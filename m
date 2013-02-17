@@ -1,100 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab3BQWUI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 17:20:08 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:45257 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab3BQWUF (ORCPT
+	id S1753954Ab3BQWbp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 17:31:45 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:38135 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753135Ab3BQWbo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 17:20:05 -0500
+	Sun, 17 Feb 2013 17:31:44 -0500
+Date: Sun, 17 Feb 2013 16:01:43 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] DocBook: update EXPORT_SYMBOL entry to point at
+ export.h
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-doc@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jiri Kosina <trivial@kernel.org>
+References: <1360873924-29368-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1360873924-29368-1-git-send-email-paul.gortmaker@windriver.com>
+	(from paul.gortmaker@windriver.com on Thu Feb 14 14:32:04 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1361138503.29465.1@driftwood>
 MIME-Version: 1.0
-In-Reply-To: <1360917814-27236-1-git-send-email-hdoyu@nvidia.com>
-References: <1360917814-27236-1-git-send-email-hdoyu@nvidia.com>
-Date: Sun, 17 Feb 2013 14:20:03 -0800
-X-Google-Sender-Auth: vCJkYQNT_1vmJ5WTAm6OIDNvHzQ
-Message-ID: <CAPnjgZ0Bkk0Ock5_WQxsni+qNMQnWURrLLqfNFVfKczN6OgLoQ@mail.gmail.com>
-Subject: Re: [v3 0/6] ARM: tegra: convert device tree files to use CLK defines
-From: Simon Glass <sjg@chromium.org>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: linux-tegra@vger.kernel.org, pdeschrijver@nvidia.com, pgaikwad@nvidia.com,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hiroshi,
+On 02/14/2013 02:32:04 PM, Paul Gortmaker wrote:
+> Previously we used to get EXPORT_SYMBOL and friends from
+> module.h but we moved away from that since module.h largely
+> includes the entire header space one way or another.
+> 
+> As most users just wanted the simple export related macros,
+> they were spun off into a separate new header -- export.h
+> Update the docs to reflect that.
+> 
+> Suggested-by: Borislav Petkov <bp@alien8.de>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Jiri Kosina <trivial@kernel.org>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-On Fri, Feb 15, 2013 at 12:43 AM, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
-> Hi,
->
-> With new dtc+cpp feature, we could get rid of magic numbers in dts*
-> files. This patch replaces CLK IDs.
->
-> We also plan to share those DT header files with kernel source
-> later[1].
->
-> This series depends on:
->   [PATCH 0/9] ARM: tegra: use new dtc+cpp feature
->   http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149613.html
->
-> [5/6] and [6/6] depend on:
->   [PATCH v6 00/10] Tegra114 clockframework
->   http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/148895.html
->
-> v2:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149816.html
->
-> v1:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149672.html
->
-> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149804.html
->
->
-> Hiroshi Doyu (6):
->   ARM: tegra20: create a DT header defining CLK IDs
->   ARM: tegra20: convert device tree files to use CLK defines
->   ARM: tegra30: create a DT header defining CLK IDs
->   ARM: tegra30: convert device tree files to use CLK defines
->   ARM: tegra114: create a DT header defining CLK IDs
->   ARM: tegra114: convert device tree files to use CLK defines
+Acked-by: Rob Landley <rob@landley.net>
 
-I wonder what sort of error message do you get when you make a mistake
-in the .dts or one of the .dtsi includes? If cpp is handling the
-including, does dtc just see a single file, in which case are the line
-numbers printed with each error not much use? Or does dtc handle the
-#line directives?
-
-Just curious...
-
-Regards,
-Simon
-
->
->  .../bindings/clock/nvidia,tegra114-car.txt         |  261 +------------------
->  .../bindings/clock/nvidia,tegra20-car.txt          |  150 +----------
->  .../bindings/clock/nvidia,tegra30-car.txt          |  207 +--------------
->  arch/arm/boot/dts/tegra114-car.h                   |  272 ++++++++++++++++++++
->  arch/arm/boot/dts/tegra114.dtsip                   |   13 +-
->  arch/arm/boot/dts/tegra20-car.h                    |  158 ++++++++++++
->  arch/arm/boot/dts/tegra20-paz00.dtsp               |    2 +-
->  arch/arm/boot/dts/tegra20.dtsip                    |   85 +++---
->  arch/arm/boot/dts/tegra30-car.h                    |  218 ++++++++++++++++
->  arch/arm/boot/dts/tegra30.dtsip                    |   87 +++----
->  10 files changed, 746 insertions(+), 707 deletions(-)
->  create mode 100644 arch/arm/boot/dts/tegra114-car.h
->  create mode 100644 arch/arm/boot/dts/tegra20-car.h
->  create mode 100644 arch/arm/boot/dts/tegra30-car.h
->
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Rob
