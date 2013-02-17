@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973Ab3BQWzG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 17:55:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45580 "EHLO
+	id S1757147Ab3BQXH7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 18:07:59 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45632 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754267Ab3BQWyz (ORCPT
+	by vger.kernel.org with ESMTP id S1754887Ab3BQWzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 17:54:55 -0500
-Message-Id: <20130217225002.151342563@decadent.org.uk>
+	Sun, 17 Feb 2013 17:55:04 -0500
+Message-Id: <20130217225002.379301902@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Feb 2013 22:50:05 +0000
+Date: Sun, 17 Feb 2013 22:50:07 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 04/66] USB: XHCI: fix memory leak of URB-private data
+Cc: akpm@linux-foundation.org, Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mike Galbraith <bitbucket@online.de>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 06/66] sched/rt: Use root_domain of rt_rq not current processor
 In-Reply-To: <20130217225001.621306883@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,39 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
 
-commit 48c3375c5f69b1c2ef3d1051a0009cb9bce0ce24 upstream.
+commit aa7f67304d1a03180f463258aa6f15a8b434e77d upstream.
 
-This patch (as1640) fixes a memory leak in xhci-hcd.  The urb_priv
-data structure isn't always deallocated in the handle_tx_event()
-routine for non-control transfers.  The patch adds a kfree() call so
-that all paths end up freeing the memory properly.
+When the system has multiple domains do_sched_rt_period_timer()
+can run on any CPU and may iterate over all rt_rq in
+cpu_online_mask.  This means when balance_runtime() is run for a
+given rt_rq that rt_rq may be in a different rd than the current
+processor.  Thus if we use smp_processor_id() to get rd in
+do_balance_runtime() we may borrow runtime from a rt_rq that is
+not part of our rd.
 
-This patch should be backported to kernels as old as 2.6.36, that
-contain the commit 8e51adccd4c4b9ffcd509d7f2afce0a906139f75 "USB: xHCI:
-Introduce urb_priv structure"
+This changes do_balance_runtime to get the rd from the passed in
+rt_rq ensuring that we borrow runtime only from the correct rd
+for the given rt_rq.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-and-tested-by: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+This fixes a BUG at kernel/sched/rt.c:687! in __disable_runtime
+when we try reclaim runtime lent to other rt_rq but runtime has
+been lent to a rt_rq in another rd.
+
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Mike Galbraith <bitbucket@online.de>
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1358186131-29494-1-git-send-email-sbohrer@rgmadvisors.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci-ring.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/sched_rt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 1512046..7f76a49 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2589,6 +2589,8 @@ cleanup:
- 				(trb_comp_code != COMP_STALL &&
- 					trb_comp_code != COMP_BABBLE))
- 				xhci_urb_free_priv(xhci, urb_priv);
-+			else
-+				kfree(urb_priv);
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -384,7 +384,7 @@ static inline struct rt_bandwidth *sched
+ static int do_balance_runtime(struct rt_rq *rt_rq)
+ {
+ 	struct rt_bandwidth *rt_b = sched_rt_bandwidth(rt_rq);
+-	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
++	struct root_domain *rd = rq_of_rt_rq(rt_rq)->rd;
+ 	int i, weight, more = 0;
+ 	u64 rt_period;
  
- 			usb_hcd_unlink_urb_from_ep(bus_to_hcd(urb->dev->bus), urb);
- 			if ((urb->actual_length != urb->transfer_buffer_length &&
 
 
