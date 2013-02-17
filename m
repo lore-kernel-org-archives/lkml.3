@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab3BQR7z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 12:59:55 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:52314 "EHLO
+	id S1751837Ab3BQSAA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 13:00:00 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:62794 "EHLO
 	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489Ab3BQR7w (ORCPT
+	with ESMTP id S1751787Ab3BQR75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 12:59:52 -0500
+	Sun, 17 Feb 2013 12:59:57 -0500
 From: David Herrmann <dh.herrmann@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         linux-fbdev@vger.kernel.org, David Airlie <airlied@linux.ie>,
         dri-devel@lists.freedesktop.org,
         David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH 1/9] video: introduce system framebuffer bus
-Date: Sun, 17 Feb 2013 18:59:03 +0100
-Message-Id: <1361123951-587-2-git-send-email-dh.herrmann@gmail.com>
+Subject: [PATCH 4/9] video: vesafb: allow building as module
+Date: Sun, 17 Feb 2013 18:59:06 +0100
+Message-Id: <1361123951-587-5-git-send-email-dh.herrmann@gmail.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1361123951-587-1-git-send-email-dh.herrmann@gmail.com>
 References: <1361123951-587-1-git-send-email-dh.herrmann@gmail.com>
@@ -25,467 +25,226 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Herrmann <dh.herrmann@googlemail.com>
 
-For a long time now we have the problem that there are multiple drivers
-available that try to use system framebuffers (like EFI, VESA/VBE, ...).
-There is no way to control which driver gets access to the devices, but
-instead works on a first-come-first-serve basis.
+Fix the vesafb module to no longer use any static __init data. Also add a
+module_exit() function that destroys the platform device.
 
-Furthermore, hardware drivers (eg., gpu/drm/*) that get loaded on the
-real hardware bus (eg., pci-bus) of the framebuffer devices have a hard
-time unloading other drivers that currently use system framebuffers.
-
-This introduces a new bus-type: sysfb (system framebuffer bus)
-
-Any available system framebuffer gets registered as a device on this bus.
-A bus-driver can then pick up the device and use it. Standard sysfs
-bind/unbind interfaces can be used to change drivers on-the-fly.
-
-There are actually two types of drivers: generic and real drivers
-
-Generic drivers use the generic framebuffer interface exclusively. They
-are often used as a fallback interface where no real driver for the
-hardware is available. Generic drivers register as sysfb drivers to the
-sysfb bus and will get loaded dynamically. User-space can bind/unbind them
-via sysfs to control which driver should get access.
-Only one driver can be active per device. During probe the driver can
-retrieve additional information via a screen_info object of the device.
-Generic drivers include: efifb, (u)vesafb, vgacon, ...
-
-Real drivers work differently. Instead of being loaded via sysfb, they
-register as drivers on the real bus (eg., pci-bus). During probe they
-should verify whether their real device provides a system-framebuffer. If
-it does, they call sysfb_claim() to claim exclusive access to the device.
-This guarantees that any generic driver gets unloaded and the real
-hardware driver can gain access. This also guarantees that a real hardware
-driver always takes precedence over generic fallback drivers.
-Real drivers include: i915, radeon, nouveau, ...
+Note that fbdev hotplugging is broken and the self-reference actually
+prevents sane module-unloading. Anyway, this at least allows delayed
+module loading of vesafb and helps debugging vesafb a lot.
 
 Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
 ---
- drivers/video/Kconfig  |  17 ++++
- drivers/video/Makefile |   1 +
- drivers/video/sysfb.c  | 230 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/sysfb.h  | 134 ++++++++++++++++++++++++++++
- 4 files changed, 382 insertions(+)
- create mode 100644 drivers/video/sysfb.c
- create mode 100644 include/linux/sysfb.h
+ drivers/video/Kconfig  |   2 +-
+ drivers/video/vesafb.c | 100 +++++++++++++++++++++++++++++++------------------
+ 2 files changed, 64 insertions(+), 38 deletions(-)
 
 diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index d08d799..eac56ef 100644
+index eac56ef..d5723c2 100644
 --- a/drivers/video/Kconfig
 +++ b/drivers/video/Kconfig
-@@ -27,6 +27,23 @@ config VGASTATE
-        tristate
-        default n
+@@ -770,7 +770,7 @@ config FB_UVESA
+ 	  If unsure, say N.
  
-+config SYSFB
-+	tristate "System Framebuffer Bus"
-+	help
-+	  Framebuffers like VGA, VESA/VBE, EFI and others can be handled by many
-+	  different drivers. This bus provides an infrastructure for drivers to
-+	  register themselves and then get bound/unbound to these system-wide
-+	  framebuffers.
-+	  This bus prevents framebuffers from being used by multiple drivers
-+	  simultaneously and also provides a sysfs API to bind/rebind different
-+	  drivers to each device from userspace.
-+
-+	  Chipset-specific drivers (like real GPU drivers) will always take
-+	  precedence over generic framebuffer drivers.
-+
-+	  A driver should normally select this bus-option automatically. Enable
-+	  it only if you need out-of-tree builds.
-+
- config VIDEO_OUTPUT_CONTROL
- 	tristate "Lowlevel video output switch controls"
- 	help
-diff --git a/drivers/video/Makefile b/drivers/video/Makefile
-index 23e948e..f0eb006 100644
---- a/drivers/video/Makefile
-+++ b/drivers/video/Makefile
-@@ -5,6 +5,7 @@
- # Each configuration option enables a list of files.
+ config FB_VESA
+-	bool "VESA VGA graphics support"
++	tristate "VESA VGA graphics support"
+ 	depends on (FB = y) && X86
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+diff --git a/drivers/video/vesafb.c b/drivers/video/vesafb.c
+index 501b340..4ad7b40 100644
+--- a/drivers/video/vesafb.c
++++ b/drivers/video/vesafb.c
+@@ -29,27 +29,10 @@
  
- obj-$(CONFIG_VGASTATE)            += vgastate.o
-+obj-$(CONFIG_SYSFB)		  += sysfb.o
- obj-y                             += fb_notify.o
- obj-$(CONFIG_FB)                  += fb.o
- fb-y                              := fbmem.o fbmon.o fbcmap.o fbsysfs.o \
-diff --git a/drivers/video/sysfb.c b/drivers/video/sysfb.c
-new file mode 100644
-index 0000000..8249006
---- /dev/null
-+++ b/drivers/video/sysfb.c
-@@ -0,0 +1,230 @@
-+/*
-+ * System framebuffer bus
-+ * Copyright (c) 2013 David Herrmann
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+/*
-+ * The system framebuffer bus (sysfb) provides a way to register global system
-+ * framebuffers and load different drivers for it. This includes VESA/VBE and
-+ * EFI framebuffers.
-+ * Platform code is responsible of adding the framebuffer devices to the system
-+ * platform bus. The sysfb bus will pick up known devices and provide them via
-+ * the sysfb bus to system drivers. This guarantees that only one driver uses
-+ * a single system framebuffer at a time.
-+ *
-+ * Drivers that can make use of the generic interfaces of system framebuffers
-+ * should register as a sysfb driver. They will get notified via probe/remove
-+ * callbacks just like any other hotpluggable driver. Users can load/unload
-+ * drivers via the sysfs bus interface so drivers must be hotplug capable.
-+ *
-+ * Drivers that cannot make use of the generic interfaces but instead control
-+ * the real hardware should instead claim the device. These drivers normally
-+ * register through PCI or platform devices and control the device via another
-+ * interface.
-+ * By claiming a device, all other generic drivers are unregistered and no more
-+ * drivers will be probed unless the device is released again.
-+ *
-+ * Only _real_ hardware drivers should claim devices as there is always another
-+ * mechanism to control which real hardware driver gets loaded (eg. pci-bus).
-+ * Generic drivers which aren't controlled via another bus should use this
-+ * generic sysfb driver interface instead of claiming a device.
-+ *
-+ * All drivers must make sure that after they get unloaded or release a device,
-+ * the device is reset to a usable state. If the driver cannot guarantee that,
-+ * it should taint the device so other drivers will notice it and can
-+ * optionally recover the device.
-+ */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/platform_device.h>
-+#include <linux/screen_info.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <linux/sysfb.h>
-+
-+static DEFINE_SPINLOCK(sysfb_lock);
-+static unsigned int claimed_types;
-+
-+static int sysfb_bus_match(struct device *dev, struct device_driver *drv)
-+{
-+	struct sysfb_device *sdev = to_sysfb_device(dev);
-+	struct sysfb_driver *sdrv = to_sysfb_driver(drv);
-+
-+	return (sdrv->type_mask & sdev->type) &&
-+	       (sdrv->allow_tainted || !sdev->tainted);
-+}
-+
-+static int sysfb_bus_probe(struct device *dev)
-+{
-+	struct sysfb_device *sdev = to_sysfb_device(dev);
-+	struct sysfb_driver *sdrv = to_sysfb_driver(dev->driver);
-+	unsigned long flags;
-+	int ret;
-+
-+	if (!(sdrv->type_mask & sdev->type))
-+		return -ENODEV;
-+	if (!sdrv->allow_tainted && sdev->tainted)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&sysfb_lock, flags);
-+	if ((claimed_types & sdev->type)) {
-+		spin_unlock_irqrestore(&sysfb_lock, flags);
-+		return -ENODEV;
-+	}
-+	spin_unlock_irqrestore(&sysfb_lock, flags);
-+
-+	if (sdrv->probe) {
-+		ret = sdrv->probe(sdev);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int sysfb_bus_remove(struct device *dev)
-+{
-+	struct sysfb_device *sdev = to_sysfb_device(dev);
-+	struct sysfb_driver *sdrv = to_sysfb_driver(dev->driver);
-+
-+	if (sdrv->remove)
-+		sdrv->remove(sdev);
-+
-+	return 0;
-+}
-+
-+static struct bus_type sysfb_bus_type = {
-+	.name = "sysfb",
-+	.match = sysfb_bus_match,
-+	.probe = sysfb_bus_probe,
-+	.remove = sysfb_bus_remove,
+ /* --------------------------------------------------------------------- */
+ 
+-static struct fb_var_screeninfo vesafb_defined __initdata = {
+-	.activate	= FB_ACTIVATE_NOW,
+-	.height		= -1,
+-	.width		= -1,
+-	.right_margin	= 32,
+-	.upper_margin	= 16,
+-	.lower_margin	= 4,
+-	.vsync_len	= 4,
+-	.vmode		= FB_VMODE_NONINTERLACED,
+-};
+-
+-static struct fb_fix_screeninfo vesafb_fix __initdata = {
+-	.id	= "VESA VGA",
+-	.type	= FB_TYPE_PACKED_PIXELS,
+-	.accel	= FB_ACCEL_NONE,
+-};
+-
+ static int   inverse    __read_mostly;
+ static int   mtrr       __read_mostly;		/* disable mtrr */
+-static int   vram_remap __initdata;		/* Set amount of memory to be used */
+-static int   vram_total __initdata;		/* Set total amount of memory */
++static int   vram_remap;			/* Set amount of memory to be used */
++static int   vram_total;			/* Set total amount of memory */
+ static int   pmi_setpal __read_mostly = 1;	/* pmi for palette changes ??? */
+ static int   ypan       __read_mostly;		/* 0..nothing, 1..ypan, 2..ywrap */
+ static void  (*pmi_start)(void) __read_mostly;
+@@ -58,6 +41,11 @@ static int   depth      __read_mostly;
+ static int   vga_compat __read_mostly;
+ /* --------------------------------------------------------------------- */
+ 
++struct vesafb_par {
++	struct fb_ops ops;
++	u32 palette[256];
 +};
 +
-+int sysfb_register_driver(struct sysfb_driver *drv)
+ static int vesafb_pan_display(struct fb_var_screeninfo *var,
+                               struct fb_info *info)
+ {
+@@ -182,7 +170,7 @@ static void vesafb_destroy(struct fb_info *info)
+ 	framebuffer_release(info);
+ }
+ 
+-static struct fb_ops vesafb_ops = {
++static const struct fb_ops vesafb_ops = {
+ 	.owner		= THIS_MODULE,
+ 	.fb_destroy     = vesafb_destroy,
+ 	.fb_setcolreg	= vesafb_setcolreg,
+@@ -192,7 +180,7 @@ static struct fb_ops vesafb_ops = {
+ 	.fb_imageblit	= cfb_imageblit,
+ };
+ 
+-static int __init vesafb_setup(char *options)
++static int vesafb_setup(char *options)
+ {
+ 	char *this_opt;
+ 	
+@@ -226,13 +214,29 @@ static int __init vesafb_setup(char *options)
+ 	return 0;
+ }
+ 
+-static int __init vesafb_probe(struct platform_device *dev)
++static int vesafb_probe(struct platform_device *dev)
+ {
+ 	struct fb_info *info;
++	struct vesafb_par *par;
+ 	int i, err;
+ 	unsigned int size_vmode;
+ 	unsigned int size_remap;
+ 	unsigned int size_total;
++	struct fb_var_screeninfo vesafb_defined = {
++		.activate	= FB_ACTIVATE_NOW,
++		.height		= -1,
++		.width		= -1,
++		.right_margin	= 32,
++		.upper_margin	= 16,
++		.lower_margin	= 4,
++		.vsync_len	= 4,
++		.vmode		= FB_VMODE_NONINTERLACED,
++	};
++	struct fb_fix_screeninfo vesafb_fix = {
++		.id	= "VESA VGA",
++		.type	= FB_TYPE_PACKED_PIXELS,
++		.accel	= FB_ACCEL_NONE,
++	};
+ 
+ 	if (screen_info.orig_video_isVGA != VIDEO_TYPE_VLFB)
+ 		return -ENODEV;
+@@ -287,13 +291,14 @@ static int __init vesafb_probe(struct platform_device *dev)
+ 		   spaces our resource handlers simply don't know about */
+ 	}
+ 
+-	info = framebuffer_alloc(sizeof(u32) * 256, &dev->dev);
++	info = framebuffer_alloc(sizeof(struct vesafb_par), &dev->dev);
+ 	if (!info) {
+ 		release_mem_region(vesafb_fix.smem_start, size_total);
+ 		return -ENOMEM;
+ 	}
+-	info->pseudo_palette = info->par;
+-	info->par = NULL;
++	par = info->par;
++	par->ops = vesafb_ops;
++	info->pseudo_palette = par->palette;
+ 
+ 	/* set vesafb aperture size for generic probing */
+ 	info->apertures = alloc_apertures(1);
+@@ -466,7 +471,7 @@ static int __init vesafb_probe(struct platform_device *dev)
+ 	       vesafb_fix.smem_start, info->screen_base,
+ 	       size_remap/1024, size_total/1024);
+ 
+-	info->fbops = &vesafb_ops;
++	info->fbops = &par->ops;
+ 	info->var = vesafb_defined;
+ 	info->fix = vesafb_fix;
+ 	info->flags = FBINFO_FLAG_DEFAULT | FBINFO_MISC_FIRMWARE |
+@@ -486,6 +491,7 @@ static int __init vesafb_probe(struct platform_device *dev)
+ 	}
+ 	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+ 	       info->node, info->fix.id);
++	platform_set_drvdata(dev, info);
+ 	return 0;
+ err:
+ 	if (info->screen_base)
+@@ -495,7 +501,17 @@ err:
+ 	return err;
+ }
+ 
++static int vesafb_remove(struct platform_device *dev)
 +{
-+	int ret;
++	struct fb_info *info = platform_get_drvdata(dev);
 +
-+	drv->driver.bus = &sysfb_bus_type;
++	unregister_framebuffer(info);
++	return 0;
++}
 +
-+	ret = driver_register(&drv->driver);
+ static struct platform_driver vesafb_driver = {
++	.probe = vesafb_probe,
++	.remove = vesafb_remove,
+ 	.driver	= {
+ 		.name	= "vesafb",
+ 	},
+@@ -512,24 +528,34 @@ static int __init vesafb_init(void)
+ 	fb_get_options("vesafb", &option);
+ 	vesafb_setup(option);
+ 
+-	vesafb_device = platform_device_alloc("vesafb", 0);
++	vesafb_device = platform_device_alloc("vesafb", -1);
+ 	if (!vesafb_device)
+ 		return -ENOMEM;
+ 
++	ret = platform_driver_register(&vesafb_driver);
 +	if (ret)
-+		return ret;
++		goto err_dev;
 +
-+	return 0;
-+}
-+EXPORT_SYMBOL(sysfb_register_driver);
-+
-+void sysfb_unregister_driver(struct sysfb_driver *drv)
-+{
-+	driver_unregister(&drv->driver);
-+}
-+EXPORT_SYMBOL(sysfb_unregister_driver);
-+
-+static int __sysfb_rescan(struct device *dev, void *data)
-+{
-+	return device_attach(dev);
-+}
-+
-+static void sysfb_rescan(void)
-+{
-+	bus_for_each_dev(&sysfb_bus_type, NULL, NULL, __sysfb_rescan);
-+}
-+
-+static int __sysfb_claim(struct device *dev, void *data)
-+{
-+	struct sysfb_device *sdev = to_sysfb_device(dev);
-+	unsigned int claim = (long)data;
-+
-+	if (!(sdev->type & claim))
-+		return 0;
-+
-+	device_release_driver(dev);
-+	return 0;
-+}
-+
-+int sysfb_claim(unsigned int types)
-+{
-+	unsigned long flags;
-+	int ret;
-+
-+	if (!(types & SYSFB_TYPES))
-+		return -EINVAL;
-+
-+	spin_lock_irqsave(&sysfb_lock, flags);
-+	if ((claimed_types & types)) {
-+		spin_unlock_irqrestore(&sysfb_lock, flags);
-+		return -EALREADY;
-+	}
-+	claimed_types |= types;
-+	spin_unlock_irqrestore(&sysfb_lock, flags);
-+
-+	ret = bus_for_each_dev(&sysfb_bus_type, NULL, (void*)(long)types,
-+			       __sysfb_claim);
+ 	ret = platform_device_add(vesafb_device);
+-	if (!ret) {
+-		ret = platform_driver_probe(&vesafb_driver, vesafb_probe);
+-		if (ret)
+-			platform_device_del(vesafb_device);
+-	}
 +	if (ret)
-+		goto err_restore;
-+
++		goto err_drv;
+ 
+-	if (ret) {
+-		platform_device_put(vesafb_device);
+-		vesafb_device = NULL;
+-	}
 +	return 0;
-+
-+err_restore:
-+	spin_lock_irqsave(&sysfb_lock, flags);
-+	claimed_types &= ~types;
-+	spin_unlock_irqrestore(&sysfb_lock, flags);
-+
-+	sysfb_rescan();
-+	return ret;
-+}
-+EXPORT_SYMBOL(sysfb_claim);
-+
-+void sysfb_release(unsigned int types)
+ 
++err_drv:
++	platform_driver_unregister(&vesafb_driver);
++err_dev:
++	platform_device_put(vesafb_device);
+ 	return ret;
+ }
+-module_init(vesafb_init);
+ 
++static void __exit vesafb_exit(void)
 +{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&sysfb_lock, flags);
-+	claimed_types &= ~types;
-+	spin_unlock_irqrestore(&sysfb_lock, flags);
-+
-+	sysfb_rescan();
-+}
-+EXPORT_SYMBOL(sysfb_release);
-+
-+void sysfb_taint(struct sysfb_device *sdev, bool set)
-+{
-+	sdev->tainted = set;
-+}
-+EXPORT_SYMBOL(sysfb_taint);
-+
-+static int __init sysfb_init(void)
-+{
-+	int ret;
-+
-+	ret = bus_register(&sysfb_bus_type);
-+	if (ret) {
-+		pr_err("cannot register sysfb bus\n");
-+		return ret;
-+	}
-+
-+	return 0;
++	platform_device_del(vesafb_device);
++	platform_device_put(vesafb_device);
++	platform_driver_unregister(&vesafb_driver);
 +}
 +
-+static void __exit sysfb_exit(void)
-+{
-+	bus_unregister(&sysfb_bus_type);
-+}
-+
-+module_init(sysfb_init);
-+module_exit(sysfb_exit);
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("David Herrmann <dh.herrmann@gmail.com>");
-+MODULE_DESCRIPTION("System framebuffer bus");
-diff --git a/include/linux/sysfb.h b/include/linux/sysfb.h
-new file mode 100644
-index 0000000..6cd3c24
---- /dev/null
-+++ b/include/linux/sysfb.h
-@@ -0,0 +1,134 @@
-+#ifndef __LINUX_SYSFB_H_
-+#define __LINUX_SYSFB_H_
-+
-+/*
-+ * System framebuffer bus
-+ * Copyright (c) 2013 David Herrmann
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/screen_info.h>
-+#include <linux/types.h>
-+
-+/**
-+ * sysfb_type
-+ *
-+ * Different types of available framebuffer devices. Only one device of each
-+ * type can be available at a time. In most systems there even is only one
-+ * device at all.
-+ *
-+ * Use the sysfb_device->screen pointer to get information about the framebuffer
-+ * devices.
-+ */
-+enum sysfb_type {
-+	SYSFB_TYPES = 0,
-+};
-+
-+/**
-+ * sysfb_device
-+ * @tainted: whether the device was tainted or not
-+ * @type: type of the fb device (@sysfb_type)
-+ * @screen: pointer to supplemental screen-info object
-+ * @dev: device object
-+ *
-+ * Each framebuffer device is represented by a sysfb_device object. The sysfb
-+ * core manages them and they cannot be registered from the outside.
-+ */
-+struct sysfb_device {
-+	bool tainted;
-+	unsigned int type;
-+	struct screen_info *screen;
-+	struct device dev;
-+};
-+
-+#define to_sysfb_device(_dev) container_of((_dev), struct sysfb_device, dev)
-+
-+/**
-+ * sysfb_driver
-+ * @type_mask: mask of device-types that are supported (@sysfb_type)
-+ * @allow_tainted: whether the driver can be bound to tainted devices
-+ * @driver: driver object
-+ * @probe: probe callback
-+ * @remove: remove callback
-+ *
-+ * Each generic framebuffer driver must provide this structure when registering
-+ * to the sysfb core. The @driver field must also be provided by the caller
-+ * except for the 'driver.bus' field which is initialized by the core.
-+ */
-+struct sysfb_driver {
-+	unsigned int type_mask;
-+	bool allow_tainted;
-+	struct device_driver driver;
-+
-+	int (*probe) (struct sysfb_device *dev);
-+	void (*remove) (struct sysfb_device *dev);
-+};
-+
-+#define to_sysfb_driver(_drv) container_of((_drv), struct sysfb_driver, driver)
-+
-+/**
-+ * sysfb_register_driver
-+ * @drv: Driver object
-+ *
-+ * Register a new driver on the sysfb bus.
-+ */
-+int sysfb_register_driver(struct sysfb_driver *drv);
-+
-+/**
-+ * sysfb_unregister_driver
-+ * @drv: Driver object
-+ *
-+ * Remove a driver from the sysfb bus.
-+ */
-+void sysfb_unregister_driver(struct sysfb_driver *drv);
-+
-+/**
-+ * sysfb_claim
-+ * @types: Bitmask of sysfb_type flags
-+ *
-+ * Unbind all drivers from all devices matching the given types and prevent
-+ * further drivers to get loaded on these types of devices. This allows real
-+ * hardware drivers that are loaded by other bus-types (eg. pci-bus) to prevent
-+ * any generic driver from using the given framebuffer types.
-+ *
-+ * Return 0 if the types could be claimed, otherwise a negative error code
-+ * is returned.
-+ */
-+int sysfb_claim(unsigned int types);
-+
-+/**
-+ * sysfb_release
-+ * @types: Bitmask of sysfb_type flags
-+ *
-+ * Releases the given previously claimed types. See sysfb_claim(). This does
-+ * not check whether the types are actually claimed or who claimed them. So make
-+ * sure to call this only when you really claimed these types previously.
-+ */
-+void sysfb_release(unsigned int types);
-+
-+/**
-+ * sysfb_taint
-+ * @sdev: sysfb device
-+ * @set: whether to taint or untaint
-+ *
-+ * This taints a given sysfb device. This should be done by all drivers if they
-+ * change the framebuffer device in a way that other generic drivers might not
-+ * be able to detect afterwards.
-+ * This includes changing the resolution or properties of a framebuffer without
-+ * adjusting the screen_info object.
-+ * This can be reset to 'false' after all the changes have been undone.
-+ *
-+ * This is an unlocked function. You must call it from within your probe/remove
-+ * callbacks in the driver.
-+ */
-+void sysfb_taint(struct sysfb_device *sdev, bool set);
-+
-+#endif /* __LINUX_SYSFB_H_ */
++module_init(vesafb_init);
++module_exit(vesafb_exit);
+ MODULE_LICENSE("GPL");
 -- 
 1.8.1.3
 
