@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab3BQXJe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 18:09:34 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45606 "EHLO
+	id S1757207Ab3BQXJd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 18:09:33 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45610 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754709Ab3BQWzA (ORCPT
+	by vger.kernel.org with ESMTP id S1754729Ab3BQWzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Feb 2013 17:55:00 -0500
-Message-Id: <20130217225003.646324517@decadent.org.uk>
+Message-Id: <20130217225003.423164857@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Feb 2013 22:50:18 +0000
+Date: Sun, 17 Feb 2013 22:50:16 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 17/66] can: c_can: Set reserved bit in IFx_MASK2 to 1 on write
+Cc: akpm@linux-foundation.org, liu chuansheng <chuansheng.liu@intel.com>,
+        xueminsu <xuemin.su@intel.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 15/66] drm/radeon: Calling object_unrefer() when creating fb failure
 In-Reply-To: <20130217225001.621306883@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,36 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Stein <alexander.stein@systec-electronic.com>
+From: liu chuansheng <chuansheng.liu@intel.com>
 
-commit 2bd3bc4e8472424f1a6009825397639a8968920a upstream.
+commit f2d68cf4daa4de97d400d94836b907e35228e54f upstream.
 
-According to C_CAN documentation, the reserved bit in IFx_MASK2 register is
-fixed 1.
+When kzalloc() failed in radeon_user_framebuffer_create(), need to
+call object_unreference() to match the object_reference().
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: xueminsu <xuemin.su@intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/can/c_can/c_can.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_display.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -446,8 +446,12 @@ static void c_can_setup_receive_object(s
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -1110,8 +1110,10 @@ radeon_user_framebuffer_create(struct dr
+ 	}
  
- 	priv->write_reg(priv, &priv->regs->ifregs[iface].mask1,
- 			IFX_WRITE_LOW_16BIT(mask));
-+
-+	/* According to C_CAN documentation, the reserved bit
-+	 * in IFx_MASK2 register is fixed 1
-+	 */
- 	priv->write_reg(priv, &priv->regs->ifregs[iface].mask2,
--			IFX_WRITE_HIGH_16BIT(mask));
-+			IFX_WRITE_HIGH_16BIT(mask) | BIT(13));
+ 	radeon_fb = kzalloc(sizeof(*radeon_fb), GFP_KERNEL);
+-	if (radeon_fb == NULL)
++	if (radeon_fb == NULL) {
++		drm_gem_object_unreference_unlocked(obj);
+ 		return ERR_PTR(-ENOMEM);
++	}
  
- 	priv->write_reg(priv, &priv->regs->ifregs[iface].arb1,
- 			IFX_WRITE_LOW_16BIT(id));
+ 	radeon_framebuffer_init(dev, radeon_fb, mode_cmd, obj);
+ 
 
 
