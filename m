@@ -1,146 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab3BQGTL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 01:19:11 -0500
-Received: from mail-ye0-f182.google.com ([209.85.213.182]:42622 "EHLO
-	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab3BQGTJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 01:19:09 -0500
-Message-ID: <51207655.5000209@gmail.com>
-Date: Sun, 17 Feb 2013 14:19:01 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
+	id S1753790Ab3BQG0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 01:26:16 -0500
+Received: from mout.gmx.net ([212.227.17.21]:59834 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751856Ab3BQG0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 01:26:15 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+SFGlL/jWS9LxSIiA7oz4lGmA+nKR1XzGL8slRu/
+	q+oFT6nwUL12cp
+Message-ID: <1361082363.6088.21.camel@marge.simpson.net>
+Subject: Re: [RFC] sched: The removal of idle_balance()
+From: Mike Galbraith <efault@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: [PATCH v2] zsmalloc: Add Kconfig for enabling PTE method
-References: <1360117028-5625-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1360117028-5625-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Clark Williams <clark@redhat.com>,
+        Andrew Theurer <habanero@us.ibm.com>
+Date: Sun, 17 Feb 2013 07:26:03 +0100
+In-Reply-To: <1361031150.23152.133.camel@gandalf.local.home>
+References: <1360908819.23152.97.camel@gandalf.local.home>
+	 <1360913172.4736.20.camel@marge.simpson.net>
+	 <1361031150.23152.133.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2013 10:17 AM, Minchan Kim wrote:
-> Zsmalloc has two methods 1) copy-based and 2) pte-based to access
-> allocations that span two pages. You can see history why we supported
-> two approach from [1].
->
-> In summary, copy-based method is 3 times fater in x86 while pte-based
-> is 6 times faster in ARM.
+On Sat, 2013-02-16 at 11:12 -0500, Steven Rostedt wrote:
+> On Fri, 2013-02-15 at 08:26 +0100, Mike Galbraith wrote:
+> > On Fri, 2013-02-15 at 01:13 -0500, Steven Rostedt wrote:
+> > 
+> > > Think about it some more, just because we go idle isn't enough reason to
+> > > pull a runable task over. CPUs go idle all the time, and tasks are woken
+> > > up all the time. There's no reason that we can't just wait for the sched
+> > > tick to decide its time to do a bit of balancing. Sure, it would be nice
+> > > if the idle CPU did the work. But I think that frame of mind was an
+> > > incorrect notion from back in the early 2000s and does not apply to
+> > > today's hardware, or perhaps it doesn't apply to the (relatively) new
+> > > CFS scheduler. If you want aggressive scheduling, make the task rt, and
+> > > it will do aggressive scheduling.
+> > 
+> > (the throttle is supposed to keep idle_balance() from doing severe
+> > damage, that may want a peek/tweak)
+> > 
+> > Hackbench spreads itself with FORK/EXEC balancing, how does say a kbuild
+> > do with no idle_balance()?
+> > 
+> 
+> Interesting, I added this patch and it brought down my hackbench to the
+> same level as removing idle_balance().
 
-Why in some arches copy-based method is better and in the other arches 
-pte-based is better? What's the root reason?
+The typo did it's job well :)
 
->
-> But it was bad choice that adding hard coding to select architecture
-> which want to use pte based method. This patch removed it and adds
-> new Kconfig to select the approach.
->
-> This patch is based on next-20130205.
->
-> [1] https://lkml.org/lkml/2012/7/11/58
->
-> * Changelog from v1
->    * Fix CONFIG_PGTABLE_MAPPING in zsmalloc-main.c - Greg
->
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> Cc: Nitin Gupta <ngupta@vflare.org>
-> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->   drivers/staging/zsmalloc/Kconfig         | 12 ++++++++++++
->   drivers/staging/zsmalloc/zsmalloc-main.c | 20 +++++---------------
->   2 files changed, 17 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/staging/zsmalloc/Kconfig b/drivers/staging/zsmalloc/Kconfig
-> index 9084565..232b3b6 100644
-> --- a/drivers/staging/zsmalloc/Kconfig
-> +++ b/drivers/staging/zsmalloc/Kconfig
-> @@ -8,3 +8,15 @@ config ZSMALLOC
->   	  non-standard allocator interface where a handle, not a pointer, is
->   	  returned by an alloc().  This handle must be mapped in order to
->   	  access the allocated space.
-> +
-> +config PGTABLE_MAPPING
-> +        bool "Use page table mapping to access allocations that span two pages"
-> +        depends on ZSMALLOC
-> +        default n
-> +        help
-> +	  By default, zsmalloc uses a copy-based object mapping method to access
-> +	  allocations that span two pages. However, if a particular architecture
-> +	  performs VM mapping faster than copying, then you should select this.
-> +	  This causes zsmalloc to use page table mapping rather than copying
-> +	  for object mapping. You can check speed with zsmalloc benchmark[1].
-> +	  [1] https://github.com/spartacus06/zsmalloc
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index 06f73a9..2c1805c 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -207,6 +207,7 @@ struct zs_pool {
->   	struct size_class size_class[ZS_SIZE_CLASSES];
->   
->   	gfp_t flags;	/* allocation flags used when growing pool */
-> +
->   };
->   
->   /*
-> @@ -218,19 +219,8 @@ struct zs_pool {
->   #define CLASS_IDX_MASK	((1 << CLASS_IDX_BITS) - 1)
->   #define FULLNESS_MASK	((1 << FULLNESS_BITS) - 1)
->   
-> -/*
-> - * By default, zsmalloc uses a copy-based object mapping method to access
-> - * allocations that span two pages. However, if a particular architecture
-> - * performs VM mapping faster than copying, then it should be added here
-> - * so that USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use
-> - * page table mapping rather than copying for object mapping.
-> -*/
-> -#if defined(CONFIG_ARM)
-> -#define USE_PGTABLE_MAPPING
-> -#endif
-> -
->   struct mapping_area {
-> -#ifdef USE_PGTABLE_MAPPING
-> +#ifdef CONFIG_PGTABLE_MAPPING
->   	struct vm_struct *vm; /* vm area for mapping object that span pages */
->   #else
->   	char *vm_buf; /* copy buffer for objects that span pages */
-> @@ -622,7 +612,7 @@ static struct page *find_get_zspage(struct size_class *class)
->   	return page;
->   }
->   
-> -#ifdef USE_PGTABLE_MAPPING
-> +#ifdef CONFIG_PGTABLE_MAPPING
->   static inline int __zs_cpu_up(struct mapping_area *area)
->   {
->   	/*
-> @@ -663,7 +653,7 @@ static inline void __zs_unmap_object(struct mapping_area *area,
->   	flush_tlb_kernel_range(addr, end);
->   }
->   
-> -#else /* USE_PGTABLE_MAPPING */
-> +#else /* CONFIG_PGTABLE_MAPPING*/
->   
->   static inline int __zs_cpu_up(struct mapping_area *area)
->   {
-> @@ -741,7 +731,7 @@ out:
->   	pagefault_enable();
->   }
->   
-> -#endif /* USE_PGTABLE_MAPPING */
-> +#endif /* CONFIG_PGTABLE_MAPPING */
->   
->   static int zs_cpu_notifier(struct notifier_block *nb, unsigned long action,
->   				void *pcpu)
+Hrm, turning idle balancing off here does not help hackbench at all.
+
+3.8.0-master
+
+Q6600 +SD_BALANCE_NEWIDLE
+ Performance counter stats for 'hackbench -l 500' (100 runs):
+
+       5221.559519 task-clock                #    4.001 CPUs utilized            ( +-  0.26% ) [100.00%]
+            129863 context-switches          #    0.025 M/sec                    ( +-  3.65% ) [100.00%]
+              7576 cpu-migrations            #    0.001 M/sec                    ( +-  4.60% ) [100.00%]
+             31095 page-faults               #    0.006 M/sec                    ( +-  0.39% )
+       12258227539 cycles                    #    2.348 GHz                      ( +-  0.27% ) [49.91%]
+   <not supported> stalled-cycles-frontend 
+   <not supported> stalled-cycles-backend  
+        5395089628 instructions              #    0.44  insns per cycle          ( +-  0.28% ) [74.99%]
+        1012563262 branches                  #  193.920 M/sec                    ( +-  0.28% ) [75.08%]
+          43217098 branch-misses             #    4.27% of all branches          ( +-  0.23% ) [75.01%]
+
+       1.305024749 seconds time elapsed                                          ( +-  0.26% )
+
+Q6600 -SD_BALANCE_NEWIDLE
+
+ Performance counter stats for 'hackbench -l 500' (100 runs):
+
+       5356.549500 task-clock                #    4.001 CPUs utilized            ( +-  0.37% ) [100.00%]
+            153093 context-switches          #    0.029 M/sec                    ( +-  3.20% ) [100.00%]
+              6887 cpu-migrations            #    0.001 M/sec                    ( +-  4.65% ) [100.00%]
+             31248 page-faults               #    0.006 M/sec                    ( +-  0.48% )
+       12141992004 cycles                    #    2.267 GHz                      ( +-  0.30% ) [49.90%]
+   <not supported> stalled-cycles-frontend 
+   <not supported> stalled-cycles-backend  
+        5426436261 instructions              #    0.45  insns per cycle          ( +-  0.22% ) [75.00%]
+        1016967893 branches                  #  189.855 M/sec                    ( +-  0.22% ) [75.09%]
+          43207200 branch-misses             #    4.25% of all branches          ( +-  0.13% ) [75.01%]
+
+       1.338768889 seconds time elapsed                                          ( +-  0.37% )
+
+E5620+HT +SD_BALANCE_NEWIDLE
+ Performance counter stats for 'hackbench -l 500' (100 runs):
+
+       3884.162557 task-clock                #    7.997 CPUs utilized            ( +-  0.14% ) [100.00%]
+             97366 context-switches          #    0.025 M/sec                    ( +-  1.68% ) [100.00%]
+             12383 CPU-migrations            #    0.003 M/sec                    ( +-  3.29% ) [100.00%]
+             30749 page-faults               #    0.008 M/sec                    ( +-  0.13% )
+        9377671582 cycles                    #    2.414 GHz                      ( +-  0.11% ) [83.04%]
+        6973792586 stalled-cycles-frontend   #   74.37% frontend cycles idle     ( +-  0.15% ) [83.27%]
+        2529338603 stalled-cycles-backend    #   26.97% backend  cycles idle     ( +-  0.32% ) [66.93%]
+        5214109586 instructions              #    0.56  insns per cycle        
+                                             #    1.34  stalled cycles per insn  ( +-  0.07% ) [83.50%]
+         984681811 branches                  #  253.512 M/sec                    ( +-  0.07% ) [83.56%]
+           7050196 branch-misses             #    0.72% of all branches          ( +-  0.49% ) [83.24%]
+
+       0.485726223 seconds time elapsed                                          ( +-  0.14% )
+
+E5620+HT -SD_BALANCE_NEWIDLE
+ Performance counter stats for 'hackbench -l 500' (100 runs):
+
+       4124.204725 task-clock                #    7.996 CPUs utilized            ( +-  0.20% ) [100.00%]
+            151292 context-switches          #    0.037 M/sec                    ( +-  1.49% ) [100.00%]
+             12504 CPU-migrations            #    0.003 M/sec                    ( +-  2.84% ) [100.00%]
+             30685 page-faults               #    0.007 M/sec                    ( +-  0.07% )
+        9566938118 cycles                    #    2.320 GHz                      ( +-  0.16% ) [83.09%]
+        7483411444 stalled-cycles-frontend   #   78.22% frontend cycles idle     ( +-  0.22% ) [83.21%]
+        2848475061 stalled-cycles-backend    #   29.77% backend  cycles idle     ( +-  0.38% ) [66.82%]
+        5360541017 instructions              #    0.56  insns per cycle        
+                                             #    1.40  stalled cycles per insn  ( +-  0.11% ) [83.48%]
+        1011027557 branches                  #  245.145 M/sec                    ( +-  0.11% ) [83.59%]
+           7964016 branch-misses             #    0.79% of all branches          ( +-  0.55% ) [83.32%]
+
+       0.515779138 seconds time elapsed                                          ( +-  0.20% )
+
+	-Mike
 
