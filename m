@@ -1,123 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab3BQNf7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 08:35:59 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:55571 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756108Ab3BQNf5 (ORCPT
+	id S1756222Ab3BQNmz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 08:42:55 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:36159 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756123Ab3BQNmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 08:35:57 -0500
-Date: Sun, 17 Feb 2013 14:38:14 +0100
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Airlie <airlied@linux.ie>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
-Message-ID: <20130217133814.GK5813@phenom.ffwll.local>
-Mail-Followup-To: Hugh Dickins <hughd@google.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	David Airlie <airlied@linux.ie>, Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Paul McKenney <paul.mckenney@linaro.org>,
-	DRI <dri-devel@lists.freedesktop.org>
-References: <alpine.LNX.2.00.1302122121170.15020@eggly.anvils>
- <20130213193411.GA15928@redhat.com>
- <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
- <20130215011503.GA11914@redhat.com>
- <alpine.LNX.2.00.1302141804400.3330@eggly.anvils>
- <CA+55aFyLDnmwy16V8TQRwJV2O51K-dmqBhuWi2ytRd4sYi8J+g@mail.gmail.com>
- <alpine.LNX.2.00.1302161302290.21380@eggly.anvils>
- <CA+55aFwF1qZmPaL5LPA+0ys68s=TF7wfXpb5y9GWi0q5RJDJ-Q@mail.gmail.com>
- <alpine.LNX.2.00.1302161522130.22723@eggly.anvils>
- <alpine.LNX.2.00.1302161803430.23675@eggly.anvils>
+	Sun, 17 Feb 2013 08:42:53 -0500
+Date: Sun, 17 Feb 2013 14:42:48 +0100
+From: Jann Horn <jannhorn@googlemail.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-api@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] posix timers: Add syscall that works on timer
+ sigevent
+Message-ID: <20130217134248.GD13378@debjann.fritz.box>
+References: <511D0E50.7090505@parallels.com>
+ <511D0EA1.9060704@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pQhZXvAqiZgbeUkD"
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1302161803430.23675@eggly.anvils>
-X-Originating-IP: [178.83.130.250]
+In-Reply-To: <511D0EA1.9060704@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 17, 2013 at 3:21 AM, Hugh Dickins <hughd@google.com> wrote:
-> On Sat, 16 Feb 2013, Hugh Dickins wrote:
->> On Sat, 16 Feb 2013, Linus Torvalds wrote:
->> >
->> > I think it's worth it to give them a heads-up already. So I've cc'd
->> > the main suspects here..
->>
->> Okay, thanks.
->>
->> >
->> > Daniel, Dave - any comments about a NULL fb in
->> > intel_choose_pipe_bpp_dither() during either suspend or resume? Some
->> > googling shows this:
->> >
->> >     https://bugzilla.redhat.com/show_bug.cgi?id=895123
->>
->> Great, yes, I'm sure that's the same (though it says "suspend"
->> and I say "resume").
->>
->> >
->> > which sounds remarkably similar, and is also during a suspend attempt
->> > (but apparently Satish got a full oops out).. Some timing race with a
->> > worker entry?
->
-> Comparing Satish's backtrace and drivers/gpu/drm history, it's clear that
-> the oops comes from Daniel's 3.8-rc2 45e2b5f640b3 "drm/i915: force restore
-> on lid open", whose force_restore case now passes down crtc->base.fb.  But
-> I wouldn't have a clue why that's usually non-NULL but occasionally NULL:
-> your timing race with a worker entry, perhaps.
->
-> And 45e2b5f640b3 contains a fine history of going back and forth, so I
-> wouldn't want to play further with it out of ignorance - though tempted
-> to replace the "if (force_restore) {" by an interim safe-seeming
-> compromise of "if (force_restore && crtc->base.fb) {".
 
-Two things to try while I try to grow a clue on what exactly is going on:
+--pQhZXvAqiZgbeUkD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-1. Related to new ACPI sleep states we've recently made the lid_notifier
-locking more sound, maybe that helps:
+On Thu, Feb 14, 2013 at 08:19:45PM +0400, Pavel Emelyanov wrote:
+> +	struct sigevent event;
+[...]
+> +	event.sigev_notify = timer->it_sigev_notify;
+> +	event.sigev_signo = timer->sigq->info.si_signo;
+> +	event.sigev_value = timer->sigq->info.si_value;
+> +	event.sigev_notify_thread_id = pid_vnr(timer->it_pid);
+[...]
+> +	if (old_event && copy_to_user(old_event, &event, sizeof(event)))
 
-http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-next-queued&id=b8efb17b3d687695b81485f606fc4e6c35a50f9a
+Won't this leak uninitialized kernel stack data to userspace? As far as I can
+see, the _sigev_un union is bigger than the _tid field in it, so the rest of
+it will be copied over without initialization, right?
 
-2. The new i915 force restore code is indeed missing a safety check
-compared to the old crtc helper based one:
+Jann
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 6eb3882..095094c 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9153,7 +9153,13 @@ void intel_modeset_setup_hw_state(struct drm_device *dev,
- 
- 	if (force_restore) {
- 		for_each_pipe(pipe) {
--			intel_crtc_restore_mode(dev_priv->pipe_to_crtc_mapping[pipe]);
-+			struct drm_crtc * crtc =
-+				dev_priv->pipe_to_crtc_mapping[pipe];
-+
-+			if (!crtc->enabled)
-+				continue;
-+
-+			intel_crtc_restore_mode(crtc);
- 		}
- 
- 		i915_redisable_vga(dev);
+--pQhZXvAqiZgbeUkD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The issue is that we save a pointer to the fb (since those are refcounted)
-but copy the mode into the crtc struct (since modes are not refcounted).
-So on restore the mode will always be non-NULL, which is wrong if the crtc
-is off (and so also has a NULL fb).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-The problem I have with that patch is figuring out how this ever worked. I
-think I need more coffee ;-)
+iQIcBAEBAgAGBQJRIN5XAAoJEGhmizV0f2d1omkP/3aYg8NWXKJAywJymFPipKyq
+PyhAhup8mGOnurcQuX84rmQP51P9wzXC1nOotfspkGvvougk1NGHX6Ns/t84qDhE
+711xvW28OmJjNyQ+YZyPXwVKMu8cXPmy+yUI42c7zW78MxHdSk50Qf9OeBgTsjcw
+RJs6D6jH7+F5uNKa0UxPKPh5Ji1TBTeJzolBIdfzy8OYA6vJ6/GtrpnotDBrDtaR
+o2bOpmOADLI9Q48fg9SPy7jAEfS2Z8ULg0vwBixqFC/7+RIUOj1hgro0UgiIdpnT
+6/vA9GXotjzDFfl9V7NE0ohLFeDvuirjkhkDmICpS4o5YosigsWYzXbKJ44dw9XP
+R/H3lUBfkppS5dik1jmSIIRHWB+wNMLcy+CYqqcQc85BZ0mGchxpGAlzvQb4jMsa
+vwXj9KXTcnmGqKkkApdZVtNk1elpd+g408xy1o9ouwuT6XQxHbpshEjBg1WFXh00
+lhpCAqkbHfjtCV6gMZhhw34G0TKOfKXOQ5z2XqruOl5XSkjhTTdvZ/PnIzKVve/F
+8xNdvCORRQJXmnDrcJePQiyIVv/g68lI2YbwR/pFbR9iGzeBCdg+TkgA+Z5aJrSU
+lkpf8lKsssGNuMKiAtV2oUWO572Me4jJeEZzYMOBMtuxXfd0vObXt4BKj1OiE8Ny
+mVnRFz9Hy401I5VyIAAm
+=6AOp
+-----END PGP SIGNATURE-----
 
-Cheers, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+--pQhZXvAqiZgbeUkD--
