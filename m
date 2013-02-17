@@ -1,286 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab3BQTFd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 14:05:33 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:33019 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab3BQTFa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 14:05:30 -0500
-Date: Sun, 17 Feb 2013 11:05:47 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.7.9
-Message-ID: <20130217190547.GB15916@kroah.com>
-References: <20130217190535.GA15916@kroah.com>
+	id S1752259Ab3BQTQT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 14:16:19 -0500
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.91]:10284 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751789Ab3BQTQS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 14:16:18 -0500
+X-Greylist: delayed 322 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Feb 2013 14:16:17 EST
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
+ Driver
+Thread-Topic: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
+ Driver
+Thread-Index: AQHOC6xQKsSDc1Q1WkuxN29CXfjd55h+pfaA///G/Yw=
+Date: Sun, 17 Feb 2013 19:10:28 +0000
+Message-ID: <a9aa48c6abf3441e9f3a4481d154319f@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1360955396-14183-1-git-send-email-haiyangz@microsoft.com>,<20130217143223.GA11543@aepfle.de>
+In-Reply-To: <20130217143223.GA11543@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130217190535.GA15916@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Forefront-Antispam-Report: CIP:131.107.1.27;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(189002)(199002)(164054002)(24454001)(377454001)(53806001)(54356001)(51856001)(4396001)(49866001)(80022001)(66066001)(65816001)(876001)(77982001)(59766001)(20776003)(76482001)(56776001)(5343655001)(46406002)(63696002)(47776003)(56816002)(54316002)(79102001)(44976002)(23726001)(31966008)(46102001)(74662001)(33646001)(16406001)(50466001)(47976001)(74502001)(47446002)(47736001)(50986001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2SR01MB604;H:hybrid.exchange.microsoft.com;RD:mail7.exchange.microsoft.com;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 07607ED19A
+X-OriginatorOrg: DuplicateDomain-7923a859-03c9-4312-a77c-440aa45aaf52.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index ad48987..5634228 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 7
--SUBLEVEL = 8
-+SUBLEVEL = 9
- EXTRAVERSION =
- NAME = Terrified Chipmunk
- 
-diff --git a/arch/s390/kernel/time.c b/arch/s390/kernel/time.c
-index b5d8a18..252c7e6 100644
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -120,6 +120,9 @@ static int s390_next_ktime(ktime_t expires,
- 	nsecs = ktime_to_ns(ktime_add(timespec_to_ktime(ts), expires));
- 	do_div(nsecs, 125);
- 	S390_lowcore.clock_comparator = sched_clock_base_cc + (nsecs << 9);
-+	/* Program the maximum value if we have an overflow (== year 2042) */
-+	if (unlikely(S390_lowcore.clock_comparator < sched_clock_base_cc))
-+		S390_lowcore.clock_comparator = -1ULL;
- 	set_clock_comparator(S390_lowcore.clock_comparator);
- 	return 0;
- }
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index a1f780d..796ed83 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -142,6 +142,11 @@ static inline unsigned long pmd_pfn(pmd_t pmd)
- 	return (pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT;
- }
- 
-+static inline unsigned long pud_pfn(pud_t pud)
-+{
-+	return (pud_val(pud) & PTE_PFN_MASK) >> PAGE_SHIFT;
-+}
-+
- #define pte_page(pte)	pfn_to_page(pte_pfn(pte))
- 
- static inline int pmd_large(pmd_t pte)
-diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index e03a1e1..562a76d 100644
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -20,18 +20,19 @@ static int set_x2apic_phys_mode(char *arg)
- }
- early_param("x2apic_phys", set_x2apic_phys_mode);
- 
--static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
-+static bool x2apic_fadt_phys(void)
- {
--	if (x2apic_phys)
--		return x2apic_enabled();
--	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
--		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
--		x2apic_enabled()) {
-+	if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
-+		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
- 		printk(KERN_DEBUG "System requires x2apic physical mode\n");
--		return 1;
-+		return true;
- 	}
--	else
--		return 0;
-+	return false;
-+}
-+
-+static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
-+{
-+	return x2apic_enabled() && (x2apic_phys || x2apic_fadt_phys());
- }
- 
- static void
-@@ -82,7 +83,7 @@ static void init_x2apic_ldr(void)
- 
- static int x2apic_phys_probe(void)
- {
--	if (x2apic_mode && x2apic_phys)
-+	if (x2apic_mode && (x2apic_phys || x2apic_fadt_phys()))
- 		return 1;
- 
- 	return apic == &apic_x2apic_phys;
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 8e13ecb..79ff7da 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -748,13 +748,15 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
- 				return;
- 		}
- #endif
-+		/* Kernel addresses are always protection faults: */
-+		if (address >= TASK_SIZE)
-+			error_code |= PF_PROT;
- 
--		if (unlikely(show_unhandled_signals))
-+		if (likely(show_unhandled_signals))
- 			show_signal_msg(regs, error_code, address, tsk);
- 
--		/* Kernel addresses are always protection faults: */
- 		tsk->thread.cr2		= address;
--		tsk->thread.error_code	= error_code | (address >= TASK_SIZE);
-+		tsk->thread.error_code	= error_code;
- 		tsk->thread.trap_nr	= X86_TRAP_PF;
- 
- 		force_sig_info_fault(SIGSEGV, si_code, address, tsk, 0);
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 3baff25..ce42da7 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -829,6 +829,9 @@ int kern_addr_valid(unsigned long addr)
- 	if (pud_none(*pud))
- 		return 0;
- 
-+	if (pud_large(*pud))
-+		return pfn_valid(pud_pfn(*pud));
-+
- 	pmd = pmd_offset(pud, addr);
- 	if (pmd_none(*pmd))
- 		return 0;
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 77cf009..928bf83 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -87,7 +87,7 @@ EXPORT_SYMBOL(efi_enabled);
- 
- static int __init setup_noefi(char *arg)
- {
--	clear_bit(EFI_BOOT, &x86_efi_facility);
-+	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
- 	return 0;
- }
- early_param("noefi", setup_noefi);
-diff --git a/arch/x86/xen/xen-asm_32.S b/arch/x86/xen/xen-asm_32.S
-index f9643fc..33ca6e4 100644
---- a/arch/x86/xen/xen-asm_32.S
-+++ b/arch/x86/xen/xen-asm_32.S
-@@ -89,11 +89,11 @@ ENTRY(xen_iret)
- 	 */
- #ifdef CONFIG_SMP
- 	GET_THREAD_INFO(%eax)
--	movl TI_cpu(%eax), %eax
--	movl __per_cpu_offset(,%eax,4), %eax
--	mov xen_vcpu(%eax), %eax
-+	movl %ss:TI_cpu(%eax), %eax
-+	movl %ss:__per_cpu_offset(,%eax,4), %eax
-+	mov %ss:xen_vcpu(%eax), %eax
- #else
--	movl xen_vcpu, %eax
-+	movl %ss:xen_vcpu, %eax
- #endif
- 
- 	/* check IF state we're restoring */
-@@ -106,11 +106,11 @@ ENTRY(xen_iret)
- 	 * resuming the code, so we don't have to be worried about
- 	 * being preempted to another CPU.
- 	 */
--	setz XEN_vcpu_info_mask(%eax)
-+	setz %ss:XEN_vcpu_info_mask(%eax)
- xen_iret_start_crit:
- 
- 	/* check for unmasked and pending */
--	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
-+	cmpw $0x0001, %ss:XEN_vcpu_info_pending(%eax)
- 
- 	/*
- 	 * If there's something pending, mask events again so we can
-@@ -118,7 +118,7 @@ xen_iret_start_crit:
- 	 * touch XEN_vcpu_info_mask.
- 	 */
- 	jne 1f
--	movb $1, XEN_vcpu_info_mask(%eax)
-+	movb $1, %ss:XEN_vcpu_info_mask(%eax)
- 
- 1:	popl %eax
- 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 513972f..6c5c7c5 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -19,6 +19,8 @@ static void pci_free_resources(struct pci_dev *dev)
- 
- static void pci_stop_dev(struct pci_dev *dev)
- {
-+	pci_pme_active(dev, false);
-+
- 	if (dev->is_added) {
- 		pci_proc_detach_device(dev);
- 		pci_remove_sysfs_dev_files(dev);
-diff --git a/drivers/rtc/rtc-pl031.c b/drivers/rtc/rtc-pl031.c
-index 10c1a34..81c5077 100644
---- a/drivers/rtc/rtc-pl031.c
-+++ b/drivers/rtc/rtc-pl031.c
-@@ -350,7 +350,9 @@ static int pl031_probe(struct amba_device *adev, const struct amba_id *id)
- 	/* Enable the clockwatch on ST Variants */
- 	if (vendor->clockwatch)
- 		data |= RTC_CR_CWEN;
--	writel(data | RTC_CR_EN, ldata->base + RTC_CR);
-+	else
-+		data |= RTC_CR_EN;
-+	writel(data, ldata->base + RTC_CR);
- 
- 	/*
- 	 * On ST PL031 variants, the RTC reset value does not provide correct
-diff --git a/fs/xfs/xfs_buf.c b/fs/xfs/xfs_buf.c
-index 58a1f41..4b0b8dd 100644
---- a/fs/xfs/xfs_buf.c
-+++ b/fs/xfs/xfs_buf.c
-@@ -487,7 +487,6 @@ _xfs_buf_find(
- 	struct rb_node		*parent;
- 	xfs_buf_t		*bp;
- 	xfs_daddr_t		blkno = map[0].bm_bn;
--	xfs_daddr_t		eofs;
- 	int			numblks = 0;
- 	int			i;
- 
-@@ -499,23 +498,6 @@ _xfs_buf_find(
- 	ASSERT(!(numbytes < (1 << btp->bt_sshift)));
- 	ASSERT(!(BBTOB(blkno) & (xfs_off_t)btp->bt_smask));
- 
--	/*
--	 * Corrupted block numbers can get through to here, unfortunately, so we
--	 * have to check that the buffer falls within the filesystem bounds.
--	 */
--	eofs = XFS_FSB_TO_BB(btp->bt_mount, btp->bt_mount->m_sb.sb_dblocks);
--	if (blkno >= eofs) {
--		/*
--		 * XXX (dgc): we should really be returning EFSCORRUPTED here,
--		 * but none of the higher level infrastructure supports
--		 * returning a specific error on buffer lookup failures.
--		 */
--		xfs_alert(btp->bt_mount,
--			  "%s: Block out of range: block 0x%llx, EOFS 0x%llx ",
--			  __func__, blkno, eofs);
--		return NULL;
--	}
--
- 	/* get tree root */
- 	pag = xfs_perag_get(btp->bt_mount,
- 				xfs_daddr_to_agno(btp->bt_mount, blkno));
-diff --git a/mm/mlock.c b/mm/mlock.c
-index f0b9ce5..c9bd528 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -517,11 +517,11 @@ SYSCALL_DEFINE2(munlock, unsigned long, start, size_t, len)
- static int do_mlockall(int flags)
- {
- 	struct vm_area_struct * vma, * prev = NULL;
--	unsigned int def_flags = 0;
- 
- 	if (flags & MCL_FUTURE)
--		def_flags = VM_LOCKED;
--	current->mm->def_flags = def_flags;
-+		current->mm->def_flags |= VM_LOCKED;
-+	else
-+		current->mm->def_flags &= ~VM_LOCKED;
- 	if (flags == MCL_FUTURE)
- 		goto out;
- 
+> From: Olaf Hering
+> Sent: Sunday, February 17, 2013 9:32 AM
+> To: Haiyang Zhang
+> Cc: FlorianSchandinat@gmx.de; linux-fbdev@vger.kernel.org; KY Srinivasan; jasowang@redhat.com; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org
+> Subject: Re: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer Driver
+
+> On Fri, Feb 15, Haiyang Zhang wrote:
+
+> +config HYPERV_FB
+
+> This should probably be FB_HYPERB to follow the naming of all other
+> drivers.
+
+Will do.
+
+Thanks,
+- Haiyang
