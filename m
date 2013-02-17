@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab3BQW4k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 17:56:40 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45870 "EHLO
+	id S1756720Ab3BQW5V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 17:57:21 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45853 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756358Ab3BQWzv (ORCPT
+	by vger.kernel.org with ESMTP id S1755119Ab3BQWzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 17:55:51 -0500
-Message-Id: <20130217225004.343966423@decadent.org.uk>
+	Sun, 17 Feb 2013 17:55:48 -0500
+Message-Id: <20130217225004.683794512@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Feb 2013 22:50:24 +0000
+Date: Sun, 17 Feb 2013 22:50:27 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Vyacheslav Dubeyko <slava@dubeyko.com>,
-        Sergey Alexandrov <splavgm@gmail.com>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 23/66] nilfs2: fix fix very long mount time issue
+Cc: akpm@linux-foundation.org,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 26/66] virtio_console: Dont access uninitialized data.
 In-Reply-To: <20130217225001.621306883@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,81 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
+From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
-commit a9bae189542e71f91e61a4428adf6e5a7dfe8063 upstream.
+commit aded024a12b32fc1ed9a80639681daae2d07ec25 upstream.
 
-There exists a situation when GC can work in background alone without
-any other filesystem activity during significant time.
+Don't access uninitialized work-queue when removing device.
+The work queue is initialized only if the device multi-queue.
+So don't call cancel_work unless this is a multi-queue device.
 
-The nilfs_clean_segments() method calls nilfs_segctor_construct() that
-updates superblocks in the case of NILFS_SC_SUPER_ROOT and
-THE_NILFS_DISCONTINUED flags are set.  But when GC is working alone the
-nilfs_clean_segments() is called with unset THE_NILFS_DISCONTINUED flag.
-As a result, the update of superblocks doesn't occurred all this time
-and in the case of SPOR superblocks keep very old values of last super
-root placement.
+This fixes the following panic:
 
-SYMPTOMS:
+Kernel panic - not syncing: BUG!
+Call Trace:
+62031b28:  [<6026085d>] panic+0x16b/0x2d3
+62031b30:  [<6004ef5e>] flush_work+0x0/0x1d7
+62031b60:  [<602606f2>] panic+0x0/0x2d3
+62031b68:  [<600333b0>] memcpy+0x0/0x140
+62031b80:  [<6002d58a>] unblock_signals+0x0/0x84
+62031ba0:  [<602609c5>] printk+0x0/0xa0
+62031bd8:  [<60264e51>] __mutex_unlock_slowpath+0x13d/0x148
+62031c10:  [<6004ef5e>] flush_work+0x0/0x1d7
+62031c18:  [<60050234>] try_to_grab_pending+0x0/0x17e
+62031c38:  [<6004e984>] get_work_gcwq+0x71/0x8f
+62031c48:  [<60050539>] __cancel_work_timer+0x5b/0x115
+62031c78:  [<628acc85>] unplug_port+0x0/0x191 [virtio_console]
+62031c98:  [<6005061c>] cancel_work_sync+0x12/0x14
+62031ca8:  [<628ace96>] virtcons_remove+0x80/0x15c [virtio_console]
+62031ce8:  [<628191de>] virtio_dev_remove+0x1e/0x7e [virtio]
+62031d08:  [<601cf242>] __device_release_driver+0x75/0xe4
+62031d28:  [<601cf2dd>] device_release_driver+0x2c/0x40
+62031d48:  [<601ce0dd>] driver_unbind+0x7d/0xc6
+62031d88:  [<601cd5d9>] drv_attr_store+0x27/0x29
+62031d98:  [<60115f61>] sysfs_write_file+0x100/0x14d
+62031df8:  [<600b737d>] vfs_write+0xcb/0x184
+62031e08:  [<600b58b8>] filp_close+0x88/0x94
+62031e38:  [<600b7686>] sys_write+0x59/0x88
+62031e88:  [<6001ced1>] handle_syscall+0x5d/0x80
+62031ea8:  [<60030a74>] userspace+0x405/0x531
+62031f08:  [<600d32cc>] sys_dup+0x0/0x5e
+62031f28:  [<601b11d6>] strcpy+0x0/0x18
+62031f38:  [<600be46c>] do_execve+0x10/0x12
+62031f48:  [<600184c7>] run_init_process+0x43/0x45
+62031fd8:  [<60019a91>] new_thread_handler+0xba/0xbc
 
-Trying to mount a NILFS2 volume after SPOR in such environment ends with
-very long mounting time (it can achieve about several hours in some
-cases).
-
-REPRODUCING PATH:
-
-1. It needs to use external USB HDD, disable automount and doesn't
-   make any additional filesystem activity on the NILFS2 volume.
-
-2. Generate temporary file with size about 100 - 500 GB (for example,
-   dd if=/dev/zero of=<file_name> bs=1073741824 count=200).  The size of
-   file defines duration of GC working.
-
-3. Then it needs to delete file.
-
-4. Start GC manually by means of command "nilfs-clean -p 0".  When you
-   start GC by means of such way then, at the end, superblocks is updated
-   by once.  So, for simulation of SPOR, it needs to wait sometime (15 -
-   40 minutes) and simply switch off USB HDD manually.
-
-5. Switch on USB HDD again and try to mount NILFS2 volume.  As a
-   result, NILFS2 volume will mount during very long time.
-
-REPRODUCIBILITY: 100%
-
-FIX:
-
-This patch adds checking that superblocks need to update and set
-THE_NILFS_DISCONTINUED flag before nilfs_clean_segments() call.
-
-Reported-by: Sergey Alexandrov <splavgm@gmail.com>
-Signed-off-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Tested-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nilfs2/ioctl.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/char/virtio_console.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
-index fdb1807..f385935 100644
---- a/fs/nilfs2/ioctl.c
-+++ b/fs/nilfs2/ioctl.c
-@@ -664,8 +664,11 @@ static int nilfs_ioctl_clean_segments(struct inode *inode, struct file *filp,
- 	if (ret < 0)
- 		printk(KERN_ERR "NILFS: GC failed during preparation: "
- 			"cannot read source blocks: err=%d\n", ret);
--	else
-+	else {
-+		if (nilfs_sb_need_update(nilfs))
-+			set_nilfs_discontinued(nilfs);
- 		ret = nilfs_clean_segments(inode->i_sb, argv, kbufs);
-+	}
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 684b0d5..ee4dbea 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -2062,7 +2062,8 @@ static void virtcons_remove(struct virtio_device *vdev)
+ 	/* Disable interrupts for vqs */
+ 	vdev->config->reset(vdev);
+ 	/* Finish up work that's lined up */
+-	cancel_work_sync(&portdev->control_work);
++	if (use_multiport(portdev))
++		cancel_work_sync(&portdev->control_work);
  
- 	nilfs_remove_all_gcinodes(nilfs);
- 	clear_nilfs_gc_running(nilfs);
+ 	list_for_each_entry_safe(port, port2, &portdev->ports, list)
+ 		unplug_port(port);
 
 
