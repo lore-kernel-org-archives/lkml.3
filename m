@@ -1,307 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab3BQKmX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 05:42:23 -0500
-Received: from mout.gmx.net ([212.227.17.20]:56436 "EHLO mout.gmx.net"
+	id S1755752Ab3BQKo3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 05:44:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7641 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755343Ab3BQKmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 05:42:20 -0500
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX188nDM48co88L3jueFmixtlKAkiZc4pVGvcPoMnbt
-	UOXqPNXgQJZPNI
-Message-ID: <5120B408.8030806@gmx.de>
-Date: Sun, 17 Feb 2013 11:42:16 +0100
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130111 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>, boinc_dev@ssl.berkeley.edu
-Subject: shouldn't a non-privileged malformed sprintf crashes the kernel
-X-Enigmail-Version: 1.5
-Content-Type: multipart/mixed;
- boundary="------------090008070604010203030301"
-X-Y-GMX-Trusted: 0
+	id S1754743Ab3BQKo0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 05:44:26 -0500
+Date: Sun, 17 Feb 2013 07:44:04 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH EDAC 07/13] edac: add support for raw error reports
+Message-ID: <20130217074404.05786692@redhat.com>
+In-Reply-To: <20130216165748.GC27207@pd.tnic>
+References: <cover.1360931635.git.mchehab@redhat.com>
+	<e08f797b129a50b4e1b39e8c31bff82904aea65d.1360931635.git.mchehab@redhat.com>
+	<20130215141330.GF14387@pd.tnic>
+	<20130215132530.4f3b7dab@redhat.com>
+	<20130215154123.GH14387@pd.tnic>
+	<20130215134929.3909cfa2@redhat.com>
+	<20130215160257.GK14387@pd.tnic>
+	<20130215162029.3bcbf50a@redhat.com>
+	<20130216165748.GC27207@pd.tnic>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090008070604010203030301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Em Sat, 16 Feb 2013 17:57:48 +0100
+Borislav Petkov <bp@alien8.de> escreveu:
 
-This is the 2nd time in a row that a stable kernel (3.7.8 currently) crashes in such a way
-that even the sys-rq key doesn't work any longer.
-Found nothing in the log. The screen shot is here [1]. First time this issue was reported in [2].
+> On Fri, Feb 15, 2013 at 04:20:29PM -0200, Mauro Carvalho Chehab wrote:
+> > Yeah, pre-allocating a buffer is something that it was on my plans. It
+> > seems it is time to do it in a clean way. I prefer to keep this as a
+> > separate patch from 07/13, as it has a different rationale, and mixing
+> > with 07/13 would just mix two different subjects.
+> >
+> > Also, having it separate helps reviewing.
+> 
+> Yep.
+> 
+> > ---
+> > 
+> > [PATCH] edac: put all arguments for the raw error handling call into a struct
+> > 
+> > The number of arguments for edac_raw_mc_handle_error() is too big;
+> > put them into a structure and allocate space for it inside
+> > edac_mc_alloc().
+> > 
+> > That reduces a lot the stack usage and simplifies the raw API call.
+> > 
+> > Tested with sb_edac driver and MCE error injection. Worked as expected:
+> > 
+> > [  143.066100] EDAC MC0: 1 CE memory read error on CPU_SrcID#0_Channel#0_DIMM#0 (channel:0 slot:0 page:0x320 offset:0x0 grain:32 syndrome:0x0 -  area:DRAM err_code:0001:0090 socket:0 channel_mask:1 rank:0)
+> > [  143.086424] EDAC MC0: 1 CE memory read error on CPU_SrcID#0_Channel#0_DIMM#0 (channel:0 slot:0 page:0x320 offset:0x0 grain:32 syndrome:0x0 -  area:DRAM err_code:0001:0090 socket:0 channel_mask:1 rank:0)
+> > [  143.106570] EDAC MC0: 1 CE memory read error on CPU_SrcID#0_Channel#0_DIMM#0 (channel:0 slot:0 page:0x320 offset:0x0 grain:32 syndrome:0x0 -  area:DRAM err_code:0001:0090 socket:0 channel_mask:1 rank:0)
+> > [  143.126712] EDAC MC0: 1 CE memory read error on CPU_SrcID#0_Channel#0_DIMM#0 (channel:0 slot:0 page:0x320 offset:0x0 grain:32 syndrome:0x0 -  area:DRAM err_code:0001:0090 socket:0 channel_mask:1 rank:0)
+> > 
+> > Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> > 
+> > diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
+> > index 9c5da11..9cf33a5 100644
+> > --- a/drivers/edac/edac_core.h
+> > +++ b/drivers/edac/edac_core.h
+> > @@ -454,21 +454,20 @@ extern struct mem_ctl_info *edac_mc_del_mc(struct device *dev);
+> >  extern int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci,
+> >  				      unsigned long page);
+> >  
+> > +static inline void edac_raw_error_desc_clean(struct edac_raw_error_desc *e)
+> > +{
+> > +	int offset = offsetof(struct edac_raw_error_desc, grain);
+> > +
+> > +	*e->location = '\0';
+> > +	*e->label = '\0';
+> 
+> Why the special handling? Why not memset the whole thing?
 
-The bug seems to be triggered by the BOINC client - I'm running the alpha version of it [3].
+We don't want to clean the pointers for the allocated area, just to
+clean the strings.
 
-I'm wondering whether the sprintf issue discussed in [4] is the trigger for the bug
-(I attached that message here b/c the BOINC devs doesn't allow just even read access
-to the mail archive w/o registering).
+> 
+> > +
+> > +	memset(e + offset, 0, sizeof(*e) - offset);
+> > +}
+> > +
+> > +
+> >  void edac_raw_mc_handle_error(const enum hw_event_mc_err_type type,
+> > -			  struct mem_ctl_info *mci,
+> > -			  long grain,
+> > -			  const u16 error_count,
+> > -			  const int top_layer,
+> > -			  const int mid_layer,
+> > -			  const int low_layer,
+> > -			  const unsigned long page_frame_number,
+> > -			  const unsigned long offset_in_page,
+> > -			  const unsigned long syndrome,
+> > -			  const char *msg,
+> > -			  const char *location,
+> > -			  const char *label,
+> > -			  const char *other_detail,
+> > -			  const bool enable_per_layer_report);
+> > +			      struct mem_ctl_info *mci,
+> > +			      struct edac_raw_error_desc *e);
+> >  
+> >  void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+> >  			  struct mem_ctl_info *mci,
+> > diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
+> > index 8fddf65..d72853b 100644
+> > --- a/drivers/edac/edac_mc.c
+> > +++ b/drivers/edac/edac_mc.c
+> > @@ -42,6 +42,12 @@
+> >  static DEFINE_MUTEX(mem_ctls_mutex);
+> >  static LIST_HEAD(mc_devices);
+> >  
+> > +/* Maximum size of the location string */
+> > +#define LOCATION_SIZE 80
+> > +
+> > +/* String used to join two or more labels */
+> > +#define OTHER_LABEL " or "
+> > +
+> >  /*
+> >   * Used to lock EDAC MC to just one module, avoiding two drivers e. g.
+> >   *	apei/ghes and i7core_edac to be used at the same time.
+> > @@ -232,6 +238,11 @@ static void _edac_mc_free(struct mem_ctl_info *mci)
+> >  		}
+> >  		kfree(mci->csrows);
+> >  	}
+> > +
+> > +	/* Frees the error report string area */
+> > +	kfree(mci->error_event.location);
+> > +	kfree(mci->error_event.label);
+> > +
+> >  	kfree(mci);
+> >  }
+> >  
+> > @@ -445,6 +456,12 @@ struct mem_ctl_info *edac_mc_alloc(unsigned mc_num,
+> >  		}
+> >  	}
+> >  
+> > +	/* Allocate memory for the error report */
+> > +	mci->error_event.location = kmalloc(LOCATION_SIZE, GFP_KERNEL);
+> > +	mci->error_event.label = kmalloc((EDAC_MC_LABEL_LEN + 1 +
+> > +					 sizeof(OTHER_LABEL)) * mci->tot_dimms,
+> > +					 GFP_KERNEL);
+> 
+> I see, those are separate strings. Why not embed them into struct
+> edac_raw_error_desc? This would simplify the whole buffer handling even
+> more and you won't need to kmalloc them.
 
+We could do it for the location. The space for label, however, depends on
+how many DIMMs are in the system, as multiple dimm's may be present, and
+the core will point to all possible affected DIMMs.
 
-@boinc_devs
-IMO it would be helpful to store the pid of the BOINC clients to stdoutdae.txt too, or where can I find it ?
+Ok, perhaps we could just allocate one big area for it (like one page), 
+as this would very likely be enough for it, and change the logic to take
+the buffer size into account when filling it.
 
+> Also just FYI, everytime you do kmalloc, you need to handle the case
+> where it returns an error.
 
+Yeah, I forgot to add the error handling logic.
 
-[1] http://ompldr.org/vaGh0MQ
-[2] http://thread.gmane.org/gmane.linux.kernel/1438965
-[3] https://boinc.berkeley.edu/dev/forum_thread.php?id=6698#46649
-[4] http://lists.ssl.berkeley.edu/mailman/private/boinc_dev/2013-February/019545.html
+> [ … ]
+> 
+> > @@ -1174,18 +1162,26 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+> >  			  const char *msg,
+> >  			  const char *other_detail)
+> >  {
+> > -	/* FIXME: too much for stack: move it to some pre-alocated area */
+> > -	char location[80];
+> > -	char label[(EDAC_MC_LABEL_LEN + 1 + sizeof(OTHER_LABEL)) * mci->tot_dimms];
+> >  	char *p;
+> >  	int row = -1, chan = -1;
+> >  	int pos[EDAC_MAX_LAYERS] = { top_layer, mid_layer, low_layer };
+> >  	int i;
+> > -	long grain;
+> > -	bool enable_per_layer_report = false;
+> > +	struct edac_raw_error_desc *e = &mci->error_event;
+> >  
+> >  	edac_dbg(3, "MC%d\n", mci->mc_idx);
+> >  
+> > +	/* Fills the error report buffer */
+> > +	edac_raw_error_desc_clean(e);
+> > +	e->error_count = error_count;
+> > +	e->top_layer = top_layer;
+> > +	e->mid_layer = mid_layer;
+> > +	e->low_layer = low_layer;
+> > +	e->page_frame_number = page_frame_number;
+> > +	e->offset_in_page = offset_in_page;
+> > +	e->syndrome = syndrome;
+> > +	e->msg = msg;
+> > +	e->other_detail = other_detail;
+> 
+> Btw, this could be simplified even further if we would've made it like
+> this from the get-go: if lowlevel EDAC drivers would populate the buffer
+> already, we wouldn't need to do that copying again. And, it is ironic
+> but I did that already in amd64_edac - see __log_bus_error, where I have
+> an amd64_edac-specific struct err_info descriptor which is being handed
+> off up.
+> 
+> Oh well, maybe something for later.
+
+I agree, but this is a separate patch, IMHO. It will require to change the
+logic again on all drivers, and re-test compilation on all supported archs.
+
+> [ … ]
+> 
+> > @@ -1302,14 +1297,9 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+> >  			     edac_layer_name[mci->layers[i].type],
+> >  			     pos[i]);
+> >  	}
+> > -	if (p > location)
+> > +	if (p > e->location)
+> >  		*(p - 1) = '\0';
+> >  
+> > -	edac_raw_mc_handle_error(type, mci, grain, error_count,
+> > -				 top_layer, mid_layer, low_layer,
+> > -				 page_frame_number, offset_in_page,
+> > -				 syndrome,
+> > -				 msg, location, label, other_detail,
+> > -				 enable_per_layer_report);
+> > +	edac_raw_mc_handle_error(type, mci, e);
+> 
+> Ok, now this hunk looks nice. :-)
+> 
+> [ … ]
+> 
+> > diff --git a/include/linux/edac.h b/include/linux/edac.h
+> > index 28232a0..7f929c3 100644
+> > --- a/include/linux/edac.h
+> > +++ b/include/linux/edac.h
+> > @@ -555,6 +555,46 @@ struct errcount_attribute_data {
+> >  	int layer0, layer1, layer2;
+> >  };
+> >  
+> > +/**
+> > + * edac_raw_error_desc - Raw error report structure
+> > + * @grain:			minimum granularity for an error report, in bytes
+> > + * @error_count:		number of errors of the same type
+> > + * @top_layer:			top layer of the error (layer[0])
+> > + * @mid_layer:			middle layer of the error (layer[1])
+> > + * @low_layer:			low layer of the error (layer[2])
+> > + * @page_frame_number:		page where the error happened
+> > + * @offset_in_page:		page offset
+> > + * @syndrome:			syndrome of the error (or 0 if unknown or if
+> > + * 				the syndrome is not applicable)
+> > + * @msg:			error message
+> > + * @location:			location of the error
+> > + * @label:			label of the affected DIMM(s)
+> > + * @other_detail:		other driver-specific detail about the error
+> > + * @enable_per_layer_report:	if false, the error affects all layers
+> > + *				(typically, a memory controller error)
+> > + */
+> > +struct edac_raw_error_desc {
+> > +	/*
+> > +	 * NOTE: everything before grain won't be cleaned by
+> > +	 * edac_raw_error_desc_clean()
+> > +	 */
+> > +	char *location;
+> > +	char *label;
+> > +	long grain;
+> > +
+> > +	/* the vars below and grain will be cleaned on every new error report */
+> > +	u16 error_count;
+> > +	int top_layer;
+> > +	int mid_layer;
+> > +	int low_layer;
+> > +	unsigned long page_frame_number;
+> > +	unsigned long offset_in_page;
+> > +	unsigned long syndrome;
+> > +	const char *msg;
+> > +	const char *other_detail;
+> > +	bool enable_per_layer_report;
+> > +};
+> > +
+> >  /* MEMORY controller information structure
+> >   */
+> >  struct mem_ctl_info {
+> > @@ -663,6 +703,12 @@ struct mem_ctl_info {
+> >  	/* work struct for this MC */
+> >  	struct delayed_work work;
+> >  
+> > +	/*
+> > +	 * Used to report an error - by being at the global struct
+> > +	 * makes the memory allocated by the EDAC core
+> > +	 */
+> > +	struct edac_raw_error_desc error_event;
+> 
+> I think 'error_desc' is clearer. This way you can refer to it everywhere
+> with mci->error_desc and you know what it is. ->error_event is kinda
+> ambiguous IMHO.
+
+Ok, I'll replace it.
+
 
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
---------------090008070604010203030301
-Content-Type: message/rfc822;
- name="Re: [boinc_dev] add time stamp to a back trace.eml"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="Re: [boinc_dev] add time stamp to a back trace.eml"
-
-X-Account-Key: account1
-X-Mozilla-Keys: 
-Return-Path: john.mcleod@sap.com
-Received: from smtpgw.sap-ag.de ([155.56.66.99]) by mx-ha.gmx.net (mxgmx113)
- with ESMTP (Nemesis) id 0LeiZe-1Ugelr467K-00qRSU for
- <toralf.foerster@gmx.de>; Thu, 14 Feb 2013 15:43:38 +0100
-From: "McLeod, John" <john.mcleod@sap.com>
-To: "noloader@gmail.com" <noloader@gmail.com>,
-	=?utf-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-CC: "boinc_dev@ssl.berkeley.edu" <boinc_dev@ssl.berkeley.edu>
-Subject: RE: [boinc_dev] add time stamp to a back trace
-Thread-Topic: [boinc_dev] add time stamp to a back trace
-Thread-Index: AQHOCiZcfqVC+TIym0awoJfZ3M5tRZh43PuAgACR5jA=
-Date: Thu, 14 Feb 2013 14:43:33 +0000
-Message-ID: <A9E71FD591DAEF4B90CC00274312936701454E3B@USPHLEMB11B.global.corp.sap>
-References: <511BF35A.7030508@gmx.de>
- <CAH8yC8ngkG4VDWLGKEXiH2C-tA2SgDu2hNc+oBYSKJ9F9sgHqA@mail.gmail.com>
-In-Reply-To: <CAH8yC8ngkG4VDWLGKEXiH2C-tA2SgDu2hNc+oBYSKJ9F9sgHqA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.4.150.20]
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
-MIME-Version: 1.0
-Envelope-To: <toralf.foerster@gmx.de>
-X-GMX-Antispam: 0 (Mail was not recognized as spam); Detail=V3;
-X-GMX-Antivirus: 0 (no virus found)
-X-UI-Filterresults: notjunk:1;V01:K0:J1ABa3UD/a0=:pKeUoNDiUGIP3CZ/l0YDuj
- sEPJTHOjxZt27e7Qgh3YKLRcx3LNYq0K+CCOdX4TB/qhw+bB1huiyDsc3IrV8Sun8lsJuw3
- /lorbcYOinCX5Xrcd+t9vlYKinHte+XkLhrZQBToXEnst3Z+WvOhl6vg2Od6TBiS66JkMr/
- Mla7rUGkzLgKlcp7tMtk4ggK/U3RpRcgbDPe5LmiD/oeBT3eY6LA07KsRRzZOeKyczxM72+
- InWtp7loGx//FbeZiCqfxpnO64gMgPjldvmjwHNF/bG1rUV1bfqH+3G/OVXNM7DtqDqk7YF
- pTg441P2KpVHwF8RuUSrEXqWDKpqW1Gy6/0VsbhrPCeTSdRnP8Zb4w5DtBAPIneiyiLLlbl
- tT+pDHsif6ZzffWaL8ALM7FZ2GUBG+fsnCEresAP8GU4L1Sy/SXdKyouVR1bDpd4OSGPH+k
- XPH4Bn/epOUdOCdtXBTjhUuhAXZSK8uOruAQKumlmhqRM+jL1KH4nCm9AMrdl+AQXUqRSPG
- bL9S6ltaeuni9ltRBgzRQlU6SmY5U5YPGQXHplM7VZ9MXkW446tMZzUo4sjpyyXdC61/v00
- /yzN1abhjY8VnUwTRV2jbeR8+tZlJhq1DqA8vBjyopEM+2LRCeW9mO20yVXdf1Afq1A0bMy
- ABbtvXZ1HX5zMLWsWJulvG/Pk0/tLBH4IqK0Q6RsHC9s/bBVKlfHG9qaGTpCSpZ7ocd97Wl
- 6mJ26I5azbkRJRBhsx+fbLGNldi8sbuuXw1lJr4NyBMhytPqcl2GieCxu4uRXvT0iD4LRVd
- nGmPUmWAvRibaUr8+/uY1P/9eR30N4HaFspqMOxYWwDdZCy6OdrOZ8pPm6jLU1fXkuXNcTX
- owN1EMWQYP5un3qcNRTy8ZT93CX1WIlBEGAhz0FWm4RLCKyprIaasPBDvJc4RPJQ8ywF85n
- HJNVCjwPClzDgkFA3eNHfgsBBzTPqTjEnztg4weChj4a3N3UpK44x2og1anyYQpmotgRjPd
- RO9xGnS9qgkjeNqRLZI3h1N4P5yVil0qcq8oDk8jbMhoinsTveC8h9L3DQrsDGArP8oQrkV
- q4uqEXE4PfJqxTJ09L4ZNKUd+TuvAwGVgKBem8liwJGzfwjCVMP4K93qdXx6XHXuxFy0CsW
- CpuECfkC+mamhnXdD9LLh+ijiomZ/ROcqf3Jl5BGnpGNSNn9vCYbEEL2BLLdJMomvsYcI3C
- 13XnlzctA==
-
-TXVjaCBvZiB0aGUgY29kZSB3YXMgd3JpdHRlbiBieSBzdHVkZW50cyBhIGRlY2FkZSBhZ28uICAN
-Cg0KLS0tLS1PcmlnaW5hbCBNZXNzYWdlLS0tLS0NCkZyb206IGJvaW5jX2Rldi1ib3VuY2VzQHNz
-bC5iZXJrZWxleS5lZHUgW21haWx0bzpib2luY19kZXYtYm91bmNlc0Bzc2wuYmVya2VsZXkuZWR1
-XSBPbiBCZWhhbGYgT2YgSmVmZnJleSBXYWx0b24NClNlbnQ6IFdlZG5lc2RheSwgRmVicnVhcnkg
-MTMsIDIwMTMgODowMSBQTQ0KVG86IFRvcmFsZiBGw7Zyc3Rlcg0KQ2M6IGJvaW5jX2RldkBzc2wu
-YmVya2VsZXkuZWR1DQpTdWJqZWN0OiBSZTogW2JvaW5jX2Rldl0gYWRkIHRpbWUgc3RhbXAgdG8g
-YSBiYWNrIHRyYWNlDQoNCkhpIEFsbCwNCg0KQSBxdWljayBwb3N0LW1vcnRlbS4uLi4NCg0KPiAv
-bGliL2xpYmMuc28uNihfX2ZvcnRpZnlfZmFpbCsweDUwKVsweGI3NDM4ZDIwXQ0KRk9SVElGWV9T
-T1VSQ0VTPTIuIEZvcnRpZnkgU291cmNlcyB3aWxsIHVzZSBhICdzYWZlcicgc3RyaW5nIG9yIG1l
-bW9yeQ0KZnVuY3Rpb24gd2hlbiB0aGUgY29tcGlsZXIgY2FuIGRlZHVjZSBidWZmZXIgc2l6ZXMu
-DQoNCj4gL2xpYi9saWJjLnNvLjYoX19zcHJpbnRmX2NoaysweDJkKVsweGI3NDM2MzhkXQ0KU2ln
-aC4uLi4gYSBiYW5uZWQgZnVuY3Rpb24gY29tcGxpY2l0IGluIGFuIG92ZXJmbG93IGNhdWdodCBi
-eSBGb3J0aWZ5IFNvdXJjZXMuDQoNClRoZSBjb21waWxlciBhcHBhcmVudGx5IGRlZHVjZWQgYSBi
-dWZmZXIgc2l6ZSwgYW5kIGNoYW5nZWQNCmBzcHJpbnQoYnVmZiwgc3RyLC4uLilgIHRvIGBzbnBy
-aW50KGJ1ZmYsIHNpemVvZihidWZmKSwgc3RyLC4uLilgDQoNCj4gV2VsbCwgbWlnaHQgbm90IGJl
-IHRvbyB1c2VmdWwgYnV0IG5ldmVydGhlbGVzcw0KVGhlIHBhcnRpY3VsYXIgcHJvYmxlbSBpcyBp
-cnJlbGV2YW50IGF0IHRoZSBtb21lbnQuIEhvd2V2ZXIsIHRoZQ0KZ2VuZXJhbCBwcm9ibGVtIGlz
-IG11Y2ggbW9yZSBpbnRlcmVzdGluZy4NCg0KSXQgYXBwZWFycyB0aGVyZSBhcmUgcHJvYmxlbXMg
-aW4gdGhlIGVuZ2luZWVyaW5nIHByb2Nlc3MuIEluIHRoZQ0KZ2VuZXJhbCBjYXNlLCBpdHMgdGhl
-IHVzZSBvZiAndW5zYWZlJyBmdW5jdGlvbnMgKGluIDIwMTMhKS4NCg0KRml4IHRoZSBlbmdpbmVl
-cmluZyBwcm9jZXNzIGJ5IHJlcXVpcmluZyB1c2Ugb2YgJ3NhZmVyJyBzdHJpbmcgYW5kDQptZW1v
-cnkgZnVuY3Rpb25zLiBUaGVuIGZpZ3VyZSBvdXQgd2hlcmUgdGhpbmdzIHdlbnQgd3Jvbmcgb24N
-CnBhcnRpY3VsYXIgaW5zdGFuY2VzIG9mIHRoZSBwcm9ibGVtLg0KDQpKZWZmDQoNCk9uIFdlZCwg
-RmViIDEzLCAyMDEzIGF0IDM6MTEgUE0sIFRvcmFsZiBGw7Zyc3RlciA8dG9yYWxmLmZvZXJzdGVy
-QGdteC5kZT4gd3JvdGU6DQo+IFRvZGF5IEkgc3R1bWJsZWQgb3ZlciBhIGJhY2t0cmFjZSBpbiBz
-dGRlcnJkYWUudHh0Lg0KPiBCdXQgSSBjYW4ndCB0ZWxsIHlvdSB3aGljaCBib2luYyBjbGllbnQg
-dmVyc2lvbiB3YXMgYWZmZWN0ZWQgbm9yIHdoZW4gaXQgb2NjdXJyZWQuDQo+IElzIHRoZXJlIGFu
-eSBjaGFuY2UgdG8gYWRkIHN1Y2ggaW5mbyB0b28gdG8gdGhhdCBmaWxlPw0KPg0KPg0KPiBXZWxs
-LCBtaWdodCBub3QgYmUgdG9vIHVzZWZ1bCBidXQgbmV2ZXJ0aGVsZXNzIGZvciB0aGUgcmVjb3Jk
-IGhlcmUgaXQgaXMgKHN0YWJsZSBHZW50b28geDg2ICsgYm9pbmMgY2xpZW50ID49IDcuMC4zNikg
-Og0KPg0KPg0KPiAqKiogYnVmZmVyIG92ZXJmbG93IGRldGVjdGVkICoqKjogL3Vzci9iaW4vYm9p
-bmNfY2xpZW50IHRlcm1pbmF0ZWQNCj4gPT09PT09PSBCYWNrdHJhY2U6ID09PT09PT09PQ0KPiAv
-bGliL2xpYmMuc28uNihfX2ZvcnRpZnlfZmFpbCsweDUwKVsweGI3NDM4ZDIwXQ0KPiAvbGliL2xp
-YmMuc28uNigrMHhlOWNhYilbMHhiNzQzNmNhYl0NCj4gL2xpYi9saWJjLnNvLjYoKzB4ZTkzOTgp
-WzB4Yjc0MzYzOThdDQo+IC9saWIvbGliYy5zby42KF9JT19kZWZhdWx0X3hzcHV0bisweDlkKVsw
-eGI3M2I5OThkXQ0KPiAvbGliL2xpYmMuc28uNihfSU9fdmZwcmludGYrMHgxOWYyKVsweGI3Mzhl
-ZDEyXQ0KPiAvbGliL2xpYmMuc28uNihfX3ZzcHJpbnRmX2NoaysweGE2KVsweGI3NDM2NDQ2XQ0K
-PiAvbGliL2xpYmMuc28uNihfX3NwcmludGZfY2hrKzB4MmQpWzB4Yjc0MzYzOGRdDQo+IC91c3Iv
-YmluL2JvaW5jX2NsaWVudFsweDgwYTNiMTRdDQo+IC91c3IvYmluL2JvaW5jX2NsaWVudFsweDgw
-YTQ2MDJdDQo+IC91c3IvYmluL2JvaW5jX2NsaWVudFsweDgwYTA1NzVdDQo+IC91c3IvYmluL2Jv
-aW5jX2NsaWVudFsweDgwNWYxNjNdDQo+IC91c3IvYmluL2JvaW5jX2NsaWVudFsweDgwYWUwOGJd
-DQo+IC91c3IvYmluL2JvaW5jX2NsaWVudFsweDgwYWUyZWJdDQo+IC9saWIvbGliYy5zby42KF9f
-bGliY19zdGFydF9tYWluKzB4ZTcpWzB4YjczNjczZDddDQo+IC91c3IvYmluL2JvaW5jX2NsaWVu
-dFsweDgwNGNkMTFdDQo+ID09PT09PT0gTWVtb3J5IG1hcDogPT09PT09PT0NCj4gMDgwNDgwMDAt
-MDgxMGQwMDAgci14cCAwMDAwMDAwMCAwODoxMyAzNDM3MTc2ICAgIC91c3IvYmluL2JvaW5jX2Ns
-aWVudA0KPiAwODEwZDAwMC0wODEwZTAwMCByLS1wIDAwMGM0MDAwIDA4OjEzIDM0MzcxNzYgICAg
-L3Vzci9iaW4vYm9pbmNfY2xpZW50DQo+IDA4MTBlMDAwLTA4MTBmMDAwIHJ3LXAgMDAwYzUwMDAg
-MDg6MTMgMzQzNzE3NiAgICAvdXNyL2Jpbi9ib2luY19jbGllbnQNCj4gMDgxMGYwMDAtMDgxM2Qw
-MDAgcnctcCAwMDAwMDAwMCAwMDowMCAwDQo+IDA5ZGFiMDAwLTA5ZGNjMDAwIHJ3LXAgMDAwMDAw
-MDAgMDA6MDAgMCAgICAgICAgICBbaGVhcF0NCj4gMDlkY2MwMDAtMGEyODAwMDAgcnctcCAwMDAw
-MDAwMCAwMDowMCAwICAgICAgICAgIFtoZWFwXQ0KPiA0NzRiZjAwMC00NzVkYjAwMCByLXhwIDAw
-MDAwMDAwIDA4OjEzIDEwMTEwMTQ1ICAgL3Vzci9saWIvbGliWDExLnNvLjYuMy4wDQo+IDQ3NWRi
-MDAwLTQ3NWRjMDAwIC0tLXAgMDAxMWMwMDAgMDg6MTMgMTAxMTAxNDUgICAvdXNyL2xpYi9saWJY
-MTEuc28uNi4zLjANCj4gNDc1ZGMwMDAtNDc1ZGQwMDAgci0tcCAwMDExYzAwMCAwODoxMyAxMDEx
-MDE0NSAgIC91c3IvbGliL2xpYlgxMS5zby42LjMuMA0KPiA0NzVkZDAwMC00NzVlMDAwMCBydy1w
-IDAwMTFkMDAwIDA4OjEzIDEwMTEwMTQ1ICAgL3Vzci9saWIvbGliWDExLnNvLjYuMy4wDQo+IDQ3
-NWUyMDAwLTQ3NWZkMDAwIHIteHAgMDAwMDAwMDAgMDg6MTMgMTAxMTI5NjQgICAvdXNyL2xpYi9s
-aWJ4Y2Iuc28uMS4xLjANCj4gNDc1ZmQwMDAtNDc1ZmUwMDAgci0tcCAwMDAxYTAwMCAwODoxMyAx
-MDExMjk2NCAgIC91c3IvbGliL2xpYnhjYi5zby4xLjEuMA0KPiA0NzVmZTAwMC00NzVmZjAwMCBy
-dy1wIDAwMDFiMDAwIDA4OjEzIDEwMTEyOTY0ICAgL3Vzci9saWIvbGlieGNiLnNvLjEuMS4wDQo+
-IDQ3NjAxMDAwLTQ3NjEwMDAwIHIteHAgMDAwMDAwMDAgMDg6MTMgMTAxMTE2MTcgICAvdXNyL2xp
-Yi9saWJYZXh0LnNvLjYuNC4wDQo+IDQ3NjEwMDAwLTQ3NjExMDAwIHItLXAgMDAwMGUwMDAgMDg6
-MTMgMTAxMTE2MTcgICAvdXNyL2xpYi9saWJYZXh0LnNvLjYuNC4wDQo+IDQ3NjExMDAwLTQ3NjEy
-MDAwIHJ3LXAgMDAwMGYwMDAgMDg6MTMgMTAxMTE2MTcgICAvdXNyL2xpYi9saWJYZXh0LnNvLjYu
-NC4wDQo+IDRlZTYwMDAwLTRlZTYyMDAwIHIteHAgMDAwMDAwMDAgMDg6MTMgMTAxMDk3NzIgICAv
-dXNyL2xpYi9saWJYYXUuc28uNi4wLjANCj4gNGVlNjIwMDAtNGVlNjMwMDAgci0tcCAwMDAwMTAw
-MCAwODoxMyAxMDEwOTc3MiAgIC91c3IvbGliL2xpYlhhdS5zby42LjAuMA0KPiA0ZWU2MzAwMC00
-ZWU2NDAwMCBydy1wIDAwMDAyMDAwIDA4OjEzIDEwMTA5NzcyICAgL3Vzci9saWIvbGliWGF1LnNv
-LjYuMC4wDQo+IDRlZTY2MDAwLTRlZjRhMDAwIHIteHAgMDAwMDAwMDAgMDg6MTMgMTAzNjIwNDcg
-ICAvdXNyL2xpYi9nY2MvaTY4Ni1wYy1saW51eC1nbnUvNC41LjMvbGlic3RkYysrLnNvLjYuMC4x
-NA0KPiA0ZWY0YTAwMC00ZWY0YjAwMCAtLS1wIDAwMGU0MDAwIDA4OjEzIDEwMzYyMDQ3ICAgL3Vz
-ci9saWIvZ2NjL2k2ODYtcGMtbGludXgtZ251LzQuNS4zL2xpYnN0ZGMrKy5zby42LjAuMTQNCj4g
-NGVmNGIwMDAtNGVmNGYwMDAgci0tcCAwMDBlNDAwMCAwODoxMyAxMDM2MjA0NyAgIC91c3IvbGli
-L2djYy9pNjg2LXBjLWxpbnV4LWdudS80LjUuMy9saWJzdGRjKysuc28uNi4wLjE0DQo+IDRlZjRm
-MDAwLTRlZjUxMDAwIHJ3LXAgMDAwZTgwMDAgMDg6MTMgMTAzNjIwNDcgICAvdXNyL2xpYi9nY2Mv
-aTY4Ni1wYy1saW51eC1nbnUvNC41LjMvbGlic3RkYysrLnNvLjYuMC4xNA0KPiA0ZWY1MTAwMC00
-ZWY1NzAwMCBydy1wIDAwMDAwMDAwIDAwOjAwIDANCj4gNGVmNTkwMDAtNGVmNzIwMDAgci14cCAw
-MDAwMDAwMCAwODoxMyAxMDM2MTkwMCAgIC91c3IvbGliL2djYy9pNjg2LXBjLWxpbnV4LWdudS80
-LjUuMy9saWJnY2Nfcy5zby4xDQo+IDRlZjcyMDAwLTRlZjczMDAwIHItLXAgMDAwMTgwMDAgMDg6
-MTMgMTAzNjE5MDAgICAvdXNyL2xpYi9nY2MvaTY4Ni1wYy1saW51eC1nbnUvNC41LjMvbGliZ2Nj
-X3Muc28uMQ0KPiA0ZWY3MzAwMC00ZWY3NDAwMCBydy1wIDAwMDE5MDAwIDA4OjEzIDEwMzYxOTAw
-ICAgL3Vzci9saWIvZ2NjL2k2ODYtcGMtbGludXgtZ251LzQuNS4zL2xpYmdjY19zLnNvLjENCj4g
-NGVmNzYwMDAtNGVmN2EwMDAgci14cCAwMDAwMDAwMCAwODoxMyAxMDExMDc3MSAgIC91c3IvbGli
-L2xpYlhkbWNwLnNvLjYuMC4wDQo+IDRlZjdhMDAwLTRlZjdiMDAwIHItLXAgMDAwMDMwMDAgMDg6
-MTMgMTAxMTA3NzEgICAvdXNyL2xpYi9saWJYZG1jcC5zby42LjAuMA0KPiA0ZWY3YjAwMC00ZWY3
-YzAwMCBydy1wIDAwMDA0MDAwIDA4OjEzIDEwMTEwNzcxICAgL3Vzci9saWIvbGliWGRtY3Auc28u
-Ni4wLjANCj4gNGYyYmEwMDAtNGYyY2QwMDAgci14cCAwMDAwMDAwMCAwODoxMyA5OTY0MTE0ICAg
-IC9saWIvbGliei5zby4xLjIuNQ0KPiA0ZjJjZDAwMC00ZjJjZTAwMCByLS1wIDAwMDEyMDAwIDA4
-OjEzIDk5NjQxMTQgICAgL2xpYi9saWJ6LnNvLjEuMi41DQo+IDRmMmNlMDAwLTRmMmNmMDAwIHJ3
-LXAgMDAwMTMwMDAgMDg6MTMgOTk2NDExNCAgICAvbGliL2xpYnouc28uMS4yLjUNCj4gYjcyZGEw
-MDAtYjcyZGUwMDAgcnctcCAwMDAwMDAwMCAwMDowMCAwDQo+IGI3MmRlMDAwLWI3MmU1MDAwIHIt
-eHAgMDAwMDAwMDAgMDg6MTMgMzY3MjMzNSAgICAvbGliL2xpYnJ0LTIuMTQuMS5zbw0KPiBiNzJl
-NTAwMC1iNzJlNjAwMCByLS1wIDAwMDA2MDAwIDA4OjEzIDM2NzIzMzUgICAgL2xpYi9saWJydC0y
-LjE0LjEuc28NCj4gYjcyZTYwMDAtYjcyZTcwMDAgcnctcCAwMDAwNzAwMCAwODoxMyAzNjcyMzM1
-ICAgIC9saWIvbGlicnQtMi4xNC4xLnNvDQo+IGI3MmU3MDAwLWI3MmY4MDAwIHIteHAgMDAwMDAw
-MDAgMDg6MTMgMzY3MjMxNSAgICAvbGliL2xpYnJlc29sdi0yLjE0LjEuc28NCj4gYjcyZjgwMDAt
-YjcyZjkwMDAgci0tcCAwMDAxMDAwMCAwODoxMyAzNjcyMzE1ICAgIC9saWIvbGlicmVzb2x2LTIu
-MTQuMS5zbw0KPiBiNzJmOTAwMC1iNzJmYTAwMCBydy1wIDAwMDExMDAwIDA4OjEzIDM2NzIzMTUg
-ICAgL2xpYi9saWJyZXNvbHYtMi4xNC4xLnNvDQo+IGI3MmZhMDAwLWI3MmZkMDAwIHJ3LXAgMDAw
-MDAwMDAgMDA6MDAgMA0KPiBiNzJmZDAwMC1iNzMwOTAwMCByLXhwIDAwMDAwMDAwIDA4OjEzIDEw
-MTExNzM4ICAgL3Vzci9saWIvbGlibGJlci0yLjQuc28uMi44LjMNCj4gYjczMDkwMDAtYjczMGEw
-MDAgci0tcCAwMDAwYjAwMCAwODoxMyAxMDExMTczOCAgIC91c3IvbGliL2xpYmxiZXItMi40LnNv
-LjIuOC4zDQo+IGI3MzBhMDAwLWI3MzBiMDAwIHJ3LXAgMDAwMGMwMDAgMDg6MTMgMTAxMTE3Mzgg
-ICAvdXNyL2xpYi9saWJsYmVyLTIuNC5zby4yLjguMw0KPiBiNzMwYjAwMC1iNzM0YjAwMCByLXhw
-IDAwMDAwMDAwIDA4OjEzIDEwMTEzODcyICAgL3Vzci9saWIvbGlibGRhcC0yLjQuc28uMi44LjMN
-Cj4gYjczNGIwMDAtYjczNGMwMDAgci0tcCAwMDA0MDAwMCAwODoxMyAxMDExMzg3MiAgIC91c3Iv
-bGliL2xpYmxkYXAtMi40LnNvLjIuOC4zDQo+IGI3MzRjMDAwLWI3MzRkMDAwIHJ3LXAgMDAwNDEw
-MDAgMDg6MTMgMTAxMTM4NzIgICAvdXNyL2xpYi9saWJsZGFwLTIuNC5zby4yLjguMw0KPiBiNzM0
-ZDAwMC1iNzRhOTAwMCByLXhwIDAwMDAwMDAwIDA4OjEzIDM2NzI1MTEgICAgL2xpYi9saWJjLTIu
-MTQuMS5zbw0KPiBiNzRhOTAwMC1iNzRhYjAwMCByLS1wIDAwMTVjMDAwIDA4OjEzIDM2NzI1MTEg
-ICAgL2xpYi9saWJjLTIuMTQuMS5zbw0KPiBiNzRhYjAwMC1iNzRhYzAwMCBydy1wIDAwMTVlMDAw
-IDA4OjEzIDM2NzI1MTEgICAgL2xpYi9saWJjLTIuMTQuMS5zbw0KPiBiNzRhYzAwMC1iNzRiMDAw
-MCBydy1wIDAwMDAwMDAwIDAwOjAwIDANCj4gYjc0YjAwMDAtYjc0ZDQwMDAgci14cCAwMDAwMDAw
-MCAwODoxMyAzNjcxOTk4ICAgIC9saWIvbGlibS0yLjE0LjEuc28NCj4gYjc0ZDQwMDAtYjc0ZDUw
-MDAgci0tcCAwMDAyMzAwMCAwODoxMyAzNjcxOTk4ICAgIC9saWIvbGlibS0yLjE0LjEuc28NCj4g
-Yjc0ZDUwMDAtYjc0ZDYwMDAgcnctcCAwMDAyNDAwMCAwODoxMyAzNjcxOTk4ICAgIC9saWIvbGli
-bS0yLjE0LjEuc28NCj4gYjc0ZDYwMDAtYjc0ZWIwMDAgci14cCAwMDAwMDAwMCAwODoxMyAzNjcy
-MzAzICAgIC9saWIvbGlicHRocmVhZC0yLjE0LjEuc28NCj4gYjc0ZWIwMDAtYjc0ZWMwMDAgLS0t
-cCAwMDAxNTAwMCAwODoxMyAzNjcyMzAzICAgIC9saWIvbGlicHRocmVhZC0yLjE0LjEuc28NCj4g
-Yjc0ZWMwMDAtYjc0ZWQwMDAgci0tcCAwMDAxNTAwMCAwODoxMyAzNjcyMzAzICAgIC9saWIvbGli
-cHRocmVhZC0yLjE0LjEuc28NCj4gYjc0ZWQwMDAtYjc0ZWUwMDAgcnctcCAwMDAxNjAwMCAwODox
-MyAzNjcyMzAzICAgIC9saWIvbGlicHRocmVhZC0yLjE0LjEuc28NCj4gYjc0ZWUwMDAtYjc0ZjAw
-MDAgcnctcCAwMDAwMDAwMCAwMDowMCAwDQo+IGI3NGYwMDAwLWI3NGYyMDAwIHIteHAgMDAwMDAw
-MDAgMDg6MTMgMTAxMTMyNzcgICAvdXNyL2xpYi9saWJYc3Muc28uMS4wLjANCj4gYjc0ZjIwMDAt
-Yjc0ZjMwMDAgci0tcCAwMDAwMTAwMCAwODoxMyAxMDExMzI3NyAgIC91c3IvbGliL2xpYlhzcy5z
-by4xLjAuMA0KPiBiNzRmMzAwMC1iNzRmNDAwMCBydy1wIDAwMDAyMDAwIDA4OjEzIDEwMTEzMjc3
-ICAgL3Vzci9saWIvbGliWHNzLnNvLjEuMC4wDQo+IGI3NGY0MDAwLWI3NGY1MDAwIHJ3LXAgMDAw
-MDAwMDAgMDA6MDAgMA0KPiBiNzRmNTAwMC1iNzRmNzAwMCByLXhwIDAwMDAwMDAwIDA4OjEzIDM2
-NzIwNDggICAgL2xpYi9saWJkbC0yLjE0LjEuc28NCj4gYjc0ZjcwMDAtYjc0ZjgwMDAgci0tcCAw
-MDAwMTAwMCAwODoxMyAzNjcyMDQ4ICAgIC9saWIvbGliZGwtMi4xNC4xLnNvDQo+IGI3NGY4MDAw
-LWI3NGY5MDAwIHJ3LXAgMDAwMDIwMDAgMDg6MTMgMzY3MjA0OCAgICAvbGliL2xpYmRsLTIuMTQu
-MS5zbw0KPiBiNzRmOTAwMC1iNzY0YjAwMCByLXhwIDAwMDAwMDAwIDA4OjEzIDM1MzkxMTYgICAg
-L3Vzci9saWIvbGliY3J5cHRvLnNvLjEuMC4wDQo+IGI3NjRiMDAwLWI3NjVhMDAwIHItLXAgMDAx
-NTEwMDAgMDg6MTMgMzUzOTExNiAgICAvdXNyL2xpYi9saWJjcnlwdG8uc28uMS4wLjANCj4gYjc2
-NWEwMDAtYjc2NjAwMDAgcnctcCAwMDE2MDAwMCAwODoxMyAzNTM5MTE2ICAgIC91c3IvbGliL2xp
-YmNyeXB0by5zby4xLjAuMA0KPiBiNzY2MDAwMC1iNzY2MzAwMCBydy1wIDAwMDAwMDAwIDAwOjAw
-IDANCj4gYjc2NjMwMDAtYjc2YjEwMDAgci14cCAwMDAwMDAwMCAwODoxMyAzNTM5MTIwICAgIC91
-c3IvbGliL2xpYnNzbC5zby4xLjAuMA0KPiBiNzZiMTAwMC1iNzZiMzAwMCByLS1wIDAwMDRkMDAw
-IDA4OjEzIDM1MzkxMjAgICAgL3Vzci9saWIvbGlic3NsLnNvLjEuMC4wDQo+IGI3NmIzMDAwLWI3
-NmI2MDAwIHJ3LXAgMDAwNGYwMDAgMDg6MTMgMzUzOTEyMCAgICAvdXNyL2xpYi9saWJzc2wuc28u
-MS4wLjANCj4gYjc2YjYwMDAtYjc3MGIwMDAgci14cCAwMDAwMDAwMCAwODoxMyAzNDM1MzkwICAg
-IC91c3IvbGliL2xpYmN1cmwuc28uNC4yLjANCj4gYjc3MGIwMDAtYjc3MGMwMDAgci0tcCAwMDA1
-NTAwMCAwODoxMyAzNDM1MzkwICAgIC91c3IvbGliL2xpYmN1cmwuc28uNC4yLjANCj4gYjc3MGMw
-MDAtYjc3MGQwMDAgcnctcCAwMDA1NjAwMCAwODoxMyAzNDM1MzkwICAgIC91c3IvbGliL2xpYmN1
-cmwuc28uNC4yLjANCj4gYjc3MTcwMDAtYjc3MTgwMDAgcnctcCAwMDAwMDAwMCAwMDowMCAwDQo+
-IGI3NzE4MDAwLWI3NzFjMDAwIHIteHAgMDAwMDAwMDAgMDg6MTMgMzY3MjMxNiAgICAvbGliL2xp
-Ym5zc19kbnMtMi4xNC4xLnNvDQo+IGI3NzFjMDAwLWI3NzFkMDAwIHItLXAgMDAwMDQwMDAgMDg6
-MTMgMzY3MjMxNiAgICAvbGliL2xpYm5zc19kbnMtMi4xNC4xLnNvDQo+IGI3NzFkMDAwLWI3NzFl
-MDAwIHJ3LXAgMDAwMDUwMDAgMDg6MTMgMzY3MjMxNiAgICAvbGliL2xpYm5zc19kbnMtMi4xNC4x
-LnNvDQo+IGI3NzFlMDAwLWI3NzIwMDAwIHJ3LXMgMDAwMDAwMDAgMDA6MDQgMTU0MDEyMCAgICAv
-U1lTVjAxMTMwMDAxIChkZWxldGVkKQ0KPiBiNzcyMDAwMC1iNzcyMjAwMCBydy1zIDAwMDAwMDAw
-IDA4OjEzIDM0MDgxNDQgICAgL3Zhci9saWIvYm9pbmMvc2xvdHMvMi9ib2luY19tbWFwX2ZpbGUN
-Cj4gYjc3MjIwMDAtYjc3MmMwMDAgci14cCAwMDAwMDAwMCAwODoxMyAzNjcyMzI2ICAgIC9saWIv
-bGlibnNzX2ZpbGVzLTIuMTQuMS5zbw0KPiBiNzcyYzAwMC1iNzcyZDAwMCByLS1wIDAwMDA5MDAw
-IDA4OjEzIDM2NzIzMjYgICAgL2xpYi9saWJuc3NfZmlsZXMtMi4xNC4xLnNvDQo+IGI3NzJkMDAw
-LWI3NzJlMDAwIHJ3LXAgMDAwMGEwMDAgMDg6MTMgMzY3MjMyNiAgICAvbGliL2xpYm5zc19maWxl
-cy0yLjE0LjEuc28NCj4gYjc3MmUwMDAtYjc3MmYwMDAgcnctcCAwMDAwMDAwMCAwMDowMCAwDQo+
-IGI3NzJmMDAwLWI3NzMwMDAwIHJ3LXAgMDAwMDAwMDAgMDA6MDAgMA0KPiBiNzczMDAwMC1iNzcz
-MTAwMCByLXhwIDAwMDAwMDAwIDAwOjAwIDAgICAgICAgICAgW3Zkc29dDQo+IGI3NzMxMDAwLWI3
-NzRlMDAwIHIteHAgMDAwMDAwMDAgMDg6MTMgMzY3MjUxMCAgICAvbGliL2xkLTIuMTQuMS5zbw0K
-PiBiNzc0ZTAwMC1iNzc0ZjAwMCByLS1wIDAwMDFjMDAwIDA4OjEzIDM2NzI1MTAgICAgL2xpYi9s
-ZC0yLjE0LjEuc28NCj4gYjc3NGYwMDAtYjc3NTAwMDAgcnctcCAwMDAxZDAwMCAwODoxMyAzNjcy
-NTEwICAgIC9saWIvbGQtMi4xNC4xLnNvDQo+IGJmZTdmMDAwLWJmZWM0MDAwIHJ3LXAgMDAwMDAw
-MDAgMDA6MDAgMCAgICAgICAgICBbc3RhY2tdDQo+IFNJR0FCUlQ6IGFib3J0IGNhbGxlZA0KPiBT
-dGFjayB0cmFjZSAoMjEgZnJhbWVzKToNCj4gL3Vzci9iaW4vYm9pbmNfY2xpZW50KGJvaW5jX2Nh
-dGNoX3NpZ25hbCsweDZmKVsweDgwZDAyMGZdDQo+IFsweGI3NzMwNDAwXQ0KPiBbMHhiNzczMDQy
-NF0NCj4gL2xpYi9saWJjLnNvLjYoZ3NpZ25hbCsweDUyKVsweGI3MzdiMGYyXQ0KPiAvbGliL2xp
-YmMuc28uNihhYm9ydCsweDE3YylbMHhiNzM3YzhiY10NCj4gL2xpYi9saWJjLnNvLjYoKzB4Njhi
-M2IpWzB4YjczYjViM2JdDQo+IC9saWIvbGliYy5zby42KF9fZm9ydGlmeV9mYWlsKzB4NTApWzB4
-Yjc0MzhkMjBdDQo+IC9saWIvbGliYy5zby42KCsweGU5Y2FiKVsweGI3NDM2Y2FiXQ0KPiAvbGli
-L2xpYmMuc28uNigrMHhlOTM5OClbMHhiNzQzNjM5OF0NCj4gL2xpYi9saWJjLnNvLjYoX0lPX2Rl
-ZmF1bHRfeHNwdXRuKzB4OWQpWzB4YjczYjk5OGRdDQo+IC9saWIvbGliYy5zby42KF9JT192ZnBy
-aW50ZisweDE5ZjIpWzB4YjczOGVkMTJdDQo+IC9saWIvbGliYy5zby42KF9fdnNwcmludGZfY2hr
-KzB4YTYpWzB4Yjc0MzY0NDZdDQo+IC9saWIvbGliYy5zby42KF9fc3ByaW50Zl9jaGsrMHgyZClb
-MHhiNzQzNjM4ZF0NCj4gL3Vzci9iaW4vYm9pbmNfY2xpZW50WzB4ODBhM2IxNF0NCj4gL3Vzci9i
-aW4vYm9pbmNfY2xpZW50WzB4ODBhNDYwMl0NCj4gL3Vzci9iaW4vYm9pbmNfY2xpZW50WzB4ODBh
-MDU3NV0NCj4gL3Vzci9iaW4vYm9pbmNfY2xpZW50WzB4ODA1ZjE2M10NCj4gL3Vzci9iaW4vYm9p
-bmNfY2xpZW50WzB4ODBhZTA4Yl0NCj4gL3Vzci9iaW4vYm9pbmNfY2xpZW50WzB4ODBhZTJlYl0N
-Cj4gL2xpYi9saWJjLnNvLjYoX19saWJjX3N0YXJ0X21haW4rMHhlNylbMHhiNzM2NzNkN10NCj4g
-L3Vzci9iaW4vYm9pbmNfY2xpZW50WzB4ODA0Y2QxMV0NCj4NCj4gRXhpdGluZy4uLg0KPg0KPg0K
-PiAtLQ0KPiBNZkcvU2luY2VyZWx5DQo+IFRvcmFsZiBGw7Zyc3Rlcg0KPiBwZ3AgZmluZ2VyIHBy
-aW50OiA3QjFBIDA3RjQgRUM4MiAwRjkwIEQ0QzIgODkzNiA4NzJBIEU1MDggN0RCNiA5REEzDQo+
-IF9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fDQo+IGJvaW5j
-X2RldiBtYWlsaW5nIGxpc3QNCj4gYm9pbmNfZGV2QHNzbC5iZXJrZWxleS5lZHUNCj4gaHR0cDov
-L2xpc3RzLnNzbC5iZXJrZWxleS5lZHUvbWFpbG1hbi9saXN0aW5mby9ib2luY19kZXYNCj4gVG8g
-dW5zdWJzY3JpYmUsIHZpc2l0IHRoZSBhYm92ZSBVUkwgYW5kDQo+IChuZWFyIGJvdHRvbSBvZiBw
-YWdlKSBlbnRlciB5b3VyIGVtYWlsIGFkZHJlc3MuDQpfX19fX19fX19fX19fX19fX19fX19fX19f
-X19fX19fX19fX19fX19fX19fX19fXw0KYm9pbmNfZGV2IG1haWxpbmcgbGlzdA0KYm9pbmNfZGV2
-QHNzbC5iZXJrZWxleS5lZHUNCmh0dHA6Ly9saXN0cy5zc2wuYmVya2VsZXkuZWR1L21haWxtYW4v
-bGlzdGluZm8vYm9pbmNfZGV2DQpUbyB1bnN1YnNjcmliZSwgdmlzaXQgdGhlIGFib3ZlIFVSTCBh
-bmQNCihuZWFyIGJvdHRvbSBvZiBwYWdlKSBlbnRlciB5b3VyIGVtYWlsIGFkZHJlc3MuDQo=
-
-
---------------090008070604010203030301--
+Cheers,
+Mauro
