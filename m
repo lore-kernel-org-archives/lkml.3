@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab3BQJo3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 04:44:29 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:33926 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755406Ab3BQJo1 (ORCPT
+	id S1755813Ab3BQJyv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 04:54:51 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:37151 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858Ab3BQJyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 04:44:27 -0500
+	Sun, 17 Feb 2013 04:54:50 -0500
+Date: Sun, 17 Feb 2013 10:54:45 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Glauber Costa <glommer@parallels.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [PATCH] ia64: rename cache_show to topology_cache_show
+Message-ID: <20130217095445.GA24857@dhcp22.suse.cz>
+References: <511e236a.o0ibbB2U8xMoURgd%fengguang.wu@intel.com>
+ <1360931904-5720-1-git-send-email-mhocko@suse.cz>
+ <20130215144629.be18bae9.akpm@linux-foundation.org>
+ <20130216121853.GA12196@dhcp22.suse.cz>
+ <20130217013649.GB6775@localhost>
 MIME-Version: 1.0
-In-Reply-To: <511E4C43.7080403@canonical.com>
-References: <511D0BCC.9070208@canonical.com>
-	<20130215073210.GM7867@spo001.leaseweb.com>
-	<511E4C43.7080403@canonical.com>
-Date: Sun, 17 Feb 2013 18:44:25 +0900
-Message-ID: <CAHh0gOgeWn5QaDGzgstft7AoQsKdoZ+4Utp8iQxxSCO0q=cZ-Q@mail.gmail.com>
-Subject: Re: [v3.8 Regression] watchdog: sp5100_tco: Add SB8x0 chipset support
-From: Tanaka Takahisa <mc74hc00@gmail.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kernel Team <kernel-team@lists.ubuntu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130217013649.GB6775@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joseph,
+On Sun 17-02-13 09:36:49, Wu Fengguang wrote:
+> On Sat, Feb 16, 2013 at 01:18:53PM +0100, Michal Hocko wrote:
+> > On Fri 15-02-13 14:46:29, Andrew Morton wrote:
+> > > On Fri, 15 Feb 2013 13:38:24 +0100
+> > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > 
+> > > > Fenguang Wu has reported the following compile time issue
+> > > > arch/ia64/kernel/topology.c:278:16: error: conflicting types for 'cache_show'
+> > > > include/linux/slab.h:224:5: note: previous declaration of 'cache_show' was here
+> > > > 
+> > > > which has been introduced by 749c5415 (memcg: aggregate memcg cache
+> > > > values in slabinfo). Let's rename ia64 local function to prevent from
+> > > > the name conflict.
+> > > 
+> > > Confused.  Tony fixed this ages ago?
+> > 
+> > Yes but it was after 3.7 so I didn't have it in my tree and I found out
+> > only after I sent this email. Sorry about the confusion.
+> 
+> Michal, sorry about the confusions. Does this indicate anything
+> improveable in the build test/notification?
 
-2013/2/15 Joseph Salisbury <joseph.salisbury@canonical.com>:
-> On 02/15/2013 02:32 AM, Wim Van Sebroeck wrote:
->>
->> Hi Joseph,
->>
->>> A bug was opened against the Ubuntu kernel[0].  It was found that
->>> reverting the following commit resolved this bug:
->>>
->>> commit 740fbddf5c3f9ad8b23c5d917ba1cc7e376a5104
->>> Author: Takahisa Tanaka <mc74hc00@gmail.com>
->>> Date:   Sun Dec 2 14:33:18 2012 +0900
->>>
->>>      watchdog: sp5100_tco: Add SB8x0 chipset support
->>>
->>>
->>> The regression was introduced as of v3.8-rc1.
->>>
->>> I see that you are the author of this patch, so I wanted to run this by
->>> you.  I was thinking of requesting a revert for v3.8, but I wanted to
->>> get your feedback first.
->>
->> Please check out the attached patches first (They are allready in
->> linux-next).
->
-> Thanks for the feedback, Wim.  I'll let you know if the patches resolve this
-> bug.
->
->
->>
->> Other references:
->> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43176
->> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43176
->>
->> Kind regards,
->> Wim.
+No, the message was clear. I should have checked Linus's tree before
+posting the fix.
 
-Thank you for your information, and sorry for the late reply.
-
-I think that I will get rid of code that re-programming the chipset
-registers, if my patch set doesn't resolve the problem.
-I'm waiting for your reply at the moment.
-
-
-Regards,
-Takahisa
+-- 
+Michal Hocko
+SUSE Labs
