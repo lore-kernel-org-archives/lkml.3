@@ -1,55 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab3BQWvX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 17:51:23 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:40018 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753449Ab3BQWvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 17:51:21 -0500
-Date: Sun, 17 Feb 2013 17:51:12 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
-        Stewart Smith <stewart@flamingspork.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [patch 1/2] mm: fincore()
-Message-ID: <20130217225112.GB24384@cmpxchg.org>
-References: <87a9rbh7b4.fsf@rustcorp.com.au>
- <20130211162701.GB13218@cmpxchg.org>
- <20130211141239.f4decf03.akpm@linux-foundation.org>
- <20130215063450.GA24047@cmpxchg.org>
- <20130215132738.c85c9eda.akpm@linux-foundation.org>
- <20130215231304.GB23930@cmpxchg.org>
- <20130215154235.0fb36f53.akpm@linux-foundation.org>
- <87621skhtc.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87621skhtc.fsf@rustcorp.com.au>
+	id S1754245Ab3BQWyy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 17:54:54 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45575 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753449Ab3BQWyw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 17:54:52 -0500
+Message-Id: <20130217225002.039307539@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Sun, 17 Feb 2013 22:50:04 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 03/66] xhci: Fix TD size for isochronous URBs.
+In-Reply-To: <20130217225001.621306883@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 16, 2013 at 02:53:43PM +1030, Rusty Russell wrote:
-> Andrew Morton <akpm@linux-foundation.org> writes:
-> > On Fri, 15 Feb 2013 18:13:04 -0500
-> > Johannes Weiner <hannes@cmpxchg.org> wrote:
-> >> I dunno.  The byte vector might not be optimal but its worst cases
-> >> seem more attractive, is just as extensible, and dead simple to use.
-> >
-> > But I think "which pages from this 4TB file are in core" will not be an
-> > uncommon usage, and writing a gig of memory to find three pages is just
-> > awful.
-> 
-> Actually, I don't know of any usage for this call.
-> 
-> I'd really like to use it for backup programs, so they stop pulling
-> random crap into memory (but leave things already resident).  But that
-> needs to madvise(MADV_DONTNEED) on the page, so need mmap.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-We do actually have fadvise() (posix_fadvise()).
+------------------
 
-Btw, why are we not invalidating page cache from MADV_DONTNEED?  I
-just see a page table teardown in there, so mmap for madvise alone
-won't do any good.  fadvise() OTOTH /does/ invalidate page cache.
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+
+commit f18f8ed2a9adc41c2d9294b85b6af115829d2af1 upstream.
+
+To calculate the TD size for a particular TRB in an isoc TD, we need
+know the endpoint's max packet size.  Isochronous endpoints also encode
+the number of additional service opportunities in their wMaxPacketSize
+field.  The TD size calculation did not mask off those bits before using
+the field.  This resulted in incorrect TD size information for
+isochronous TRBs when an URB frame buffer crossed a 64KB boundary.
+
+For example:
+ - an isoc endpoint has 2 additional service opportunites and
+   a max packet size of 1020 bytes
+ - a frame transfer buffer contains 3060 bytes
+ - one frame buffer crosses a 64KB boundary, and must be split into
+   one 1276 byte TRB, and one 1784 byte TRB.
+
+The TD size is is the number of packets that remain to be transferred
+for a TD after processing all the max packet sized packets in the
+current TRB and all previous TRBs.
+
+For this TD, the number of packets to be transferred is (3060 / 1020),
+or 3.  The first TRB contains 1276 bytes, which means it contains one
+full packet, and a 256 byte remainder.  After processing all the max
+packet-sized packets in the first TRB, the host will have 2 packets left
+to transfer.
+
+The old code would calculate the TD size for the first TRB as:
+
+total packet count = DIV_ROUND_UP (TD length / endpoint wMaxPacketSize)
+total packet count - (first TRB length / endpoint wMaxPacketSize)
+
+The math should have been:
+
+total packet count = DIV_ROUND_UP (3060 / 1020) = 3
+3 - (1276 / 1020) = 2
+
+Since the old code didn't mask off the additional service interval bits
+from the wMaxPacketSize field, the math ended up as
+
+total packet count = DIV_ROUND_UP (3060 / 5116) = 1
+1 - (1276 / 5116) = 1
+
+Fix this by masking off the number of additional service opportunities
+in the wMaxPacketSize field.
+
+This patch should be backported to stable kernels as old as 3.0, that
+contain the commit 4da6e6f247a2601ab9f1e63424e4d944ed4124f3 "xhci 1.0:
+Update TD size field format."  It may not apply well to kernels older
+than 3.2 because of commit 29cc88979a8818cd8c5019426e945aed118b400e
+"USB: use usb_endpoint_maxp() instead of le16_to_cpu()".
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/usb/host/xhci-ring.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index d1ff133..80ef717 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -3108,7 +3108,7 @@ static u32 xhci_v1_0_td_remainder(int running_total, int trb_buff_len,
+ 	 * running_total.
+ 	 */
+ 	packets_transferred = (running_total + trb_buff_len) /
+-		usb_endpoint_maxp(&urb->ep->desc);
++		GET_MAX_PACKET(usb_endpoint_maxp(&urb->ep->desc));
+ 
+ 	if ((total_packet_count - packets_transferred) > 31)
+ 		return 31 << 17;
+@@ -3642,7 +3642,8 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+ 		td_len = urb->iso_frame_desc[i].length;
+ 		td_remain_len = td_len;
+ 		total_packet_count = DIV_ROUND_UP(td_len,
+-				usb_endpoint_maxp(&urb->ep->desc));
++				GET_MAX_PACKET(
++					usb_endpoint_maxp(&urb->ep->desc)));
+ 		/* A zero-length transfer still involves at least one packet. */
+ 		if (total_packet_count == 0)
+ 			total_packet_count++;
+
+
