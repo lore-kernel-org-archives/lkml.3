@@ -1,96 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab3BQHOc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 02:14:32 -0500
-Received: from mout.gmx.net ([212.227.17.21]:60692 "EHLO mout.gmx.net"
+	id S1754324Ab3BQHbs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 02:31:48 -0500
+Received: from mga09.intel.com ([134.134.136.24]:12779 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755640Ab3BQHOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 02:14:31 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX192azEdQ7J2A9M2Orv3rzgSxZg1psSNV6eb5TCOFZ
-	9lCGAmT3WbUsWp
-Message-ID: <1361085245.28353.3.camel@marge.simpson.net>
-Subject: Re: [RFC] sched: The removal of idle_balance()
-From: Mike Galbraith <efault@gmx.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Clark Williams <clark@redhat.com>,
-        Andrew Theurer <habanero@us.ibm.com>
-Date: Sun, 17 Feb 2013 08:14:05 +0100
-In-Reply-To: <1361082363.6088.21.camel@marge.simpson.net>
-References: <1360908819.23152.97.camel@gandalf.local.home>
-	 <1360913172.4736.20.camel@marge.simpson.net>
-	 <1361031150.23152.133.camel@gandalf.local.home>
-	 <1361082363.6088.21.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1752522Ab3BQHbr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 02:31:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,682,1355126400"; 
+   d="scan'208";a="263684463"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: RE: linux-next: build failure after merge of the xen-two tree
+Thread-Topic: linux-next: build failure after merge of the xen-two tree
+Thread-Index: AQHODIHETyBHFMmDoE2LH83uWllZQ5h9p5rA
+Date: Sun, 17 Feb 2013 07:31:37 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923353FCCAC@SHSMSX101.ccr.corp.intel.com>
+References: <20130215154551.d11e9d376d30d32b9673e6cc@canb.auug.org.au>
+ <2185970.g9YrD945My@vostro.rjw.lan>
+ <20130216015200.1e58bec1aff05592ac2ae98f@canb.auug.org.au>
+ <11850955.SHqxVBsJqI@vostro.rjw.lan>
+In-Reply-To: <11850955.SHqxVBsJqI@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-02-17 at 07:26 +0100, Mike Galbraith wrote: 
-> On Sat, 2013-02-16 at 11:12 -0500, Steven Rostedt wrote:
-> > On Fri, 2013-02-15 at 08:26 +0100, Mike Galbraith wrote:
-> > > On Fri, 2013-02-15 at 01:13 -0500, Steven Rostedt wrote:
-> > > 
-> > > > Think about it some more, just because we go idle isn't enough reason to
-> > > > pull a runable task over. CPUs go idle all the time, and tasks are woken
-> > > > up all the time. There's no reason that we can't just wait for the sched
-> > > > tick to decide its time to do a bit of balancing. Sure, it would be nice
-> > > > if the idle CPU did the work. But I think that frame of mind was an
-> > > > incorrect notion from back in the early 2000s and does not apply to
-> > > > today's hardware, or perhaps it doesn't apply to the (relatively) new
-> > > > CFS scheduler. If you want aggressive scheduling, make the task rt, and
-> > > > it will do aggressive scheduling.
-> > > 
-> > > (the throttle is supposed to keep idle_balance() from doing severe
-> > > damage, that may want a peek/tweak)
-> > > 
-> > > Hackbench spreads itself with FORK/EXEC balancing, how does say a kbuild
-> > > do with no idle_balance()?
-> > > 
-> > 
-> > Interesting, I added this patch and it brought down my hackbench to the
-> > same level as removing idle_balance().
+Rafael J. Wysocki wrote:
+> On Saturday, February 16, 2013 01:52:00 AM Stephen Rothwell wrote:
+>> Hi Rafael,
 > 
-> The typo did it's job well :)
+> Hi,
 > 
-> Hrm, turning idle balancing off here does not help hackbench at all.
+>> On Fri, 15 Feb 2013 15:53:34 +0100 "Rafael J. Wysocki" <rjw@sisk.pl>
+>> wrote: 
+>>> 
+>>> On Saturday, February 16, 2013 12:50:14 AM Stephen Rothwell wrote:
+>>>> 
+>>>> On Fri, 15 Feb 2013 08:26:24 -0500 Konrad Rzeszutek Wilk
+>>>> <konrad.wilk@oracle.com> wrote: 
+>>>>> 
+>>>>> Thank you. I keep on forgetting - but would it be OK for me to
+>>>>> take this patch in my tree? Or should I not since this is a new
+>>>>> functionality that Rafael is going to introduce in v3.9?
+>>>> 
+>>>> It is an API change in the pm tree that is not yet in Linus' tree.
+>>>> 
+>>>>> And if so, perhaps I should tack it on in my tree, once Rafael
+>>>>> does a git pull to Linus? Or just point Linus to this git commit?
+>>>> 
+>>>> You should point Linus at this patch if the pm tree is merged
+>>>> first, or 
+>>>> Rafael should do the same if the reverse happens.
+>>> 
+>>> Alternatively, Konrad can pull the acpi-scan branch containing the
+>>> changes in question from my tree into his tree and rebase the new
+>>> material on top of that.
+>> 
+>> Or pull the acpi-scan branch into his tree and use my conflict
+>> resolution in the resulting merge thus requiring no rebasing. 
+>> However, Linus likes to see such interactions, so it can be left up
+>> to when the latter of the two tress is merged by Linus.
+> 
+> Well, I'm afraid this won't be sufficient this time, because of this
+> commit in my tree (which is not on the acpi-scan branch):
+> 
+> commit 3757b94802fb65d8f696597a74053cf21738da0b
+> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Date:   Wed Feb 13 14:36:47 2013 +0100
+> 
+>     ACPI / hotplug: Fix concurrency issues and memory leaks
+> 
+> after which acpi_bus_scan() and acpi_bus_trim() have to be run under
+> acpi_scan_lock (new in my tree as well).
 
-(And puts a dent in x264 ultrafast)
+Yes, we noticed that and only need minor updates at xen side, will send out 2 xen patches later accordingly, for cleanup and adding lock.
 
-+SD_BALANCE_NEWIDLE
-encoded 600 frames, 425.04 fps, 22132.71 kb/s
-encoded 600 frames, 416.07 fps, 22132.71 kb/s
-encoded 600 frames, 417.49 fps, 22132.71 kb/s
-encoded 600 frames, 420.65 fps, 22132.71 kb/s
-encoded 600 frames, 425.55 fps, 22132.71 kb/s
-encoded 600 frames, 425.58 fps, 22132.71 kb/s
-encoded 600 frames, 426.18 fps, 22132.71 kb/s
-encoded 600 frames, 424.21 fps, 22132.71 kb/s
-encoded 600 frames, 422.20 fps, 22132.71 kb/s
-encoded 600 frames, 423.15 fps, 22132.71 kb/s
+Thanks,
+Jinsong
 
--SD_BALANCE_NEWIDLE
-encoded 600 frames, 378.52 fps, 22132.71 kb/s
-encoded 600 frames, 378.75 fps, 22132.71 kb/s
-encoded 600 frames, 378.20 fps, 22132.71 kb/s
-encoded 600 frames, 372.54 fps, 22132.71 kb/s
-encoded 600 frames, 366.69 fps, 22132.71 kb/s
-encoded 600 frames, 378.46 fps, 22132.71 kb/s
-encoded 600 frames, 379.89 fps, 22132.71 kb/s
-encoded 600 frames, 382.25 fps, 22132.71 kb/s
-encoded 600 frames, 384.10 fps, 22132.71 kb/s
-encoded 600 frames, 375.24 fps, 22132.71 kb/s
-
-
+> 
+> Moreover, I think that the introduction of ACPI-based CPU hotplug
+> into Xen and this point would be premature, because we need to rework
+> the original ACPI-based CPU hotplug and quite frankly it shouldn't
+> call acpi_bus_scan() directly at all.
+> 
+> Konrad?
+> 
+> Thanks,
+> Rafael
 
