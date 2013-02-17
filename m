@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab3BQCm7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 21:42:59 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:36354 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab3BQCm6 (ORCPT
+	id S1755253Ab3BQCuD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 21:50:03 -0500
+Received: from smtprelay02.ispgateway.de ([80.67.31.36]:42120 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754353Ab3BQCuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 21:42:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <1360608173-12907-1-git-send-email-shc_work@mail.ru>
-References: <1360608173-12907-1-git-send-email-shc_work@mail.ru>
-Date: Sun, 17 Feb 2013 10:42:57 +0800
-Message-ID: <CAP1dx+xn-0N2GMF1s9=mG1t9jty8s1g_NW-S2m+UySG=_2fbmg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] mfd: syscon: Removed support for unloading
-From: Dong Aisheng <dong.aisheng@linaro.org>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 16 Feb 2013 21:50:01 -0500
+X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Feb 2013 21:50:00 EST
+References: <20130214153255.GA5033@rhlx01.hs-esslingen.de> <744357E9AAD1214791ACBA4B0B90926329ED72@SHSMSX101.ccr.corp.intel.com> <20130215154931.GA26213@rhlx01.hs-esslingen.de> <CACWwPiuk0GynEwe3RuKndWnsYwTuPhO0ob6sJ6ve34u1_RtkYw@mail.gmail.com> <20130216214712.GA13494@pd.tnic>
+Message-ID: <cone.1361068993.271211.4532.1000@galar>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Alexander Lam <azl@andrew.cmu.edu>,
+        =?UTF-8?B?bGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZw==?= 
+	<linux-kernel@vger.kernel.org>,
+        Andreas Mohr <andi@lisas.de>
+Subject: Re: thermal governor: does it actually work??
+Date: Sun, 17 Feb 2013 03:43:13 +0100
+Mime-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 February 2013 02:42, Alexander Shiyan <shc_work@mail.ru> wrote:
-> The driver can be used in various subsystems and therefore should not
-> be unloaded when it is defined in the kernel configuration, so remove
-> support for unloading it.
->
-> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+Hi Boris, Alex, Andreas,
 
-Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+what do you think about this acerhdf patch?
+I think it makes things straight and implements the two-point regulation of 
+acerhdf to be for correctly handled by the thermal layer:
 
-Regards
-Dong Aisheng
 
-> ---
->  drivers/mfd/syscon.c | 18 ------------------
->  1 file changed, 18 deletions(-)
->
-> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-> index 3f10591..e1886fb 100644
-> --- a/drivers/mfd/syscon.c
-> +++ b/drivers/mfd/syscon.c
-> @@ -138,17 +138,6 @@ static int syscon_probe(struct platform_device *pdev)
->         return 0;
->  }
->
-> -static int syscon_remove(struct platform_device *pdev)
-> -{
-> -       struct syscon *syscon;
-> -
-> -       syscon = platform_get_drvdata(pdev);
-> -       iounmap(syscon->base);
-> -       platform_set_drvdata(pdev, NULL);
-> -
-> -       return 0;
-> -}
-> -
->  static struct platform_driver syscon_driver = {
->         .driver = {
->                 .name = "syscon",
-> @@ -156,7 +145,6 @@ static struct platform_driver syscon_driver = {
->                 .of_match_table = of_syscon_match,
->         },
->         .probe          = syscon_probe,
-> -       .remove         = syscon_remove,
->  };
->
->  static int __init syscon_init(void)
-> @@ -165,12 +153,6 @@ static int __init syscon_init(void)
->  }
->  postcore_initcall(syscon_init);
->
-> -static void __exit syscon_exit(void)
-> -{
-> -       platform_driver_unregister(&syscon_driver);
-> -}
-> -module_exit(syscon_exit);
-> -
->  MODULE_AUTHOR("Dong Aisheng <dong.aisheng@linaro.org>");
->  MODULE_DESCRIPTION("System Control driver");
->  MODULE_LICENSE("GPL v2");
-> --
-> 1.7.12.4
->
+>From 7b39bd8837de6dc5658ac3e54ac5d4df9d351528 Mon Sep 17 00:00:00 2001
+From: Peter Feuerer <peter@piie.net>
+Date: Sun, 17 Feb 2013 03:29:19 +0100
+Subject: [PATCH] added two more trip points to acerhdf, this allows thermal
+ layer to correctly handle the two point regulation of acerhdf. Trip point 0
+ will be active from 0 degree to "fanoff" and is marked as passive, then trip
+ point 1 is valid from "fanoff" to "fanon" value and is marked as active,
+ even if it's only really active in case temperature is going down from trip
+ point 2. Trip point 2 will be valid above "fanon" value and is also marked
+ as active.
+
+---
+ drivers/platform/x86/acerhdf.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+index f94467c..c36633b 100644
+--- a/drivers/platform/x86/acerhdf.c
++++ b/drivers/platform/x86/acerhdf.c
+@@ -400,6 +400,10 @@ static int acerhdf_get_trip_type(struct thermal_zone_device *thermal, int trip,
+ 				 enum thermal_trip_type *type)
+ {
+ 	if (trip == 0)
++		*type = THERMAL_TRIP_PASSIVE;
++	if (trip == 1)
++		*type = THERMAL_TRIP_ACTIVE;
++	if (trip == 2)
+ 		*type = THERMAL_TRIP_ACTIVE;
+ 
+ 	return 0;
+@@ -409,6 +413,10 @@ static int acerhdf_get_trip_temp(struct thermal_zone_device *thermal, int trip,
+ 				 unsigned long *temp)
+ {
+ 	if (trip == 0)
++		*temp = 0;
++	if (trip == 1)
++		*temp = fanoff;
++	if (trip == 2)
+ 		*temp = fanon;
+ 
+ 	return 0;
+@@ -486,7 +494,8 @@ static int acerhdf_set_cur_state(struct thermal_cooling_device *cdev,
+ 		    (cur_temp < fanoff))
+ 			acerhdf_change_fanstate(ACERHDF_FAN_OFF);
+ 	} else {
+-		if (cur_state == ACERHDF_FAN_OFF)
++		if ((cur_state == ACERHDF_FAN_OFF) &&
++		    (cur_temp > fanon))
+ 			acerhdf_change_fanstate(ACERHDF_FAN_AUTO);
+ 	}
+ 	return 0;
+@@ -661,8 +670,8 @@ static int acerhdf_register_thermal(void)
+ 	if (IS_ERR(cl_dev))
+ 		return -EINVAL;
+ 
+-	thz_dev = thermal_zone_device_register("acerhdf", 1, 0, NULL,
+-					      &acerhdf_dev_ops, NULL, 0,
++	thz_dev = thermal_zone_device_register("acerhdf", 3, 0, NULL,
++					      &acerhdf_dev_ops, (kernelmode) ? interval*1000 : 0,
+ 					      (kernelmode) ? interval*1000 : 0);
+ 	if (IS_ERR(thz_dev))
+ 		return -EINVAL;
+-- 
+1.8.1.3
+
