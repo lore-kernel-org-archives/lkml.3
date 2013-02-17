@@ -1,89 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab3BQOhQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 09:37:16 -0500
-Received: from jonshouse.co.uk ([91.84.151.33]:53037 "EHLO
-	mail.jonshouse.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754227Ab3BQOhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 09:37:15 -0500
-Subject: Re: Stupid user with user-space questions, matrix LED driving with
- user space code only.
-From: Jonathan Andrews <jon@jonshouse.co.uk>
-Reply-To: jon@jonshouse.co.uk
-To: anish kumar <anish198519851985@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1361082134.16206.24.camel@anish-Inspiron-N5050>
-References: <1361025476.4271.36.camel@jonspc>
-	 <1361082134.16206.24.camel@anish-Inspiron-N5050>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 17 Feb 2013 14:37:24 +0000
-Message-ID: <1361111844.14757.29.camel@jonspc>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1756180Ab3BQOtd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 09:49:33 -0500
+Received: from mx01.sz.bfs.de ([194.94.69.103]:3367 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755250Ab3BQOtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 09:49:31 -0500
+Message-ID: <5120EDF8.7010503@bfs.de>
+Date: Sun, 17 Feb 2013 15:49:28 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Kumar Amit Mehta <gmate.amit@gmail.com>
+CC: jdmason@kudzu.us, davem@davemloft.net, joe@perches.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] ethernet: neterion: vxge: vxge-traffic.c: fix for a potential
+ NULL pointer dereference
+References: <1361037394-14731-1-git-send-email-gmate.amit@gmail.com>
+In-Reply-To: <1361037394-14731-1-git-send-email-gmate.amit@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-> > The dim pixel code is timing critical (but as I said only a tiny
-> > fraction of the total CPU usage). What I need to do is grab the CPU and
-> > prevent any context switch (IRQ or PREEMPT) for this period.
-> why you want to do this?
-Because I need an I/O pin to change state for a short accurately timed
-period. If the scheduler is activated during the generation of this
-pulse then the timing will be stretched, this stretching is seen as
-bright flash by the viewer of the LED display. 
 
->  
-> > I cant find a user space mechanism other than changing the kernel to
-> > disable preemtion ? No simple /proc switch to turn it on/off ? If not
-> > why - I cant be the only one who wants to toggle preemption off without
-> > swapping kernels ?
-> you can't disable pre-emption from user space.
-Part of why I asked this here.
-
-Why not !
-
-I would expect a "/proc/sys/kernel/sched_preemption" that I could toggle
-a 1 or 0 into to turn it on/off.  
-
->From a user perspective it seems a bit crap to have to change the kernel
-if you have a workload that preemption is harmful to.  
-In the case of something like the Raspberry Pi changing the kernel if
-the distribution has not done the work for me sounds like real effort.
-The kernel is tied to binary obscurity from broadcom... To build I need
-a working cross compiler, toolchain, kernel sources, Pi specific patches
-then to get everything in the correct place on an SD card containing two
-filesystems.  Its possible but its not going to "just work" at my skill
-level....
-> > The other issue is that of IRQs, my dim pixels on the display seem to
-> > flash brighter from time to time, this I assume is partly preemption
-> > (maybe possibly) and partly IRQ handling (more likely) allowing context
-> > switches or just taking a while on slow hardware.
-> > 
-> > I need only a tiny fraction of the runtime to be hard real time, on
-> > intel in the past i've simply disabled IRQs briefly with some inline
-> > assembler. 
-> you shouldn't fiddle with irq's from user space but...
-> > The Raspberry Pi board would also probably survive this as the only
-> > active peripheral is ethenet, I suspect couple of missed IRQs would not
-> > matter as once IRQs are re-enabled the USB/ethernet hardware will likely
-> > have the data or it can be re-tried.  Does anyone have an example of a
-> > dirty hack along these lines they can share with me :-) 
+Am 16.02.2013 18:56, schrieb Kumar Amit Mehta:
+> fix for a potential NULL pointer dereference and removal of a redundant
+> assignment operation. Found using smatch.
 > 
-> > Do I have any simple mechanism available to disable (or defer) kernel
-> > IRQ handling briefly from user space code, I suspect not but no harm in
-> > asking ?
-> Use any sysfs to disable/enable the irq. This approach is very bad but
-> as you said you wanted a hack.
-Sounds interesting, can I have some more specific clues how. Device is
-not intel or PCI so I need to toggle something relevant to ARMs native
-interrupt system, do I still have anything I can toggle that is relevant
-in "Linux raspberrypi 3.6.11+ #375 PREEMPT" /sys ?
+> Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
+> ---
+>  drivers/net/ethernet/neterion/vxge/vxge-traffic.c |    8 ++------
+>  1 file changed, 2 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/neterion/vxge/vxge-traffic.c b/drivers/net/ethernet/neterion/vxge/vxge-traffic.c
+> index 99749bd..adb05a8 100644
+> --- a/drivers/net/ethernet/neterion/vxge/vxge-traffic.c
+> +++ b/drivers/net/ethernet/neterion/vxge/vxge-traffic.c
+> @@ -611,11 +611,8 @@ __vxge_hw_vpath_alarm_process(struct __vxge_hw_virtualpath *vpath,
+>  	struct vxge_hw_vpath_stats_sw_info *sw_stats;
+>  	struct vxge_hw_vpath_reg __iomem *vp_reg;
+>  
+> -	if (vpath == NULL) {
+> -		alarm_event = VXGE_HW_SET_LEVEL(VXGE_HW_EVENT_UNKNOWN,
+> -			alarm_event);
+> +	if (vpath == NULL)
+>  		goto out2;
+> -	}
+>  
+>  	hldev = vpath->hldev;
+>  	vp_reg = vpath->vp_reg;
+> @@ -852,13 +849,12 @@ __vxge_hw_vpath_alarm_process(struct __vxge_hw_virtualpath *vpath,
+>  	}
+>  out:
+>  	hldev->stats.sw_dev_err_stats.vpath_alarms++;
+> +	__vxge_hw_device_handle_error(hldev, vpath->vp_id, alarm_event);
+>  out2:
+>  	if ((alarm_event == VXGE_HW_EVENT_ALARM_CLEARED) ||
+>  		(alarm_event == VXGE_HW_EVENT_UNKNOWN))
+>  		return VXGE_HW_OK;
+>  
+> -	__vxge_hw_device_handle_error(hldev, vpath->vp_id, alarm_event);
+> -
+>  	if (alarm_event == VXGE_HW_EVENT_SERR)
+>  		return VXGE_HW_ERR_CRITICAL;
+>  
 
-Many thanks,
-Jon
+the patch looks ok.
+it would be nice if someone would rewrite the if (alarm_event == x ) stuff
+using switch or more if()'s it is hardly readable this way.
 
-
+just my 2 cents,
+re,
+ wh
