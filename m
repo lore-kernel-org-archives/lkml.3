@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755Ab3BQW6O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 17:58:14 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45783 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756311Ab3BQWzq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756421Ab3BQWzq (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 17 Feb 2013 17:55:46 -0500
-Message-Id: <20130217225005.039605447@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45658 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755098Ab3BQWzT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 17:55:19 -0500
+Message-Id: <20130217225009.179334490@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Feb 2013 22:50:30 +0000
+Date: Sun, 17 Feb 2013 22:51:06 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Maia Kozheva <sikon@ubuntu.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 29/66] rt2800usb: Add support for 2001:3c1e (D-Link DWA-125 rev B1) USB
- Wi-Fi adapter
+Cc: akpm@linux-foundation.org, Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 65/66] tg3: Fix crc errors on jumbo frame receive
 In-Reply-To: <20130217225001.621306883@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,41 +28,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maia Kozheva <sikon@ubuntu.com>
+From: Nithin Nayak Sujir <nsujir@broadcom.com>
 
-commit fd7b9270120ca7e53fbf0469febe0c68acf6a0a2 upstream.
+[ Upstream commit daf3ec688e057f6060fb9bb0819feac7a8bbf45c ]
 
-D-Link DWA-125/B1 is a relatively new USB Wi-Fi adapter, using a
-Ralink chipset supported by the rt2800usb driver. Currently, to work
-around the problem (it's missing in all present kernel versions,
-up to and including 3.7.x), I had to add this to /etc/rc.local:
+TG3_PHY_AUXCTL_SMDSP_ENABLE/DISABLE macros do a blind write to the phy
+auxiliary control register and overwrite the EXT_PKT_LEN (bit 14) resulting
+in intermittent crc errors on jumbo frames with some link partners. Change
+the code to do a read/modify/write.
 
-echo 2001 3c1e >> /sys/bus/usb/drivers/rt2800usb/new_id
-
-After that, the device works without problems. Been using it for over
-a week with no bugs in sight.
-
-The attached patch is trivial and simply adds the new USB ID to the
-list of devices handled by rt2800usb.
-
-Signed-off-by: Maia Kozheva <sikon@ubuntu.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rt2x00/rt2800usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/broadcom/tg3.c | 58 ++++++++++++++++++++++---------------
+ 1 file changed, 35 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
-index 0230812..d67d14e 100644
---- a/drivers/net/wireless/rt2x00/rt2800usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -965,6 +965,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
- 	{ USB_DEVICE(0x07d1, 0x3c15) },
- 	{ USB_DEVICE(0x07d1, 0x3c16) },
- 	{ USB_DEVICE(0x2001, 0x3c1b) },
-+	{ USB_DEVICE(0x2001, 0x3c1e) },
- 	/* Draytek */
- 	{ USB_DEVICE(0x07fa, 0x7712) },
- 	/* DVICO */
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index c3197d9..c86fa50 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -1135,14 +1135,26 @@ static int tg3_phy_auxctl_write(struct tg3 *tp, int reg, u32 set)
+ 	return tg3_writephy(tp, MII_TG3_AUX_CTRL, set | reg);
+ }
+ 
+-#define TG3_PHY_AUXCTL_SMDSP_ENABLE(tp) \
+-	tg3_phy_auxctl_write((tp), MII_TG3_AUXCTL_SHDWSEL_AUXCTL, \
+-			     MII_TG3_AUXCTL_ACTL_SMDSP_ENA | \
+-			     MII_TG3_AUXCTL_ACTL_TX_6DB)
++static int tg3_phy_toggle_auxctl_smdsp(struct tg3 *tp, bool enable)
++{
++	u32 val;
++	int err;
++
++	err = tg3_phy_auxctl_read(tp, MII_TG3_AUXCTL_SHDWSEL_AUXCTL, &val);
+ 
+-#define TG3_PHY_AUXCTL_SMDSP_DISABLE(tp) \
+-	tg3_phy_auxctl_write((tp), MII_TG3_AUXCTL_SHDWSEL_AUXCTL, \
+-			     MII_TG3_AUXCTL_ACTL_TX_6DB);
++	if (err)
++		return err;
++	if (enable)
++
++		val |= MII_TG3_AUXCTL_ACTL_SMDSP_ENA;
++	else
++		val &= ~MII_TG3_AUXCTL_ACTL_SMDSP_ENA;
++
++	err = tg3_phy_auxctl_write((tp), MII_TG3_AUXCTL_SHDWSEL_AUXCTL,
++				   val | MII_TG3_AUXCTL_ACTL_TX_6DB);
++
++	return err;
++}
+ 
+ static int tg3_bmcr_reset(struct tg3 *tp)
+ {
+@@ -2087,7 +2099,7 @@ static void tg3_phy_apply_otp(struct tg3 *tp)
+ 
+ 	otp = tp->phy_otp;
+ 
+-	if (TG3_PHY_AUXCTL_SMDSP_ENABLE(tp))
++	if (tg3_phy_toggle_auxctl_smdsp(tp, true))
+ 		return;
+ 
+ 	phy = ((otp & TG3_OTP_AGCTGT_MASK) >> TG3_OTP_AGCTGT_SHIFT);
+@@ -2112,7 +2124,7 @@ static void tg3_phy_apply_otp(struct tg3 *tp)
+ 	      ((otp & TG3_OTP_RCOFF_MASK) >> TG3_OTP_RCOFF_SHIFT);
+ 	tg3_phydsp_write(tp, MII_TG3_DSP_EXP97, phy);
+ 
+-	TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
++	tg3_phy_toggle_auxctl_smdsp(tp, false);
+ }
+ 
+ static void tg3_phy_eee_adjust(struct tg3 *tp, u32 current_link_up)
+@@ -2148,9 +2160,9 @@ static void tg3_phy_eee_adjust(struct tg3 *tp, u32 current_link_up)
+ 
+ 	if (!tp->setlpicnt) {
+ 		if (current_link_up == 1 &&
+-		   !TG3_PHY_AUXCTL_SMDSP_ENABLE(tp)) {
++		   !tg3_phy_toggle_auxctl_smdsp(tp, true)) {
+ 			tg3_phydsp_write(tp, MII_TG3_DSP_TAP26, 0x0000);
+-			TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
++			tg3_phy_toggle_auxctl_smdsp(tp, false);
+ 		}
+ 
+ 		val = tr32(TG3_CPMU_EEE_MODE);
+@@ -2166,11 +2178,11 @@ static void tg3_phy_eee_enable(struct tg3 *tp)
+ 	    (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5717 ||
+ 	     GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719 ||
+ 	     GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_57765) &&
+-	    !TG3_PHY_AUXCTL_SMDSP_ENABLE(tp)) {
++	    !tg3_phy_toggle_auxctl_smdsp(tp, true)) {
+ 		val = MII_TG3_DSP_TAP26_ALNOKO |
+ 		      MII_TG3_DSP_TAP26_RMRXSTO;
+ 		tg3_phydsp_write(tp, MII_TG3_DSP_TAP26, val);
+-		TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
++		tg3_phy_toggle_auxctl_smdsp(tp, false);
+ 	}
+ 
+ 	val = tr32(TG3_CPMU_EEE_MODE);
+@@ -2314,7 +2326,7 @@ static int tg3_phy_reset_5703_4_5(struct tg3 *tp)
+ 		tg3_writephy(tp, MII_CTRL1000,
+ 			     CTL1000_AS_MASTER | CTL1000_ENABLE_MASTER);
+ 
+-		err = TG3_PHY_AUXCTL_SMDSP_ENABLE(tp);
++		err = tg3_phy_toggle_auxctl_smdsp(tp, true);
+ 		if (err)
+ 			return err;
+ 
+@@ -2335,7 +2347,7 @@ static int tg3_phy_reset_5703_4_5(struct tg3 *tp)
+ 	tg3_writephy(tp, MII_TG3_DSP_ADDRESS, 0x8200);
+ 	tg3_writephy(tp, MII_TG3_DSP_CONTROL, 0x0000);
+ 
+-	TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
++	tg3_phy_toggle_auxctl_smdsp(tp, false);
+ 
+ 	tg3_writephy(tp, MII_CTRL1000, phy9_orig);
+ 
+@@ -2424,10 +2436,10 @@ static int tg3_phy_reset(struct tg3 *tp)
+ 
+ out:
+ 	if ((tp->phy_flags & TG3_PHYFLG_ADC_BUG) &&
+-	    !TG3_PHY_AUXCTL_SMDSP_ENABLE(tp)) {
++	    !tg3_phy_toggle_auxctl_smdsp(tp, true)) {
+ 		tg3_phydsp_write(tp, 0x201f, 0x2aaa);
+ 		tg3_phydsp_write(tp, 0x000a, 0x0323);
+-		TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
++		tg3_phy_toggle_auxctl_smdsp(tp, false);
+ 	}
+ 
+ 	if (tp->phy_flags & TG3_PHYFLG_5704_A0_BUG) {
+@@ -2436,14 +2448,14 @@ out:
+ 	}
+ 
+ 	if (tp->phy_flags & TG3_PHYFLG_BER_BUG) {
+-		if (!TG3_PHY_AUXCTL_SMDSP_ENABLE(tp)) {
++		if (!tg3_phy_toggle_auxctl_smdsp(tp, true)) {
+ 			tg3_phydsp_write(tp, 0x000a, 0x310b);
+ 			tg3_phydsp_write(tp, 0x201f, 0x9506);
+ 			tg3_phydsp_write(tp, 0x401f, 0x14e2);
+-			TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
++			tg3_phy_toggle_auxctl_smdsp(tp, false);
+ 		}
+ 	} else if (tp->phy_flags & TG3_PHYFLG_JITTER_BUG) {
+-		if (!TG3_PHY_AUXCTL_SMDSP_ENABLE(tp)) {
++		if (!tg3_phy_toggle_auxctl_smdsp(tp, true)) {
+ 			tg3_writephy(tp, MII_TG3_DSP_ADDRESS, 0x000a);
+ 			if (tp->phy_flags & TG3_PHYFLG_ADJUST_TRIM) {
+ 				tg3_writephy(tp, MII_TG3_DSP_RW_PORT, 0x110b);
+@@ -2452,7 +2464,7 @@ out:
+ 			} else
+ 				tg3_writephy(tp, MII_TG3_DSP_RW_PORT, 0x010b);
+ 
+-			TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
++			tg3_phy_toggle_auxctl_smdsp(tp, false);
+ 		}
+ 	}
+ 
+@@ -3639,7 +3651,7 @@ static int tg3_phy_autoneg_cfg(struct tg3 *tp, u32 advertise, u32 flowctrl)
+ 	tw32(TG3_CPMU_EEE_MODE,
+ 	     tr32(TG3_CPMU_EEE_MODE) & ~TG3_CPMU_EEEMD_LPI_ENABLE);
+ 
+-	err = TG3_PHY_AUXCTL_SMDSP_ENABLE(tp);
++	err = tg3_phy_toggle_auxctl_smdsp(tp, true);
+ 	if (!err) {
+ 		u32 err2;
+ 
+@@ -3671,7 +3683,7 @@ static int tg3_phy_autoneg_cfg(struct tg3 *tp, u32 advertise, u32 flowctrl)
+ 						 MII_TG3_DSP_CH34TP2_HIBW01);
+ 		}
+ 
+-		err2 = TG3_PHY_AUXCTL_SMDSP_DISABLE(tp);
++		err2 = tg3_phy_toggle_auxctl_smdsp(tp, false);
+ 		if (!err)
+ 			err = err2;
+ 	}
 
 
