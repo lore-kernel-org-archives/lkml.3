@@ -1,107 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab3BQTE1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 14:04:27 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:59937 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab3BQTE0 (ORCPT
+	id S1752253Ab3BQTEl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 14:04:41 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:55676 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096Ab3BQTEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 14:04:26 -0500
-Date: Sun, 17 Feb 2013 11:04:44 -0800
+	Sun, 17 Feb 2013 14:04:38 -0500
+Date: Sun, 17 Feb 2013 11:04:56 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.4.32
-Message-ID: <20130217190444.GA10122@kroah.com>
+Subject: Re: Linux 3.4.32
+Message-ID: <20130217190456.GB10122@kroah.com>
+References: <20130217190444.GA10122@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qxx1br4bt0+wmkIi"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130217190444.GA10122@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---Qxx1br4bt0+wmkIi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-I'm announcing the release of the 3.4.32 kernel.
-
-All users of the 3.4 kernel series must upgrade.
-
-The updated 3.4.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.4.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                  |    2 +-
- arch/s390/kernel/time.c                   |    3 +++
- arch/x86/include/asm/pgtable.h            |    5 +++++
- arch/x86/kernel/apic/x2apic_phys.c        |   21 +++++++++++----------
- arch/x86/mm/fault.c                       |    8 +++++---
- arch/x86/mm/init_64.c                     |    3 +++
- arch/x86/platform/efi/efi.c               |    2 +-
- arch/x86/xen/xen-asm_32.S                 |   14 +++++++-------
- drivers/net/ethernet/intel/igb/igb_main.c |    8 +++++---
- drivers/pci/remove.c                      |    2 ++
- 10 files changed, 43 insertions(+), 25 deletions(-)
-
-Alexander Duyck (1):
-      igb: Remove artificial restriction on RQDPC stat reading
-
-Greg Kroah-Hartman (1):
-      Linux 3.4.32
-
-Heiko Carstens (1):
-      s390/timer: avoid overflow when programming clock comparator
-
-Jan Beulich (1):
-      x86/xen: don't assume %ds is usable in xen_iret for 32-bit PVOPS.
-
-Kees Cook (1):
-      x86: Do not leak kernel page mapping locations
-
-Mel Gorman (1):
-      x86/mm: Check if PUD is large when validating a kernel address
-
-Rafael J. Wysocki (1):
-      PCI/PM: Clean up PME state when removing a device
-
-Satoru Takeuchi (1):
-      efi: Clear EFI_RUNTIME_SERVICES rather than EFI_BOOT by "noefi" boot parameter
-
-Stoney Wang (1):
-      x86/apic: Work around boot failure on HP ProLiant DL980 G7 Server systems
-
-
---Qxx1br4bt0+wmkIi
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRISnMAAoJEDjbvchgkmk+X6IP/1/JYr+mpFgYlQ5bTxAfv8no
-Ssl5XUL00vQ2TcMy+3iT+pNFSp9uUSZPjdiMvTpp0R2g6v84m5JbXB3nsOBERuMi
-oOUc7k/AtziZA7Pnk2XNyr+smW6zrmISiuFUrM1sSs3NV3b2DWc9Uyc8mmocnh0/
-ix4Ne+jB2+diQFn6GXT5nz5Ybl7BwDOEJgRZgQAGTIoD36jh62glD6H4f5N2yG7p
-6febBzl1RQMhZnRqV/f4kiggHuTi0RM0BxJtJone5P1nBF/vGvSclpctm/RoEQrm
-oGnSgJM6NJeMun20zxvHNdXaEE8u9GW1pGQ2r44thPRGj7PhIx+8L3rUbmsbl6hs
-FHbE35uVGxICJZhD1Or1QKbj6bD/XV4BJmdn1Vy8cZ1OQ2MabOJC5bXipi+Zxghp
-lnHmTbEoTC866OQNJVEaQPTlPwOFJIbV7e9BaIBlyCWBk0MfTNyfkH174Fy+1u8u
-nLhAso8pU76wFEJd0e5UXAaUlOSIOfYBiaJgq95iTMXd9WKPBnZlkJKbrO+vK9eQ
-01sWskuUQx4A26tkV1mUKJAQ4jnx2MDcA4OvZdqFDg48fgaCD66uYDF2OTz3HvDF
-Lxfrn1w8RuQHl+syGF+sRbetDd0bRk5qTMVDgl18emEpTs+5L1vVIGnzXJdlmx0D
-ECvJ+840Hhf4lEnRNMTA
-=rBqd
------END PGP SIGNATURE-----
-
---Qxx1br4bt0+wmkIi--
+diff --git a/Makefile b/Makefile
+index 930db76..ece8970 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 4
+-SUBLEVEL = 31
++SUBLEVEL = 32
+ EXTRAVERSION =
+ NAME = Saber-toothed Squirrel
+ 
+diff --git a/arch/s390/kernel/time.c b/arch/s390/kernel/time.c
+index c5531db..747ab28 100644
+--- a/arch/s390/kernel/time.c
++++ b/arch/s390/kernel/time.c
+@@ -121,6 +121,9 @@ static int s390_next_ktime(ktime_t expires,
+ 	nsecs = ktime_to_ns(ktime_add(timespec_to_ktime(ts), expires));
+ 	do_div(nsecs, 125);
+ 	S390_lowcore.clock_comparator = sched_clock_base_cc + (nsecs << 9);
++	/* Program the maximum value if we have an overflow (== year 2042) */
++	if (unlikely(S390_lowcore.clock_comparator < sched_clock_base_cc))
++		S390_lowcore.clock_comparator = -1ULL;
+ 	set_clock_comparator(S390_lowcore.clock_comparator);
+ 	return 0;
+ }
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index c3520d7..3f3dd52 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -142,6 +142,11 @@ static inline unsigned long pmd_pfn(pmd_t pmd)
+ 	return (pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT;
+ }
+ 
++static inline unsigned long pud_pfn(pud_t pud)
++{
++	return (pud_val(pud) & PTE_PFN_MASK) >> PAGE_SHIFT;
++}
++
+ #define pte_page(pte)	pfn_to_page(pte_pfn(pte))
+ 
+ static inline int pmd_large(pmd_t pte)
+diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
+index 991e315..db31a2c 100644
+--- a/arch/x86/kernel/apic/x2apic_phys.c
++++ b/arch/x86/kernel/apic/x2apic_phys.c
+@@ -20,18 +20,19 @@ static int set_x2apic_phys_mode(char *arg)
+ }
+ early_param("x2apic_phys", set_x2apic_phys_mode);
+ 
+-static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
++static bool x2apic_fadt_phys(void)
+ {
+-	if (x2apic_phys)
+-		return x2apic_enabled();
+-	else if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
+-		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL) &&
+-		x2apic_enabled()) {
++	if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
++		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
+ 		printk(KERN_DEBUG "System requires x2apic physical mode\n");
+-		return 1;
++		return true;
+ 	}
+-	else
+-		return 0;
++	return false;
++}
++
++static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
++{
++	return x2apic_enabled() && (x2apic_phys || x2apic_fadt_phys());
+ }
+ 
+ static void
+@@ -114,7 +115,7 @@ static void init_x2apic_ldr(void)
+ 
+ static int x2apic_phys_probe(void)
+ {
+-	if (x2apic_mode && x2apic_phys)
++	if (x2apic_mode && (x2apic_phys || x2apic_fadt_phys()))
+ 		return 1;
+ 
+ 	return apic == &apic_x2apic_phys;
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 3ecfd1a..e922e01 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -747,13 +747,15 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
+ 				return;
+ 		}
+ #endif
++		/* Kernel addresses are always protection faults: */
++		if (address >= TASK_SIZE)
++			error_code |= PF_PROT;
+ 
+-		if (unlikely(show_unhandled_signals))
++		if (likely(show_unhandled_signals))
+ 			show_signal_msg(regs, error_code, address, tsk);
+ 
+-		/* Kernel addresses are always protection faults: */
+ 		tsk->thread.cr2		= address;
+-		tsk->thread.error_code	= error_code | (address >= TASK_SIZE);
++		tsk->thread.error_code	= error_code;
+ 		tsk->thread.trap_nr	= X86_TRAP_PF;
+ 
+ 		force_sig_info_fault(SIGSEGV, si_code, address, tsk, 0);
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index fc18be0..faf7a68 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -821,6 +821,9 @@ int kern_addr_valid(unsigned long addr)
+ 	if (pud_none(*pud))
+ 		return 0;
+ 
++	if (pud_large(*pud))
++		return pfn_valid(pud_pfn(*pud));
++
+ 	pmd = pmd_offset(pud, addr);
+ 	if (pmd_none(*pmd))
+ 		return 0;
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 6fcd4ad..3705bb0 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -86,7 +86,7 @@ EXPORT_SYMBOL(efi_enabled);
+ 
+ static int __init setup_noefi(char *arg)
+ {
+-	clear_bit(EFI_BOOT, &x86_efi_facility);
++	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
+ 	return 0;
+ }
+ early_param("noefi", setup_noefi);
+diff --git a/arch/x86/xen/xen-asm_32.S b/arch/x86/xen/xen-asm_32.S
+index b040b0e..7328f71 100644
+--- a/arch/x86/xen/xen-asm_32.S
++++ b/arch/x86/xen/xen-asm_32.S
+@@ -88,11 +88,11 @@ ENTRY(xen_iret)
+ 	 */
+ #ifdef CONFIG_SMP
+ 	GET_THREAD_INFO(%eax)
+-	movl TI_cpu(%eax), %eax
+-	movl __per_cpu_offset(,%eax,4), %eax
+-	mov xen_vcpu(%eax), %eax
++	movl %ss:TI_cpu(%eax), %eax
++	movl %ss:__per_cpu_offset(,%eax,4), %eax
++	mov %ss:xen_vcpu(%eax), %eax
+ #else
+-	movl xen_vcpu, %eax
++	movl %ss:xen_vcpu, %eax
+ #endif
+ 
+ 	/* check IF state we're restoring */
+@@ -105,11 +105,11 @@ ENTRY(xen_iret)
+ 	 * resuming the code, so we don't have to be worried about
+ 	 * being preempted to another CPU.
+ 	 */
+-	setz XEN_vcpu_info_mask(%eax)
++	setz %ss:XEN_vcpu_info_mask(%eax)
+ xen_iret_start_crit:
+ 
+ 	/* check for unmasked and pending */
+-	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
++	cmpw $0x0001, %ss:XEN_vcpu_info_pending(%eax)
+ 
+ 	/*
+ 	 * If there's something pending, mask events again so we can
+@@ -117,7 +117,7 @@ xen_iret_start_crit:
+ 	 * touch XEN_vcpu_info_mask.
+ 	 */
+ 	jne 1f
+-	movb $1, XEN_vcpu_info_mask(%eax)
++	movb $1, %ss:XEN_vcpu_info_mask(%eax)
+ 
+ 1:	popl %eax
+ 
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 6b4f014..1fb180d 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -4649,11 +4649,13 @@ void igb_update_stats(struct igb_adapter *adapter,
+ 	bytes = 0;
+ 	packets = 0;
+ 	for (i = 0; i < adapter->num_rx_queues; i++) {
+-		u32 rqdpc_tmp = rd32(E1000_RQDPC(i)) & 0x0FFF;
++		u32 rqdpc = rd32(E1000_RQDPC(i));
+ 		struct igb_ring *ring = adapter->rx_ring[i];
+ 
+-		ring->rx_stats.drops += rqdpc_tmp;
+-		net_stats->rx_fifo_errors += rqdpc_tmp;
++		if (rqdpc) {
++			ring->rx_stats.drops += rqdpc;
++			net_stats->rx_fifo_errors += rqdpc;
++		}
+ 
+ 		do {
+ 			start = u64_stats_fetch_begin_bh(&ring->rx_syncp);
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index fd77e2b..eae55c7 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -19,6 +19,8 @@ static void pci_free_resources(struct pci_dev *dev)
+ 
+ static void pci_stop_dev(struct pci_dev *dev)
+ {
++	pci_pme_active(dev, false);
++
+ 	if (dev->is_added) {
+ 		pci_proc_detach_device(dev);
+ 		pci_remove_sysfs_dev_files(dev);
