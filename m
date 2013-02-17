@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837Ab3BQSAA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 13:00:00 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:62794 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab3BQR75 (ORCPT
+	id S1751892Ab3BQSAH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 13:00:07 -0500
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:56452 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab3BQSAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 12:59:57 -0500
+	Sun, 17 Feb 2013 13:00:00 -0500
 From: David Herrmann <dh.herrmann@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         linux-fbdev@vger.kernel.org, David Airlie <airlied@linux.ie>,
         dri-devel@lists.freedesktop.org,
-        David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH 4/9] video: vesafb: allow building as module
-Date: Sun, 17 Feb 2013 18:59:06 +0100
-Message-Id: <1361123951-587-5-git-send-email-dh.herrmann@gmail.com>
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH 6/9] drm: new sysfb DRM bus module
+Date: Sun, 17 Feb 2013 18:59:08 +0100
+Message-Id: <1361123951-587-7-git-send-email-dh.herrmann@gmail.com>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1361123951-587-1-git-send-email-dh.herrmann@gmail.com>
 References: <1361123951-587-1-git-send-email-dh.herrmann@gmail.com>
@@ -23,228 +23,277 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Herrmann <dh.herrmann@googlemail.com>
+This provides a new DRM bus helper for the system framebuffer bus. It is
+very similar in its functionality to the DRM_USB helper. It allows to
+write DRM drivers that register as SYSFB drivers to the system.
 
-Fix the vesafb module to no longer use any static __init data. Also add a
-module_exit() function that destroys the platform device.
-
-Note that fbdev hotplugging is broken and the self-reference actually
-prevents sane module-unloading. Anyway, this at least allows delayed
-module loading of vesafb and helps debugging vesafb a lot.
-
-Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 ---
- drivers/video/Kconfig  |   2 +-
- drivers/video/vesafb.c | 100 +++++++++++++++++++++++++++++++------------------
- 2 files changed, 64 insertions(+), 38 deletions(-)
+ drivers/gpu/drm/Kconfig     |   5 ++
+ drivers/gpu/drm/Makefile    |   1 +
+ drivers/gpu/drm/drm_sysfb.c | 145 ++++++++++++++++++++++++++++++++++++++++++++
+ include/drm/drmP.h          |   4 ++
+ include/drm/drm_sysfb.h     |  35 +++++++++++
+ 5 files changed, 190 insertions(+)
+ create mode 100644 drivers/gpu/drm/drm_sysfb.c
+ create mode 100644 include/drm/drm_sysfb.h
 
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index eac56ef..d5723c2 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -770,7 +770,7 @@ config FB_UVESA
- 	  If unsure, say N.
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index 18321b68b..2df448e 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -25,6 +25,11 @@ config DRM_USB
+ 	depends on USB_SUPPORT && USB_ARCH_HAS_HCD
+ 	select USB
  
- config FB_VESA
--	bool "VESA VGA graphics support"
-+	tristate "VESA VGA graphics support"
- 	depends on (FB = y) && X86
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
-diff --git a/drivers/video/vesafb.c b/drivers/video/vesafb.c
-index 501b340..4ad7b40 100644
---- a/drivers/video/vesafb.c
-+++ b/drivers/video/vesafb.c
-@@ -29,27 +29,10 @@
++config DRM_SYSFB
++	tristate
++	depends on DRM
++	select SYSFB
++
+ config DRM_KMS_HELPER
+ 	tristate
+ 	depends on DRM
+diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
+index 2ff5cef..9249b66 100644
+--- a/drivers/gpu/drm/Makefile
++++ b/drivers/gpu/drm/Makefile
+@@ -29,6 +29,7 @@ CFLAGS_drm_trace_points.o := -I$(src)
  
- /* --------------------------------------------------------------------- */
- 
--static struct fb_var_screeninfo vesafb_defined __initdata = {
--	.activate	= FB_ACTIVATE_NOW,
--	.height		= -1,
--	.width		= -1,
--	.right_margin	= 32,
--	.upper_margin	= 16,
--	.lower_margin	= 4,
--	.vsync_len	= 4,
--	.vmode		= FB_VMODE_NONINTERLACED,
--};
--
--static struct fb_fix_screeninfo vesafb_fix __initdata = {
--	.id	= "VESA VGA",
--	.type	= FB_TYPE_PACKED_PIXELS,
--	.accel	= FB_ACCEL_NONE,
--};
--
- static int   inverse    __read_mostly;
- static int   mtrr       __read_mostly;		/* disable mtrr */
--static int   vram_remap __initdata;		/* Set amount of memory to be used */
--static int   vram_total __initdata;		/* Set total amount of memory */
-+static int   vram_remap;			/* Set amount of memory to be used */
-+static int   vram_total;			/* Set total amount of memory */
- static int   pmi_setpal __read_mostly = 1;	/* pmi for palette changes ??? */
- static int   ypan       __read_mostly;		/* 0..nothing, 1..ypan, 2..ywrap */
- static void  (*pmi_start)(void) __read_mostly;
-@@ -58,6 +41,11 @@ static int   depth      __read_mostly;
- static int   vga_compat __read_mostly;
- /* --------------------------------------------------------------------- */
- 
-+struct vesafb_par {
-+	struct fb_ops ops;
-+	u32 palette[256];
+ obj-$(CONFIG_DRM)	+= drm.o
+ obj-$(CONFIG_DRM_USB)   += drm_usb.o
++obj-$(CONFIG_DRM_SYSFB) += drm_sysfb.o
+ obj-$(CONFIG_DRM_TTM)	+= ttm/
+ obj-$(CONFIG_DRM_TDFX)	+= tdfx/
+ obj-$(CONFIG_DRM_R128)	+= r128/
+diff --git a/drivers/gpu/drm/drm_sysfb.c b/drivers/gpu/drm/drm_sysfb.c
+new file mode 100644
+index 0000000..4e8a823
+--- /dev/null
++++ b/drivers/gpu/drm/drm_sysfb.c
+@@ -0,0 +1,145 @@
++/*
++ * DRM Bus for sysfb drivers
++ *
++ * Copyright 2013 David Herrmann <dh.herrmann@gmail.com>
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the next
++ * paragraph) shall be included in all copies or substantial portions of the
++ * Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
++ * AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
++ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++#include <linux/export.h>
++#include <linux/module.h>
++#include <linux/sysfb.h>
++#include <drm/drmP.h>
++
++int drm_get_sysfb_dev(struct sysfb_device *sdev,
++		      struct drm_driver *driver)
++{
++	struct drm_device *dev;
++	int ret;
++
++	DRM_DEBUG("\n");
++
++	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
++	if (!dev)
++		return -ENOMEM;
++
++	dev_set_drvdata(&sdev->dev, dev);
++	dev->sysfbdev = sdev;
++	dev->dev = &sdev->dev;
++
++	mutex_lock(&drm_global_mutex);
++
++	ret = drm_fill_in_dev(dev, NULL, driver);
++	if (ret) {
++		DRM_ERROR("drm_fill_in_dev failed\n");
++		goto err_unlock;
++	}
++
++	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
++		ret = drm_get_minor(dev, &dev->control, DRM_MINOR_CONTROL);
++		if (ret)
++			goto err_unlock;
++	}
++
++	ret = drm_get_minor(dev, &dev->primary, DRM_MINOR_LEGACY);
++	if (ret)
++		goto err_ctrl;
++
++	if (dev->driver->load) {
++		ret = dev->driver->load(dev, 0);
++		if (ret)
++			goto err_primary;
++	}
++
++	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
++		ret = drm_mode_group_init_legacy_group(dev,
++				&dev->primary->mode_group);
++		if (ret)
++			goto err_primary;
++	}
++
++	list_add_tail(&dev->driver_item, &driver->device_list);
++
++	mutex_unlock(&drm_global_mutex);
++
++	DRM_INFO("initialized %s %d.%d.%d %s on minor %d\n",
++		 driver->name, driver->major, driver->minor, driver->patchlevel,
++		 driver->date, dev->primary->index);
++
++	return 0;
++
++err_primary:
++	drm_put_minor(&dev->primary);
++err_ctrl:
++	if (drm_core_check_feature(dev, DRIVER_MODESET))
++		drm_put_minor(&dev->control);
++err_unlock:
++	mutex_unlock(&drm_global_mutex);
++	kfree(dev);
++	return ret;
++}
++EXPORT_SYMBOL(drm_get_sysfb_dev);
++
++static int drm_sysfb_get_irq(struct drm_device *dev)
++{
++	return 0;
++}
++
++static const char *drm_sysfb_get_name(struct drm_device *dev)
++{
++	return dev_name(&dev->sysfbdev->dev);
++}
++
++static int drm_sysfb_set_busid(struct drm_device *dev,
++			       struct drm_master *master)
++{
++	return 0;
++}
++
++static struct drm_bus drm_sysfb_bus = {
++	.bus_type = DRIVER_BUS_SYSFB,
++	.get_irq = drm_sysfb_get_irq,
++	.get_name = drm_sysfb_get_name,
++	.set_busid = drm_sysfb_set_busid,
 +};
 +
- static int vesafb_pan_display(struct fb_var_screeninfo *var,
-                               struct fb_info *info)
- {
-@@ -182,7 +170,7 @@ static void vesafb_destroy(struct fb_info *info)
- 	framebuffer_release(info);
- }
- 
--static struct fb_ops vesafb_ops = {
-+static const struct fb_ops vesafb_ops = {
- 	.owner		= THIS_MODULE,
- 	.fb_destroy     = vesafb_destroy,
- 	.fb_setcolreg	= vesafb_setcolreg,
-@@ -192,7 +180,7 @@ static struct fb_ops vesafb_ops = {
- 	.fb_imageblit	= cfb_imageblit,
- };
- 
--static int __init vesafb_setup(char *options)
-+static int vesafb_setup(char *options)
- {
- 	char *this_opt;
- 	
-@@ -226,13 +214,29 @@ static int __init vesafb_setup(char *options)
- 	return 0;
- }
- 
--static int __init vesafb_probe(struct platform_device *dev)
-+static int vesafb_probe(struct platform_device *dev)
- {
- 	struct fb_info *info;
-+	struct vesafb_par *par;
- 	int i, err;
- 	unsigned int size_vmode;
- 	unsigned int size_remap;
- 	unsigned int size_total;
-+	struct fb_var_screeninfo vesafb_defined = {
-+		.activate	= FB_ACTIVATE_NOW,
-+		.height		= -1,
-+		.width		= -1,
-+		.right_margin	= 32,
-+		.upper_margin	= 16,
-+		.lower_margin	= 4,
-+		.vsync_len	= 4,
-+		.vmode		= FB_VMODE_NONINTERLACED,
-+	};
-+	struct fb_fix_screeninfo vesafb_fix = {
-+		.id	= "VESA VGA",
-+		.type	= FB_TYPE_PACKED_PIXELS,
-+		.accel	= FB_ACCEL_NONE,
-+	};
- 
- 	if (screen_info.orig_video_isVGA != VIDEO_TYPE_VLFB)
- 		return -ENODEV;
-@@ -287,13 +291,14 @@ static int __init vesafb_probe(struct platform_device *dev)
- 		   spaces our resource handlers simply don't know about */
- 	}
- 
--	info = framebuffer_alloc(sizeof(u32) * 256, &dev->dev);
-+	info = framebuffer_alloc(sizeof(struct vesafb_par), &dev->dev);
- 	if (!info) {
- 		release_mem_region(vesafb_fix.smem_start, size_total);
- 		return -ENOMEM;
- 	}
--	info->pseudo_palette = info->par;
--	info->par = NULL;
-+	par = info->par;
-+	par->ops = vesafb_ops;
-+	info->pseudo_palette = par->palette;
- 
- 	/* set vesafb aperture size for generic probing */
- 	info->apertures = alloc_apertures(1);
-@@ -466,7 +471,7 @@ static int __init vesafb_probe(struct platform_device *dev)
- 	       vesafb_fix.smem_start, info->screen_base,
- 	       size_remap/1024, size_total/1024);
- 
--	info->fbops = &vesafb_ops;
-+	info->fbops = &par->ops;
- 	info->var = vesafb_defined;
- 	info->fix = vesafb_fix;
- 	info->flags = FBINFO_FLAG_DEFAULT | FBINFO_MISC_FIRMWARE |
-@@ -486,6 +491,7 @@ static int __init vesafb_probe(struct platform_device *dev)
- 	}
- 	printk(KERN_INFO "fb%d: %s frame buffer device\n",
- 	       info->node, info->fix.id);
-+	platform_set_drvdata(dev, info);
- 	return 0;
- err:
- 	if (info->screen_base)
-@@ -495,7 +501,17 @@ err:
- 	return err;
- }
- 
-+static int vesafb_remove(struct platform_device *dev)
++int drm_sysfb_init(struct drm_driver *driver, struct sysfb_driver *sdrv)
 +{
-+	struct fb_info *info = platform_get_drvdata(dev);
++	DRM_DEBUG("\n");
 +
-+	unregister_framebuffer(info);
-+	return 0;
++	INIT_LIST_HEAD(&driver->device_list);
++	driver->kdriver.sysfb = sdrv;
++	driver->bus = &drm_sysfb_bus;
++
++	return sysfb_register_driver(sdrv);
 +}
++EXPORT_SYMBOL(drm_sysfb_init);
 +
- static struct platform_driver vesafb_driver = {
-+	.probe = vesafb_probe,
-+	.remove = vesafb_remove,
- 	.driver	= {
- 		.name	= "vesafb",
- 	},
-@@ -512,24 +528,34 @@ static int __init vesafb_init(void)
- 	fb_get_options("vesafb", &option);
- 	vesafb_setup(option);
- 
--	vesafb_device = platform_device_alloc("vesafb", 0);
-+	vesafb_device = platform_device_alloc("vesafb", -1);
- 	if (!vesafb_device)
- 		return -ENOMEM;
- 
-+	ret = platform_driver_register(&vesafb_driver);
-+	if (ret)
-+		goto err_dev;
-+
- 	ret = platform_device_add(vesafb_device);
--	if (!ret) {
--		ret = platform_driver_probe(&vesafb_driver, vesafb_probe);
--		if (ret)
--			platform_device_del(vesafb_device);
--	}
-+	if (ret)
-+		goto err_drv;
- 
--	if (ret) {
--		platform_device_put(vesafb_device);
--		vesafb_device = NULL;
--	}
-+	return 0;
- 
-+err_drv:
-+	platform_driver_unregister(&vesafb_driver);
-+err_dev:
-+	platform_device_put(vesafb_device);
- 	return ret;
- }
--module_init(vesafb_init);
- 
-+static void __exit vesafb_exit(void)
++void drm_sysfb_exit(struct drm_driver *driver, struct sysfb_driver *sdrv)
 +{
-+	platform_device_del(vesafb_device);
-+	platform_device_put(vesafb_device);
-+	platform_driver_unregister(&vesafb_driver);
-+}
++	DRM_DEBUG("\n");
 +
-+module_init(vesafb_init);
-+module_exit(vesafb_exit);
- MODULE_LICENSE("GPL");
++	sysfb_unregister_driver(sdrv);
++	DRM_INFO("module unloaded\n");
++}
++EXPORT_SYMBOL(drm_sysfb_exit);
++
++MODULE_AUTHOR("David Herrmann <dh.herrmann@gmail.com>");
++MODULE_DESCRIPTION("DRM sysfb support");
++MODULE_LICENSE("GPL and additional rights");
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index 3fd8280..e5d73fe 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -71,6 +71,7 @@
+ #endif
+ #include <linux/workqueue.h>
+ #include <linux/poll.h>
++#include <linux/sysfb.h>
+ #include <asm/pgalloc.h>
+ #include <drm/drm.h>
+ #include <drm/drm_sarea.h>
+@@ -157,6 +158,7 @@ int drm_err(const char *func, const char *format, ...);
+ #define DRIVER_BUS_PCI 0x1
+ #define DRIVER_BUS_PLATFORM 0x2
+ #define DRIVER_BUS_USB 0x3
++#define DRIVER_BUS_SYSFB 0x4
+ 
+ /***********************************************************************/
+ /** \name Begin the DRM... */
+@@ -953,6 +955,7 @@ struct drm_driver {
+ 		struct pci_driver *pci;
+ 		struct platform_device *platform_device;
+ 		struct usb_driver *usb;
++		struct sysfb_driver *sysfb;
+ 	} kdriver;
+ 	struct drm_bus *bus;
+ 
+@@ -1173,6 +1176,7 @@ struct drm_device {
+ 
+ 	struct platform_device *platformdev; /**< Platform device struture */
+ 	struct usb_device *usbdev;
++	struct sysfb_device *sysfbdev;
+ 
+ 	struct drm_sg_mem *sg;	/**< Scatter gather memory */
+ 	unsigned int num_crtcs;                  /**< Number of CRTCs on this device */
+diff --git a/include/drm/drm_sysfb.h b/include/drm/drm_sysfb.h
+new file mode 100644
+index 0000000..ced54d7
+--- /dev/null
++++ b/include/drm/drm_sysfb.h
+@@ -0,0 +1,35 @@
++#ifndef __DRM_SYSFB_H
++#define __DRM_SYSFB_H
++/*
++ * DRM Bus for sysfb drivers
++ *
++ * Copyright 2013 David Herrmann <dh.herrmann@gmail.com>
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the next
++ * paragraph) shall be included in all copies or substantial portions of the
++ * Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
++ * AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
++ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
++ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++#include <drmP.h>
++#include <linux/sysfb.h>
++
++int drm_sysfb_init(struct drm_driver *driver, struct sysfb_driver *sdrv);
++void drm_sysfb_exit(struct drm_driver *driver, struct sysfb_driver *sdrv);
++int drm_get_sysfb_dev(struct sysfb_device *sdev,
++		      struct drm_driver *driver);
++
++#endif /* __DRM_SYSFB_H */
 -- 
 1.8.1.3
 
