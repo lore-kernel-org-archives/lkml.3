@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3BQVDL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 16:03:11 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:56642
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	id S1753739Ab3BQVDK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 16:03:10 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:59327
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753449Ab3BQVDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753221Ab3BQVDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Feb 2013 16:03:06 -0500
 x-originating-ip: 72.167.245.219
 From: "K. Y. Srinivasan" <kys@microsoft.com>
@@ -13,9 +13,9 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
         jasowang@redhat.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 2/3] Drivers: hv: balloon: Execute balloon inflation in a separate context
-Date: Sun, 17 Feb 2013 13:31:25 -0800
-Message-Id: <1361136686-31020-2-git-send-email-kys@microsoft.com>
+Subject: [PATCH 3/3] Drivers: hv: balloon: Execute hot-add code in a separate context
+Date: Sun, 17 Feb 2013 13:31:26 -0800
+Message-Id: <1361136686-31020-3-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1361136686-31020-1-git-send-email-kys@microsoft.com>
 References: <1361136655-30979-1-git-send-email-kys@microsoft.com>
@@ -24,130 +24,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Execute the balloon inflation operation in a separate work context.
+Execute the hot-add operation in a separate work context.
 This allows us to decouple the pressure reporting activity from the
-ballooning activity. Testing has shown that this decoupling makes the
-guest more reponsive.
+"hot-add" activity.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/hv/hv_balloon.c |   34 ++++++++++++++++++++++++----------
- 1 files changed, 24 insertions(+), 10 deletions(-)
+ drivers/hv/hv_balloon.c |   40 ++++++++++++++++++++++------------------
+ 1 files changed, 22 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index 3787321..860e176 100644
+index 860e176..225a1fe 100644
 --- a/drivers/hv/hv_balloon.c
 +++ b/drivers/hv/hv_balloon.c
-@@ -412,6 +412,11 @@ struct dm_info_msg {
-  * End protocol definitions.
-  */
+@@ -417,6 +417,11 @@ struct balloon_state {
+ 	struct work_struct wrk;
+ };
  
-+struct balloon_state {
-+	__u32 num_pages;
++struct hot_add_wrk {
++	union dm_mem_page_range ha_page_range;
 +	struct work_struct wrk;
 +};
 +
  static bool hot_add;
  static bool do_hot_add;
  /*
-@@ -429,6 +434,7 @@ static atomic_t trans_id = ATOMIC_INIT(0);
- 
- static int dm_ring_size = (5 * PAGE_SIZE);
- 
-+
- /*
-  * Driver specific state.
-  */
-@@ -459,7 +465,12 @@ struct hv_dynmem_device {
- 	unsigned int num_pages_ballooned;
+@@ -470,6 +475,11 @@ struct hv_dynmem_device {
+ 	struct balloon_state balloon_wrk;
  
  	/*
--	 * This thread handles both balloon/hot-add
-+	 * State to manage the ballooning (up) operation.
++	 * State to execute the "hot-add" operation.
 +	 */
-+	struct balloon_state balloon_wrk;
++	struct hot_add_wrk ha_wrk;
 +
 +	/*
-+	 * This thread handles hot-add
+ 	 * This thread handles hot-add
  	 * requests from the host as well as notifying
  	 * the host with regards to memory pressure in
- 	 * the guest.
-@@ -657,9 +668,9 @@ static int  alloc_balloon_pages(struct hv_dynmem_device *dm, int num_pages,
+@@ -487,7 +497,7 @@ struct hv_dynmem_device {
  
+ static struct hv_dynmem_device dm_device;
  
- 
--static void balloon_up(struct hv_dynmem_device *dm, struct dm_balloon *req)
-+static void balloon_up(struct work_struct *dummy)
+-static void hot_add_req(struct hv_dynmem_device *dm, struct dm_hot_add *msg)
++static void hot_add_req(struct work_struct *dummy)
  {
--	int num_pages = req->num_pages;
-+	int num_pages = dm_device.balloon_wrk.num_pages;
- 	int num_ballooned = 0;
- 	struct dm_balloon_response *bl_resp;
- 	int alloc_unit;
-@@ -684,14 +695,14 @@ static void balloon_up(struct hv_dynmem_device *dm, struct dm_balloon *req)
  
+ 	struct dm_hot_add_response resp;
+@@ -510,8 +520,8 @@ static void hot_add_req(struct hv_dynmem_device *dm, struct dm_hot_add *msg)
+ 	resp.page_count = 0;
+ 	resp.result = 0;
  
- 		num_pages -= num_ballooned;
--		num_ballooned = alloc_balloon_pages(dm, num_pages,
-+		num_ballooned = alloc_balloon_pages(&dm_device, num_pages,
- 						bl_resp, alloc_unit,
- 						 &alloc_error);
+-	dm->state = DM_INITIALIZED;
+-	vmbus_sendpacket(dm->dev->channel, &resp,
++	dm_device.state = DM_INITIALIZED;
++	vmbus_sendpacket(dm_device.dev->channel, &resp,
+ 			sizeof(struct dm_hot_add_response),
+ 			(unsigned long)NULL,
+ 			VM_PKT_DATA_INBAND, 0);
+@@ -772,7 +782,6 @@ static int dm_thread_func(void *dm_dev)
+ {
+ 	struct hv_dynmem_device *dm = dm_dev;
+ 	int t;
+-	unsigned long  scan_start;
  
- 		if ((alloc_error) || (num_ballooned == num_pages)) {
- 			bl_resp->more_pages = 0;
- 			done = true;
--			dm->state = DM_INITIALIZED;
-+			dm_device.state = DM_INITIALIZED;
- 		}
+ 	while (!kthread_should_stop()) {
+ 		t = wait_for_completion_timeout(&dm_device.config_event, 1*HZ);
+@@ -784,19 +793,6 @@ static int dm_thread_func(void *dm_dev)
+ 		if (t == 0)
+ 			post_status(dm);
  
- 		/*
-@@ -719,7 +730,7 @@ static void balloon_up(struct hv_dynmem_device *dm, struct dm_balloon *req)
- 			pr_info("Balloon response failed\n");
- 
- 			for (i = 0; i < bl_resp->range_count; i++)
--				free_balloon_pages(dm,
-+				free_balloon_pages(&dm_device,
- 						 &bl_resp->range_array[i]);
- 
- 			done = true;
-@@ -775,9 +786,6 @@ static int dm_thread_func(void *dm_dev)
- 
- 		scan_start = jiffies;
- 		switch (dm->state) {
--		case DM_BALLOON_UP:
--			balloon_up(dm, (struct dm_balloon *)recv_buffer);
+-		scan_start = jiffies;
+-		switch (dm->state) {
+-
+-		case DM_HOT_ADD:
+-			hot_add_req(dm, (struct dm_hot_add *)recv_buffer);
 -			break;
+-		default:
+-			break;
+-		}
+-
+-		if (!time_in_range(jiffies, scan_start, scan_start + HZ))
+-			post_status(dm);
+-
+ 	}
  
- 		case DM_HOT_ADD:
- 			hot_add_req(dm, (struct dm_hot_add *)recv_buffer);
-@@ -861,6 +869,7 @@ static void balloon_onchannelcallback(void *context)
- 	struct dm_message *dm_msg;
+ 	return 0;
+@@ -870,6 +866,8 @@ static void balloon_onchannelcallback(void *context)
  	struct dm_header *dm_hdr;
  	struct hv_dynmem_device *dm = hv_get_drvdata(dev);
-+	struct dm_balloon *bal_msg;
+ 	struct dm_balloon *bal_msg;
++	struct dm_hot_add *ha_msg;
++	union dm_mem_page_range *ha_pg_range;
  
  	memset(recv_buffer, 0, sizeof(recv_buffer));
  	vmbus_recvpacket(dev->channel, recv_buffer,
-@@ -882,8 +891,12 @@ static void balloon_onchannelcallback(void *context)
+@@ -906,8 +904,13 @@ static void balloon_onchannelcallback(void *context)
  			break;
  
- 		case DM_BALLOON_REQUEST:
-+			if (dm->state == DM_BALLOON_UP)
-+				pr_warn("Currently ballooning\n");
-+			bal_msg = (struct dm_balloon *)recv_buffer;
- 			dm->state = DM_BALLOON_UP;
+ 		case DM_MEM_HOT_ADD_REQUEST:
++			if (dm->state == DM_HOT_ADD)
++				pr_warn("Currently hot-adding\n");
+ 			dm->state = DM_HOT_ADD;
 -			complete(&dm->config_event);
-+			dm_device.balloon_wrk.num_pages = bal_msg->num_pages;
-+			schedule_work(&dm_device.balloon_wrk.wrk);
++			ha_msg = (struct dm_hot_add *)recv_buffer;
++			ha_pg_range = &ha_msg->range;
++			dm_device.ha_wrk.ha_page_range = *ha_pg_range;
++			schedule_work(&dm_device.ha_wrk.wrk);
  			break;
  
- 		case DM_UNBALLOON_REQUEST:
-@@ -937,6 +950,7 @@ static int balloon_probe(struct hv_device *dev,
- 	dm_device.next_version = DYNMEM_PROTOCOL_VERSION_WIN7;
+ 		case DM_INFO_MESSAGE:
+@@ -951,6 +954,7 @@ static int balloon_probe(struct hv_device *dev,
  	init_completion(&dm_device.host_event);
  	init_completion(&dm_device.config_event);
-+	INIT_WORK(&dm_device.balloon_wrk.wrk, balloon_up);
+ 	INIT_WORK(&dm_device.balloon_wrk.wrk, balloon_up);
++	INIT_WORK(&dm_device.ha_wrk.wrk, hot_add_req);
  
  	dm_device.thread =
  		 kthread_run(dm_thread_func, &dm_device, "hv_balloon");
