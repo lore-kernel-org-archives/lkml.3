@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757094Ab3BQXGt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 18:06:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45706 "EHLO
+	id S1757070Ab3BQXGs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 18:06:48 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45713 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755295Ab3BQWzZ (ORCPT
+	by vger.kernel.org with ESMTP id S1755329Ab3BQWzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Feb 2013 17:55:25 -0500
-Message-Id: <20130217225008.595345988@decadent.org.uk>
+Message-Id: <20130217225007.567352657@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Feb 2013 22:51:01 +0000
+Date: Sun, 17 Feb 2013 22:50:52 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Eric Dumazet <edumazet@google.com>,
-        =?ISO-8859-15?q?Pasi=20K=C3=A4rkk=C3=A4inen?= <pasik@iki.fi>,
-        Neal Cardwell <ncardwell@google.com>,
-        =?ISO-8859-15?q?Ilpo=20J=C3=A4rvinen?= <ilpo.jarvinen@helsinki.fi>,
-        Yuchung Cheng <ycheng@google.com>,
+Cc: akpm@linux-foundation.org, Phil Sutter <phil.sutter@viprinet.com>,
+        Johann Baudy <johann.baudy@gnu-log.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 60/66] tcp: frto should not set snd_cwnd to 0
+Subject: [ 51/66] packet: fix leakage of tx_ring memory
 In-Reply-To: <20130217225001.621306883@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,44 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Phil Sutter <phil.sutter@viprinet.com>
 
-[ Upstream commit 2e5f421211ff76c17130b4597bc06df4eeead24f ]
+[ Upstream commit 9665d5d62487e8e7b1f546c00e11107155384b9a ]
 
-Commit 9dc274151a548 (tcp: fix ABC in tcp_slow_start())
-uncovered a bug in FRTO code :
-tcp_process_frto() is setting snd_cwnd to 0 if the number
-of in flight packets is 0.
+When releasing a packet socket, the routine packet_set_ring() is reused
+to free rings instead of allocating them. But when calling it for the
+first time, it fills req->tp_block_nr with the value of rb->pg_vec_len
+which in the second invocation makes it bail out since req->tp_block_nr
+is greater zero but req->tp_block_size is zero.
 
-As Neal pointed out, if no packet is in flight we lost our
-chance to disambiguate whether a loss timeout was spurious.
+This patch solves the problem by passing a zeroed auto-variable to
+packet_set_ring() upon each invocation from packet_release().
 
-We should assume it was a proper loss.
+As far as I can tell, this issue exists even since 69e3c75 (net: TX_RING
+and packet mmap), i.e. the original inclusion of TX ring support into
+af_packet, but applies only to sockets with both RX and TX ring
+allocated, which is probably why this was unnoticed all the time.
 
-Reported-by: Pasi Kärkkäinen <pasik@iki.fi>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
-Cc: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: Phil Sutter <phil.sutter@viprinet.com>
+Cc: Johann Baudy <johann.baudy@gnu-log.net>
+Cc: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/tcp_input.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/packet/af_packet.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index aab8f08..308b5b4 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -3635,7 +3635,8 @@ static int tcp_process_frto(struct sock *sk, int flag)
- 	    ((tp->frto_counter >= 2) && (flag & FLAG_RETRANS_DATA_ACKED)))
- 		tp->undo_marker = 0;
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 85afc13..835fcea 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -2422,13 +2422,15 @@ static int packet_release(struct socket *sock)
  
--	if (!before(tp->snd_una, tp->frto_highmark)) {
-+	if (!before(tp->snd_una, tp->frto_highmark) ||
-+	    !tcp_packets_in_flight(tp)) {
- 		tcp_enter_frto_loss(sk, (tp->frto_counter == 1 ? 2 : 3), flag);
- 		return 1;
- 	}
+ 	packet_flush_mclist(sk);
+ 
+-	memset(&req_u, 0, sizeof(req_u));
+-
+-	if (po->rx_ring.pg_vec)
++	if (po->rx_ring.pg_vec) {
++		memset(&req_u, 0, sizeof(req_u));
+ 		packet_set_ring(sk, &req_u, 1, 0);
++	}
+ 
+-	if (po->tx_ring.pg_vec)
++	if (po->tx_ring.pg_vec) {
++		memset(&req_u, 0, sizeof(req_u));
+ 		packet_set_ring(sk, &req_u, 1, 1);
++	}
+ 
+ 	fanout_release(sk);
+ 
 
 
