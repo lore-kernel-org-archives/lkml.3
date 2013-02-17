@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab3BQCuD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 21:50:03 -0500
-Received: from smtprelay02.ispgateway.de ([80.67.31.36]:42120 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353Ab3BQCuB (ORCPT
+	id S1755415Ab3BQC5T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 21:57:19 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:38731 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755275Ab3BQC5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 21:50:01 -0500
-X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Feb 2013 21:50:00 EST
-References: <20130214153255.GA5033@rhlx01.hs-esslingen.de> <744357E9AAD1214791ACBA4B0B90926329ED72@SHSMSX101.ccr.corp.intel.com> <20130215154931.GA26213@rhlx01.hs-esslingen.de> <CACWwPiuk0GynEwe3RuKndWnsYwTuPhO0ob6sJ6ve34u1_RtkYw@mail.gmail.com> <20130216214712.GA13494@pd.tnic>
-Message-ID: <cone.1361068993.271211.4532.1000@galar>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Alexander Lam <azl@andrew.cmu.edu>,
-        =?UTF-8?B?bGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZw==?= 
-	<linux-kernel@vger.kernel.org>,
-        Andreas Mohr <andi@lisas.de>
-Subject: Re: thermal governor: does it actually work??
-Date: Sun, 17 Feb 2013 03:43:13 +0100
-Mime-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: NDA0MDk0
+	Sat, 16 Feb 2013 21:57:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <1360608173-12907-2-git-send-email-shc_work@mail.ru>
+References: <1360608173-12907-1-git-send-email-shc_work@mail.ru>
+	<1360608173-12907-2-git-send-email-shc_work@mail.ru>
+Date: Sun, 17 Feb 2013 10:57:16 +0800
+Message-ID: <CAP1dx+yVg+CfRFjy2dTs6JRpDP=3bF9do_NQbQtBThj+2ijV5g@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] mfd: syscon: Removed unneeded field "dev" from
+ private driver structure
+From: Dong Aisheng <dong.aisheng@linaro.org>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris, Alex, Andreas,
+On 12 February 2013 02:42, Alexander Shiyan <shc_work@mail.ru> wrote:
+>
+> Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
 
-what do you think about this acerhdf patch?
-I think it makes things straight and implements the two-point regulation of 
-acerhdf to be for correctly handled by the thermal layer:
+Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
 
+Regards
+Dong Aisheng
 
->From 7b39bd8837de6dc5658ac3e54ac5d4df9d351528 Mon Sep 17 00:00:00 2001
-From: Peter Feuerer <peter@piie.net>
-Date: Sun, 17 Feb 2013 03:29:19 +0100
-Subject: [PATCH] added two more trip points to acerhdf, this allows thermal
- layer to correctly handle the two point regulation of acerhdf. Trip point 0
- will be active from 0 degree to "fanoff" and is marked as passive, then trip
- point 1 is valid from "fanoff" to "fanon" value and is marked as active,
- even if it's only really active in case temperature is going down from trip
- point 2. Trip point 2 will be valid above "fanon" value and is also marked
- as active.
-
----
- drivers/platform/x86/acerhdf.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
-index f94467c..c36633b 100644
---- a/drivers/platform/x86/acerhdf.c
-+++ b/drivers/platform/x86/acerhdf.c
-@@ -400,6 +400,10 @@ static int acerhdf_get_trip_type(struct thermal_zone_device *thermal, int trip,
- 				 enum thermal_trip_type *type)
- {
- 	if (trip == 0)
-+		*type = THERMAL_TRIP_PASSIVE;
-+	if (trip == 1)
-+		*type = THERMAL_TRIP_ACTIVE;
-+	if (trip == 2)
- 		*type = THERMAL_TRIP_ACTIVE;
- 
- 	return 0;
-@@ -409,6 +413,10 @@ static int acerhdf_get_trip_temp(struct thermal_zone_device *thermal, int trip,
- 				 unsigned long *temp)
- {
- 	if (trip == 0)
-+		*temp = 0;
-+	if (trip == 1)
-+		*temp = fanoff;
-+	if (trip == 2)
- 		*temp = fanon;
- 
- 	return 0;
-@@ -486,7 +494,8 @@ static int acerhdf_set_cur_state(struct thermal_cooling_device *cdev,
- 		    (cur_temp < fanoff))
- 			acerhdf_change_fanstate(ACERHDF_FAN_OFF);
- 	} else {
--		if (cur_state == ACERHDF_FAN_OFF)
-+		if ((cur_state == ACERHDF_FAN_OFF) &&
-+		    (cur_temp > fanon))
- 			acerhdf_change_fanstate(ACERHDF_FAN_AUTO);
- 	}
- 	return 0;
-@@ -661,8 +670,8 @@ static int acerhdf_register_thermal(void)
- 	if (IS_ERR(cl_dev))
- 		return -EINVAL;
- 
--	thz_dev = thermal_zone_device_register("acerhdf", 1, 0, NULL,
--					      &acerhdf_dev_ops, NULL, 0,
-+	thz_dev = thermal_zone_device_register("acerhdf", 3, 0, NULL,
-+					      &acerhdf_dev_ops, (kernelmode) ? interval*1000 : 0,
- 					      (kernelmode) ? interval*1000 : 0);
- 	if (IS_ERR(thz_dev))
- 		return -EINVAL;
--- 
-1.8.1.3
-
+> ---
+>  drivers/mfd/syscon.c | 5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+>
+> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> index e1886fb..4a7ed5a 100644
+> --- a/drivers/mfd/syscon.c
+> +++ b/drivers/mfd/syscon.c
+> @@ -24,17 +24,15 @@
+>  static struct platform_driver syscon_driver;
+>
+>  struct syscon {
+> -       struct device *dev;
+>         void __iomem *base;
+>         struct regmap *regmap;
+>  };
+>
+>  static int syscon_match(struct device *dev, void *data)
+>  {
+> -       struct syscon *syscon = dev_get_drvdata(dev);
+>         struct device_node *dn = data;
+>
+> -       return (syscon->dev->of_node == dn) ? 1 : 0;
+> +       return (dev->of_node == dn) ? 1 : 0;
+>  }
+>
+>  struct regmap *syscon_node_to_regmap(struct device_node *np)
+> @@ -129,7 +127,6 @@ static int syscon_probe(struct platform_device *pdev)
+>                 return PTR_ERR(syscon->regmap);
+>         }
+>
+> -       syscon->dev = dev;
+>         platform_set_drvdata(pdev, syscon);
+>
+>         dev_info(dev, "syscon regmap start 0x%x end 0x%x registered\n",
+> --
+> 1.7.12.4
+>
