@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab3BQUCp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 15:02:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51332 "EHLO mx1.redhat.com"
+	id S1752979Ab3BQUeN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 15:34:13 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:39133 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752675Ab3BQUCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 15:02:44 -0500
-Date: Sun, 17 Feb 2013 21:01:03 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Neil Horman <nhorman@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] coredump: fix the ancient signal problems
-Message-ID: <20130217200103.GC22544@redhat.com>
-References: <20130217191819.GA21778@redhat.com> <CA+55aFx-9Ajb13JfxghNMzoHMJWDtH=a0DZfz2Q-eCBnHyVDPQ@mail.gmail.com> <20130217195044.GA22544@redhat.com>
+	id S1752891Ab3BQUeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 15:34:11 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jonas Heinrich <onny@project-insanity.org>
+Cc: hpa@zytor.com, len.brown@intel.com, pavel@ucw.cz, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [Bisected] 3.7-rc1 can't resume
+Date: Sun, 17 Feb 2013 21:40:42 +0100
+Message-ID: <3513716.1dZa4Epkei@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130217174824.GA649@onny>
+References: <20130217174824.GA649@onny>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130217195044.GA22544@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17, Oleg Nesterov wrote:
->
-> On 02/17, Linus Torvalds wrote:
-> >
-> > SIGKILL really is very very special. Having it kill a
-> > coredump in progress sounds fine to me.
->
-> Great.
+On Sunday, February 17, 2013 05:48:25 PM Jonas Heinrich wrote:
+> Hello,
+> since kernel version 3.7-rc1 I can't resume my notebook (Thinkpad T43)
+> from suspend2ram anymore.
+> 
+> I started a kernel bisection (see bisection_log in attachement). Also
+> see kernel conifg @ attachement.
+> 
+> The culprit commit seems to be: 
+> - x86, smap: Do not abuse the [f][x]rstor_checking() functions for user space
+> commit e139e95590dfebab81841bf7a3ac46500f51a47c
 
-Forgot to mention just in case...
+Does the commit immediately preceding this one behave correctly?
 
-We could probably make a simpler patch. do_coredump() can ignore
-all signals except SIGKILL from the start. But when I suggested
-this change in the past I was told that the dump handler looks
-(or may look) at /proc/pid/status so we shouldn't do this.
+Rafael
 
-And instead of s/SIGNAL_GROUP_EXIT/group_exit_task/ in 2/3 we
-could add the ugly but simple checks in __send_signal() paths.
-Say we could rely on PF_DUMPCORE (which btw asks for cleanup
-anyway).
 
-However, I think that using ->group_exit_task is better (if
-correct!) and simply more logical.
-
-Oleg.
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
