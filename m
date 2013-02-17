@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab3BQIlU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 03:41:20 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:49964 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab3BQIlT (ORCPT
+	id S1755662Ab3BQJA0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 04:00:26 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:47248 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755311Ab3BQJAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 03:41:19 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 17 Feb 2013 09:41:00 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, stern@rowland.harvard.edu
-Subject: Re: [PATCH v3] firewire: Fix ohci free_irq() warning
-Message-ID: <20130217094100.7a5d17e3@stein>
-In-Reply-To: <1360061927-3359-1-git-send-email-mark.einon@gmail.com>
-References: <1359748245-3674-1-git-send-email-mark.einon@gmail.com>
-	<1360061927-3359-1-git-send-email-mark.einon@gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 17 Feb 2013 04:00:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <1359391359-25783-11-git-send-email-matthew.garrett@nebula.com>
+References: <1359391359-25783-1-git-send-email-matthew.garrett@nebula.com>
+	<1359391359-25783-11-git-send-email-matthew.garrett@nebula.com>
+Date: Sun, 17 Feb 2013 17:00:23 +0800
+Message-ID: <CABqxG0cJGp7UEREvMW49QA0BfDXPsyEbAuMMLZwcHPdUAKT+Dw@mail.gmail.com>
+Subject: Re: [PATCH 10/15] acpi: Ignore acpi_rsdp kernel parameter in a secure
+ boot environment
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>,
+        lxiang@redhat.com, Vivek Goyal <vgoyal@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Feb 05 Mark Einon wrote:
-> This patch fixes the kernel warning below, generated when putting an
-> MSI MS-1727 GT740 laptop into suspend mode. The call sequence in this
-> case calls free_irq() twice, once in pci_suspend() and once then in
-> pci_remove().
-> 
-> The fix breaks up the ohci_enable() call into four separate calls -
-> ohci_enable_regs(), ohci_create_irq(), ohci_enable_irq() and
-> ohci_enable_run(). The original call sequence of ohci_enable() is replaced
-> by the four calls, but the ohci_enable() called from pci_resume() is
-> replaced by three of the calls, missing out ohci_create_irq().
-> 
-> Finally, a new call, ohci_disable_irq(), replaces the free_irq() in
-> pci_suspend() which sets the irq mask to zero.
-[...]
+On Tue, Jan 29, 2013 at 12:42 AM, Matthew Garrett
+<matthew.garrett@nebula.com> wrote:
+> From: Josh Boyer <jwboyer@redhat.com>
+>
+> This option allows userspace to pass the RSDP address to the kernel.  This
+> could potentially be used to circumvent the secure boot trust model.
+> We ignore the setting if we don't have the CAP_COMPROMISE_KERNEL capability.
+>
+> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+> ---
+>  drivers/acpi/osl.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index bd22f86..88251d2 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -246,7 +246,7 @@ early_param("acpi_rsdp", setup_acpi_rsdp);
+>  acpi_physical_address __init acpi_os_get_root_pointer(void)
+>  {
+>  #ifdef CONFIG_KEXEC
+> -       if (acpi_rsdp)
+> +       if (acpi_rsdp && capable(CAP_COMPROMISE_KERNEL))
 
-Hi,
-I haven't forgotten about this patch; just didn't fully check it yet
-because I still wanted to look whether there is a more minimalistic
-way.  Perhaps I'll post something in the next days.
 
-> @@ -3766,7 +3811,7 @@ static int pci_suspend(struct pci_dev *dev, pm_message_t state)
->  	int err;
->  
->  	software_reset(ohci);
-> -	free_irq(dev->irq, ohci);
-> +	ohci_disable_irq(ohci);
->  	pci_disable_msi(dev);
->  	err = pci_save_state(dev);
->  	if (err) {
-> @@ -3802,10 +3847,13 @@ static int pci_resume(struct pci_dev *dev)
->  		reg_write(ohci, OHCI1394_GUIDHi, (u32)(ohci->card.guid >> 32));
->  	}
->  
-> -	err = ohci_enable(&ohci->card, NULL, 0);
-> +	err = ohci_enable_regs(&ohci->card, NULL, 0);
->  	if (err)
->  		return err;
->  
-> +	ohci_enable_irq(ohci);
-> +	ohci_enable_run(ohci);
-> +
->  	ohci_resume_iso_dma(ohci);
->  
->  	return 0;
+This caused an issue in a kdump test even without secure boot enabled.
+Looks like security subsystem init is not initialized yet at this
+point.
 
-Looks like pci_{en,dis}able_msi are now unbalanced.  I suppose we better
-place them immediately around {request,free}_irq.
+See redhat bug 906225:
+https://bugzilla.redhat.com/show_bug.cgi?id=906225
+
+
+>                 return acpi_rsdp;
+>  #endif
+>
+> --
+> 1.8.0.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
 -- 
-Stefan Richter
--=====-===-= --=- =---=
-http://arcgraph.de/sr/
+Regards
+Dave
