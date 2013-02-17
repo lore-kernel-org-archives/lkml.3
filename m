@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab3BQPpg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 10:45:36 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:42311 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753078Ab3BQPpf (ORCPT
+	id S1754422Ab3BQPrc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 10:47:32 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:55190 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264Ab3BQPra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 10:45:35 -0500
+	Sun, 17 Feb 2013 10:47:30 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mikael Pettersson <mikpe@it.uu.se>
+Subject: Re: [PATCH 02/11] ARM: samsung: fix assembly syntax for new gas
+Date: Sun, 17 Feb 2013 15:47:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        stable@vger.kernel.org, arm@kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+References: <1360849767-1463135-1-git-send-email-arnd@arndb.de> <20130216232550.GQ17833@n2100.arm.linux.org.uk> <20768.63816.104018.377650@pilspetsen.it.uu.se>
+In-Reply-To: <20768.63816.104018.377650@pilspetsen.it.uu.se>
 MIME-Version: 1.0
-In-Reply-To: <201302151416.18121.arnd@arndb.de>
-References: <1360880818-4071454-1-git-send-email-arnd@arndb.de>
-	<1360880818-4071454-8-git-send-email-arnd@arndb.de>
-	<20130214230501.GA30269@kroah.com>
-	<201302151416.18121.arnd@arndb.de>
-Date: Sun, 17 Feb 2013 23:45:33 +0800
-Message-ID: <CAN1soZwfykw8A3EPoBzvxhxFk7N1PN=b8Fz4LYps9yAWD6W0Eg@mail.gmail.com>
-Subject: Re: fb: mmp: include linux/platform_device.h
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Zhou Zhu <zzhu3@marvell.com>, Lisa Du <cldu@marvell.com>,
-        Guoqing Li <ligq@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302171547.11614.arnd@arndb.de>
+X-Provags-ID: V02:K0:OrSc8q272kqxSFHpmAnxILUQIdTrE9VVlA4gG8JsVjJ
+ WprNGfAukjQRNfao1qPex+TsHEK1hm6bY7n6kjnyyeaRrbmtX6
+ GPTOYJ36yfuDQWAmAb8kPbxwsmr1Bz7/9UsUPSCCqYiWwgkzA3
+ wqpJoYOOpOWO0d1gGITVS2WcclnflRfZ0YstRa8rpvBNI2VgPk
+ KGCBS1tUWgAhwpJNa9NgG0vQXIT2YNrnQmA5ZJ/+wZxDKDAw/u
+ 6QSZIKPbUdKAwpA112cLcPsYxzr67YfPMUdzyn7hUdFEMkx/6T
+ TCDmNRGs0PUOs611XRBSriHtQs3K9PTTA1R7nluGLcGr1fpEId
+ 1PeSjy830rXEJQEdoiIo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 10:16 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> Patch 16559ae "kgdb: remove #include <linux/serial_8250.h> from kgdb.h"
-> changes the kgdb.h file so that drivers including it do not implicitly
-> include linux/platform_device.h. The mmp framebuffer driver is new,
-> so Greg did not have a chance to fix it up when introducing his change.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-> On Thursday 14 February 2013, Greg Kroah-Hartman wrote:
->> On Thu, Feb 14, 2013 at 11:26:56PM +0100, Arnd Bergmann wrote:
->> > Patch 16559ae "kgdb: remove #include <linux/serial_8250.h> from kgdb.h"
->> > removed an implicit inclusion of linux/platform_device.h
->> > In a number of places. This adds back explicit inclusions in a few
->> > more places I found.
->>
->> >  drivers/video/mmp/fb/mmpfb.c             | 1 +
->>
->> This file isn't my tty tree, so I can't apply that part of the patch,
->> but I've applied the rest of the patch, and the 2 others you sent me to
->> fix this issue.
->
-> Right. It seems the driver is only in Andrew's tree. Andrew, can you
-> add this hunk on top?
->
-> diff --git a/drivers/video/mmp/fb/mmpfb.c b/drivers/video/mmp/fb/mmpfb.c
-> index f34a3a9..6d1fa96 100644
-> --- a/drivers/video/mmp/fb/mmpfb.c
-> +++ b/drivers/video/mmp/fb/mmpfb.c
-> @@ -21,6 +21,7 @@
->   */
->  #include <linux/module.h>
->  #include <linux/dma-mapping.h>
-> +#include <linux/platform_device.h>
->  #include "mmpfb.h"
->
->  static int var_to_pixfmt(struct fb_var_screeninfo *var)
+On Sunday 17 February 2013, Mikael Pettersson wrote:
+> Russell King - ARM Linux writes:
+>  > On Thu, Feb 14, 2013 at 02:49:18PM +0100, Arnd Bergmann wrote:
+>  > > Recent assembler versions complain about extraneous
+>  > > whitespace inside [] brackets. This fixes all of
+>  > > these instances for the samsung platforms. We should
+>  > > backport this to all kernels that might need to
+>  > > be built with new binutils.
+>  > 
+>  > I hope that's also been reported as a bug to the binutils people.
+> 
+> See PR gas/14887, a post binutils-2.23.1 regression which seems
+> to be fixed on trunk but not on 2.23 branch.
 
-Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Ok, thanks for the info, I just came to the same conclusion a few minutes
+before your reply.
+
+Since I have some binutils people listening now, maybe someone can
+comment on the issue I tried working around in
+https://patchwork.kernel.org/patch/2013211/
+
+	Arnd
