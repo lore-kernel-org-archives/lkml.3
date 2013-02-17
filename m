@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab3BQWzj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 17:55:39 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45664 "EHLO
+	id S1756470Ab3BQWzs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 17:55:48 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45661 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755131Ab3BQWzV (ORCPT
+	by vger.kernel.org with ESMTP id S1755119Ab3BQWzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 17:55:21 -0500
-Message-Id: <20130217225008.947357407@decadent.org.uk>
+	Sun, 17 Feb 2013 17:55:19 -0500
+Message-Id: <20130217225002.974821217@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Feb 2013 22:51:04 +0000
+Date: Sun, 17 Feb 2013 22:50:12 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Sarveshwar Bandi <sarveshwar.bandi@emulex.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 63/66] bridge: Pull ip header into skb->data before looking  into ip header.
+Cc: akpm@linux-foundation.org, Bing Zhao <bzhao@marvell.com>,
+        Amitkumar Karwar <akarwar@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 11/66] mwifiex: fix incomplete scan in case of IE parsing error
 In-Reply-To: <20130217225001.621306883@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,34 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-[ Upstream commit 6caab7b0544e83e6c160b5e80f5a4a7dd69545c7 ]
+commit 8a7d7cbf7b5ff9912ef50b3e94c9ad9f37b1c75f upstream.
 
-If lower layer driver leaves the ip header in the skb fragment, it needs to
-be first pulled into skb->data before inspecting ip header length or ip version
-number.
+A scan request is split into multiple scan commands queued in
+scan_pending_q. Each scan command will be sent to firmware and
+its response is handlded one after another.
 
-Signed-off-by: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+If any error is detected while parsing IE in command response
+buffer the remaining data will be ignored and error is returned.
+
+We should check if there is any more scan commands pending in
+the queue before returning error. This ensures that we will call
+cfg80211_scan_done if this is the last scan command, or send
+next scan command in scan_pending_q to firmware.
+
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/bridge/br_netfilter.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/mwifiex/scan.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
-index 577ea5d..7c1745d 100644
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -245,6 +245,9 @@ static int br_parse_ip_options(struct sk_buff *skb)
- 	struct net_device *dev = skb->dev;
- 	u32 len;
+--- a/drivers/net/wireless/mwifiex/scan.c
++++ b/drivers/net/wireless/mwifiex/scan.c
+@@ -1594,7 +1594,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 		dev_err(adapter->dev, "SCAN_RESP: too many AP returned (%d)\n",
+ 		       scan_rsp->number_of_sets);
+ 		ret = -1;
+-		goto done;
++		goto check_next_scan;
+ 	}
  
-+	if (!pskb_may_pull(skb, sizeof(struct iphdr)))
-+		goto inhdr_error;
-+
- 	iph = ip_hdr(skb);
- 	opt = &(IPCB(skb)->opt);
+ 	bytes_left = le16_to_cpu(scan_rsp->bss_descript_size);
+@@ -1663,7 +1663,8 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 		if (!beacon_size || beacon_size > bytes_left) {
+ 			bss_info += bytes_left;
+ 			bytes_left = 0;
+-			return -1;
++			ret = -1;
++			goto check_next_scan;
+ 		}
+ 
+ 		/* Initialize the current working beacon pointer for this BSS
+@@ -1716,7 +1717,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 				dev_err(priv->adapter->dev, "%s: in processing"
+ 					" IE, bytes left < IE length\n",
+ 					__func__);
+-				goto done;
++				goto check_next_scan;
+ 			}
+ 			if (element_id == WLAN_EID_DS_PARAMS) {
+ 				channel = *(u8 *) (current_ptr +
+@@ -1782,6 +1783,7 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 		}
+ 	}
+ 
++check_next_scan:
+ 	spin_lock_irqsave(&adapter->scan_pending_q_lock, flags);
+ 	if (list_empty(&adapter->scan_pending_q)) {
+ 		spin_unlock_irqrestore(&adapter->scan_pending_q_lock, flags);
+@@ -1812,7 +1814,6 @@ int mwifiex_ret_802_11_scan(struct mwifi
+ 		mwifiex_insert_cmd_to_pending_q(adapter, cmd_node, true);
+ 	}
+ 
+-done:
+ 	return ret;
+ }
  
 
 
