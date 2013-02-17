@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab3BQXGT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 18:06:19 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45705 "EHLO
+	id S1757029Ab3BQXGf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 18:06:35 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45697 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755403Ab3BQWz0 (ORCPT
+	by vger.kernel.org with ESMTP id S1755241Ab3BQWzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 17:55:26 -0500
-Message-Id: <20130217225007.450605139@decadent.org.uk>
+	Sun, 17 Feb 2013 17:55:25 -0500
+Message-Id: <20130217225007.222380532@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Feb 2013 22:50:51 +0000
+Date: Sun, 17 Feb 2013 22:50:49 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Marcelo Ricardo Leitner <mleitner@redhat.com>,
-        Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 50/66] ipv6: do not create neighbor entries for local  delivery
+Cc: akpm@linux-foundation.org, Eric Dumazet <edumazet@google.com>,
+        Ben Greear <greearb@candelatech.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 48/66] net: loopback: fix a dst refcounting issue
 In-Reply-To: <20130217225001.621306883@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,40 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Ricardo Leitner <mleitner@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit bd30e947207e2ea0ff2c08f5b4a03025ddce48d3 ]
+[ Upstream commit 794ed393b707f01858f5ebe2ae5eabaf89d00022 ]
 
-They will be created at output, if ever needed. This avoids creating
-empty neighbor entries when TPROXYing/Forwarding packets for addresses
-that are not even directly reachable.
+Ben Greear reported crashes in ip_rcv_finish() on a stress
+test involving many macvlans.
 
-Note that IPv4 already handles it this way. No neighbor entries are
-created for local input.
+We tracked the bug to a dst use after free. ip_rcv_finish()
+was calling dst->input() and got garbage for dst->input value.
 
-Tested by myself and customer.
+It appears the bug is in loopback driver, lacking
+a skb_dst_force() before calling netif_rx().
 
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
+As a result, a non refcounted dst, normally protected by a
+RCU read_lock section, was escaping this section and could
+be freed before the packet being processed.
+
+  [<ffffffff813a3c4d>] loopback_xmit+0x64/0x83
+  [<ffffffff81477364>] dev_hard_start_xmit+0x26c/0x35e
+  [<ffffffff8147771a>] dev_queue_xmit+0x2c4/0x37c
+  [<ffffffff81477456>] ? dev_hard_start_xmit+0x35e/0x35e
+  [<ffffffff8148cfa6>] ? eth_header+0x28/0xb6
+  [<ffffffff81480f09>] neigh_resolve_output+0x176/0x1a7
+  [<ffffffff814ad835>] ip_finish_output2+0x297/0x30d
+  [<ffffffff814ad6d5>] ? ip_finish_output2+0x137/0x30d
+  [<ffffffff814ad90e>] ip_finish_output+0x63/0x68
+  [<ffffffff814ae412>] ip_output+0x61/0x67
+  [<ffffffff814ab904>] dst_output+0x17/0x1b
+  [<ffffffff814adb6d>] ip_local_out+0x1e/0x23
+  [<ffffffff814ae1c4>] ip_queue_xmit+0x315/0x353
+  [<ffffffff814adeaf>] ? ip_send_unicast_reply+0x2cc/0x2cc
+  [<ffffffff814c018f>] tcp_transmit_skb+0x7ca/0x80b
+  [<ffffffff814c3571>] tcp_connect+0x53c/0x587
+  [<ffffffff810c2f0c>] ? getnstimeofday+0x44/0x7d
+  [<ffffffff810c2f56>] ? ktime_get_real+0x11/0x3e
+  [<ffffffff814c6f9b>] tcp_v4_connect+0x3c2/0x431
+  [<ffffffff814d6913>] __inet_stream_connect+0x84/0x287
+  [<ffffffff814d6b38>] ? inet_stream_connect+0x22/0x49
+  [<ffffffff8108d695>] ? _local_bh_enable_ip+0x84/0x9f
+  [<ffffffff8108d6c8>] ? local_bh_enable+0xd/0x11
+  [<ffffffff8146763c>] ? lock_sock_nested+0x6e/0x79
+  [<ffffffff814d6b38>] ? inet_stream_connect+0x22/0x49
+  [<ffffffff814d6b49>] inet_stream_connect+0x33/0x49
+  [<ffffffff814632c6>] sys_connect+0x75/0x98
+
+This bug was introduced in linux-2.6.35, in commit
+7fee226ad2397b (net: add a noref bit on skb dst)
+
+skb_dst_force() is enforced in dev_queue_xmit() for devices having a
+qdisc.
+
+Reported-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Ben Greear <greearb@candelatech.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv6/route.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/loopback.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 19724bd..791c1fa 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -819,7 +819,8 @@ restart:
- 	dst_hold(&rt->dst);
- 	read_unlock_bh(&table->tb6_lock);
+diff --git a/drivers/net/loopback.c b/drivers/net/loopback.c
+index 4ce9e5f..d0893e4 100644
+--- a/drivers/net/loopback.c
++++ b/drivers/net/loopback.c
+@@ -78,6 +78,11 @@ static netdev_tx_t loopback_xmit(struct sk_buff *skb,
  
--	if (!dst_get_neighbour_raw(&rt->dst) && !(rt->rt6i_flags & RTF_NONEXTHOP))
-+	if (!dst_get_neighbour_raw(&rt->dst)
-+	    && !(rt->rt6i_flags & (RTF_NONEXTHOP | RTF_LOCAL)))
- 		nrt = rt6_alloc_cow(rt, &fl6->daddr, &fl6->saddr);
- 	else if (!(rt->dst.flags & DST_HOST))
- 		nrt = rt6_alloc_clone(rt, &fl6->daddr);
+ 	skb_orphan(skb);
+ 
++	/* Before queueing this packet to netif_rx(),
++	 * make sure dst is refcounted.
++	 */
++	skb_dst_force(skb);
++
+ 	skb->protocol = eth_type_trans(skb, dev);
+ 
+ 	/* it's OK to use per_cpu_ptr() because BHs are off */
 
 
