@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab3BQWCU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 17:02:20 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:43458 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753458Ab3BQWCS (ORCPT
+	id S1753905Ab3BQWDH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 17:03:07 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:53202 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195Ab3BQWDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 17:02:18 -0500
+	Sun, 17 Feb 2013 17:03:05 -0500
+Message-ID: <51215393.1070409@suse.cz>
+Date: Sun, 17 Feb 2013 23:02:59 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-In-Reply-To: <1361123951-587-1-git-send-email-dh.herrmann@gmail.com>
-References: <1361123951-587-1-git-send-email-dh.herrmann@gmail.com>
-Date: Mon, 18 Feb 2013 08:02:16 +1000
-Message-ID: <CAPM=9txQtJ6FLFTEFr_Wi6RK=W9y3gKYxV_+zPCo6kLi4nM8eA@mail.gmail.com>
-Subject: Re: [PATCH 0/9] System Framebuffer Bus (sysfb)
-From: Dave Airlie <airlied@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-mm <linux-mm@kvack.org>
+CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>
+Subject: kswapd craziness round 2
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> This series tries to fix the mess with global system framebuffer access in
-> device drivers. Currently, architecture initialization sets the "screen_info"
-> object according to the system framebuffer that was detected during boot. The
-> device driver that can map VMEM first gets access to it. There is no way to give
-> a specific driver access to the device and no _proper_ way to revoke access
-> again. In fact, some drivers don't even check whether they mapped the VMEM
-> successfully, letting multiple drivers to access the system framebuffer at the
-> same time.
+Hi,
 
-I'm unsure if I like this or not, and I don't see why its greatly more
-useful than the interface we have now.
+You still feel the sour taste of the "kswapd craziness in v3.7" thread,
+right? Welcome to the hell, part two :{.
 
-It doesn't solve the main problem with the current interface, which is
-that if somebody opens has vesafb /dev/fb0, mmaps it, and modprobes a
-real driver, things will fail either miserably or crappy from a users
-pov.
+I believe this started happening after update from
+3.8.0-rc4-next-20130125 to 3.8.0-rc7-next-20130211. The same as before,
+many hours of uptime are needed and perhaps some suspend/resume cycles
+too. Memory pressure is not high, plenty of I/O cache:
+# free
+             total       used       free     shared    buffers     cached
+Mem:       6026692    5571184     455508          0     351252    2016648
+-/+ buffers/cache:    3203284    2823408
+Swap:            0          0          0
 
-The internal reference counts stop vesafb from unloading due to the
-mmaps, then i915 loads anyways and one bashes the other, or we fix so
-i915 doesn't load and the user gets fail.
+kswap is working very toughly though:
+root       580  0.6  0.0      0     0 ?        S    úno12  46:21 [kswapd0]
 
-Dave.
+This happens on I/O activity right now. For example by updatedb or find
+/. This is what the stack trace of kswapd0 looks like:
+[<ffffffff8113c431>] shrink_slab+0xa1/0x2d0
+[<ffffffff8113ecd1>] kswapd+0x541/0x930
+[<ffffffff810a3000>] kthread+0xc0/0xd0
+[<ffffffff816beb5c>] ret_from_fork+0x7c/0xb0
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+Any ideas?
+
+thanks,
+-- 
+js
+suse labs
