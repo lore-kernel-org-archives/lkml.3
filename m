@@ -1,31 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab3BQHbs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 02:31:48 -0500
-Received: from mga09.intel.com ([134.134.136.24]:12779 "EHLO mga09.intel.com"
+	id S1754831Ab3BQHcH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 02:32:07 -0500
+Received: from mga14.intel.com ([143.182.124.37]:18701 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752522Ab3BQHbr convert rfc822-to-8bit (ORCPT
+	id S1754526Ab3BQHcE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 02:31:47 -0500
+	Sun, 17 Feb 2013 02:32:04 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,682,1355126400"; 
-   d="scan'208";a="263684463"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+   d="scan'208";a="203215504"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Len Brown <lenb@kernel.org>
 CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: RE: linux-next: build failure after merge of the xen-two tree
-Thread-Topic: linux-next: build failure after merge of the xen-two tree
-Thread-Index: AQHODIHETyBHFMmDoE2LH83uWllZQ5h9p5rA
-Date: Sun, 17 Feb 2013 07:31:37 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923353FCCAC@SHSMSX101.ccr.corp.intel.com>
-References: <20130215154551.d11e9d376d30d32b9673e6cc@canb.auug.org.au>
- <2185970.g9YrD945My@vostro.rjw.lan>
- <20130216015200.1e58bec1aff05592ac2ae98f@canb.auug.org.au>
- <11850955.SHqxVBsJqI@vostro.rjw.lan>
-In-Reply-To: <11850955.SHqxVBsJqI@vostro.rjw.lan>
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Krogerus, Heikki" <heikki.krogerus@intel.com>,
+        "Moore, Robert" <robert.moore@intel.com>
+Subject: RE: linux-next: manual merge of the acpi tree with the pm tree
+Thread-Topic: linux-next: manual merge of the acpi tree with the pm tree
+Thread-Index: AQHOB/tjFlInWkucOEq+/X12FYrI7ph0yn0AgAGAfQCAB0ReQA==
+Date: Sun, 17 Feb 2013 07:31:57 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88C06087@SHSMSX101.ccr.corp.intel.com>
+References: <20130211125856.64b216a03dd18218c4627635@canb.auug.org.au>
+	<51197FEE.9070606@kernel.org>
+ <20130213093014.b6d0a21e1299823763ba3113@canb.auug.org.au>
+In-Reply-To: <20130213093014.b6d0a21e1299823763ba3113@canb.auug.org.au>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -38,67 +40,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki wrote:
-> On Saturday, February 16, 2013 01:52:00 AM Stephen Rothwell wrote:
->> Hi Rafael,
+> Hi Len,
 > 
-> Hi,
+> On Mon, 11 Feb 2013 18:34:06 -0500 Len Brown <lenb@kernel.org> wrote:
+> >
+> > BTW. Rafael's "pm" tree now carries the ACPI patch stream, so it is
+> > probably a mis-representation to call my tree the "acpi" tree.
+> > My tree is primarily focused on the "idle" part of pm these days.
 > 
->> On Fri, 15 Feb 2013 15:53:34 +0100 "Rafael J. Wysocki" <rjw@sisk.pl>
->> wrote: 
->>> 
->>> On Saturday, February 16, 2013 12:50:14 AM Stephen Rothwell wrote:
->>>> 
->>>> On Fri, 15 Feb 2013 08:26:24 -0500 Konrad Rzeszutek Wilk
->>>> <konrad.wilk@oracle.com> wrote: 
->>>>> 
->>>>> Thank you. I keep on forgetting - but would it be OK for me to
->>>>> take this patch in my tree? Or should I not since this is a new
->>>>> functionality that Rafael is going to introduce in v3.9?
->>>> 
->>>> It is an API change in the pm tree that is not yet in Linus' tree.
->>>> 
->>>>> And if so, perhaps I should tack it on in my tree, once Rafael
->>>>> does a git pull to Linus? Or just point Linus to this git commit?
->>>> 
->>>> You should point Linus at this patch if the pm tree is merged
->>>> first, or 
->>>> Rafael should do the same if the reverse happens.
->>> 
->>> Alternatively, Konrad can pull the acpi-scan branch containing the
->>> changes in question from my tree into his tree and rebase the new
->>> material on top of that.
->> 
->> Or pull the acpi-scan branch into his tree and use my conflict
->> resolution in the resulting merge thus requiring no rebasing. 
->> However, Linus likes to see such interactions, so it can be left up
->> to when the latter of the two tress is merged by Linus.
-> 
-> Well, I'm afraid this won't be sufficient this time, because of this
-> commit in my tree (which is not on the acpi-scan branch):
-> 
-> commit 3757b94802fb65d8f696597a74053cf21738da0b
-> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Date:   Wed Feb 13 14:36:47 2013 +0100
-> 
->     ACPI / hotplug: Fix concurrency issues and memory leaks
-> 
-> after which acpi_bus_scan() and acpi_bus_trim() have to be run under
-> acpi_scan_lock (new in my tree as well).
+> OK, I have renamed your tree to "idle".
 
-Yes, we noticed that and only need minor updates at xen side, will send out 2 xen patches later accordingly, for cleanup and adding lock.
+Thanks for fixing the conflicts.
 
-Thanks,
-Jinsong
+The new ACPICA release contains a patch renaming the PM_TIMER_FREQUENCY macro.
+A further CA release patch cleans up the repo (pm/linux-next) where the release patch set based on.
+The conflicts would happen if other repos contained new codes using the old macro definition.
 
-> 
-> Moreover, I think that the introduction of ACPI-based CPU hotplug
-> into Xen and this point would be premature, because we need to rework
-> the original ACPI-based CPU hotplug and quite frankly it shouldn't
-> call acpi_bus_scan() directly at all.
-> 
-> Konrad?
-> 
-> Thanks,
-> Rafael
-
+Thanks
+-Lv
