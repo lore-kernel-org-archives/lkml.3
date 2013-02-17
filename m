@@ -1,86 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab3BQSZF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 13:25:05 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:33434 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463Ab3BQSZD (ORCPT
+	id S1751937Ab3BQStP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 13:49:15 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43976 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751373Ab3BQStO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 13:25:03 -0500
-Date: Sun, 17 Feb 2013 10:25:19 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
-Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
- delivering VMBUS interrupts
-Message-ID: <20130217182519.GB8687@kroah.com>
-References: <20130206191313.GA1470@kroah.com>
- <511ADEB7.6080909@zytor.com>
- <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130213162211.GA21253@kroah.com>
- <c31482583b394bfcaa16b76a63c413fe@SN2PR03MB061.namprd03.prod.outlook.com>
- <511BD923.7000500@zytor.com>
- <20130213182349.GA4959@kroah.com>
- <511BDD2A.8020002@zytor.com>
- <20130213185239.GB16645@kroah.com>
- <bc26219c6d0e4a498912a8411c11f81c@SN2PR03MB061.namprd03.prod.outlook.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <bc26219c6d0e4a498912a8411c11f81c@SN2PR03MB061.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 17 Feb 2013 13:49:14 -0500
+Message-ID: <1361126922.5374.475.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [stable request] fix stack overflow in
+ __reserve_region_with_split
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: stable <stable@vger.kernel.org>, tmac@hp.com, linuxram@us.ibm.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Date: Sun, 17 Feb 2013 18:48:42 +0000
+In-Reply-To: <51191BBE.9080904@suse.cz>
+References: <51191BBE.9080904@suse.cz>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-3dGUaRgkHN7nkL9xJt2u"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 17, 2013 at 06:13:49PM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > Sent: Wednesday, February 13, 2013 1:53 PM
-> > To: H. Peter Anvin
-> > Cc: KY Srinivasan; x86@kernel.org; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> > jasowang@redhat.com; tglx@linutronix.de; JBeulich@suse.com; bp@alien8.de
-> > Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
-> > delivering VMBUS interrupts
-> > 
-> > On Wed, Feb 13, 2013 at 10:36:26AM -0800, H. Peter Anvin wrote:
-> > > On 02/13/2013 10:23 AM, Greg KH wrote:
-> > > > On Wed, Feb 13, 2013 at 10:19:15AM -0800, H. Peter Anvin wrote:
-> > > >> Sounds like we have the joy of a cross-tree dependency...
-> > > >
-> > > > Yeah, a mess.
-> > > >
-> > > > KY, how about I just wait until all of this gets merged with Linus for
-> > > > 3.9-rc1, and then you resend me the patches you have to take advantage
-> > > > of these new bits?  That makes it easy for everyone involved.
-> > > >
-> > >
-> > > The other option is you can pull tip:x86/hyperv from me... it has *only*
-> > > these changes.  I can then let you push them to Linus or I can push them
-> > > to Linus before you push your tree.
-> > 
-> > Nah, I'll just wait, it's not that big of a deal here, it will all make
-> > it into 3.9-final eventually.
-> 
-> Peter's check-ins are now in Linux-next. Should I send you the vmbus
-> patch that uses this infrastructure.
 
-No one can base their tree on linux-next, so no.  Please wait for them
-to get into Linus's tree.
+--=-3dGUaRgkHN7nkL9xJt2u
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Or send them to me now, with the instructions to apply them after
-3.9-rc1, and I will save them for that point in time.
+On Mon, 2013-02-11 at 17:26 +0100, Jiri Slaby wrote:
+> Hi,
+>=20
+> I think this one should go to stable:
+> commit 4965f5667f36a95b41cda6638875bc992bd7d18b
+> Author: T Makphaibulchoke <tmac@hp.com>
+> Date:   Thu Oct 4 17:16:55 2012 -0700
+>=20
+>     kernel/resource.c: fix stack overflow in __reserve_region_with_split(=
+)
+>=20
+> To all up to 3.7 (exclusive).
 
-thanks,
+Queued up for 3.2, thanks.
 
-greg k-h
+Ben.
+
+--=20
+Ben Hutchings
+Experience is what causes a person to make new mistakes instead of old ones=
+.
+
+--=-3dGUaRgkHN7nkL9xJt2u
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUSEmCue/yOyVhhEJAQrkMhAAgmrpydYtUJjabLjzF6g1+tUH0DxgZl77
+AjtO6y1DWKZHxiJNR3xYMbsTHF9/7SQiMXLx6vgdXQY/vbSTB25Ota/DO8TH7Ptg
+cGSPv9frG+1BnjkoQRiz57ocgSiOjywsN9jjLnADbc34yW4KgSah7rV+v4Hi8b/0
+K7cmAOeLROhC5gkLuDRdLdi10hAasHRpjbsbZ6eQnpqr28RY9wmCgVuVelBvvrmf
+GdXySKOSDTq6BlHbo1g3Qcg/kq51YkXH5b0Yhuy7suJXNAXdmqVkQ7Sb/sDG+m3d
+Egj8tBJz/josM1zKHzMVQslnmBrzqOAx+Wm6IRoKpnf0v69/Opy2O5kCtapg/Ria
+BIE0zn5NJ5NfBHd8cTSe4sc2YYwEr7ssd9QBnC7Q053vMlL8idPbcsooGD59vvln
+v1IUtK9hLRRyTwH0Z6e32Vpt47ZutqwPU5sd8cA1gQ5g0xzHSShVz4TZeSuk0n61
+D2CfSYHWmsX1CRtmTRG1pXzb0eCH7AmcPAxKWwLS90K6L09k/dz6zqMizCRXLIz0
+G35VaQb/aVVzAEK7BEhK6LXooYDmpKZ4VSR+BTJVG1YfBS1+hV8aSRHQfcZXy143
+yeQM5kZNSs2jjZdjFc/z5nHU7LAWtT06EHHu1L+rBG6wPQBBVWk1xEayWouHwnjb
+sTBOVyCeZhA=
+=ve2g
+-----END PGP SIGNATURE-----
+
+--=-3dGUaRgkHN7nkL9xJt2u--
