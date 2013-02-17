@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab3BQJLF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 04:11:05 -0500
-Received: from mail-gh0-f173.google.com ([209.85.160.173]:35648 "EHLO
-	mail-gh0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755725Ab3BQJK7 (ORCPT
+	id S1755948Ab3BQJo3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 04:44:29 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:33926 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755406Ab3BQJo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 04:10:59 -0500
-Message-ID: <51209E9C.3020507@gmail.com>
-Date: Sun, 17 Feb 2013 17:10:52 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Sun, 17 Feb 2013 04:44:27 -0500
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: paul.szabo@sydney.edu.au, linux-mm@kvack.org, 695182@bugs.debian.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Reproducible OOM with just a few sleeps
-References: <201301120331.r0C3VxXc016220@como.maths.usyd.edu.au> <50F41D9D.1000403@linux.vnet.ibm.com>
-In-Reply-To: <50F41D9D.1000403@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <511E4C43.7080403@canonical.com>
+References: <511D0BCC.9070208@canonical.com>
+	<20130215073210.GM7867@spo001.leaseweb.com>
+	<511E4C43.7080403@canonical.com>
+Date: Sun, 17 Feb 2013 18:44:25 +0900
+Message-ID: <CAHh0gOgeWn5QaDGzgstft7AoQsKdoZ+4Utp8iQxxSCO0q=cZ-Q@mail.gmail.com>
+Subject: Re: [v3.8 Regression] watchdog: sp5100_tco: Add SB8x0 chipset support
+From: Tanaka Takahisa <mc74hc00@gmail.com>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kernel Team <kernel-team@lists.ubuntu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2013 11:00 PM, Dave Hansen wrote:
-> On 01/11/2013 07:31 PM, paul.szabo@sydney.edu.au wrote:
->> Seems that any i386 PAE machine will go OOM just by running a few
->> processes. To reproduce:
->>    sh -c 'n=0; while [ $n -lt 19999 ]; do sleep 600 & ((n=n+1)); done'
->> My machine has 64GB RAM. With previous OOM episodes, it seemed that
->> running (booting) it with mem=32G might avoid OOM; but an OOM was
->> obtained just the same, and also with lower memory:
->>    Memory    sleeps to OOM       free shows total
->>    (mem=64G)  5300               64447796
->>    mem=32G   10200               31155512
->>    mem=16G   13400               14509364
->>    mem=8G    14200               6186296
->>    mem=6G    15200               4105532
->>    mem=4G    16400               2041364
->> The machine does not run out of highmem, nor does it use any swap.
-> I think what you're seeing here is that, as the amount of total memory
-> increases, the amount of lowmem available _decreases_ due to inflation
-> of mem_map[] (and a few other more minor things).  The number of sleeps
+Hi Joseph,
 
-So if he config sparse memory, the issue can be solved I think.
-
-> you can do is bound by the number of processes, as you noticed from
-> ulimit.  Creating processes that don't use much memory eats a relatively
-> large amount of low memory.
->
-> This is a sad (and counterintuitive) fact: more RAM actually *CREATES*
-> RAM bottlenecks on 32-bit systems.
->
->> On my large machine, 'free' fails to show about 2GB memory, e.g. with
->> mem=16G it shows:
+2013/2/15 Joseph Salisbury <joseph.salisbury@canonical.com>:
+> On 02/15/2013 02:32 AM, Wim Van Sebroeck wrote:
 >>
->> root@zeno:~# free -l
->>               total       used       free     shared    buffers     cached
->> Mem:      14509364     435440   14073924          0       4068     111328
->> Low:        769044     120232     648812
->> High:     13740320     315208   13425112
->> -/+ buffers/cache:     320044   14189320
->> Swap:    134217724          0  134217724
-> You probably have a memory hole.  mem=16G means "give me all the memory
-> below the physical address at 16GB".  It does *NOT* mean, "give me
-> enough memory such that 'free' will show ~16G available."  If you have a
-> 1.5GB hole below 16GB, and you do mem=16G, you'll end up with ~14.5GB
-> available.
+>> Hi Joseph,
+>>
+>>> A bug was opened against the Ubuntu kernel[0].  It was found that
+>>> reverting the following commit resolved this bug:
+>>>
+>>> commit 740fbddf5c3f9ad8b23c5d917ba1cc7e376a5104
+>>> Author: Takahisa Tanaka <mc74hc00@gmail.com>
+>>> Date:   Sun Dec 2 14:33:18 2012 +0900
+>>>
+>>>      watchdog: sp5100_tco: Add SB8x0 chipset support
+>>>
+>>>
+>>> The regression was introduced as of v3.8-rc1.
+>>>
+>>> I see that you are the author of this patch, so I wanted to run this by
+>>> you.  I was thinking of requesting a revert for v3.8, but I wanted to
+>>> get your feedback first.
+>>
+>> Please check out the attached patches first (They are allready in
+>> linux-next).
 >
-> The e820 map (during early boot in dmesg) or /proc/iomem will let you
-> locate your memory holes.
-
-Dear Dave, two questions here:
-
-1) e820 map is read from BIOS, correct? So if all kinds of ranges dump 
-from /proc/iomem are setup by BIOS?
-2) only "System RAM" range dump from /proc/iomem can be treated as real 
-memory, all other ranges can be treated as holes, correct?
-
+> Thanks for the feedback, Wim.  I'll let you know if the patches resolve this
+> bug.
 >
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+>>
+>> Other references:
+>> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43176
+>> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43176
+>>
+>> Kind regards,
+>> Wim.
 
+Thank you for your information, and sorry for the late reply.
+
+I think that I will get rid of code that re-programming the chipset
+registers, if my patch set doesn't resolve the problem.
+I'm waiting for your reply at the moment.
+
+
+Regards,
+Takahisa
