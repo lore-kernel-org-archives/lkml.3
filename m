@@ -1,138 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3BQXyF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 18:54:05 -0500
-Received: from rydia.net ([69.46.88.68]:57199 "EHLO mail.rydia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755684Ab3BQXyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 18:54:04 -0500
-Date: Sun, 17 Feb 2013 15:54:02 -0800 (PST)
-From: dormando <dormando@rydia.net>
-X-X-Sender: dormando@dflat
-To: Rik van Riel <riel@redhat.com>
-cc: Seiji Aguchi <seiji.aguchi@hds.com>, Satoru Moriya <satoru.moriya@hds.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hughd@google.com" <hughd@google.com>
-Subject: Re: extra free kbytes tunable
-In-Reply-To: <511EB5CB.2060602@redhat.com>
-Message-ID: <alpine.DEB.2.02.1302171551350.10836@dflat>
-References: <alpine.DEB.2.02.1302111734090.13090@dflat> <A5ED84D3BB3A384992CBB9C77DEDA4D414A98EBF@USINDEM103.corp.hds.com> <511EB5CB.2060602@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756514Ab3BQX7c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 18:59:32 -0500
+Received: from server19320154104.serverpool.info ([193.201.54.104]:36775 "EHLO
+	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756266Ab3BQX7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 18:59:31 -0500
+Message-ID: <51216ED8.5040906@hauke-m.de>
+Date: Mon, 18 Feb 2013 00:59:20 +0100
+From: Hauke Mehrtens <hauke@hauke-m.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Ralf Baechle <ralf@linux-mips.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, John Crispin <blogic@openwrt.org>
+Subject: Re: linux-next: build failure after merge of the mips tree
+References: <20130218104340.eb5e20da05dffe89ac4da693@canb.auug.org.au>
+In-Reply-To: <20130218104340.eb5e20da05dffe89ac4da693@canb.auug.org.au>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
+On 02/18/2013 12:43 AM, Stephen Rothwell wrote:
+> Hi Ralf,
+> 
+> After merging the mips tree, today's linux-next build (x86_64 
+> allmodconfig) failed like this:
+> 
+> drivers/ssb/driver_gpio.c: In function 'ssb_gpio_chipco_to_irq': 
+> drivers/ssb/driver_gpio.c:82:3: error: implicit declaration of
+> function 'ssb_mips_irq' [-Werror=implicit-function-declaration]
+> 
+> Caused by commit d630dd4ef20f ("ssb: add gpio_to_irq again").
+> 
+> I have used the mips tree from next-20130215 for today.
+> 
+Hi Ralf and blogic,
 
-On Fri, 15 Feb 2013, Rik van Riel wrote:
+Could you drop this patch [0] and this one [1].
 
-> On 02/15/2013 05:21 PM, Seiji Aguchi wrote:
-> > Rik, Satoru,
-> >
-> > Do you have any comments?
->
-> IIRC at the time the patch was rejected as too inelegant.
->
-> However, nobody else seems to have come up with a better plan, and
-> there are users in need of a fix for this problem.
->
-> I would still like to see a fix for the problem merged upstream.
+I saw that they are not any more in blogic tree.
 
-I merged in the cleanups to your original patch, rebased it off of linus'
-master from a day or two ago and re-sent (not sure how to preserve
-authorship in that case? Apologies for goofing it).
+Hauke
 
-I'm willing to argue it, or investigate better options. I'm going to be
-stuck maintaining this patch since we can't really afford to have
-production hang, or waste 12g+ of RAM per box.
+[0]: https://patchwork.linux-mips.org/patch/4719/
+[1]: https://patchwork.linux-mips.org/patch/4720/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
 
-> > > -----Original Message-----
-> > > From: linux-kernel-owner@vger.kernel.org
-> > > [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of dormando
-> > > Sent: Monday, February 11, 2013 9:01 PM
-> > > To: Rik van Riel
-> > > Cc: Randy Dunlap; Satoru Moriya; linux-kernel@vger.kernel.org;
-> > > linux-mm@kvack.org; lwoodman@redhat.com; Seiji Aguchi;
-> > > akpm@linux-foundation.org; hughd@google.com
-> > > Subject: extra free kbytes tunable
-> > >
-> > > Hi,
-> > >
-> > > As discussed in this thread:
-> > > http://marc.info/?l=linux-mm&m=131490523222031&w=2
-> > > (with this cleanup as well: https://lkml.org/lkml/2011/9/2/225)
-> > >
-> > > A tunable was proposed to allow specifying the distance between pages_min
-> > > and the low watermark before kswapd is kicked in to
-> > > free up pages. I'd like to re-open this thread since the patch did not
-> > > appear to go anywhere.
-> > >
-> > > We have a server workload wherein machines with 100G+ of "free" memory
-> > > (used by page cache), scattered but frequent random io
-> > > reads from 12+ SSD's, and 5gbps+ of internet traffic, will frequently hit
-> > > direct reclaim in a few different ways.
-> > >
-> > > 1) It'll run into small amounts of reclaim randomly (a few hundred
-> > > thousand).
-> > >
-> > > 2) A burst of reads or traffic can cause extra pressure, which kswapd
-> > > occasionally responds to by freeing up 40g+ of the pagecache all
-> > > at once
-> > > (!) while pausing the system (Argh).
-> > >
-> > > 3) A blip in an upstream provider or failover from a peer causes the
-> > > kernel to allocate massive amounts of memory for retransmission
-> > > queues/etc, potentially along with buffered IO reads and (some, but not
-> > > often a ton) of new allocations from an application. This
-> > > paired with 2) can cause the box to stall for 15+ seconds.
-> > >
-> > > We're seeing this more in 3.4/3.5/3.6, saw it less in 2.6.38. Mass
-> > > reclaims are more common in newer kernels, but reclaims still happen
-> > > in all kernels without raising min_free_kbytes dramatically.
-> > >
-> > > I've found that setting "lowmem_reserve_ratio" to something like "1 1 32"
-> > > (thus protecting the DMA32 zone) causes 2) to happen less often, and is
-> > > generally less violent with 1).
-> > >
-> > > Setting min_free_kbytes to 15G or more, paired with the above, has been
-> > > the best at mitigating the issue. This is simply trying to raise
-> > > the distance between the min and low watermarks. With min_free_kbytes set
-> > > to 15000000, that gives us a whopping 1.8G (!!!) of
-> > > leeway before slamming into direct reclaim.
-> > >
-> > > So, this patch is unfortunate but wonderful at letting us reclaim 10G+ of
-> > > otherwise lost memory. Could we please revisit it?
-> > >
-> > > I saw a lot of discussion on doing this automatically, or making kswapd
-> > > more efficient to it, and I'd love to do that. Beyond making
-> > > kswapd psychic I haven't seen any better options yet.
-> > >
-> > > The issue is more complex than simply having an application warn of an
-> > > impending allocation, since this can happen via read load on
-> > > disk or from kernel page allocations for the network, or a combination of
-> > > the two (or three, if you add the app back in).
-> > >
-> > > It's going to get worse as we push machines with faster SSD's and bigger
-> > > networks. I'm open to any ideas on how to make kswapd
-> > > more efficient in our case, or really anything at all that works.
-> > >
-> > > I have more details, but cut it down as much as I could for this mail.
-> > >
-> > > Thanks,
-> > > -Dormando
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org More
-> > > majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
->
->
-> --
-> All rights reversed
->
+iQIcBAEBAgAGBQJRIW7SAAoJEIZ0px9YPRMySfMQAII6ZFgh+dDS/gEhxCmZ5EJZ
+dmz5AjafHmmqAKuw5j5erKvRzocxaxwLscvEjv6WXD/dGD7DoUkixSkoHD0G5ptE
+gba3OL8qqBQGzuqhUsfKCnYS3b7UGYC95G9qS03jcikm46Rl3ufpEnOswkIwyssw
+Qd0yVqvsmXDaTz6LljwSYGT6BxLo63QmoaxH64yCXwYtOh+vGanif8U+QZcg61Hm
+jL1CRlbzjJg5VrtTOak9SVsRFRp4TOvJe7TI5P/Nm20mkt6q+1sWcoOXa1egG0k7
+68Y2hTzlERTK6LCpmHRZcQxXPbMl/KP03+mgtqcN5xQtkGq4NfcnfG0HIANo9fpf
+BlnCX//gDaLRVcwlQnAShVYRcLd+tjb6l+2ObYLShJVFPdD5YJ3sTiySKW7xVW04
+iFlzxDWKYA2NILHldHHa+MX7r86IBPLrZhG+IqgdjLcw4zQZiGn2heVSQipzmPGm
+eBWqJuSUtVYNrEFVd/+CcqHo5jvmqmybh7+DLi6fVBvNb1vh9ApmltVuD37T00CB
+d3bOF5VEFQR+zoNloxriI84SCZPRu/in8f/Bqy9x+iGnkgW+FxnJnDi4kEaerNB7
+jjZow64JwE5f/pYHle/ffLUvsCRLV7GpvJ33n4OxFQyVMYHrPEdbF2r+YkytA5zJ
+KzZDEk6WfzVItcPcjSTg
+=EwXd
+-----END PGP SIGNATURE-----
