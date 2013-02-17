@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792Ab3BQG4D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 01:56:03 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:43573 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453Ab3BQG4B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 01:56:01 -0500
-Date: Sun, 17 Feb 2013 01:55:58 -0500
-From: tmhikaru@gmail.com
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Subject: Re: [PATCH 2/2] dmi_scan: Refactor dmi_scan_machine(),
- {smbios,dmi}_present()
-Message-ID: <20130217065558.GA2113@roll>
-References: <1361037634.5374.437.camel@deadeye.wl.decadent.org.uk>
- <1361037742.5374.441.camel@deadeye.wl.decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
-Content-Disposition: inline
-In-Reply-To: <1361037742.5374.441.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755850Ab3BQHOc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 02:14:32 -0500
+Received: from mout.gmx.net ([212.227.17.21]:60692 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755640Ab3BQHOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 02:14:31 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX192azEdQ7J2A9M2Orv3rzgSxZg1psSNV6eb5TCOFZ
+	9lCGAmT3WbUsWp
+Message-ID: <1361085245.28353.3.camel@marge.simpson.net>
+Subject: Re: [RFC] sched: The removal of idle_balance()
+From: Mike Galbraith <efault@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Clark Williams <clark@redhat.com>,
+        Andrew Theurer <habanero@us.ibm.com>
+Date: Sun, 17 Feb 2013 08:14:05 +0100
+In-Reply-To: <1361082363.6088.21.camel@marge.simpson.net>
+References: <1360908819.23152.97.camel@gandalf.local.home>
+	 <1360913172.4736.20.camel@marge.simpson.net>
+	 <1361031150.23152.133.camel@gandalf.local.home>
+	 <1361082363.6088.21.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2013-02-17 at 07:26 +0100, Mike Galbraith wrote: 
+> On Sat, 2013-02-16 at 11:12 -0500, Steven Rostedt wrote:
+> > On Fri, 2013-02-15 at 08:26 +0100, Mike Galbraith wrote:
+> > > On Fri, 2013-02-15 at 01:13 -0500, Steven Rostedt wrote:
+> > > 
+> > > > Think about it some more, just because we go idle isn't enough reason to
+> > > > pull a runable task over. CPUs go idle all the time, and tasks are woken
+> > > > up all the time. There's no reason that we can't just wait for the sched
+> > > > tick to decide its time to do a bit of balancing. Sure, it would be nice
+> > > > if the idle CPU did the work. But I think that frame of mind was an
+> > > > incorrect notion from back in the early 2000s and does not apply to
+> > > > today's hardware, or perhaps it doesn't apply to the (relatively) new
+> > > > CFS scheduler. If you want aggressive scheduling, make the task rt, and
+> > > > it will do aggressive scheduling.
+> > > 
+> > > (the throttle is supposed to keep idle_balance() from doing severe
+> > > damage, that may want a peek/tweak)
+> > > 
+> > > Hackbench spreads itself with FORK/EXEC balancing, how does say a kbuild
+> > > do with no idle_balance()?
+> > > 
+> > 
+> > Interesting, I added this patch and it brought down my hackbench to the
+> > same level as removing idle_balance().
+> 
+> The typo did it's job well :)
+> 
+> Hrm, turning idle balancing off here does not help hackbench at all.
 
---SLDf9lqlvOQaIe6s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(And puts a dent in x264 ultrafast)
 
-On Sat, Feb 16, 2013 at 06:02:22PM +0000, Ben Hutchings wrote:
-> Move the calls to memcpy_fromio() up into the loop in
-> dmi_scan_machine(), and move the signature checks back down into
-> dmi_decode().  We need to check at 16-byte intervals but keep a
-> 32-byte buffer for an SMBIOS entry, so shift the buffer after each
-> iteration.
->=20
-> Merge smbios_present() into dmi_present(), so we look for an SMBIOS
-> signature at the beginning of the given buffer and then for a DMI
-> signature at an offset of 16 bytes.
->=20
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
-> This file mixes up __iomem and regular pointers a lot, and this patch
-> fixes some but not all of those instances.  Presumably it is quite
-> safe to read a BIOS image with any mov instructions the compiler
-> generates, but in that case maybe we should explicitly cast away the
-> __iomem qualifier in dmi_ioremap()?
->=20
-> Tim, you might like to test that this doesn't cause a regression
-> of the previous fix.
++SD_BALANCE_NEWIDLE
+encoded 600 frames, 425.04 fps, 22132.71 kb/s
+encoded 600 frames, 416.07 fps, 22132.71 kb/s
+encoded 600 frames, 417.49 fps, 22132.71 kb/s
+encoded 600 frames, 420.65 fps, 22132.71 kb/s
+encoded 600 frames, 425.55 fps, 22132.71 kb/s
+encoded 600 frames, 425.58 fps, 22132.71 kb/s
+encoded 600 frames, 426.18 fps, 22132.71 kb/s
+encoded 600 frames, 424.21 fps, 22132.71 kb/s
+encoded 600 frames, 422.20 fps, 22132.71 kb/s
+encoded 600 frames, 423.15 fps, 22132.71 kb/s
 
-I can confirm that this works just as well as the last patch you gave me.
-I'm sorry that it took me a while to reply.
+-SD_BALANCE_NEWIDLE
+encoded 600 frames, 378.52 fps, 22132.71 kb/s
+encoded 600 frames, 378.75 fps, 22132.71 kb/s
+encoded 600 frames, 378.20 fps, 22132.71 kb/s
+encoded 600 frames, 372.54 fps, 22132.71 kb/s
+encoded 600 frames, 366.69 fps, 22132.71 kb/s
+encoded 600 frames, 378.46 fps, 22132.71 kb/s
+encoded 600 frames, 379.89 fps, 22132.71 kb/s
+encoded 600 frames, 382.25 fps, 22132.71 kb/s
+encoded 600 frames, 384.10 fps, 22132.71 kb/s
+encoded 600 frames, 375.24 fps, 22132.71 kb/s
 
-Tim McGrath
 
---SLDf9lqlvOQaIe6s
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEVAwUBUSB+/pEncCrqzVruAQJ01AgAlHDoKGQjcTCh4dkTy0suSowFj3nf5D+8
-4jDOuckigvmjUrCr/lLX2V2lfZhq262ZL33B5ddak5yN1SpH2OUo+7ST26IEHrKu
-uOqWE4qVSIhYITy/aDE2S5sW9/VIw5YBIbL8tYYhecWFgNiXmm4QSz34GN+2rmAR
-WqH/GBYqAcoqx4QN8Q8eEv03ijvkvaf7HjX9SdxSsslBw8/XcsTgxOT4FeHHodF/
-6K3PS2pVBUEmSDLgUitOPTarsaRV0sLjpG8geiex8vzrHGg4LYZXF6N8LZisLTs8
-fBoX4EhFscAVl2XYM8KEg3M6q33PRpwMJlQE7QFqzp+CC+mUNdav8w==
-=2dO0
------END PGP SIGNATURE-----
-
---SLDf9lqlvOQaIe6s--
