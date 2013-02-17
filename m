@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab3BQVDI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 16:03:08 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:47144
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206Ab3BQVDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 16:03:06 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/3] Drivers: hv: vmbus: Handle channel rescind message correctly
-Date: Sun, 17 Feb 2013 13:31:24 -0800
-Message-Id: <1361136686-31020-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1361136655-30979-1-git-send-email-kys@microsoft.com>
-References: <1361136655-30979-1-git-send-email-kys@microsoft.com>
+	id S1753505Ab3BQVyy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 16:54:54 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31684 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753095Ab3BQVyx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 16:54:53 -0500
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=MPEKn9ueenIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=zGjexpQmzOwA:10 a=CjxXgO3LAAAA:8 a=kADjIXcFrCjqV-ybU7YA:9 a=PUjeQqilurYA:10 a=rC2wZJ5BpNYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1361138089.23152.141.camel@gandalf.local.home>
+Subject: Re: [RFC] sched: The removal of idle_balance()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Clark Williams <clark@redhat.com>,
+        Andrew Theurer <habanero@us.ibm.com>
+Date: Sun, 17 Feb 2013 16:54:49 -0500
+In-Reply-To: <1361085245.28353.3.camel@marge.simpson.net>
+References: <1360908819.23152.97.camel@gandalf.local.home>
+	 <1360913172.4736.20.camel@marge.simpson.net>
+	 <1361031150.23152.133.camel@gandalf.local.home>
+	 <1361082363.6088.21.camel@marge.simpson.net>
+	 <1361085245.28353.3.camel@marge.simpson.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Properly cleanup the channel state on receipt of the "offer rescind" message.
-Starting with ws2012, the host requires that the channel "relid" be properly
-cleaned up when the offer is rescinded.
+On Sun, 2013-02-17 at 08:14 +0100, Mike Galbraith wrote:
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/hv/channel_mgmt.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+> (And puts a dent in x264 ultrafast)
+> 
+> +SD_BALANCE_NEWIDLE
+> encoded 600 frames, 425.04 fps, 22132.71 kb/s
+> encoded 600 frames, 416.07 fps, 22132.71 kb/s
+> encoded 600 frames, 417.49 fps, 22132.71 kb/s
+> encoded 600 frames, 420.65 fps, 22132.71 kb/s
+> encoded 600 frames, 425.55 fps, 22132.71 kb/s
+> encoded 600 frames, 425.58 fps, 22132.71 kb/s
+> encoded 600 frames, 426.18 fps, 22132.71 kb/s
+> encoded 600 frames, 424.21 fps, 22132.71 kb/s
+> encoded 600 frames, 422.20 fps, 22132.71 kb/s
+> encoded 600 frames, 423.15 fps, 22132.71 kb/s
+> 
+> -SD_BALANCE_NEWIDLE
+> encoded 600 frames, 378.52 fps, 22132.71 kb/s
+> encoded 600 frames, 378.75 fps, 22132.71 kb/s
+> encoded 600 frames, 378.20 fps, 22132.71 kb/s
+> encoded 600 frames, 372.54 fps, 22132.71 kb/s
+> encoded 600 frames, 366.69 fps, 22132.71 kb/s
+> encoded 600 frames, 378.46 fps, 22132.71 kb/s
+> encoded 600 frames, 379.89 fps, 22132.71 kb/s
+> encoded 600 frames, 382.25 fps, 22132.71 kb/s
+> encoded 600 frames, 384.10 fps, 22132.71 kb/s
+> encoded 600 frames, 375.24 fps, 22132.71 kb/s
 
-diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
-index 53a8600..7cb76fb 100644
---- a/drivers/hv/channel_mgmt.c
-+++ b/drivers/hv/channel_mgmt.c
-@@ -165,8 +165,19 @@ static void vmbus_process_rescind_offer(struct work_struct *work)
- 	struct vmbus_channel *channel = container_of(work,
- 						     struct vmbus_channel,
- 						     work);
-+	unsigned long flags;
-+	struct vmbus_channel_relid_released msg;
- 
- 	vmbus_device_unregister(channel->device_obj);
-+	memset(&msg, 0, sizeof(struct vmbus_channel_relid_released));
-+	msg.child_relid = channel->offermsg.child_relid;
-+	msg.header.msgtype = CHANNELMSG_RELID_RELEASED;
-+	vmbus_post_msg(&msg, sizeof(struct vmbus_channel_relid_released));
-+
-+	spin_lock_irqsave(&vmbus_connection.channel_lock, flags);
-+	list_del(&channel->listentry);
-+	spin_unlock_irqrestore(&vmbus_connection.channel_lock, flags);
-+	free_channel(channel);
- }
- 
- void vmbus_free_channels(void)
--- 
-1.7.4.1
+What about my last patch? The one that avoids idle_balance() if the
+previous task was in a task_uninterruptible state. That one gave the
+same performance increase that removing idle_balance() did on my box.
+
+-- Steve
+
+
 
