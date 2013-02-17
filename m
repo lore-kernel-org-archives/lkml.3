@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927Ab3BQXFo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 18:05:44 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45711 "EHLO
+	id S1756985Ab3BQXF6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 18:05:58 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45708 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755338Ab3BQWz1 (ORCPT
+	by vger.kernel.org with ESMTP id S1755182Ab3BQWz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Feb 2013 17:55:27 -0500
-Message-Id: <20130217225007.791299943@decadent.org.uk>
+Message-Id: <20130217225008.143434698@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Feb 2013 22:50:54 +0000
+Date: Sun, 17 Feb 2013 22:50:57 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Neil Horman <nhorman@tuxdriver.com>,
-        Jamie Parsons <Jamie.Parsons@metaswitch.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
+Cc: akpm@linux-foundation.org, Ian Campbell <Ian.Campbell@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <JBeulich@suse.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 53/66] sctp: refactor sctp_outq_teardown to insure proper  re-initalization
+Subject: [ 56/66] xen/netback: shutdown the ring if it contains garbage.
 In-Reply-To: <20130217225001.621306883@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,73 +30,255 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Ian Campbell <Ian.Campbell@citrix.com>
 
-[ Upstream commit 2f94aabd9f6c925d77aecb3ff020f1cc12ed8f86 ]
+[ Upstream commit 48856286b64e4b66ec62b94e504d0b29c1ade664 ]
 
-Jamie Parsons reported a problem recently, in which the re-initalization of an
-association (The duplicate init case), resulted in a loss of receive window
-space.  He tracked down the root cause to sctp_outq_teardown, which discarded
-all the data on an outq during a re-initalization of the corresponding
-association, but never reset the outq->outstanding_data field to zero.  I wrote,
-and he tested this fix, which does a proper full re-initalization of the outq,
-fixing this problem, and hopefully future proofing us from simmilar issues down
-the road.
+A buggy or malicious frontend should not be able to confuse netback.
+If we spot anything which is not as it should be then shutdown the
+device and don't try to continue with the ring in a potentially
+hostile state. Well behaved and non-hostile frontends will not be
+penalised.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: Jamie Parsons <Jamie.Parsons@metaswitch.com>
-Tested-by: Jamie Parsons <Jamie.Parsons@metaswitch.com>
-CC: Jamie Parsons <Jamie.Parsons@metaswitch.com>
-CC: Vlad Yasevich <vyasevich@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: netdev@vger.kernel.org
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+As well as making the existing checks for such errors fatal also add a
+new check that ensures that there isn't an insane number of requests
+on the ring (i.e. more than would fit in the ring). If the ring
+contains garbage then previously is was possible to loop over this
+insane number, getting an error each time and therefore not generating
+any more pending requests and therefore not exiting the loop in
+xen_netbk_tx_build_gops for an externded period.
+
+Also turn various netdev_dbg calls which no precipitate a fatal error
+into netdev_err, they are rate limited because the device is shutdown
+afterwards.
+
+This fixes at least one known DoS/softlockup of the backend domain.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Jan Beulich <JBeulich@suse.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sctp/outqueue.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/net/xen-netback/common.h    |  3 ++
+ drivers/net/xen-netback/interface.c | 23 ++++++++------
+ drivers/net/xen-netback/netback.c   | 62 +++++++++++++++++++++++++++----------
+ 3 files changed, 62 insertions(+), 26 deletions(-)
 
-diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-index cfeb1d4..96eb168 100644
---- a/net/sctp/outqueue.c
-+++ b/net/sctp/outqueue.c
-@@ -223,7 +223,7 @@ void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index 94b79c3..9d7f172 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -151,6 +151,9 @@ void xen_netbk_queue_tx_skb(struct xenvif *vif, struct sk_buff *skb);
+ /* Notify xenvif that ring now has space to send an skb to the frontend */
+ void xenvif_notify_tx_completion(struct xenvif *vif);
  
- /* Free the outqueue structure and any related pending chunks.
-  */
--void sctp_outq_teardown(struct sctp_outq *q)
-+static void __sctp_outq_teardown(struct sctp_outq *q)
- {
- 	struct sctp_transport *transport;
- 	struct list_head *lchunk, *temp;
-@@ -276,8 +276,6 @@ void sctp_outq_teardown(struct sctp_outq *q)
- 		sctp_chunk_free(chunk);
- 	}
++/* Prevent the device from generating any further traffic. */
++void xenvif_carrier_off(struct xenvif *vif);
++
+ /* Returns number of ring slots required to send an skb to the frontend */
+ unsigned int xen_netbk_count_skb_slots(struct xenvif *vif, struct sk_buff *skb);
  
--	q->error = 0;
--
- 	/* Throw away any leftover control chunks. */
- 	list_for_each_entry_safe(chunk, tmp, &q->control_chunk_list, list) {
- 		list_del_init(&chunk->list);
-@@ -285,11 +283,17 @@ void sctp_outq_teardown(struct sctp_outq *q)
- 	}
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index 1825629..5925e0b 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -342,17 +342,22 @@ err:
+ 	return err;
  }
  
-+void sctp_outq_teardown(struct sctp_outq *q)
-+{
-+	__sctp_outq_teardown(q);
-+	sctp_outq_init(q->asoc, q);
+-void xenvif_disconnect(struct xenvif *vif)
++void xenvif_carrier_off(struct xenvif *vif)
+ {
+ 	struct net_device *dev = vif->dev;
+-	if (netif_carrier_ok(dev)) {
+-		rtnl_lock();
+-		netif_carrier_off(dev); /* discard queued packets */
+-		if (netif_running(dev))
+-			xenvif_down(vif);
+-		rtnl_unlock();
+-		xenvif_put(vif);
+-	}
++
++	rtnl_lock();
++	netif_carrier_off(dev); /* discard queued packets */
++	if (netif_running(dev))
++		xenvif_down(vif);
++	rtnl_unlock();
++	xenvif_put(vif);
 +}
 +
- /* Free the outqueue structure and any related pending chunks.  */
- void sctp_outq_free(struct sctp_outq *q)
- {
- 	/* Throw away leftover chunks. */
--	sctp_outq_teardown(q);
-+	__sctp_outq_teardown(q);
++void xenvif_disconnect(struct xenvif *vif)
++{
++	if (netif_carrier_ok(vif->dev))
++		xenvif_carrier_off(vif);
  
- 	/* If we were kmalloc()'d, free the memory.  */
- 	if (q->malloced)
+ 	atomic_dec(&vif->refcnt);
+ 	wait_event(vif->waiting_to_free, atomic_read(&vif->refcnt) == 0);
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 15e332d..6501813 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -860,6 +860,13 @@ static void netbk_tx_err(struct xenvif *vif,
+ 	xenvif_put(vif);
+ }
+ 
++static void netbk_fatal_tx_err(struct xenvif *vif)
++{
++	netdev_err(vif->dev, "fatal error; disabling device\n");
++	xenvif_carrier_off(vif);
++	xenvif_put(vif);
++}
++
+ static int netbk_count_requests(struct xenvif *vif,
+ 				struct xen_netif_tx_request *first,
+ 				struct xen_netif_tx_request *txp,
+@@ -873,19 +880,22 @@ static int netbk_count_requests(struct xenvif *vif,
+ 
+ 	do {
+ 		if (frags >= work_to_do) {
+-			netdev_dbg(vif->dev, "Need more frags\n");
++			netdev_err(vif->dev, "Need more frags\n");
++			netbk_fatal_tx_err(vif);
+ 			return -frags;
+ 		}
+ 
+ 		if (unlikely(frags >= MAX_SKB_FRAGS)) {
+-			netdev_dbg(vif->dev, "Too many frags\n");
++			netdev_err(vif->dev, "Too many frags\n");
++			netbk_fatal_tx_err(vif);
+ 			return -frags;
+ 		}
+ 
+ 		memcpy(txp, RING_GET_REQUEST(&vif->tx, cons + frags),
+ 		       sizeof(*txp));
+ 		if (txp->size > first->size) {
+-			netdev_dbg(vif->dev, "Frags galore\n");
++			netdev_err(vif->dev, "Frag is bigger than frame.\n");
++			netbk_fatal_tx_err(vif);
+ 			return -frags;
+ 		}
+ 
+@@ -893,8 +903,9 @@ static int netbk_count_requests(struct xenvif *vif,
+ 		frags++;
+ 
+ 		if (unlikely((txp->offset + txp->size) > PAGE_SIZE)) {
+-			netdev_dbg(vif->dev, "txp->offset: %x, size: %u\n",
++			netdev_err(vif->dev, "txp->offset: %x, size: %u\n",
+ 				 txp->offset, txp->size);
++			netbk_fatal_tx_err(vif);
+ 			return -frags;
+ 		}
+ 	} while ((txp++)->flags & XEN_NETTXF_more_data);
+@@ -1069,7 +1080,8 @@ static int xen_netbk_get_extras(struct xenvif *vif,
+ 
+ 	do {
+ 		if (unlikely(work_to_do-- <= 0)) {
+-			netdev_dbg(vif->dev, "Missing extra info\n");
++			netdev_err(vif->dev, "Missing extra info\n");
++			netbk_fatal_tx_err(vif);
+ 			return -EBADR;
+ 		}
+ 
+@@ -1078,8 +1090,9 @@ static int xen_netbk_get_extras(struct xenvif *vif,
+ 		if (unlikely(!extra.type ||
+ 			     extra.type >= XEN_NETIF_EXTRA_TYPE_MAX)) {
+ 			vif->tx.req_cons = ++cons;
+-			netdev_dbg(vif->dev,
++			netdev_err(vif->dev,
+ 				   "Invalid extra type: %d\n", extra.type);
++			netbk_fatal_tx_err(vif);
+ 			return -EINVAL;
+ 		}
+ 
+@@ -1095,13 +1108,15 @@ static int netbk_set_skb_gso(struct xenvif *vif,
+ 			     struct xen_netif_extra_info *gso)
+ {
+ 	if (!gso->u.gso.size) {
+-		netdev_dbg(vif->dev, "GSO size must not be zero.\n");
++		netdev_err(vif->dev, "GSO size must not be zero.\n");
++		netbk_fatal_tx_err(vif);
+ 		return -EINVAL;
+ 	}
+ 
+ 	/* Currently only TCPv4 S.O. is supported. */
+ 	if (gso->u.gso.type != XEN_NETIF_GSO_TYPE_TCPV4) {
+-		netdev_dbg(vif->dev, "Bad GSO type %d.\n", gso->u.gso.type);
++		netdev_err(vif->dev, "Bad GSO type %d.\n", gso->u.gso.type);
++		netbk_fatal_tx_err(vif);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -1238,9 +1253,25 @@ static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
+ 
+ 		/* Get a netif from the list with work to do. */
+ 		vif = poll_net_schedule_list(netbk);
++		/* This can sometimes happen because the test of
++		 * list_empty(net_schedule_list) at the top of the
++		 * loop is unlocked.  Just go back and have another
++		 * look.
++		 */
+ 		if (!vif)
+ 			continue;
+ 
++		if (vif->tx.sring->req_prod - vif->tx.req_cons >
++		    XEN_NETIF_TX_RING_SIZE) {
++			netdev_err(vif->dev,
++				   "Impossible number of requests. "
++				   "req_prod %d, req_cons %d, size %ld\n",
++				   vif->tx.sring->req_prod, vif->tx.req_cons,
++				   XEN_NETIF_TX_RING_SIZE);
++			netbk_fatal_tx_err(vif);
++			continue;
++		}
++
+ 		RING_FINAL_CHECK_FOR_REQUESTS(&vif->tx, work_to_do);
+ 		if (!work_to_do) {
+ 			xenvif_put(vif);
+@@ -1268,17 +1299,14 @@ static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
+ 			work_to_do = xen_netbk_get_extras(vif, extras,
+ 							  work_to_do);
+ 			idx = vif->tx.req_cons;
+-			if (unlikely(work_to_do < 0)) {
+-				netbk_tx_err(vif, &txreq, idx);
++			if (unlikely(work_to_do < 0))
+ 				continue;
+-			}
+ 		}
+ 
+ 		ret = netbk_count_requests(vif, &txreq, txfrags, work_to_do);
+-		if (unlikely(ret < 0)) {
+-			netbk_tx_err(vif, &txreq, idx - ret);
++		if (unlikely(ret < 0))
+ 			continue;
+-		}
++
+ 		idx += ret;
+ 
+ 		if (unlikely(txreq.size < ETH_HLEN)) {
+@@ -1290,11 +1318,11 @@ static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
+ 
+ 		/* No crossing a page as the payload mustn't fragment. */
+ 		if (unlikely((txreq.offset + txreq.size) > PAGE_SIZE)) {
+-			netdev_dbg(vif->dev,
++			netdev_err(vif->dev,
+ 				   "txreq.offset: %x, size: %u, end: %lu\n",
+ 				   txreq.offset, txreq.size,
+ 				   (txreq.offset&~PAGE_MASK) + txreq.size);
+-			netbk_tx_err(vif, &txreq, idx);
++			netbk_fatal_tx_err(vif);
+ 			continue;
+ 		}
+ 
+@@ -1322,8 +1350,8 @@ static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
+ 			gso = &extras[XEN_NETIF_EXTRA_TYPE_GSO - 1];
+ 
+ 			if (netbk_set_skb_gso(vif, skb, gso)) {
++				/* Failure in netbk_set_skb_gso is fatal. */
+ 				kfree_skb(skb);
+-				netbk_tx_err(vif, &txreq, idx);
+ 				continue;
+ 			}
+ 		}
 
 
