@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab3BQCVv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 21:21:51 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:61392 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755043Ab3BQCVt (ORCPT
+	id S1755480Ab3BQCe2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 21:34:28 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:38953 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755435Ab3BQCe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 21:21:49 -0500
-Date: Sat, 16 Feb 2013 18:21:01 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
-In-Reply-To: <alpine.LNX.2.00.1302161522130.22723@eggly.anvils>
-Message-ID: <alpine.LNX.2.00.1302161803430.23675@eggly.anvils>
-References: <20130212193901.GA18906@redhat.com> <alpine.LNX.2.00.1302121549500.890@eggly.anvils> <20130213004059.GA14451@redhat.com> <alpine.LNX.2.00.1302121652240.1077@eggly.anvils> <20130213041629.GA28622@redhat.com> <alpine.LNX.2.00.1302122121170.15020@eggly.anvils>
- <20130213193411.GA15928@redhat.com> <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com> <20130215011503.GA11914@redhat.com> <alpine.LNX.2.00.1302141804400.3330@eggly.anvils> <CA+55aFyLDnmwy16V8TQRwJV2O51K-dmqBhuWi2ytRd4sYi8J+g@mail.gmail.com>
- <alpine.LNX.2.00.1302161302290.21380@eggly.anvils> <CA+55aFwF1qZmPaL5LPA+0ys68s=TF7wfXpb5y9GWi0q5RJDJ-Q@mail.gmail.com> <alpine.LNX.2.00.1302161522130.22723@eggly.anvils>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 16 Feb 2013 21:34:26 -0500
+From: Samu Kallio <samu.kallio@aberdeencloud.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Samu Kallio <samu.kallio@aberdeencloud.com>
+Subject: [PATCH] x86: mm: Fix vmalloc_fault oops during lazy MMU updates.
+Date: Sun, 17 Feb 2013 04:35:52 +0200
+Message-Id: <1361068552-21529-1-git-send-email-samu.kallio@aberdeencloud.com>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 16 Feb 2013, Hugh Dickins wrote:
-> On Sat, 16 Feb 2013, Linus Torvalds wrote:
-> > 
-> > I think it's worth it to give them a heads-up already. So I've cc'd
-> > the main suspects here..
-> 
-> Okay, thanks.
-> 
-> > 
-> > Daniel, Dave - any comments about a NULL fb in
-> > intel_choose_pipe_bpp_dither() during either suspend or resume? Some
-> > googling shows this:
-> > 
-> >     https://bugzilla.redhat.com/show_bug.cgi?id=895123
-> 
-> Great, yes, I'm sure that's the same (though it says "suspend"
-> and I say "resume").
-> 
-> > 
-> > which sounds remarkably similar, and is also during a suspend attempt
-> > (but apparently Satish got a full oops out).. Some timing race with a
-> > worker entry?
+In paravirtualized x86_64 kernels, vmalloc_fault may cause an oops
+when lazy MMU updates are enabled, because set_pgd effects are being
+deferred.
 
-Comparing Satish's backtrace and drivers/gpu/drm history, it's clear that
-the oops comes from Daniel's 3.8-rc2 45e2b5f640b3 "drm/i915: force restore
-on lid open", whose force_restore case now passes down crtc->base.fb.  But
-I wouldn't have a clue why that's usually non-NULL but occasionally NULL:
-your timing race with a worker entry, perhaps.
+One instance of this problem is during process mm cleanup with memory
+cgroups enabled. The chain of events is as follows:
 
-And 45e2b5f640b3 contains a fine history of going back and forth, so I
-wouldn't want to play further with it out of ignorance - though tempted
-to replace the "if (force_restore) {" by an interim safe-seeming
-compromise of "if (force_restore && crtc->base.fb) {".
+- zap_pte_range enables lazy MMU updates
+- zap_pte_range eventually calls mem_cgroup_charge_statistics,
+  which accesses the vmalloc'd mem_cgroup per-cpu stat area
+- vmalloc_fault is triggered which tries to sync the corresponding
+  PGD entry with set_pgd, but the update is deferred
+- vmalloc_fault oopses due to a mismatch in the PUD entries
 
-Hugh
+Calling arch_flush_lazy_mmu_mode immediately after set_pgd makes the
+changes visible to the consistency checks.
+
+Signed-off-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+---
+ arch/x86/mm/fault.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 8e13ecb..0a45298 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -378,10 +378,12 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
+ 	if (pgd_none(*pgd_ref))
+ 		return -1;
+ 
+-	if (pgd_none(*pgd))
++	if (pgd_none(*pgd)) {
+ 		set_pgd(pgd, *pgd_ref);
+-	else
++		arch_flush_lazy_mmu_mode();
++	} else {
+ 		BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
++	}
+ 
+ 	/*
+ 	 * Below here mismatches are bugs because these lower tables
+-- 
+1.8.1.3
+
