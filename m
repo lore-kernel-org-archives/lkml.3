@@ -1,79 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab3BQCfW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 21:35:22 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23852 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682Ab3BQCfV convert rfc822-to-8bit (ORCPT
+	id S1755554Ab3BQCkF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 21:40:05 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:52528 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745Ab3BQCkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 21:35:21 -0500
+	Sat, 16 Feb 2013 21:40:03 -0500
 MIME-Version: 1.0
-Message-ID: <505e6314-555a-4bc6-96ef-dac735ae0bee@default>
-Date: Sat, 16 Feb 2013 18:35:04 -0800 (PST)
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-To: <ben@decadent.org.uk>
-Cc: <tmhikaru@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] dmi_scan: Fix missing check for _DMI_ signature in
- smbios_present()
-X-Mailer: Zimbra on Oracle Beehive
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1360252328.221651004@f364.mail.ru>
+References: <1359990040-5339-1-git-send-email-shc_work@mail.ru>
+	<1360226494.178606955@f137.mail.ru>
+	<1360252328.221651004@f364.mail.ru>
+Date: Sun, 17 Feb 2013 10:40:01 +0800
+Message-ID: <CAP1dx+wNf=udD-X8=TKBqsFbvcpCAzM2pYyLmPaTHk_=tvQs2w@mail.gmail.com>
+Subject: Re: Re[4]: [PATCH] mfd: syscon: Added support for using platform
+ driver resources
+From: Dong Aisheng <dong.aisheng@linaro.org>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Alexander,
 
------ ben@decadent.org.uk wrote：
+On 7 February 2013 23:52, Alexander Shiyan <shc_work@mail.ru> wrote:
+> Hello.
+>
+>> > ...
+>> >> Thanks for the patch adding non-dt support. :-)
+>> >>
+>> >> On Mon, Feb 04, 2013 at 07:00:40PM +0400, Alexander Shiyan wrote:
+>> >> > This patch adds support usage platform driver resources, i.e.
+>> >> > possibility works without oftree support. Additionally patch
+>> >> > removes CONFIG_OF dependency and adds helper for accessing
+>> >> > regmap by searching device by its name.
+>> > ...
+>> >> > +static int syscon_match_name(struct device *dev, void *data)
+>> >> > +{
+>> >> > +   return !strcmp(dev_name(dev), (const char *)data);
+>> >> > +}
+>> >> > +
+>> >> > +struct regmap *syscon_regmap_lookup_by_name(const char *name)
+>> >> > +{
+>> >> > +   struct syscon *syscon;
+>> >> > +   struct device *dev;
+>> >> > +
+>> >> > +   dev = driver_find_device(&syscon_driver.driver, NULL, (void *)name,
+>> >> > +                            syscon_match_name);
+>> >> > +   if (!dev)
+>> >> > +           return ERR_PTR(-EPROBE_DEFER);
+>> >> > +
+>> >> > +   syscon = dev_get_drvdata(dev);
+>> >> > +
+>> >> > +   return syscon->regmap;
+>> >> > +}
+>> >> > +
+>> >>
+>> >> How about syscon_dev_to_regmap(struct device *dev) as the exist dt version
+>> >> syscon_node_to_regmap since it's not affected by the name change of devices?
+>> >
+>> > I am not completely understand what you mean. In my version which doing
+>> > search regmap by name, we can call this function with desired device name,
+>> > then use regmap:
+>> > struct regmap *r = syscon_regmap_lookup_by_name("syscon.1");
+>> >
+>>
+>> My concern is that this API may be used by other client drivers, if we hardcode
+>> the device name in those drivers, once the device name is changed,
+>> all those drivers need change too.
+>> For dt case, we use device node to find regmap, so does not care about the name.
+>>
+>> > You suggest use "struct device" as parameter?
+>>
+>> A device pointer.
+>>
+>> > I do not know what we should
+>> > use as parameter to the function in this case, since we can get "struct device"
+>> > only when register this device,
+>>
+>> If we have a platform_device, then we have its device pointer, right?
+>>
+>> > i.e. in board support code, not from anywhere,
+>> > for example from another driver.
+>> > Fixme please.
+>> >
+>>
+>> My understanding is that in board support code, we can have the
+>> platform device instance
+>> of that syscon compatible device, then we can use it as the platform
+>> data parameter for those devices driver who wants to use it.
+>> Then in client driver, it can call:
+>> syscon_dev_to_regmap(syscon_compatible_dev)
+>> to find the regmap.
+>> Just like dt working way, the device node usually uses a phandle pointing to
+>> the syscon compatible node which it wants to use.
+>
+> This is not as easy as it seems.
+> All devices that will use "syscon" driver, in this case should have a platform_data
+> record.
 
-> Commit 9f9c9cbb6057 ('drivers/firmware/dmi_scan.c: fetch dmi version
-> from SMBIOS if it exists') hoisted the check for "_DMI_" into
-> dmi_scan_machine(), which means that we don't bother to check for
-> "_DMI_" at offset 16 in an SMBIOS entry.  smbios_present() may also
-> call dmi_present() for an address where we found "_SM_", if it failed
-> further validation.
-> 
-> Check for "_DMI_" in smbios_present() before calling dmi_present().
-> 
-> Reported-by: Tim McGrath <tmhikaru@gmail.com>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> Cc: stable <stable@vger.kernel.org>
+Yes, that's the same way as the dt version does.
+
+> I think that it can create problems with using these drivers as modules.
+
+What problems do you think?
+
+> Alternatively, we can create additional (virtual) "compatible" text property in syscon
+> private data structure and use it to find the proper device. What is your opinion?
+>
+
+Hmm, i can't see why we need that.
+IMO, for non-dt, we can just use platform_device_id to match devices.
+
+>> > ...
+>> >> > +   if (IS_ENABLED(CONFIG_OF) && np) {
+>> >> > +           syscon->base = of_iomap(np, 0);
+>> >> > +           if (!syscon->base)
+>> >> > +                   return -EADDRNOTAVAIL;
+>> >> > +
+>> >> > +           res = &res_of;
+>> >> > +           ret = of_address_to_resource(np, 0, res);
+>> >> > +           if (ret)
+>> >> > +                   return ret;
+>> >> > +   } else {
+>> >> > +           res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> >> > +           if (!res)
+>> >> > +                   return -ENXIO;
+>> >> > +
+>> >> > +           if (!request_mem_region(res->start, resource_size(res),
+>> >> > +                                   dev_name(&pdev->dev)))
+>> >> > +                   return -EBUSY;
+>> >> > +
+>> >> > +           syscon->base = ioremap(res->start, resource_size(res));
+>> >> > +           if (!syscon->base)
+>> >> > +                   return -EADDRNOTAVAIL;
+>> >>
+>> >> devm_request_and_ioremap?
+>> >
+>> > We call of_iomap for DT-version,  for removal procedure - iounmap.
+>> > Will iounmap work properly with devm_-version, I'm not sure.
+>>
+>> You're right, i'm afraid not.
+>> If that, i wonder the ioremap resource may be freed twice for driver removal.
+>> So, i'm okay with your current way.
+>> But one issue is that then we need take care of the resource free by ourselves
+>> for probe failed cases. e.g. ioremap and request_mem_region.
+>> You may need add them.
+>
+> Yes, thanks. I forget about it.
+>
+>> > May be better to completely remove ".remove" (and module_exit) feature for driver?
+>> > It is loaded at startup always once compiled, and should always be in the system.
+>> It supports to be a module, so it may be better to keep ".remove".
+>
+> As far I can see, no. Kernel symbol defined as bool, so driver cannot be compiled
+> as module:
+> config MFD_SYSCON
+>         bool "System Controller Register R/W Based on Regmap"
+>
+
+I see.
+Thanks
+
+Regards
+Dong Aisheng
+
+> Thanks!
+>
 > ---
-> This has a memcmp() that wasn't in the previous version, so I've not
-> included the Acked-by or Tested-by for that.
-Yes, the further "_DMI_" check is needed.
-Acked-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> 
-> Ben.
-> 
->  drivers/firmware/dmi_scan.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/firmware/dmi_scan.c
-> b/drivers/firmware/dmi_scan.c
-> index 982f1f5..a86ccff 100644
-> --- a/drivers/firmware/dmi_scan.c
-> +++ b/drivers/firmware/dmi_scan.c
-> @@ -442,7 +442,6 @@ static int __init dmi_present(const char __iomem
-> *p)
->  static int __init smbios_present(const char __iomem *p)
->  {
->  	u8 buf[32];
-> -	int offset = 0;
->  
->  	memcpy_fromio(buf, p, 32);
->  	if ((buf[5] < 32) && dmi_checksum(buf, buf[5])) {
-> @@ -461,9 +460,9 @@ static int __init smbios_present(const char
-> __iomem *p)
->  			dmi_ver = 0x0206;
->  			break;
->  		}
-> -		offset = 16;
-> +		return memcmp(q + 16, "_DMI_", 5) || dmi_present(p + 16);
->  	}
-> -	return dmi_present(buf + offset);
-> +	return 1;
->  }
->  
->  void __init dmi_scan_machine(void)
