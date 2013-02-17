@@ -1,83 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751141Ab3BQQZg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 11:25:36 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42368 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751024Ab3BQQZf (ORCPT
+	id S1751235Ab3BQQby (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 11:31:54 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:59450 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab3BQQbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 11:25:35 -0500
-Date: Sun, 17 Feb 2013 16:25:24 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Eric Piel <eric.piel@tremplin-utc.net>,
-        Ilkka Koskinen <ilkka.koskinen@nokia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Driver lis3lv02d_i2c not working on Nokia RX-51
-Message-ID: <20130217162523.GC1583@opensource.wolfsonmicro.com>
-References: <201302170046.26569@pali>
+	Sun, 17 Feb 2013 11:31:52 -0500
+Date: Sun, 17 Feb 2013 08:31:03 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Airlie <airlied@linux.ie>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
+In-Reply-To: <20130217133814.GK5813@phenom.ffwll.local>
+Message-ID: <alpine.LNX.2.00.1302170820140.893@eggly.anvils>
+References: <alpine.LNX.2.00.1302122121170.15020@eggly.anvils> <20130213193411.GA15928@redhat.com> <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com> <20130215011503.GA11914@redhat.com> <alpine.LNX.2.00.1302141804400.3330@eggly.anvils>
+ <CA+55aFyLDnmwy16V8TQRwJV2O51K-dmqBhuWi2ytRd4sYi8J+g@mail.gmail.com> <alpine.LNX.2.00.1302161302290.21380@eggly.anvils> <CA+55aFwF1qZmPaL5LPA+0ys68s=TF7wfXpb5y9GWi0q5RJDJ-Q@mail.gmail.com> <alpine.LNX.2.00.1302161522130.22723@eggly.anvils>
+ <alpine.LNX.2.00.1302161803430.23675@eggly.anvils> <20130217133814.GK5813@phenom.ffwll.local>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B4IIlcmfBL/1gGOG"
-Content-Disposition: inline
-In-Reply-To: <201302170046.26569@pali>
-X-Cookie: Is this really happening?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 17 Feb 2013, Daniel Vetter wrote:
+> On Sun, Feb 17, 2013 at 3:21 AM, Hugh Dickins <hughd@google.com> wrote:
+> > On Sat, 16 Feb 2013, Hugh Dickins wrote:
+> >> On Sat, 16 Feb 2013, Linus Torvalds wrote:
+> >> >
+> >> > I think it's worth it to give them a heads-up already. So I've cc'd
+> >> > the main suspects here..
+> >>
+> >> Okay, thanks.
+> >>
+> >> >
+> >> > Daniel, Dave - any comments about a NULL fb in
+> >> > intel_choose_pipe_bpp_dither() during either suspend or resume? Some
+> >> > googling shows this:
+> >> >
+> >> >     https://bugzilla.redhat.com/show_bug.cgi?id=895123
+> >>
+> >> Great, yes, I'm sure that's the same (though it says "suspend"
+> >> and I say "resume").
+> >>
+> >> >
+> >> > which sounds remarkably similar, and is also during a suspend attempt
+> >> > (but apparently Satish got a full oops out).. Some timing race with a
+> >> > worker entry?
+> >
+> > Comparing Satish's backtrace and drivers/gpu/drm history, it's clear that
+> > the oops comes from Daniel's 3.8-rc2 45e2b5f640b3 "drm/i915: force restore
+> > on lid open", whose force_restore case now passes down crtc->base.fb.  But
+> > I wouldn't have a clue why that's usually non-NULL but occasionally NULL:
+> > your timing race with a worker entry, perhaps.
+> >
+> > And 45e2b5f640b3 contains a fine history of going back and forth, so I
+> > wouldn't want to play further with it out of ignorance - though tempted
+> > to replace the "if (force_restore) {" by an interim safe-seeming
+> > compromise of "if (force_restore && crtc->base.fb) {".
 
---B4IIlcmfBL/1gGOG
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+My suggestion there in the line above was stupidly wrong :(
 
-On Sun, Feb 17, 2013 at 12:46:25AM +0100, Pali Roh=E1r wrote:
+> 
+> Two things to try while I try to grow a clue on what exactly is going on:
 
-> Accelerometer driver lis3lv02d_i2c not working on Nokia RX-51=20
-> with linux kernel 3.8-rc3. Probing for i2c device failing.
+Thank you.
 
-> I tried to compile older version and it working without problem.=20
-> Then I bisected commit which broke support for RX-51.
+By the way, I hope you've looked back through this thread, and realize
+that Dave and I both had ThinkPad T4?0s suspend/resume display problems,
+but they've gone off in different directions: so a lot of the discussion
+comes from Dave having CONFIG_PROVE_RCU_DELAY, and has nothing to do with
+what we now know to be my oops in i915/intel_display.c.
 
-> That commit is ec400c9fab99d16a491cea17d27d0c6a5780b97c
-> "lis3lv02d: make regulator API usage unconditional"
+> 
+> 1. Related to new ACPI sleep states we've recently made the lid_notifier
+> locking more sound, maybe that helps:
+> 
+> http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-next-queued&id=b8efb17b3d687695b81485f606fc4e6c35a50f9a
 
-> CCing everybody who signed off that commit. When I reverted that=20
-> commit on top of 3.8-rc3, lis3lv02d working without problem.
+Looks like it may be relevant, but I'll ignore it for now:
+preferring first to test the more minimal safety you suggest below.
 
-> It looks like driver is trying to use some regulator, but there=20
-> is nothing defined for RX-51.
+> 
+> 2. The new i915 force restore code is indeed missing a safety check
+> compared to the old crtc helper based one:
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index 6eb3882..095094c 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -9153,7 +9153,13 @@ void intel_modeset_setup_hw_state(struct drm_device *dev,
+>  
+>  	if (force_restore) {
+>  		for_each_pipe(pipe) {
+> -			intel_crtc_restore_mode(dev_priv->pipe_to_crtc_mapping[pipe]);
+> +			struct drm_crtc * crtc =
+> +				dev_priv->pipe_to_crtc_mapping[pipe];
+> +
+> +			if (!crtc->enabled)
+> +				continue;
+> +
+> +			intel_crtc_restore_mode(crtc);
+>  		}
+>  
+>  		i915_redisable_vga(dev);
 
-> Any idea what to do?
+I see your followup, where you observe that intel_modeset_affected_pipes()
+should already have made this check; but you do say it would still be good
+to prove one way or the other, so I'll run from now with the patch below.
 
-It would be helpful to provide some more detailed information on the
-problem you are seeing than "the probe is failing".  Are there any error
-messages or other indications as to where in the probe the error occurs?
+Note that we haven't got to worrying about what will be in 3.9 yet
+(linux-next tells me to expect hangcheck timer problems): it's Linus's
+current git for 3.8 final that we're working on at present.
 
---B4IIlcmfBL/1gGOG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+And since quick resumes have always worked for me, it's only occasionally
+that a long suspend (e.g. overnight) fails for me in this way, so I won't
+be able to report success for several days - but failure may come sooner.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+And, it being very tiresome to debug when it does fail, I have inserted
+WARN_ONs and more safety: here's what I'm running with now.
 
-iQIcBAEBAgAGBQJRIQRrAAoJELSic+t+oim9AEAP/3VppxyYF25HD0gXSbr5IwMp
-+kw63+JZ+kkS7VcLsAd1aN7J45t+5PU0DLwc6KSXXPCZ+dzafD2/EYMbZDa76zat
-XS+LiWZSqu9u4D62+3oyDiwDVtcCxGm4A+pXLpzSEHyLA5X8WPJSZUMHa5RvYpPb
-dVWJpQ5Ee1CXtsUqv6li+6VLR84zgfKU9kHVAxGMbWChgvBDOokK9dyF6qsGCp0o
-88Ogzs4Au6eGMalQIqhkADxbjBL71sCeMk200fi4vUL0uWDRkLMBem5JBezCElQZ
-BcUoQ/wEG7YW+gmVX7/4Cwa9QRKRBAGBvaWRoufFl+emPODakPysIPyei62ImEUX
-b+kj5464GEOiFzBnwBj+8t/JPwVNZEm49ocBcsM5x20yyHG6Fv1eS9a5k9F0eTGQ
-9J4V8s50GiAo0hEp3L7FvHoBiJzghzOlIwubHyedO2CJn3WPi6uxktx38upx90l2
-Xtquu0HV5ZdHHbmDZIrCIMFQPejFgKWt6K21+8Sw2f8k0unT8R4ZTxLsF7sTUmBB
-t0lONlNl/mI6P7+ouk+eVrI7jcQU7+3uJ4g5HaCj9Tf0zXu6xsfmQJ4fFfJP80Ia
-74lNeGs+lYzgJYrxu2FNh8539JMdVVioJeITIwm7AwHfqPif14GVniS4rv8QeC4B
-qUzRAub1/beBGFGNcpEm
-=l8oo
------END PGP SIGNATURE-----
-
---B4IIlcmfBL/1gGOG--
+--- 3.8-rc7/drivers/gpu/drm/i915/intel_display.c	2013-01-17 20:06:11.384002362 -0800
++++ linux/drivers/gpu/drm/i915/intel_display.c	2013-02-17 07:50:28.012075150 -0800
+@@ -4156,7 +4156,9 @@ static bool intel_choose_pipe_bpp_dither
+ 	 * also stays within the max display bpc discovered above.
+ 	 */
+ 
+-	switch (fb->depth) {
++	if (WARN_ON(!fb))
++		bpc = 8;
++	else switch (fb->depth) {
+ 	case 8:
+ 		bpc = 8; /* since we go through a colormap */
+ 		break;
+@@ -9302,6 +9304,10 @@ void intel_modeset_setup_hw_state(struct
+ 	if (force_restore) {
+ 		for_each_pipe(pipe) {
+ 			crtc = to_intel_crtc(dev_priv->pipe_to_crtc_mapping[pipe]);
++			if (WARN_ON(!crtc->base.enabled))
++				continue;
++			if (WARN_ON(!crtc->base.fb))
++				continue;
+ 			intel_set_mode(&crtc->base, &crtc->base.mode,
+ 				       crtc->base.x, crtc->base.y, crtc->base.fb);
+ 		}
