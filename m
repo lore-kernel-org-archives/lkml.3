@@ -1,117 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab3BQHpx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 02:45:53 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:52730 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab3BQHpw (ORCPT
+	id S1755680Ab3BQICU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 03:02:20 -0500
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:30023
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753148Ab3BQICT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 02:45:52 -0500
-Subject: Re: Stupid user with user-space questions, matrix LED driving with
- user space code only.
-From: anish kumar <anish198519851985@gmail.com>
-To: jon@jonshouse.co.uk
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1361025476.4271.36.camel@jonspc>
-References: <1361025476.4271.36.camel@jonspc>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 17 Feb 2013 11:52:14 +0530
-Message-ID: <1361082134.16206.24.camel@anish-Inspiron-N5050>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 17 Feb 2013 03:02:19 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahz8dhz8275bh8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Sun, 17 Feb 2013 16:02:20 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Fabio Estevam <festevam@gmail.com>
+CC: <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] clk: mxs: Fix sparse warnings
+Message-ID: <20130217080219.GF15048@S2101-09.ap.freescale.net>
+References: <1360591636-10575-1-git-send-email-festevam@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1360591636-10575-1-git-send-email-festevam@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-02-16 at 14:37 +0000, Jonathan Andrews wrote:
-> I hope this is the correct place, I expect to get abused.
+On Mon, Feb 11, 2013 at 12:07:16PM -0200, Fabio Estevam wrote:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
 > 
-> I'm trying to do a mostly soft real-time task with a very small hard
-> real time element.
+> Fix the following sparse warnings:
 > 
-> I've written some code to drive matrix LED signs using a Raspberry Pi.
+> drivers/clk/mxs/clk.c:17:1: warning: symbol 'mxs_lock' was not declared. Should it be static?
+> drivers/clk/mxs/clk.c:19:5: warning: symbol 'mxs_clk_wait' was not declared. Should it be static?
 > 
-> Source here:
-> http://www.jonshouse.co.uk/download/128x32_red_green_led_sign.tar.gz
-> 
-> 
-> Since I last used linux you kernel people have fiddled with it yet
-> again:
-> 
-> Linux raspberrypi 3.6.11+ #375 PREEMPT Tue Feb 12 01:41:07 GMT 2013 armv6l GNU/Linux
-> 
-> I'm scanning an LED display to produce a 2 bits per pixel image.  The
-> code simply alters the amount of time any one LED is on, for higher
-> intensity pixels the true amount of "on" time is non critical.
-> 
-> I've marked my process as realtime.
-> 
-> My problem is that for very dim pixels the amount of "on" time for the
-> LED  is very critical, this is only a fraction of a percent of the total
-> processes timeslice.
-> It scans 100 frames of brightest, 100 frames of brighter and 1 frame of
-> dim pixels for example, so 200:1 ratio of don't care much /vs care a lot
-> timing !
-> 
-> To this end I'm using a hard coded small delay instead of usleep for the
-> tight timing section:
-> 
-> // Delay for ARM without yeilding to schedular, roughly calibrated but better than usleep for short delays
-> inline usleep_arm_hard(int usecs)
-> {
->         long int outer,inner;
-> 
->         for (outer=0;outer<usecs;outer++)
->         {
->                 for (inner=0;inner<300;inner++)
->                         asm("andeq r0, r0, r0");		// NOP
->         }
-> }
-> 
-> The dim pixel code is timing critical (but as I said only a tiny
-> fraction of the total CPU usage). What I need to do is grab the CPU and
-> prevent any context switch (IRQ or PREEMPT) for this period.
-why you want to do this?
-> 
-> I cant find a user space mechanism other than changing the kernel to
-> disable preemtion ? No simple /proc switch to turn it on/off ? If not
-> why - I cant be the only one who wants to toggle preemption off without
-> swapping kernels ?
-you can't disable pre-emption from user space.
-> 
-> The other issue is that of IRQs, my dim pixels on the display seem to
-> flash brighter from time to time, this I assume is partly preemption
-> (maybe possibly) and partly IRQ handling (more likely) allowing context
-> switches or just taking a while on slow hardware.
-> 
-> I need only a tiny fraction of the runtime to be hard real time, on
-> intel in the past i've simply disabled IRQs briefly with some inline
-> assembler. 
-you shouldn't fiddle with irq's from user space but...
-> The Raspberry Pi board would also probably survive this as the only
-> active peripheral is ethenet, I suspect couple of missed IRQs would not
-> matter as once IRQs are re-enabled the USB/ethernet hardware will likely
-> have the data or it can be re-tried.  Does anyone have an example of a
-> dirty hack along these lines they can share with me :-) 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-> Do I have any simple mechanism available to disable (or defer) kernel
-> IRQ handling briefly from user space code, I suspect not but no harm in
-> asking ?
-Use any sysfs to disable/enable the irq. This approach is very bad but
-as you said you wanted a hack.
-> Thanks,
-> Jon
-> 
-> PS I'm not a kernel hacker - yes I know I could write a proper driver
-> for the task but I lack any real skill and the required time !
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
+> ---
+>  drivers/clk/mxs/clk.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/clk/mxs/clk.c b/drivers/clk/mxs/clk.c
+> index b24d560..5301bce 100644
+> --- a/drivers/clk/mxs/clk.c
+> +++ b/drivers/clk/mxs/clk.c
+> @@ -13,6 +13,7 @@
+>  #include <linux/io.h>
+>  #include <linux/jiffies.h>
+>  #include <linux/spinlock.h>
+> +#include "clk.h"
+>  
+>  DEFINE_SPINLOCK(mxs_lock);
+>  
+> -- 
+> 1.7.9.5
+> 
 
