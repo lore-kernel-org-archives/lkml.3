@@ -1,92 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200Ab3BQQkr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 11:40:47 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:44976 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab3BQQkq (ORCPT
+	id S1751274Ab3BQRBZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 12:01:25 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:35642 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab3BQRBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 11:40:46 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: Driver lis3lv02d_i2c not working on Nokia RX-51
-Date: Sun, 17 Feb 2013 17:40:41 +0100
-User-Agent: KMail/1.13.7 (Linux/3.5.0-24-generic; KDE/4.10.0; x86_64; ; )
-Cc: Eric Piel <eric.piel@tremplin-utc.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <201302170046.26569@pali> <20130217162523.GC1583@opensource.wolfsonmicro.com>
-In-Reply-To: <20130217162523.GC1583@opensource.wolfsonmicro.com>
+	Sun, 17 Feb 2013 12:01:23 -0500
+Date: Sun, 17 Feb 2013 11:01:11 -0600
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: 3.7 HDMI channel map regression
+Message-ID: <20130217170111.GA21967@lintop>
+References: <20130128011827.GA30485@lintop>
+ <s5h1ud5bs8u.wl%tiwai@suse.de>
+ <20130129025205.GB30485@lintop>
+ <20130217002225.GA20562@lintop>
+ <s5h621rcp8y.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2123684.uNZyNx79sE";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302171740.41985@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5h621rcp8y.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2123684.uNZyNx79sE
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Sun, Feb 17, 2013 at 09:34:53AM +0100, Takashi Iwai wrote:
+> At Sat, 16 Feb 2013 18:22:25 -0600,
+> Shawn Bohrer wrote:
+> > 
+> > On Mon, Jan 28, 2013 at 08:52:05PM -0600, Shawn Bohrer wrote:
+> > > On Mon, Jan 28, 2013 at 09:56:33AM +0100, Takashi Iwai wrote:
+> > > > At Sun, 27 Jan 2013 19:18:27 -0600,
+> > > > Shawn Bohrer wrote:
+> > > > > 
+> > > > > Hi Takashi,
+> > > > > 
+> > > > > I recently updated my HTPC from 3.6.11 to 3.7.2 and this caused my RL
+> > > > > and FC channels to swap, and my RR and LFE channels to swap for PCM
+> > > > > audio.  Doing a git bisect identified
+> > > > > d45e6889ee69456a4d5b1bbb32252f460cd48fa9 "ALSA: hda - Provide the
+> > > > > proper channel mapping for generic HDMI driver" as the commit that
+> > > > > caused my channels to swap.  The commit doesn't revert cleanly on
+> > > > > 3.7.4, and I haven't really looked to see what the correct fix might
+> > > > > be.
+> > > > > 
+> > > > > Some info that may be relevant, the sound card is a:
+> > > > > 
+> > > > > 00:1b.0 Audio device: Intel Corporation 7 Series/C210 Series Chipset
+> > > > > Family High Definition Audio Controller (rev 04)
+> > > > > 
+> > > > > The machine is running Fedora 18 and audio goes over HDMI to a 5.1
+> > > > > receiver.  I'm not really sure what other info you might need, but
+> > > > > let me know if you need something else or have any patches you would
+> > > > > like me to test.
+> > > > 
+> > > > OK, it's the first time to get a bug report about this.
+> > > > Could you tell me how did you test it (i.e. which application, which
+> > > > sound backend)?  Can you confirm that it's reproduced via speaker-test
+> > > > program in alsa-utils package?
+> > > 
+> > > I originally noticed the problem when all of the dialog started coming
+> > > out of my rear left speaker in MythTV after the kernel update.  Then I
+> > > started using the Gnome 3 sound configuration gui in the system
+> > > settings which has a speaker test and I assume is using pulseaudio.
+> > > Running 'speaker-test -c6 -l1 -twav' also reproduces the problem.
+> > > 
+> > > For reference here are the versions of the various packages that I'm
+> > > running:
+> > > 
+> > > alsa-utils-1.0.26-1.fc18.x86_64
+> > > alsa-firmware-1.0.25-2.fc18.noarch
+> > > alsa-plugins-pulseaudio-1.0.26-2.fc18.x86_64
+> > > alsa-lib-devel-1.0.26-2.fc18.x86_64
+> > > alsa-lib-1.0.26-2.fc18.x86_64
+> > > alsa-tools-firmware-1.0.26.1-1.fc18.x86_64
+> > > pulseaudio-gdm-hooks-2.1-5.fc18.x86_64
+> > > pulseaudio-libs-2.1-5.fc18.x86_64
+> > > pulseaudio-libs-glib2-2.1-5.fc18.x86_64
+> > > pulseaudio-module-x11-2.1-5.fc18.x86_64
+> > > pulseaudio-module-bluetooth-2.1-5.fc18.x86_64
+> > > pulseaudio-2.1-5.fc18.x86_64
+> > > pulseaudio-utils-2.1-5.fc18.x86_64
+> > 
+> > Hi Takashi,
+> > 
+> > Any updates on this issue?  I'd really like to see this issue fixed
+> > and am happy to help in any way I can.  Until this gets fixed I'm
+> > stuck on a 3.6.* kernel.
+> 
+> There is one fix in sound git tree regarding the HDMI channel map, but
+> it's queued for 3.9 kernel (then backported to stable tree).
+> Try sound.git tree or wait for a while until the upstream merge
+> process above is done.
 
-On Sunday 17 February 2013 17:25:24 Mark Brown wrote:
-> On Sun, Feb 17, 2013 at 12:46:25AM +0100, Pali Roh=C3=A1r wrote:
-> > Accelerometer driver lis3lv02d_i2c not working on Nokia
-> > RX-51 with linux kernel 3.8-rc3. Probing for i2c device
-> > failing.
-> >=20
-> > I tried to compile older version and it working without
-> > problem. Then I bisected commit which broke support for
-> > RX-51.
-> >=20
-> > That commit is ec400c9fab99d16a491cea17d27d0c6a5780b97c
-> > "lis3lv02d: make regulator API usage unconditional"
-> >=20
-> > CCing everybody who signed off that commit. When I reverted
-> > that commit on top of 3.8-rc3, lis3lv02d working without
-> > problem.
-> >=20
-> > It looks like driver is trying to use some regulator, but
-> > there is nothing defined for RX-51.
-> >=20
-> > Any idea what to do?
->=20
-> It would be helpful to provide some more detailed information
-> on the problem you are seeing than "the probe is failing".=20
-> Are there any error messages or other indications as to where
-> in the probe the error occurs?
+Thanks Takashi, I just tested the sound.git master branch and this
+does indeed fix my issue.  I'll look forward to this going into 3.9.
 
-I booted kernel without reverted that commit and here is dmesg output:
-
-$ dmesg | grep lis3
-[  110.454345] lis3lv02d_i2c 3-001d: Failed to get supply 'Vdd': -517
-[  110.457397] i2c 3-001d: Driver lis3lv02d_i2c requests probe deferral
-[  111.507415] lis3lv02d_i2c 3-001d: Failed to get supply 'Vdd': -517
-[  111.510528] i2c 3-001d: Driver lis3lv02d_i2c requests probe deferral
-[  126.720458] lis3lv02d_i2c 3-001d: Failed to get supply 'Vdd': -517
-[  126.728149] i2c 3-001d: Driver lis3lv02d_i2c requests probe deferral
-[  135.842803] lis3lv02d_i2c 3-001d: Failed to get supply 'Vdd': -517
-[  135.856292] i2c 3-001d: Driver lis3lv02d_i2c requests probe deferral
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart2123684.uNZyNx79sE
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlEhCAkACgkQi/DJPQPkQ1JSJACfSOIxU4w9PkppmY7cJuXgxTAX
-zMgAn3iDB+7sDVmPfGHCLtIxnUEYlGwi
-=6H0S
------END PGP SIGNATURE-----
-
---nextPart2123684.uNZyNx79sE--
+--
+Shawn
