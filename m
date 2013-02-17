@@ -1,107 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776Ab3BQSOP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 13:14:15 -0500
-Received: from na01-bl2-obe.ptr.protection.outlook.com ([65.55.169.31]:15541
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751352Ab3BQSOM convert rfc822-to-8bit (ORCPT
+	id S1751810Ab3BQSRN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 13:17:13 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:40671 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab3BQSRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 13:14:12 -0500
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -3
-X-BigFish: PS-3(zzbb2dI98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>, "H. Peter Anvin" <hpa@zytor.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
-Subject: RE: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
- delivering VMBUS interrupts
-Thread-Topic: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
- delivering VMBUS interrupts
-Thread-Index: AQHOBHqGdmZWmCfA3EOMQRE9yVbBN5htMw+AgAnGt4CAADNcoIAA1naAgAAC4FCAAB3VgIAAAUaAgAADhwCAAASIgIAGPgNA
-Date: Sun, 17 Feb 2013 18:13:49 +0000
-Message-ID: <bc26219c6d0e4a498912a8411c11f81c@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1360164359-12273-1-git-send-email-kys@microsoft.com>
- <20130206191313.GA1470@kroah.com> <511ADEB7.6080909@zytor.com>
- <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130213162211.GA21253@kroah.com>
- <c31482583b394bfcaa16b76a63c413fe@SN2PR03MB061.namprd03.prod.outlook.com>
- <511BD923.7000500@zytor.com> <20130213182349.GA4959@kroah.com>
- <511BDD2A.8020002@zytor.com> <20130213185239.GB16645@kroah.com>
-In-Reply-To: <20130213185239.GB16645@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [98.110.61.163]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 17 Feb 2013 13:17:12 -0500
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB061.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUTRONIX.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%ALIEN8.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%ZYTOR.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC106.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC106.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(479174001)(377454001)(13464002)(189002)(199002)(51704002)(24454001)(76482001)(65816001)(74662001)(74502001)(31966008)(46406002)(47446002)(23726001)(44976002)(6806001)(33646001)(16676001)(79102001)(46102001)(63696002)(56776001)(56816002)(80022001)(66066001)(47776003)(20776003)(59766001)(54356001)(77982001)(53806001)(47976001)(54316002)(51856001)(50466001)(47736001)(4396001)(50986001)(49866001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB011;H:TK5EX14HUBC106.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 07607ED19A
+In-Reply-To: <CA+55aFz4vO-JGv+A7h=uxwfyWEMcK=Q3gntwHfr=a4OUVs-f+g@mail.gmail.com>
+References: <20130212193901.GA18906@redhat.com>
+	<alpine.LNX.2.00.1302121549500.890@eggly.anvils>
+	<20130213004059.GA14451@redhat.com>
+	<alpine.LNX.2.00.1302121652240.1077@eggly.anvils>
+	<20130213041629.GA28622@redhat.com>
+	<alpine.LNX.2.00.1302122121170.15020@eggly.anvils>
+	<20130213193411.GA15928@redhat.com>
+	<CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
+	<20130215011503.GA11914@redhat.com>
+	<CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com>
+	<20130215174435.GA2792@linux.vnet.ibm.com>
+	<CA+55aFy8FeGMOnWwkfmyFYyVCw+k1LSVg7BG0tsTNZzqi5EKYg@mail.gmail.com>
+	<CAFTL4hyTfwAZWz=gMokk5oG3HO8iGh7=FtoNv89CMg_Lm-TPNg@mail.gmail.com>
+	<CA+55aFz4vO-JGv+A7h=uxwfyWEMcK=Q3gntwHfr=a4OUVs-f+g@mail.gmail.com>
+Date: Sun, 17 Feb 2013 19:17:09 +0100
+Message-ID: <CAFTL4hyBm8AH4UKyN2VaRb4yBt7C4rG1ETQ3qXvNUdbh5HzSng@mail.gmail.com>
+Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paul.mckenney@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013/2/17 Linus Torvalds <torvalds@linux-foundation.org>:
+> On Sun, Feb 17, 2013 at 7:11 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>
+>> preempt_value_in_interrupt() looks buggy in your patch: it makes
+>> invoke_softirq() returning if (val & HARDIRQ_MASK). But that's always
+>> true since you have moved further the sub_preempt_count(IRQ_EXIT)
+>> further.
+>
+> No, that's not it. The value hasn't been written back yet, but it already did:
+>
+> +       int offset = IRQ_EXIT_OFFSET;
+> +       int count = preempt_count() - offset;
+>
+> so the 'count' has the IRQ_EXIT_OFFSET already subtracted. So no,
+> HARDIRQ_MASK is *not* always set.
 
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Wednesday, February 13, 2013 1:53 PM
-> To: H. Peter Anvin
-> Cc: KY Srinivasan; x86@kernel.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> jasowang@redhat.com; tglx@linutronix.de; JBeulich@suse.com; bp@alien8.de
-> Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
-> delivering VMBUS interrupts
-> 
-> On Wed, Feb 13, 2013 at 10:36:26AM -0800, H. Peter Anvin wrote:
-> > On 02/13/2013 10:23 AM, Greg KH wrote:
-> > > On Wed, Feb 13, 2013 at 10:19:15AM -0800, H. Peter Anvin wrote:
-> > >> Sounds like we have the joy of a cross-tree dependency...
-> > >
-> > > Yeah, a mess.
-> > >
-> > > KY, how about I just wait until all of this gets merged with Linus for
-> > > 3.9-rc1, and then you resend me the patches you have to take advantage
-> > > of these new bits?  That makes it easy for everyone involved.
-> > >
-> >
-> > The other option is you can pull tip:x86/hyperv from me... it has *only*
-> > these changes.  I can then let you push them to Linus or I can push them
-> > to Linus before you push your tree.
-> 
-> Nah, I'll just wait, it's not that big of a deal here, it will all make
-> it into 3.9-final eventually.
-
-Peter's check-ins are now in Linux-next. Should I send you the vmbus patch that uses this infrastructure.
-
-Regards,
-
-K. Y
-
-
+Ah right. I was confused.
