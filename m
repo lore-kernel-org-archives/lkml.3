@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab3BQW6w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 17:58:52 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45788 "EHLO
+	id S1756792Ab3BQW7k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 17:59:40 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45791 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756339Ab3BQWzo (ORCPT
+	by vger.kernel.org with ESMTP id S1756322Ab3BQWzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 17:55:44 -0500
-Message-Id: <20130217225006.987407451@decadent.org.uk>
+	Sun, 17 Feb 2013 17:55:43 -0500
+Message-Id: <20130217225004.910967134@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Feb 2013 22:50:47 +0000
+Date: Sun, 17 Feb 2013 22:50:29 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Eric Dumazet <edumazet@google.com>,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 46/66] netxen: fix off by one bug in  netxen_release_tx_buffer()
+Cc: akpm@linux-foundation.org,
+        =?UTF-8?q?Jaume=20Delcl=C3=B2s?= <jaume@delclos.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 28/66] Wireless: rt2x00: Add device id for Sweex LW323 to rt2800usb.c
 In-Reply-To: <20130217225001.621306883@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,63 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Jaume Delclòs <jaume@delclos.com>
 
-[ Upstream commit a05948f296ce103989b28a2606e47d2e287c3c89 ]
+commit 36f318bb124b231c01db6965a009f46d5731f012 upstream.
 
-Christoph Paasch found netxen could trigger a BUG in its dismantle
-phase, in netxen_release_tx_buffer(), using full size TSO packets.
+This patch adds detection for the Sweex LW323 USB wireless network card
+in the rt2x00 driver (just one line in rt2800usb.c).
+It applies to linux-3.7-rc3.
 
-cmd_buf->frag_count includes the skb->data part, so the loop must
-start at index 1 instead of 0, or else we can make an out
-of bound access to cmd_buff->frag_array[MAX_SKB_FRAGS + 2]
-
-Christoph provided the fixes in netxen_map_tx_skb() function.
-In case of a dma mapping error, its better to clear the dma fields
-so that we don't try to unmap them again in netxen_release_tx_buffer()
-
-Reported-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Cc: Sony Chacko <sony.chacko@qlogic.com>
-Cc: Rajesh Borundia <rajesh.borundia@qlogic.com>
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jaume Delclòs <jaume@delclos.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c | 2 +-
- drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c | 2 ++
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2800usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
-index a8259cc..5674145 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
-@@ -144,7 +144,7 @@ void netxen_release_tx_buffers(struct netxen_adapter *adapter)
- 					 buffrag->length, PCI_DMA_TODEVICE);
- 			buffrag->dma = 0ULL;
- 		}
--		for (j = 0; j < cmd_buf->frag_count; j++) {
-+		for (j = 1; j < cmd_buf->frag_count; j++) {
- 			buffrag++;
- 			if (buffrag->dma) {
- 				pci_unmap_page(adapter->pdev, buffrag->dma,
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-index da5204d..4a238a4 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-@@ -1924,10 +1924,12 @@ unwind:
- 	while (--i >= 0) {
- 		nf = &pbuf->frag_array[i+1];
- 		pci_unmap_page(pdev, nf->dma, nf->length, PCI_DMA_TODEVICE);
-+		nf->dma = 0ULL;
- 	}
- 
- 	nf = &pbuf->frag_array[0];
- 	pci_unmap_single(pdev, nf->dma, skb_headlen(skb), PCI_DMA_TODEVICE);
-+	nf->dma = 0ULL;
- 
- out_err:
- 	return -ENOMEM;
+diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
+index 3b8fb5a..0230812 100644
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -1096,6 +1096,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
+ 	{ USB_DEVICE(0x177f, 0x0153) },
+ 	{ USB_DEVICE(0x177f, 0x0302) },
+ 	{ USB_DEVICE(0x177f, 0x0313) },
++	{ USB_DEVICE(0x177f, 0x0323) },
+ 	/* U-Media */
+ 	{ USB_DEVICE(0x157e, 0x300e) },
+ 	{ USB_DEVICE(0x157e, 0x3013) },
 
 
