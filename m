@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab3BQAWj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 19:22:39 -0500
-Received: from mail-gh0-f169.google.com ([209.85.160.169]:63302 "EHLO
-	mail-gh0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394Ab3BQAWi (ORCPT
+	id S1755224Ab3BQA1A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 19:27:00 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:42265 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754902Ab3BQA07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 19:22:38 -0500
-Date: Sat, 16 Feb 2013 18:22:25 -0600
-From: Shawn Bohrer <shawn.bohrer@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: 3.7 HDMI channel map regression
-Message-ID: <20130217002225.GA20562@lintop>
-References: <20130128011827.GA30485@lintop>
- <s5h1ud5bs8u.wl%tiwai@suse.de>
- <20130129025205.GB30485@lintop>
+	Sat, 16 Feb 2013 19:26:59 -0500
+Date: Sat, 16 Feb 2013 16:27:14 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 0/4] 3.0.65-stable review
+Message-ID: <20130217002714.GA29015@kroah.com>
+References: <20130215225523.525656849@linuxfoundation.org>
+ <CAKocOONp22yNGkt1YNVL2r4fWMJiDaQOkrxpQoQXa4b4Gz=1Qg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130129025205.GB30485@lintop>
+In-Reply-To: <CAKocOONp22yNGkt1YNVL2r4fWMJiDaQOkrxpQoQXa4b4Gz=1Qg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 28, 2013 at 08:52:05PM -0600, Shawn Bohrer wrote:
-> On Mon, Jan 28, 2013 at 09:56:33AM +0100, Takashi Iwai wrote:
-> > At Sun, 27 Jan 2013 19:18:27 -0600,
-> > Shawn Bohrer wrote:
-> > > 
-> > > Hi Takashi,
-> > > 
-> > > I recently updated my HTPC from 3.6.11 to 3.7.2 and this caused my RL
-> > > and FC channels to swap, and my RR and LFE channels to swap for PCM
-> > > audio.  Doing a git bisect identified
-> > > d45e6889ee69456a4d5b1bbb32252f460cd48fa9 "ALSA: hda - Provide the
-> > > proper channel mapping for generic HDMI driver" as the commit that
-> > > caused my channels to swap.  The commit doesn't revert cleanly on
-> > > 3.7.4, and I haven't really looked to see what the correct fix might
-> > > be.
-> > > 
-> > > Some info that may be relevant, the sound card is a:
-> > > 
-> > > 00:1b.0 Audio device: Intel Corporation 7 Series/C210 Series Chipset
-> > > Family High Definition Audio Controller (rev 04)
-> > > 
-> > > The machine is running Fedora 18 and audio goes over HDMI to a 5.1
-> > > receiver.  I'm not really sure what other info you might need, but
-> > > let me know if you need something else or have any patches you would
-> > > like me to test.
-> > 
-> > OK, it's the first time to get a bug report about this.
-> > Could you tell me how did you test it (i.e. which application, which
-> > sound backend)?  Can you confirm that it's reproduced via speaker-test
-> > program in alsa-utils package?
+On Sat, Feb 16, 2013 at 03:08:38PM -0700, Shuah Khan wrote:
+> On Fri, Feb 15, 2013 at 3:55 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > This is the start of the stable review cycle for the 3.0.65 release.
+> > There are 4 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Sun Feb 17 22:53:56 UTC 2013.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> >         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.65-rc1.gz
+> > and the diffstat can be found below.
+> >
+> > thanks,
+> >
+> > greg k-h
+> >
+> > -------------
 > 
-> I originally noticed the problem when all of the dialog started coming
-> out of my rear left speaker in MythTV after the kernel update.  Then I
-> started using the Gnome 3 sound configuration gui in the system
-> settings which has a speaker test and I assume is using pulseaudio.
-> Running 'speaker-test -c6 -l1 -twav' also reproduces the problem.
-> 
-> For reference here are the versions of the various packages that I'm
-> running:
-> 
-> alsa-utils-1.0.26-1.fc18.x86_64
-> alsa-firmware-1.0.25-2.fc18.noarch
-> alsa-plugins-pulseaudio-1.0.26-2.fc18.x86_64
-> alsa-lib-devel-1.0.26-2.fc18.x86_64
-> alsa-lib-1.0.26-2.fc18.x86_64
-> alsa-tools-firmware-1.0.26.1-1.fc18.x86_64
-> pulseaudio-gdm-hooks-2.1-5.fc18.x86_64
-> pulseaudio-libs-2.1-5.fc18.x86_64
-> pulseaudio-libs-glib2-2.1-5.fc18.x86_64
-> pulseaudio-module-x11-2.1-5.fc18.x86_64
-> pulseaudio-module-bluetooth-2.1-5.fc18.x86_64
-> pulseaudio-2.1-5.fc18.x86_64
-> pulseaudio-utils-2.1-5.fc18.x86_64
+> Patches applied cleanly to 3.0.64, 3.4.31, and 3.7.8.
+> Compiled and booted on the following systems:
+> HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
+> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
-Hi Takashi,
+Thanks for testing all of these and letting us know.
 
-Any updates on this issue?  I'd really like to see this issue fixed
-and am happy to help in any way I can.  Until this gets fixed I'm
-stuck on a 3.6.* kernel.
-
-Thanks,
-Shawn
+greg k-h
