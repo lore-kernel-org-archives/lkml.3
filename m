@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab3BQJA0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 04:00:26 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:47248 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755311Ab3BQJAY (ORCPT
+	id S1755848Ab3BQJLF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 04:11:05 -0500
+Received: from mail-gh0-f173.google.com ([209.85.160.173]:35648 "EHLO
+	mail-gh0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755725Ab3BQJK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 04:00:24 -0500
+	Sun, 17 Feb 2013 04:10:59 -0500
+Message-ID: <51209E9C.3020507@gmail.com>
+Date: Sun, 17 Feb 2013 17:10:52 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1359391359-25783-11-git-send-email-matthew.garrett@nebula.com>
-References: <1359391359-25783-1-git-send-email-matthew.garrett@nebula.com>
-	<1359391359-25783-11-git-send-email-matthew.garrett@nebula.com>
-Date: Sun, 17 Feb 2013 17:00:23 +0800
-Message-ID: <CABqxG0cJGp7UEREvMW49QA0BfDXPsyEbAuMMLZwcHPdUAKT+Dw@mail.gmail.com>
-Subject: Re: [PATCH 10/15] acpi: Ignore acpi_rsdp kernel parameter in a secure
- boot environment
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-security-module@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>,
-        lxiang@redhat.com, Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: paul.szabo@sydney.edu.au, linux-mm@kvack.org, 695182@bugs.debian.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Reproducible OOM with just a few sleeps
+References: <201301120331.r0C3VxXc016220@como.maths.usyd.edu.au> <50F41D9D.1000403@linux.vnet.ibm.com>
+In-Reply-To: <50F41D9D.1000403@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 12:42 AM, Matthew Garrett
-<matthew.garrett@nebula.com> wrote:
-> From: Josh Boyer <jwboyer@redhat.com>
+On 01/14/2013 11:00 PM, Dave Hansen wrote:
+> On 01/11/2013 07:31 PM, paul.szabo@sydney.edu.au wrote:
+>> Seems that any i386 PAE machine will go OOM just by running a few
+>> processes. To reproduce:
+>>    sh -c 'n=0; while [ $n -lt 19999 ]; do sleep 600 & ((n=n+1)); done'
+>> My machine has 64GB RAM. With previous OOM episodes, it seemed that
+>> running (booting) it with mem=32G might avoid OOM; but an OOM was
+>> obtained just the same, and also with lower memory:
+>>    Memory    sleeps to OOM       free shows total
+>>    (mem=64G)  5300               64447796
+>>    mem=32G   10200               31155512
+>>    mem=16G   13400               14509364
+>>    mem=8G    14200               6186296
+>>    mem=6G    15200               4105532
+>>    mem=4G    16400               2041364
+>> The machine does not run out of highmem, nor does it use any swap.
+> I think what you're seeing here is that, as the amount of total memory
+> increases, the amount of lowmem available _decreases_ due to inflation
+> of mem_map[] (and a few other more minor things).  The number of sleeps
+
+So if he config sparse memory, the issue can be solved I think.
+
+> you can do is bound by the number of processes, as you noticed from
+> ulimit.  Creating processes that don't use much memory eats a relatively
+> large amount of low memory.
 >
-> This option allows userspace to pass the RSDP address to the kernel.  This
-> could potentially be used to circumvent the secure boot trust model.
-> We ignore the setting if we don't have the CAP_COMPROMISE_KERNEL capability.
+> This is a sad (and counterintuitive) fact: more RAM actually *CREATES*
+> RAM bottlenecks on 32-bit systems.
 >
-> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-> ---
->  drivers/acpi/osl.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>> On my large machine, 'free' fails to show about 2GB memory, e.g. with
+>> mem=16G it shows:
+>>
+>> root@zeno:~# free -l
+>>               total       used       free     shared    buffers     cached
+>> Mem:      14509364     435440   14073924          0       4068     111328
+>> Low:        769044     120232     648812
+>> High:     13740320     315208   13425112
+>> -/+ buffers/cache:     320044   14189320
+>> Swap:    134217724          0  134217724
+> You probably have a memory hole.  mem=16G means "give me all the memory
+> below the physical address at 16GB".  It does *NOT* mean, "give me
+> enough memory such that 'free' will show ~16G available."  If you have a
+> 1.5GB hole below 16GB, and you do mem=16G, you'll end up with ~14.5GB
+> available.
 >
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index bd22f86..88251d2 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -246,7 +246,7 @@ early_param("acpi_rsdp", setup_acpi_rsdp);
->  acpi_physical_address __init acpi_os_get_root_pointer(void)
->  {
->  #ifdef CONFIG_KEXEC
-> -       if (acpi_rsdp)
-> +       if (acpi_rsdp && capable(CAP_COMPROMISE_KERNEL))
+> The e820 map (during early boot in dmesg) or /proc/iomem will let you
+> locate your memory holes.
 
+Dear Dave, two questions here:
 
-This caused an issue in a kdump test even without secure boot enabled.
-Looks like security subsystem init is not initialized yet at this
-point.
+1) e820 map is read from BIOS, correct? So if all kinds of ranges dump 
+from /proc/iomem are setup by BIOS?
+2) only "System RAM" range dump from /proc/iomem can be treated as real 
+memory, all other ranges can be treated as holes, correct?
 
-See redhat bug 906225:
-https://bugzilla.redhat.com/show_bug.cgi?id=906225
-
-
->                 return acpi_rsdp;
->  #endif
 >
 > --
-> 1.8.0.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-
-
--- 
-Regards
-Dave
