@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab3BQW6x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 17:58:53 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45816 "EHLO
+	id S1756779Ab3BQW6w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 17:58:52 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45788 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755217Ab3BQWzo (ORCPT
+	by vger.kernel.org with ESMTP id S1756339Ab3BQWzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Feb 2013 17:55:44 -0500
-Message-Id: <20130217225005.475331641@decadent.org.uk>
+Message-Id: <20130217225006.987407451@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 17 Feb 2013 22:50:34 +0000
+Date: Sun, 17 Feb 2013 22:50:47 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: [ 33/66] ptrace/x86: Introduce set_task_blockstep() helper
+Cc: akpm@linux-foundation.org, Eric Dumazet <edumazet@google.com>,
+        Christoph Paasch <christoph.paasch@uclouvain.be>,
+        Sony Chacko <sony.chacko@qlogic.com>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 46/66] netxen: fix off by one bug in  netxen_release_tx_buffer()
 In-Reply-To: <20130217225001.621306883@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,88 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 848e8f5f0ad3169560c516fff6471be65f76e69f upstream.
+[ Upstream commit a05948f296ce103989b28a2606e47d2e287c3c89 ]
 
-No functional changes, preparation for the next fix and for uprobes
-single-step fixes.
+Christoph Paasch found netxen could trigger a BUG in its dismantle
+phase, in netxen_release_tx_buffer(), using full size TSO packets.
 
-Move the code playing with TIF_BLOCKSTEP/DEBUGCTLMSR_BTF into the
-new helper, set_task_blockstep().
+cmd_buf->frag_count includes the skb->data part, so the loop must
+start at index 1 instead of 0, or else we can make an out
+of bound access to cmd_buff->frag_array[MAX_SKB_FRAGS + 2]
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Christoph provided the fixes in netxen_map_tx_skb() function.
+In case of a dma mapping error, its better to clear the dma fields
+so that we don't try to unmap them again in netxen_release_tx_buffer()
+
+Reported-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Tested-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Cc: Sony Chacko <sony.chacko@qlogic.com>
+Cc: Rajesh Borundia <rajesh.borundia@qlogic.com>
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/step.c |   41 +++++++++++++++++++++--------------------
- 1 file changed, 21 insertions(+), 20 deletions(-)
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c | 2 +-
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c | 2 ++
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/step.c b/arch/x86/kernel/step.c
-index c346d11..7a51498 100644
---- a/arch/x86/kernel/step.c
-+++ b/arch/x86/kernel/step.c
-@@ -157,6 +157,21 @@ static int enable_single_step(struct task_struct *child)
- 	return 1;
- }
+diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
+index a8259cc..5674145 100644
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
+@@ -144,7 +144,7 @@ void netxen_release_tx_buffers(struct netxen_adapter *adapter)
+ 					 buffrag->length, PCI_DMA_TODEVICE);
+ 			buffrag->dma = 0ULL;
+ 		}
+-		for (j = 0; j < cmd_buf->frag_count; j++) {
++		for (j = 1; j < cmd_buf->frag_count; j++) {
+ 			buffrag++;
+ 			if (buffrag->dma) {
+ 				pci_unmap_page(adapter->pdev, buffrag->dma,
+diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
+index da5204d..4a238a4 100644
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
+@@ -1924,10 +1924,12 @@ unwind:
+ 	while (--i >= 0) {
+ 		nf = &pbuf->frag_array[i+1];
+ 		pci_unmap_page(pdev, nf->dma, nf->length, PCI_DMA_TODEVICE);
++		nf->dma = 0ULL;
+ 	}
  
-+static void set_task_blockstep(struct task_struct *task, bool on)
-+{
-+	unsigned long debugctl;
-+
-+	debugctl = get_debugctlmsr();
-+	if (on) {
-+		debugctl |= DEBUGCTLMSR_BTF;
-+		set_tsk_thread_flag(task, TIF_BLOCKSTEP);
-+	} else {
-+		debugctl &= ~DEBUGCTLMSR_BTF;
-+		clear_tsk_thread_flag(task, TIF_BLOCKSTEP);
-+	}
-+	update_debugctlmsr(debugctl);
-+}
-+
- /*
-  * Enable single or block step.
-  */
-@@ -169,19 +184,10 @@ static void enable_step(struct task_struct *child, bool block)
- 	 * So no one should try to use debugger block stepping in a program
- 	 * that uses user-mode single stepping itself.
- 	 */
--	if (enable_single_step(child) && block) {
--		unsigned long debugctl = get_debugctlmsr();
--
--		debugctl |= DEBUGCTLMSR_BTF;
--		update_debugctlmsr(debugctl);
--		set_tsk_thread_flag(child, TIF_BLOCKSTEP);
--	} else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
--		unsigned long debugctl = get_debugctlmsr();
--
--		debugctl &= ~DEBUGCTLMSR_BTF;
--		update_debugctlmsr(debugctl);
--		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
--	}
-+	if (enable_single_step(child) && block)
-+		set_task_blockstep(child, true);
-+	else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP))
-+		set_task_blockstep(child, false);
- }
+ 	nf = &pbuf->frag_array[0];
+ 	pci_unmap_single(pdev, nf->dma, skb_headlen(skb), PCI_DMA_TODEVICE);
++	nf->dma = 0ULL;
  
- void user_enable_single_step(struct task_struct *child)
-@@ -199,13 +205,8 @@ void user_disable_single_step(struct task_struct *child)
- 	/*
- 	 * Make sure block stepping (BTF) is disabled.
- 	 */
--	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
--		unsigned long debugctl = get_debugctlmsr();
--
--		debugctl &= ~DEBUGCTLMSR_BTF;
--		update_debugctlmsr(debugctl);
--		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
--	}
-+	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP))
-+		set_task_blockstep(child, false);
- 
- 	/* Always clear TIF_SINGLESTEP... */
- 	clear_tsk_thread_flag(child, TIF_SINGLESTEP);
+ out_err:
+ 	return -ENOMEM;
 
 
