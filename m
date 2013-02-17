@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab3BQHn1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 02:43:27 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:14038 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751736Ab3BQHn0 (ORCPT
+	id S1755608Ab3BQHpx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 02:45:53 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:52730 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148Ab3BQHpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 02:43:26 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Sun, 17 Feb 2013 15:43:20 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] of: use platform_device_add
-Message-ID: <20130217074317.GB16632@S2101-09.ap.freescale.net>
-References: <1358473200-17886-1-git-send-email-grant.likely@secretlab.ca>
- <1358473200-17886-2-git-send-email-grant.likely@secretlab.ca>
- <20130217030331.GA15048@S2101-09.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130217030331.GA15048@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+	Sun, 17 Feb 2013 02:45:52 -0500
+Subject: Re: Stupid user with user-space questions, matrix LED driving with
+ user space code only.
+From: anish kumar <anish198519851985@gmail.com>
+To: jon@jonshouse.co.uk
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1361025476.4271.36.camel@jonspc>
+References: <1361025476.4271.36.camel@jonspc>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 17 Feb 2013 11:52:14 +0530
+Message-ID: <1361082134.16206.24.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 17, 2013 at 11:03:35AM +0800, Shawn Guo wrote:
-> On Fri, Jan 18, 2013 at 01:40:00AM +0000, Grant Likely wrote:
-> > This allows platform_device_add a chance to call insert_resource on all
-> > of the resources from OF. At a minimum this fills in proc/iomem and
-> > presumably makes resource tracking and conflict detection work better.
-> > However, it has the side effect of moving all OF generated platform
-> > devices from /sys/devices to /sys/devices/platform/. It /shouldn't/
-> > break userspace because userspace is not supposed to depend on the full
-> > path (because userspace always does what it is supposed to, right?).
-> > 
-> > This may cause breakage if either:
-> > 1) any two nodes in a given device tree have overlapping & staggered
-> >    regions (ie. 0x80..0xbf and 0xa0..0xdf; where one is not contained
-> >    within the other). In this case one of the devices will fail to
-> >    register and an exception will be needed in platform_device_add() to
-> >    complain but not fail.
+On Sat, 2013-02-16 at 14:37 +0000, Jonathan Andrews wrote:
+> I hope this is the correct place, I expect to get abused.
 > 
-> Grant,
+> I'm trying to do a mostly soft real-time task with a very small hard
+> real time element.
 > 
-> The patch introduce a regression on imx6q boot.
+> I've written some code to drive matrix LED signs using a Raspberry Pi.
+> 
+> Source here:
+> http://www.jonshouse.co.uk/download/128x32_red_green_led_sign.tar.gz
+> 
+> 
+> Since I last used linux you kernel people have fiddled with it yet
+> again:
+> 
+> Linux raspberrypi 3.6.11+ #375 PREEMPT Tue Feb 12 01:41:07 GMT 2013 armv6l GNU/Linux
+> 
+> I'm scanning an LED display to produce a 2 bits per pixel image.  The
+> code simply alters the amount of time any one LED is on, for higher
+> intensity pixels the true amount of "on" time is non critical.
+> 
+> I've marked my process as realtime.
+> 
+> My problem is that for very dim pixels the amount of "on" time for the
+> LED  is very critical, this is only a fraction of a percent of the total
+> processes timeslice.
+> It scans 100 frames of brightest, 100 frames of brighter and 1 frame of
+> dim pixels for example, so 200:1 ratio of don't care much /vs care a lot
+> timing !
+> 
+> To this end I'm using a hard coded small delay instead of usleep for the
+> tight timing section:
+> 
+> // Delay for ARM without yeilding to schedular, roughly calibrated but better than usleep for short delays
+> inline usleep_arm_hard(int usecs)
+> {
+>         long int outer,inner;
+> 
+>         for (outer=0;outer<usecs;outer++)
+>         {
+>                 for (inner=0;inner<300;inner++)
+>                         asm("andeq r0, r0, r0");		// NOP
+>         }
+> }
+> 
+> The dim pixel code is timing critical (but as I said only a tiny
+> fraction of the total CPU usage). What I need to do is grab the CPU and
+> prevent any context switch (IRQ or PREEMPT) for this period.
+why you want to do this?
+> 
+> I cant find a user space mechanism other than changing the kernel to
+> disable preemtion ? No simple /proc switch to turn it on/off ? If not
+> why - I cant be the only one who wants to toggle preemption off without
+> swapping kernels ?
+you can't disable pre-emption from user space.
+> 
+> The other issue is that of IRQs, my dim pixels on the display seem to
+> flash brighter from time to time, this I assume is partly preemption
+> (maybe possibly) and partly IRQ handling (more likely) allowing context
+> switches or just taking a while on slow hardware.
+> 
+> I need only a tiny fraction of the runtime to be hard real time, on
+> intel in the past i've simply disabled IRQs briefly with some inline
+> assembler. 
+you shouldn't fiddle with irq's from user space but...
+> The Raspberry Pi board would also probably survive this as the only
+> active peripheral is ethenet, I suspect couple of missed IRQs would not
+> matter as once IRQs are re-enabled the USB/ethernet hardware will likely
+> have the data or it can be re-tried.  Does anyone have an example of a
+> dirty hack along these lines they can share with me :-) 
 
-It also breaks all of_amba_device users.
+> Do I have any simple mechanism available to disable (or defer) kernel
+> IRQ handling briefly from user space code, I suspect not but no harm in
+> asking ?
+Use any sysfs to disable/enable the irq. This approach is very bad but
+as you said you wanted a hack.
+> Thanks,
+> Jon
+> 
+> PS I'm not a kernel hacker - yes I know I could write a proper driver
+> for the task but I lack any real skill and the required time !
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-of_amba_device_create() --> amba_device_add() --> request_resource()
-and fails.
-
-Shawn
 
