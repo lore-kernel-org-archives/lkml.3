@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab3BQDDq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Feb 2013 22:03:46 -0500
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:14348
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755303Ab3BQDDp (ORCPT
+	id S1755492Ab3BQEEq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Feb 2013 23:04:46 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:62562 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755385Ab3BQEEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Feb 2013 22:03:45 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Sun, 17 Feb 2013 11:03:35 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] of: use platform_device_add
-Message-ID: <20130217030331.GA15048@S2101-09.ap.freescale.net>
-References: <1358473200-17886-1-git-send-email-grant.likely@secretlab.ca>
- <1358473200-17886-2-git-send-email-grant.likely@secretlab.ca>
+	Sat, 16 Feb 2013 23:04:44 -0500
+Message-ID: <51205684.5040407@huawei.com>
+Date: Sun, 17 Feb 2013 12:03:16 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1358473200-17886-2-git-send-email-grant.likely@secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH 1/2] Revert "cgroup: fix cgroup_path() vs rename() race"
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 18, 2013 at 01:40:00AM +0000, Grant Likely wrote:
-> This allows platform_device_add a chance to call insert_resource on all
-> of the resources from OF. At a minimum this fills in proc/iomem and
-> presumably makes resource tracking and conflict detection work better.
-> However, it has the side effect of moving all OF generated platform
-> devices from /sys/devices to /sys/devices/platform/. It /shouldn't/
-> break userspace because userspace is not supposed to depend on the full
-> path (because userspace always does what it is supposed to, right?).
-> 
-> This may cause breakage if either:
-> 1) any two nodes in a given device tree have overlapping & staggered
->    regions (ie. 0x80..0xbf and 0xa0..0xdf; where one is not contained
->    within the other). In this case one of the devices will fail to
->    register and an exception will be needed in platform_device_add() to
->    complain but not fail.
+This reverts commit 299772fab304ab3a36b22b5d28ed81f9408972e7
 
-Grant,
+Sasha reported this:
 
-The patch introduce a regression on imx6q boot.  The IOMUXC block on
-imx6q is special.  It acts not only a pin controller but also a system
-controller with a bunch of system level registers in there.  That's why
-we currently have the following two nodes in imx6q device tree with the
-same start "reg" address, which work with drivers/mfd/syscon.c and
-drivers/pinctrl/pinctrl-imx6q.c respectively.
+[  313.262599] ======================================================
+[  313.271340] [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
+[  313.277542] 3.8.0-rc6-next-20130208-sasha-00028-ge4e162d #278 Tainted: G       W
+[  313.277542] ------------------------------------------------------
+[  313.277542] kworker/u:3/4490 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
+[  313.277542]  (rename_lock){+.+...}, at: [<ffffffff812a11f9>] dentry_path_raw+0x29/0x70
+[  313.277542]
+[  313.277542] and this task is already holding:
+[  313.277542]  (&(&q->__queue_lock)->rlock){-.-...}, at: [<ffffffff819e78f3>] put_io_context_active+0x63/0x100
+[  313.277542] which would create a new lock dependency:
+[  313.277542]  (&(&q->__queue_lock)->rlock){-.-...} -> (rename_lock){+.+...}
+[  313.277542]
+[  313.277542] but this new dependency connects a HARDIRQ-irq-safe lock:
+[  313.277542]  (&(&q->__queue_lock)->rlock){-.-...}
 
-	gpr: iomuxc-gpr@020e0000 {
-		compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
-		reg = <0x020e0000 0x38>;
-	};
+dentry_path_raw() grabs rename_lock and dentry->d_lock without disabling
+irqs, which means cgroup_path() can't be called if the caller has already
+held a spinlock with irq disabled.
 
-	iomuxc: iomuxc@020e0000 {
-		compatible = "fsl,imx6q-iomuxc";
-		reg = <0x020e0000 0x4000>;
-	};
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
-With the patch in place, pinctrl-imx6q fails to register like below.
-
-syscon 20e0000.iomuxc: syscon regmap start 0x20e0000 end 0x20e3fff registered
-imx6q-pinctrl 20e0000.iomuxc: can't request region for resource [mem 0x020e0000-0x020e3fff]
-imx6q-pinctrl: probe of 20e0000.iomuxc failed with error -16
-
-Shawn
-
-> 2) any device calls request_mem_region() on a region larger than
->    specified in the device tree. In this case the device node may be
->    wrong, or the driver is overreaching. In either case I'd like to know
->    about any problems and fix them.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 776ff75..5d4c92e 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1792,10 +1792,26 @@ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
+ 		return 0;
+ 	}
+ 
+-	start = dentry_path_raw(dentry, buf, buflen);
+-	if (IS_ERR(start))
+-		return PTR_ERR(start);
++	start = buf + buflen - 1;
+ 
++	*start = '\0';
++	for (;;) {
++		int len = dentry->d_name.len;
++
++		if ((start -= len) < buf)
++			return -ENAMETOOLONG;
++		memcpy(start, dentry->d_name.name, len);
++		cgrp = cgrp->parent;
++		if (!cgrp)
++			break;
++
++		dentry = cgrp->dentry;
++		if (!cgrp->parent)
++			continue;
++		if (--start < buf)
++			return -ENAMETOOLONG;
++		*start = '/';
++	}
+ 	memmove(buf, start, buf + buflen - start);
+ 	return 0;
+ }
+-- 
+1.8.0.2
 
