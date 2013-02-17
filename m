@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab3BQTRi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 14:17:38 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54214 "EHLO mail.zytor.com"
+	id S1752352Ab3BQTT4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 14:19:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43140 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751925Ab3BQTRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 14:17:37 -0500
-Message-ID: <51212C68.1090900@zytor.com>
-Date: Sun, 17 Feb 2013 11:15:52 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751925Ab3BQTTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 14:19:55 -0500
+Date: Sun, 17 Feb 2013 20:18:19 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Neil Horman <nhorman@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] coredump: fix the ancient signal problems
+Message-ID: <20130217191819.GA21778@redhat.com>
 MIME-Version: 1.0
-To: KY Srinivasan <kys@microsoft.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
-Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Use the new infrastructure for
- delivering VMBUS interrupts
-References: <20130206191313.GA1470@kroah.com> <511ADEB7.6080909@zytor.com> <ae14ef66af2d4206baf4ccb382fc4205@SN2PR03MB061.namprd03.prod.outlook.com> <20130213162211.GA21253@kroah.com> <c31482583b394bfcaa16b76a63c413fe@SN2PR03MB061.namprd03.prod.outlook.com> <511BD923.7000500@zytor.com> <20130213182349.GA4959@kroah.com> <511BDD2A.8020002@zytor.com> <20130213185239.GB16645@kroah.com> <bc26219c6d0e4a498912a8411c11f81c@SN2PR03MB061.namprd03.prod.outlook.com> <20130217182519.GB8687@kroah.com> <663c5ef1750e4aa3922c38e897c4903a@SN2PR03MB061.namprd03.prod.outlook.com>
-In-Reply-To: <663c5ef1750e4aa3922c38e897c4903a@SN2PR03MB061.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2013 10:51 AM, KY Srinivasan wrote:
->>
->> No one can base their tree on linux-next, so no.  Please wait for them
->> to get into Linus's tree.
->>
->> Or send them to me now, with the instructions to apply them after
->> 3.9-rc1, and I will save them for that point in time.
->
-> Thanks Greg. Will do.
->
+Hello.
 
-As I said, I'm also perfectly happy to have you take over the 
-tip:x86/hyperv branch for this cycle...
+These problems are really annoying. I reported and tried to fix
+them in 2008 (see http://marc.info/?l=linux-kernel&m=121665710711931)
+but nobody was interested.
 
-	-hpa
+Since then I had a lot of (to some degree contradictory) bug reports:
+we do not want the interrupted coredumps (this is what the current code
+tries to achieve but the logic is very wrong), but at the same time some
+people blame the coredump because it is not interruptible.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+And every time the discussion was confusing, it is not clear what should
+we actually do to make everyone happy.
+
+Linus, et al, could you please ack/nack the intent? Of course I will
+appreciate if you can review the code, but what I am actually worried
+about is the user-visible change: the coredumping becomes killable but
+only by the _explicit_ SIGKILL, other fatal signals are "ignored".
+
+The changes were not tested at all, I'll try to recheck everything and
+test this tomorrow. I am sending this series right now because I strongly
+believe that the recent -mm patches in this area are not right and should
+be dropped, and I also disagree with the pending v2.
+
+Mandeep, just in case please note that 1/3 alone should fix the problems
+with non-fatal signals and wait_dump_helper(). As for the freezer, afaics
+we are almost ready for the (slightly modified) fix proposed in
+http://marc.info/?l=linux-kernel&m=136103469831268.
+
+Oleg.
+
+ fs/coredump.c         |   33 +++++++++++++++++++--------------
+ include/linux/sched.h |    1 +
+ kernel/signal.c       |    6 ++++--
+ 3 files changed, 24 insertions(+), 16 deletions(-)
 
