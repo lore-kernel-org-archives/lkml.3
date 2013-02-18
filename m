@@ -1,432 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab3BRJ5y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 04:57:54 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:63929 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab3BRJ5w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 04:57:52 -0500
-Date: Mon, 18 Feb 2013 10:57:44 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-kernel@vger.kernel.org
-cc: Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
-        devicetree-discuss@lists.ozlabs.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org
-Subject: [PATCH v2] mfd: as3711: add OF support
-Message-ID: <Pine.LNX.4.64.1302181049510.4526@axis700.grange>
+	id S1757645Ab3BRKAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 05:00:14 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:40380 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663Ab3BRKAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 05:00:12 -0500
+X-IronPort-AV: E=Sophos;i="4.84,686,1355068800"; 
+   d="scan'208";a="6723946"
+Message-ID: <5121F521.6080300@cn.fujitsu.com>
+Date: Mon, 18 Feb 2013 17:32:17 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:VcJX4FyMJjd3sBX6ISMlOntYUChzSh+sELSEFqmxjL6
- QkeCsYtLOKNFS3w4W1P/a9Z3lAEIQ+LyrIYe+1a21N1kskEq1m
- NIwCihalT6H7BVVtomvIGCWvsHw/9uYLUF22Q5awk1oWwA7CUf
- kT/HE9j0EJLt+l341nNKG4ibP+10uq0zfoPs/o3NVwsd+UxF6H
- H988njt8mBt7lN1YEK74qK4dAwJ3JokWpT/mvp1TlJdY2uyEAs
- ELTlOjJZCydX8Si3kP9WgxruK7VO86c6gV2nVIeL7pUr2W/cek
- zX5kACvqDm2CfMM8PqJ48Y6MCgjxwP6N9rVUYH5h7ZgH+gPvX0
- yJlybV4Nf9OUPowQvRe+ZRTwzfJjO1QjDrLcjjq9Htg/y8GK+5
- 8bT70gdI7OXQw==
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: linux-kernel@vger.kernel.org, asias@redhat.com, mst@redhat.com,
+        Rusty Russell <rusty@rustcorp.com.au>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com, Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH v3 0/5] virtio-scsi multiqueue
+References: <1360674391-2661-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1360674391-2661-1-git-send-email-pbonzini@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/18 17:32:24,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/18 17:32:27,
+	Serialize complete at 2013/02/18 17:32:27
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device-tree bindings to the AS3711 regulator and backlight drivers.
+On 02/12/2013 09:06 PM, Paolo Bonzini wrote:
+> This series implements virtio-scsi queue steering, which gives
+> performance improvements of up to 50% (measured both with QEMU and
+> tcm_vhost backends).  The patches build on top of the new virtio APIs
+> at http://permalink.gmane.org/gmane.linux.kernel.virtualization/18431;
+> the new API simplifies the locking of the virtio-scsi driver nicely,
+> thus it makes sense to require them as a prerequisite.
+> 
+> Changes from the previous post, which can be found at
+> http://permalink.gmane.org/gmane.linux.kernel.virtualization/17869:
+> 
+> - patches 1 and 2 ("virtio: add functions for piecewise addition of
+>   buffers", "virtio-scsi: use functions for piecewise composition of
+>   buffers") split into their own series
+> 
+> - new cleanup patch "virtio-scsi: push vq lock/unlock into virtscsi_vq_done"
+> 
+> - reorganized code to move ACCESS_ONCE in a clearer place
+> 
+> - included Wanlong Gao's CPU hotplug patches
+> 
+> Ok for 3.9?  It would probably be easier to get it in via Rusty's tree
+> because of the prerequisites.  James, can I get your Acked-by?
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
----
+I can't apply this series on top of Rusty's virtio-next, I missed something
+or needed rebase them ?
 
-v2:
-1. remove of_device_is_available() - it breaks compilation with CONFIG_OF 
-disabled and is redundant anyway - I2C devices are only registered for 
-available devoces
-2. add parenthesis to eliminate a compiler warning
+Thanks,
+Wanlong Gao
 
- Documentation/devicetree/bindings/mfd/as3711.txt |   73 +++++++++++++
- drivers/mfd/as3711.c                             |   27 ++++-
- drivers/regulator/as3711-regulator.c             |   69 ++++++++++++-
- drivers/video/backlight/as3711_bl.c              |  118 +++++++++++++++++++++-
- 4 files changed, 279 insertions(+), 8 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/as3711.txt
-
-diff --git a/Documentation/devicetree/bindings/mfd/as3711.txt b/Documentation/devicetree/bindings/mfd/as3711.txt
-new file mode 100644
-index 0000000..d98cf18
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/as3711.txt
-@@ -0,0 +1,73 @@
-+AS3711 is an I2C PMIC from Austria MicroSystems with multiple DCDC and LDO power
-+supplies, a battery charger and an RTC. So far only bindings for the two stepup
-+DCDC converters are defined. Other DCDC and LDO supplies are configured, using
-+standard regulator properties, they must belong to a sub-node, called
-+"regulators" and be called "sd1" to "sd4" and "ldo1" to "ldo8." Stepup converter
-+configuration should be placed in a subnode, called "backlight."
-+
-+Compulsory properties:
-+- compatible		: must be "ams,as3711"
-+- reg			: specifies the I2C address
-+
-+To use the SU1 converter as a backlight source the following two properties must
-+be provided:
-+- su1-dev		: framebuffer phandle
-+- su1-max-uA		: maximum current
-+
-+To use the SU2 converter as a backlight source the following two properties must
-+be provided:
-+- su2-dev		: framebuffer phandle
-+- su1-max-uA		: maximum current
-+
-+Additionally one of these properties must be provided to select the type of
-+feedback used:
-+- su2-feedback-voltage	: voltage feedback is used
-+- su2-feedback-curr1	: CURR1 input used for current feedback
-+- su2-feedback-curr2	: CURR2 input used for current feedback
-+- su2-feedback-curr3	: CURR3 input used for current feedback
-+- su2-feedback-curr-auto: automatic current feedback selection
-+
-+and one of these to select the over-voltage protection pin
-+- su2-fbprot-lx-sd4	: LX_SD4 is used for over-voltage protection
-+- su2-fbprot-gpio2	: GPIO2 is used for over-voltage protection
-+- su2-fbprot-gpio3	: GPIO3 is used for over-voltage protection
-+- su2-fbprot-gpio4	: GPIO4 is used for over-voltage protection
-+
-+If "su2-feedback-curr-auto" is selected, one or more of the following properties
-+have to be specified:
-+- su2-auto-curr1	: use CURR1 input for current feedback
-+- su2-auto-curr2	: use CURR2 input for current feedback
-+- su2-auto-curr3	: use CURR3 input for current feedback
-+
-+Example:
-+
-+as3711@40 {
-+	compatible = "ams,as3711";
-+	reg = <0x40>;
-+
-+	regulators {
-+		sd4 {
-+			regulator-name = "1.215V";
-+			regulator-min-microvolt = <1215000>;
-+			regulator-max-microvolt = <1235000>;
-+		};
-+		ldo2 {
-+			regulator-name = "2.8V CPU";
-+			regulator-min-microvolt = <2800000>;
-+			regulator-max-microvolt = <2800000>;
-+			regulator-always-on;
-+			regulator-boot-on;
-+		};
-+	};
-+
-+	backlight {
-+		compatible = "ams,as3711-bl";
-+		su2-dev = <&lcdc>;
-+		su2-max-uA = <36000>;
-+		su2-feedback-curr-auto;
-+		su2-fbprot-gpio4;
-+		su2-auto-curr1;
-+		su2-auto-curr2;
-+		su2-auto-curr3;
-+	};
-+};
-diff --git a/drivers/mfd/as3711.c b/drivers/mfd/as3711.c
-index e994c96..01e4141 100644
---- a/drivers/mfd/as3711.c
-+++ b/drivers/mfd/as3711.c
-@@ -112,16 +112,34 @@ static const struct regmap_config as3711_regmap_config = {
- 	.cache_type = REGCACHE_RBTREE,
- };
- 
-+#ifdef CONFIG_OF
-+static struct of_device_id as3711_of_match[] = {
-+	{.compatible = "ams,as3711",},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, as3711_of_match);
-+#endif
-+
- static int as3711_i2c_probe(struct i2c_client *client,
- 			    const struct i2c_device_id *id)
- {
- 	struct as3711 *as3711;
--	struct as3711_platform_data *pdata = client->dev.platform_data;
-+	struct as3711_platform_data *pdata;
- 	unsigned int id1, id2;
- 	int ret;
- 
--	if (!pdata)
--		dev_dbg(&client->dev, "Platform data not found\n");
-+	if (!client->dev.of_node) {
-+		pdata = client->dev.platform_data;
-+		if (!pdata)
-+			dev_dbg(&client->dev, "Platform data not found\n");
-+	} else {
-+		pdata = devm_kzalloc(&client->dev,
-+				     sizeof(*pdata), GFP_KERNEL);
-+		if (!pdata) {
-+			dev_err(&client->dev, "Failed to allocate pdata\n");
-+			return -ENOMEM;
-+		}
-+	}
- 
- 	as3711 = devm_kzalloc(&client->dev, sizeof(struct as3711), GFP_KERNEL);
- 	if (!as3711) {
-@@ -193,7 +211,8 @@ static struct i2c_driver as3711_i2c_driver = {
- 	.driver = {
- 		   .name = "as3711",
- 		   .owner = THIS_MODULE,
--		   },
-+		   .of_match_table = of_match_ptr(as3711_of_match),
-+	},
- 	.probe = as3711_i2c_probe,
- 	.remove = as3711_i2c_remove,
- 	.id_table = as3711_i2c_id,
-diff --git a/drivers/regulator/as3711-regulator.c b/drivers/regulator/as3711-regulator.c
-index f0ba8c4..cf145fc 100644
---- a/drivers/regulator/as3711-regulator.c
-+++ b/drivers/regulator/as3711-regulator.c
-@@ -13,9 +13,11 @@
- #include <linux/init.h>
- #include <linux/mfd/as3711.h>
- #include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/regmap.h>
- #include <linux/regulator/driver.h>
-+#include <linux/regulator/of_regulator.h>
- #include <linux/slab.h>
- 
- struct as3711_regulator_info {
-@@ -276,6 +278,57 @@ static struct as3711_regulator_info as3711_reg_info[] = {
- 
- #define AS3711_REGULATOR_NUM ARRAY_SIZE(as3711_reg_info)
- 
-+static const char *as3711_regulator_of_names[AS3711_REGULATOR_NUM] = {
-+	[AS3711_REGULATOR_SD_1] = "sd1",
-+	[AS3711_REGULATOR_SD_2] = "sd2",
-+	[AS3711_REGULATOR_SD_3] = "sd3",
-+	[AS3711_REGULATOR_SD_4] = "sd4",
-+	[AS3711_REGULATOR_LDO_1] = "ldo1",
-+	[AS3711_REGULATOR_LDO_2] = "ldo2",
-+	[AS3711_REGULATOR_LDO_3] = "ldo3",
-+	[AS3711_REGULATOR_LDO_4] = "ldo4",
-+	[AS3711_REGULATOR_LDO_5] = "ldo5",
-+	[AS3711_REGULATOR_LDO_6] = "ldo6",
-+	[AS3711_REGULATOR_LDO_7] = "ldo7",
-+	[AS3711_REGULATOR_LDO_8] = "ldo8",
-+};
-+
-+static int as3711_regulator_parse_dt(struct device *dev)
-+{
-+	struct as3711_regulator_pdata *pdata = dev_get_platdata(dev);
-+	struct device_node *regulators =
-+		of_find_node_by_name(dev->parent->of_node, "regulators");
-+	struct of_regulator_match *matches, *match;
-+	const int count = AS3711_REGULATOR_NUM;
-+	int ret, i;
-+
-+	if (!regulators) {
-+		dev_err(dev, "regulator node not found\n");
-+		return -ENODEV;
-+	}
-+
-+	matches = devm_kzalloc(dev, sizeof(*matches) * count, GFP_KERNEL);
-+	if (!matches)
-+		return -ENOMEM;
-+
-+	for (i = 0, match = matches; i < count; i++, match++) {
-+		match->name = as3711_regulator_of_names[i];
-+		match->driver_data = as3711_reg_info + i;
-+	}
-+
-+	ret = of_regulator_match(dev->parent, regulators, matches, count);
-+	if (ret < 0) {
-+		dev_err(dev, "Error parsing regulator init data: %d\n", ret);
-+		return ret;
-+	}
-+
-+	for (i = 0, match = matches; i < count; i++, match++)
-+		if (match->of_node)
-+			pdata->init_data[i] = match->init_data;
-+
-+	return 0;
-+}
-+
- static int as3711_regulator_probe(struct platform_device *pdev)
- {
- 	struct as3711_regulator_pdata *pdata = dev_get_platdata(&pdev->dev);
-@@ -289,8 +342,18 @@ static int as3711_regulator_probe(struct platform_device *pdev)
- 	int ret;
- 	int id;
- 
--	if (!pdata)
--		dev_dbg(&pdev->dev, "No platform data...\n");
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "No platform data...\n");
-+		return -ENODEV;
-+	}
-+
-+	if (pdev->dev.parent->of_node) {
-+		ret = as3711_regulator_parse_dt(&pdev->dev);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "DT parsing failed: %d\n", ret);
-+			return ret;
-+		}
-+	}
- 
- 	regs = devm_kzalloc(&pdev->dev, AS3711_REGULATOR_NUM *
- 			sizeof(struct as3711_regulator), GFP_KERNEL);
-@@ -300,7 +363,7 @@ static int as3711_regulator_probe(struct platform_device *pdev)
- 	}
- 
- 	for (id = 0, ri = as3711_reg_info; id < AS3711_REGULATOR_NUM; ++id, ri++) {
--		reg_data = pdata ? pdata->init_data[id] : NULL;
-+		reg_data = pdata->init_data[id];
- 
- 		/* No need to register if there is no regulator data */
- 		if (!reg_data)
-diff --git a/drivers/video/backlight/as3711_bl.c b/drivers/video/backlight/as3711_bl.c
-index c6bc65d..c78e4cb 100644
---- a/drivers/video/backlight/as3711_bl.c
-+++ b/drivers/video/backlight/as3711_bl.c
-@@ -257,6 +257,109 @@ static int as3711_bl_register(struct platform_device *pdev,
- 	return 0;
- }
- 
-+static int as3711_backlight_parse_dt(struct device *dev)
-+{
-+	struct as3711_bl_pdata *pdata = dev_get_platdata(dev);
-+	struct device_node *bl =
-+		of_find_node_by_name(dev->parent->of_node, "backlight"), *fb;
-+	int ret;
-+
-+	if (!bl) {
-+		dev_dbg(dev, "backlight node not found\n");
-+		return -ENODEV;
-+	}
-+
-+	fb = of_parse_phandle(bl, "su1-dev", 0);
-+	if (fb) {
-+		pdata->su1_fb = fb->full_name;
-+
-+		ret = of_property_read_u32(bl, "su1-max-uA", &pdata->su1_max_uA);
-+		if (pdata->su1_max_uA <= 0)
-+			ret = -EINVAL;
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	fb = of_parse_phandle(bl, "su2-dev", 0);
-+	if (fb) {
-+		int count = 0;
-+
-+		pdata->su2_fb = fb->full_name;
-+
-+		ret = of_property_read_u32(bl, "su2-max-uA", &pdata->su2_max_uA);
-+		if (pdata->su2_max_uA <= 0)
-+			ret = -EINVAL;
-+		if (ret < 0)
-+			return ret;
-+
-+		if (of_find_property(bl, "su2-feedback-voltage", NULL)) {
-+			pdata->su2_feedback = AS3711_SU2_VOLTAGE;
-+			count++;
-+		}
-+		if (of_find_property(bl, "su2-feedback-curr1", NULL)) {
-+			pdata->su2_feedback = AS3711_SU2_CURR1;
-+			count++;
-+		}
-+		if (of_find_property(bl, "su2-feedback-curr2", NULL)) {
-+			pdata->su2_feedback = AS3711_SU2_CURR2;
-+			count++;
-+		}
-+		if (of_find_property(bl, "su2-feedback-curr3", NULL)) {
-+			pdata->su2_feedback = AS3711_SU2_CURR3;
-+			count++;
-+		}
-+		if (of_find_property(bl, "su2-feedback-curr-auto", NULL)) {
-+			pdata->su2_feedback = AS3711_SU2_CURR_AUTO;
-+			count++;
-+		}
-+		if (count != 1)
-+			return -EINVAL;
-+
-+		count = 0;
-+		if (of_find_property(bl, "su2-fbprot-lx-sd4", NULL)) {
-+			pdata->su2_fbprot = AS3711_SU2_LX_SD4;
-+			count++;
-+		}
-+		if (of_find_property(bl, "su2-fbprot-gpio2", NULL)) {
-+			pdata->su2_fbprot = AS3711_SU2_GPIO2;
-+			count++;
-+		}
-+		if (of_find_property(bl, "su2-fbprot-gpio3", NULL)) {
-+			pdata->su2_fbprot = AS3711_SU2_GPIO3;
-+			count++;
-+		}
-+		if (of_find_property(bl, "su2-fbprot-gpio4", NULL)) {
-+			pdata->su2_fbprot = AS3711_SU2_GPIO4;
-+			count++;
-+		}
-+		if (count != 1)
-+			return -EINVAL;
-+
-+		count = 0;
-+		if (of_find_property(bl, "su2-auto-curr1", NULL)) {
-+			pdata->su2_auto_curr1 = true;
-+			count++;
-+		}
-+		if (of_find_property(bl, "su2-auto-curr2", NULL)) {
-+			pdata->su2_auto_curr2 = true;
-+			count++;
-+		}
-+		if (of_find_property(bl, "su2-auto-curr3", NULL)) {
-+			pdata->su2_auto_curr3 = true;
-+			count++;
-+		}
-+
-+		/*
-+		 * At least one su2-auto-curr* must be specified iff
-+		 * AS3711_SU2_CURR_AUTO is used
-+		 */
-+		if (!count ^ (pdata->su2_feedback != AS3711_SU2_CURR_AUTO))
-+			return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int as3711_backlight_probe(struct platform_device *pdev)
- {
- 	struct as3711_bl_pdata *pdata = dev_get_platdata(&pdev->dev);
-@@ -266,11 +369,24 @@ static int as3711_backlight_probe(struct platform_device *pdev)
- 	unsigned int max_brightness;
- 	int ret;
- 
--	if (!pdata || (!pdata->su1_fb && !pdata->su2_fb)) {
-+	if (!pdata) {
- 		dev_err(&pdev->dev, "No platform data, exiting...\n");
- 		return -ENODEV;
- 	}
- 
-+	if (pdev->dev.parent->of_node) {
-+		ret = as3711_backlight_parse_dt(&pdev->dev);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "DT parsing failed: %d\n", ret);
-+			return ret;
-+		}
-+	}
-+
-+	if (!pdata->su1_fb && !pdata->su2_fb) {
-+		dev_err(&pdev->dev, "No framebuffer specified\n");
-+		return -EINVAL;
-+	}
-+
- 	/*
- 	 * Due to possible hardware damage I chose to block all modes,
- 	 * unsupported on my hardware. Anyone, wishing to use any of those modes
--- 
-1.7.2.5
+> 
+> Paolo
+> 
+> Paolo Bonzini (4):
+>   virtio-scsi: redo allocation of target data
+>   virtio-scsi: pass struct virtio_scsi to virtqueue completion function
+>   virtio-scsi: push vq lock/unlock into virtscsi_vq_done
+>   virtio-scsi: introduce multiqueue support
+> 
+> Wanlong Gao (1):
+>   virtio-scsi: reset virtqueue affinity when doing cpu hotplug
+> 
+>  drivers/scsi/virtio_scsi.c |  360 +++++++++++++++++++++++++++++++++++---------
+>  1 files changed, 292 insertions(+), 68 deletions(-)
+> 
+> 
 
