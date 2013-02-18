@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757252Ab3BRTxV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 14:53:21 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33334 "EHLO
+	id S1757330Ab3BRTxb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 14:53:31 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8397 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756801Ab3BRTxS (ORCPT
+	with ESMTP id S1757279Ab3BRTx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 14:53:18 -0500
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=A1c2XFf7dFUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=F-nNtcodUUAA:10 a=fAfWBmd5Mb2GVkWXFAQA:9 a=PUjeQqilurYA:10 a=hoPC4-FNjB2KoLwe:21 a=SxClT33DH1kedRVZ:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 18 Feb 2013 14:53:26 -0500
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=A1c2XFf7dFUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=F-nNtcodUUAA:10 a=fAfWBmd5Mb2GVkWXFAQA:9 a=PUjeQqilurYA:10 a=OeR4jqcyOXU7V_Wx:21 a=GelX9i-ffy02LAcZ:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-ID: <1361217195.23152.170.camel@gandalf.local.home>
+Message-ID: <1361217204.23152.171.camel@gandalf.local.home>
 Subject: Re: [PATCH v5 00/45] CPU hotplug: stop_machine()-free CPU hotplug
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Vincent Guittot <vincent.guittot@linaro.org>
@@ -27,7 +27,7 @@ Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
         oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
         linuxppc-dev@lists.ozlabs.org
-Date: Mon, 18 Feb 2013 14:53:15 -0500
+Date: Mon, 18 Feb 2013 14:53:24 -0500
 In-Reply-To: <CAKfTPtC4hbXXWO=_zsGYryM9hpWaGFLbiY+jiLf=koLa4xGJOQ@mail.gmail.com>
 References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
 	 <510FBC01.2030405@linux.vnet.ibm.com> <87haloiwv0.fsf@rustcorp.com.au>
@@ -83,6 +83,7 @@ f(t) {
  <failed? bisect f(t1), if not bisect f(t2)>
 }
 
+-- Steve
 
 
 
