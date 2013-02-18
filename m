@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab3BRSZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 13:25:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43947 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753698Ab3BRSZk (ORCPT
+	id S1753010Ab3BRSZN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 13:25:13 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:33118 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995Ab3BRSZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 13:25:40 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
-Subject: [ 1/1] printk: fix buffer overflow when calling log_prefix function from call_console_drivers
-Date: Mon, 18 Feb 2013 10:25:29 -0800
-Message-Id: <20130218182321.813939691@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130218182321.620396886@linuxfoundation.org>
-References: <20130218182321.620396886@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Mon, 18 Feb 2013 13:25:07 -0500
+Message-ID: <512271E1.9000105@linux.vnet.ibm.com>
+Date: Mon, 18 Feb 2013 12:24:33 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Ric Mason <ric.masonn@gmail.com>
+CC: Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Subject: Re: [PATCH] zsmalloc: Add Kconfig for enabling PTE method
+References: <1359937421-19921-1-git-send-email-minchan@kernel.org> <511F2721.2000305@gmail.com>
+In-Reply-To: <511F2721.2000305@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021818-3620-0000-0000-00000141D0C4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 02/16/2013 12:28 AM, Ric Mason wrote:
+> On 02/04/2013 08:23 AM, Minchan Kim wrote:
+>> Zsmalloc has two methods 1) copy-based and 2) pte based to access
+>> allocations that span two pages.
+>> You can see history why we supported two approach from [1].
+>>
+>> But it was bad choice that adding hard coding to select architecture
+>> which want to use pte based method. This patch removed it and adds
+>> new Kconfig to select the approach.
+>>
+>> This patch is based on next-20130202.
+>>
+>> [1] https://lkml.org/lkml/2012/7/11/58
+>>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+>> Cc: Nitin Gupta <ngupta@vflare.org>
+>> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+>> Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
+>> Signed-off-by: Minchan Kim <minchan@kernel.org>
+>> ---
+>>   drivers/staging/zsmalloc/Kconfig         |   12 ++++++++++++
+>>   drivers/staging/zsmalloc/zsmalloc-main.c |   11 -----------
+>>   2 files changed, 12 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/drivers/staging/zsmalloc/Kconfig
+>> b/drivers/staging/zsmalloc/Kconfig
+>> index 9084565..2359123 100644
+>> --- a/drivers/staging/zsmalloc/Kconfig
+>> +++ b/drivers/staging/zsmalloc/Kconfig
+>> @@ -8,3 +8,15 @@ config ZSMALLOC
+>>         non-standard allocator interface where a handle, not a
+>> pointer, is
+>>         returned by an alloc().  This handle must be mapped in order to
+>>         access the allocated space.
+>> +
+>> +config ZSMALLOC_PGTABLE_MAPPING
+>> +        bool "Use page table mapping to access allocations that
+>> span two pages"
+>> +        depends on ZSMALLOC
+>> +        default n
+>> +        help
+>> +      By default, zsmalloc uses a copy-based object mapping method
+>> to access
+>> +      allocations that span two pages. However, if a particular
+>> architecture
+>> +      performs VM mapping faster than copying, then you should
+>> select this.
+>> +      This causes zsmalloc to use page table mapping rather than
+>> copying
+>> +      for object mapping. You can check speed with zsmalloc
+>> benchmark[1].
+>> +      [1] https://github.com/spartacus06/zsmalloc
+> 
+> Is there benchmark to test zcache? eg. internal fragmentation level ...
 
-------------------
+First, zsmalloc is not used in zcache right now so just wanted to say
+that.  It is used in zram and the proposed zswap
+(https://lwn.net/Articles/528817/)
 
-From: Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
+There is not an official benchmark.  However anything that generates
+activity that will hit the frontswap or cleancache hooks will do.
+These are workloads that overcommit memory and use swap, or access
+file sets whose size is larger that the system page cache.
 
-This patch corrects a buffer overflow in kernels from 3.0 to 3.4 when calling
-log_prefix() function from call_console_drivers().
+The closest thing to a fragmentation metric is an effective
+compression ratio that can be calculated with debugfs attributes:
 
-This bug existed in previous releases but has been revealed with commit
-162a7e7500f9664636e649ba59defe541b7c2c60 (2.6.39 => 3.0) that made changes
-about how to allocate memory for early printk buffer (use of memblock_alloc).
-It disappears with commit 7ff9554bb578ba02166071d2d487b7fc7d860d62 (3.4 => 3.5)
-that does a refactoring of printk buffer management.
+zcache_[eph|pers]_zbytes / (zcache_[eph|pers]_pageframes * PAGE_SIZE)
 
-In log_prefix(), the access to "p[0]", "p[1]", "p[2]" or
-"simple_strtoul(&p[1], &endp, 10)" may cause a buffer overflow as this
-function is called from call_console_drivers by passing "&LOG_BUF(cur_index)"
-where the index must be masked to do not exceed the buffer's boundary.
+eph for cleancache, and pers for frontswap.
 
-The trick is to prepare in call_console_drivers() a buffer with the necessary
-data (PRI field of syslog message) to be safely evaluated in log_prefix().
-
-This patch can be applied to stable kernel branches 3.0.y, 3.2.y and 3.4.y.
-
-Without this patch, one can freeze a server running this loop from shell :
-  $ export DUMMY=`cat /dev/urandom | tr -dc '12345AZERTYUIOPQSDFGHJKLMWXCVBNazertyuiopqsdfghjklmwxcvbn' | head -c255`
-  $ while true do ; echo $DUMMY > /dev/kmsg ; done
-
-The "server freeze" depends on where memblock_alloc does allocate printk buffer :
-if the buffer overflow is inside another kernel allocation the problem may not
-be revealed, else the server may hangs up.
-
-Signed-off-by: Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/linux/syslog.h |    6 ++++++
- kernel/printk.c        |   13 ++++++++++++-
- 2 files changed, 18 insertions(+), 1 deletion(-)
-
---- a/include/linux/syslog.h
-+++ b/include/linux/syslog.h
-@@ -47,6 +47,12 @@
- #define SYSLOG_FROM_CALL 0
- #define SYSLOG_FROM_FILE 1
- 
-+/*
-+ * Syslog priority (PRI) maximum length in char : '<[0-9]{1,3}>'
-+ * See RFC5424 for details
-+*/
-+#define SYSLOG_PRI_MAX_LENGTH 5
-+
- int do_syslog(int type, char __user *buf, int count, bool from_file);
- 
- #endif /* _LINUX_SYSLOG_H */
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -633,8 +633,19 @@ static void call_console_drivers(unsigne
- 	start_print = start;
- 	while (cur_index != end) {
- 		if (msg_level < 0 && ((end - cur_index) > 2)) {
-+			/*
-+			 * prepare buf_prefix, as a contiguous array,
-+			 * to be processed by log_prefix function
-+			 */
-+			char buf_prefix[SYSLOG_PRI_MAX_LENGTH+1];
-+			unsigned i;
-+			for (i = 0; i < ((end - cur_index)) && (i < SYSLOG_PRI_MAX_LENGTH); i++) {
-+				buf_prefix[i] = LOG_BUF(cur_index + i);
-+			}
-+			buf_prefix[i] = '\0'; /* force '\0' as last string character */
-+
- 			/* strip log prefix */
--			cur_index += log_prefix(&LOG_BUF(cur_index), &msg_level, NULL);
-+			cur_index += log_prefix((const char *)&buf_prefix, &msg_level, NULL);
- 			start_print = cur_index;
- 		}
- 		while (cur_index != end) {
-
+Seth
 
