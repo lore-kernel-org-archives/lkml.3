@@ -1,76 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757922Ab3BRGS3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 01:18:29 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:36953 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab3BRGS1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 01:18:27 -0500
-Message-ID: <5121C7AF.2090803@numascale-asia.com>
-Date: Mon, 18 Feb 2013 14:18:23 +0800
-From: Daniel J Blueman <daniel@numascale-asia.com>
-Organization: Numascale Asia
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1757203Ab3BRG0m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 01:26:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:30494 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751136Ab3BRG0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 01:26:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,684,1355126400"; 
+   d="scan'208";a="287012753"
+From: "Li, Fei" <fei.li@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Miklos Szeredi <miklos@szeredi.hu>
+CC: Pavel Machek <pavel@ucw.cz>, Goswin von Brederlow <goswin-v-b@web.de>,
+        "Brown, Len" <len.brown@intel.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "Wang, Biao" <biao.wang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: RE: Getting rid of freezer for suspend [was Re: [fuse-devel]
+ [PATCH] fuse: make fuse daemon frozen along with kernel threads]
+Thread-Topic: Getting rid of freezer for suspend [was Re: [fuse-devel]
+ [PATCH] fuse: make fuse daemon frozen along with kernel threads]
+Thread-Index: AQHOB3olAHFPqtS62k684yYjcBqH9ZhylloAgAAImICAAExEgIAATRqAgACy/QCAACDEAIAAHwMAgAFcLwCAACkpgIAAARWAgAHaHwCAAD9mgIAA34sAgAAZE4CAABBvAIAASu8AgAXb/VA=
+Date: Mon, 18 Feb 2013 06:26:34 +0000
+Message-ID: <BEC9F67575FA1E429CA7CF5AE9BE3634400F30@SHSMSX102.ccr.corp.intel.com>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <2891124.QXsiBPuYKW@vostro.rjw.lan>
+ <CAJfpeguV5X1pwb-E7vzVtK4n0Q6Mu6A4XKnS5-tWn4Q7MtzgZg@mail.gmail.com>
+ <6332427.iqPUMjtDaQ@vostro.rjw.lan>
+In-Reply-To: <6332427.iqPUMjtDaQ@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: "Linux Kernel" <linux-kernel@vger.kernel.org>,
-        "Steffen Persvold" <sp@numascale.com>
-Subject: Re: kswapd craziness round 2
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1I6Qmvd022141
 
-On Monday, 18 February 2013 06:10:02 UTC+8, Jiri Slaby  wrote:
- > Hi,
- >
- > You still feel the sour taste of the "kswapd craziness in v3.7" thread,
- > right? Welcome to the hell, part two :{.
- >
- > I believe this started happening after update from
- > 3.8.0-rc4-next-20130125 to 3.8.0-rc7-next-20130211. The same as before,
- > many hours of uptime are needed and perhaps some suspend/resume cycles
- > too. Memory pressure is not high, plenty of I/O cache:
- > # free
- >              total       used       free     shared    buffers     cached
- > Mem:       6026692    5571184     455508          0     351252    2016648
- > -/+ buffers/cache:    3203284    2823408
- > Swap:            0          0          0
- >
- > kswap is working very toughly though:
- > root       580  0.6  0.0      0     0 ?        S    úno12  46:21 
-[kswapd0]
- >
- > This happens on I/O activity right now. For example by updatedb or find
- > /. This is what the stack trace of kswapd0 looks like:
- > [<ffffffff8113c431>] shrink_slab+0xa1/0x2d0
- > [<ffffffff8113ecd1>] kswapd+0x541/0x930
- > [<ffffffff810a3000>] kthread+0xc0/0xd0
- > [<ffffffff816beb5c>] ret_from_fork+0x7c/0xb0
- > [<ffffffffffffffff>] 0xffffffffffffffff
 
-Likewise with 3.8-rc, I've been able to reproduce [1] a livelock 
-scenario which hoses the box and observe RCU stalls are observed [2].
+> -----Original Message-----
+> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+> Sent: Friday, February 15, 2013 1:38 AM
+> To: Miklos Szeredi
+> Cc: Pavel Machek; Goswin von Brederlow; Li, Fei; Brown, Len;
+> mingo@redhat.com; peterz@infradead.org; Wang, Biao;
+> linux-pm@vger.kernel.org; fuse-devel@lists.sourceforge.net;
+> linux-kernel@vger.kernel.org; Liu, Chuansheng
+> Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH] fuse:
+> make fuse daemon frozen along with kernel threads]
+> 
+> On Thursday, February 14, 2013 02:09:50 PM Miklos Szeredi wrote:
+> > On Thu, Feb 14, 2013 at 1:11 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > On Thursday, February 14, 2013 11:41:16 AM Miklos Szeredi wrote:
+> >
+> > >>
+> > >> It is essentially the same mechanism that is used to delay the
+> > >> freezing of kernel threads after userspace tasks have been frozen.
+> > >> Except it's a lot more difficult to determine which userspace tasks
+> > >> need to be suspended late and which aren't.
+> > >
+> > > Well, I suppose that information is available to user space.
+> > >
+> > > Do we need an interface for a process to mark itself as PF_FREEZE_LATE or
+> > > do we need an interface for one process to mark another process as
+> > > PF_FREEZE_LATE, or both?
+> >
+> > As a first step marking self with PF_FREEZE_LATE and inheriting this
+> > flag across fork/clone would work for most cases, I think.
+> 
+> OK, so we can just have a switch for that in /proc I suppose.
 
-There may be a connection; I'll do a bit more debugging in the next few 
-days.
+Thanks for feedback and suggestion.
 
-Daniel
+We have ever tried similar idea, expose interface /sys/power/pm_freeze_daemon,
+userspace tasks write 1 to this attribute to make itself to be frozen at the same time
+with kernel tasks, and it worked in our experiment.
 
---- [1]
+Do you think it's suitable and enough to use such attribute /sys/power/pm_freeze_late, 
+or other more suitable place under /proc suggested?
+If needed, I can prepare the patch.
 
-1. live-booted image using ramdisk
-2. boot 3.8-rc with <16GB memory and without swap
-3. run OpenMP NAS Parallel Benchmark dc.B against local disk (ie not 
-ramdisk)
-4. observe hang O(30) mins later
+Best Regards,
+Li Fei
 
---- [2]
-
-[ 2675.587878] INFO: rcu_sched self-detected stall on CPU { 5}  (t=24000 
-jiffies g=6313 c=6312 q=68)
--- 
-Daniel J Blueman
-Principal Software Engineer, Numascale Asia
+> > Marking an unrelated process would have all sorts of issues: Who has
+> > permission to do this?  Won't it be misused to "fix" random freezer
+> > issues.
+> 
+> Yes, that's why I was asking.
+> 
+> Thanks,
+> Rafael
+> 
+> 
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
