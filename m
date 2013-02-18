@@ -1,73 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab3BRKsx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 05:48:53 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:64533 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab3BRKsw (ORCPT
+	id S1751512Ab3BRKxe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 05:53:34 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:39553 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218Ab3BRKxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 05:48:52 -0500
+	Mon, 18 Feb 2013 05:53:32 -0500
+Message-ID: <512207A6.4000402@linux.vnet.ibm.com>
+Date: Mon, 18 Feb 2013 16:21:18 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Date: Mon, 18 Feb 2013 18:48:50 +0800
-Message-ID: <CAFNq8R4UYvygk8+X+NZgyGjgU5vBsEv1UM6MiUxah6iW8=0HrQ@mail.gmail.com>
-Subject: Should a swapped out page be deleted from swap cache?
-From: Li Haifeng <omycle@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: paulmck@linux.vnet.ibm.com,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, walken@google.com, mingo@kernel.org,
+        linux-arch@vger.kernel.org, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        rostedt@goodmis.org, rjw@sisk.pl, namhyung@kernel.org,
+        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
+        netdev@vger.kernel.org, oleg@redhat.com, sbw@mit.edu, tj@kernel.org,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v5 00/45] CPU hotplug: stop_machine()-free CPU hotplug
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <510FBC01.2030405@linux.vnet.ibm.com>	<87haloiwv0.fsf@rustcorp.com.au> <51134596.4080106@linux.vnet.ibm.com> <20130208154113.GV17833@n2100.arm.linux.org.uk> <51152B81.2050501@linux.vnet.ibm.com>	<51153F72.1060005@linux.vnet.ibm.com> <CAKfTPtCe+cD7LLkb+D6pqG1SwG2V08ws=4XO3ttHEHV2qgmqPg@mail.gmail.com> <5118E2CD.90401@linux.vnet.ibm.com> <20130211190852.GA5695@linux.vnet.ibm.com> <5119BDFD.1000909@linux.vnet.ibm.com> <CAKfTPtAo2hQTfBKTVUuLKgsGJ2ZLD0UTR3fH9UFuJwyFt4n__w@mail.gmail.com> <511E8F3C.2010406@linux.vnet.ibm.com> <CAKfTPtD=2jn1AVjuhVP1ot7_8x9-W4==hNGZET5N9tRE7gtyMw@mail.gmail.com> <512203B3.7090002@linux.vnet.ibm.com>
+In-Reply-To: <512203B3.7090002@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021810-6102-0000-0000-00000305616A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For explain my question, the two points should be displayed as below.
+On 02/18/2013 04:04 PM, Srivatsa S. Bhat wrote:
+> On 02/18/2013 03:54 PM, Vincent Guittot wrote:
+>> On 15 February 2013 20:40, Srivatsa S. Bhat
+>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>> Hi Vincent,
+>>>
+>>> On 02/15/2013 06:58 PM, Vincent Guittot wrote:
+>>>> Hi Srivatsa,
+>>>>
+>>>> I have run some tests with you branch (thanks Paul for the git tree)
+>>>> and you will find results below.
+>>>>
+>>>
+>>> Thank you very much for testing this patchset!
+>>>
+>>>> The tests condition are:
+>>>> - 5 CPUs system in 2 clusters
+>>>> - The test plugs/unplugs CPU2 and it increases the system load each 20
+>>>> plug/unplug sequence with either more cyclictests threads
+>>>> - The test is done with all CPUs online and with only CPU0 and CPU2
+>>>>
+>>>> The main conclusion is that there is no differences with and without
+>>>> your patches with my stress tests. I'm not sure that it was the
+>>>> expected results but the cpu_down is already quite low : 4-5ms in
+>>>> average
+>>>>
+>>>
+>>> Atleast my patchset doesn't perform _worse_ than mainline, with respect
+>>> to cpu_down duration :-)
+>>
+>> yes exactly and it has pass  more than 400 consecutive plug/unplug on
+>> an ARM platform
+>>
+> 
+> Great! However, did you turn on CPU_IDLE during your tests?
+> 
+> In my tests, I had turned off cpu idle in the .config, like I had mentioned in
+> the cover letter. I'm struggling to get it working with CPU_IDLE/INTEL_IDLE
+> turned on, because it gets into a lockup almost immediately. It appears that
+> the lock-holder of clockevents_lock never releases it, for some reason..
+> See below for the full log. Lockdep has not been useful in debugging this,
+> unfortunately :-(
+> 
 
-1.  If an anonymous page is swapped out, this page will be deleted
-from swap cache and be put back into buddy system.
+Ah, nevermind, the following diff fixes it :-) I had applied this fix on v5
+and tested but it still had races where I used to hit the lockups. Now after
+I fixed all the memory barrier issues that Paul and Oleg pointed out in v5,
+I applied this fix again and tested it just now - it works beautifully! :-)
 
-2. When a page is swapped out, the sharing count of swap slot must not
-be zero. That is, page_swapcount(page) will not return zero.
+I'll include this fix and post a v6 soon.
 
-Are both of them above right?
+Regards,
+Srivatsa S. Bhat
 
-According the two points above, I was confused to the line 655 below.
-When a page is swapped out, the return value of page_swapcount(page)
-will not be zero. So, the page couldn't be deleted from swap cache.
+--------------------------------------------------------------------------->
 
- 644  * If swap is getting full, or if there are no more mappings of this page,
- 645  * then try_to_free_swap is called to free its swap space.
- 646  */
- 647 int try_to_free_swap(struct page *page)
- 648 {
- 649         VM_BUG_ON(!PageLocked(page));
- 650
- 651         if (!PageSwapCache(page))
- 652                 return 0;
- 653         if (PageWriteback(page))
- 654                 return 0;
- 655         if (page_swapcount(page))//Has referenced by other swap out page.
- 656                 return 0;
- 657
- 658         /*
- 659          * Once hibernation has begun to create its image of memory,
- 660          * there's a danger that one of the calls to try_to_free_swap()
- 661          * - most probably a call from __try_to_reclaim_swap() while
- 662          * hibernation is allocating its own swap pages for the image,
- 663          * but conceivably even a call from memory reclaim - will free
- 664          * the swap from a page which has already been recorded in the
- 665          * image as a clean swapcache page, and then reuse its swap for
- 666          * another page of the image.  On waking from hibernation, the
- 667          * original page might be freed under memory pressure, then
- 668          * later read back in from swap, now with the wrong data.
- 669          *
- 670          * Hibration suspends storage while it is writing the image
- 671          * to disk so check that here.
- 672          */
- 673         if (pm_suspended_storage())
- 674                 return 0;
- 675
- 676         delete_from_swap_cache(page);
- 677         SetPageDirty(page);
- 678         return 1;
- 679 }
 
-Thanks.
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 30b6de0..ca340fd 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -17,6 +17,7 @@
+ #include <linux/module.h>
+ #include <linux/notifier.h>
+ #include <linux/smp.h>
++#include <linux/cpu.h>
+ 
+ #include "tick-internal.h"
+ 
+@@ -431,6 +432,7 @@ void clockevents_notify(unsigned long reason, void *arg)
+ 	unsigned long flags;
+ 	int cpu;
+ 
++	get_online_cpus_atomic();
+ 	raw_spin_lock_irqsave(&clockevents_lock, flags);
+ 	clockevents_do_notify(reason, arg);
+ 
+@@ -459,6 +461,7 @@ void clockevents_notify(unsigned long reason, void *arg)
+ 		break;
+ 	}
+ 	raw_spin_unlock_irqrestore(&clockevents_lock, flags);
++	put_online_cpus_atomic();
+ }
+ EXPORT_SYMBOL_GPL(clockevents_notify);
+ #endif
+
