@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab3BRMmd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 07:42:33 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:35148 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755096Ab3BRMm3 (ORCPT
+	id S1755329Ab3BRMmp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 07:42:45 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:39320 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755228Ab3BRMmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 07:42:29 -0500
+	Mon, 18 Feb 2013 07:42:40 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v6 15/46] tick: Use get/put_online_cpus_atomic() to prevent
- CPU offline
+Subject: [PATCH v6 16/46] time/clocksource: Use get/put_online_cpus_atomic()
+ to prevent CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -21,8 +21,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         walken@google.com, vincent.guittot@linaro.org
-Date: Mon, 18 Feb 2013 18:10:18 +0530
-Message-ID: <20130218124018.26245.34450.stgit@srivatsabhat.in.ibm.com>
+Date: Mon, 18 Feb 2013 18:10:30 +0530
+Message-ID: <20130218124030.26245.64712.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,42 +30,59 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021812-9264-0000-0000-0000032CB86A
+x-cbid: 13021812-5140-0000-0000-000002C60B66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Once stop_machine() is gone from the CPU offline path, we won't be able to
-depend on preempt_disable() or local_irq_disable() to prevent CPUs from
-going offline from under us.
+depend on preempt_disable() or local_irq_disable() to prevent CPUs from going
+offline from under us.
 
 Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
 while invoking from atomic context.
 
+Cc: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- kernel/time/tick-broadcast.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/time/clocksource.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index f113755..d123a2c 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -160,6 +160,7 @@ static void tick_do_broadcast(struct cpumask *mask)
-  */
- static void tick_do_periodic_broadcast(void)
- {
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index c958338..1c8d735 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -30,6 +30,7 @@
+ #include <linux/sched.h> /* for spin_unlock_irq() using preempt_count() m68k */
+ #include <linux/tick.h>
+ #include <linux/kthread.h>
++#include <linux/cpu.h>
+ 
+ void timecounter_init(struct timecounter *tc,
+ 		      const struct cyclecounter *cc,
+@@ -320,11 +321,13 @@ static void clocksource_watchdog(unsigned long data)
+ 	 * Cycle through CPUs to check if the CPUs stay synchronized
+ 	 * to each other.
+ 	 */
 +	get_online_cpus_atomic();
- 	raw_spin_lock(&tick_broadcast_lock);
- 
- 	cpumask_and(to_cpumask(tmpmask),
-@@ -167,6 +168,7 @@ static void tick_do_periodic_broadcast(void)
- 	tick_do_broadcast(to_cpumask(tmpmask));
- 
- 	raw_spin_unlock(&tick_broadcast_lock);
+ 	next_cpu = cpumask_next(raw_smp_processor_id(), cpu_online_mask);
+ 	if (next_cpu >= nr_cpu_ids)
+ 		next_cpu = cpumask_first(cpu_online_mask);
+ 	watchdog_timer.expires += WATCHDOG_INTERVAL;
+ 	add_timer_on(&watchdog_timer, next_cpu);
 +	put_online_cpus_atomic();
+ out:
+ 	spin_unlock(&watchdog_lock);
+ }
+@@ -336,7 +339,9 @@ static inline void clocksource_start_watchdog(void)
+ 	init_timer(&watchdog_timer);
+ 	watchdog_timer.function = clocksource_watchdog;
+ 	watchdog_timer.expires = jiffies + WATCHDOG_INTERVAL;
++	get_online_cpus_atomic();
+ 	add_timer_on(&watchdog_timer, cpumask_first(cpu_online_mask));
++	put_online_cpus_atomic();
+ 	watchdog_running = 1;
  }
  
- /*
 
