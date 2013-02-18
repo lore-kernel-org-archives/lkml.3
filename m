@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362Ab3BROtk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 09:49:40 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:62481 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab3BROtj (ORCPT
+	id S1752624Ab3BROxs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 09:53:48 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34798 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965Ab3BROxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 09:49:39 -0500
+	Mon, 18 Feb 2013 09:53:46 -0500
+Date: Mon, 18 Feb 2013 15:53:41 +0100
+From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>,
+        wency@cn.fujitsu.com
+Subject: Re: [PATCH] ACPI / scan: Make it clear that acpi_bus_trim() cannot
+ fail
+Message-ID: <20130218145341.GC4448@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <1511096.zmfmBrfdmu@vostro.rjw.lan>
+ <20130218122549.GA4448@dhcp-192-168-178-175.profitbricks.localdomain>
+ <15493777.FVIQvWOuf9@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <87d2vxznzk.fsf@devron.myhome.or.jp>
-References: <1360422145-12280-1-git-send-email-linkinjeon@gmail.com>
-	<87fw0t3mq0.fsf@devron.myhome.or.jp>
-	<CAKYAXd9cxUJwObHUfh0Rf9jVLzmvpfnYx4AKw6tsSAX-jzDusA@mail.gmail.com>
-	<87d2vxznzk.fsf@devron.myhome.or.jp>
-Date: Mon, 18 Feb 2013 23:49:38 +0900
-Message-ID: <CAKYAXd-DZ+bXNve22ei2RXT1atH0nKp6=qbE_e+5j8+oZAg2pQ@mail.gmail.com>
-Subject: Re: [PATCH v6 4/7] fat: restructure export_operations
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <15493777.FVIQvWOuf9@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/18 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>>> +     if (parent && (len < FAT_FID_SIZE_WITH_PARENT)) {
->>>> +             *lenp = FAT_FID_SIZE_WITH_PARENT;
->>>> +             return 255;
->>>> +     } else if (len < FAT_FID_SIZE_WITHOUT_PARENT) {
->>>> +             *lenp = FAT_FID_SIZE_WITHOUT_PARENT;
->>>> +             return 255;
->>>> +     }
->>>
->>> This check strange. "parent && len == FAT_FID_SIZE_WITHOUT_PARENT" will
->>> overwrite over limit of fh size?
->> I need to check more. because I followed the logic in
->> export_encode_fh() function.
->
-> Ah, my fault, it doesn't have real problem. But code is quite strange.
->
-> If input is "parent && len >= FAT_FID_SIZE_WITHOUT_PARENT", "else if
-> (len < FAT_FID_SIZE_WITHOUT_PARENT)" check is entirely useless, but this
-> code itself checks "len".
->
-> if (parent) {
->         if (len < FAT_FID_SIZE_WITH_PARENT)
->                 /* error */
-> } else {
->         if (len < FAT_FID_SIZE_WITHOUT_PARENT)
->                 /* error */
-> }
->
-> I think this would readable, and I guess this will generates faster/simpler
-> code (at least, this doesn't depends an optimization of gcc).
-I agree. I will change it as your opinion.
-Thanks a lot, OGAWA!.
->
-> Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+On Mon, Feb 18, 2013 at 02:17:02PM +0100, Rafael J. Wysocki wrote:
+> On Monday, February 18, 2013 01:25:49 PM Vasilis Liaskovitis wrote:
+> > Hi,
+> > 
+> > On Thu, Jan 24, 2013 at 11:56:50PM +0100, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > Since acpi_bus_trim() cannot fail, change its definition to a void
+> > > function, so that its callers don't check the return value in vain
+> > > and update the callers.
+> > 
+> > I have missed a few patchsets/discussions in the last month and wanted to
+> > ask a question related to this: Does the new always-succeed 2-pass
+> > trim_device design guarantee safe memory hot-remove operations?
+> 
+> I doesn't by itself.  Nor it really can, because the .remove() callbacks of
+> device drivers are not allowed to fail.
+
+right.
+
+> 
+> > Afaict if memory offline fails now, the device is ejected (_EJ0) anyways
+> > causing a panic. Tested in a VM with linux-next-20130207 and
+> > linux-next-20130218 by doing an SCI-eject request on a hot-plugged dimm.
+> > 
+> > Are there more patches in development for safe memory hot-remove?
+> 
+> Yes, there are.  I sent a patch series yesterday introducing some safety
+> measures (you can disable memory hotplug from user space or disable
+> automatic ejection).  There's more to come still.
+> 
+> The plan is to introduce offline/online operations for memory modules (in
+> analogy with CPU core online/offline) that can be started by user space and
+> memory eject will only be possible after offline (i.e. when the memory module
+> is known to be not in use).
+
+ok, thanks for the info. I 'll test these and the follow ups.
+
+thanks again,
+
+- Vasilis
