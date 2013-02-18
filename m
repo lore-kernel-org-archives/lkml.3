@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757425Ab3BRUgQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 15:36:16 -0500
-Received: from mail.tpi.com ([70.99.223.143]:2855 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753494Ab3BRUgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 15:36:12 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Chirag Kantharia <chirag.kantharia@hp.com>, iss_storagedev@hp.com
-Subject: [PATCH linux-next] cpqarray: do_ida_request() - reduce stack frame size
-Date: Mon, 18 Feb 2013 13:35:58 -0700
-Message-Id: <1361219758-112250-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1757367Ab3BRUit (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 15:38:49 -0500
+Received: from sema.semaphore.gr ([78.46.194.137]:55638 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753010Ab3BRUis (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 15:38:48 -0500
+Message-ID: <51229152.8010007@semaphore.gr>
+Date: Mon, 18 Feb 2013 22:38:42 +0200
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH linux-next] net: ipv6: Fix compiler warning
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_ida_request() can be called from within interrupt context.
-A stack frame of more then 1K runs the risk of overflowing the
-kernel stack. Correct this situation by dynamically allocating
-the large (and temporary) scatter/gather array. A failure from kmalloc()
-will leave a stack trace in the kernel log.
+Fix the following compiler warning (also a checkpatch error):
 
-drivers/block/cpqarray.c: In function â€˜do_ida_requestâ€™:
-drivers/block/cpqarray.c:969:1: warning: the frame size of 1072 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+net/ipv6/xfrm6_mode_tunnel.c: In function ‘xfrm6_mode_tunnel_input’:
+net/ipv6/xfrm6_mode_tunnel.c:72:2: warning: suggest parentheses around
+assignment used as truth value [-Wparentheses]
 
-Cc: Chirag Kantharia <chirag.kantharia@hp.com>
-Cc: iss_storagedev@hp.com
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
 ---
- drivers/block/cpqarray.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ net/ipv6/xfrm6_mode_tunnel.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
-index 3f08713..2715b35 100644
---- a/drivers/block/cpqarray.c
-+++ b/drivers/block/cpqarray.c
-@@ -908,9 +908,13 @@ static void do_ida_request(struct request_queue *q)
- 	ctlr_info_t *h = q->queuedata;
- 	cmdlist_t *c;
- 	struct request *creq;
--	struct scatterlist tmp_sg[SG_MAX];
-+	struct scatterlist *tmp_sg;
- 	int i, dir, seg;
+diff --git a/net/ipv6/xfrm6_mode_tunnel.c b/net/ipv6/xfrm6_mode_tunnel.c
+index 93c41a8..9bf6a74 100644
+--- a/net/ipv6/xfrm6_mode_tunnel.c
++++ b/net/ipv6/xfrm6_mode_tunnel.c
+@@ -69,7 +69,8 @@ static int xfrm6_mode_tunnel_input(struct xfrm_state *x, struct sk_buff *skb)
+ 	if (!pskb_may_pull(skb, sizeof(struct ipv6hdr)))
+ 		goto out;
  
-+	tmp_sg = kmalloc(sizeof(*tmp_sg) * SG_MAX, GFP_ATOMIC);
-+	if (!tmp_sg)
-+		return;
-+
- queue_next:
- 	creq = blk_peek_request(q);
- 	if (!creq)
-@@ -966,6 +970,7 @@ DBGPX(	printk("Submitting %u sectors in %d segments\n", blk_rq_sectors(creq), se
+-	if (err = skb_unclone(skb, GFP_ATOMIC))
++	err = skb_unclone(skb, GFP_ATOMIC);
++	if (err)
+ 		goto out;
  
- startio:
- 	start_io(h);
-+	kfree(tmp_sg);
- }
- 
- /* 
+ 	if (x->props.flags & XFRM_STATE_DECAP_DSCP)
 -- 
-1.7.9.5
+1.8.1.2
 
