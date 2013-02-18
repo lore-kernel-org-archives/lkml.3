@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab3BRGbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 01:31:00 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50320 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758103Ab3BRGa4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 01:30:56 -0500
+	id S932206Ab3BRGcV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 01:32:21 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60446 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757696Ab3BRGai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 01:30:38 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
@@ -20,9 +19,9 @@ CC: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
         Syed Mohammed Khasim <khasim@ti.com>
-Subject: [RFC 7/8] ARM: dts: am4372: initial support
-Date: Mon, 18 Feb 2013 12:00:41 +0530
-Message-ID: <c9c131c0508b875c0893e8557504372a1564568a.1361166003.git.afzal@ti.com>
+Subject: [RFC 2/8] ARM: twd: register clock event for 1 core SMP
+Date: Mon, 18 Feb 2013 12:00:15 +0530
+Message-ID: <a7f62b8580aa4b33d5658f4f03371a453adaea9b.1361166003.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <cover.1361166003.git.afzal@ti.com>
 References: <cover.1361166003.git.afzal@ti.com>
@@ -32,76 +31,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DT source (minimal) for AM4372 SoC. Those represented here are the
-minimal DT nodes necessary to get kernel booting.
+Register percpu local timer for scheduler tick in the case of one core
+SMP configuration. In other cases - secondary cpu's as well as boot
+cpu's having more than one core, this is being registered as per
+existing boot flow, with a difference that they happens after delay
+calibration. Registering the clock for tick in case of one core should
+be done before Kernel calibrates delay (this is required to boot,
+unless local timer is the only one registered for tick). Registering
+twd local timer at init_time (which platforms are doing now) helps
+achieve that with the proposed change.
+
+This helps in an almost booting Kernel (minimal) by only relying on
+ARM parts for an A9 one core SMP.
 
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
- arch/arm/boot/dts/am4372.dtsi | 55 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 55 insertions(+)
- create mode 100644 arch/arm/boot/dts/am4372.dtsi
+ arch/arm/kernel/smp_twd.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
-new file mode 100644
-index 0000000..178c41f
---- /dev/null
-+++ b/arch/arm/boot/dts/am4372.dtsi
-@@ -0,0 +1,55 @@
-+/*
-+ * Device Tree Source for AM4372 SoC
-+ *
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2.  This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
+diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+index 616268c..118f4f2 100644
+--- a/arch/arm/kernel/smp_twd.c
++++ b/arch/arm/kernel/smp_twd.c
+@@ -335,6 +335,9 @@ static int __init twd_local_timer_common_register(struct device_node *np)
+ 
+ 	twd_get_clock(np);
+ 
++	if (num_possible_cpus() == 1)
++		twd_timer_setup(evt);
 +
-+/include/ "skeleton.dtsi"
-+
-+/ {
-+	compatible = "ti,am4372", "ti,am43";
-+	interrupt-parent = <&gic>;
-+
-+
-+	aliases {
-+		serial0 = &uart1;
-+	};
-+
-+	cpus {
-+		cpu@0 {
-+			compatible = "arm,cortex-a9";
-+		};
-+	};
-+
-+	gic: interrupt-controller@48241000 {
-+		compatible = "arm,cortex-a9-gic";
-+		interrupt-controller;
-+		#interrupt-cells = <3>;
-+		reg = <0x48241000 0x1000>,
-+		      <0x48240100 0x0100>;
-+	};
-+
-+	twd1: local-timer@0x48240600 {
-+		compatible = "arm,cortex-a9-twd-timer";
-+		reg = <0x48240600 0x20>;
-+		interrupts = <1 13 0x304>;
-+	};
-+
-+	ocp {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		uart1: serial@44e09000 {
-+			compatible = "ti,am4372-uart","ti,omap2-uart";
-+			clock-frequency = <48000000>;
-+			reg = <0x44e09000 0x2000>;
-+			interrupts = <0 72 0x4>;
-+		};
-+	};
-+};
+ 	return 0;
+ 
+ out_irq:
 -- 
 1.7.12
 
