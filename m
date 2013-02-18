@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab3BRGbC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 01:31:02 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:40373 "EHLO bear.ext.ti.com"
+	id S932181Ab3BRGbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 01:31:08 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:40387 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758029Ab3BRGa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 01:30:56 -0500
+	id S932161Ab3BRGbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 01:31:04 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
@@ -19,9 +19,9 @@ CC: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
         Syed Mohammed Khasim <khasim@ti.com>
-Subject: [RFC 6/8] ARM: OMAP2+: am43: basic dt support
-Date: Mon, 18 Feb 2013 12:00:36 +0530
-Message-ID: <64d18c5a07bf7680b8299f3ef98303e60522e738.1361166003.git.afzal@ti.com>
+Subject: [RFC 8/8] ARM: dts: am43-pre-silicon support
+Date: Mon, 18 Feb 2013 12:00:46 +0530
+Message-ID: <e344f74da47579c11db68d9f6efe25259ed7f25d.1361166003.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <cover.1361166003.git.afzal@ti.com>
 References: <cover.1361166003.git.afzal@ti.com>
@@ -31,53 +31,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Describe minimal DT boot machine details for AM43 based SoC's. AM43
-family of SoC's are ARM Cortex-A9 based with one core in SMP
-configuration. Low level debug could be achieved by selecting
-DEBUG_AM33XXUART1. To boot AM43 SoC, this change is sufficient w.r.t
-Kernel (considering the fact that strictly speaking DT sources does
-not classify as a part of Kernel). Here private timer of the one and
-only core is being used as clock event (as well as, as time source).
+AM43 SoC is in pre-silicon stage, meanwhile it has been modelled in
+a pre-silicon platform. To validate and boot Linux in pre-silicon
+platform that emulates an AM43 SoC, add DT build support.
+
+As bootloader is not used, bootargs is passed through DT.
+
+Note: This would be replaced by an original board support.
 
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
- arch/arm/mach-omap2/board-generic.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ arch/arm/boot/dts/Makefile             |  3 ++-
+ arch/arm/boot/dts/am43-pre-silicon.dts | 31 +++++++++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/am43-pre-silicon.dts
 
-diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-index 0274ff7..e083f08 100644
---- a/arch/arm/mach-omap2/board-generic.c
-+++ b/arch/arm/mach-omap2/board-generic.c
-@@ -15,7 +15,10 @@
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/irqdomain.h>
-+#include <linux/irqchip.h>
- 
-+#include <asm/mach/map.h>
-+#include <asm/smp_twd.h>
- #include <asm/mach/arch.h>
- 
- #include "common.h"
-@@ -182,3 +185,18 @@ DT_MACHINE_START(OMAP5_DT, "Generic OMAP5 (Flattened Device Tree)")
- 	.restart	= omap44xx_restart,
- MACHINE_END
- #endif
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 94d88b9..b434344 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -124,7 +124,8 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+ 	omap5-evm.dtb \
+ 	am335x-evm.dtb \
+ 	am335x-evmsk.dtb \
+-	am335x-bone.dtb
++	am335x-bone.dtb \
++	am43-pre-silicon.dtb
+ dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-ethernet-disk-mini-v2.dtb
+ dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
+ dtb-$(CONFIG_ARCH_U8500) += snowball.dtb \
+diff --git a/arch/arm/boot/dts/am43-pre-silicon.dts b/arch/arm/boot/dts/am43-pre-silicon.dts
+new file mode 100644
+index 0000000..b9c6297
+--- /dev/null
++++ b/arch/arm/boot/dts/am43-pre-silicon.dts
+@@ -0,0 +1,31 @@
++/*
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
-+#ifdef CONFIG_SOC_AM43
-+static const char *am43_boards_compat[] __initdata = {
-+	"ti,am43",
-+	NULL,
++/* AM43 Pre Silicon */
++
++/dts-v1/;
++
++/include/ "am4372.dtsi"
++
++/ {
++	model = "TI AM43 Pre Silicon";
++	compatible = "ti,am43-pre-silicon","ti,am4372","ti,am43";
++
++	memory {
++		device_type = "memory";
++		reg = <0x80000000 0x10000000>; /* 256 MB */
++	};
++
++	chosen {
++		bootargs = "console=ttyO0,115200n8 root=/dev/ram rw initrd=0x82000000,32MB earlyprintk";
++	};
 +};
 +
-+DT_MACHINE_START(AM43_DT, "Generic AM43 (Flattened Device Tree)")
-+	.map_io		= debug_ll_io_init,
-+	.init_irq	= irqchip_init,
-+	.init_machine	= omap_generic_init,
-+	.init_time	= twd_local_timer_of_register,
-+	.dt_compat	= am43_boards_compat,
-+MACHINE_END
-+#endif
++&twd1 {
++	clock-frequency = <300000000>;
++};
 -- 
 1.7.12
 
