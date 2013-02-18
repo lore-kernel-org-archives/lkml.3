@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150Ab3BRF2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 00:28:09 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46137 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab3BRF2I (ORCPT
+	id S1757786Ab3BRF2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 00:28:21 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:37885 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755411Ab3BRF2R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 00:28:08 -0500
-Date: Mon, 18 Feb 2013 16:27:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: linux-next: manual merge of the userns tree with the nfsd tree
-Message-Id: <20130218162758.2e71a4fe0676ed701d44e85e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__18_Feb_2013_16_27_58_+1100_llrxzoTygRPtep9b"
+	Mon, 18 Feb 2013 00:28:17 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Wim Van Sebroeck <wim@iguana.be>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "fabio.porcedda@gmail.com" <fabio.porcedda@gmail.com>,
+        "Lin, JM" <JM.Lin@atmel.com>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v4 3/8] watchdog/at91sam9_wdt: Convert to use the
+ watchdog framework
+Thread-Topic: [PATCH v4 3/8] watchdog/at91sam9_wdt: Convert to use the
+ watchdog framework
+Thread-Index: AQHOAErejbt0IsRv/EC3VNSIaMSDMph399SAgAc1hOA=
+Date: Mon, 18 Feb 2013 05:27:38 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A24364145F0DD11@penmbx01>
+References: <1359702386-21284-1-git-send-email-wenyou.yang@atmel.com>
+ <1359702386-21284-4-git-send-email-wenyou.yang@atmel.com>
+ <20130213231007.GE7867@spo001.leaseweb.com>
+In-Reply-To: <20130213231007.GE7867@spo001.leaseweb.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Feb_2013_16_27_58_+1100_llrxzoTygRPtep9b
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Wim,
 
-Hi Eric,
+> This code not only converts the watchdog to the new framework,
+> but it also adds the is_enable related code changes which should
+> be a seperate patch.
+> 
+> So I took your original patch and changed it to the below at91sam9_wdt
+> watchdog conversion patch. Note: this is also without Fabio's timeout-sec
+> patch, this one needs to come after the conversion.
+> 
+> Please test this patch and let me know if this works (the watchdog should
+> behave the same before as after this patch).
 
-Today's linux-next merge of the userns tree got a conflict in
-net/sunrpc/svcauth_unix.c between commit 2d4383383b0b ("SUNRPC: rework
-cache upcall logic") from the nfsd tree and commit 7eaf040b720b ("sunrpc:
-Use kuid_t and kgid_t where appropriate") from the userns tree.
+Sorry for so late reply due to Chinese New Year's holiday.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I applied it on the linux-watchdog trees, 
+and tested it on at91sam9m10g45ek both DT and non-DT support, at91sam9g25ek with DT support.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+It works OK after one compilation error fixed.
 
-diff --cc net/sunrpc/svcauth_unix.c
-index 5085804,a1852e1..0000000
---- a/net/sunrpc/svcauth_unix.c
-+++ b/net/sunrpc/svcauth_unix.c
-@@@ -465,7 -475,12 +470,7 @@@ static void unix_gid_request(struct cac
-  	(*bpp)[-1] =3D '\n';
-  }
- =20
-- static struct unix_gid *unix_gid_lookup(struct cache_detail *cd, uid_t ui=
-d);
- -static int unix_gid_upcall(struct cache_detail *cd, struct cache_head *h)
- -{
- -	return sunrpc_cache_pipe_upcall(cd, h, unix_gid_request);
- -}
- -
-+ static struct unix_gid *unix_gid_lookup(struct cache_detail *cd, kuid_t u=
-id);
- =20
-  static int unix_gid_parse(struct cache_detail *cd,
-  			char *mesg, int mlen)
+> +	at91wdt_private.next_heartbeat = jiffies + wdd->timeout * HZ;
+ +  at91wdt_private.next_heartbeat = jiffies + at91_wdt_dev.timeout * HZ;
 
---Signature=_Mon__18_Feb_2013_16_27_58_+1100_llrxzoTygRPtep9b
-Content-Type: application/pgp-signature
+Thank you very much.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Best Regards,
+Wenyou Yang
 
-iQIcBAEBCAAGBQJRIbveAAoJEECxmPOUX5FE+H0QAJh4HeHujPhcXp9Dt4BmXGpC
-5onp9xggnUHmAIEpFTkl+1Yqs9aXOw0fwHm7tXMSjXEp+U+35tFEZELYOEGJM5jt
-OeSfJAP+O9RoqTIfCVxRpecNIuxq4CdnxJ1bT6ovAR2lbdOAAdL993AGvycNAE2A
-j5I2SdPEfOevAtRwWEz/ePMSeQoyvrAB4fdbx2sUYkurZbc/l3li+d0LqAeU6jvB
-Phw08NeQuJgNgxyefmv86tAIuwyIYep/WHegMwxTzSDSHpsCv6+Aq9xdjJEU2YbG
-hD0xHbb9Ee5dF2K+4W+xuZuDKNtSLkyc6bBL5BpAuRJPV1ZwmivTGU6VV3Tt6M2R
-xzVWiP5Jy+fxdjwZ2qB6YHPuepnbTV1QTtfsE5AXZd4Pt8BnBS9Ith5cTvZiy5Ug
-KlwyBWXg4EdgZylulq0gnl0jEE0knEblbf0vvkyrOgZnVsRn3NhBdqkyzMseOYTH
-5pWXUvZPLl2KAPxvSnGfdtdmBkBsAgvny2jnkPJN4X7AXGkzFifUdrKL8sBI5M0P
-UAPYtDa8o3UTqTzC/oPO3cqunXdyu+eYSYeFJfn2WUmiPYoAZfdD3thxmre6sGPz
-IbQRvcO4RljcL2BEf9iDHYsTJIM+73/eptXG7HFCyTEgLhxn7kfhXy+42IRL3vGP
-QKlVDXQ/dSaRpQLendXR
-=fFaR
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Feb_2013_16_27_58_+1100_llrxzoTygRPtep9b--
