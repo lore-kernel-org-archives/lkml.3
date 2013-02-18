@@ -1,94 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406Ab3BRFBj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 00:01:39 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:45657 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab3BRFBi (ORCPT
+	id S1751464Ab3BRFGA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 00:06:00 -0500
+Received: from jonshouse.co.uk ([91.84.151.33]:53043 "EHLO
+	mail.jonshouse.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab3BRFF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 00:01:38 -0500
-Date: Mon, 18 Feb 2013 16:01:25 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: linux-next: manual merge of the arm-soc tree with the input tree
-Message-Id: <20130218160125.0afc414767b236bdfc6ee8df@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Mon, 18 Feb 2013 00:05:59 -0500
+Subject: Re: Stupid user with user-space questions, matrix LED driving with
+ user space code only.
+From: Jonathan Andrews <jon@jonshouse.co.uk>
+Reply-To: jon@jonshouse.co.uk
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: anish kumar <anish198519851985@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20130218020557.GA27667@kroah.com>
+References: <1361025476.4271.36.camel@jonspc>
+	 <1361082134.16206.24.camel@anish-Inspiron-N5050>
+	 <1361111844.14757.29.camel@jonspc>  <20130218020557.GA27667@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Feb 2013 05:06:08 +0000
+Message-ID: <1361163968.29540.62.camel@jonspc>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__18_Feb_2013_16_01_25_+1100_Qt5lwnLLkg7+E71Q"
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Feb_2013_16_01_25_+1100_Qt5lwnLLkg7+E71Q
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 2013-02-17 at 18:05 -0800, Greg KH wrote: 
+> On Sun, Feb 17, 2013 at 02:37:24PM +0000, Jonathan Andrews wrote:
+> > From a user perspective it seems a bit crap to have to change the kernel
+> > if you have a workload that preemption is harmful to.  
+> > In the case of something like the Raspberry Pi changing the kernel if
+> > the distribution has not done the work for me sounds like real effort.
+> > The kernel is tied to binary obscurity from broadcom... To build I need
+> > a working cross compiler, toolchain, kernel sources, Pi specific patches
+> > then to get everything in the correct place on an SD card containing two
+> > filesystems.  Its possible but its not going to "just work" at my skill
+> > level....
+> 
+> As you can not boot a kernel.org kernel on the RPI platform just yet,
+> there's very little that the kernel.org community can do here to help
+> you out.
+Somebody could stick in the code to enable/disable preemption at runtime
+on PREEMPT compiled kernels :-) - Then all I have to do is wait for it
+to filter down to the Raspian kernel maintainers, i'm patient ;-) ?   
 
-Hi all,
+In all seriousness I assume preemption has a timer and an interrupt
+vector, cant the timer simply be enabled/disabled leaving just the
+kernel call mechanism untouched. IE a "preemption" kernel that is now
+not preempting ...... OK, OK - I have many other egg sucking suggestions
+but am I the only one who wants the functionality ?
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-drivers/input/keyboard/tegra-kbc.c between commit 9eee07d39fa6 ("Input:
-tegra-kbc - require CONFIG_OF, remove platform data") from the input tree
-and commit 61fd290d213e ("ARM: tegra: migrate to new clock code") from
-the arm-soc tree.
+Seems a half step to add all this wizzy real-time code to the kernel
+then stop users doing real-time in user space by allowing the schedular
+to yield during what a user wishes to be a citical section (from a
+timing point of view not the atomic point of view).
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+What about a yield alignment mechanism for user space. IE the process
+calls the kernel with a request "schedule me first after a yeild" - then
+the process at least has whatever the timer granularity is to do
+something timing critical... add a flag to ignore or defer interrupts
+and you have a semi 'hard-realtime' behaviour for user space, allowing
+user space to grab small chunks of real time. Yes a nasty looking
+facility for SMP intel servers but really useful for embedded.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>   I suggest you go take this up with the developers whom you got
+> this specific kernel build from, there's nothing we can do here about
+> it.
+I suspected it was not going to be simple. As I suspect my feature
+request is not that simple but if you don't ask........
 
-diff --cc drivers/input/keyboard/tegra-kbc.c
-index d89e7d39,54ac1dc..0000000
---- a/drivers/input/keyboard/tegra-kbc.c
-+++ b/drivers/input/keyboard/tegra-kbc.c
-@@@ -29,16 -29,9 +29,16 @@@
-  #include <linux/of.h>
-  #include <linux/clk.h>
-  #include <linux/slab.h>
- -#include <linux/input/tegra_kbc.h>
- +#include <linux/input/matrix_keypad.h>
-- #include <mach/clk.h>
-+ #include <linux/clk/tegra.h>
- =20
- +#define KBC_MAX_GPIO	24
- +#define KBC_MAX_KPENT	8
- +
- +#define KBC_MAX_ROW	16
- +#define KBC_MAX_COL	8
- +#define KBC_MAX_KEY	(KBC_MAX_ROW * KBC_MAX_COL)
- +
-  #define KBC_MAX_DEBOUNCE_CNT	0x3ffu
- =20
-  /* KBC row scan time and delay for beginning the row scan. */
+Thanks,
+Jon
 
---Signature=_Mon__18_Feb_2013_16_01_25_+1100_Qt5lwnLLkg7+E71Q
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRIbWlAAoJEECxmPOUX5FEfYAP/0O5XGJ/gI98NIA90H8ENBNK
-YlKd3vNumrmmhSn60plSqyobgkj5C8nMXt/+xhjJ9nxF3f810ul6v6Tn9yDlj6GJ
-oaSm82PHorfgEn1uYQc10fR4W20mHRHhBjxHRJe2ivVoGel4uRkCKWE86I8fhWrX
-hufgv59Xk2d0yVXqn8HFganTZmcxbUOFO4vKaBMmBeTPypAsgkoD/Y0a1iVZrGgQ
-2K08YI18+h5C3Y4LeiqWY3AglyqkfqEUsNKvERSyvGZHLByPurJ9iapuqaFmXCRv
-4jMGLrLqvhI2KpA9df58iUBYhRTzXOrXNr9JmH5Pig5tdeAKaMh57k2Mx+WaGbKP
-l/eY0BEQ7WZwe46MmMXlI0woQxUC07a0rqgfxxEycAqLqNsxjgg9C5y+SxsNoP8Z
-3bfm8yhuWPLVM5eOSPu5uN5tIJp6HN4rodqG99DL1kSZ2+klVcP4+eocoOtb46Ng
-ahqpEQL6pODesdKJEU5wkJXWyIrrp6tVTJ8zbbUtyEWq0YvDZhFmnP9+309O0/XG
-hJ8z6jcPbSNHswM+1IWZN3e9XBJ5XYRJ7QzYrez0Ukz8YwranC5gMU/Ewx6U1HNu
-AyXDlmov5ySI8MVi2ZpF4+oKSK7yxYoU+NIssYeuNcBQpS8ppWAObqyrC+BplbnL
-1xdZRSDuKO40H4Mgjf5G
-=BdAx
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Feb_2013_16_01_25_+1100_Qt5lwnLLkg7+E71Q--
