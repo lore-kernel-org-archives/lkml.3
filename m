@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab3BRQbn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 11:31:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37716 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754726Ab3BRQbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 11:31:41 -0500
-Date: Mon, 18 Feb 2013 17:31:35 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, jslaby@suse.cz,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "kay.sievers" <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 3/3] printk: Avoid softlockups in console_unlock()
-Message-ID: <20130218163135.GE12679@quack.suse.cz>
-References: <1360112748.2621.25.camel@gandalf.local.home>
- <20130206230220.GA18329@quack.suse.cz>
- <20130215165710.GB12734@quack.suse.cz>
- <20130215142219.01915825.akpm@linux-foundation.org>
+	id S1755232Ab3BRQdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 11:33:42 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:47113 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab3BRQdj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 11:33:39 -0500
+Message-ID: <5122575E.5030405@linux.vnet.ibm.com>
+Date: Mon, 18 Feb 2013 22:01:26 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130215142219.01915825.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Michel Lespinasse <walken@google.com>
+CC: linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rostedt@goodmis.org,
+        rjw@sisk.pl, namhyung@kernel.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, vincent.guittot@linaro.org, sbw@mit.edu,
+        tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 07/46] percpu_rwlock: Allow writers to be readers,
+ and add lockdep annotations
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123913.26245.7713.stgit@srivatsabhat.in.ibm.com> <CANN689Ec4g7jMapv8ChAEom+gEDQ8RDVLa07CKwJ==YO+MUUrA@mail.gmail.com>
+In-Reply-To: <CANN689Ec4g7jMapv8ChAEom+gEDQ8RDVLa07CKwJ==YO+MUUrA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021816-7014-0000-0000-0000029B34BF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 15-02-13 14:22:19, Andrew Morton wrote:
-> On Fri, 15 Feb 2013 17:57:10 +0100
-> Jan Kara <jack@suse.cz> wrote:
+On 02/18/2013 09:21 PM, Michel Lespinasse wrote:
+> On Mon, Feb 18, 2013 at 8:39 PM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> @@ -200,6 +217,16 @@ void percpu_write_lock_irqsave(struct percpu_rwlock *pcpu_rwlock,
+>>
+>>         smp_mb(); /* Complete the wait-for-readers, before taking the lock */
+>>         write_lock_irqsave(&pcpu_rwlock->global_rwlock, *flags);
+>> +
+>> +       /*
+>> +        * It is desirable to allow the writer to acquire the percpu-rwlock
+>> +        * for read (if necessary), without deadlocking or getting complaints
+>> +        * from lockdep. To achieve that, just increment the reader_refcnt of
+>> +        * this CPU - that way, any attempt by the writer to acquire the
+>> +        * percpu-rwlock for read, will get treated as a case of nested percpu
+>> +        * reader, which is safe, from a locking perspective.
+>> +        */
+>> +       this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
 > 
-> > A CPU can be caught in console_unlock() for a long time (tens of seconds are
-> > reported by our customers) when other CPUs are using printk heavily and serial
-> > console makes printing slow. Despite serial console drivers are calling
-> > touch_nmi_watchdog() this triggers softlockup warnings because
-> > interrupts are disabled for the whole time console_unlock() runs (e.g.
-> > vprintk() calls console_unlock() with interrupts disabled). Thus IPIs
-> > cannot be processed and other CPUs get stuck spinning in calls like
-> > smp_call_function_many(). Also RCU eventually starts reporting lockups.
-> > 
-> > In my artifical testing I also managed to trigger a situation when disk
-> > disappeared from the system apparently because commands to / from it
-> > could not be delivered for long enough. This is why just silencing
-> > watchdogs isn't a reliable solution to the problem and we simply have to
-> > avoid spending too long in console_unlock().
-> > 
-> > We fix the issue by limiting the time we spend in console_unlock() to
-> > watchdog_thresh() / 4 (unless we are in an early boot stage or oops is
-> > happening). The rest of the buffer will be printed either by further
-> > callers to printk() or during next timer tick.
-> > 
+> I find this quite disgusting, but once again this may be because I
+> don't like unfair recursive rwlocks.
 > 
-> It still gives me tummy ache :(
-  But it's better than it used to be, isn't it? At least I like this
-version more than the one with postponing to worker thread since we only
-depend on timer ticks to occur...
 
-> The patch adds additional tests of oops_in_progress.  Some description
-> of your thinking on that matter would be appropriate?
-  Good point, I'll add that. My thinking was that when we are oopsing, all
-bets are off and we want to get the messages to console as reliably as
-possible and we don't care about soflockups anymore as we have bigger
-trouble anyway.
+:-)
 
-> > --- a/kernel/printk.c
-> > +++ b/kernel/printk.c
-> > @@ -1990,17 +1990,31 @@ int is_console_locked(void)
-> >  #define PRINTK_PENDING_OUTPUT	2
-> >  
-> >  static unsigned long printk_pending;
-> > +static int last_printing_cpu = -1;
-> > +
-> > +static bool __console_unlock(void);
-> >  
-> >  void printk_tick(void)
-> 
-> printk_tick() no longer exists in linux-next.
-  Thanks for notice, I'll rebase and fix this up.
+> In my opinion, the alternative of explicitly not taking the read lock
+> when one already has the write lock sounds *much* nicer.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+I don't seem to recall any strong reasons to do it this way, so I don't have
+any strong opinions on doing it this way. But one of the things to note is that,
+in the CPU Hotplug case, the readers are *way* more hotter than the writer.
+So avoiding extra checks/'if' conditions/memory barriers in the reader-side
+is very welcome. (If we slow down the read-side, we get a performance hit
+even when *not* doing hotplug!). Considering this, the logic used in this
+patchset seems better, IMHO.
+
+Regards,
+Srivatsa S. Bhat
+
