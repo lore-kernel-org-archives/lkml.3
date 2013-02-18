@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab3BRLiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 06:38:07 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:33211 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463Ab3BRLiD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 06:38:03 -0500
+	id S1753336Ab3BRLiR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 06:38:17 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43797 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751906Ab3BRLiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 06:38:13 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
@@ -20,9 +19,9 @@ CC: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
         Syed Mohammed Khasim <khasim@ti.com>
-Subject: [PATCH, RFC 2/8] ARM: twd: register clock event for 1 core SMP
-Date: Mon, 18 Feb 2013 17:07:47 +0530
-Message-ID: <a7f62b8580aa4b33d5658f4f03371a453adaea9b.1361186097.git.afzal@ti.com>
+Subject: [PATCH, RFC 3/8] ARM: twd: clock rate from DT (if no DT clk tree)
+Date: Mon, 18 Feb 2013 17:07:52 +0530
+Message-ID: <94cb377171f84ceefd667aead4602d70adab6619.1361186097.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <cover.1361186097.git.afzal@ti.com>
 References: <cover.1361186097.git.afzal@ti.com>
@@ -32,38 +31,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register percpu local timer for scheduler tick in the case of one core
-SMP configuration. In other cases - secondary cpu's as well as boot
-cpu's having more than one core, this is being registered as per
-existing boot flow, with a difference that they happens after delay
-calibration. Registering the clock for tick in case of one core should
-be done before Kernel calibrates delay (this is required to boot,
-unless local timer is the only one registered for tick). Registering
-twd local timer at init_time (which platforms are doing now) helps
-achieve that with the proposed change.
-
-This helps in an almost booting Kernel (minimal) by only relying on
-ARM parts for an A9 one core SMP.
+Add an optional property to find clock-frequency from DT. This helps
+as a fallback mechanism in case there is no representation of clock
+tree in DT.
 
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
- arch/arm/kernel/smp_twd.c | 3 +++
- 1 file changed, 3 insertions(+)
+ Documentation/devicetree/bindings/arm/twd.txt | 7 ++++++-
+ arch/arm/kernel/smp_twd.c                     | 8 ++++++++
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/devicetree/bindings/arm/twd.txt b/Documentation/devicetree/bindings/arm/twd.txt
+index 75b8610..fdafa4f 100644
+--- a/Documentation/devicetree/bindings/arm/twd.txt
++++ b/Documentation/devicetree/bindings/arm/twd.txt
+@@ -7,8 +7,9 @@ and watchdog.
+ The TWD is usually attached to a GIC to deliver its two per-processor
+ interrupts.
+ 
+-** Timer node required properties:
++** Timer node properties:
+ 
++Required properties:
+ - compatible : Should be one of:
+ 	"arm,cortex-a9-twd-timer"
+ 	"arm,cortex-a5-twd-timer"
+@@ -19,12 +20,16 @@ interrupts.
+ - reg : Specify the base address and the size of the TWD timer
+ 	register window.
+ 
++Optional property:
++- clock-frequency : frequency(Hz) of peripheral clock fed to timer
++
+ Example:
+ 
+ 	twd-timer@2c000600 {
+ 		compatible = "arm,arm11mp-twd-timer"";
+ 		reg = <0x2c000600 0x20>;
+ 		interrupts = <1 13 0xf01>;
++		clock-frequency = <300000000>;
+ 	};
+ 
+ ** Watchdog node properties:
 diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index 616268c..118f4f2 100644
+index 118f4f2..aac0f9f 100644
 --- a/arch/arm/kernel/smp_twd.c
 +++ b/arch/arm/kernel/smp_twd.c
-@@ -335,6 +335,9 @@ static int __init twd_local_timer_common_register(struct device_node *np)
+@@ -247,7 +247,15 @@ static void twd_get_clock(struct device_node *np)
+ 		twd_clk = clk_get_sys("smp_twd", NULL);
  
- 	twd_get_clock(np);
- 
-+	if (num_possible_cpus() == 1)
-+		twd_timer_setup(evt);
+ 	if (IS_ERR(twd_clk)) {
++		u32 freq;
 +
- 	return 0;
+ 		pr_err("smp_twd: clock not found %d\n", (int) PTR_ERR(twd_clk));
++
++		/* If there is no representation of clock tree in DT,
++		   provide a fallback option to obtain frequency
++		 */
++		if (np && !of_property_read_u32(np, "clock-frequency", &freq))
++			twd_timer_rate = freq;
+ 		return;
+ 	}
  
- out_irq:
 -- 
 1.7.12
 
