@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707Ab3BRFS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 00:18:27 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:61967 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab3BRFSZ (ORCPT
+	id S1757764Ab3BRFYN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 00:24:13 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:58473 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666Ab3BRFYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 00:18:25 -0500
-X-AuditID: cbfee690-b7f066d00000169f-bb-5121b9a073c4
+	Mon, 18 Feb 2013 00:24:11 -0500
+X-AuditID: cbfee68f-b7f656d000000d78-ac-5121bafae461
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
         "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000201ce0d96$9fa550b0$deeff210$%han@samsung.com>
-In-reply-to: <000201ce0d96$9fa550b0$deeff210$%han@samsung.com>
-Subject: [PATCH 5/5 RESEND] video: s3c-fb: Fix typo in definition of
- VIDCON1_VSTATUS_FRONTPORCH value
-Date: Mon, 18 Feb 2013 14:18:24 +0900
-Message-id: <000601ce0d97$60175e10$20461a30$%han@samsung.com>
+Subject: [PATCH 1/2 RESEND] video: exynos_dp: add missing of_node_put()
+Date: Mon, 18 Feb 2013 14:24:09 +0900
+Message-id: <000801ce0d98$2e103fd0$8a30bf70$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4Nlp93iQLgxtgRRimJ2C2xwhxUfAAAIlOw
+Thread-index: Ac4NmC3wY06s4orcQzuu4vTFFedQgA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zI90FOxUDDd4dVbM40feB1eLyrjls
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGWcet/EVrCGveLSZJ8GxilsXYycHBICJhKrDy+EssUk
-	LtxbD2RzcQgJLGOUWNe/iLWLkQOs6ONLd4j4dEaJlYv/sUA4vxglNkz5xALSzSagJvHly2F2
-	kAYRAX2JthYNkBpmgbmMEpfWHAGrERKwleh8cRLM5hSwk5h36RQziC0skC7x/cYLRhCbRUBV
-	4uDlfewgNi9Q/ZMPm1kgbEGJH5PvgdnMAloS63ceZ4Kw5SU2r3nLDHGousSjv7ogYREBI4lN
-	+z6xQpSISOx78Y4R5B4JgVXsEu1fTrNA7BKQ+Db5EAtEr6zEpgPMkICQlDi44gbLBEaJWUg2
-	z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCm9yESvODG3uDQvXS85P3cTIyTCJuxgvHfA+hBjMtD6
-	icxSosn5wAjNK4k3NDY2MTMxNTG3NDU3JU1YSZxX/pJMoJBAemJJanZqakFqUXxRaU5q8SFG
-	Jg5OqQbGWmNuA9+eR6bN/xPe5tlX2lx+8d7y3SnhSWXOa1XDco4xtm5nv/Fzt4+o8tKEM3WX
-	lTcJVpXNYJcM1bhQonPXtTnhiPvPejfPM7lHhN9eWeL2jcmg6JPo9Po00/AXyxsUf36/91X+
-	zkP3Q0uEtme+T9vNtObrUckHjx/e2LH2+vx1XXN6zyQnK7EUZyQaajEXFScCALhwRUfGAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jQd0FOxUDDRZNU7Q40feB1eLyrjls
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDIsWRmVeSWpSXmKPExsVy+t8zQ91fuxQDDX6e57E40feB1eLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGX0rVjPWtAkULHtbCNbA+MC3i5GTg4JAROJNW+mMkPY
+	YhIX7q1nA7GFBJYxSkw9HwBTc/76JaAaLqD4IkaJV/1/GSGcX4wSX5f+ZwepYhNQk/jy5TCQ
+	zcEhIqAv0daiAVLDLDCXUeLSmiMsIDXCAu4Sq9bOZAWxWQRUJeZefgEW5xWwlZh47xIThC0o
+	8WPyPbA4s4CWxPqdx5kgbHmJzWveMoPMlxBQl3j0VxckLCKgJ9H36RdUuYjEvhfvwG6TEOhn
+	l2ict4YNYpeAxLfJh1ggemUlNh2AelhS4uCKGywTGMVmIdk8C8nmWUg2z0KyYgEjyypG0dSC
+	5ILipPQiY73ixNzi0rx0veT83E2MkJjp38F494D1IcZkoPUTmaVEk/OBMZdXEm9obGxiZmJq
+	Ym5pam5KmrCSOK/8JZlAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYxO9lNSHmm+qfz2dscs
+	sYnKFQs3f5MPP7WzrI5n5gmJiJLNavtVNnOLlitO6tGd+MAy6R+HkIWllLZl242/bgcezky0
+	3ft5d4zZ4ucyn/9Jh5/mKZG4W/z/yPz1+/K5o+7eVMxsF73W1/fyxVavksruy1M+bTdTqHi2
+	I+rjo1Czi106h77MEN6oxFKckWioxVxUnAgAKUOZh68CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t9jAd1fuxQDDd6cZbU40feB1eLyrjls
 	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmnHrfxFawhr3i
-	0mSfBsYpbF2MHBwSAiYSH1+6dzFyApliEhfurQcKc3EICUxnlFi5+B8LhPOLUWLDlE8sIFVs
-	AmoSX74cZgdpFhHQl2hr0QCpYRaYyyhxac0RsBohAVuJzhcnwWxOATuJeZdOMYPYwgLpEt9v
-	vGAEsVkEVCUOXt7HDmLzAtU/+bCZBcIWlPgx+R6YzSygJbF+53EmCFteYvOat8wQR6tLPPqr
-	CxIWETCS2LTvEytEiYjEvhfvGCcwCs1CMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FxDveLE
-	3OLSvHS95PzcTYzg+H0mtYNxZYPFIUYBDkYlHl6GfMVAIdbEsuLK3EOMEhzMSiK8m0SAQrwp
-	iZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTC15JfGGxiZmRpZGZhZGJubmpAkrifMynnoSICSQ
-	nliSmp2aWpBaBLOFiYNTqoExdEquxpazyyOf/Jx3nDeEceWhRW9NsvulpiZu36fCkHA5p/nP
-	vGC3RSL1nEtV7WZO5mC/U6zKxbSpOYqr0uJKzeTne7o0ZdbdXs16h1Xd70qLjcQR7cKF014c
-	aJHO+WR0uPJKoO6sn5b/hBlM8o/P6W7/afnK5LHyC+OFwVGKHsGWdivsJisqsRRnJBpqMRcV
-	JwIAREMT1iMDAAA=
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm9K1Yz1rQJFCx
+	7WwjWwPjAt4uRk4OCQETifPXLzFD2GISF+6tZ+ti5OIQEljEKPGq/y8jhPOLUeLr0v/sIFVs
+	AmoSX74cBrI5OEQE9CXaWjRAapgF5jJKXFpzhAWkRljAXWLV2pmsIDaLgKrE3MsvwOK8ArYS
+	E+9dYoKwBSV+TL4HFmcW0JJYv/M4E4QtL7F5zVtmkPkSAuoSj/7qgoRFBPQk+j79gioXkdj3
+	4h3jBEaBWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERyTz6R3
+	MK5qsDjEKMDBqMTDy5CvGCjEmlhWXJl7iFGCg1lJhHeTCFCINyWxsiq1KD++qDQntfgQYzLQ
+	oxOZpUST84HpIq8k3tDYxMzI0sjMwsjE3Jw0YSVxXsZTTwKEBNITS1KzU1MLUotgtjBxcEo1
+	MFbdtFr4LLvz+SYHp7XNC0+6df3TnbZOrI01aerC3+YCjqeqDn45e9mSrWC1cUaFT56/8rtr
+	bBPNmVUdHpz3XKeUw2lundwgc0Ay6ppYx+Ja1u0Pl750jJfgVRB0a+O8dvF4IH8o6zkZjbYr
+	p/tfFSXutT+b7fGU3ebpuyDTTsEJfbf3HN29S4mlOCPRUIu5qDgRAOYFwfINAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,30 +52,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Figa <t.figa@samsung.com>
+of_find_node_by_name() returns a node pointer with refcount
+incremented, use of_node_put() on it when done.
 
-The correct value for VIDCON1_VSTATUS_FRONTPORCH is 3, not 0.
+of_find_node_by_name() will call of_node_put() against
+the node pass to from parameter, thus we also need to call
+of_node_get(from) before calling of_find_node_by_name().
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- include/video/samsung_fimd.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/video/exynos/exynos_dp_core.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/include/video/samsung_fimd.h b/include/video/samsung_fimd.h
-index 2f95d9a..b039320 100644
---- a/include/video/samsung_fimd.h
-+++ b/include/video/samsung_fimd.h
-@@ -82,7 +82,7 @@
- #define VIDCON1_VSTATUS_VSYNC			(0x0 << 13)
- #define VIDCON1_VSTATUS_BACKPORCH		(0x1 << 13)
- #define VIDCON1_VSTATUS_ACTIVE			(0x2 << 13)
--#define VIDCON1_VSTATUS_FRONTPORCH		(0x0 << 13)
-+#define VIDCON1_VSTATUS_FRONTPORCH		(0x3 << 13)
- #define VIDCON1_VCLK_MASK			(0x3 << 9)
- #define VIDCON1_VCLK_HOLD			(0x0 << 9)
- #define VIDCON1_VCLK_RUN			(0x1 << 9)
+diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
+index 2ed9776..c7374c0 100644
+--- a/drivers/video/exynos/exynos_dp_core.c
++++ b/drivers/video/exynos/exynos_dp_core.c
+@@ -965,10 +965,11 @@ static struct exynos_dp_platdata *exynos_dp_dt_parse_pdata(struct device *dev)
+ 
+ static int exynos_dp_dt_parse_phydata(struct exynos_dp_device *dp)
+ {
+-	struct device_node *dp_phy_node;
++	struct device_node *dp_phy_node = of_node_get(dp->dev->of_node);
+ 	u32 phy_base;
++	int ret = 0;
+ 
+-	dp_phy_node = of_find_node_by_name(dp->dev->of_node, "dptx-phy");
++	dp_phy_node = of_find_node_by_name(dp_phy_node, "dptx-phy");
+ 	if (!dp_phy_node) {
+ 		dev_err(dp->dev, "could not find dptx-phy node\n");
+ 		return -ENODEV;
+@@ -976,22 +977,28 @@ static int exynos_dp_dt_parse_phydata(struct exynos_dp_device *dp)
+ 
+ 	if (of_property_read_u32(dp_phy_node, "reg", &phy_base)) {
+ 		dev_err(dp->dev, "faild to get reg for dptx-phy\n");
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto err;
+ 	}
+ 
+ 	if (of_property_read_u32(dp_phy_node, "samsung,enable-mask",
+ 				&dp->enable_mask)) {
+ 		dev_err(dp->dev, "faild to get enable-mask for dptx-phy\n");
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto err;
+ 	}
+ 
+ 	dp->phy_addr = ioremap(phy_base, SZ_4);
+ 	if (!dp->phy_addr) {
+ 		dev_err(dp->dev, "failed to ioremap dp-phy\n");
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto err;
+ 	}
+ 
+-	return 0;
++err:
++	of_node_put(dp_phy_node);
++
++	return ret;
+ }
+ 
+ static void exynos_dp_phy_init(struct exynos_dp_device *dp)
 -- 
 1.7.2.5
 
