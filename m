@@ -1,134 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab3BROdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 09:33:12 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:54371 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502Ab3BROdI (ORCPT
+	id S1753190Ab3BROda (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 09:33:30 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:60995 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752666Ab3BROd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 09:33:08 -0500
+	Mon, 18 Feb 2013 09:33:28 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130217141757.GA5228@jack.whiskey>
-References: <1360338220-12753-1-git-send-email-ruslan.bilovol@ti.com>
-	<1360338220-12753-2-git-send-email-ruslan.bilovol@ti.com>
-	<20130210235125.GA8098@jack.whiskey>
-	<CAB=otbSpspZ9Z_fOpBvE1mPtt+JwZydZrgcR2LdkD_4CrGa_eg@mail.gmail.com>
-	<20130217141757.GA5228@jack.whiskey>
-Date: Mon, 18 Feb 2013 16:33:06 +0200
-X-Google-Sender-Auth: HzB0unopMSqTSkjztwYVWtnu0Xw
-Message-ID: <CAB=otbS-_YgMnP9G_MJ2n7wGAiRP-1-WeXgg8SvC-w9EGas5ZQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/1] OMAP4: DSS: Add panel for Blaze Tablet boards
-From: Ruslan Bilovol <ruslan.bilovol@ti.com>
-To: Andi Shyti <andi.shyti@gmail.com>
-Cc: Andi Shyti <andi@etezian.org>, tomi.valkeinen@ti.com,
-        FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+In-Reply-To: <CAKfTPtCWudftS2XSM1OC2sR050mYvcAU6Fkt0vjV=C2V+w84Ew@mail.gmail.com>
+References: <1359455940-1710-1-git-send-email-vincent.guittot@linaro.org>
+	<1359455940-1710-2-git-send-email-vincent.guittot@linaro.org>
+	<CAFTL4hzboD8Mv_-pRDHc+39QwXGWiT3MGtL8gJ=_ajnHdDCBcA@mail.gmail.com>
+	<CAKfTPtD2jRke2CUXiJdmaYYki_Voi4eTqJKgsyTnRpna7p8mJg@mail.gmail.com>
+	<CAFTL4hzriJm1mK1A_9U5kX9Z0RCMGpxy8M3gKuzFtt9Bky5htQ@mail.gmail.com>
+	<CAKfTPtCWudftS2XSM1OC2sR050mYvcAU6Fkt0vjV=C2V+w84Ew@mail.gmail.com>
+Date: Mon, 18 Feb 2013 15:33:26 +0100
+Message-ID: <CAFTL4hzu-7uAXLqP+J48DaqLUYQWTESMNwPMYiiwrU2ZoOsgqw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] sched: fix init NOHZ_IDLE flag
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, Mike Galbraith <efault@gmx.de>,
+        Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
-
-On Sun, Feb 17, 2013 at 4:17 PM, Andi Shyti <andi.shyti@gmail.com> wrote:
->> >> +     char name[30];
->> >> +     char buf[50];
->> >> +
->> >> +     if (size >= sizeof(buf))
->> >> +             size = sizeof(buf);
->> >
->> > what's the point of this?
+2013/2/8 Vincent Guittot <vincent.guittot@linaro.org>:
+> On 8 February 2013 16:35, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> What if the following happen (inventing function names but you get the idea):
 >>
->> This is a way to limit copied from userspace data by available buffer size,
->> widely used in current kernel sources. Are you implying there is some
->> better (more graceful) way?
->
-> No indeed :)
-> There is no other way, sorry for polluting the review :)
->
->> >> +     if ((pins[2] & 1) || (pins[3] & 1)) {
->> >> +             lanes |= (1 << 1);
->> >> +             ret |= tc358765_write_register(dssdev, PPI_D0S_CLRSIPOCOUNT,
->> >> +                                                     board_data->clrsipo);
->> >> +     }
->> >> +     if ((pins[4] & 1) || (pins[5] & 1)) {
->> >> +             lanes |= (1 << 2);
->> >> +             ret |= tc358765_write_register(dssdev, PPI_D1S_CLRSIPOCOUNT,
->> >> +                                                     board_data->clrsipo);
->> >> +     }
->> >> +     if ((pins[6] & 1) || (pins[7] & 1)) {
->> >> +             lanes |= (1 << 3);
->> >> +             ret |= tc358765_write_register(dssdev, PPI_D2S_CLRSIPOCOUNT,
->> >> +                                                     board_data->clrsipo);
->> >> +     }
->> >> +     if ((pins[8] & 1) || (pins[9] & 1)) {
->> >> +             lanes |= (1 << 4);
->> >> +             ret |= tc358765_write_register(dssdev, PPI_D3S_CLRSIPOCOUNT,
->> >> +                                                     board_data->clrsipo);
->> >> +     }
->> >
->> > Can't this be done in one single multiwrighting command since
->> > this registers are consecutive?
->> >
->> > You build once the array to write and you send it at once.
+>> CPU 0                                           CPU 1
 >>
->> In this particular case I disagree. Yes, it will be a little bit
->> faster, however:
->> 1) we write this for panel initialization only (so no impact in other cases)
->> 2) multiwriting of array will make code reading more difficult
+>> dom = new_domain(...) {
+>>            nr_cpus_busy = 0;
+>>            set_idle(CPU 1);                  old_dom =get_dom()
+>>                                                      clear_idle(CPU 1)
+>> }
+>> rcu_assign_pointer(cpu1_dom, dom);
 >>
->> So I would like to leave it as-is
->> Same is for next your similar comment.
+>>
+>> Can this scenario happen?
 >
-> If the hw is providing us some ways for simplifying the code I
-> would use it. In this case we are talking about the i2c feature
-> of multiwriting and multireading.
+> This scenario will be:
 >
-> Let's assume that we want to write on 8 different consecutive
-> registers. In my opinion this aproach is quite "heavy":
+>  CPU 0                                           CPU 1
 >
->   uX register;
+>  detach_and_destroy_domain {
+>             rcu_assign_pointer(cpu1_dom, NULL);
+>  }
 >
->   register = value1;
->   i2c_write(REG1, register);
->
->   register = value2;
->   i2c_write(REG2, register);
->
->   ...
->
-> Usually what I do is this:
->
->   uX register[8];
->
->   for (i = 0; i < 8; i++)
->     register |= valuei << i; (or register[i] = valuei or whatever)
->
->   i2c_multi_write(REG, register, 8);
->
-> of course this is a simplified example in pseudocode. I think
-> it's more readable and we are making a better use of the i2c
-> protocol.
->
-> In your case you have some if statement that are making the multi
-> writing more difficult, but still is not impossible.
->
-> At the end it's still a matter of taste, so that you are free to
-> choose whatever you prefer :)
+>  dom = new_domain(...) {
+>             nr_cpus_busy = 0;
+>             set_idle(CPU 1);                  old_dom =get_dom()
+>                                                       old_dom is null
+>                                                       //clear_idle(CPU
+> 1) can't happen because a null domain is attached so we will never
+> call nohz_kick_needed which is the only place where we can clear_idle
+>  }
+>  rcu_assign_pointer(cpu1_dom, dom);
 
-Thank you for reviewing this.
-Unfortunately, this driver is not accepted due to future OMAP DSS rework.
+So is the following possible?
 
-I will take into account your comments when will reimplement it for new
-DSS architecture.
+= CPU 0 =                                                       = CPU 1=
 
-Thanks and best regards,
-Ruslan
+detach_and_destroy_domain {
+            rcu_assign_pointer(cpu1_dom, NULL);
+}
 
->
-> Andi
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+dom = new_domain(...) {
+             nr_cpus_busy = 0;
+             set_idle(CPU 1);
+}
+
+clear_idle(CPU 1)
+
+dom = rcu_dereference(cpu1_dom)
+
+//dom == NULL, return
+
+rcu_assign_pointer(cpu1_dom, NULL);
+
+
+set_idle(CPU 1)
+
+dom = rcu_dereference(cpu1_dom)
+
+//dec nr_cpus_busy, making it negative
