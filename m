@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab3BRLib (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 06:38:31 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40635 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753511Ab3BRLiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 06:38:25 -0500
+	id S1753884Ab3BRLin (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 06:38:43 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:33245 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab3BRLij (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 06:38:39 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
@@ -19,9 +20,9 @@ CC: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
         Syed Mohammed Khasim <khasim@ti.com>
-Subject: [PATCH, RFC 5/8] ARM: OMAP2+: am43: Kconfig
-Date: Mon, 18 Feb 2013 17:08:04 +0530
-Message-ID: <5951ba90110b97fb494743e1aedf26aaa92b97a9.1361186097.git.afzal@ti.com>
+Subject: [PATCH, RFC 8/8] ARM: dts: am43-pre-silicon support
+Date: Mon, 18 Feb 2013 17:08:21 +0530
+Message-ID: <e344f74da47579c11db68d9f6efe25259ed7f25d.1361186097.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <cover.1361186097.git.afzal@ti.com>
 References: <cover.1361186097.git.afzal@ti.com>
@@ -31,36 +32,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Kconfig option for AM43 family of SoC's, these are ARM Cortex A9
-based (SMP configuration with 1 core).
+AM43 SoC is in pre-silicon stage, meanwhile it has been modelled in
+a pre-silicon platform. To validate and boot Linux in pre-silicon
+platform that emulates an AM43 SoC, add DT build support.
+
+As bootloader is not used, bootargs is passed through DT.
+
+Note: This would be replaced by an original board support.
 
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
- arch/arm/mach-omap2/Kconfig | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ arch/arm/boot/dts/Makefile             |  3 ++-
+ arch/arm/boot/dts/am43-pre-silicon.dts | 31 +++++++++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/am43-pre-silicon.dts
 
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index 49ac3df..683fbaa 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -141,6 +141,17 @@ config SOC_AM33XX
- 	select MULTI_IRQ_HANDLER
- 	select COMMON_CLK
- 
-+config SOC_AM43
-+	bool "TI AM43"
-+	depends on ARCH_OMAP2PLUS
-+	default y
-+	select CPU_V7
-+	select HAVE_SMP
-+	select LOCAL_TIMERS if SMP
-+	select MULTI_IRQ_HANDLER
-+	select ARM_GIC
-+	select COMMON_CLK
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 94d88b9..b434344 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -124,7 +124,8 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+ 	omap5-evm.dtb \
+ 	am335x-evm.dtb \
+ 	am335x-evmsk.dtb \
+-	am335x-bone.dtb
++	am335x-bone.dtb \
++	am43-pre-silicon.dtb
+ dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-ethernet-disk-mini-v2.dtb
+ dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
+ dtb-$(CONFIG_ARCH_U8500) += snowball.dtb \
+diff --git a/arch/arm/boot/dts/am43-pre-silicon.dts b/arch/arm/boot/dts/am43-pre-silicon.dts
+new file mode 100644
+index 0000000..b9c6297
+--- /dev/null
++++ b/arch/arm/boot/dts/am43-pre-silicon.dts
+@@ -0,0 +1,31 @@
++/*
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
- config OMAP_PACKAGE_ZAF
-        bool
- 
++/* AM43 Pre Silicon */
++
++/dts-v1/;
++
++/include/ "am4372.dtsi"
++
++/ {
++	model = "TI AM43 Pre Silicon";
++	compatible = "ti,am43-pre-silicon","ti,am4372","ti,am43";
++
++	memory {
++		device_type = "memory";
++		reg = <0x80000000 0x10000000>; /* 256 MB */
++	};
++
++	chosen {
++		bootargs = "console=ttyO0,115200n8 root=/dev/ram rw initrd=0x82000000,32MB earlyprintk";
++	};
++};
++
++&twd1 {
++	clock-frequency = <300000000>;
++};
 -- 
 1.7.12
 
