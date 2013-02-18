@@ -1,213 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330Ab3BRV7F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 16:59:05 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40255 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756771Ab3BRV7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 16:59:02 -0500
-Date: Mon, 18 Feb 2013 23:57:43 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>, <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Doug Thompson <dougthompson@xmission.com>,
-        <linux-edac@vger.kernel.org>, <rjw@sisk.pl>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: SYSFS "errors"
-Message-ID: <20130218215743.GA21192@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130218184633.GC10755@arwen.pp.htv.fi>
- <Pine.LNX.4.44L0.1302181644260.6790-100000@netrider.rowland.org>
+	id S1757299Ab3BRWA4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 17:00:56 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:40432 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756771Ab3BRWAz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 17:00:55 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VS++wcV0S1rZb1Fb"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1302181644260.6790-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <2c81050d-72b0-4a93-aecb-900171a019d0@default>
+Date: Mon, 18 Feb 2013 13:59:25 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Ric Mason <ric.masonn@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: RE: [PATCHv5 4/8] zswap: add to mm/
+References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1360780731-11708-5-git-send-email-sjenning@linux.vnet.ibm.com>
+ <511F0536.5030802@gmail.com> <51227FDA.7040000@linux.vnet.ibm.com>
+ <0fb2af92-575f-4f5d-a115-829a3cf035e5@default>
+ <5122918A.8090307@linux.vnet.ibm.com>
+In-Reply-To: <5122918A.8090307@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---VS++wcV0S1rZb1Fb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: Re: [PATCHv5 4/8] zswap: add to mm/
+> 
+> On 02/18/2013 01:55 PM, Dan Magenheimer wrote:
+> >> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> >> Subject: Re: [PATCHv5 4/8] zswap: add to mm/
+> >>
+> >> On 02/15/2013 10:04 PM, Ric Mason wrote:
+> >>>> + * certain event is occurring.
+> >>>> +*/
+> >>>> +static u64 zswap_pool_limit_hit;
+> >>>> +static u64 zswap_reject_compress_poor;
+> >>>> +static u64 zswap_reject_zsmalloc_fail;
+> >>>> +static u64 zswap_reject_kmemcache_fail;
+> >>>> +static u64 zswap_duplicate_entry;
+> >>>> +
+> >>>> +/*********************************
+> >>>> +* tunables
+> >>>> +**********************************/
+> >>>> +/* Enable/disable zswap (disabled by default, fixed at boot for
+> >>>> now) */
+> >>>> +static bool zswap_enabled;
+> >>>> +module_param_named(enabled, zswap_enabled, bool, 0);
+> >>>
+> >>> please document in Documentation/kernel-parameters.txt.
+> >>
+> >> Will do.
+> >
+> > Is that a good idea?  Konrad's frontswap/cleancache patches
+> > to fix frontswap/cleancache initialization so that backends
+> > can be built/loaded as modules may be merged for 3.9.
+> > AFAIK, module parameters are not included in kernel-parameters.txt.
+> 
+> This is true.  However, the frontswap/cleancache init stuff isn't the
+> only reason zswap is built-in only.  The writeback code depends on
+> non-exported kernel symbols:
+> 
+> swapcache_free
+> __swap_writepage
+> __add_to_swap_cache
+> swapcache_prepare
+> swapper_space
+> end_swap_bio_write
+> 
+> I know a fix is as trivial as exporting them, but I didn't want to
+> take on that debate right now.
 
-On Mon, Feb 18, 2013 at 04:48:06PM -0500, Alan Stern wrote:
-> On Mon, 18 Feb 2013, Felipe Balbi wrote:
->=20
-> > Hi, On Mon, Feb 18, 2013 at 09:49:16AM -0800, Greg KH wrote:
-> > > > Input/output error - /sys/devices/cpu/power/autosuspend_delay_ms
-> > >=20
-> > > The issue with this file is, if the power.use_autosuspend flag is not
-> > > set for the device, then it can't be read or written to.  This flag
-> > > changes dynamically with the system state
-> > > (__pm_runtime_use_autosuspend() can change it), so we can't just not
-> > > show the file if the flag is not set properly, sorry.
-> > >=20
-> > > So the "error" is correct here, as is the 0644 file value.
-> >=20
-> > hmm... we could create the file at pm_runtime_enable() time and remove
-> > it on pm_runtime_disable() time, no ? Addin Rafael to Cc
->=20
-> In theory this could be done, although the times would be when runtime=20
-> autosuspend is turned on or off, not when pm_runtime_enable is called.
-
-Right, I got that after replying. Here's a patch I plan to test
-tomorrow:
-
-8<------------------------ cut here ----------------------------
-
-=46rom 2cdeeb483383490946cc98727a167843c40d7d27 Mon Sep 17 00:00:00 2001
-=46rom: Felipe Balbi <balbi@ti.com>
-Date: Mon, 18 Feb 2013 21:20:28 +0200
-Subject: [PATCH] base: power: create autosuspend_delay_ms from
- pm_runtime_use_autosuspend()
-
-this patch moves the creation of autosuspend_delay_ms
-sysfs file to pm_runtime_use_autosuspend() and, conversely,
-its deletion to pm_runtime_dont_use_autosuspend.
-
-The idea behind this patch is such that the file in
-question is only readable after pm_runtime_use_autosuspend()
-has been called for a particular device, so we might
-as well move the creation of the file to that place.
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- drivers/base/power/power.h   |  4 ++++
- drivers/base/power/runtime.c |  6 ++++++
- drivers/base/power/sysfs.c   | 25 ++++++++++++++++++++++++-
- 3 files changed, 34 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/base/power/power.h b/drivers/base/power/power.h
-index b16686a..3822b94 100644
---- a/drivers/base/power/power.h
-+++ b/drivers/base/power/power.h
-@@ -90,6 +90,8 @@ static inline void device_pm_init(struct device *dev)
-=20
- extern int dpm_sysfs_add(struct device *dev);
- extern void dpm_sysfs_remove(struct device *dev);
-+extern int dpm_autosuspend_sysfs_add(struct device *dev);
-+extern void dpm_autosuspend_sysfs_remove(struct device *dev);
- extern void rpm_sysfs_remove(struct device *dev);
- extern int wakeup_sysfs_add(struct device *dev);
- extern void wakeup_sysfs_remove(struct device *dev);
-@@ -102,6 +104,8 @@ extern void pm_qos_sysfs_remove_flags(struct device *de=
-v);
-=20
- static inline int dpm_sysfs_add(struct device *dev) { return 0; }
- static inline void dpm_sysfs_remove(struct device *dev) {}
-+static inline int dpm_autosuspend_sysfs_add(struct device *dev) { return 0=
-; }
-+static inline void dpm_autosuspend_sysfs_remove(struct device *dev) {}
- static inline void rpm_sysfs_remove(struct device *dev) {}
- static inline int wakeup_sysfs_add(struct device *dev) { return 0; }
- static inline void wakeup_sysfs_remove(struct device *dev) {}
-diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-index 3148b10..a162ba5 100644
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -1266,6 +1266,12 @@ void __pm_runtime_use_autosuspend(struct device *dev=
-, bool use)
- 	old_use =3D dev->power.use_autosuspend;
- 	dev->power.use_autosuspend =3D use;
- 	update_autosuspend(dev, old_delay, old_use);
-+
-+	if (use)
-+		dpm_autosuspend_sysfs_add(dev);
-+	else
-+		dpm_autosuspend_sysfs_remove(dev);
-+
- 	spin_unlock_irq(&dev->power.lock);
- }
- EXPORT_SYMBOL_GPL(__pm_runtime_use_autosuspend);
-diff --git a/drivers/base/power/sysfs.c b/drivers/base/power/sysfs.c
-index 50d16e3..ef2a41c 100644
---- a/drivers/base/power/sysfs.c
-+++ b/drivers/base/power/sysfs.c
-@@ -609,15 +609,26 @@ static struct attribute *runtime_attrs[] =3D {
- 	&dev_attr_control.attr,
- 	&dev_attr_runtime_suspended_time.attr,
- 	&dev_attr_runtime_active_time.attr,
--	&dev_attr_autosuspend_delay_ms.attr,
- #endif /* CONFIG_PM_RUNTIME */
- 	NULL,
- };
-+
- static struct attribute_group pm_runtime_attr_group =3D {
- 	.name	=3D power_group_name,
- 	.attrs	=3D runtime_attrs,
- };
-=20
-+static struct attribute *runtime_autosuspend_attrs[] =3D {
-+#ifdef CONFIG_PM_RUNTIME
-+	&dev_attr_autosuspend_delay_ms.attr,
-+#endif /* CONFIG_PM_RUNTIME */
-+};
-+
-+static struct attribute_group pm_runtime_autosuspend_attr_group =3D {
-+	.name	=3D power_group_name,
-+	.attrs	=3D runtime_autosuspend_attrs,
-+};
-+
- static struct attribute *pm_qos_latency_attrs[] =3D {
- #ifdef CONFIG_PM_RUNTIME
- 	&dev_attr_pm_qos_resume_latency_us.attr,
-@@ -671,6 +682,12 @@ int dpm_sysfs_add(struct device *dev)
- 	return rc;
- }
-=20
-+int dpm_autosuspend_sysfs_add(struct device *dev)
-+{
-+	return sysfs_merge_group(&dev->kobj,
-+			&pm_runtime_autosuspend_attr_group);
-+}
-+
- int wakeup_sysfs_add(struct device *dev)
- {
- 	return sysfs_merge_group(&dev->kobj, &pm_wakeup_attr_group);
-@@ -712,3 +729,9 @@ void dpm_sysfs_remove(struct device *dev)
- 	sysfs_unmerge_group(&dev->kobj, &pm_wakeup_attr_group);
- 	sysfs_remove_group(&dev->kobj, &pm_attr_group);
- }
-+
-+void dpm_autosuspend_sysfs_remove(struct device *dev)
-+{
-+	sysfs_unmerge_group(&dev->kobj,
-+			&pm_runtime_autosuspend_attr_group);
-+}
---=20
-1.8.1.rc1.5.g7e0651a
-
---=20
-balbi
-
---VS++wcV0S1rZb1Fb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRIqPWAAoJEIaOsuA1yqREKKQP+gNtEHdA0IaJNfVwCokXa9jF
-4l8AWz8Kxxyckwrn8XPHCCzIXVWuXzIdr0fkZ8A97pz7Ibn6WinNC7Bezk07+hDI
-x1Th8D1BrvCj/wvv/R5rUFGoiZl/9ABF1ihukQDmgObbrXGQEuEMRfqnE6Tj7k2L
-+7dnA4Rpj9KN06GGQNk2HiQ7aa8zQ2ezD1vFZ/aarec5vTCyFVxEpUD8fHzTyUNK
-uAvdqslKmpAyktrj5zrFGWKkvmJmd9oYlFrN58OgVWPjqWobmdEBw/8j/wUHNKR2
-9PMsjGpb+CO3iLcJBKLehaI6P44Fwpeytgw/j7XM6YO3JsOJYtHES6r1/JNhuhJ+
-MbImAaGDwtQwElQH4IkN2ujWIPAzxhfo806HEBTDjtXjMo8jKaYw+eG9jC+4zSct
-0Cd3IQ7zVfklYw1Jv5SJGJ8xzI0BO/unxnilB/pmdNJYY97tBJd/G2ev4hc/5KA2
-aEL3fappD/l9i3vc6Hz4eIfxuIupU7FO8pbinlEGsQa4D0UueSwaCPn0kl0e1GQ+
-vrxexnERS5q2Wa1slLQ6mrT6C2fDmjuRjpfle72jBm6ZFW149So/ackKgQB1fBXh
-O8GJNippgaREW9Bza31URJz7VhsZgeJlbMB2+bHnf31873jjfCa0CLGNujXp1O0p
-rvMwqOd3xFaJiFHtcaNg
-=QpVH
------END PGP SIGNATURE-----
-
---VS++wcV0S1rZb1Fb--
+Hmmm... I wonder if exporting these might be the best solution
+as it (unnecessarily?) exposes some swap subsystem internals.
+I wonder if a small change to read_swap_cache_async might
+be more acceptable.
