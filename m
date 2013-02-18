@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926Ab3BRSIh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 13:08:37 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:44892 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756820Ab3BRSIg convert rfc822-to-8bit (ORCPT
+	id S1756983Ab3BRSJV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 13:09:21 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:53869 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756763Ab3BRSJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 13:08:36 -0500
+	Mon, 18 Feb 2013 13:09:20 -0500
+Message-ID: <51226E0B.5080000@linux.vnet.ibm.com>
+Date: Mon, 18 Feb 2013 12:08:11 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Message-ID: <5120c705-5fcf-4e33-8562-22e8ad4b6c54@default>
-Date: Mon, 18 Feb 2013 10:07:59 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Ric Mason <ric.masonn@gmail.com>, Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+To: Ric Mason <ric.masonn@gmail.com>
+CC: Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Nitin Gupta <ngupta@vflare.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
         Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: RE: [PATCH v2] zsmalloc: Add Kconfig for enabling PTE method
-References: <1360117028-5625-1-git-send-email-minchan@kernel.org>
- <51207655.5000209@gmail.com>
+Subject: Re: [PATCH v2] zsmalloc: Add Kconfig for enabling PTE method
+References: <1360117028-5625-1-git-send-email-minchan@kernel.org> <51207655.5000209@gmail.com>
 In-Reply-To: <51207655.5000209@gmail.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021818-2398-0000-0000-0000112E82B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Ric Mason [mailto:ric.masonn@gmail.com]
-> Sent: Saturday, February 16, 2013 11:19 PM
-> To: Minchan Kim
-> Cc: Greg Kroah-Hartman; linux-mm@kvack.org; linux-kernel@vger.kernel.org; Andrew Morton; Seth
-> Jennings; Nitin Gupta; Dan Magenheimer; Konrad Rzeszutek Wilk
-> Subject: Re: [PATCH v2] zsmalloc: Add Kconfig for enabling PTE method
-> 
+On 02/17/2013 12:19 AM, Ric Mason wrote:
 > On 02/06/2013 10:17 AM, Minchan Kim wrote:
-> > Zsmalloc has two methods 1) copy-based and 2) pte-based to access
-> > allocations that span two pages. You can see history why we supported
-> > two approach from [1].
-> >
-> > In summary, copy-based method is 3 times fater in x86 while pte-based
-> > is 6 times faster in ARM.
+>> Zsmalloc has two methods 1) copy-based and 2) pte-based to access
+>> allocations that span two pages. You can see history why we supported
+>> two approach from [1].
+>>
+>> In summary, copy-based method is 3 times fater in x86 while pte-based
+>> is 6 times faster in ARM.
 > 
 > Why in some arches copy-based method is better and in the other arches
 > pte-based is better? What's the root reason?
 
-Minchan, if you post another version, I think these precise numbers
-(of "times faster") should be removed.  The speed is very data
-dependent, because the copy-based method is copying a zpage which
-may vary widely in size from ~100 bytes to nearly PAGE_SIZE bytes,
-a factor of 40x or more.
+Minchan might know more about this (or Russell King) but I'll give it
+a try.
 
-Please at least say "up to 3 times" or "approximately 3x faster for
-an average compressed page".
+MMU designs can vary pretty significantly from arch to arch.  An
+operation that is cheap on one MMU design can be expensive on another,
+especially once SMP gets involved, possibly resulting in
+inter-processor interrupts.
 
-Ric, the copy-based method does an extra copy of N bytes (where
-N is the compressed size of a page).  The pte-based method requires
-extra TLB actions.  The relative speed of TLB operations vs
-copying is very architecture-dependent.  It is also probably
-dependent on the specific implementation of the architecture
-(i.e x86 sandybridge is likely very different than x86
-nehalem) and, as noted above, dependent on N which is
-unpredictable.
+RAM speed is also a factor since the copy-method will use more memory
+bandwidth.  Embedded systems typically won't have really fast memory.
 
-So it makes sense to have both choices, but it's not at all clear
-how to select which one to use!
+Seth
 
