@@ -1,99 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab3BRTLw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 14:11:52 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:37693 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755746Ab3BRTLv (ORCPT
+	id S1756899Ab3BRTRR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 14:17:17 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:42428 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756576Ab3BRTRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 14:11:51 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
-To: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: kernel/signal.c - fix suboptimal printk usage
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1361214676_2799P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Mon, 18 Feb 2013 14:17:16 -0500
+Message-ID: <51227DF4.9020900@linux.vnet.ibm.com>
+Date: Mon, 18 Feb 2013 13:16:04 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Ric Mason <ric.masonn@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv5 2/8] zsmalloc: add documentation
+References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com> <1360780731-11708-3-git-send-email-sjenning@linux.vnet.ibm.com> <511F254D.2010909@gmail.com>
+In-Reply-To: <511F254D.2010909@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Mon, 18 Feb 2013 14:11:16 -0500
-Message-ID: <14949.1361214676@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020202.51227CD5.00CA,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021819-5518-0000-0000-00000BAFFF45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1361214676_2799P
-Content-Type: text/plain; charset=us-ascii
+On 02/16/2013 12:21 AM, Ric Mason wrote:
+> On 02/14/2013 02:38 AM, Seth Jennings wrote:
+>> This patch adds a documentation file for zsmalloc at
+>> Documentation/vm/zsmalloc.txt
+>>
+>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+>> ---
+>>   Documentation/vm/zsmalloc.txt |   68
+>> +++++++++++++++++++++++++++++++++++++++++
+>>   1 file changed, 68 insertions(+)
+>>   create mode 100644 Documentation/vm/zsmalloc.txt
+>>
+>> diff --git a/Documentation/vm/zsmalloc.txt
+>> b/Documentation/vm/zsmalloc.txt
+>> new file mode 100644
+>> index 0000000..85aa617
+>> --- /dev/null
+>> +++ b/Documentation/vm/zsmalloc.txt
+>> @@ -0,0 +1,68 @@
+>> +zsmalloc Memory Allocator
+>> +
+>> +Overview
+>> +
+>> +zmalloc a new slab-based memory allocator,
+>> +zsmalloc, for storing compressed pages.  It is designed for
+>> +low fragmentation and high allocation success rate on
+>> +large object, but <= PAGE_SIZE allocations.
+>> +
+>> +zsmalloc differs from the kernel slab allocator in two primary
+>> +ways to achieve these design goals.
+>> +
+>> +zsmalloc never requires high order page allocations to back
+>> +slabs, or "size classes" in zsmalloc terms. Instead it allows
+>> +multiple single-order pages to be stitched together into a
+>> +"zspage" which backs the slab.  This allows for higher allocation
+>> +success rate under memory pressure.
+>> +
+>> +Also, zsmalloc allows objects to span page boundaries within the
+>> +zspage.  This allows for lower fragmentation than could be had
+>> +with the kernel slab allocator for objects between PAGE_SIZE/2
+>> +and PAGE_SIZE.  With the kernel slab allocator, if a page compresses
+>> +to 60% of it original size, the memory savings gained through
+>> +compression is lost in fragmentation because another object of
+>> +the same size can't be stored in the leftover space.
+>> +
+>> +This ability to span pages results in zsmalloc allocations not being
+>> +directly addressable by the user.  The user is given an
+>> +non-dereferencable handle in response to an allocation request.
+>> +That handle must be mapped, using zs_map_object(), which returns
+>> +a pointer to the mapped region that can be used.  The mapping is
+>> +necessary since the object data may reside in two different
+>> +noncontigious pages.
+> 
+> Do you mean the reason of  to use a zsmalloc object must map after
+> malloc is object data maybe reside in two different nocontiguous pages?
 
-Several printk's were missing KERN_INFO and KERN_CONT flags.
-In addition, a printk that was outside a #if/#endif should have
-been inside, which would result in stray blank line on non-x86 boxes.
+Yes, that is one reason for the mapping.  The other reason (more of an
+added bonus) is below.
 
-Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+> 
+>> +
+>> +For 32-bit systems, zsmalloc has the added benefit of being
+>> +able to back slabs with HIGHMEM pages, something not possible
+> 
+> What's the meaning of "back slabs with HIGHMEM pages"?
 
---- linux-next/kernel/signal.c.orig	2013-02-15 19:09:29.451843219 -0500
-+++ linux-next/kernel/signal.c	2013-02-18 14:04:33.423065822 -0500
-@@ -1157,11 +1157,11 @@ static int send_signal(int sig, struct s
- static void print_fatal_signal(int signr)
- {
- 	struct pt_regs *regs = signal_pt_regs();
--	printk("%s/%d: potentially unexpected fatal signal %d.\n",
-+	printk(KERN_INFO "%s/%d: potentially unexpected fatal signal %d.\n",
- 		current->comm, task_pid_nr(current), signr);
+By HIGHMEM, I'm referring to the HIGHMEM memory zone on 32-bit systems
+with larger that 1GB (actually a little less) of RAM.  The upper 3GB
+of the 4GB address space, depending on kernel build options, is not
+directly addressable by the kernel, but can be mapped into the kernel
+address space with functions like kmap() or kmap_atomic().
 
- #if defined(__i386__) && !defined(__arch_um__)
--	printk("code at %08lx: ", regs->ip);
-+	printk(KERN_INFO "code at %08lx: ", regs->ip);
- 	{
- 		int i;
- 		for (i = 0; i < 16; i++) {
-@@ -1169,11 +1169,11 @@ static void print_fatal_signal(int signr
+These pages can't be used by slab/slub because they are not
+continuously mapped into the kernel address space.  However, since
+zsmalloc requires a mapping anyway to handle objects that span
+non-contiguous page boundaries, we do the kernel mapping as part of
+the process.
 
- 			if (get_user(insn, (unsigned char *)(regs->ip + i)))
- 				break;
--			printk("%02x ", insn);
-+			printk(KERN_CONT "%02x ", insn);
- 		}
- 	}
-+	printk(KERN_CONT "\n");
- #endif
--	printk("\n");
- 	preempt_disable();
- 	show_regs(regs);
- 	preempt_enable();
+So zspages, the conceptual slab in zsmalloc backed by single-order
+pages can include pages from the HIGHMEM zone as well.
 
-
---==_Exmh_1361214676_2799P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUSJ81AdmEQWDXROgAQIGqQ//XJSDaO312bvg9qLIJJYYeOhdW5egZCHH
-jXEeg05o9UtBapgE+6diKlCIfdJ7cWvhs0WsLuC5jbK+fdSmKxpTUIO9/N9ZstNY
-EvCd7QgMGLkis4ixotgwiwTGV5q71OwX11MvA7lA99CnyhV61SsG7oti1qSmipo/
-HkZwFJZa3snMv6pJoZedvp/ggWx9Toef01947+LWDKoALN0ZEUSz0lT17rSktJhP
-uTmjf/kxem/mKx45C551M8m7gPqhWt7Ak0qkKs2dPee7Dm4oSbYT2K7R72DskKtE
-g6rguvPUM326QwvTRmRaRY+O7jHFXMBxDMRqAqfPLFFukY1SFxyCN4APvPXf5JjO
-wribddkP6O70uI2JbopZm7TUalsvg9zzOgnAfRrRVK1qgiqKMR7dMj3nlAeMqabs
-Rg9LUGjQx9LLWvKKQLIawo3y8v/GyCDaP/56Kb0CeUidJr6VchpZeKxEmNbsq+17
-wPBITwQhTvkKSNSUt3gxwEuphLtzCsGZBsPff1IxBJO9uDkGJ84oos1eYyllsZB4
-YE276q5yqlNEjfZ6MBXlJFVj38SS7FYyGJG93P7THcrT8ldvCaTQo0my1S5FPUTI
-gGoZJFG7ISttasFz2Ey+F+VqDKwST+hHJUdUR/Ku94VBjGhORxEp1sellgtzJmVi
-SyhVlcV+f0w=
-=YkZS
------END PGP SIGNATURE-----
-
---==_Exmh_1361214676_2799P--
+Seth
 
