@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab3BRRVJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 12:21:09 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:38902 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756498Ab3BRRVF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 12:21:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <51225A36.40600@linux.vnet.ibm.com>
-References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
-	<20130218123920.26245.56709.stgit@srivatsabhat.in.ibm.com>
-	<CANN689HhVxDv+3Bn9UAxOMzj0egTvVp_c7oAmQ2nnQ8Xjn_aMA@mail.gmail.com>
-	<51225A36.40600@linux.vnet.ibm.com>
-Date: Tue, 19 Feb 2013 01:21:02 +0800
-Message-ID: <CANN689FJPLfz06MFRJ9T+BuToejAzjYP_yrw_H4iGi1Kb3p2-g@mail.gmail.com>
-Subject: Re: [PATCH v6 08/46] CPU hotplug: Provide APIs to prevent CPU offline
- from atomic context
-From: Michel Lespinasse <walken@google.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vincent.guittot@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756398Ab3BRRW2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 12:22:28 -0500
+Received: from mout.gmx.net ([212.227.15.19]:64771 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751937Ab3BRRW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 12:22:27 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/VygJAumLVQlSGbrI/bF15kO8p9mjdLrHDw8zdk0
+	BO1jCGmXilhOQz
+Message-ID: <1361208136.14352.226.camel@marge.simpson.net>
+Subject: Re: [RFC] sched: The removal of idle_balance()
+From: Mike Galbraith <efault@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Clark Williams <clark@redhat.com>,
+        Andrew Theurer <habanero@us.ibm.com>
+Date: Mon, 18 Feb 2013 18:22:16 +0100
+In-Reply-To: <1361200989.23152.150.camel@gandalf.local.home>
+References: <1360908819.23152.97.camel@gandalf.local.home>
+	 <1360913172.4736.20.camel@marge.simpson.net>
+	 <1361031150.23152.133.camel@gandalf.local.home>
+	 <1361082363.6088.21.camel@marge.simpson.net>
+	 <1361085245.28353.3.camel@marge.simpson.net>
+	 <1361138089.23152.141.camel@gandalf.local.home>
+	 <1361158953.14352.17.camel@marge.simpson.net>
+	 <1361200989.23152.150.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 12:43 AM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> On 02/18/2013 09:53 PM, Michel Lespinasse wrote:
->> I am wondering though, if you could take care of recursive uses in
->> get/put_online_cpus_atomic() instead of doing it as a property of your
->> rwlock:
->>
->> get_online_cpus_atomic()
->> {
->>     unsigned long flags;
->>     local_irq_save(flags);
->>     if (this_cpu_inc_return(hotplug_recusion_count) == 1)
->>         percpu_read_lock_irqsafe(&hotplug_pcpu_rwlock);
->>     local_irq_restore(flags);
->> }
->>
->> Once again, the idea there is to avoid baking the reader side
->> recursive properties into your rwlock itself, so that it won't be
->> impossible to implement reader/writer fairness into your rwlock in the
->> future (which may be not be very important for the hotplug use, but
->> could be when other uses get introduced).
->
-> Hmm, your proposal above looks good to me, at first glance.
-> (Sorry, I had mistaken your earlier mails to mean that you were against
-> recursive reader-side, while you actually meant that you didn't like
-> implementing the recursive reader-side logic using the recursive property
-> of rwlocks).
+On Mon, 2013-02-18 at 10:23 -0500, Steven Rostedt wrote: 
+> On Mon, 2013-02-18 at 04:42 +0100, Mike Galbraith wrote:
+> > On Sun, 2013-02-17 at 16:54 -0500, Steven Rostedt wrote:
+> > > On Sun, 2013-02-17 at 08:14 +0100, Mike Galbraith wrote:
+> > > 
+> > > > (And puts a dent in x264 ultrafast) 
+> >  
+> > > What about my last patch? The one that avoids idle_balance() if the
+> > > previous task was in a task_uninterruptible state. That one gave the
+> > > same performance increase that removing idle_balance() did on my box.
+> > 
+> > I didn't try it, figuring it was pretty much the same as turning it off,
+> > but just did.  Patch (-typo) has no effect on either x264 or hackbench
+> > (surely will for -rt, but rt tasks here aren't sent to burn in rt hell).
+> 
+> So it had no effect to your tests? That's actually good, as if it has a
+> positive effect on some workloads and no effect on others, that's still
+> a net win.
 
-To be honest, I was replying as I went through the series, so I hadn't
-digested your hotplug use case yet :)
+Yeah, for clarity, with "!" removed, there was zero effect to either
+hackbench or x264 ultrafast. 
 
-But yes - I don't like having the rwlock itself be recursive, but I do
-understand that you have a legitimate requirement for
-get_online_cpus_atomic() to be recursive. This IMO points to the
-direction I suggested, of explicitly handling the recusion in
-get_online_cpus_atomic() so that the underlying rwlock doesn't have to
-support recursive reader side itself.
+	-Mike
 
-(And this would work for the idea of making writers own the reader
-side as well - you can do it with the hotplug_recursion_count instead
-of with the underlying rwlock).
-
-> While your idea above looks good, it might introduce more complexity
-> in the unlock path, since this would allow nesting of heterogeneous readers
-> (ie., if hotplug_recursion_count == 1, you don't know whether you need to
-> simply decrement the counter or unlock the rwlock as well).
-
-Well, I think the idea doesn't make the underlying rwlock more
-complex, since you could in principle keep your existing
-percpu_read_lock_irqsafe implementation as is and just remove the
-recursive behavior from its documentation.
-
-Now ideally if we're adding a bit of complexity in
-get_online_cpus_atomic() it'd be nice if we could remove some from
-percpu_read_lock_irqsafe, but I haven't thought about that deeply
-either. I think you'd still want to have the equivalent of a percpu
-reader_refcnt, except it could now be a bool instead of an int, and
-percpu_read_lock_irqsafe would still set it to back to 0/false after
-acquiring the global read side if a writer is signaled. Basically your
-existing percpu_read_lock_irqsafe code should still work, and we could
-remove just the parts that were only there to deal with the recursive
-property.
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
