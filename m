@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab3BRO7t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 09:59:49 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:37800 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752320Ab3BRO7r (ORCPT
+	id S1753101Ab3BRPCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 10:02:06 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9852 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab3BRPCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 09:59:47 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: Andrew Bartlett <abartlet@samba.org>, linux-kernel@vger.kernel.org,
-        Ravishankar N <cyberax82@gmail.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>,
-        Nam-Jae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: Read support for fat_fallocate()? (was [v2] fat: editions to support fat_fallocate())
-References: <1350138661-2454-1-git-send-email-linkinjeon@gmail.com>
-	<1360810114.1727.306.camel@jesse>
-	<CAKYAXd9qmDYivsJduT3bFD2vPOc0DQ0f8RQTxQ7MXXTCQMMQQA@mail.gmail.com>
-	<1360825669.1727.337.camel@jesse>
-	<CAKYAXd9tVzvP_Oa+BoUwKbpaMoVZKZgesDgrLirqoyk6AHrJ2A@mail.gmail.com>
-	<1360900178.1727.393.camel@jesse> <87fw0t26qu.fsf@devron.myhome.or.jp>
-	<CAKYAXd-DSo1R7zgu81vc9ckke+5doeEd2QPwqHt54OF-VZo34Q@mail.gmail.com>
-Date: Mon, 18 Feb 2013 23:59:43 +0900
-In-Reply-To: <CAKYAXd-DSo1R7zgu81vc9ckke+5doeEd2QPwqHt54OF-VZo34Q@mail.gmail.com>
-	(Namjae Jeon's message of "Mon, 18 Feb 2013 23:25:11 +0900")
-Message-ID: <878v6lzmzk.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 18 Feb 2013 10:02:05 -0500
+X-Authority-Analysis: v=2.0 cv=It2cgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=1taZYQiZ_WsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=0H2JTn8J8XcA:10 a=whJf14y56VyULO2p4oQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1361199721.23152.145.camel@gandalf.local.home>
+Subject: Re: [PATCH 04/16] rcu: rcutiny: Prevent RCU stall
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 18 Feb 2013 10:02:01 -0500
+In-Reply-To: <20130216205909.GB3094@linux.vnet.ibm.com>
+References: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de>
+	 <1360771932-27150-5-git-send-email-bigeasy@linutronix.de>
+	 <20130216205909.GB3094@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+On Sat, 2013-02-16 at 12:59 -0800, Paul E. McKenney wrote:
+>  
+> > diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+> > index 2b0484a..bac1906 100644
+> > --- a/kernel/rcutiny_plugin.h
+> > +++ b/kernel/rcutiny_plugin.h
+> > @@ -552,7 +552,7 @@ static void rcu_read_unlock_special(struct task_struct *t)
+> >  		rcu_preempt_cpu_qs();
+> > 
+> >  	/* Hardware IRQ handlers cannot block. */
+> > -	if (in_irq()) {
+> > +	if (preempt_count() & (HARDIRQ_MASK | SOFTIRQ_OFFSET)) {
+> 
+> For whatever it is worth, in mainline this is:
+> 
+> 	if (in_irq() || in_serving_softirq()) {
+> 
+> The definition of in_serving_softirq() is a bit different:
+> 
+> #define in_serving_softirq()    (softirq_count() & SOFTIRQ_OFFSET)
+> 
+> This might be due to differences between mainline and -rt, but thought
+> it worth calling attention to.
+> 
 
->> Hm. My concerns are compatibility and reliability. Although We can
->> change on-disk format if need, but I don't think it can be compatible
->> and reliable. If so, who wants to use it? I feel there is no reason to
->> use FAT if there is no compatible.
->>
->> Well, anyway, possible solution would be, we can pre-allocate physical
->> blocks via fallocate(2) or something, but discard pre-allocated blocks
->> at ->release() (or before unmount at least). This way would have
->> compatibility (no on-disk change over unmount) and possible breakage
->> would be same with normal extend write patterns on kernel crash
->> (i.e. Windows or fsck will truncate after i_size).
-> Hi OGAWA.
-> We don't need to consider device unplugging case ?
-> If yes, I can rework fat fallocate patch as your suggestion.
+Right, and we should avoid open coding HARDIRQ_MASK and SOFTIRQ_OFFSET. 
+And note, -rt is slowly creeping into mainline. It's better to have
+things like this nicely tidied up.
 
-In my suggestion, I think, kernel crash or something like unplugging
-cases handles has no change from current way.
+-- Steve
 
-Any pre-allocated blocks are truncated by fsck as inconsistency state,
-like crash before updating i_size for normal extend write.  I.e. across
-unmount, nobody care whether pre-allocated or not. IOW, if there is
-inconsistent between i_size and cluster chain (includes via
-fallocate(2)) across unmount, it should be handled as broken state.
 
-In short, the lifetime of pre-allocated blocks are from fallocate(2) to
-->release() only.
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
