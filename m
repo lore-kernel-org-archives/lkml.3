@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab3BRXqw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 18:46:52 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:56292 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756671Ab3BRXqu convert rfc822-to-8bit (ORCPT
+	id S1757661Ab3BRXtO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 18:49:14 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:45892 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757560Ab3BRXtN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 18:46:50 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Steven Rostedt <rostedt@goodmis.org>, "H. Peter Anvin" <hpa@zytor.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
-Subject: RE: [PATCH v9 2/3] trace,x86: add x86 irq vector tracepoints
-Thread-Topic: [PATCH v9 2/3] trace,x86: add x86 irq vector tracepoints
-Thread-Index: Ac4DKenvaw7irpCHQuCAh5bLR9M+cAI2fG6AAAPXLoAAAGoYgAAAYjMAAIaQEGA=
-Date: Mon, 18 Feb 2013 23:45:58 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414ABE178@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A64C4B@USINDEM103.corp.hds.com>
-	  <511ECE53.8040801@zytor.com>
-	 <1360979993.23152.122.camel@gandalf.local.home>
-	 <511EEAE1.1040106@zytor.com> <1360981364.23152.123.camel@gandalf.local.home>
-In-Reply-To: <1360981364.23152.123.camel@gandalf.local.home>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Feb 2013 18:49:13 -0500
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2013-02-18_05:2013-02-18,2013-02-18,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1302180267
+Message-ID: <b6ea78ee-41df-4c92-84fa-e1b4a430f957@default>
+Date: Mon, 18 Feb 2013 15:48:47 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Ric Mason <ric.masonn@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Subject: RE: [PATCH] zsmalloc: Add Kconfig for enabling PTE method
+References: <1359937421-19921-1-git-send-email-minchan@kernel.org>
+ <511F2721.2000305@gmail.com> <512271E1.9000105@linux.vnet.ibm.com>
+In-Reply-To: <512271E1.9000105@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Not-yet-signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: Re: [PATCH] zsmalloc: Add Kconfig for enabling PTE method
+> 
+> On 02/16/2013 12:28 AM, Ric Mason wrote:
+> > On 02/04/2013 08:23 AM, Minchan Kim wrote:
+> >> +      for object mapping. You can check speed with zsmalloc
+> >> benchmark[1].
+> >> +      [1] https://github.com/spartacus06/zsmalloc
 > >
-> > ... so I was holding off on doing anything with it.
+> > Is there benchmark to test zcache? eg. internal fragmentation level ...
 > 
-> Heh, and I was waiting for comments from you before doing anything further with it ;-)
+> First, zsmalloc is not used in zcache right now so just wanted to say
+> that.  It is used in zram and the proposed zswap
+> (https://lwn.net/Articles/528817/)
 > 
-> Email review deadlock!
+> There is not an official benchmark.  However anything that generates
+> activity that will hit the frontswap or cleancache hooks will do.
+> These are workloads that overcommit memory and use swap, or access
+> file sets whose size is larger that the system page cache.
 
-So, how do you plan to push ahead with this patch?
+I think it's important to note that the question "is there
+a benchmark" is a very deep and difficult question for any
+compression solution because it is so workload-dependent.
+Unlike many benchmarks that simply synthesize a _quantity_
+of data, zcache/zswap/zram all are very sensitive to the
+actual contents of that data as the compression ratio
+varies widely depending on the data.  So we need to ensure
+that the data used by any benchmark has similar "entropy"
+to real world workloads.  I'm not sure how we can do that.
 
-https://lkml.org/lkml/2013/2/1/532
+So it may or may not be useful to measure zcache/zswap/zram using
+standard benchmarks (including things like SPECjbb).  At least
+kernbench is something that kernel developers do every day,
+so it is definitely a real world workload... but adding
+parallel compiles (via "make -jN") until the system thrashes,
+and then showing zcache/zswap/zram reduces the thrashing may
+not be at all representative of a broad range of workloads
+that cause memory pressure... kernbench is just convenient for
+us developers to demonstrate that the mechanism works.
 
-<snip>
-I think I got all the cases, as NMIs causes the store/restore functions to be re-entrent without any locks.
-<snip>
+Ideas welcome... well-thought out ideas anyway!
 
-Steven, 
-if you think you got all the cases, you can do more testing.
-What is your concern?
-
-I hope this patch will be included in 3.9.
-
-Seiji
-
-
+Dan
 
