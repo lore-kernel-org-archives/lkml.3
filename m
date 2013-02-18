@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab3BRJNl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 04:13:41 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:41530 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886Ab3BRJNj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 04:13:39 -0500
-X-Spam-Score: -100.8
-Message-ID: <5121F0BA.2080103@asianux.com>
-Date: Mon, 18 Feb 2013 17:13:30 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756945Ab3BRJOF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 04:14:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44911 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753976Ab3BRJOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 04:14:03 -0500
+Date: Mon, 18 Feb 2013 10:13:53 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] hid driver transport cleanup
+In-Reply-To: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
+Message-ID: <alpine.LNX.2.00.1302181012320.17024@pobox.suse.cz>
+References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: grant.likely@secretlab.ca, linus.walleij@linaro.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] drivers/gpio/*twl* need call irq_free_descs when leaving
-References: <511F34C3.6020406@asianux.com> <5121EFE7.7040301@ti.com>
-In-Reply-To: <5121EFE7.7040301@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年02月18日 17:09, Peter Ujfalusi 写道:
-> On 02/16/2013 08:26 AM, Chen Gang wrote:
->> > 
->> >   since already call irq_alloc_descs before,
->> >     we need call irq_free_descs when quiting, or resource leak.
-> While it is true that we need to free the descs, but this patch is not correct.
-> We have other issues to fix in the driver - I have not looked at the
-> probe/remove path yet, but the sequence is not right and also the call of
-> gpio_twl4030_remove() from probe is not correct.
-> 
-> I'll send a small series to fix these up.
-> 
+On Fri, 8 Feb 2013, Benjamin Tissoires wrote:
 
-  ok, thank you.
+> Hi guys,
+> 
+> so, here is the hid drivers cleanup. The aim is to remove as much as possible
+> direct calls to usbhid for hid drivers. Thus, other transport layers can use
+> the existing hid drivers (like I2C or uhid).
+> 
+> Henrik, patches 1 to 5 are yours. I just rebased and double-checked them. Please
+> add you Signed-off-by if you are happy with the rebase.
 
-  :-)
+Henrik,
+
+I can see your signoff in my inbox only for patches 1 and 2. Are you still 
+reviewing patches 3-5?
+
+Also, I'd like to make sure that we don't mess up the authorship, so 
+patches 1-5 should be applied with Henrik's authorship, right? (I can do 
+it after I receive signoffs from Henrik for those).
+
+Thanks a lot for this work.
 
 -- 
-Chen Gang
-
-Asianux Corporation
+Jiri Kosina
+SUSE Labs
