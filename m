@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab3BRQbd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 11:31:33 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25782 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753954Ab3BRQbb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 11:31:31 -0500
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=o2Q8bu201zMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=90TB_Sdg_p4A:10 a=CRI1Dda8Ao7ugpeRgCQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1361205087.23152.159.camel@gandalf.local.home>
-Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
- Per-CPU Reader-Writer Locks
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Michel Lespinasse <walken@google.com>, tglx@linutronix.de,
-        peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vincent.guittot@linaro.org
-Date: Mon, 18 Feb 2013 11:31:27 -0500
-In-Reply-To: <5122551E.1080703@linux.vnet.ibm.com>
-References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
-	 <20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com>
-	 <CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com>
-	 <5122551E.1080703@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756318Ab3BRQbn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 11:31:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37716 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754726Ab3BRQbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 11:31:41 -0500
+Date: Mon, 18 Feb 2013 17:31:35 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, jslaby@suse.cz,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "kay.sievers" <kay.sievers@vrfy.org>
+Subject: Re: [PATCH 3/3] printk: Avoid softlockups in console_unlock()
+Message-ID: <20130218163135.GE12679@quack.suse.cz>
+References: <1360112748.2621.25.camel@gandalf.local.home>
+ <20130206230220.GA18329@quack.suse.cz>
+ <20130215165710.GB12734@quack.suse.cz>
+ <20130215142219.01915825.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130215142219.01915825.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-18 at 21:51 +0530, Srivatsa S. Bhat wrote:
-> Hi Michel,
+On Fri 15-02-13 14:22:19, Andrew Morton wrote:
+> On Fri, 15 Feb 2013 17:57:10 +0100
+> Jan Kara <jack@suse.cz> wrote:
+> 
+> > A CPU can be caught in console_unlock() for a long time (tens of seconds are
+> > reported by our customers) when other CPUs are using printk heavily and serial
+> > console makes printing slow. Despite serial console drivers are calling
+> > touch_nmi_watchdog() this triggers softlockup warnings because
+> > interrupts are disabled for the whole time console_unlock() runs (e.g.
+> > vprintk() calls console_unlock() with interrupts disabled). Thus IPIs
+> > cannot be processed and other CPUs get stuck spinning in calls like
+> > smp_call_function_many(). Also RCU eventually starts reporting lockups.
+> > 
+> > In my artifical testing I also managed to trigger a situation when disk
+> > disappeared from the system apparently because commands to / from it
+> > could not be delivered for long enough. This is why just silencing
+> > watchdogs isn't a reliable solution to the problem and we simply have to
+> > avoid spending too long in console_unlock().
+> > 
+> > We fix the issue by limiting the time we spend in console_unlock() to
+> > watchdog_thresh() / 4 (unless we are in an early boot stage or oops is
+> > happening). The rest of the buffer will be printed either by further
+> > callers to printk() or during next timer tick.
+> > 
+> 
+> It still gives me tummy ache :(
+  But it's better than it used to be, isn't it? At least I like this
+version more than the one with postponing to worker thread since we only
+depend on timer ticks to occur...
 
-> Yes.. I don't think we can avoid that. Moreover, since we _want_ unfair
-> reader/writer semantics to allow flexible locking rules and guarantee
-> deadlock-safety, having a recursive reader side is not even an issue, IMHO.
+> The patch adds additional tests of oops_in_progress.  Some description
+> of your thinking on that matter would be appropriate?
+  Good point, I'll add that. My thinking was that when we are oopsing, all
+bets are off and we want to get the messages to console as reliably as
+possible and we don't care about soflockups anymore as we have bigger
+trouble anyway.
 
-Recursive unfair reader lock may guarantee deadlock-safety, but
-remember, it adds a higher probability of live-locking the write_lock.
-Which is another argument to keep this separate to cpu hotplug only.
+> > --- a/kernel/printk.c
+> > +++ b/kernel/printk.c
+> > @@ -1990,17 +1990,31 @@ int is_console_locked(void)
+> >  #define PRINTK_PENDING_OUTPUT	2
+> >  
+> >  static unsigned long printk_pending;
+> > +static int last_printing_cpu = -1;
+> > +
+> > +static bool __console_unlock(void);
+> >  
+> >  void printk_tick(void)
+> 
+> printk_tick() no longer exists in linux-next.
+  Thanks for notice, I'll rebase and fix this up.
 
--- Steve
-
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
