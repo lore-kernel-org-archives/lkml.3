@@ -1,58 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab3BRRZs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 12:25:48 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:51826 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756085Ab3BRRZq (ORCPT
+	id S1756550Ab3BRR0z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 12:26:55 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:47482 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756085Ab3BRR0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 12:25:46 -0500
-Date: Mon, 18 Feb 2013 12:24:38 -0500
-From: Frederik Deweerdt <frederik.deweerdt@xprog.eu>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] perf stat: --repeat forever
-Message-ID: <20130218172438.GB5199@ks398093.ip-192-95-24.net>
-References: <20130215222849.GA5199@ks398093.ip-192-95-24.net>
- <20130218150444.GB1915@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130218150444.GB1915@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 18 Feb 2013 12:26:54 -0500
+Date: Mon, 18 Feb 2013 12:26:53 -0500 (EST)
+Message-Id: <20130218.122653.2052167397005650003.davem@davemloft.net>
+To: dyoung@redhat.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH]net: ehea module param description fix
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <511f24e7.iqc1+9PTu6xF8JTF%dyoung@redhat.com>
+References: <511f24e7.iqc1+9PTu6xF8JTF%dyoung@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+From: dyoung@redhat.com
+Date: Sat, 16 Feb 2013 14:19:19 +0800
 
-On Mon, Feb 18, 2013 at 12:04:44PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Feb 15, 2013 at 05:28:49PM -0500, Frederik Deweerdt escreveu:
-> > Hi,
-> > 
-> > The following patch causes 'perf stat --repeat 0' to be interpreted as
-> > 'forever', displaying the stats for every run.
-> > 
-> > We act as if a single run was asked, and reset the stats in each
-> > iteration. In this mode SIGINT is passed to perf to be able to stop the
-> > loop with Ctrl+C.
+> In ehea.h the minimal entries is 2^7 - 1:
+> #define EHEA_MIN_ENTRIES_QP  127
 > 
-> It is not applying to my perf/core branch, please take a look at:
+> Thus change the module param description accordinglly
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux
-> 
-> branch perf/core
-> 
-Noted, I'll base the next version based on this branch.
+> Signed-off-by: Dave Young <dyoung@redhat.com>
 
-> Also please consider removing the need to specify 0, i.e. I think this
-> is possible and shorter:
-> 
-> # perf stat -a --repeat sleep 1
-
-I'm unsure how to achieve that. I've looked at the different OPT_*
-defines, but I can't find one that would do the job. Any pointers?
-
-Thanks,
-Frederik
+Applied.
