@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab3BRNYg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 08:24:36 -0500
-Received: from mga03.intel.com ([143.182.124.21]:24972 "EHLO mga03.intel.com"
+	id S1754987Ab3BRN0a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 08:26:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57656 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751771Ab3BRNYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 08:24:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,687,1355126400"; 
-   d="scan'208";a="258366813"
-Date: Mon, 18 Feb 2013 15:28:44 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: Re: [PATCH v3] i2c-designware: make SDA hold time configurable
-Message-ID: <20130218132843.GA2439@intel.com>
-References: <20130218105742.GK20771@intel.com>
- <1361191905-30099-1-git-send-email-christian.ruppert@abilis.com>
+	id S1754791Ab3BRN02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 08:26:28 -0500
+Message-ID: <51222BF9.3040802@suse.cz>
+Date: Mon, 18 Feb 2013 14:26:17 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361191905-30099-1-git-send-email-christian.ruppert@abilis.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Joseph Lo <josephl@nvidia.com>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [RFC 1/2] Makefile: Add arch/arch/$(hdr-arch)/boot in header
+ include path
+References: <1360918364-27960-1-git-send-email-hdoyu@nvidia.com> <511E617E.6080206@wwwdotorg.org>
+In-Reply-To: <511E617E.6080206@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 18, 2013 at 01:51:45PM +0100, Christian Ruppert wrote:
-> This patch makes the SDA hold time configurable through device tree.
-> It was tested on a hybrid of i2c/next and arc-3.8-baseline (see
-> https://github.com/foss-for-synopsys-dwc-arc-processors/linux/commits/arc-3.8-baseline) since our platform is ARC based and this architecture is not yet
-> supported by i2c/next.
-> 
-> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
+On 15.2.2013 17:25, Stephen Warren wrote:
+> On 02/15/2013 01:52 AM, Hiroshi Doyu wrote:
+>> This patch allows kernel source to include those DT
+>> headers. For example:
+>>
+>> + #include <dts/tegra20-car.h>
+>>
+>> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+>> ---
+>>  Makefile |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/Makefile b/Makefile
+>> index 0b4bf62..7f54cdb 100644
+>> --- a/Makefile
+>> +++ b/Makefile
+>> @@ -364,7 +364,7 @@ LINUXINCLUDE    := \
+>>  		-I$(srctree)/arch/$(hdr-arch)/include \
+>>  		-Iarch/$(hdr-arch)/include/generated \
+>>  		$(if $(KBUILD_SRC), -I$(srctree)/include) \
+>> -		-Iinclude \
+>> +		-Iinclude -Iarch/$(hdr-arch)/boot \
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Would it be possible to use a new directory for this? At least POWER and
+x86 have several unrelated headers in their arch/*/boot that are only
+meant for the bootstrap code.
 
-Thanks!
+Michal
