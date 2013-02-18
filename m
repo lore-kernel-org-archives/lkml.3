@@ -1,76 +1,562 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab3BROTE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 09:19:04 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:32905 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951Ab3BROTC (ORCPT
+	id S1753190Ab3BROXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 09:23:00 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:32769 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab3BROW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 09:19:02 -0500
-Date: Mon, 18 Feb 2013 06:17:25 -0800
-From: "tip-bot for Bu, Yitian" <tipbot@zytor.com>
-Message-ID: <tip-dbda92d16f8655044e082930e4e9d244b87fde77@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, ybu@qti.qualcomm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, ybu@qti.qualcomm.com, tglx@linutronix.de
-In-Reply-To: <E807E903FE6CBE4D95E420FBFCC273B827413C@nasanexd01h.na.qualcomm.com>
-References: <E807E903FE6CBE4D95E420FBFCC273B827413C@nasanexd01h.na.qualcomm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/printk] printk: Fix rq->
- lock vs logbuf_lock unlock lock inversion
-Git-Commit-ID: dbda92d16f8655044e082930e4e9d244b87fde77
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Feb 2013 06:17:34 -0800 (PST)
+	Mon, 18 Feb 2013 09:22:58 -0500
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, benh@kernel.crashing.org,
+        grant.likely@secretlab.ca, horms@verge.net.au,
+        Magnus Damm <magnus.damm@gmail.com>, tglx@linutronix.de
+Date: Mon, 18 Feb 2013 23:28:34 +0900
+Message-Id: <20130218142834.28739.39417.sendpatchset@w520>
+Subject: [PATCH] irqchip: Renesas INTC External IRQ pin driver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dbda92d16f8655044e082930e4e9d244b87fde77
-Gitweb:     http://git.kernel.org/tip/dbda92d16f8655044e082930e4e9d244b87fde77
-Author:     Bu, Yitian <ybu@qti.qualcomm.com>
-AuthorDate: Mon, 18 Feb 2013 12:53:37 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 18 Feb 2013 15:05:57 +0100
+From: Magnus Damm <damm@opensource.se>
 
-printk: Fix rq->lock vs logbuf_lock unlock lock inversion
+This patch adds a driver for external IRQ pins connected
+to the INTC block on recent SoCs from Renesas.
 
-commit 07354eb1a74d1 ("locking printk: Annotate logbuf_lock as raw")
-reintroduced a lock inversion problem which was fixed in commit
-0b5e1c5255 ("printk: Release console_sem after logbuf_lock"). This
-happened probably when fixing up patch rejects.
+The INTC hardware block usually contains a rather wide
+range of features ranging from external IRQ pin handling
+to legacy interrupt controller support. On older SoCs
+the INTC is used as a general purpose interrupt controller
+both for external IRQ pins and on-chip devices.
 
-Restore the ordering and unlock logbuf_lock before releasing
-console_sem.
+On more recent ARM based SoCs with Cortex-A9 the main
+interrupt controller is the GIC, but IRQ trigger setup
+still need to happen in the INTC hardware block.
 
-Signed-off-by: ybu <ybu@qti.qualcomm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/E807E903FE6CBE4D95E420FBFCC273B827413C@nasanexd01h.na.qualcomm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+This driver implements the glue code needed to configure
+IRQ trigger and also handle mask/unmask and demux of
+external IRQ pins hooked up from the INTC to the GIC.
+
+Tested on sh73a0 and r8a7779. The hardware varies quite
+a bit with SoC model, for instance register width and
+bitfield widths vary wildly. The driver requires one GIC
+SPI per external IRQ pin to operate.  Each driver instance
+will handle up to 8 external IRQ pins.
+
+The SoCs using this driver are currently mainly used
+together with regular platform devices so this driver
+allows configuration via platform data to support things
+like static interrupt base address. DT support will
+be added incrementally in the not so distant future.
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
- kernel/printk.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 267ce78..e698e80 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1358,9 +1358,9 @@ static int console_trylock_for_printk(unsigned int cpu)
- 		}
- 	}
- 	logbuf_cpu = UINT_MAX;
-+	raw_spin_unlock(&logbuf_lock);
- 	if (wake)
- 		up(&console_sem);
--	raw_spin_unlock(&logbuf_lock);
- 	return retval;
- }
+ drivers/irqchip/Kconfig                               |    4 
+ drivers/irqchip/Makefile                              |    1 
+ drivers/irqchip/irq-renesas-intc-irqpin.c             |  464 +++++++++++++++++
+ include/linux/platform_data/irq-renesas-intc-irqpin.h |   10 
+ 4 files changed, 479 insertions(+)
+
+--- 0001/drivers/irqchip/Kconfig
++++ work/drivers/irqchip/Kconfig	2013-02-18 18:28:22.000000000 +0900
+@@ -25,6 +25,10 @@ config ARM_VIC_NR
+ 	  The maximum number of VICs available in the system, for
+ 	  power management.
  
++config RENESAS_INTC_IRQPIN
++	bool
++	select IRQ_DOMAIN
++
+ config VERSATILE_FPGA_IRQ
+ 	bool
+ 	select IRQ_DOMAIN
+--- 0001/drivers/irqchip/Makefile
++++ work/drivers/irqchip/Makefile	2013-02-18 18:28:22.000000000 +0900
+@@ -5,4 +5,5 @@ obj-$(CONFIG_ARCH_SUNXI)		+= irq-sunxi.o
+ obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
+ obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
+ obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
++obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
+ obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
+--- /dev/null
++++ work/drivers/irqchip/irq-renesas-intc-irqpin.c	2013-02-18 21:06:32.000000000 +0900
+@@ -0,0 +1,464 @@
++/*
++ * Renesas INTC External IRQ Pin Driver
++ *
++ *  Copyright (C) 2013 Magnus Damm
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/spinlock.h>
++#include <linux/interrupt.h>
++#include <linux/ioport.h>
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/irqdomain.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/platform_data/irq-renesas-intc-irqpin.h>
++
++#define INTC_IRQPIN_MAX 8 /* maximum 8 interrupts per driver instance */
++
++#define INTC_IRQPIN_REG_SENSE 0 /* ICRn */
++#define INTC_IRQPIN_REG_PRIO 1 /* INTPRInn */
++#define INTC_IRQPIN_REG_SOURCE 2 /* INTREQnn */
++#define INTC_IRQPIN_REG_MASK 3 /* INTMSKnn */
++#define INTC_IRQPIN_REG_CLEAR 4 /* INTMSKCLRnn */
++#define INTC_IRQPIN_REG_NR 5
++
++/* INTC external IRQ PIN hardware register access:
++ *
++ * SENSE is read-write 32-bit with 2-bits or 4-bits per IRQ (*)
++ * PRIO is read-write 32-bit with 4-bits per IRQ (**)
++ * SOURCE is read-only 32-bit or 8-bit with 1-bit per IRQ (***)
++ * MASK is write-only 32-bit or 8-bit with 1-bit per IRQ (***)
++ * CLEAR is write-only 32-bit or 8-bit with 1-bit per IRQ (***)
++ *
++ * (*) May be accessed by more than one driver instance - lock needed
++ * (**) Read-modify-write access by one driver instance - lock needed
++ * (***) Accessed by one driver instance only - no locking needed
++ */
++
++struct intc_irqpin_iomem {
++	void __iomem *iomem;
++	unsigned long (*read)(void __iomem *iomem);
++	void (*write)(void __iomem *iomem, unsigned long data);
++	int width;
++};  
++
++struct intc_irqpin_irq {
++	int hw_irq;
++	int irq;
++	struct intc_irqpin_priv *p;
++};  
++
++struct intc_irqpin_priv {
++	struct intc_irqpin_iomem iomem[INTC_IRQPIN_REG_NR];
++	struct intc_irqpin_irq irq[INTC_IRQPIN_MAX];
++	struct renesas_intc_irqpin_config config;
++	unsigned int number_of_irqs;
++	struct platform_device *pdev;
++	struct irq_chip irq_chip;
++	struct irq_domain *irq_domain;
++};
++
++static unsigned long intc_irqpin_read32(void __iomem *iomem)
++{
++	return ioread32(iomem);
++}
++
++static unsigned long intc_irqpin_read8(void __iomem *iomem)
++{
++	return ioread8(iomem);
++}
++
++static void intc_irqpin_write32(void __iomem *iomem, unsigned long data)
++{
++	iowrite32(data, iomem);
++}
++
++static void intc_irqpin_write8(void __iomem *iomem, unsigned long data)
++{
++	iowrite8(data, iomem);
++}
++
++static inline unsigned long intc_irqpin_read(struct intc_irqpin_priv *p,
++					     int reg)
++{
++	struct intc_irqpin_iomem *i = &p->iomem[reg];
++	return i->read(i->iomem);
++}
++
++static inline void intc_irqpin_write(struct intc_irqpin_priv *p,
++				     int reg, unsigned long data)
++{
++	struct intc_irqpin_iomem *i = &p->iomem[reg];
++	i->write(i->iomem, data);
++}
++
++static inline unsigned long intc_irqpin_hwirq_mask(struct intc_irqpin_priv *p,
++						   int reg, int hw_irq)
++{
++	return BIT((p->iomem[reg].width - 1) - hw_irq);
++}
++
++static inline void intc_irqpin_irq_write_hwirq(struct intc_irqpin_priv *p,
++					       int reg, int hw_irq)
++{
++	intc_irqpin_write(p, reg, intc_irqpin_hwirq_mask(p, reg, hw_irq));
++}
++
++static DEFINE_RAW_SPINLOCK(intc_irqpin_lock); /* only used by slow path */
++
++static void intc_irqpin_read_modify_write(struct intc_irqpin_priv *p,
++					  int reg, int shift,
++					  int width, int value)
++{
++	unsigned long flags;
++	unsigned long tmp;
++
++	raw_spin_lock_irqsave(&intc_irqpin_lock, flags);
++
++	tmp = intc_irqpin_read(p, reg);
++	tmp &= ~(((1 << width) - 1) << shift);
++	tmp |= value << shift;
++	intc_irqpin_write(p, reg, tmp);
++
++	raw_spin_unlock_irqrestore(&intc_irqpin_lock, flags);
++}
++
++static void intc_irqpin_mask_unmask_prio(struct intc_irqpin_priv *p,
++					 int irq, int do_mask)
++{
++	int bitfield_width = 4; /* PRIO assumed to have fixed bitfield width */
++	int shift = (7 - irq) * bitfield_width; /* PRIO assumed to be 32-bit */
++
++	intc_irqpin_read_modify_write(p, INTC_IRQPIN_REG_PRIO,
++				      shift, bitfield_width,
++				      do_mask ? 0 : (1 << bitfield_width) - 1);
++}
++
++static int intc_irqpin_set_sense(struct intc_irqpin_priv *p, int irq, int value)
++{
++	int bitfield_width = p->config.sense_bitfield_width;
++	int shift = (7 - irq) * bitfield_width; /* SENSE assumed to be 32-bit */
++
++	dev_dbg(&p->pdev->dev, "sense irq = %d, mode = %d\n", irq, value);
++
++	if (value >= (1 << bitfield_width))
++		return -EINVAL;
++
++	intc_irqpin_read_modify_write(p, INTC_IRQPIN_REG_SENSE, shift,
++				      bitfield_width, value);
++	return 0;
++}
++
++static void intc_irqpin_dbg(struct intc_irqpin_irq *i, char *str)
++{
++	dev_dbg(&i->p->pdev->dev, "%s (%d:%d:%d)\n",
++		str, i->irq, i->hw_irq,
++		irq_find_mapping(i->p->irq_domain, i->hw_irq));
++}
++
++static void intc_irqpin_irq_enable(struct irq_data *d)
++{
++	struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
++	int hw_irq = irqd_to_hwirq(d);
++
++	intc_irqpin_dbg(&p->irq[hw_irq], "enable");
++	intc_irqpin_irq_write_hwirq(p, INTC_IRQPIN_REG_CLEAR, hw_irq);
++}
++
++static void intc_irqpin_irq_disable(struct irq_data *d)
++{
++	struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
++	int hw_irq = irqd_to_hwirq(d);
++
++	intc_irqpin_dbg(&p->irq[hw_irq], "disable");
++	intc_irqpin_irq_write_hwirq(p, INTC_IRQPIN_REG_MASK, hw_irq);
++}
++
++static void intc_irqpin_irq_enable_force(struct irq_data *d)
++{
++	struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
++	int irq = p->irq[irqd_to_hwirq(d)].irq;
++
++	intc_irqpin_irq_enable(d);
++	irq_get_chip(irq)->irq_unmask(irq_get_irq_data(irq));
++}
++
++static void intc_irqpin_irq_disable_force(struct irq_data *d)
++{
++	struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
++	int irq = p->irq[irqd_to_hwirq(d)].irq;
++
++	irq_get_chip(irq)->irq_mask(irq_get_irq_data(irq));
++	intc_irqpin_irq_disable(d);
++}
++
++#define INTC_IRQ_SENSE_VALID 0x10
++#define INTC_IRQ_SENSE(x) (x + INTC_IRQ_SENSE_VALID)
++
++static unsigned char intc_irqpin_sense[IRQ_TYPE_SENSE_MASK + 1] = {
++	[IRQ_TYPE_EDGE_FALLING] = INTC_IRQ_SENSE(0x00),
++	[IRQ_TYPE_EDGE_RISING] = INTC_IRQ_SENSE(0x01),
++	[IRQ_TYPE_LEVEL_LOW] = INTC_IRQ_SENSE(0x02),
++	[IRQ_TYPE_LEVEL_HIGH] = INTC_IRQ_SENSE(0x03),
++	[IRQ_TYPE_EDGE_BOTH] = INTC_IRQ_SENSE(0x04),
++};
++
++static int intc_irqpin_irq_set_type(struct irq_data *d, unsigned int type)
++{
++	unsigned char value = intc_irqpin_sense[type & IRQ_TYPE_SENSE_MASK];
++	struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
++
++	if (!(value & INTC_IRQ_SENSE_VALID))
++		return -EINVAL;
++
++	return intc_irqpin_set_sense(p, irqd_to_hwirq(d),
++				     value ^ INTC_IRQ_SENSE_VALID);
++}
++
++static irqreturn_t intc_irqpin_irq_handler(int irq, void *dev_id)
++{
++	struct intc_irqpin_irq *i = dev_id;
++	struct intc_irqpin_priv *p = i->p;
++	unsigned long bit;
++
++	intc_irqpin_dbg(i, "demux1");
++	bit = intc_irqpin_hwirq_mask(p, INTC_IRQPIN_REG_SOURCE, i->hw_irq);
++
++	if (intc_irqpin_read(p, INTC_IRQPIN_REG_SOURCE) & bit) {
++		intc_irqpin_write(p, INTC_IRQPIN_REG_SOURCE, ~bit);
++		intc_irqpin_dbg(i, "demux2");
++		generic_handle_irq(irq_find_mapping(p->irq_domain, i->hw_irq));
++		return IRQ_HANDLED;
++	}
++	return IRQ_NONE;
++}
++
++static int intc_irqpin_irq_domain_map(struct irq_domain *h, unsigned int virq,
++				      irq_hw_number_t hw)
++{
++	struct intc_irqpin_priv *p = h->host_data;
++
++	intc_irqpin_dbg(&p->irq[hw], "map");
++	irq_set_chip_data(virq, h->host_data);
++	irq_set_chip_and_handler(virq, &p->irq_chip, handle_level_irq);
++	set_irq_flags(virq, IRQF_VALID); /* kill me now */
++	return 0;
++}
++
++static struct irq_domain_ops intc_irqpin_irq_domain_ops = {
++	.map	= intc_irqpin_irq_domain_map,
++};
++
++static int intc_irqpin_probe(struct platform_device *pdev)
++{
++	struct renesas_intc_irqpin_config *pdata = pdev->dev.platform_data;
++	struct intc_irqpin_priv *p;
++	struct intc_irqpin_iomem *i;
++	struct resource *io[INTC_IRQPIN_REG_NR];
++	struct resource *irq;
++	struct irq_chip *irq_chip;
++	void (*enable_fn)(struct irq_data *d);
++	void (*disable_fn)(struct irq_data *d);
++	const char *name = dev_name(&pdev->dev);
++	int ret;
++	int k;
++
++	p = kzalloc(sizeof(*p), GFP_KERNEL);
++	if (!p) {
++		dev_err(&pdev->dev, "failed to allocate driver data\n");
++		ret = -ENOMEM;
++		goto err0;
++	}
++
++	/* deal with driver instance configuration */
++	if (pdata)
++		memcpy(&p->config, pdata, sizeof(*pdata));
++	if (!p->config.sense_bitfield_width)
++		p->config.sense_bitfield_width = 4; /* default to 4 bits */
++
++	p->pdev = pdev;
++	platform_set_drvdata(pdev, p);
++
++	/* get hold of manadatory IOMEM */
++	for (k = 0; k < INTC_IRQPIN_REG_NR; k++) {
++		io[k] = platform_get_resource(pdev, IORESOURCE_MEM, k);
++		if (!io[k]) {
++			dev_err(&pdev->dev, "not enough IOMEM resources\n");
++			ret = -EINVAL;
++			goto err1;
++		}
++	}
++
++	/* allow any number of IRQs between 1 and INTC_IRQPIN_MAX */
++	for (k = 0; k < INTC_IRQPIN_MAX; k++) {
++		irq = platform_get_resource(pdev, IORESOURCE_IRQ, k);
++		if (!irq)
++			break;
++
++		p->irq[k].hw_irq = k;
++		p->irq[k].p = p;
++		p->irq[k].irq = irq->start;
++	}
++
++	p->number_of_irqs = k;
++	if (p->number_of_irqs < 1) {
++		dev_err(&pdev->dev, "not enough IRQ resources\n");
++		ret = -EINVAL;
++		goto err1;
++	}
++
++	/* ioremap IOMEM and setup read/write callbacks */
++	for (k = 0; k < INTC_IRQPIN_REG_NR; k++) {
++		i = &p->iomem[k];
++
++		switch (resource_size(io[k])) {
++		case 1:
++			i->width = 8;
++			i->read = intc_irqpin_read8;
++			i->write = intc_irqpin_write8;
++			break;
++		case 4:
++			i->width = 32;
++			i->read = intc_irqpin_read32;
++			i->write = intc_irqpin_write32;
++			break;
++		default:
++			dev_err(&pdev->dev, "IOMEM size mismatch\n");
++			ret = -EINVAL;
++			goto err2;
++		}
++
++		i->iomem = ioremap_nocache(io[k]->start, resource_size(io[k]));
++		if (!i->iomem) {
++			dev_err(&pdev->dev, "failed to remap IOMEM\n");
++			ret = -ENXIO;
++			goto err2;
++		}
++	}
++
++	/* mask all interrupts using priority */
++	for (k = 0; k < p->number_of_irqs; k++)
++		intc_irqpin_mask_unmask_prio(p, k, 1);
++
++	/* use more severe masking method if requested */
++	if (p->config.control_parent) {
++		enable_fn = intc_irqpin_irq_enable_force;
++		disable_fn = intc_irqpin_irq_disable_force;
++	} else {
++		enable_fn = intc_irqpin_irq_enable;
++		disable_fn = intc_irqpin_irq_disable;
++	}
++
++	irq_chip = &p->irq_chip;
++	irq_chip->name = name;
++	irq_chip->irq_mask = disable_fn;
++	irq_chip->irq_unmask = enable_fn;
++	irq_chip->irq_enable = enable_fn;
++	irq_chip->irq_disable = disable_fn;
++	irq_chip->irq_set_type = intc_irqpin_irq_set_type;
++	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
++
++	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
++					      p->number_of_irqs,
++					      p->config.irq_base,
++					      &intc_irqpin_irq_domain_ops, p);
++	if (!p->irq_domain) {
++		ret = -ENXIO;
++		dev_err(&pdev->dev, "cannot initialize irq domain\n");
++		goto err2;
++	}
++
++	/* request and set priority on interrupts one by one */
++	for (k = 0; k < p->number_of_irqs; k++) {
++		if (request_irq(p->irq[k].irq, intc_irqpin_irq_handler,
++				0, name, &p->irq[k])) {
++			dev_err(&pdev->dev, "failed to request low IRQ\n");
++			ret = -ENOENT;
++			goto err3;
++		}
++		intc_irqpin_mask_unmask_prio(p, k, 0);
++	}
++
++	dev_info(&pdev->dev, "driving %d irqs\n", p->number_of_irqs);
++
++	/* warn in case of mismatch if irq base is specified */
++	if (p->config.irq_base) {
++		k = irq_find_mapping(p->irq_domain, 0);
++		if (p->config.irq_base != k)
++			dev_warn(&pdev->dev, "irq base mismatch (%d/%d)\n",
++				 p->config.irq_base, k);
++	}
++	
++	return 0;
++
++err3:
++	for (; k >= 0; k--)
++		free_irq(p->irq[k - 1].irq, &p->irq[k - 1]);
++
++	irq_domain_remove(p->irq_domain);
++err2:
++	for (k = 0; k < INTC_IRQPIN_REG_NR; k++)
++		iounmap(p->iomem[k].iomem);
++err1:
++	kfree(p);
++err0:
++	return ret;
++}
++
++static int intc_irqpin_remove(struct platform_device *pdev)
++{
++	struct intc_irqpin_priv *p = platform_get_drvdata(pdev);
++	int k;
++
++	for (k = 0; k < p->number_of_irqs; k++)
++		free_irq(p->irq[k].irq, &p->irq[k]);
++
++	irq_domain_remove(p->irq_domain);
++
++	for (k = 0; k < INTC_IRQPIN_REG_NR; k++)
++		iounmap(p->iomem[k].iomem);
++
++	kfree(p);
++	return 0;
++}
++
++static struct platform_driver intc_irqpin_device_driver = {
++	.probe		= intc_irqpin_probe,
++	.remove		= intc_irqpin_remove,
++	.driver		= {
++		.name	= "renesas_intc_irqpin",
++	}
++};
++
++static int __init intc_irqpin_init(void)
++{
++	return platform_driver_register(&intc_irqpin_device_driver);
++}
++postcore_initcall(intc_irqpin_init);
++
++static void __exit intc_irqpin_exit(void)
++{
++	platform_driver_unregister(&intc_irqpin_device_driver);
++}
++module_exit(intc_irqpin_exit);
++
++MODULE_AUTHOR("Magnus Damm");
++MODULE_DESCRIPTION("Renesas INTC External IRQ Pin Driver");
++MODULE_LICENSE("GPL v2");
+--- /dev/null
++++ work/include/linux/platform_data/irq-renesas-intc-irqpin.h	2013-02-18 18:28:24.000000000 +0900
+@@ -0,0 +1,10 @@
++#ifndef __IRQ_RENESAS_INTC_IRQPIN_H__
++#define __IRQ_RENESAS_INTC_IRQPIN_H__
++
++struct renesas_intc_irqpin_config {
++	unsigned int sense_bitfield_width;
++	unsigned int irq_base;
++	bool control_parent;
++};
++
++#endif /* __IRQ_RENESAS_INTC_IRQPIN_H__ */
