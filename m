@@ -1,123 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179Ab3BRTu3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 14:50:29 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49869 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341Ab3BRTu2 (ORCPT
+	id S1757267Ab3BRTuk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 14:50:40 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:35453 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757212Ab3BRTui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 14:50:28 -0500
-Date: Mon, 18 Feb 2013 11:50:23 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 13/15] workqueue: also record worker in work->data if
- running&&queued
-Message-ID: <20130218195023.GJ17414@htj.dyndns.org>
-References: <1361203940-6300-1-git-send-email-laijs@cn.fujitsu.com>
- <1361203940-6300-14-git-send-email-laijs@cn.fujitsu.com>
+	Mon, 18 Feb 2013 14:50:38 -0500
+Message-ID: <512285C4.4050809@linux.vnet.ibm.com>
+Date: Mon, 18 Feb 2013 11:49:24 -0800
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361203940-6300-14-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Ric Mason <ric.masonn@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv5 4/8] zswap: add to mm/
+References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com> <1360780731-11708-5-git-send-email-sjenning@linux.vnet.ibm.com> <511F0536.5030802@gmail.com> <51227FDA.7040000@linux.vnet.ibm.com>
+In-Reply-To: <51227FDA.7040000@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021819-2398-0000-0000-0000112F4B03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+On 02/18/2013 11:24 AM, Seth Jennings wrote:
+> On 02/15/2013 10:04 PM, Ric Mason wrote:
+>> On 02/14/2013 02:38 AM, Seth Jennings wrote:
+> <snip>
+>>> +/* invalidates all pages for the given swap type */
+>>> +static void zswap_frontswap_invalidate_area(unsigned type)
+>>> +{
+>>> +    struct zswap_tree *tree = zswap_trees[type];
+>>> +    struct rb_node *node, *next;
+>>> +    struct zswap_entry *entry;
+>>> +
+>>> +    if (!tree)
+>>> +        return;
+>>> +
+>>> +    /* walk the tree and free everything */
+>>> +    spin_lock(&tree->lock);
+>>> +    node = rb_first(&tree->rbroot);
+>>> +    while (node) {
+>>> +        entry = rb_entry(node, struct zswap_entry, rbnode);
+>>> +        zs_free(tree->pool, entry->handle);
+>>> +        next = rb_next(node);
+>>> +        zswap_entry_cache_free(entry);
+>>> +        node = next;
+>>> +    }
+>>> +    tree->rbroot = RB_ROOT;
+>>
+>> Why don't need rb_erase for every nodes?
+>
+> We are freeing the entire tree here.  try_to_unuse() in the swapoff
+> syscall should have already emptied the tree, but this is here for
+> completeness.
+>
+> rb_erase() will do things like rebalancing the tree; something that
+> just wastes time since we are in the process of freeing the whole
+> tree.  We are holding the tree lock here so we are sure that no one
+> else is accessing the tree while it is in this transient broken state.
 
-On Tue, Feb 19, 2013 at 12:12:14AM +0800, Lai Jiangshan wrote:
-> +/**
-> + * get_work_cwq - get cwq of the work
-> + * @work: the work item of interest
-> + *
-> + * CONTEXT:
-> + * spin_lock_irq(&pool->lock), the work must be queued on this pool
-> + */
-> +static struct cpu_workqueue_struct *get_work_cwq(struct work_struct *work)
-> +{
-> +	unsigned long data = atomic_long_read(&work->data);
-> +	struct worker *worker;
-> +
-> +	if (data & WORK_STRUCT_CWQ) {
-> +		return (void *)(data & WORK_STRUCT_WQ_DATA_MASK);
-> +	} else if (data & WORK_OFFQ_REQUEUED) {
-> +		worker = worker_by_id(data >> WORK_OFFQ_WORKER_SHIFT);
-> +		BUG_ON(!worker || !worker->requeue);
-> +		return worker->current_cwq;
-> +	} else {
-> +		BUG();
-> +		return NULL;
-> +	}
-> +}
+If we have a sub-tree like:
+     ...
+    /
+   A
+  / \
+B   C
 
-So, work->data points to the last worker ID if off-queue or on-queue
-with another worker executing it and points to cwq if on-queue w/o
-another worker executing.  If on-queue w/ concurrent execution, the
-excuting worker updates work->data when it finishes execution, right?
+B == rb_next(tree)
+A == rb_next(B)
+C == rb_next(A)
 
-Why no documentation about it at all?  The mechanism is convoluted
-with interlocking from both work and worker sides.  Lack of
-documentation makes things difficult for reviewers and later readers
-of the code.
+The current code free's A (via zswap_entry_cache_free()) prior to 
+examining C, and thus rb_next(C) results in a use after free of A.
 
-> @@ -1296,8 +1283,16 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
->  		worklist = &cwq->delayed_works;
->  	}
->  
-> -	color_flags = work_color_to_flags(cwq->work_color);
-> -	insert_work(cwq, work, worklist, color_flags | delayed_flags);
-> +	if (worker) {
-> +		worker->requeue = true;
-> +		worker->requeue_color = cwq->work_color;
-> +		set_work_worker_and_keep_pending(work, worker->id,
-> +				delayed_flags | WORK_OFFQ_REQUEUED);
-> +		list_add_tail(&work->entry, worklist);
-> +	} else {
-> +		color_flags = work_color_to_flags(cwq->work_color);
-> +		insert_work(cwq, work, worklist, color_flags | delayed_flags);
-> +	}
+You can solve this by doing a post-order traversal of the tree, either
 
-I can't say I like this.  In interlocks the work being queued and the
-worker so that both have to watch out for each other.  It's kinda
-nasty.
+a) in the destructive manner used in a number of filesystems, see 
+fs/ubifs/orphan.c ubifs_add_orphan(), for example.
 
-> @@ -2236,6 +2241,16 @@ __acquires(&pool->lock)
->  	worker->current_func = NULL;
->  	worker->current_cwq = NULL;
->  	cwq_dec_nr_in_flight(cwq, work_color);
-> +
-> +	if (unlikely(worker->requeue)) {
-> +		unsigned long color_flags, keep_flags;
-> +
-> +		worker->requeue = false;
-> +		keep_flags = atomic_long_read(&work->data);
-> +		keep_flags &= WORK_STRUCT_LINKED | WORK_STRUCT_DELAYED;
-> +		color_flags = work_color_to_flags(worker->requeue_color);
-> +		set_work_cwq(work, cwq, color_flags | keep_flags);
-> +	}
+b) or by doing something similar to this commit: 
+https://github.com/jmesmon/linux/commit/d9e43aaf9e8a447d6802531d95a1767532339fad 
+, which I've been using for some yet-to-be-merged code.
 
-So, what was before mostly one way "is it still executing?" query
-becomes three party handshake among the queuer, executing worker and
-try_to_grab_pending(), and we end up shifting information from the
-queuer through the executing worker because work->data can't hold both
-workqueue and worker information.
-
-I don't know, Lai.  While removal of busy_hash is nice, I'm not really
-sure whether we're ending up with better or worse code by doing this.
-It's more convoluted for sure.  Performance-wise, now that idr_find()
-for pool costs almost nothing (because we're very unlikely to have
-more than 256 pools), we're comparing one idr lookup (which can easily
-blow through 256 single layer optimization limit) against two simple
-hash table lookup.  I don't really think either would be noticeably
-better than the other in any measureable way.
-
-The trade-off, while doesn't seem too bad, doesn't seem much
-beneficial either.  It's different from what we're currently doing but
-I'm not sure we're making it better by doing this.
-
-Hmmmmm....
-
--- 
-tejun
