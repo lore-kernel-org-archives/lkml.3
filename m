@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757164Ab3BREc7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 23:32:59 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:42213 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755757Ab3BREc5 (ORCPT
+	id S1757125Ab3BREnu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 23:43:50 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:38385 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756744Ab3BREnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 23:32:57 -0500
-Date: Mon, 18 Feb 2013 15:32:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Manjunath Goudar <manjunath.goudar@linaro.org>
-Subject: linux-next: manual merge of the usb tree with the driver-core tree
-Message-Id: <20130218153242.747962940bbed03bfdb2623b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__18_Feb_2013_15_32_42_+1100_ixNjl.R/xAQm+ZWC"
+	Sun, 17 Feb 2013 23:43:49 -0500
+MIME-Version: 1.0
+Date: Sun, 17 Feb 2013 20:43:47 -0800
+X-Google-Sender-Auth: pMMQuFbnPAir7WsphliKknykifc
+Message-ID: <CANeU7QmbzX4Tx1Dtu6xOiYzr6h6_8tPQvVG32Wvkt=5wAwEEAg@mail.gmail.com>
+Subject: i915 black screen introduced by ACPI changes
+From: Chris Li <lkml@chrisli.org>
+To: linux-kernel@vger.kernel.org
+Cc: jbarnes@virtuousgeek.org, robert.moore@intel.com, feng.tang@intel.com,
+        len.brown@intel.com, daniel.vetter@ffwll.ch
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Feb_2013_15_32_42_+1100_ixNjl.R/xAQm+ZWC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+My Lenovo Y580 laptop with FC18 start to get black screen after the kernel
+upgrade to 3.7.xxx
 
-Hi Greg,
+The black screen happens about the time kernel switch to using VT console.
+At the point of black screen, no response of cap locks key led no network
+connection. The machine seems dead.
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/host/ehci-vt8500.c between commit 148e11349b0c ("usb: Convert
-to devm_ioremap_resource()") from the driver-core tree and commit
-d57ada0c37ec ("USB: EHCI: make ehci-vt8500 a separate driver") from the
-usb tree.
+The CPU is i7 and it has two video card. The Intel build-in video card
+and Gtx 660M Nvidia card.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+This is very annoying. I did some poking around it:
+- It was fine on the FC18 3.6.xxx kernel before the upgrade.
+- The black screen exists with FC18 3.7.xxx kernel
+- The black screen also exists in latest tip of linux-2.6.
+- Switch to multi-user mode booting does not get rid of the black screen.
+- Get rid of the "rhrb quit" does not help either.
+- When the black screen happen, cap lock LED does not response to cap locks.
+- No networking when black screen happen. The only thing to do is
+reboot the system.
+- Adding "i915.modeset=0" will allow the kernel to boot into GUI login. However,
+  logout of X will cause the machine to hang similar to the black screen.
+- Suspend and resume will get stuck at the black screen with"i915.modeset=0".
+- Kernel console and X is using the Intel driver for display.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+There are other user experience the same problem as well.
+http://forums.fedoraforum.org/showthread.php?t=287853
 
-diff --cc drivers/usb/host/ehci-vt8500.c
-index 7ecf709,98d65bd..0000000
---- a/drivers/usb/host/ehci-vt8500.c
-+++ b/drivers/usb/host/ehci-vt8500.c
-@@@ -16,7 -16,12 +16,13 @@@
-   *
-   */
- =20
- +#include <linux/err.h>
-+ #include <linux/kernel.h>
-+ #include <linux/module.h>
-+ #include <linux/usb.h>
-+ #include <linux/usb/hcd.h>
-+ #include <linux/io.h>
-+ #include <linux/dma-mapping.h>
-  #include <linux/of.h>
-  #include <linux/platform_device.h>
- =20
+The black screen is introduced between v3.6 and v3.7. I did the git bisect.
+It points to this ACPI change which is a little bit surprising. I was
+expecting some
+change relate to i915 driver. I double check commit before this does
+not have black
+screen.
 
---Signature=_Mon__18_Feb_2013_15_32_42_+1100_ixNjl.R/xAQm+ZWC
-Content-Type: application/pgp-signature
+Anyway, any suggestion to nail down this problem?
+I am happy to reproduce and verify the fix.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks
 
-iQIcBAEBCAAGBQJRIa7qAAoJEECxmPOUX5FEZbwP/3XX6l4bVyw+ehgQJW2HC+Wd
-49MNWUcf5tQ3UBizMuVR0DOj1PrI0Ti+D1XLXHRhykiI+qf4fJT9XmNIyI2f6A8b
-NNocERyGpqzbpjoJDIW6X7mGqS8gGRq78r90SpBbk9bxWo1dPJW3ViaSq0MUWgrB
-9T2Z3AitL6j7fZJL0nLW03FZcXPYwmh2Ae+jB71B+tXIjFMls5jvRUZbV1ad+yid
-GomeNcRAKmP64zhE2HJdsCCko6Fk78OTVcpQRpEdrv5+68PDwRAnVGUB2hylxHmd
-eI/+glyn/ojGoUJbKV5a1SL5VwMnxTZvF0rtF082/MyLL8y3Gqdu3aZ8MR4fMe5V
-DHljDhExzG0VoPnujThYAEIsbXjHoO37gx6EQgYnP1DVoqlqFPMXFD0I9njT6koA
-vz6Ph62WQcFpNMDe3GQz6IzxTcsHldZQH2+Szf8o9fmW6guyEPzfDaWPv9B7o9r+
-3TB0bLeB5YRD3JzH6TCiiE7qIRzgfXCufQak/MFnkM5t0K+7gK9mu8izcNd3zjGb
-KodDcAQzHMxS5UhAZ2C5LisbG0IMUutWQkU0h6hYyU9qJ4XYULwthqRweSnP59SZ
-KaUaA6T1ZrSRWMI22CzCbn284KmXzIIqZjT5YXlJfJQdM43kVjkYjjLgsc9hvsrd
-+DxZv4WYFZHgLlbwrrro
-=APUB
------END PGP SIGNATURE-----
+Chris
 
---Signature=_Mon__18_Feb_2013_15_32_42_+1100_ixNjl.R/xAQm+ZWC--
+
+commit a57f7f9175b8ccbc9df83ac13860488913115de4
+Author: Bob Moore <robert.moore@intel.com>
+Date:   Fri Aug 17 10:55:02 2012 +0800
+
+    ACPICA: Add Windows8/Server2012 string for _OSI method.
+
+    This change adds a new _OSI string, "Windows 2012" for both Windows 8
+    and Windows Server 2012.
+
+    From Microsoft document "How to Identify the Windows Version in ACPI
+    by Using _OSI", July 13, 2012.
+
+    Signed-off-by: Bob Moore <robert.moore@intel.com>
+    Signed-off-by: Feng Tang <feng.tang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
