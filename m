@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813Ab3BRMk4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 07:40:56 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56962 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753551Ab3BRMkw (ORCPT
+	id S1754090Ab3BRMlB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 07:41:01 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:50049 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753786Ab3BRMk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 07:40:52 -0500
+	Mon, 18 Feb 2013 07:40:57 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v6 02/46] percpu_rwlock: Introduce per-CPU variables for the
- reader and the writer
+Subject: [PATCH v6 03/46] percpu_rwlock: Provide a way to define and init
+ percpu-rwlocks at compile time
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -21,8 +21,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         walken@google.com, vincent.guittot@linaro.org
-Date: Mon, 18 Feb 2013 18:08:45 +0530
-Message-ID: <20130218123845.26245.58287.stgit@srivatsabhat.in.ibm.com>
+Date: Mon, 18 Feb 2013 18:08:50 +0530
+Message-ID: <20130218123850.26245.81751.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,81 +30,46 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021812-3864-0000-0000-000006E0F19F
+x-cbid: 13021812-8878-0000-0000-000005EFB918
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Per-CPU rwlocks ought to give better performance than global rwlocks.
-That is where the "per-CPU" component comes in. So introduce the necessary
-per-CPU variables that would be necessary at the reader and the writer sides,
-and add the support for dynamically initializing per-CPU rwlocks.
-These per-CPU variables will be used subsequently to implement the core
-algorithm behind per-CPU rwlocks.
+Add the support for defining and initializing percpu-rwlocks at compile time
+for those users who would like to use percpu-rwlocks really early in the boot
+process (even before dynamic per-CPU allocations can begin).
 
 Cc: David Howells <dhowells@redhat.com>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- include/linux/percpu-rwlock.h |    8 ++++++++
- lib/percpu-rwlock.c           |   12 ++++++++++++
- 2 files changed, 20 insertions(+)
+ include/linux/percpu-rwlock.h |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
 diff --git a/include/linux/percpu-rwlock.h b/include/linux/percpu-rwlock.h
-index 0caf81f..74eaf4d 100644
+index 74eaf4d..5590b1e 100644
 --- a/include/linux/percpu-rwlock.h
 +++ b/include/linux/percpu-rwlock.h
-@@ -28,7 +28,13 @@
- #include <linux/lockdep.h>
- #include <linux/spinlock.h>
+@@ -49,6 +49,21 @@ extern int __percpu_init_rwlock(struct percpu_rwlock *,
  
-+struct rw_state {
-+	unsigned long	reader_refcnt;
-+	bool		writer_signal;
-+};
+ extern void percpu_free_rwlock(struct percpu_rwlock *);
+ 
 +
- struct percpu_rwlock {
-+	struct rw_state __percpu	*rw_state;
- 	rwlock_t			global_rwlock;
- };
- 
-@@ -41,6 +47,8 @@ extern void percpu_write_unlock(struct percpu_rwlock *);
- extern int __percpu_init_rwlock(struct percpu_rwlock *,
- 				const char *, struct lock_class_key *);
- 
-+extern void percpu_free_rwlock(struct percpu_rwlock *);
++#define __PERCPU_RWLOCK_INIT(name)					\
++	{								\
++		.rw_state = &name##_rw_state,				\
++		.global_rwlock = __RW_LOCK_UNLOCKED(name.global_rwlock) \
++	}
++
++#define DEFINE_PERCPU_RWLOCK(name)					\
++	static DEFINE_PER_CPU(struct rw_state, name##_rw_state);	\
++	struct percpu_rwlock (name) = __PERCPU_RWLOCK_INIT(name);
++
++#define DEFINE_STATIC_PERCPU_RWLOCK(name)				\
++	static DEFINE_PER_CPU(struct rw_state, name##_rw_state);	\
++	static struct percpu_rwlock(name) = __PERCPU_RWLOCK_INIT(name);
 +
  #define percpu_init_rwlock(pcpu_rwlock)					\
  ({	static struct lock_class_key rwlock_key;			\
  	__percpu_init_rwlock(pcpu_rwlock, #pcpu_rwlock, &rwlock_key);	\
-diff --git a/lib/percpu-rwlock.c b/lib/percpu-rwlock.c
-index 111a238..f938096 100644
---- a/lib/percpu-rwlock.c
-+++ b/lib/percpu-rwlock.c
-@@ -31,6 +31,10 @@
- int __percpu_init_rwlock(struct percpu_rwlock *pcpu_rwlock,
- 			 const char *name, struct lock_class_key *rwlock_key)
- {
-+	pcpu_rwlock->rw_state = alloc_percpu(struct rw_state);
-+	if (unlikely(!pcpu_rwlock->rw_state))
-+		return -ENOMEM;
-+
- 	/* ->global_rwlock represents the whole percpu_rwlock for lockdep */
- #ifdef CONFIG_DEBUG_SPINLOCK
- 	__rwlock_init(&pcpu_rwlock->global_rwlock, name, rwlock_key);
-@@ -41,6 +45,14 @@ int __percpu_init_rwlock(struct percpu_rwlock *pcpu_rwlock,
- 	return 0;
- }
- 
-+void percpu_free_rwlock(struct percpu_rwlock *pcpu_rwlock)
-+{
-+	free_percpu(pcpu_rwlock->rw_state);
-+
-+	/* Catch use-after-free bugs */
-+	pcpu_rwlock->rw_state = NULL;
-+}
-+
- void percpu_read_lock(struct percpu_rwlock *pcpu_rwlock)
- {
- 	read_lock(&pcpu_rwlock->global_rwlock);
 
