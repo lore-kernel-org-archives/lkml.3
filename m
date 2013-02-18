@@ -1,163 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab3BRSr5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 13:47:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35226 "EHLO arroyo.ext.ti.com"
+	id S1754170Ab3BRSsH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 13:48:07 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45167 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751580Ab3BRSrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 13:47:53 -0500
-Date: Mon, 18 Feb 2013 20:46:33 +0200
+	id S1751580Ab3BRSsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 13:48:05 -0500
+Date: Mon, 18 Feb 2013 20:47:35 +0200
 From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Felipe Balbi <balbi@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>, <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Doug Thompson <dougthompson@xmission.com>,
-        <linux-edac@vger.kernel.org>, <rjw@sisk.pl>,
-        <linux-pm@vger.kernel.org>
+To: Borislav Petkov <bp@alien8.de>, Felipe Balbi <balbi@ti.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: SYSFS "errors"
-Message-ID: <20130218184633.GC10755@arwen.pp.htv.fi>
+Message-ID: <20130218184735.GD10755@arwen.pp.htv.fi>
 Reply-To: <balbi@ti.com>
 References: <20130218153316.GA2663@arwen.pp.htv.fi>
  <20130218155012.GA30974@kroah.com>
  <20130218155215.GB2663@arwen.pp.htv.fi>
  <20130218171334.GA31329@kroah.com>
  <20130218172700.GH2663@arwen.pp.htv.fi>
- <20130218174916.GA2070@kroah.com>
+ <20130218174527.GB16628@pd.tnic>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0IvGJv3f9h+YhkrH"
+	protocol="application/pgp-signature"; boundary="jTMWTj4UTAEmbWeb"
 Content-Disposition: inline
-In-Reply-To: <20130218174916.GA2070@kroah.com>
+In-Reply-To: <20130218174527.GB16628@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0IvGJv3f9h+YhkrH
+--jTMWTj4UTAEmbWeb
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi, On Mon, Feb 18, 2013 at 09:49:16AM -0800, Greg KH wrote:
-> > Input/output error - /sys/devices/cpu/power/autosuspend_delay_ms
->=20
-> The issue with this file is, if the power.use_autosuspend flag is not
-> set for the device, then it can't be read or written to.  This flag
-> changes dynamically with the system state
-> (__pm_runtime_use_autosuspend() can change it), so we can't just not
-> show the file if the flag is not set properly, sorry.
->=20
-> So the "error" is correct here, as is the 0644 file value.
-
-hmm... we could create the file at pm_runtime_enable() time and remove
-it on pm_runtime_disable() time, no ? Addin Rafael to Cc
-
-> > No such device or address - /sys/devices/pci0000:00/0000:00:1d.7/usb2/2=
--5/2-5.1/2-5.1.1/2-5.1.1:1.0/host100/target100:0:0/100:0:0:0/block/sdc/trac=
-e/pid
-> > No such device or address - /sys/devices/pci0000:00/0000:00:1d.7/usb2/2=
--5/2-5.1/2-5.1.1/2-5.1.1:1.0/host100/target100:0:0/100:0:0:0/block/sdc/trac=
-e/end_lba
-> > No such device or address - /sys/devices/pci0000:00/0000:00:1d.7/usb2/2=
--5/2-5.1/2-5.1.1/2-5.1.1:1.0/host100/target100:0:0/100:0:0:0/block/sdc/trac=
-e/enable
-> > No such device or address - /sys/devices/pci0000:00/0000:00:1d.7/usb2/2=
--5/2-5.1/2-5.1.1/2-5.1.1:1.0/host100/target100:0:0/100:0:0:0/block/sdc/trac=
-e/act_mask
-> > No such device or address - /sys/devices/pci0000:00/0000:00:1d.7/usb2/2=
--5/2-5.1/2-5.1.1/2-5.1.1:1.0/host100/target100:0:0/100:0:0:0/block/sdc/trac=
-e/start_lba
-> > Invalid argument - /sys/devices/pci0000:00/0000:00:1f.2/ata2/host1/scsi=
-_host/host1/em_buffer
-> > Invalid argument - /sys/devices/pci0000:00/0000:00:1f.2/ata2/host1/targ=
-et1:0:0/1:0:0:0/sw_activity
-> > Operation not supported - /sys/devices/pci0000:00/0000:00:1f.2/ata2/hos=
-t1/target1:0:0/1:0:0:0/unload_heads
->=20
-> SCSI fun, go poke the SCSI developers about these files, I know nothing
-> about them, nor do I really want to :)
->=20
+On Mon, Feb 18, 2013 at 06:45:27PM +0100, Borislav Petkov wrote:
+> On Mon, Feb 18, 2013 at 07:27:00PM +0200, Felipe Balbi wrote:
 > > No such device - /sys/devices/system/edac/mc/mc0/sdram_scrub_rate
 >=20
-> Odd, go ask the edac developers
+> Looks like your edac module doesn't allow scrub rate setting. Which edac
+> driver is that? dmesg?
 
-will do ;-)
-
-> > Input/output error - /sys/devices/system/memory/soft_offline_page
-> > Input/output error - /sys/devices/system/memory/hard_offline_page
->=20
-> These both should be mode 0400, not 0644, they have no 'show' attribute,
-> that's a bug, care to make up a patch that I can take?  Or I can, let me
-> know.
-
-sure, will send in a bit.
-
-> > Invalid argument - /sys/devices/virtual/net/lo/speed
-> > Invalid argument - /sys/devices/virtual/net/lo/duplex
->=20
-> Ask the network developers, odds are, the loopback device doesn't really
-> have a speed :)
-
-right ;-)
-
-> > No such device or address - /sys/devices/virtual/block/loop0/trace/pid
-> > No such device or address - /sys/devices/virtual/block/loop0/trace/end_=
-lba
-> > No such device or address - /sys/devices/virtual/block/loop0/trace/enab=
-le
-> > No such device or address - /sys/devices/virtual/block/loop0/trace/act_=
-mask
-> > No such device or address - /sys/devices/virtual/block/loop0/trace/star=
-t_lba
->=20
-> Hm, these show up for virtual block devices as well, maybe they aren't
-> scsi specific, but rather block specific, go poke the block developers
-> then.
-
-yeah, I was looking into these a while ago. They're created by
-blk_trace_init_sysfs() which is called by blk_register_queue() but I
-wonder if we couldn't defer the creation of those so that:
-
-sysfs_blk_trace_attr_show():
-
-1639         bdev =3D bdget(part_devt(p));
-1640         if (bdev =3D=3D NULL)
-1641                 goto out;
-1642=20
-1643         q =3D blk_trace_get_queue(bdev);
-1644         if (q =3D=3D NULL)
-1645                 goto out_bdput;
-
-never fail (meaning they could be removed), adding some block folks to
-the loop.
+$ lsmod | grep -i edac
+i7core_edac            22414  0=20
+edac_core              43453  2 i7core_edac
 
 --=20
 balbi
 
---0IvGJv3f9h+YhkrH
+--jTMWTj4UTAEmbWeb
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRIncJAAoJEIaOsuA1yqREDr0P/jIuEk5NZM1ZXoLJ7VHyYa14
-ryQ6bQdJI8GJ0GgGTpy9VYHPmtKOpoidQ8xB8fMtuBdEvFYrwHu+5QmtNSSMAjbV
-lYs/J6q0jIlxvLQecDEER6xZFvm4YiNRiDgwgARB8xc74HukbtLbM5XSIiyOR5cc
-u7ue0ZACpDznT9j0/CvR6F/k1wSsCwsf6qJS1KH69ro7t/0XbpykbDVeBZAAczCk
-bnIoSP1b9auWOiFxObVBXNWie2Uf8NAE0Y9RaF91FpChgklsQc2kMXZCMTfPd2Lc
-Q4kSi1Hu+epdSzS3y20mAMOnH1EdWnAsCUikZYXfduQVXY60bdiwie4ejy5eNkTJ
-w5SLGuTc3Jd3sY65kxApOfCLi8396pEi6/Ru6gSr/3o77cgtQPkv6/SGiufzLjGh
-xlOau8TEbAEkA38vmyIZoTTTNVPeRo0q3jCXVmzD6Wn3p/iQLUAHx7FqQ7FLhd5a
-+ipFbKN5wvU0tEKxNrnm3QXEzVYEB0IQMMZsrXMykKdVDADccIDNtgZ9NAmAdUeV
-FdN6hjZMunh1akvKVnwcETy6aOQhWzFFKTL2oVgMrDvW52gjd6Hh1QS5bAs3RoWH
-0/57uC8buGLWCMVcNtJdbeshPbdMN8Po7QyOpQK32w7iXXuQFOE1ScbcFWSgdRYw
-hkNmCY0YtkQ5iHC+LVPP
-=Z36/
+iQIcBAEBAgAGBQJRIndHAAoJEIaOsuA1yqREFXwQAJh9HfHQQaUawJmlKM8xexWx
+J92s4EeSIepiCw0B1VZU5GOly+gVA7KirlKpDQuoxaegf5WabRqlMlvaoSPjMs8L
+fC1u5rgqCKoIRLPa2i6KTv2HpjUe4R8j/OIUSAdIHALe4WxAO0HjG5yJHOuFd0A/
+5Osgj5YtaKkNeUang3YnPS870SiLMt+b19fYwS12jxFbCfjLIsqVNn9SdKTYjNz2
+38kuxN7kq+Ar7WaXvCgV2gVMMX2IGSXLbI7nS6kQA2X5mLt9ahg3lVawFK62IjN7
+qgOq1jLLYUCQaGv2DlNXIHoG5axLABG71JzJ86hGsemWqMcRGSz+KWuZ8DQkjwEN
+Le/roZiFJrGoK4XW0d2gPtXB32WSzpcPfZWMZ89NEHwEAICdmlrcsmT45wTaHqyJ
+d7KpPJEAeMI8sXevC/YXKKEZ9bQ7tcNoxi6b0w90B3RMDh03/vQu+IWue/gMwbfm
+EV++Ep4hsZrdEPNHVmgknrlQGn08gOzNU6aaLLudyb8ZEwFgaOPhFP0BtpvN8VeP
+bIAfG5AN6mXWwxfx5wncGGfzvK/3etpgqxNpAOadz2GSGIB3LwOJ4fTND/KbDQIH
+CzqUhIg7dyW1iWX3cN4UBc4ZIl2eKP0F23bGMrdRMjDXm2KbSvLttUltkvuxV7Bp
+zL1QnqRy8e4qUrJlmbz1
+=JFgA
 -----END PGP SIGNATURE-----
 
---0IvGJv3f9h+YhkrH--
+--jTMWTj4UTAEmbWeb--
