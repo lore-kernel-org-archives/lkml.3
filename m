@@ -1,139 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3BRQY2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 11:24:28 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:52159 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755542Ab3BRQX7 (ORCPT
+	id S1756161Ab3BRQZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 11:25:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33999 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752661Ab3BRQZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 11:23:59 -0500
+	Mon, 18 Feb 2013 11:25:17 -0500
+Date: Mon, 18 Feb 2013 08:23:51 -0800
+From: tip-bot for Alexander Holler <tipbot@zytor.com>
+Message-ID: <tip-20bf062c6575e162ede00308ca3a5714ca112009@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, holler@ahsoftware.de,
+        akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, holler@ahsoftware.de,
+        akpm@linux-foundation.org, tglx@linutronix.de
+In-Reply-To: <1361029097-8308-1-git-send-email-holler@ahsoftware.de>
+References: <1361029097-8308-1-git-send-email-holler@ahsoftware.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86/memtest: Shorten time for tests
+Git-Commit-ID: 20bf062c6575e162ede00308ca3a5714ca112009
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20130218123920.26245.56709.stgit@srivatsabhat.in.ibm.com>
-References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
-	<20130218123920.26245.56709.stgit@srivatsabhat.in.ibm.com>
-Date: Tue, 19 Feb 2013 00:23:56 +0800
-Message-ID: <CANN689HhVxDv+3Bn9UAxOMzj0egTvVp_c7oAmQ2nnQ8Xjn_aMA@mail.gmail.com>
-Subject: Re: [PATCH v6 08/46] CPU hotplug: Provide APIs to prevent CPU offline
- from atomic context
-From: Michel Lespinasse <walken@google.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vincent.guittot@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Feb 2013 08:23:58 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 18, 2013 at 8:39 PM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> Some important design requirements and considerations:
-> -----------------------------------------------------
->
-> 1. Scalable synchronization at the reader-side, especially in the fast-path
->
->    Any synchronization at the atomic hotplug readers side must be highly
->    scalable - avoid global single-holder locks/counters etc. Because, these
->    paths currently use the extremely fast preempt_disable(); our replacement
->    to preempt_disable() should not become ridiculously costly and also should
->    not serialize the readers among themselves needlessly.
->
->    At a minimum, the new APIs must be extremely fast at the reader side
->    atleast in the fast-path, when no CPU offline writers are active.
->
-> 2. preempt_disable() was recursive. The replacement should also be recursive.
->
-> 3. No (new) lock-ordering restrictions
->
->    preempt_disable() was super-flexible. It didn't impose any ordering
->    restrictions or rules for nesting. Our replacement should also be equally
->    flexible and usable.
->
-> 4. No deadlock possibilities
->
->    Regular per-cpu locking is not the way to go if we want to have relaxed
->    rules for lock-ordering. Because, we can end up in circular-locking
->    dependencies as explained in https://lkml.org/lkml/2012/12/6/290
->
->    So, avoid the usual per-cpu locking schemes (per-cpu locks/per-cpu atomic
->    counters with spin-on-contention etc) as much as possible, to avoid
->    numerous deadlock possibilities from creeping in.
->
->
-> Implementation of the design:
-> ----------------------------
->
-> We use per-CPU reader-writer locks for synchronization because:
->
->   a. They are quite fast and scalable in the fast-path (when no writers are
->      active), since they use fast per-cpu counters in those paths.
->
->   b. They are recursive at the reader side.
->
->   c. They provide a good amount of safety against deadlocks; they don't
->      spring new deadlock possibilities on us from out of nowhere. As a
->      result, they have relaxed locking rules and are quite flexible, and
->      thus are best suited for replacing usages of preempt_disable() or
->      local_irq_disable() at the reader side.
->
-> Together, these satisfy all the requirements mentioned above.
+Commit-ID:  20bf062c6575e162ede00308ca3a5714ca112009
+Gitweb:     http://git.kernel.org/tip/20bf062c6575e162ede00308ca3a5714ca112009
+Author:     Alexander Holler <holler@ahsoftware.de>
+AuthorDate: Sat, 16 Feb 2013 16:38:17 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 18 Feb 2013 09:28:42 +0100
 
-Thanks for this detailed design explanation.
+x86/memtest: Shorten time for tests
 
-> +/*
-> + * Invoked by atomic hotplug reader (a task which wants to prevent
-> + * CPU offline, but which can't afford to sleep), to prevent CPUs from
-> + * going offline. So, you can call this function from atomic contexts
-> + * (including interrupt handlers).
-> + *
-> + * Note: This does NOT prevent CPUs from coming online! It only prevents
-> + * CPUs from going offline.
-> + *
-> + * You can call this function recursively.
-> + *
-> + * Returns with preemption disabled (but interrupts remain as they are;
-> + * they are not disabled).
-> + */
-> +void get_online_cpus_atomic(void)
-> +{
-> +       percpu_read_lock_irqsafe(&hotplug_pcpu_rwlock);
-> +}
-> +EXPORT_SYMBOL_GPL(get_online_cpus_atomic);
-> +
-> +void put_online_cpus_atomic(void)
-> +{
-> +       percpu_read_unlock_irqsafe(&hotplug_pcpu_rwlock);
-> +}
-> +EXPORT_SYMBOL_GPL(put_online_cpus_atomic);
+By just reversing the order memtest is using the test patterns,
+an additional round to zero the memory is not necessary.
 
-So, you made it clear why you want a recursive read side here.
+This might save up to a second or even more for setups which are
+doing tests on every boot.
 
-I am wondering though, if you could take care of recursive uses in
-get/put_online_cpus_atomic() instead of doing it as a property of your
-rwlock:
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1361029097-8308-1-git-send-email-holler@ahsoftware.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/mm/memtest.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-get_online_cpus_atomic()
-{
-    unsigned long flags;
-    local_irq_save(flags);
-    if (this_cpu_inc_return(hotplug_recusion_count) == 1)
-        percpu_read_lock_irqsafe(&hotplug_pcpu_rwlock);
-    local_irq_restore(flags);
-}
-
-Once again, the idea there is to avoid baking the reader side
-recursive properties into your rwlock itself, so that it won't be
-impossible to implement reader/writer fairness into your rwlock in the
-future (which may be not be very important for the hotplug use, but
-could be when other uses get introduced).
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+diff --git a/arch/x86/mm/memtest.c b/arch/x86/mm/memtest.c
+index c80b9fb..8dabbed 100644
+--- a/arch/x86/mm/memtest.c
++++ b/arch/x86/mm/memtest.c
+@@ -9,6 +9,7 @@
+ #include <linux/memblock.h>
+ 
+ static u64 patterns[] __initdata = {
++	/* The first entry has to be 0 to leave memtest with zeroed memory */
+ 	0,
+ 	0xffffffffffffffffULL,
+ 	0x5555555555555555ULL,
+@@ -110,15 +111,8 @@ void __init early_memtest(unsigned long start, unsigned long end)
+ 		return;
+ 
+ 	printk(KERN_INFO "early_memtest: # of tests: %d\n", memtest_pattern);
+-	for (i = 0; i < memtest_pattern; i++) {
++	for (i = memtest_pattern-1; i < UINT_MAX; --i) {
+ 		idx = i % ARRAY_SIZE(patterns);
+ 		do_one_pass(patterns[idx], start, end);
+ 	}
+-
+-	if (idx > 0) {
+-		printk(KERN_INFO "early_memtest: wipe out "
+-		       "test pattern from memory\n");
+-		/* additional test with pattern 0 will do this */
+-		do_one_pass(0, start, end);
+-	}
+ }
