@@ -1,143 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab3BRDmV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 22:42:21 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:49815 "EHLO comal.ext.ti.com"
+	id S1756386Ab3BRDmq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 22:42:46 -0500
+Received: from mout.gmx.net ([212.227.15.19]:64608 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754483Ab3BRDmU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 22:42:20 -0500
-From: "Kumar, Anil" <anilkumar.v@ti.com>
-To: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>
-CC: "wim@iguana.be" <wim@iguana.be>, "Nori, Sekhar" <nsekhar@ti.com>,
-        "Kumar, Anil" <anilkumar.v@ti.com>
-Subject: RE: [PATCH V2] watchdog: davinci_wdt: update to devm_* API
-Thread-Topic: [PATCH V2] watchdog: davinci_wdt: update to devm_* API
-Thread-Index: AQHOBc870MtGYfE0SEW3iqNb9smjO5h/Axwg
-Date: Mon, 18 Feb 2013 03:42:09 +0000
-Message-ID: <F3DBB1B3EF102E4994C89758CFCA32412C9258@DBDE01.ent.ti.com>
-References: <1360309170-9672-1-git-send-email-anilkumar.v@ti.com>
-In-Reply-To: <1360309170-9672-1-git-send-email-anilkumar.v@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754451Ab3BRDmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 22:42:45 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18P43FbOUIPZ3yvggFp6ogQ0Mm/UysfkuuNNFES6n
+	wLpLjGjdXdNTFQ
+Message-ID: <1361158953.14352.17.camel@marge.simpson.net>
+Subject: Re: [RFC] sched: The removal of idle_balance()
+From: Mike Galbraith <efault@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Clark Williams <clark@redhat.com>,
+        Andrew Theurer <habanero@us.ibm.com>
+Date: Mon, 18 Feb 2013 04:42:33 +0100
+In-Reply-To: <1361138089.23152.141.camel@gandalf.local.home>
+References: <1360908819.23152.97.camel@gandalf.local.home>
+	 <1360913172.4736.20.camel@marge.simpson.net>
+	 <1361031150.23152.133.camel@gandalf.local.home>
+	 <1361082363.6088.21.camel@marge.simpson.net>
+	 <1361085245.28353.3.camel@marge.simpson.net>
+	 <1361138089.23152.141.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 2013-02-17 at 16:54 -0500, Steven Rostedt wrote:
+> On Sun, 2013-02-17 at 08:14 +0100, Mike Galbraith wrote:
+> 
+> > (And puts a dent in x264 ultrafast) 
+ 
+> What about my last patch? The one that avoids idle_balance() if the
+> previous task was in a task_uninterruptible state. That one gave the
+> same performance increase that removing idle_balance() did on my box.
 
-On Fri, Feb 08, 2013 at 13:09:30, Kumar, Anil wrote:
-> Update the code to use devm_* API so that driver
-> core will manage resources.
-> 
-> Signed-off-by: Kumar, Anil <anilkumar.v@ti.com>
-> ---
-> This patch applies on top of v3.8-rc6.
-> 
-> Tested on da850 EVM.
-> 
-> Changes for V2:
->  - Use return -EADDRNOTAVAIL in case of devm_request_and_ioremap() fail.
->  - Use devm_clk_get() instead of clk_get().
->  - Revert back the change for *dev.
->  - Removes static type for "wdt_mem" structure as it is used only
->    inside the function now. 
->
+I didn't try it, figuring it was pretty much the same as turning it off,
+but just did.  Patch (-typo) has no effect on either x264 or hackbench
+(surely will for -rt, but rt tasks here aren't sent to burn in rt hell).
 
-Gentle Ping. As there are no review comments on this patch,
-Could you please pull this patch ?    
+-Mike
 
-
-> :100644 100644 e8e8724... 7df1fdc... M	drivers/watchdog/davinci_wdt.c
->  drivers/watchdog/davinci_wdt.c |   29 ++++++-----------------------
->  1 files changed, 6 insertions(+), 23 deletions(-)
-> 
-> diff --git a/drivers/watchdog/davinci_wdt.c b/drivers/watchdog/davinci_wdt.c
-> index e8e8724..7df1fdc 100644
-> --- a/drivers/watchdog/davinci_wdt.c
-> +++ b/drivers/watchdog/davinci_wdt.c
-> @@ -69,7 +69,6 @@ static unsigned long wdt_status;
->  #define WDT_REGION_INITED 2
->  #define WDT_DEVICE_INITED 3
->  
-> -static struct resource	*wdt_mem;
->  static void __iomem	*wdt_base;
->  struct clk		*wdt_clk;
->  
-> @@ -201,10 +200,11 @@ static struct miscdevice davinci_wdt_miscdev = {
->  
->  static int davinci_wdt_probe(struct platform_device *pdev)
->  {
-> -	int ret = 0, size;
-> +	int ret = 0;
->  	struct device *dev = &pdev->dev;
-> +	struct resource  *wdt_mem;
->  
-> -	wdt_clk = clk_get(dev, NULL);
-> +	wdt_clk = devm_clk_get(dev, NULL);
->  	if (WARN_ON(IS_ERR(wdt_clk)))
->  		return PTR_ERR(wdt_clk);
->  
-> @@ -221,43 +221,26 @@ static int davinci_wdt_probe(struct platform_device *pdev)
->  		return -ENOENT;
->  	}
->  
-> -	size = resource_size(wdt_mem);
-> -	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
-> -		dev_err(dev, "failed to get memory region\n");
-> -		return -ENOENT;
-> -	}
-> -
-> -	wdt_base = ioremap(wdt_mem->start, size);
-> +	wdt_base = devm_request_and_ioremap(dev, wdt_mem);
->  	if (!wdt_base) {
-> -		dev_err(dev, "failed to map memory region\n");
-> -		release_mem_region(wdt_mem->start, size);
-> -		wdt_mem = NULL;
-> -		return -ENOMEM;
-> +		dev_err(dev, "ioremap failed\n");
-> +		return -EADDRNOTAVAIL;
->  	}
->  
->  	ret = misc_register(&davinci_wdt_miscdev);
->  	if (ret < 0) {
->  		dev_err(dev, "cannot register misc device\n");
-> -		release_mem_region(wdt_mem->start, size);
-> -		wdt_mem = NULL;
->  	} else {
->  		set_bit(WDT_DEVICE_INITED, &wdt_status);
->  	}
->  
-> -	iounmap(wdt_base);
->  	return ret;
->  }
->  
->  static int davinci_wdt_remove(struct platform_device *pdev)
->  {
->  	misc_deregister(&davinci_wdt_miscdev);
-> -	if (wdt_mem) {
-> -		release_mem_region(wdt_mem->start, resource_size(wdt_mem));
-> -		wdt_mem = NULL;
-> -	}
-> -
->  	clk_disable_unprepare(wdt_clk);
-> -	clk_put(wdt_clk);
->  
->  	return 0;
->  }
-> -- 
-> 1.7.4.1
-> 
-> 
-
-Thanks,
-Anil
