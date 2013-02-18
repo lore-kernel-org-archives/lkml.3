@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab3BRTrI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 14:47:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3734 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757102Ab3BRTrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 14:47:02 -0500
-Date: Mon, 18 Feb 2013 16:46:38 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: <balbi@ti.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	id S1757209Ab3BRTt2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 14:49:28 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10819 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab3BRTt1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 14:49:27 -0500
+X-Authority-Analysis: v=2.0 cv=It2cgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=dna11aX-Ae4A:10 a=2AvaQ2u3cyaRZxchUbkA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1361216963.23152.168.camel@gandalf.local.home>
+Subject: Re: prctl(PR_SET_MM)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: u3557@dialix.com.au
+Cc: Oleg Nesterov <oleg@redhat.com>, Pedro Alves <palves@redhat.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>, <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Doug Thompson <dougthompson@xmission.com>,
-        <linux-edac@vger.kernel.org>, <rjw@sisk.pl>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: SYSFS "errors"
-Message-ID: <20130218164638.7cb53baa@redhat.com>
-In-Reply-To: <20130218184633.GC10755@arwen.pp.htv.fi>
-References: <20130218153316.GA2663@arwen.pp.htv.fi>
-	<20130218155012.GA30974@kroah.com>
-	<20130218155215.GB2663@arwen.pp.htv.fi>
-	<20130218171334.GA31329@kroah.com>
-	<20130218172700.GH2663@arwen.pp.htv.fi>
-	<20130218174916.GA2070@kroah.com>
-	<20130218184633.GC10755@arwen.pp.htv.fi>
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Date: Mon, 18 Feb 2013 14:49:23 -0500
+In-Reply-To: <20130218163359.25760592076@miso.sublimeip.com>
+References: <20130218163359.25760592076@miso.sublimeip.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 18 Feb 2013 20:46:33 +0200
-Felipe Balbi <balbi@ti.com> escreveu:
+On Tue, 2013-02-19 at 03:33 +1100, Amnon Shiloh wrote:
 
-> Hi, On Mon, Feb 18, 2013 at 09:49:16AM -0800, Greg KH wrote:
-> > > Input/output error - /sys/devices/cpu/power/autosuspend_delay_ms
-> > 
-> > The issue with this file is, if the power.use_autosuspend flag is not
-> > set for the device, then it can't be read or written to.  This flag
-> > changes dynamically with the system state
-> > (__pm_runtime_use_autosuspend() can change it), so we can't just not
-> > show the file if the flag is not set properly, sorry.
-> > 
-> > So the "error" is correct here, as is the 0644 file value.
+> Yes, Randy Dunlap already raised this point, but I have no dealings with
+> any particular Linux distribution or the right connections to chase them
+> all, one by one - I develop generic software for the general Linux community,
+> that is intended to work distribution-independently.  Even if I had access
+> to all distributions, it may be hard to convince them to configure
+> CONFIG_CHECKPOINT_RESTORE as a whole since it contains so much other code.
+
+If only you, or a few people are using it (ie. distros don't see a
+need), then it will be up to you to make the changes.
+
 > 
-> hmm... we could create the file at pm_runtime_enable() time and remove
-> it on pm_runtime_disable() time, no ? Addin Rafael to Cc
+> BTW, Can anyone explain this policy of "have things default n"?
+> When I go over "init/Kconfig" or most other Kconfig's, I can
+> actually see lots of "default y".
 
-...
+Linus stated that he doesn't want any new feature default on, unless it
+gives better performance to the general populace. Because someone's old
+config should not add new features when they use it for a new kernel.
+Basically, if something is default on, then it probably shouldn't have a
+config for it.
 
+Some are on because they were always on (although several were changed
+to 'n'). Also it's fine to have a default y that depends on something
+that is default n, if it makes sense.
 
-> > 
-> > > No such device - /sys/devices/system/edac/mc/mc0/sdram_scrub_rate
-> > 
-> > Odd, go ask the edac developers
+For example, the function graph tracer is default y, but requires the
+function tracer to be enabled which is default n. This is because I
+assumed that you would want the function graph tracer if you enabled
+function tracing, as the graph tracer gives much more information.
+
 > 
-> will do ;-)
+> > 
+> > > 2) Releasing this code from the "#ifdef CONFIG_CHECK_RESTORE"; or
+> > > 3) Placing this code within a different kernel-configuration option
+> > >    (say "CONFIG_BASIC_CHECKPOINTING") that is enabled by default; or
+> > > 4) Placing this code under a dual #if, so instead of:
+> > >    #ifdef CONFIG_CHECKPOINT_RESTORE
+> > > 	   have:
+> > >    #if defined(CONFIG_CHECKPOINT_RESTORE) || defined(CONFIG_BASIC_CHECKPOINTING)
+> > 
+> > One of the above 3 can probably be worked out.
+> > 
+> > -- Steve
+> 
+> Great!
+> 
+> Naturally I prefer option 2 (but the other two will do as well).
 
-Well, the question is missing ;) /me assumes that you want to talk about
-suspending/resume and EDAC, right?
+I have no problems with this out of line.
 
-In general, memory controllers don't supports suspend, as far as I can tell. 
-Still, I've seen a few ones that support, but the current drivers and/or the
-EDAC core currently doesn't offer any support to it, as such setup is done
-by the BIOS, when it detects the used DIMM banks.
+-- Steve
 
-I suspect that, when the OS puts the machine on a suspend state, the BIOS may
-also suspend also the memory controller or put it into a low power consumption
-mode, but it does it without any help from the EDAC drivers.
 
-For most of what's there at EDAC, I don't think it is worth to add any PM support
-inside it. There are, however, two cases were we may need to add some support:
-
-1) if user changed the SDRAM scrub rate before suspending, it makes sense to
-restore it after resume, on the memory controller drivers that support such
-feature (not all supports it);
-
-2) hot-pluggable DIMMs. EDAC currently doesn't support. This could be needed
-on some future. In this case, the core may need to re-scan the memory controller,
-changing the memory properties. I've no idea if is there any real case needing
-it, nor what event would trigger the memory-controller re-scan. Resume is likely
-one of the candidates for it, on machines that support hot-pluggable memories.
-
-Regards,
-Mauro
