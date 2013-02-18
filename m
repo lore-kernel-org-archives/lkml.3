@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206Ab3BRGcV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 01:32:21 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60446 "EHLO arroyo.ext.ti.com"
+	id S932200Ab3BRGeB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 01:34:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57920 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757696Ab3BRGai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 01:30:38 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
-        Syed Mohammed Khasim <khasim@ti.com>
-Subject: [RFC 2/8] ARM: twd: register clock event for 1 core SMP
-Date: Mon, 18 Feb 2013 12:00:15 +0530
-Message-ID: <a7f62b8580aa4b33d5658f4f03371a453adaea9b.1361166003.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <cover.1361166003.git.afzal@ti.com>
-References: <cover.1361166003.git.afzal@ti.com>
+	id S932084Ab3BRGd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 01:33:59 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130218143528.451b9e1e19d79693c5673414@canb.auug.org.au>
+References: <20130218143528.451b9e1e19d79693c5673414@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: linux-next: manual merge of the tip tree with the kbuild tree
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 17 Feb 2013 22:31:38 -0800
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>
+Message-ID: <d79f6bb4-0ddc-4958-a3d3-15062928e436@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register percpu local timer for scheduler tick in the case of one core
-SMP configuration. In other cases - secondary cpu's as well as boot
-cpu's having more than one core, this is being registered as per
-existing boot flow, with a difference that they happens after delay
-calibration. Registering the clock for tick in case of one core should
-be done before Kernel calibrates delay (this is required to boot,
-unless local timer is the only one registered for tick). Registering
-twd local timer at init_time (which platforms are doing now) helps
-achieve that with the proposed change.
+That is the right fix indeed.
 
-This helps in an almost booting Kernel (minimal) by only relying on
-ARM parts for an A9 one core SMP.
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
- arch/arm/kernel/smp_twd.c | 3 +++
- 1 file changed, 3 insertions(+)
+>Hi all,
+>
+>Today's linux-next merge of the tip tree got a conflict in
+>kernel/timeconst.pl between commit 70730bca1331 ("kernel: Replace
+>timeconst.pl with a bc script") from the kbuild tree and commit
+>63a3f603413f ("timeconst.pl: Eliminate Perl warning") from the tip
+>tree.
+>
+>I just droppped the tip tree version (I deleted the file) and can carry
+>the fix as necessary (no action is required).
 
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index 616268c..118f4f2 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -335,6 +335,9 @@ static int __init twd_local_timer_common_register(struct device_node *np)
- 
- 	twd_get_clock(np);
- 
-+	if (num_possible_cpus() == 1)
-+		twd_timer_setup(evt);
-+
- 	return 0;
- 
- out_irq:
 -- 
-1.7.12
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
