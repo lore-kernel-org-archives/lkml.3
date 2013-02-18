@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab3BROda (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 09:33:30 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:60995 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666Ab3BROd2 (ORCPT
+	id S1751965Ab3BROek (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 09:34:40 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:42907 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab3BROej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 09:33:28 -0500
+	Mon, 18 Feb 2013 09:34:39 -0500
+X-AuditID: 85900ec0-d60ccb900000151e-c0-51223bfcc44a
+Message-ID: <51223BFC.3000408@hitachi.com>
+Date: Mon, 18 Feb 2013 23:34:36 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAKfTPtCWudftS2XSM1OC2sR050mYvcAU6Fkt0vjV=C2V+w84Ew@mail.gmail.com>
-References: <1359455940-1710-1-git-send-email-vincent.guittot@linaro.org>
-	<1359455940-1710-2-git-send-email-vincent.guittot@linaro.org>
-	<CAFTL4hzboD8Mv_-pRDHc+39QwXGWiT3MGtL8gJ=_ajnHdDCBcA@mail.gmail.com>
-	<CAKfTPtD2jRke2CUXiJdmaYYki_Voi4eTqJKgsyTnRpna7p8mJg@mail.gmail.com>
-	<CAFTL4hzriJm1mK1A_9U5kX9Z0RCMGpxy8M3gKuzFtt9Bky5htQ@mail.gmail.com>
-	<CAKfTPtCWudftS2XSM1OC2sR050mYvcAU6Fkt0vjV=C2V+w84Ew@mail.gmail.com>
-Date: Mon, 18 Feb 2013 15:33:26 +0100
-Message-ID: <CAFTL4hzu-7uAXLqP+J48DaqLUYQWTESMNwPMYiiwrU2ZoOsgqw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] sched: fix init NOHZ_IDLE flag
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, Mike Galbraith <efault@gmx.de>,
-        Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Re: [BUG arm-soc] mvneta: tx queue done sometimes causes kernel
+ panic
+References: <511DE679.5080801@hitachi.com> <1360947132.19353.15.camel@edumazet-glaptop> <20130216022043.65d5c940@skate>
+In-Reply-To: <20130216022043.65d5c940@skate>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/8 Vincent Guittot <vincent.guittot@linaro.org>:
-> On 8 February 2013 16:35, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> What if the following happen (inventing function names but you get the idea):
->>
->> CPU 0                                           CPU 1
->>
->> dom = new_domain(...) {
->>            nr_cpus_busy = 0;
->>            set_idle(CPU 1);                  old_dom =get_dom()
->>                                                      clear_idle(CPU 1)
->> }
->> rcu_assign_pointer(cpu1_dom, dom);
->>
->>
->> Can this scenario happen?
->
-> This scenario will be:
->
->  CPU 0                                           CPU 1
->
->  detach_and_destroy_domain {
->             rcu_assign_pointer(cpu1_dom, NULL);
->  }
->
->  dom = new_domain(...) {
->             nr_cpus_busy = 0;
->             set_idle(CPU 1);                  old_dom =get_dom()
->                                                       old_dom is null
->                                                       //clear_idle(CPU
-> 1) can't happen because a null domain is attached so we will never
-> call nohz_kick_needed which is the only place where we can clear_idle
->  }
->  rcu_assign_pointer(cpu1_dom, dom);
+(2013/02/16 10:20), Thomas Petazzoni wrote:
+> Hello,
+> 
+> On Fri, 15 Feb 2013 08:52:12 -0800, Eric Dumazet wrote:
+> 
+>> Driver is buggy, as TX completion can happen both from ndo_start_xmit()
+>> and a timer, and there is no spinlock or appropriate synchro.
+> 
+> Yes, it is a known issue. I did post a patch fixing the problem on
+> netdev@ a while ago [1], but while it was fixing the problem, it wasn't
+> considered the right approach. Being busy with other Marvell Armada
+> 370/XP developments, I haven't yet had the time to investigate the
+> issue again.
+> 
+> [1] https://patchwork.kernel.org/patch/1941601/
 
-So is the following possible?
+Thank you for pointing that.
 
-= CPU 0 =                                                       = CPU 1=
+I've tried the above patch and found at least this panic
+disappeared (even if it was not the right approach).
 
-detach_and_destroy_domain {
-            rcu_assign_pointer(cpu1_dom, NULL);
-}
+Thanks again!
 
-dom = new_domain(...) {
-             nr_cpus_busy = 0;
-             set_idle(CPU 1);
-}
-
-clear_idle(CPU 1)
-
-dom = rcu_dereference(cpu1_dom)
-
-//dom == NULL, return
-
-rcu_assign_pointer(cpu1_dom, NULL);
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
-set_idle(CPU 1)
-
-dom = rcu_dereference(cpu1_dom)
-
-//dec nr_cpus_busy, making it negative
