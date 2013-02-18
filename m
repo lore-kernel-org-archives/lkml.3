@@ -1,125 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab3BRCox (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 21:44:53 -0500
-Received: from fox.seas.upenn.edu ([158.130.68.12]:34613 "EHLO
-	fox.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755344Ab3BRCow (ORCPT
+	id S1756821Ab3BRCwG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 21:52:06 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49155 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754439Ab3BRCwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 21:44:52 -0500
-X-Greylist: delayed 310 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Feb 2013 21:44:51 EST
-Message-ID: <51219432.8020902@seas.upenn.edu>
-Date: Sun, 17 Feb 2013 21:38:42 -0500
-From: Rafi Rubin <rafi@seas.upenn.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Sun, 17 Feb 2013 21:52:04 -0500
+Message-ID: <51219742.1000301@oracle.com>
+Date: Sun, 17 Feb 2013 21:51:46 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-CC: Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: ntrig: use input_configured() callback to set the
- name
-References: <1360335090-24024-1-git-send-email-benjamin.tissoires@gmail.com>
-In-Reply-To: <1360335090-24024-1-git-send-email-benjamin.tissoires@gmail.com>
-X-Enigmail-Version: 1.4.1
+To: ebiederm@xmission.com
+CC: Andrew Morton <akpm@linux-foundation.org>, serge.hallyn@canonical.com,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: BUG in find_pid_ns
+References: <512117D5.3050602@oracle.com> <87ppzyqxu6.fsf@xmission.com>
+In-Reply-To: <87ppzyqxu6.fsf@xmission.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
- definitions=2013-02-18_01:2013-02-15,2013-02-18,1970-01-01 signatures=0
-X-PP-Spam-Details: rule=add_spam_details policy=default score=0 spamscore=0 ipscore=0
- suspectscore=2 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1302170326
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-Looks good, and I can confirm it works fine.
-
-Signed-off-by: Rafi Rubin <rafi@seas.upenn.edu>
-
-On 02/08/13 09:51, Benjamin Tissoires wrote:
-> The use of input_configured() allows the ntrig driver to actually 
-> change the name of the input and its bitmask before it is added to
-> the input subsystem. Thus, the logs are coherents and udev catch
-> the real bitmask when the device is added.
+On 02/17/2013 07:17 PM, ebiederm@xmission.com wrote:
+> The bad pointer value is 0xfffffffffffffff0.  Hmm.
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com> 
-> --- drivers/hid/hid-ntrig.c | 68
-> ++++++++++++++++++++++++------------------------- 1 file changed,
-> 34 insertions(+), 34 deletions(-)
+> If you have the failure location correct it looks like a corrupted hash
+> entry was found while following the hash chain.
 > 
-> diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c 
-> index 2ffc0e3..7757e82 100644 --- a/drivers/hid/hid-ntrig.c +++
-> b/drivers/hid/hid-ntrig.c @@ -858,12 +858,43 @@ not_claimed_input: 
-> return 1; }
+> It looks like the memory has been set to -16 -EBUSY? Weird.
 > 
-> +static void ntrig_input_configured(struct hid_device *hid, +
-> struct hid_input *hidinput) + +{ +	struct input_dev *input =
-> hidinput->input; + +	if (hidinput->report->maxfield < 1) +
-> return; + +	switch (hidinput->report->field[0]->application) { +
-> case HID_DG_PEN: +		input->name = "N-Trig Pen"; +		break; +	case
-> HID_DG_TOUCHSCREEN: +		/* These keys are redundant for fingers,
-> clear them +		 * to prevent incorrect identification */ +
-> __clear_bit(BTN_TOOL_PEN, input->keybit); +
-> __clear_bit(BTN_TOOL_FINGER, input->keybit); +		__clear_bit(BTN_0,
-> input->keybit); +		__set_bit(BTN_TOOL_DOUBLETAP, input->keybit); +
-> /* +		 * The physical touchscreen (single touch) +		 * input has a
-> value for physical, whereas +		 * the multitouch only has logical
-> input +		 * fields. +		 */ +		input->name =
-> (hidinput->report->field[0]->physical) ? +							"N-Trig
-> Touchscreen" : +							"N-Trig MultiTouch"; +		break; +	} +} + 
-> static int ntrig_probe(struct hid_device *hdev, const struct
-> hid_device_id *id) { int ret; struct ntrig_data *nd; -	struct
-> hid_input *hidinput; -	struct input_dev *input; struct hid_report
-> *report;
+> It smells like something is stomping on the memory of a struct pid, with
+> the same hash value and thus in the same hash chain as the current pid.
 > 
-> if (id->driver_data) @@ -901,38 +932,6 @@ static int
-> ntrig_probe(struct hid_device *hdev, const struct hid_device_id
-> *id) goto err_free; }
-> 
-> - -	list_for_each_entry(hidinput, &hdev->inputs, list) { -		if
-> (hidinput->report->maxfield < 1) -			continue; - -		input =
-> hidinput->input; -		switch
-> (hidinput->report->field[0]->application) { -		case HID_DG_PEN: -
-> input->name = "N-Trig Pen"; -			break; -		case HID_DG_TOUCHSCREEN: 
-> -			/* These keys are redundant for fingers, clear them -			 * to
-> prevent incorrect identification */ -			__clear_bit(BTN_TOOL_PEN,
-> input->keybit); -			__clear_bit(BTN_TOOL_FINGER, input->keybit); -
-> __clear_bit(BTN_0, input->keybit); -
-> __set_bit(BTN_TOOL_DOUBLETAP, input->keybit); -			/* -			 * The
-> physical touchscreen (single touch) -			 * input has a value for
-> physical, whereas -			 * the multitouch only has logical input -
-> * fields. -			 */ -			input->name = -
-> (hidinput->report->field[0] -				 ->physical) ? -				"N-Trig
-> Touchscreen" : -				"N-Trig MultiTouch"; -			break; -		} -	} - /*
-> This is needed for devices with more recent firmware versions */ 
-> report =
-> hdev->report_enum[HID_FEATURE_REPORT].report_id_hash[0x0a]; if
-> (report) { @@ -1023,6 +1022,7 @@ static struct hid_driver
-> ntrig_driver = { .remove = ntrig_remove, .input_mapping =
-> ntrig_input_mapping, .input_mapped = ntrig_input_mapped, +
-> .input_configured = ntrig_input_configured, .usage_table =
-> ntrig_grabbed_usages, .event = ntrig_event, };
+> Can you reproduce this?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+I've just reproduced it again:
 
-iQIcBAEBAgAGBQJRIZQxAAoJEPILXytRLnK26REP+weeAIqA4kfDn+tWqFOXIbcL
-u65bkvNQmlEqx/mUeO7i7+tOsgTJnKpMy3ec5zsfyZd5DKs2yc3DTvrNXZbnqumZ
-NkUYe7+aob1ge4+edJKw9nWDHp2E1sCm7VDNXVcEUTQN1ntMp/BjMenhDjgWhXVw
-/3meslXrD3TOvXx/FzDLzJdV1WdBPeOHTHZq/yxsI3Z5jWCFba/Xz1CHc62sd2Og
-hRTe9CthK3Hq9EQJXOc8qSBgNkhQ6XtBZb7KTw7FXAyKH3htus6t3c57ZPqGUUER
-i6rasUYs3QGQQDG3tEU4wnWEtkS0i+9SO9L8tkUJwTKmdn7rDd5oAwovwMghkEkb
-L1+tKL8EamC1oD8CMfHa7zCOTlkfTT0eRJiyHIErWpxn+VQxx2fpR7/MS2fF9n60
-ecNGCRGrQo1UvIpYHmmGfigptcp6kyDgl8H9KBjafbQI5OWrJanwPi3aIXYhZmo8
-XLjqCRJfgeJKFZD3mTdgqKL0hpNldskNUUauFD5GJblAB3UQ/MZ5Nmm+hWi3Y7y2
-e0zxkPzw1puBFNNA06KLUNJ1DyibBZTPua1h36bD+OtqcRXIi8cdMHVf7bZhWSUK
-ePVxgYjbgybAh4gMTgRQP/ucEuc6eDHGQ6MRe16ezwk3+fvUiLPntAtTXro1e3ck
-nN0+r/NQSn7PKOdCqgeF
-=ltkV
------END PGP SIGNATURE-----
+[ 2404.518957] BUG: unable to handle kernel paging request at fffffffffffffff0
+[ 2404.520024] IP: [<ffffffff81131d50>] find_pid_ns+0x110/0x1f0
+[ 2404.520024] PGD 5429067 PUD 542b067 PMD 0
+[ 2404.520024] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 2404.520024] Dumping ftrace buffer:
+[ 2404.520024]    (ftrace buffer empty)
+[ 2404.520024] Modules linked in:
+[ 2404.520024] CPU 3
+[ 2404.520024] Pid: 6890, comm: trinity Tainted: G        W    3.8.0-rc7-next-20130215-sasha-00027-gb399f44-dirty #288
+[ 2404.520024] RIP: 0010:[<ffffffff81131d50>]  [<ffffffff81131d50>] find_pid_ns+0x110/0x1f0
+[ 2404.520024] RSP: 0018:ffff8800af1dfe18  EFLAGS: 00010286
+[ 2404.520024] RAX: 0000000000000001 RBX: 0000000000004b72 RCX: 0000000000000000
+[ 2404.520024] RDX: 0000000000000001 RSI: ffffffff85466e40 RDI: 0000000000000286
+[ 2404.520024] RBP: ffff8800af1dfe48 R08: 0000000000000001 R09: 0000000000000001
+[ 2404.520024] R10: 0000000000000001 R11: 0000000000000000 R12: ffffffff85466460
+[ 2404.520024] R13: ffff8800bf8d3ef8 R14: fffffffffffffff0 R15: ffff8800a43d9a40
+[ 2404.520024] FS:  00007f8300f79700(0000) GS:ffff8800bbc00000(0000) knlGS:0000000000000000
+[ 2404.520024] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 2404.520024] CR2: fffffffffffffff0 CR3: 00000000af0b7000 CR4: 00000000000406e0
+[ 2404.520024] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 2404.520024] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 2404.520024] Process trinity (pid: 6890, threadinfo ffff8800af1de000, task ffff8800b060b000)
+[ 2404.520024] Stack:
+[ 2404.520024]  ffffffff85466e40 0000000000004b72 ffff8800af1dfed8 0000000000000000
+[ 2404.520024]  0000000000000003 20c49ba5e353f7cf ffff8800af1dfe58 ffffffff81131e5c
+[ 2404.520024]  ffff8800af1dfec8 ffffffff8112400f ffffffff81123f9c 0000000000000000
+[ 2404.520024] Call Trace:
+[ 2404.520024]  [<ffffffff81131e5c>] find_vpid+0x2c/0x30
+[ 2404.520024]  [<ffffffff8112400f>] kill_something_info+0x9f/0x270
+[ 2404.673395]  [<ffffffff81123f9c>] ? kill_something_info+0x2c/0x270
+[ 2404.673395]  [<ffffffff81125e38>] sys_kill+0x88/0xa0
+[ 2404.673395]  [<ffffffff8107ad34>] ? syscall_trace_enter+0x24/0x2e0
+[ 2404.694324]  [<ffffffff811813b8>] ? trace_hardirqs_on_caller+0x128/0x160
+[ 2404.694324]  [<ffffffff83d96275>] ? tracesys+0x7e/0xe6
+[ 2404.694324]  [<ffffffff83d962d8>] tracesys+0xe1/0xe6
+[ 2404.694324] Code: 4d 8b 75 00 e8 b2 0e 00 00 85 c0 0f 84 d2 00 00 00 80 3d fa 17 d5 04 00 0f 85 c5 00 00 00 e9 93 00 00 00 0f
+1f 84 00 00 00 00 00 <41> 39 1e 75 2b 4d 39 66 08 75 25 41 8b 84 24 20 08 00 00 48 c1
+[ 2404.733487] RIP  [<ffffffff81131d50>] find_pid_ns+0x110/0x1f0
+[ 2404.740299]  RSP <ffff8800af1dfe18>
+[ 2404.740299] CR2: fffffffffffffff0
+[ 2404.740299] ---[ end trace 9f8bc22bbe4fe990 ]---
+
+I'm not sure what debug info I could throw in which will be helpful. Dump
+the entire chain or table if 'pnr' happens to look odd?
+
+> Memory corruption is hard to trace down with just a single data point.
+> 
+> Looking a little closer Sasha you have rewritten
+> hlist_for_each_entry_rcu, and that seems to be the most recent patch
+> dealing with pids, and we are failing in hlist_for_each_entry_rcu.
+> 
+> I haven't looked at your patch in enough detail to know if you have
+> missed something or not, but a brand new patch and a brand new failure
+> certainly look suspicious at first glance.
+
+Agreed, I've also took a second look at it when this BUG popped up. What
+surprises me about it is that if the new iteration is broken, the kernel
+would spectacularly break in a bunch of places instead of failing in the
+exact same place twice.
+
+Not ignoring the possibility it's broken though.
+
+
+Thanks,
+Sasha
