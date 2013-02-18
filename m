@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab3BRHoK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 02:44:10 -0500
-Received: from mga14.intel.com ([143.182.124.37]:15727 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752043Ab3BRHoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 02:44:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,684,1355126400"; 
-   d="scan'208";a="203457469"
-Message-ID: <5121DBC4.9070601@intel.com>
-Date: Mon, 18 Feb 2013 15:44:04 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1754388Ab3BRH4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 02:56:35 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56767 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666Ab3BRH4e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 02:56:34 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-e6-5121deaebe95
+From: Kyungsik Lee <kyungsik.lee@lge.com>
+To: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com,
+        Kyungsik Lee <kyungsik.lee@lge.com>, David Sterba <dsterba@suse.cz>
+Subject: [PATCH v2] btrfs: use kmalloc for lzo de/compress buffer
+Date: Mon, 18 Feb 2013 16:56:04 +0900
+Message-Id: <1361174164-7182-1-git-send-email-kyungsik.lee@lge.com>
+X-Mailer: git-send-email 1.8.0.3
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 0/15] power aware scheduling
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2013 01:07 PM, Alex Shi wrote:
-> Since the simplification of fork/exec/wake balancing has much arguments,
-> I removed that part in the patch set.
-> 
-> This patch set implement/consummate the rough power aware scheduling
-> proposal: https://lkml.org/lkml/2012/8/13/139.
+The size of de/compress buffer is small enough to use kmalloc.
+Allocating it with kmalloc rather than vmalloc is preferred.
 
-Just review the great summary of the conversation on this proposal.
-http://lwn.net/Articles/512487/
+This patch depends on my previous patch, “btrfs: fix decompress buffer size”.
 
-One of advantage of this patch is that it bases on the general sched
-domain/groups architecture, so, if other hardware platforms, like ARM,
-has different hardware setting, it can be represented as specific domain
-flags. and then be treated specific in scheduling. The scheduling is
-natural and easy to expend to that.
+v2: Using vmalloc for "workspace->mem" due to the size limit.
 
-And guess the big.LITTLE arch also can be represented by cpu power, if
-so, the 'balance' policy just fit them since it judges if the sched
-domain/group is full by domain/group's capacity.
-
-Also adding a answer for policy automatic change feature:
+Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+Cc: David Sterba <dsterba@suse.cz>
 ---
-The 'balance/powersaving' is automatic power friendly scheduling, since
-system will auto bypass power scheduling when cpus utilisation in a
-sched domain is beyond the domain's cpu weight (powersaving) or beyond
-the domain's capacity (balance).
+ fs/btrfs/lzo.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-There is no always enabled power scheduling, since the patchset bases on
-'race to idle'.
-
-
+diff --git a/fs/btrfs/lzo.c b/fs/btrfs/lzo.c
+index 223893a..aaaab2e 100644
+--- a/fs/btrfs/lzo.c
++++ b/fs/btrfs/lzo.c
+@@ -40,8 +40,8 @@ static void lzo_free_workspace(struct list_head *ws)
+ {
+ 	struct workspace *workspace = list_entry(ws, struct workspace, list);
+ 
+-	vfree(workspace->buf);
+-	vfree(workspace->cbuf);
++	kfree(workspace->buf);
++	kfree(workspace->cbuf);
+ 	vfree(workspace->mem);
+ 	kfree(workspace);
+ }
+@@ -55,8 +55,9 @@ static struct list_head *lzo_alloc_workspace(void)
+ 		return ERR_PTR(-ENOMEM);
+ 
+ 	workspace->mem = vmalloc(LZO1X_MEM_COMPRESS);
+-	workspace->buf = vmalloc(PAGE_CACHE_SIZE);
+-	workspace->cbuf = vmalloc(lzo1x_worst_compress(PAGE_CACHE_SIZE));
++	workspace->buf = kmalloc(PAGE_CACHE_SIZE, GFP_NOFS);
++	workspace->cbuf = kmalloc(lzo1x_worst_compress(PAGE_CACHE_SIZE),
++			GFP_NOFS);
+ 	if (!workspace->mem || !workspace->buf || !workspace->cbuf)
+ 		goto fail;
+ 
 -- 
-Thanks Alex
+1.8.0.3
+
