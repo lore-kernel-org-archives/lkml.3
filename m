@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab3BRJFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 04:05:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28392 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751870Ab3BRJFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 04:05:40 -0500
-Message-ID: <5121EED6.7000307@redhat.com>
-Date: Mon, 18 Feb 2013 10:05:26 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753030Ab3BRJKM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 04:10:12 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:56244 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649Ab3BRJKK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 04:10:10 -0500
+Message-ID: <5121EFE7.7040301@ti.com>
+Date: Mon, 18 Feb 2013 10:09:59 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Asias He <asias@redhat.com>
-CC: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        mst@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 4/9] virtio-blk: use virtqueue_start_buf on req path
-References: <1360671815-2135-1-git-send-email-pbonzini@redhat.com> <1360671815-2135-5-git-send-email-pbonzini@redhat.com> <51207AA1.4090408@redhat.com>
-In-Reply-To: <51207AA1.4090408@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Chen Gang <gang.chen@asianux.com>
+CC: <grant.likely@secretlab.ca>, <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] drivers/gpio/*twl* need call irq_free_descs when leaving
+References: <511F34C3.6020406@asianux.com>
+In-Reply-To: <511F34C3.6020406@asianux.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 17/02/2013 07:37, Asias He ha scritto:
->> >  static int __virtblk_add_req(struct virtqueue *vq,
->> > -			     struct virtblk_req *vbr)
->> > +			     struct virtblk_req *vbr,
->> > +			     struct scatterlist *data_sg,
->> > +			     unsigned data_nents)
->> >  {
->> >  	struct scatterlist sg;
->> >  	enum dma_data_direction dir;
->> >  	int ret;
->> >  
->> > +	int type = vbr->out_hdr.type & ~VIRTIO_BLK_T_OUT;
->> >  	unsigned int nents = 2;
->> >  	unsigned int nsg = 2;
->> >  
->> > -	if (vbr->nents) {
->> > +	if (type == VIRTIO_BLK_T_SCSI_CMD) {
->> > +		BUG_ON(use_bio);
-> Do we really need the BUG_ON?  Even if with use_bio=1,
-> VIRTIO_BLK_T_SCSI_CMD cmd can be fired. See this:
+On 02/16/2013 08:26 AM, Chen Gang wrote:
+> 
+>   since already call irq_alloc_descs before,
+>     we need call irq_free_descs when quiting, or resource leak.
 
-I stand corrected... will send the patch with this removed.
+While it is true that we need to free the descs, but this patch is not correct.
+We have other issues to fix in the driver - I have not looked at the
+probe/remove path yet, but the sequence is not right and also the call of
+gpio_twl4030_remove() from probe is not correct.
 
-Paolo
+I'll send a small series to fix these up.
+
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  drivers/gpio/gpio-twl4030.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
+> index 4d330e3..26aef72 100644
+> --- a/drivers/gpio/gpio-twl4030.c
+> +++ b/drivers/gpio/gpio-twl4030.c
+> @@ -486,8 +486,10 @@ static int gpio_twl4030_probe(struct platform_device *pdev)
+>  			      &irq_domain_simple_ops, NULL);
+>  
+>  	ret = twl4030_sih_setup(&pdev->dev, TWL4030_MODULE_GPIO, irq_base);
+> -	if (ret < 0)
+> +	if (ret < 0) {
+> +		irq_free_descs(irq_base, TWL4030_GPIO_MAX);
+>  		return ret;
+> +	}
+>  
+>  	priv->irq_base = irq_base;
+>  
+> @@ -578,6 +580,7 @@ static int gpio_twl4030_remove(struct platform_device *pdev)
+>  
+>  	/* REVISIT no support yet for deregistering all the IRQs */
+>  	WARN_ON(1);
+> +	irq_free_descs(priv->irq_base, TWL4030_GPIO_MAX);
+>  	return -EIO;
+>  }
+>  
+> 
+
+
+-- 
+P¨¦ter
