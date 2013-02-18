@@ -1,184 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab3BROmd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 09:42:33 -0500
-Received: from fallback5.mail.ru ([94.100.176.59]:56361 "EHLO
-	fallback5.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab3BROmc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 09:42:32 -0500
-From: Alexander Shiyan <shc_work@mail.ru>
-To: linux-kernel@vger.kernel.org
-Cc: Dong Aisheng <dong.aisheng@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH v3] mfd: syscon: Add non-DT support
-Date: Mon, 18 Feb 2013 18:42:02 +0400
-Message-Id: <1361198522-23789-1-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.7.12.4
-X-Spam: Not detected
-X-Mras: Ok
+	id S1752049Ab3BROqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 09:46:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60991 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751852Ab3BROq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 09:46:29 -0500
+Date: Mon, 18 Feb 2013 14:46:23 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@ftp.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Laura Abbott <lauraa@codeaurora.org>
+Subject: Re: [-rc7 regression] Buggy commit: "mm: use aligned zone start for
+ pfn_to_bitidx calculation"
+Message-ID: <20130218142440.GA29814@suse.de>
+References: <CA+55aFz50VvnMjoDCbg01N+rMu5vscu88kr0SV3tWLjaiL0TeA@mail.gmail.com>
+ <20130213111007.GA11367@gmail.com>
+ <CA+55aFxrjsVkBwUdjmc4MYvEsjEyCJZ7AFpGrWvbbQFB3EVtHA@mail.gmail.com>
+ <alpine.LFD.2.02.1302140012460.22263@ionos>
+ <20130214144510.GC25282@gmail.com>
+ <20130214145424.GA26071@gmail.com>
+ <20130214150810.GA26095@gmail.com>
+ <CAE9FiQXc=7+TMwbfd20YiHNfOHX_kUOzYcVm8-uaP2R_C_1RRg@mail.gmail.com>
+ <20130215114425.GD26955@gmail.com>
+ <CA+55aFzTR5nBLXHe4MKtN6E7xrs3=xsbMd1aprr8Ax4mu96onw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzTR5nBLXHe4MKtN6E7xrs3=xsbMd1aprr8Ax4mu96onw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allow using syscon driver from the platform data, i.e.
-possibility using driver on systems without oftree support.
+On Sat, Feb 16, 2013 at 10:26:30AM -0800, Linus Torvalds wrote:
+> On Fri, Feb 15, 2013 at 3:44 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >>
+> >> c060f943d092 may be related as you config does not have
+> >> CONFIG_SPARSEMEM defined.
+> >
+> > Right, that's the commit causing the x86 regression:
+> >
+> >  c060f943d0929f3e429c5d9522290584f6281d6e is the first bad commit
+> >  commit c060f943d0929f3e429c5d9522290584f6281d6e
+> >  Date:   Fri Jan 11 14:31:51 2013 -0800
+> >
+> >      mm: use aligned zone start for pfn_to_bitidx calculation
+> 
+> Ok, looking more at this, I don't really want to revert it, and I have
+> an idea of what is wrong.
+> 
+> When we allocate the zone use bitmap, we do not take the
+> zone_start_pfn into account. So I *think* that what happens is that
+> "pfn_to_bitidx()" simply overruns the allocation for unaligned zonesm
+> and the spinlock just happens to be right after (or the overrun causes
+> some other memory corruption that then indirectly causes the spinlock
+> corruption).
+> 
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
----
- drivers/mfd/Kconfig  |  1 -
- drivers/mfd/syscon.c | 76 +++++++++++++++++++++++++++++++++++++++-------------
- 2 files changed, 57 insertions(+), 20 deletions(-)
+More likely the latter. I'd expect the usemap to be adjacent to the
+zone->wait_table because of when they are allocated by the bootmem
+allocator. This would break wait_on_page_[locked|writeback] at the very
+least. If page_waitqueue() returned a corrupt pointer from the wait table
+then it would lead to further corruption elsewhere each time wait_on_page_foo
+was called.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 671f5b1..8fdd87e 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -1070,7 +1070,6 @@ config MFD_STA2X11
- 
- config MFD_SYSCON
- 	bool "System Controller Register R/W Based on Regmap"
--	depends on OF
- 	select REGMAP_MMIO
- 	help
- 	  Select this option to enable accessing system control registers
-diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-index 4a7ed5a..3c0abcb 100644
---- a/drivers/mfd/syscon.c
-+++ b/drivers/mfd/syscon.c
-@@ -28,7 +28,7 @@ struct syscon {
- 	struct regmap *regmap;
- };
- 
--static int syscon_match(struct device *dev, void *data)
-+static int syscon_match_node(struct device *dev, void *data)
- {
- 	struct device_node *dn = data;
- 
-@@ -41,7 +41,7 @@ struct regmap *syscon_node_to_regmap(struct device_node *np)
- 	struct device *dev;
- 
- 	dev = driver_find_device(&syscon_driver.driver, NULL, np,
--				 syscon_match);
-+				 syscon_match_node);
- 	if (!dev)
- 		return ERR_PTR(-EPROBE_DEFER);
- 
-@@ -51,19 +51,41 @@ struct regmap *syscon_node_to_regmap(struct device_node *np)
- }
- EXPORT_SYMBOL_GPL(syscon_node_to_regmap);
- 
-+static int syscon_match_id(struct device *dev, void *data)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	const struct platform_device_id *id = platform_get_device_id(pdev);
-+
-+	if (id)
-+		return !strcmp(id->name, (const char *)data);
-+
-+	return 0;
-+}
-+
- struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
- {
- 	struct device_node *syscon_np;
- 	struct regmap *regmap;
-+	struct syscon *syscon;
-+	struct device *dev;
- 
- 	syscon_np = of_find_compatible_node(NULL, NULL, s);
--	if (!syscon_np)
-+	if (syscon_np) {
-+		regmap = syscon_node_to_regmap(syscon_np);
-+		of_node_put(syscon_np);
-+
-+		return regmap;
-+	}
-+
-+	/* Fallback to search by id_entry.name string */
-+	dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
-+				 syscon_match_id);
-+	if (!dev)
- 		return ERR_PTR(-ENODEV);
- 
--	regmap = syscon_node_to_regmap(syscon_np);
--	of_node_put(syscon_np);
-+	syscon = dev_get_drvdata(dev);
- 
--	return regmap;
-+	return syscon->regmap;
- }
- EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
- 
-@@ -100,37 +122,53 @@ static int syscon_probe(struct platform_device *pdev)
- 	struct device *dev = &pdev->dev;
- 	struct device_node *np = dev->of_node;
- 	struct syscon *syscon;
--	struct resource res;
-+	struct resource *res, res_of;
- 	int ret;
- 
--	if (!np)
--		return -ENOENT;
--
- 	syscon = devm_kzalloc(dev, sizeof(struct syscon),
- 			    GFP_KERNEL);
- 	if (!syscon)
- 		return -ENOMEM;
- 
--	syscon->base = of_iomap(np, 0);
--	if (!syscon->base)
--		return -EADDRNOTAVAIL;
--
--	ret = of_address_to_resource(np, 0, &res);
--	if (ret)
--		return ret;
-+	if (IS_ENABLED(CONFIG_OF) && np) {
-+		syscon->base = of_iomap(np, 0);
-+		if (!syscon->base)
-+			return -EADDRNOTAVAIL;
-+
-+		res = &res_of;
-+		ret = of_address_to_resource(np, 0, res);
-+		if (ret) {
-+			iounmap(syscon->base);
-+			return ret;
-+		}
-+	} else {
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+		if (!res)
-+			return -ENOENT;
-+
-+		if (!devm_request_mem_region(dev, res->start,
-+					     resource_size(res),
-+					     dev_name(&pdev->dev)))
-+			return -EBUSY;
-+
-+		syscon->base = ioremap(res->start, resource_size(res));
-+		if (!syscon->base)
-+			return -EADDRNOTAVAIL;
-+	}
- 
--	syscon_regmap_config.max_register = res.end - res.start - 3;
-+	syscon_regmap_config.max_register = res->end - res->start - 3;
- 	syscon->regmap = devm_regmap_init_mmio(dev, syscon->base,
- 					&syscon_regmap_config);
- 	if (IS_ERR(syscon->regmap)) {
- 		dev_err(dev, "regmap init failed\n");
-+		iounmap(syscon->base);
- 		return PTR_ERR(syscon->regmap);
- 	}
- 
- 	platform_set_drvdata(pdev, syscon);
- 
- 	dev_info(dev, "syscon regmap start 0x%x end 0x%x registered\n",
--		res.start, res.end);
-+		res->start, res->end);
- 
- 	return 0;
- }
+> So I'm wondering if the fix is simply something like the attached
+> patch. It takes the zone_start_pfn into account when allocating the
+> zone bitmap.
+> 
+> Laura? Mel?
+> 
+
+Looks correct to me and should cc stable@vger.kernel.org
+
+Acked-by: Mel Gorman <mgorman@suse.de>
+
 -- 
-1.7.12.4
-
+Mel Gorman
+SUSE Labs
