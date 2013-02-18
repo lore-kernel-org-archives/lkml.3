@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757565Ab3BRWr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 17:47:26 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:59396 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757469Ab3BRWrY (ORCPT
+	id S1757569Ab3BRWw2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 17:52:28 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:42957 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757509Ab3BRWw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 17:47:24 -0500
-Date: Tue, 19 Feb 2013 09:47:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ouyang Maochun <ouyang.maochun@zte.com.cn>,
-        Jiang Yong <jian.yong5@zte.com.cn>
-Subject: linux-next: interesting commits in the cifs tree
-Message-Id: <20130219094716.530b3d75b4fc850fe1629456@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__19_Feb_2013_09_47_16_+1100_2PZCk9B/O+tLhdK8"
+	Mon, 18 Feb 2013 17:52:27 -0500
+Message-ID: <5122B0A0.3090401@linux.vnet.ibm.com>
+Date: Mon, 18 Feb 2013 16:52:16 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Ric Mason <ric.masonn@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv5 4/8] zswap: add to mm/
+References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com> <1360780731-11708-5-git-send-email-sjenning@linux.vnet.ibm.com> <511F0536.5030802@gmail.com> <51227FDA.7040000@linux.vnet.ibm.com> <0fb2af92-575f-4f5d-a115-829a3cf035e5@default> <5122918A.8090307@linux.vnet.ibm.com> <2c81050d-72b0-4a93-aecb-900171a019d0@default>
+In-Reply-To: <2c81050d-72b0-4a93-aecb-900171a019d0@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021822-4834-0000-0000-000003CD4BB4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__19_Feb_2013_09_47_16_+1100_2PZCk9B/O+tLhdK8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/18/2013 03:59 PM, Dan Magenheimer wrote:
+>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>> Subject: Re: [PATCHv5 4/8] zswap: add to mm/
+>>
+>> On 02/18/2013 01:55 PM, Dan Magenheimer wrote:
+>>>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>>>> Subject: Re: [PATCHv5 4/8] zswap: add to mm/
+>>>>
+>>>> On 02/15/2013 10:04 PM, Ric Mason wrote:
+>>>>>> + * certain event is occurring.
+>>>>>> +*/
+>>>>>> +static u64 zswap_pool_limit_hit;
+>>>>>> +static u64 zswap_reject_compress_poor;
+>>>>>> +static u64 zswap_reject_zsmalloc_fail;
+>>>>>> +static u64 zswap_reject_kmemcache_fail;
+>>>>>> +static u64 zswap_duplicate_entry;
+>>>>>> +
+>>>>>> +/*********************************
+>>>>>> +* tunables
+>>>>>> +**********************************/
+>>>>>> +/* Enable/disable zswap (disabled by default, fixed at boot for
+>>>>>> now) */
+>>>>>> +static bool zswap_enabled;
+>>>>>> +module_param_named(enabled, zswap_enabled, bool, 0);
+>>>>>
+>>>>> please document in Documentation/kernel-parameters.txt.
+>>>>
+>>>> Will do.
+>>>
+>>> Is that a good idea?  Konrad's frontswap/cleancache patches
+>>> to fix frontswap/cleancache initialization so that backends
+>>> can be built/loaded as modules may be merged for 3.9.
+>>> AFAIK, module parameters are not included in kernel-parameters.txt.
+>>
+>> This is true.  However, the frontswap/cleancache init stuff isn't the
+>> only reason zswap is built-in only.  The writeback code depends on
+>> non-exported kernel symbols:
+>>
+>> swapcache_free
+>> __swap_writepage
+>> __add_to_swap_cache
+>> swapcache_prepare
+>> swapper_space
+>> end_swap_bio_write
+>>
+>> I know a fix is as trivial as exporting them, but I didn't want to
+>> take on that debate right now.
+> 
+> Hmmm... I wonder if exporting these might be the best solution
+> as it (unnecessarily?) exposes some swap subsystem internals.
+> I wonder if a small change to read_swap_cache_async might
+> be more acceptable.
 
-Hi Steve,
+Yes, I'm not saying that I'm for exporting them; just that that would
+be an easy and probably improper fix.
 
-I noticed this commit in the cifs tree today:
+As I recall, the only thing I really needed to change in my adaption
+of read_swap_cache_async(), zswap_get_swap_cache_page() in zswap, was
+the assumption built in that it is swapping in a page on behalf of a
+userspace program with the vma argument and alloc_page_vma().  Maybe
+if we change it to just use alloc_page when vma is NULL, that could
+work.  In a non-NUMA kernel alloc_page_vma() equals alloc_page() so I
+wouldn't expect weird things doing that.
 
-cc67d17bffd7 "This patch applies to the kernel version of linux-3.8-rc6."
+Seth
 
-That really is not a good summary line for the commit and this commit
-appears to be authored by you and committed by you, but has no
-Signed-off-by line from you.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__19_Feb_2013_09_47_16_+1100_2PZCk9B/O+tLhdK8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRIq90AAoJEECxmPOUX5FE0tkP/3MwVaaxTyvAEyjYmfdndhXX
-vzdSSuKRrLCiZOEQhEAllJ+Ywy85bkSKMT08EqdQaMlXNIiD+Nqg80N9abmJ27hq
-+Czkz6SI5FtuBeT6PSPnbLfv1/4gxLhwjRktfKf9LFI6pg/YQPX5hFWi69LtrWVU
-oDdRnDNecGu5Vu9igP+OgD7loTVfi8ZBXErrYHPGCE751xKBi57Y9UaAn/6RXAoV
-wO1B5YPRFb5xYQotyUAFWCZZ+WJ0UkmTflzzGp7+gRaun2eQzEfHLrSWK5prD+CQ
-lf6lVkEizxoGwpMvNypJOjvMU7SRtwc38bOXJP83rzZlHkucYe8jBUEvu8pECJzS
-Omd7QUciguLl95MjuQXfdv7ajgl/MhQEqjH1U+gqYkKD7ebeKk7E+U9AQP9TlSJi
-2TZFxSiXSvXKyhmBnCQr2shGdy/vwyMyYvmRqLb+gIGlgUQu3vRSm2BUqk+YN24q
-udIVL8//3sR+myYp99PEJzEghWCjoozGrROyUprj43SGEZ4FtKJ8UxZXL/UBTN1t
-HNHPev2yDiSsdH4cNyUKr4Me4SnqpI6zkgx9U54Uj4IZb8x4sBgdz7fVisIxwyrY
-gFVCGsyWs/fNR6PSQAkH5UjBQm1rhg27ih9HJhPTKLsmCaqbjLIIOvpgCPMDc0+j
-pfKSI59g1Ul0Jp3sslSD
-=TWhn
------END PGP SIGNATURE-----
-
---Signature=_Tue__19_Feb_2013_09_47_16_+1100_2PZCk9B/O+tLhdK8--
