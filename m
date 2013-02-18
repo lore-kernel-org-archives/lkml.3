@@ -1,102 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab3BRBRL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 20:17:11 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:56080 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729Ab3BRBRJ (ORCPT
+	id S1757110Ab3BRBSG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 20:18:06 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:28863 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756914Ab3BRBSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 20:17:09 -0500
-Date: Mon, 18 Feb 2013 12:17:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiang Liu <liuj97@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: linux-next: manual merge of the pm tree with the pci tree
-Message-Id: <20130218121707.221f3f24673d92066b6603ad@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__18_Feb_2013_12_17_07_+1100_wjG/1MsW4xrGGFhU"
+	Sun, 17 Feb 2013 20:18:04 -0500
+Message-ID: <51218100.5020007@huawei.com>
+Date: Mon, 18 Feb 2013 09:16:48 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, Sasha Levin <levinsasha928@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v2 2/2] cgroup: fix cgroup_path() vs rename() race, take 2
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Feb_2013_12_17_07_+1100_wjG/1MsW4xrGGFhU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+rename() will change dentry->d_name. The result of this race can
+be worse than seeing partially rewritten name, but we might access
+a stale pointer because rename() will re-allocate memory to hold
+a longer name.
 
-Hi Rafael,
+As accessing dentry->name must be protected by dentry->d_lock or
+parent inode's i_mutex, while on the other hand cgroup-path() can
+be called with some irq-safe spinlocks held, we can't generate
+cgroup path using dentry->d_name.
 
-Today's linux-next merge of the pm tree got a conflict in
-drivers/acpi/scan.c between commits 668192b67820 ("PCI: acpiphp: Move
-host bridge hotplug to pci_root.c") and ab1a2e038ff2 ("ACPI / PCI: Make
-pci_slot built-in only, not a module") from the pci tree and commits
-4daeaf68379f ("ACPI / PCI: Make PCI IRQ link driver use struct
-acpi_scan_handler") and  3757b94802fb ("ACPI / hotplug: Fix concurrency
-issues and memory leaks") from the pm tree.
+Alternatively we make a copy of dentry->d_name and save it in
+cgrp->name when a cgroup is created, and update cgrp->name at
+rename().
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+v2: make cgrp->name RCU safe.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ block/blk-cgroup.h     |   2 -
+ include/linux/cgroup.h |   1 +
+ kernel/cgroup.c        | 113 ++++++++++++++++++++++++++++++++++++-------------
+ 3 files changed, 85 insertions(+), 31 deletions(-)
 
-diff --cc drivers/acpi/scan.c
-index d9ee41e,daee749..0000000
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@@ -1685,10 -1778,13 +1778,14 @@@ int __init acpi_scan_init(void
-  		printk(KERN_ERR PREFIX "Could not register bus type\n");
-  	}
- =20
-- 	acpi_power_init();
-  	acpi_pci_root_init();
- +	acpi_pci_slot_init();
-+ 	acpi_pci_link_init();
-+ 	acpi_platform_init();
-+ 	acpi_csrt_init();
-+ 	acpi_container_init();
- =20
-+ 	mutex_lock(&acpi_scan_lock);
-  	/*
-  	 * Enumerate devices in the ACPI namespace.
-  	 */
-@@@ -1708,7 -1804,7 +1805,9 @@@
- =20
-  	acpi_update_all_gpes();
- =20
- +	acpi_pci_root_hp_init();
- +
-- 	return 0;
-+  out:
-+ 	mutex_unlock(&acpi_scan_lock);
-+ 	return result;
-  }
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 2459730..e2e3404 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -216,9 +216,7 @@ static inline int blkg_path(struct blkcg_gq *blkg, char *buf, int buflen)
+ {
+ 	int ret;
+ 
+-	rcu_read_lock();
+ 	ret = cgroup_path(blkg->blkcg->css.cgroup, buf, buflen);
+-	rcu_read_unlock();
+ 	if (ret)
+ 		strncpy(buf, "<unavailable>", buflen);
+ 	return ret;
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 900af59..a3d87d9 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -171,6 +171,7 @@ struct cgroup {
+ 
+ 	struct cgroup *parent;		/* my parent */
+ 	struct dentry *dentry;		/* cgroup fs entry, RCU protected */
++	char __rcu *name;		/* a copy of dentry->d_name */
+ 
+ 	/* Private pointers for each registered subsystem */
+ 	struct cgroup_subsys_state *subsys[CGROUP_SUBSYS_COUNT];
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 5d4c92e..26c071c 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -890,6 +890,7 @@ static void cgroup_free_fn(struct work_struct *work)
+ 	simple_xattrs_free(&cgrp->xattrs);
+ 
+ 	ida_simple_remove(&cgrp->root->cgroup_ida, cgrp->id);
++	kfree(cgrp->name);
+ 	kfree(cgrp);
+ }
+ 
+@@ -1565,6 +1566,18 @@ static int cgroup_get_rootdir(struct super_block *sb)
+ 	return 0;
+ }
+ 
++static char *cgroup_alloc_name(struct dentry *dentry)
++{
++	char *name;
++
++	name = kmalloc(dentry->d_name.len + 1, GFP_KERNEL);
++	if (!name)
++		return NULL;
++	memcpy(name, dentry->d_name.name, dentry->d_name.len);
++	name[dentry->d_name.len] = '\0';
++	return name;
++}
++
+ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 			 int flags, const char *unused_dev_name,
+ 			 void *data)
+@@ -1613,13 +1626,19 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 		int i;
+ 		struct hlist_node *node;
+ 		struct css_set *cg;
++		struct dentry *dentry;
+ 
+ 		BUG_ON(sb->s_root != NULL);
+ 
+ 		ret = cgroup_get_rootdir(sb);
+ 		if (ret)
+ 			goto drop_new_super;
+-		inode = sb->s_root->d_inode;
++		dentry = sb->s_root;
++		inode = dentry->d_inode;
++
++		root_cgrp->name = cgroup_alloc_name(dentry);
++		if (!root_cgrp->name)
++			goto drop_new_super;
+ 
+ 		mutex_lock(&inode->i_mutex);
+ 		mutex_lock(&cgroup_mutex);
+@@ -1660,8 +1679,8 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 		list_add(&root->root_list, &roots);
+ 		root_count++;
+ 
+-		sb->s_root->d_fsdata = root_cgrp;
+-		root->top_cgroup.dentry = sb->s_root;
++		dentry->d_fsdata = root_cgrp;
++		root->top_cgroup.dentry = dentry;
+ 
+ 		/* Link the top cgroup in this hierarchy into all
+ 		 * the css_set objects */
+@@ -1751,6 +1770,8 @@ static void cgroup_kill_sb(struct super_block *sb) {
+ 	mutex_unlock(&cgroup_root_mutex);
+ 	mutex_unlock(&cgroup_mutex);
+ 
++	synchronize_rcu();
++	kfree(cgrp->name);
+ 	simple_xattrs_free(&cgrp->xattrs);
+ 
+ 	kill_litter_super(sb);
+@@ -1771,49 +1792,47 @@ static struct kobject *cgroup_kobj;
+  * @buf: the buffer to write the path into
+  * @buflen: the length of the buffer
+  *
+- * Called with cgroup_mutex held or else with an RCU-protected cgroup
+- * reference.  Writes path of cgroup into buf.  Returns 0 on success,
+- * -errno on error.
++ * Writes path of cgroup into buf.  Returns 0 on success, -errno on error.
++ *
++ * We can't generate cgroup path using dentry->d_name, as accessing
++ * dentry->name must be protected by irq-unsafe dentry->d_lock or parent
++ * inode's i_mutex, while on the other hand cgroup_path() can be called
++ * with some irq-safe spinlocks held.
+  */
+ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
+ {
+-	struct dentry *dentry = cgrp->dentry;
++	int ret = -ENAMETOOLONG;
+ 	char *start;
+ 
+-	rcu_lockdep_assert(rcu_read_lock_held() || cgroup_lock_is_held(),
+-			   "cgroup_path() called without proper locking");
+-
+-	if (cgrp == dummytop) {
+-		/*
+-		 * Inactive subsystems have no dentry for their root
+-		 * cgroup
+-		 */
+-		strcpy(buf, "/");
+-		return 0;
+-	}
+-
+ 	start = buf + buflen - 1;
+-
+ 	*start = '\0';
+-	for (;;) {
+-		int len = dentry->d_name.len;
+ 
++	rcu_read_lock();
++	while (true) {
++		char *p;
++		int len;
++
++		p = rcu_dereference(cgrp->name);
++		len = strlen(p);
+ 		if ((start -= len) < buf)
+-			return -ENAMETOOLONG;
+-		memcpy(start, dentry->d_name.name, len);
++			goto fail;
++		memcpy(start, p, len);
++
+ 		cgrp = cgrp->parent;
+ 		if (!cgrp)
+ 			break;
+ 
+-		dentry = cgrp->dentry;
+ 		if (!cgrp->parent)
+ 			continue;
+ 		if (--start < buf)
+-			return -ENAMETOOLONG;
++			goto fail;
+ 		*start = '/';
+ 	}
++	ret = 0;
+ 	memmove(buf, start, buf + buflen - start);
+-	return 0;
++fail:
++	rcu_read_unlock();
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(cgroup_path);
+ 
+@@ -2539,13 +2558,41 @@ static int cgroup_file_release(struct inode *inode, struct file *file)
+ static int cgroup_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 			    struct inode *new_dir, struct dentry *new_dentry)
+ {
++	int ret;
++	char *name, *old_name;
++	struct cgroup *cgrp;
++
++	/*
++	 * It's convinient to use parent dir's i_mutex to protected
++	 * cgrp->name.
++	 */
++	lockdep_assert_held(&old_dir->i_mutex);
++
+ 	if (!S_ISDIR(old_dentry->d_inode->i_mode))
+ 		return -ENOTDIR;
+ 	if (new_dentry->d_inode)
+ 		return -EEXIST;
+ 	if (old_dir != new_dir)
+ 		return -EIO;
+-	return simple_rename(old_dir, old_dentry, new_dir, new_dentry);
++
++	cgrp = __d_cgrp(old_dentry);
++
++	name = cgroup_alloc_name(new_dentry);
++	if (!name)
++		return -ENOMEM;
++
++	ret = simple_rename(old_dir, old_dentry, new_dir, new_dentry);
++	if (ret) {
++		kfree(name);
++		return ret;
++	}
++
++	old_name = cgrp->name;
++	rcu_assign_pointer(cgrp->name, name);
++
++	synchronize_rcu();
++	kfree(old_name);
++	return 0;
+ }
+ 
+ static struct simple_xattrs *__d_xattrs(struct dentry *dentry)
+@@ -4144,9 +4191,13 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	if (!cgrp)
+ 		return -ENOMEM;
+ 
++	cgrp->name = cgroup_alloc_name(dentry);
++	if (!cgrp->name)
++		goto err_free_cgrp;
++
+ 	cgrp->id = ida_simple_get(&root->cgroup_ida, 1, 0, GFP_KERNEL);
+ 	if (cgrp->id < 0)
+-		goto err_free_cgrp;
++		goto err_free_name;
+ 
+ 	/*
+ 	 * Only live parents can have children.  Note that the liveliness
+@@ -4252,6 +4303,8 @@ err_free_all:
+ 	deactivate_super(sb);
+ err_free_id:
+ 	ida_simple_remove(&root->cgroup_ida, cgrp->id);
++err_free_name:
++	kfree(cgrp->name);
+ err_free_cgrp:
+ 	kfree(cgrp);
+ 	return err;
+@@ -4656,6 +4709,8 @@ int __init cgroup_init_early(void)
+ 	root_count = 1;
+ 	init_task.cgroups = &init_css_set;
+ 
++	dummytop->name = "/";
++
+ 	init_css_set_link.cg = &init_css_set;
+ 	init_css_set_link.cgrp = dummytop;
+ 	list_add(&init_css_set_link.cgrp_link_list,
+-- 
+1.8.0.2
 
---Signature=_Mon__18_Feb_2013_12_17_07_+1100_wjG/1MsW4xrGGFhU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRIYETAAoJEECxmPOUX5FE7w4P/i8rt7hPbmoxkbhdPxmqlMf6
-M2few1k/qwV/04fw6fNU1xpuFba9GGGxxdY31MmdaHUyiOjr/cC9tD+ZhisuAz+f
-tQK+DAjK4TlKwP0Q4qT4haBAqNHM/VahUeZt1zX3kA+VmjreMyvRr86QAXhfJHRt
-x8FguyoQMMDwIx5OFvmeegla14XicIRQuDknqrZ48BhcauU9q4VycxZlV7ty+8mK
-p8LBK4cOrp6jxTcBJMsAKopCabLAzURz4/waRB1ewEEjTw/QfcXXVRvkUn+J3W+N
-CFo4sYwRlXZOlME8HDbCJEExG+7LHqTNUA2T5Lo++8aMEY+PGTFsBonl/hjCprOo
-QhM7I6k0ten2xXXKrnHLlgkuvIBPvsB2PCSrWv4XeIsbdwCgfXDL/zAjiiQo3TlZ
-tK2eEFYEzljn43hQFAyrZm1erjfwK0sBmhljeTNBG8gr4KwNEEdNYkv9NMOsRZGf
-mHsgDlF+2xaEzi7IvaJt9rP76uR+/xRr7SvHPUYhUZG5howvy0AQe0x5wRJt7b0E
-gw9Z+1rY8pmk7OTqSt1Gz21JE4ktgOe/RfbEwR4eEAY60EcE+tnyHXLfcmvV9KZA
-/yMVhbJYdjFdWqAcLZ9jQ/h3L+5BsNlGV/apyHxSqjdfFCBOX0T0vwcCMSbICLC6
-lR7b19oMw9JgItsAftQh
-=MAwK
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Feb_2013_12_17_07_+1100_wjG/1MsW4xrGGFhU--
