@@ -1,78 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab3BRIlf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 03:41:35 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:57187 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792Ab3BRIle (ORCPT
+	id S1755349Ab3BRIod (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 03:44:33 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42552 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab3BRIoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 03:41:34 -0500
-Date: Mon, 18 Feb 2013 09:41:30 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paul.mckenney@linaro.org>
-Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
-Message-ID: <20130218084130.GB15989@gmail.com>
-References: <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
- <20130215011503.GA11914@redhat.com>
- <CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com>
- <20130215174435.GA2792@linux.vnet.ibm.com>
- <CA+55aFy8FeGMOnWwkfmyFYyVCw+k1LSVg7BG0tsTNZzqi5EKYg@mail.gmail.com>
- <CA+55aFwHtFeN97E-zW2QKQWH8vu=g29cxevvEnpEnHc8dx7oWA@mail.gmail.com>
- <CA+55aFyXo89LQ0mboxVYB5SJ08D8=Kv0=cqYHAd6-H7nmp=S-w@mail.gmail.com>
- <20130216192554.GB7035@linux.vnet.ibm.com>
- <CA+55aFy821kt0cz=nNB45e0K-hGUfairbTEgNP6E65jkA6bWaA@mail.gmail.com>
- <51215E6C.5090102@zytor.com>
+	Mon, 18 Feb 2013 03:44:32 -0500
+X-AuditID: 9c930197-b7ca4ae000006ba8-c0-5121e9ec578e
+Date: Mon, 18 Feb 2013 17:44:39 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
+        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 10/15] sched: packing transitory tasks in wake/exec
+ power balancing
+Message-ID: <20130218084439.GB10009@lge.com>
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
+ <1361164062-20111-11-git-send-email-alex.shi@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51215E6C.5090102@zytor.com>
+In-Reply-To: <1361164062-20111-11-git-send-email-alex.shi@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Alex.
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+On Mon, Feb 18, 2013 at 01:07:37PM +0800, Alex Shi wrote:
+> If the waked/execed task is transitory enough, it will has a chance to be
+> packed into a cpu which is busy but still has time to care it.
+> For powersaving policy, only the history util < 25% task has chance to
+> be packed, and for balance policy, only histroy util < 12.5% has chance.
+> If there is no cpu eligible to handle it, will use a idlest cpu in
+> leader group.
 
-> On 02/16/2013 11:46 AM, Linus Torvalds wrote:
-> >Adding Peter Anvin to the people, just in case he sees what's wrong
-> >with the system call stub generation that keeps excessively old object
-> >files around. If it's easy to fix, it might be worth trying to make it
-> >ok to switch from i386 to x86-64 and back in the same tree.
+After exec(), task's behavior may be changed, and history util may be
+changed, too. So, IMHO, exec balancing by history util is not good idea.
+How do you think about it?
+
+Thanks.
+
+> Morten Rasmussen catch a type bug and suggest using different criteria
+> for different policy, thanks!
 > 
-> I have not been able to reproduce this; it seems to Just 
-> Work[TM].
+> Inspired-by: Vincent Guittot <vincent.guittot@linaro.org>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c | 66 ++++++++++++++++++++++++++++++++++++++++++++++++-----
+>  1 file changed, 60 insertions(+), 6 deletions(-)
 > 
-> The syscall header stuff is definitely not to blame: it 
-> doesn't even *see* the CONFIG_ settings; instead they are only 
-> used to determine which subset of files to create, but the 
-> files themselves are configuration-independent.  This is by 
-> design.
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index b172678..2e8131d 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3455,19 +3455,72 @@ static inline int get_sd_sched_balance_policy(struct sched_domain *sd,
+>  }
+>  
+>  /*
+> + * find_leader_cpu - find the busiest but still has enough leisure time cpu
+> + * among the cpus in group.
+> + */
+> +static int
+> +find_leader_cpu(struct sched_group *group, struct task_struct *p, int this_cpu,
+> +		int policy)
+> +{
+> +	/* percentage of the task's util */
+> +	unsigned putil = p->se.avg.runnable_avg_sum * 100
+> +				/ (p->se.avg.runnable_avg_period + 1);
+> +
+> +	struct rq *rq = cpu_rq(this_cpu);
+> +	int nr_running = rq->nr_running > 0 ? rq->nr_running : 1;
+> +	int vacancy, min_vacancy = INT_MAX, max_util;
+> +	int leader_cpu = -1;
+> +	int i;
+> +
+> +	if (policy == SCHED_POLICY_POWERSAVING)
+> +		max_util = FULL_UTIL;
+> +	else
+> +		/* maximum allowable util is 60% */
+> +		max_util = 60;
+> +
+> +	/* bias toward local cpu */
+> +	if (cpumask_test_cpu(this_cpu, tsk_cpus_allowed(p)) &&
+> +		max_util - (rq->util * nr_running + (putil << 2)) > 0)
+> +			return this_cpu;
+> +
+> +	/* Traverse only the allowed CPUs */
+> +	for_each_cpu_and(i, sched_group_cpus(group), tsk_cpus_allowed(p)) {
+> +		if (i == this_cpu)
+> +			continue;
+> +
+> +		rq = cpu_rq(i);
+> +		nr_running = rq->nr_running > 0 ? rq->nr_running : 1;
+> +
+> +		/* only light task allowed, like putil < 25% for powersaving */
+> +		vacancy = max_util - (rq->util * nr_running + (putil << 2));
+> +
+> +		if (vacancy > 0 && vacancy < min_vacancy) {
+> +			min_vacancy = vacancy;
+> +			leader_cpu = i;
+> +		}
+> +	}
+> +	return leader_cpu;
+> +}
+> +
+> +/*
+>   * If power policy is eligible for this domain, and it has task allowed cpu.
+>   * we will select CPU from this domain.
+>   */
+>  static int get_cpu_for_power_policy(struct sched_domain *sd, int cpu,
+> -		struct task_struct *p, struct sd_lb_stats *sds)
+> +		struct task_struct *p, struct sd_lb_stats *sds, int fork)
+>  {
+>  	int policy;
+>  	int new_cpu = -1;
+>  
+>  	policy = get_sd_sched_balance_policy(sd, cpu, p, sds);
+> -	if (policy != SCHED_POLICY_PERFORMANCE && sds->group_leader)
+> -		new_cpu = find_idlest_cpu(sds->group_leader, p, cpu);
+> -
+> +	if (policy != SCHED_POLICY_PERFORMANCE && sds->group_leader) {
+> +		if (!fork)
+> +			new_cpu = find_leader_cpu(sds->group_leader,
+> +							p, cpu, policy);
+> +		/* for fork balancing and a little busy task */
+> +		if (new_cpu == -1)
+> +			new_cpu = find_idlest_cpu(sds->group_leader, p, cpu);
+> +	}
+>  	return new_cpu;
+>  }
+>  
+> @@ -3518,14 +3571,15 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int flags)
+>  		if (tmp->flags & sd_flag) {
+>  			sd = tmp;
+>  
+> -			new_cpu = get_cpu_for_power_policy(sd, cpu, p, &sds);
+> +			new_cpu = get_cpu_for_power_policy(sd, cpu, p, &sds,
+> +						flags & SD_BALANCE_FORK);
+>  			if (new_cpu != -1)
+>  				goto unlock;
+>  		}
+>  	}
+>  
+>  	if (affine_sd) {
+> -		new_cpu = get_cpu_for_power_policy(affine_sd, cpu, p, &sds);
+> +		new_cpu = get_cpu_for_power_policy(affine_sd, cpu, p, &sds, 0);
+>  		if (new_cpu != -1)
+>  			goto unlock;
+>  
+> -- 
+> 1.7.12
 > 
-> As such, without an actual known to fail test case there isn't 
-> much I can do.
-
-I tried (based on the versions given by Paul):
-
-  git checkout v3.7-rc7
-  make ARCH=i386 defconfig
-  make -j64 bzImage
-
-  git checkout v3.8-rc7
-  make ARCH=x86_64 olddefconfig
-  make -j64 bzImage
-
-but it built just fine. The build bug might depend on the 
-specific config file, or might depend on tooling details?
-
-Thanks,
-
-	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
