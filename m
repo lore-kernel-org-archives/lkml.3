@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab3BRFZW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 00:25:22 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:58667 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab3BRFZU (ORCPT
+	id S1757150Ab3BRF2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 00:28:09 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:46137 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754264Ab3BRF2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 00:25:20 -0500
-X-AuditID: cbfee68e-b7fc26d000001938-37-5121bb3f7697
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000801ce0d98$2e103fd0$8a30bf70$%han@samsung.com>
-In-reply-to: <000801ce0d98$2e103fd0$8a30bf70$%han@samsung.com>
-Subject: [PATCH 2/2 RESEND] video: exynos_dp: move disable_irq() to
- exynos_dp_suspend()
-Date: Mon, 18 Feb 2013 14:25:19 +0900
-Message-id: <000901ce0d98$5794c240$06be46c0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4NmC3wY06s4orcQzuu4vTFFedQgAAAAeMQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t8zI1373YqBBjMbjSxO9H1gtbi8aw6b
-	A5PH501yAYxRXDYpqTmZZalF+nYJXBk9VxYzFczhrNhyt5etgfE9excjJ4eEgInE5buLoWwx
-	iQv31rN1MXJxCAksY5TY37cdrujb173MEIlFjBK3P31khXB+MUrc//yUFaSKTUBN4suXw0Ad
-	HBwiAvoSbS0aIDXMAnMZJS6tOcICUiMkYCsx88tmJhCbU8BOYvO9VrC4sECkxJE1RxlBbBYB
-	VYkt636B1fAC1d+ffIsVwhaU+DH5Hlg9s4CWxPqdx5kgbHmJzWveMoPslRBQl3j0VxckLCJg
-	JLF28XKochGJfS/eMYLcIyGwjl3i2oY+JohdAhLfJh9igeiVldh0gBniYUmJgytusExglJiF
-	ZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0ouM9IoTc4tL89L1kvNzNzFCoqxvB+PNA9aHGJOB
-	1k9klhJNzgdGaV5JvKGxsYmZiamJuaWpuSlpwkrivPKXZAKFBNITS1KzU1MLUovii0pzUosP
-	MTJxcEo1MDIfFTt9UMXt0wTGjOLS3SeizTM31TH9u58fvfyryL4fb3j/TfpV37tkwgR175lH
-	sy6cvPJGpSZ9Q/KMzpT7helXL0ZdnN3eFZQvG6U8x3Fla01NUcZ1mwQLWWeBqadnPTJeKn1Q
-	fd1ttp3xR1U/BSUmTGnhuWy/YFbAw1xxkxsT3AKORbjfylRiKc5INNRiLipOBACLY8DByAIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jAV373YqBBn2/dC1O9H1gtbi8aw6b
-	A5PH501yAYxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4B
-	um6ZOUCjlRTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZPVcWMxXM4azY
-	creXrYHxPXsXIyeHhICJxLeve5khbDGJC/fWs3UxcnEICSxilLj96SMrhPOLUeL+56esIFVs
-	AmoSX74cBurm4BAR0Jdoa9EAqWEWmMsocWnNERaQGiEBW4mZXzYzgdicAnYSm++1gsWFBSIl
-	jqw5yghiswioSmxZ9wushheo/v7kW6wQtqDEj8n3wOqZBbQk1u88zgRhy0tsXvOWGWSvhIC6
-	xKO/uiBhEQEjibWLl0OVi0jse/GOcQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXU
-	K07MLS7NS9dLzs/dxAiO4WdSOxhXNlgcYhTgYFTi4WXIVwwUYk0sK67MPcQowcGsJMK7SQQo
-	xJuSWFmVWpQfX1Sak1p8iDEZ6NGJzFKiyfnA9JJXEm9obGJmZGlkZmFkYm5OmrCSOC/jqScB
-	QgLpiSWp2ampBalFMFuYODilGhinsnncceH9mivwTn5GDstXLQO+RxYcHpNXPLnD0bbx1IKl
-	Ni1pTPwX11m3p+SpOIS4rGfl+WjEtfrHKy8Nn9+5wsw/it+cv63ftOP5tf8+Bx4xhk7SSGJd
-	dvHCpuypss2LotZseTvtgfg2yZiig+dnJDA/+CgVKub1eSnzASPnqf5/w8w1eFyUWIozEg21
-	mIuKEwGEnhgqJQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 18 Feb 2013 00:28:08 -0500
+Date: Mon, 18 Feb 2013 16:27:58 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: linux-next: manual merge of the userns tree with the nfsd tree
+Message-Id: <20130218162758.2e71a4fe0676ed701d44e85e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__18_Feb_2013_16_27_58_+1100_llrxzoTygRPtep9b"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ajay Kumar <ajaykumar.rs@samsung.com>
+--Signature=_Mon__18_Feb_2013_16_27_58_+1100_llrxzoTygRPtep9b
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-disable_irq() should be moved to exynos_dp_suspend(), because
-enable_irq() is called at exynos_dp_resume().
+Hi Eric,
 
-Signed-off-by: Ajay Kumar <ajaykumar.rs@samsung.com>
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/exynos/exynos_dp_core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Today's linux-next merge of the userns tree got a conflict in
+net/sunrpc/svcauth_unix.c between commit 2d4383383b0b ("SUNRPC: rework
+cache upcall logic") from the nfsd tree and commit 7eaf040b720b ("sunrpc:
+Use kuid_t and kgid_t where appropriate") from the userns tree.
 
-diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
-index c7374c0..de9d4da 100644
---- a/drivers/video/exynos/exynos_dp_core.c
-+++ b/drivers/video/exynos/exynos_dp_core.c
-@@ -1124,8 +1124,6 @@ static int exynos_dp_remove(struct platform_device *pdev)
- 	struct exynos_dp_platdata *pdata = pdev->dev.platform_data;
- 	struct exynos_dp_device *dp = platform_get_drvdata(pdev);
- 
--	disable_irq(dp->irq);
--
- 	flush_work(&dp->hotplug_work);
- 
- 	if (pdev->dev.of_node) {
-@@ -1148,6 +1146,8 @@ static int exynos_dp_suspend(struct device *dev)
- 	struct exynos_dp_platdata *pdata = dev->platform_data;
- 	struct exynos_dp_device *dp = dev_get_drvdata(dev);
- 
-+	disable_irq(dp->irq);
-+
- 	flush_work(&dp->hotplug_work);
- 
- 	if (dev->of_node) {
--- 
-1.7.2.5
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc net/sunrpc/svcauth_unix.c
+index 5085804,a1852e1..0000000
+--- a/net/sunrpc/svcauth_unix.c
++++ b/net/sunrpc/svcauth_unix.c
+@@@ -465,7 -475,12 +470,7 @@@ static void unix_gid_request(struct cac
+  	(*bpp)[-1] =3D '\n';
+  }
+ =20
+- static struct unix_gid *unix_gid_lookup(struct cache_detail *cd, uid_t ui=
+d);
+ -static int unix_gid_upcall(struct cache_detail *cd, struct cache_head *h)
+ -{
+ -	return sunrpc_cache_pipe_upcall(cd, h, unix_gid_request);
+ -}
+ -
++ static struct unix_gid *unix_gid_lookup(struct cache_detail *cd, kuid_t u=
+id);
+ =20
+  static int unix_gid_parse(struct cache_detail *cd,
+  			char *mesg, int mlen)
+
+--Signature=_Mon__18_Feb_2013_16_27_58_+1100_llrxzoTygRPtep9b
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRIbveAAoJEECxmPOUX5FE+H0QAJh4HeHujPhcXp9Dt4BmXGpC
+5onp9xggnUHmAIEpFTkl+1Yqs9aXOw0fwHm7tXMSjXEp+U+35tFEZELYOEGJM5jt
+OeSfJAP+O9RoqTIfCVxRpecNIuxq4CdnxJ1bT6ovAR2lbdOAAdL993AGvycNAE2A
+j5I2SdPEfOevAtRwWEz/ePMSeQoyvrAB4fdbx2sUYkurZbc/l3li+d0LqAeU6jvB
+Phw08NeQuJgNgxyefmv86tAIuwyIYep/WHegMwxTzSDSHpsCv6+Aq9xdjJEU2YbG
+hD0xHbb9Ee5dF2K+4W+xuZuDKNtSLkyc6bBL5BpAuRJPV1ZwmivTGU6VV3Tt6M2R
+xzVWiP5Jy+fxdjwZ2qB6YHPuepnbTV1QTtfsE5AXZd4Pt8BnBS9Ith5cTvZiy5Ug
+KlwyBWXg4EdgZylulq0gnl0jEE0knEblbf0vvkyrOgZnVsRn3NhBdqkyzMseOYTH
+5pWXUvZPLl2KAPxvSnGfdtdmBkBsAgvny2jnkPJN4X7AXGkzFifUdrKL8sBI5M0P
+UAPYtDa8o3UTqTzC/oPO3cqunXdyu+eYSYeFJfn2WUmiPYoAZfdD3thxmre6sGPz
+IbQRvcO4RljcL2BEf9iDHYsTJIM+73/eptXG7HFCyTEgLhxn7kfhXy+42IRL3vGP
+QKlVDXQ/dSaRpQLendXR
+=fFaR
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__18_Feb_2013_16_27_58_+1100_llrxzoTygRPtep9b--
