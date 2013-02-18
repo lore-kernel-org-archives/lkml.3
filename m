@@ -1,44 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272Ab3BREpT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 23:45:19 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48634 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756725Ab3BREpR (ORCPT
+	id S1757331Ab3BREyP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 23:54:15 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:50404 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756742Ab3BREyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 23:45:17 -0500
-X-Sasl-enc: Kqmq98X0t9gYOnUp/5oI/UP+FVDTCssL0AcBRSucyhsS 1361162715
-Date: Sun, 17 Feb 2013 20:45:35 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Manjunath Goudar <manjunath.goudar@linaro.org>
-Subject: Re: linux-next: manual merge of the usb tree with the driver-core
- tree
-Message-ID: <20130218044535.GA28277@kroah.com>
-References: <20130218153242.747962940bbed03bfdb2623b@canb.auug.org.au>
+	Sun, 17 Feb 2013 23:54:14 -0500
+Date: Mon, 18 Feb 2013 13:54:10 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Julian Anastasov <ja@ssi.bg>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, davem@davemloft.net,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] net: fix functions and variables related to
+ netns_ipvs->sysctl_sync_qlen_max
+Message-ID: <20130218045410.GC25347@verge.net.au>
+References: <51131B88.6040809@cn.fujitsu.com>
+ <51132A56.60906@cn.fujitsu.com>
+ <alpine.LFD.2.00.1302070944480.1810@ja.ssi.bg>
+ <20130214142159.d0516a5f.akpm@linux-foundation.org>
+ <alpine.LFD.2.00.1302152304010.1746@ja.ssi.bg>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130218153242.747962940bbed03bfdb2623b@canb.auug.org.au>
+In-Reply-To: <alpine.LFD.2.00.1302152304010.1746@ja.ssi.bg>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 18, 2013 at 03:32:42PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
+On Fri, Feb 15, 2013 at 11:39:34PM +0200, Julian Anastasov wrote:
 > 
-> Today's linux-next merge of the usb tree got a conflict in
-> drivers/usb/host/ehci-vt8500.c between commit 148e11349b0c ("usb: Convert
-> to devm_ioremap_resource()") from the driver-core tree and commit
-> d57ada0c37ec ("USB: EHCI: make ehci-vt8500 a separate driver") from the
-> usb tree.
+> 	Hello,
 > 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+> On Thu, 14 Feb 2013, Andrew Morton wrote:
+> 
+> > On Thu, 7 Feb 2013 10:40:26 +0200 (EET)
+> > Julian Anastasov <ja@ssi.bg> wrote:
+> > 
+> > > > Another question about the sysctl_sync_qlen_max:
+> > > > This variable is assigned as:
+> > > > 
+> > > > ipvs->sysctl_sync_qlen_max = nr_free_buffer_pages() / 32;
+> > > > 
+> > > > The function nr_free_buffer_pages actually means: counts of pages
+> > > > which are beyond high watermark within ZONE_DMA and ZONE_NORMAL.
+> > > > 
+> > > > is it ok to be called here? Some people misused this function because
+> > > > the function name was misleading them. I am sorry I am totally not
+> > > > familiar with the ipvs code, so I am just asking you about
+> > > > this.
+> > > 
+> > > 	Using nr_free_buffer_pages should be fine here.
+> > > We are using it as rough estimation for the number of sync
+> > > buffers we can use in NORMAL zones. We are using dev->mtu
+> > > for such buffers, so it can take a PAGE_SIZE for a buffer.
+> > > We are not interested in HIGHMEM size. high watermarks
+> > > should have negliable effect. I'm even not sure whether
+> > > we need to clamp it for systems with TBs of memory.
+> > 
+> > Using nr_free_buffer_pages() is good-enough-for-now.  There are
+> > questions around the name of this thing and its exact functionality and
+> > whether callers are using it appropriately.  But if anything is changed
+> > there, it will be as part of kernel-wide sweep.
+> > 
+> > One thing to bear in mind is memory hot[un]plug.  Anything which was
+> > sized using nr_free_buffer_pages() (or similar) may become
+> > inappropriately sized if memory is added or removed.  So any site which
+> > uses nr_free_buffer_pages() really should be associated with a hotplug
+> > handler and a great pile of code to resize the structure at runtime. 
+> > It's pretty ugly stuff :(  I suspect it usually Just Doesn't Matter.
+> 
+> 	I'll try to think on this hotplug problem
+> and also on the si_meminfo usage in net/netfilter/ipvs/ip_vs_ctl.c
+> which is quite wrong for systems with HIGHMEM, may be
+> we need there a free+reclaimable+file function for
+> NORMAL zone.
+> 
+> > Redarding this patch:
+> > net-change-type-of-netns_ipvs-sysctl_sync_qlen_max.patch and
+> > net-fix-functions-and-variables-related-to-netns_ipvs-sysctl_sync_qlen_max.patch
+> > are joined at the hip and should be redone as a single patch with a
+> > suitable changelog, please.  And with a cc:netdev@vger.kernel.org.
+> 
+> 	Agreed, Zhang Yanfei and Simon? I'm just not sure,
+> may be this combined patch should hit only the
+> ipvs->nf->net trees? Or may be net-next, if we don't have
+> time for 3.8.
 
-Looks good to me, thanks.
+ipvs->nf->net seems to be the most logical approach unless
+Andrew wishes to take it.
 
-greg k-h
+I assume that at this point its too late for v3.8 and I'm not
+entirely clear that the changes is needed there anyway.
