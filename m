@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158Ab3BRBLV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 20:11:21 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:36628 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754985Ab3BRBLT (ORCPT
+	id S1757583Ab3BRBLd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 20:11:33 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:54417 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757558Ab3BRBL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 20:11:19 -0500
-Date: Mon, 18 Feb 2013 12:11:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: linux-next: manual merge of the pm tree with the pci tree
-Message-Id: <20130218121105.e728f240b75b73821ff8058d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__18_Feb_2013_12_11_05_+1100_JtfQKZsgFDvRwowz"
+	Sun, 17 Feb 2013 20:11:29 -0500
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+To: <linux-fsdevel@vger.kernel.org>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, Dave Chinner <david@fromorbit.com>
+Date: Sun, 17 Feb 2013 17:10:54 -0800
+Message-Id: <1361149870-27732-1-git-send-email-ebiederm@xmission.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <87txpaph4n.fsf@xmission.com>
+References: <87txpaph4n.fsf@xmission.com>
+X-XM-AID: U2FsdGVkX190gJvGvUtjpquqW4Dtsylw932Bhr9r2Ek=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  3.0 XMDrug1234561 Drug references
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1678]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;<linux-fsdevel@vger.kernel.org>
+X-Spam-Relay-Country: 
+Subject: [PATCH review 01/16] xfs: Convert uids and gids in xfs acls to/from kuids and kgids
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Feb_2013_12_11_05_+1100_JtfQKZsgFDvRwowz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Hi Rafael,
+- When reading from disk convert on disk uids and gids to kuids and kgids
+- When writing to the disk convert in memory kuids and kgids to uids and gids.
+- Don't write e_id as that field only exists when user namespace
+  support is disabled.
+- Use uid_eq when testing to see if current_fsuid() is allowed to set the
+  acls for a file.
 
-Today's linux-next merge of the pm tree got a conflict in
-drivers/acpi/internal.h between commits 668192b67820 ("PCI: acpiphp: Move
-host bridge hotplug to pci_root.c") and ab1a2e038ff2 ("ACPI / PCI: Make
-pci_slot built-in only, not a module") from the pci tree and commit
-00c43b968250 ("ACPI / PCI: Make PCI root driver use struct
-acpi_scan_handler") from the pm tree.
+Cc: Ben Myers <bpm@sgi.com>
+Cc: Alex Elder <elder@kernel.org>
+Cc: Dave Chinner <david@fromorbit.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+---
+ fs/xfs/xfs_acl.c |   23 +++++++++++++++++++----
+ 1 files changed, 19 insertions(+), 4 deletions(-)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+diff --git a/fs/xfs/xfs_acl.c b/fs/xfs/xfs_acl.c
+index 1d32f1d..ca2aade 100644
+--- a/fs/xfs/xfs_acl.c
++++ b/fs/xfs/xfs_acl.c
+@@ -64,14 +64,17 @@ xfs_acl_from_disk(struct xfs_acl *aclp)
+ 
+ 		switch (acl_e->e_tag) {
+ 		case ACL_USER:
++			acl_e->e_uid = make_kuid(&init_user_ns,
++						 be32_to_cpu(ace->ae_id));
++			break;
+ 		case ACL_GROUP:
+-			acl_e->e_id = be32_to_cpu(ace->ae_id);
++			acl_e->e_gid = make_kgid(&init_user_ns,
++						 be32_to_cpu(ace->ae_id));
+ 			break;
+ 		case ACL_USER_OBJ:
+ 		case ACL_GROUP_OBJ:
+ 		case ACL_MASK:
+ 		case ACL_OTHER:
+-			acl_e->e_id = ACL_UNDEFINED_ID;
+ 			break;
+ 		default:
+ 			goto fail;
+@@ -97,8 +100,20 @@ xfs_acl_to_disk(struct xfs_acl *aclp, const struct posix_acl *acl)
+ 		acl_e = &acl->a_entries[i];
+ 
+ 		ace->ae_tag = cpu_to_be32(acl_e->e_tag);
+-		ace->ae_id = cpu_to_be32(acl_e->e_id);
+ 		ace->ae_perm = cpu_to_be16(acl_e->e_perm);
++		switch(acl_e->e_tag) {
++		case ACL_USER:
++			ace->ae_id = cpu_to_be32(
++				from_kuid(&init_user_ns, acl_e->e_uid));
++			break;
++		case ACL_GROUP:
++			ace->ae_id = cpu_to_be32(
++				from_kgid(&init_user_ns, acl_e->e_gid));
++			break;
++		default:
++			ace->ae_id = cpu_to_be32(ACL_UNDEFINED_ID);
++			break;
++		}
+ 	}
+ }
+ 
+@@ -355,7 +370,7 @@ xfs_xattr_acl_set(struct dentry *dentry, const char *name,
+ 		return -EINVAL;
+ 	if (type == ACL_TYPE_DEFAULT && !S_ISDIR(inode->i_mode))
+ 		return value ? -EACCES : 0;
+-	if ((current_fsuid() != inode->i_uid) && !capable(CAP_FOWNER))
++	if ((!uid_eq(current_fsuid(), inode->i_uid)) && !capable(CAP_FOWNER))
+ 		return -EPERM;
+ 
+ 	if (!value)
+-- 
+1.7.5.4
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/acpi/internal.h
-index e09ce03,7909232..0000000
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@@ -67,13 -94,6 +94,12 @@@ struct acpi_ec=20
- =20
-  extern struct acpi_ec *first_ec;
- =20
- +#ifdef	CONFIG_ACPI_PCI_SLOT
- +void acpi_pci_slot_init(void);
- +#else
- +static inline void acpi_pci_slot_init(void) { }
- +#endif
-- int acpi_pci_root_init(void);
- +void acpi_pci_root_hp_init(void);
-  int acpi_ec_init(void);
-  int acpi_ec_ecdt_probe(void);
-  int acpi_boot_ec_enable(void);
-
---Signature=_Mon__18_Feb_2013_12_11_05_+1100_JtfQKZsgFDvRwowz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRIX+pAAoJEECxmPOUX5FEE2wQAKQ7yqNCPNPpLiN69e4vkYkE
-fx8Vk9u3vNS8mDSc8jQbgeV00OJUcgTU80gtKNW9YfsvFrOxMFlTXD7SjfDnbqTO
-H5hxDYajgmGFhwKad9LS5HjkKxpZJ0W9RQhT6VORC65B1QTUpS5BTzffsX9tJoaa
-ACoqlq2l50DfJ41oKcgTCPE6XxYfWkLoFHwpWhEI4jFslcpVJzIz+EXqAVQCn6hy
-qVXHySI6I/hooCPOQgTRlo3MAvmmcf03E754YGCND9Zz+i8CJSp8/kPgcVLGH+54
-kmsDbnJY9qARG7CyXUC3o6TBnGTUtXDsjuMH2KKcI2/5QrJ7VjLI/+N33nY63nFN
-8EYU54mBRviP/S+o+qwYDMdlD1nUhQwtz2GZdJnB1Y+16a3KlDaftWlvCFCNrRHc
-iP9Z3X3JAwJbQEUJ+gLVaULII8uK7PImbiqtM1u4dwk90/X8NWVT1kGjI4YRDU9m
-IlubVRmd62xz9vgJtKQmx1J+fX3Or/NR6VBrBOKjGqXbi90UkfRn99bwth+NPNzi
-IRhJ/s7e4KEUpvhet0Y4cCAy7LEBEN9kbB808wz4msEKa7lx+SSTFf9qi9Z6NLo9
-34KQwRAJ2oO//5w85A7hKJ/M+fA7FnKJjGpSvpZPfqt3uD+7C8owB9j2APWVBVjj
-0qKg4brK+PYvHqmQxU+w
-=NgRS
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Feb_2013_12_11_05_+1100_JtfQKZsgFDvRwowz--
