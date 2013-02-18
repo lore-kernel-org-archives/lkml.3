@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab3BRIdO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 03:33:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58637 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab3BRIdN (ORCPT
+	id S1756303Ab3BRIfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 03:35:06 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45438 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751735Ab3BRIfE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 03:33:13 -0500
-Date: Mon, 18 Feb 2013 00:31:39 -0800
-From: tip-bot for Ingo Molnar <tipbot@zytor.com>
-Message-ID: <tip-e341c59c6da2aa90719955809d9efc3cd41e6b49@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        williams@redhat.com, peterz@infradead.org, rostedt@goodmis.org,
-        tglx@linutronix.de, fengguang.wu@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, williams@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, fengguang.wu@intel.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/rt: Add <linux/sched/rt.h> header to <
- linux/init_task.h>
-Git-Commit-ID: e341c59c6da2aa90719955809d9efc3cd41e6b49
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 18 Feb 2013 03:35:04 -0500
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: Graeme Gregory <gg@slimlogic.co.uk>
+CC: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/4] regulator: palmas: Removing duplicated code
+Thread-Topic: [PATCH 3/4] regulator: palmas: Removing duplicated code
+Thread-Index: AQHODZbzlruKrwrzB0+4blbrifIXF5h+61KAgABe9uA=
+Date: Mon, 18 Feb 2013 08:34:55 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229BB514@DBDE01.ent.ti.com>
+References: <1361164446-3216-1-git-send-email-j-keerthy@ti.com>
+ <5121E535.6040309@slimlogic.co.uk>
+In-Reply-To: <5121E535.6040309@slimlogic.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 18 Feb 2013 00:31:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e341c59c6da2aa90719955809d9efc3cd41e6b49
-Gitweb:     http://git.kernel.org/tip/e341c59c6da2aa90719955809d9efc3cd41e6b49
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Sat, 16 Feb 2013 09:46:48 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 18 Feb 2013 09:02:28 +0100
 
-sched/rt: Add <linux/sched/rt.h> header to <linux/init_task.h>
 
-IA64 relied on it through sched.h inclusion:
+> -----Original Message-----
+> From: Graeme Gregory [mailto:gg@slimlogic.co.uk]
+> Sent: Monday, February 18, 2013 1:54 PM
+> To: J, KEERTHY
+> Cc: broonie@opensource.wolfsonmicro.com; lgirdwood@gmail.com; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH 3/4] regulator: palmas: Removing duplicated code
+> 
+> 
+> On 18/02/13 05:14, J Keerthy wrote:
+> > Removing duplicate assignment in the existing code.
+> >
+> > Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> > ---
+> >  drivers/regulator/palmas-regulator.c |    5 -----
+> >  1 files changed, 0 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/drivers/regulator/palmas-regulator.c
+> b/drivers/regulator/palmas-regulator.c
+> > index c9e912f..22c6ae2 100644
+> > --- a/drivers/regulator/palmas-regulator.c
+> > +++ b/drivers/regulator/palmas-regulator.c
+> > @@ -566,11 +566,6 @@ static void palmas_dt_to_pdata(struct device
+> *dev,
+> >  			pdata->reg_init[idx]->mode_sleep = prop;
+> >
+> >  		ret = of_property_read_u32(palmas_matches[idx].of_node,
+> > -				"ti,warm_reset", &prop);
+> > -		if (!ret)
+> > -			pdata->reg_init[idx]->warm_reset = prop;
+> > -
+> > -		ret = of_property_read_u32(palmas_matches[idx].of_node,
+> >  				"ti,tstep", &prop);
+> >  		if (!ret)
+> >  			pdata->reg_init[idx]->tstep = prop;
+> This hunk has already been upstreamed by Axel Lin.
 
-  arch/ia64/kernel/init_task.c:38:11: error: 'MAX_PRIO' undeclared here (not in a function)
-  arch/ia64/kernel/init_task.c:38:11: error: 'RR_TIMESLICE' undeclared here (not in a function)
+Ok. Thanks Graeme. I had missed this.
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Cc: Clark Williams <williams@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/n/tip-xaan1twswggedMR0airtpjui@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/init_task.h | 1 +
- 1 file changed, 1 insertion(+)
+> 
+> http://git.kernel.org/?p=linux/kernel/git/next/linux-
+> next.git;a=commit;h=f33d0081ff3ffb7180a9794e60318458d7671b36
+> 
+> Graeme
 
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index cc898b8..5cd0f09 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -12,6 +12,7 @@
- #include <linux/securebits.h>
- #include <linux/seqlock.h>
- #include <net/net_namespace.h>
-+#include <linux/sched/rt.h>
- 
- #ifdef CONFIG_SMP
- # define INIT_PUSHABLE_TASKS(tsk)					\
