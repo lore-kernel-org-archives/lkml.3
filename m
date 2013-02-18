@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab3BRSfk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 13:35:40 -0500
-Received: from mx1.imag.fr ([129.88.30.5]:43763 "EHLO shiva.imag.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753000Ab3BRSfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 13:35:38 -0500
-From: Matthieu Moy <Matthieu.Moy@grenoble-inp.fr>
-To: Junio C Hamano <gitster@pobox.com>
-Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Git v1.8.2-rc0
-References: <7vk3q6e94s.fsf@alter.siamese.dyndns.org>
-Date: Mon, 18 Feb 2013 19:35:28 +0100
-In-Reply-To: <7vk3q6e94s.fsf@alter.siamese.dyndns.org> (Junio C. Hamano's
-	message of "Sun, 17 Feb 2013 16:52:19 -0800")
-Message-ID: <vpq4nh9v5an.fsf@grenoble-inp.fr>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	id S1753358Ab3BRSja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 13:39:30 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:57241 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752851Ab3BRSj2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 13:39:28 -0500
+Date: Mon, 18 Feb 2013 10:39:25 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-api@vger.kernel.org, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>,
+        RavindranathX Doddi <ravindranathx.doddi@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>
+Subject: Re: uhid: broken interface: 32/64-bit compatibility
+Message-ID: <20130218183925.GA15167@core.coreip.homeip.net>
+References: <20130215112911.68A98E0085@blue.fi.intel.com>
+ <CANq1E4T1QzOUOwWPpV6_55hVTXzXF4baShxpYaM0HNAgF0ffAg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.0.1 (shiva.imag.fr [129.88.30.5]); Mon, 18 Feb 2013 19:35:27 +0100 (CET)
-X-IMAG-MailScanner-Information: Please contact MI2S MIM  for more information
-X-MailScanner-ID: r1IIZR2Y001732
-X-IMAG-MailScanner: Found to be clean
-X-IMAG-MailScanner-SpamCheck: 
-X-IMAG-MailScanner-From: matthieu.moy@grenoble-inp.fr
-MailScanner-NULL-Check: 1361817330.90879@G+P747OSOFDj+BbLePvLQA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANq1E4T1QzOUOwWPpV6_55hVTXzXF4baShxpYaM0HNAgF0ffAg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Junio C Hamano <gitster@pobox.com> writes:
+Hi David,
 
-> Git v1.8.2 Release Notes (draft)
-> ========================
->
-> Backward compatibility notes
-> ----------------------------
->
-> In the upcoming major release (tentatively called 1.8.2), we will
-> change the behavior of the "git push" command.
->
-> When "git push [$there]" does not say what to push, we have used the
-> traditional "matching" semantics so far (all your branches were sent
-> to the remote as long as there already are branches of the same name
-> over there).  We will use the "simple" semantics
+On Fri, Feb 15, 2013 at 12:46:55PM +0100, David Herrmann wrote:
+> Hi Kirill
+> 
+> On Fri, Feb 15, 2013 at 12:29 PM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> > Hi David and all,
+> >
+> > There's claim in uhid.h that the interface is "compatible even between
+> > architectures". But it obviously is not true: struct uhid_create_req
+> > contains pointer which breaks everything.
+> >
+> > The easy way to demonstrate the issue is compile uhid-example.c with -m32
+> > and try to run it on 64 bit kernel. Creating of the device will fail.
+> 
+> Indeed, we missed that. We should probably also notify the HIDP
+> developers as "struct hidp_connadd_req" suffers from the same
+> problems. (CC'ed)
 
-I don't understand: wasn't this supposed to happen in Git 2.0? Did you
-mean "In the upcoming major release (tentatively called *2.0*)"?
+I believe this issue has already been taken care of (see
+compat_hidp_connadd_req and hidp_sock_compat_ioctl).
 
-Also, you may want to mention the argumentless "git add -u" change too.
-It currently has an item below, but this is a future
-backward-incompatible change so it may deserve to appear in this section
-too.
+Thanks.
 
 -- 
-Matthieu Moy
-http://www-verimag.imag.fr/~moy/
+Dmitry
