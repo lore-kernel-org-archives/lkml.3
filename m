@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757633Ab3BRBLk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 20:11:40 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:50951 "EHLO
+	id S1757719Ab3BRBLx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 20:11:53 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:51039 "EHLO
 	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757609Ab3BRBLh (ORCPT
+	with ESMTP id S1757687Ab3BRBLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 20:11:37 -0500
+	Sun, 17 Feb 2013 20:11:50 -0500
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: <linux-fsdevel@vger.kernel.org>
 Cc: Linux Containers <containers@lists.linux-foundation.org>,
         <linux-kernel@vger.kernel.org>, "Serge E. Hallyn" <serge@hallyn.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>, Ben Myers <bpm@sgi.com>,
         Alex Elder <elder@kernel.org>, Dave Chinner <david@fromorbit.com>
-Date: Sun, 17 Feb 2013 17:10:56 -0800
-Message-Id: <1361149870-27732-3-git-send-email-ebiederm@xmission.com>
+Date: Sun, 17 Feb 2013 17:11:00 -0800
+Message-Id: <1361149870-27732-7-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1361149870-27732-1-git-send-email-ebiederm@xmission.com>
 References: <87txpaph4n.fsf@xmission.com>
  <1361149870-27732-1-git-send-email-ebiederm@xmission.com>
-X-XM-AID: U2FsdGVkX1+nDWEoBPleHKNuZWa3TGNEl9NoxDnb5fY=
+X-XM-AID: U2FsdGVkX18Y717Zz1g7Yd/BTmTpwK5taWLYKu1/L/U=
 X-SA-Exim-Connect-IP: 98.207.153.68
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.5 XMGappySubj_01 Very gappy subject
+	*  1.5 TR_Symld_Words too many words that have symbols inside
 	*  0.1 XMSubLong Long Subject
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.2666]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<linux-fsdevel@vger.kernel.org>
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;<linux-fsdevel@vger.kernel.org>
 X-Spam-Relay-Country: 
-Subject: [PATCH review 03/16] xfs: Always read uids and gids from the vfs inode
+Subject: [PATCH review 07/16] xfs: Update ioctl(XFS_IOC_FREE_EOFBLOCKS) to handle callers in any userspace
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
 X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
@@ -43,329 +47,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-Add xfs_set_uid and xfs_set_gid to encapsulate the double write
-needed when updating uid and gids, and uset them for all uid
-and gid writes.
+- Modify the ioctl to convert from uids, gid, and projids in the
+  current user namespace to kuids, kgids, and kprojids, and to report
+  an error if the conversion fails.
 
-Update VFS()->i_uid and VFS_I()->i_gid immediately after reading
-on-disk inode values so that all of the cached uid and gid values
-are always in sync allowing VFS()->i_uid and VFS()->i_gid to safely
-be used everywhere.
+- Create struct xfs_internal_eofblocks to hold the same information as
+  struct xfs_eofblocks but with uids, gids, and projids stored as
+  kuids, kgids, and kprojids preventing confusion.
 
-Replace reads of i_d.di_uid and i_d.di_gid with VFS_I()->i_uid and
-VFS_I()->i_gid.
-
-This is a precursor to pushing kuids and kgids down into xfs.
+- Pass struct xfs_interanl_eofblocks into xfs_icache_free_eofblocks
+  and it's helpers ensuring there will not be confusing about which
+  user namespace identifiers that need to be compared are in.
 
 Cc: Ben Myers <bpm@sgi.com>
 Cc: Alex Elder <elder@kernel.org>
 Cc: Dave Chinner <david@fromorbit.com>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- fs/xfs/xfs_icache.c |    4 ++--
- fs/xfs/xfs_inode.c  |   10 ++++++----
- fs/xfs/xfs_inode.h  |   12 ++++++++++++
- fs/xfs/xfs_ioctl.c  |    6 +++---
- fs/xfs/xfs_iops.c   |   20 ++++++++------------
- fs/xfs/xfs_itable.c |    4 ++--
- fs/xfs/xfs_qm.c     |   22 +++++++++++-----------
- 7 files changed, 44 insertions(+), 34 deletions(-)
+ fs/xfs/xfs_icache.c |    8 ++++----
+ fs/xfs/xfs_icache.h |   11 ++++++++++-
+ fs/xfs/xfs_ioctl.c  |   22 +++++++++++++++++++++-
+ 3 files changed, 35 insertions(+), 6 deletions(-)
 
 diff --git a/fs/xfs/xfs_icache.c b/fs/xfs/xfs_icache.c
-index 4f109ca..eba1dbd 100644
+index 0583649..e4cdc02 100644
 --- a/fs/xfs/xfs_icache.c
 +++ b/fs/xfs/xfs_icache.c
-@@ -1202,11 +1202,11 @@ xfs_inode_match_id(
- 	struct xfs_eofblocks	*eofb)
+@@ -1199,7 +1199,7 @@ xfs_reclaim_inodes_count(
+ STATIC int
+ xfs_inode_match_id(
+ 	struct xfs_inode	*ip,
+-	struct xfs_eofblocks	*eofb)
++	struct xfs_internal_eofblocks	*eofb)
  {
  	if (eofb->eof_flags & XFS_EOF_FLAGS_UID &&
--	    ip->i_d.di_uid != eofb->eof_uid)
-+	    VFS_I(ip)->i_uid != eofb->eof_uid)
- 		return 0;
- 
- 	if (eofb->eof_flags & XFS_EOF_FLAGS_GID &&
--	    ip->i_d.di_gid != eofb->eof_gid)
-+	    VFS_I(ip)->i_gid != eofb->eof_gid)
+ 	    !uid_eq(VFS_I(ip)->i_uid, eofb->eof_uid))
+@@ -1210,7 +1210,7 @@ xfs_inode_match_id(
  		return 0;
  
  	if (eofb->eof_flags & XFS_EOF_FLAGS_PRID &&
-diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
-index 51c2597..846166d 100644
---- a/fs/xfs/xfs_inode.c
-+++ b/fs/xfs/xfs_inode.c
-@@ -1016,6 +1016,8 @@ xfs_iread(
+-	    !projid_eq(ip->i_projid, eofb->eof_prid))
++	    !projid_eq(ip->i_projid, eofb->eof_projid))
+ 		return 0;
  
- 		ip->i_projid = ((projid_t)ip->i_d.di_projid_hi << 16) |
- 					  ip->i_d.di_projid_lo;
-+		VFS_I(ip)->i_uid = ip->i_d.di_uid;
-+		VFS_I(ip)->i_gid = ip->i_d.di_gid;
+ 	return 1;
+@@ -1224,7 +1224,7 @@ xfs_inode_free_eofblocks(
+ 	void			*args)
+ {
+ 	int ret;
+-	struct xfs_eofblocks *eofb = args;
++	struct xfs_internal_eofblocks *eofb = args;
  
- 		error = xfs_iformat(ip, dip);
- 		if (error)  {
-@@ -1201,8 +1203,8 @@ xfs_ialloc(
- 	ip->i_d.di_onlink = 0;
- 	ip->i_d.di_nlink = nlink;
- 	ASSERT(ip->i_d.di_nlink == nlink);
--	ip->i_d.di_uid = current_fsuid();
--	ip->i_d.di_gid = current_fsgid();
-+	xfs_set_uid(ip, current_fsuid());
-+	xfs_set_gid(ip, current_fsgid());
- 	xfs_set_projid(ip, prid);
- 	memset(&(ip->i_d.di_pad[0]), 0, sizeof(ip->i_d.di_pad));
+ 	if (!xfs_can_free_eofblocks(ip, false)) {
+ 		/* inode could be preallocated or append-only */
+@@ -1263,7 +1263,7 @@ xfs_inode_free_eofblocks(
+ int
+ xfs_icache_free_eofblocks(
+ 	struct xfs_mount	*mp,
+-	struct xfs_eofblocks	*eofb)
++	struct xfs_internal_eofblocks	*eofb)
+ {
+ 	int flags = SYNC_TRYLOCK;
  
-@@ -1228,7 +1230,7 @@ xfs_ialloc(
- 		xfs_bump_ino_vers2(tp, ip);
+diff --git a/fs/xfs/xfs_icache.h b/fs/xfs/xfs_icache.h
+index e0f138c..260dc27 100644
+--- a/fs/xfs/xfs_icache.h
++++ b/fs/xfs/xfs_icache.h
+@@ -35,9 +35,18 @@ void xfs_reclaim_inodes_nr(struct xfs_mount *mp, int nr_to_scan);
  
- 	if (pip && XFS_INHERIT_GID(pip)) {
--		ip->i_d.di_gid = pip->i_d.di_gid;
-+		xfs_set_gid(ip, VFS_I(pip)->i_gid);
- 		if ((pip->i_d.di_mode & S_ISGID) && S_ISDIR(mode)) {
- 			ip->i_d.di_mode |= S_ISGID;
- 		}
-@@ -1241,7 +1243,7 @@ xfs_ialloc(
- 	 */
- 	if ((irix_sgid_inherit) &&
- 	    (ip->i_d.di_mode & S_ISGID) &&
--	    (!in_group_p((gid_t)ip->i_d.di_gid))) {
-+	    (!in_group_p(VFS_I(ip)->i_gid))) {
- 		ip->i_d.di_mode &= ~S_ISGID;
- 	}
+ void xfs_inode_set_reclaim_tag(struct xfs_inode *ip);
  
-diff --git a/fs/xfs/xfs_inode.h b/fs/xfs/xfs_inode.h
-index b9e4389..f503aed 100644
---- a/fs/xfs/xfs_inode.h
-+++ b/fs/xfs/xfs_inode.h
-@@ -370,6 +370,18 @@ xfs_set_projid(struct xfs_inode *ip,
- 	ip->i_d.di_projid_lo = (__uint16_t) (projid & 0xffff);
- }
- 
-+static inline void xfs_set_uid(struct xfs_inode *ip, uid_t uid)
-+{
-+	VFS_I(ip)->i_uid = uid;
-+	ip->i_d.di_uid = uid;
-+}
++struct xfs_internal_eofblocks {
++	u32		eof_version;
++	u32		eof_flags;
++	kuid_t		eof_uid;
++	kgid_t		eof_gid;
++	kprojid_t	eof_projid;
++	u64		eof_min_file_size;
++};
 +
-+static inline void xfs_set_gid(struct xfs_inode *ip, gid_t gid)
-+{
-+	VFS_I(ip)->i_gid = gid;
-+	ip->i_d.di_gid = gid;
-+}
-+
- /*
-  * In-core inode flags.
-  */
+ void xfs_inode_set_eofblocks_tag(struct xfs_inode *ip);
+ void xfs_inode_clear_eofblocks_tag(struct xfs_inode *ip);
+-int xfs_icache_free_eofblocks(struct xfs_mount *, struct xfs_eofblocks *);
++int xfs_icache_free_eofblocks(struct xfs_mount *, struct xfs_internal_eofblocks *);
+ void xfs_eofblocks_worker(struct work_struct *);
+ 
+ int xfs_sync_inode_grab(struct xfs_inode *ip);
 diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
-index 4afb509..db274d4 100644
+index 4a55f50..1a74b56 100644
 --- a/fs/xfs/xfs_ioctl.c
 +++ b/fs/xfs/xfs_ioctl.c
-@@ -949,8 +949,8 @@ xfs_ioctl_setattr(
- 	 * because the i_*dquot fields will get updated anyway.
- 	 */
- 	if (XFS_IS_QUOTA_ON(mp) && (mask & FSX_PROJID)) {
--		code = xfs_qm_vop_dqalloc(ip, ip->i_d.di_uid,
--					 ip->i_d.di_gid, fa->fsx_projid,
-+		code = xfs_qm_vop_dqalloc(ip, VFS_I(ip)->i_uid,
-+					 VFS_I(ip)->i_gid, fa->fsx_projid,
- 					 XFS_QMOPT_PQUOTA, &udqp, &gdqp);
- 		if (code)
- 			return code;
-@@ -975,7 +975,7 @@ xfs_ioctl_setattr(
- 	 * to the file owner ID, except in cases where the
- 	 * CAP_FSETID capability is applicable.
- 	 */
--	if (current_fsuid() != ip->i_d.di_uid && !capable(CAP_FOWNER)) {
-+	if (current_fsuid() != VFS_I(ip)->i_uid && !capable(CAP_FOWNER)) {
- 		code = XFS_ERROR(EPERM);
- 		goto error_return;
- 	}
-diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
-index 643f55a..235a48c 100644
---- a/fs/xfs/xfs_iops.c
-+++ b/fs/xfs/xfs_iops.c
-@@ -420,8 +420,8 @@ xfs_vn_getattr(
- 	stat->dev = inode->i_sb->s_dev;
- 	stat->mode = ip->i_d.di_mode;
- 	stat->nlink = ip->i_d.di_nlink;
--	stat->uid = ip->i_d.di_uid;
--	stat->gid = ip->i_d.di_gid;
-+	stat->uid = VFS_I(ip)->i_uid;
-+	stat->gid = VFS_I(ip)->i_gid;
- 	stat->ino = ip->i_ino;
- 	stat->atime = inode->i_atime;
- 	stat->mtime = inode->i_mtime;
-@@ -500,13 +500,13 @@ xfs_setattr_nonsize(
- 			uid = iattr->ia_uid;
- 			qflags |= XFS_QMOPT_UQUOTA;
- 		} else {
--			uid = ip->i_d.di_uid;
-+			uid = VFS_I(ip)->i_uid;
- 		}
- 		if ((mask & ATTR_GID) && XFS_IS_GQUOTA_ON(mp)) {
- 			gid = iattr->ia_gid;
- 			qflags |= XFS_QMOPT_GQUOTA;
- 		}  else {
--			gid = ip->i_d.di_gid;
-+			gid = VFS_I(ip)->i_gid;
- 		}
+@@ -1615,6 +1615,7 @@ xfs_file_ioctl(
  
- 		/*
-@@ -539,8 +539,8 @@ xfs_setattr_nonsize(
- 		 * while we didn't have the inode locked, inode's dquot(s)
- 		 * would have changed also.
- 		 */
--		iuid = ip->i_d.di_uid;
--		igid = ip->i_d.di_gid;
-+		iuid = VFS_I(ip)->i_uid;
-+		igid = VFS_I(ip)->i_gid;
- 		gid = (mask & ATTR_GID) ? iattr->ia_gid : igid;
- 		uid = (mask & ATTR_UID) ? iattr->ia_uid : iuid;
+ 	case XFS_IOC_FREE_EOFBLOCKS: {
+ 		struct xfs_eofblocks eofb;
++		struct xfs_internal_eofblocks keofb;
  
-@@ -587,8 +587,7 @@ xfs_setattr_nonsize(
- 				olddquot1 = xfs_qm_vop_chown(tp, ip,
- 							&ip->i_udquot, udqp);
- 			}
--			ip->i_d.di_uid = uid;
--			inode->i_uid = uid;
-+			xfs_set_uid(ip, uid);
- 		}
- 		if (igid != gid) {
- 			if (XFS_IS_QUOTA_RUNNING(mp) && XFS_IS_GQUOTA_ON(mp)) {
-@@ -598,8 +597,7 @@ xfs_setattr_nonsize(
- 				olddquot2 = xfs_qm_vop_chown(tp, ip,
- 							&ip->i_gdquot, gdqp);
- 			}
--			ip->i_d.di_gid = gid;
--			inode->i_gid = gid;
-+			xfs_set_gid(ip, gid);
- 		}
+ 		if (copy_from_user(&eofb, arg, sizeof(eofb)))
+ 			return -XFS_ERROR(EFAULT);
+@@ -1629,7 +1630,26 @@ xfs_file_ioctl(
+ 		    memchr_inv(eofb.pad64, 0, sizeof(eofb.pad64)))
+ 			return -XFS_ERROR(EINVAL);
+ 
+-		error = xfs_icache_free_eofblocks(mp, &eofb);
++		keofb.eof_version = eofb.eof_version;
++		keofb.eof_flags   = eofb.eof_flags;
++		if (eofb.eof_flags & XFS_EOF_FLAGS_UID) {
++			keofb.eof_uid = make_kuid(current_user_ns(), eofb.eof_uid);
++			if (!uid_valid(keofb.eof_uid))
++				return -XFS_ERROR(EINVAL);
++		}
++		if (eofb.eof_flags & XFS_EOF_FLAGS_GID) {
++			keofb.eof_gid = make_kgid(current_user_ns(), eofb.eof_gid);
++			if (!gid_valid(keofb.eof_gid))
++				return -XFS_ERROR(EINVAL);
++		}
++		if (eofb.eof_flags & XFS_EOF_FLAGS_PRID) {
++			keofb.eof_projid = make_kprojid(current_user_ns(), eofb.eof_prid);
++			if (!projid_valid(keofb.eof_projid))
++				return -XFS_ERROR(EINVAL);
++		}
++		keofb.eof_min_file_size = eofb.eof_min_file_size;
++
++		error = xfs_icache_free_eofblocks(mp, &keofb);
+ 		return -error;
  	}
  
-@@ -1155,8 +1153,6 @@ xfs_setup_inode(
- 
- 	inode->i_mode	= ip->i_d.di_mode;
- 	set_nlink(inode, ip->i_d.di_nlink);
--	inode->i_uid	= ip->i_d.di_uid;
--	inode->i_gid	= ip->i_d.di_gid;
- 
- 	switch (inode->i_mode & S_IFMT) {
- 	case S_IFBLK:
-diff --git a/fs/xfs/xfs_itable.c b/fs/xfs/xfs_itable.c
-index cf5b1d0..a9e07dd 100644
---- a/fs/xfs/xfs_itable.c
-+++ b/fs/xfs/xfs_itable.c
-@@ -95,8 +95,8 @@ xfs_bulkstat_one_int(
- 	buf->bs_projid_hi = (u16)(ip->i_projid >> 16);
- 	buf->bs_ino = ino;
- 	buf->bs_mode = dic->di_mode;
--	buf->bs_uid = dic->di_uid;
--	buf->bs_gid = dic->di_gid;
-+	buf->bs_uid = VFS_I(ip)->i_uid;
-+	buf->bs_gid = VFS_I(ip)->i_gid;
- 	buf->bs_size = dic->di_size;
- 	buf->bs_atime.tv_sec = dic->di_atime.t_sec;
- 	buf->bs_atime.tv_nsec = dic->di_atime.t_nsec;
-diff --git a/fs/xfs/xfs_qm.c b/fs/xfs/xfs_qm.c
-index e5f48a7..c1310ed 100644
---- a/fs/xfs/xfs_qm.c
-+++ b/fs/xfs/xfs_qm.c
-@@ -516,7 +516,7 @@ xfs_qm_dqattach_locked(
- 	ASSERT(xfs_isilocked(ip, XFS_ILOCK_EXCL));
- 
- 	if (XFS_IS_UQUOTA_ON(mp)) {
--		error = xfs_qm_dqattach_one(ip, ip->i_d.di_uid, XFS_DQ_USER,
-+		error = xfs_qm_dqattach_one(ip, VFS_I(ip)->i_uid, XFS_DQ_USER,
- 						flags & XFS_QMOPT_DQALLOC,
- 						NULL, &ip->i_udquot);
- 		if (error)
-@@ -527,7 +527,7 @@ xfs_qm_dqattach_locked(
- 	ASSERT(xfs_isilocked(ip, XFS_ILOCK_EXCL));
- 	if (XFS_IS_OQUOTA_ON(mp)) {
- 		error = XFS_IS_GQUOTA_ON(mp) ?
--			xfs_qm_dqattach_one(ip, ip->i_d.di_gid, XFS_DQ_GROUP,
-+			xfs_qm_dqattach_one(ip, VFS_I(ip)->i_gid, XFS_DQ_GROUP,
- 						flags & XFS_QMOPT_DQALLOC,
- 						ip->i_udquot, &ip->i_gdquot) :
- 			xfs_qm_dqattach_one(ip, ip->i_projid, XFS_DQ_PROJ,
-@@ -1158,14 +1158,14 @@ xfs_qm_dqusage_adjust(
- 	 * and quotaoffs don't race. (Quotachecks happen at mount time only).
- 	 */
- 	if (XFS_IS_UQUOTA_ON(mp)) {
--		error = xfs_qm_quotacheck_dqadjust(ip, ip->i_d.di_uid,
-+		error = xfs_qm_quotacheck_dqadjust(ip, VFS_I(ip)->i_uid,
- 						   XFS_DQ_USER, nblks, rtblks);
- 		if (error)
- 			goto error0;
- 	}
- 
- 	if (XFS_IS_GQUOTA_ON(mp)) {
--		error = xfs_qm_quotacheck_dqadjust(ip, ip->i_d.di_gid,
-+		error = xfs_qm_quotacheck_dqadjust(ip, VFS_I(ip)->i_gid,
- 						   XFS_DQ_GROUP, nblks, rtblks);
- 		if (error)
- 			goto error0;
-@@ -1634,7 +1634,7 @@ xfs_qm_vop_dqalloc(
- 	xfs_ilock(ip, lockflags);
- 
- 	if ((flags & XFS_QMOPT_INHERIT) && XFS_INHERIT_GID(ip))
--		gid = ip->i_d.di_gid;
-+		gid = VFS_I(ip)->i_gid;
- 
- 	/*
- 	 * Attach the dquot(s) to this inode, doing a dquot allocation
-@@ -1650,7 +1650,7 @@ xfs_qm_vop_dqalloc(
- 
- 	uq = gq = NULL;
- 	if ((flags & XFS_QMOPT_UQUOTA) && XFS_IS_UQUOTA_ON(mp)) {
--		if (ip->i_d.di_uid != uid) {
-+		if (VFS_I(ip)->i_uid != uid) {
- 			/*
- 			 * What we need is the dquot that has this uid, and
- 			 * if we send the inode to dqget, the uid of the inode
-@@ -1685,7 +1685,7 @@ xfs_qm_vop_dqalloc(
- 		}
- 	}
- 	if ((flags & XFS_QMOPT_GQUOTA) && XFS_IS_GQUOTA_ON(mp)) {
--		if (ip->i_d.di_gid != gid) {
-+		if (VFS_I(ip)->i_gid != gid) {
- 			xfs_iunlock(ip, lockflags);
- 			if ((error = xfs_qm_dqget(mp, NULL, (xfs_dqid_t)gid,
- 						 XFS_DQ_GROUP,
-@@ -1806,7 +1806,7 @@ xfs_qm_vop_chown_reserve(
- 			XFS_QMOPT_RES_RTBLKS : XFS_QMOPT_RES_REGBLKS;
- 
- 	if (XFS_IS_UQUOTA_ON(mp) && udqp &&
--	    ip->i_d.di_uid != (uid_t)be32_to_cpu(udqp->q_core.d_id)) {
-+	    VFS_I(ip)->i_uid != (uid_t)be32_to_cpu(udqp->q_core.d_id)) {
- 		delblksudq = udqp;
- 		/*
- 		 * If there are delayed allocation blocks, then we have to
-@@ -1825,7 +1825,7 @@ xfs_qm_vop_chown_reserve(
- 
- 		if (prjflags ||
- 		    (XFS_IS_GQUOTA_ON(ip->i_mount) &&
--		     ip->i_d.di_gid != be32_to_cpu(gdqp->q_core.d_id))) {
-+		     VFS_I(ip)->i_gid != be32_to_cpu(gdqp->q_core.d_id))) {
- 			delblksgdq = gdqp;
- 			if (delblks) {
- 				ASSERT(ip->i_gdquot);
-@@ -1909,7 +1909,7 @@ xfs_qm_vop_create_dqattach(
- 	if (udqp) {
- 		ASSERT(ip->i_udquot == NULL);
- 		ASSERT(XFS_IS_UQUOTA_ON(mp));
--		ASSERT(ip->i_d.di_uid == be32_to_cpu(udqp->q_core.d_id));
-+		ASSERT(VFS_I(ip)->i_uid == be32_to_cpu(udqp->q_core.d_id));
- 
- 		ip->i_udquot = xfs_qm_dqhold(udqp);
- 		xfs_trans_mod_dquot(tp, udqp, XFS_TRANS_DQ_ICOUNT, 1);
-@@ -1918,7 +1918,7 @@ xfs_qm_vop_create_dqattach(
- 		ASSERT(ip->i_gdquot == NULL);
- 		ASSERT(XFS_IS_OQUOTA_ON(mp));
- 		ASSERT((XFS_IS_GQUOTA_ON(mp) ?
--			ip->i_d.di_gid : ip->i_projid) ==
-+			VFS_I(ip)->i_gid : ip->i_projid) ==
- 				be32_to_cpu(gdqp->q_core.d_id));
- 
- 		ip->i_gdquot = xfs_qm_dqhold(gdqp);
 -- 
 1.7.5.4
 
