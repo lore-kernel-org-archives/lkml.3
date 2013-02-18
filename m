@@ -1,103 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab3BRP7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 10:59:08 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36319 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232Ab3BRP7G (ORCPT
+	id S1754765Ab3BRQCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 11:02:53 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:60273 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652Ab3BRQCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 10:59:06 -0500
-Date: Tue, 19 Feb 2013 00:58:56 +0900 (JST)
-Message-Id: <20130219.005856.267479651.d.hatayama@jp.fujitsu.com>
-To: vgoyal@redhat.com
-Cc: ebiederm@xmission.com, cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp,
-        lisa.mitchell@hp.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/13] vmcore: round up buffer size of ELF headers by
- PAGE_SIZE
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <20130215151821.GB27784@redhat.com>
-References: <20130214100945.22466.4172.stgit@localhost6.localdomain6>
-	<20130214101154.22466.21769.stgit@localhost6.localdomain6>
-	<20130215151821.GB27784@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 24.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 18 Feb 2013 11:02:52 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexander Shiyan <shc_work@mail.ru>
+Subject: Re: [PATCH v3] mfd: syscon: Add non-DT support
+Date: Mon, 18 Feb 2013 16:02:46 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Dong Aisheng <dong.aisheng@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+References: <1361198522-23789-1-git-send-email-shc_work@mail.ru>
+In-Reply-To: <1361198522-23789-1-git-send-email-shc_work@mail.ru>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201302181602.47157.arnd@arndb.de>
+X-Provags-ID: V02:K0:Zk+9fJ3/WmuBxaIEqpZFaWSuUmYjD1o4GDjVxISK0F/
+ Y57vT2VaxuyIYAURgLyWlFl+MqjbyyMjlViLqklOnZAZ5qIyT3
+ 2VIkXVAabfJ+5PjHINvC0jW0qStIePKxGBO7xV9P2WUPpl0mlx
+ ZmDPrA61MxZ4Lcw2eO2LarNygFag9w1jpLc2AhuTfHJTkTyf6c
+ 5YuYSLfJTnSYcK5HpTE+AOJYgE0REZQjGF1k7L2KMclqMq9ETo
+ K2TJra8e0S3ED6IBdCNFkXXbqaLkhcKXg5hjpdrA2rPTCx8lzo
+ aLC9FHWllQPlKMfmCNva1cEL9E9O4HuZblD/8G5PgXKptW4yP4
+ 0RGOXAEzzNTMHKr7dy80=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 02/13] vmcore: round up buffer size of ELF headers by PAGE_SIZE
-Date: Fri, 15 Feb 2013 10:18:21 -0500
+On Monday 18 February 2013, Alexander Shiyan wrote:
+> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> index 4a7ed5a..3c0abcb 100644
+> --- a/drivers/mfd/syscon.c
+> +++ b/drivers/mfd/syscon.c
 
-> On Thu, Feb 14, 2013 at 07:11:54PM +0900, HATAYAMA Daisuke wrote:
->> To satisfy mmap() page-size boundary requirement, reound up buffer
->> size of ELF headers by PAGE_SIZE. The resulting value becomes offset
->> of ELF note segments and it's assigned in unique PT_NOTE program
->> header entry.
->> 
->> Also, some part that assumes past ELF headers' size is replaced by
->> this new rounded-up value.
->> 
->> Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
->> ---
->> 
->>  fs/proc/vmcore.c |    9 +++++----
->>  1 files changed, 5 insertions(+), 4 deletions(-)
->> 
->> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
->> index 85714c3..5010ead 100644
->> --- a/fs/proc/vmcore.c
->> +++ b/fs/proc/vmcore.c
->> @@ -313,7 +313,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
->>  	phdr.p_flags   = 0;
->>  	note_off = sizeof(Elf64_Ehdr) +
->>  			(ehdr_ptr->e_phnum - nr_ptnote +1) * sizeof(Elf64_Phdr);
->> -	phdr.p_offset  = note_off;
->> +	phdr.p_offset  = roundup(note_off, PAGE_SIZE);
->>  	phdr.p_vaddr   = phdr.p_paddr = 0;
->>  	phdr.p_filesz  = phdr.p_memsz = phdr_sz;
->>  	phdr.p_align   = 0;
->> @@ -331,6 +331,8 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
->>  	/* Modify e_phnum to reflect merged headers. */
->>  	ehdr_ptr->e_phnum = ehdr_ptr->e_phnum - nr_ptnote + 1;
->>  
-> 
-> Hi Hatayama,
-> 
-> While reading the /proc/vmcore code again, I realized that we are making
-> a horrible assumption. And that is that all PT_NOTE program headers
-> prepared by kexec-tools are contiguous. And we also seem to be assuming
-> that all PT_NOTE phdrs are following immediately Elf Header.
-> 
->         /* Add merged PT_NOTE program header*/
->         tmp = elfptr + sizeof(Elf64_Ehdr);
->         memcpy(tmp, &phdr, sizeof(phdr));
->         tmp += sizeof(phdr);
-> 
->         /* Remove unwanted PT_NOTE program headers. */
->         i = (nr_ptnote - 1) * sizeof(Elf64_Phdr);
->         *elfsz = *elfsz - i;
->         memmove(tmp, tmp+i, ((*elfsz)-sizeof(Elf64_Ehdr)-sizeof(Elf64_Phdr)));
-> 
-> I know I wrote this code but now I realize that this is very bad
-> assumption. We should not be assuming where PT_NOTE headers are and
-> also should not be assuming that these are contiguous.
-> 
-> This will require fixing. I think we just need to read old elf headers
-> in a buffer and prepare new headers (merged one) in a separate buffer
-> instead of trying to make do with single buffer.
-> 
-> If it is not too much of trouble, can you please do this cleanup and
-> rebase your patches on top of it.
-> 
-> Thanks
-> Vivek
+Hi Alexander,
 
-Yes, I'll do this.
+>  struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
+>  {
+>  	struct device_node *syscon_np;
+>  	struct regmap *regmap;
+> +	struct syscon *syscon;
+> +	struct device *dev;
+>  
+>  	syscon_np = of_find_compatible_node(NULL, NULL, s);
+> -	if (!syscon_np)
+> +	if (syscon_np) {
+> +		regmap = syscon_node_to_regmap(syscon_np);
+> +		of_node_put(syscon_np);
+> +
+> +		return regmap;
+> +	}
+> +
+> +	/* Fallback to search by id_entry.name string */
+> +	dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
+> +				 syscon_match_id);
+> +	if (!dev)
+>  		return ERR_PTR(-ENODEV);
+>  
+> -	regmap = syscon_node_to_regmap(syscon_np);
+> -	of_node_put(syscon_np);
+> +	syscon = dev_get_drvdata(dev);
+>  
+> -	return regmap;
+> +	return syscon->regmap;
+>  }
+>  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
 
-Thanks.
-HATAYAMA, Daisuke
+Since you are not actually comparing the "compatible" property here,
+I would suggest adding another function here, something like
+syscon_regmap_lookup_by_pdevname() that you can use in device
+drivers that are not DT-enabled. I would also recommend enclosing
+that function in #ifdef CONFIG_ATAGS.
 
+Which code do you have in mind that would call this anyway?
+The changeset description does not really explain what ATAG
+boot support in syscon is good for.
+
+> +	if (IS_ENABLED(CONFIG_OF) && np) {
+> +		syscon->base = of_iomap(np, 0);
+> +		if (!syscon->base)
+> +			return -EADDRNOTAVAIL;
+> +
+> +		res = &res_of;
+> +		ret = of_address_to_resource(np, 0, res);
+> +		if (ret) {
+> +			iounmap(syscon->base);
+> +			return ret;
+> +		}
+> +	} else {
+> +		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +		if (!res)
+> +			return -ENOENT;
+> +
+> +		if (!devm_request_mem_region(dev, res->start,
+> +					     resource_size(res),
+> +					     dev_name(&pdev->dev)))
+> +			return -EBUSY;
+> +
+> +		syscon->base = ioremap(res->start, resource_size(res));
+> +		if (!syscon->base)
+> +			return -EADDRNOTAVAIL;
+> +	}
+
+These two code paths look equivalent. Why not always use the second
+one? Also, you might want to convert this to devm_ioremap_resource()
+to simplify the code in the process.
+
+	Arnd
