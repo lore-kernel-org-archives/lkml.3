@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817Ab3BRVTa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 16:19:30 -0500
-Received: from mail.tpi.com ([70.99.223.143]:1956 "EHLO mail.tpi.com"
+	id S1756183Ab3BRVYw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 16:24:52 -0500
+Received: from mail.tpi.com ([70.99.223.143]:4050 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752836Ab3BRVT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 16:19:29 -0500
+	id S1753666Ab3BRVYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 16:24:51 -0500
 From: Tim Gardner <tim.gardner@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: Tim Gardner <tim.gardner@canonical.com>,
         Stefan Richter <stefanr@s5r6.in-berlin.de>,
         linux1394-devel@lists.sourceforge.net
-Subject: [PATCH linux-next] =?UTF-8?q?firewire:=20fw=5Fdevice=5Finit:=20=E2=80=98minor=E2?= =?UTF-8?q?=80=99=20may=20be=20used=20uninitialized?=
-Date: Mon, 18 Feb 2013 14:19:03 -0700
-Message-Id: <1361222343-112898-1-git-send-email-tim.gardner@canonical.com>
+Subject: [PATCH linux-next v2] firewire: fw_device_init: 'minor' may be used uninitialized
+Date: Mon, 18 Feb 2013 14:24:36 -0700
+Message-Id: <1361222676-113069-1-git-send-email-tim.gardner@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361222343-112898-1-git-send-email-tim.gardner@canonical.com>
+References: <1361222343-112898-1-git-send-email-tim.gardner@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -34,6 +36,8 @@ Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 
 If this patch is correct, then it also ought to go to stable
 if it misses 3.8 final.
+
+v2 - Better commit subject
 
  drivers/firewire/core-device.c |    5 +++--
  1 file changed, 3 insertions(+), 2 deletions(-)
