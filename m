@@ -1,166 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab3BRIod (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 03:44:33 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42552 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334Ab3BRIoc (ORCPT
+	id S1756554Ab3BRIsc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 03:48:32 -0500
+Received: from mail-ve0-f201.google.com ([209.85.128.201]:61858 "EHLO
+	mail-ve0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab3BRIsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 03:44:32 -0500
-X-AuditID: 9c930197-b7ca4ae000006ba8-c0-5121e9ec578e
-Date: Mon, 18 Feb 2013 17:44:39 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 10/15] sched: packing transitory tasks in wake/exec
- power balancing
-Message-ID: <20130218084439.GB10009@lge.com>
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
- <1361164062-20111-11-git-send-email-alex.shi@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361164062-20111-11-git-send-email-alex.shi@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 18 Feb 2013 03:48:31 -0500
+X-Greylist: delayed 476 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Feb 2013 03:48:30 EST
+From: Chung-yih Wang <cywang@chromium.org>
+To: linux-input@vger.kernel.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, Chung-yih Wang <cywang@chromium.org>
+Subject: [PATCH] Input: synaptics - add retry mechanism for reconnect
+Date: Mon, 18 Feb 2013 16:40:21 +0800
+Message-Id: <1361176821-31372-1-git-send-email-cywang@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Alex.
+On the Samsung Series 5 Chromebook, the Synaptics ClickPad will sometimes not
+send an "0xFA" PS/2 ACK in response to a command byte during the reconnect
+sequence following a resume from suspend. From our experiments, the failure can
+happen during any byte of any of the commands in the reconnect batch.
 
-On Mon, Feb 18, 2013 at 01:07:37PM +0800, Alex Shi wrote:
-> If the waked/execed task is transitory enough, it will has a chance to be
-> packed into a cpu which is busy but still has time to care it.
-> For powersaving policy, only the history util < 25% task has chance to
-> be packed, and for balance policy, only histroy util < 12.5% has chance.
-> If there is no cpu eligible to handle it, will use a idlest cpu in
-> leader group.
+This failure results in a timeout in the psmouse driver. In addition, the
+ClickPad will often also respond to the next PS/2 command byte with an "0xFE"
+PS/2 RESEND response.
 
-After exec(), task's behavior may be changed, and history util may be
-changed, too. So, IMHO, exec balancing by history util is not good idea.
-How do you think about it?
+This patch makes the synaptics reconnect-at-resume more tolerant to such
+failures.
 
-Thanks.
+Signed-off-by: Chung-yih Wang <cywang@chromium.org>
+---
+ drivers/input/mouse/synaptics.c |   79 ++++++++++++++++++++++++++-------------
+ 1 files changed, 53 insertions(+), 26 deletions(-)
 
-> Morten Rasmussen catch a type bug and suggest using different criteria
-> for different policy, thanks!
-> 
-> Inspired-by: Vincent Guittot <vincent.guittot@linaro.org>
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/fair.c | 66 ++++++++++++++++++++++++++++++++++++++++++++++++-----
->  1 file changed, 60 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index b172678..2e8131d 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3455,19 +3455,72 @@ static inline int get_sd_sched_balance_policy(struct sched_domain *sd,
->  }
->  
->  /*
-> + * find_leader_cpu - find the busiest but still has enough leisure time cpu
-> + * among the cpus in group.
-> + */
-> +static int
-> +find_leader_cpu(struct sched_group *group, struct task_struct *p, int this_cpu,
-> +		int policy)
-> +{
-> +	/* percentage of the task's util */
-> +	unsigned putil = p->se.avg.runnable_avg_sum * 100
-> +				/ (p->se.avg.runnable_avg_period + 1);
-> +
-> +	struct rq *rq = cpu_rq(this_cpu);
-> +	int nr_running = rq->nr_running > 0 ? rq->nr_running : 1;
-> +	int vacancy, min_vacancy = INT_MAX, max_util;
-> +	int leader_cpu = -1;
-> +	int i;
-> +
-> +	if (policy == SCHED_POLICY_POWERSAVING)
-> +		max_util = FULL_UTIL;
-> +	else
-> +		/* maximum allowable util is 60% */
-> +		max_util = 60;
-> +
-> +	/* bias toward local cpu */
-> +	if (cpumask_test_cpu(this_cpu, tsk_cpus_allowed(p)) &&
-> +		max_util - (rq->util * nr_running + (putil << 2)) > 0)
-> +			return this_cpu;
-> +
-> +	/* Traverse only the allowed CPUs */
-> +	for_each_cpu_and(i, sched_group_cpus(group), tsk_cpus_allowed(p)) {
-> +		if (i == this_cpu)
-> +			continue;
-> +
-> +		rq = cpu_rq(i);
-> +		nr_running = rq->nr_running > 0 ? rq->nr_running : 1;
-> +
-> +		/* only light task allowed, like putil < 25% for powersaving */
-> +		vacancy = max_util - (rq->util * nr_running + (putil << 2));
-> +
-> +		if (vacancy > 0 && vacancy < min_vacancy) {
-> +			min_vacancy = vacancy;
-> +			leader_cpu = i;
-> +		}
-> +	}
-> +	return leader_cpu;
-> +}
-> +
-> +/*
->   * If power policy is eligible for this domain, and it has task allowed cpu.
->   * we will select CPU from this domain.
->   */
->  static int get_cpu_for_power_policy(struct sched_domain *sd, int cpu,
-> -		struct task_struct *p, struct sd_lb_stats *sds)
-> +		struct task_struct *p, struct sd_lb_stats *sds, int fork)
->  {
->  	int policy;
->  	int new_cpu = -1;
->  
->  	policy = get_sd_sched_balance_policy(sd, cpu, p, sds);
-> -	if (policy != SCHED_POLICY_PERFORMANCE && sds->group_leader)
-> -		new_cpu = find_idlest_cpu(sds->group_leader, p, cpu);
-> -
-> +	if (policy != SCHED_POLICY_PERFORMANCE && sds->group_leader) {
-> +		if (!fork)
-> +			new_cpu = find_leader_cpu(sds->group_leader,
-> +							p, cpu, policy);
-> +		/* for fork balancing and a little busy task */
-> +		if (new_cpu == -1)
-> +			new_cpu = find_idlest_cpu(sds->group_leader, p, cpu);
-> +	}
->  	return new_cpu;
->  }
->  
-> @@ -3518,14 +3571,15 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int flags)
->  		if (tmp->flags & sd_flag) {
->  			sd = tmp;
->  
-> -			new_cpu = get_cpu_for_power_policy(sd, cpu, p, &sds);
-> +			new_cpu = get_cpu_for_power_policy(sd, cpu, p, &sds,
-> +						flags & SD_BALANCE_FORK);
->  			if (new_cpu != -1)
->  				goto unlock;
->  		}
->  	}
->  
->  	if (affine_sd) {
-> -		new_cpu = get_cpu_for_power_policy(affine_sd, cpu, p, &sds);
-> +		new_cpu = get_cpu_for_power_policy(affine_sd, cpu, p, &sds, 0);
->  		if (new_cpu != -1)
->  			goto unlock;
->  
-> -- 
-> 1.7.12
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 2f78538..2ee19a5 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -72,33 +72,65 @@
+  ****************************************************************************/
+ 
+ /*
++ * Send a "synaptics" command to the device and retry on PS/2 communication
++ * error
++ */
++static int synaptics_send_cmd_retry(struct psmouse *psmouse, unsigned char cmd,
++				    unsigned char *param, int param_c)
++{
++	int tries = 2;
++	do {
++		if (!psmouse_sliced_command(psmouse, cmd) &&
++		    !ps2_command(&psmouse->ps2dev, param, param_c)) {
++			return 0;
++		}
++		/*
++		 * If the touchpad did not ACK a previous command byte,
++		 * it may also respond to the next command byte with 'FE'.
++		 * Send a dummy command to clear this possible 'FE'.
++		 */
++		ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_SETSCALE11);
++	} while (--tries > 0);
++	psmouse_err(psmouse, "synaptics_retry failed cmd:0x%02x param_c 0x%x",
++		    cmd, param_c);
++	return -1;
++}
++
++/*
+  * Set the synaptics touchpad mode byte by special commands
+  */
+ static int synaptics_mode_cmd(struct psmouse *psmouse, unsigned char mode)
+ {
+ 	unsigned char param[1];
+ 
+-	if (psmouse_sliced_command(psmouse, mode))
+-		return -1;
+ 	param[0] = SYN_PS_SET_MODE2;
+-	if (ps2_command(&psmouse->ps2dev, param, PSMOUSE_CMD_SETRATE))
+-		return -1;
+-	return 0;
++	return synaptics_send_cmd_retry(psmouse, mode,
++					param, PSMOUSE_CMD_SETRATE);
+ }
+ 
+ int synaptics_detect(struct psmouse *psmouse, bool set_properties)
+ {
+ 	struct ps2dev *ps2dev = &psmouse->ps2dev;
+ 	unsigned char param[4];
++	int tries = 2;
+ 
+-	param[0] = 0;
++	do {
++		param[0] = 0;
++		if (!ps2_command(ps2dev, param, PSMOUSE_CMD_SETRES) &&
++		    !ps2_command(ps2dev, param, PSMOUSE_CMD_SETRES) &&
++		    !ps2_command(ps2dev, param, PSMOUSE_CMD_SETRES) &&
++		    !ps2_command(ps2dev, param, PSMOUSE_CMD_SETRES) &&
++		    !ps2_command(ps2dev, param, PSMOUSE_CMD_GETINFO)) {
++			goto ps2_command_success;
++		}
++		/* dummy command to reset the communication channel */
++		ps2_command(ps2dev, NULL, PSMOUSE_CMD_SETSCALE11);
++	} while (--tries > 0);
+ 
+-	ps2_command(ps2dev, param, PSMOUSE_CMD_SETRES);
+-	ps2_command(ps2dev, param, PSMOUSE_CMD_SETRES);
+-	ps2_command(ps2dev, param, PSMOUSE_CMD_SETRES);
+-	ps2_command(ps2dev, param, PSMOUSE_CMD_SETRES);
+-	ps2_command(ps2dev, param, PSMOUSE_CMD_GETINFO);
++	psmouse_err(psmouse, "synaptics_retry failed in detect()");
++	return -1;
+ 
++ps2_command_success:
+ 	if (param[1] != 0x47)
+ 		return -ENODEV;
+ 
+@@ -137,11 +169,7 @@ static int synaptics_invert_y(int y)
+  */
+ static int synaptics_send_cmd(struct psmouse *psmouse, unsigned char c, unsigned char *param)
+ {
+-	if (psmouse_sliced_command(psmouse, c))
+-		return -1;
+-	if (ps2_command(&psmouse->ps2dev, param, PSMOUSE_CMD_GETINFO))
+-		return -1;
+-	return 0;
++	return synaptics_send_cmd_retry(psmouse, c, param, PSMOUSE_CMD_GETINFO);
+ }
+ 
+ /*
+@@ -332,11 +360,10 @@ static int synaptics_set_advanced_gesture_mode(struct psmouse *psmouse)
+ 	      SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)))
+ 		return 0;
+ 
+-	if (psmouse_sliced_command(psmouse, SYN_QUE_MODEL))
+-		return -1;
+-
+-	if (ps2_command(&psmouse->ps2dev, &param, PSMOUSE_CMD_SETRATE))
++	if (synaptics_send_cmd_retry(psmouse, SYN_QUE_MODEL,
++				     &param, PSMOUSE_CMD_SETRATE)) {
+ 		return -1;
++	}
+ 
+ 	/* Advanced gesture mode also sends multi finger data */
+ 	priv->capabilities |= BIT(1);
+@@ -393,11 +420,8 @@ static int synaptics_pt_write(struct serio *serio, unsigned char c)
+ 	struct psmouse *parent = serio_get_drvdata(serio->parent);
+ 	char rate_param = SYN_PS_CLIENT_CMD; /* indicates that we want pass-through port */
+ 
+-	if (psmouse_sliced_command(parent, c))
+-		return -1;
+-	if (ps2_command(&parent->ps2dev, &rate_param, PSMOUSE_CMD_SETRATE))
+-		return -1;
+-	return 0;
++	return synaptics_send_cmd_retry(parent, c,
++					&rate_param, PSMOUSE_CMD_SETRATE);
+ }
+ 
+ static int synaptics_pt_start(struct serio *serio)
+@@ -1383,7 +1407,10 @@ static int synaptics_reconnect(struct psmouse *psmouse)
+ 	int error;
+ 
+ 	do {
+-		psmouse_reset(psmouse);
++		if (psmouse_reset(psmouse))
++			psmouse_err(psmouse, "psmouse_reset() failed.\n");
++
++
+ 		if (retry) {
+ 			/*
+ 			 * On some boxes, right after resuming, the touchpad
+-- 
+1.7.8.6
+
