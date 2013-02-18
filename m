@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab3BRStE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 13:49:04 -0500
+	id S1756915Ab3BRStb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 13:49:31 -0500
 Received: from mga14.intel.com ([143.182.124.37]:8652 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755072Ab3BRSs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 13:48:27 -0500
+	id S1754357Ab3BRSsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 13:48:21 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,689,1355126400"; 
-   d="scan'208";a="258471108"
+   d="scan'208";a="258471107"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 5/5] perf, x86: Move NMI clearing to end of PMI handler after the counter registers are reset
-Date: Mon, 18 Feb 2013 10:48:07 -0800
-Message-Id: <1361213287-7636-6-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 4/5] perf, x86: Support full width counting v3
+Date: Mon, 18 Feb 2013 10:48:06 -0800
+Message-Id: <1361213287-7636-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1361213287-7636-1-git-send-email-andi@firstfloor.org>
 References: <1361213287-7636-1-git-send-email-andi@firstfloor.org>
@@ -24,53 +24,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-This avoids some problems with spurious PMIs on Haswell.
-Haswell seems to behave more like P4 in this regard. Do
-the same thing as the P4 perf handler by unmasking
-the NMI only at the end. Shouldn't make any difference
-for earlier family 6 cores.
+Recent Intel CPUs like Haswell and IvyBridge have a new alternative MSR
+range for perfctrs that allows writing the full counter width. Enable this
+range if the hardware reports it using a new capability bit.
 
-Tested on Haswell, IvyBridge, Westmere, Saltwell (Atom)
+This lowers the overhead of perf stat slightly because it has to do less
+interrupts to accumulate the counter value. On Haswell it also avoids some
+problems with TSX aborting when the end of the counter range is reached.
 
+v2: Print the feature at boot
+v3: Rename field. Add comment.
+Reviewed-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   16 ++++++----------
- 1 files changed, 6 insertions(+), 10 deletions(-)
+ arch/x86/include/uapi/asm/msr-index.h  |    3 +++
+ arch/x86/kernel/cpu/perf_event.h       |    5 +++++
+ arch/x86/kernel/cpu/perf_event_intel.c |    7 +++++++
+ 3 files changed, 15 insertions(+), 0 deletions(-)
 
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index 433a59f..af41a77 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -163,6 +163,9 @@
+ #define MSR_KNC_EVNTSEL0               0x00000028
+ #define MSR_KNC_EVNTSEL1               0x00000029
+ 
++/* Alternative perfctr range with full access. */
++#define MSR_IA32_PMC0			0x000004c1
++
+ /* AMD64 MSRs. Not complete. See the architecture manual for a more
+    complete list. */
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index ded4667..ebac06d 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -278,6 +278,11 @@ union perf_capabilities {
+ 		u64	pebs_arch_reg:1;
+ 		u64	pebs_format:4;
+ 		u64	smm_freeze:1;
++		/*
++		 * PMU supports separate counter range for writing
++		 * values > 32bit.
++		 */
++		u64	full_width_write:1;
+ 	};
+ 	u64	capabilities;
+ };
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index f4d3377..23e1dcb 100644
+index 74540ac..f4d3377 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1122,16 +1122,6 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+@@ -2230,5 +2230,12 @@ __init int intel_pmu_init(void)
+ 		}
+ 	}
  
- 	cpuc = &__get_cpu_var(cpu_hw_events);
- 
--	/*
--	 * Some chipsets need to unmask the LVTPC in a particular spot
--	 * inside the nmi handler.  As a result, the unmasking was pushed
--	 * into all the nmi handlers.
--	 *
--	 * This handler doesn't seem to have any issues with the unmasking
--	 * so it was left at the top.
--	 */
--	apic_write(APIC_LVTPC, APIC_DM_NMI);
--
- 	intel_pmu_disable_all();
- 	handled = intel_pmu_drain_bts_buffer();
- 	status = intel_pmu_get_status();
-@@ -1191,6 +1181,12 @@ again:
- 
- done:
- 	intel_pmu_enable_all(0);
-+	/*
-+	 * Only unmask the NMI after the overflow counters
-+	 * have been reset. This avoids spurious NMIs on
-+	 * Haswell CPUs.
-+	 */
-+	apic_write(APIC_LVTPC, APIC_DM_NMI);
- 	return handled;
++	/* Support full width counters using alternative MSR range */
++	if (x86_pmu.intel_cap.full_width_write) {
++		x86_pmu.max_period = x86_pmu.cntval_mask;
++		x86_pmu.perfctr = MSR_IA32_PMC0;
++		pr_cont("full-width counters, ");
++	}
++
+ 	return 0;
  }
- 
 -- 
 1.7.7.6
 
