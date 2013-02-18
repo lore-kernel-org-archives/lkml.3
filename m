@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab3BRMqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 07:46:09 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:35305 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757027Ab3BRMqC (ORCPT
+	id S1757150Ab3BRMqY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 07:46:24 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:50178 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757081Ab3BRMqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 07:46:02 -0500
+	Mon, 18 Feb 2013 07:46:19 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v6 40/46] powerpc: Use get/put_online_cpus_atomic() to prevent
+Subject: [PATCH v6 42/46] sparc: Use get/put_online_cpus_atomic() to prevent
  CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
@@ -21,8 +21,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         walken@google.com, vincent.guittot@linaro.org
-Date: Mon, 18 Feb 2013 18:13:51 +0530
-Message-ID: <20130218124350.26245.49623.stgit@srivatsabhat.in.ibm.com>
+Date: Mon, 18 Feb 2013 18:14:08 +0530
+Message-ID: <20130218124408.26245.83105.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,7 +30,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021812-9264-0000-0000-0000032CB93B
+x-cbid: 13021812-5140-0000-0000-000002C60C06
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -42,33 +42,118 @@ going offline from under us.
 Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
 while invoking from atomic context.
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: sparclinux@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/powerpc/mm/mmu_context_nohash.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/sparc/kernel/leon_smp.c  |    2 ++
+ arch/sparc/kernel/smp_64.c    |    9 +++++----
+ arch/sparc/kernel/sun4d_smp.c |    2 ++
+ arch/sparc/kernel/sun4m_smp.c |    3 +++
+ 4 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/mm/mmu_context_nohash.c b/arch/powerpc/mm/mmu_context_nohash.c
-index e779642..29f58cf 100644
---- a/arch/powerpc/mm/mmu_context_nohash.c
-+++ b/arch/powerpc/mm/mmu_context_nohash.c
-@@ -196,6 +196,7 @@ void switch_mmu_context(struct mm_struct *prev, struct mm_struct *next)
+diff --git a/arch/sparc/kernel/leon_smp.c b/arch/sparc/kernel/leon_smp.c
+index 0f3fb6d..441d3ac 100644
+--- a/arch/sparc/kernel/leon_smp.c
++++ b/arch/sparc/kernel/leon_smp.c
+@@ -420,6 +420,7 @@ static void leon_cross_call(smpfunc_t func, cpumask_t mask, unsigned long arg1,
+ 		unsigned long flags;
  
- 	/* No lockless fast path .. yet */
- 	raw_spin_lock(&context_lock);
+ 		spin_lock_irqsave(&cross_call_lock, flags);
++		get_online_cpus_atomic();
+ 
+ 		{
+ 			/* If you make changes here, make sure gcc generates proper code... */
+@@ -476,6 +477,7 @@ static void leon_cross_call(smpfunc_t func, cpumask_t mask, unsigned long arg1,
+ 			} while (++i <= high);
+ 		}
+ 
++		put_online_cpus_atomic();
+ 		spin_unlock_irqrestore(&cross_call_lock, flags);
+ 	}
+ }
+diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+index 537eb66..e1d7300 100644
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -894,7 +894,8 @@ void smp_flush_dcache_page_impl(struct page *page, int cpu)
+ 	atomic_inc(&dcpage_flushes);
+ #endif
+ 
+-	this_cpu = get_cpu();
++	get_online_cpus_atomic();
++	this_cpu = smp_processor_id();
+ 
+ 	if (cpu == this_cpu) {
+ 		__local_flush_dcache_page(page);
+@@ -920,7 +921,7 @@ void smp_flush_dcache_page_impl(struct page *page, int cpu)
+ 		}
+ 	}
+ 
+-	put_cpu();
++	put_online_cpus_atomic();
+ }
+ 
+ void flush_dcache_page_all(struct mm_struct *mm, struct page *page)
+@@ -931,7 +932,7 @@ void flush_dcache_page_all(struct mm_struct *mm, struct page *page)
+ 	if (tlb_type == hypervisor)
+ 		return;
+ 
+-	preempt_disable();
 +	get_online_cpus_atomic();
  
- 	pr_hard("[%d] activating context for mm @%p, active=%d, id=%d",
- 		cpu, next, next->context.active, next->context.id);
-@@ -279,6 +280,7 @@ void switch_mmu_context(struct mm_struct *prev, struct mm_struct *next)
- 	/* Flick the MMU and release lock */
- 	pr_hardcont(" -> %d\n", id);
- 	set_context(id, next->pgd);
+ #ifdef CONFIG_DEBUG_DCFLUSH
+ 	atomic_inc(&dcpage_flushes);
+@@ -956,7 +957,7 @@ void flush_dcache_page_all(struct mm_struct *mm, struct page *page)
+ 	}
+ 	__local_flush_dcache_page(page);
+ 
+-	preempt_enable();
 +	put_online_cpus_atomic();
- 	raw_spin_unlock(&context_lock);
+ }
+ 
+ void __irq_entry smp_new_mmu_context_version_client(int irq, struct pt_regs *regs)
+diff --git a/arch/sparc/kernel/sun4d_smp.c b/arch/sparc/kernel/sun4d_smp.c
+index ddaea31..1fa7ff2 100644
+--- a/arch/sparc/kernel/sun4d_smp.c
++++ b/arch/sparc/kernel/sun4d_smp.c
+@@ -300,6 +300,7 @@ static void sun4d_cross_call(smpfunc_t func, cpumask_t mask, unsigned long arg1,
+ 		unsigned long flags;
+ 
+ 		spin_lock_irqsave(&cross_call_lock, flags);
++		get_online_cpus_atomic();
+ 
+ 		{
+ 			/*
+@@ -356,6 +357,7 @@ static void sun4d_cross_call(smpfunc_t func, cpumask_t mask, unsigned long arg1,
+ 			} while (++i <= high);
+ 		}
+ 
++		put_online_cpus_atomic();
+ 		spin_unlock_irqrestore(&cross_call_lock, flags);
+ 	}
+ }
+diff --git a/arch/sparc/kernel/sun4m_smp.c b/arch/sparc/kernel/sun4m_smp.c
+index 128af73..5599548 100644
+--- a/arch/sparc/kernel/sun4m_smp.c
++++ b/arch/sparc/kernel/sun4m_smp.c
+@@ -192,6 +192,7 @@ static void sun4m_cross_call(smpfunc_t func, cpumask_t mask, unsigned long arg1,
+ 		unsigned long flags;
+ 
+ 		spin_lock_irqsave(&cross_call_lock, flags);
++		get_online_cpus_atomic();
+ 
+ 		/* Init function glue. */
+ 		ccall_info.func = func;
+@@ -238,6 +239,8 @@ static void sun4m_cross_call(smpfunc_t func, cpumask_t mask, unsigned long arg1,
+ 					barrier();
+ 			} while (++i < ncpus);
+ 		}
++
++		put_online_cpus_atomic();
+ 		spin_unlock_irqrestore(&cross_call_lock, flags);
  }
  
 
