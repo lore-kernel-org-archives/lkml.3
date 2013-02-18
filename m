@@ -1,88 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab3BRUGM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 15:06:12 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:56793 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754770Ab3BRUGJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 15:06:09 -0500
-Date: Mon, 18 Feb 2013 22:05:42 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>, <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Doug Thompson <dougthompson@xmission.com>,
-        <linux-edac@vger.kernel.org>, <rjw@sisk.pl>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: SYSFS "errors"
-Message-ID: <20130218200542.GB20137@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130218153316.GA2663@arwen.pp.htv.fi>
- <20130218155012.GA30974@kroah.com>
- <20130218155215.GB2663@arwen.pp.htv.fi>
- <20130218171334.GA31329@kroah.com>
- <20130218172700.GH2663@arwen.pp.htv.fi>
- <20130218174916.GA2070@kroah.com>
- <20130218184633.GC10755@arwen.pp.htv.fi>
- <20130218164638.7cb53baa@redhat.com>
+	id S1757248Ab3BRUIE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 15:08:04 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:59808 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752300Ab3BRUIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 15:08:02 -0500
+Message-ID: <51228A09.9030902@linux.vnet.ibm.com>
+Date: Mon, 18 Feb 2013 14:07:37 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JYK4vJDZwFMowpUq"
-Content-Disposition: inline
-In-Reply-To: <20130218164638.7cb53baa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+CC: Ric Mason <ric.masonn@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv5 4/8] zswap: add to mm/
+References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com> <1360780731-11708-5-git-send-email-sjenning@linux.vnet.ibm.com> <511F0536.5030802@gmail.com> <51227FDA.7040000@linux.vnet.ibm.com> <512285C4.4050809@linux.vnet.ibm.com>
+In-Reply-To: <512285C4.4050809@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021820-5806-0000-0000-00001FCBDB61
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---JYK4vJDZwFMowpUq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/18/2013 01:49 PM, Cody P Schafer wrote:
+> On 02/18/2013 11:24 AM, Seth Jennings wrote:
+>> On 02/15/2013 10:04 PM, Ric Mason wrote:
+>>> On 02/14/2013 02:38 AM, Seth Jennings wrote:
+>> <snip>
+>>>> +/* invalidates all pages for the given swap type */
+>>>> +static void zswap_frontswap_invalidate_area(unsigned type)
+>>>> +{
+>>>> +    struct zswap_tree *tree = zswap_trees[type];
+>>>> +    struct rb_node *node, *next;
+>>>> +    struct zswap_entry *entry;
+>>>> +
+>>>> +    if (!tree)
+>>>> +        return;
+>>>> +
+>>>> +    /* walk the tree and free everything */
+>>>> +    spin_lock(&tree->lock);
+>>>> +    node = rb_first(&tree->rbroot);
+>>>> +    while (node) {
+>>>> +        entry = rb_entry(node, struct zswap_entry, rbnode);
+>>>> +        zs_free(tree->pool, entry->handle);
+>>>> +        next = rb_next(node);
+>>>> +        zswap_entry_cache_free(entry);
+>>>> +        node = next;
+>>>> +    }
+>>>> +    tree->rbroot = RB_ROOT;
+>>>
+>>> Why don't need rb_erase for every nodes?
+>>
+>> We are freeing the entire tree here.  try_to_unuse() in the swapoff
+>> syscall should have already emptied the tree, but this is here for
+>> completeness.
+>>
+>> rb_erase() will do things like rebalancing the tree; something that
+>> just wastes time since we are in the process of freeing the whole
+>> tree.  We are holding the tree lock here so we are sure that no one
+>> else is accessing the tree while it is in this transient broken state.
+> 
+> If we have a sub-tree like:
+>     ...
+>    /
+>   A
+>  / \
+> B   C
+> 
+> B == rb_next(tree)
+> A == rb_next(B)
+> C == rb_next(A)
+> 
+> The current code free's A (via zswap_entry_cache_free()) prior to
+> examining C, and thus rb_next(C) results in a use after free of A.
+> 
+> You can solve this by doing a post-order traversal of the tree, either
+> 
+> a) in the destructive manner used in a number of filesystems, see
+> fs/ubifs/orphan.c ubifs_add_orphan(), for example.
+> 
+> b) or by doing something similar to this commit:
+> https://github.com/jmesmon/linux/commit/d9e43aaf9e8a447d6802531d95a1767532339fad
+> , which I've been using for some yet-to-be-merged code.
 
-Hi,
+Great catch! I'll fix this up.
 
-On Mon, Feb 18, 2013 at 04:46:38PM -0300, Mauro Carvalho Chehab wrote:
-> > > > No such device - /sys/devices/system/edac/mc/mc0/sdram_scrub_rate
-> > >=20
-> > > Odd, go ask the edac developers
-> >=20
-> > will do ;-)
->=20
-> Well, the question is missing ;) /me assumes that you want to talk about
-> suspending/resume and EDAC, right?
+Thanks,
+Seth
 
-oops, my bad. The thing is that file has read permission but reading it
-isn't allowed ;-)
-
---=20
-balbi
-
---JYK4vJDZwFMowpUq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRIomWAAoJEIaOsuA1yqREPqMQAIcJwkhZsILJMk/f68kb+jYW
-ddS0ChYFT2YzFD+f9n2cvM/KGViNwcN5uvBlsQdmYrPT9tt2HXTNahyZ/kr0IW+N
-jP5TCEEUf/BcarJDoZQmXh4QbrHyqggNyn4GYyNDGvun7kzsju8DIsJAAPPPMPi3
-15jI8YSXBPyfMAOiVtn6FALcFKzf/IbM93qqASwR5acHftxe+5DNs0scwvfEioZN
-/Ju865Mqcaggw6/D8FU1W0ZuMWrFwUlIcvWt4PQR2+RTyDyyceGGhIJ5rzpH8hTv
-B8Y+pOELH2hdaqLifRE2kbusB2uH/pu0epmS1d6Ej6ilPiqxAP7/GhSPethEdQsG
-8/tfLdgG58hmSIQHGvDv8BSmIAQVUCCJsevIPqcuIUw5YlzFmCVFKmyhvGq3NGNT
-SXc3DinwxngBx9WXZWeaIgdfZGJ6Uus8HjpNBWm/BDRidL2G4AdBH4h1gKRmUpWD
-iD7cLl1CEhGDzlnPx9QcRssOCNhPdjG/wKJ45ojpIbXSFcl7sZIeKQ7cUkJsstah
-fa3VUialnJJzHHC+3dF0ZQ8Vx+om8eZ4KH1164GlTI87bxvLLhnYcIYNmOtEx10s
-jXDBUiu3CjXT/+L9q2+QtHG9O8mXC9T1+6QgYxIQFNWIxIGpf+C6syBljiDyGa1i
-ta6Hfne1GOm9gb8vzpse
-=1AVI
------END PGP SIGNATURE-----
-
---JYK4vJDZwFMowpUq--
