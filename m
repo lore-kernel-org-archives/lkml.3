@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757798Ab3BRKJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 05:09:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47432 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756755Ab3BRKJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 05:09:56 -0500
-From: Hannes Reinecke <hare@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Hannes Reinecke <hare@suse.de>, Frederik Himpe <fhimpe@vub.ac.be>,
-        Oliver Neukum <oneukum@suse.de>, David Haerdeman <david@hardeman.nu>,
-        linux-usb@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH] pci: do not try to assign irq 255
-Date: Mon, 18 Feb 2013 11:09:53 +0100
-Message-Id: <1361182193-31894-1-git-send-email-hare@suse.de>
-X-Mailer: git-send-email 1.7.4.2
+	id S1757910Ab3BRKNo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 05:13:44 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:64836 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757604Ab3BRKNn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 05:13:43 -0500
+From: Arnd Bergmann <arnd@linaro.org>
+Organization: Linaro Ltd
+To: Bo Shen <voice.shen@atmel.com>
+Subject: Re: [V2 2/8] USB: EHCI: make ehci-atmel a separate driver
+Date: Mon, 18 Feb 2013 10:12:44 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: Manjunath Goudar <manjunath.goudar@linaro.org>, linux-usb@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
+        Greg KH <greg@kroah.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "Andrew Victor" <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org
+References: <1360923853-7875-1-git-send-email-manjunath.goudar@linaro.org> <1360923853-7875-3-git-send-email-manjunath.goudar@linaro.org> <5121F80E.1010501@atmel.com>
+In-Reply-To: <5121F80E.1010501@atmel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302181012.44721.arnd@linaro.org>
+X-Provags-ID: V02:K0:lxswPM1DVdHeJKaWHHFnllkYHoZ69kCY9VqEKze7d/Q
+ xm6Yaeu81wTQfR+j9aKInTuF+bvmgQrq4pJ5dM8AnEZ1MuVvo6
+ kfLDQaYd3mTeK55497du0MIxuyfFXItPgUKbMRsbtsmCBpEb67
+ wJ2VKbKy3fY+PDJCUPhOM0UrgzhE2CvNDCBXTsmibXWk1xYG4P
+ SSzK6YFmrP1F3ijnbYB9EJE06eHceA3FsyPtYga1O/LvMdfRe2
+ QxqoXHsX0Ia7xB43KZH0Ep22Y4fBbq3ub6OkUJElbwb0rsyNEG
+ mItoN7LHrgSCNngwCb0rkBpMAZeSkqReTc6NcRKdAs856idd74
+ sS5R4lgo3MPWbJzmo8jc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PCI config space reseves a byte for the interrupt line,
-so irq 255 actually refers to 'not set'.
-However, the 'irq' field for struct pci_dev is an integer,
-so the original meaning is lost, causing the system to
-assign an interrupt '255', which fails.
+On Monday 18 February 2013, Bo Shen wrote:
+> > -             .name   = "atmel-ehci",
+> > +             .name   = hcd_name,
+> 
+> This change will cause atmel ehci won't work with the none device tree 
+> kernel.
+> 
+> it can be fixed with replace other places using "atmel-ehci" with 
+> <hcd_name>, that means replace "atmel-ehci" with "ehci-atmel" at other 
+> places.
 
-So we should _not_ assign an interrupt value here, and
-allow upper layers to fixup things.
+Ah, that is right. Thanks for pointing it out!
 
-This patch make PCI devices with MSI interrupts only
-(like the xhci device on certain HP laptops) work properly.
+Manjunath, please revert this change and ensure you are not changing
+the contents of the 'platform_driver->name' field in any of the drivers.
 
-Cc: Frederik Himpe <fhimpe@vub.ac.be>
-Cc: Oliver Neukum <oneukum@suse.de>
-Cc: David Haerdeman <david@hardeman.nu>
-Cc: linux-usb@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 6186f03..a2db887f 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -923,7 +923,8 @@ static void pci_read_irq(struct pci_dev *dev)
- 	dev->pin = irq;
- 	if (irq)
- 		pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &irq);
--	dev->irq = irq;
-+	if (irq < 255)
-+		dev->irq = irq;
- }
- 
- void set_pcie_port_type(struct pci_dev *pdev)
+	Arnd
