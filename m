@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757080Ab3BRI4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 03:56:33 -0500
-Received: from mga01.intel.com ([192.55.52.88]:28551 "EHLO mga01.intel.com"
+	id S1753530Ab3BRJFm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 04:05:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28392 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756720Ab3BRI4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 03:56:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,686,1355126400"; 
-   d="scan'208";a="288520055"
-Message-ID: <5121ECD9.3020300@intel.com>
-Date: Mon, 18 Feb 2013 16:56:57 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1751870Ab3BRJFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 04:05:40 -0500
+Message-ID: <5121EED6.7000307@redhat.com>
+Date: Mon, 18 Feb 2013 10:05:26 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 10/15] sched: packing transitory tasks in wake/exec
- power balancing
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-11-git-send-email-alex.shi@intel.com> <20130218084439.GB10009@lge.com>
-In-Reply-To: <20130218084439.GB10009@lge.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Asias He <asias@redhat.com>
+CC: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        mst@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 4/9] virtio-blk: use virtqueue_start_buf on req path
+References: <1360671815-2135-1-git-send-email-pbonzini@redhat.com> <1360671815-2135-5-git-send-email-pbonzini@redhat.com> <51207AA1.4090408@redhat.com>
+In-Reply-To: <51207AA1.4090408@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2013 04:44 PM, Joonsoo Kim wrote:
-> Hello, Alex.
-> 
-> On Mon, Feb 18, 2013 at 01:07:37PM +0800, Alex Shi wrote:
->> If the waked/execed task is transitory enough, it will has a chance to be
->> packed into a cpu which is busy but still has time to care it.
->> For powersaving policy, only the history util < 25% task has chance to
->> be packed, and for balance policy, only histroy util < 12.5% has chance.
->> If there is no cpu eligible to handle it, will use a idlest cpu in
->> leader group.
-> 
-> After exec(), task's behavior may be changed, and history util may be
-> changed, too. So, IMHO, exec balancing by history util is not good idea.
-> How do you think about it?
-> 
+Il 17/02/2013 07:37, Asias He ha scritto:
+>> >  static int __virtblk_add_req(struct virtqueue *vq,
+>> > -			     struct virtblk_req *vbr)
+>> > +			     struct virtblk_req *vbr,
+>> > +			     struct scatterlist *data_sg,
+>> > +			     unsigned data_nents)
+>> >  {
+>> >  	struct scatterlist sg;
+>> >  	enum dma_data_direction dir;
+>> >  	int ret;
+>> >  
+>> > +	int type = vbr->out_hdr.type & ~VIRTIO_BLK_T_OUT;
+>> >  	unsigned int nents = 2;
+>> >  	unsigned int nsg = 2;
+>> >  
+>> > -	if (vbr->nents) {
+>> > +	if (type == VIRTIO_BLK_T_SCSI_CMD) {
+>> > +		BUG_ON(use_bio);
+> Do we really need the BUG_ON?  Even if with use_bio=1,
+> VIRTIO_BLK_T_SCSI_CMD cmd can be fired. See this:
 
-sounds make sense. are there any objections?
+I stand corrected... will send the patch with this removed.
 
+Paolo
