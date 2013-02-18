@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab3BROqb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 09:46:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60991 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852Ab3BROq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 09:46:29 -0500
-Date: Mon, 18 Feb 2013 14:46:23 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@ftp.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Laura Abbott <lauraa@codeaurora.org>
-Subject: Re: [-rc7 regression] Buggy commit: "mm: use aligned zone start for
- pfn_to_bitidx calculation"
-Message-ID: <20130218142440.GA29814@suse.de>
-References: <CA+55aFz50VvnMjoDCbg01N+rMu5vscu88kr0SV3tWLjaiL0TeA@mail.gmail.com>
- <20130213111007.GA11367@gmail.com>
- <CA+55aFxrjsVkBwUdjmc4MYvEsjEyCJZ7AFpGrWvbbQFB3EVtHA@mail.gmail.com>
- <alpine.LFD.2.02.1302140012460.22263@ionos>
- <20130214144510.GC25282@gmail.com>
- <20130214145424.GA26071@gmail.com>
- <20130214150810.GA26095@gmail.com>
- <CAE9FiQXc=7+TMwbfd20YiHNfOHX_kUOzYcVm8-uaP2R_C_1RRg@mail.gmail.com>
- <20130215114425.GD26955@gmail.com>
- <CA+55aFzTR5nBLXHe4MKtN6E7xrs3=xsbMd1aprr8Ax4mu96onw@mail.gmail.com>
+	id S1752362Ab3BROtk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 09:49:40 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:62481 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab3BROtj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 09:49:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzTR5nBLXHe4MKtN6E7xrs3=xsbMd1aprr8Ax4mu96onw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87d2vxznzk.fsf@devron.myhome.or.jp>
+References: <1360422145-12280-1-git-send-email-linkinjeon@gmail.com>
+	<87fw0t3mq0.fsf@devron.myhome.or.jp>
+	<CAKYAXd9cxUJwObHUfh0Rf9jVLzmvpfnYx4AKw6tsSAX-jzDusA@mail.gmail.com>
+	<87d2vxznzk.fsf@devron.myhome.or.jp>
+Date: Mon, 18 Feb 2013 23:49:38 +0900
+Message-ID: <CAKYAXd-DZ+bXNve22ei2RXT1atH0nKp6=qbE_e+5j8+oZAg2pQ@mail.gmail.com>
+Subject: Re: [PATCH v6 4/7] fat: restructure export_operations
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 16, 2013 at 10:26:30AM -0800, Linus Torvalds wrote:
-> On Fri, Feb 15, 2013 at 3:44 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >>
-> >> c060f943d092 may be related as you config does not have
-> >> CONFIG_SPARSEMEM defined.
-> >
-> > Right, that's the commit causing the x86 regression:
-> >
-> >  c060f943d0929f3e429c5d9522290584f6281d6e is the first bad commit
-> >  commit c060f943d0929f3e429c5d9522290584f6281d6e
-> >  Date:   Fri Jan 11 14:31:51 2013 -0800
-> >
-> >      mm: use aligned zone start for pfn_to_bitidx calculation
-> 
-> Ok, looking more at this, I don't really want to revert it, and I have
-> an idea of what is wrong.
-> 
-> When we allocate the zone use bitmap, we do not take the
-> zone_start_pfn into account. So I *think* that what happens is that
-> "pfn_to_bitidx()" simply overruns the allocation for unaligned zonesm
-> and the spinlock just happens to be right after (or the overrun causes
-> some other memory corruption that then indirectly causes the spinlock
-> corruption).
-> 
-
-More likely the latter. I'd expect the usemap to be adjacent to the
-zone->wait_table because of when they are allocated by the bootmem
-allocator. This would break wait_on_page_[locked|writeback] at the very
-least. If page_waitqueue() returned a corrupt pointer from the wait table
-then it would lead to further corruption elsewhere each time wait_on_page_foo
-was called.
-
-> So I'm wondering if the fix is simply something like the attached
-> patch. It takes the zone_start_pfn into account when allocating the
-> zone bitmap.
-> 
-> Laura? Mel?
-> 
-
-Looks correct to me and should cc stable@vger.kernel.org
-
-Acked-by: Mel Gorman <mgorman@suse.de>
-
--- 
-Mel Gorman
-SUSE Labs
+2013/2/18 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>>>> +     if (parent && (len < FAT_FID_SIZE_WITH_PARENT)) {
+>>>> +             *lenp = FAT_FID_SIZE_WITH_PARENT;
+>>>> +             return 255;
+>>>> +     } else if (len < FAT_FID_SIZE_WITHOUT_PARENT) {
+>>>> +             *lenp = FAT_FID_SIZE_WITHOUT_PARENT;
+>>>> +             return 255;
+>>>> +     }
+>>>
+>>> This check strange. "parent && len == FAT_FID_SIZE_WITHOUT_PARENT" will
+>>> overwrite over limit of fh size?
+>> I need to check more. because I followed the logic in
+>> export_encode_fh() function.
+>
+> Ah, my fault, it doesn't have real problem. But code is quite strange.
+>
+> If input is "parent && len >= FAT_FID_SIZE_WITHOUT_PARENT", "else if
+> (len < FAT_FID_SIZE_WITHOUT_PARENT)" check is entirely useless, but this
+> code itself checks "len".
+>
+> if (parent) {
+>         if (len < FAT_FID_SIZE_WITH_PARENT)
+>                 /* error */
+> } else {
+>         if (len < FAT_FID_SIZE_WITHOUT_PARENT)
+>                 /* error */
+> }
+>
+> I think this would readable, and I guess this will generates faster/simpler
+> code (at least, this doesn't depends an optimization of gcc).
+I agree. I will change it as your opinion.
+Thanks a lot, OGAWA!.
+>
+> Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
