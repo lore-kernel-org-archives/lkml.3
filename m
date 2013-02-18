@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab3BRPvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 10:51:45 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:64296 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232Ab3BRPvm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 10:51:42 -0500
+	id S1754775Ab3BRPwa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 10:52:30 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51987 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752232Ab3BRPw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 10:52:29 -0500
+Date: Mon, 18 Feb 2013 17:52:15 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Felipe Balbi <balbi@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: SYSFS "errors"
+Message-ID: <20130218155215.GB2663@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130218153316.GA2663@arwen.pp.htv.fi>
+ <20130218155012.GA30974@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20130218123913.26245.7713.stgit@srivatsabhat.in.ibm.com>
-References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
-	<20130218123913.26245.7713.stgit@srivatsabhat.in.ibm.com>
-Date: Mon, 18 Feb 2013 23:51:41 +0800
-Message-ID: <CANN689Ec4g7jMapv8ChAEom+gEDQ8RDVLa07CKwJ==YO+MUUrA@mail.gmail.com>
-Subject: Re: [PATCH v6 07/46] percpu_rwlock: Allow writers to be readers, and
- add lockdep annotations
-From: Michel Lespinasse <walken@google.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vincent.guittot@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TRYliJ5NKNqkz5bu"
+Content-Disposition: inline
+In-Reply-To: <20130218155012.GA30974@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 18, 2013 at 8:39 PM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> @@ -200,6 +217,16 @@ void percpu_write_lock_irqsave(struct percpu_rwlock *pcpu_rwlock,
->
->         smp_mb(); /* Complete the wait-for-readers, before taking the lock */
->         write_lock_irqsave(&pcpu_rwlock->global_rwlock, *flags);
-> +
-> +       /*
-> +        * It is desirable to allow the writer to acquire the percpu-rwlock
-> +        * for read (if necessary), without deadlocking or getting complaints
-> +        * from lockdep. To achieve that, just increment the reader_refcnt of
-> +        * this CPU - that way, any attempt by the writer to acquire the
-> +        * percpu-rwlock for read, will get treated as a case of nested percpu
-> +        * reader, which is safe, from a locking perspective.
-> +        */
-> +       this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
+--TRYliJ5NKNqkz5bu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I find this quite disgusting, but once again this may be because I
-don't like unfair recursive rwlocks.
+Hi,
 
-In my opinion, the alternative of explicitly not taking the read lock
-when one already has the write lock sounds *much* nicer.
+On Mon, Feb 18, 2013 at 07:50:12AM -0800, Greg KH wrote:
+> > If it helps in any way, I have printed below only the filenames
+> > (without path) so I could pipe it through uniq:
+> >=20
+> > act_mask
+> > audit
+> > autosuspend_delay_ms
+> > bind
+>=20
+> This one the driver core creates, I'll fix that up.
+>=20
+> The rest need paths to determine who to blame :)
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+wanna see the full list ? It's 1602 lines :-p
+
+--=20
+balbi
+
+--TRYliJ5NKNqkz5bu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRIk4vAAoJEIaOsuA1yqREfnEQAKvPptvKmG+5UjoqoY4BR1iU
+4Q3ZLQGrYd32WO0x8Rd4/EijjsfKNxMWibKBKlgrLFar4AP8DhBCsvbwlUV42AlX
+WTNjZ8vZb+EPbD6Twv8jbL74En0gWyMo6HxqyksFItpqjUl1KU8diX8/okxSmAWA
+BqudGodq1wzhw0ikgDxVk5M3eic4vluhsTcjObJihexQ2pXZFjWOmIUMBbFdUbSS
+Cd1ju1LNsz4d8Ov/D9NthdteHy0o3xf5hlqTSCI1L/78dCgBvs51R8fItiQPwtMV
+RXG9+gaoGlN+fExASXluFJbXAGqaQOFWEXpsNo8HHgqJnW14QPR34FsumWED7Pmx
+RhjlO7AHF0TXCQyh82InHJUC/XmtH+RejDN8MkUzcMoVNskehV4tjRunn4AygXzF
+psXxfZkFr9+SDioERG3SHtRREso36WZtOEcSF0a2UTtIh2KZtmzug85i9K++zL8D
+WI9IfmcVkYYA7tvD9yycJYPt7IHaferXrSVPQUsCKwYwe2oT3Y536pdPUecq8Q+4
+fE4dyTZbIqqMTuO5eLLDVk8PiY0qoIgdu4GH+CRgC6o5NCcLIpO2pyKtCwJk4vn4
+l3XuKReQg/2/s9xX9FqPQonvWugAxSTtNnoJH8O/qAQ5kz2wyGDcBGE3Z8RwG4mY
+t+rGO3/aB62PCiLC3MFL
+=Xrjp
+-----END PGP SIGNATURE-----
+
+--TRYliJ5NKNqkz5bu--
