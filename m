@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757610Ab3BRG3F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 01:29:05 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:56183 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab3BRG3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 01:29:03 -0500
+	id S1757871Ab3BRGac (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 01:30:32 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50271 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757518Ab3BRGab (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 01:30:31 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
@@ -19,93 +20,99 @@ CC: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
         Syed Mohammed Khasim <khasim@ti.com>
-Subject: [RFC 0/8] ARM: AM43 (OMAP2+) boot support
-Date: Mon, 18 Feb 2013 11:58:22 +0530
-Message-ID: <cover.1361166003.git.afzal@ti.com>
+Subject: [RFC 1/8] ARM: localtimer: return percpu clkevt on register
+Date: Mon, 18 Feb 2013 12:00:09 +0530
+Message-ID: <e7cbb10903841ba23a93f71e7a06ae34a43adc70.1361166003.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.12
+In-Reply-To: <cover.1361166003.git.afzal@ti.com>
+References: <cover.1361166003.git.afzal@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Return percpu clock event on local timer register. It is the boot cpu
+that calls this and it can use the returned percpu clock event to
+register a clock event in the case of SMP configuration with one core.
+This helps to have a booting Kernel even if no other timer is
+registered for clock tick.
 
-This series adds minimal support to boot Linux on platforms having
-AM43 based SoC's.
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+---
+ arch/arm/include/asm/localtimer.h | 7 ++++---
+ arch/arm/kernel/smp.c             | 8 ++++----
+ arch/arm/kernel/smp_twd.c         | 5 +++--
+ 3 files changed, 11 insertions(+), 9 deletions(-)
 
-This is being sent as an RFC to seek opinion about modification in
-twd to register percpu local timer clock event for scheduler tick in
-the case of one core SMP.
-
-AM43 SoC's are based on ARM Cortex-A9. It is an ARM Cortex-A9 SMP
-configuration with one core (not uniprocessor configuration). AM43 is
-similar to AM335x in it's peripheral capabilities, with many of the
-peripheral register mapping's similar like that of uart.
-
-AM43 is in pre-silicon stage and currently there are no public
-documents.
-
-This series has been tested on a pre-silicon platform that emulates
-AM43 SoC, changes proposed here are minimal - to get it booting.
-Kernel was directly run without the help of bootloader - Images were
-directly loaded onto a pre-initialized RAM and ARM registers updated
-as required for booting.
-
-Changes have been made over linux-next (next-20130213) with three "OF"
-related reverts (which otherwise causes problem in other platforms
-also) and compiled with omap2plus_defconfig. Multiplatform option was
-enabled, while most of CONFIG options were deselected for a faster
-boot. Beagle bone boots as earlier with these changes.
-
-An interesting observation is that it may be possible to boot this
-platform to console without any platform specific modification to
-proper Kernel (by that I mean excluding DT sources) using Arnd's,
-
-"[PATCH,RFC] default machine descriptor for multiplatform",
-
-along with a "CLOCKSOURCE_OF_DECLARE" for smp twd.
-
-But later on to make SoC do any really useful work or to get done
-things that the SoC is meant to do, platform changes like omap-hwmod,
-handling power management, clock tree, detecting SoC capabilities etc
-would have to be made, necessitating DT_MACHINE_START at least in
-the foreseeable future.
-
-Patch - 8 that makes AM43 boot on pre-silicon platform would be
-replaced later by a one for original board.
-
-Last but not least, thanks to Ankur Kishore <a-kishore@ti.com>
-(who first made Linux to boot on AM43) for all the help that made
-Linux bringup easier.
-
-Regards
-Afzal
-
-Afzal Mohammed (8):
-  ARM: localtimer: return percpu clkevt on register
-  ARM: twd: register clock event for 1 core SMP
-  ARM: twd: clock rate from DT (if no DT clk tree)
-  ARM: am33xx: ll debug config help
-  ARM: OMAP2+: am43: Kconfig
-  ARM: OMAP2+: am43: basic dt support
-  ARM: dts: am4372: initial support
-  ARM: dts: am43-pre-silicon support
-
- Documentation/devicetree/bindings/arm/twd.txt |  7 +++-
- arch/arm/Kconfig.debug                        |  3 ++
- arch/arm/boot/dts/Makefile                    |  3 +-
- arch/arm/boot/dts/am43-pre-silicon.dts        | 31 +++++++++++++++
- arch/arm/boot/dts/am4372.dtsi                 | 55 +++++++++++++++++++++++++++
- arch/arm/include/asm/localtimer.h             |  7 ++--
- arch/arm/kernel/smp.c                         |  8 ++--
- arch/arm/kernel/smp_twd.c                     | 16 +++++++-
- arch/arm/mach-omap2/Kconfig                   | 11 ++++++
- arch/arm/mach-omap2/board-generic.c           | 18 +++++++++
- 10 files changed, 148 insertions(+), 11 deletions(-)
- create mode 100644 arch/arm/boot/dts/am43-pre-silicon.dts
- create mode 100644 arch/arm/boot/dts/am4372.dtsi
-
+diff --git a/arch/arm/include/asm/localtimer.h b/arch/arm/include/asm/localtimer.h
+index f77ffc1..c3f89c0 100644
+--- a/arch/arm/include/asm/localtimer.h
++++ b/arch/arm/include/asm/localtimer.h
+@@ -23,11 +23,12 @@ struct local_timer_ops {
+ /*
+  * Register a local timer driver
+  */
+-int local_timer_register(struct local_timer_ops *);
++struct clock_event_device *local_timer_register(struct local_timer_ops *);
+ #else
+-static inline int local_timer_register(struct local_timer_ops *ops)
++static inline
++struct clock_event_device *local_timer_register(struct local_timer_ops *ops)
+ {
+-	return -ENXIO;
++	return ERR_PTR(-ENXIO);
+ }
+ #endif
+ 
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 5f73f70..42d95d6 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -491,16 +491,16 @@ static void __cpuinit broadcast_timer_setup(struct clock_event_device *evt)
+ static struct local_timer_ops *lt_ops;
+ 
+ #ifdef CONFIG_LOCAL_TIMERS
+-int local_timer_register(struct local_timer_ops *ops)
++struct clock_event_device *local_timer_register(struct local_timer_ops *ops)
+ {
+ 	if (!is_smp() || !setup_max_cpus)
+-		return -ENXIO;
++		return ERR_PTR(-ENXIO);
+ 
+ 	if (lt_ops)
+-		return -EBUSY;
++		return ERR_PTR(-EBUSY);
+ 
+ 	lt_ops = ops;
+-	return 0;
++	return &per_cpu(percpu_clockevent, smp_processor_id());
+ }
+ #endif
+ 
+diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+index c092115..616268c 100644
+--- a/arch/arm/kernel/smp_twd.c
++++ b/arch/arm/kernel/smp_twd.c
+@@ -315,6 +315,7 @@ static struct local_timer_ops twd_lt_ops __cpuinitdata = {
+ static int __init twd_local_timer_common_register(struct device_node *np)
+ {
+ 	int err;
++	struct clock_event_device *evt;
+ 
+ 	twd_evt = alloc_percpu(struct clock_event_device *);
+ 	if (!twd_evt) {
+@@ -328,8 +329,8 @@ static int __init twd_local_timer_common_register(struct device_node *np)
+ 		goto out_free;
+ 	}
+ 
+-	err = local_timer_register(&twd_lt_ops);
+-	if (err)
++	evt = local_timer_register(&twd_lt_ops);
++	if (IS_ERR(evt))
+ 		goto out_irq;
+ 
+ 	twd_get_clock(np);
 -- 
 1.7.12
 
