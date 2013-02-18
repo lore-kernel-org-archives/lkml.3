@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab3BRHnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 02:43:06 -0500
-Received: from mail.agmk.net ([91.192.224.71]:33953 "EHLO mail.agmk.net"
+	id S1752290Ab3BRHoK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 02:44:10 -0500
+Received: from mga14.intel.com ([143.182.124.37]:15727 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751400Ab3BRHnE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 02:43:04 -0500
-From: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        linux-nfs@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Tom Horsley <horsley1953@gmail.com>
-Subject: Re: BUG at net/sunrpc/svc_xprt.c:921 (another one)
-Date: Mon, 18 Feb 2013 08:42:57 +0100
-Message-ID: <3252378.kHVF7T4vxC@localhost>
-User-Agent: KMail/4.10 (Linux/3.7.8-1; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <20130217155420.GB11441@fieldses.org>
-References: <50F4D800.5040703@teksavvy.com> <6911210.gbkqvnQvg4@localhost> <20130217155420.GB11441@fieldses.org>
+	id S1752043Ab3BRHoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 02:44:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,684,1355126400"; 
+   d="scan'208";a="203457469"
+Message-ID: <5121DBC4.9070601@intel.com>
+Date: Mon, 18 Feb 2013 15:44:04 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+To: Alex Shi <alex.shi@intel.com>
+CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
+        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 0/15] power aware scheduling
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 17 of February 2013 10:54:20 J. Bruce Fields wrote:
-> On Fri, Feb 15, 2013 at 08:33:14PM +0100, Paweł Sikora wrote:
-> > On Tuesday 12 of February 2013 15:52:17 J. Bruce Fields wrote:
-> > > On Sun, Jan 20, 2013 at 05:51:12PM -0500, Mark Lord wrote:
-> > > > Got it again, this time on a different system
-> > > > running mostly the same software.
-> > > 
-> > > Mark, Paweł, Tom, could any of you confirm whether this helps?
-> > 
-> > with this patch i can confirm a 2 day uptime w/o any oopses.
-> > 
+On 02/18/2013 01:07 PM, Alex Shi wrote:
+> Since the simplification of fork/exec/wake balancing has much arguments,
+> I removed that part in the patch set.
 > 
-> Thanks for the report.--b.
+> This patch set implement/consummate the rough power aware scheduling
+> proposal: https://lkml.org/lkml/2012/8/13/139.
 
-please push this patch to the 3.7.y stable kernel.
+Just review the great summary of the conversation on this proposal.
+http://lwn.net/Articles/512487/
 
+One of advantage of this patch is that it bases on the general sched
+domain/groups architecture, so, if other hardware platforms, like ARM,
+has different hardware setting, it can be represented as specific domain
+flags. and then be treated specific in scheduling. The scheduling is
+natural and easy to expend to that.
+
+And guess the big.LITTLE arch also can be represented by cpu power, if
+so, the 'balance' policy just fit them since it judges if the sched
+domain/group is full by domain/group's capacity.
+
+Also adding a answer for policy automatic change feature:
+---
+The 'balance/powersaving' is automatic power friendly scheduling, since
+system will auto bypass power scheduling when cpus utilisation in a
+sched domain is beyond the domain's cpu weight (powersaving) or beyond
+the domain's capacity (balance).
+
+There is no always enabled power scheduling, since the patchset bases on
+'race to idle'.
+
+
+-- 
+Thanks Alex
