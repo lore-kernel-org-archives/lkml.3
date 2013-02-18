@@ -1,44 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab3BRLSs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 06:18:48 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:25167 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab3BRLSr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 06:18:47 -0500
-Date: Mon, 18 Feb 2013 14:18:24 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>, devel@driverdev.osuosl.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] staging/xgifb: Remove duplicated code in loops.
-Message-ID: <20130218111824.GE6802@mwanda>
-References: <1360957033-11876-1-git-send-email-peterhuewe@gmx.de>
- <1360957033-11876-5-git-send-email-peterhuewe@gmx.de>
+	id S1752836Ab3BRLUs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 06:20:48 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43253 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751347Ab3BRLUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 06:20:46 -0500
+Message-ID: <51220E78.5000409@ti.com>
+Date: Mon, 18 Feb 2013 12:20:24 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130115 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360957033-11876-5-git-send-email-peterhuewe@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Anil Kumar <anilk4.v@gmail.com>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <alsa-devel@alsa-project.org>, <linux@arm.linux.org.uk>,
+        <b-cousson@ti.com>, <tony@atomide.com>, <grant.likely@secretlab.ca>,
+        <thomas@tomweber.eu>
+Subject: Re: [PATCH V2] ARM: dts: omap3-devkit8000: Enable audio support
+References: <1361000036-18121-1-git-send-email-anilk4.v@gmail.com>
+In-Reply-To: <1361000036-18121-1-git-send-email-anilk4.v@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 08:37:13PM +0100, Peter Huewe wrote:
-> -	for (i = 0; i < 256; i++) {
-> -		outb((unsigned char) DAC_TEST_PARMS[0], (pVBInfo->P3c8 + 1));
-> -		outb((unsigned char) DAC_TEST_PARMS[1], (pVBInfo->P3c8 + 1));
-> -		outb((unsigned char) DAC_TEST_PARMS[2], (pVBInfo->P3c8 + 1));
-> +	for (i = 0; i < 256 * 3; i++) {
-> +		outb(0x0F, (pVBInfo->P3c8 + 1)); /* DAC_TEST_PARMS */
+On 02/16/2013 08:33 AM, Anil Kumar wrote:
+> Add the needed sections to enable audio support on
+> Devkit8000 when booted with DT blob.
+> 
+> Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
 
-The original code looks buggy, but it's been that way from the
-initial commit so I have no idea what was intended.  Perhaps the
-"+ 1" was supposed to be a "+ i".  There is no way to know really.
+Looks good:
+Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-regards,
-dan carpenter
+> ---
+> This patch is based on top of kernel 3.8-rc5 and
+> the following patches.
+> 
+> Peter Ujfalusi:-
+> ASoC: twl4030: Correct the support for Voice port
+> ASoC: twl4030: Convert MICBIAS to SUPPLY widget
+> ASoC: omap-twl4030: Add support for routing, voice port and jack detect
+> 
+> Anil Kumar:-
+> ARM: dts: add minimal DT support for DevKit8000
+> https://patchwork.kernel.org/patch/2122461/
+> 
+> -Tested for playback and capture on Devkit8000.
+> 
+>  Test process:-
+> 
+>  #amixer set 'PredriveR Mixer AudioR2' on
+>  #amixer set 'PredriveL Mixer AudioL2' on
+>  #amixer set PreDriv 100 unmute
+>  #amixer set 'DAC2 Digital Fine' 100
+>  #amixer cset numid=27 1
+>  #arecord | aplay
+> 
+> For V2:
+>  - Remove pin mux as done at device boot time by default.
+> 
+> :100644 100644 6338993... c70116f... M	arch/arm/boot/dts/omap3-devkit8000.dts
+>  arch/arm/boot/dts/omap3-devkit8000.dts |   23 +++++++++++++++++++----
+>  1 files changed, 19 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/omap3-devkit8000.dts b/arch/arm/boot/dts/omap3-devkit8000.dts
+> index 6338993..c70116f 100644
+> --- a/arch/arm/boot/dts/omap3-devkit8000.dts
+> +++ b/arch/arm/boot/dts/omap3-devkit8000.dts
+> @@ -42,6 +42,19 @@
+>                  };
+>  
+>  	};
+> +
+> +	sound {
+> +		compatible = "ti,omap-twl4030";
+> +		ti,model = "devkit8000";
+> +
+> +		ti,mcbsp = <&mcbsp2>;
+> +		ti,codec = <&twl_audio>;
+> +		ti,audio-routing =
+> +			"Ext Spk", "PREDRIVEL",
+> +			"Ext Spk", "PREDRIVER",
+> +			"MAINMIC", "Main Mic",
+> +			"Main Mic", "Mic Bias 1";
+> +	};
+>  };
+>  
+>  &i2c1 {
+> @@ -51,6 +64,12 @@
+>  		reg = <0x48>;
+>  		interrupts = <7>;	/* SYS_NIRQ cascaded to intc */
+>  		interrupt-parent = <&intc>;
+> +
+> +		twl_audio: audio {
+> +			compatible = "ti,twl4030-audio";
+> +			codec {
+> +			};
+> +		};
+>  	};
+>  };
+>  
+> @@ -86,10 +105,6 @@
+>  	status = "disabled";
+>  };
+>  
+> -&mcbsp2 {
+> -	status = "disabled";
+> -};
+> -
+>  &mcbsp3 {
+>  	status = "disabled";
+>  };
+> 
+
+
+-- 
+Péter
