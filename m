@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750988Ab3BRFBA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 00:01:00 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:60983 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750695Ab3BRFA7 (ORCPT
+	id S1751406Ab3BRFBj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 00:01:39 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:45657 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab3BRFBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 00:00:59 -0500
-Message-ID: <5121B585.10703@kernel.org>
-Date: Mon, 18 Feb 2013 00:00:53 -0500
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>
-Subject: cpuidle sizes (Re: [PATCH 14/16] intel_idle: remove use and definition
- of MWAIT_MAX_NUM_CSTATES)
-References: <1360372100-28482-1-git-send-email-lenb@kernel.org> <137ecc779c80138723677209730738d76262e810.1360371180.git.len.brown@intel.com> <5118B16E.6010709@linaro.org> <511982C6.7080505@kernel.org> <511AC5A8.4030509@linaro.org>
-In-Reply-To: <511AC5A8.4030509@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Feb 2013 00:01:38 -0500
+Date: Mon, 18 Feb 2013 16:01:25 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: linux-next: manual merge of the arm-soc tree with the input tree
+Message-Id: <20130218160125.0afc414767b236bdfc6ee8df@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__18_Feb_2013_16_01_25_+1100_Qt5lwnLLkg7+E71Q"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/12/2013 05:43 PM, Daniel Lezcano wrote:
-> On 02/12/2013 12:46 AM, Len Brown wrote:
->> On 02/11/2013 03:53 AM, Daniel Lezcano wrote:
->>> On 02/09/2013 02:08 AM, Len Brown wrote:
->>
->>>> The reason to change is that intel_idle will soon be able
->>>> to export more than the 8 "major" states supported by MWAIT.
->>>> When we hit that limit, it is important to know
->>>> where the limit comes from.
->>>
->>> Does it mean CPUIDLE_STATE_MAX may increase in a near future ?
->>
->> Yes, perhaps to 10.
->> Let me know if you anticipate issues with doing that.
-> 
-> No, I don't see any issue so far. Maybe the array state is increasing
-> more and more, so for most architecture it is a waste of memory, but
-> anyway ...
+--Signature=_Mon__18_Feb_2013_16_01_25_+1100_Qt5lwnLLkg7+E71Q
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-aking a quick look at data structure sizes...
+Hi all,
 
-struct cpuidle_device{} is allocated per cpu --
-so if we have a lot of cpus, that gets multiplied out.
-But it doesn't grow much with growing CPUIDLE_STATE_MAX:
+Today's linux-next merge of the arm-soc tree got a conflict in
+drivers/input/keyboard/tegra-kbc.c between commit 9eee07d39fa6 ("Input:
+tegra-kbc - require CONFIG_OF, remove platform data") from the input tree
+and commit 61fd290d213e ("ARM: tegra: migrate to new clock code") from
+the arm-soc tree.
 
-cpuidle_state_usage states_usage[CPUIDLE_STATE_MAX];
-	we just shrunk to 24 bytes from 32 bytes/entry.
-	(and 240 < 256, so we're still shrinking:-)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-plus it contains cpuidle_state_kobj *kobjs[CPUIDLE_STATE_MAX];
-	which is a set of pointers per cpu - so with 8-byte
-	pointers, that would be 64->80 bytes/cpu.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The other sizes that vary with CPUIDLE_STATE_MAX
-seem to be static allocations per driver --
-and so they don't grow much.  Did I miss something?
+diff --cc drivers/input/keyboard/tegra-kbc.c
+index d89e7d39,54ac1dc..0000000
+--- a/drivers/input/keyboard/tegra-kbc.c
++++ b/drivers/input/keyboard/tegra-kbc.c
+@@@ -29,16 -29,9 +29,16 @@@
+  #include <linux/of.h>
+  #include <linux/clk.h>
+  #include <linux/slab.h>
+ -#include <linux/input/tegra_kbc.h>
+ +#include <linux/input/matrix_keypad.h>
+- #include <mach/clk.h>
++ #include <linux/clk/tegra.h>
+ =20
+ +#define KBC_MAX_GPIO	24
+ +#define KBC_MAX_KPENT	8
+ +
+ +#define KBC_MAX_ROW	16
+ +#define KBC_MAX_COL	8
+ +#define KBC_MAX_KEY	(KBC_MAX_ROW * KBC_MAX_COL)
+ +
+  #define KBC_MAX_DEBOUNCE_CNT	0x3ffu
+ =20
+  /* KBC row scan time and delay for beginning the row scan. */
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+--Signature=_Mon__18_Feb_2013_16_01_25_+1100_Qt5lwnLLkg7+E71Q
+Content-Type: application/pgp-signature
 
-ps. I can easily offer an arch-specific CPUIDLE_STATE_MAX over-ride
-if you want to squeeze bytes per-arch.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJRIbWlAAoJEECxmPOUX5FEfYAP/0O5XGJ/gI98NIA90H8ENBNK
+YlKd3vNumrmmhSn60plSqyobgkj5C8nMXt/+xhjJ9nxF3f810ul6v6Tn9yDlj6GJ
+oaSm82PHorfgEn1uYQc10fR4W20mHRHhBjxHRJe2ivVoGel4uRkCKWE86I8fhWrX
+hufgv59Xk2d0yVXqn8HFganTZmcxbUOFO4vKaBMmBeTPypAsgkoD/Y0a1iVZrGgQ
+2K08YI18+h5C3Y4LeiqWY3AglyqkfqEUsNKvERSyvGZHLByPurJ9iapuqaFmXCRv
+4jMGLrLqvhI2KpA9df58iUBYhRTzXOrXNr9JmH5Pig5tdeAKaMh57k2Mx+WaGbKP
+l/eY0BEQ7WZwe46MmMXlI0woQxUC07a0rqgfxxEycAqLqNsxjgg9C5y+SxsNoP8Z
+3bfm8yhuWPLVM5eOSPu5uN5tIJp6HN4rodqG99DL1kSZ2+klVcP4+eocoOtb46Ng
+ahqpEQL6pODesdKJEU5wkJXWyIrrp6tVTJ8zbbUtyEWq0YvDZhFmnP9+309O0/XG
+hJ8z6jcPbSNHswM+1IWZN3e9XBJ5XYRJ7QzYrez0Ukz8YwranC5gMU/Ewx6U1HNu
+AyXDlmov5ySI8MVi2ZpF4+oKSK7yxYoU+NIssYeuNcBQpS8ppWAObqyrC+BplbnL
+1xdZRSDuKO40H4Mgjf5G
+=BdAx
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__18_Feb_2013_16_01_25_+1100_Qt5lwnLLkg7+E71Q--
