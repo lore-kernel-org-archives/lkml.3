@@ -1,132 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872Ab3BRRz1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 12:55:27 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:62011 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756398Ab3BRRzW (ORCPT
+	id S1756845Ab3BRR6e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 12:58:34 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:34253 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756680Ab3BRR6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 12:55:22 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v4 2/2] perf: add sysfs entry to adjust multiplexing interval per PMU
-Date: Mon, 18 Feb 2013 18:54:44 +0100
-Message-Id: <1361210084-14409-3-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361210084-14409-1-git-send-email-eranian@google.com>
-References: <1361210084-14409-1-git-send-email-eranian@google.com>
+	Mon, 18 Feb 2013 12:58:31 -0500
+Message-ID: <51226B46.9080707@linux.vnet.ibm.com>
+Date: Mon, 18 Feb 2013 23:26:22 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rostedt@goodmis.org,
+        rjw@sisk.pl, namhyung@kernel.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, vincent.guittot@linaro.org, sbw@mit.edu,
+        tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com> <CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com> <5122551E.1080703@linux.vnet.ibm.com>
+In-Reply-To: <5122551E.1080703@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021817-8878-0000-0000-000005F096B1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds /sys/device/xxx/perf_event_mux_interval_ms to ajust the
-multiplexing interval per PMU. The unit is milliseconds. Value
-has to be >= 1.
+On 02/18/2013 09:51 PM, Srivatsa S. Bhat wrote:
+> Hi Michel,
+> 
+> On 02/18/2013 09:15 PM, Michel Lespinasse wrote:
+>> Hi Srivasta,
+>>
+>> I admit not having followed in detail the threads about the previous
+>> iteration, so some of my comments may have been discussed already
+>> before - apologies if that is the case.
+>>
+>> On Mon, Feb 18, 2013 at 8:38 PM, Srivatsa S. Bhat
+>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>> Reader-writer locks and per-cpu counters are recursive, so they can be
+>>> used in a nested fashion in the reader-path, which makes per-CPU rwlocks also
+>>> recursive. Also, this design of switching the synchronization scheme ensures
+>>> that you can safely nest and use these locks in a very flexible manner.
+[...]
+>>>  void percpu_write_lock(struct percpu_rwlock *pcpu_rwlock)
+>>>  {
+>>> +       unsigned int cpu;
+>>> +
+>>> +       /*
+>>> +        * Tell all readers that a writer is becoming active, so that they
+>>> +        * start switching over to the global rwlock.
+>>> +        */
+>>> +       for_each_possible_cpu(cpu)
+>>> +               per_cpu_ptr(pcpu_rwlock->rw_state, cpu)->writer_signal = true;
+>>
+>> I don't see anything preventing a race with the corresponding code in
+>> percpu_write_unlock() that sets writer_signal back to false. Did I
+>> miss something here ? It seems to me we don't have any guarantee that
+>> all writer signals will be set to true at the end of the loop...
+>>
+> 
+> Ah, thanks for pointing that out! IIRC Oleg had pointed this issue in the last
+> version, but back then, I hadn't fully understood what he meant. Your
+> explanation made it clear. I'll work on fixing this.
+> 
 
-In the 4th version, we renamed the sysfs file to be more
-consistent with the other /proc/sys/kernel entries for
-perf_events.
+We can fix this by using the simple patch (untested) shown below.
+The alternative would be to acquire the rwlock for write, update the
+->writer_signal values, release the lock, wait for readers to switch,
+again acquire the rwlock for write with interrupts disabled etc... which
+makes it kinda messy, IMHO. So I prefer the simple version shown below.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- include/linux/perf_event.h |    1 +
- kernel/events/core.c       |   56 ++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 53 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index bb51329..bca8e25 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -194,6 +194,7 @@ struct pmu {
- 	int * __percpu			pmu_disable_count;
- 	struct perf_cpu_context * __percpu pmu_cpu_context;
- 	int				task_ctx_nr;
-+	int				hrtimer_interval_ms;
+diff --git a/lib/percpu-rwlock.c b/lib/percpu-rwlock.c
+index bf95e40..64ccd3f 100644
+--- a/lib/percpu-rwlock.c
++++ b/lib/percpu-rwlock.c
+@@ -50,6 +50,12 @@
+ 	(__this_cpu_read((pcpu_rwlock)->rw_state->writer_signal))
  
- 	/*
- 	 * Fully disable/enable this PMU, can be used to protect from the PMI
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 3e12fc9..7c3f00f 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -692,13 +692,21 @@ static void __perf_cpu_hrtimer_init(struct perf_cpu_context *cpuctx, int cpu)
+ 
++/*
++ * Spinlock to synchronize access to the writer's data-structures
++ * (->writer_signal) from multiple writers.
++ */
++static DEFINE_SPINLOCK(writer_side_lock);
++
+ int __percpu_init_rwlock(struct percpu_rwlock *pcpu_rwlock,
+ 			 const char *name, struct lock_class_key *rwlock_key)
  {
- 	struct hrtimer *hr = &cpuctx->hrtimer;
- 	struct pmu *pmu = cpuctx->ctx.pmu;
-+	int timer;
+@@ -191,6 +197,8 @@ void percpu_write_lock_irqsave(struct percpu_rwlock *pcpu_rwlock,
+ {
+ 	unsigned int cpu;
  
- 	/* no multiplexing needed for SW PMU */
- 	if (pmu->task_ctx_nr == perf_sw_context)
- 		return;
- 
--	cpuctx->hrtimer_interval =
--		ns_to_ktime(NSEC_PER_MSEC * PERF_CPU_HRTIMER);
-+	/*
-+	 * check default is sane, if not set then force to
-+	 * default interval (1/tick)
-+	 */
-+	timer = pmu->hrtimer_interval_ms;
-+	if (timer < 1)
-+		timer = pmu->hrtimer_interval_ms = PERF_CPU_HRTIMER;
++	spin_lock(&writer_side_lock);
 +
-+	cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * timer);
+ 	/*
+ 	 * Tell all readers that a writer is becoming active, so that they
+ 	 * start switching over to the global rwlock.
+@@ -252,5 +260,6 @@ void percpu_write_unlock_irqrestore(struct percpu_rwlock *pcpu_rwlock,
+ 		per_cpu_ptr(pcpu_rwlock->rw_state, cpu)->writer_signal = false;
  
- 	hrtimer_init(hr, CLOCK_MONOTONIC, HRTIMER_MODE_REL_PINNED);
- 	hr->function = perf_cpu_hrtimer_handler;
-@@ -5998,9 +6006,49 @@ type_show(struct device *dev, struct device_attribute *attr, char *page)
- 	return snprintf(page, PAGE_SIZE-1, "%d\n", pmu->type);
+ 	write_unlock_irqrestore(&pcpu_rwlock->global_rwlock, *flags);
++	spin_unlock(&writer_side_lock);
  }
- 
-+static ssize_t
-+perf_event_mux_interval_ms_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *page)
-+{
-+	struct pmu *pmu = dev_get_drvdata(dev);
-+
-+	return snprintf(page, PAGE_SIZE-1, "%d\n", pmu->hrtimer_interval_ms);
-+}
-+
-+static ssize_t
-+perf_event_mux_interval_ms_store(struct device *dev,
-+				 struct device_attribute *attr,
-+				 const char *buf, size_t count)
-+{
-+	struct pmu *pmu = dev_get_drvdata(dev);
-+	int timer, cpu, ret;
-+
-+	ret = kstrtoint(buf, 0, &timer);
-+	if (ret)
-+		return ret;
-+
-+	if (timer < 1)
-+		return -EINVAL;
-+
-+	pmu->hrtimer_interval_ms = timer;
-+
-+	/* update all cpuctx for this PMU */
-+	for_each_possible_cpu(cpu) {
-+		struct perf_cpu_context *cpuctx;
-+		cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
-+		cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * timer);
-+	}
-+
-+	return count;
-+}
-+
-+#define __ATTR_RW(attr) __ATTR(attr, 0644, attr##_show, attr##_store)
-+
- static struct device_attribute pmu_dev_attrs[] = {
--       __ATTR_RO(type),
--       __ATTR_NULL,
-+	__ATTR_RO(type),
-+	__ATTR_RW(perf_event_mux_interval_ms),
-+	__ATTR_NULL,
- };
- 
- static int pmu_bus_running;
--- 
-1.7.9.5
 
