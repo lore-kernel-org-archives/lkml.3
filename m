@@ -1,54 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab3BRFdg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 00:33:36 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:36895 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750917Ab3BRFdf convert rfc822-to-8bit (ORCPT
+	id S1757477Ab3BRFfz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 00:35:55 -0500
+Received: from mail-ia0-f176.google.com ([209.85.210.176]:59841 "EHLO
+	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab3BRFfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 00:33:35 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "fabio.porcedda@gmail.com" <fabio.porcedda@gmail.com>,
-        "Lin, JM" <JM.Lin@atmel.com>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v4 2/8] watchdog/at91sam9_wdt: Remove at91wdt_private
- and add at91wdt_drvdata struct
-Thread-Topic: [PATCH v4 2/8] watchdog/at91sam9_wdt: Remove at91wdt_private
- and add at91wdt_drvdata struct
-Thread-Index: AQHOAErSahxFImhUuUOyMhp31kk9V5h38cmAgAc/NJA=
-Date: Mon, 18 Feb 2013 05:33:27 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A24364145F0ED56@penmbx01>
-References: <1359702386-21284-1-git-send-email-wenyou.yang@atmel.com>
- <1359702386-21284-3-git-send-email-wenyou.yang@atmel.com>
- <20130213224829.GD7867@spo001.leaseweb.com>
-In-Reply-To: <20130213224829.GD7867@spo001.leaseweb.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Feb 2013 00:35:54 -0500
 MIME-Version: 1.0
+Date: Mon, 18 Feb 2013 11:05:53 +0530
+Message-ID: <CAJsYZ5nnAHW9Uu-ee09ttFZZT-DeBVSiHzUnpwt3ZE0hjTFA=g@mail.gmail.com>
+Subject: [PATCH] staging: android: ashmem: get_name,set_name not to hold ashmem_mutex
+From: Shankar Brahadeeswaran <shankoo77@gmail.com>
+To: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Cruz Julian Bishop <cruzjbishop@gmail.com>,
+        Hugh Dickins <hughd@google.com>, devel@driverdev.osuosl.org
+Content-Type: multipart/mixed; boundary=14dae9340e3b40f60504d5f919be
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim
+--14dae9340e3b40f60504d5f919be
+Content-Type: text/plain; charset=ISO-8859-1
 
-> I rather have this after the conversion of the watchdog to the new framework.
-> 
-Thanks a lot.
+Hi,
+I'm working on Android Linux Kernel (version 3.4) and seeing a
+"deadlock" in the ashmem driver, while handling mmap request.
+I seek your support to fix the same. The locks that involved in the
+dead lock are
+1) mm->mmap_sem
+2) ashmem_mutex
 
-OK , I will do it later.
+The following is the sequence of events that leads to the deadlock.
+There are two threads A and B that belong to the same process
+(system_server) and hence share the mm struct.
+A1) In the A's context an mmap system call is made with an fd of ashmem
+A2) The system call sys_mmap_pgoff acquires the mmap_sem of the "mm"
+and sleeps before calling the .mmap of ashmem i.e before calling
+ashmem_mmap and acquiring the ashmem_mutex from this function.
 
-Best Regards,
-Wenyou Yang
+Now the thread B runs and proceeds to do the following
+B1) In the B's context ashmem ioctl with option ASHMEM_GET_NAME is called.
+B2) Now the code proceeds to acquire the ashmem_mutex and performs a
+"copy_to_user"
+B3) copy_to_user raises a valid exception to copy the data from user
+space and proceeds to handle it gracefully,
+do_DataAbort --> do_page_fault (This condition can happen if the
+physical page for the give user address is not mapped yet).
+B4) In do_page_fault it finds that the mm->mmap_sem is not available
+(Note A & B share the mm) since A has it and sleeps
 
+Now the thread A runs again
+A3) It proceeds to call ashmem_mmap and tries to acquired
+ashmem_mutex, which is not available (is with B) and sleeps.
 
+Now A has acquired mmap_sem and waits for B to release ashmem_mutex
+B has acquired ashmem_mutex and waits for the mmap_sem to be
+available, which is held by A.
+This creates a dead lock in the system.
+
+Proposed Solution:
+Do not hold the ashmem lock while making copy_to_user/copy_from_user calls.
+At the same ensure that data integrity is maintained (two threads
+calling SET_NAME/GET_NAME should not lead to issues).
+I have attached a patch to fix this problem.
+
+How to Reproduce the problem:
+In normal circumstances it is very hard to see this. The problem was
+seen during regression tests, but was very rare.
+My Kernel Version is 3.4.0 and I managed to write a unit test case to
+create this issue almost 100% of the time.
+
+Testing:
+Used the same unit test case to ensure that the attached patch fixes
+the deadlock in Kernel Version 3.4
+Ported the same patch to 3.8 for submission.
+
+Please provide your feedback on the patch.
+
+Warm Regards,
+Shankar
+
+--14dae9340e3b40f60504d5f919be
+Content-Type: application/octet-stream; 
+	name="0001-staging-android-ashmem-get_name-set_name-not-to-hold.patch"
+Content-Disposition: attachment; 
+	filename="0001-staging-android-ashmem-get_name-set_name-not-to-hold.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hdb6or6y0
+
+RnJvbSA4MzZhODk2ZmMxOGViMjdjNmFlYzJiMzIwZWYwMWMxN2RhYjdjOTZkIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBTaGFua2FyIEJyYWhhZGVlc3dhcmFuIDxzaGFua29vNzdAZ21h
+aWwuY29tPgpEYXRlOiBNb24sIDE4IEZlYiAyMDEzIDEwOjIxOjU2ICswNTMwClN1YmplY3Q6IFtQ
+QVRDSF0gc3RhZ2luZzogYW5kcm9pZDogYXNobWVtOiBnZXRfbmFtZSxzZXRfbmFtZSBub3QgdG8g
+aG9sZCBhc2htZW1fbXV0ZXgKClByb2JsZW06ClRoZXJlIGV4aXN0cyBhIHBhdGggaW4gYXNobWVt
+IGRyaXZlciB0aGF0IGNvdWxkIGxlYWQgdG8gYWNxdWlzdGlvbgpvZiBtbS0+bW1hcF9zZW0sIGFz
+aG1lbV9tdXRleCBpbiByZXZlcnNlIG9yZGVyLiBUaGlzIGNvdWxkIGxlYWQKdG8gZGVhZGxvY2sg
+aW4gdGhlIHN5c3RlbS4KRm9yIEV4YW1wbGUsIGFzc3VtZSB0aGF0IG1tYXAgaXMgY2FsbGVkIG9u
+IGEgYXNobWVtIHJlZ2lvbgppbiB0aGUgY29udGV4dCBvZiBhIHRocmVhZCBzYXkgVDEuCiBzeXNf
+bW1hcF9wZ29mZiAoMS4gYWNxdWlyZXMgbW0tPm1tYXBfc2VtKQogIHwKICAgLS0+IG1tYXBfcmVn
+aW9uCiAJfAogICAgICAgICAtLS0tPiBhc2htZW1fbW1hcCAoMi4gYWNxdWlyZXMgYXNtZW1fbXV0
+ZXgpCiBOb3cgaWYgdGhlcmUgaXMgYSBjb250ZXh0IHN3aXRjaCBhZnRlciAxIGFuZCBiZWZvcmUg
+MiwKIGFuZCBpZiBhbm90aGVyIHRocmVhZCBUMiAodGhhdCBzaGFyZXMgdGhlIG1tIHN0cnVjdCkg
+aW52b2tlcyBhbgogaW9jdGwgc2F5IEFTSE1FTV9HRVRfTkFNRSwgdGhpcyBjYW4gbGVhZCB0byB0
+aGUgZm9sbG93aW5nIHBhdGgKCmFzaG1lbV9pb2N0bAogIHwKICAtLT5nZXRfbmFtZSAoMy4gYWNx
+dWlyZXMgYXNobWVtX211dGV4KQoJfAoJLS0tPiBjb3B5X3RvX3VzZXIgKDQuIGFjcXVpcmVzIHRo
+ZSBtbS0+bW1hcF9zZW0pCk5vdGUgdGhhdCB0aGUgY29weV90b191c2VyIGNvdWxkIGxlYWQgdG8g
+YSB2YWxpZCBmYXVsdCBpZiBubwpwaHlzaWNhbCBwYWdlIGlzIGFsbG9jYXRlZCB5ZXQgZm9yIHRo
+ZSB1c2VyIGFkZHJlc3MgcGFzc2VkLgpOb3cgVDEgaGFzIG1tYXBfc2VtIGFuZCBpcyB3YWl0aW5n
+IGZvciBhc2htZW1fbXV0ZXguCmFuZCBUMiBoYXMgdGhlIGFzaG1lbV9tdXRleCBhbmQgaXMgd2Fp
+dGluZyBmb3IgbW1hcF9zZW0KVGh1cyBsZWFkaW5nIHRvIGRlYWRsb2NrLgoKU29sdXRpb246CkRv
+IG5vdCBjYWxsIGNvcHlfdG9fdXNlciBvciBjb3B5X2Zyb21fdXNlciB3aGlsZSBob2xkaW5nIHRo
+ZQphaHNtZW1fbXV0ZXguIEluc3RlYWQgY29weSB0aGlzIHRvIGEgbG9jYWwgYnVmZmVyIHRoYXQg
+bGl2ZXMKaW4gdGhlIHN0YWNrIHdoaWxlIGhvbGRpbmcgdGhpcyBsb2NrLiBUaGlzIHdpbGwgbWFp
+bnRhaW4gZGF0YQppbnRlZ3JpdHkgYXMgd2VsbCBuZXZlciByZXZlcnNlIHRoZSBsb2NrIG9yZGVy
+LgotLS0KIGRyaXZlcnMvc3RhZ2luZy9hbmRyb2lkL2FzaG1lbS5jIHwgICA0OCArKysrKysrKysr
+KysrKysrKysrKysrKysrKysrKystLS0tLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDM5IGluc2VydGlv
+bnMoKyksIDkgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9zdGFnaW5nL2FuZHJv
+aWQvYXNobWVtLmMgYi9kcml2ZXJzL3N0YWdpbmcvYW5kcm9pZC9hc2htZW0uYwppbmRleCA2MzRi
+OWFlLi45ZGRkZTkyIDEwMDY0NAotLS0gYS9kcml2ZXJzL3N0YWdpbmcvYW5kcm9pZC9hc2htZW0u
+YworKysgYi9kcml2ZXJzL3N0YWdpbmcvYW5kcm9pZC9hc2htZW0uYwpAQCAtNDE0LDYgKzQxNCwx
+MSBAQCBvdXQ6CiBzdGF0aWMgaW50IHNldF9uYW1lKHN0cnVjdCBhc2htZW1fYXJlYSAqYXNtYSwg
+dm9pZCBfX3VzZXIgKm5hbWUpCiB7CiAJaW50IHJldCA9IDA7CisJLyoKKwkgKiBMb2NhbCB2YXJp
+YWJsZSB0byBob2xkIHRoZSBuYW1lIGNvcGllZCBmcm9tIHVzZXIgc3BhY2UKKwkgKiBUaGlzIHZh
+cmlhYmxlIGlzIGFwcHJveCBvZiBzaXplIDI3MCBieXRlcywgbm90IGh1Z2UKKwkgKi8KKwljaGFy
+IGxvY2FsX25hbWVbQVNITUVNX05BTUVfTEVOXTsKIAogCW11dGV4X2xvY2soJmFzaG1lbV9tdXRl
+eCk7CiAKQEAgLTQyMyw5ICs0MjgsMjQgQEAgc3RhdGljIGludCBzZXRfbmFtZShzdHJ1Y3QgYXNo
+bWVtX2FyZWEgKmFzbWEsIHZvaWQgX191c2VyICpuYW1lKQogCQlnb3RvIG91dDsKIAl9CiAKLQlp
+ZiAodW5saWtlbHkoY29weV9mcm9tX3VzZXIoYXNtYS0+bmFtZSArIEFTSE1FTV9OQU1FX1BSRUZJ
+WF9MRU4sCi0JCQkJICAgIG5hbWUsIEFTSE1FTV9OQU1FX0xFTikpKQorCS8qCisJICogSG9sZGlu
+ZyB0aGUgYXNobWVtX211dGV4IHdoaWxlIGRvaW5nIGEgY29weV9mcm9tX3VzZXIgbWlnaHQgY2F1
+c2UKKwkgKiBhbiBkYXRhIGFib3VydCB3aGljaCB3b3VsZCB0cnkgdG8gYWNjZXNzIG1tYXBfc2Vt
+LiBJZiBhbm90aGVyCisJICogdGhyZWFkIGhhcyBpbnZva2VkIGFzaG1lbV9tbWFwIHRoZW4gaXQg
+d2lsbCBiZSBob2xkaW5nIHRoZQorCSAqIHNlbWFwaG9yZSBhbmQgd2lsbCBiZSB3YWl0aW5nIGZv
+ciBhc2htZW1fbXV0ZXgsIHRoZXJlIGJ5IGxlYWRpbmcgdG8KKwkgKiBkZWFkbG9jay4gV2UnbGwg
+cmVsZWFzZSB0aGUgbXV0ZXggIGFuZCB0YWtlIHRoZSBuYW1lIHRvIGEgbG9jYWwKKwkgKiB2YXJp
+YWJsZSB0aGF0IGRvZXMgbm90IG5lZWQgcHJvdGVjdGlvbiBhbmQgbGF0ZXIgY29weSB0aGUgbG9j
+YWwKKwkgKiB2YXJpYWJsZSB0byB0aGUgc3RydWN0dXJlIG1lbWJlciB3aXRoIGxvY2sgaGVsZC4K
+KwkgKi8KKwltdXRleF91bmxvY2soJmFzaG1lbV9tdXRleCk7CisJaWYgKHVubGlrZWx5KGNvcHlf
+ZnJvbV91c2VyKGxvY2FsX25hbWUsIG5hbWUsIEFTSE1FTV9OQU1FX0xFTikpKSB7CisJCS8qIExv
+Y2sgaXMgYWxyZWFkeSBkcm9wcGVkLCBqdXN0IHJldHVybiAqLwogCQlyZXQgPSAtRUZBVUxUOwor
+CQlyZXR1cm4gcmV0OworCX0KKwltdXRleF9sb2NrKCZhc2htZW1fbXV0ZXgpOworCW1lbWNweShh
+c21hLT5uYW1lICsgQVNITUVNX05BTUVfUFJFRklYX0xFTiwKKwkJbG9jYWxfbmFtZSwgQVNITUVN
+X05BTUVfTEVOKTsKIAlhc21hLT5uYW1lW0FTSE1FTV9GVUxMX05BTUVfTEVOLTFdID0gJ1wwJzsK
+IAogb3V0OgpAQCAtNDM3LDI2ICs0NTcsMzYgQEAgb3V0Ogogc3RhdGljIGludCBnZXRfbmFtZShz
+dHJ1Y3QgYXNobWVtX2FyZWEgKmFzbWEsIHZvaWQgX191c2VyICpuYW1lKQogewogCWludCByZXQg
+PSAwOworCXNpemVfdCBsZW47CisJLyoKKwkgKiBIYXZlIGEgbG9jYWwgdmFyaWFibGUgdG8gd2hp
+Y2ggd2UnbGwgY29weSB0aGUgY29udGVudAorCSAqIGZyb20gYXNtYSB3aXRoIHRoZSBsb2NrIGhl
+bGQuIExhdGVyIHdlIGNhbiBjb3B5IHRoaXMgdG8gdGhlIHVzZXIKKwkgKiBzcGFjZSBzYWZlbHkg
+d2l0aG91dCBob2xkaW5nIGFueSBsb2Nrcy4gU28gZXZlbiBpZiB3ZSBwcm9jZWVkIHRvCisJICog
+d2FpdCBmb3IgbW1hcF9zZW0sIGl0IHdvbid0IGxlYWQgdG8gZGVhZGxvY2suCisJICovCisJY2hh
+ciBsb2NhbF9uYW1lW0FTSE1FTV9OQU1FX0xFTl07CiAKIAltdXRleF9sb2NrKCZhc2htZW1fbXV0
+ZXgpOwogCWlmIChhc21hLT5uYW1lW0FTSE1FTV9OQU1FX1BSRUZJWF9MRU5dICE9ICdcMCcpIHsK
+LQkJc2l6ZV90IGxlbjsKIAogCQkvKgogCQkgKiBDb3B5aW5nIG9ubHkgYGxlbicsIGluc3RlYWQg
+b2YgQVNITUVNX05BTUVfTEVOLCBieXRlcwogCQkgKiBwcmV2ZW50cyB1cyBmcm9tIHJldmVhbGlu
+ZyBvbmUgdXNlcidzIHN0YWNrIHRvIGFub3RoZXIuCiAJCSAqLwogCQlsZW4gPSBzdHJsZW4oYXNt
+YS0+bmFtZSArIEFTSE1FTV9OQU1FX1BSRUZJWF9MRU4pICsgMTsKLQkJaWYgKHVubGlrZWx5KGNv
+cHlfdG9fdXNlcihuYW1lLAotCQkJCWFzbWEtPm5hbWUgKyBBU0hNRU1fTkFNRV9QUkVGSVhfTEVO
+LCBsZW4pKSkKLQkJCXJldCA9IC1FRkFVTFQ7CisJCW1lbWNweShsb2NhbF9uYW1lLCBhc21hLT5u
+YW1lICsgQVNITUVNX05BTUVfUFJFRklYX0xFTiwgbGVuKTsKIAl9IGVsc2UgewotCQlpZiAodW5s
+aWtlbHkoY29weV90b191c2VyKG5hbWUsIEFTSE1FTV9OQU1FX0RFRiwKLQkJCQkJICBzaXplb2Yo
+QVNITUVNX05BTUVfREVGKSkpKQotCQkJcmV0ID0gLUVGQVVMVDsKKwkJbGVuID0gc2l6ZW9mKEFT
+SE1FTV9OQU1FX0RFRik7CisJCW1lbWNweShsb2NhbF9uYW1lLCBBU0hNRU1fTkFNRV9ERUYsIGxl
+bik7CiAJfQogCW11dGV4X3VubG9jaygmYXNobWVtX211dGV4KTsKIAorCS8qCisJICogTm93IHdl
+IGFyZSBqdXN0IGNvcHlpbmcgZnJvbSB0aGUgc3RhY2sgdmFyaWFibGUgdG8gdXNlcmxhbmQKKwkg
+KiBObyBsb2NrIGhlbGQKKwkgKi8KKwlpZiAodW5saWtlbHkoY29weV90b191c2VyKG5hbWUsIGxv
+Y2FsX25hbWUsIGxlbikpKQorCQlyZXQgPSAtRUZBVUxUOwogCXJldHVybiByZXQ7CiB9CiAKLS0g
+CjEuNy4wLjQKCg==
+--14dae9340e3b40f60504d5f919be--
