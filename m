@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab3BRPXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 10:23:13 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5285 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724Ab3BRPXL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 10:23:11 -0500
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=MPEKn9ueenIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=zGjexpQmzOwA:10 a=3-v-330or6qoVSpEtHYA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1361200989.23152.150.camel@gandalf.local.home>
-Subject: Re: [RFC] sched: The removal of idle_balance()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Clark Williams <clark@redhat.com>,
-        Andrew Theurer <habanero@us.ibm.com>
-Date: Mon, 18 Feb 2013 10:23:09 -0500
-In-Reply-To: <1361158953.14352.17.camel@marge.simpson.net>
-References: <1360908819.23152.97.camel@gandalf.local.home>
-	 <1360913172.4736.20.camel@marge.simpson.net>
-	 <1361031150.23152.133.camel@gandalf.local.home>
-	 <1361082363.6088.21.camel@marge.simpson.net>
-	 <1361085245.28353.3.camel@marge.simpson.net>
-	 <1361138089.23152.141.camel@gandalf.local.home>
-	 <1361158953.14352.17.camel@marge.simpson.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
+	id S1754168Ab3BRPY4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 10:24:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4683 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753724Ab3BRPYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 10:24:54 -0500
+Date: Mon, 18 Feb 2013 12:24:29 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH EDAC 07/13] edac: add support for raw error reports
+Message-ID: <20130218122429.239584aa@redhat.com>
+In-Reply-To: <20130218135251.GC16622@pd.tnic>
+References: <cover.1360931635.git.mchehab@redhat.com>
+	<e08f797b129a50b4e1b39e8c31bff82904aea65d.1360931635.git.mchehab@redhat.com>
+	<20130215141330.GF14387@pd.tnic>
+	<20130215132530.4f3b7dab@redhat.com>
+	<20130215154123.GH14387@pd.tnic>
+	<20130215134929.3909cfa2@redhat.com>
+	<20130215160257.GK14387@pd.tnic>
+	<20130215162029.3bcbf50a@redhat.com>
+	<20130216165748.GC27207@pd.tnic>
+	<20130217074404.05786692@redhat.com>
+	<20130218135251.GC16622@pd.tnic>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-18 at 04:42 +0100, Mike Galbraith wrote:
-> On Sun, 2013-02-17 at 16:54 -0500, Steven Rostedt wrote:
-> > On Sun, 2013-02-17 at 08:14 +0100, Mike Galbraith wrote:
+Em Mon, 18 Feb 2013 14:52:51 +0100
+Borislav Petkov <bp@alien8.de> escreveu:
+
+> On Sun, Feb 17, 2013 at 07:44:04AM -0300, Mauro Carvalho Chehab wrote:
+> > We could do it for the location. The space for label, however, depends on
+> > how many DIMMs are in the system, as multiple dimm's may be present, and
+> > the core will point to all possible affected DIMMs.
 > > 
-> > > (And puts a dent in x264 ultrafast) 
->  
-> > What about my last patch? The one that avoids idle_balance() if the
-> > previous task was in a task_uninterruptible state. That one gave the
-> > same performance increase that removing idle_balance() did on my box.
+> > Ok, perhaps we could just allocate one big area for it (like one page), 
+> > as this would very likely be enough for it, and change the logic to take
+> > the buffer size into account when filling it.
 > 
-> I didn't try it, figuring it was pretty much the same as turning it off,
-> but just did.  Patch (-typo) has no effect on either x264 or hackbench
-> (surely will for -rt, but rt tasks here aren't sent to burn in rt hell).
+> Or, in the case where ->label is all dimms on the mci, you simply put
+> "All DIMMs on MCI%d" in there and done. Simple.
 
-So it had no effect to your tests? That's actually good, as if it has a
-positive effect on some workloads and no effect on others, that's still
-a net win.
+The core does this already when it has no glue at all about where is the
+error.
 
--- Steve
+The core is prepared to the case where the location is only half-filled,
+as this is a common scenario on the drivers, and important enough on
+some memory controllers.
+
+As already discussed, on most memory controllers nowadays, the memory
+controller can't point to a single DIMM, as the error correction code
+takes 128 bits (2 DIMMs). It is impossible for the error correction
+code to determine on what DIMM an uncorrected error happened[1].
+
+With Nehalem memory controllers, depending on the memory configuration,
+the minimal DIMM granularity for an uncorrected error can be even worse: 
+4 DIMMs, if 128-bits error correction code and mirror mode are both enabled.
+
+There are some border cases where the driver can simply not discover on
+what channel or on what dimm(or csrow) inside a channel the error
+happened. The error could be associated with some failure at the logic
+or at the bus that communicated with the Advanced Memory Buffers on an
+FB-DIMM memory controller, for example.
+
+So, the real core's worse case scenario would be if the driver can't
+determine on what DIMM inside a channel the error happened. As a channel
+can have a large number of DIMMs[2] the allocated area for the label
+should be conservative.
 
 
+ (16? Not sure what's the worse case),
+
+[1] such error can even not be fatal, if that particular address is
+unused.
+
+[2] Currently, up to 8, according with:
+	$for i in $(git grep "layers.*size\s*=" drivers/edac|perl -ne 'print "$1 " if (m/\=\s*([A-Z][^\s]+);/);'); do echo $i; git grep $i drivers/edac; done|grep define|perl -ne 'print "$1 " if (m/define\s+[^\s]+\s(\d+)/)'
+	8 8 2 2 4 2 3 3 3 8 4 4 3 3 1 1 4 
+
+and
+	$ git grep "layers.*size\s*=" drivers/edac|perl -ne 'print "$1 " if (m/\=\s*(\d+);/);'
+	1 1 1 1 2 2 8 4 1 1 1 1 
+
+Nothing prevents that a driver would have more than 8 DIMMs per layer
+in the future.
+
+-- 
+
+Cheers,
+Mauro
