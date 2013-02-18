@@ -1,72 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab3BRPP4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 10:15:56 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:56522 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984Ab3BRPPz (ORCPT
+	id S1753813Ab3BRPQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 10:16:59 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:59085 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab3BRPQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 10:15:55 -0500
+	Mon, 18 Feb 2013 10:16:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <878v6lzmzk.fsf@devron.myhome.or.jp>
-References: <1350138661-2454-1-git-send-email-linkinjeon@gmail.com>
-	<1360810114.1727.306.camel@jesse>
-	<CAKYAXd9qmDYivsJduT3bFD2vPOc0DQ0f8RQTxQ7MXXTCQMMQQA@mail.gmail.com>
-	<1360825669.1727.337.camel@jesse>
-	<CAKYAXd9tVzvP_Oa+BoUwKbpaMoVZKZgesDgrLirqoyk6AHrJ2A@mail.gmail.com>
-	<1360900178.1727.393.camel@jesse>
-	<87fw0t26qu.fsf@devron.myhome.or.jp>
-	<CAKYAXd-DSo1R7zgu81vc9ckke+5doeEd2QPwqHt54OF-VZo34Q@mail.gmail.com>
-	<878v6lzmzk.fsf@devron.myhome.or.jp>
-Date: Tue, 19 Feb 2013 00:15:54 +0900
-Message-ID: <CAKYAXd94jVs4SMdVUEsnsYjApru=+8cWFmXO3L_NAvwM1ge6cw@mail.gmail.com>
-Subject: Re: Read support for fat_fallocate()? (was [v2] fat: editions to
- support fat_fallocate())
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Andrew Bartlett <abartlet@samba.org>, linux-kernel@vger.kernel.org,
-        Ravishankar N <cyberax82@gmail.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>,
-        Nam-Jae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
+In-Reply-To: <1360838032.4045.126.camel@hornet>
+References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
+	<1350408232.2336.42.camel@laptop>
+	<1359728280.8360.15.camel@hornet>
+	<CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>
+	<51118797.9080800@linaro.org>
+	<1360113595.2621.30.camel@gandalf.local.home>
+	<1360174657.4045.33.camel@hornet>
+	<CABPqkBR=R_xnM1j8J_+vXHniqfBzJQRr8oUZz05YVzhbSW777w@mail.gmail.com>
+	<1360838032.4045.126.camel@hornet>
+Date: Mon, 18 Feb 2013 16:16:55 +0100
+Message-ID: <CABPqkBRaMUOz6MsJRzCu2wcvGoYasdnZCnneyzrUstYTWRJnqA@mail.gmail.com>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user samples
+ with kernel samples
+From: Stephane Eranian <eranian@google.com>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>,
+        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/18 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
+Hi,
+
+
+I think the advantage of the ioctl() is that is reuses existing infrastructure.
+The downside is that to get the timestamp you need at a minimum:
+
+uint64_t get_perf_timestamp(void)
+{
+   struct perf_event_attr attr;
+   uint64_t ts = 0;
+   int fd;
+
+   memset(&attr, 0, sizeof(attr));
+
+   /* pick a dummy SW event (no PMU HW resource allocated), keep it disabled */
+   attr.type = PERF_TYPE_SOFTWARE;
+   attr.config =  PERF_COUNT_SW_CPU_CLOCK; /* dummy event */
+   attr.disabled = 1;
+
+   /* attach to self in per-thread mode */
+   fd = perf_event_open(&attr, 0, -1, -1, 0);
+   if (fd == -1)
+       return 0;
+
+  ioctl(fd, PERF_EVENT_IOC_GET_TIME, &ts);
+  close(fd);
+
+  return ts;
+}
+
+This function is likely to be called multiple times. So we could cache
+the fd and reuse it.
+There would be a bigger penalty only for the first call. Thereafter it
+would cost probably
+ just a bit more than the pfm_control() approach, because of the need
+to go through VFS.
+So I am fine with this.
+
+
+On Thu, Feb 14, 2013 at 11:33 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+> On Wed, 2013-02-13 at 20:00 +0000, Stephane Eranian wrote:
+>> On Wed, Feb 6, 2013 at 7:17 PM, Pawel Moll <pawel.moll@arm.com> wrote:
+>> > On Wed, 2013-02-06 at 01:19 +0000, Steven Rostedt wrote:
+>> >> If people are worried about adding a bunch of new perf syscalls, maybe
+>> >> add a sys_perf_control() system call that works like an ioctl but
+>> >> without a file descriptor. Something for things that don't require an
+>> >> event attached to it, like to retrieve a time stamp counter that perf
+>> >> uses, but done in a way that it could be used for other things perf
+>> >> related that does not require an event.
+>> >
+>> >  /**
+>> > + * sys_perf_control - ioctl-like interface to control system-wide
+>> > + *                   perf behaviour
+>> > + *
+>> > + * @cmd:       one of the PERF_CONTROL_* commands
+>> > + * @arg:       command-specific argument
+>> > + */
+>> > +SYSCALL_DEFINE2(perf_control, unsigned int, cmd, unsigned long, arg)
+>> > +{
+>> > +       switch (cmd) {
+>> > +       case PERF_CONTROL_GET_TIME:
+>> > +       {
+>> > +               u64 time = perf_clock();
+>> > +               if (copy_to_user((void __user *)arg, &time, sizeof(time)))
+>> > +                       return -EFAULT;
+>> > +               return 0;
+>> > +       }
+>> > +
+>> > +       default:
+>> > +               return -ENOTTY;
+>> > +       }
+>> > +}
+>>
+>> So what would be the role of this new syscall besides GET_TIME?
+>> What other controls without a fd could be done? We are already passing
+>> a lot of control thru the perf_event_open() some in the attr struct others
+>> as arguments.
 >
->>> Hm. My concerns are compatibility and reliability. Although We can
->>> change on-disk format if need, but I don't think it can be compatible
->>> and reliable. If so, who wants to use it? I feel there is no reason to
->>> use FAT if there is no compatible.
->>>
->>> Well, anyway, possible solution would be, we can pre-allocate physical
->>> blocks via fallocate(2) or something, but discard pre-allocated blocks
->>> at ->release() (or before unmount at least). This way would have
->>> compatibility (no on-disk change over unmount) and possible breakage
->>> would be same with normal extend write patterns on kernel crash
->>> (i.e. Windows or fsck will truncate after i_size).
->> Hi OGAWA.
->> We don't need to consider device unplugging case ?
->> If yes, I can rework fat fallocate patch as your suggestion.
+> I think Steven was thinking about an "extensible" fd-less interface.
+> Whether we'll need any other fd-less control in the future, I don't
+> know...
 >
-> In my suggestion, I think, kernel crash or something like unplugging
-> cases handles has no change from current way.
+>> The only advantage of this "disguised" ioctl() is that it does not require
+>> a fd. But it is worth adding a syscall just to avoid creating a fd?
 >
-> Any pre-allocated blocks are truncated by fsck as inconsistency state,
-> like crash before updating i_size for normal extend write.  I.e. across
-> unmount, nobody care whether pre-allocated or not. IOW, if there is
-> inconsistent between i_size and cluster chain (includes via
-> fallocate(2)) across unmount, it should be handled as broken state.
+> Frankly speaking, I have some doubts here, but I do sys_perf_open()
+> anyway, so it was mainly trying to address your situation.
 >
-> In short, the lifetime of pre-allocated blocks are from fallocate(2) to
-> ->release() only.
-Okay, I will post updated fat fallocate patch after looking into more.
-Thanks.
+> One way or another I'd like to get the timestamp, so how about picking
+> one solution and trying to make it happen? Seems that my previous
+> "standard ioctl()" patch would be the best compromise?
 >
-> Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> Pawel
+>
+>
