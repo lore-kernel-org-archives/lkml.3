@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757661Ab3BRXtO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 18:49:14 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45892 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757560Ab3BRXtN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 18:49:13 -0500
+	id S1757722Ab3BRXvh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 18:51:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37235 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757686Ab3BRXvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 18:51:35 -0500
+Message-ID: <5122BE0C.9020403@zytor.com>
+Date: Mon, 18 Feb 2013 15:49:32 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Message-ID: <b6ea78ee-41df-4c92-84fa-e1b4a430f957@default>
-Date: Mon, 18 Feb 2013 15:48:47 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Ric Mason <ric.masonn@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: RE: [PATCH] zsmalloc: Add Kconfig for enabling PTE method
-References: <1359937421-19921-1-git-send-email-minchan@kernel.org>
- <511F2721.2000305@gmail.com> <512271E1.9000105@linux.vnet.ibm.com>
-In-Reply-To: <512271E1.9000105@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Subject: Re: [PATCH v9 2/3] trace,x86: add x86 irq vector tracepoints
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A64C4B@USINDEM103.corp.hds.com>   <511ECE53.8040801@zytor.com>  <1360979993.23152.122.camel@gandalf.local.home>  <511EEAE1.1040106@zytor.com> <1360981364.23152.123.camel@gandalf.local.home> <A5ED84D3BB3A384992CBB9C77DEDA4D414ABE178@USINDEM103.corp.hds.com>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414ABE178@USINDEM103.corp.hds.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Subject: Re: [PATCH] zsmalloc: Add Kconfig for enabling PTE method
-> 
-> On 02/16/2013 12:28 AM, Ric Mason wrote:
-> > On 02/04/2013 08:23 AM, Minchan Kim wrote:
-> >> +      for object mapping. You can check speed with zsmalloc
-> >> benchmark[1].
-> >> +      [1] https://github.com/spartacus06/zsmalloc
-> >
-> > Is there benchmark to test zcache? eg. internal fragmentation level ...
-> 
-> First, zsmalloc is not used in zcache right now so just wanted to say
-> that.  It is used in zram and the proposed zswap
-> (https://lwn.net/Articles/528817/)
-> 
-> There is not an official benchmark.  However anything that generates
-> activity that will hit the frontswap or cleancache hooks will do.
-> These are workloads that overcommit memory and use swap, or access
-> file sets whose size is larger that the system page cache.
+On 02/18/2013 03:45 PM, Seiji Aguchi wrote:
+>>> Not-yet-signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+>>>
+>>> ... so I was holding off on doing anything with it.
+>>
+>> Heh, and I was waiting for comments from you before doing anything further with it ;-)
+>>
+>> Email review deadlock!
+>
+> So, how do you plan to push ahead with this patch?
+>
+> https://lkml.org/lkml/2013/2/1/532
+>
+> <snip>
+> I think I got all the cases, as NMIs causes the store/restore functions to be re-entrent without any locks.
+> <snip>
+>
+> Steven,
+> if you think you got all the cases, you can do more testing.
+> What is your concern?
+>
+> I hope this patch will be included in 3.9.
+>
 
-I think it's important to note that the question "is there
-a benchmark" is a very deep and difficult question for any
-compression solution because it is so workload-dependent.
-Unlike many benchmarks that simply synthesize a _quantity_
-of data, zcache/zswap/zram all are very sensitive to the
-actual contents of that data as the compression ratio
-varies widely depending on the data.  So we need to ensure
-that the data used by any benchmark has similar "entropy"
-to real world workloads.  I'm not sure how we can do that.
+What about the following:
 
-So it may or may not be useful to measure zcache/zswap/zram using
-standard benchmarks (including things like SPECjbb).  At least
-kernbench is something that kernel developers do every day,
-so it is definitely a real world workload... but adding
-parallel compiles (via "make -jN") until the system thrashes,
-and then showing zcache/zswap/zram reduces the thrashing may
-not be at all representative of a broad range of workloads
-that cause memory pressure... kernbench is just convenient for
-us developers to demonstrate that the mechanism works.
+> The base address of the IDT doesn't generally change... the one
+> exception is when we do the funny NMI workaround.
+>
+> For that reason, I would be happier if we just restored the standard
+> value instead of saving/restoring stuff.
 
-Ideas welcome... well-thought out ideas anyway!
+	-hpa
 
-Dan
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
