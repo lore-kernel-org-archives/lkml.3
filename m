@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab3BRS73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 13:59:29 -0500
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:62905 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab3BRS72 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 13:59:28 -0500
-Message-ID: <51227A07.5020508@gmail.com>
-Date: Mon, 18 Feb 2013 11:59:19 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1755855Ab3BRTEX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 14:04:23 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:47750 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753199Ab3BRTEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 14:04:22 -0500
+Message-ID: <51227B29.4020909@linux.vnet.ibm.com>
+Date: Mon, 18 Feb 2013 13:04:09 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: Pawel Moll <pawel.moll@arm.com>, Steven Rostedt <rostedt@goodmis.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>,
-        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user samples
- with kernel samples
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com> <1350408232.2336.42.camel@laptop> <1359728280.8360.15.camel@hornet> <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com> <51118797.9080800@linaro.org> <1360113595.2621.30.camel@gandalf.local.home> <1360174657.4045.33.camel@hornet> <CABPqkBR=R_xnM1j8J_+vXHniqfBzJQRr8oUZz05YVzhbSW777w@mail.gmail.com> <1360838032.4045.126.camel@hornet> <CABPqkBRaMUOz6MsJRzCu2wcvGoYasdnZCnneyzrUstYTWRJnqA@mail.gmail.com>
-In-Reply-To: <CABPqkBRaMUOz6MsJRzCu2wcvGoYasdnZCnneyzrUstYTWRJnqA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Ric Mason <ric.masonn@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv5 1/8] zsmalloc: add to mm/
+References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com> <1360780731-11708-2-git-send-email-sjenning@linux.vnet.ibm.com> <511EFC5A.3030408@gmail.com>
+In-Reply-To: <511EFC5A.3030408@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021819-7182-0000-0000-0000054B782B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/18/13 8:16 AM, Stephane Eranian wrote:
-> Hi,
->
->
-> I think the advantage of the ioctl() is that is reuses existing infrastructure.
-> The downside is that to get the timestamp you need at a minimum:
->
-> uint64_t get_perf_timestamp(void)
-> {
->     struct perf_event_attr attr;
->     uint64_t ts = 0;
->     int fd;
->
->     memset(&attr, 0, sizeof(attr));
->
->     /* pick a dummy SW event (no PMU HW resource allocated), keep it disabled */
->     attr.type = PERF_TYPE_SOFTWARE;
->     attr.config =  PERF_COUNT_SW_CPU_CLOCK; /* dummy event */
->     attr.disabled = 1;
->
->     /* attach to self in per-thread mode */
->     fd = perf_event_open(&attr, 0, -1, -1, 0);
->     if (fd == -1)
->         return 0;
->
->    ioctl(fd, PERF_EVENT_IOC_GET_TIME, &ts);
->    close(fd);
->
->    return ts;
-> }
->
+On 02/15/2013 09:26 PM, Ric Mason wrote:
+> On 02/14/2013 02:38 AM, Seth Jennings wrote:
+>> =========
+>> DO NOT MERGE, FOR REVIEW ONLY
+>> This patch introduces zsmalloc as new code, however, it already
+>> exists in drivers/staging.  In order to build successfully, you
+>> must select EITHER to driver/staging version OR this version.
+>> Once zsmalloc is reviewed in this format (and hopefully accepted),
+>> I will create a new patchset that properly promotes zsmalloc from
+>> staging.
+>> =========
+>>
+>> This patchset introduces a new slab-based memory allocator,
+>> zsmalloc, for storing compressed pages.  It is designed for
+>> low fragmentation and high allocation success rate on
+>> large object, but <= PAGE_SIZE allocations.
+>>
+>> zsmalloc differs from the kernel slab allocator in two primary
+>> ways to achieve these design goals.
+>>
+>> zsmalloc never requires high order page allocations to back
+>> slabs, or "size classes" in zsmalloc terms. Instead it allows
+>> multiple single-order pages to be stitched together into a
+>> "zspage" which backs the slab.  This allows for higher allocation
+>> success rate under memory pressure.
+>>
+>> Also, zsmalloc allows objects to span page boundaries within the
+>> zspage.  This allows for lower fragmentation than could be had
+>> with the kernel slab allocator for objects between PAGE_SIZE/2
+>> and PAGE_SIZE.  With the kernel slab allocator, if a page compresses
+>> to 60% of it original size, the memory savings gained through
+>> compression is lost in fragmentation because another object of
+>> the same size can't be stored in the leftover space.
+> 
+> Why you say so? slab/slub allocator both have policies to setup
+> suitable order of pages in each slab cache in order to reduce
+> fragmentation. Which codes show you slab object can't span page
+> boundaries? Could you pointed out to me?
 
-That's the approach I took with an update to my perf_clock to 
-time-of-day series. Specific patch:
- 
-https://github.com/dsahern/linux/commit/7e6f40fca5f8cdbee1cd46d42b11aee71d0ffd34
+I might need to reword this. What I meant to say is "non-contiguous
+page boundaries".
 
-and series:
-https://github.com/dsahern/linux/commits/perf-time-of-day-3.7
+zsmalloc allows an object to span non-contiguous page boundaries
+within a zspage.  This obviously can't be done by slab/slub since they
+give addresses directly to users and the object data must be
+contiguous.  This is one reason why zsmalloc allocations require
+mapping to obtain a usable address.
 
-David
+Thanks,
+Seth
+
