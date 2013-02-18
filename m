@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab3BRLIJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 06:08:09 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:62553 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab3BRLIH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 06:08:07 -0500
+	id S1752232Ab3BRLIk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 06:08:40 -0500
+Received: from mga02.intel.com ([134.134.136.20]:16738 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751408Ab3BRLIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 06:08:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,686,1355126400"; 
+   d="scan'208";a="264041324"
+Date: Mon, 18 Feb 2013 13:12:17 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, srinivas.pandruvada@intel.com
+Subject: Re: [PATCH 3/3] HID: sensor-hub: don't limit the driver only to USB
+ bus
+Message-ID: <20130218111217.GL20771@intel.com>
+References: <1360578679-7029-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1360578679-7029-3-git-send-email-mika.westerberg@linux.intel.com>
+ <51220A68.9030608@ahsoftware.de>
 MIME-Version: 1.0
-From: Hui Zhu <teawater@gmail.com>
-Date: Mon, 18 Feb 2013 19:07:25 +0800
-Message-ID: <CANFwon1h8FxV3Xy4agY6=AR61U6K5FExXRn5DMetoWzPpdPhYA@mail.gmail.com>
-Subject: KGTP (Linux debugger and tracer) 20130218 release (add watch
- tracepoint control hardware breakpoints to record memory and bug fix)
-To: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
-        kgtp <kgtp@freelists.org>
-Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Geunsik Lim <leemgs1@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Tao Ma <taoma.tm@gmail.com>,
-        Oliver Yang <yangoliver@gmail.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51220A68.9030608@ahsoftware.de>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Mon, Feb 18, 2013 at 12:03:04PM +0100, Alexander Holler wrote:
+> Am 11.02.2013 11:31, schrieb Mika Westerberg:
+> >We now have two transport mediums: USB and I2C, where sensor hubs can
+> >exists. So instead of constraining the driver to only these two we let it
+> >to match any HID bus as long as the group is HID_GROUP_SENSOR_HUB.
+> >
+> >Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >---
+> >  drivers/hid/hid-sensor-hub.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> >
+> >diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
+> >index 2643bce9..c01f10d 100644
+> >--- a/drivers/hid/hid-sensor-hub.c
+> >+++ b/drivers/hid/hid-sensor-hub.c
+> >@@ -603,7 +603,8 @@ static void sensor_hub_remove(struct hid_device *hdev)
+> >  }
+> >
+> >  static const struct hid_device_id sensor_hub_devices[] = {
+> >-	{ HID_DEVICE(BUS_USB, HID_GROUP_SENSOR_HUB, HID_ANY_ID, HID_ANY_ID) },
+> >+	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_SENSOR_HUB, HID_ANY_ID,
+> >+		     HID_ANY_ID) },
+> >  	{ }
+> >  };
+> >  MODULE_DEVICE_TABLE(hid, sensor_hub_devices);
+> >
+> 
+> Hmm, what happens with Bluetooth sensor-hubs? Is the driver now able
+> to handle them too?
 
-KGTP (http://code.google.com/p/kgtp/) is a flexible, lightweight and
-realtime Linux debugger and tracer.
-To use it, you don't need patch or rebuild the Linux kernel. Just
-build KGTP module and insmod it is OK.
-
-Please go to http://code.google.com/p/kgtp/wiki/HOWTO or
-http://code.google.com/p/kgtp/wiki/HOWTO (Chinese) to get more info
-about howto use KGTP.
-
-Now, KGTP 20130218 release.
-You can get the package for it from
-http://kgtp.googlecode.com/files/kgtp_20130218.tar.bz2
-or
-svn co https://kgtp.googlecode.com/svn/tags/20130218
-
-The main change of this release is add watch tracepoint control
-hardware breakpoints to record memory.
-Please goto http://code.google.com/p/kgtp/wiki/HOWTO#Howto_use_watch_tracepoint_control_hardware_breakpoints_to_recor
-or http://code.google.com/p/kgtp/wiki/HOWTOCN#如何用watch_tracepoint控制硬件断点记录内存访问
-(Chinese version) get more info about watch tracepoint.
-
-Another one is fix memory leak of output the value directly function.
-Please goto http://code.google.com/p/kgtp/wiki/UPDATE get more info
-about this release.
-
-According to the comments of Christoph, Geoff and Andi.  I make lite
-patch for review.  Please goto https://lkml.org/lkml/2012/5/9/90 to
-see it.
-
-Thanks,
-Hui
+It should, yes.
