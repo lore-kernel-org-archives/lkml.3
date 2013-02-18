@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757455Ab3BRW02 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 17:26:28 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:38160 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757272Ab3BRW0Y (ORCPT
+	id S1757502Ab3BRWg4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 17:36:56 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:62775 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757240Ab3BRWgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 17:26:24 -0500
-Date: Mon, 18 Feb 2013 14:26:18 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Borislav Petkov <bp@alien8.de>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        balbi@ti.com, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, davem@davemloft.net,
-        netdev@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
-        linux-edac@vger.kernel.org, rjw@sisk.pl, linux-pm@vger.kernel.org
-Subject: Re: SYSFS "errors"
-Message-ID: <20130218222618.GA21818@kroah.com>
-References: <20130218155215.GB2663@arwen.pp.htv.fi>
- <20130218171334.GA31329@kroah.com>
- <20130218172700.GH2663@arwen.pp.htv.fi>
- <20130218174916.GA2070@kroah.com>
- <20130218184633.GC10755@arwen.pp.htv.fi>
- <20130218164638.7cb53baa@redhat.com>
- <20130218200542.GB20137@arwen.pp.htv.fi>
- <20130218184742.5a4c3c06@redhat.com>
- <20130218215434.GB16794@kroah.com>
- <20130218221306.GA21493@pd.tnic>
+	Mon, 18 Feb 2013 17:36:55 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Dongjin Kim <tobetter@gmail.com>
+Subject: Re: [PATCH v3] mmc: dw_mmc: Add MSHC compatible for Exynos4412
+Date: Mon, 18 Feb 2013 22:36:43 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jaehoon Chung <jh80.chung@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Will Newton <will.newton@imgtec.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1361210793-5710-1-git-send-email-tobetter@gmail.com>
+In-Reply-To: <1361210793-5710-1-git-send-email-tobetter@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130218221306.GA21493@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302182236.43877.arnd@arndb.de>
+X-Provags-ID: V02:K0:T+YOMatPhcng8X1AhAYriqFcflxgKtZtbje1OZ/1pen
+ r8Gv9N37sJ2rlkCZ/GJuXmjsAEp9pFyLKR6RYQJ5RrK5AlAOhU
+ r22kLdoiMaY0VyUvuWnzz+RFI+RdGPahjj7yxWii9BIsHgptHV
+ e5fOYuwCiAgS8SoRdsP+ppPu8eFrvwbIXbErKpwsOEcv/Swy/e
+ 4fAnHqbWDIR0LOrqZsRA97fadDAmvtED51+HV4hqmC3ffrp70Y
+ dLKNoWhStV6Lsn/U0Ol2cwsE7p9b6s6bd4lhHQaTi7qtedx+Oe
+ pdBMzcCoGab8Dz2QvIfaKp7Hzu94BRZczzftpVx6C2QueIeoA6
+ niwjvd310oRcNzrqMM1U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 18, 2013 at 11:13:06PM +0100, Borislav Petkov wrote:
-> On Mon, Feb 18, 2013 at 01:54:34PM -0800, Greg KH wrote:
-> > Because sysfs is "one value per file" the lack of a file showing up
-> > shouldn't cause any userspace tools any problems, that is why we did
-> > things this way.
-> >
-> > But, of course, userspace programmers do know how to mess things up...
+On Monday 18 February 2013, Dongjin Kim wrote:
 > 
-> How about what I proposed earlier to Felipe:
+> This patch adds the compatible string for MSHC controller of Exynos4412, and
+> share the controller specific properties with Exynos5250 since they have same
+> features. Its driver data name is changed to exynos_drv_data instead SoC
+> specific name.
 > 
-> --
-> diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-> index 0ca1ca71157f..d2eef76d1d46 100644
-> --- a/drivers/edac/edac_mc_sysfs.c
-> +++ b/drivers/edac/edac_mc_sysfs.c
-> @@ -704,7 +704,7 @@ static ssize_t mci_sdram_scrub_rate_show(struct device *dev,
->  	int bandwidth = 0;
->  
->  	if (!mci->get_sdram_scrub_rate)
-> -		return -ENODEV;
-> +		return sprintf(data, "N/A");
->  
->  	bandwidth = mci->get_sdram_scrub_rate(mci);
->  	if (bandwidth < 0) {
-> 
-> --
-> 
-> Would that hurt the sysfs policy? In this case we *can* read the file
-> and it correctly tells us that scrub rate reading is not supported
-> instead of having a number there.
-> 
-> Hmm.
+> Cc: Jaehoon Chung <jh80.chung@samsung.com>
+> Cc: Sachin Kamat <sachin.kamat@linaro.org>
+> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
 
-I don't know, it depends on if userspace can handle this properly or
-not.  What tools rely on this sysfs file?  WHat happens when they get a
-non-number in the file?
+If they are completely compatibly, you can just list
+"samsung,exynos4412-dw-mshc" in the compatible property of the
+exynos5250 device tree, along with the other ones like:
 
-thanks,
+	compatible = "samsung,exynos5250-dw-mshc", "samsung,exynos4412-dw-mshc", "snps,dw-mshc";
 
-greg k-h
+then you don't need to change the driver at all.
+
+	Arnd
