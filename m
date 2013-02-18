@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab3BRTip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 14:38:45 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33995 "EHLO e8.ny.us.ibm.com"
+	id S1757040Ab3BRTkf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 14:40:35 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39122 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752940Ab3BRTio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 14:38:44 -0500
-Message-ID: <512282FF.2050005@linux.vnet.ibm.com>
-Date: Mon, 18 Feb 2013 13:37:35 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1754583Ab3BRTke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 14:40:34 -0500
+Date: Mon, 18 Feb 2013 20:40:32 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: SYSFS "errors"
+Message-ID: <20130218194031.GD16622@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20130218153316.GA2663@arwen.pp.htv.fi>
+ <20130218155012.GA30974@kroah.com>
+ <20130218155215.GB2663@arwen.pp.htv.fi>
+ <20130218171334.GA31329@kroah.com>
+ <20130218172700.GH2663@arwen.pp.htv.fi>
+ <20130218174527.GB16628@pd.tnic>
+ <20130218184735.GD10755@arwen.pp.htv.fi>
 MIME-Version: 1.0
-To: Ric Mason <ric.masonn@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCHv5 0/8] zswap: compressed swap caching
-References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com> <511EFB05.3020700@gmail.com>
-In-Reply-To: <511EFB05.3020700@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021819-9360-0000-0000-000010BD64A6
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130218184735.GD10755@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2013 09:20 PM, Ric Mason wrote:
-> On 02/14/2013 02:38 AM, Seth Jennings wrote:
-<snip>
->>
->> Some addition performance metrics regarding the performance
->> improvements and I/O reductions that can be achieved using zswap as
->> measured by SPECjbb are provided here:
->>
->> http://ibm.co/VCgHvM
+On Mon, Feb 18, 2013 at 08:47:35PM +0200, Felipe Balbi wrote:
+> On Mon, Feb 18, 2013 at 06:45:27PM +0100, Borislav Petkov wrote:
+> > On Mon, Feb 18, 2013 at 07:27:00PM +0200, Felipe Balbi wrote:
+> > > No such device - /sys/devices/system/edac/mc/mc0/sdram_scrub_rate
+> > 
+> > Looks like your edac module doesn't allow scrub rate setting. Which edac
+> > driver is that? dmesg?
 > 
-> I see this link.  You mentioned that "When a user enables zswap and
-> the hardware accelerator, zswap simply passes the pages to be
-> compressed or decompressed off to the accelerator instead of
-> performing the work in software". Then how can user enable hardware
-> accelerator, there are option in UEFI or ... ?
+> $ lsmod | grep -i edac
+> i7core_edac            22414  0 
+> edac_core              43453  2 i7core_edac
 
-zswap uses the cryptographic API for accessing compressor modules.  In
-the case of Power7+, we have a crypto API driver (crypto/842.c) which
-wraps calls to the real driver (drivers/crypto/nx/nx-842.c) which
-makes the hardware calls.
+Ok, that would be those i7s which reportedly do
+not support reading/setting the scrub rate, see
+27100db0e0d381d24b6f3cb1a4f439996e7c00c8, for example.
 
-To use a compressor module, use the zswap.compressor attribute on the
-kernel parameter.  For P7+, for exmaple:
+So this is as expected.
 
-zswap.compressor=842
+Maybe it would be more correct if the core would return "N/A" or
+"unsupported" or something to that effect in such cases, to conform with
+the readable flag of the sysfs file.
 
-> 
->> These results include runs on x86 and new results on Power7+ with
->> hardware compression acceleration.
+Hmm.
 
-Thanks,
-Seth
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
