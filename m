@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757617Ab3BRXnN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 18:43:13 -0500
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:42952 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757230Ab3BRXnL (ORCPT
+	id S1757639Ab3BRXqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 18:46:52 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:56292 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756671Ab3BRXqu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 18:43:11 -0500
-Message-ID: <5122BC8A.6040503@suse.cz>
-Date: Tue, 19 Feb 2013 00:43:06 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Mon, 18 Feb 2013 18:46:50 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Steven Rostedt <rostedt@goodmis.org>, "H. Peter Anvin" <hpa@zytor.com>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Subject: RE: [PATCH v9 2/3] trace,x86: add x86 irq vector tracepoints
+Thread-Topic: [PATCH v9 2/3] trace,x86: add x86 irq vector tracepoints
+Thread-Index: Ac4DKenvaw7irpCHQuCAh5bLR9M+cAI2fG6AAAPXLoAAAGoYgAAAYjMAAIaQEGA=
+Date: Mon, 18 Feb 2013 23:45:58 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414ABE178@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A64C4B@USINDEM103.corp.hds.com>
+	  <511ECE53.8040801@zytor.com>
+	 <1360979993.23152.122.camel@gandalf.local.home>
+	 <511EEAE1.1040106@zytor.com> <1360981364.23152.123.camel@gandalf.local.home>
+In-Reply-To: <1360981364.23152.123.camel@gandalf.local.home>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-CC: bskeggs@redhat.com, dri-devel@lists.freedesktop.org,
-        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
-Subject: Re: WARNING: at drivers/gpu/drm/nouveau/core/core/mm.c:242
-References: <5122021F.1060207@suse.cz> <20130218232335.GA9730@joi.lan>
-In-Reply-To: <20130218232335.GA9730@joi.lan>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-02-18_05:2013-02-18,2013-02-18,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1302180267
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2013 12:23 AM, Marcin Slusarz wrote:
-> On Mon, Feb 18, 2013 at 11:27:43AM +0100, Jiri Slaby wrote:
->> Hi,
->>
->> we have a report of WARNING from 3.7.6 in nouveau at
->> drivers/gpu/drm/nouveau/core/core/mm.c:242 here:
->> https://bugzilla.novell.com/show_bug.cgi?id=802347#c11
->>
->> There is an order 4 allocation failure in nouveau_drm_open ->
->> nouveau_vm_create, i.e. this one failed:
->> vm->pgt  = kcalloc(vm->lpde - vm->fpde + 1, sizeof(*vm->pgt), GFP_KERNEL);
->>
->> Then, on the error path in still in nouveau_drm_open, it is followed by
->> a call to nouveau_cli_destroy. But that one calls nouveau_vm_ref ->
->> nouveau_mm_fini -> nouveau_vm_del -> nouveau_mm_fini which triggers the
->> warning.
->>
->> Any ideas?
+> > Not-yet-signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> >
+> > ... so I was holding off on doing anything with it.
 > 
-> Crash/warning should be fixed by commit cfd376b6bfccf33782a0748a9c70f7f752f8b869
-> "drm/nouveau/vm: fix memory corruption when pgt allocation fails".
+> Heh, and I was waiting for comments from you before doing anything further with it ;-)
+> 
+> Email review deadlock!
 
-Oh, thanks for the pointer. Could that bug cause real "memory
-corruption"? As we're hunting one there...
+So, how do you plan to push ahead with this patch?
 
-Isn't this a stable-3.7 candidate?
+https://lkml.org/lkml/2013/2/1/532
 
-> Tomorrow I'll post a patch for page allocation failure.
+<snip>
+I think I got all the cases, as NMIs causes the store/restore functions to be re-entrent without any locks.
+<snip>
 
-What do you mean -- what kind of patch?
+Steven, 
+if you think you got all the cases, you can do more testing.
+What is your concern?
 
--- 
-js
-suse labs
+I hope this patch will be included in 3.9.
+
+Seiji
+
+
+
