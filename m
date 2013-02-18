@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965Ab3BROek (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 09:34:40 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:42907 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab3BROej (ORCPT
+	id S1752086Ab3BROiN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 09:38:13 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:37793 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463Ab3BROiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 09:34:39 -0500
-X-AuditID: 85900ec0-d60ccb900000151e-c0-51223bfcc44a
-Message-ID: <51223BFC.3000408@hitachi.com>
-Date: Mon, 18 Feb 2013 23:34:36 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 18 Feb 2013 09:38:12 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v6 4/7] fat: restructure export_operations
+References: <1360422145-12280-1-git-send-email-linkinjeon@gmail.com>
+	<87fw0t3mq0.fsf@devron.myhome.or.jp>
+	<CAKYAXd9cxUJwObHUfh0Rf9jVLzmvpfnYx4AKw6tsSAX-jzDusA@mail.gmail.com>
+Date: Mon, 18 Feb 2013 23:38:07 +0900
+In-Reply-To: <CAKYAXd9cxUJwObHUfh0Rf9jVLzmvpfnYx4AKw6tsSAX-jzDusA@mail.gmail.com>
+	(Namjae Jeon's message of "Mon, 18 Feb 2013 23:03:45 +0900")
+Message-ID: <87d2vxznzk.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Re: [BUG arm-soc] mvneta: tx queue done sometimes causes kernel
- panic
-References: <511DE679.5080801@hitachi.com> <1360947132.19353.15.camel@edumazet-glaptop> <20130216022043.65d5c940@skate>
-In-Reply-To: <20130216022043.65d5c940@skate>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/02/16 10:20), Thomas Petazzoni wrote:
-> Hello,
-> 
-> On Fri, 15 Feb 2013 08:52:12 -0800, Eric Dumazet wrote:
-> 
->> Driver is buggy, as TX completion can happen both from ndo_start_xmit()
->> and a timer, and there is no spinlock or appropriate synchro.
-> 
-> Yes, it is a known issue. I did post a patch fixing the problem on
-> netdev@ a while ago [1], but while it was fixing the problem, it wasn't
-> considered the right approach. Being busy with other Marvell Armada
-> 370/XP developments, I haven't yet had the time to investigate the
-> issue again.
-> 
-> [1] https://patchwork.kernel.org/patch/1941601/
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Thank you for pointing that.
+>>> +     if (parent && (len < FAT_FID_SIZE_WITH_PARENT)) {
+>>> +             *lenp = FAT_FID_SIZE_WITH_PARENT;
+>>> +             return 255;
+>>> +     } else if (len < FAT_FID_SIZE_WITHOUT_PARENT) {
+>>> +             *lenp = FAT_FID_SIZE_WITHOUT_PARENT;
+>>> +             return 255;
+>>> +     }
+>>
+>> This check strange. "parent && len == FAT_FID_SIZE_WITHOUT_PARENT" will
+>> overwrite over limit of fh size?
+> I need to check more. because I followed the logic in
+> export_encode_fh() function.
 
-I've tried the above patch and found at least this panic
-disappeared (even if it was not the right approach).
+Ah, my fault, it doesn't have real problem. But code is quite strange.
 
-Thanks again!
+If input is "parent && len >= FAT_FID_SIZE_WITHOUT_PARENT", "else if
+(len < FAT_FID_SIZE_WITHOUT_PARENT)" check is entirely useless, but this
+code itself checks "len".
 
+if (parent) {
+	if (len < FAT_FID_SIZE_WITH_PARENT)
+		/* error */
+} else {
+	if (len < FAT_FID_SIZE_WITHOUT_PARENT)
+		/* error */
+}
+
+I think this would readable, and I guess this will generates faster/simpler
+code (at least, this doesn't depends an optimization of gcc).
+
+Thanks.
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
