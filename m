@@ -1,461 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab3BRLfA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 06:35:00 -0500
-Received: from chrocht.moloch.sk ([62.176.169.44]:38181 "EHLO mail.moloch.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181Ab3BRLe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 06:34:58 -0500
-From: Martin Sustrik <sustrik@250bpm.com>
-To: viro@zeniv.linux.org.uk, handai.szj@taobao.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, davidel@xmailserver.org, normalperson@yhbt.net
-Cc: mtk.manpages@gmail.com, Martin Sustrik <sustrik@250bpm.com>
-Subject: [PATCH v3 1/1] eventfd: implementation of EFD_MASK flag
-Date: Mon, 18 Feb 2013 12:34:50 +0100
-Message-Id: <1361187290-11759-1-git-send-email-sustrik@250bpm.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753283Ab3BRLfv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 06:35:51 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:33131 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab3BRLft (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 06:35:49 -0500
+From: Afzal Mohammed <afzal@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
+        Marc Zyngier <marc.zyngier@arm.com>, Nicolas Pitre <nico@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
+        Syed Mohammed Khasim <khasim@ti.com>
+Subject: [PATCH, RFC 0/8] ARM: AM43 (OMAP2+) boot support
+Date: Mon, 18 Feb 2013 17:05:00 +0530
+Message-ID: <cover.1361186097.git.afzal@ti.com>
+X-Mailer: git-send-email 1.7.12
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When implementing network protocols in user space, one has to implement
-fake file descriptors to represent the sockets for the protocol.
+(Resending, since it seems, LAKML doesn't accept patches with subject
+prefix only as "RFC", but requires "PATCH" prefix also)
 
-Polling on such fake file descriptors is a problem (poll/select/epoll accept
-only true file descriptors) and forces protocol implementers to use various
-workarounds resulting in complex, non-standard and convoluted APIs.
+Hi,
 
-More generally, ability to create full-blown file descriptors for
-userspace-to-userspace signalling is missing. While eventfd(2) goes half the way
-towards this goal it has follwoing shorcomings:
+This series adds minimal support to boot Linux on platforms having
+AM43 based SoC's.
 
-I.  There's no way to signal POLLPRI, POLLHUP etc.
-II. There's no way to signal arbitrary combination of POLL* flags. Most notably,
-    simultaneous !POLLIN and !POLLOUT, which is a perfectly valid combination
-    for a network protocol (rx buffer is empty and tx buffer is full), cannot be
-    signaled using eventfd.
+This is being sent as an RFC to seek opinion about modification in
+twd to register percpu local timer clock event for scheduler tick in
+the case of one core SMP.
 
-This patch implements new EFD_MASK flag which solves the above problems.
+AM43 SoC's are based on ARM Cortex-A9. It is an ARM Cortex-A9 SMP
+configuration with one core (not uniprocessor configuration). AM43 is
+similar to AM335x in it's peripheral capabilities, with many of the
+peripheral register mapping's similar like that of uart.
 
-Additionally, to provide a way to associate user-space state with eventfd
-object, it allows to attach user-space data to the file descriptor.
+AM43 is in pre-silicon stage and currently there are no public
+documents.
 
-The semantics of EFD_MASK are as follows:
+This series has been tested on a pre-silicon platform that emulates
+AM43 SoC, changes proposed here are minimal - to get it booting.
+Kernel was directly run without the help of bootloader - Images were
+directly loaded onto a pre-initialized RAM and ARM registers updated
+as required for booting.
 
-eventfd(2):
+Changes have been made over linux-next (next-20130213) with three "OF"
+related reverts (which otherwise causes problem in other platforms
+also) and compiled with omap2plus_defconfig. Multiplatform option was
+enabled, while most of CONFIG options were deselected for a faster
+boot. Beagle bone boots as earlier with these changes.
 
-If eventfd is created with EFD_MASK flag set, it is initialised in such a way
-as to signal no events on the file descriptor when it is polled on. 'initval'
-argument is ignored.
+An interesting observation is that it may be possible to boot this
+platform to console without any platform specific modification to
+proper Kernel (by that I mean excluding DT sources) using Arnd's,
 
-write(2):
+"[PATCH,RFC] default machine descriptor for multiplatform",
 
-User is allowed to write only buffers containing the following structure:
+along with a "CLOCKSOURCE_OF_DECLARE" for smp twd.
 
-struct efd_mask {
-  short events;
-  union {
-    void    *ptr;
-    uint32_t u32;
-    uint64_t u64;
-  };
-};
+But later on to make SoC do any really useful work or to get done
+things that the SoC is meant to do, platform changes like omap-hwmod,
+handling power management, clock tree, detecting SoC capabilities etc
+would have to be made, necessitating DT_MACHINE_START at least in
+the foreseeable future.
 
-The value of 'events' should be any combination of event flags as defined by
-poll(2) function (POLLIN, POLLOUT, POLLERR, POLLHUP etc.) Specified events will
-be signaled when polling (select, poll, epoll) on the eventfd is done later on.
-'ptr', 'u32' or 'u64' are opaque data that are not interpreted by eventfd
-object.
+Patch - 8 that makes AM43 boot on pre-silicon platform would be
+replaced later by a one for original board.
 
-read(2):
+Last but not least, thanks to Ankur Kishore <a-kishore@ti.com>
+(who first made Linux to boot on AM43) for all the help that made
+Linux bringup easier.
 
-User is allowed to read an efd_mask structure from the eventfd marked by
-EFD_MASK. Returned value shall be the last one written to the eventfd.
+Regards
+Afzal
 
-select(2), poll(2) and similar:
 
-When polling on the eventfd marked by EFD_MASK flag, all the events specified
-in last written 'events' field shall be signaled.
+Afzal Mohammed (8):
+  ARM: localtimer: return percpu clkevt on register
+  ARM: twd: register clock event for 1 core SMP
+  ARM: twd: clock rate from DT (if no DT clk tree)
+  ARM: am33xx: ll debug config help
+  ARM: OMAP2+: am43: Kconfig
+  ARM: OMAP2+: am43: basic dt support
+  ARM: dts: am4372: initial support
+  ARM: dts: am43-pre-silicon support
 
-Signed-off-by: Martin Sustrik <sustrik@250bpm.com>
----
-Following changes were made to the patch since v2:
+ Documentation/devicetree/bindings/arm/twd.txt |  7 +++-
+ arch/arm/Kconfig.debug                        |  3 ++
+ arch/arm/boot/dts/Makefile                    |  3 +-
+ arch/arm/boot/dts/am43-pre-silicon.dts        | 31 +++++++++++++++
+ arch/arm/boot/dts/am4372.dtsi                 | 55 +++++++++++++++++++++++++++
+ arch/arm/include/asm/localtimer.h             |  7 ++--
+ arch/arm/kernel/smp.c                         |  8 ++--
+ arch/arm/kernel/smp_twd.c                     | 16 +++++++-
+ arch/arm/mach-omap2/Kconfig                   | 11 ++++++
+ arch/arm/mach-omap2/board-generic.c           | 18 +++++++++
+ 10 files changed, 148 insertions(+), 11 deletions(-)
+ create mode 100644 arch/arm/boot/dts/am43-pre-silicon.dts
+ create mode 100644 arch/arm/boot/dts/am4372.dtsi
 
-- eventfd_mask structure renamed to efd_mask to keep user-space prefixes
-  consistent
-- efd_mask is __packed for all architectures
-- eventfd.h header file added to uapi; given there wasn't one so far, in
-  addition to moving efd_mask there, I've moved also all the eventfd flags that
-  are meant to be visible from the user space
-- comment for 'mask' member eventfd_ctx added 
-- synchronisation bugs in eventfd_read fixed
-- several variable declarations moved from the beginning of the function to
-  the blocks where they are used
-- changelog text made simpler and more up to the point
-
-There was also a request to explain why this functionality is needed. I've
-written an article explaining the problems user-space network protocol
-implementers face here: http://www.250bpm.com/blog:16
----
- fs/eventfd.c                 |  194 ++++++++++++++++++++++++++++--------------
- include/linux/eventfd.h      |   17 +---
- include/uapi/linux/eventfd.h |   40 +++++++++
- 3 files changed, 172 insertions(+), 79 deletions(-)
- create mode 100644 include/uapi/linux/eventfd.h
-
-diff --git a/fs/eventfd.c b/fs/eventfd.c
-index 35470d9..8f821b1 100644
---- a/fs/eventfd.c
-+++ b/fs/eventfd.c
-@@ -2,6 +2,7 @@
-  *  fs/eventfd.c
-  *
-  *  Copyright (C) 2007  Davide Libenzi <davidel@xmailserver.org>
-+ *  Copyright (C) 2013  Martin Sustrik <sustrik@250bpm.com>
-  *
-  */
- 
-@@ -22,18 +23,31 @@
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
- 
-+#define EFD_SHARED_FCNTL_FLAGS (O_CLOEXEC | O_NONBLOCK)
-+#define EFD_FLAGS_SET (EFD_SHARED_FCNTL_FLAGS | EFD_SEMAPHORE | EFD_MASK)
-+#define EFD_MASK_VALID_EVENTS (POLLIN | POLLPRI | POLLOUT | POLLERR | POLLHUP)
-+
- struct eventfd_ctx {
- 	struct kref kref;
- 	wait_queue_head_t wqh;
--	/*
--	 * Every time that a write(2) is performed on an eventfd, the
--	 * value of the __u64 being written is added to "count" and a
--	 * wakeup is performed on "wqh". A read(2) will return the "count"
--	 * value to userspace, and will reset "count" to zero. The kernel
--	 * side eventfd_signal() also, adds to the "count" counter and
--	 * issue a wakeup.
--	 */
--	__u64 count;
-+	union {
-+		/*
-+		 * Every time that a write(2) is performed on an eventfd, the
-+		 * value of the __u64 being written is added to "count" and a
-+		 * wakeup is performed on "wqh". A read(2) will return the
-+		 * "count" value to userspace, and will reset "count" to zero.
-+		 * The kernel side eventfd_signal() also, adds to the "count"
-+		 * counter and issue a wakeup.
-+		 */
-+		__u64 count;
-+
-+		/*
-+		 * When using eventfd in EFD_MASK mode this stracture stores the
-+		 * current events to be signaled on the eventfd (events member)
-+		 * along with opaque user-defined data (data member).
-+		 */
-+		struct efd_mask mask;
-+	};
- 	unsigned int flags;
- };
- 
-@@ -55,6 +69,9 @@ __u64 eventfd_signal(struct eventfd_ctx *ctx, __u64 n)
- {
- 	unsigned long flags;
- 
-+	/* This function should never be used with eventfd in the mask mode. */
-+	BUG_ON(ctx->flags & EFD_MASK);
-+
- 	spin_lock_irqsave(&ctx->wqh.lock, flags);
- 	if (ULLONG_MAX - ctx->count < n)
- 		n = ULLONG_MAX - ctx->count;
-@@ -123,12 +140,16 @@ static unsigned int eventfd_poll(struct file *file, poll_table *wait)
- 	poll_wait(file, &ctx->wqh, wait);
- 
- 	spin_lock_irqsave(&ctx->wqh.lock, flags);
--	if (ctx->count > 0)
--		events |= POLLIN;
--	if (ctx->count == ULLONG_MAX)
--		events |= POLLERR;
--	if (ULLONG_MAX - 1 > ctx->count)
--		events |= POLLOUT;
-+	if (ctx->flags & EFD_MASK) {
-+		events = ctx->mask.events;
-+	} else {
-+		if (ctx->count > 0)
-+			events |= POLLIN;
-+		if (ctx->count == ULLONG_MAX)
-+			events |= POLLERR;
-+		if (ULLONG_MAX - 1 > ctx->count)
-+			events |= POLLOUT;
-+	}
- 	spin_unlock_irqrestore(&ctx->wqh.lock, flags);
- 
- 	return events;
-@@ -158,6 +179,9 @@ int eventfd_ctx_remove_wait_queue(struct eventfd_ctx *ctx, wait_queue_t *wait,
- {
- 	unsigned long flags;
- 
-+	/* This function should never be used with eventfd in the mask mode. */
-+	BUG_ON(ctx->flags & EFD_MASK);
-+
- 	spin_lock_irqsave(&ctx->wqh.lock, flags);
- 	eventfd_ctx_do_read(ctx, cnt);
- 	__remove_wait_queue(&ctx->wqh, wait);
-@@ -188,6 +212,9 @@ ssize_t eventfd_ctx_read(struct eventfd_ctx *ctx, int no_wait, __u64 *cnt)
- 	ssize_t res;
- 	DECLARE_WAITQUEUE(wait, current);
- 
-+	/* This function should never be used with eventfd in the mask mode. */
-+	BUG_ON(ctx->flags & EFD_MASK);
-+
- 	spin_lock_irq(&ctx->wqh.lock);
- 	*cnt = 0;
- 	res = -EAGAIN;
-@@ -227,63 +254,92 @@ static ssize_t eventfd_read(struct file *file, char __user *buf, size_t count,
- 			    loff_t *ppos)
- {
- 	struct eventfd_ctx *ctx = file->private_data;
--	ssize_t res;
--	__u64 cnt;
- 
--	if (count < sizeof(cnt))
--		return -EINVAL;
--	res = eventfd_ctx_read(ctx, file->f_flags & O_NONBLOCK, &cnt);
--	if (res < 0)
--		return res;
--
--	return put_user(cnt, (__u64 __user *) buf) ? -EFAULT : sizeof(cnt);
-+	if (ctx->flags & EFD_MASK) {
-+		struct efd_mask mask;
-+		if (count < sizeof(mask))
-+			return -EINVAL;
-+		spin_lock_irq(&ctx->wqh.lock);
-+		mask = ctx->mask;
-+		spin_unlock_irq(&ctx->wqh.lock);
-+		if (copy_to_user(buf, &mask, sizeof(mask)))
-+			return -EFAULT;
-+		return sizeof(mask);
-+	} else {
-+		ssize_t res;
-+		__u64 cnt;
-+		if (count < sizeof(cnt))
-+			return -EINVAL;
-+		res = eventfd_ctx_read(ctx, file->f_flags & O_NONBLOCK, &cnt);
-+		if (res < 0)
-+			return res;
-+		return put_user(cnt, (__u64 __user *) buf) ?
-+			-EFAULT : sizeof(cnt);
-+	}
- }
- 
- static ssize_t eventfd_write(struct file *file, const char __user *buf, size_t count,
- 			     loff_t *ppos)
- {
- 	struct eventfd_ctx *ctx = file->private_data;
--	ssize_t res;
--	__u64 ucnt;
--	DECLARE_WAITQUEUE(wait, current);
- 
--	if (count < sizeof(ucnt))
--		return -EINVAL;
--	if (copy_from_user(&ucnt, buf, sizeof(ucnt)))
--		return -EFAULT;
--	if (ucnt == ULLONG_MAX)
--		return -EINVAL;
--	spin_lock_irq(&ctx->wqh.lock);
--	res = -EAGAIN;
--	if (ULLONG_MAX - ctx->count > ucnt)
--		res = sizeof(ucnt);
--	else if (!(file->f_flags & O_NONBLOCK)) {
--		__add_wait_queue(&ctx->wqh, &wait);
--		for (res = 0;;) {
--			set_current_state(TASK_INTERRUPTIBLE);
--			if (ULLONG_MAX - ctx->count > ucnt) {
--				res = sizeof(ucnt);
--				break;
--			}
--			if (signal_pending(current)) {
--				res = -ERESTARTSYS;
--				break;
-+	if (ctx->flags & EFD_MASK) {
-+		struct efd_mask mask;
-+		if (count < sizeof(mask))
-+			return -EINVAL;
-+		if (copy_from_user(&mask, buf, sizeof(mask)))
-+			return -EFAULT;
-+		if (mask.events & ~EFD_MASK_VALID_EVENTS)
-+			return -EINVAL;
-+		spin_lock_irq(&ctx->wqh.lock);
-+		memcpy(&ctx->mask, &mask, sizeof(ctx->mask));
-+		if (waitqueue_active(&ctx->wqh))
-+			wake_up_locked_poll(&ctx->wqh,
-+				(unsigned long)ctx->mask.events);
-+		spin_unlock_irq(&ctx->wqh.lock);
-+		return sizeof(ctx->mask);
-+	} else {
-+		ssize_t res;
-+		__u64 ucnt;
-+		DECLARE_WAITQUEUE(wait, current);
-+		if (count < sizeof(ucnt))
-+			return -EINVAL;
-+		if (copy_from_user(&ucnt, buf, sizeof(ucnt)))
-+			return -EFAULT;
-+		if (ucnt == ULLONG_MAX)
-+			return -EINVAL;
-+		spin_lock_irq(&ctx->wqh.lock);
-+		res = -EAGAIN;
-+		if (ULLONG_MAX - ctx->count > ucnt)
-+			res = sizeof(ucnt);
-+		else if (!(file->f_flags & O_NONBLOCK)) {
-+			__add_wait_queue(&ctx->wqh, &wait);
-+			for (res = 0;;) {
-+				set_current_state(TASK_INTERRUPTIBLE);
-+				if (ULLONG_MAX - ctx->count > ucnt) {
-+					res = sizeof(ucnt);
-+					break;
-+				}
-+				if (signal_pending(current)) {
-+					res = -ERESTARTSYS;
-+					break;
-+				}
-+				spin_unlock_irq(&ctx->wqh.lock);
-+				schedule();
-+				spin_lock_irq(&ctx->wqh.lock);
- 			}
--			spin_unlock_irq(&ctx->wqh.lock);
--			schedule();
--			spin_lock_irq(&ctx->wqh.lock);
-+			__remove_wait_queue(&ctx->wqh, &wait);
-+			__set_current_state(TASK_RUNNING);
- 		}
--		__remove_wait_queue(&ctx->wqh, &wait);
--		__set_current_state(TASK_RUNNING);
--	}
--	if (likely(res > 0)) {
--		ctx->count += ucnt;
--		if (waitqueue_active(&ctx->wqh))
--			wake_up_locked_poll(&ctx->wqh, POLLIN);
--	}
--	spin_unlock_irq(&ctx->wqh.lock);
-+		if (likely(res > 0)) {
-+			ctx->count += ucnt;
-+			if (waitqueue_active(&ctx->wqh))
-+				wake_up_locked_poll(&ctx->wqh, POLLIN);
-+		}
-+		spin_unlock_irq(&ctx->wqh.lock);
- 
--	return res;
-+		return res;
-+	}
- }
- 
- #ifdef CONFIG_PROC_FS
-@@ -293,8 +349,13 @@ static int eventfd_show_fdinfo(struct seq_file *m, struct file *f)
- 	int ret;
- 
- 	spin_lock_irq(&ctx->wqh.lock);
--	ret = seq_printf(m, "eventfd-count: %16llx\n",
--			 (unsigned long long)ctx->count);
-+	if (ctx->flags & EFD_MASK) {
-+		ret = seq_printf(m, "eventfd-mask: %x\n",
-+				 (unsigned)ctx->mask.events);
-+	} else {
-+		ret = seq_printf(m, "eventfd-count: %16llx\n",
-+				 (unsigned long long)ctx->count);
-+	}
- 	spin_unlock_irq(&ctx->wqh.lock);
- 
- 	return ret;
-@@ -412,7 +473,12 @@ struct file *eventfd_file_create(unsigned int count, int flags)
- 
- 	kref_init(&ctx->kref);
- 	init_waitqueue_head(&ctx->wqh);
--	ctx->count = count;
-+	if (flags & EFD_MASK) {
-+		ctx->mask.events = 0;
-+		ctx->mask.data = 0;
-+	} else {
-+		ctx->count = count;
-+	}
- 	ctx->flags = flags;
- 
- 	file = anon_inode_getfile("[eventfd]", &eventfd_fops, ctx,
-diff --git a/include/linux/eventfd.h b/include/linux/eventfd.h
-index 3c3ef19..218aba6 100644
---- a/include/linux/eventfd.h
-+++ b/include/linux/eventfd.h
-@@ -8,24 +8,11 @@
- #ifndef _LINUX_EVENTFD_H
- #define _LINUX_EVENTFD_H
- 
--#include <linux/fcntl.h>
-+#include <uapi/linux/eventfd.h>
-+
- #include <linux/file.h>
- #include <linux/wait.h>
- 
--/*
-- * CAREFUL: Check include/asm-generic/fcntl.h when defining
-- * new flags, since they might collide with O_* ones. We want
-- * to re-use O_* flags that couldn't possibly have a meaning
-- * from eventfd, in order to leave a free define-space for
-- * shared O_* flags.
-- */
--#define EFD_SEMAPHORE (1 << 0)
--#define EFD_CLOEXEC O_CLOEXEC
--#define EFD_NONBLOCK O_NONBLOCK
--
--#define EFD_SHARED_FCNTL_FLAGS (O_CLOEXEC | O_NONBLOCK)
--#define EFD_FLAGS_SET (EFD_SHARED_FCNTL_FLAGS | EFD_SEMAPHORE)
--
- #ifdef CONFIG_EVENTFD
- 
- struct file *eventfd_file_create(unsigned int count, int flags);
-diff --git a/include/uapi/linux/eventfd.h b/include/uapi/linux/eventfd.h
-new file mode 100644
-index 0000000..03057a5
---- /dev/null
-+++ b/include/uapi/linux/eventfd.h
-@@ -0,0 +1,40 @@
-+/*
-+ *  Copyright (C) 2013 Martin Sustrik <sustrik@250bpm.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ */
-+
-+#ifndef _UAPI_LINUX_EVENTFD_H
-+#define _UAPI_LINUX_EVENTFD_H
-+
-+/* For O_CLOEXEC */
-+#include <linux/fcntl.h>
-+#include <linux/types.h>
-+
-+/*
-+ * CAREFUL: Check include/asm-generic/fcntl.h when defining
-+ * new flags, since they might collide with O_* ones. We want
-+ * to re-use O_* flags that couldn't possibly have a meaning
-+ * from eventfd, in order to leave a free define-space for
-+ * shared O_* flags.
-+ */
-+
-+/* Provide semaphore-like semantics for reads from the eventfd. */
-+#define EFD_SEMAPHORE (1 << 0)
-+/* Provide event mask semantics for the eventfd. */
-+#define EFD_MASK (1 << 1)
-+/*  Set the close-on-exec (FD_CLOEXEC) flag on the eventfd. */
-+#define EFD_CLOEXEC O_CLOEXEC
-+/*  Create the eventfd in non-blocking mode. */
-+#define EFD_NONBLOCK O_NONBLOCK
-+
-+/* Structure to read/write to eventfd in EFD_MASK mode. */
-+struct efd_mask {
-+	__u32 events;
-+	__u64 data;
-+} __packed;
-+
-+#endif /* _UAPI_LINUX_EVENTFD_H */
 -- 
-1.7.4.1
+1.7.12
 
