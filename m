@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab3BRM4A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 07:56:00 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:53250 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517Ab3BRMlc (ORCPT
+	id S1756567Ab3BRM4z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 07:56:55 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:35851 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931Ab3BRMlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 07:41:32 -0500
+	Mon, 18 Feb 2013 07:41:07 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v6 08/46] CPU hotplug: Provide APIs to prevent CPU offline
- from atomic context
+Subject: [PATCH v6 05/46] percpu_rwlock: Make percpu-rwlocks IRQ-safe,
+ optimally
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -21,8 +21,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         walken@google.com, vincent.guittot@linaro.org
-Date: Mon, 18 Feb 2013 18:09:20 +0530
-Message-ID: <20130218123920.26245.56709.stgit@srivatsabhat.in.ibm.com>
+Date: Mon, 18 Feb 2013 18:09:01 +0530
+Message-ID: <20130218123901.26245.80637.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,368 +30,240 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021812-6102-0000-0000-00000305771E
+x-cbid: 13021812-4790-0000-0000-000006F5F0AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are places where preempt_disable() or local_irq_disable() are used
-to prevent any CPU from going offline during the critical section. Let us
-call them as "atomic hotplug readers" ("atomic" because they run in atomic,
-non-preemptible contexts).
+If interrupt handlers can also be readers, then one of the ways to make
+per-CPU rwlocks safe, is to disable interrupts at the reader side before
+trying to acquire the per-CPU rwlock and keep it disabled throughout the
+duration of the read-side critical section.
 
-Today, preempt_disable() or its equivalent works because the hotplug writer
-uses stop_machine() to take CPUs offline. But once stop_machine() is gone
-from the CPU hotplug offline path, the readers won't be able to prevent
-CPUs from going offline using preempt_disable().
+The goal is to avoid cases such as:
 
-So the intent here is to provide synchronization APIs for such atomic hotplug
-readers, to prevent (any) CPUs from going offline, without depending on
-stop_machine() at the writer-side. The new APIs will look something like
-this:  get_online_cpus_atomic() and put_online_cpus_atomic()
+  1. writer is active and it holds the global rwlock for write
 
-Some important design requirements and considerations:
------------------------------------------------------
+  2. a regular reader comes in and marks itself as present (by incrementing
+     its per-CPU refcount) before checking whether writer is active.
 
-1. Scalable synchronization at the reader-side, especially in the fast-path
+  3. an interrupt hits the reader;
+     [If it had not hit, the reader would have noticed that the writer is
+      active and would have decremented its refcount and would have tried
+      to acquire the global rwlock for read].
+     Since the interrupt handler also happens to be a reader, it notices
+     the non-zero refcount (which was due to the reader who got interrupted)
+     and thinks that this is a nested read-side critical section and
+     proceeds to take the fastpath, which is wrong. The interrupt handler
+     should have noticed that the writer is active and taken the rwlock
+     for read.
 
-   Any synchronization at the atomic hotplug readers side must be highly
-   scalable - avoid global single-holder locks/counters etc. Because, these
-   paths currently use the extremely fast preempt_disable(); our replacement
-   to preempt_disable() should not become ridiculously costly and also should
-   not serialize the readers among themselves needlessly.
+So, disabling interrupts can help avoid this problem (at the cost of keeping
+the interrupts disabled for quite long).
 
-   At a minimum, the new APIs must be extremely fast at the reader side
-   atleast in the fast-path, when no CPU offline writers are active.
+But Oleg had a brilliant idea by which we can do much better than that:
+we can manage with disabling interrupts _just_ during the updates (writes to
+per-CPU refcounts) to safe-guard against races with interrupt handlers.
+Beyond that, we can keep the interrupts enabled and still be safe w.r.t
+interrupt handlers that can act as readers.
 
-2. preempt_disable() was recursive. The replacement should also be recursive.
+Basically the idea is that we differentiate between the *part* of the
+per-CPU refcount that we use for reference counting vs the part that we use
+merely to make the writer wait for us to switch over to the right
+synchronization scheme.
 
-3. No (new) lock-ordering restrictions
+The scheme involves splitting the per-CPU refcounts into 2 parts:
+eg: the lower 16 bits are used to track the nesting depth of the reader
+(a "nested-counter"), and the remaining (upper) bits are used to merely mark
+the presence of the reader.
 
-   preempt_disable() was super-flexible. It didn't impose any ordering
-   restrictions or rules for nesting. Our replacement should also be equally
-   flexible and usable.
+As long as the overall reader_refcnt is non-zero, the writer waits for the
+reader (assuming that the reader is still actively using per-CPU refcounts for
+synchronization).
 
-4. No deadlock possibilities
+The reader first sets one of the higher bits to mark its presence, and then
+uses the lower 16 bits to manage the nesting depth. So, an interrupt handler
+coming in as illustrated above will be able to distinguish between "this is
+a nested read-side critical section" vs "we have merely marked our presence
+to make the writer wait for us to switch" by looking at the same refcount.
+Thus, it makes it unnecessary to keep interrupts disabled throughout the
+read-side critical section, despite having the possibility of interrupt
+handlers being readers themselves.
 
-   Regular per-cpu locking is not the way to go if we want to have relaxed
-   rules for lock-ordering. Because, we can end up in circular-locking
-   dependencies as explained in https://lkml.org/lkml/2012/12/6/290
 
-   So, avoid the usual per-cpu locking schemes (per-cpu locks/per-cpu atomic
-   counters with spin-on-contention etc) as much as possible, to avoid
-   numerous deadlock possibilities from creeping in.
+Implement this logic and rename the locking functions appropriately, to
+reflect what they do.
 
-
-Implementation of the design:
-----------------------------
-
-We use per-CPU reader-writer locks for synchronization because:
-
-  a. They are quite fast and scalable in the fast-path (when no writers are
-     active), since they use fast per-cpu counters in those paths.
-
-  b. They are recursive at the reader side.
-
-  c. They provide a good amount of safety against deadlocks; they don't
-     spring new deadlock possibilities on us from out of nowhere. As a
-     result, they have relaxed locking rules and are quite flexible, and
-     thus are best suited for replacing usages of preempt_disable() or
-     local_irq_disable() at the reader side.
-
-Together, these satisfy all the requirements mentioned above.
-
-I'm indebted to Michael Wang and Xiao Guangrong for their numerous thoughtful
-suggestions and ideas, which inspired and influenced many of the decisions in
-this as well as previous designs. Thanks a lot Michael and Xiao!
-
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
+Based-on-idea-by: Oleg Nesterov <oleg@redhat.com>
 Cc: David Howells <dhowells@redhat.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: uclinux-dist-devel@blackfin.uclinux.org
-Cc: linux-ia64@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Cc: linux-am33-list@redhat.com
-Cc: linux-parisc@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-s390@vger.kernel.org
-Cc: linux-sh@vger.kernel.org
-Cc: sparclinux@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
 
- arch/arm/Kconfig      |    1 +
- arch/blackfin/Kconfig |    1 +
- arch/ia64/Kconfig     |    1 +
- arch/mips/Kconfig     |    1 +
- arch/mn10300/Kconfig  |    1 +
- arch/parisc/Kconfig   |    1 +
- arch/powerpc/Kconfig  |    1 +
- arch/s390/Kconfig     |    1 +
- arch/sh/Kconfig       |    1 +
- arch/sparc/Kconfig    |    1 +
- arch/x86/Kconfig      |    1 +
- include/linux/cpu.h   |    4 ++++
- kernel/cpu.c          |   55 +++++++++++++++++++++++++++++++++++++++++++++++--
- 13 files changed, 68 insertions(+), 2 deletions(-)
+ include/linux/percpu-rwlock.h |   10 ++++---
+ lib/percpu-rwlock.c           |   57 ++++++++++++++++++++++++++---------------
+ 2 files changed, 42 insertions(+), 25 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 67874b8..cb6b94b 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1616,6 +1616,7 @@ config NR_CPUS
- config HOTPLUG_CPU
- 	bool "Support for hot-pluggable CPUs"
- 	depends on SMP && HOTPLUG
-+	select PERCPU_RWLOCK
- 	help
- 	  Say Y here to experiment with turning CPUs off and on.  CPUs
- 	  can be controlled through /sys/devices/system/cpu.
-diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-index b6f3ad5..83d9882 100644
---- a/arch/blackfin/Kconfig
-+++ b/arch/blackfin/Kconfig
-@@ -261,6 +261,7 @@ config NR_CPUS
- config HOTPLUG_CPU
- 	bool "Support for hot-pluggable CPUs"
- 	depends on SMP && HOTPLUG
-+	select PERCPU_RWLOCK
- 	default y
+diff --git a/include/linux/percpu-rwlock.h b/include/linux/percpu-rwlock.h
+index 5590b1e..8c9e145 100644
+--- a/include/linux/percpu-rwlock.h
++++ b/include/linux/percpu-rwlock.h
+@@ -38,11 +38,13 @@ struct percpu_rwlock {
+ 	rwlock_t			global_rwlock;
+ };
  
- config BF_REV_MIN
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 3279646..c246772 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -378,6 +378,7 @@ config HOTPLUG_CPU
- 	bool "Support for hot-pluggable CPUs (EXPERIMENTAL)"
- 	depends on SMP && EXPERIMENTAL
- 	select HOTPLUG
-+	select PERCPU_RWLOCK
- 	default n
- 	---help---
- 	  Say Y here to experiment with turning CPUs off and on.  CPUs
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 2ac626a..f97c479 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -956,6 +956,7 @@ config SYS_HAS_EARLY_PRINTK
- config HOTPLUG_CPU
- 	bool "Support for hot-pluggable CPUs"
- 	depends on SMP && HOTPLUG && SYS_SUPPORTS_HOTPLUG_CPU
-+	select PERCPU_RWLOCK
- 	help
- 	  Say Y here to allow turning CPUs off and on. CPUs can be
- 	  controlled through /sys/devices/system/cpu.
-diff --git a/arch/mn10300/Kconfig b/arch/mn10300/Kconfig
-index e70001c..a64e488 100644
---- a/arch/mn10300/Kconfig
-+++ b/arch/mn10300/Kconfig
-@@ -60,6 +60,7 @@ config ARCH_HAS_ILOG2_U32
+-extern void percpu_read_lock(struct percpu_rwlock *);
+-extern void percpu_read_unlock(struct percpu_rwlock *);
++extern void percpu_read_lock_irqsafe(struct percpu_rwlock *);
++extern void percpu_read_unlock_irqsafe(struct percpu_rwlock *);
  
- config HOTPLUG_CPU
- 	def_bool n
-+	select PERCPU_RWLOCK
+-extern void percpu_write_lock(struct percpu_rwlock *);
+-extern void percpu_write_unlock(struct percpu_rwlock *);
++extern void percpu_write_lock_irqsave(struct percpu_rwlock *,
++				      unsigned long *flags);
++extern void percpu_write_unlock_irqrestore(struct percpu_rwlock *,
++					   unsigned long *flags);
  
- source "init/Kconfig"
+ extern int __percpu_init_rwlock(struct percpu_rwlock *,
+ 				const char *, struct lock_class_key *);
+diff --git a/lib/percpu-rwlock.c b/lib/percpu-rwlock.c
+index edefdea..ce7e440 100644
+--- a/lib/percpu-rwlock.c
++++ b/lib/percpu-rwlock.c
+@@ -30,11 +30,15 @@
+ #include <asm/processor.h>
  
-diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
-index b77feff..6f55cd4 100644
---- a/arch/parisc/Kconfig
-+++ b/arch/parisc/Kconfig
-@@ -226,6 +226,7 @@ config HOTPLUG_CPU
- 	bool
- 	default y if SMP
- 	select HOTPLUG
-+	select PERCPU_RWLOCK
  
- config ARCH_SELECT_MEMORY_MODEL
- 	def_bool y
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 17903f1..56b1f15 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -336,6 +336,7 @@ config HOTPLUG_CPU
- 	bool "Support for enabling/disabling CPUs"
- 	depends on SMP && HOTPLUG && EXPERIMENTAL && (PPC_PSERIES || \
- 	PPC_PMAC || PPC_POWERNV || (PPC_85xx && !PPC_E500MC))
-+	select PERCPU_RWLOCK
- 	---help---
- 	  Say Y here to be able to disable and re-enable individual
- 	  CPUs at runtime on SMP machines.
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index b5ea38c..a9aafb4 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -299,6 +299,7 @@ config HOTPLUG_CPU
- 	prompt "Support for hot-pluggable CPUs"
- 	depends on SMP
- 	select HOTPLUG
-+	select PERCPU_RWLOCK
- 	help
- 	  Say Y here to be able to turn CPUs off and on. CPUs
- 	  can be controlled through /sys/devices/system/cpu/cpu#.
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index babc2b8..8c92eef 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -765,6 +765,7 @@ config NR_CPUS
- config HOTPLUG_CPU
- 	bool "Support for hot-pluggable CPUs (EXPERIMENTAL)"
- 	depends on SMP && HOTPLUG && EXPERIMENTAL
-+	select PERCPU_RWLOCK
- 	help
- 	  Say Y here to experiment with turning CPUs off and on.  CPUs
- 	  can be controlled through /sys/devices/system/cpu.
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index cb9c333..b22f29d 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -254,6 +254,7 @@ config HOTPLUG_CPU
- 	bool "Support for hot-pluggable CPUs"
- 	depends on SPARC64 && SMP
- 	select HOTPLUG
-+	select PERCPU_RWLOCK
- 	help
- 	  Say Y here to experiment with turning CPUs off and on.  CPUs
- 	  can be controlled through /sys/devices/system/cpu/cpu#.
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 225543b..1a6d50d 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1689,6 +1689,7 @@ config PHYSICAL_ALIGN
- config HOTPLUG_CPU
- 	bool "Support for hot-pluggable CPUs"
- 	depends on SMP && HOTPLUG
-+	select PERCPU_RWLOCK
- 	---help---
- 	  Say Y here to allow turning CPUs off and on. CPUs can be
- 	  controlled through /sys/devices/system/cpu.
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index ce7a074..cf24da1 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -175,6 +175,8 @@ extern struct bus_type cpu_subsys;
++#define READER_PRESENT		(1UL << 16)
++#define READER_REFCNT_MASK	(READER_PRESENT - 1)
++
+ #define reader_yet_to_switch(pcpu_rwlock, cpu)				    \
+ 	(ACCESS_ONCE(per_cpu_ptr((pcpu_rwlock)->rw_state, cpu)->reader_refcnt))
  
- extern void get_online_cpus(void);
- extern void put_online_cpus(void);
-+extern void get_online_cpus_atomic(void);
-+extern void put_online_cpus_atomic(void);
- #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
- #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
- #define unregister_hotcpu_notifier(nb)	unregister_cpu_notifier(nb)
-@@ -198,6 +200,8 @@ static inline void cpu_hotplug_driver_unlock(void)
+-#define reader_percpu_nesting_depth(pcpu_rwlock)		  \
+-	(__this_cpu_read((pcpu_rwlock)->rw_state->reader_refcnt))
++#define reader_percpu_nesting_depth(pcpu_rwlock)			\
++	(__this_cpu_read((pcpu_rwlock)->rw_state->reader_refcnt) &	\
++	 READER_REFCNT_MASK)
  
- #define get_online_cpus()	do { } while (0)
- #define put_online_cpus()	do { } while (0)
-+#define get_online_cpus_atomic()	do { } while (0)
-+#define put_online_cpus_atomic()	do { } while (0)
- #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
- /* These aren't inline functions due to a GCC bug. */
- #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 3046a50..58dd1df 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -1,6 +1,18 @@
- /* CPU control.
-  * (C) 2001, 2002, 2003, 2004 Rusty Russell
-  *
-+ * Rework of the CPU hotplug offline mechanism to remove its dependence on
-+ * the heavy-weight stop_machine() primitive, by Srivatsa S. Bhat and
-+ * Paul E. McKenney.
-+ *
-+ * Copyright (C) IBM Corporation, 2012-2013
-+ * Authors: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-+ *          Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-+ *
-+ * With lots of invaluable suggestions from:
-+ *	    Oleg Nesterov <oleg@redhat.com>
-+ *	    Tejun Heo <tj@kernel.org>
-+ *
-  * This code is licenced under the GPL.
-  */
- #include <linux/proc_fs.h>
-@@ -19,6 +31,7 @@
- #include <linux/mutex.h>
- #include <linux/gfp.h>
- #include <linux/suspend.h>
-+#include <linux/percpu-rwlock.h>
- 
- #include "smpboot.h"
- 
-@@ -133,6 +146,38 @@ static void cpu_hotplug_done(void)
- 	mutex_unlock(&cpu_hotplug.lock);
+ #define reader_uses_percpu_refcnt(pcpu_rwlock)				\
+ 				reader_percpu_nesting_depth(pcpu_rwlock)
+@@ -71,7 +75,7 @@ void percpu_free_rwlock(struct percpu_rwlock *pcpu_rwlock)
+ 	pcpu_rwlock->rw_state = NULL;
  }
  
-+/*
-+ * Per-CPU Reader-Writer lock to synchronize between atomic hotplug
-+ * readers and the CPU offline hotplug writer.
-+ */
-+DEFINE_STATIC_PERCPU_RWLOCK(hotplug_pcpu_rwlock);
-+
-+/*
-+ * Invoked by atomic hotplug reader (a task which wants to prevent
-+ * CPU offline, but which can't afford to sleep), to prevent CPUs from
-+ * going offline. So, you can call this function from atomic contexts
-+ * (including interrupt handlers).
-+ *
-+ * Note: This does NOT prevent CPUs from coming online! It only prevents
-+ * CPUs from going offline.
-+ *
-+ * You can call this function recursively.
-+ *
-+ * Returns with preemption disabled (but interrupts remain as they are;
-+ * they are not disabled).
-+ */
-+void get_online_cpus_atomic(void)
-+{
-+	percpu_read_lock_irqsafe(&hotplug_pcpu_rwlock);
-+}
-+EXPORT_SYMBOL_GPL(get_online_cpus_atomic);
-+
-+void put_online_cpus_atomic(void)
-+{
-+	percpu_read_unlock_irqsafe(&hotplug_pcpu_rwlock);
-+}
-+EXPORT_SYMBOL_GPL(put_online_cpus_atomic);
-+
- #else /* #if CONFIG_HOTPLUG_CPU */
- static void cpu_hotplug_begin(void) {}
- static void cpu_hotplug_done(void) {}
-@@ -246,15 +291,21 @@ struct take_cpu_down_param {
- static int __ref take_cpu_down(void *_param)
+-void percpu_read_lock(struct percpu_rwlock *pcpu_rwlock)
++void percpu_read_lock_irqsafe(struct percpu_rwlock *pcpu_rwlock)
  {
- 	struct take_cpu_down_param *param = _param;
-+	unsigned long flags;
- 	int err;
+ 	preempt_disable();
  
-+	percpu_write_lock_irqsave(&hotplug_pcpu_rwlock, &flags);
-+
- 	/* Ensure this CPU doesn't handle any more interrupts. */
- 	err = __cpu_disable();
- 	if (err < 0)
--		return err;
-+		goto out;
+@@ -79,14 +83,18 @@ void percpu_read_lock(struct percpu_rwlock *pcpu_rwlock)
+ 	 * Let the writer know that a reader is active, even before we choose
+ 	 * our reader-side synchronization scheme.
+ 	 */
+-	this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
++	this_cpu_add(pcpu_rwlock->rw_state->reader_refcnt, READER_PRESENT);
  
- 	cpu_notify(CPU_DYING | param->mod, param->hcpu);
--	return 0;
+ 	/*
+ 	 * If we are already using per-cpu refcounts, it is not safe to switch
+ 	 * the synchronization scheme. So continue using the refcounts.
+ 	 */
+-	if (reader_nested_percpu(pcpu_rwlock))
++	if (reader_uses_percpu_refcnt(pcpu_rwlock)) {
++		this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
++		this_cpu_sub(pcpu_rwlock->rw_state->reader_refcnt,
++			     READER_PRESENT);
+ 		return;
++	}
+ 
+ 	/*
+ 	 * The write to 'reader_refcnt' must be visible before we read
+@@ -95,9 +103,19 @@ void percpu_read_lock(struct percpu_rwlock *pcpu_rwlock)
+ 	smp_mb();
+ 
+ 	if (likely(!writer_active(pcpu_rwlock))) {
+-		goto out;
++		this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
+ 	} else {
+ 		/* Writer is active, so switch to global rwlock. */
 +
-+out:
-+	percpu_write_unlock_irqrestore(&hotplug_pcpu_rwlock, &flags);
-+	return err;
++		/*
++		 * While we are spinning on ->global_rwlock, an
++		 * interrupt can hit us, and the interrupt handler
++		 * might call this function. The distinction between
++		 * READER_PRESENT and the refcnt helps ensure that the
++		 * interrupt handler also takes this branch and spins
++		 * on the ->global_rwlock, as long as the writer is
++		 * active.
++		 */
+ 		read_lock(&pcpu_rwlock->global_rwlock);
+ 
+ 		/*
+@@ -107,29 +125,24 @@ void percpu_read_lock(struct percpu_rwlock *pcpu_rwlock)
+ 		 * refcounts. (This also helps avoid heterogeneous nesting of
+ 		 * readers).
+ 		 */
+-		if (writer_active(pcpu_rwlock)) {
+-			/*
+-			 * The above writer_active() check can get reordered
+-			 * with this_cpu_dec() below, but this is OK, because
+-			 * holding the rwlock is conservative.
+-			 */
+-			this_cpu_dec(pcpu_rwlock->rw_state->reader_refcnt);
+-		} else {
++		if (!writer_active(pcpu_rwlock)) {
++			this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
+ 			read_unlock(&pcpu_rwlock->global_rwlock);
+ 		}
+ 	}
+ 
+-out:
++	this_cpu_sub(pcpu_rwlock->rw_state->reader_refcnt, READER_PRESENT);
++
+ 	/* Prevent reordering of any subsequent reads/writes */
+ 	smp_mb();
  }
  
- /* Requires cpu_add_remove_lock to be held */
+-void percpu_read_unlock(struct percpu_rwlock *pcpu_rwlock)
++void percpu_read_unlock_irqsafe(struct percpu_rwlock *pcpu_rwlock)
+ {
+ 	/*
+ 	 * We never allow heterogeneous nesting of readers. So it is trivial
+ 	 * to find out the kind of reader we are, and undo the operation
+-	 * done by our corresponding percpu_read_lock().
++	 * done by our corresponding percpu_read_lock_irqsafe().
+ 	 */
+ 
+ 	/* Try to fast-path: a nested percpu reader is the simplest case */
+@@ -158,7 +171,8 @@ void percpu_read_unlock(struct percpu_rwlock *pcpu_rwlock)
+ 	preempt_enable();
+ }
+ 
+-void percpu_write_lock(struct percpu_rwlock *pcpu_rwlock)
++void percpu_write_lock_irqsave(struct percpu_rwlock *pcpu_rwlock,
++			       unsigned long *flags)
+ {
+ 	unsigned int cpu;
+ 
+@@ -187,10 +201,11 @@ void percpu_write_lock(struct percpu_rwlock *pcpu_rwlock)
+ 	}
+ 
+ 	smp_mb(); /* Complete the wait-for-readers, before taking the lock */
+-	write_lock(&pcpu_rwlock->global_rwlock);
++	write_lock_irqsave(&pcpu_rwlock->global_rwlock, *flags);
+ }
+ 
+-void percpu_write_unlock(struct percpu_rwlock *pcpu_rwlock)
++void percpu_write_unlock_irqrestore(struct percpu_rwlock *pcpu_rwlock,
++				    unsigned long *flags)
+ {
+ 	unsigned int cpu;
+ 
+@@ -205,6 +220,6 @@ void percpu_write_unlock(struct percpu_rwlock *pcpu_rwlock)
+ 	for_each_possible_cpu(cpu)
+ 		per_cpu_ptr(pcpu_rwlock->rw_state, cpu)->writer_signal = false;
+ 
+-	write_unlock(&pcpu_rwlock->global_rwlock);
++	write_unlock_irqrestore(&pcpu_rwlock->global_rwlock, *flags);
+ }
+ 
 
