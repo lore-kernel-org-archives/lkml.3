@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299Ab3BRMqx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 07:46:53 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:35253 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757274Ab3BRMqs (ORCPT
+	id S1757375Ab3BRMrA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 07:47:00 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:56599 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757315Ab3BRMq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 07:46:48 -0500
+	Mon, 18 Feb 2013 07:46:56 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v6 45/46] CPU hotplug,
- stop_machine: Decouple CPU hotplug from stop_machine() in Kconfig
+Subject: [PATCH v6 46/46] Documentation/cpu-hotplug: Remove references to
+ stop_machine()
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -21,8 +21,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         walken@google.com, vincent.guittot@linaro.org
-Date: Mon, 18 Feb 2013 18:14:43 +0530
-Message-ID: <20130218124443.26245.34919.stgit@srivatsabhat.in.ibm.com>
+Date: Mon, 18 Feb 2013 18:14:49 +0530
+Message-ID: <20130218124448.26245.60959.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,58 +30,59 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021812-4790-0000-0000-000006F5F5CA
+x-cbid: 13021812-8878-0000-0000-000005EFBDF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simply dropping HOTPLUG_CPU from the dependency list of STOP_MACHINE will
-lead to the following kconfig issue, reported by Fengguang Wu:
+Since stop_machine() is no longer used in the CPU offline path, we cannot
+disable CPU hotplug using preempt_disable()/local_irq_disable() etc. We
+need to use the newly introduced get/put_online_cpus_atomic() APIs.
+Reflect this in the documentation.
 
-"warning: (HAVE_TEXT_POKE_SMP) selects STOP_MACHINE which has unmet direct
-dependencies (SMP && MODULE_UNLOAD)"
-
-So drop HOTPLUG_CPU and add HAVE_TEXT_POKE_SMP to the dependency list of
-STOP_MACHINE.
-
-And while at it, also cleanup a comment that refers to CPU hotplug being
-dependent on stop_machine().
-
-Cc: David Howells <dhowells@redhat.com>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Suggested-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: linux-doc@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
 
- include/linux/stop_machine.h |    2 +-
- init/Kconfig                 |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ Documentation/cpu-hotplug.txt |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/stop_machine.h b/include/linux/stop_machine.h
-index 3b5e910..ce2d3c4 100644
---- a/include/linux/stop_machine.h
-+++ b/include/linux/stop_machine.h
-@@ -120,7 +120,7 @@ int stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus);
-  * @cpus: the cpus to run the @fn() on (NULL = any online cpu)
-  *
-  * Description: This is a special version of the above, which assumes cpus
-- * won't come or go while it's being called.  Used by hotplug cpu.
-+ * won't come or go while it's being called.
-  */
- int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus);
+diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
+index 9f40135..7f907ec 100644
+--- a/Documentation/cpu-hotplug.txt
++++ b/Documentation/cpu-hotplug.txt
+@@ -113,13 +113,15 @@ Never use anything other than cpumask_t to represent bitmap of CPUs.
+ 	#include <linux/cpu.h>
+ 	get_online_cpus() and put_online_cpus():
  
-diff --git a/init/Kconfig b/init/Kconfig
-index be8b7f5..f4f79af 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1711,7 +1711,7 @@ config INIT_ALL_POSSIBLE
- config STOP_MACHINE
- 	bool
- 	default y
--	depends on (SMP && MODULE_UNLOAD) || HOTPLUG_CPU
-+	depends on (SMP && (MODULE_UNLOAD || HAVE_TEXT_POKE_SMP))
- 	help
- 	  Need stop_machine() primitive.
+-The above calls are used to inhibit cpu hotplug operations. While the
++The above calls are used to inhibit cpu hotplug operations, when invoked from
++non-atomic context (because the above functions can sleep). While the
+ cpu_hotplug.refcount is non zero, the cpu_online_mask will not change.
+-If you merely need to avoid cpus going away, you could also use
+-preempt_disable() and preempt_enable() for those sections.
+-Just remember the critical section cannot call any
+-function that can sleep or schedule this process away. The preempt_disable()
+-will work as long as stop_machine_run() is used to take a cpu down.
++
++However, if you are executing in atomic context (ie., you can't afford to
++sleep), and you merely need to avoid cpus going offline, you can use
++get_online_cpus_atomic() and put_online_cpus_atomic() for those sections.
++Just remember the critical section cannot call any function that can sleep or
++schedule this process away.
  
+ CPU Hotplug - Frequently Asked Questions.
+ 
+@@ -360,6 +362,9 @@ A: There are two ways.  If your code can be run in interrupt context, use
+ 		return err;
+ 	}
+ 
++   If my_func_on_cpu() itself cannot block, use get/put_online_cpus_atomic()
++   instead of get/put_online_cpus() to prevent CPUs from going offline.
++
+ Q: How do we determine how many CPUs are available for hotplug.
+ A: There is no clear spec defined way from ACPI that can give us that
+    information today. Based on some input from Natalie of Unisys,
 
