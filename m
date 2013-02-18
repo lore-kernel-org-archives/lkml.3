@@ -1,93 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab3BRPGE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 10:06:04 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:54275 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664Ab3BRPGB (ORCPT
+	id S1753336Ab3BRPHD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 10:07:03 -0500
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:43191 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664Ab3BRPHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 10:06:01 -0500
-Message-ID: <51224354.4010909@numascale-asia.com>
-Date: Mon, 18 Feb 2013 23:05:56 +0800
-From: Daniel J Blueman <daniel@numascale-asia.com>
-Organization: Numascale Asia
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 18 Feb 2013 10:07:00 -0500
 MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: Jiri Slaby <jslaby@suse.cz>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Steffen Persvold <sp@numascale.com>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: kswapd craziness round 2
-References: <5121C7AF.2090803@numascale-asia.com> <CAJd=RBArPT8YowhLuE8YVGNfH7G-xXTOjSyDgdV2RsatL-9m+Q@mail.gmail.com>
-In-Reply-To: <CAJd=RBArPT8YowhLuE8YVGNfH7G-xXTOjSyDgdV2RsatL-9m+Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFTL4hyR=_ftCxycyvCBR0xwj6aOix9op40ps7htogpkkqVz+A@mail.gmail.com>
+References: <1359455940-1710-1-git-send-email-vincent.guittot@linaro.org>
+	<1359455940-1710-2-git-send-email-vincent.guittot@linaro.org>
+	<CAFTL4hzboD8Mv_-pRDHc+39QwXGWiT3MGtL8gJ=_ajnHdDCBcA@mail.gmail.com>
+	<CAKfTPtD2jRke2CUXiJdmaYYki_Voi4eTqJKgsyTnRpna7p8mJg@mail.gmail.com>
+	<CAFTL4hzriJm1mK1A_9U5kX9Z0RCMGpxy8M3gKuzFtt9Bky5htQ@mail.gmail.com>
+	<CAKfTPtCWudftS2XSM1OC2sR050mYvcAU6Fkt0vjV=C2V+w84Ew@mail.gmail.com>
+	<CAFTL4hzu-7uAXLqP+J48DaqLUYQWTESMNwPMYiiwrU2ZoOsgqw@mail.gmail.com>
+	<CAFTL4hyR=_ftCxycyvCBR0xwj6aOix9op40ps7htogpkkqVz+A@mail.gmail.com>
+Date: Mon, 18 Feb 2013 16:06:58 +0100
+Message-ID: <CAKfTPtC3c50yo8AcQ7K9m73gP95dEsetjbhNXDN4RiR-nZ8UqA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] sched: fix init NOHZ_IDLE flag
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, Mike Galbraith <efault@gmx.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/02/2013 19:42, Hillf Danton wrote:
-> On Mon, Feb 18, 2013 at 2:18 PM, Daniel J Blueman
-> <daniel@numascale-asia.com> wrote:
->> On Monday, 18 February 2013 06:10:02 UTC+8, Jiri Slaby  wrote:
->>
->>> Hi,
+On 18 February 2013 15:38, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 2013/2/18 Frederic Weisbecker <fweisbec@gmail.com>:
+>> 2013/2/8 Vincent Guittot <vincent.guittot@linaro.org>:
+>>> On 8 February 2013 16:35, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>>> What if the following happen (inventing function names but you get the idea):
+>>>>
+>>>> CPU 0                                           CPU 1
+>>>>
+>>>> dom = new_domain(...) {
+>>>>            nr_cpus_busy = 0;
+>>>>            set_idle(CPU 1);                  old_dom =get_dom()
+>>>>                                                      clear_idle(CPU 1)
+>>>> }
+>>>> rcu_assign_pointer(cpu1_dom, dom);
+>>>>
+>>>>
+>>>> Can this scenario happen?
 >>>
->>> You still feel the sour taste of the "kswapd craziness in v3.7" thread,
->>> right? Welcome to the hell, part two :{.
+>>> This scenario will be:
 >>>
->>> I believe this started happening after update from
->>> 3.8.0-rc4-next-20130125 to 3.8.0-rc7-next-20130211. The same as before,
->>> many hours of uptime are needed and perhaps some suspend/resume cycles
->>> too. Memory pressure is not high, plenty of I/O cache:
->>> # free
->>>               total       used       free     shared    buffers     cached
->>> Mem:       6026692    5571184     455508          0     351252    2016648
->>> -/+ buffers/cache:    3203284    2823408
->>> Swap:            0          0          0
+>>>  CPU 0                                           CPU 1
 >>>
->>> kswap is working very toughly though:
->>> root       580  0.6  0.0      0     0 ?        S    úno12  46:21 [kswapd0]
+>>>  detach_and_destroy_domain {
+>>>             rcu_assign_pointer(cpu1_dom, NULL);
+>>>  }
 >>>
->>> This happens on I/O activity right now. For example by updatedb or find
->>> /. This is what the stack trace of kswapd0 looks like:
->>> [<ffffffff8113c431>] shrink_slab+0xa1/0x2d0
->>> [<ffffffff8113ecd1>] kswapd+0x541/0x930
->>> [<ffffffff810a3000>] kthread+0xc0/0xd0
->>> [<ffffffff816beb5c>] ret_from_fork+0x7c/0xb0
->>> [<ffffffffffffffff>] 0xffffffffffffffff
+>>>  dom = new_domain(...) {
+>>>             nr_cpus_busy = 0;
+>>>             set_idle(CPU 1);                  old_dom =get_dom()
+>>>                                                       old_dom is null
+>>>                                                       //clear_idle(CPU
+>>> 1) can't happen because a null domain is attached so we will never
+>>> call nohz_kick_needed which is the only place where we can clear_idle
+>>>  }
+>>>  rcu_assign_pointer(cpu1_dom, dom);
 >>
->> Likewise with 3.8-rc, I've been able to reproduce [1] a livelock scenario
->> which hoses the box and observe RCU stalls [2].
+>> So is the following possible?
 >>
->> There may be a connection; I'll do a bit more debugging in the next few
->> days.
+>> = CPU 0 =                                                       = CPU 1=
 >>
->> Daniel
+>> detach_and_destroy_domain {
+>>             rcu_assign_pointer(cpu1_dom, NULL);
+>> }
 >>
->> --- [1]
+>> dom = new_domain(...) {
+>>              nr_cpus_busy = 0;
+>>              set_idle(CPU 1);
+>> }
 >>
->> 1. live-booted image using ramdisk
->> 2. boot 3.8-rc with <16GB memory and without swap
->> 3. run OpenMP NAS Parallel Benchmark dc.B against local disk (ie not
->> ramdisk)
->> 4. observe hang O(30) mins later
+>> clear_idle(CPU 1)
 >>
->> --- [2]
+>> dom = rcu_dereference(cpu1_dom)
 >>
->> [ 2675.587878] INFO: rcu_sched self-detected stall on CPU { 5}  (t=24000
->> jiffies g=6313 c=6312 q=68)
+>> //dom == NULL, return
+>>
+>> rcu_assign_pointer(cpu1_dom, NULL);
+>>
+>>
+>> set_idle(CPU 1)
+>>
+>> dom = rcu_dereference(cpu1_dom)
+>>
+>> //dec nr_cpus_busy, making it negative
 >
-> Does Ingo's revert help? https://lkml.org/lkml/2013/2/15/168
+> Sorry, gmail messed up as usual.
+>
+> I pasted the original at: http://pastebin.com/DMm5U8J8
 
-Close, but no cigar; I still hit this livelock on 3.8-rc7 with Ingo's 
-revert or Linus's fix.
+We can clear the idle flag only in the nohz_kick_needed which will not
+be called if the sched_domain is NULL so the sequence will be
 
-However, I am unable to reproduce the hang with 3.7.9, so will begin 
-bisection tomorrow, probably automating via pexpect.
+= CPU 0 =                                            = CPU 1=
 
-Thanks,
-   Daniel
--- 
-Daniel J Blueman
-Principal Software Engineer, Numascale Asia
+detach_and_destroy_domain {
+            rcu_assign_pointer(cpu1_dom, NULL);
+}
+
+dom = new_domain(...) {
+             nr_cpus_busy = 0;
+             set_idle(CPU 1);
+}
+                                                    dom =
+rcu_dereference(cpu1_dom)
+                                                    //dom == NULL, return
+
+rcu_assign_pointer(cpu1_dom, dom);
+
+                                                    dom =
+rcu_dereference(cpu1_dom)
+                                                    //dom != NULL,
+                                                    nohz_kick_needed {
+
+set_idle(CPU 1)
+                                                                   dom
+= rcu_dereference(cpu1_dom)
+
+//dec nr_cpus_busy,
+                                                    }
+
+Vincent
