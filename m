@@ -1,471 +1,432 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab3BRJzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 04:55:20 -0500
-Received: from mysmtp1.stec-inc.com ([1.9.68.9]:41075 "HELO
-	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752854Ab3BRJzQ convert rfc822-to-8bit (ORCPT
+	id S1757571Ab3BRJ5y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 04:57:54 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:63929 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754264Ab3BRJ5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 04:55:16 -0500
-X-Greylist: delayed 604 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Feb 2013 04:55:05 EST
-X-ASG-Debug-ID: 1361180696-053ea90dcf2b6e20001-xx1T2L
-X-Barracuda-Envelope-From: sunnikrishnan@stec-inc.com
-X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
-From: Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com>
-X-Barracuda-BWL-IP: fe80::748e:376a:ee63:5279
-X-Barracuda-Apparent-Source-IP: fe80::748e:376a:ee63:5279
-To: "Darrick J. Wong" <darrick.wong@oracle.com>,
-        OS Engineering <osengineering@stec-inc.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        =?iso-2022-jp?B?GyRCMiY2YjE6GyhC?= <jinpuwang@gmail.com>,
-        Amit Kale <akale@stec-inc.com>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "koverstreet@google.com" <koverstreet@google.com>,
-        "thornber@redhat.com" <thornber@redhat.com>
-Date: Mon, 18 Feb 2013 17:42:38 +0800
-Subject: RE: [PATCH] EnhanceIO ssd caching software
-Thread-Topic: [PATCH] EnhanceIO ssd caching software
-X-ASG-Orig-Subj: RE: [PATCH] EnhanceIO ssd caching software
-Thread-Index: Ac4Lu3Y5Pp0aO1WDSlSaKpyUfPKjfgB+fG+g
-Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0C746B4948@MYMBX.MY.STEC-INC.AD>
-References: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD>
- <20130215203139.GE26292@blackbox.djwong.org>
-In-Reply-To: <20130215203139.GE26292@blackbox.djwong.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Feb 2013 04:57:52 -0500
+Date: Mon, 18 Feb 2013 10:57:44 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-kernel@vger.kernel.org
+cc: Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        devicetree-discuss@lists.ozlabs.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org
+Subject: [PATCH v2] mfd: as3711: add OF support
+Message-ID: <Pine.LNX.4.64.1302181049510.4526@axis700.grange>
 MIME-Version: 1.0
-X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
-X-Barracuda-Start-Time: 1361180696
-X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: -0.00
-X-Barracuda-Spam-Status: No, SCORE=-0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=ISO2022JP_CHARSET
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.123005
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	-0.00 ISO2022JP_CHARSET      ISO-2022-JP message
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:VcJX4FyMJjd3sBX6ISMlOntYUChzSh+sELSEFqmxjL6
+ QkeCsYtLOKNFS3w4W1P/a9Z3lAEIQ+LyrIYe+1a21N1kskEq1m
+ NIwCihalT6H7BVVtomvIGCWvsHw/9uYLUF22Q5awk1oWwA7CUf
+ kT/HE9j0EJLt+l341nNKG4ibP+10uq0zfoPs/o3NVwsd+UxF6H
+ H988njt8mBt7lN1YEK74qK4dAwJ3JokWpT/mvp1TlJdY2uyEAs
+ ELTlOjJZCydX8Si3kP9WgxruK7VO86c6gV2nVIeL7pUr2W/cek
+ zX5kACvqDm2CfMM8PqJ48Y6MCgjxwP6N9rVUYH5h7ZgH+gPvX0
+ yJlybV4Nf9OUPowQvRe+ZRTwzfJjO1QjDrLcjjq9Htg/y8GK+5
+ 8bT70gdI7OXQw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Darrick J. Wong [mailto:darrick.wong@oracle.com]
-> Sent: Saturday, February 16, 2013 2:02 AM
-> To: OS Engineering
-> Cc: Greg Kroah-Hartman; LKML; Jens Axboe; Sanoj Unnikrishnan; 王金浦;
-> Amit Kale; dm-devel@redhat.com; koverstreet@google.com;
-> thornber@redhat.com
-> Subject: Re: [PATCH] EnhanceIO ssd caching software
-> 
-> [Resending with dm-devel, Kent, and Joe on cc.  Sorry for the noise.]
-> 
-> On Fri, Feb 15, 2013 at 02:02:38PM +0800, OS Engineering wrote:
-> > Hi Greg, Jens,
-> >
-> > We are submitting EnhanceIO(TM) software driver for an inclusion in
-> linux
-> > staging tree. Present state of this driver is beta. We have been
-> posting it
-> > for a few weeks, while it was maintained at github. It is still being
-> > cleaned-up and is being tested by LKML members. Inclusion in linux
-> staging
-> > tree will make testing and reviewing easier and help a future
-> integration in
-> > Linux kernel.
-> >
-> > Could you please include it?
+Add device-tree bindings to the AS3711 regulator and backlight drivers.
 
-> >
-> > Signed-off-by:
-> > Amit Kale <akale@stec-inc.com>
-> > Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com>
-> > Darrick J. Wong <darrick.wong@oracle.com>
-> > Jinpu Wang <jinpuwang@gmail.com>
-> 
-> Each of these email addresses needs to have the "S-o-b:" prefix
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+---
 
-> Also, you ought to run this patch through scripts/checkpatch.pl, as
-> there are
-> quite a lot of style errors.
+v2:
+1. remove of_device_is_available() - it breaks compilation with CONFIG_OF 
+disabled and is redundant anyway - I2C devices are only registered for 
+available devoces
+2. add parenthesis to eliminate a compiler warning
 
-we will fix these in the next patch.
+ Documentation/devicetree/bindings/mfd/as3711.txt |   73 +++++++++++++
+ drivers/mfd/as3711.c                             |   27 ++++-
+ drivers/regulator/as3711-regulator.c             |   69 ++++++++++++-
+ drivers/video/backlight/as3711_bl.c              |  118 +++++++++++++++++++++-
+ 4 files changed, 279 insertions(+), 8 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/as3711.txt
 
-
-> > +ACTION!="add|change", GOTO="EIO_EOF"
-> > +SUBSYSTEM!="block", GOTO="EIO_EOF"
-> > +
-> > +<cache_match_expr>, GOTO="EIO_CACHE"
-> > +
-> > +<source_match_expr>, GOTO="EIO_SOURCE"
-> > +
-> > +# If none of the rules above matched then it isn't an EnhanceIO
-> device so ignore it.
-> > +GOTO="EIO_EOF"
-> > +
-> > +# If we just found the cache device and the source already exists
-> then we can setup
-> > +LABEL="EIO_CACHE"
-> > +       TEST!="/dev/enhanceio/<cache_name>", PROGRAM="/bin/mkdir -p
-> /dev/enhanceio/<cache_name>"
-> > +       PROGRAM="/bin/sh -c 'echo $kernel >
-> /dev/enhanceio/<cache_name>/.ssd_name'"
-> > +
-> > +       TEST=="/dev/enhanceio/<cache_name>/.disk_name",
-> GOTO="EIO_SETUP"
-> > +GOTO="EIO_EOF"
-> > +
-> > +# If we just found the source device and the cache already exists
-> then we can setup
-> > +LABEL="EIO_SOURCE"
-> > +       TEST!="/dev/enhanceio/<cache_name>", PROGRAM="/bin/mkdir -p
-> /dev/enhanceio/<cache_name>"
-> > +       PROGRAM="/bin/sh -c 'echo $kernel >
-> /dev/enhanceio/<cache_name>/.disk_name'"
-> > +
-> > +       TEST=="/dev/enhanceio/<cache_name>/.ssd_name",
-> GOTO="EIO_SETUP"
-> 
-> If the cache is running in wb mode, perhaps we should make it ro until
-> the SSD
-> shows up and we run eio_cli?  Run blockdev --setro in the EIO_CACHE
-> part, and
-> blockdev --setrw in the EIO_SOURCE part?
-> 
-> <shrug> not a udev developer, take that with a grain of salt.
-
-We were exploring hiding source node as an option. This seems to be better.
+diff --git a/Documentation/devicetree/bindings/mfd/as3711.txt b/Documentation/devicetree/bindings/mfd/as3711.txt
+new file mode 100644
+index 0000000..d98cf18
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/as3711.txt
+@@ -0,0 +1,73 @@
++AS3711 is an I2C PMIC from Austria MicroSystems with multiple DCDC and LDO power
++supplies, a battery charger and an RTC. So far only bindings for the two stepup
++DCDC converters are defined. Other DCDC and LDO supplies are configured, using
++standard regulator properties, they must belong to a sub-node, called
++"regulators" and be called "sd1" to "sd4" and "ldo1" to "ldo8." Stepup converter
++configuration should be placed in a subnode, called "backlight."
++
++Compulsory properties:
++- compatible		: must be "ams,as3711"
++- reg			: specifies the I2C address
++
++To use the SU1 converter as a backlight source the following two properties must
++be provided:
++- su1-dev		: framebuffer phandle
++- su1-max-uA		: maximum current
++
++To use the SU2 converter as a backlight source the following two properties must
++be provided:
++- su2-dev		: framebuffer phandle
++- su1-max-uA		: maximum current
++
++Additionally one of these properties must be provided to select the type of
++feedback used:
++- su2-feedback-voltage	: voltage feedback is used
++- su2-feedback-curr1	: CURR1 input used for current feedback
++- su2-feedback-curr2	: CURR2 input used for current feedback
++- su2-feedback-curr3	: CURR3 input used for current feedback
++- su2-feedback-curr-auto: automatic current feedback selection
++
++and one of these to select the over-voltage protection pin
++- su2-fbprot-lx-sd4	: LX_SD4 is used for over-voltage protection
++- su2-fbprot-gpio2	: GPIO2 is used for over-voltage protection
++- su2-fbprot-gpio3	: GPIO3 is used for over-voltage protection
++- su2-fbprot-gpio4	: GPIO4 is used for over-voltage protection
++
++If "su2-feedback-curr-auto" is selected, one or more of the following properties
++have to be specified:
++- su2-auto-curr1	: use CURR1 input for current feedback
++- su2-auto-curr2	: use CURR2 input for current feedback
++- su2-auto-curr3	: use CURR3 input for current feedback
++
++Example:
++
++as3711@40 {
++	compatible = "ams,as3711";
++	reg = <0x40>;
++
++	regulators {
++		sd4 {
++			regulator-name = "1.215V";
++			regulator-min-microvolt = <1215000>;
++			regulator-max-microvolt = <1235000>;
++		};
++		ldo2 {
++			regulator-name = "2.8V CPU";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <2800000>;
++			regulator-always-on;
++			regulator-boot-on;
++		};
++	};
++
++	backlight {
++		compatible = "ams,as3711-bl";
++		su2-dev = <&lcdc>;
++		su2-max-uA = <36000>;
++		su2-feedback-curr-auto;
++		su2-fbprot-gpio4;
++		su2-auto-curr1;
++		su2-auto-curr2;
++		su2-auto-curr3;
++	};
++};
+diff --git a/drivers/mfd/as3711.c b/drivers/mfd/as3711.c
+index e994c96..01e4141 100644
+--- a/drivers/mfd/as3711.c
++++ b/drivers/mfd/as3711.c
+@@ -112,16 +112,34 @@ static const struct regmap_config as3711_regmap_config = {
+ 	.cache_type = REGCACHE_RBTREE,
+ };
  
-> > +How to create persistent cache
-> > +==============================
-> > +
-> > +Use the 94-Enhanceio-template file to create a per cache udev-rule
-> file named /etc/udev/rules.d/94-enhancio-<cache_name>.rules
-> > +
-> > +1) Change <cache_match_expr> to ENV{ID_SERIAL}=="<ID SERIAL OF YOUR
-> CACHE DEVICE>", ENV{DEVTYPE}==<DEVICE TYPE OF YOUR CACHE DEVICE>
-> > +
-> > +2) Change <source_match_expr> to ENV{ID_SERIAL}=="<ID SERIAL OF YOUR
-> HARD DISK>", ENV{DEVTYPE}==<DEVICE TYPE OF YOUR SOURCE DEVICE>
-> > +
-> > +3) Replace all instances of <cache_name> with the name of your cache
-> 
-> I wonder if there's a better way to do this than manually cutting and
-> pasting
-> all these IDs into a udev rules file.  Or, how about a quick script at
-> cache
-> creation time that spits out files into /etc/udev/rules.d/ ?
-
-agreed!! Will add one in the next patch.
-
-> > +       Write-back improves write latency by writing application
-> requested data
-> > +       only to SSD. This data, referred to as dirty data, is copied
-> later to
-> 
-> How much later?
->
-
-This is triggered by a set of thresholds.
-per cache dirty high and low watermark.
-per cache set dirty high and low watermark.
-and a time based threshold.
-If any of the high watermarks or time based interval is triggered clean is initiated.
-
-These thresholds are all configurable through sysctl.
-
-> > +       Failure of an SSD device in write-back mode obviously results
-> in the
-> > +       loss of dirty blocks in the cache. To guard against this data
-> loss, two
-> > +       SSD devices can be mirrored via RAID 1.
-> 
-> What happens to writes that happen after the SSD goes down?  Are they
-> simply
-> passed through to the slow disk?
-
-
-It does so in the current code. Maybe, we could make the source device read only and
-change it to read-write only cache deletion.
-
-> > +#if defined(__KERNEL__) && !defined(CONFIG_PROC_FS)
-> > +#error "EnhanceIO requires CONFIG_PROC_FS"
-> > +#endif                          /* __KERNEL__ && !CONFIG_PROC_FS */
-> 
-> This dependency should be stated in the Kconfig file.  'depends
-> PROC_FS' or
-> something like that.
-
-Will fix this!
-
-> > +struct eio_control_s {
-> > +       volatile unsigned long synch_flags;
-> 
-> Are you sure that this volatile does what you think it does?
-> http://www.kernel.org/doc/Documentation/volatile-considered-harmful.txt
-> 
-> afaict all the uses of synch_flags seem to use atomic operations
-> already...
-> 
-> > +};
-
-Use of volatiles in Enhanceio is very similar to use of jiffies. However,
-we will consider replacing them.
-
-
-> > + * This file has three sections as follows:
-> > + *
-> > + *      Section 1: User space only
-> > + *      Section 2: User space and kernel
-> > + *      Section 3: Kernel only
-> > + *
-> > + * Each section may contain its own subsections.
-> > + */
-> > +
-> > +/*
-> > + * Begin Section 1: User space only.
-> > + */
-> 
-> Empty?
-
-Yes, Need to figure out how to include C header file in python (looking at cffi module,
-for this purpose). Certain constants and structures such as ioctl numbers and structure
-have to be moved here. Currently it is duplicated.
-
-> > +/*
-> > + * End Section 1: User space only.
-> > + */
-> > +
-> > +/*
-> > + * Begin Section 2: User space and kernel.
-> > + */
-> > +
-> > +/* States of a cache block */
-> > +#define INVALID                 0x0001
-> > +#define VALID                   0x0002  /* Valid */
-> > +#define DISKREADINPROG          0x0004  /* Read from disk in
-> progress */
-> > +#define DISKWRITEINPROG         0x0008  /* Write to disk in progress
-> */
-> > +#define CACHEREADINPROG         0x0010  /* Read from cache in
-> progress */
-> > +#define CACHEWRITEINPROG        0x0020  /* Write to cache in
-> progress */
-> > +#define DIRTY                   0x0040  /* Dirty, needs writeback to
-> disk */
-> > +#define QUEUED                  0x0080  /* Other requests are queued
-> for this block */
-> > +
-> > +#define BLOCK_IO_INPROG (DISKREADINPROG | DISKWRITEINPROG | \
-> > +                        CACHEREADINPROG | CACHEWRITEINPROG)
-> > +#define DIRTY_INPROG    (VALID | DIRTY | CACHEWRITEINPROG)      /*
-> block being dirtied */
-> > +#define CLEAN_INPROG    (VALID | DIRTY | DISKWRITEINPROG)       /*
-> ongoing clean */
-> > +#define ALREADY_DIRTY   (VALID | DIRTY)                         /*
-> block which is dirty to begin with for an I/O */
-> 
-> These shouldn't go past 80 columns.
-> 
-> > +/*
-> > + * This is a special state used only in the following scenario as
-> > + * part of device (SSD) failure handling:
-> > + *
-> > + * ------| dev fail |------| dev resume |------------
-> > + *   ...-<--- Tf --><- Td -><---- Tr ---><-- Tn ---...
-> > + * |---- Normal ----|-- Degraded -------|-- Normal ---|
-> > + *
-> > + * Tf: Time during device failure.
-> > + * Td: Time after failure when the cache is in degraded mode.
-> > + * Tr: Time when the SSD comes back online.
-> > + *
-> > + * When a failed SSD is added back again, it should be treated
-> > + * as a cold SSD.
-> > + *
-> > + * If Td is very small, then there can be IOs that were initiated
-> > + * before or during Tf, and did not finish until the end of Tr.
-> From
-> > + * the IO's viewpoint, the SSD was there when the IO was initiated
-> > + * and it was there when the IO was finished.  These IOs need
-> special
-> > + * handling as described below.
-> > + *
-> > + * To add the SSD as a cold cache device, we initialize all blocks
-> > + * to INVALID, execept for the ones that had IOs in progress before
-> > + * or during Tf.  We mark such blocks as both VALID and INVALID.
-> > + * These blocks will be marked INVALID when finished.
-> > + */
-> > +#define NO_SSD_IO_INPROG        (VALID | INVALID)
-> > +
-> > +/*
-> > + * On Flash (cache metadata) Structures
-> > + */
-> > +#define CACHE_MD_STATE_DIRTY            0x55daddee
-> > +#define CACHE_MD_STATE_CLEAN            0xacceded1
-> > +#define CACHE_MD_STATE_FASTCLEAN        0xcafebabf
-> > +#define CACHE_MD_STATE_UNSTABLE         0xdeaddeee
-> > +
-> > +/* Do we have a read cache or a read-write cache */
-> > +#define CACHE_MODE_WB           1
-> > +#define CACHE_MODE_RO           2
-> > +#define CACHE_MODE_WT           3
-> > +#define CACHE_MODE_FIRST        CACHE_MODE_WB
-> > +#define CACHE_MODE_LAST         CACHE_MODE_WT
-> > +#define CACHE_MODE_DEFAULT      CACHE_MODE_WT
-> > +
-> > +#define DEV_PATHLEN             128
-> > +#define EIO_SUPERBLOCK_SIZE     4096
-> > +
-> > +#define EIO_CLEAN_ABORT         0x00000000
-> > +#define EIO_CLEAN_START         0x00000001
-> > +#define EIO_CLEAN_KEEP          0x00000002
-> > +
-> > +/* EIO magic number */
-> > +#define EIO_MAGIC               0xE10CAC6E
-> > +#define EIO_BAD_MAGIC           0xBADCAC6E
-> > +
-> > +/* EIO version */
-> > +#define EIO_SB_VERSION          3       /* kernel superblock version
-> */
-> > +#define EIO_SB_MAGIC_VERSION    3       /* version in which magic
-> number was introduced */
-> > +
-> > +typedef union eio_superblock {
-> > +       struct superblock_fields {
-> > +               sector_t size;                  /* Cache size */
-> 
-> sector_t is 32 bits on !LBDAF 32-bit systems and 64 bits otherwise.
-> This
-> structure seems reflect an on-disk format, which means that I can badly
-> screw
-> things up if I move a cache disk between machines with differently
-> configured
-> kernels.  Plus, if we ever change the definition of sector_t then this
-> structure will be broken.
-> 
-> This field should be declared with an explicit size, i.e. __le64.
-> 
-> > +               u_int32_t block_size;           /* Cache block size
-> */
-> 
-> Worse yet, these fields should use endianness notations (e.g. __le32)
-> and when
-> you write out the superblock, you need to wrap the assignments with a
-> cpu_to_leXX() call.  Otherwise, enhanceio caches created on ppc64 won't
-> load on
-> a x64 box (and vice versa) because all the bytes are swapped.
-> 
-> These two grumblings also apply to any other on-disk-format structs in
-> this
-> patch.
-
-Will fix these ASAP.
-
-
-> 
-> > +               u_int32_t assoc;                /* Cache
-> associativity */
-> > +               u_int32_t cache_sb_state;       /* Clean shutdown ?
-> */
-> > +               char cache_devname[DEV_PATHLEN];
-> > +               sector_t cache_devsize;
-> > +               char disk_devname[DEV_PATHLEN];
-> > +               sector_t disk_devsize;
-> > +               u_int32_t cache_version;
-> > +               char cache_name[DEV_PATHLEN];
-> > +               u_int32_t mode;
-> > +               u_int32_t repl_policy;
-> > +               u_int32_t cache_flags;
-> > +               /*
-> > +                * Version 1.1 superblock ends here.
-> > +                * Don't modify any of the above fields.
-> > +                */
-> > +               u_int32_t magic;                /* Has to be the 1st
-> field afer 1.1 superblock */
-> > +               u_int32_t cold_boot;            /* cache to be
-> started as cold after boot */
-> > +               char ssd_uuid[DEV_PATHLEN];
-> > +               sector_t cache_md_start_sect;   /* cache metadata
-> start (8K aligned) */
-> > +               sector_t cache_data_start_sect; /* cache data start
-> (8K aligned) */
-> > +               u_int32_t dirty_high_threshold;
-> > +               u_int32_t dirty_low_threshold;
-> > +               u_int32_t dirty_set_high_threshold;
-> > +               u_int32_t dirty_set_low_threshold;
-> > +               u_int32_t time_based_clean_interval;
-> > +               u_int32_t autoclean_threshold;
-> > +       } sbf;
-> > +       u_int8_t padding[EIO_SUPERBLOCK_SIZE];
-> > +} eio_superblock_t;
-> 
-> Why does this in-memory data structure need to be 4096 bytes long?
-> 'padding'
-> doesn't seem to be used anywhere.
-
-We have assumed that superblock would require at most 4096 bytes (considering future
-Additions too). 
++#ifdef CONFIG_OF
++static struct of_device_id as3711_of_match[] = {
++	{.compatible = "ams,as3711",},
++	{}
++};
++MODULE_DEVICE_TABLE(of, as3711_of_match);
++#endif
++
+ static int as3711_i2c_probe(struct i2c_client *client,
+ 			    const struct i2c_device_id *id)
+ {
+ 	struct as3711 *as3711;
+-	struct as3711_platform_data *pdata = client->dev.platform_data;
++	struct as3711_platform_data *pdata;
+ 	unsigned int id1, id2;
+ 	int ret;
  
-> > + * Rethink on max, min, default values
-> > + */
-> > +#define DIRTY_HIGH_THRESH_DEF           30
-> > +#define DIRTY_LOW_THRESH_DEF            10
-> > +#define DIRTY_SET_HIGH_THRESH_DEF       100
-> > +#define DIRTY_SET_LOW_THRESH_DEF        30
-> 
-> What are the units of these values?  I suspect that they're used to
-> decide when
-> to start (and stop) flushing dirty blocks out of a wb cache, but please
-> write
-> down in Documentation/enhanceio/README.txt or somewhere what the sysctl
-> values
-> do, and in what units they are expressed.
-
-These are the auto clean thresholds (mentioned previously in the mail).
-Will update the Documentation.
-
-> > +#include "eio_ioctl.h"
-> > +
-> > +/* resolve conflict with scsi/scsi_device.h */
-> > +#ifdef __KERNEL__
-> > +#ifdef VERIFY
-> > +#undef VERIFY
-> > +#endif
-> > +#define ENABLE_VERIFY
-> > +#ifdef ENABLE_VERIFY
-> > +/* Like ASSERT() but always compiled in */
-> > +#define VERIFY(x) do { \
-> > +               if (unlikely(!(x))) { \
-> > +                       dump_stack(); \
-> > +                       panic("VERIFY: assertion (%s) failed at %s
-> (%d)\n", \
-> > +                             # x,  __FILE__, __LINE__);
-> \
-> > +               } \
-> > +} while (0)
-> > +#else                           /* ENABLE_VERIFY */
-> > +#define VERIFY(x) do { } while (0);
-> > +#endif                          /* ENABLE_VERIFY */
-> 
-> BUG_ON()?
-> 
-
-Will Fix this
+-	if (!pdata)
+-		dev_dbg(&client->dev, "Platform data not found\n");
++	if (!client->dev.of_node) {
++		pdata = client->dev.platform_data;
++		if (!pdata)
++			dev_dbg(&client->dev, "Platform data not found\n");
++	} else {
++		pdata = devm_kzalloc(&client->dev,
++				     sizeof(*pdata), GFP_KERNEL);
++		if (!pdata) {
++			dev_err(&client->dev, "Failed to allocate pdata\n");
++			return -ENOMEM;
++		}
++	}
  
-> Ooookay, that's enough, I need a break, I'll review more later.
-> 
-> --D
+ 	as3711 = devm_kzalloc(&client->dev, sizeof(struct as3711), GFP_KERNEL);
+ 	if (!as3711) {
+@@ -193,7 +211,8 @@ static struct i2c_driver as3711_i2c_driver = {
+ 	.driver = {
+ 		   .name = "as3711",
+ 		   .owner = THIS_MODULE,
+-		   },
++		   .of_match_table = of_match_ptr(as3711_of_match),
++	},
+ 	.probe = as3711_i2c_probe,
+ 	.remove = as3711_i2c_remove,
+ 	.id_table = as3711_i2c_id,
+diff --git a/drivers/regulator/as3711-regulator.c b/drivers/regulator/as3711-regulator.c
+index f0ba8c4..cf145fc 100644
+--- a/drivers/regulator/as3711-regulator.c
++++ b/drivers/regulator/as3711-regulator.c
+@@ -13,9 +13,11 @@
+ #include <linux/init.h>
+ #include <linux/mfd/as3711.h>
+ #include <linux/module.h>
++#include <linux/of.h>
+ #include <linux/platform_device.h>
+ #include <linux/regmap.h>
+ #include <linux/regulator/driver.h>
++#include <linux/regulator/of_regulator.h>
+ #include <linux/slab.h>
+ 
+ struct as3711_regulator_info {
+@@ -276,6 +278,57 @@ static struct as3711_regulator_info as3711_reg_info[] = {
+ 
+ #define AS3711_REGULATOR_NUM ARRAY_SIZE(as3711_reg_info)
+ 
++static const char *as3711_regulator_of_names[AS3711_REGULATOR_NUM] = {
++	[AS3711_REGULATOR_SD_1] = "sd1",
++	[AS3711_REGULATOR_SD_2] = "sd2",
++	[AS3711_REGULATOR_SD_3] = "sd3",
++	[AS3711_REGULATOR_SD_4] = "sd4",
++	[AS3711_REGULATOR_LDO_1] = "ldo1",
++	[AS3711_REGULATOR_LDO_2] = "ldo2",
++	[AS3711_REGULATOR_LDO_3] = "ldo3",
++	[AS3711_REGULATOR_LDO_4] = "ldo4",
++	[AS3711_REGULATOR_LDO_5] = "ldo5",
++	[AS3711_REGULATOR_LDO_6] = "ldo6",
++	[AS3711_REGULATOR_LDO_7] = "ldo7",
++	[AS3711_REGULATOR_LDO_8] = "ldo8",
++};
++
++static int as3711_regulator_parse_dt(struct device *dev)
++{
++	struct as3711_regulator_pdata *pdata = dev_get_platdata(dev);
++	struct device_node *regulators =
++		of_find_node_by_name(dev->parent->of_node, "regulators");
++	struct of_regulator_match *matches, *match;
++	const int count = AS3711_REGULATOR_NUM;
++	int ret, i;
++
++	if (!regulators) {
++		dev_err(dev, "regulator node not found\n");
++		return -ENODEV;
++	}
++
++	matches = devm_kzalloc(dev, sizeof(*matches) * count, GFP_KERNEL);
++	if (!matches)
++		return -ENOMEM;
++
++	for (i = 0, match = matches; i < count; i++, match++) {
++		match->name = as3711_regulator_of_names[i];
++		match->driver_data = as3711_reg_info + i;
++	}
++
++	ret = of_regulator_match(dev->parent, regulators, matches, count);
++	if (ret < 0) {
++		dev_err(dev, "Error parsing regulator init data: %d\n", ret);
++		return ret;
++	}
++
++	for (i = 0, match = matches; i < count; i++, match++)
++		if (match->of_node)
++			pdata->init_data[i] = match->init_data;
++
++	return 0;
++}
++
+ static int as3711_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct as3711_regulator_pdata *pdata = dev_get_platdata(&pdev->dev);
+@@ -289,8 +342,18 @@ static int as3711_regulator_probe(struct platform_device *pdev)
+ 	int ret;
+ 	int id;
+ 
+-	if (!pdata)
+-		dev_dbg(&pdev->dev, "No platform data...\n");
++	if (!pdata) {
++		dev_err(&pdev->dev, "No platform data...\n");
++		return -ENODEV;
++	}
++
++	if (pdev->dev.parent->of_node) {
++		ret = as3711_regulator_parse_dt(&pdev->dev);
++		if (ret < 0) {
++			dev_err(&pdev->dev, "DT parsing failed: %d\n", ret);
++			return ret;
++		}
++	}
+ 
+ 	regs = devm_kzalloc(&pdev->dev, AS3711_REGULATOR_NUM *
+ 			sizeof(struct as3711_regulator), GFP_KERNEL);
+@@ -300,7 +363,7 @@ static int as3711_regulator_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	for (id = 0, ri = as3711_reg_info; id < AS3711_REGULATOR_NUM; ++id, ri++) {
+-		reg_data = pdata ? pdata->init_data[id] : NULL;
++		reg_data = pdata->init_data[id];
+ 
+ 		/* No need to register if there is no regulator data */
+ 		if (!reg_data)
+diff --git a/drivers/video/backlight/as3711_bl.c b/drivers/video/backlight/as3711_bl.c
+index c6bc65d..c78e4cb 100644
+--- a/drivers/video/backlight/as3711_bl.c
++++ b/drivers/video/backlight/as3711_bl.c
+@@ -257,6 +257,109 @@ static int as3711_bl_register(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
++static int as3711_backlight_parse_dt(struct device *dev)
++{
++	struct as3711_bl_pdata *pdata = dev_get_platdata(dev);
++	struct device_node *bl =
++		of_find_node_by_name(dev->parent->of_node, "backlight"), *fb;
++	int ret;
++
++	if (!bl) {
++		dev_dbg(dev, "backlight node not found\n");
++		return -ENODEV;
++	}
++
++	fb = of_parse_phandle(bl, "su1-dev", 0);
++	if (fb) {
++		pdata->su1_fb = fb->full_name;
++
++		ret = of_property_read_u32(bl, "su1-max-uA", &pdata->su1_max_uA);
++		if (pdata->su1_max_uA <= 0)
++			ret = -EINVAL;
++		if (ret < 0)
++			return ret;
++	}
++
++	fb = of_parse_phandle(bl, "su2-dev", 0);
++	if (fb) {
++		int count = 0;
++
++		pdata->su2_fb = fb->full_name;
++
++		ret = of_property_read_u32(bl, "su2-max-uA", &pdata->su2_max_uA);
++		if (pdata->su2_max_uA <= 0)
++			ret = -EINVAL;
++		if (ret < 0)
++			return ret;
++
++		if (of_find_property(bl, "su2-feedback-voltage", NULL)) {
++			pdata->su2_feedback = AS3711_SU2_VOLTAGE;
++			count++;
++		}
++		if (of_find_property(bl, "su2-feedback-curr1", NULL)) {
++			pdata->su2_feedback = AS3711_SU2_CURR1;
++			count++;
++		}
++		if (of_find_property(bl, "su2-feedback-curr2", NULL)) {
++			pdata->su2_feedback = AS3711_SU2_CURR2;
++			count++;
++		}
++		if (of_find_property(bl, "su2-feedback-curr3", NULL)) {
++			pdata->su2_feedback = AS3711_SU2_CURR3;
++			count++;
++		}
++		if (of_find_property(bl, "su2-feedback-curr-auto", NULL)) {
++			pdata->su2_feedback = AS3711_SU2_CURR_AUTO;
++			count++;
++		}
++		if (count != 1)
++			return -EINVAL;
++
++		count = 0;
++		if (of_find_property(bl, "su2-fbprot-lx-sd4", NULL)) {
++			pdata->su2_fbprot = AS3711_SU2_LX_SD4;
++			count++;
++		}
++		if (of_find_property(bl, "su2-fbprot-gpio2", NULL)) {
++			pdata->su2_fbprot = AS3711_SU2_GPIO2;
++			count++;
++		}
++		if (of_find_property(bl, "su2-fbprot-gpio3", NULL)) {
++			pdata->su2_fbprot = AS3711_SU2_GPIO3;
++			count++;
++		}
++		if (of_find_property(bl, "su2-fbprot-gpio4", NULL)) {
++			pdata->su2_fbprot = AS3711_SU2_GPIO4;
++			count++;
++		}
++		if (count != 1)
++			return -EINVAL;
++
++		count = 0;
++		if (of_find_property(bl, "su2-auto-curr1", NULL)) {
++			pdata->su2_auto_curr1 = true;
++			count++;
++		}
++		if (of_find_property(bl, "su2-auto-curr2", NULL)) {
++			pdata->su2_auto_curr2 = true;
++			count++;
++		}
++		if (of_find_property(bl, "su2-auto-curr3", NULL)) {
++			pdata->su2_auto_curr3 = true;
++			count++;
++		}
++
++		/*
++		 * At least one su2-auto-curr* must be specified iff
++		 * AS3711_SU2_CURR_AUTO is used
++		 */
++		if (!count ^ (pdata->su2_feedback != AS3711_SU2_CURR_AUTO))
++			return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static int as3711_backlight_probe(struct platform_device *pdev)
+ {
+ 	struct as3711_bl_pdata *pdata = dev_get_platdata(&pdev->dev);
+@@ -266,11 +369,24 @@ static int as3711_backlight_probe(struct platform_device *pdev)
+ 	unsigned int max_brightness;
+ 	int ret;
+ 
+-	if (!pdata || (!pdata->su1_fb && !pdata->su2_fb)) {
++	if (!pdata) {
+ 		dev_err(&pdev->dev, "No platform data, exiting...\n");
+ 		return -ENODEV;
+ 	}
+ 
++	if (pdev->dev.parent->of_node) {
++		ret = as3711_backlight_parse_dt(&pdev->dev);
++		if (ret < 0) {
++			dev_err(&pdev->dev, "DT parsing failed: %d\n", ret);
++			return ret;
++		}
++	}
++
++	if (!pdata->su1_fb && !pdata->su2_fb) {
++		dev_err(&pdev->dev, "No framebuffer specified\n");
++		return -EINVAL;
++	}
++
+ 	/*
+ 	 * Due to possible hardware damage I chose to block all modes,
+ 	 * unsupported on my hardware. Anyone, wishing to use any of those modes
+-- 
+1.7.2.5
 
-Sure,  Thanks for the elaborate review.
-Sanoj
-
-PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
-
-
-
-This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
