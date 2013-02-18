@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab3BRIQm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 03:16:42 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:55810 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753215Ab3BRIQl (ORCPT
+	id S1756106Ab3BRIUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 03:20:08 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:39107 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755349Ab3BRIUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 03:16:41 -0500
-Date: Mon, 18 Feb 2013 13:43:45 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>,
+	Mon, 18 Feb 2013 03:20:05 -0500
+Date: Mon, 18 Feb 2013 09:20:01 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Clark Williams <clark@redhat.com>,
-        Andrew Theurer <habanero@us.ibm.com>
-Subject: Re: [RFC] sched: The removal of idle_balance()
-Message-ID: <20130218081345.GA4157@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1360908819.23152.97.camel@gandalf.local.home>
+        Andrew Morton <akpm@linux-foundation.org>, jolsa@redhat.com,
+        namhyung@kernel.org
+Subject: Re: [PATCH 1/5] perf, x86: Add Haswell PEBS record support v3
+Message-ID: <20130218082001.GA15591@gmail.com>
+References: <1360771693-32063-1-git-send-email-andi@firstfloor.org>
+ <1360771693-32063-2-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360908819.23152.97.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021808-3620-0000-0000-00000140F430
+In-Reply-To: <1360771693-32063-2-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The cache misses dropped by ~23% and migrations dropped by ~28%. I
-> really believe that the idle_balance() hurts performance, and not just
-> for something like hackbench, but the aggressive nature for migration
-> that idle_balance() causes takes a large hit on a process' cache.
-> 
-> Think about it some more, just because we go idle isn't enough reason to
-> pull a runable task over. CPUs go idle all the time, and tasks are woken
-> up all the time. There's no reason that we can't just wait for the sched
-> tick to decide its time to do a bit of balancing. Sure, it would be nice
-> if the idle CPU did the work. But I think that frame of mind was an
-> incorrect notion from back in the early 2000s and does not apply to
-> today's hardware, or perhaps it doesn't apply to the (relatively) new
-> CFS scheduler. If you want aggressive scheduling, make the task rt, and
-> it will do aggressive scheduling.
-> 
 
-How is it that the normal tick based load balancing gets it correctly while
-the idle_balance gets is wrong?  Can it because of the different
-cpu_idle_type?
+* Andi Kleen <andi@firstfloor.org> wrote:
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -41,6 +41,22 @@ struct pebs_record_nhm {
+>  	u64 status, dla, dse, lat;
+>  };
+>  
+> +/*
+> + * Same as pebs_record_nhm, with two additional fields.
+> + */
+> +struct pebs_record_hsw {
+> +	struct pebs_record_nhm nhm;
+> +	/* 
+> +	 * Real IP of the event. In the Intel documentation this
+> +	 * is called eventingrip.
+> +	 */
+> +	u64 ip_of_the_event;
 
+Sigh.
+
+In a prior review I objected to the original field's 
+'eventingrip' name:
+
+    http://permalink.gmane.org/gmane.linux.kernel/1434494
+
+... because it's a misnomer on so many levels. (What is an 
+'eventing'? What 'grip' does it have on anything? 
+Whyisthenamemergedtogether?)
+
+But, instead of just renaming it to something usable you renamed 
+it to an equally silly "ip_of_the_event" field name.
+
+Just do a 'git grep of_the_' in the kernel source to see how 
+silly the name you picked is.
+
+Why are you doing this passive-aggressive crap? Do you want to 
+drag out the review even more and delay the Haswell enabling 
+patches to v3.10 or beyond?
+
+Thanks,
+
+        Ingo
