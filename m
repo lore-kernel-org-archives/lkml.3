@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab3BRRSX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 12:18:23 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:47682 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756446Ab3BRRSV (ORCPT
+	id S1756432Ab3BRRU4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 12:20:56 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:54713 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756033Ab3BRRUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 12:18:21 -0500
-Date: Mon, 18 Feb 2013 09:18:17 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Cgroups <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCH v2] cgroup: fix cgroup_rmdir() vs close(eventfd) race
-Message-ID: <20130218171817.GF17414@htj.dyndns.org>
-References: <5121C647.7030608@huawei.com>
- <20130218171647.GD17414@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130218171647.GD17414@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 18 Feb 2013 12:20:55 -0500
+From: Tim Niemeyer <tim.niemeyer@corscience.de>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Mans Rullgard <mans@mansr.com>, Thomas Weber <thomas.weber@corscience.de>
+Subject: [PATCH] arm: update ARM_ERRATA_430973 Kconfig
+Date: Mon, 18 Feb 2013 18:15:04 +0100
+Message-Id: <1361207704-11609-1-git-send-email-tim.niemeyer@corscience.de>
+X-Mailer: git-send-email 1.7.2.5
+X-Provags-ID: V02:K0:S1EIjOMusmkDx3fLVJMdvx8ZJqonaeT00tSwy4S/FMI
+ soqmMyppbQ1C2IAwFGkWiqqVQaI18UezwJJQ7H8ZQ2ylmspYRo
+ cw/rgTqqdVRL1F+CsD6VAp7JVeixc79KAEHNHUSV3WUmO71Y2s
+ 4RoLTQ3nTi7kdSWjrvWjJPtXsEUBrVcerxrnyJd/YEIxVxFx4w
+ IHhMsjxloNLFTYFCHcsDmbI68UxkQo0O9i37Bqbq8TG69a2zJ7
+ e+I11RWVy2eVY5/Ich0d9X8x/UKcTqUkMt7q/JgCVs8ua2Ifzs
+ Iwh02c+ufLpm38XnIzlA3sZUi6wh04GTrSdTZJ2aUPFR1xI3ig
+ Ut+JlkXuLnniTHeI9w7x+rzKd3DAp5+WQE+Sfm5Jq0u2r8n6KT
+ qtfiim5i7R9XQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 18, 2013 at 09:16:47AM -0800, Tejun Heo wrote:
-> On Mon, Feb 18, 2013 at 02:12:23PM +0800, Li Zefan wrote:
-> > commit 205a872bd6f9a9a09ef035ef1e90185a8245cc58 ("cgroup: fix lockdep
-> > warning for event_control") solved a deadlock by introducing a new
-> > bug.
-> > 
-> > Move cgrp->event_list to a temporary list doesn't mean you can traverse
-> > this list locklessly, because at the same time cgroup_event_wake() can
-> > be called and remove the event from the list. The result of this race
-> > is disastrous.
-> > 
-> > We adopt the way how kvm irqfd code implements race-free event removal,
-> > which is now described in the comments in cgroup_event_wake().
-> > 
-> > Signed-off-by: Li Zefan <lizefan@huawei.com>
-> 
-> Applied to cgroup/for-3.9.
+We had strange problems with some illegal instructions and segmentation
+faults. It turns out that the OMAP3503D (Cortex A8 r1p3) suffers from
+erratum 430973.
 
-Never mind.  Just spotted v3 and applied that one instead.
+    Discussion about this problem:
+    https://bugs.launchpad.net/ubuntu/+source/fakeroot/+bug/495536
+    http://www.beagleboard.org/irclogs/index.php?date=2013-02-18
 
+Signed-off-by: Tim Niemeyer <tim.niemeyer@corscience.de>
+Signed-off-by: Thomas Weber <thomas.weber@corscience.de>
+---
+ arch/arm/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 67874b8..2ca277e 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1215,7 +1215,7 @@ config ARM_ERRATA_430973
+ 	depends on CPU_V7
+ 	help
+ 	  This option enables the workaround for the 430973 Cortex-A8
+-	  (r1p0..r1p2) erratum. If a code sequence containing an ARM/Thumb
++	  (r1p*) erratum. If a code sequence containing an ARM/Thumb
+ 	  interworking branch is replaced with another code sequence at the
+ 	  same virtual address, whether due to self-modifying code or virtual
+ 	  to physical address re-mapping, Cortex-A8 does not recover from the
 -- 
-tejun
+1.7.2.5
+
