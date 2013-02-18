@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817Ab3BRNBe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 08:01:34 -0500
-Received: from [216.32.180.30] ([216.32.180.30]:8312 "EHLO
+	id S1753196Ab3BRNB4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 08:01:56 -0500
+Received: from [216.32.180.31] ([216.32.180.31]:46970 "EHLO
 	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755158Ab3BRNBb (ORCPT
+	by vger.kernel.org with ESMTP id S1751149Ab3BRNBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 08:01:31 -0500
+	Mon, 18 Feb 2013 08:01:53 -0500
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1155h)
+X-SpamScore: 1
+X-BigFish: VS1(z551bizzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1155h)
 From: Varun Sethi <Varun.Sethi@freescale.com>
 To: <iommu@lists.linux-foundation.org>, <linuxppc-dev@lists.ozlabs.org>,
         <linux-kernel@vger.kernel.org>, <scottwood@freescale.com>,
         <joro@8bytes.org>, <stuart.yoder@freescale.com>
 CC: Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [PATCH 2/6] powerpc/fsl_pci: Store the platform device information corresponding to the pci controller.
-Date: Mon, 18 Feb 2013 18:22:15 +0530
-Message-ID: <1361191939-21260-3-git-send-email-Varun.Sethi@freescale.com>
+Subject: [PATCH 3/6] powerpc/fsl_pci: Added defines for the FSL PCI controller BRR1 register.
+Date: Mon, 18 Feb 2013 18:22:16 +0530
+Message-ID: <1361191939-21260-4-git-send-email-Varun.Sethi@freescale.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com>
 References: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com>
@@ -28,75 +28,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pci controller structure has a provision to store the device strcuture
-pointer of the corresponding platform device. Currently this information is
-not stored during fsl pci controller initialization. This information is
-required while dealing with iommu groups for pci devices connected to the fsl
-pci controller. For the case where the pci devices can't be paritioned, they
-would fall under the same device group as the pci controller.
-
-This patch stores the platform device information in the pci controller
-structure during initialization.
+Macros for checking FSL PCI controller version.
 
 Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
 ---
- arch/powerpc/sysdev/fsl_pci.c |    9 +++++++--
- arch/powerpc/sysdev/fsl_pci.h |    2 +-
- 2 files changed, 8 insertions(+), 3 deletions(-)
+ arch/powerpc/include/asm/pci-bridge.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
-index 92a5915..b393ae7 100644
---- a/arch/powerpc/sysdev/fsl_pci.c
-+++ b/arch/powerpc/sysdev/fsl_pci.c
-@@ -421,13 +421,16 @@ void fsl_pcibios_fixup_bus(struct pci_bus *bus)
- 	}
- }
+diff --git a/arch/powerpc/include/asm/pci-bridge.h b/arch/powerpc/include/asm/pci-bridge.h
+index 025a130..c12ed78 100644
+--- a/arch/powerpc/include/asm/pci-bridge.h
++++ b/arch/powerpc/include/asm/pci-bridge.h
+@@ -14,6 +14,10 @@
  
--int __init fsl_add_bridge(struct device_node *dev, int is_primary)
-+int __init fsl_add_bridge(struct platform_device *pdev, int is_primary)
- {
- 	int len;
- 	struct pci_controller *hose;
- 	struct resource rsrc;
- 	const int *bus_range;
- 	u8 hdr_type, progif;
-+	struct device_node *dev;
+ struct device_node;
+ 
++/* FSL PCI controller BRR1 register */
++#define PCI_FSL_BRR1      0xbf8
++#define PCI_FSL_BRR1_VER 0xffff
 +
-+	dev = pdev->dev.of_node;
- 
- 	if (!of_device_is_available(dev)) {
- 		pr_warning("%s: disabled\n", dev->full_name);
-@@ -453,6 +456,8 @@ int __init fsl_add_bridge(struct device_node *dev, int is_primary)
- 	if (!hose)
- 		return -ENOMEM;
- 
-+	/* set platform device as the parent */
-+	hose->parent = &pdev->dev;
- 	hose->first_busno = bus_range ? bus_range[0] : 0x0;
- 	hose->last_busno = bus_range ? bus_range[1] : 0xff;
- 
-@@ -880,7 +885,7 @@ static int fsl_pci_probe(struct platform_device *pdev)
- #endif
- 
- 	node = pdev->dev.of_node;
--	ret = fsl_add_bridge(node, fsl_pci_primary == node);
-+	ret = fsl_add_bridge(pdev, fsl_pci_primary == node);
- 
- #ifdef CONFIG_SWIOTLB
- 	if (ret == 0) {
-diff --git a/arch/powerpc/sysdev/fsl_pci.h b/arch/powerpc/sysdev/fsl_pci.h
-index d078537..c495c00 100644
---- a/arch/powerpc/sysdev/fsl_pci.h
-+++ b/arch/powerpc/sysdev/fsl_pci.h
-@@ -91,7 +91,7 @@ struct ccsr_pci {
- 	__be32	pex_err_cap_r3;		/* 0x.e34 - PCIE error capture register 0 */
- };
- 
--extern int fsl_add_bridge(struct device_node *dev, int is_primary);
-+extern int fsl_add_bridge(struct platform_device *pdev, int is_primary);
- extern void fsl_pcibios_fixup_bus(struct pci_bus *bus);
- extern int mpc83xx_add_bridge(struct device_node *dev);
- u64 fsl_pci_immrbar_base(struct pci_controller *hose);
+ /*
+  * Structure of a PCI controller (host bridge)
+  */
 -- 
 1.7.4.1
 
