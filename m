@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab3BRIY2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 03:24:28 -0500
-Received: from slimlogic.co.uk ([89.16.172.20]:60184 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752112Ab3BRIY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 03:24:27 -0500
-Message-ID: <5121E535.6040309@slimlogic.co.uk>
-Date: Mon, 18 Feb 2013 08:24:21 +0000
-From: Graeme Gregory <gg@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756470Ab3BRI0o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 03:26:44 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:57600 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152Ab3BRI0n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 03:26:43 -0500
+Date: Mon, 18 Feb 2013 09:26:39 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: sched: circular dependency between sched_domains_mutex and
+ oom_notify_list
+Message-ID: <20130218082639.GA15989@gmail.com>
+References: <51206DAB.7030701@oracle.com>
 MIME-Version: 1.0
-To: J Keerthy <j-keerthy@ti.com>
-CC: broonie@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] regulator: palmas: Removing duplicated code
-References: <1361164446-3216-1-git-send-email-j-keerthy@ti.com>
-In-Reply-To: <1361164446-3216-1-git-send-email-j-keerthy@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51206DAB.7030701@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 18/02/13 05:14, J Keerthy wrote:
-> Removing duplicate assignment in the existing code.
->
-> Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> ---
->  drivers/regulator/palmas-regulator.c |    5 -----
->  1 files changed, 0 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-> index c9e912f..22c6ae2 100644
-> --- a/drivers/regulator/palmas-regulator.c
-> +++ b/drivers/regulator/palmas-regulator.c
-> @@ -566,11 +566,6 @@ static void palmas_dt_to_pdata(struct device *dev,
->  			pdata->reg_init[idx]->mode_sleep = prop;
->  
->  		ret = of_property_read_u32(palmas_matches[idx].of_node,
-> -				"ti,warm_reset", &prop);
-> -		if (!ret)
-> -			pdata->reg_init[idx]->warm_reset = prop;
-> -
-> -		ret = of_property_read_u32(palmas_matches[idx].of_node,
->  				"ti,tstep", &prop);
->  		if (!ret)
->  			pdata->reg_init[idx]->tstep = prop;
-This hunk has already been upstreamed by Axel Lin.
+* Sasha Levin <sasha.levin@oracle.com> wrote:
 
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commit;h=f33d0081ff3ffb7180a9794e60318458d7671b36
+> I suspect it's the result of adding the new rcu_oom_notify, but that happened
+> about half a year ago so I'm not sure why this showed up only now.
+> 
+> [ 1039.634183] ======================================================
+> [ 1039.635717] [ INFO: possible circular locking dependency detected ]
+> [ 1039.637255] 3.8.0-rc7-next-20130215-sasha-00003-gea816fa #286 Tainted: G        W
+> [ 1039.639104] -------------------------------------------------------
+> [ 1039.640579] init/1 is trying to acquire lock:
+> [ 1039.641224]  ((oom_notify_list).rwsem){.+.+..}, at: [<ffffffff81141c8f>] __blocking_notifier_call_chain+0x7f/0xc0
 
-Graeme
+We changed (optimized) rwsems via:
 
+ 3a15e0e0cdda rwsem: Implement writer lock-stealing for better scalability
+
+so maybe it can hit different codepaths and races now?
+
+Thanks,
+
+	Ingo
