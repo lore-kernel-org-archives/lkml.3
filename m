@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab3BRLzz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 06:55:55 -0500
-Received: from plane.gmane.org ([80.91.229.3]:38505 "EHLO plane.gmane.org"
+	id S1753330Ab3BRL5I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 06:57:08 -0500
+Received: from chrocht.moloch.sk ([62.176.169.44]:38245 "EHLO mail.moloch.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852Ab3BRLzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 06:55:54 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: el es <el.es.cr@gmail.com>
-Subject: Re: Stupid user with user-space questions, matrix LED driving with user space code only.
-Date: Mon, 18 Feb 2013 11:55:38 +0000 (UTC)
-Message-ID: <loom.20130218T124824-843@post.gmane.org>
-References: <1361025476.4271.36.camel@jonspc>  <1361082134.16206.24.camel@anish-Inspiron-N5050>  <1361111844.14757.29.camel@jonspc>  <20130218020557.GA27667@kroah.com> <1361163968.29540.62.camel@jonspc>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751218Ab3BRL5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 06:57:07 -0500
+Message-ID: <51221710.5060102@250bpm.com>
+Date: Mon, 18 Feb 2013 12:57:04 +0100
+From: Martin Sustrik <sustrik@250bpm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Sha Zhengju <handai.szj@taobao.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: Re: [PATCH v2 1/1] eventfd: implementation of EFD_MASK flag
+References: <1360311077-14474-1-git-send-email-sustrik@250bpm.com> <20130214145430.04f8750c.akpm@linux-foundation.org>
+In-Reply-To: <20130214145430.04f8750c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 81.148.108.228 (Mozilla/5.0 (Windows NT 5.1; rv:18.0) Gecko/20100101 Firefox/18.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathan Andrews <jon <at> jonshouse.co.uk> writes:
+On 14/02/13 23:54, Andrew Morton wrote:
 
+> This patch adds userspace interfaces which will require manpage
+> updates.  Please Cc Michael and work with him on getting those changes
+> completed.
 
-> 
-> What about a yield alignment mechanism for user space. IE the process
-> calls the kernel with a request "schedule me first after a yeild" - then
-> the process at least has whatever the timer granularity is to do
-> something timing critical... add a flag to ignore or defer interrupts
-> and you have a semi 'hard-realtime' behaviour for user space, allowing
-> user space to grab small chunks of real time. Yes a nasty looking
-> facility for SMP intel servers but really useful for embedded.
-> 
+Right. It adds the efd_mask structure. As far as I understand how it 
+works is that the actual user-space definition of the structure should 
+be provided by glibc (sys/eventfd.h), right?
 
-Seems you have some (bad?) habits from embedded programming, 
-you think Linux is FreeRTOS ;)
+If so, should the man page be updated now? If so, it may result in the 
+situation where the man page describes a structure that's not available 
+in the user space yet.
 
-Linux as such, as far as I read, is not a real-time OS, it will 
-NOT do what you want in userspace, (maybe unless you build it with
-the RT patchset?)
+Is there a formal process to do this kind of kernel+glibc+docs changes?
 
-Better take the advice and go build a kernel driver for this display.
-
-Or use a small microcontroller that won't have the limitations. 
-
-> Thanks,
-> Jon
-> 
-> 
-Lukasz
-
-
-
+Martin
