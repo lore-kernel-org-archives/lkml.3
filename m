@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277Ab3BRDTo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 22:19:44 -0500
-Received: from mga14.intel.com ([143.182.124.37]:4625 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755351Ab3BRDTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 22:19:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,683,1355126400"; 
-   d="scan'208";a="258183699"
-Date: Mon, 18 Feb 2013 11:20:39 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Aaron Lu <aaron.lwe@gmail.com>, Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v9 4/4] sd: change to auto suspend mode
-Message-ID: <20130218032039.GA25348@aaronlu.sh.intel.com>
-References: <5111BBA1.4010200@intel.com>
- <Pine.LNX.4.44L0.1302061048180.1893-100000@iolanthe.rowland.org>
+	id S1757314Ab3BRDUc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 22:20:32 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12366 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab3BRDUa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 22:20:30 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 17 Feb 2013 19:16:09 -0800
+Message-ID: <51219DFA.6070902@nvidia.com>
+Date: Mon, 18 Feb 2013 12:20:26 +0900
+From: Alex Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1302061048180.1893-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
+CC: USB list <linux-usb@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: usb_wwan_write() called while device still being resumed
+References: <511CBCE8.9070204@nvidia.com> <87ehgivlmg.fsf@nemi.mork.no> <511DF09F.3070401@nvidia.com> <87r4khu9az.fsf@nemi.mork.no>
+In-Reply-To: <87r4khu9az.fsf@nemi.mork.no>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 10:51:19AM -0500, Alan Stern wrote:
-> On Wed, 6 Feb 2013, Aaron Lu wrote:
-> 
-> > > The "if (err == -EAGAIN)" test and the call to pm_schedule_suspend seem
-> > > to have been dropped since v8 of this series.  It looks like they ought
-> > > to be moved into sdev_runtime_suspend.
-> > 
-> > I thought they were no longer needed...
-> 
-> You did not mention this in the patch description.
+On 02/15/2013 08:05 PM, Bjørn Mork wrote:
+> Maybe something like the completely untested:
+>
+> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+> index 3148b10..38e19ba 100644
+> --- a/drivers/base/power/runtime.c
+> +++ b/drivers/base/power/runtime.c
+> @@ -512,6 +512,9 @@ static int rpm_resume(struct device *dev, int rpmflags)
+>   	else if (dev->power.disable_depth == 1 && dev->power.is_suspended
+>   	    && dev->power.runtime_status == RPM_ACTIVE)
+>   		retval = 1;
+> +	else if (rpmflags & RPM_ASYNC && dev->power.request_pending &&
+> +		 dev->power.request == RPM_REQ_RESUME)
+> +		retval = -EINPROGRESS;
+>   	else if (dev->power.disable_depth > 0)
+>   		retval = -EACCES;
+>   	if (retval)
 
-Sorry about that.
+Second thought: not sure this will work since power.request_pending and 
+power.request are set to these values later in the same rpm_resume() 
+function. However, the three lines before yours caught my attention. 
+They are not in my 3.1 source tree and the conditions are very close 
+from the ones I am seeing when the issue happens: disable_depth == 1, 
+is_suspended == 1. Only runtime_status is not equal to RPM_ACTIVE.
 
-> 
-> > For sd, we have request based rutime PM and the PM core will always try
-> > to autosuspend the device with the timer; and for sr, the poll will
-> > trigger suspend constantly.
-> 
-> What if the poll has been disabled?
-> 
-> > And for both, we don't return -EAGAIN anyway.
-> > So I suppose that code is not necessary?
-> 
-> You could replace it with WARN_ON(err == -EAGAIN).  That way if some 
-> SCSI driver does return -EAGAIN in the future, people will know 
-> something is wrong.
+Nonetheless, I have looked at the patch that introduced these 
+(http://pastebin.com/PmHUjiAE ) and it details a problem that is very 
+similar to mine. It also mentions a workaround to be implemented in the 
+driver by saving the suspend status into a variable that is checked when 
+pm_runtime_get() return -EACCES. This variable already exists in 
+usb_wwan, actually it is the very variable that is checked a bit later 
+in that other chunk of code you mentioned:
 
-Placing a WARN_ON there seems to suggest drivers should not return
--EAGAIN, so I think I'll just add back those dropped code to
-sdev_runtime_suspend as you have suggested like this:
+spin_lock_irqsave(&intfdata->susp_lock, flags);
+if (intfdata->suspended) {
+	usb_anchor_urb(this_urb, &portdata->delayed);
+	spin_unlock_irqrestore(&intfdata->susp_lock, flags);
+} else {
 
-static int sdev_runtime_suspend(struct device *dev)
-{
-	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-	int (*cb)(struct device *) = pm ? pm->runtime_suspend : NULL;
-	struct scsi_device *sdev = to_scsi_device(dev);
-	int ret;
+So it looks like this code is here for exactly that purpose. However in 
+my current condition I do not see how this block could be run since 
+runtime PM is disabled when intfdata->suspended is set to true.
 
-	if (sdev->request_queue->dev)
-		return sdev_blk_runtime_suspend(sdev, cb);
+I will try implementing the workaround suggested (checking if 
+intfdata->suspended is set when -EACCES is returned and go on if it is 
+the case) and see if it works (and I bet it will). In the upstream 
+kernel the issue seems to have been addressed already, so this might 
+just be a source-out-of-date issue.
 
-	ret = scsi_dev_type_suspend(dev, cb);
-	if (ret == -EAGAIN)
-		pm_schedule_suspend(dev, jiffies_to_msecs(
-					round_jiffies_up_relative(HZ/10)));
-	return ret;
-}
-
-Does this look OK?
-
-> 
-> > BTW, I'll be on vocation till 02/17, and I don't have access to the
-> > internet in my hometown, but please feel free to drop any comments and
-> > I'll check them when I get back.
-> 
-> I'm going on vacation next week too.  Enjoy your trip.
-
-Thanks, the trip was great.
-
--Aaron
+Thanks,
+Alex.
 
