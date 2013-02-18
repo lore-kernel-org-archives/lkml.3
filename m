@@ -1,183 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab3BRMkT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 07:40:19 -0500
-Received: from relay.medianet-world.de ([213.157.0.172]:39447 "HELO
-	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750988Ab3BRMkS (ORCPT
+	id S1752872Ab3BRMki (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 07:40:38 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:57520 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288Ab3BRMkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 07:40:18 -0500
-Thread-Index: Ac4N1RpQy6Wn0xR/Sauvbr8z2ayptg==
-Thread-Topic: [patch] Re: RCU?: Scheduling while atomic with 3.4.23-rt33
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-From: "Tim Sander" <tim.sander@hbm.com>
-To: "Thomas Gleixner" <tglx@linutronix.de>
-Cc: "linux-rt-users" <linux-rt-users@vger.kernel.org>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "Steven Rostedt" <rostedt@goodmis.org>
-Subject: [patch] Re: RCU?: Scheduling while atomic with 3.4.23-rt33
-Date: Mon, 18 Feb 2013 13:40:15 +0100
-Message-ID: <1531475.RE4mPsegvf@dabox>
-Organization: Hottinger Baldwin Messtechnik
-User-Agent: KMail/4.10 (Linux/3.6.0; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <alpine.LFD.2.02.1302181214250.22263@ionos>
-References: <4738617.pBMCEJ5E3K@dabox> <alpine.LFD.2.02.1302181214250.22263@ionos>
+	Mon, 18 Feb 2013 07:40:35 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v6 00/46] CPU hotplug: stop_machine()-free CPU hotplug
+To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org
+Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, rjw@sisk.pl, sbw@mit.edu,
+        fweisbec@gmail.com, linux@arm.linux.org.uk, nikunj@linux.vnet.ibm.com,
+        srivatsa.bhat@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        walken@google.com, vincent.guittot@linaro.org
+Date: Mon, 18 Feb 2013 18:08:27 +0530
+Message-ID: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="nextPart3458342.eXhJ7SgOxQ"
-Content-Transfer-Encoding: 7Bit
-X-OriginalArrivalTime: 18 Feb 2013 12:40:15.0973 (UTC) FILETIME=[1A3D1950:01CE0DD5]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021812-2000-0000-0000-00000AFDD950
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Hi,
 
---nextPart3458342.eXhJ7SgOxQ
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset="us-ascii"
+This patchset removes CPU hotplug's dependence on stop_machine() from the CPU
+offline path and provides an alternative (set of APIs) to preempt_disable() to
+prevent CPUs from going offline, which can be invoked from atomic context.
+The motivation behind the removal of stop_machine() is to avoid its ill-effects
+and thus improve the design of CPU hotplug. (More description regarding this
+is available in the patches).
 
-Am Montag, 18. Februar 2013, 12:16:41 schrieb Thomas Gleixner:
-> On Mon, 18 Feb 2013, Tim Sander wrote:
-> > Here is a transtribed backtrace for easier reading:
-> > c0010fac t dump_backtrace
-> > c022c188 T dump_stack
-> > c022c71c t __schedule_bug
-> > c022fb28 t __schedule
-> > c0230644 t rt_spin_lock_slowlock
-> > c0230ba8 T rt_spin_lock
-> > c003a9b8 T __wake_up
-> > c0052a44 t invoke_rcu_callbacks
-> > c0053764 T rcu_check_callbacks
-> > c0026060 T update_process_times
->=20
-> That's due to CONFIG_TINY_PREEMPT_RCU=3Dy. That's a known issue, which
-> has been fixed in 3.6-rt.
->=20
-> Steven, could you backport that to 3.2/3.4 please ?
-As far as i see its been the waitequeue stuff. The patch below is the =
-patch=20
-from 3.6. backported to 3.4.
+All the users of preempt_disable()/local_irq_disable() who used to use it to
+prevent CPU offline, have been converted to the new primitives introduced in the
+patchset. Also, the CPU_DYING notifiers have been audited to check whether
+they can cope up with the removal of stop_machine() or whether they need to
+use new locks for synchronization (all CPU_DYING notifiers looked OK, without
+the need for any new locks).
+
+Applies on current mainline (v3.8-rc7+).
+
+This patchset is available in the following git branch:
+
+git://github.com/srivatsabhat/linux.git  stop-machine-free-cpu-hotplug-v6
 
 
-Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, =
-Germany | www.hbm.com=20
+Overview of the patches:
+-----------------------
 
-Registered as GmbH (German limited liability corporation) in the =
-commercial register at the local court of Darmstadt, HRB 1147 =20
-Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of =
-the board: James Charles Webster
+Patches 1 to 7 introduce a generic, flexible Per-CPU Reader-Writer Locking
+scheme.
 
-Als Gesellschaft mit beschraenkter Haftung eingetragen im =
-Handelsregister des Amtsgerichts Darmstadt unter HRB 1147=20
-Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas =
-Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+Patch 8 uses this synchronization mechanism to build the
+get/put_online_cpus_atomic() APIs which can be used from atomic context, to
+prevent CPUs from going offline.
 
-The information in this email is confidential. It is intended solely for =
-the addressee. If you are not the intended recipient, please let me know =
-and delete this email.
+Patch 9 is a cleanup; it converts preprocessor macros to static inline
+functions.
 
-Die in dieser E-Mail enthaltene Information ist vertraulich und =
-lediglich fur den Empfaenger bestimmt. Sollten Sie nicht der eigentliche =
-Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese =
-E-Mail.
+Patches 10 to 43 convert various call-sites to use the new APIs.
 
---nextPart3458342.eXhJ7SgOxQ
-Content-Disposition: attachment;
-	filename="0022-rcutiny-Use-simple-waitqueue.patch"
-Content-Transfer-Encoding: 7bit
-Content-Type: text/x-patch;
-	charset="UTF-8";
-	name="0022-rcutiny-Use-simple-waitqueue.patch"
+Patch 44 is the one which actually removes stop_machine() from the CPU
+offline path.
 
->From 2f0eb85792045f06bc0db3fe1fff17c9298240d3 Mon Sep 17 00:00:00 2001
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 3 Dec 2012 16:25:21 +0100
-Subject: [PATCH] rcutiny: Use simple waitqueue
+Patch 45 decouples stop_machine() and CPU hotplug from Kconfig.
 
-Simple waitqueues can be handled from interrupt disabled contexts.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/rcutiny_plugin.h |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-index 97e359b..2824dbd 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/kernel/rcutiny_plugin.h
-@@ -26,6 +26,7 @@
- #include <linux/module.h>
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
-+#include <linux/wait-simple.h>
- 
- /* Global control variables for rcupdate callback mechanism. */
- struct rcu_ctrlblk {
-@@ -261,7 +262,7 @@ static void show_tiny_preempt_stats(struct seq_file *m)
- 
- /* Controls for rcu_kthread() kthread. */
- static struct task_struct *rcu_kthread_task;
--static DECLARE_WAIT_QUEUE_HEAD(rcu_kthread_wq);
-+static DEFINE_SWAIT_HEAD(rcu_kthread_wq);
- static unsigned long have_rcu_kthread_work;
- 
- /*
-@@ -754,7 +755,7 @@ void synchronize_rcu(void)
- }
- EXPORT_SYMBOL_GPL(synchronize_rcu);
- 
--static DECLARE_WAIT_QUEUE_HEAD(sync_rcu_preempt_exp_wq);
-+static DEFINE_SWAIT_HEAD(sync_rcu_preempt_exp_wq);
- static unsigned long sync_rcu_preempt_exp_count;
- static DEFINE_MUTEX(sync_rcu_preempt_exp_mutex);
- 
-@@ -776,7 +777,7 @@ static int rcu_preempted_readers_exp(void)
-  */
- static void rcu_report_exp_done(void)
- {
--	wake_up(&sync_rcu_preempt_exp_wq);
-+	swait_wake(&sync_rcu_preempt_exp_wq);
- }
- 
- /*
-@@ -828,8 +829,8 @@ void synchronize_rcu_expedited(void)
- 	else {
- 		rcu_initiate_boost();
- 		local_irq_restore(flags);
--		wait_event(sync_rcu_preempt_exp_wq,
--			   !rcu_preempted_readers_exp());
-+		swait_event(sync_rcu_preempt_exp_wq,
-+			    !rcu_preempted_readers_exp());
- 	}
- 
- 	/* Clean up and exit. */
-@@ -917,7 +918,7 @@ static void invoke_rcu_callbacks(void)
- {
- 	have_rcu_kthread_work = 1;
- 	if (rcu_kthread_task != NULL)
--		wake_up(&rcu_kthread_wq);
-+		swait_wake(&rcu_kthread_wq);
- }
- 
- #ifdef CONFIG_RCU_TRACE
-@@ -947,8 +948,8 @@ static int rcu_kthread(void *arg)
- 	unsigned long flags;
- 
- 	for (;;) {
--		wait_event_interruptible(rcu_kthread_wq,
--					 have_rcu_kthread_work != 0);
-+		swait_event_interruptible(rcu_kthread_wq,
-+					  have_rcu_kthread_work != 0);
- 		morework = rcu_boost();
- 		local_irq_save(flags);
- 		work = have_rcu_kthread_work;
--- 
-1.7.9.5
+Patch 46 updates the documentation to reflect the new APIs.
 
 
---nextPart3458342.eXhJ7SgOxQ--
+Changes in v6:
+--------------
+
+* Fixed issues related to memory barriers, as pointed out by Paul and Oleg.
+* Fixed the locking issue related to clockevents_lock, which was being
+  triggered when cpu idle was enabled.
+* Some code restructuring to improve readability and to enhance some fastpath
+  optimizations.
+* Randconfig build-fixes, reported by Fengguang Wu.
+
+
+Changes in v5:
+--------------
+  Exposed a new generic locking scheme: Flexible Per-CPU Reader-Writer locks,
+  based on the synchronization schemes already discussed in the previous
+  versions, and used it in CPU hotplug, to implement the new APIs.
+
+  Audited the CPU_DYING notifiers in the kernel source tree and replaced
+  usages of preempt_disable() with the new get/put_online_cpus_atomic() APIs
+  where necessary.
+
+
+Changes in v4:
+--------------
+  The synchronization scheme has been simplified quite a bit, which makes it
+  look a lot less complex than before. Some highlights:
+
+* Implicit ACKs:
+
+  The earlier design required the readers to explicitly ACK the writer's
+  signal. The new design uses implicit ACKs instead. The reader switching
+  over to rwlock implicitly tells the writer to stop waiting for that reader.
+
+* No atomic operations:
+
+  Since we got rid of explicit ACKs, we no longer have the need for a reader
+  and a writer to update the same counter. So we can get rid of atomic ops
+  too.
+
+Changes in v3:
+--------------
+* Dropped the _light() and _full() variants of the APIs. Provided a single
+  interface: get/put_online_cpus_atomic().
+
+* Completely redesigned the synchronization mechanism again, to make it
+  fast and scalable at the reader-side in the fast-path (when no hotplug
+  writers are active). This new scheme also ensures that there is no
+  possibility of deadlocks due to circular locking dependency.
+  In summary, this provides the scalability and speed of per-cpu rwlocks
+  (without actually using them), while avoiding the downside (deadlock
+  possibilities) which is inherent in any per-cpu locking scheme that is
+  meant to compete with preempt_disable()/enable() in terms of flexibility.
+
+  The problem with using per-cpu locking to replace preempt_disable()/enable
+  was explained here:
+  https://lkml.org/lkml/2012/12/6/290
+
+  Basically we use per-cpu counters (for scalability) when no writers are
+  active, and then switch to global rwlocks (for lock-safety) when a writer
+  becomes active. It is a slightly complex scheme, but it is based on
+  standard principles of distributed algorithms.
+
+Changes in v2:
+-------------
+* Completely redesigned the synchronization scheme to avoid using any extra
+  cpumasks.
+
+* Provided APIs for 2 types of atomic hotplug readers: "light" (for
+  light-weight) and "full". We wish to have more "light" readers than
+  the "full" ones, to avoid indirectly inducing the "stop_machine effect"
+  without even actually using stop_machine().
+
+  And the patches show that it _is_ generally true: 5 patches deal with
+  "light" readers, whereas only 1 patch deals with a "full" reader.
+
+  Also, the "light" readers happen to be in very hot paths. So it makes a
+  lot of sense to have such a distinction and a corresponding light-weight
+  API.
+
+Links to previous versions:
+v5: http://lwn.net/Articles/533553/
+v4: https://lkml.org/lkml/2012/12/11/209
+v3: https://lkml.org/lkml/2012/12/7/287
+v2: https://lkml.org/lkml/2012/12/5/322
+v1: https://lkml.org/lkml/2012/12/4/88
+
+--
+ Paul E. McKenney (1):
+      cpu: No more __stop_machine() in _cpu_down()
+
+Srivatsa S. Bhat (45):
+      percpu_rwlock: Introduce the global reader-writer lock backend
+      percpu_rwlock: Introduce per-CPU variables for the reader and the writer
+      percpu_rwlock: Provide a way to define and init percpu-rwlocks at compile time
+      percpu_rwlock: Implement the core design of Per-CPU Reader-Writer Locks
+      percpu_rwlock: Make percpu-rwlocks IRQ-safe, optimally
+      percpu_rwlock: Rearrange the read-lock code to fastpath nested percpu readers
+      percpu_rwlock: Allow writers to be readers, and add lockdep annotations
+      CPU hotplug: Provide APIs to prevent CPU offline from atomic context
+      CPU hotplug: Convert preprocessor macros to static inline functions
+      smp, cpu hotplug: Fix smp_call_function_*() to prevent CPU offline properly
+      smp, cpu hotplug: Fix on_each_cpu_*() to prevent CPU offline properly
+      sched/timer: Use get/put_online_cpus_atomic() to prevent CPU offline
+      sched/migration: Use raw_spin_lock/unlock since interrupts are already disabled
+      sched/rt: Use get/put_online_cpus_atomic() to prevent CPU offline
+      tick: Use get/put_online_cpus_atomic() to prevent CPU offline
+      time/clocksource: Use get/put_online_cpus_atomic() to prevent CPU offline
+      clockevents: Use get/put_online_cpus_atomic() in clockevents_notify()
+      softirq: Use get/put_online_cpus_atomic() to prevent CPU offline
+      irq: Use get/put_online_cpus_atomic() to prevent CPU offline
+      net: Use get/put_online_cpus_atomic() to prevent CPU offline
+      block: Use get/put_online_cpus_atomic() to prevent CPU offline
+      crypto: pcrypt - Protect access to cpu_online_mask with get/put_online_cpus()
+      infiniband: ehca: Use get/put_online_cpus_atomic() to prevent CPU offline
+      [SCSI] fcoe: Use get/put_online_cpus_atomic() to prevent CPU offline
+      staging: octeon: Use get/put_online_cpus_atomic() to prevent CPU offline
+      x86: Use get/put_online_cpus_atomic() to prevent CPU offline
+      perf/x86: Use get/put_online_cpus_atomic() to prevent CPU offline
+      KVM: Use get/put_online_cpus_atomic() to prevent CPU offline from atomic context
+      kvm/vmx: Use get/put_online_cpus_atomic() to prevent CPU offline
+      x86/xen: Use get/put_online_cpus_atomic() to prevent CPU offline
+      alpha/smp: Use get/put_online_cpus_atomic() to prevent CPU offline
+      blackfin/smp: Use get/put_online_cpus_atomic() to prevent CPU offline
+      cris/smp: Use get/put_online_cpus_atomic() to prevent CPU offline
+      hexagon/smp: Use get/put_online_cpus_atomic() to prevent CPU offline
+      ia64: Use get/put_online_cpus_atomic() to prevent CPU offline
+      m32r: Use get/put_online_cpus_atomic() to prevent CPU offline
+      MIPS: Use get/put_online_cpus_atomic() to prevent CPU offline
+      mn10300: Use get/put_online_cpus_atomic() to prevent CPU offline
+      parisc: Use get/put_online_cpus_atomic() to prevent CPU offline
+      powerpc: Use get/put_online_cpus_atomic() to prevent CPU offline
+      sh: Use get/put_online_cpus_atomic() to prevent CPU offline
+      sparc: Use get/put_online_cpus_atomic() to prevent CPU offline
+      tile: Use get/put_online_cpus_atomic() to prevent CPU offline
+      CPU hotplug, stop_machine: Decouple CPU hotplug from stop_machine() in Kconfig
+      Documentation/cpu-hotplug: Remove references to stop_machine()
+
+  Documentation/cpu-hotplug.txt                 |   17 +-
+ arch/alpha/kernel/smp.c                       |   19 +-
+ arch/arm/Kconfig                              |    1 
+ arch/blackfin/Kconfig                         |    1 
+ arch/blackfin/mach-common/smp.c               |    6 -
+ arch/cris/arch-v32/kernel/smp.c               |    8 +
+ arch/hexagon/kernel/smp.c                     |    5 
+ arch/ia64/Kconfig                             |    1 
+ arch/ia64/kernel/irq_ia64.c                   |   13 +
+ arch/ia64/kernel/perfmon.c                    |    6 +
+ arch/ia64/kernel/smp.c                        |   23 ++
+ arch/ia64/mm/tlb.c                            |    6 -
+ arch/m32r/kernel/smp.c                        |   12 +
+ arch/mips/Kconfig                             |    1 
+ arch/mips/kernel/cevt-smtc.c                  |    8 +
+ arch/mips/kernel/smp.c                        |   16 +-
+ arch/mips/kernel/smtc.c                       |    3 
+ arch/mips/mm/c-octeon.c                       |    4 
+ arch/mn10300/Kconfig                          |    1 
+ arch/mn10300/kernel/smp.c                     |    2 
+ arch/mn10300/mm/cache-smp.c                   |    5 
+ arch/mn10300/mm/tlb-smp.c                     |   15 +
+ arch/parisc/Kconfig                           |    1 
+ arch/parisc/kernel/smp.c                      |    4 
+ arch/powerpc/Kconfig                          |    1 
+ arch/powerpc/mm/mmu_context_nohash.c          |    2 
+ arch/s390/Kconfig                             |    1 
+ arch/sh/Kconfig                               |    1 
+ arch/sh/kernel/smp.c                          |   12 +
+ arch/sparc/Kconfig                            |    1 
+ arch/sparc/kernel/leon_smp.c                  |    2 
+ arch/sparc/kernel/smp_64.c                    |    9 -
+ arch/sparc/kernel/sun4d_smp.c                 |    2 
+ arch/sparc/kernel/sun4m_smp.c                 |    3 
+ arch/tile/kernel/smp.c                        |    4 
+ arch/x86/Kconfig                              |    1 
+ arch/x86/include/asm/ipi.h                    |    5 
+ arch/x86/kernel/apic/apic_flat_64.c           |   10 +
+ arch/x86/kernel/apic/apic_numachip.c          |    5 
+ arch/x86/kernel/apic/es7000_32.c              |    5 
+ arch/x86/kernel/apic/io_apic.c                |    7 -
+ arch/x86/kernel/apic/ipi.c                    |   10 +
+ arch/x86/kernel/apic/x2apic_cluster.c         |    4 
+ arch/x86/kernel/apic/x2apic_uv_x.c            |    4 
+ arch/x86/kernel/cpu/mcheck/therm_throt.c      |    4 
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    5 
+ arch/x86/kvm/vmx.c                            |    8 +
+ arch/x86/mm/tlb.c                             |   14 +
+ arch/x86/xen/mmu.c                            |   11 +
+ arch/x86/xen/smp.c                            |    9 +
+ block/blk-softirq.c                           |    4 
+ crypto/pcrypt.c                               |    4 
+ drivers/infiniband/hw/ehca/ehca_irq.c         |    8 +
+ drivers/scsi/fcoe/fcoe.c                      |    7 +
+ drivers/staging/octeon/ethernet-rx.c          |    3 
+ include/linux/cpu.h                           |    8 +
+ include/linux/percpu-rwlock.h                 |   74 +++++++
+ include/linux/stop_machine.h                  |    2 
+ init/Kconfig                                  |    2 
+ kernel/cpu.c                                  |   59 +++++-
+ kernel/irq/manage.c                           |    7 +
+ kernel/sched/core.c                           |   36 +++-
+ kernel/sched/fair.c                           |    5 
+ kernel/sched/rt.c                             |    3 
+ kernel/smp.c                                  |   65 ++++--
+ kernel/softirq.c                              |    3 
+ kernel/time/clockevents.c                     |    3 
+ kernel/time/clocksource.c                     |    5 
+ kernel/time/tick-broadcast.c                  |    2 
+ kernel/timer.c                                |    2 
+ lib/Kconfig                                   |    3 
+ lib/Makefile                                  |    1 
+ lib/percpu-rwlock.c                           |  256 +++++++++++++++++++++++++
+ net/core/dev.c                                |    9 +
+ virt/kvm/kvm_main.c                           |   10 +
+ 75 files changed, 776 insertions(+), 123 deletions(-)
+ create mode 100644 include/linux/percpu-rwlock.h
+ create mode 100644 lib/percpu-rwlock.c
+
+
+
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
+
