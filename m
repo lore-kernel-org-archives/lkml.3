@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab3BRMlX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 07:41:23 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:35916 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab3BRMlR (ORCPT
+	id S1754602Ab3BRMld (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 07:41:33 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:38272 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754450Ab3BRMl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 07:41:17 -0500
+	Mon, 18 Feb 2013 07:41:27 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v6 06/46] percpu_rwlock: Rearrange the read-lock code to
- fastpath nested percpu readers
+Subject: [PATCH v6 07/46] percpu_rwlock: Allow writers to be readers,
+ and add lockdep annotations
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -21,8 +21,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         walken@google.com, vincent.guittot@linaro.org
-Date: Mon, 18 Feb 2013 18:09:07 +0530
-Message-ID: <20130218123907.26245.37550.stgit@srivatsabhat.in.ibm.com>
+Date: Mon, 18 Feb 2013 18:09:14 +0530
+Message-ID: <20130218123913.26245.7713.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,54 +30,112 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021812-4790-0000-0000-000006F5F0CC
+x-cbid: 13021812-5564-0000-0000-000006A63243
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we are dealing with a nester percpu reader, we can optimize away quite
-a few costly operations. Improve that fastpath further, by avoiding the
-unnecessary addition and subtraction of 'READER_PRESENT' to reader_refcnt,
-by rearranging the code a bit.
+CPU hotplug (which will be the first user of per-CPU rwlocks) has a special
+requirement with respect to locking: the writer, after acquiring the per-CPU
+rwlock for write, must be allowed to take the same lock for read, without
+deadlocking and without getting complaints from lockdep. In comparison, this
+is similar to what get_online_cpus()/put_online_cpus() does today: it allows
+a hotplug writer (who holds the cpu_hotplug.lock mutex) to invoke it without
+locking issues, because it silently returns if the caller is the hotplug
+writer itself.
 
+This can be easily achieved with per-CPU rwlocks as well (even without a
+"is this a writer?" check) by incrementing the per-CPU refcount of the writer
+immediately after taking the global rwlock for write, and then decrementing
+the per-CPU refcount before releasing the global rwlock.
+This ensures that any reader that comes along on that CPU while the writer is
+active (on that same CPU), notices the non-zero value of the nested counter
+and assumes that it is a nested read-side critical section and proceeds by
+just incrementing the refcount. Thus we prevent the reader from taking the
+global rwlock for read, which prevents the writer from deadlocking itself.
+
+Add that support and teach lockdep about this special locking scheme so
+that it knows that this sort of usage is valid. Also add the required lockdep
+annotations to enable it to detect common locking problems with per-CPU
+rwlocks.
+
+Cc: David Howells <dhowells@redhat.com>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- lib/percpu-rwlock.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ lib/percpu-rwlock.c |   33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
 diff --git a/lib/percpu-rwlock.c b/lib/percpu-rwlock.c
-index ce7e440..ed36531 100644
+index ed36531..bf95e40 100644
 --- a/lib/percpu-rwlock.c
 +++ b/lib/percpu-rwlock.c
-@@ -80,23 +80,21 @@ void percpu_read_lock_irqsafe(struct percpu_rwlock *pcpu_rwlock)
- 	preempt_disable();
+@@ -102,6 +102,10 @@ void percpu_read_lock_irqsafe(struct percpu_rwlock *pcpu_rwlock)
  
- 	/*
--	 * Let the writer know that a reader is active, even before we choose
--	 * our reader-side synchronization scheme.
--	 */
--	this_cpu_add(pcpu_rwlock->rw_state->reader_refcnt, READER_PRESENT);
--
--	/*
- 	 * If we are already using per-cpu refcounts, it is not safe to switch
- 	 * the synchronization scheme. So continue using the refcounts.
- 	 */
- 	if (reader_uses_percpu_refcnt(pcpu_rwlock)) {
+ 	if (likely(!writer_active(pcpu_rwlock))) {
  		this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
--		this_cpu_sub(pcpu_rwlock->rw_state->reader_refcnt,
--			     READER_PRESENT);
- 		return;
++
++		/* Pretend that we take global_rwlock for lockdep */
++		rwlock_acquire_read(&pcpu_rwlock->global_rwlock.dep_map,
++				    0, 0, _RET_IP_);
+ 	} else {
+ 		/* Writer is active, so switch to global rwlock. */
+ 
+@@ -126,6 +130,12 @@ void percpu_read_lock_irqsafe(struct percpu_rwlock *pcpu_rwlock)
+ 		if (!writer_active(pcpu_rwlock)) {
+ 			this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
+ 			read_unlock(&pcpu_rwlock->global_rwlock);
++
++			/*
++			 * Pretend that we take global_rwlock for lockdep
++			 */
++			rwlock_acquire_read(&pcpu_rwlock->global_rwlock.dep_map,
++					    0, 0, _RET_IP_);
+ 		}
  	}
  
- 	/*
-+	 * Let the writer know that a reader is active, even before we choose
-+	 * our reader-side synchronization scheme.
-+	 */
-+	this_cpu_add(pcpu_rwlock->rw_state->reader_refcnt, READER_PRESENT);
+@@ -162,6 +172,13 @@ void percpu_read_unlock_irqsafe(struct percpu_rwlock *pcpu_rwlock)
+ 		 */
+ 		smp_mb();
+ 		this_cpu_dec(pcpu_rwlock->rw_state->reader_refcnt);
++
++		/*
++		 * Since this is the last decrement, it is time to pretend
++		 * to lockdep that we are releasing the read lock.
++		 */
++		rwlock_release(&pcpu_rwlock->global_rwlock.dep_map,
++			       1, _RET_IP_);
+ 	} else {
+ 		read_unlock(&pcpu_rwlock->global_rwlock);
+ 	}
+@@ -200,6 +217,16 @@ void percpu_write_lock_irqsave(struct percpu_rwlock *pcpu_rwlock,
+ 
+ 	smp_mb(); /* Complete the wait-for-readers, before taking the lock */
+ 	write_lock_irqsave(&pcpu_rwlock->global_rwlock, *flags);
 +
 +	/*
- 	 * The write to 'reader_refcnt' must be visible before we read
- 	 * 'writer_signal'.
- 	 */
++	 * It is desirable to allow the writer to acquire the percpu-rwlock
++	 * for read (if necessary), without deadlocking or getting complaints
++	 * from lockdep. To achieve that, just increment the reader_refcnt of
++	 * this CPU - that way, any attempt by the writer to acquire the
++	 * percpu-rwlock for read, will get treated as a case of nested percpu
++	 * reader, which is safe, from a locking perspective.
++	 */
++	this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
+ }
+ 
+ void percpu_write_unlock_irqrestore(struct percpu_rwlock *pcpu_rwlock,
+@@ -207,6 +234,12 @@ void percpu_write_unlock_irqrestore(struct percpu_rwlock *pcpu_rwlock,
+ {
+ 	unsigned int cpu;
+ 
++	/*
++	 * Undo the special increment that we had done in the write-lock path
++	 * in order to allow writers to be readers.
++	 */
++	this_cpu_dec(pcpu_rwlock->rw_state->reader_refcnt);
++
+ 	/* Complete the critical section before clearing ->writer_signal */
+ 	smp_mb();
+ 
 
