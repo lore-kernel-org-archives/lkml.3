@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756536Ab3BRMoh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 07:44:37 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:36478 "EHLO
+	id S932125Ab3BRMox (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 07:44:53 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:36581 "EHLO
 	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461Ab3BRMob (ORCPT
+	with ESMTP id S1756551Ab3BRMol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 07:44:31 -0500
+	Mon, 18 Feb 2013 07:44:41 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v6 29/46] kvm/vmx: Use get/put_online_cpus_atomic() to prevent
- CPU offline
+Subject: [PATCH v6 31/46] alpha/smp: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -21,8 +21,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         walken@google.com, vincent.guittot@linaro.org
-Date: Mon, 18 Feb 2013 18:12:26 +0530
-Message-ID: <20130218124226.26245.11310.stgit@srivatsabhat.in.ibm.com>
+Date: Mon, 18 Feb 2013 18:12:37 +0530
+Message-ID: <20130218124237.26245.20750.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,7 +30,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021812-5564-0000-0000-000006A6352F
+x-cbid: 13021812-5564-0000-0000-000006A63578
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -40,41 +40,106 @@ depend on preempt_disable() or local_irq_disable() to prevent CPUs from
 going offline from under us.
 
 Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
-while invoking from atomic context (in vmx_vcpu_load() to prevent CPUs from
-going offline while clearing vmcs).
+while invoking from atomic context.
 
-Reported-by: Michael Wang <wangyun@linux.vnet.ibm.com>
-Debugged-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: kvm@vger.kernel.org
+Also, remove the non-ASCII character present in this file!
+
+Cc: linux-alpha@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/kvm/vmx.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/alpha/kernel/smp.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 9120ae1..2886ff0 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -1557,10 +1557,14 @@ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- 	struct vcpu_vmx *vmx = to_vmx(vcpu);
- 	u64 phys_addr = __pa(per_cpu(vmxarea, cpu));
+diff --git a/arch/alpha/kernel/smp.c b/arch/alpha/kernel/smp.c
+index 9603bc2..9213d5d 100644
+--- a/arch/alpha/kernel/smp.c
++++ b/arch/alpha/kernel/smp.c
+@@ -498,7 +498,6 @@ smp_cpus_done(unsigned int max_cpus)
+ 	       ((bogosum + 2500) / (5000/HZ)) % 100);
+ }
  
--	if (!vmm_exclusive)
-+	if (!vmm_exclusive) {
- 		kvm_cpu_vmxon(phys_addr);
--	else if (vmx->loaded_vmcs->cpu != cpu)
-+	} else if (vmx->loaded_vmcs->cpu != cpu) {
-+		/* Prevent any CPU from going offline */
-+		get_online_cpus_atomic();
- 		loaded_vmcs_clear(vmx->loaded_vmcs);
-+		put_online_cpus_atomic();
-+	}
+-
+ void
+ smp_percpu_timer_interrupt(struct pt_regs *regs)
+ {
+@@ -682,7 +681,7 @@ ipi_flush_tlb_mm(void *x)
+ void
+ flush_tlb_mm(struct mm_struct *mm)
+ {
+-	preempt_disable();
++	get_online_cpus_atomic();
  
- 	if (per_cpu(current_vmcs, cpu) != vmx->loaded_vmcs->vmcs) {
- 		per_cpu(current_vmcs, cpu) = vmx->loaded_vmcs->vmcs;
+ 	if (mm == current->active_mm) {
+ 		flush_tlb_current(mm);
+@@ -694,7 +693,7 @@ flush_tlb_mm(struct mm_struct *mm)
+ 				if (mm->context[cpu])
+ 					mm->context[cpu] = 0;
+ 			}
+-			preempt_enable();
++			put_online_cpus_atomic();
+ 			return;
+ 		}
+ 	}
+@@ -703,7 +702,7 @@ flush_tlb_mm(struct mm_struct *mm)
+ 		printk(KERN_CRIT "flush_tlb_mm: timed out\n");
+ 	}
+ 
+-	preempt_enable();
++	put_online_cpus_atomic();
+ }
+ EXPORT_SYMBOL(flush_tlb_mm);
+ 
+@@ -731,7 +730,7 @@ flush_tlb_page(struct vm_area_struct *vma, unsigned long addr)
+ 	struct flush_tlb_page_struct data;
+ 	struct mm_struct *mm = vma->vm_mm;
+ 
+-	preempt_disable();
++	get_online_cpus_atomic();
+ 
+ 	if (mm == current->active_mm) {
+ 		flush_tlb_current_page(mm, vma, addr);
+@@ -743,7 +742,7 @@ flush_tlb_page(struct vm_area_struct *vma, unsigned long addr)
+ 				if (mm->context[cpu])
+ 					mm->context[cpu] = 0;
+ 			}
+-			preempt_enable();
++			put_online_cpus_atomic();
+ 			return;
+ 		}
+ 	}
+@@ -756,7 +755,7 @@ flush_tlb_page(struct vm_area_struct *vma, unsigned long addr)
+ 		printk(KERN_CRIT "flush_tlb_page: timed out\n");
+ 	}
+ 
+-	preempt_enable();
++	put_online_cpus_atomic();
+ }
+ EXPORT_SYMBOL(flush_tlb_page);
+ 
+@@ -787,7 +786,7 @@ flush_icache_user_range(struct vm_area_struct *vma, struct page *page,
+ 	if ((vma->vm_flags & VM_EXEC) == 0)
+ 		return;
+ 
+-	preempt_disable();
++	get_online_cpus_atomic();
+ 
+ 	if (mm == current->active_mm) {
+ 		__load_new_mm_context(mm);
+@@ -799,7 +798,7 @@ flush_icache_user_range(struct vm_area_struct *vma, struct page *page,
+ 				if (mm->context[cpu])
+ 					mm->context[cpu] = 0;
+ 			}
+-			preempt_enable();
++			put_online_cpus_atomic();
+ 			return;
+ 		}
+ 	}
+@@ -808,5 +807,5 @@ flush_icache_user_range(struct vm_area_struct *vma, struct page *page,
+ 		printk(KERN_CRIT "flush_icache_page: timed out\n");
+ 	}
+ 
+-	preempt_enable();
++	put_online_cpus_atomic();
+ }
 
