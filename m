@@ -1,133 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab3BRMw4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 07:52:56 -0500
-Received: from mail.abilis.ch ([195.70.19.74]:14713 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755933Ab3BRMwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 07:52:39 -0500
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Wolfram Sang <w.sang@pengutronix.de>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: [PATCH v3] i2c-designware: make SDA hold time configurable
-Date: Mon, 18 Feb 2013 13:51:45 +0100
-Message-Id: <1361191905-30099-1-git-send-email-christian.ruppert@abilis.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20130218105742.GK20771@intel.com>
-References: <20130218105742.GK20771@intel.com>
+	id S1756447Ab3BRMxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 07:53:41 -0500
+Received: from sabertooth01.qualcomm.com ([65.197.215.72]:25022 "EHLO
+	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754388Ab3BRMxj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 07:53:39 -0500
+X-IronPort-AV: E=Sophos;i="4.84,687,1355126400"; 
+   d="scan'208";a="23673774"
+X-IronPort-AV: E=Sophos;i="4.84,687,1355126400"; 
+   d="scan'208";a="400787471"
+From: "Bu, Yitian" <ybu@qti.qualcomm.com>
+To: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>
+Subject: [PATCH] Fix rq->lock vs logbuf_lock unlock race
+Thread-Topic: [PATCH] Fix rq->lock vs logbuf_lock unlock race
+Thread-Index: Ac4N1rXhQCDf/Fl/TX2FyJP1BGO59g==
+Date: Mon, 18 Feb 2013 12:53:37 +0000
+Message-ID: <E807E903FE6CBE4D95E420FBFCC273B827413C@nasanexd01h.na.qualcomm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.48.1]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the SDA hold time configurable through device tree.
-It was tested on a hybrid of i2c/next and arc-3.8-baseline (see
-https://github.com/foss-for-synopsys-dwc-arc-processors/linux/commits/arc-3.8-baseline) since our platform is ARC based and this architecture is not yet
-supported by i2c/next.
+This patch is for kernel V3.7.9
 
-Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
+>From 8796f4a2175a323aaa49ea8dd0fe68678dd5dccd Mon Sep 17 00:00:00 2001
+From: ybu <ybu@qti.qualcomm.com>
+Date: Mon, 18 Feb 2013 19:52:01 +0800
+Subject: [PATCH] Fix rq->lock vs logbuf_lock unlock race
+
+fix up the fallout from commit 07354eb1a74d1 ("locking printk:
+Annotate logbuf_lock as raw")
+Release console_sem after unlocking the logbuf_lock avoids some lock
+inversion troubles between logbuf_lock and rq->lock.
+
+Change-Id: I782c1d16e0e82bd156699f0f205f19781c4819e0
+Signed-off-by: ybu <ybu@qti.qualcomm.com>
 ---
- .../devicetree/bindings/i2c/i2c-designware.txt     |   15 +++++++++++++++
- drivers/i2c/busses/i2c-designware-core.c           |    5 +++++
- drivers/i2c/busses/i2c-designware-core.h           |    1 +
- drivers/i2c/busses/i2c-designware-platdrv.c        |    5 +++++
- 4 files changed, 26 insertions(+), 0 deletions(-)
+ kernel/printk.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-designware.txt b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-index e42a2ee..fb2eac8 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
-@@ -10,6 +10,10 @@ Recommended properties :
- 
-  - clock-frequency : desired I2C bus clock frequency in Hz.
- 
-+Optional properties :
-+ - sda-hold-time : If this property is present, the register SDA_HOLD will
-+   be initialised with its value.
-+
- Example :
- 
- 	i2c@f0000 {
-@@ -20,3 +24,14 @@ Example :
- 		interrupts = <11>;
- 		clock-frequency = <400000>;
- 	};
-+
-+	i2c@1120000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "snps,designware-i2c";
-+		reg = <0x1120000 0x1000>;
-+		interrupt-parent = <&ictl>;
-+		interrupts = <12 1>;
-+		clock-frequency = <400000>;
-+		sda-hold-time = <0x64>;
-+	};
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 94fd818..ba40e14 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -67,6 +67,7 @@
- #define DW_IC_STATUS		0x70
- #define DW_IC_TXFLR		0x74
- #define DW_IC_RXFLR		0x78
-+#define DW_IC_SDA_HOLD		0x7c
- #define DW_IC_TX_ABRT_SOURCE	0x80
- #define DW_IC_COMP_PARAM_1	0xf4
- #define DW_IC_COMP_TYPE		0xfc
-@@ -310,6 +311,10 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
- 	dw_writel(dev, lcnt, DW_IC_FS_SCL_LCNT);
- 	dev_dbg(dev->dev, "Fast-mode HCNT:LCNT = %d:%d\n", hcnt, lcnt);
- 
-+	/* Configure SDA Hold Time if required */
-+	if (dev->sda_hold_time)
-+		dw_writel(dev, dev->sda_hold_time, DW_IC_SDA_HOLD);
-+
- 	/* Configure Tx/Rx FIFO threshold levels */
- 	dw_writel(dev, dev->tx_fifo_depth - 1, DW_IC_TX_TL);
- 	dw_writel(dev, 0, DW_IC_RX_TL);
-diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
-index 9c1840e..33dfec3 100644
---- a/drivers/i2c/busses/i2c-designware-core.h
-+++ b/drivers/i2c/busses/i2c-designware-core.h
-@@ -88,6 +88,7 @@ struct dw_i2c_dev {
- 	u32			master_cfg;
- 	unsigned int		tx_fifo_depth;
- 	unsigned int		rx_fifo_depth;
-+	u32			sda_hold_time;
- };
- 
- #define ACCESS_SWAP		0x00000001
-diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-index d2a33e9..cb44bae 100644
---- a/drivers/i2c/busses/i2c-designware-platdrv.c
-+++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-@@ -34,6 +34,7 @@
- #include <linux/sched.h>
- #include <linux/err.h>
- #include <linux/interrupt.h>
-+#include <linux/of.h>
- #include <linux/of_i2c.h>
- #include <linux/platform_device.h>
- #include <linux/pm.h>
-@@ -136,6 +137,10 @@ static int dw_i2c_probe(struct platform_device *pdev)
+diff --git a/kernel/printk.c b/kernel/printk.c
+index f8e0b5a..3a49454 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1356,9 +1356,9 @@ static int console_trylock_for_printk(unsigned int cpu)
+ 		}
  	}
- 	clk_prepare_enable(dev->clk);
+ 	logbuf_cpu = UINT_MAX;
++	raw_spin_unlock(&logbuf_lock);
+ 	if (wake)
+ 		up(&console_sem);
+-	raw_spin_unlock(&logbuf_lock);
+ 	return retval;
+ }
  
-+	if (pdev->dev.of_node)
-+		of_property_read_u32(pdev->dev.of_node, "sda-hold-time",
-+						&dev->sda_hold_time);
-+
- 	dev->functionality =
- 		I2C_FUNC_I2C |
- 		I2C_FUNC_10BIT_ADDR |
 -- 
-1.7.1
+1.7.9.5
 
