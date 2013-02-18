@@ -1,60 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab3BRQWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 11:22:44 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33929 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752661Ab3BRQWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 11:22:42 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130218155439.GA902@onny>
-References: <20130218155439.GA902@onny>
+	id S1755996Ab3BRQYA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 11:24:00 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:60353 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754744Ab3BRQX5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 11:23:57 -0500
+Message-ID: <5122551E.1080703@linux.vnet.ibm.com>
+Date: Mon, 18 Feb 2013 21:51:50 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [Bisected] 3.7-rc1 can't resume
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 18 Feb 2013 08:21:03 -0800
-To: Jonas Heinrich <onny@project-insanity.org>, len.brown@intel.com,
-        pavel@ucw.cz, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        rjw@sisk.pl
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Message-ID: <cfd96a3d-5834-4687-b9de-9f044f43b588@email.android.com>
+To: Michel Lespinasse <walken@google.com>
+CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vincent.guittot@linaro.org
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com> <CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com>
+In-Reply-To: <CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021816-5816-0000-0000-000006BA63CA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I might be able to get my hands on a T43 later this week and see if I can reproduce this.  This patch seems more plausible, at least... but still puzzling.
+Hi Michel,
 
-Jonas Heinrich <onny@project-insanity.org> wrote:
+On 02/18/2013 09:15 PM, Michel Lespinasse wrote:
+> Hi Srivasta,
+> 
+> I admit not having followed in detail the threads about the previous
+> iteration, so some of my comments may have been discussed already
+> before - apologies if that is the case.
+> 
+> On Mon, Feb 18, 2013 at 8:38 PM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> Reader-writer locks and per-cpu counters are recursive, so they can be
+>> used in a nested fashion in the reader-path, which makes per-CPU rwlocks also
+>> recursive. Also, this design of switching the synchronization scheme ensures
+>> that you can safely nest and use these locks in a very flexible manner.
+> 
+> I like the general idea of switching between per-cpu and global
+> rwlocks as needed; however I dislike unfair locks, and especially
+> unfair recursive rwlocks.
+> 
+> If you look at rwlock_t, the main reason we haven't been able to
+> implement reader/writer fairness there is because tasklist_lock makes
+> use of the recursive nature of the rwlock_t read side. I'm worried
+> about introducing more lock usages that would make use of the same
+> property for your proposed lock.
+> 
+> I am fine with your proposal not implementing reader/writer fairness
+> from day 1, but I am worried about your proposal having a recursive
+> reader side. Or, to put it another way: if your proposal didn't have a
+> recursive reader side, and rwlock_t could somehow be changed to
+> implement reader/writer fairness, then this property could
+> automatically propagate into your proposed rwlock; but if anyone makes
+> use of the recursive nature of your proposal then implementing
+> reader/writer fairness later won't be as easy.
+>
 
->On 02-17 21:40, Rafael J. Wysocki wrote:
->> Does the commit immediately preceding this one behave correctly?
->Strangely the preceding commit works well, so I bisected the kernel
->again, this time more carefully and I've got a different result!
->(see bisect_log attachement).
->It seems to be commit 73201dbec64aebf6b0dca855b523f437972dc7bb 
->(https://patchwork.kernel.org/patch/1511921/).
->Someone on LKML already reported an issue with this commit
->(https://lkml.org/lkml/2012/10/18/228) , but Peter
->Anvins patch got already applied in newer versions.
->Reverting this patch with the recent git clone seems to be difficult
->because it already has too much dependencies.
->
->Additionally I've included dmesg dumps of the last good and the bad
->kernel version.
->
->On 02-17 12:52, H. Peter Anvin wrote:
->> T43 is quite old... which might have exposed unique bugs.  How
->reliable is the failure?  Even one misidentified commit results in git
->bisect giving garbage.
->It affects really all versions after that commit and the failure
->happens
->every time I try to resume my notebook.
->
->Best regards,
->Jonas
+Actually, we don't want reader/writer fairness in this particular case.
+We want deadlock safety - and in this particular case, this is guaranteed
+by the unfair nature of rwlocks today.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+I understand that you want to make rwlocks fair. So, I am thinking of
+going ahead with Tejun's proposal - implementing our own unfair locking
+scheme inside percpu-rwlocks using atomic ops or something like that, and
+being completely independent of rwlock_t. That way, you can easily go
+ahead with making rwlocks fair without fear of breaking CPU hotplug.
+However I would much prefer making that change to percpu-rwlocks as a
+separate patchset, after this patchset goes in, so that we can also see
+how well this unfair logic performs in practice.
+
+And regarding recursive reader side,... the way I see it, having a
+recursive reader side is a primary requirement in this case. The reason is
+that the existing reader side (with stop_machine) uses preempt_disable(),
+which is recursive. So our replacement also has to be recursive.
+ 
+> I see that the very next change in this series is talking about
+> acquiring the read side from interrupts, so it does look like you're
+> planning to make use of the recursive nature of the read side.
+
+Yes.. I don't think we can avoid that. Moreover, since we _want_ unfair
+reader/writer semantics to allow flexible locking rules and guarantee
+deadlock-safety, having a recursive reader side is not even an issue, IMHO.
+
+> I kinda
+> wish you didn't, as this is exactly replicating the design of
+> tasklist_lock which is IMO problematic. Your prior proposal of
+> disabling interrupts during the read side had other disadvantages, but
+> I think it was nice that it didn't rely on having a recursive read
+> side.
+> 
+
+We can have readers from non-interrupt contexts too, which depend on the
+recursive property...
+
+>> +#define reader_yet_to_switch(pcpu_rwlock, cpu)                             \
+>> +       (ACCESS_ONCE(per_cpu_ptr((pcpu_rwlock)->rw_state, cpu)->reader_refcnt))
+>> +
+>> +#define reader_percpu_nesting_depth(pcpu_rwlock)                 \
+>> +       (__this_cpu_read((pcpu_rwlock)->rw_state->reader_refcnt))
+>> +
+>> +#define reader_uses_percpu_refcnt(pcpu_rwlock)                         \
+>> +                               reader_percpu_nesting_depth(pcpu_rwlock)
+>> +
+>> +#define reader_nested_percpu(pcpu_rwlock)                              \
+>> +                       (reader_percpu_nesting_depth(pcpu_rwlock) > 1)
+>> +
+>> +#define writer_active(pcpu_rwlock)                                     \
+>> +       (__this_cpu_read((pcpu_rwlock)->rw_state->writer_signal))
+> 
+> I'm personally not a fan of such one-line shorthand functions - I
+> think they tend to make the code harder to read instead of easier, as
+> one constantly has to refer to them to understand what's actually
+> going on.
+> 
+
+I got rid of most of the helper functions in this version. But I would rather
+prefer retaining the above ones, because they are unwieldy and long. And IMHO
+the short-hand names are pretty descriptive, so you might not actually need
+to keep referring to their implementations all the time.
+
+>>  void percpu_write_lock(struct percpu_rwlock *pcpu_rwlock)
+>>  {
+>> +       unsigned int cpu;
+>> +
+>> +       /*
+>> +        * Tell all readers that a writer is becoming active, so that they
+>> +        * start switching over to the global rwlock.
+>> +        */
+>> +       for_each_possible_cpu(cpu)
+>> +               per_cpu_ptr(pcpu_rwlock->rw_state, cpu)->writer_signal = true;
+> 
+> I don't see anything preventing a race with the corresponding code in
+> percpu_write_unlock() that sets writer_signal back to false. Did I
+> miss something here ? It seems to me we don't have any guarantee that
+> all writer signals will be set to true at the end of the loop...
+> 
+
+Ah, thanks for pointing that out! IIRC Oleg had pointed this issue in the last
+version, but back then, I hadn't fully understood what he meant. Your
+explanation made it clear. I'll work on fixing this.
+
+Thanks a lot for your review Michel!
+
+Regards,
+Srivatsa S. Bhat
+
