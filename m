@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab3BRLGk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 06:06:40 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:37703 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628Ab3BRLGi (ORCPT
+	id S1752093Ab3BRLIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 06:08:09 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:62553 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab3BRLIH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 06:06:38 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v6 4/7] fat: restructure export_operations
-References: <1360422145-12280-1-git-send-email-linkinjeon@gmail.com>
-Date: Mon, 18 Feb 2013 20:06:31 +0900
-In-Reply-To: <1360422145-12280-1-git-send-email-linkinjeon@gmail.com> (Namjae
-	Jeon's message of "Sun, 10 Feb 2013 00:02:25 +0900")
-Message-ID: <87fw0t3mq0.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Mon, 18 Feb 2013 06:08:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+From: Hui Zhu <teawater@gmail.com>
+Date: Mon, 18 Feb 2013 19:07:25 +0800
+Message-ID: <CANFwon1h8FxV3Xy4agY6=AR61U6K5FExXRn5DMetoWzPpdPhYA@mail.gmail.com>
+Subject: KGTP (Linux debugger and tracer) 20130218 release (add watch
+ tracepoint control hardware breakpoints to record memory and bug fix)
+To: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
+        kgtp <kgtp@freelists.org>
+Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Geunsik Lim <leemgs1@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Tao Ma <taoma.tm@gmail.com>,
+        Oliver Yang <yangoliver@gmail.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+Hi guys,
 
-> +	if (MSDOS_SB(inode->i_sb)->options.nfs == FAT_NFS_NOSTALE_RO) {
-> +		if (inode->i_ino == MSDOS_ROOT_INO)
-> +			stat->ino = MSDOS_ROOT_INO;
+KGTP (http://code.google.com/p/kgtp/) is a flexible, lightweight and
+realtime Linux debugger and tracer.
+To use it, you don't need patch or rebuild the Linux kernel. Just
+build KGTP module and insmod it is OK.
 
-Can we simply set i_pos = MSDOS_ROOT_INO in fat_read_root()? If so, I
-think we can avoid this check.
+Please go to http://code.google.com/p/kgtp/wiki/HOWTO or
+http://code.google.com/p/kgtp/wiki/HOWTO (Chinese) to get more info
+about howto use KGTP.
 
-> +		else
-> +			/* Use i_pos for ino. This is used as fileid of nfs. */
-> +			stat->ino = fat_i_pos_read(MSDOS_SB(inode->i_sb),
-> +						   inode);
-> +	}
->  	return 0;
->  }
->  EXPORT_SYMBOL_GPL(fat_getattr);
+Now, KGTP 20130218 release.
+You can get the package for it from
+http://kgtp.googlecode.com/files/kgtp_20130218.tar.bz2
+or
+svn co https://kgtp.googlecode.com/svn/tags/20130218
 
+The main change of this release is add watch tracepoint control
+hardware breakpoints to record memory.
+Please goto http://code.google.com/p/kgtp/wiki/HOWTO#Howto_use_watch_tracepoint_control_hardware_breakpoints_to_recor
+or http://code.google.com/p/kgtp/wiki/HOWTOCN#如何用watch_tracepoint控制硬件断点记录内存访问
+(Chinese version) get more info about watch tracepoint.
 
-> +struct fat_fid {
-> +	u32 i_gen;
-> +	u32 i_pos_low;
-> +	u16 i_pos_hi;
-> +	u16 parent_i_pos_hi;
-> +	u32 parent_i_pos_low;
-> +	u32 parent_i_gen;
-> +} __packed;
+Another one is fix memory leak of output the value directly function.
+Please goto http://code.google.com/p/kgtp/wiki/UPDATE get more info
+about this release.
 
-Do we need to use __packed? Unnecessary __packed can generate slower
-code for alignment check on arch has unaligned fault.
+According to the comments of Christoph, Geoff and Andi.  I make lite
+patch for review.  Please goto https://lkml.org/lkml/2012/5/9/90 to
+see it.
 
-> +	if (parent && (len < FAT_FID_SIZE_WITH_PARENT)) {
-> +		*lenp = FAT_FID_SIZE_WITH_PARENT;
-> +		return 255;
-> +	} else if (len < FAT_FID_SIZE_WITHOUT_PARENT) {
-> +		*lenp = FAT_FID_SIZE_WITHOUT_PARENT;
-> +		return 255;
-> +	}
-
-This check strange. "parent && len == FAT_FID_SIZE_WITHOUT_PARENT" will
-overwrite over limit of fh size?
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Thanks,
+Hui
