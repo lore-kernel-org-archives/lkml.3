@@ -1,75 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab3BRKyg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 05:54:36 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53313 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab3BRKyd (ORCPT
+	id S1751693Ab3BRK5T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 05:57:19 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:1559 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab3BRK5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 05:54:33 -0500
-Date: Mon, 18 Feb 2013 11:54:23 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-cc: Vincent Guittot <vincent.guittot@linaro.org>, paulmck@linux.vnet.ibm.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, walken@google.com, mingo@kernel.org,
-        linux-arch@vger.kernel.org, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        rostedt@goodmis.org, rjw@sisk.pl, namhyung@kernel.org,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v5 00/45] CPU hotplug: stop_machine()-free CPU hotplug
-In-Reply-To: <512203B3.7090002@linux.vnet.ibm.com>
-Message-ID: <alpine.LFD.2.02.1302181151040.22263@ionos>
-References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <510FBC01.2030405@linux.vnet.ibm.com> <87haloiwv0.fsf@rustcorp.com.au> <51134596.4080106@linux.vnet.ibm.com> <20130208154113.GV17833@n2100.arm.linux.org.uk> <51152B81.2050501@linux.vnet.ibm.com>
- <51153F72.1060005@linux.vnet.ibm.com> <CAKfTPtCe+cD7LLkb+D6pqG1SwG2V08ws=4XO3ttHEHV2qgmqPg@mail.gmail.com> <5118E2CD.90401@linux.vnet.ibm.com> <20130211190852.GA5695@linux.vnet.ibm.com> <5119BDFD.1000909@linux.vnet.ibm.com>
- <CAKfTPtAo2hQTfBKTVUuLKgsGJ2ZLD0UTR3fH9UFuJwyFt4n__w@mail.gmail.com> <511E8F3C.2010406@linux.vnet.ibm.com> <CAKfTPtD=2jn1AVjuhVP1ot7_8x9-W4==hNGZET5N9tRE7gtyMw@mail.gmail.com> <512203B3.7090002@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 18 Feb 2013 05:57:17 -0500
+Message-ID: <512208CE.8000003@huawei.com>
+Date: Mon, 18 Feb 2013 18:56:14 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Tejun Heo <tj@kernel.org>
+CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v3] cgroup: fix cgroup_rmdir() vs close(eventfd) race
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Feb 2013, Srivatsa S. Bhat wrote:
-> Lockup observed while running this patchset, with CPU_IDLE and INTEL_IDLE turned
-> on in the .config:
-> 
->  smpboot: CPU 1 is now offline
-> Kernel panic - not syncing: Watchdog detected hard LOCKUP on cpu 11
-> Pid: 0, comm: swapper/11 Not tainted 3.8.0-rc7+stpmch13-1 #8
-> Call Trace:
->  [<ffffffff812aba1e>] do_raw_spin_lock+0x7e/0x150
->  [<ffffffff815a64c1>] _raw_spin_lock_irqsave+0x61/0x70
->  [<ffffffff810c0758>] ? clockevents_notify+0x28/0x150
->  [<ffffffff815a6d37>] ? _raw_spin_unlock_irqrestore+0x77/0x80
->  [<ffffffff810c0758>] clockevents_notify+0x28/0x150
->  [<ffffffff8130459f>] intel_idle+0xaf/0xe0
->  [<ffffffff81472ee0>] ? disable_cpuidle+0x20/0x20
->  [<ffffffff81472ef9>] cpuidle_enter+0x19/0x20
->  [<ffffffff814734c1>] cpuidle_wrap_enter+0x41/0xa0
->  [<ffffffff81473530>] cpuidle_enter_tk+0x10/0x20
->  [<ffffffff81472f17>] cpuidle_enter_state+0x17/0x50
->  [<ffffffff81473899>] cpuidle_idle_call+0xd9/0x290
->  [<ffffffff810203d5>] cpu_idle+0xe5/0x140
->  [<ffffffff8159c603>] start_secondary+0xdd/0xdf
+commit 205a872bd6f9a9a09ef035ef1e90185a8245cc58 ("cgroup: fix lockdep
+warning for event_control") solved a deadlock by introducing a new
+bug.
 
-> BUG: spinlock lockup suspected on CPU#2, migration/2/19
->  lock: clockevents_lock+0x0/0x40, .magic: dead4ead, .owner: swapper/8/0, .owner_cpu: 8
+Move cgrp->event_list to a temporary list doesn't mean you can traverse
+this list locklessly, because at the same time cgroup_event_wake() can
+be called and remove the event from the list. The result of this race
+is disastrous.
 
-Unfortunately there is no back trace for cpu8. That's probably caused
-by the watchdog -> panic setting.
+We adopt the way how kvm irqfd code implements race-free event removal,
+which is now described in the comments in cgroup_event_wake().
 
-So we have no idea why cpu2 and 11 get stuck on the clockevents_lock
-and without that information it's impossible to decode.
+v3:
+- call eventfd_signal() no matter it's eventfd close or cgroup removal
+that removes the cgroup event.
 
-Thanks,
+Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c | 41 +++++++++++++++++++++++++----------------
+ 1 file changed, 25 insertions(+), 16 deletions(-)
 
-	tglx
-
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 26c071c..621eec1 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3833,8 +3833,13 @@ static void cgroup_event_remove(struct work_struct *work)
+ 			remove);
+ 	struct cgroup *cgrp = event->cgrp;
+ 
++	remove_wait_queue(event->wqh, &event->wait);
++
+ 	event->cft->unregister_event(cgrp, event->cft, event->eventfd);
+ 
++	/* Notify userspace the event is going away. */
++	eventfd_signal(event->eventfd, 1);
++
+ 	eventfd_ctx_put(event->eventfd);
+ 	kfree(event);
+ 	dput(cgrp->dentry);
+@@ -3854,15 +3859,25 @@ static int cgroup_event_wake(wait_queue_t *wait, unsigned mode,
+ 	unsigned long flags = (unsigned long)key;
+ 
+ 	if (flags & POLLHUP) {
+-		__remove_wait_queue(event->wqh, &event->wait);
+-		spin_lock(&cgrp->event_list_lock);
+-		list_del_init(&event->list);
+-		spin_unlock(&cgrp->event_list_lock);
+ 		/*
+-		 * We are in atomic context, but cgroup_event_remove() may
+-		 * sleep, so we have to call it in workqueue.
++		 * If the event has been detached at cgroup removal, we
++		 * can simply return knowing the other side will cleanup
++		 * for us.
++		 *
++		 * We can't race against event freeing since the other
++		 * side will require wqh->lock via remove_wait_queue(),
++		 * which we hold.
+ 		 */
+-		schedule_work(&event->remove);
++		spin_lock(&cgrp->event_list_lock);
++		if (!list_empty(&event->list)) {
++			list_del_init(&event->list);
++			/*
++			 * We are in atomic context, but cgroup_event_remove()
++			 * may sleep, so we have to call it in workqueue.
++			 */
++			schedule_work(&event->remove);
++		}
++		spin_unlock(&cgrp->event_list_lock);
+ 	}
+ 
+ 	return 0;
+@@ -4428,20 +4443,14 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 	/*
+ 	 * Unregister events and notify userspace.
+ 	 * Notify userspace about cgroup removing only after rmdir of cgroup
+-	 * directory to avoid race between userspace and kernelspace. Use
+-	 * a temporary list to avoid a deadlock with cgroup_event_wake(). Since
+-	 * cgroup_event_wake() is called with the wait queue head locked,
+-	 * remove_wait_queue() cannot be called while holding event_list_lock.
++	 * directory to avoid race between userspace and kernelspace.
+ 	 */
+ 	spin_lock(&cgrp->event_list_lock);
+-	list_splice_init(&cgrp->event_list, &tmp_list);
+-	spin_unlock(&cgrp->event_list_lock);
+-	list_for_each_entry_safe(event, tmp, &tmp_list, list) {
++	list_for_each_entry_safe(event, tmp, &cgrp->event_list, list) {
+ 		list_del_init(&event->list);
+-		remove_wait_queue(event->wqh, &event->wait);
+-		eventfd_signal(event->eventfd, 1);
+ 		schedule_work(&event->remove);
+ 	}
++	spin_unlock(&cgrp->event_list_lock);
+ 
+ 	return 0;
+ }
+-- 
+1.8.0.2
