@@ -1,59 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379Ab3BRSZB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 13:25:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43938 "EHLO
+	id S1753345Ab3BRSZP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 13:25:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43940 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab3BRSZA (ORCPT
+	with ESMTP id S1752549Ab3BRSZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 13:25:00 -0500
+	Mon, 18 Feb 2013 13:25:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 0/1] 3.4.33-stable review
-Date: Mon, 18 Feb 2013 10:24:55 -0800
-Message-Id: <20130218181454.615592566@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
+Subject: [ 1/1] printk: fix buffer overflow when calling log_prefix function from call_console_drivers
+Date: Mon, 18 Feb 2013 10:24:56 -0800
+Message-Id: <20130218181454.976143076@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130218181454.615592566@linuxfoundation.org>
+References: <20130218181454.615592566@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.33 release.
-There is 1 patch in this series, which will be posted as a response to
-this one.  If anyone has any issues with it being applied, please let me
-know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Wed Feb 20 18:13:44 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.33-rc1.gz
-and the diffstat can be found below.
+From: Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
 
-thanks,
+This patch corrects a buffer overflow in kernels from 3.0 to 3.4 when calling
+log_prefix() function from call_console_drivers().
 
-greg k-h
+This bug existed in previous releases but has been revealed with commit
+162a7e7500f9664636e649ba59defe541b7c2c60 (2.6.39 => 3.0) that made changes
+about how to allocate memory for early printk buffer (use of memblock_alloc).
+It disappears with commit 7ff9554bb578ba02166071d2d487b7fc7d860d62 (3.4 => 3.5)
+that does a refactoring of printk buffer management.
 
--------------
-Pseudo-Shortlog of commits:
+In log_prefix(), the access to "p[0]", "p[1]", "p[2]" or
+"simple_strtoul(&p[1], &endp, 10)" may cause a buffer overflow as this
+function is called from call_console_drivers by passing "&LOG_BUF(cur_index)"
+where the index must be masked to do not exceed the buffer's boundary.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.33-rc1
+The trick is to prepare in call_console_drivers() a buffer with the necessary
+data (PRI field of syslog message) to be safely evaluated in log_prefix().
 
-Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
-    printk: fix buffer overflow when calling log_prefix function from call_console_drivers
+This patch can be applied to stable kernel branches 3.0.y, 3.2.y and 3.4.y.
 
+Without this patch, one can freeze a server running this loop from shell :
+  $ export DUMMY=`cat /dev/urandom | tr -dc '12345AZERTYUIOPQSDFGHJKLMWXCVBNazertyuiopqsdfghjklmwxcvbn' | head -c255`
+  $ while true do ; echo $DUMMY > /dev/kmsg ; done
 
--------------
+The "server freeze" depends on where memblock_alloc does allocate printk buffer :
+if the buffer overflow is inside another kernel allocation the problem may not
+be revealed, else the server may hangs up.
 
-Diffstat:
+Signed-off-by: Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
- Makefile               |  4 ++--
- include/linux/syslog.h |  6 ++++++
- kernel/printk.c        | 13 ++++++++++++-
- 3 files changed, 20 insertions(+), 3 deletions(-)
+---
+ include/linux/syslog.h |    6 ++++++
+ kernel/printk.c        |   13 ++++++++++++-
+ 2 files changed, 18 insertions(+), 1 deletion(-)
+
+--- a/include/linux/syslog.h
++++ b/include/linux/syslog.h
+@@ -47,6 +47,12 @@
+ #define SYSLOG_FROM_CALL 0
+ #define SYSLOG_FROM_FILE 1
+ 
++/*
++ * Syslog priority (PRI) maximum length in char : '<[0-9]{1,3}>'
++ * See RFC5424 for details
++*/
++#define SYSLOG_PRI_MAX_LENGTH 5
++
+ int do_syslog(int type, char __user *buf, int count, bool from_file);
+ 
+ #endif /* _LINUX_SYSLOG_H */
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -638,8 +638,19 @@ static void call_console_drivers(unsigne
+ 	start_print = start;
+ 	while (cur_index != end) {
+ 		if (msg_level < 0 && ((end - cur_index) > 2)) {
++			/*
++			 * prepare buf_prefix, as a contiguous array,
++			 * to be processed by log_prefix function
++			 */
++			char buf_prefix[SYSLOG_PRI_MAX_LENGTH+1];
++			unsigned i;
++			for (i = 0; i < ((end - cur_index)) && (i < SYSLOG_PRI_MAX_LENGTH); i++) {
++				buf_prefix[i] = LOG_BUF(cur_index + i);
++			}
++			buf_prefix[i] = '\0'; /* force '\0' as last string character */
++
+ 			/* strip log prefix */
+-			cur_index += log_prefix(&LOG_BUF(cur_index), &msg_level, NULL);
++			cur_index += log_prefix((const char *)&buf_prefix, &msg_level, NULL);
+ 			start_print = cur_index;
+ 		}
+ 		while (cur_index != end) {
 
 
