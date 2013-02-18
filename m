@@ -1,60 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757910Ab3BRKNo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 05:13:44 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:64836 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757604Ab3BRKNn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 05:13:43 -0500
-From: Arnd Bergmann <arnd@linaro.org>
-Organization: Linaro Ltd
-To: Bo Shen <voice.shen@atmel.com>
-Subject: Re: [V2 2/8] USB: EHCI: make ehci-atmel a separate driver
-Date: Mon, 18 Feb 2013 10:12:44 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: Manjunath Goudar <manjunath.goudar@linaro.org>, linux-usb@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
-        Greg KH <greg@kroah.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "Andrew Victor" <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org
-References: <1360923853-7875-1-git-send-email-manjunath.goudar@linaro.org> <1360923853-7875-3-git-send-email-manjunath.goudar@linaro.org> <5121F80E.1010501@atmel.com>
-In-Reply-To: <5121F80E.1010501@atmel.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302181012.44721.arnd@linaro.org>
-X-Provags-ID: V02:K0:lxswPM1DVdHeJKaWHHFnllkYHoZ69kCY9VqEKze7d/Q
- xm6Yaeu81wTQfR+j9aKInTuF+bvmgQrq4pJ5dM8AnEZ1MuVvo6
- kfLDQaYd3mTeK55497du0MIxuyfFXItPgUKbMRsbtsmCBpEb67
- wJ2VKbKy3fY+PDJCUPhOM0UrgzhE2CvNDCBXTsmibXWk1xYG4P
- SSzK6YFmrP1F3ijnbYB9EJE06eHceA3FsyPtYga1O/LvMdfRe2
- QxqoXHsX0Ia7xB43KZH0Ep22Y4fBbq3ub6OkUJElbwb0rsyNEG
- mItoN7LHrgSCNngwCb0rkBpMAZeSkqReTc6NcRKdAs856idd74
- sS5R4lgo3MPWbJzmo8jc=
+	id S1757741Ab3BRKQU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 05:16:20 -0500
+Received: from mail.abilis.ch ([195.70.19.74]:10594 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757386Ab3BRKQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 05:16:17 -0500
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Wolfram Sang <w.sang@pengutronix.de>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Subject: [PATCH v2] i2c-designware: make SDA hold time configurable
+Date: Mon, 18 Feb 2013 11:14:27 +0100
+Message-Id: <1361182467-19184-1-git-send-email-christian.ruppert@abilis.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20130215164937.GV20771@intel.com>
+References: <20130215164937.GV20771@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 February 2013, Bo Shen wrote:
-> > -             .name   = "atmel-ehci",
-> > +             .name   = hcd_name,
-> 
-> This change will cause atmel ehci won't work with the none device tree 
-> kernel.
-> 
-> it can be fixed with replace other places using "atmel-ehci" with 
-> <hcd_name>, that means replace "atmel-ehci" with "ehci-atmel" at other 
-> places.
+This patch makes the SDA hold time configurable through device tree.
+It was tested on a hybrid of i2c/next and arc-3.8-baseline (see
+https://github.com/foss-for-synopsys-dwc-arc-processors/linux/commits/arc-3.8-baseline) since our platform is ARC based and this architecture is not yet
+supported by i2c/next.
 
-Ah, that is right. Thanks for pointing it out!
+Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
+---
+ .../devicetree/bindings/i2c/i2c-designware.txt     |   15 +++++++++++++++
+ drivers/i2c/busses/i2c-designware-core.c           |    5 +++++
+ drivers/i2c/busses/i2c-designware-core.h           |    1 +
+ drivers/i2c/busses/i2c-designware-platdrv.c        |    8 ++++++++
+ 4 files changed, 29 insertions(+), 0 deletions(-)
 
-Manjunath, please revert this change and ensure you are not changing
-the contents of the 'platform_driver->name' field in any of the drivers.
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-designware.txt b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+index e42a2ee..fb2eac8 100644
+--- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
++++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+@@ -10,6 +10,10 @@ Recommended properties :
+ 
+  - clock-frequency : desired I2C bus clock frequency in Hz.
+ 
++Optional properties :
++ - sda-hold-time : If this property is present, the register SDA_HOLD will
++   be initialised with its value.
++
+ Example :
+ 
+ 	i2c@f0000 {
+@@ -20,3 +24,14 @@ Example :
+ 		interrupts = <11>;
+ 		clock-frequency = <400000>;
+ 	};
++
++	i2c@1120000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "snps,designware-i2c";
++		reg = <0x1120000 0x1000>;
++		interrupt-parent = <&ictl>;
++		interrupts = <12 1>;
++		clock-frequency = <400000>;
++		sda-hold-time = <0x64>;
++	};
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index 94fd818..ba40e14 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -67,6 +67,7 @@
+ #define DW_IC_STATUS		0x70
+ #define DW_IC_TXFLR		0x74
+ #define DW_IC_RXFLR		0x78
++#define DW_IC_SDA_HOLD		0x7c
+ #define DW_IC_TX_ABRT_SOURCE	0x80
+ #define DW_IC_COMP_PARAM_1	0xf4
+ #define DW_IC_COMP_TYPE		0xfc
+@@ -310,6 +311,10 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
+ 	dw_writel(dev, lcnt, DW_IC_FS_SCL_LCNT);
+ 	dev_dbg(dev->dev, "Fast-mode HCNT:LCNT = %d:%d\n", hcnt, lcnt);
+ 
++	/* Configure SDA Hold Time if required */
++	if (dev->sda_hold_time)
++		dw_writel(dev, dev->sda_hold_time, DW_IC_SDA_HOLD);
++
+ 	/* Configure Tx/Rx FIFO threshold levels */
+ 	dw_writel(dev, dev->tx_fifo_depth - 1, DW_IC_TX_TL);
+ 	dw_writel(dev, 0, DW_IC_RX_TL);
+diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
+index 9c1840e..33dfec3 100644
+--- a/drivers/i2c/busses/i2c-designware-core.h
++++ b/drivers/i2c/busses/i2c-designware-core.h
+@@ -88,6 +88,7 @@ struct dw_i2c_dev {
+ 	u32			master_cfg;
+ 	unsigned int		tx_fifo_depth;
+ 	unsigned int		rx_fifo_depth;
++	u32			sda_hold_time;
+ };
+ 
+ #define ACCESS_SWAP		0x00000001
+diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+index d2a33e9..9cb0100 100644
+--- a/drivers/i2c/busses/i2c-designware-platdrv.c
++++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+@@ -34,6 +34,7 @@
+ #include <linux/sched.h>
+ #include <linux/err.h>
+ #include <linux/interrupt.h>
++#include <linux/of.h>
+ #include <linux/of_i2c.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm.h>
+@@ -136,6 +137,13 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 	}
+ 	clk_prepare_enable(dev->clk);
+ 
++	if (pdev->dev.of_node) {
++		if (of_property_read_u32(pdev->dev.of_node, "sda-hold-time",
++						&dev->sda_hold_time))
++			dev->sda_hold_time = 0;
++	} else
++		dev->sda_hold_time = 0;
++
+ 	dev->functionality =
+ 		I2C_FUNC_I2C |
+ 		I2C_FUNC_10BIT_ADDR |
+-- 
+1.7.1
 
-	Arnd
