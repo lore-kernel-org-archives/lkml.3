@@ -1,84 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab3BRPtx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 10:49:53 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:34273 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753141Ab3BRPtw (ORCPT
+	id S1754287Ab3BRPuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 10:50:22 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:59264 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751731Ab3BRPuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 10:49:52 -0500
-Date: Mon, 18 Feb 2013 07:50:12 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: SYSFS "errors"
-Message-ID: <20130218155012.GA30974@kroah.com>
-References: <20130218153316.GA2663@arwen.pp.htv.fi>
+	Mon, 18 Feb 2013 10:50:18 -0500
+Date: Mon, 18 Feb 2013 15:49:44 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] mm: Limit pgd range freeing to mm->task_size
+Message-ID: <20130218154944.GA1678@arm.com>
+References: <1360755569-27282-1-git-send-email-catalin.marinas@arm.com>
+ <20130213134756.b90f8e1b.akpm@linux-foundation.org>
+ <alpine.LNX.2.00.1302141227500.1911@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130218153316.GA2663@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1302141227500.1911@eggly.anvils>
+Thread-Topic: [PATCH] mm: Limit pgd range freeing to mm->task_size
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 18, 2013 at 05:33:16PM +0200, Felipe Balbi wrote:
-> Hi folks,
-> 
-> there are today a number of SYSFS files with read permission set but
-> can't really be read (tried with normal user and root). To make things
-> simpler, I wrote a simple ruby script (see below) to check if the file
-> is world writeable or if it has Read permission but throws an exception
-> when read (note that I ignore files which return empty buffers since
-> ruby cries about it).
-> 
-> Here are some results from my desktop PC:
-> 
-> $ ruby sysfs_errors.rb |wc -l
-> 968
-> 
-> # ruby sysfs_errors.rb | wc -l
-> 1602
-> 
-> 8<---------------------------- cut here --------------------------------
-> 
-> Dir.glob("/sys/**/*").each do |file|
-> 	next if File.directory?(file)
-> 
-> 	if File.world_writable?(file)
-> 		puts "#{file} is world-writable"
-> 	end
-> 
-> 	if File.readable?(file)
-> 		begin
-> 			File.open(file) { |f|
-> 				result = f.readline
-> 			}
-> 		rescue EOFError
-> 			nil
-> 		rescue => e
-> 			puts e.message
-> 		end
-> 	end
-> end
-> 
-> I wonder if that should be sorted out or should we leave it as is ?
+Hugh,
 
-They should be sorted out.
-
-> If it helps in any way, I have printed below only the filenames
-> (without path) so I could pipe it through uniq:
+On Thu, Feb 14, 2013 at 09:24:09PM +0000, Hugh Dickins wrote:
+> On Wed, 13 Feb 2013, Andrew Morton wrote:
+> > On Wed, 13 Feb 2013 11:39:29 +0000
+> > Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > 
+> > > ARM processors with LPAE enabled use 3 levels of page tables, with an
+> > > entry in the top level (pgd) covering 1GB of virtual space. Because of
+> > > the branch relocation limitations on ARM, the loadable modules are
+> > > mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
+> > > between kernel modules and user space.
+> > > 
+> > > Since free_pgtables() is called with ceiling == 0, free_pgd_range() (and
+> > > subsequently called functions) also frees the page table
+> > > shared between user space and kernel modules (which is normally handled
+> > > by the ARM-specific pgd_free() function).
+> > > 
+> > > This patch changes the ceiling argument to mm->task_size for the
+> > > free_pgtables() and free_pgd_range() function calls. We cannot use
+> > > TASK_SIZE since this macro may not be a run-time constant on 64-bit
+> > > systems supporting compat applications.
+> > 
+> > I'm trying to work out why we're using 0 in there at all, rather than
+> > ->task_size.  But that's lost in the mists of time.
+> > 
+> > As you've discovered, handling of task_size and TASK_SIZE is somewhat
+> > inconsistent across architectures and with compat tasks.  I guess we
+> > toss it in there and see if anything breaks...
 > 
-> act_mask
-> audit
-> autosuspend_delay_ms
-> bind
+> ... and an x86_64 kernel quickly shows,
+> with either 64-bit or 32-bit userspace, that exit_mmap() breaks at
+> WARN_ON(mm->nr_ptes > (FIRST_USER_ADDRESS+PMD_SIZE-1)>>PMD_SHIFT);
+> 
+> We couldn't think of using mm->task_size in 2.6.12 because it didn't
+> exist then; but although it sounds plausible, and on many architectures
+> (x86_32?) it should be fine, in general it's not quite the right thing
+> to use.  0 is an easy rounded-up-whatever-the-increment version of
+> TASK_SIZE (okay, it's missing an implicit 1 before all its 0s).
+> 
+> The ceiling passed to free_pgtables() says how far up it can go in
+> freeing pts and pmds and puds and pgds: when doing munmap(), you have
+> to be careful not to stray beyond the range you're freeing; when doing
+> exit_mmap(), you have to be careful to free all the areas you might
+> have had to avoid before.
 
-This one the driver core creates, I'll fix that up.
+Yes, on ARM+LPAE we make sure we free what's left of the shared pgd (a
+pmd page).
 
-The rest need paths to determine who to blame :)
+> mm->task_size does not necessarily fall on a nice boundary: use it
+> instead of 0 and exit_mmap() is liable to leave unfreed page tables
+> at several levels.
+> 
+> I'm sure that Catalin is right that he needs to adjust that ceiling arg
+> to free_pgtables() to cope with a level shared between user and kernel.
+> 
+> I met the same problem two years ago, when doing a patch (which worked
+> but went nowhere: x86 people kept on changing the early pagetable setup)
+> to make CONFIG_VMSPLIT_2G_OPT and 3G_OPT compatible with CONFIG_X86_PAE.
+> That shared a level beween user and kernel too: everything could be
+> handled down in the arch code, except this free_pgtables() ceiling arg.
+> 
+> (I did not make any change to the free_pgd_range() calls in fs/exec.c,
+> I'm not familiar with those at all: my patch appeared to work fine
+> without touching them, but now I wonder.)
+> 
+> Here's the mm/mmap.c part of my patch (but it now looks like the
+> default should go into include/asm-generic):
 
-thanks,
+Thanks for the patch. It is related to FIRST_USER_ADDRESS which is
+defined in asm/pgtable.h, so asm-generic/pgtable.h looks like a good
+place. We can actually make FIRST_USER_ADDRESS generic as well since
+apart from arm and unicore32 all the other architectures define it as 0.
 
-greg k-h
+I'll shortly post a series of two patches with your patch and the ARM
+definition of USER_PGTABLES_CEILING.
+
+-- 
+Catalin
