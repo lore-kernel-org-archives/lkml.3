@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464Ab3BRFGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 00:06:00 -0500
-Received: from jonshouse.co.uk ([91.84.151.33]:53043 "EHLO
-	mail.jonshouse.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab3BRFF7 (ORCPT
+	id S1751577Ab3BRFGW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 00:06:22 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:48586 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab3BRFGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 00:05:59 -0500
-Subject: Re: Stupid user with user-space questions, matrix LED driving with
- user space code only.
-From: Jonathan Andrews <jon@jonshouse.co.uk>
-Reply-To: jon@jonshouse.co.uk
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: anish kumar <anish198519851985@gmail.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20130218020557.GA27667@kroah.com>
-References: <1361025476.4271.36.camel@jonspc>
-	 <1361082134.16206.24.camel@anish-Inspiron-N5050>
-	 <1361111844.14757.29.camel@jonspc>  <20130218020557.GA27667@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Feb 2013 05:06:08 +0000
-Message-ID: <1361163968.29540.62.camel@jonspc>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	Mon, 18 Feb 2013 00:06:20 -0500
+Message-ID: <5121B6C9.70001@kernel.org>
+Date: Mon, 18 Feb 2013 00:06:17 -0500
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Benson Leung <bleung@chromium.org>
+CC: colin.king@canonical.com, linux-kernel@vger.kernel.org, vapier@gentoo.org
+Subject: Re: [PATCH v3 1/1] tools/power x86_energy_perf_policy: fix cpuid
+ for i686
+References: <1360870558-11711-1-git-send-email-bleung@chromium.org> <1360870558-11711-2-git-send-email-bleung@chromium.org>
+In-Reply-To: <1360870558-11711-2-git-send-email-bleung@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-02-17 at 18:05 -0800, Greg KH wrote: 
-> On Sun, Feb 17, 2013 at 02:37:24PM +0000, Jonathan Andrews wrote:
-> > From a user perspective it seems a bit crap to have to change the kernel
-> > if you have a workload that preemption is harmful to.  
-> > In the case of something like the Raspberry Pi changing the kernel if
-> > the distribution has not done the work for me sounds like real effort.
-> > The kernel is tied to binary obscurity from broadcom... To build I need
-> > a working cross compiler, toolchain, kernel sources, Pi specific patches
-> > then to get everything in the correct place on an SD card containing two
-> > filesystems.  Its possible but its not going to "just work" at my skill
-> > level....
-> 
-> As you can not boot a kernel.org kernel on the RPI platform just yet,
-> there's very little that the kernel.org community can do here to help
-> you out.
-Somebody could stick in the code to enable/disable preemption at runtime
-on PREEMPT compiled kernels :-) - Then all I have to do is wait for it
-to filter down to the Raspian kernel maintainers, i'm patient ;-) ?   
+Hi Benson,
 
-In all seriousness I assume preemption has a timer and an interrupt
-vector, cant the timer simply be enabled/disabled leaving just the
-kernel call mechanism untouched. IE a "preemption" kernel that is now
-not preempting ...... OK, OK - I have many other egg sucking suggestions
-but am I the only one who wants the functionality ?
+checkpatch.pl doesn't love this syntax:
 
-Seems a half step to add all this wizzy real-time code to the kernel
-then stop users doing real-time in user space by allowing the schedular
-to yield during what a user wishes to be a citical section (from a
-timing point of view not the atomic point of view).
+ERROR: spaces required around that ':' (ctx:ExV)
+#113: FILE: tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c:142:
++		      :"+a" (_eax), "=S" (_ebx), "=c" (_ecx), "=d" (_edx)
+ 		      ^
 
-What about a yield alignment mechanism for user space. IE the process
-calls the kernel with a request "schedule me first after a yeild" - then
-the process at least has whatever the timer granularity is to do
-something timing critical... add a flag to ignore or defer interrupts
-and you have a semi 'hard-realtime' behaviour for user space, allowing
-user space to grab small chunks of real time. Yes a nasty looking
-facility for SMP intel servers but really useful for embedded.
+ERROR: spaces required around that ':' (ctx:ExV)
+#115: FILE: tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c:144:
++		      :"edi" /* clobbers: we hit edi directly */);
+ 		      ^
 
->   I suggest you go take this up with the developers whom you got
-> this specific kernel build from, there's nothing we can do here about
-> it.
-I suspected it was not going to be simple. As I suspect my feature
-request is not that simple but if you don't ask........
+ERROR: trailing statements should be on next line
+#116: FILE: tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c:145:
++	if (eax) *eax = _eax;
 
-Thanks,
-Jon
+ERROR: trailing statements should be on next line
+#117: FILE: tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c:146:
++	if (ebx) *ebx = _ebx;
 
+ERROR: trailing statements should be on next line
+#118: FILE: tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c:147:
++	if (ecx) *ecx = _ecx;
+
+ERROR: trailing statements should be on next line
+#119: FILE: tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c:148:
++	if (edx) *edx = _edx;
+
+total: 6 errors, 2 warnings, 57 lines checked
+
+/home/lenb/Documents/epp.eml has style problems, please review.
+
+If any of these errors are false positives, please report
+them to the maintainer, see CHECKPATCH in MAINTAINERS.
+Commit Body is:
+--------------------------
+tools/power x86_energy_perf_policy: fix cpuid for i686
 
