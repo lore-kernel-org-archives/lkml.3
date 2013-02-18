@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab3BRXIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 18:08:17 -0500
-Received: from mout.gmx.net ([212.227.17.21]:56660 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752627Ab3BRXIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 18:08:16 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/oUvxWVbbokmz+4CaB8Se4aPBL4JbBFt7f09ACQy
-	iocAcDLq3b2r1c
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Teddy Wang <teddy.wang@siliconmotion.com.cn>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Javier M. Mellid" <jmunhoz@igalia.com>,
-        Devendra Naga <devendra.aaru@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] staging/sm7xxfb: Convert to SIMPLE_DEV_PM_OPS
-Date: Tue, 19 Feb 2013 00:12:48 +0100
-Message-Id: <1361229168-18137-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-X-Y-GMX-Trusted: 0
+	id S1757599Ab3BRXJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 18:09:16 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:37212 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753601Ab3BRXJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 18:09:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:in-reply-to:references:date:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=yT55V2ZHwO8EhvwJUom/HFBBxXBs27ON
+	9CjLoq1NNOeZdrayBnmosTsqlPqoESCR3mLYF9nM+VbZ6gPAwExioZBGPunpwbk6
+	N+j5Gw7K9n/FTu6zWGp18qiZloYIr6gCBBbf2TfluKHHf4D/K/9McsVrCFTo49Ck
+	r7QahefA0nY=
+From: Junio C Hamano <gitster@pobox.com>
+To: Matthieu Moy <Matthieu.Moy@grenoble-inp.fr>
+Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git v1.8.2-rc0
+In-Reply-To: <vpq4nh9v5an.fsf@grenoble-inp.fr> (Matthieu Moy's message of
+ "Mon, 18 Feb 2013 19:35:28 +0100")
+References: <7vk3q6e94s.fsf@alter.siamese.dyndns.org>
+ <vpq4nh9v5an.fsf@grenoble-inp.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+Date: Mon, 18 Feb 2013 15:09:11 -0800
+Message-ID: <7vobfh8bjc.fsf@alter.siamese.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 3641256C-7A20-11E2-9827-21622E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of assigning the pm_ops fields individually we can simply use
-SIMPLE_DEV_PM_OPS.
+Matthieu Moy <Matthieu.Moy@grenoble-inp.fr> writes:
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/sm7xxfb/sm7xxfb.c |   10 +---------
- 1 files changed, 1 insertions(+), 9 deletions(-)
+> Junio C Hamano <gitster@pobox.com> writes:
+>
+>> Git v1.8.2 Release Notes (draft)
+>> ========================
+>>
+>> Backward compatibility notes
+>> ----------------------------
+>>
+>> In the upcoming major release (tentatively called 1.8.2), we will
+>> change the behavior of the "git push" command.
+>>
+>> When "git push [$there]" does not say what to push, we have used the
+>> traditional "matching" semantics so far (all your branches were sent
+>> to the remote as long as there already are branches of the same name
+>> over there).  We will use the "simple" semantics
+>
+> I don't understand: wasn't this supposed to happen in Git 2.0? Did you
+> mean "In the upcoming major release (tentatively called *2.0*)"?
 
-diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm7xxfb.c
-index 0764bbb..8add64b 100644
---- a/drivers/staging/sm7xxfb/sm7xxfb.c
-+++ b/drivers/staging/sm7xxfb/sm7xxfb.c
-@@ -1006,15 +1006,7 @@ static int smtcfb_pci_resume(struct device *device)
- 	return 0;
- }
- 
--static const struct dev_pm_ops sm7xx_pm_ops = {
--	.suspend = smtcfb_pci_suspend,
--	.resume = smtcfb_pci_resume,
--	.freeze = smtcfb_pci_suspend,
--	.thaw = smtcfb_pci_resume,
--	.poweroff = smtcfb_pci_suspend,
--	.restore = smtcfb_pci_resume,
--};
--
-+static SIMPLE_DEV_PM_OPS(sm7xx_pm_ops, smtcfb_pci_suspend, smtcfb_pci_resume);
- #define SM7XX_PM_OPS (&sm7xx_pm_ops)
- 
- #else  /* !CONFIG_PM */
--- 
-1.7.8.6
+Thanks.  I am not sure what I was thinking.  Perhaps when we started
+this cycle we did want to merge the push-2.0-default-to-simple series
+
+Will update.
+
+> Also, you may want to mention the argumentless "git add -u" change too.
+> It currently has an item below, but this is a future
+> backward-incompatible change so it may deserve to appear in this section
+> too.
+
+Quite right.  Care to do the honors as the proposer to the new
+direction?
 
