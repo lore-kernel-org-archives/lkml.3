@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314Ab3BRDUc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 22:20:32 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12366 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab3BRDUa convert rfc822-to-8bit (ORCPT
+	id S1756636Ab3BRDYw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 22:24:52 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37993 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754439Ab3BRDYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 22:20:30 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 17 Feb 2013 19:16:09 -0800
-Message-ID: <51219DFA.6070902@nvidia.com>
-Date: Mon, 18 Feb 2013 12:20:26 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: USB list <linux-usb@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Subject: Re: usb_wwan_write() called while device still being resumed
-References: <511CBCE8.9070204@nvidia.com> <87ehgivlmg.fsf@nemi.mork.no> <511DF09F.3070401@nvidia.com> <87r4khu9az.fsf@nemi.mork.no>
-In-Reply-To: <87r4khu9az.fsf@nemi.mork.no>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Sun, 17 Feb 2013 22:24:51 -0500
+Message-ID: <1361157880.30510.1.camel@phoenix>
+Subject: [RFT][PATCH] regulator: ab8500: Remove get_voltage_sel for fixed
+ voltage
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Emeric Vigier <emeric.vigier@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Mon, 18 Feb 2013 11:24:40 +0800
+In-Reply-To: <1361156277.24231.1.camel@phoenix>
+References: <1361156277.24231.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2013 08:05 PM, Bjørn Mork wrote:
-> Maybe something like the completely untested:
->
-> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> index 3148b10..38e19ba 100644
-> --- a/drivers/base/power/runtime.c
-> +++ b/drivers/base/power/runtime.c
-> @@ -512,6 +512,9 @@ static int rpm_resume(struct device *dev, int rpmflags)
->   	else if (dev->power.disable_depth == 1 && dev->power.is_suspended
->   	    && dev->power.runtime_status == RPM_ACTIVE)
->   		retval = 1;
-> +	else if (rpmflags & RPM_ASYNC && dev->power.request_pending &&
-> +		 dev->power.request == RPM_REQ_RESUME)
-> +		retval = -EINPROGRESS;
->   	else if (dev->power.disable_depth > 0)
->   		retval = -EACCES;
->   	if (retval)
+Current code sets get_voltage_sel to ab8500_regulator_get_voltage_sel,
+however both ab8500_regulator_mode_ops and ab8500_regulator_ops do not
+have voltage_bank, voltage_reg and voltage_mask settings.
+So it looks wrong to use ab8500_regulator_get_voltage_sel as
+get_voltage_sel callback in these cases.
 
-Second thought: not sure this will work since power.request_pending and 
-power.request are set to these values later in the same rpm_resume() 
-function. However, the three lines before yours caught my attention. 
-They are not in my 3.1 source tree and the conditions are very close 
-from the ones I am seeing when the issue happens: disable_depth == 1, 
-is_suspended == 1. Only runtime_status is not equal to RPM_ACTIVE.
+A simple fix is just not implement get_voltage_sel, regulator core will
+report microvolts in sysfs even with only list_voltage().
 
-Nonetheless, I have looked at the patch that introduced these 
-(http://pastebin.com/PmHUjiAE ) and it details a problem that is very 
-similar to mine. It also mentions a workaround to be implemented in the 
-driver by saving the suspend status into a variable that is checked when 
-pm_runtime_get() return -EACCES. This variable already exists in 
-usb_wwan, actually it is the very variable that is checked a bit later 
-in that other chunk of code you mentioned:
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+Just found this needs to be fixed after I sent previous ab8500 patches,
+this patch is on top of previous ab8500 fixes.
 
-spin_lock_irqsave(&intfdata->susp_lock, flags);
-if (intfdata->suspended) {
-	usb_anchor_urb(this_urb, &portdata->delayed);
-	spin_unlock_irqrestore(&intfdata->susp_lock, flags);
-} else {
+Axel
+ drivers/regulator/ab8500.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-So it looks like this code is here for exactly that purpose. However in 
-my current condition I do not see how this block could be run since 
-runtime PM is disabled when intfdata->suspended is set to true.
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 24d490e..67b4412 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -362,7 +362,6 @@ static struct regulator_ops ab8500_regulator_mode_ops = {
+ 	.get_optimum_mode	= ab8500_regulator_get_optimum_mode,
+ 	.set_mode		= ab8500_regulator_set_mode,
+ 	.get_mode		= ab8500_regulator_get_mode,
+-	.get_voltage_sel 	= ab8500_regulator_get_voltage_sel,
+ 	.list_voltage		= regulator_list_voltage_linear,
+ 	.set_voltage_time_sel 	= ab8500_regulator_set_voltage_time_sel,
+ };
+@@ -371,7 +370,6 @@ static struct regulator_ops ab8500_regulator_ops = {
+ 	.enable			= ab8500_regulator_enable,
+ 	.disable		= ab8500_regulator_disable,
+ 	.is_enabled		= ab8500_regulator_is_enabled,
+-	.get_voltage_sel 	= ab8500_regulator_get_voltage_sel,
+ 	.list_voltage		= regulator_list_voltage_linear,
+ };
+ 
+-- 
+1.7.9.5
 
-I will try implementing the workaround suggested (checking if 
-intfdata->suspended is set when -EACCES is returned and go on if it is 
-the case) and see if it works (and I bet it will). In the upstream 
-kernel the issue seems to have been addressed already, so this might 
-just be a source-out-of-date issue.
 
-Thanks,
-Alex.
 
