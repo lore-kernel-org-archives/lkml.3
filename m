@@ -1,151 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab3BRPdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 10:33:32 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:42764 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225Ab3BRPdb (ORCPT
+	id S1754508Ab3BRPkn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 10:40:43 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:43342 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754212Ab3BRPkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 10:33:31 -0500
-Date: Mon, 18 Feb 2013 17:33:16 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: SYSFS "errors"
-Message-ID: <20130218153316.GA2663@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
+	Mon, 18 Feb 2013 10:40:42 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKfTPtC3c50yo8AcQ7K9m73gP95dEsetjbhNXDN4RiR-nZ8UqA@mail.gmail.com>
+References: <1359455940-1710-1-git-send-email-vincent.guittot@linaro.org>
+	<1359455940-1710-2-git-send-email-vincent.guittot@linaro.org>
+	<CAFTL4hzboD8Mv_-pRDHc+39QwXGWiT3MGtL8gJ=_ajnHdDCBcA@mail.gmail.com>
+	<CAKfTPtD2jRke2CUXiJdmaYYki_Voi4eTqJKgsyTnRpna7p8mJg@mail.gmail.com>
+	<CAFTL4hzriJm1mK1A_9U5kX9Z0RCMGpxy8M3gKuzFtt9Bky5htQ@mail.gmail.com>
+	<CAKfTPtCWudftS2XSM1OC2sR050mYvcAU6Fkt0vjV=C2V+w84Ew@mail.gmail.com>
+	<CAFTL4hzu-7uAXLqP+J48DaqLUYQWTESMNwPMYiiwrU2ZoOsgqw@mail.gmail.com>
+	<CAFTL4hyR=_ftCxycyvCBR0xwj6aOix9op40ps7htogpkkqVz+A@mail.gmail.com>
+	<CAKfTPtC3c50yo8AcQ7K9m73gP95dEsetjbhNXDN4RiR-nZ8UqA@mail.gmail.com>
+Date: Mon, 18 Feb 2013 16:40:40 +0100
+Message-ID: <CAFTL4hxxWBfi5Ad+X27ouFDFBM-LttRJiEn3f83T1Q2z=v1k7g@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] sched: fix init NOHZ_IDLE flag
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, Mike Galbraith <efault@gmx.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---+QahgC5+KEYLbs62
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2013/2/18 Vincent Guittot <vincent.guittot@linaro.org>:
+> On 18 February 2013 15:38, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> I pasted the original at: http://pastebin.com/DMm5U8J8
+>
+> We can clear the idle flag only in the nohz_kick_needed which will not
+> be called if the sched_domain is NULL so the sequence will be
+>
+> = CPU 0 =                                            = CPU 1=
+>
+> detach_and_destroy_domain {
+>             rcu_assign_pointer(cpu1_dom, NULL);
+> }
+>
+> dom = new_domain(...) {
+>              nr_cpus_busy = 0;
+>              set_idle(CPU 1);
+> }
+>                                                     dom =
+> rcu_dereference(cpu1_dom)
+>                                                     //dom == NULL, return
+>
+> rcu_assign_pointer(cpu1_dom, dom);
+>
+>                                                     dom =
+> rcu_dereference(cpu1_dom)
+>                                                     //dom != NULL,
+>                                                     nohz_kick_needed {
+>
+> set_idle(CPU 1)
+>                                                                    dom
+> = rcu_dereference(cpu1_dom)
+>
+> //dec nr_cpus_busy,
+>                                                     }
+>
+> Vincent
 
-Hi folks,
-
-there are today a number of SYSFS files with read permission set but
-can't really be read (tried with normal user and root). To make things
-simpler, I wrote a simple ruby script (see below) to check if the file
-is world writeable or if it has Read permission but throws an exception
-when read (note that I ignore files which return empty buffers since
-ruby cries about it).
-
-Here are some results from my desktop PC:
-
-$ ruby sysfs_errors.rb |wc -l
-968
-
-# ruby sysfs_errors.rb | wc -l
-1602
-
-8<---------------------------- cut here --------------------------------
-
-Dir.glob("/sys/**/*").each do |file|
-	next if File.directory?(file)
-
-	if File.world_writable?(file)
-		puts "#{file} is world-writable"
-	end
-
-	if File.readable?(file)
-		begin
-			File.open(file) { |f|
-				result =3D f.readline
-			}
-		rescue EOFError
-			nil
-		rescue =3D> e
-			puts e.message
-		end
-	end
-end
-
-I wonder if that should be sorted out or should we leave it as is ? If
-it helps in any way, I have printed below only the filenames (without
-path) so I could pipe it through uniq:
-
-act_mask
-audit
-autosuspend_delay_ms
-bind
-bl_curve
-clear
-compact
-delete
-delete_device
-drivers_probe
-drvctl
-duplex
-em_buffer
-enable
-end_lba
-event_char
-hard_offline_page
-host_reset
-mode
-new_device
-new_id
-pid
-probe
-reconfig
-release
-reload
-remove
-remove_id
-rescan
-reset
-reset_counters
-resource0
-resource1
-resource1_wc
-resource2
-resource3
-resource4
-resource5
-rom
-rotate_all
-scan
-sdram_scrub_rate
-smi_request
-soft_offline_page
-speed
-start_lba
-sw_activity
-trigger_fs_error
-uevent
-unbind
-unload_heads
-
---=20
-balbi
-
---+QahgC5+KEYLbs62
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRIkm8AAoJEIaOsuA1yqREExUQAI1J68fTLbz28tBNu7ApU0nx
-hCcaenAOoTKQ2z59iaUz39w/OmSjDpF4sZoP3R5qf9ajevMsrR81okMWT7fXBvqW
-xeXfEdaq33XmhG6papYqLxek12EDz015X5FfA8SJQKivRDuXXmxCptPgRSzERqT9
-B0+l8Ubkjho2Gb/lvWHmiFI98CvuXxIJ2u1vr8iajTaS7KQKXHm62+HSW5ntn/8m
-BhKX6Q/nfrgiVzsJm2dMP4SlPE4aXCzoZqAqX7V6Ae67un2EueMMnDd8o3fsB5cb
-W47AKUcphxFF21v/OhfB13GfhHpSFqgYrB8UxQf4ZH/u1WXW03NXW2AoMq+lT/PU
-0DUIqYaxmWkeDGYfRmWna9HRC+GGEUHsLLy+i9sy0/Dhm8HCxIqo6Km3MGQqZkmE
-0ovneSGlUwFGwOTbu5c8F/cIvI7CC3o2exMrXYWySJuZwm5zdQmuHQuEDtRchkwd
-RTYshGro4CSVCu5NIBXAPY4UWHSeIivhwPtpMsWrG0KSlgmZ7l8G1GWof0ubPyOl
-Ot0zrPJBYv3aMARqpxsYmY9MCVAA41lSjId1jttlvDR+/AIQdHvYRwsk4NG03b88
-F7l/zjEiXMsCNJkdShaDzCk0ysXUoGgbhyodNPIaFYA0/9viKxVsHVEHe6Fenlnd
-qLcl7z1FmqorLAovQxdb
-=Ok3D
------END PGP SIGNATURE-----
-
---+QahgC5+KEYLbs62--
+Ok but CPU 0 can assign NULL to the domain of cpu1 while CPU 1 is
+already in the middle of nohz_kick_needed().
