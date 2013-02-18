@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869Ab3BRFnu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 00:43:50 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38158 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab3BRFnt (ORCPT
+	id S1757886Ab3BRFwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 00:52:36 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:59710 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab3BRFwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 00:43:49 -0500
-Message-ID: <5121BFA7.8070203@infradead.org>
-Date: Sun, 17 Feb 2013 21:44:07 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: u3557@dialix.com.au
-CC: Amnon Shiloh <u3557@miso.sublimeip.com>, Oleg Nesterov <oleg@redhat.com>,
-        Pedro Alves <palves@redhat.com>, Denys Vlasenko <dvlasenk@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: Re: prctl(PR_SET_MM)
-References: <20130218013954.28FCF59206F@miso.sublimeip.com>
-In-Reply-To: <20130218013954.28FCF59206F@miso.sublimeip.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Feb 2013 00:52:35 -0500
+Date: Mon, 18 Feb 2013 16:52:32 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        =?UTF-8?B?IkRhZ2Zpbm4gSWxtYXJpIE1hbm5zw6VrZXIi?= 
+	<ilmari@ilmari.org>
+Subject: linux-next: manual merge of the akpm tree with the kbuild tree
+Message-Id: <20130218165232.92004590a089f22f67127db9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__18_Feb_2013_16_52_32_+1100_d5AnoGEzRiPoDQDD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/13 17:39, Amnon Shiloh wrote:
-> Hello,
-> 
-> The code in "kernel/sys.c" provides the "prctl(PR_SET_MM)" function,
-> which is the only way a process can set or modify the following 11
-> per-process fields:
-> 
->  	start_code, end_code, start_data, end_data, start_brk, brk,
->  	start_stack, arg_start, arg_end, env_start, env_end.
-> 
-> Being able to set those fields is important, even crucial,
-> for any conceivable user-level checkpointing software, as
-> well as for migrating processes between different computers.
-> 
-> Unfortunately, this code (essentially "prctl_set_mm()") is presently
-> enclosed in "#ifdef CONFIG_CHECKPOINT_RESTORE" which is configured
-> as "default n" in "init/Kconfig".  Many system-administrators who
-> may like to have a checkpoint/restore or process-migration facility,
-> but use standard pre-packaged kernels, find the requirement to
-> configure and compile their own non-standard kernel difficult or
-> too prohibitive.
-> 
-> Would it be possible to have this code enabled by default?
-> 
-> This could be done in one of 4 ways:
-> 1) Having CONFIG_CHECKPOINT_RESTORE enabled by default; or
-> 2) Releasing this code from the "#ifdef CONFIG_CHECK_RESTORE"; or
-> 3) Placing this code within a different kernel-configuration option
->    (say "CONFIG_BASIC_CHECKPOINTING") that is enabled by default; or
-> 4) Placing this code under a dual #if, so instead of:
->    #ifdef CONFIG_CHECKPOINT_RESTORE
-> 	   have:
->    #if defined(CONFIG_CHECKPOINT_RESTORE) || defined(CONFIG_BASIC_CHECKPOINTING)
+--Signature=_Mon__18_Feb_2013_16_52_32_+1100_d5AnoGEzRiPoDQDD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Andrew,
 
-This is basically a distro issue.  Distros can choose to enable
-this code by default, but the Linux kernel that Linus maintains does
-not need to enable it.
+Today's linux-next merge of the akpm tree got a conflict in
+kernel/timeconst.pl between commit 70730bca1331 ("kernel: Replace
+timeconst.pl with a bc script") from the kbuild tree and commit
+"timeconst.pl: remove deprecated defined(@array)" from the akpm tree.
 
+I just dropped the akpm tree patch since the file had been deleted by the
+kbuild tree commit.
 
--- 
-~Randy
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__18_Feb_2013_16_52_32_+1100_d5AnoGEzRiPoDQDD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRIcGgAAoJEECxmPOUX5FEl60P/iCdzTRtXx/UKTZ0XG54iOuF
+gm/i5FnrPQLk42gklUYclWPRDUC4aoYmVTOI7faAwNvP7fhKjK89GBhR25hfac0p
+w76eEN/KMPHE9+dEnupWS3rmP11cpzCwP3GDJPBgTaRPinrhtkXVYghepQtOiry8
+KMv5x8v91v9tAF3LndIWff1Gxd6qngiu71/l6GL8o9EnVpLC9yEApZX73tmDOMV0
++frdGS8SR2S+zEVxZGNgQfP9Kl3S8OzVJaZOO5wVK8PcQUhYIYWLOHEXdxUFyO/Z
+4LxbxV4ShBJVVtnP/1wlC8aV5ZZq/YhIRQwBfQq5tn32XAysG8WeWj5/wIAEU0jz
+mvNd5n1MjSOep2UbOwIdSShxAFOMKtIdPDrMxAeF5WcTBqP+AzI9d/d1ANe/7+U7
+FFy0NAJG0a2NgYw8KmY/WZWw4FEcLVdUfLTyv+TUws+UB9nVjzgNLHb5A5Q4E5XG
+v+06GMEg7EMGPr0oaU06NCKx3xPORRSNPMh7+Ej3rzuWoe7pzgIE9EbOcs8yeLQZ
+iRiJ2kos3v2aOkKcbiQLHIHYSvHCy5NSzqWmboP+CfwoyH5eem7nnA9j+PBX/7iX
+4uOSu9LxBf3XcexBIZ69DKjXi382m8d04RgXVamSnNTydNRb4fQpIRuHTCuvu/yt
+CRP8MbVwsM81fkH03yAu
+=xTHX
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__18_Feb_2013_16_52_32_+1100_d5AnoGEzRiPoDQDD--
