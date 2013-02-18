@@ -1,132 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab3BRPHD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 10:07:03 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:43191 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664Ab3BRPHA (ORCPT
+	id S1753599Ab3BRPJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 10:09:59 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:57623 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664Ab3BRPJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 10:07:00 -0500
+	Mon, 18 Feb 2013 10:09:56 -0500
+Date: Mon, 18 Feb 2013 16:12:06 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: "Sankaran, Rajesh" <rajesh.sankaran@intel.com>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH] intel/iommu: force writebuffer-flush quirk on Gen 4
+ Chipsets
+Message-ID: <20130218151206.GO5813@phenom.ffwll.local>
+Mail-Followup-To: David Woodhouse <dwmw2@infradead.org>,
+	"Sankaran, Rajesh" <rajesh.sankaran@intel.com>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+References: <1358794139-4820-1-git-send-email-daniel.vetter@ffwll.ch>
+ <1358880935.5523.147.camel@shinybook.infradead.org>
+ <CAKMK7uFLi5VeOBpDRctJ3AW_0fk3YPqcwnDokOTpGCioaWOqCA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFTL4hyR=_ftCxycyvCBR0xwj6aOix9op40ps7htogpkkqVz+A@mail.gmail.com>
-References: <1359455940-1710-1-git-send-email-vincent.guittot@linaro.org>
-	<1359455940-1710-2-git-send-email-vincent.guittot@linaro.org>
-	<CAFTL4hzboD8Mv_-pRDHc+39QwXGWiT3MGtL8gJ=_ajnHdDCBcA@mail.gmail.com>
-	<CAKfTPtD2jRke2CUXiJdmaYYki_Voi4eTqJKgsyTnRpna7p8mJg@mail.gmail.com>
-	<CAFTL4hzriJm1mK1A_9U5kX9Z0RCMGpxy8M3gKuzFtt9Bky5htQ@mail.gmail.com>
-	<CAKfTPtCWudftS2XSM1OC2sR050mYvcAU6Fkt0vjV=C2V+w84Ew@mail.gmail.com>
-	<CAFTL4hzu-7uAXLqP+J48DaqLUYQWTESMNwPMYiiwrU2ZoOsgqw@mail.gmail.com>
-	<CAFTL4hyR=_ftCxycyvCBR0xwj6aOix9op40ps7htogpkkqVz+A@mail.gmail.com>
-Date: Mon, 18 Feb 2013 16:06:58 +0100
-Message-ID: <CAKfTPtC3c50yo8AcQ7K9m73gP95dEsetjbhNXDN4RiR-nZ8UqA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] sched: fix init NOHZ_IDLE flag
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, Mike Galbraith <efault@gmx.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uFLi5VeOBpDRctJ3AW_0fk3YPqcwnDokOTpGCioaWOqCA@mail.gmail.com>
+X-Operating-System: Linux phenom 3.7.0-rc4+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 February 2013 15:38, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 2013/2/18 Frederic Weisbecker <fweisbec@gmail.com>:
->> 2013/2/8 Vincent Guittot <vincent.guittot@linaro.org>:
->>> On 8 February 2013 16:35, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>>> What if the following happen (inventing function names but you get the idea):
->>>>
->>>> CPU 0                                           CPU 1
->>>>
->>>> dom = new_domain(...) {
->>>>            nr_cpus_busy = 0;
->>>>            set_idle(CPU 1);                  old_dom =get_dom()
->>>>                                                      clear_idle(CPU 1)
->>>> }
->>>> rcu_assign_pointer(cpu1_dom, dom);
->>>>
->>>>
->>>> Can this scenario happen?
->>>
->>> This scenario will be:
->>>
->>>  CPU 0                                           CPU 1
->>>
->>>  detach_and_destroy_domain {
->>>             rcu_assign_pointer(cpu1_dom, NULL);
->>>  }
->>>
->>>  dom = new_domain(...) {
->>>             nr_cpus_busy = 0;
->>>             set_idle(CPU 1);                  old_dom =get_dom()
->>>                                                       old_dom is null
->>>                                                       //clear_idle(CPU
->>> 1) can't happen because a null domain is attached so we will never
->>> call nohz_kick_needed which is the only place where we can clear_idle
->>>  }
->>>  rcu_assign_pointer(cpu1_dom, dom);
->>
->> So is the following possible?
->>
->> = CPU 0 =                                                       = CPU 1=
->>
->> detach_and_destroy_domain {
->>             rcu_assign_pointer(cpu1_dom, NULL);
->> }
->>
->> dom = new_domain(...) {
->>              nr_cpus_busy = 0;
->>              set_idle(CPU 1);
->> }
->>
->> clear_idle(CPU 1)
->>
->> dom = rcu_dereference(cpu1_dom)
->>
->> //dom == NULL, return
->>
->> rcu_assign_pointer(cpu1_dom, NULL);
->>
->>
->> set_idle(CPU 1)
->>
->> dom = rcu_dereference(cpu1_dom)
->>
->> //dec nr_cpus_busy, making it negative
->
-> Sorry, gmail messed up as usual.
->
-> I pasted the original at: http://pastebin.com/DMm5U8J8
+On Wed, Feb 13, 2013 at 07:40:05PM +0100, Daniel Vetter wrote:
+> On Tue, Jan 22, 2013 at 7:55 PM, David Woodhouse <dwmw2@infradead.org> wrote:
+> > On Mon, 2013-01-21 at 19:48 +0100, Daniel Vetter wrote:
+> >> We already have the quirk entry for the mobile platform, but also
+> >> reports on some desktop versions. So be paranoid and set it
+> >> everywhere.
+> >>
+> >> References: http://www.mail-archive.com/dri-devel@lists.freedesktop.org/msg33138.html
+> >> Cc: stable@vger.kernel.org
+> >> Cc: David Woodhouse <dwmw2@infradead.org>
+> >> Reported-and-tested-by: Mihai Moldovan <ionic@ionic.de>
+> >> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> >> ---
+> >>  drivers/iommu/intel-iommu.c |    8 +++++++-
+> >>  1 file changed, 7 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+> >> index 9743769..19854bf 100644
+> >> --- a/drivers/iommu/intel-iommu.c
+> >> +++ b/drivers/iommu/intel-iommu.c
+> >> @@ -4215,13 +4215,19 @@ static void __devinit quirk_iommu_rwbf(struct pci_dev *dev)
+> >>  {
+> >>       /*
+> >>        * Mobile 4 Series Chipset neglects to set RWBF capability,
+> >> -      * but needs it:
+> >> +      * but needs it. Same seems to hold for the desktop versions.
+> >>        */
+> >>       printk(KERN_INFO "DMAR: Forcing write-buffer flush capability\n");
+> >>       rwbf_quirk = 1;
+> >>  }
+> >>
+> >>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2a40, quirk_iommu_rwbf);
+> >> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e00, quirk_iommu_rwbf);
+> >> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e10, quirk_iommu_rwbf);
+> >> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e20, quirk_iommu_rwbf);
+> >> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e30, quirk_iommu_rwbf);
+> >> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e40, quirk_iommu_rwbf);
+> >> +DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e90, quirk_iommu_rwbf);
+> >>
+> >>  #define GGC 0x52
+> >>  #define GGC_MEMORY_SIZE_MASK (0xf << 8)
+> >
+> > Again, I'm really unhappy about doing this kind of thing based on
+> > hearsay. This should have a specific reference (with URL) to a published
+> > erratum. Rajesh?
+> 
+> Any updates here? I'd like to include this for 3.9 -next with cc:
+> stable to finally allow distros to enable DMAR/IOMMU support by
+> default on Intel hw. The current state of affairs is simply
+> embarrassing imo :(
 
-We can clear the idle flag only in the nohz_kick_needed which will not
-be called if the sched_domain is NULL so the sequence will be
-
-= CPU 0 =                                            = CPU 1=
-
-detach_and_destroy_domain {
-            rcu_assign_pointer(cpu1_dom, NULL);
-}
-
-dom = new_domain(...) {
-             nr_cpus_busy = 0;
-             set_idle(CPU 1);
-}
-                                                    dom =
-rcu_dereference(cpu1_dom)
-                                                    //dom == NULL, return
-
-rcu_assign_pointer(cpu1_dom, dom);
-
-                                                    dom =
-rcu_dereference(cpu1_dom)
-                                                    //dom != NULL,
-                                                    nohz_kick_needed {
-
-set_idle(CPU 1)
-                                                                   dom
-= rcu_dereference(cpu1_dom)
-
-//dec nr_cpus_busy,
-                                                    }
-
-Vincent
+Whatever, I want to get this off my table, so merged to drm-intel-fixes
+for 3.9.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
