@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab3BRRID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 12:08:03 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:57856 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755042Ab3BRRIB (ORCPT
+	id S1756168Ab3BRRJZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 12:09:25 -0500
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:57755 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753581Ab3BRRJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 12:08:01 -0500
-Date: Mon, 18 Feb 2013 09:07:56 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [PATCH 1/2] Revert "cgroup: fix cgroup_path() vs rename() race"
-Message-ID: <20130218170756.GC17414@htj.dyndns.org>
-References: <51205684.5040407@huawei.com>
+	Mon, 18 Feb 2013 12:09:24 -0500
+Date: Mon, 18 Feb 2013 09:09:23 -0800 (PST)
+From: Andy King <acking@vmware.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, gregkh@linuxfoundation.org,
+        davem@davemloft.net, pv-drivers@vmware.com, kraxel@redhat.com
+Message-ID: <1877909883.2079524.1361207363932.JavaMail.root@vmware.com>
+In-Reply-To: <CA+1xoqfWGUuFjruFk1UV1BAXwzZvX4_i0MShQEpsq69B6P9ieg@mail.gmail.com>
+References: <1360196636-9357-1-git-send-email-acking@vmware.com> <1360196636-9357-2-git-send-email-acking@vmware.com> <CA+1xoqfWGUuFjruFk1UV1BAXwzZvX4_i0MShQEpsq69B6P9ieg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] VSOCK: Introduce VM Sockets
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51205684.5040407@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.163.67]
+X-Mailer: Zimbra 8.0.2_GA_5569 (ZimbraWebClient - GC24 (Mac)/8.0.2_GA_5569)
+Thread-Topic: VSOCK: Introduce VM Sockets
+Thread-Index: /0QMlHIuAQ0pOWuL/AqEvVQw3GgRSA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
+Hi Sasha,
 
-On Sun, Feb 17, 2013 at 12:03:16PM +0800, Li Zefan wrote:
-> This reverts commit 299772fab304ab3a36b22b5d28ed81f9408972e7
+> > + * Specifically, we initialize the vsock_bind_table array to a size of
+> > + * VSOCK_HASH_SIZE + 1 so that vsock_bind_table[0] through
+...
+> Why isn't it using the kernel's linux/hashtable.h?
 
-I didn't push 299772 to 3.8.  I forgot about it for a couple weeks and
-then it felt too late and was planning to push it through for-3.9.
-I'm just gonna drop for-3.8-fixes and cherr-pick the following two
-commits into for-3.9.
+Gah, that's a leftover from when it was platform independent :/  I have a
+patch lying around to address this, once we have some more fixes batched
+up I'll send it out.  Sorry about that!
 
- * 7ccff5e0e9 ("cgroup: fix exit() vs rmdir() race")
- * 0844ab1e68 ("cpuset: fix cpuset_print_task_mems_allowed() vs rename() race")
-
-Thanks.
-
--- 
-tejun
+Thanks!
+- Andy
