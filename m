@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab3BRNKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 08:10:30 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:39395 "EHLO hydra.sisk.pl"
+	id S1755869Ab3BRNLW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 08:11:22 -0500
+Received: from fn.samba.org ([216.83.154.106]:43790 "EHLO mail.samba.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751706Ab3BRNK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 08:10:28 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>,
-        wency@cn.fujitsu.com
-Subject: Re: [PATCH] ACPI / scan: Make it clear that acpi_bus_trim() cannot fail
-Date: Mon, 18 Feb 2013 14:17:02 +0100
-Message-ID: <15493777.FVIQvWOuf9@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc7; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130218122549.GA4448@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1511096.zmfmBrfdmu@vostro.rjw.lan> <20130218122549.GA4448@dhcp-192-168-178-175.profitbricks.localdomain>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755036Ab3BRNLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 08:11:21 -0500
+Message-ID: <1361193074.5565.87.camel@jesse>
+Subject: Re: Read support for fat_fallocate()? (was [v2] fat: editions to
+ support fat_fallocate())
+From: Andrew Bartlett <abartlet@samba.org>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+        Ravishankar N <cyberax82@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        Nam-Jae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Date: Tue, 19 Feb 2013 00:11:14 +1100
+In-Reply-To: <87fw0t26qu.fsf@devron.myhome.or.jp>
+References: <1350138661-2454-1-git-send-email-linkinjeon@gmail.com>
+	 <1360810114.1727.306.camel@jesse>
+	 <CAKYAXd9qmDYivsJduT3bFD2vPOc0DQ0f8RQTxQ7MXXTCQMMQQA@mail.gmail.com>
+	 <1360825669.1727.337.camel@jesse>
+	 <CAKYAXd9tVzvP_Oa+BoUwKbpaMoVZKZgesDgrLirqoyk6AHrJ2A@mail.gmail.com>
+	 <1360900178.1727.393.camel@jesse> <87fw0t26qu.fsf@devron.myhome.or.jp>
+Organization: 
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 18, 2013 01:25:49 PM Vasilis Liaskovitis wrote:
-> Hi,
+On Mon, 2013-02-18 at 20:36 +0900, OGAWA Hirofumi wrote:
+> Andrew Bartlett <abartlet@samba.org> writes:
+
+> > Or, if we cannot make any changes to the on-disk format, what about
+> > keeping such a database in memory, allocating some of the existing free
+> > list to files that have had fallocate() called on them?  (Naturally,
+> > this makes it non-persistent, and instead more of a 'hint', but could at
+> > least solve our mutual performance issues).
 > 
-> On Thu, Jan 24, 2013 at 11:56:50PM +0100, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Since acpi_bus_trim() cannot fail, change its definition to a void
-> > function, so that its callers don't check the return value in vain
-> > and update the callers.
+> [...]
 > 
-> I have missed a few patchsets/discussions in the last month and wanted to
-> ask a question related to this: Does the new always-succeed 2-pass
-> trim_device design guarantee safe memory hot-remove operations?
-
-I doesn't by itself.  Nor it really can, because the .remove() callbacks of
-device drivers are not allowed to fail.
-
-> Afaict if memory offline fails now, the device is ejected (_EJ0) anyways
-> causing a panic. Tested in a VM with linux-next-20130207 and
-> linux-next-20130218 by doing an SCI-eject request on a hot-plugged dimm.
+> Hm. My concerns are compatibility and reliability. Although We can
+> change on-disk format if need, but I don't think it can be compatible
+> and reliable. If so, who wants to use it? I feel there is no reason to
+> use FAT if there is no compatible.
 > 
-> Are there more patches in development for safe memory hot-remove?
+> Well, anyway, possible solution would be, we can pre-allocate physical
+> blocks via fallocate(2) or something, but discard pre-allocated blocks
+> at ->release() (or before unmount at least). This way would have
+> compatibility (no on-disk change over unmount) and possible breakage
+> would be same with normal extend write patterns on kernel crash
+> (i.e. Windows or fsck will truncate after i_size).
 
-Yes, there are.  I sent a patch series yesterday introducing some safety
-measures (you can disable memory hotplug from user space or disable
-automatic ejection).  There's more to come still.
-
-The plan is to introduce offline/online operations for memory modules (in
-analogy with CPU core online/offline) that can be started by user space and
-memory eject will only be possible after offline (i.e. when the memory module
-is known to be not in use).
+That would certainly give me what the Samba NAS with USB FAT disk use
+case needs.
 
 Thanks,
-Rafael
 
+Andrew Bartlett
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Andrew Bartlett                                http://samba.org/~abartlet/
+Authentication Developer, Samba Team           http://samba.org
+
+
