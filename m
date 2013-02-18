@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab3BRMmp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 07:42:45 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:39320 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755228Ab3BRMmk (ORCPT
+	id S1755432Ab3BRMmw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 07:42:52 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34607 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755350Ab3BRMmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 07:42:40 -0500
+	Mon, 18 Feb 2013 07:42:47 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v6 16/46] time/clocksource: Use get/put_online_cpus_atomic()
- to prevent CPU offline
+Subject: [PATCH v6 17/46] clockevents: Use get/put_online_cpus_atomic() in
+ clockevents_notify()
 To: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
         paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
         akpm@linux-foundation.org, namhyung@kernel.org
@@ -21,8 +21,8 @@ Cc: rostedt@goodmis.org, wangyun@linux.vnet.ibm.com,
         linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         walken@google.com, vincent.guittot@linaro.org
-Date: Mon, 18 Feb 2013 18:10:30 +0530
-Message-ID: <20130218124030.26245.64712.stgit@srivatsabhat.in.ibm.com>
+Date: Mon, 18 Feb 2013 18:10:42 +0530
+Message-ID: <20130218124042.26245.92242.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -30,59 +30,50 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021812-5140-0000-0000-000002C60B66
+x-cbid: 13021812-9574-0000-0000-000006A37B03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once stop_machine() is gone from the CPU offline path, we won't be able to
-depend on preempt_disable() or local_irq_disable() to prevent CPUs from going
-offline from under us.
+The cpu idle code invokes clockevents_notify() during idle state transitions
+and the cpu offline code invokes it during the CPU_DYING phase. There
+seems to be a race-condition between the two, where the clockevents_lock
+never gets released, ending in a lockup. This can be fixed by synchronizing
+clockevents_notify() with CPU offline, by wrapping its contents within
+get/put_online_cpus_atomic().
 
-Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
-while invoking from atomic context.
-
-Cc: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- kernel/time/clocksource.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ kernel/time/clockevents.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index c958338..1c8d735 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -30,6 +30,7 @@
- #include <linux/sched.h> /* for spin_unlock_irq() using preempt_count() m68k */
- #include <linux/tick.h>
- #include <linux/kthread.h>
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 30b6de0..ca340fd 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -17,6 +17,7 @@
+ #include <linux/module.h>
+ #include <linux/notifier.h>
+ #include <linux/smp.h>
 +#include <linux/cpu.h>
  
- void timecounter_init(struct timecounter *tc,
- 		      const struct cyclecounter *cc,
-@@ -320,11 +321,13 @@ static void clocksource_watchdog(unsigned long data)
- 	 * Cycle through CPUs to check if the CPUs stay synchronized
- 	 * to each other.
- 	 */
-+	get_online_cpus_atomic();
- 	next_cpu = cpumask_next(raw_smp_processor_id(), cpu_online_mask);
- 	if (next_cpu >= nr_cpu_ids)
- 		next_cpu = cpumask_first(cpu_online_mask);
- 	watchdog_timer.expires += WATCHDOG_INTERVAL;
- 	add_timer_on(&watchdog_timer, next_cpu);
-+	put_online_cpus_atomic();
- out:
- 	spin_unlock(&watchdog_lock);
- }
-@@ -336,7 +339,9 @@ static inline void clocksource_start_watchdog(void)
- 	init_timer(&watchdog_timer);
- 	watchdog_timer.function = clocksource_watchdog;
- 	watchdog_timer.expires = jiffies + WATCHDOG_INTERVAL;
-+	get_online_cpus_atomic();
- 	add_timer_on(&watchdog_timer, cpumask_first(cpu_online_mask));
-+	put_online_cpus_atomic();
- 	watchdog_running = 1;
- }
+ #include "tick-internal.h"
  
+@@ -431,6 +432,7 @@ void clockevents_notify(unsigned long reason, void *arg)
+ 	unsigned long flags;
+ 	int cpu;
+ 
++	get_online_cpus_atomic();
+ 	raw_spin_lock_irqsave(&clockevents_lock, flags);
+ 	clockevents_do_notify(reason, arg);
+ 
+@@ -459,6 +461,7 @@ void clockevents_notify(unsigned long reason, void *arg)
+ 		break;
+ 	}
+ 	raw_spin_unlock_irqrestore(&clockevents_lock, flags);
++	put_online_cpus_atomic();
+ }
+ EXPORT_SYMBOL_GPL(clockevents_notify);
+ #endif
 
