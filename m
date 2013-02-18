@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab3BRGve (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 01:51:34 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51019 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758038Ab3BRGvc convert rfc822-to-8bit (ORCPT
+	id S932232Ab3BRGwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 01:52:53 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:41144 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752632Ab3BRGww convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 01:51:32 -0500
+	Mon, 18 Feb 2013 01:52:52 -0500
 From: "Kim, Milo" <Milo.Kim@ti.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 CC: Axel Lin <axel.lin@ingics.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 2/4] regulator: core: manage enable GPIO list
-Thread-Topic: [PATCH v3 2/4] regulator: core: manage enable GPIO list
-Thread-Index: Ac4NpEfrgYRWH1fvRduBqK3XNCUZRQ==
-Date: Mon, 18 Feb 2013 06:50:48 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F792729F9@DQHE02.ent.ti.com>
+Subject: [PATCH v3 3/4] regulator: core: use regulator_ena_pin member
+Thread-Topic: [PATCH v3 3/4] regulator: core: use regulator_ena_pin member
+Thread-Index: Ac4NpEwh1xD720iiQXOjTk/XPOObGQ==
+Date: Mon, 18 Feb 2013 06:50:55 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F79272A01@DQHE02.ent.ti.com>
 Accept-Language: ko-KR, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -28,96 +28,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- To support shared enable GPIO pin, replace GPIO code with new static functions
+ The regulator_dev has regulator_enable_gpio structure.
+ 'ena_gpio' and 'ena_gpio_invert' were moved to in regulator_enable_gpio.
 
- Reference count: 'enable_count'
-   Balance the reference count of each GPIO and actual pin control.
-   The count is incremented with enabling GPIO.
-   On the other hand, it is decremented on disabling GPIO.
-   Actual GPIO pin is enabled at the initial use.(enable_count = 0)
-   The pin is disabled if it is not used(shared) any more. (enable_count <=1)
-   Regardless of the enable count, update GPIO state of the regulator.
+  regulator_dev   --->   regulator_enable_gpio
+  .ena_gpio              .gpio
+  .ena_gpio_invert       .ena_gpio_invert
+
+  Pointer, 'ena_pin' is used for checking valid enable GPIO pin.
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/regulator/core.c |   50 ++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 44 insertions(+), 6 deletions(-)
+ drivers/regulator/core.c         |    6 +++---
+ include/linux/regulator/driver.h |    2 --
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 71d6adc..57d434d 100644
+index 57d434d..6c8c824 100644
 --- a/drivers/regulator/core.c
 +++ b/drivers/regulator/core.c
-@@ -1529,6 +1529,42 @@ static void regulator_ena_gpio_free(struct regulator_dev *rdev)
- 	}
- }
- 
-+/**
-+ * Balance enable_count of each GPIO and actual GPIO pin control.
-+ * GPIO is enabled in case of initial use. (enable_count is 0)
-+ * GPIO is disabled when it is not shared any more. (enable_count <= 1)
-+ */
-+static int regulator_ena_gpio_ctrl(struct regulator_dev *rdev, bool enable)
-+{
-+	struct regulator_enable_gpio *pin = rdev->ena_pin;
-+
-+	if (!pin)
-+		return -EINVAL;
-+
-+	if (enable) {
-+		/* Enable GPIO at initial use */
-+		if (pin->enable_count == 0)
-+			gpio_set_value_cansleep(pin->gpio,
-+						!pin->ena_gpio_invert);
-+
-+		pin->enable_count++;
-+	} else {
-+		if (pin->enable_count > 1) {
-+			pin->enable_count--;
-+			return 0;
-+		}
-+
-+		/* Disable GPIO if not used */
-+		if (pin->enable_count <= 1) {
-+			gpio_set_value_cansleep(pin->gpio,
-+						pin->ena_gpio_invert);
-+			pin->enable_count = 0;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static int _regulator_do_enable(struct regulator_dev *rdev)
+@@ -1945,7 +1945,7 @@ EXPORT_SYMBOL_GPL(regulator_disable_regmap);
+ static int _regulator_is_enabled(struct regulator_dev *rdev)
  {
- 	int ret, delay;
-@@ -1544,9 +1580,10 @@ static int _regulator_do_enable(struct regulator_dev *rdev)
+ 	/* A GPIO control always takes precedence */
+-	if (rdev->ena_gpio)
++	if (rdev->ena_pin)
+ 		return rdev->ena_gpio_state;
  
- 	trace_regulator_enable(rdev_get_name(rdev));
+ 	/* If we don't know then assume that the regulator is always on */
+@@ -3344,7 +3344,7 @@ static int add_regulator_attributes(struct regulator_dev *rdev)
+ 		if (status < 0)
+ 			return status;
+ 	}
+-	if (rdev->ena_gpio || ops->is_enabled) {
++	if (rdev->ena_pin || ops->is_enabled) {
+ 		status = device_create_file(dev, &dev_attr_state);
+ 		if (status < 0)
+ 			return status;
+@@ -3556,7 +3556,7 @@ regulator_register(const struct regulator_desc *regulator_desc,
+ 		if (config->ena_gpio_flags & GPIOF_OUT_INIT_HIGH)
+ 			rdev->ena_gpio_state = 1;
  
--	if (rdev->ena_gpio) {
--		gpio_set_value_cansleep(rdev->ena_gpio,
--					!rdev->ena_gpio_invert);
-+	if (rdev->ena_pin) {
-+		ret = regulator_ena_gpio_ctrl(rdev, true);
-+		if (ret < 0)
-+			return ret;
- 		rdev->ena_gpio_state = 1;
- 	} else if (rdev->desc->ops->enable) {
- 		ret = rdev->desc->ops->enable(rdev);
-@@ -1648,9 +1685,10 @@ static int _regulator_do_disable(struct regulator_dev *rdev)
+-		if (rdev->ena_gpio_invert)
++		if (config->ena_gpio_invert)
+ 			rdev->ena_gpio_state = !rdev->ena_gpio_state;
+ 	}
  
- 	trace_regulator_disable(rdev_get_name(rdev));
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index a467d11..7b7aeec 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -302,8 +302,6 @@ struct regulator_dev {
+ 	struct dentry *debugfs;
  
--	if (rdev->ena_gpio) {
--		gpio_set_value_cansleep(rdev->ena_gpio,
--					rdev->ena_gpio_invert);
-+	if (rdev->ena_pin) {
-+		ret = regulator_ena_gpio_ctrl(rdev, false);
-+		if (ret < 0)
-+			return ret;
- 		rdev->ena_gpio_state = 0;
+ 	struct regulator_enable_gpio *ena_pin;
+-	int ena_gpio;
+-	unsigned int ena_gpio_invert:1;
+ 	unsigned int ena_gpio_state:1;
+ };
  
- 	} else if (rdev->desc->ops->disable) {
 -- 
 1.7.9.5
 
