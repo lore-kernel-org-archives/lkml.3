@@ -1,67 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757005Ab3BRV6V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 16:58:21 -0500
-Received: from ja.ssi.bg ([178.16.129.10]:37843 "EHLO ja.ssi.bg"
+	id S1757330Ab3BRV7F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 16:59:05 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:40255 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756402Ab3BRV6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 16:58:20 -0500
-Date: Mon, 18 Feb 2013 23:57:46 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, davem@davemloft.net,
-        Simon Horman <horms@verge.net.au>, Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] net: fix functions and variables related to
- netns_ipvs->sysctl_sync_qlen_max
-In-Reply-To: <5121C699.2050408@cn.fujitsu.com>
-Message-ID: <alpine.LFD.2.00.1302182253560.1723@ja.ssi.bg>
-References: <51131B88.6040809@cn.fujitsu.com> <51132A56.60906@cn.fujitsu.com> <alpine.LFD.2.00.1302070944480.1810@ja.ssi.bg> <20130214142159.d0516a5f.akpm@linux-foundation.org> <alpine.LFD.2.00.1302152304010.1746@ja.ssi.bg>
- <5121C699.2050408@cn.fujitsu.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756771Ab3BRV7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 16:59:02 -0500
+Date: Mon, 18 Feb 2013 23:57:43 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, <JBottomley@parallels.com>,
+        <linux-scsi@vger.kernel.org>, <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, Doug Thompson <dougthompson@xmission.com>,
+        <linux-edac@vger.kernel.org>, <rjw@sisk.pl>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: SYSFS "errors"
+Message-ID: <20130218215743.GA21192@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130218184633.GC10755@arwen.pp.htv.fi>
+ <Pine.LNX.4.44L0.1302181644260.6790-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811672-176011512-1361224671=:1723"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VS++wcV0S1rZb1Fb"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1302181644260.6790-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+--VS++wcV0S1rZb1Fb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
----1463811672-176011512-1361224671=:1723
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+On Mon, Feb 18, 2013 at 04:48:06PM -0500, Alan Stern wrote:
+> On Mon, 18 Feb 2013, Felipe Balbi wrote:
+>=20
+> > Hi, On Mon, Feb 18, 2013 at 09:49:16AM -0800, Greg KH wrote:
+> > > > Input/output error - /sys/devices/cpu/power/autosuspend_delay_ms
+> > >=20
+> > > The issue with this file is, if the power.use_autosuspend flag is not
+> > > set for the device, then it can't be read or written to.  This flag
+> > > changes dynamically with the system state
+> > > (__pm_runtime_use_autosuspend() can change it), so we can't just not
+> > > show the file if the flag is not set properly, sorry.
+> > >=20
+> > > So the "error" is correct here, as is the 0644 file value.
+> >=20
+> > hmm... we could create the file at pm_runtime_enable() time and remove
+> > it on pm_runtime_disable() time, no ? Addin Rafael to Cc
+>=20
+> In theory this could be done, although the times would be when runtime=20
+> autosuspend is turned on or off, not when pm_runtime_enable is called.
 
+Right, I got that after replying. Here's a patch I plan to test
+tomorrow:
 
-	Hello,
+8<------------------------ cut here ----------------------------
 
-On Mon, 18 Feb 2013, Zhang Yanfei wrote:
+=46rom 2cdeeb483383490946cc98727a167843c40d7d27 Mon Sep 17 00:00:00 2001
+=46rom: Felipe Balbi <balbi@ti.com>
+Date: Mon, 18 Feb 2013 21:20:28 +0200
+Subject: [PATCH] base: power: create autosuspend_delay_ms from
+ pm_runtime_use_autosuspend()
 
-> 于 2013年02月16日 05:39, Julian Anastasov 写道:
-> > 
-> > 	Hello,
-> > 
-> > On Thu, 14 Feb 2013, Andrew Morton wrote:
-> > 
-> >> Redarding this patch:
-> >> net-change-type-of-netns_ipvs-sysctl_sync_qlen_max.patch and
-> >> net-fix-functions-and-variables-related-to-netns_ipvs-sysctl_sync_qlen_max.patch
-> >> are joined at the hip and should be redone as a single patch with a
-> >> suitable changelog, please.  And with a cc:netdev@vger.kernel.org.
-> > 
-> > 	Agreed, Zhang Yanfei and Simon? I'm just not sure,
-> > may be this combined patch should hit only the
-> > ipvs->nf->net trees? Or may be net-next, if we don't have
-> > time for 3.8.
-> > 
-> 
-> Should I resend the combined patch?
+this patch moves the creation of autosuspend_delay_ms
+sysfs file to pm_runtime_use_autosuspend() and, conversely,
+its deletion to pm_runtime_dont_use_autosuspend.
 
-	Yes, please! Just add CC: netdev@vger.kernel.org.
-Simon will take the patch for the networking trees.
+The idea behind this patch is such that the file in
+question is only readable after pm_runtime_use_autosuspend()
+has been called for a particular device, so we might
+as well move the creation of the file to that place.
 
-Regards
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/base/power/power.h   |  4 ++++
+ drivers/base/power/runtime.c |  6 ++++++
+ drivers/base/power/sysfs.c   | 25 ++++++++++++++++++++++++-
+ 3 files changed, 34 insertions(+), 1 deletion(-)
 
---
-Julian Anastasov <ja@ssi.bg>
----1463811672-176011512-1361224671=:1723--
+diff --git a/drivers/base/power/power.h b/drivers/base/power/power.h
+index b16686a..3822b94 100644
+--- a/drivers/base/power/power.h
++++ b/drivers/base/power/power.h
+@@ -90,6 +90,8 @@ static inline void device_pm_init(struct device *dev)
+=20
+ extern int dpm_sysfs_add(struct device *dev);
+ extern void dpm_sysfs_remove(struct device *dev);
++extern int dpm_autosuspend_sysfs_add(struct device *dev);
++extern void dpm_autosuspend_sysfs_remove(struct device *dev);
+ extern void rpm_sysfs_remove(struct device *dev);
+ extern int wakeup_sysfs_add(struct device *dev);
+ extern void wakeup_sysfs_remove(struct device *dev);
+@@ -102,6 +104,8 @@ extern void pm_qos_sysfs_remove_flags(struct device *de=
+v);
+=20
+ static inline int dpm_sysfs_add(struct device *dev) { return 0; }
+ static inline void dpm_sysfs_remove(struct device *dev) {}
++static inline int dpm_autosuspend_sysfs_add(struct device *dev) { return 0=
+; }
++static inline void dpm_autosuspend_sysfs_remove(struct device *dev) {}
+ static inline void rpm_sysfs_remove(struct device *dev) {}
+ static inline int wakeup_sysfs_add(struct device *dev) { return 0; }
+ static inline void wakeup_sysfs_remove(struct device *dev) {}
+diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+index 3148b10..a162ba5 100644
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -1266,6 +1266,12 @@ void __pm_runtime_use_autosuspend(struct device *dev=
+, bool use)
+ 	old_use =3D dev->power.use_autosuspend;
+ 	dev->power.use_autosuspend =3D use;
+ 	update_autosuspend(dev, old_delay, old_use);
++
++	if (use)
++		dpm_autosuspend_sysfs_add(dev);
++	else
++		dpm_autosuspend_sysfs_remove(dev);
++
+ 	spin_unlock_irq(&dev->power.lock);
+ }
+ EXPORT_SYMBOL_GPL(__pm_runtime_use_autosuspend);
+diff --git a/drivers/base/power/sysfs.c b/drivers/base/power/sysfs.c
+index 50d16e3..ef2a41c 100644
+--- a/drivers/base/power/sysfs.c
++++ b/drivers/base/power/sysfs.c
+@@ -609,15 +609,26 @@ static struct attribute *runtime_attrs[] =3D {
+ 	&dev_attr_control.attr,
+ 	&dev_attr_runtime_suspended_time.attr,
+ 	&dev_attr_runtime_active_time.attr,
+-	&dev_attr_autosuspend_delay_ms.attr,
+ #endif /* CONFIG_PM_RUNTIME */
+ 	NULL,
+ };
++
+ static struct attribute_group pm_runtime_attr_group =3D {
+ 	.name	=3D power_group_name,
+ 	.attrs	=3D runtime_attrs,
+ };
+=20
++static struct attribute *runtime_autosuspend_attrs[] =3D {
++#ifdef CONFIG_PM_RUNTIME
++	&dev_attr_autosuspend_delay_ms.attr,
++#endif /* CONFIG_PM_RUNTIME */
++};
++
++static struct attribute_group pm_runtime_autosuspend_attr_group =3D {
++	.name	=3D power_group_name,
++	.attrs	=3D runtime_autosuspend_attrs,
++};
++
+ static struct attribute *pm_qos_latency_attrs[] =3D {
+ #ifdef CONFIG_PM_RUNTIME
+ 	&dev_attr_pm_qos_resume_latency_us.attr,
+@@ -671,6 +682,12 @@ int dpm_sysfs_add(struct device *dev)
+ 	return rc;
+ }
+=20
++int dpm_autosuspend_sysfs_add(struct device *dev)
++{
++	return sysfs_merge_group(&dev->kobj,
++			&pm_runtime_autosuspend_attr_group);
++}
++
+ int wakeup_sysfs_add(struct device *dev)
+ {
+ 	return sysfs_merge_group(&dev->kobj, &pm_wakeup_attr_group);
+@@ -712,3 +729,9 @@ void dpm_sysfs_remove(struct device *dev)
+ 	sysfs_unmerge_group(&dev->kobj, &pm_wakeup_attr_group);
+ 	sysfs_remove_group(&dev->kobj, &pm_attr_group);
+ }
++
++void dpm_autosuspend_sysfs_remove(struct device *dev)
++{
++	sysfs_unmerge_group(&dev->kobj,
++			&pm_runtime_autosuspend_attr_group);
++}
+--=20
+1.8.1.rc1.5.g7e0651a
+
+--=20
+balbi
+
+--VS++wcV0S1rZb1Fb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRIqPWAAoJEIaOsuA1yqREKKQP+gNtEHdA0IaJNfVwCokXa9jF
+4l8AWz8Kxxyckwrn8XPHCCzIXVWuXzIdr0fkZ8A97pz7Ibn6WinNC7Bezk07+hDI
+x1Th8D1BrvCj/wvv/R5rUFGoiZl/9ABF1ihukQDmgObbrXGQEuEMRfqnE6Tj7k2L
++7dnA4Rpj9KN06GGQNk2HiQ7aa8zQ2ezD1vFZ/aarec5vTCyFVxEpUD8fHzTyUNK
+uAvdqslKmpAyktrj5zrFGWKkvmJmd9oYlFrN58OgVWPjqWobmdEBw/8j/wUHNKR2
+9PMsjGpb+CO3iLcJBKLehaI6P44Fwpeytgw/j7XM6YO3JsOJYtHES6r1/JNhuhJ+
+MbImAaGDwtQwElQH4IkN2ujWIPAzxhfo806HEBTDjtXjMo8jKaYw+eG9jC+4zSct
+0Cd3IQ7zVfklYw1Jv5SJGJ8xzI0BO/unxnilB/pmdNJYY97tBJd/G2ev4hc/5KA2
+aEL3fappD/l9i3vc6Hz4eIfxuIupU7FO8pbinlEGsQa4D0UueSwaCPn0kl0e1GQ+
+vrxexnERS5q2Wa1slLQ6mrT6C2fDmjuRjpfle72jBm6ZFW149So/ackKgQB1fBXh
+O8GJNippgaREW9Bza31URJz7VhsZgeJlbMB2+bHnf31873jjfCa0CLGNujXp1O0p
+rvMwqOd3xFaJiFHtcaNg
+=QpVH
+-----END PGP SIGNATURE-----
+
+--VS++wcV0S1rZb1Fb--
