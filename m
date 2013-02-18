@@ -1,56 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513Ab3BRD7T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 22:59:19 -0500
-Received: from mga02.intel.com ([134.134.136.20]:35886 "EHLO mga02.intel.com"
+	id S1756767Ab3BRECz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 23:02:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6852 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754741Ab3BRD7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 22:59:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,683,1355126400"; 
-   d="scan'208";a="286975454"
-Date: Mon, 18 Feb 2013 11:07:23 -0500
-From: Youquan Song <youquan.song@linux.intel.com>
-To: Libor Pechacek <lpechacek@suse.cz>
-Cc: Youquan Song <youquan.song@intel.com>, htejun@gmail.com,
-        ming.lei@canonical.com, sshtylyov@mvista.com,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        seth.heasley@intel.com, jlee@suse.com, james.d.ralston@intel.com,
-        stable@vger.kernel.org, Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH v2] ata: Fix DVD not dectected at some Haswell platforms
-Message-ID: <20130218160723.GA1749@linux-youquan.bj.intel.com>
-References: <1359731982-1390-1-git-send-email-youquan.song@intel.com> <20130213083242.GD1106@fm.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130213083242.GD1106@fm.suse.cz>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1755256Ab3BRECy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Feb 2013 23:02:54 -0500
+Message-ID: <1361160167.2801.12.camel@bling.home>
+Subject: Re: [RFC][PATCH] kvm: fix a race when closing irq eventfd
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        kvm@vger.kernel.org, Davide Libenzi <davidel@xmailserver.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Gregory Haskins <ghaskins@novell.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Sun, 17 Feb 2013 21:02:47 -0700
+In-Reply-To: <51219C57.7080809@huawei.com>
+References: <51219C57.7080809@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2013-02-18 at 11:13 +0800, Li Zefan wrote:
+> While trying to fix a race when closing cgroup eventfd, I took a look
+> at how kvm deals with this problem, and I found it doesn't.
 > 
-> As to my understanding Sergei did not suggest citing the whole commit message.
-> I also find the numerous references to Sandy Bridge confusing as this is a fix
-> for Lynx Point chipset.
+> I may be wrong, as I don't know kvm code, so correct me if I'm.
 > 
-> How about rephrasing the commit message in a way similar to the following one?
-> ------8<-----
-> We've hit a problem with DVD not recognized on Haswell Desktop platform which
-> includes Lynx Point 2-port SATA controller.  This quirk patch disables 32bit
-> PIO on the controller in IDE mode.
-> ------>8-----
-Thanks Libor!
-I have updated the comments and sent out a v3 patch out to LKML. 
+> 	/*
+> 	 * Race-free decouple logic (ordering is critical)
+> 	 */
+> 	static void
+> 	irqfd_shutdown(struct work_struct *work)
+> 
+> I don't think it's race-free!
+> 
+> 	static int
+> 	irqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
+> 	{
+> 	...
+> 			 * We cannot race against the irqfd going away since the
+> 			 * other side is required to acquire wqh->lock, which we hold
+> 			 */
+> 			if (irqfd_is_active(irqfd))
+> 				irqfd_deactivate(irqfd);
+> 	}
+> 
+> In kvm_irqfd_deassign() and kvm_irqfd_release() where irqfds are freed,
+> wqh->lock is not acquired!
+> 
+> So here is the race:
+> 
+> CPU0                                    CPU1
+> -----------------------------------     ---------------------------------
+> kvm_irqfd_release()
+>   spin_lock(kvm->irqfds.lock);
+>   ...
+>   irqfd_deactivate(irqfd);
+>     list_del_init(&irqfd->list);
+>   spin_unlock(kvm->irqfd.lock);
+>   ...
+> 					close(eventfd)
+> 					  irqfd_wakeup();
 
+irqfd_wakeup is assumed to be called with wqh->lock held
 
-> > +		.flags		= PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR | PIIX_FLAG_PIO16,
-> 
-> The line might be worth splitting as it's over 80 characters.
-> 
-> Otherwise the patch looks OK to me.
-> 
-Also change it in v3 patch.
+>     irqfd_shutdown();
 
-Thanks
--Youquan
+eventfd_ctx_remove_wait_queue has to acquire wqh->lock to complete or
+else irqfd_shutdown never makes it to the kfree.  So in your scenario
+this cpu0 spins here until cpu1 completes.
+
+>       remove_waitqueue(irqfd->wait);
+>       kfree(irqfd);
+> 					    spin_lock(kvm->irqfd.lock);
+> 					      if (!list_empty(&irqfd->list))
+
+We don't take this branch because we already did list_del_init above,
+which makes irqfd->list empty.
+
+> 						irqfd_deactivate(irqfd);
+> 						  list_del_init(&irqfd->list);
+> 					    spin_unlock(kvm->irqfd.lock);
+> 
+> Look, we're accessing irqfd though it has already been freed!
+
+Unless the irqfd_wakeup path isn't acquiring wqh->lock, it looks
+race-free to me.  Thanks,
+
+Alex
+
