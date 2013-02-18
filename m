@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab3BRD26 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Feb 2013 22:28:58 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47714 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754209Ab3BRD24 (ORCPT
+	id S1756014Ab3BRDfn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Feb 2013 22:35:43 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:60106 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754433Ab3BRDfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Feb 2013 22:28:56 -0500
-Message-ID: <1361158129.5374.549.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH firmware] rtl_nic: update firmware for RTL8168G
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: dwmw2@infradead.org, romieu@fr.zoreil.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 18 Feb 2013 03:28:49 +0000
-In-Reply-To: <1360163939-3625-1-git-send-email-hayeswang@realtek.com>
-References: <1360163939-3625-1-git-send-email-hayeswang@realtek.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-2knzy+UWkxXKFSVKbYGe"
-X-Mailer: Evolution 3.4.4-1 
+	Sun, 17 Feb 2013 22:35:42 -0500
+Date: Mon, 18 Feb 2013 14:35:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>
+Subject: linux-next: manual merge of the tip tree with the kbuild tree
+Message-Id: <20130218143528.451b9e1e19d79693c5673414@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a11:96ff:fec6:70c4
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__18_Feb_2013_14_35_28_+1100_XBTzKu0EdQw=EKMG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-2knzy+UWkxXKFSVKbYGe
-Content-Type: text/plain; charset="UTF-8"
+--Signature=_Mon__18_Feb_2013_14_35_28_+1100_XBTzKu0EdQw=EKMG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2013-02-06 at 23:18 +0800, Hayes Wang wrote:
-> File: rtl_nic/rtl8168g-2.fw
-> Version: 0.0.1
->=20
-> This firmware supports new fw setting mothod for linux kernel.
->=20
-> Add MAC OCP settings for:
->  -phy reset
->  -PXE in ALDPS
->  -pwron sequence
->  -OBFF
->=20
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-> ---
->  WHENCE                |   3 +++
->  rtl_nic/rtl8168g-2.fw | Bin 0 -> 4896 bytes
->  2 files changed, 3 insertions(+)
->  create mode 100644 rtl_nic/rtl8168g-2.fw
-[...]
+Hi all,
 
-Applied, thanks.
+Today's linux-next merge of the tip tree got a conflict in
+kernel/timeconst.pl between commit 70730bca1331 ("kernel: Replace
+timeconst.pl with a bc script") from the kbuild tree and commit
+63a3f603413f ("timeconst.pl: Eliminate Perl warning") from the tip tree.
 
-Ben.
+I just droppped the tip tree version (I deleted the file) and can carry
+the fix as necessary (no action is required).
 
 --=20
-Ben Hutchings
-Sturgeon's Law: Ninety percent of everything is crap.
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---=-2knzy+UWkxXKFSVKbYGe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+--Signature=_Mon__18_Feb_2013_14_35_28_+1100_XBTzKu0EdQw=EKMG
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAUSGf8ee/yOyVhhEJAQo2EBAAzYdoqoC5UJiUSonz7zWzuAxAlDahC+3B
-Y972U4Vw54CUnGOWagCLXojdAJUNdmdWvIJnfjkIrU4nC03I1NGOtwNiFrYQhmI1
-q6rO/SpxsE1gGkvvtjjtlB8FDzMPgFLpS739TUwHxTEFi1qsZ1vP5+ajkiMiNkLX
-Om5QCEjBDr7UIXvj4jKdzt2RQUFrTW9Gu5j8wdVTmU784ZSkCVtcO86j4l9sFgJ6
-1vyU0LDej+Lzp75INOUPgmSRf7XrZdNihc1RndSP6ZOpa5oysq1wR3LQ/ihzfAa/
-zQ9MW2+d+PnXrFh1BCPPYRa6zmDYHvDxunEy8gJGxR6rvs+ztVHhvJB/mNnldm8g
-XHS+tO4fUmQoWz6TW5/udEpC29SQA6GZDogFk+Jw7FHthbQ56ZHRsHlfSsPCjvkd
-+G2HOlSowslnGdQglzO+K/dGwwl0p7+yOdQASn1shlzuC4z83Mb9IGdnyf8AB+tz
-WTkhWvVlqL+V2RsQLm3SiEU7djMjTRCwWI4yTl3r2RzNL7TqmVdSvVkQlmpKE9v7
-DpHm/W90gkmy5sL7NkdJeiHGgvJVTMj6ZXFi/TPEXpEslALclvAauxEbx7qZOd6L
-U35SF9xzYhco7n4jzE24/WxjT6KMzaC8N0pk7FJ5Z/1MiacEPRbDbfo8G8v//bvo
-puzPKyc8BgM=
-=6iMV
+iQIcBAEBCAAGBQJRIaGAAAoJEECxmPOUX5FEKu0P/0XPqDX+zVic+fCFqPdlCdNd
+uFlGzYy7iE4G4j+WAzxIflGYSce0rfaLLl3OUo8VdlbVa7PnRoJljW1USAiy1V/K
+W2Y+LnUf0dI3GIr2u/2wNeve51l6kn5sAn84XIhRNsWGzPJ7BD4OZN2iRoSSmfmF
+g5BjZb3C/ag4oWtv3+6lUV6evmiv8ZXl6gC/1LlA03BpT+L2buzhOcGg7FQhHrH7
+6GVVilHUFAH69FyYLKQNM74/BRSvAW3HkEG7AphCvrtBiBGbdEGEX8PArkKpXPPG
+G9bNRP+LnfFgMSQz9V1kdeNlqTYka63gp5S2LeK+ZuShpmRO6J+fvuEJAq1US9CX
+8n0tgigRPs1OgBmyqVtjkCsBdfYDZ7yhA5YdUXr4WlZkMcx8K5JdjX5T4xGe/egW
+o6uy7ludS5cWMkrvSBUc/Cl9N/wpjnVFRotX8Sh4Y5OPlALQNTQvf+hTMXAi4Irj
+OTIAkpumAwUxQv5M9K8i5gFD3NdhjGPwcmF/tbWkfqn0E9r0sgUsok0zM5iOFZcy
+lgQe6jHl/L8j1K8d4RTPWCO2iKFUQ4b+TVr3iI7rfdNteaYlU/+a57yRH80vgpqj
+ysBod3uC7gk6FhyYfk+UicCuMZnA/FOmILdbwW0kE20R+O8gxMV1SCVfjYY8txTJ
+mY4lOqM2TmXl1awV9uMQ
+=7f0O
 -----END PGP SIGNATURE-----
 
---=-2knzy+UWkxXKFSVKbYGe--
+--Signature=_Mon__18_Feb_2013_14_35_28_+1100_XBTzKu0EdQw=EKMG--
