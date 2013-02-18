@@ -1,59 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756432Ab3BRRU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 12:20:56 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:54713 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756033Ab3BRRUz (ORCPT
+	id S1756610Ab3BRRVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 12:21:09 -0500
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:38902 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756498Ab3BRRVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 12:20:55 -0500
-From: Tim Niemeyer <tim.niemeyer@corscience.de>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Mans Rullgard <mans@mansr.com>, Thomas Weber <thomas.weber@corscience.de>
-Subject: [PATCH] arm: update ARM_ERRATA_430973 Kconfig
-Date: Mon, 18 Feb 2013 18:15:04 +0100
-Message-Id: <1361207704-11609-1-git-send-email-tim.niemeyer@corscience.de>
-X-Mailer: git-send-email 1.7.2.5
-X-Provags-ID: V02:K0:S1EIjOMusmkDx3fLVJMdvx8ZJqonaeT00tSwy4S/FMI
- soqmMyppbQ1C2IAwFGkWiqqVQaI18UezwJJQ7H8ZQ2ylmspYRo
- cw/rgTqqdVRL1F+CsD6VAp7JVeixc79KAEHNHUSV3WUmO71Y2s
- 4RoLTQ3nTi7kdSWjrvWjJPtXsEUBrVcerxrnyJd/YEIxVxFx4w
- IHhMsjxloNLFTYFCHcsDmbI68UxkQo0O9i37Bqbq8TG69a2zJ7
- e+I11RWVy2eVY5/Ich0d9X8x/UKcTqUkMt7q/JgCVs8ua2Ifzs
- Iwh02c+ufLpm38XnIzlA3sZUi6wh04GTrSdTZJ2aUPFR1xI3ig
- Ut+JlkXuLnniTHeI9w7x+rzKd3DAp5+WQE+Sfm5Jq0u2r8n6KT
- qtfiim5i7R9XQ==
+	Mon, 18 Feb 2013 12:21:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <51225A36.40600@linux.vnet.ibm.com>
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
+	<20130218123920.26245.56709.stgit@srivatsabhat.in.ibm.com>
+	<CANN689HhVxDv+3Bn9UAxOMzj0egTvVp_c7oAmQ2nnQ8Xjn_aMA@mail.gmail.com>
+	<51225A36.40600@linux.vnet.ibm.com>
+Date: Tue, 19 Feb 2013 01:21:02 +0800
+Message-ID: <CANN689FJPLfz06MFRJ9T+BuToejAzjYP_yrw_H4iGi1Kb3p2-g@mail.gmail.com>
+Subject: Re: [PATCH v6 08/46] CPU hotplug: Provide APIs to prevent CPU offline
+ from atomic context
+From: Michel Lespinasse <walken@google.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vincent.guittot@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had strange problems with some illegal instructions and segmentation
-faults. It turns out that the OMAP3503D (Cortex A8 r1p3) suffers from
-erratum 430973.
+On Tue, Feb 19, 2013 at 12:43 AM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> On 02/18/2013 09:53 PM, Michel Lespinasse wrote:
+>> I am wondering though, if you could take care of recursive uses in
+>> get/put_online_cpus_atomic() instead of doing it as a property of your
+>> rwlock:
+>>
+>> get_online_cpus_atomic()
+>> {
+>>     unsigned long flags;
+>>     local_irq_save(flags);
+>>     if (this_cpu_inc_return(hotplug_recusion_count) == 1)
+>>         percpu_read_lock_irqsafe(&hotplug_pcpu_rwlock);
+>>     local_irq_restore(flags);
+>> }
+>>
+>> Once again, the idea there is to avoid baking the reader side
+>> recursive properties into your rwlock itself, so that it won't be
+>> impossible to implement reader/writer fairness into your rwlock in the
+>> future (which may be not be very important for the hotplug use, but
+>> could be when other uses get introduced).
+>
+> Hmm, your proposal above looks good to me, at first glance.
+> (Sorry, I had mistaken your earlier mails to mean that you were against
+> recursive reader-side, while you actually meant that you didn't like
+> implementing the recursive reader-side logic using the recursive property
+> of rwlocks).
 
-    Discussion about this problem:
-    https://bugs.launchpad.net/ubuntu/+source/fakeroot/+bug/495536
-    http://www.beagleboard.org/irclogs/index.php?date=2013-02-18
+To be honest, I was replying as I went through the series, so I hadn't
+digested your hotplug use case yet :)
 
-Signed-off-by: Tim Niemeyer <tim.niemeyer@corscience.de>
-Signed-off-by: Thomas Weber <thomas.weber@corscience.de>
----
- arch/arm/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+But yes - I don't like having the rwlock itself be recursive, but I do
+understand that you have a legitimate requirement for
+get_online_cpus_atomic() to be recursive. This IMO points to the
+direction I suggested, of explicitly handling the recusion in
+get_online_cpus_atomic() so that the underlying rwlock doesn't have to
+support recursive reader side itself.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 67874b8..2ca277e 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1215,7 +1215,7 @@ config ARM_ERRATA_430973
- 	depends on CPU_V7
- 	help
- 	  This option enables the workaround for the 430973 Cortex-A8
--	  (r1p0..r1p2) erratum. If a code sequence containing an ARM/Thumb
-+	  (r1p*) erratum. If a code sequence containing an ARM/Thumb
- 	  interworking branch is replaced with another code sequence at the
- 	  same virtual address, whether due to self-modifying code or virtual
- 	  to physical address re-mapping, Cortex-A8 does not recover from the
+(And this would work for the idea of making writers own the reader
+side as well - you can do it with the hotplug_recursion_count instead
+of with the underlying rwlock).
+
+> While your idea above looks good, it might introduce more complexity
+> in the unlock path, since this would allow nesting of heterogeneous readers
+> (ie., if hotplug_recursion_count == 1, you don't know whether you need to
+> simply decrement the counter or unlock the rwlock as well).
+
+Well, I think the idea doesn't make the underlying rwlock more
+complex, since you could in principle keep your existing
+percpu_read_lock_irqsafe implementation as is and just remove the
+recursive behavior from its documentation.
+
+Now ideally if we're adding a bit of complexity in
+get_online_cpus_atomic() it'd be nice if we could remove some from
+percpu_read_lock_irqsafe, but I haven't thought about that deeply
+either. I think you'd still want to have the equivalent of a percpu
+reader_refcnt, except it could now be a bool instead of an int, and
+percpu_read_lock_irqsafe would still set it to back to 0/false after
+acquiring the global read side if a writer is signaled. Basically your
+existing percpu_read_lock_irqsafe code should still work, and we could
+remove just the parts that were only there to deal with the recursive
+property.
+
 -- 
-1.7.2.5
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
