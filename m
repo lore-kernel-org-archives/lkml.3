@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab3BRSXS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 13:23:18 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:59573 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751634Ab3BRSXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 13:23:16 -0500
-Date: Mon, 18 Feb 2013 20:22:40 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Afzal Mohammed <afzal@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
-        Syed Mohammed Khasim <khasim@ti.com>
-Subject: Re: [PATCH, RFC 7/8] ARM: dts: am4372: initial support
-Message-ID: <20130218182240.GA10755@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <cover.1361186097.git.afzal@ti.com>
- <c9c131c0508b875c0893e8557504372a1564568a.1361186097.git.afzal@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
-Content-Disposition: inline
-In-Reply-To: <c9c131c0508b875c0893e8557504372a1564568a.1361186097.git.afzal@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752379Ab3BRSZB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 13:25:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43938 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634Ab3BRSZA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 13:25:00 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 0/1] 3.4.33-stable review
+Date: Mon, 18 Feb 2013 10:24:55 -0800
+Message-Id: <20130218181454.615592566@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---HlL+5n6rz5pIUxbD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is the start of the stable review cycle for the 3.4.33 release.
+There is 1 patch in this series, which will be posted as a response to
+this one.  If anyone has any issues with it being applied, please let me
+know.
 
-Hi,
+Responses should be made by Wed Feb 20 18:13:44 UTC 2013.
+Anything received after that time might be too late.
 
-On Mon, Feb 18, 2013 at 05:08:16PM +0530, Afzal Mohammed wrote:
-> +		uart1: serial@44e09000 {
-> +			compatible =3D "ti,am4372-uart","ti,omap2-uart";
-> +			clock-frequency =3D <48000000>;
-> +			reg =3D <0x44e09000 0x2000>;
-> +			interrupts =3D <0 72 0x4>;
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.33-rc1.gz
+and the diffstat can be found below.
 
-missing ti,hwmods ??
+thanks,
 
---=20
-balbi
+greg k-h
 
---HlL+5n6rz5pIUxbD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-------------
+Pseudo-Shortlog of commits:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.33-rc1
 
-iQIcBAEBAgAGBQJRInFwAAoJEIaOsuA1yqRE28MP/3E3Dj63dULqlnF+vytnOoft
-VE60mB7NGEU6lehR41LCXcLiZK5CH5XNUynuC+eUykTzGjh7Tcx3u+MLTg0nkzra
-Nns/6ohhnALowcAVwAoXHI3HspY6r/YAAmybR/XXrB8LOSKKFiZq5Ak4q/+iYupD
-Ic66WpaGV85NDX8TELFgeRLCZo0TxT/mAaA3RkdVNf7tJtQF1cPbVi+fdJLGvq4j
-UqeXwp/YbWycIn+6dydWJxAslGIPi5V4ll9/cdhC5oY/ot8awe+moM55O2HxBuLK
-FAeKldpm4yQCDXcECMAQKhClo7rwuZ7GqvDMxxcii2sxBywVS0wdgyz6EF422Ost
-Nrws6fTfBWfKJy961xHEYx6h7OtXpiV1mvE5LCso1aGOTeiE1C4+a2miwpBMxE+1
-meLzMSbTRswASX3wim0bMxsWg2A6A9NGHQbTG2F8C31Euzi8smDSsMQfOc/sh6ij
-kERgQam5l8EvWaRqCi2OGvsIQ/1rfHjp3+HjzaG+tO1z5n93TGL1gmU3UEoYeXBT
-iWE8plppPMwJp+d9apjFnG+hvKGZyjAkd4uHb9xAs5fj6B27NdLtk3TkBQTb35gO
-B9lzOmDdNOua957cFxgnHM6yVqPtliJAvxLxuO2t9Sbr9RUb/zRQjGwOzQOCsGIu
-+pU3un+qlAboiNmh4jiX
-=Gbnv
------END PGP SIGNATURE-----
+Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
+    printk: fix buffer overflow when calling log_prefix function from call_console_drivers
 
---HlL+5n6rz5pIUxbD--
+
+-------------
+
+Diffstat:
+
+ Makefile               |  4 ++--
+ include/linux/syslog.h |  6 ++++++
+ kernel/printk.c        | 13 ++++++++++++-
+ 3 files changed, 20 insertions(+), 3 deletions(-)
+
+
