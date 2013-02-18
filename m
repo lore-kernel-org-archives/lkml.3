@@ -1,134 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813Ab3BRPQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 10:16:59 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:59085 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535Ab3BRPQ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 10:16:57 -0500
+	id S1754057Ab3BRPRY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 10:17:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34101 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753648Ab3BRPRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 10:17:23 -0500
+Date: Mon, 18 Feb 2013 15:17:16 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, bcrl@kvack.org,
+        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org, riel@redhat.com,
+        rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, jiang.liu@huawei.com,
+        linux-mm@kvack.org, linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: hotplug: implement non-movable version of
+ get_user_pages() called get_user_pages_non_movable()
+Message-ID: <20130218151716.GL4365@suse.de>
+References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com>
+ <1359972248-8722-2-git-send-email-linfeng@cn.fujitsu.com>
+ <20130204160624.5c20a8a0.akpm@linux-foundation.org>
+ <20130205115722.GF21389@suse.de>
+ <512203C4.8010608@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1360838032.4045.126.camel@hornet>
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
-	<1350408232.2336.42.camel@laptop>
-	<1359728280.8360.15.camel@hornet>
-	<CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>
-	<51118797.9080800@linaro.org>
-	<1360113595.2621.30.camel@gandalf.local.home>
-	<1360174657.4045.33.camel@hornet>
-	<CABPqkBR=R_xnM1j8J_+vXHniqfBzJQRr8oUZz05YVzhbSW777w@mail.gmail.com>
-	<1360838032.4045.126.camel@hornet>
-Date: Mon, 18 Feb 2013 16:16:55 +0100
-Message-ID: <CABPqkBRaMUOz6MsJRzCu2wcvGoYasdnZCnneyzrUstYTWRJnqA@mail.gmail.com>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user samples
- with kernel samples
-From: Stephane Eranian <eranian@google.com>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>,
-        Robert Richter <robert.richter@amd.com>, tglx <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <512203C4.8010608@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Feb 18, 2013 at 06:34:44PM +0800, Lin Feng wrote:
+> >>> +			if (!migrate_pre_flag) {
+> >>> +				if (migrate_prep())
+> >>> +					goto put_page;
+> > 
+> > CONFIG_MEMORY_HOTREMOVE depends on CONFIG_MIGRATION so this will never
+> > return failure. You could make this BUG_ON(migrate_prep()), remove this
+> > goto and the migrate_pre_flag check below becomes redundant.
+> Sorry, I don't quite catch on this. Without migrate_pre_flag, the BUG_ON() check
+> will call/check migrate_prep() every time we isolate a single page, do we have
+> to do so?
 
+I was referring to the migrate_pre_flag check further down and I'm not
+suggesting it be removed from here as you do want to call migrate_prep()
+only once. However, as it'll never return failure for any kernel
+configuration that allows memory hot-remove, this goto can be
+removed and the flow simplified.
 
-I think the advantage of the ioctl() is that is reuses existing infrastructure.
-The downside is that to get the timestamp you need at a minimum:
+> > 
+> >>> +				migrate_pre_flag = 1;
+> >>> +			}
+> >>> +
+> >>> +			if (!isolate_lru_page(pages[i])) {
+> >>> +				inc_zone_page_state(pages[i], NR_ISOLATED_ANON +
+> >>> +						 page_is_file_cache(pages[i]));
+> >>> +				list_add_tail(&pages[i]->lru, &pagelist);
+> >>> +			} else {
+> >>> +				isolate_err = 1;
+> >>> +				goto put_page;
+> >>> +			}
+> > 
+> > isolate_lru_page() takes the LRU lock every time. If
+> > get_user_pages_non_movable is used heavily then you may encounter lock
+> > contention problems. Batching this lock would be a separate patch and should
+> > not be necessary yet but you should at least comment on it as a reminder.
+> Farsighted, should improve it in the future.
+> 
+> > 
+> > I think that a goto could also have been avoided here if you used break. The
+> > i == ret check below would be false and it would just fall through.
+> > Overall the flow would be a bit easier to follow.
+> Yes, I noticed this before. I thought using goto could save some micro ops
+> (here is only the i == ret check) though lower the readability but still be clearly. 
+> 
+> Also there are some other place in current kernel facing such performance/readability 
+> race condition, but it seems that the developers prefer readability, why? While I
+> think performance is fatal to kernel..
+> 
 
-uint64_t get_perf_timestamp(void)
-{
-   struct perf_event_attr attr;
-   uint64_t ts = 0;
-   int fd;
+Memory hot-remove and page migration are not performance critical paths.
+For page migration, the cost will be likely dominated by the page copy but
+it's also possible the cost will be dominated by locking. The difference
+between a break and goto will not even be measurable.
 
-   memset(&attr, 0, sizeof(attr));
-
-   /* pick a dummy SW event (no PMU HW resource allocated), keep it disabled */
-   attr.type = PERF_TYPE_SOFTWARE;
-   attr.config =  PERF_COUNT_SW_CPU_CLOCK; /* dummy event */
-   attr.disabled = 1;
-
-   /* attach to self in per-thread mode */
-   fd = perf_event_open(&attr, 0, -1, -1, 0);
-   if (fd == -1)
-       return 0;
-
-  ioctl(fd, PERF_EVENT_IOC_GET_TIME, &ts);
-  close(fd);
-
-  return ts;
-}
-
-This function is likely to be called multiple times. So we could cache
-the fd and reuse it.
-There would be a bigger penalty only for the first call. Thereafter it
-would cost probably
- just a bit more than the pfm_control() approach, because of the need
-to go through VFS.
-So I am fine with this.
-
-
-On Thu, Feb 14, 2013 at 11:33 AM, Pawel Moll <pawel.moll@arm.com> wrote:
-> On Wed, 2013-02-13 at 20:00 +0000, Stephane Eranian wrote:
->> On Wed, Feb 6, 2013 at 7:17 PM, Pawel Moll <pawel.moll@arm.com> wrote:
->> > On Wed, 2013-02-06 at 01:19 +0000, Steven Rostedt wrote:
->> >> If people are worried about adding a bunch of new perf syscalls, maybe
->> >> add a sys_perf_control() system call that works like an ioctl but
->> >> without a file descriptor. Something for things that don't require an
->> >> event attached to it, like to retrieve a time stamp counter that perf
->> >> uses, but done in a way that it could be used for other things perf
->> >> related that does not require an event.
->> >
->> >  /**
->> > + * sys_perf_control - ioctl-like interface to control system-wide
->> > + *                   perf behaviour
->> > + *
->> > + * @cmd:       one of the PERF_CONTROL_* commands
->> > + * @arg:       command-specific argument
->> > + */
->> > +SYSCALL_DEFINE2(perf_control, unsigned int, cmd, unsigned long, arg)
->> > +{
->> > +       switch (cmd) {
->> > +       case PERF_CONTROL_GET_TIME:
->> > +       {
->> > +               u64 time = perf_clock();
->> > +               if (copy_to_user((void __user *)arg, &time, sizeof(time)))
->> > +                       return -EFAULT;
->> > +               return 0;
->> > +       }
->> > +
->> > +       default:
->> > +               return -ENOTTY;
->> > +       }
->> > +}
->>
->> So what would be the role of this new syscall besides GET_TIME?
->> What other controls without a fd could be done? We are already passing
->> a lot of control thru the perf_event_open() some in the attr struct others
->> as arguments.
+> > <SNIP>
+> >
+> > result. It's a little clumsy but the memory hot-remove failure message
+> > could list what applications have pinned the pages that cannot be removed
+> > so the administrator has the option of force-killing the application. It
+> > is possible to discover what application is pinning a page from userspace
+> > but it would involve an expensive search with /proc/kpagemap
+> > 
+> >>> +	if (migrate_pre_flag && !isolate_err) {
+> >>> +		ret = migrate_pages(&pagelist, alloc_migrate_target, 1,
+> >>> +					false, MIGRATE_SYNC, MR_SYSCALL);
+> > 
+> > The conversion of alloc_migrate_target is a bit problematic. It strips
+> > the __GFP_MOVABLE flag and the consequence of this is that it converts
+> > those allocation requests to MIGRATE_UNMOVABLE. This potentially is a large
+> > number of pages, particularly if the number of get_user_pages_non_movable()
+> > increases for short-lived pins like direct IO.
 >
-> I think Steven was thinking about an "extensible" fd-less interface.
-> Whether we'll need any other fd-less control in the future, I don't
-> know...
->
->> The only advantage of this "disguised" ioctl() is that it does not require
->> a fd. But it is worth adding a syscall just to avoid creating a fd?
->
-> Frankly speaking, I have some doubts here, but I do sys_perf_open()
-> anyway, so it was mainly trying to address your situation.
->
-> One way or another I'd like to get the timestamp, so how about picking
-> one solution and trying to make it happen? Seems that my previous
-> "standard ioctl()" patch would be the best compromise?
->
-> Pawel
->
->
+> Sorry, I don't quite understand here neither. If we use the following new 
+> migration allocation function as you said, the increasing number of 
+> get_user_pages_non_movable() will also lead to large numbers of MIGRATE_UNMOVABLE
+> pages. What's the difference, do I miss something?
+> 
+
+The replacement function preserves the __GFP_MOVABLE flag. It cannot use
+ZONE_MOVABLE but otherwise the newly allocated page will be grouped with
+other movable pages.
+
+-- 
+Mel Gorman
+SUSE Labs
