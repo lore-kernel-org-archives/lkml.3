@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3BRUse (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 15:48:34 -0500
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:33981 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab3BRUsc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 15:48:32 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgNDAHKSIlFV5qjOPGdsb2JhbABEiwC1I4EDFwMBAQEBODSCHwEBBAE6HCMFCwgDDhMlDwUlChqIHwrBExWNWoFIB4JfYQOWK4YBjWCBcQ
-X-IronPort-AV: E=Sophos;i="4.84,690,1355094000"; 
-   d="scan'208";a="278833801"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 18 Feb 2013 21:49:41 +0100
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] hid driver transport cleanup
-Message-ID: <20130218204941.GA12214@polaris.bitmath.org>
-References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
- <alpine.LNX.2.00.1302181012320.17024@pobox.suse.cz>
+	id S1754508Ab3BRUtH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 15:49:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20238 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752043Ab3BRUtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 15:49:04 -0500
+Date: Mon, 18 Feb 2013 15:48:58 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: anish kumar <anish198519851985@gmail.com>
+Cc: akpm@linux-foundation.org, mingo@kernel.org, chuansheng.liu@intel.com,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [Watchdog][Trivial] Added comments to explain
+ watchdog_disabled variable
+Message-ID: <20130218204858.GB98867@redhat.com>
+References: <1361016849-5181-1-git-send-email-anish198519851985@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1302181012320.17024@pobox.suse.cz>
+In-Reply-To: <1361016849-5181-1-git-send-email-anish198519851985@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-> > so, here is the hid drivers cleanup. The aim is to remove as much as possible
-> > direct calls to usbhid for hid drivers. Thus, other transport layers can use
-> > the existing hid drivers (like I2C or uhid).
-> > 
-> > Henrik, patches 1 to 5 are yours. I just rebased and double-checked them. Please
-> > add you Signed-off-by if you are happy with the rebase.
+On Sat, Feb 16, 2013 at 05:44:09PM +0530, anish kumar wrote:
+> From: anish kumar <anish198519851985@gmail.com>
 > 
-> Henrik,
+> This watchdog_disabled flag is bit of cryptic.Howerver it's usefullnes is multifold.
+> Uses are:
+> 1. Check if smpboot_register_percpu_thread function passed.
+> 2. Makes sure that user enables and disables the watchdog in sequence
+>    i.e. enable watchdog->disable watchdog->enable watchdog
+>    Unlike enable watchdog->enable watchdog which is wrong.
 > 
-> I can see your signoff in my inbox only for patches 1 and 2. Are you still 
-> reviewing patches 3-5?
+> Signed-off-by: anish kumar <anish198519851985@gmail.com>
+> ---
+>  kernel/watchdog.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 75a2ab3..8a20ebe 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -518,6 +518,11 @@ int proc_dowatchdog(struct ctl_table *table, int write,
+>  		return ret;
+>  
+>  	set_sample_period();
+> +	/*
+> +	 * Watchdog threads shouldn't be enabled if they are
+> +	 * disabled.'watchdog_disabled' variable check in
 
-Yes, unfortunately the pipe is pretty full.
+Missing a 'The'  ^^^
 
-> Also, I'd like to make sure that we don't mess up the authorship, so 
-> patches 1-5 should be applied with Henrik's authorship, right? (I can do 
-> it after I receive signoffs from Henrik for those).
+Other than that,
 
-Benjamin has gone through the effort of keeping the patches
-up-to-date, so I don't mind him being the author on most of
-them. Maybe the first patch is actually identical to my earlier
-submission, at least I seem to have it in my computer. :-)
-
-Thanks,
-Henrik
+Acked-by: Don Zickus <dzickus@redhat.com>
