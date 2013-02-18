@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635Ab3BRLia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 06:38:30 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40637 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753522Ab3BRLi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 06:38:26 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
-        Syed Mohammed Khasim <khasim@ti.com>
-Subject: [PATCH, RFC 6/8] ARM: OMAP2+: am43: basic dt support
-Date: Mon, 18 Feb 2013 17:08:09 +0530
-Message-ID: <64d18c5a07bf7680b8299f3ef98303e60522e738.1361186097.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <cover.1361186097.git.afzal@ti.com>
-References: <cover.1361186097.git.afzal@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754162Ab3BRLjx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 06:39:53 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:53772 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731Ab3BRLiP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 06:38:15 -0500
+From: Kumar Amit Mehta <gmate.amit@gmail.com>
+To: linville@tuxdriver.com
+Cc: sarah.a.sharp@linux.intel.com, dan.carpenter@oracle.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH] net: wireless: orinoco: orinoco_usb.c: fix DMA buffers on stack
+Date: Mon, 18 Feb 2013 03:37:44 -0800
+Message-Id: <1361187464-24174-1-git-send-email-gmate.amit@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Describe minimal DT boot machine details for AM43 based SoC's. AM43
-family of SoC's are ARM Cortex-A9 based with one core in SMP
-configuration. Low level debug could be achieved by selecting
-DEBUG_AM33XXUART1. To boot AM43 SoC, this change is sufficient w.r.t
-Kernel (considering the fact that strictly speaking DT sources does
-not classify as a part of Kernel). Here private timer of the one and
-only core is being used as clock event (as well as, as time source).
+This patch fixes an instance of DMA buffer on stack(being passed to
+usb_control_msg) for the wireless USB version of the Agere Orinoco card driver.
+It also fixes the missing audit for the return value of firmware download
+routine. Found using smatch.
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
+Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
 ---
- arch/arm/mach-omap2/board-generic.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/net/wireless/orinoco/orinoco_usb.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-index 0274ff7..e083f08 100644
---- a/arch/arm/mach-omap2/board-generic.c
-+++ b/arch/arm/mach-omap2/board-generic.c
-@@ -15,7 +15,10 @@
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/irqdomain.h>
-+#include <linux/irqchip.h>
+diff --git a/drivers/net/wireless/orinoco/orinoco_usb.c b/drivers/net/wireless/orinoco/orinoco_usb.c
+index 01624dc..7744f42 100644
+--- a/drivers/net/wireless/orinoco/orinoco_usb.c
++++ b/drivers/net/wireless/orinoco/orinoco_usb.c
+@@ -804,10 +804,15 @@ static inline int ezusb_8051_cpucs(struct ezusb_priv *upriv, int reset)
+ static int ezusb_firmware_download(struct ezusb_priv *upriv,
+ 				   struct ez_usb_fw *fw)
+ {
+-	u8 fw_buffer[FW_BUF_SIZE];
++	u8 *fw_buffer;
+ 	int retval, addr;
+ 	int variant_offset;
  
-+#include <asm/mach/map.h>
-+#include <asm/smp_twd.h>
- #include <asm/mach/arch.h>
++	fw_buffer = kmalloc(FW_BUF_SIZE, GFP_KERNEL);
++	if (!fw_buffer) {
++		printk(KERN_ERR PFX "Out of memory for firmware buffer.\n");
++		return -ENOMEM;
++	}
+ 	/*
+ 	 * This byte is 1 and should be replaced with 0.  The offset is
+ 	 * 0x10AD in version 0.0.6.  The byte in question should follow
+@@ -859,6 +864,7 @@ static int ezusb_firmware_download(struct ezusb_priv *upriv,
+ 	printk(KERN_ERR PFX "Firmware download failed, error %d\n",
+ 	       retval);
+  exit:
++	kfree(fw_buffer);
+ 	return retval;
+ }
  
- #include "common.h"
-@@ -182,3 +185,18 @@ DT_MACHINE_START(OMAP5_DT, "Generic OMAP5 (Flattened Device Tree)")
- 	.restart	= omap44xx_restart,
- MACHINE_END
- #endif
-+
-+#ifdef CONFIG_SOC_AM43
-+static const char *am43_boards_compat[] __initdata = {
-+	"ti,am43",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(AM43_DT, "Generic AM43 (Flattened Device Tree)")
-+	.map_io		= debug_ll_io_init,
-+	.init_irq	= irqchip_init,
-+	.init_machine	= omap_generic_init,
-+	.init_time	= twd_local_timer_of_register,
-+	.dt_compat	= am43_boards_compat,
-+MACHINE_END
-+#endif
+@@ -1681,7 +1687,8 @@ static int ezusb_probe(struct usb_interface *interface,
+ 		firmware.code = fw_entry->data;
+ 	}
+ 	if (firmware.size && firmware.code) {
+-		ezusb_firmware_download(upriv, &firmware);
++		if (ezusb_firmware_download(upriv, &firmware))
++			goto error;
+ 	} else {
+ 		err("No firmware to download");
+ 		goto error;
 -- 
-1.7.12
+1.7.9.5
 
