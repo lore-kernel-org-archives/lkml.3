@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757764Ab3BRFYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 00:24:13 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:58473 "EHLO
+	id S1754845Ab3BRFZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 00:25:22 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:58667 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab3BRFYL (ORCPT
+	with ESMTP id S1751500Ab3BRFZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 00:24:11 -0500
-X-AuditID: cbfee68f-b7f656d000000d78-ac-5121bafae461
+	Mon, 18 Feb 2013 00:25:20 -0500
+X-AuditID: cbfee68e-b7fc26d000001938-37-5121bb3f7697
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
         "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/2 RESEND] video: exynos_dp: add missing of_node_put()
-Date: Mon, 18 Feb 2013 14:24:09 +0900
-Message-id: <000801ce0d98$2e103fd0$8a30bf70$%han@samsung.com>
+References: <000801ce0d98$2e103fd0$8a30bf70$%han@samsung.com>
+In-reply-to: <000801ce0d98$2e103fd0$8a30bf70$%han@samsung.com>
+Subject: [PATCH 2/2 RESEND] video: exynos_dp: move disable_irq() to
+ exynos_dp_suspend()
+Date: Mon, 18 Feb 2013 14:25:19 +0900
+Message-id: <000901ce0d98$5794c240$06be46c0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4NmC3wY06s4orcQzuu4vTFFedQgA==
+Thread-index: Ac4NmC3wY06s4orcQzuu4vTFFedQgAAAAeMQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDIsWRmVeSWpSXmKPExsVy+t8zQ91fuxQDDX6e57E40feB1eLyrjls
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGX0rVjPWtAkULHtbCNbA+MC3i5GTg4JAROJNW+mMkPY
-	YhIX7q1nA7GFBJYxSkw9HwBTc/76JaAaLqD4IkaJV/1/GSGcX4wSX5f+ZwepYhNQk/jy5TCQ
-	zcEhIqAv0daiAVLDLDCXUeLSmiMsIDXCAu4Sq9bOZAWxWQRUJeZefgEW5xWwlZh47xIThC0o
-	8WPyPbA4s4CWxPqdx5kgbHmJzWveMoPMlxBQl3j0VxckLCKgJ9H36RdUuYjEvhfvwG6TEOhn
-	l2ict4YNYpeAxLfJh1ggemUlNh2AelhS4uCKGywTGMVmIdk8C8nmWUg2z0KyYgEjyypG0dSC
-	5ILipPQiY73ixNzi0rx0veT83E2MkJjp38F494D1IcZkoPUTmaVEk/OBMZdXEm9obGxiZmJq
-	Ym5pam5KmrCSOK/8JZlAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYxO9lNSHmm+qfz2dscs
-	sYnKFQs3f5MPP7WzrI5n5gmJiJLNavtVNnOLlitO6tGd+MAy6R+HkIWllLZl242/bgcezky0
-	3ft5d4zZ4ucyn/9Jh5/mKZG4W/z/yPz1+/K5o+7eVMxsF73W1/fyxVavksruy1M+bTdTqHi2
-	I+rjo1Czi106h77MEN6oxFKckWioxVxUnAgAKUOZh68CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t9jAd1fuxQDDd6cZbU40feB1eLyrjls
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm9K1Yz1rQJFCx
-	7WwjWwPjAt4uRk4OCQETifPXLzFD2GISF+6tZ+ti5OIQEljEKPGq/y8jhPOLUeLr0v/sIFVs
-	AmoSX74cBrI5OEQE9CXaWjRAapgF5jJKXFpzhAWkRljAXWLV2pmsIDaLgKrE3MsvwOK8ArYS
-	E+9dYoKwBSV+TL4HFmcW0JJYv/M4E4QtL7F5zVtmkPkSAuoSj/7qgoRFBPQk+j79gioXkdj3
-	4h3jBEaBWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERyTz6R3
-	MK5qsDjEKMDBqMTDy5CvGCjEmlhWXJl7iFGCg1lJhHeTCFCINyWxsiq1KD++qDQntfgQYzLQ
-	oxOZpUST84HpIq8k3tDYxMzI0sjMwsjE3Jw0YSVxXsZTTwKEBNITS1KzU1MLUotgtjBxcEo1
-	MFbdtFr4LLvz+SYHp7XNC0+6df3TnbZOrI01aerC3+YCjqeqDn45e9mSrWC1cUaFT56/8rtr
-	bBPNmVUdHpz3XKeUw2lundwgc0Ay6ppYx+Ja1u0Pl750jJfgVRB0a+O8dvF4IH8o6zkZjbYr
-	p/tfFSXutT+b7fGU3ebpuyDTTsEJfbf3HN29S4mlOCPRUIu5qDgRAOYFwfINAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t8zI1373YqBBjMbjSxO9H1gtbi8aw6b
+	A5PH501yAYxRXDYpqTmZZalF+nYJXBk9VxYzFczhrNhyt5etgfE9excjJ4eEgInE5buLoWwx
+	iQv31rN1MXJxCAksY5TY37cdrujb173MEIlFjBK3P31khXB+MUrc//yUFaSKTUBN4suXw0Ad
+	HBwiAvoSbS0aIDXMAnMZJS6tOcICUiMkYCsx88tmJhCbU8BOYvO9VrC4sECkxJE1RxlBbBYB
+	VYkt636B1fAC1d+ffIsVwhaU+DH5Hlg9s4CWxPqdx5kgbHmJzWveMoPslRBQl3j0VxckLCJg
+	JLF28XKochGJfS/eMYLcIyGwjl3i2oY+JohdAhLfJh9igeiVldh0gBniYUmJgytusExglJiF
+	ZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0ouM9IoTc4tL89L1kvNzNzFCoqxvB+PNA9aHGJOB
+	1k9klhJNzgdGaV5JvKGxsYmZiamJuaWpuSlpwkrivPKXZAKFBNITS1KzU1MLUovii0pzUosP
+	MTJxcEo1MDIfFTt9UMXt0wTGjOLS3SeizTM31TH9u58fvfyryL4fb3j/TfpV37tkwgR175lH
+	sy6cvPJGpSZ9Q/KMzpT7helXL0ZdnN3eFZQvG6U8x3Fla01NUcZ1mwQLWWeBqadnPTJeKn1Q
+	fd1ttp3xR1U/BSUmTGnhuWy/YFbAw1xxkxsT3AKORbjfylRiKc5INNRiLipOBACLY8DByAIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jAV373YqBBn2/dC1O9H1gtbi8aw6b
+	A5PH501yAYxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4B
+	um6ZOUCjlRTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZPVcWMxXM4azY
+	creXrYHxPXsXIyeHhICJxLeve5khbDGJC/fWs3UxcnEICSxilLj96SMrhPOLUeL+56esIFVs
+	AmoSX74cBurm4BAR0Jdoa9EAqWEWmMsocWnNERaQGiEBW4mZXzYzgdicAnYSm++1gsWFBSIl
+	jqw5yghiswioSmxZ9wushheo/v7kW6wQtqDEj8n3wOqZBbQk1u88zgRhy0tsXvOWGWSvhIC6
+	xKO/uiBhEQEjibWLl0OVi0jse/GOcQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXU
+	K07MLS7NS9dLzs/dxAiO4WdSOxhXNlgcYhTgYFTi4WXIVwwUYk0sK67MPcQowcGsJMK7SQQo
+	xJuSWFmVWpQfX1Sak1p8iDEZ6NGJzFKiyfnA9JJXEm9obGJmZGlkZmFkYm5OmrCSOC/jqScB
+	QgLpiSWp2ampBalFMFuYODilGhinsnncceH9mivwTn5GDstXLQO+RxYcHpNXPLnD0bbx1IKl
+	Ni1pTPwX11m3p+SpOIS4rGfl+WjEtfrHKy8Nn9+5wsw/it+cv63ftOP5tf8+Bx4xhk7SSGJd
+	dvHCpuypss2LotZseTvtgfg2yZiig+dnJDA/+CgVKub1eSnzASPnqf5/w8w1eFyUWIozEg21
+	mIuKEwGEnhgqJQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,69 +56,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_find_node_by_name() returns a node pointer with refcount
-incremented, use of_node_put() on it when done.
+From: Ajay Kumar <ajaykumar.rs@samsung.com>
 
-of_find_node_by_name() will call of_node_put() against
-the node pass to from parameter, thus we also need to call
-of_node_get(from) before calling of_find_node_by_name().
+disable_irq() should be moved to exynos_dp_suspend(), because
+enable_irq() is called at exynos_dp_resume().
 
+Signed-off-by: Ajay Kumar <ajaykumar.rs@samsung.com>
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/exynos/exynos_dp_core.c |   19 +++++++++++++------
- 1 files changed, 13 insertions(+), 6 deletions(-)
+ drivers/video/exynos/exynos_dp_core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/video/exynos/exynos_dp_core.c b/drivers/video/exynos/exynos_dp_core.c
-index 2ed9776..c7374c0 100644
+index c7374c0..de9d4da 100644
 --- a/drivers/video/exynos/exynos_dp_core.c
 +++ b/drivers/video/exynos/exynos_dp_core.c
-@@ -965,10 +965,11 @@ static struct exynos_dp_platdata *exynos_dp_dt_parse_pdata(struct device *dev)
+@@ -1124,8 +1124,6 @@ static int exynos_dp_remove(struct platform_device *pdev)
+ 	struct exynos_dp_platdata *pdata = pdev->dev.platform_data;
+ 	struct exynos_dp_device *dp = platform_get_drvdata(pdev);
  
- static int exynos_dp_dt_parse_phydata(struct exynos_dp_device *dp)
- {
--	struct device_node *dp_phy_node;
-+	struct device_node *dp_phy_node = of_node_get(dp->dev->of_node);
- 	u32 phy_base;
-+	int ret = 0;
+-	disable_irq(dp->irq);
+-
+ 	flush_work(&dp->hotplug_work);
  
--	dp_phy_node = of_find_node_by_name(dp->dev->of_node, "dptx-phy");
-+	dp_phy_node = of_find_node_by_name(dp_phy_node, "dptx-phy");
- 	if (!dp_phy_node) {
- 		dev_err(dp->dev, "could not find dptx-phy node\n");
- 		return -ENODEV;
-@@ -976,22 +977,28 @@ static int exynos_dp_dt_parse_phydata(struct exynos_dp_device *dp)
+ 	if (pdev->dev.of_node) {
+@@ -1148,6 +1146,8 @@ static int exynos_dp_suspend(struct device *dev)
+ 	struct exynos_dp_platdata *pdata = dev->platform_data;
+ 	struct exynos_dp_device *dp = dev_get_drvdata(dev);
  
- 	if (of_property_read_u32(dp_phy_node, "reg", &phy_base)) {
- 		dev_err(dp->dev, "faild to get reg for dptx-phy\n");
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto err;
- 	}
- 
- 	if (of_property_read_u32(dp_phy_node, "samsung,enable-mask",
- 				&dp->enable_mask)) {
- 		dev_err(dp->dev, "faild to get enable-mask for dptx-phy\n");
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto err;
- 	}
- 
- 	dp->phy_addr = ioremap(phy_base, SZ_4);
- 	if (!dp->phy_addr) {
- 		dev_err(dp->dev, "failed to ioremap dp-phy\n");
--		return -ENOMEM;
-+		ret = -ENOMEM;
-+		goto err;
- 	}
- 
--	return 0;
-+err:
-+	of_node_put(dp_phy_node);
++	disable_irq(dp->irq);
 +
-+	return ret;
- }
+ 	flush_work(&dp->hotplug_work);
  
- static void exynos_dp_phy_init(struct exynos_dp_device *dp)
+ 	if (dev->of_node) {
 -- 
 1.7.2.5
 
