@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab3BRQdm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 11:33:42 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:47113 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab3BRQdj (ORCPT
+	id S1755996Ab3BRQeE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 11:34:04 -0500
+Received: from miso.sublimeip.com ([203.12.5.51]:21395 "EHLO
+	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755070Ab3BRQeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 11:33:39 -0500
-Message-ID: <5122575E.5030405@linux.vnet.ibm.com>
-Date: Mon, 18 Feb 2013 22:01:26 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 18 Feb 2013 11:34:02 -0500
+Subject: Re: prctl(PR_SET_MM)
+To: rostedt@goodmis.org (Steven Rostedt)
+Date: Tue, 19 Feb 2013 03:33:59 +1100 (EST)
+Cc: u3557@dialix.com.au, oleg@redhat.com (Oleg Nesterov),
+        palves@redhat.com (Pedro Alves), dvlasenk@redhat.com (Denys Vlasenko),
+        jan.kratochvil@redhat.com (Jan Kratochvil),
+        gorcunov@openvz.org (Cyrill Gorcunov),
+        xemul@parallels.com (Pavel Emelyanov),
+        fweisbec@gmail.com (Frederic Weisbecker),
+        mingo@redhat.com (Ingo Molnar),
+        a.p.zijlstra@chello.nl (Peter Zijlstra), linux-kernel@vger.kernel.org
+Reply-To: u3557@dialix.com.au
+In-Reply-To: <1361200876.23152.149.camel@gandalf.local.home>
+X-Mailer: ELM [version 2.5 PL8]
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org,
-        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
-        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rostedt@goodmis.org,
-        rjw@sisk.pl, namhyung@kernel.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        oleg@redhat.com, vincent.guittot@linaro.org, sbw@mit.edu,
-        tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v6 07/46] percpu_rwlock: Allow writers to be readers,
- and add lockdep annotations
-References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123913.26245.7713.stgit@srivatsabhat.in.ibm.com> <CANN689Ec4g7jMapv8ChAEom+gEDQ8RDVLa07CKwJ==YO+MUUrA@mail.gmail.com>
-In-Reply-To: <CANN689Ec4g7jMapv8ChAEom+gEDQ8RDVLa07CKwJ==YO+MUUrA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021816-7014-0000-0000-0000029B34BF
+Message-Id: <20130218163359.25760592076@miso.sublimeip.com>
+From: u3557@miso.sublimeip.com (Amnon Shiloh)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2013 09:21 PM, Michel Lespinasse wrote:
-> On Mon, Feb 18, 2013 at 8:39 PM, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> @@ -200,6 +217,16 @@ void percpu_write_lock_irqsave(struct percpu_rwlock *pcpu_rwlock,
->>
->>         smp_mb(); /* Complete the wait-for-readers, before taking the lock */
->>         write_lock_irqsave(&pcpu_rwlock->global_rwlock, *flags);
->> +
->> +       /*
->> +        * It is desirable to allow the writer to acquire the percpu-rwlock
->> +        * for read (if necessary), without deadlocking or getting complaints
->> +        * from lockdep. To achieve that, just increment the reader_refcnt of
->> +        * this CPU - that way, any attempt by the writer to acquire the
->> +        * percpu-rwlock for read, will get treated as a case of nested percpu
->> +        * reader, which is safe, from a locking perspective.
->> +        */
->> +       this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
+Steven Rostedt wrote:
+
+> On Mon, 2013-02-18 at 12:39 +1100, Amnon Shiloh wrote:
+> > Hello,
+> > 
+> > The code in "kernel/sys.c" provides the "prctl(PR_SET_MM)" function,
+> > which is the only way a process can set or modify the following 11
+> > per-process fields:
+> > 
+> >  	start_code, end_code, start_data, end_data, start_brk, brk,
+> >  	start_stack, arg_start, arg_end, env_start, env_end.
+> > 
+> > Being able to set those fields is important, even crucial,
+> > for any conceivable user-level checkpointing software, as
+> > well as for migrating processes between different computers.
 > 
-> I find this quite disgusting, but once again this may be because I
-> don't like unfair recursive rwlocks.
+> You're saying that this is useful for code not needing a kernel with
+> CHECKPOINT_RESTORE enabled. Correct?
+
+Correct, this is an important feature that is useful for a whole
+general class of applications, not only those needing CHECKPOINT_RESTORE.
+
+Had this not been done as part of the CHECKPOINT_RESTORE project, it
+would have certainly been done, sooner or later, by some other developers:
+it just so happened that the CHECKPOINT_RESTORE people were the first to
+(publically) fill this gap, but in fact this code in "kernel/sys.c" should
+be general kernel code, not part of CHECKPOINT_RESTORE.
+
 > 
+> > 
+> > Unfortunately, this code (essentially "prctl_set_mm()") is presently
+> > enclosed in "#ifdef CONFIG_CHECKPOINT_RESTORE" which is configured
+> > as "default n" in "init/Kconfig".  Many system-administrators who
+> > may like to have a checkpoint/restore or process-migration facility,
+> > but use standard pre-packaged kernels, find the requirement to
+> > configure and compile their own non-standard kernel difficult or
+> > too prohibitive.
+> > 
+> > Would it be possible to have this code enabled by default?
+> > 
+> > This could be done in one of 4 ways:
+> > 1) Having CONFIG_CHECKPOINT_RESTORE enabled by default; or
+> 
+> Nope, that wont due. Kernel policy is to have things default n. Have an
+> issue with a config, talk with the distribution you are dealing with.
+> They set the policy of what configs get set for their kernels.
 
-:-)
+Yes, Randy Dunlap already raised this point, but I have no dealings with
+any particular Linux distribution or the right connections to chase them
+all, one by one - I develop generic software for the general Linux community,
+that is intended to work distribution-independently.  Even if I had access
+to all distributions, it may be hard to convince them to configure
+CONFIG_CHECKPOINT_RESTORE as a whole since it contains so much other code.
 
-> In my opinion, the alternative of explicitly not taking the read lock
-> when one already has the write lock sounds *much* nicer.
+BTW, Can anyone explain this policy of "have things default n"?
+When I go over "init/Kconfig" or most other Kconfig's, I can
+actually see lots of "default y".
 
-I don't seem to recall any strong reasons to do it this way, so I don't have
-any strong opinions on doing it this way. But one of the things to note is that,
-in the CPU Hotplug case, the readers are *way* more hotter than the writer.
-So avoiding extra checks/'if' conditions/memory barriers in the reader-side
-is very welcome. (If we slow down the read-side, we get a performance hit
-even when *not* doing hotplug!). Considering this, the logic used in this
-patchset seems better, IMHO.
+> 
+> > 2) Releasing this code from the "#ifdef CONFIG_CHECK_RESTORE"; or
+> > 3) Placing this code within a different kernel-configuration option
+> >    (say "CONFIG_BASIC_CHECKPOINTING") that is enabled by default; or
+> > 4) Placing this code under a dual #if, so instead of:
+> >    #ifdef CONFIG_CHECKPOINT_RESTORE
+> > 	   have:
+> >    #if defined(CONFIG_CHECKPOINT_RESTORE) || defined(CONFIG_BASIC_CHECKPOINTING)
+> 
+> One of the above 3 can probably be worked out.
+> 
+> -- Steve
 
-Regards,
-Srivatsa S. Bhat
+Great!
 
+Naturally I prefer option 2 (but the other two will do as well).
+
+Thanks,
+Amnon.
