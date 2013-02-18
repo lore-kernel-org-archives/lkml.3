@@ -1,68 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757886Ab3BRFwg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 00:52:36 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:59710 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab3BRFwf (ORCPT
+	id S1757891Ab3BRFxH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 00:53:07 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:55252 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab3BRFxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 00:52:35 -0500
-Date: Mon, 18 Feb 2013 16:52:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        =?UTF-8?B?IkRhZ2Zpbm4gSWxtYXJpIE1hbm5zw6VrZXIi?= 
-	<ilmari@ilmari.org>
-Subject: linux-next: manual merge of the akpm tree with the kbuild tree
-Message-Id: <20130218165232.92004590a089f22f67127db9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__18_Feb_2013_16_52_32_+1100_d5AnoGEzRiPoDQDD"
+	Mon, 18 Feb 2013 00:53:05 -0500
+Message-ID: <5121C1B3.3090100@linux.vnet.ibm.com>
+Date: Mon, 18 Feb 2013 13:52:51 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
+References: <51079178.3070002@linux.vnet.ibm.com>
+In-Reply-To: <51079178.3070002@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021805-5816-0000-0000-000006B84A9D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Feb_2013_16_52_32_+1100_d5AnoGEzRiPoDQDD
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/29/2013 05:08 PM, Michael Wang wrote:
+> v3 change log:
+> 	Fix small logical issues (Thanks to Mike Galbraith).
+> 	Change the way of handling WAKE.
+> 
+> This patch set is trying to simplify the select_task_rq_fair() with
+> schedule balance map.
+> 
+> After get rid of the complex code and reorganize the logical, pgbench show
+> the improvement, more the clients, bigger the improvement.
+> 
+> 				Prev:		Post:
+> 
+> 	| db_size | clients |	|  tps  |	|  tps  |
+>         +---------+---------+   +-------+       +-------+
+>         | 22 MB   |       1 |   | 10788 |       | 10881 |
+>         | 22 MB   |       2 |   | 21617 |       | 21837 |
+>         | 22 MB   |       4 |   | 41597 |       | 42645 |
+>         | 22 MB   |       8 |   | 54622 |       | 57808 |
+>         | 22 MB   |      12 |   | 50753 |       | 54527 |
+>         | 22 MB   |      16 |   | 50433 |       | 56368 |	+11.77%
+>         | 22 MB   |      24 |   | 46725 |       | 54319 |	+16.25%
+>         | 22 MB   |      32 |   | 43498 |       | 54650 |	+25.64%
+>         | 7484 MB |       1 |   |  7894 |       |  8301 |
+>         | 7484 MB |       2 |   | 19477 |       | 19622 |
+>         | 7484 MB |       4 |   | 36458 |       | 38242 |
+>         | 7484 MB |       8 |   | 48423 |       | 50796 |
+>         | 7484 MB |      12 |   | 46042 |       | 49938 |
+>         | 7484 MB |      16 |   | 46274 |       | 50507 |	+9.15%
+>         | 7484 MB |      24 |   | 42583 |       | 49175 |	+15.48%
+>         | 7484 MB |      32 |   | 36413 |       | 49148 |	+34.97%
+>         | 15 GB   |       1 |   |  7742 |       |  7876 |
+>         | 15 GB   |       2 |   | 19339 |       | 19531 |
+>         | 15 GB   |       4 |   | 36072 |       | 37389 |
+>         | 15 GB   |       8 |   | 48549 |       | 50570 |
+>         | 15 GB   |      12 |   | 45716 |       | 49542 |
+>         | 15 GB   |      16 |   | 46127 |       | 49647 |	+7.63%
+>         | 15 GB   |      24 |   | 42539 |       | 48639 |	+14.34%
+>         | 15 GB   |      32 |   | 36038 |       | 48560 |	+34.75%
+> 
+> Please check the patch for more details about schedule balance map.
+> 
+> Support the NUMA domain but not well tested.
+> Support the rebuild of domain but not tested.
 
-Hi Andrew,
+Hi, Ingo, Peter
 
-Today's linux-next merge of the akpm tree got a conflict in
-kernel/timeconst.pl between commit 70730bca1331 ("kernel: Replace
-timeconst.pl with a bc script") from the kbuild tree and commit
-"timeconst.pl: remove deprecated defined(@array)" from the akpm tree.
+I've finished the test I could figure out (NUMA, domain rebuild...) , no
+issue appear on my box.
 
-I just dropped the akpm tree patch since the file had been deleted by the
-kbuild tree commit.
+I think this patch set will benefit the system, especially when there
+are huge amount of cpus.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+How do you think about this idea? do you have any comments on the patch set?
 
---Signature=_Mon__18_Feb_2013_16_52_32_+1100_d5AnoGEzRiPoDQDD
-Content-Type: application/pgp-signature
+Regards,
+Michael Wang
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> 
+> Comments are very welcomed.
+> 
+> Behind the v3:
+> 	Some changes has been applied to the way of handling WAKE.
+> 
+> 	And that's all around one question, whether we should do load balance
+> 	for WAKE or not?
+> 
+> 	In the old world, the only chance to do load balance for WAKE is when
+> 	prev cpu and curr cpu are not cache affine, but that doesn't make sense.
+> 
+> 	I suppose the real meaning behind that logical is, do balance only if
+> 	cache benefit nothing after changing cpu.
+> 
+> 	However, select_idle_sibling() is not only designed for the purpose to
+> 	take care of cache, it also benefit latency, and cost less than the
+> 	balance path.
+> 
+> 	Besides, it's impossible to estimate the benefit of doing load balance
+> 	at that point of time.
+> 
+> 	And that's come out the v3, no load balance for WAKE.
+> 
+> Test with:
+> 	12 cpu X86 server and linux-next 3.8.0-rc3.
+> 
+> Michael Wang (3):
+> 	[RFC PATCH v3 1/3] sched: schedule balance map foundation
+> 	[RFC PATCH v3 2/3] sched: build schedule balance map
+> 	[RFC PATCH v3 3/3] sched: simplify select_task_rq_fair() with schedule balance map
+> 
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
+>  b/kernel/sched/core.c  |   44 +++++++++++++++
+>  b/kernel/sched/fair.c  |  135 ++++++++++++++++++++++++++-----------------------
+>  b/kernel/sched/sched.h |   14 +++++
+>  kernel/sched/core.c    |   67 ++++++++++++++++++++++++
+>  4 files changed, 199 insertions(+), 61 deletions(-)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-iQIcBAEBCAAGBQJRIcGgAAoJEECxmPOUX5FEl60P/iCdzTRtXx/UKTZ0XG54iOuF
-gm/i5FnrPQLk42gklUYclWPRDUC4aoYmVTOI7faAwNvP7fhKjK89GBhR25hfac0p
-w76eEN/KMPHE9+dEnupWS3rmP11cpzCwP3GDJPBgTaRPinrhtkXVYghepQtOiry8
-KMv5x8v91v9tAF3LndIWff1Gxd6qngiu71/l6GL8o9EnVpLC9yEApZX73tmDOMV0
-+frdGS8SR2S+zEVxZGNgQfP9Kl3S8OzVJaZOO5wVK8PcQUhYIYWLOHEXdxUFyO/Z
-4LxbxV4ShBJVVtnP/1wlC8aV5ZZq/YhIRQwBfQq5tn32XAysG8WeWj5/wIAEU0jz
-mvNd5n1MjSOep2UbOwIdSShxAFOMKtIdPDrMxAeF5WcTBqP+AzI9d/d1ANe/7+U7
-FFy0NAJG0a2NgYw8KmY/WZWw4FEcLVdUfLTyv+TUws+UB9nVjzgNLHb5A5Q4E5XG
-v+06GMEg7EMGPr0oaU06NCKx3xPORRSNPMh7+Ej3rzuWoe7pzgIE9EbOcs8yeLQZ
-iRiJ2kos3v2aOkKcbiQLHIHYSvHCy5NSzqWmboP+CfwoyH5eem7nnA9j+PBX/7iX
-4uOSu9LxBf3XcexBIZ69DKjXi382m8d04RgXVamSnNTydNRb4fQpIRuHTCuvu/yt
-CRP8MbVwsM81fkH03yAu
-=xTHX
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Feb_2013_16_52_32_+1100_d5AnoGEzRiPoDQDD--
