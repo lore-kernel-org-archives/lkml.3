@@ -1,111 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab3BSNjY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 08:39:24 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:34210 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932753Ab3BSNjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 08:39:22 -0500
-Date: Tue, 19 Feb 2013 15:38:09 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Borislav Petkov <bp@alien8.de>, Felipe Balbi <balbi@ti.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>, <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Doug Thompson <dougthompson@xmission.com>,
-        <linux-edac@vger.kernel.org>, <rjw@sisk.pl>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: SYSFS "errors"
-Message-ID: <20130219133809.GA4390@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130219070310.2cadad7a@redhat.com>
- <20130219101121.GJ23197@arwen.pp.htv.fi>
- <20130219081149.46972f56@redhat.com>
- <20130219114345.GA26623@pd.tnic>
- <20130219091610.2b746a30@redhat.com>
- <20130219123502.GD26623@pd.tnic>
- <20130219094640.2abf1a66@redhat.com>
- <20130219130626.GE26623@pd.tnic>
- <20130219131500.GW23197@arwen.pp.htv.fi>
- <20130219132853.GG26623@pd.tnic>
+	id S932855Ab3BSNjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 08:39:35 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:47182 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932760Ab3BSNjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 08:39:32 -0500
+X-IronPort-AV: E=Sophos;i="4.84,695,1355068800"; 
+   d="scan'208";a="6730291"
+Message-ID: <51238033.6010005@cn.fujitsu.com>
+Date: Tue, 19 Feb 2013 21:37:55 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
-Content-Disposition: inline
-In-Reply-To: <20130219132853.GG26623@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, bcrl@kvack.org,
+        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org, riel@redhat.com,
+        rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, jiang.liu@huawei.com,
+        mhocko@suse.cz, linux-mm@kvack.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: hotplug: implement non-movable version of get_user_pages()
+ called get_user_pages_non_movable()
+References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com> <1359972248-8722-2-git-send-email-linfeng@cn.fujitsu.com> <20130204160624.5c20a8a0.akpm@linux-foundation.org> <20130205115722.GF21389@suse.de> <20130205133244.GH21389@suse.de>
+In-Reply-To: <20130205133244.GH21389@suse.de>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/19 21:38:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/19 21:38:50,
+	Serialize complete at 2013/02/19 21:38:50
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bp/iNruPH9dso1Pn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Mel,
 
-Hi,
+On 02/05/2013 09:32 PM, Mel Gorman wrote:
+> On Tue, Feb 05, 2013 at 11:57:22AM +0000, Mel Gorman wrote:
+>>
+>>>> +				migrate_pre_flag = 1;
+>>>> +			}
+>>>> +
+>>>> +			if (!isolate_lru_page(pages[i])) {
+>>>> +				inc_zone_page_state(pages[i], NR_ISOLATED_ANON +
+>>>> +						 page_is_file_cache(pages[i]));
+>>>> +				list_add_tail(&pages[i]->lru, &pagelist);
+>>>> +			} else {
+>>>> +				isolate_err = 1;
+>>>> +				goto put_page;
+>>>> +			}
+>>
+>> isolate_lru_page() takes the LRU lock every time.
+> 
+> Credit to Michal Hocko for bringing this up but with the number of
+> other issues I missed that this is also broken with respect to huge page
+> handling. hugetlbfs pages will not be on the LRU so the isolation will mess
+> up and the migration has to be handled differently.  Ordinarily hugetlbfs
+> pages cannot be allocated from ZONE_MOVABLE but it is possible to configure
+> it to be allowed via /proc/sys/vm/hugepages_treat_as_movable. If this
+> encounters a hugetlbfs page, it'll just blow up.
 
-On Tue, Feb 19, 2013 at 02:28:54PM +0100, Borislav Petkov wrote:
-> On Tue, Feb 19, 2013 at 03:15:00PM +0200, Felipe Balbi wrote:
-> > what's the problem with that ?
->=20
-> Not a problem - simply annoying.
->=20
-> $ ./test.sh
-> cat: /path/to/file/that/doesnt/exist.txt: No such file or directory
-> Setting scrubrate to:
->=20
-> I'm sure someone would ask themselves why all of a sudden the file is
-> gone.
->=20
-> > $ cat /path/to/file/that/doesnt/exist.txt
-> > cat: /path/to/file/that/doesnt/exist.txt: No such file or directory
-> >=20
-> > Didn't see any gates to hell opening here...
->=20
-> And I don't see why we have to debate such a trivial thing when we can
-> fix it *properly* without *absolutely* *not* upsetting userspace.
+I look into the migrate_huge_page() codes find that if we support the hugetlbfs
+non movable migration, we have to invent another alloc_huge_page_node_nonmovable() 
+or such allocate interface, which cost is large(exploding the codes and great impact
+on current alloc_huge_page_node()) but gains little, I think that pinning hugepage
+is a corner case. 
 
-because changing the permission will cause the same issue:
+So can we skip over hugepage without migration but give some WARN_ON() info, is
+it acceptable?
 
-$ cat temporary.txt=20
-cat: temporary.txt: Permission denied
-$ ls -l temporary.txt=20
----------- 1 balbi balbi 0 Feb 19 15:37 temporary.txt
-$ cat temporary.txt=20
-cat: temporary.txt: Permission denied
-$ cat non-existent.txt
-cat: non-existent.txt: No such file or directory
+> 
+> The other is that this almost certainly broken for transhuge page
+> handling. gup returns the head and tail pages and ordinarily this is ok
 
-just a different error code is returned...
+I can't find codes doing such things :(, could you please point me out?
 
---=20
-balbi
+> because the caller only cares about the physical address. Migration will
+> also split a hugepage if it receives it but you are potentially adding
+> tail pages to a list here and then migrating them. The split of the first
+> page will get very confused. I'm not exactly sure what the result will be
+> but it won't be pretty.
+> 
+> Was THP enabled when this was tested? Was CONFIG_DEBUG_LIST enabled
+> during testing?
 
---bp/iNruPH9dso1Pn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I checked my config file that both CONFIG options aboved are enabled. However it was 
+only be tested by two services invoking io_setup(), it works fine..
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRI4BBAAoJEIaOsuA1yqREk08P/3ty8uikzGRMcoaDI6aVGBW5
-UHlJQga00Y7bMpZmhdTWleB92rsFvwcOL53Yc6YYCwcTgHkYE8dcAYALRfVpO4Y0
-kNq/wtMSXqx7H1JBo15pm2XIq6FLUudZkXOCjKiBG/miVDqogzINUZ758ofcXelY
-wOeYMs5WKUxdkj41oqgN624gwyf/O81VT1paQ4eSXr1zTCjWx8KJz7JZkQY+daZn
-3panntFRUJvDDWsrZ1fKoztxaWAO0s3pyctT8yXJYv9o1JVDjADtkNgMSqVxF+0m
-zD+fHhmPTT627ZE3gmwmw2rk0jcqCYMjBMp2OuFlqeNivSKLXs03BRisvq8g3IUI
-pcFNmbVaF7vJ6Oam6CO7zpOPgykmxWb4oRqFBXMri5biY0it3KicIxeL8ZnqMU/o
-OXpKrF5W50bd0CfQTH9kEd6g/a/nmTWXA9hCTVzpH7Ln//njmBA3nDp7ciXL2J6F
-krgdK9wtXSfxf2fs8AGldw05FO2rwq45dhFvohDZXCP34pYvqTDCK+iAOC+Xmvxm
-tw8dUrs3L/Pm0U97e7FW4peJBmjuDHB6WU9Q4PNXedkuiE3qK8/5VzsB+bzGEnsD
-HASmiR+0d2m2LzWwVa+y2kIJ/ByNBbiHbMsbb3XTWdHqVPPuPkGEfbIJvdjI0+7N
-t2F+JanJfKfUMHEDaWVb
-=oWer
------END PGP SIGNATURE-----
-
---bp/iNruPH9dso1Pn--
+thanks,
+linfeng
