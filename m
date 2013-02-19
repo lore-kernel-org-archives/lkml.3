@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934021Ab3BSWqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 17:46:15 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49663 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933133Ab3BSWqN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 17:46:13 -0500
-Message-ID: <512400B2.9010801@mit.edu>
-Date: Tue, 19 Feb 2013 14:46:10 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S934408Ab3BSWq3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 17:46:29 -0500
+Received: from mxin.vub.ac.be ([134.184.129.112]:16164 "EHLO mxin.vub.ac.be"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933133Ab3BSWq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 17:46:26 -0500
+X-Greylist: delayed 594 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Feb 2013 17:46:25 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqQEAHX9I1GGuBhX/2dsb2JhbABFvz+BA4Ejc4IfAQEFJxM/EAsOCgklDwVJE4gSDLAshxqJCgSPDgeCX2EDliqFX4p6gwg
+Date: Tue, 19 Feb 2013 23:36:22 +0100
+From: Frederik Himpe <fhimpe@vub.ac.be>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org,
+        Oliver Neukum <oneukum@suse.de>, David Haerdeman <david@hardeman.nu>,
+        linux-usb@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] pci: do not try to assign irq 255
+Message-ID: <20130219223622.GA31434@artipc10.vub.ac.be>
+References: <1361182193-31894-1-git-send-email-hare@suse.de>
+ <CAErSpo5j5WXx-Y4ML22yzsVzXgXnT9JoD1EGvGRMy55GGRdn6A@mail.gmail.com>
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linaro-dev >> Lists Linaro-dev" <linaro-dev@lists.linaro.org>
-Subject: Re: [resend] Timer broadcast question
-References: <5123BE35.8070902@linaro.org> <alpine.LFD.2.02.1302191904560.22263@ionos> <5123C299.3080005@linaro.org>
-In-Reply-To: <5123C299.3080005@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo5j5WXx-Y4ML22yzsVzXgXnT9JoD1EGvGRMy55GGRdn6A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2013 10:21 AM, Daniel Lezcano wrote:
-> On 02/19/2013 07:10 PM, Thomas Gleixner wrote:
->> On Tue, 19 Feb 2013, Daniel Lezcano wrote:
->>> I am working on identifying the different wakeup sources from the
->>> interrupts and I have a question regarding the timer broadcast.
->>>
->>> The broadcast timer is setup to the next event and that will wake up any
->>> idle cpu belonging to the "broadcast cpumask", right ?
->>>
->>> The cpu which has been woken up will look for each cpu the next-event
->>> and send an IPI to wake it up.
->>>  
->>> Although, it is possible the sender of this IPI may not be concerned by
->>> the timer expiration and has been woken up just for sending the IPI, right ?
->>
->> Correct.
->>  
->>> If this is correct, is it possible to setup the timer irq affinity to a
->>> cpu which will be concerned by the timer expiration ? so we prevent an
->>> unnecessary wake up for a cpu.
->>
->> It is possible, but we never implemented it.
->>
->> If we go there, we want to make that conditional on a property flag,
->> because some interrupt controllers especially on x86 only allow to
->> move the affinity from interrupt context, which is pointless.
+On Tue, Feb 19, 2013 at 12:47:32PM -0700, Bjorn Helgaas wrote:
+> On Mon, Feb 18, 2013 at 3:09 AM, Hannes Reinecke <hare@suse.de> wrote:
+> > The PCI config space reseves a byte for the interrupt line,
+> > so irq 255 actually refers to 'not set'.
+> > However, the 'irq' field for struct pci_dev is an integer,
+> > so the original meaning is lost, causing the system to
+> > assign an interrupt '255', which fails.
+> >
+> > So we should _not_ assign an interrupt value here, and
+> > allow upper layers to fixup things.
+> >
+> > This patch make PCI devices with MSI interrupts only
+> > (like the xhci device on certain HP laptops) work properly.
+> >
+> > Cc: Frederik Himpe <fhimpe@vub.ac.be>
+> > Cc: Oliver Neukum <oneukum@suse.de>
+> > Cc: David Haerdeman <david@hardeman.nu>
+> > Cc: linux-usb@vger.kernel.org
+> > Cc: linux-pci@vger.kernel.org
+> > Signed-off-by: Hannes Reinecke <hare@suse.de>
+> >
+> > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> > index 6186f03..a2db887f 100644
+> > --- a/drivers/pci/probe.c
+> > +++ b/drivers/pci/probe.c
+> > @@ -923,7 +923,8 @@ static void pci_read_irq(struct pci_dev *dev)
+> >         dev->pin = irq;
+> >         if (irq)
+> >                 pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &irq);
+> > -       dev->irq = irq;
+> > +       if (irq < 255)
+> > +               dev->irq = irq;
+> >  }
+> >
+> >  void set_pcie_port_type(struct pci_dev *pdev)
 > 
-> Thanks Thomas for your quick answer. I will write a RFC patchset.
+> Is there a bugzilla or other URL with more information (problem
+> description, hardware involved, dmesg logs, acpidump, etc)?
 
-I'm curious what the use case is.  I played with this code awhile ago,
-and AFAICT it's not used on sensible (i.e. modern) systems.  Is there
-anything other than old x86 machines that needs it?
+https://bugzilla.kernel.org/show_bug.cgi?id=52591
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1072918
 
---Andy
+Basically it looks like most HP Probook/Elitebook of the Ivy Bridge
+generation are affected.
+
+-- 
+Frederik Himpe
