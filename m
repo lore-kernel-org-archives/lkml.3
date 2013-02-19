@@ -1,132 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab3BSIBS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 03:01:18 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36758 "EHLO arroyo.ext.ti.com"
+	id S932252Ab3BSIBq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 03:01:46 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36787 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755035Ab3BSIBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 03:01:16 -0500
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>, Will Deacon <will.deacon@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Syed Mohammed, Khasim" <khasim@ti.com>
-Subject: RE: [RFC 2/8] ARM: twd: register clock event for 1 core SMP
-Thread-Topic: [RFC 2/8] ARM: twd: register clock event for 1 core SMP
-Thread-Index: AQHODaHTgGJd/bPs20OR7GBLiFPJQJh/RYWAgAF6A2A=
-Date: Tue, 19 Feb 2013 08:00:07 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EAA8534@DBDE01.ent.ti.com>
-References: <cover.1361166003.git.afzal@ti.com>
- <a7f62b8580aa4b33d5658f4f03371a453adaea9b.1361166003.git.afzal@ti.com>
- <512230F1.8020208@gmail.com>
-In-Reply-To: <512230F1.8020208@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="utf-8"
+	id S932108Ab3BSIBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 03:01:43 -0500
+Date: Tue, 19 Feb 2013 10:01:10 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>, <balbi@ti.com>,
+        <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
+        <mchehab@redhat.com>, <cesarb@cesarb.net>, <davem@davemloft.net>,
+        <arnd@arndb.de>, <santosh.shilimkar@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH v2 1/5] drivers: phy: add generic PHY framework
+Message-ID: <20130219080109.GD23197@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1361253198-7401-1-git-send-email-kishon@ti.com>
+ <1361253198-7401-2-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VMt1DrMGOVs3KQwf"
+Content-Disposition: inline
+In-Reply-To: <1361253198-7401-2-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1J81LH4028151
 
-Hi Rob,
+--VMt1DrMGOVs3KQwf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Feb 18, 2013 at 19:17:29, Rob Herring wrote:
-> On 02/18/2013 12:30 AM, Afzal Mohammed wrote:
+Hi,
 
-> > Register percpu local timer for scheduler tick in the case of one core
-> > SMP configuration. In other cases - secondary cpu's as well as boot
-> > cpu's having more than one core, this is being registered as per
-> > existing boot flow, with a difference that they happens after delay
-> > calibration. Registering the clock for tick in case of one core should
-> > be done before Kernel calibrates delay (this is required to boot,
-> > unless local timer is the only one registered for tick). Registering
-> > twd local timer at init_time (which platforms are doing now) helps
-> > achieve that with the proposed change.
-> > 
-> > This helps in an almost booting Kernel (minimal) by only relying on
-> > ARM parts for an A9 one core SMP.
+On Tue, Feb 19, 2013 at 11:23:14AM +0530, Kishon Vijay Abraham I wrote:
+> The PHY framework provides a set of APIs for the PHY drivers to
+> create/destroy a PHY and APIs for the PHY users to obtain a reference to =
+the
+> PHY with or without using phandle. To obtain a reference to the PHY witho=
+ut
+> using phandle, the platform specfic intialization code (say from board fi=
+le)
+> should have already called phy_bind with the binding information. The bin=
+ding
+> information consists of phy's device name, phy user device name and an in=
+dex.
+> The index is used when the same phy user binds to mulitple phys.
+>=20
+> PHY drivers should create the PHY by passing phy_descriptor that has
+> describes the PHY (label, type etc..) and ops like init, exit, suspend, r=
+esume,
 
-> >  arch/arm/kernel/smp_twd.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-> > index 616268c..118f4f2 100644
-> > --- a/arch/arm/kernel/smp_twd.c
-> > +++ b/arch/arm/kernel/smp_twd.c
-> > @@ -335,6 +335,9 @@ static int __init twd_local_timer_common_register(struct device_node *np)
-> >  
-> >  	twd_get_clock(np);
-> >  
-> > +	if (num_possible_cpus() == 1)
-> > +		twd_timer_setup(evt);
-> > +
+s/has describes/describes
 
-> Shouldn't this be fixed in the core code, so the same issue is fixed for
-> all timers?
+> poweron, shutdown.
+>=20
+> The documentation for the generic PHY framework is added in
+> Documentation/phy.txt and the documentation for the sysfs entry is added
+> in Documentation/ABI/testing/sysfs-class-phy.
 
-Is the following that you had in mind ? (with it, this patch as well as
-1/8 would not be required),
+you forgot to mention here that one case of re-use is OMAP5 where the
+same PHY IP (different instances of it) is used for SATA and USB3
+functionality, which means that we would have to maintain 2 drivers for
+the same thing.
 
-diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-index d3a22be..2b6417d 100644
---- a/arch/arm/include/asm/smp.h
-+++ b/arch/arm/include/asm/smp.h
-@@ -42,6 +42,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs);
-  */
- extern void smp_init_cpus(void);
- 
-+extern void smp_monocore_timer_setup(void);
-+
- 
- /*
-  * Provide a function to raise an IPI cross call on CPUs in callmap.
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 5f73f70..7431b77 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -504,6 +504,15 @@ int local_timer_register(struct local_timer_ops *ops)
- }
- #endif
- 
-+void __init smp_monocore_timer_setup(void)
-+{
-+       unsigned int cpu = smp_processor_id();
-+       struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
-+
-+       if (!lt_ops)
-+               lt_ops->setup(evt);
-+}
-+
- static void __cpuinit percpu_timer_setup(void)
- {
-        unsigned int cpu = smp_processor_id();
-diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
-index 955d92d..eb023ee 100644
---- a/arch/arm/kernel/time.c
-+++ b/arch/arm/kernel/time.c
-@@ -116,5 +116,6 @@ int __init register_persistent_clock(clock_access_fn read_boot,
- void __init time_init(void)
- {
-        machine_desc->init_time();
-+       smp_monocore_timer_setup();
-        sched_clock_postinit();
- }
+> diff --git a/Documentation/ABI/testing/sysfs-class-phy b/Documentation/AB=
+I/testing/sysfs-class-phy
+> new file mode 100644
+> index 0000000..ffd9930
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-class-phy
+> @@ -0,0 +1,15 @@
+> +What:		/sys/class/phy/<phy>/label
+> +Date:		Feb 2013
+> +KernelVersion:	3.10
+> +Contact:	Kishon Vijay Abraham I <kishon@ti.com>
+> +Description:
+> +		This is a read-only file for getting the label of the phy.
+> +
+> +What:		/sys/class/phy/<phy>/bind
 
-Regards
-Afzal
+this will cause problems with the generic bind/unbind sysfs files which
+are write-only. You should probably rename it to something else.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> +4. Getting a reference to the PHY
+> +
+> +Before the controller can make use of the PHY, it has to get a reference=
+ to
+> +the PHY. The PHY framework provides 4 APIs to get a reference to the PHY.
+
+'it has to get a reference to it. This framework', decreases the
+duplication of 'PHY'.
+
+> +struct phy *phy_get(struct device *dev, u8 index);
+> +struct phy *devm_phy_get(struct device *dev, u8 index);
+> +struct phy *of_phy_get(struct device *dev, const char *phandle, u8 index=
+);
+> +struct phy *devm_of_phy_get(struct device *dev, const char *phandle, u8 =
+index);
+> +
+> +phy_get and devm_phy_get can be used to get the PHY in non-dt boot. This=
+ API
+> +uses the binding information added using the phy_bind API to find and re=
+turn
+> +the appropriate PHY. The only difference between the two APIs is that
+> +devm_phy_get associates the device with the PHY using devres on successf=
+ul PHY
+> +get. On driver detach, release function is invoked on the the devres dat=
+a and
+
+s/the the/the/
+
+> +devres data is freed.
+
+s/devres data/it/
+
+> +7. Current Status
+> +
+> +Currently only USB in OMAP is made to use this framework. However using =
+the
+> +USB PHY library cannot be completely removed because it is intertwined w=
+ith
+> +OTG. Once we move OTG out of PHY completely, using the old PHY library c=
+an be
+> +completely removed. SATA in OMAP will also more likely use this new fram=
+ework
+> +and we should have a patch for it soon.
+
+not sure if this should be in the documentation, but fair enough.
+
+> +static DEFINE_MUTEX(phy_list_mutex);
+
+not sure if a mutex is enough to protect list traversal...
+
+> +struct phy_ops {
+> +	int	(*init)(struct phy_descriptor *desc);
+> +	int	(*exit)(struct phy_descriptor *desc);
+> +	int	(*suspend)(struct phy_descriptor *desc);
+> +	int	(*resume)(struct phy_descriptor *desc);
+
+should you really have these two pointers ? I wonder if it wouldn't be
+better to force runtime_pm down on the users and have phy_suspend() and
+phy_resume() just be wrappers to pm_runtime_get() and pm_runtime_put().
+
+Up to discussion, I guess.
+
+> +#if defined(CONFIG_GENERIC_PHY) || defined(CONFIG_GENERIC_PHY_MODULE)
+
+#if IS_ENABLED(CONFIG_GENERIC_PHY)
+
+> +static inline struct phy *devm_phy_get(struct device *dev, u8 index)
+> +{
+> +	return ERR_PTR(-EINVAL);
+
+would -EOPNOTSUPP fit better here (and all others)
+
+
+--=20
+balbi
+
+--VMt1DrMGOVs3KQwf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRIzFFAAoJEIaOsuA1yqREPaYP/irrHfuqqW4w/g0J72bLTLs+
+cmGd1SCSpvbgdo9oD7vQSHWaPDVPfFqxXjMKUxomLmhCnEtNY6sjpnz8HAXANtjd
+ajh/0sh+fCby/Lj+3x8J9cBgqsNmwfhmuPYskcBcsE/BmZ7YY+aS30hMLgpIvLRP
+q5Z45sJLMm6w1rNDNvXnYzFFQ2fC26Z/T96YpAM7uSGncrITDkVxAzE0qEjvKC+R
+W90+3iXalwbZmGK6Q8zBNrtqybLpmuIz6mj7gkKBskV2hXdlviwhA5Z53F70WyhE
+TB6KkS32U4vu21iOZUHG7aGLcujjtnCnmthz8vOZ6YFr12Rl2OSl5DE/ormhSSDL
+yO0FEnmzBrXtujAHgCxfR9IrkUf84Z+y1xmAry2FZada1HjlU8qBrKnCdpBl8A8r
+D278mqZXgFstuD5QgMGibGTLCInMbIGNewXlMuhHCdhy29EPKgdX9+jXL1FaqJzo
+UCthTndf46Rk56hAGbE6FEgZ8UrV0Rk9VU5imXsrF/kqxgourz2yyKLuNEyKyTHB
++Mwc/+Jtsi5NJi+WlZHQFAT4lPv/iM+OAC7ozG5M1JO8e6vSImeiYF28R36ILmMq
+2mS4hz+rUl6LAE2rM/j4A3OrRndqENDueefCg3zDTBsNwep/bDegFK5WZmzLtdd7
+XvCAsrVI3fM2Vr1uKSZt
+=jXHf
+-----END PGP SIGNATURE-----
+
+--VMt1DrMGOVs3KQwf--
