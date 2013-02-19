@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab3BSIDr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 03:03:47 -0500
-Received: from ozlabs.org ([203.10.76.45]:56812 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757481Ab3BSICt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758258Ab3BSICt (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 19 Feb 2013 03:02:49 -0500
+Received: from ozlabs.org ([203.10.76.45]:33606 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757481Ab3BSICm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 03:02:42 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
 To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Asias He <asias@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+Cc: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        asias@redhat.com, mst@redhat.com, kvm@vger.kernel.org,
         virtualization@lists.linux-foundation.org
-Subject: [PATCH 14/16] virtio_rpmsg_bus: use simplified virtqueue accessors.
-Date: Tue, 19 Feb 2013 18:26:32 +1030
-Message-Id: <1361260594-601-15-git-send-email-rusty@rustcorp.com.au>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au>
-References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au>
+Subject: Re: [PATCH 0/9] virtio: new API for addition of buffers, scatterlist changes
+In-Reply-To: <511CAD19.2010902@redhat.com>
+References: <1360671815-2135-1-git-send-email-pbonzini@redhat.com> <87r4kjjuyn.fsf@rustcorp.com.au> <511CAD19.2010902@redhat.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 19 Feb 2013 18:19:11 +1030
+Message-ID: <87ehgciw08.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We never add buffers with input and output parts, so use the new accessors.
+Paolo Bonzini <pbonzini@redhat.com> writes:
+>> virtio_ring: virtqueue_add_sgs, to add multiple sgs.
+>> 
+>> virtio_scsi and virtio_blk can really use these, to avoid their current
+>> hack of copying the whole sg array.
+>> 
+>> Signed-off-by: Ruty Russell <rusty@rustcorp.com.au> 
+>
+> It's much better than the other prototype you had posted, but I still
+> dislike this...  You pay for additional counting of scatterlists when
+> the caller knows the number of buffers
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
----
- drivers/rpmsg/virtio_rpmsg_bus.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Yes, but I like the API simplicity.  We could use an array of sg_table,
+which is what you have in virtio_scsi anyway, but I doubt it's
+measurable on benchmarks.
 
-diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
-index f1e3239..d9897d1 100644
---- a/drivers/rpmsg/virtio_rpmsg_bus.c
-+++ b/drivers/rpmsg/virtio_rpmsg_bus.c
-@@ -763,14 +763,14 @@ int rpmsg_send_offchannel_raw(struct rpmsg_channel *rpdev, u32 src, u32 dst,
- 	mutex_lock(&vrp->tx_lock);
- 
- 	/* add message to the remote processor's virtqueue */
--	err = virtqueue_add_buf(vrp->svq, &sg, 1, 0, msg, GFP_KERNEL);
-+	err = virtqueue_add_outbuf(vrp->svq, &sg, 1, msg, GFP_KERNEL);
- 	if (err) {
- 		/*
- 		 * need to reclaim the buffer here, otherwise it's lost
- 		 * (memory won't leak, but rpmsg won't use it again for TX).
- 		 * this will wait for a buffer management overhaul.
- 		 */
--		dev_err(dev, "virtqueue_add_buf failed: %d\n", err);
-+		dev_err(dev, "virtqueue_add_outbuf failed: %d\n", err);
- 		goto out;
- 	}
- 
-@@ -845,7 +845,7 @@ static void rpmsg_recv_done(struct virtqueue *rvq)
- 	sg_init_one(&sg, msg, RPMSG_BUF_SIZE);
- 
- 	/* add the buffer back to the remote processor's virtqueue */
--	err = virtqueue_add_buf(vrp->rvq, &sg, 0, 1, msg, GFP_KERNEL);
-+	err = virtqueue_add_inbuf(vrp->rvq, &sg, 1, msg, GFP_KERNEL);
- 	if (err < 0) {
- 		dev_err(dev, "failed to add a virtqueue buffer: %d\n", err);
- 		return;
-@@ -976,7 +976,7 @@ static int rpmsg_probe(struct virtio_device *vdev)
- 
- 		sg_init_one(&sg, cpu_addr, RPMSG_BUF_SIZE);
- 
--		err = virtqueue_add_buf(vrp->rvq, &sg, 0, 1, cpu_addr,
-+		err = virtqueue_add_inbuf(vrp->rvq, &sg, 1, cpu_addr,
- 								GFP_KERNEL);
- 		WARN_ON(err); /* sanity check; this can't really happen */
- 	}
--- 
-1.7.10.4
+> and the nested loops aren't free, either.
 
+I think they'll win over multiple function calls :)
+
+But modulo devastating benchmarks, this wins.  Because the three-part
+API is really, really ugly.  It *looks* like a generic "start - work
+... work - end" API, but it's not.  Because you need to declare exactly
+what you're doing in virtqueue_start_buf!
+
+And that's OK, because noone wants a generic API like that.
+
+> > +	sg_unmark_end(sg + out + in);
+> > +	if (out && in)
+> > +		sg_unmark_end(sg + out);
+>
+> What's this second sg_unmark_end block for?  Doesn't it access after the
+> end of sg?  If you wanted it to be sg_mark_end, that must be:
+> 
+>   if (out)
+> 	  sg_mark_end(sg + out - 1);
+>   if (in)
+> 	  sg_mark_end(sg + out + in - 1);
+> 
+>   with a corresponding unmark afterwards.
+
+Thanks, I fixed that after I actually tested it :)
+
+But as we clean them every time, we don't need to unmark:
+
+	/* Workaround until callers pass well-formed sgs. */
+	for (i = 0; i < out + in; i++)
+		sg_unmark_end(sg + i);
+
+	sg_mark_end(sg + out + in - 1);
+	if (out && in)
+		sg_mark_end(sg + out - 1);
+
+	return virtqueue_add_sgs(_vq, sgs, out ? 1 : 0, in ? 1 : 0, data, gfp);
+
+This is a workaround until all callers fixed / replaced, of course.
+
+> Another problem is that you cannot pass "truncated" scatterlists.  You
+> must ensure there is an end marker on the last item.  I'm not sure if
+> the kernel ensures that, given that for_each_sg takes explicitly the
+> number of scatterlist elements; and it is not as trivial as
+> "sg_mark_end(foo + nsg - 1);" if the upper layers hand you a chained
+> scatterlist.
+
+Makes you wonder why they have end markers at all.  But yes, the block
+layer does the right thing with end markers in blk_bio_map_sg(), which
+seems to carry through.
+
+Cheers,
+Rusty.
+PS.  Patchbomb coming, lightly tested.
