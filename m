@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab3BUAnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 19:43:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42090 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751840Ab3BUAm7 (ORCPT
+	id S1752987Ab3BUBBt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 20:01:49 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:51799 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab3BUBBr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 19:42:59 -0500
-Date: Wed, 20 Feb 2013 16:42:57 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH v4] lockdep: check that no locks held at freeze time
-Message-Id: <20130220164257.0905dc45.akpm@linux-foundation.org>
-In-Reply-To: <CACBanvrdvTW+C2d2-+bC++mJOb8+3qNs2GgY3gf_9EfY+kNPvA@mail.gmail.com>
-References: <20130220223013.GA15760@redhat.com>
-	<1361402236-28644-1-git-send-email-msb@chromium.org>
-	<20130220152446.a65ff84f.akpm@linux-foundation.org>
-	<CACBanvr+1VEM6UqfNVx+KiuehZejwqpGp6djPN5kTgYD-umP2g@mail.gmail.com>
-	<20130220162015.545ebb6b.akpm@linux-foundation.org>
-	<CACBanvrdvTW+C2d2-+bC++mJOb8+3qNs2GgY3gf_9EfY+kNPvA@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Feb 2013 20:01:47 -0500
+Date: Tue, 19 Feb 2013 11:44:10 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] Documentation: update top level 00-INDEX file with new
+ additions
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <51224F70.9050806@infradead.org> (from rdunlap@infradead.org on
+	Mon Feb 18 09:57:36 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1361295850.29465.8@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Feb 2013 16:28:07 -0800
-Mandeep Singh Baines <msb@chromium.org> wrote:
-
-> > Backtraces aren't *that* bad.  We'll easily be able to tell which of
-> > the two callsites triggered the trace.
+On 02/18/2013 09:57:36 AM, Randy Dunlap wrote:
+> On 02/18/13 01:39, Jiri Kosina wrote:
+> > On Thu, 14 Feb 2013, Paul Gortmaker wrote:
 > >
+> >> It seems there are about 80 new, but undocumented addtions at
+> >> the top level Documentation directory.  This fixes up the top
+> >> level 00-INDEX by adding new entries and deleting a couple orphans.
+> >> Some subdirs could probably still use a check/cleanup too though.
 > 
-> Let's say there was a try_to_freeze() that got inlined indirectly
-> (multiple levels of inline) into do_exit. Wouldn't the backtraces for
-> the regular exit check and the try_to_freeze check be identical except
-> for the offset (do_exit+0x45 versus do_exit+0x88)? So unless you had
-> an object file you wouldn't know which check you hit.
+> After this patch, I would prefer to see a requirement that each  
+> Documentation/
+> file contain a "topic" line and then generate INDEX files from those  
+> automatically...
+> 
+> comments?
 
-Mutter.  Spose so.  Vaguely possible.  Yes, if we want to avoid a
-wont-happen, use __FILE__ and __LINE__.  Or, probably more sanely,
-__func__.
+I actually have a script that can audit the 00-INDEX files, as part of  
+my kernel.org/doc build stuff:
 
-Or uninline try_to_freeze().  If anything's calling that at high
-frequency, we have a problem.  And given the number of callsites,
-getting it into icache might result in a faster kernel...
+   http://landley.net/hg/kdocs/file/tip/make
 
-(Someone needs to teach __might_sleep() about __ratelimit())
+Manually auditing these isn't hard for me, it's just that since  
+kernel.org went all-in on locking the barn door after the horses  
+escaped, I haven't had access to my old kernel.org account (I need to  
+meed kernel developers in person to get keys signed, which doesn't  
+happen much).
+
+And even if I did get a new ssh key, you don't get shell access anymore  
+you get "kup" which is a git wrapper you can't rsync through. So fixing  
+problem 1 opens up problem 2 and I still can't do anything useful.  
+(Navigating the new bureaucracy is on my todo list, but not really  
+something I sit down and go "oh boy, I should work on THIS" on any  
+given evening.)
+
+So I haven't been able to update kernel.org/doc since the breakin, and  
+my tools for auditing the 00-INDEX files and htmldocs and menuconfig  
+and so on are all tied up with that.
+
+Rob
