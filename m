@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933604Ab3BSSyd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:54:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29936 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933699Ab3BSSyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:54:22 -0500
-Date: Tue, 19 Feb 2013 13:29:52 -0500
-From: Dave Jones <davej@redhat.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        mpm@selenic.com, linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: slab: odd BUG on kzalloc
-Message-ID: <20130219182952.GB27141@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-	mpm@selenic.com, linux-mm <linux-mm@kvack.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <5120FDA4.2060704@oracle.com>
- <0000013cefe056e0-daedd018-43cd-472f-9b20-27b2a897ae2a-000000@email.amazonses.com>
- <5123C1F1.6050102@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5123C1F1.6050102@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933700Ab3BSSyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:54:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54512 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933698Ab3BSSyc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 13:54:32 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 70/81] tg3: Avoid null pointer dereference in tg3_interrupt in netconsole mode
+Date: Tue, 19 Feb 2013 15:49:33 -0300
+Message-Id: <1361299784-8830-71-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 01:18:25PM -0500, Sasha Levin wrote:
+3.5.7.6 -stable review patch.  If anyone has any objections, please let me know.
 
- > >> [  169.930103] ---[ end trace 4d135f3def21b4bd ]---
- > >>
- > >> The code translates to the following in fs/pipe.c:alloc_pipe_info :
- > >>
- > >>         pipe = kzalloc(sizeof(struct pipe_inode_info), GFP_KERNEL);
- > >>         if (pipe) {
- > >>                 pipe->bufs = kzalloc(sizeof(struct pipe_buffer) * PIPE_DEF_BUFFERS, GFP_KERNEL); <=== this
- > >>                 if (pipe->bufs) {
- > >>                         init_waitqueue_head(&pipe->wait);
- > 
- > Looks like it's not specific to pipe(). I've also got this one now:
- > 
- > Since I've managed to reproduce it, I'll go ahead and add slub_debug and see what it tells us.
+------------------
 
-I'm curious, did you recently upgrade gcc, or other parts of the toolchain ?
-This, and one of the other 'weird' bugs you reported recently have me wondering
-if perhaps you're seeing a compiler bug.
+From: Nithin Nayak Sujir <nsujir@broadcom.com>
 
-	Dave
+commit 9c13cb8bb477a83b9a3c9e5a5478a4e21294a760 upstream.
+
+When netconsole is enabled, logging messages generated during tg3_open
+can result in a null pointer dereference for the uninitialized tg3
+status block. Use the irq_sync flag to disable polling in the early
+stages. irq_sync is cleared when the driver is enabling interrupts after
+all initialization is completed.
+
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/net/ethernet/broadcom/tg3.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 15f8b00..82a8ed2 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -6594,6 +6594,9 @@ static void tg3_poll_controller(struct net_device *dev)
+ 	int i;
+ 	struct tg3 *tp = netdev_priv(dev);
+ 
++	if (tg3_irq_sync(tp))
++		return;
++
+ 	for (i = 0; i < tp->irq_cnt; i++)
+ 		tg3_interrupt(tp->napi[i].irq_vec, &tp->napi[i]);
+ }
+@@ -15556,6 +15559,7 @@ static int __devinit tg3_init_one(struct pci_dev *pdev,
+ 	tp->pm_cap = pm_cap;
+ 	tp->rx_mode = TG3_DEF_RX_MODE;
+ 	tp->tx_mode = TG3_DEF_TX_MODE;
++	tp->irq_sync = 1;
+ 
+ 	if (tg3_debug > 0)
+ 		tp->msg_enable = tg3_debug;
+-- 
+1.7.9.5
 
