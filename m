@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933604Ab3BSSdY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:33:24 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:58333 "EHLO mail.skyhub.de"
+	id S933586Ab3BSSdW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:33:22 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:58330 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933571Ab3BSSdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933221Ab3BSSdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Feb 2013 13:33:20 -0500
 From: Borislav Petkov <bp@alien8.de>
 To: "H. Peter Anvin" <hpa@zytor.com>
@@ -13,85 +13,58 @@ Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@suse.de>, Andre Przywara <andre@andrep.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [PATCH 2/2] x86, kvm: Add MSR_AMD64_BU_CFG2 to the list of ignored MSRs
-Date: Tue, 19 Feb 2013 19:33:13 +0100
-Message-Id: <1361298793-31834-2-git-send-email-bp@alien8.de>
+        Borislav Petkov <bp@suse.de>, Gleb Natapov <gleb@redhat.com>
+Subject: [PATCH 1/2] x86, CPU, AMD: Fix WC+ workaround for older hosts
+Date: Tue, 19 Feb 2013 19:33:12 +0100
+Message-Id: <1361298793-31834-1-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 1.8.1.3.535.ga923c31
-In-Reply-To: <1361298793-31834-1-git-send-email-bp@alien8.de>
+In-Reply-To: <5123BBBC.2080008@zytor.com>
 References: <5123BBBC.2080008@zytor.com>
- <1361298793-31834-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-The "x86, AMD: Enable WC+ memory type on family 10 processors" patch
-currently in -tip added a workaround for AMD F10h CPUs which #GPs my
-guest when booted in kvm. This is because it accesses MSR_AMD64_BU_CFG2
-which is not currently ignored by kvm. Do that because this MSR is only
-baremetal-relevant anyway. While at it, move the ignored MSRs at the
-beginning of kvm_set_msr_common so that we exit then and there.
+The WC+ workaround for F10h introduces a new MSR and kvm host #GPs
+on accesses to unknown MSRs if paravirt is not compiled in. Use the
+exception-handling MSR accessors so as not to break 3.8 and later guests
+booting on older hosts.
 
-Acked-by: Gleb Natapov <gleb@redhat.com>
+Remove a redundant family check while at it.
+
+Cc: Gleb Natapov <gleb@redhat.com>
 Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: Andre Przywara <andre@andrep.de>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Link: http://lkml.kernel.org/r/20130219153655.GD26748@pd.tnic
 Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- arch/x86/kvm/x86.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ arch/x86/kernel/cpu/amd.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index c243b81e3c74..37040079cd6b 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1881,6 +1881,14 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
- 	u64 data = msr_info->data;
- 
- 	switch (msr) {
-+	case MSR_AMD64_NB_CFG:
-+	case MSR_IA32_UCODE_REV:
-+	case MSR_IA32_UCODE_WRITE:
-+	case MSR_VM_HSAVE_PA:
-+	case MSR_AMD64_PATCH_LOADER:
-+	case MSR_AMD64_BU_CFG2:
-+		break;
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 721ef3208eb5..163af4a91d09 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -723,12 +723,14 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		 * performance degradation for certain nested-paging guests.
+ 		 * Prevent this conversion by clearing bit 24 in
+ 		 * MSR_AMD64_BU_CFG2.
++		 *
++		 * NOTE: we want to use the _safe accessors so as not to #GP kvm
++		 * guests on older kvm hosts.
+ 		 */
+-		if (c->x86 == 0x10) {
+-			rdmsrl(MSR_AMD64_BU_CFG2, value);
+-			value &= ~(1ULL << 24);
+-			wrmsrl(MSR_AMD64_BU_CFG2, value);
+-		}
 +
- 	case MSR_EFER:
- 		return set_efer(vcpu, data);
- 	case MSR_K7_HWCR:
-@@ -1900,8 +1908,6 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
- 			return 1;
- 		}
- 		break;
--	case MSR_AMD64_NB_CFG:
--		break;
- 	case MSR_IA32_DEBUGCTLMSR:
- 		if (!data) {
- 			/* We support the non-activated case already */
-@@ -1914,11 +1920,6 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
- 		vcpu_unimpl(vcpu, "%s: MSR_IA32_DEBUGCTLMSR 0x%llx, nop\n",
- 			    __func__, data);
- 		break;
--	case MSR_IA32_UCODE_REV:
--	case MSR_IA32_UCODE_WRITE:
--	case MSR_VM_HSAVE_PA:
--	case MSR_AMD64_PATCH_LOADER:
--		break;
- 	case 0x200 ... 0x2ff:
- 		return set_msr_mtrr(vcpu, msr, data);
- 	case MSR_IA32_APICBASE:
-@@ -2253,6 +2254,7 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
- 	case MSR_K8_INT_PENDING_MSG:
- 	case MSR_AMD64_NB_CFG:
- 	case MSR_FAM10H_MMIO_CONF_BASE:
-+	case MSR_AMD64_BU_CFG2:
- 		data = 0;
- 		break;
- 	case MSR_P6_PERFCTR0:
++		rdmsrl_safe(MSR_AMD64_BU_CFG2, &value);
++		value &= ~(1ULL << 24);
++		wrmsrl_safe(MSR_AMD64_BU_CFG2, value);
+ 	}
+ 
+ 	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
 -- 
 1.8.1.3.535.ga923c31
 
