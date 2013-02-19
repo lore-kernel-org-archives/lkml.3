@@ -1,72 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933068Ab3BSPF5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 10:05:57 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:41649 "EHLO mail.skyhub.de"
+	id S933099Ab3BSPGT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 10:06:19 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38537 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932995Ab3BSPFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 10:05:55 -0500
-Date: Tue, 19 Feb 2013 16:05:51 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Peter Feuerer <peter@piie.net>, Alexander Lam <azl@andrew.cmu.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andreas Mohr <andi@lisas.de>
-Subject: Re: thermal governor: does it actually work??
-Message-ID: <20130219150551.GL26623@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Zhang Rui <rui.zhang@intel.com>, Peter Feuerer <peter@piie.net>,
-	Alexander Lam <azl@andrew.cmu.edu>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Andreas Mohr <andi@lisas.de>
-References: <744357E9AAD1214791ACBA4B0B90926329ED72@SHSMSX101.ccr.corp.intel.com>
- <20130215154931.GA26213@rhlx01.hs-esslingen.de>
- <CACWwPiuk0GynEwe3RuKndWnsYwTuPhO0ob6sJ6ve34u1_RtkYw@mail.gmail.com>
- <20130216214712.GA13494@pd.tnic>
- <cone.1361068993.271211.4532.1000@galar>
- <20130217140908.GA20323@pd.tnic>
- <cone.1361115717.636831.25189.1000@galar>
- <20130218135012.GB16622@pd.tnic>
- <cone.1361206053.493518.2246.1000@galar>
- <1361285464.2323.20.camel@rzhang1-mobl4>
+	id S933006Ab3BSPGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 10:06:16 -0500
+Date: Tue, 19 Feb 2013 17:05:00 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <balbi@ti.com>, kishon <kishon@ti.com>, <rob@landley.net>,
+        <tony@atomide.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <gregkh@linuxfoundation.org>,
+        <akpm@linux-foundation.org>, <mchehab@redhat.com>, <cesarb@cesarb.net>,
+        <davem@davemloft.net>, <santosh.shilimkar@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH v2 0/5] Generic PHY Framework
+Message-ID: <20130219150500.GG4390@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1361253198-7401-1-git-send-email-kishon@ti.com>
+ <201302191233.54677.arnd@arndb.de>
+ <20130219131258.GV23197@arwen.pp.htv.fi>
+ <201302191434.40495.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="64j1qyTOoGvYcHb1"
 Content-Disposition: inline
-In-Reply-To: <1361285464.2323.20.camel@rzhang1-mobl4>
+In-Reply-To: <201302191434.40495.arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 10:51:04PM +0800, Zhang Rui wrote:
-> Okay, here I see the problem, say you want to turn on the fan at 60C and
-> turn it off at 55C, is this what you want?
-> hmmm, is it possible to do some tricks in acerhdf driver?
-> say,
-> only one active trip point as before. but change acerhdf_get_trip_temp
-> to:
-> acerhdf_get_trip_temp()
-> {
-> 	if (fan is on)
-> 		return 55;
-> 	else
-> 		return 60;
-> }
-> 
-> In this way, when the fan is off and the temperature is raising, the fan
-> will be turned on at 60C because we have an active trip point of 60C.
-> And when the fan is turned on and the temperature starts to drop, the
-> fan will be turned off at 55C.
+--64j1qyTOoGvYcHb1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Makes a sense to me. I was questioning the need for 4 trip points too.
-We probably would need a second, critical trip point though, just in
-case.
+Hi,
 
-Thanks.
+On Tue, Feb 19, 2013 at 02:34:40PM +0000, Arnd Bergmann wrote:
+> On Tuesday 19 February 2013, Felipe Balbi wrote:
+> > On Tue, Feb 19, 2013 at 12:33:54PM +0000, Arnd Bergmann wrote:
+> > > > Currently drivers/phy and drivers/net/phy are independent and are n=
+ot=20
+> > > > related to each other. There are some fundamental differences on ho=
+w=20
+> > > > these frameworks work. IIUC, the *net* uses bus layer (MDIO bus) to=
+=20
+> > > > match a PHY device with a PHY driver and the Ethernet device uses t=
+he=20
+> > > > bus layer to get the PHY.
+> > > > The Generic PHY Framework however doesn't have any bus layer. The P=
+HY=20
+> > > > should be like any other Platform Devices and Drivers and the frame=
+work=20
+> > > > will provide some APIs to register with the framework. And there ar=
+e=20
+> > > > other APIs which any controller can use to get the PHY (for e.g., i=
+n the=20
+> > > > case of dt boot, it can use phandle to get a reference to the PHY).
+> > >=20
+> > > Hmm, I think the use of a bus_type for a PHY actually sounds quite
+> > > appropriate. The actual PHY device would then be a child of the
+> >=20
+> > really ? I'm not so sure, the *bus* used by the PHY is ULPI, UTMI,
+> > UTMI+, PIP3, I2C, etc... adding another 'fake' bus representation is a
+> > bit overkill IMO.
+> >=20
+> > Imagine an I2C-controlled PHY driver like isp1301, that driver will have
+> > to register i2c_driver and phy_driver, which looks weird to me. If the
+> > only substitute for class is a bus, we can't drop classes just yet, I'm
+> > afraid.
+> >=20
+> > Imagine a regulator bus, a pwm bus, an LED bus etc. They don't make
+> > sense IMHO.
+>=20
+> It's a fine line, but I think a phy is something that resembles a device
+> more than an LED does. When I read patch 1, I also noticed and commented
+> on the fact that it does use a 'class'. Now, according to Greg, we should
+> use 'bus_type' instead of 'class' in new code. I originally disagreed with
+> that concept, but he's the boss here and it's good if he has a vision
+> how things should be lined out.
+>=20
+> In practice, there is little difference between a 'bus_type' and a 'class=
+',
+> so just replace any instance of the former with the latter in your head
+> when reading the code ;-)
 
--- 
-Regards/Gruss,
-    Boris.
+it's not so simple :-) if we must use bus_type we need to introduce all
+the device/driver matching mechanism which isn't necessary with a class.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> I understand that there is not a real common bus here, and the bus_type
+> infrastructure would basically be used as a way to represent each PHY
+> in sysfs and provide a way to enumerate and look them up inside of the
+> kernel.
+
+right, but maybe we need another mechanism. If, in the long run we must
+use bus_type, then eventually pwm, led, regulators, etc will all be
+converted to bus_type. It will look quite weird IMHO.
+
+Greg, can you pitch your suggestion here ? It would be great to hear
+your rationale behind dropping class infrastructure, couldn't find
+anything through Google and since feature-removal-schedule.txt has been
+removed (without adding it to feature-removal-schedule.txt, I must add
+:-) I don't know what's the idea behind removing classes.
+
+cheers
+
+--=20
+balbi
+
+--64j1qyTOoGvYcHb1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRI5SbAAoJEIaOsuA1yqREUfYP/1Va53JVZFSDnDRA4yV6Cq5a
+ldTluhlGuUhVni0Cyovis5LweKvPHhPcmb1kGUCwW2avtwJLg2FBySj5v+uKqjWy
+vSeDS9ceFHYp03JAQbyYH7aRj5kDGUVHK32SanTWYDEMH3T4TSmqfUjB10dikOU/
+dEhbu957T/pu21VSSgF+f0kYFCBS5EEbp0dzO4NpgPBt4TMP2Z11kXqOE9yGYWqy
+zV+SNpektQ4Rj74NA14UuzylpPhqNSpVpEXTasTGtnAcunIrUQPOIu1PB1ZjKnR9
+v1maWqbpZP8+iMHLZuL6+zTyEvEa+GE8d1E76IZapcVYwfwiOElloOXX1vnZ6ylu
+t2Uhp1TIGzRCE8P5o45aK1Zueb0q2SZpG4jCSPpzt16MCV+YydXbXI3JtRNfzGcw
+tDKA0CT/5/97YetsG1qEdc00CIMrNFnp7nrX8I0JtAu22qE141TuHCcyXSEqYOaY
+ysKdi5CDVmbduJrkYOUkHy3b6rQExJZhFAcBLAjWN6q1winX1bF4ZWD6slu2CwgK
+HVHvfr2iLDsJPVPZNiCIhaLnRJYOEX3twYfFoaDJQbTirqBHxXczlKIWBTePu/0l
+xexrzWYlyZ/J9Z71XV2nOFYIavzNEz74uImSrgxNJL5Q1w33Utakgwd3p2ggEMUA
+9YJockzXn1o8js8fP4pp
+=ImRF
+-----END PGP SIGNATURE-----
+
+--64j1qyTOoGvYcHb1--
