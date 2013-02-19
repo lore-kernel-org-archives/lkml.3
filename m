@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab3BSMC4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 07:02:56 -0500
-Received: from mout.gmx.net ([212.227.17.20]:50056 "EHLO mout.gmx.net"
+	id S932690Ab3BSMDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 07:03:00 -0500
+Received: from mout.gmx.net ([212.227.15.18]:51726 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932473Ab3BSMCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 07:02:55 -0500
+	id S932473Ab3BSMC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 07:02:57 -0500
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18TyyFuu1sTv38Ws3jdh7Y0IOwLrP08U/OfemyZeB
-	WwnBU1LMCBJufH
+X-Provags-ID: V01U2FsdGVkX1+MaFFD2pGMQGNmU8dS87Q9C3+zFND8x7NzTGZZRl
+	qgkm1vROfCTmDt
 From: Peter Huewe <peterhuewe@gmx.de>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Devendra Naga <devendra.aaru@gmail.com>, Peter Huewe <peterhuewe@gmx.de>,
         "Robert P. J. Day" <rpjday@crashcourse.ca>,
         Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] staging/sep: Fix smatch false positive about potential NULL dereference in sep_main.c
-Date: Tue, 19 Feb 2013 13:07:27 +0100
-Message-Id: <1361275648-6259-1-git-send-email-peterhuewe@gmx.de>
+Subject: [PATCH 2/2] staging/sep: Check pointers before dereferencing (fix smatch warning)
+Date: Tue, 19 Feb 2013 13:07:28 +0100
+Message-Id: <1361275648-6259-2-git-send-email-peterhuewe@gmx.de>
 X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1361275648-6259-1-git-send-email-peterhuewe@gmx.de>
+References: <1361275648-6259-1-git-send-email-peterhuewe@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Smatch complains about a potential NULL pointer dereference:
+smatch complains about two dereferenced before check issues:
 
-sep_main.c:2312 sep_construct_dma_tables_from_lli() error: potential
-NULL dereference 'info_out_entry_ptr'.
+sep_main.c:2898 sep_free_dma_tables_and_dcb() warn: variable dereferenced before check
+'dma_ctx' (see line 2885)
+sep_main.c:2898 sep_free_dma_tables_and_dcb() warn: variable dereferenced before check
+'*dma_ctx' (see line 2885)
 
-info_out_entry_ptr is initialized with NULL and if info_in_entry_ptr is
-not NULL it gets derefenced.
-However info_out_entry_ptr is only NULL in the first iteration of the
-while loop and in this case info_in_entry_ptr is also NULL (as indicated
-by the comment /* If info entry is null - this is the first table built */
--> this is a false positive.
-
-Nevertheless we add a check for info_out_entry_ptr to silence this
-warning and make it more robust in regard to code changes.
+-> Move the checks to the top, but keep the semantics.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/staging/sep/sep_main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/staging/sep/sep_main.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/staging/sep/sep_main.c b/drivers/staging/sep/sep_main.c
-index 30e8d25..366d56b 100644
+index 366d56b..f5b7341 100644
 --- a/drivers/staging/sep/sep_main.c
 +++ b/drivers/staging/sep/sep_main.c
-@@ -2276,7 +2276,7 @@ static int sep_construct_dma_tables_from_lli(
- 			table_data_size);
+@@ -2880,6 +2880,8 @@ static int sep_free_dma_tables_and_dcb(struct sep_device *sep, bool isapplet,
  
- 		/* If info entry is null - this is the first table built */
--		if (info_in_entry_ptr == NULL) {
-+		if (info_in_entry_ptr == NULL || info_out_entry_ptr == NULL) {
- 			/* Set the output parameters to physical addresses */
- 			*lli_table_in_ptr =
- 			sep_shared_area_virt_to_bus(sep, dma_in_lli_table_ptr);
+ 	dev_dbg(&sep->pdev->dev, "[PID%d] sep_free_dma_tables_and_dcb\n",
+ 					current->pid);
++	if (!dma_ctx || !*dma_ctx) /* nothing to be done here*/
++		return 0;
+ 
+ 	if (((*dma_ctx)->secure_dma == false) && (isapplet == true)) {
+ 		dev_dbg(&sep->pdev->dev, "[PID%d] handling applet\n",
+@@ -2895,8 +2897,7 @@ static int sep_free_dma_tables_and_dcb(struct sep_device *sep, bool isapplet,
+ 		 * Go over each DCB and see if
+ 		 * tail pointer must be updated
+ 		 */
+-		for (i = 0; dma_ctx && *dma_ctx &&
+-			i < (*dma_ctx)->nr_dcb_creat; i++, dcb_table_ptr++) {
++		for (i = 0; i < (*dma_ctx)->nr_dcb_creat; i++, dcb_table_ptr++) {
+ 			if (dcb_table_ptr->out_vr_tail_pt) {
+ 				pt_hold = (unsigned long)dcb_table_ptr->
+ 					out_vr_tail_pt;
 -- 
 1.7.8.6
 
