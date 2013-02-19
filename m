@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983Ab3BSRGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 12:06:21 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49036 "EHLO
+	id S932947Ab3BSRIX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 12:08:23 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34967 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758479Ab3BSRGU (ORCPT
+	with ESMTP id S1756731Ab3BSRIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 12:06:20 -0500
-Message-ID: <5123B108.1010207@wwwdotorg.org>
-Date: Tue, 19 Feb 2013 10:06:16 -0700
+	Tue, 19 Feb 2013 12:08:21 -0500
+Message-ID: <5123B180.5060106@wwwdotorg.org>
+Date: Tue, 19 Feb 2013 10:08:16 -0700
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Dan Williams <djbw@fb.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] dma: tegra: assume CONFIG_OF
-References: <1360965237-14857-1-git-send-email-swarren@wwwdotorg.org> <CAA9_cme3e-VWFs+5o6g88dXmURsjojT08o9Cw+=r7=AfRKz5gQ@mail.gmail.com> <20130217150735.GK29960@intel.com>
-In-Reply-To: <20130217150735.GK29960@intel.com>
+To: Simon Glass <sjg@chromium.org>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
+        pdeschrijver@nvidia.com, pgaikwad@nvidia.com,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [v3 0/6] ARM: tegra: convert device tree files to use CLK defines
+References: <1360917814-27236-1-git-send-email-hdoyu@nvidia.com> <CAPnjgZ0Bkk0Ock5_WQxsni+qNMQnWURrLLqfNFVfKczN6OgLoQ@mail.gmail.com>
+In-Reply-To: <CAPnjgZ0Bkk0Ock5_WQxsni+qNMQnWURrLLqfNFVfKczN6OgLoQ@mail.gmail.com>
 X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -25,28 +30,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2013 08:07 AM, Vinod Koul wrote:
-> On Fri, Feb 15, 2013 at 02:18:59PM -0800, Dan Williams wrote:
->> On Fri, Feb 15, 2013 at 1:53 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> From: Stephen Warren <swarren@nvidia.com>
->>>
->>> Tegra only supports, and always enables, device tree. Remove all ifdefs
->>> and runtime checks for DT support from the driver.
->>>
->>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+On 02/17/2013 03:20 PM, Simon Glass wrote:
+> Hi Hiroshi,
+> 
+> On Fri, Feb 15, 2013 at 12:43 AM, Hiroshi Doyu <hdoyu@nvidia.com> wrote:
+>> Hi,
 >>
->> Acked-by: Dan Williams <djbw@fb.com>
->>
->> ..adding Vinod.
->
-> I think it should assume CONFIG_DMA_OF?
+>> With new dtc+cpp feature, we could get rid of magic numbers in dts*
+>> files. This patch replaces CLK IDs.
+...
+> I wonder what sort of error message do you get when you make a mistake
+> in the .dts or one of the .dtsi includes? If cpp is handling the
+> including, does dtc just see a single file,
 
-I'm not quite sure what you're saying. There are no ifdefs in the driver
-related to CONFIG_DMA_OF, so there's no code (ifdefs) that could benefit
-from (be removed due to) assuming that.
+It is.
 
-Do you mean this driver should be updated to support the generic DMA DT
-bindings? Yes, that's true. However, a patch to do so would be
-completely unrelated. We've been holding off doing such a conversion
-until the dmaengine core support for CONFIG_DMA_OF is in the kernel, so
-we can use it.
+> in which case are the line
+> numbers printed with each error not much use? Or does dtc handle the
+> #line directives?
+
+cpp does generate #line directives, which dtc does know how to
+interpret, so this should all work just fine. IIRC, I did test out this
+aspect when adding #line support to dtc.
