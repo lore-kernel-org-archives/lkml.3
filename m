@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467Ab3BSKNJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:13:09 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:53844 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932209Ab3BSKNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:13:07 -0500
-Message-ID: <51235076.8040200@ti.com>
-Date: Tue, 19 Feb 2013 15:44:14 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1758659Ab3BSKOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:14:46 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39935 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758262Ab3BSKOp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 05:14:45 -0500
+Date: Tue, 19 Feb 2013 11:14:37 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Andy Ross <andy.ross@windriver.com>
+Subject: Re: [PATCH] vt: add init_hide parameter to suppress boot output
+Message-ID: <20130219101437.GA3396@xo-6d-61-c0.localdomain>
+References: <1361266690-19382-1-git-send-email-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-To: Afzal Mohammed <afzal@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
-        Syed Mohammed Khasim <khasim@ti.com>
-Subject: Re: [PATCH, RFC 2/8] ARM: twd: register clock event for 1 core SMP
-References: <cover.1361186097.git.afzal@ti.com> <a7f62b8580aa4b33d5658f4f03371a453adaea9b.1361186097.git.afzal@ti.com>
-In-Reply-To: <a7f62b8580aa4b33d5658f4f03371a453adaea9b.1361186097.git.afzal@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361266690-19382-1-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 February 2013 05:07 PM, Afzal Mohammed wrote:
-> Register percpu local timer for scheduler tick in the case of one core
-> SMP configuration. In other cases - secondary cpu's as well as boot
-> cpu's having more than one core, this is being registered as per
-> existing boot flow, with a difference that they happens after delay
-> calibration. Registering the clock for tick in case of one core should
-> be done before Kernel calibrates delay (this is required to boot,
-> unless local timer is the only one registered for tick). Registering
-> twd local timer at init_time (which platforms are doing now) helps
-> achieve that with the proposed change.
->
-> This helps in an almost booting Kernel (minimal) by only relying on
-> ARM parts for an A9 one core SMP.
->
-> Signed-off-by: Afzal Mohammed <afzal@ti.com>
-> ---
-As mentioned in cover-letter, I don't think we have good
-reasoning to make TWD to work with UP configuration. Even
-you fix the timer code, there are more cascaded dependencies
-which is not worth the effort.
+Hi!
 
-Regards,
-Samtosh
+> --- a/drivers/tty/vt/vt.c
+> +++ b/drivers/tty/vt/vt.c
+> @@ -165,6 +165,9 @@ module_param(global_cursor_default, int, S_IRUGO | S_IWUSR);
+>  static int cur_default = CUR_DEFAULT;
+>  module_param(cur_default, int, S_IRUGO | S_IWUSR);
+>  
+> +static int init_hide;
+> +module_param(init_hide, int, S_IRUGO);
+> +
+>  /*
+>   * ignore_poke: don't unblank the screen when things are typed.  This is
+>   * mainly for the privacy of braille terminal users.
+> @@ -734,6 +737,7 @@ static void visual_init(struct vc_data *vc, int num, int init)
+>  	__module_get(vc->vc_sw->owner);
+>  	vc->vc_num = num;
+>  	vc->vc_display_fg = &master_display_fg;
+> +	vc->vc_hidden = init_hide;
+>  	vc->vc_uni_pagedir_loc = &vc->vc_uni_pagedir;
+>  	vc->vc_uni_pagedir = 0;
+>  	vc->vc_hi_font_mask = 0;
+> @@ -2336,6 +2340,9 @@ static void console_callback(struct work_struct *ignored)
+>  	if (want_console >= 0) {
+>  		if (want_console != fg_console &&
+>  		    vc_cons_allocated(want_console)) {
+> +			if(want_console != SUSPEND_CONSOLE &&
 
+"if (", please.
+
+Otherwise looks ok.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
