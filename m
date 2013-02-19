@@ -1,70 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758393Ab3BSJKx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 04:10:53 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39968 "EHLO arroyo.ext.ti.com"
+	id S1758437Ab3BSJL1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 04:11:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62176 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758150Ab3BSJKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 04:10:50 -0500
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: "Balbi, Felipe" <balbi@ti.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, "Nori, Sekhar" <nsekhar@ti.com>,
-        "Syed Mohammed, Khasim" <khasim@ti.com>
-Subject: RE: [PATCH, RFC 7/8] ARM: dts: am4372: initial support
-Thread-Topic: [PATCH, RFC 7/8] ARM: dts: am4372: initial support
-Thread-Index: AQHODcyhekrN7w0cOUWaNV2FPnrjXZh/khIAgAFQ+EA=
-Date: Tue, 19 Feb 2013 09:10:17 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EAA85B2@DBDE01.ent.ti.com>
-References: <cover.1361186097.git.afzal@ti.com>
- <c9c131c0508b875c0893e8557504372a1564568a.1361186097.git.afzal@ti.com>
- <20130218182240.GA10755@arwen.pp.htv.fi>
-In-Reply-To: <20130218182240.GA10755@arwen.pp.htv.fi>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="utf-8"
+	id S1758151Ab3BSJLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 04:11:24 -0500
+Message-ID: <512341B2.6030209@redhat.com>
+Date: Tue, 19 Feb 2013 10:11:14 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        asias@redhat.com, mst@redhat.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 0/9] virtio: new API for addition of buffers, scatterlist
+ changes
+References: <1360671815-2135-1-git-send-email-pbonzini@redhat.com> <87r4kjjuyn.fsf@rustcorp.com.au> <511CAD19.2010902@redhat.com> <87ehgciw08.fsf@rustcorp.com.au>
+In-Reply-To: <87ehgciw08.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1J9Asrs028483
 
-Hi Felipe,
-
-On Mon, Feb 18, 2013 at 23:52:40, Balbi, Felipe wrote:
-> On Mon, Feb 18, 2013 at 05:08:16PM +0530, Afzal Mohammed wrote:
-
-> > +		uart1: serial@44e09000 {
-> > +			compatible = "ti,am4372-uart","ti,omap2-uart";
-> > +			clock-frequency = <48000000>;
-> > +			reg = <0x44e09000 0x2000>;
-> > +			interrupts = <0 72 0x4>;
+Il 19/02/2013 08:49, Rusty Russell ha scritto:
 > 
-> missing ti,hwmods ??
+> But modulo devastating benchmarks, this wins.  Because the three-part
+> API is really, really ugly.  It *looks* like a generic "start - work
+> ... work - end" API, but it's not.  Because you need to declare exactly
+> what you're doing in virtqueue_start_buf!
 
-It is a deliberate omission. For minimal bootconsole booting, hwmod
-help is not required. Hwmod details would be added gradually later,
-current series doesn't register hwmod.
+Fair enough, and since you did the work for me I cannot really complain. :)
 
-Regards
-Afzal
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Paolo
