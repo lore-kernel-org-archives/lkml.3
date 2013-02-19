@@ -1,226 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932634Ab3BSKeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:34:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35295 "EHLO mx1.redhat.com"
+	id S932566Ab3BSKft (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:35:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5163 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932621Ab3BSKeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:34:09 -0500
+	id S932631Ab3BSKeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 05:34:12 -0500
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
 Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 06/10] GFS2: Clean up freeze code
-Date: Tue, 19 Feb 2013 10:07:36 +0000
-Message-Id: <1361268460-3092-7-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 08/10] GFS2: Split glock lru processing into two parts
+Date: Tue, 19 Feb 2013 10:07:38 +0000
+Message-Id: <1361268460-3092-9-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1361268460-3092-1-git-send-email-swhiteho@redhat.com>
 References: <1361268460-3092-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The freeze code has not been looked at a lot recently. Upstream has
-moved on, and this is an attempt to catch us back up again. There
-is a vfs level interface for the freeze code which can be called
-from our (obsolete, but kept for backward compatibility purposes)
-sysfs freeze interface. This means freezing this way vs. doing it
-from the ioctl should now work in identical fashion.
+The intent here is to split the processing of the glock lru
+list into two parts, so that the selection of glocks and the
+disposal are separate functions. The plan is then, that further
+updates can then be made to these functions in the future
+to improve the selection of glocks and also the efficiency of
+glock disposal.
 
-As a result of this, the freeze function is only called once
-and we can drop our own special purpose code for counting the
-number of freezes.
+The new feature which this patch brings is sorting the
+glocks to be disposed of into glock number (and thus also
+disk block number) order. Not all glocks will need i/o in
+order to dispose of them, but some will, and at least we'll
+generate mostly disk block order i/o now.
 
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/incore.h b/fs/gfs2/incore.h
-index 5d129ab..19750bc 100644
---- a/fs/gfs2/incore.h
-+++ b/fs/gfs2/incore.h
-@@ -757,10 +757,7 @@ struct gfs2_sbd {
- 	unsigned int sd_replayed_blocks;
+diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
+index 3ad8fd3..cf35155 100644
+--- a/fs/gfs2/glock.c
++++ b/fs/gfs2/glock.c
+@@ -30,6 +30,7 @@
+ #include <linux/rculist_bl.h>
+ #include <linux/bit_spinlock.h>
+ #include <linux/percpu.h>
++#include <linux/list_sort.h>
  
- 	/* For quiescing the filesystem */
--
- 	struct gfs2_holder sd_freeze_gh;
--	struct mutex sd_freeze_lock;
--	unsigned int sd_freeze_count;
- 
- 	char sd_fsname[GFS2_FSNAME_LEN];
- 	char sd_table_name[GFS2_FSNAME_LEN];
-diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
-index 0e3554e..5f5aba5 100644
---- a/fs/gfs2/ops_fstype.c
-+++ b/fs/gfs2/ops_fstype.c
-@@ -115,8 +115,6 @@ static struct gfs2_sbd *init_sbd(struct super_block *sb)
- 
- 	INIT_LIST_HEAD(&sdp->sd_revoke_list);
- 
--	mutex_init(&sdp->sd_freeze_lock);
--
- 	return sdp;
+ #include "gfs2.h"
+ #include "incore.h"
+@@ -1376,50 +1377,93 @@ void gfs2_glock_complete(struct gfs2_glock *gl, int ret)
+ 		gfs2_glock_put(gl);
  }
  
-diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
-index 4dfda4c..c075b62 100644
---- a/fs/gfs2/super.c
-+++ b/fs/gfs2/super.c
-@@ -663,54 +663,6 @@ out:
- 	return error;
- }
- 
--/**
-- * gfs2_freeze_fs - freezes the file system
-- * @sdp: the file system
-- *
-- * This function flushes data and meta data for all machines by
-- * acquiring the transaction log exclusively.  All journals are
-- * ensured to be in a clean state as well.
-- *
-- * Returns: errno
-- */
--
--int gfs2_freeze_fs(struct gfs2_sbd *sdp)
--{
--	int error = 0;
--
--	mutex_lock(&sdp->sd_freeze_lock);
--
--	if (!sdp->sd_freeze_count++) {
--		error = gfs2_lock_fs_check_clean(sdp, &sdp->sd_freeze_gh);
--		if (error)
--			sdp->sd_freeze_count--;
--	}
--
--	mutex_unlock(&sdp->sd_freeze_lock);
--
--	return error;
--}
--
--/**
-- * gfs2_unfreeze_fs - unfreezes the file system
-- * @sdp: the file system
-- *
-- * This function allows the file system to proceed by unlocking
-- * the exclusively held transaction lock.  Other GFS2 nodes are
-- * now free to acquire the lock shared and go on with their lives.
-- *
-- */
--
--void gfs2_unfreeze_fs(struct gfs2_sbd *sdp)
--{
--	mutex_lock(&sdp->sd_freeze_lock);
--
--	if (sdp->sd_freeze_count && !--sdp->sd_freeze_count)
--		gfs2_glock_dq_uninit(&sdp->sd_freeze_gh);
--
--	mutex_unlock(&sdp->sd_freeze_lock);
--}
--
- void gfs2_dinode_out(const struct gfs2_inode *ip, void *buf)
- {
- 	struct gfs2_dinode *str = buf;
-@@ -888,13 +840,6 @@ static void gfs2_put_super(struct super_block *sb)
- 	int error;
- 	struct gfs2_jdesc *jd;
- 
--	/*  Unfreeze the filesystem, if we need to  */
--
--	mutex_lock(&sdp->sd_freeze_lock);
--	if (sdp->sd_freeze_count)
--		gfs2_glock_dq_uninit(&sdp->sd_freeze_gh);
--	mutex_unlock(&sdp->sd_freeze_lock);
--
- 	/* No more recovery requests */
- 	set_bit(SDF_NORECOVERY, &sdp->sd_flags);
- 	smp_mb();
-@@ -985,7 +930,7 @@ static int gfs2_freeze(struct super_block *sb)
- 		return -EINVAL;
- 
- 	for (;;) {
--		error = gfs2_freeze_fs(sdp);
-+		error = gfs2_lock_fs_check_clean(sdp, &sdp->sd_freeze_gh);
- 		if (!error)
- 			break;
- 
-@@ -1013,7 +958,9 @@ static int gfs2_freeze(struct super_block *sb)
- 
- static int gfs2_unfreeze(struct super_block *sb)
- {
--	gfs2_unfreeze_fs(sb->s_fs_info);
-+	struct gfs2_sbd *sdp = sb->s_fs_info;
++static int glock_cmp(void *priv, struct list_head *a, struct list_head *b)
++{
++	struct gfs2_glock *gla, *glb;
 +
-+	gfs2_glock_dq_uninit(&sdp->sd_freeze_gh);
- 	return 0;
- }
- 
-diff --git a/fs/gfs2/super.h b/fs/gfs2/super.h
-index a046468..90e3322 100644
---- a/fs/gfs2/super.h
-+++ b/fs/gfs2/super.h
-@@ -46,9 +46,6 @@ extern void update_statfs(struct gfs2_sbd *sdp, struct buffer_head *m_bh,
- 			  struct buffer_head *l_bh);
- extern int gfs2_statfs_sync(struct super_block *sb, int type);
- 
--extern int gfs2_freeze_fs(struct gfs2_sbd *sdp);
--extern void gfs2_unfreeze_fs(struct gfs2_sbd *sdp);
--
- extern struct file_system_type gfs2_fs_type;
- extern struct file_system_type gfs2meta_fs_type;
- extern const struct export_operations gfs2_export_ops;
-diff --git a/fs/gfs2/sys.c b/fs/gfs2/sys.c
-index 8056b7b..462e841 100644
---- a/fs/gfs2/sys.c
-+++ b/fs/gfs2/sys.c
-@@ -91,19 +91,15 @@ static ssize_t uuid_show(struct gfs2_sbd *sdp, char *buf)
- 
- static ssize_t freeze_show(struct gfs2_sbd *sdp, char *buf)
- {
--	unsigned int count;
--
--	mutex_lock(&sdp->sd_freeze_lock);
--	count = sdp->sd_freeze_count;
--	mutex_unlock(&sdp->sd_freeze_lock);
-+	struct super_block *sb = sdp->sd_vfs;
-+	int frozen = (sb->s_writers.frozen == SB_UNFROZEN) ? 0 : 1;
- 
--	return snprintf(buf, PAGE_SIZE, "%u\n", count);
-+	return snprintf(buf, PAGE_SIZE, "%u\n", frozen);
- }
- 
- static ssize_t freeze_store(struct gfs2_sbd *sdp, const char *buf, size_t len)
- {
--	ssize_t ret = len;
--	int error = 0;
-+	int error;
- 	int n = simple_strtol(buf, NULL, 0);
- 
- 	if (!capable(CAP_SYS_ADMIN))
-@@ -111,19 +107,21 @@ static ssize_t freeze_store(struct gfs2_sbd *sdp, const char *buf, size_t len)
- 
- 	switch (n) {
- 	case 0:
--		gfs2_unfreeze_fs(sdp);
-+		error = thaw_super(sdp->sd_vfs);
- 		break;
- 	case 1:
--		error = gfs2_freeze_fs(sdp);
-+		error = freeze_super(sdp->sd_vfs);
- 		break;
- 	default:
--		ret = -EINVAL;
-+		return -EINVAL;
- 	}
- 
--	if (error)
-+	if (error) {
- 		fs_warn(sdp, "freeze %d error %d", n, error);
-+		return error;
++	gla = list_entry(a, struct gfs2_glock, gl_lru);
++	glb = list_entry(b, struct gfs2_glock, gl_lru);
++
++	if (gla->gl_name.ln_number > glb->gl_name.ln_number)
++		return 1;
++	if (gla->gl_name.ln_number < glb->gl_name.ln_number)
++		return -1;
++
++	return 0;
++}
++
++/**
++ * gfs2_dispose_glock_lru - Demote a list of glocks
++ * @list: The list to dispose of
++ *
++ * Disposing of glocks may involve disk accesses, so that here we sort
++ * the glocks by number (i.e. disk location of the inodes) so that if
++ * there are any such accesses, they'll be sent in order (mostly).
++ *
++ * Must be called under the lru_lock, but may drop and retake this
++ * lock. While the lru_lock is dropped, entries may vanish from the
++ * list, but no new entries will appear on the list (since it is
++ * private)
++ */
++
++static void gfs2_dispose_glock_lru(struct list_head *list)
++__releases(&lru_lock)
++__acquires(&lru_lock)
++{
++	struct gfs2_glock *gl;
++
++	list_sort(NULL, list, glock_cmp);
++
++	while(!list_empty(list)) {
++		gl = list_entry(list->next, struct gfs2_glock, gl_lru);
++		list_del_init(&gl->gl_lru);
++		clear_bit(GLF_LRU, &gl->gl_flags);
++		gfs2_glock_hold(gl);
++		spin_unlock(&lru_lock);
++		spin_lock(&gl->gl_spin);
++		if (demote_ok(gl))
++			handle_callback(gl, LM_ST_UNLOCKED, 0);
++		WARN_ON(!test_and_clear_bit(GLF_LOCK, &gl->gl_flags));
++		smp_mb__after_clear_bit();
++		if (queue_delayed_work(glock_workqueue, &gl->gl_work, 0) == 0)
++			gfs2_glock_put_nolock(gl);
++		spin_unlock(&gl->gl_spin);
++		spin_lock(&lru_lock);
 +	}
++}
++
+ /**
+  * gfs2_scan_glock_lru - Scan the LRU looking for locks to demote
+  * @nr: The number of entries to scan
+  *
++ * This function selects the entries on the LRU which are able to
++ * be demoted, and then kicks off the process by calling
++ * gfs2_dispose_glock_lru() above.
+  */
  
--	return ret;
-+	return len;
+ static void gfs2_scan_glock_lru(int nr)
+ {
+ 	struct gfs2_glock *gl;
+-	int may_demote;
+-	int nr_skipped = 0;
+ 	LIST_HEAD(skipped);
++	LIST_HEAD(dispose);
+ 
+ 	spin_lock(&lru_lock);
+ 	while(nr && !list_empty(&lru_list)) {
+ 		gl = list_entry(lru_list.next, struct gfs2_glock, gl_lru);
+-		list_del_init(&gl->gl_lru);
+-		clear_bit(GLF_LRU, &gl->gl_flags);
+-		atomic_dec(&lru_count);
+ 
+ 		/* Test for being demotable */
+ 		if (!test_and_set_bit(GLF_LOCK, &gl->gl_flags)) {
+-			gfs2_glock_hold(gl);
+-			spin_unlock(&lru_lock);
+-			spin_lock(&gl->gl_spin);
+-			may_demote = demote_ok(gl);
+-			if (may_demote) {
+-				handle_callback(gl, LM_ST_UNLOCKED, 0);
+-				nr--;
+-			}
+-			clear_bit(GLF_LOCK, &gl->gl_flags);
+-			smp_mb__after_clear_bit();
+-			if (queue_delayed_work(glock_workqueue, &gl->gl_work, 0) == 0)
+-				gfs2_glock_put_nolock(gl);
+-			spin_unlock(&gl->gl_spin);
+-			spin_lock(&lru_lock);
++			list_move(&gl->gl_lru, &dispose);
++			atomic_dec(&lru_count);
++			nr--;
+ 			continue;
+ 		}
+-		nr_skipped++;
+-		list_add(&gl->gl_lru, &skipped);
+-		set_bit(GLF_LRU, &gl->gl_flags);
++
++		list_move(&gl->gl_lru, &skipped);
+ 	}
+ 	list_splice(&skipped, &lru_list);
+-	atomic_add(nr_skipped, &lru_count);
++	if (!list_empty(&dispose))
++		gfs2_dispose_glock_lru(&dispose);
+ 	spin_unlock(&lru_lock);
  }
  
- static ssize_t withdraw_show(struct gfs2_sbd *sdp, char *buf)
 -- 
 1.7.4
 
