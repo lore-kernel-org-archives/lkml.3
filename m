@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933682Ab3BSSjl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:39:41 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46436 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932823Ab3BSSjj (ORCPT
+	id S933703Ab3BSSkQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:40:16 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:32408 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932823Ab3BSSkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:39:39 -0500
-Message-ID: <5123C6E7.9070407@wwwdotorg.org>
-Date: Tue, 19 Feb 2013 11:39:35 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 19 Feb 2013 13:40:13 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5rDcwfYOOLE=
+X-RZG-CLASS-ID: mo00
+Date: Tue, 19 Feb 2013 19:40:09 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
+ Driver
+Message-ID: <20130219184009.GA21783@aepfle.de>
+References: <1360955396-14183-1-git-send-email-haiyangz@microsoft.com>
+ <20130219165118.GA17715@aepfle.de>
+ <1ca36b5d55c64ac6b8854c4f216ef8e5@DFM-TK5MBX15-06.exchange.corp.microsoft.com>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
-        Joseph Lo <josephl@nvidia.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 00/12] Tegra114 clockframework
-References: <1360931849-7090-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1360931849-7090-1-git-send-email-pdeschrijver@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1ca36b5d55c64ac6b8854c4f216ef8e5@DFM-TK5MBX15-06.exchange.corp.microsoft.com>
+User-Agent: Mutt/1.5.21.rev5638 (2013-02-08)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/15/2013 05:36 AM, Peter De Schrijver wrote:
-> This is the seventh version of the Tegra114 clockframework. It is based on the
-> for-next branch of
-> git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git and
-> http://www.spinics.net/lists/arm-kernel/msg220452.html.
+On Tue, Feb 19, Haiyang Zhang wrote:
 
-Mike,
+> The emulated video device is a separate device from the synthetic video.
+> The synthetic driver can only take control of the synthetic video, but not
+> the emulated video.
 
-I think it'd be prudent to take this series through the Tegra tree again
-for 3.10; patch 11 needs to go in as part of the series due to internal
-dependencies, and I'm slightly worried that other Tegra DT changes might
-conflict with that patch (if only for context). Taking this series (and
-any other Tegra clk driver changes for 3.10) through the Tegra tree
-could resolve that easily. Do you have a problem with that?
+Please add this to the comment above.
 
-If that's OK, can you stage the dependency Peter mentioned:
-http://www.spinics.net/lists/arm-kernel/msg220452.html
-into a stable branch for me to merge, obviously after 3.9-rc1 is out.
+> Actually, we already have a similar mechanism in ata/ata_piix.c to disable
+> emulated IDE drive on Hyper-V, so it won't conflict with the synthetic drive.
 
-Thanks.
+I havent read the vesafb code, but I think it can kind of give up the
+hardware, something ata_piix can not do.
 
-Prashant, could you provide a review/ack for this series too.
-
+Olaf
