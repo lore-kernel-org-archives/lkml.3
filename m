@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934331Ab3BSSxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:53:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54412 "EHLO
+	id S934360Ab3BSSxn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:53:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54438 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934321Ab3BSSxU (ORCPT
+	with ESMTP id S933531Ab3BSSxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:53:20 -0500
+	Tue, 19 Feb 2013 13:53:37 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Sony Chacko <sony.chacko@qlogic.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 52/81] netxen: fix off by one bug in netxen_release_tx_buffer()
-Date: Tue, 19 Feb 2013 15:49:15 -0300
-Message-Id: <1361299784-8830-53-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 57/81] via-rhine: Fix bugs in NAPI support.
+Date: Tue, 19 Feb 2013 15:49:20 -0300
+Message-Id: <1361299784-8830-58-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -30,64 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit a05948f296ce103989b28a2606e47d2e287c3c89 upstream.
+commit 559bcac35facfed49ab4f408e162971612dcfdf3 upstream.
 
-Christoph Paasch found netxen could trigger a BUG in its dismantle
-phase, in netxen_release_tx_buffer(), using full size TSO packets.
+1) rhine_tx() should use dev_kfree_skb() not dev_kfree_skb_irq()
 
-cmd_buf->frag_count includes the skb->data part, so the loop must
-start at index 1 instead of 0, or else we can make an out
-of bound access to cmd_buff->frag_array[MAX_SKB_FRAGS + 2]
+2) rhine_slow_event_task's NAPI triggering logic is racey, it
+   should just hit the interrupt mask register.  This is the
+   same as commit 7dbb491878a2c51d372a8890fa45a8ff80358af1
+   ("r8169: avoid NAPI scheduling delay.") made to fix the same
+   problem in the r8169 driver.  From Francois Romieu.
 
-Christoph provided the fixes in netxen_map_tx_skb() function.
-In case of a dma mapping error, its better to clear the dma fields
-so that we don't try to unmap them again in netxen_release_tx_buffer()
-
-Reported-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Cc: Sony Chacko <sony.chacko@qlogic.com>
-Cc: Rajesh Borundia <rajesh.borundia@qlogic.com>
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Reported-by: Jamie Gloudon <jamie.gloudon@gmail.com>
+Tested-by: Jamie Gloudon <jamie.gloudon@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- .../net/ethernet/qlogic/netxen/netxen_nic_init.c   |    2 +-
- .../net/ethernet/qlogic/netxen/netxen_nic_main.c   |    2 ++
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/via/via-rhine.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
-index 8694124..fdddfcc 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c
-@@ -144,7 +144,7 @@ void netxen_release_tx_buffers(struct netxen_adapter *adapter)
- 					 buffrag->length, PCI_DMA_TODEVICE);
- 			buffrag->dma = 0ULL;
+diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
+index 0459c09..046526e0 100644
+--- a/drivers/net/ethernet/via/via-rhine.c
++++ b/drivers/net/ethernet/via/via-rhine.c
+@@ -1802,7 +1802,7 @@ static void rhine_tx(struct net_device *dev)
+ 					 rp->tx_skbuff[entry]->len,
+ 					 PCI_DMA_TODEVICE);
  		}
--		for (j = 0; j < cmd_buf->frag_count; j++) {
-+		for (j = 1; j < cmd_buf->frag_count; j++) {
- 			buffrag++;
- 			if (buffrag->dma) {
- 				pci_unmap_page(adapter->pdev, buffrag->dma,
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-index a77c558..d6a8218 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-@@ -1963,10 +1963,12 @@ unwind:
- 	while (--i >= 0) {
- 		nf = &pbuf->frag_array[i+1];
- 		pci_unmap_page(pdev, nf->dma, nf->length, PCI_DMA_TODEVICE);
-+		nf->dma = 0ULL;
+-		dev_kfree_skb_irq(rp->tx_skbuff[entry]);
++		dev_kfree_skb(rp->tx_skbuff[entry]);
+ 		rp->tx_skbuff[entry] = NULL;
+ 		entry = (++rp->dirty_tx) % TX_RING_SIZE;
  	}
+@@ -2011,11 +2011,7 @@ static void rhine_slow_event_task(struct work_struct *work)
+ 	if (intr_status & IntrPCIErr)
+ 		netif_warn(rp, hw, dev, "PCI error\n");
  
- 	nf = &pbuf->frag_array[0];
- 	pci_unmap_single(pdev, nf->dma, skb_headlen(skb), PCI_DMA_TODEVICE);
-+	nf->dma = 0ULL;
+-	napi_disable(&rp->napi);
+-	rhine_irq_disable(rp);
+-	/* Slow and safe. Consider __napi_schedule as a replacement ? */
+-	napi_enable(&rp->napi);
+-	napi_schedule(&rp->napi);
++	iowrite16(RHINE_EVENT & 0xffff, rp->base + IntrEnable);
  
- out_err:
- 	return -ENOMEM;
+ out_unlock:
+ 	mutex_unlock(&rp->task_lock);
 -- 
 1.7.9.5
 
