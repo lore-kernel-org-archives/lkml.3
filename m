@@ -1,101 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933150Ab3BSPaM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 10:30:12 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:19354 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933114Ab3BSPaJ convert rfc822-to-8bit (ORCPT
+	id S933169Ab3BSPad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 10:30:33 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:33127 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758180Ab3BSPab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 10:30:09 -0500
+	Tue, 19 Feb 2013 10:30:31 -0500
+Date: Tue, 19 Feb 2013 15:30:24 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: Make AB8500_CORE select POWER_SUPPLY to fix build
+ error
+Message-ID: <20130219153024.GA4098@gmail.com>
+References: <1361287233.23734.1.camel@phoenix>
 MIME-Version: 1.0
-Message-ID: <1f089254-3abe-4c63-a72a-c9e564ae7d0d@default>
-Date: Tue, 19 Feb 2013 07:27:24 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Ric Mason <ric.masonn@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: RE: Questin about swap_slot free and invalidate page
-References: <20130131051140.GB23548@blaptop>
- <alpine.LNX.2.00.1302031732520.4050@eggly.anvils>
- <20130204024950.GD2688@blaptop>
- <d6fc41b7-8448-40be-84c3-c24d0833bd85@default> <51236C11.1010208@gmail.com>
-In-Reply-To: <51236C11.1010208@gmail.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1361287233.23734.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Ric Mason [mailto:ric.masonn@gmail.com]
-> Sent: Tuesday, February 19, 2013 5:12 AM
-> To: Dan Magenheimer
-> Cc: Minchan Kim; Hugh Dickins; Nitin Gupta; Seth Jennings; Konrad Rzeszutek Wilk; linux-mm@kvack.org;
-> linux-kernel@vger.kernel.org; Andrew Morton
-> Subject: Re: Questin about swap_slot free and invalidate page
-> 
-> On 02/05/2013 05:28 AM, Dan Magenheimer wrote:
-> >> From: Minchan Kim [mailto:minchan@kernel.org]
-> >> Sent: Sunday, February 03, 2013 7:50 PM
-> >> To: Hugh Dickins
-> >> Cc: Nitin Gupta; Dan Magenheimer; Seth Jennings; Konrad Rzeszutek Wilk; linux-mm@kvack.org; linux-
-> >> kernel@vger.kernel.org; Andrew Morton
-> >> Subject: Re: Questin about swap_slot free and invalidate page
-> >>
-> >> Hi Hugh,
-> >>
-> >> On Sun, Feb 03, 2013 at 05:51:14PM -0800, Hugh Dickins wrote:
-> >>> On Thu, 31 Jan 2013, Minchan Kim wrote:
-> >>>
-> >>>> When I reviewed zswap, I was curious about frontswap_store.
-> >>>> It said following as.
-> >>>>
-> >>>>   * If frontswap already contains a page with matching swaptype and
-> >>>>   * offset, the frontswap implementation may either overwrite the data and
-> >>>>   * return success or invalidate the page from frontswap and return failure.
-> >>>>
-> >>>> It didn't say why it happens. we already have __frontswap_invalidate_page
-> >>>> and call it whenever swap_slot frees. If we don't free swap slot,
-> >>>> scan_swap_map can't find the slot for swap out so I thought overwriting of
-> >>>> data shouldn't happen in frontswap.
-> >>>>
-> >> I am waiting Dan's reply(He will come in this week) and then, judge what's
-> >> the best.
-> > Hugh is right that handling the possibility of duplicates is
-> > part of the tmem ABI.  If there is any possibility of duplicates,
-> > the ABI defines how a backend must handle them to avoid data
-> > coherency issues.
-> >
-> > The kernel implements an in-kernel API which implements the tmem
-> > ABI.  If the frontend and backend can always agree that duplicate
-> 
-> Which ABI in zcache implement that?
+On Tue, 19 Feb 2013, Axel Lin wrote:
 
-https://oss.oracle.com/projects/tmem/dist/documentation/api/tmemspec-v001.pdf
+> This patch fixes below build error when CONFIG_POWER_SUPPLY is not set.
+> 
+> drivers/built-in.o: In function `ab8500_power_off':
+> drivers/mfd/ab8500-sysctrl.c:37: undefined reference to `power_supply_get_by_name'
+> drivers/mfd/ab8500-sysctrl.c:53: undefined reference to `power_supply_get_by_name'
+> make: *** [vmlinux] Error 1
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/mfd/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 671f5b1..c346941 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -858,6 +858,7 @@ config EZX_PCAP
+>  config AB8500_CORE
+>  	bool "ST-Ericsson AB8500 Mixed Signal Power Management chip"
+>  	depends on GENERIC_HARDIRQS && ABX500_CORE && MFD_DB8500_PRCMU
+> +	select POWER_SUPPLY
+>  	select MFD_CORE
+>  	select IRQ_DOMAIN
+>  	help
 
-The in-kernel APIs are frontswap and cleancache.  For more information about
-tmem, see http://lwn.net/Articles/454795/ 
- 
-> > are never possible, I agree that the backend could avoid that
-> > special case.  However, duplicates occur rarely enough and the
-> > consequences (data loss) are bad enough that I think the case
-> > should still be checked, at least with a BUG_ON.  I also wonder
-> > if it is worth it to make changes to the core swap subsystem
-> > to avoid code to implement a zswap corner case.
-> >
-> > Remember that zswap is an oversimplified special case of tmem
-> > that handles only one frontend (Linux frontswap) and one backend
-> > (zswap).  Tmem goes well beyond that and already supports other
-> > more general backends including Xen and ramster, and could also
-> > support other frontends such as a BSD or Solaris equivalent
-> > of frontswap, for example with a Linux ramster/zcache backend.
-> > I'm not sure how wise it is to tear out generic code and replace
-> > it with simplistic code unless there is absolutely no chance that
-> > the generic code will be necessary.
+I noticed and was going to fix this up myself - it's the right thing
+to do.
+
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
