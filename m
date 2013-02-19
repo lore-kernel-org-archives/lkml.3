@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933116Ab3BSPP4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 10:15:56 -0500
-Received: from mga01.intel.com ([192.55.52.88]:41651 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932551Ab3BSPPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 10:15:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,696,1355126400"; 
-   d="scan'208";a="289085898"
-Date: Tue, 19 Feb 2013 17:20:08 +0200
-From: "Westerberg, Mika" <mika.westerberg@intel.com>
-To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Subject: Re: How to populate Battery information through ACPI tables
-Message-ID: <20130219152008.GG2439@intel.com>
-References: <D854C92F57B1B347B57E531E78D05EAD24661392@BGSMSX102.gar.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD24661392@BGSMSX102.gar.corp.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933118Ab3BSPUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 10:20:46 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:59891 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933077Ab3BSPUp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 10:20:45 -0500
+Message-ID: <1361287233.23734.1.camel@phoenix>
+Subject: [PATCH] mfd: Make AB8500_CORE select POWER_SUPPLY to fix build error
+From: Axel Lin <axel.lin@ingics.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 19 Feb 2013 23:20:33 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 03:07:57PM +0000, Pallala, Ramakrishna wrote:
-> I am trying to populate battery related information through ACPI tables
-> and do battery management through non acpi drivers.  Can you tell or
-> point me on how to populate the ACPI tables in FW/BIOS and get them in
-> OS? I am new to ACPI world.
+This patch fixes below build error when CONFIG_POWER_SUPPLY is not set.
 
-You should start by reading Documentation/acpi/enumeration.txt.
+drivers/built-in.o: In function `ab8500_power_off':
+drivers/mfd/ab8500-sysctrl.c:37: undefined reference to `power_supply_get_by_name'
+drivers/mfd/ab8500-sysctrl.c:53: undefined reference to `power_supply_get_by_name'
+make: *** [vmlinux] Error 1
 
-Also can you describe with bit more details, what you are trying to do? A
-new battery driver that is enumerated from ACPI namespace, perhaps?
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/mfd/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-Do you have a DSDT table in hand which we could take a peek?
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 671f5b1..c346941 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -858,6 +858,7 @@ config EZX_PCAP
+ config AB8500_CORE
+ 	bool "ST-Ericsson AB8500 Mixed Signal Power Management chip"
+ 	depends on GENERIC_HARDIRQS && ABX500_CORE && MFD_DB8500_PRCMU
++	select POWER_SUPPLY
+ 	select MFD_CORE
+ 	select IRQ_DOMAIN
+ 	help
+-- 
+1.7.9.5
+
+
+
