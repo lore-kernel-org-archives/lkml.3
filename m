@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933665Ab3BSSyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:54:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54484 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934384Ab3BSSyN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:54:13 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ian Campbell <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 65/81] xen/netback: free already allocated memory on failure in xen_netbk_get_requests
-Date: Tue, 19 Feb 2013 15:49:28 -0300
-Message-Id: <1361299784-8830-66-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	id S933604Ab3BSSyd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:54:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29936 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933699Ab3BSSyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 13:54:22 -0500
+Date: Tue, 19 Feb 2013 13:29:52 -0500
+From: Dave Jones <davej@redhat.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        mpm@selenic.com, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: slab: odd BUG on kzalloc
+Message-ID: <20130219182952.GB27141@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+	mpm@selenic.com, linux-mm <linux-mm@kvack.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <5120FDA4.2060704@oracle.com>
+ <0000013cefe056e0-daedd018-43cd-472f-9b20-27b2a897ae2a-000000@email.amazonses.com>
+ <5123C1F1.6050102@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5123C1F1.6050102@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.6 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 19, 2013 at 01:18:25PM -0500, Sasha Levin wrote:
 
-------------------
+ > >> [  169.930103] ---[ end trace 4d135f3def21b4bd ]---
+ > >>
+ > >> The code translates to the following in fs/pipe.c:alloc_pipe_info :
+ > >>
+ > >>         pipe = kzalloc(sizeof(struct pipe_inode_info), GFP_KERNEL);
+ > >>         if (pipe) {
+ > >>                 pipe->bufs = kzalloc(sizeof(struct pipe_buffer) * PIPE_DEF_BUFFERS, GFP_KERNEL); <=== this
+ > >>                 if (pipe->bufs) {
+ > >>                         init_waitqueue_head(&pipe->wait);
+ > 
+ > Looks like it's not specific to pipe(). I've also got this one now:
+ > 
+ > Since I've managed to reproduce it, I'll go ahead and add slub_debug and see what it tells us.
 
-From: Ian Campbell <Ian.Campbell@citrix.com>
+I'm curious, did you recently upgrade gcc, or other parts of the toolchain ?
+This, and one of the other 'weird' bugs you reported recently have me wondering
+if perhaps you're seeing a compiler bug.
 
-commit 4cc7c1cb7b11b6f3515bd9075527576a1eecc4aa upstream.
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/net/xen-netback/netback.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index e7913e0..c503a58 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -949,7 +949,7 @@ static struct gnttab_copy *xen_netbk_get_requests(struct xen_netbk *netbk,
- 		pending_idx = netbk->pending_ring[index];
- 		page = xen_netbk_alloc_page(netbk, skb, pending_idx);
- 		if (!page)
--			return NULL;
-+			goto err;
- 
- 		gop->source.u.ref = txp->gref;
- 		gop->source.domid = vif->domid;
-@@ -971,6 +971,17 @@ static struct gnttab_copy *xen_netbk_get_requests(struct xen_netbk *netbk,
- 	}
- 
- 	return gop;
-+err:
-+	/* Unwind, freeing all pages and sending error responses. */
-+	while (i-- > start) {
-+		xen_netbk_idx_release(netbk, frag_get_pending_idx(&frags[i]),
-+				      XEN_NETIF_RSP_ERROR);
-+	}
-+	/* The head too, if necessary. */
-+	if (start)
-+		xen_netbk_idx_release(netbk, pending_idx, XEN_NETIF_RSP_ERROR);
-+
-+	return NULL;
- }
- 
- static int xen_netbk_tx_check_gop(struct xen_netbk *netbk,
--- 
-1.7.9.5
+	Dave
 
