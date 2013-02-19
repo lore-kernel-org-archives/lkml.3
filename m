@@ -1,127 +1,446 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933028Ab3BSOtL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 09:49:11 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:19180 "EHLO
+	id S933046Ab3BSOtW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 09:49:22 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:55588 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932969Ab3BSOs4 (ORCPT
+	with ESMTP id S932973Ab3BSOtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 09:48:56 -0500
+	Tue, 19 Feb 2013 09:49:19 -0500
 X-IronPort-AV: E=Sophos;i="4.84,695,1355097600"; 
-   d="scan'208";a="7771203"
-Date: Tue, 19 Feb 2013 14:48:30 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] xen: introduce xen_remap, use it instead of ioremap
-In-Reply-To: <20130219144253.GE7026@konrad-lan.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1302191445160.4654@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1302191332340.4654@kaball.uk.xensource.com> <20130219144253.GE7026@konrad-lan.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+   d="scan'208";a="7771408"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: <xen-devel@lists.xen.org>
+CC: <linux-kernel@vger.kernel.org>, Ian Campbell <ian.campbell@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>, "Keir (Xen.org)" <keir@xen.org>,
+        Tim Deegan <tim@xen.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH LINUX] xen: event channel arrays are xen_ulong_t and not unsigned long
+Date: Tue, 19 Feb 2013 14:49:17 +0000
+Message-ID: <1361285357-26696-1-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
+References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Feb 2013, Konrad Rzeszutek Wilk wrote:
-> On Tue, Feb 19, 2013 at 01:59:19PM +0000, Stefano Stabellini wrote:
-> > ioremap can't be used to map ring pages on ARM because it uses device
-> > memory caching attributes (MT_DEVICE*).
-> > 
-> > Introduce a Xen specific abstraction to map ring pages, called
-> > xen_remap, that is defined as ioremap on x86 (no behavioral changes).
-> > On ARM it explicitly calls __arm_ioremap with the right caching
-> > attributes: MT_MEMORY.
-> 
-> Do you want to push this to Linus yourself or should I just include it
-> in my 'for-39' tree?
-> 
-> Do you have other patches for 3.9?
+On ARM we want these to be the same size on 32- and 64-bit.
 
-Ian has two patches ("linux: public interface changes for arm"), it
-would be great if they could go in 3.9.
-Given the small number of patches (three all together), it is probably
-easier to go via your tree, if you are OK with that.
+This is an ABI change on ARM. X86 does not change.
 
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Jan Beulich <JBeulich@suse.com>
+Cc: Keir (Xen.org) <keir@xen.org>
+Cc: Tim Deegan <tim@xen.org>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: xen-devel@lists.xen.org
+---
+Changes since V1
+  use find_first_set not __ffs
+  fix some more unsigned long -> xen_ulong_t
+  use more generic xchg_xen_ulong instead of ...read_evtchn...
+---
+ arch/arm/include/asm/xen/events.h |   22 ++++++++
+ arch/x86/include/asm/xen/events.h |    3 +
+ drivers/xen/events.c              |  103 ++++++++++++++++++++-----------------
+ include/xen/interface/xen.h       |    8 ++--
+ 4 files changed, 84 insertions(+), 52 deletions(-)
 
+diff --git a/arch/arm/include/asm/xen/events.h b/arch/arm/include/asm/xen/events.h
+index 94b4e90..9bb5f50 100644
+--- a/arch/arm/include/asm/xen/events.h
++++ b/arch/arm/include/asm/xen/events.h
+@@ -15,4 +15,26 @@ static inline int xen_irqs_disabled(struct pt_regs *regs)
+ 	return raw_irqs_disabled_flags(regs->ARM_cpsr);
+ }
+ 
++/*
++ * We cannot use xchg because it does not support 8-byte
++ * values. However it is safe to use {ldr,dtd}exd directly because all
++ * platforms which Xen can run on support those instructions.
++ */
++static inline xen_ulong_t xchg_xen_ulong(xen_ulong_t *ptr, xen_ulong_t val)
++{
++	xen_ulong_t oldval;
++	unsigned int tmp;
++
++	wmb();
++	asm volatile("@ read_evtchn_pending_sel\n"
++		"1:     ldrexd  %0, %H0, [%3]\n"
++		"       strexd  %1, %2, %H2, [%3]\n"
++		"       teq     %1, #0\n"
++		"       bne     1b"
++		: "=&r" (oldval), "=&r" (tmp)
++		: "r" (val), "r" (ptr)
++		: "memory", "cc");
++	return oldval;
++}
++
+ #endif /* _ASM_ARM_XEN_EVENTS_H */
+diff --git a/arch/x86/include/asm/xen/events.h b/arch/x86/include/asm/xen/events.h
+index cc146d5..ca842f2 100644
+--- a/arch/x86/include/asm/xen/events.h
++++ b/arch/x86/include/asm/xen/events.h
+@@ -16,4 +16,7 @@ static inline int xen_irqs_disabled(struct pt_regs *regs)
+ 	return raw_irqs_disabled_flags(regs->flags);
+ }
+ 
++/* No need for a barrier -- XCHG is a barrier on x86. */
++#define xchg_xen_ulong(ptr, val) xchg((ptr), (val))
++
+ #endif /* _ASM_X86_XEN_EVENTS_H */
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 0be4df3..5618ca0 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -80,6 +80,12 @@ enum xen_irq_type {
+ };
+ 
+ /*
++ * Make a bitmask (i.e. unsigned long *) of a xen_ulong_t
++ * array. Primarily to avoid long lines (hence the terse name).
++ */
++#define BM(x) (unsigned long *)(x)
++
++/*
+  * Packed IRQ information:
+  * type - enum xen_irq_type
+  * event channel - irq->event channel mapping
+@@ -120,7 +126,9 @@ static unsigned long *pirq_eoi_map;
+ #endif
+ static bool (*pirq_needs_eoi)(unsigned irq);
+ 
+-static DEFINE_PER_CPU(unsigned long [NR_EVENT_CHANNELS/BITS_PER_LONG],
++#define BITS_PER_EVTCHN_WORD (sizeof(xen_ulong_t)*8)
++
++static DEFINE_PER_CPU(xen_ulong_t [NR_EVENT_CHANNELS/BITS_PER_EVTCHN_WORD],
+ 		      cpu_evtchn_mask);
+ 
+ /* Xen will never allocate port zero for any purpose. */
+@@ -294,9 +302,9 @@ static bool pirq_needs_eoi_flag(unsigned irq)
+ 	return info->u.pirq.flags & PIRQ_NEEDS_EOI;
+ }
+ 
+-static inline unsigned long active_evtchns(unsigned int cpu,
+-					   struct shared_info *sh,
+-					   unsigned int idx)
++static inline xen_ulong_t active_evtchns(unsigned int cpu,
++					 struct shared_info *sh,
++					 unsigned int idx)
+ {
+ 	return sh->evtchn_pending[idx] &
+ 		per_cpu(cpu_evtchn_mask, cpu)[idx] &
+@@ -312,8 +320,8 @@ static void bind_evtchn_to_cpu(unsigned int chn, unsigned int cpu)
+ 	cpumask_copy(irq_to_desc(irq)->irq_data.affinity, cpumask_of(cpu));
+ #endif
+ 
+-	clear_bit(chn, per_cpu(cpu_evtchn_mask, cpu_from_irq(irq)));
+-	set_bit(chn, per_cpu(cpu_evtchn_mask, cpu));
++	clear_bit(chn, BM(per_cpu(cpu_evtchn_mask, cpu_from_irq(irq))));
++	set_bit(chn, BM(per_cpu(cpu_evtchn_mask, cpu)));
+ 
+ 	info_for_irq(irq)->cpu = cpu;
+ }
+@@ -339,19 +347,19 @@ static void init_evtchn_cpu_bindings(void)
+ static inline void clear_evtchn(int port)
+ {
+ 	struct shared_info *s = HYPERVISOR_shared_info;
+-	sync_clear_bit(port, &s->evtchn_pending[0]);
++	sync_clear_bit(port, BM(&s->evtchn_pending[0]));
+ }
+ 
+ static inline void set_evtchn(int port)
+ {
+ 	struct shared_info *s = HYPERVISOR_shared_info;
+-	sync_set_bit(port, &s->evtchn_pending[0]);
++	sync_set_bit(port, BM(&s->evtchn_pending[0]));
+ }
+ 
+ static inline int test_evtchn(int port)
+ {
+ 	struct shared_info *s = HYPERVISOR_shared_info;
+-	return sync_test_bit(port, &s->evtchn_pending[0]);
++	return sync_test_bit(port, BM(&s->evtchn_pending[0]));
+ }
+ 
+ 
+@@ -375,7 +383,7 @@ EXPORT_SYMBOL_GPL(notify_remote_via_irq);
+ static void mask_evtchn(int port)
+ {
+ 	struct shared_info *s = HYPERVISOR_shared_info;
+-	sync_set_bit(port, &s->evtchn_mask[0]);
++	sync_set_bit(port, BM(&s->evtchn_mask[0]));
+ }
+ 
+ static void unmask_evtchn(int port)
+@@ -389,7 +397,7 @@ static void unmask_evtchn(int port)
+ 	if (unlikely((cpu != cpu_from_evtchn(port))))
+ 		do_hypercall = 1;
+ 	else
+-		evtchn_pending = sync_test_bit(port, &s->evtchn_pending[0]);
++		evtchn_pending = sync_test_bit(port, BM(&s->evtchn_pending[0]));
+ 
+ 	if (unlikely(evtchn_pending && xen_hvm_domain()))
+ 		do_hypercall = 1;
+@@ -403,7 +411,7 @@ static void unmask_evtchn(int port)
+ 	} else {
+ 		struct vcpu_info *vcpu_info = __this_cpu_read(xen_vcpu);
+ 
+-		sync_clear_bit(port, &s->evtchn_mask[0]);
++		sync_clear_bit(port, BM(&s->evtchn_mask[0]));
+ 
+ 		/*
+ 		 * The following is basically the equivalent of
+@@ -411,8 +419,8 @@ static void unmask_evtchn(int port)
+ 		 * the interrupt edge' if the channel is masked.
+ 		 */
+ 		if (evtchn_pending &&
+-		    !sync_test_and_set_bit(port / BITS_PER_LONG,
+-					   &vcpu_info->evtchn_pending_sel))
++		    !sync_test_and_set_bit(port / BITS_PER_EVTCHN_WORD,
++					   BM(&vcpu_info->evtchn_pending_sel)))
+ 			vcpu_info->evtchn_upcall_pending = 1;
+ 	}
+ 
+@@ -1189,7 +1197,7 @@ irqreturn_t xen_debug_interrupt(int irq, void *dev_id)
+ {
+ 	struct shared_info *sh = HYPERVISOR_shared_info;
+ 	int cpu = smp_processor_id();
+-	unsigned long *cpu_evtchn = per_cpu(cpu_evtchn_mask, cpu);
++	xen_ulong_t *cpu_evtchn = per_cpu(cpu_evtchn_mask, cpu);
+ 	int i;
+ 	unsigned long flags;
+ 	static DEFINE_SPINLOCK(debug_lock);
+@@ -1205,7 +1213,7 @@ irqreturn_t xen_debug_interrupt(int irq, void *dev_id)
+ 		pending = (get_irq_regs() && i == cpu)
+ 			? xen_irqs_disabled(get_irq_regs())
+ 			: v->evtchn_upcall_mask;
+-		printk("%d: masked=%d pending=%d event_sel %0*lx\n  ", i,
++		printk("%d: masked=%d pending=%d event_sel %0*"PRI_xen_ulong"\n  ", i,
+ 		       pending, v->evtchn_upcall_pending,
+ 		       (int)(sizeof(v->evtchn_pending_sel)*2),
+ 		       v->evtchn_pending_sel);
+@@ -1214,49 +1222,52 @@ irqreturn_t xen_debug_interrupt(int irq, void *dev_id)
+ 
+ 	printk("\npending:\n   ");
+ 	for (i = ARRAY_SIZE(sh->evtchn_pending)-1; i >= 0; i--)
+-		printk("%0*lx%s", (int)sizeof(sh->evtchn_pending[0])*2,
++		printk("%0*"PRI_xen_ulong"%s",
++		       (int)sizeof(sh->evtchn_pending[0])*2,
+ 		       sh->evtchn_pending[i],
+ 		       i % 8 == 0 ? "\n   " : " ");
+ 	printk("\nglobal mask:\n   ");
+ 	for (i = ARRAY_SIZE(sh->evtchn_mask)-1; i >= 0; i--)
+-		printk("%0*lx%s",
++		printk("%0*"PRI_xen_ulong"%s",
+ 		       (int)(sizeof(sh->evtchn_mask[0])*2),
+ 		       sh->evtchn_mask[i],
+ 		       i % 8 == 0 ? "\n   " : " ");
+ 
+ 	printk("\nglobally unmasked:\n   ");
+ 	for (i = ARRAY_SIZE(sh->evtchn_mask)-1; i >= 0; i--)
+-		printk("%0*lx%s", (int)(sizeof(sh->evtchn_mask[0])*2),
++		printk("%0*"PRI_xen_ulong"%s",
++		       (int)(sizeof(sh->evtchn_mask[0])*2),
+ 		       sh->evtchn_pending[i] & ~sh->evtchn_mask[i],
+ 		       i % 8 == 0 ? "\n   " : " ");
+ 
+ 	printk("\nlocal cpu%d mask:\n   ", cpu);
+-	for (i = (NR_EVENT_CHANNELS/BITS_PER_LONG)-1; i >= 0; i--)
+-		printk("%0*lx%s", (int)(sizeof(cpu_evtchn[0])*2),
++	for (i = (NR_EVENT_CHANNELS/BITS_PER_EVTCHN_WORD)-1; i >= 0; i--)
++		printk("%0*"PRI_xen_ulong"%s", (int)(sizeof(cpu_evtchn[0])*2),
+ 		       cpu_evtchn[i],
+ 		       i % 8 == 0 ? "\n   " : " ");
+ 
+ 	printk("\nlocally unmasked:\n   ");
+ 	for (i = ARRAY_SIZE(sh->evtchn_mask)-1; i >= 0; i--) {
+-		unsigned long pending = sh->evtchn_pending[i]
++		xen_ulong_t pending = sh->evtchn_pending[i]
+ 			& ~sh->evtchn_mask[i]
+ 			& cpu_evtchn[i];
+-		printk("%0*lx%s", (int)(sizeof(sh->evtchn_mask[0])*2),
++		printk("%0*"PRI_xen_ulong"%s",
++		       (int)(sizeof(sh->evtchn_mask[0])*2),
+ 		       pending, i % 8 == 0 ? "\n   " : " ");
+ 	}
+ 
+ 	printk("\npending list:\n");
+ 	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
+-		if (sync_test_bit(i, sh->evtchn_pending)) {
+-			int word_idx = i / BITS_PER_LONG;
++		if (sync_test_bit(i, BM(sh->evtchn_pending))) {
++			int word_idx = i / BITS_PER_EVTCHN_WORD;
+ 			printk("  %d: event %d -> irq %d%s%s%s\n",
+ 			       cpu_from_evtchn(i), i,
+ 			       evtchn_to_irq[i],
+-			       sync_test_bit(word_idx, &v->evtchn_pending_sel)
++			       sync_test_bit(word_idx, BM(&v->evtchn_pending_sel))
+ 					     ? "" : " l2-clear",
+-			       !sync_test_bit(i, sh->evtchn_mask)
++			       !sync_test_bit(i, BM(sh->evtchn_mask))
+ 					     ? "" : " globally-masked",
+-			       sync_test_bit(i, cpu_evtchn)
++			       sync_test_bit(i, BM(cpu_evtchn))
+ 					     ? "" : " locally-masked");
+ 		}
+ 	}
+@@ -1273,7 +1284,7 @@ static DEFINE_PER_CPU(unsigned int, current_bit_idx);
+ /*
+  * Mask out the i least significant bits of w
+  */
+-#define MASK_LSBS(w, i) (w & ((~0UL) << i))
++#define MASK_LSBS(w, i) (w & ((~((xen_ulong_t)0UL)) << i))
+ 
+ /*
+  * Search the CPUs pending events bitmasks.  For each one found, map
+@@ -1295,18 +1306,14 @@ static void __xen_evtchn_do_upcall(void)
+ 	unsigned count;
+ 
+ 	do {
+-		unsigned long pending_words;
++		xen_ulong_t pending_words;
+ 
+ 		vcpu_info->evtchn_upcall_pending = 0;
+ 
+ 		if (__this_cpu_inc_return(xed_nesting_count) - 1)
+ 			goto out;
+ 
+-#ifndef CONFIG_X86 /* No need for a barrier -- XCHG is a barrier on x86. */
+-		/* Clear master flag /before/ clearing selector flag. */
+-		wmb();
+-#endif
+-		pending_words = xchg(&vcpu_info->evtchn_pending_sel, 0);
++		pending_words = xchg_xen_ulong(&vcpu_info->evtchn_pending_sel, 0);
+ 
+ 		start_word_idx = __this_cpu_read(current_word_idx);
+ 		start_bit_idx = __this_cpu_read(current_bit_idx);
+@@ -1314,8 +1321,8 @@ static void __xen_evtchn_do_upcall(void)
+ 		word_idx = start_word_idx;
+ 
+ 		for (i = 0; pending_words != 0; i++) {
+-			unsigned long pending_bits;
+-			unsigned long words;
++			xen_ulong_t pending_bits;
++			xen_ulong_t words;
+ 
+ 			words = MASK_LSBS(pending_words, word_idx);
+ 
+@@ -1327,7 +1334,7 @@ static void __xen_evtchn_do_upcall(void)
+ 				bit_idx = 0;
+ 				continue;
+ 			}
+-			word_idx = __ffs(words);
++			word_idx = find_first_bit(BM(&words), sizeof(words));
+ 
+ 			pending_bits = active_evtchns(cpu, s, word_idx);
+ 			bit_idx = 0; /* usually scan entire word from start */
+@@ -1342,7 +1349,7 @@ static void __xen_evtchn_do_upcall(void)
+ 			}
+ 
+ 			do {
+-				unsigned long bits;
++				xen_ulong_t bits;
+ 				int port, irq;
+ 				struct irq_desc *desc;
+ 
+@@ -1352,10 +1359,10 @@ static void __xen_evtchn_do_upcall(void)
+ 				if (bits == 0)
+ 					break;
+ 
+-				bit_idx = __ffs(bits);
++				bit_idx = find_first_bit(BM(&bits), sizeof(bits));
+ 
+ 				/* Process port. */
+-				port = (word_idx * BITS_PER_LONG) + bit_idx;
++				port = (word_idx * BITS_PER_EVTCHN_WORD) + bit_idx;
+ 				irq = evtchn_to_irq[port];
+ 
+ 				if (irq != -1) {
+@@ -1364,12 +1371,12 @@ static void __xen_evtchn_do_upcall(void)
+ 						generic_handle_irq_desc(irq, desc);
+ 				}
+ 
+-				bit_idx = (bit_idx + 1) % BITS_PER_LONG;
++				bit_idx = (bit_idx + 1) % BITS_PER_EVTCHN_WORD;
+ 
+ 				/* Next caller starts at last processed + 1 */
+ 				__this_cpu_write(current_word_idx,
+ 						 bit_idx ? word_idx :
+-						 (word_idx+1) % BITS_PER_LONG);
++						 (word_idx+1) % BITS_PER_EVTCHN_WORD);
+ 				__this_cpu_write(current_bit_idx, bit_idx);
+ 			} while (bit_idx != 0);
+ 
+@@ -1377,7 +1384,7 @@ static void __xen_evtchn_do_upcall(void)
+ 			if ((word_idx != start_word_idx) || (i != 0))
+ 				pending_words &= ~(1UL << word_idx);
+ 
+-			word_idx = (word_idx + 1) % BITS_PER_LONG;
++			word_idx = (word_idx + 1) % BITS_PER_EVTCHN_WORD;
+ 		}
+ 
+ 		BUG_ON(!irqs_disabled());
+@@ -1487,8 +1494,8 @@ int resend_irq_on_evtchn(unsigned int irq)
+ 	if (!VALID_EVTCHN(evtchn))
+ 		return 1;
+ 
+-	masked = sync_test_and_set_bit(evtchn, s->evtchn_mask);
+-	sync_set_bit(evtchn, s->evtchn_pending);
++	masked = sync_test_and_set_bit(evtchn, BM(s->evtchn_mask));
++	sync_set_bit(evtchn, BM(s->evtchn_pending));
+ 	if (!masked)
+ 		unmask_evtchn(evtchn);
+ 
+@@ -1536,8 +1543,8 @@ static int retrigger_dynirq(struct irq_data *data)
+ 	if (VALID_EVTCHN(evtchn)) {
+ 		int masked;
+ 
+-		masked = sync_test_and_set_bit(evtchn, sh->evtchn_mask);
+-		sync_set_bit(evtchn, sh->evtchn_pending);
++		masked = sync_test_and_set_bit(evtchn, BM(sh->evtchn_mask));
++		sync_set_bit(evtchn, BM(sh->evtchn_pending));
+ 		if (!masked)
+ 			unmask_evtchn(evtchn);
+ 		ret = 1;
+diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
+index 5d6c272..a9075df 100644
+--- a/include/xen/interface/xen.h
++++ b/include/xen/interface/xen.h
+@@ -285,7 +285,7 @@ DEFINE_GUEST_HANDLE_STRUCT(multicall_entry);
+  * Event channel endpoints per domain:
+  *  1024 if a long is 32 bits; 4096 if a long is 64 bits.
+  */
+-#define NR_EVENT_CHANNELS (sizeof(unsigned long) * sizeof(unsigned long) * 64)
++#define NR_EVENT_CHANNELS (sizeof(xen_ulong_t) * sizeof(xen_ulong_t) * 64)
+ 
+ struct vcpu_time_info {
+ 	/*
+@@ -341,7 +341,7 @@ struct vcpu_info {
+ 	 */
+ 	uint8_t evtchn_upcall_pending;
+ 	uint8_t evtchn_upcall_mask;
+-	unsigned long evtchn_pending_sel;
++	xen_ulong_t evtchn_pending_sel;
+ 	struct arch_vcpu_info arch;
+ 	struct pvclock_vcpu_time_info time;
+ }; /* 64 bytes (x86) */
+@@ -384,8 +384,8 @@ struct shared_info {
+ 	 * per-vcpu selector word to be set. Each bit in the selector covers a
+ 	 * 'C long' in the PENDING bitfield array.
+ 	 */
+-	unsigned long evtchn_pending[sizeof(unsigned long) * 8];
+-	unsigned long evtchn_mask[sizeof(unsigned long) * 8];
++	xen_ulong_t evtchn_pending[sizeof(xen_ulong_t) * 8];
++	xen_ulong_t evtchn_mask[sizeof(xen_ulong_t) * 8];
+ 
+ 	/*
+ 	 * Wallclock time: updated only by control software. Guests should base
+-- 
+1.7.2.5
 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > 
-> > diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-> > index c6b9096..30cdacb 100644
-> > --- a/arch/arm/include/asm/xen/page.h
-> > +++ b/arch/arm/include/asm/xen/page.h
-> > @@ -1,6 +1,7 @@
-> >  #ifndef _ASM_ARM_XEN_PAGE_H
-> >  #define _ASM_ARM_XEN_PAGE_H
-> >  
-> > +#include <asm/mach/map.h>
-> >  #include <asm/page.h>
-> >  #include <asm/pgtable.h>
-> >  
-> > @@ -86,4 +87,7 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
-> >  {
-> >  	return __set_phys_to_machine(pfn, mfn);
-> >  }
-> > +
-> > +#define xen_remap(cookie, size) __arm_ioremap((cookie), (size), MT_MEMORY);
-> > +
-> >  #endif /* _ASM_ARM_XEN_PAGE_H */
-> > diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-> > index 472b9b7..6aef9fb 100644
-> > --- a/arch/x86/include/asm/xen/page.h
-> > +++ b/arch/x86/include/asm/xen/page.h
-> > @@ -212,4 +212,6 @@ unsigned long arbitrary_virt_to_mfn(void *vaddr);
-> >  void make_lowmem_page_readonly(void *vaddr);
-> >  void make_lowmem_page_readwrite(void *vaddr);
-> >  
-> > +#define xen_remap(cookie, size) ioremap((cookie), (size));
-> > +
-> >  #endif /* _ASM_X86_XEN_PAGE_H */
-> > diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-> > index 19843ec..682210d7 100644
-> > --- a/drivers/tty/hvc/hvc_xen.c
-> > +++ b/drivers/tty/hvc/hvc_xen.c
-> > @@ -230,7 +230,7 @@ static int xen_hvm_console_init(void)
-> >  	if (r < 0 || v == 0)
-> >  		goto err;
-> >  	mfn = v;
-> > -	info->intf = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
-> > +	info->intf = xen_remap(mfn << PAGE_SHIFT, PAGE_SIZE);
-> >  	if (info->intf == NULL)
-> >  		goto err;
-> >  	info->vtermno = HVC_COOKIE;
-> > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> > index 7038de5..1c2a1e5 100644
-> > --- a/drivers/xen/grant-table.c
-> > +++ b/drivers/xen/grant-table.c
-> > @@ -1146,7 +1146,7 @@ int gnttab_resume(void)
-> >  		return gnttab_map(0, nr_grant_frames - 1);
-> >  
-> >  	if (gnttab_shared.addr == NULL) {
-> > -		gnttab_shared.addr = ioremap(xen_hvm_resume_frames,
-> > +		gnttab_shared.addr = xen_remap(xen_hvm_resume_frames,
-> >  						PAGE_SIZE * max_nr_gframes);
-> >  		if (gnttab_shared.addr == NULL) {
-> >  			printk(KERN_WARNING
-> > diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-> > index 038b71d..3325884 100644
-> > --- a/drivers/xen/xenbus/xenbus_probe.c
-> > +++ b/drivers/xen/xenbus/xenbus_probe.c
-> > @@ -769,7 +769,7 @@ static int __init xenbus_init(void)
-> >  			goto out_error;
-> >  		xen_store_mfn = (unsigned long)v;
-> >  		xen_store_interface =
-> > -			ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
-> > +			xen_remap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
-> >  		break;
-> >  	default:
-> >  		pr_warn("Xenstore state unknown\n");
-> 
