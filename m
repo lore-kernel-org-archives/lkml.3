@@ -1,152 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758473Ab3BSNNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 08:13:43 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:39762 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757000Ab3BSNNl (ORCPT
+	id S932718Ab3BSNON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 08:14:13 -0500
+Received: from www.linutronix.de ([62.245.132.108]:32860 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758423Ab3BSNOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 08:13:41 -0500
-Date: Tue, 19 Feb 2013 15:12:58 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: kishon <kishon@ti.com>, <rob@landley.net>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        <akpm@linux-foundation.org>, <mchehab@redhat.com>, <cesarb@cesarb.net>,
-        <davem@davemloft.net>, <santosh.shilimkar@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH v2 0/5] Generic PHY Framework
-Message-ID: <20130219131258.GV23197@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1361253198-7401-1-git-send-email-kishon@ti.com>
- <201302191044.28653.arnd@arndb.de>
- <512361F0.1070500@ti.com>
- <201302191233.54677.arnd@arndb.de>
+	Tue, 19 Feb 2013 08:14:12 -0500
+Date: Tue, 19 Feb 2013 14:14:09 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Magnus Damm <magnus.damm@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        benh@kernel.crashing.org, grant.likely@secretlab.ca,
+        horms@verge.net.au
+Subject: Re: [PATCH] irqchip: Renesas INTC External IRQ pin driver
+In-Reply-To: <CANqRtoSPmDkCF8fuxMrwr9AyU5vr10dhnEmbKwyE4A3MXZ0KUg@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1302191400170.22263@ionos>
+References: <20130218142834.28739.39417.sendpatchset@w520> <alpine.LFD.2.02.1302191029510.22263@ionos> <CANqRtoSPmDkCF8fuxMrwr9AyU5vr10dhnEmbKwyE4A3MXZ0KUg@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fCmRXBY78W5odcVA"
-Content-Disposition: inline
-In-Reply-To: <201302191233.54677.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---fCmRXBY78W5odcVA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 19 Feb 2013, Magnus Damm wrote:
+> On Tue, Feb 19, 2013 at 7:11 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >> +static DEFINE_RAW_SPINLOCK(intc_irqpin_lock); /* only used by slow path */
+> >
+> > Shouldn't the lock be part of struct intc_irqpin_priv ?
+> 
+> Good idea, but I need to lock access to the SENSE register against
+> multiple driver instances. This is not the case for PRIO. But because
+> both PRIO and SENSE are accessed in the slow path I decided to be lazy
+> and use the same way of locking to reduce the code size.
 
-Hi,
+Fair enough.
 
-On Tue, Feb 19, 2013 at 12:33:54PM +0000, Arnd Bergmann wrote:
-> On Tuesday 19 February 2013, kishon wrote:
-> > On Tuesday 19 February 2013 04:14 PM, Arnd Bergmann wrote:
-> > > On Tuesday 19 February 2013, Kishon Vijay Abraham I wrote:
-> > >> Added a generic PHY framework that provides a set of APIs for the PH=
-Y drivers
-> > >> to create/destroy a PHY and APIs for the PHY users to obtain a refer=
-ence to
-> > >> the PHY with or without using phandle. To obtain a reference to the =
-PHY
-> > >> without using phandle, the platform specfic intialization code (say =
-=66rom board
-> > >> file) should have already called phy_bind with the binding informati=
-on. The
-> > >> binding information consists of phy's device name, phy user device n=
-ame and an
-> > >> index. The index is used when the same phy user binds to mulitple ph=
-ys.
-> > >>
-> > >> This framework will be of use only to devices that uses external PHY=
- (PHY
-> > >> functionality is not embedded within the controller).
-> > >>
-> > >> The intention of creating this framework is to bring the phy drivers=
- spread
-> > >> all over the Linux kernel to drivers/phy to increase code re-use and=
- to
-> > >> increase code maintainability.
-> > >>
-> > >> Comments to make PHY as bus wasn't done because PHY devices can be p=
-art of
-> > >> other bus and making a same device attached to multiple bus leads to=
- bad
-> > >> design.
-> > >
-> > > How does this relate to the generic PHY interfaces in drivers/net/phy?
-> >=20
-> > Currently drivers/phy and drivers/net/phy are independent and are not=
-=20
-> > related to each other. There are some fundamental differences on how=20
-> > these frameworks work. IIUC, the *net* uses bus layer (MDIO bus) to=20
-> > match a PHY device with a PHY driver and the Ethernet device uses the=
-=20
-> > bus layer to get the PHY.
-> > The Generic PHY Framework however doesn't have any bus layer. The PHY=
-=20
-> > should be like any other Platform Devices and Drivers and the framework=
-=20
-> > will provide some APIs to register with the framework. And there are=20
-> > other APIs which any controller can use to get the PHY (for e.g., in th=
-e=20
-> > case of dt boot, it can use phandle to get a reference to the PHY).
->=20
-> Hmm, I think the use of a bus_type for a PHY actually sounds quite
-> appropriate. The actual PHY device would then be a child of the
+> >> +static void intc_irqpin_irq_enable_force(struct irq_data *d)
+> >> +{
+> >> +     struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
+> >> +     int irq = p->irq[irqd_to_hwirq(d)].irq;
+> >> +
+> >> +     intc_irqpin_irq_enable(d);
+> >> +     irq_get_chip(irq)->irq_unmask(irq_get_irq_data(irq));
+> >> +}
+> >> +
+> >> +static void intc_irqpin_irq_disable_force(struct irq_data *d)
+> >> +{
+> >> +     struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
+> >> +     int irq = p->irq[irqd_to_hwirq(d)].irq;
+> >> +
+> >> +     irq_get_chip(irq)->irq_mask(irq_get_irq_data(irq));
+> >> +     intc_irqpin_irq_disable(d);
+> >
+> > Hmm. If I understand that code correctly, then the _force functions
+> > are (un)masking another interrupt line. But this happens without
+> > holding irq_desc[irq]->lock. Looks unsafe at least and if correct
+> > wants a big fat comment.
+> 
+> On some SoCs the masking for some IRQs seems busted, and the only sane
+> way to work around that is to (un)mask the parent interrupt. The
+> parent happens to be the GIC. I will look into how to add locking.
 
-really ? I'm not so sure, the *bus* used by the PHY is ULPI, UTMI,
-UTMI+, PIP3, I2C, etc... adding another 'fake' bus representation is a
-bit overkill IMO.
+Is there a 1:1 relationship between the intc interrupt and the GIC? If
+yes and if nothing else fiddles with that particular GIC interrupt,
+then you might get away without extra locking, but that wants a
+comment at least.
+ 
+> >> +     irq_set_chip_and_handler(virq, &p->irq_chip, handle_level_irq);
+> >> +     set_irq_flags(virq, IRQF_VALID); /* kill me now */
+> >
+> > What needs to be killed? -ENOPARSE
+> 
+> I'd like to not have to set this flag in my interrupt code.
 
-Imagine an I2C-controlled PHY driver like isp1301, that driver will have
-to register i2c_driver and phy_driver, which looks weird to me. If the
-only substitute for class is a bus, we can't drop classes just yet, I'm
-afraid.
+Ah.
+ 
+> I've written interrupt code on other architectures before, and from my
+> experience only ARM requires the IRQF_VALID flag to be set because the
+> ARM architecture software believes it is a special case. I may be
+> behind times - I have to admit that I've not checked the latest state
+> - this flag may not be needed anymore, hurray if so - but at least a
+> couple of years ago it was needed in case of ARM for our shared INTC
+> code (shared between sh and ARM).
+> 
+> What is your opinion about this matter?
 
-Imagine a regulator bus, a pwm bus, an LED bus etc. They don't make
-sense IMHO.
+It provides an extra paranoia level, but I'm not sure if it's really
+worth the trouble.
 
-> platform_device (or something else) that gets probed by its parent
-> bus or the DT. The operations that you define for the PHY
-> actually mirror some of the things that we have for a 'struct device',
-> so I think it would be quite logical to do it the same way.
->=20
-> Note that MDIO has both a 'bus' and a 'class', and what we want here is m=
-ore
-> like what the 'class' was meant for, except that for new classes, we
-> should actually use a 'bus', since the long-term plan is to kill off
-> the concept of a 'class'. I hope that was not too confusing. :)
+Thanks,
 
-:)
-
---=20
-balbi
-
---fCmRXBY78W5odcVA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRI3pZAAoJEIaOsuA1yqRERKkP/RH8Q7YwqdCtERF9W5S1lWTY
-EqTvOOCto0Ijdyg203y384O2ECY9U57KZrCFdN/j+e3PDKc99FDpa5MC03xNa18R
-0QxZdyDotPNq5tGdH6uJEqsS2iDixVjSGb0O/vnie1F+VMNhoDELXJB8NQGG1UjN
-Gec7eY6kc47HKSJrNSRybueYqLWSUIEUj0DscA2J+fT2LBH5vUfcjPutCz4Aa2aS
-Gi9jUUJ7M7bVdpHMP4PvcKu9svRmbAyztyZTGpjcoDdbod1q0DnMO5SkXnlo/eRt
-LXvK5RApTnRmvLyvS+CRjzvW+yo1/bh/xPxHfe6Gn24WqxoNCeWCq0Uq2CrWMeME
-K2XMMcVineXpIGaj1B76NkLVF8q/j0Y0bLmibjyeilFxaubZKzPCc2Aw7BbZEe1H
-5W7vizCMtYcEy0jeAKrEkKszS465y6326lf0UUtBlce1hDw7CoAFQklgWwvluelT
-NIuEb2iuBSk4F4zNH1teDpSLwDD+P14/ugLyFAN3OIQMGQYsczXCKiHdPQJf09mD
-mzXOYalYNEZEJEV9ZHX0mNmb4YFqhAgLsf3g4qrc06JMbTJvqAUrg5SSOYIXEAWz
-xs0E5lP93HV9+8G84HUyk/10e5Huq0x3mIeuMV3hwgHSK4HMQIAIMeUHomnK83ry
-XwpUKLLRfYvFguzidRsY
-=UZg3
------END PGP SIGNATURE-----
-
---fCmRXBY78W5odcVA--
+	tglx
