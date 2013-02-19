@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934480Ab3BSTAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:00:52 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:52283 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933525Ab3BSSxy (ORCPT
+	id S934445Ab3BSTAv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:00:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54459 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933600Ab3BSSxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:53:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <5123C5A5.4000106@suse.cz>
-References: <5123C5A5.4000106@suse.cz>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 19 Feb 2013 11:53:34 -0700
-Message-ID: <CAErSpo4MBSAt=oD=TajZXHXCwm12rrJswiVCyW2+On9NfmrkPg@mail.gmail.com>
-Subject: Re: WARNING: at drivers/pci/pci.c:1397 pci_disable_device
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Feb 2013 13:53:55 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        Jamie Parsons <Jamie.Parsons@metaswitch.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 60/81] sctp: refactor sctp_outq_teardown to insure proper re-initalization
+Date: Tue, 19 Feb 2013 15:49:23 -0300
+Message-Id: <1361299784-8830-61-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 11:34 AM, Jiri Slaby <jslaby@suse.cz> wrote:
-> Hi,
->
-> so I hit that one:
-> +       dev_WARN_ONCE(&dev->dev, atomic_read(&dev->enable_cnt) <= 0,
-> +                     "disabling already-disabled device");
->
-> during suspend (to ram):
-> WARNING: at drivers/pci/pci.c:1397 pci_disable_device+0x90/0xa0()
-> Hardware name: To Be Filled By O.E.M.
-> Device e1000e
-> disabling already-disabled device
-> Modules linked in: dvb_usb_dib0700 dib0090 dib7000p dib7000m dib0070
-> dib8000 dib3000mc dibx000_common microcode
-> Pid: 31027, comm: kworker/u:35 Not tainted 3.8.0-rc7-next-20130218_64+ #1768
-> Call Trace:
->  [<ffffffff81313b00>] ? do_pci_disable_device+0x30/0x60
->  [<ffffffff8107f2ff>] warn_slowpath_common+0x7f/0xc0
->  [<ffffffff8107f3f6>] warn_slowpath_fmt+0x46/0x50
->  [<ffffffff81313bc0>] pci_disable_device+0x90/0xa0
->  [<ffffffff814c8152>] __e1000_shutdown+0x262/0x8b0
->  [<ffffffff814c8813>] e1000_suspend+0x23/0x50
->  [<ffffffff816be581>] ? wait_for_completion+0x31/0x100
->  [<ffffffff81316337>] pci_pm_suspend+0x77/0x140
->  [<ffffffff8144aa6a>] ? __pm_runtime_barrier+0x1a/0x130
->  [<ffffffff813162c0>] ? pci_pm_poweroff+0xf0/0xf0
->  [<ffffffff81447838>] dpm_run_callback+0x58/0x90
->  [<ffffffff8144795b>] __device_suspend+0xeb/0x280
->  [<ffffffff814482af>] async_suspend+0x1f/0xa0
->  [<ffffffff810a9c9b>] async_run_entry_fn+0x3b/0x140
->  [<ffffffff8109b9a4>] process_one_work+0x174/0x410
->  [<ffffffff8109d426>] worker_thread+0x116/0x400
->  [<ffffffff8109d310>] ? busy_worker_rebind_fn+0xc0/0xc0
->  [<ffffffff810a3340>] kthread+0xc0/0xd0
->  [<ffffffff810a3280>] ? kthread_create_on_node+0x130/0x130
->  [<ffffffff816c089c>] ret_from_fork+0x7c/0xb0
->  [<ffffffff810a3280>] ? kthread_create_on_node+0x130/0x130
-> ---[ end trace 6c5060f8b8fb9175 ]---
-> e1000e 0000:00:19.0: System wakeup enabled by ACPI
+3.5.7.6 -stable review patch.  If anyone has any objections, please let me know.
 
-I think Konstantin posted an e1000e patch that would fix this, but
-it's going via the e1000e folks.  Hopefully both my tree and the
-e1000e patch will be merged soon.
+------------------
 
-Bjorn
+From: Neil Horman <nhorman@tuxdriver.com>
+
+commit 2f94aabd9f6c925d77aecb3ff020f1cc12ed8f86 upstream.
+
+Jamie Parsons reported a problem recently, in which the re-initalization of an
+association (The duplicate init case), resulted in a loss of receive window
+space.  He tracked down the root cause to sctp_outq_teardown, which discarded
+all the data on an outq during a re-initalization of the corresponding
+association, but never reset the outq->outstanding_data field to zero.  I wrote,
+and he tested this fix, which does a proper full re-initalization of the outq,
+fixing this problem, and hopefully future proofing us from simmilar issues down
+the road.
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Reported-by: Jamie Parsons <Jamie.Parsons@metaswitch.com>
+Tested-by: Jamie Parsons <Jamie.Parsons@metaswitch.com>
+CC: Jamie Parsons <Jamie.Parsons@metaswitch.com>
+CC: Vlad Yasevich <vyasevich@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: netdev@vger.kernel.org
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ net/sctp/outqueue.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+index a0fa19f..0716290 100644
+--- a/net/sctp/outqueue.c
++++ b/net/sctp/outqueue.c
+@@ -223,7 +223,7 @@ void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
+ 
+ /* Free the outqueue structure and any related pending chunks.
+  */
+-void sctp_outq_teardown(struct sctp_outq *q)
++static void __sctp_outq_teardown(struct sctp_outq *q)
+ {
+ 	struct sctp_transport *transport;
+ 	struct list_head *lchunk, *temp;
+@@ -276,8 +276,6 @@ void sctp_outq_teardown(struct sctp_outq *q)
+ 		sctp_chunk_free(chunk);
+ 	}
+ 
+-	q->error = 0;
+-
+ 	/* Throw away any leftover control chunks. */
+ 	list_for_each_entry_safe(chunk, tmp, &q->control_chunk_list, list) {
+ 		list_del_init(&chunk->list);
+@@ -285,11 +283,17 @@ void sctp_outq_teardown(struct sctp_outq *q)
+ 	}
+ }
+ 
++void sctp_outq_teardown(struct sctp_outq *q)
++{
++	__sctp_outq_teardown(q);
++	sctp_outq_init(q->asoc, q);
++}
++
+ /* Free the outqueue structure and any related pending chunks.  */
+ void sctp_outq_free(struct sctp_outq *q)
+ {
+ 	/* Throw away leftover chunks. */
+-	sctp_outq_teardown(q);
++	__sctp_outq_teardown(q);
+ 
+ 	/* If we were kmalloc()'d, free the memory.  */
+ 	if (q->malloced)
+-- 
+1.7.9.5
+
