@@ -1,150 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab3BSEi0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 23:38:26 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:59243 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755688Ab3BSEiY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 23:38:24 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, serge.hallyn@canonical.com,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-References: <512117D5.3050602@oracle.com> <87ppzyqxu6.fsf@xmission.com>
-	<51219742.1000301@oracle.com>
-Date: Mon, 18 Feb 2013 20:38:13 -0800
-In-Reply-To: <51219742.1000301@oracle.com> (Sasha Levin's message of "Sun, 17
-	Feb 2013 21:51:46 -0500")
-Message-ID: <87r4kcor4a.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1757725Ab3BSElJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 23:41:09 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38975 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755702Ab3BSElH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 23:41:07 -0500
+Message-ID: <512301F7.4020709@zytor.com>
+Date: Mon, 18 Feb 2013 20:39:19 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19nr/kKUidZctLwMgpQCbTFhMa9QpgPJVQ=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
-	*  0.0 T_XMDrugObfuBody_12 obfuscated drug references
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Sasha Levin <sasha.levin@oracle.com>
-X-Spam-Relay-Country: 
-Subject: Re: BUG in find_pid_ns
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Seiji Aguchi <seiji.aguchi@hds.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Subject: Re: [PATCH v9 2/3] trace,x86: add x86 irq vector tracepoints
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A64C4B@USINDEM103.corp.hds.com>    <511ECE53.8040801@zytor.com>   <1360979993.23152.122.camel@gandalf.local.home>   <511EEAE1.1040106@zytor.com>  <1360981364.23152.123.camel@gandalf.local.home>  <A5ED84D3BB3A384992CBB9C77DEDA4D414ABE178@USINDEM103.corp.hds.com>  <5122BE0C.9020403@zytor.com> <1361247854.23152.198.camel@gandalf.local.home>
+In-Reply-To: <1361247854.23152.198.camel@gandalf.local.home>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin <sasha.levin@oracle.com> writes:
+On 02/18/2013 08:24 PM, Steven Rostedt wrote:
+> On Mon, 2013-02-18 at 15:49 -0800, H. Peter Anvin wrote:
+> 
+>> What about the following:
+>>
+>>> The base address of the IDT doesn't generally change... the one
+>>> exception is when we do the funny NMI workaround.
+>>>
+>>> For that reason, I would be happier if we just restored the standard
+>>> value instead of saving/restoring stuff.
+> 
+> Basically what you are saying, is to have his code do what the NMI code
+> originally did, but can't now, due to there being another IDT table
+> (from Seiji's changes).
+> 
+> static void switch_to_trace_idt(void *arg)
+> {
+>      load_idt(&trace_idt_descr);
+> }
+> 
+> static void restore_original_idt(void *arg)
+> {
+>      load_idt(this_cpu_ptr(&idt_descr));
+> }
+> 
 
-> On 02/17/2013 07:17 PM, ebiederm@xmission.com wrote:
->> The bad pointer value is 0xfffffffffffffff0.  Hmm.
->> 
->> If you have the failure location correct it looks like a corrupted hash
->> entry was found while following the hash chain.
->> 
->> It looks like the memory has been set to -16 -EBUSY? Weird.
->> 
->> It smells like something is stomping on the memory of a struct pid, with
->> the same hash value and thus in the same hash chain as the current pid.
->> 
->> Can you reproduce this?
->
-> I've just reproduced it again:
->
-> [ 2404.518957] BUG: unable to handle kernel paging request at fffffffffffffff0
-> [ 2404.520024] IP: [<ffffffff81131d50>] find_pid_ns+0x110/0x1f0
-> [ 2404.520024] PGD 5429067 PUD 542b067 PMD 0
-> [ 2404.520024] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [ 2404.520024] Dumping ftrace buffer:
-> [ 2404.520024]    (ftrace buffer empty)
-> [ 2404.520024] Modules linked in:
-> [ 2404.520024] CPU 3
-> [ 2404.520024] Pid: 6890, comm: trinity Tainted: G        W    3.8.0-rc7-next-20130215-sasha-00027-gb399f44-dirty #288
-> [ 2404.520024] RIP: 0010:[<ffffffff81131d50>]  [<ffffffff81131d50>] find_pid_ns+0x110/0x1f0
-> [ 2404.520024] RSP: 0018:ffff8800af1dfe18  EFLAGS: 00010286
-> [ 2404.520024] RAX: 0000000000000001 RBX: 0000000000004b72 RCX: 0000000000000000
-> [ 2404.520024] RDX: 0000000000000001 RSI: ffffffff85466e40 RDI: 0000000000000286
-> [ 2404.520024] RBP: ffff8800af1dfe48 R08: 0000000000000001 R09: 0000000000000001
-> [ 2404.520024] R10: 0000000000000001 R11: 0000000000000000 R12: ffffffff85466460
-> [ 2404.520024] R13: ffff8800bf8d3ef8 R14: fffffffffffffff0 R15: ffff8800a43d9a40
-> [ 2404.520024] FS:  00007f8300f79700(0000) GS:ffff8800bbc00000(0000) knlGS:0000000000000000
-> [ 2404.520024] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [ 2404.520024] CR2: fffffffffffffff0 CR3: 00000000af0b7000 CR4: 00000000000406e0
-> [ 2404.520024] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [ 2404.520024] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [ 2404.520024] Process trinity (pid: 6890, threadinfo ffff8800af1de000, task ffff8800b060b000)
-> [ 2404.520024] Stack:
-> [ 2404.520024]  ffffffff85466e40 0000000000004b72 ffff8800af1dfed8 0000000000000000
-> [ 2404.520024]  0000000000000003 20c49ba5e353f7cf ffff8800af1dfe58 ffffffff81131e5c
-> [ 2404.520024]  ffff8800af1dfec8 ffffffff8112400f ffffffff81123f9c 0000000000000000
-> [ 2404.520024] Call Trace:
-> [ 2404.520024]  [<ffffffff81131e5c>] find_vpid+0x2c/0x30
-> [ 2404.520024]  [<ffffffff8112400f>] kill_something_info+0x9f/0x270
-> [ 2404.673395]  [<ffffffff81123f9c>] ? kill_something_info+0x2c/0x270
-> [ 2404.673395]  [<ffffffff81125e38>] sys_kill+0x88/0xa0
-> [ 2404.673395]  [<ffffffff8107ad34>] ? syscall_trace_enter+0x24/0x2e0
-> [ 2404.694324]  [<ffffffff811813b8>] ? trace_hardirqs_on_caller+0x128/0x160
-> [ 2404.694324]  [<ffffffff83d96275>] ? tracesys+0x7e/0xe6
-> [ 2404.694324]  [<ffffffff83d962d8>] tracesys+0xe1/0xe6
-> [ 2404.694324] Code: 4d 8b 75 00 e8 b2 0e 00 00 85 c0 0f 84 d2 00 00 00 80 3d fa 17 d5 04 00 0f 85 c5 00 00 00 e9 93 00 00 00 0f
-> 1f 84 00 00 00 00 00 <41> 39 1e 75 2b 4d 39 66 08 75 25 41 8b 84 24 20 08 00 00 48 c1
-> [ 2404.733487] RIP  [<ffffffff81131d50>] find_pid_ns+0x110/0x1f0
-> [ 2404.740299]  RSP <ffff8800af1dfe18>
-> [ 2404.740299] CR2: fffffffffffffff0
-> [ 2404.740299] ---[ end trace 9f8bc22bbe4fe990 ]---
->
-> I'm not sure what debug info I could throw in which will be helpful. Dump
-> the entire chain or table if 'pnr' happens to look odd?
->
->> Memory corruption is hard to trace down with just a single data point.
->> 
->> Looking a little closer Sasha you have rewritten
->> hlist_for_each_entry_rcu, and that seems to be the most recent patch
->> dealing with pids, and we are failing in hlist_for_each_entry_rcu.
->> 
->> I haven't looked at your patch in enough detail to know if you have
->> missed something or not, but a brand new patch and a brand new failure
->> certainly look suspicious at first glance.
->
-> Agreed, I've also took a second look at it when this BUG popped up. What
-> surprises me about it is that if the new iteration is broken, the kernel
-> would spectacularly break in a bunch of places instead of failing in the
-> exact same place twice.
->
-> Not ignoring the possibility it's broken though.
+Yes.  If there needs to be handshaking about whose IDT is currently
+installed I'm much happier if that handshake is done explicitly, rather
+than as a save/restore function which will break when we have to add
+another one which for whatever reason isn't nesting.
 
-I don't see any obvious problems with your code however. struct upid is:
+	-hpa
 
-struct upid {
-	/* Try to keep pid_chain in the same cacheline as nr for find_vpid */
-	int nr;
-	struct pid_namespace *ns;
-	struct hlist_node pid_chain;
-};
-
-Which puts pid_chain at offset 16.  nr is at offset 0 and is the first
-field we access.
-
-Trying to access a upid at address fffffffffffffff0 looks for all the
-world like hlist_entry_safe decremented a NULL pointer by 16 bytebs.
-
-I suggest you take a look at the assembly.  Upon occassion gcc
-optmizations get smart and optimize out things we would prefer they
-kept.
-
-As for the rest perhaps there is something odd about the optimization
-of pid_nr_ns or perhaps kill_something_info is the only frequent test
-where we try to acess something that does not exist.
-
-Eric
 
