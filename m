@@ -1,185 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab3BSKLq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:11:46 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60117 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758568Ab3BSKLo (ORCPT
+	id S932423Ab3BSKMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:12:09 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:32998 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932306Ab3BSKMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:11:44 -0500
-Date: Tue, 19 Feb 2013 11:11:39 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Magnus Damm <magnus.damm@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        benh@kernel.crashing.org, grant.likely@secretlab.ca,
-        horms@verge.net.au
-Subject: Re: [PATCH] irqchip: Renesas INTC External IRQ pin driver
-In-Reply-To: <20130218142834.28739.39417.sendpatchset@w520>
-Message-ID: <alpine.LFD.2.02.1302191029510.22263@ionos>
-References: <20130218142834.28739.39417.sendpatchset@w520>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 19 Feb 2013 05:12:06 -0500
+Date: Tue, 19 Feb 2013 12:11:21 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: Borislav Petkov <bp@alien8.de>, Greg KH <gregkh@linuxfoundation.org>,
+        <balbi@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, <JBottomley@parallels.com>,
+        <linux-scsi@vger.kernel.org>, <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, Doug Thompson <dougthompson@xmission.com>,
+        <linux-edac@vger.kernel.org>, <rjw@sisk.pl>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: SYSFS "errors"
+Message-ID: <20130219101121.GJ23197@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130218174916.GA2070@kroah.com>
+ <20130218184633.GC10755@arwen.pp.htv.fi>
+ <20130218164638.7cb53baa@redhat.com>
+ <20130218200542.GB20137@arwen.pp.htv.fi>
+ <20130218184742.5a4c3c06@redhat.com>
+ <20130218215434.GB16794@kroah.com>
+ <20130218221306.GA21493@pd.tnic>
+ <20130218222618.GA21818@kroah.com>
+ <20130218224405.GB21493@pd.tnic>
+ <20130219070310.2cadad7a@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PEkEgRdBLZYkpbX2"
+Content-Disposition: inline
+In-Reply-To: <20130219070310.2cadad7a@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Magnus,
+--PEkEgRdBLZYkpbX2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, 18 Feb 2013, Magnus Damm wrote:
+Hi,
 
-> +static inline unsigned long intc_irqpin_read(struct intc_irqpin_priv *p,
-> +					     int reg)
-> +{
-> +	struct intc_irqpin_iomem *i = &p->iomem[reg];
+On Tue, Feb 19, 2013 at 07:03:10AM -0300, Mauro Carvalho Chehab wrote:
+> > But my gut feeling says to stay concervative and not touch this code -
+> > we don't know what uses it and how much we would break by "fixing" it.
+> > The current situation is not that big of a deal IMVHO and I'd be willing
+> > to accept the small inconcistency versus possibly breaking userspace.
+>=20
+> I remember I saw some discussions about it in the past at bluesmoke ML,
+> saying that -ENODEV is the expected behavior when this is not supported.
+>=20
+> Changing from -ENODEV to "N/A" will break anything that would be relying
+> on the previous behavior. So, I think that such change will for sure break
+> userspace.
+>=20
+> If we're willing to change it, not creating the "sdram_scrub_rate" sysfs=
+=20
+> node is less likely to affect userspace.
 
-Newline between variable and code please.
+yeah, I agree with this. Guess we shouldn't be creating files which
+aren't supported by the underlying HW and having a read() return -ENODEV
+is quite weird IMO since that's actually 'breaking' read() interface
+although that's up to interpretations.
 
-> +	return i->read(i->iomem);
-> +}
-> +
-> +static inline void intc_irqpin_write(struct intc_irqpin_priv *p,
-> +				     int reg, unsigned long data)
-> +{
-> +	struct intc_irqpin_iomem *i = &p->iomem[reg];
-> +	i->write(i->iomem, data);
-> +}
-> +
-> +static inline unsigned long intc_irqpin_hwirq_mask(struct intc_irqpin_priv *p,
-> +						   int reg, int hw_irq)
-> +{
-> +	return BIT((p->iomem[reg].width - 1) - hw_irq);
-> +}
-> +
-> +static inline void intc_irqpin_irq_write_hwirq(struct intc_irqpin_priv *p,
-> +					       int reg, int hw_irq)
-> +{
-> +	intc_irqpin_write(p, reg, intc_irqpin_hwirq_mask(p, reg, hw_irq));
-> +}
-> +
-> +static DEFINE_RAW_SPINLOCK(intc_irqpin_lock); /* only used by slow path */
+--=20
+balbi
 
-Shouldn't the lock be part of struct intc_irqpin_priv ?
+--PEkEgRdBLZYkpbX2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +static void intc_irqpin_read_modify_write(struct intc_irqpin_priv *p,
-> +					  int reg, int shift,
-> +					  int width, int value)
-> +{
-> +	unsigned long flags;
-> +	unsigned long tmp;
-> +
-> +	raw_spin_lock_irqsave(&intc_irqpin_lock, flags);
-> +static void intc_irqpin_dbg(struct intc_irqpin_irq *i, char *str)
-> +{
-> +	dev_dbg(&i->p->pdev->dev, "%s (%d:%d:%d)\n",
-> +		str, i->irq, i->hw_irq,
-> +		irq_find_mapping(i->p->irq_domain, i->hw_irq));
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Do you really want to do a lookup for each debug invocation?
+iQIcBAEBAgAGBQJRI0/JAAoJEIaOsuA1yqREB/4P/jd/dGVZSoGjV7FrsOEuG/O9
+FyWi0VRov4gOmyTomCL28e3qlKLOyPcnmgsMaj+5OVkIu0BqSrsh76zs9a67ONka
+GX/Wsq7uNo+GH2/5ECKO72QGQIbOFN4c9Lpb1NgYuZWX4dKESwLSOojxsxw4a4NZ
+mlBUtIUhXuuLVQnXX7GcQ/2fs0SOodYJXTBPzxMb/lMqeP3svIJRy+tUxV93VyZp
+ZiZyuYdY5qeflo8vtA5AZMOIqLrhcsG/4vLvioGxkX93p9uwG8fP+NlFlIkVyWgC
+THDidjApsB21hFXnoAEid4tWD+MD5iaJ76k2CAI0aM39AxiEkmJ38FiEKKppWPEj
+rf6o6VQeB55ppuPbIW1qoEj1MTYyx7kTGFmgqpur3kpbYpZJlFrulQOQblsGge8v
+MNNq0WInhW4RIaxz2kpjcnrou2q4DC7Aq4HkL0RdfEPC/d2uHomxX+2dzxSRAVfY
+A7o4t8X3vxydRyujwSQIqcdFTnL/C5I2+5ZdMA2fC0yhVbY/d/KqPhKrs7qNtABX
+x1iBGTRYALtF23dbxKQDg2HSv6lOH2+9Okkmh36ZDqePd6ftKZeX57u2YmojQXXv
+24d5NAXKD3iAz2fgNTszF6kkw62PpPhjXgcUZ3jW+DXFEECHw1jIAEDeFzvJIDn8
+DghQDgawKtAmpImLlpur
+=ZlSk
+-----END PGP SIGNATURE-----
 
-> +}
-> +
-> +static void intc_irqpin_irq_enable(struct irq_data *d)
-> +{
-> +	struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
-> +	int hw_irq = irqd_to_hwirq(d);
-> +
-> +	intc_irqpin_dbg(&p->irq[hw_irq], "enable");
-> +	intc_irqpin_irq_write_hwirq(p, INTC_IRQPIN_REG_CLEAR, hw_irq);
-> +}
-> +
-> +static void intc_irqpin_irq_disable(struct irq_data *d)
-> +{
-> +	struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
-> +	int hw_irq = irqd_to_hwirq(d);
-> +
-> +	intc_irqpin_dbg(&p->irq[hw_irq], "disable");
-> +	intc_irqpin_irq_write_hwirq(p, INTC_IRQPIN_REG_MASK, hw_irq);
-> +}
-> +
-> +static void intc_irqpin_irq_enable_force(struct irq_data *d)
-> +{
-> +	struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
-> +	int irq = p->irq[irqd_to_hwirq(d)].irq;
-> +
-> +	intc_irqpin_irq_enable(d);
-> +	irq_get_chip(irq)->irq_unmask(irq_get_irq_data(irq));
-> +}
-> +
-> +static void intc_irqpin_irq_disable_force(struct irq_data *d)
-> +{
-> +	struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
-> +	int irq = p->irq[irqd_to_hwirq(d)].irq;
-> +
-> +	irq_get_chip(irq)->irq_mask(irq_get_irq_data(irq));
-> +	intc_irqpin_irq_disable(d);
-
-Hmm. If I understand that code correctly, then the _force functions
-are (un)masking another interrupt line. But this happens without
-holding irq_desc[irq]->lock. Looks unsafe at least and if correct
-wants a big fat comment.
-
-> +}
-> +
-> +#define INTC_IRQ_SENSE_VALID 0x10
-> +#define INTC_IRQ_SENSE(x) (x + INTC_IRQ_SENSE_VALID)
-> +
-> +static unsigned char intc_irqpin_sense[IRQ_TYPE_SENSE_MASK + 1] = {
-> +	[IRQ_TYPE_EDGE_FALLING] = INTC_IRQ_SENSE(0x00),
-> +	[IRQ_TYPE_EDGE_RISING] = INTC_IRQ_SENSE(0x01),
-> +	[IRQ_TYPE_LEVEL_LOW] = INTC_IRQ_SENSE(0x02),
-> +	[IRQ_TYPE_LEVEL_HIGH] = INTC_IRQ_SENSE(0x03),
-> +	[IRQ_TYPE_EDGE_BOTH] = INTC_IRQ_SENSE(0x04),
-> +};
-> +
-> +static int intc_irqpin_irq_set_type(struct irq_data *d, unsigned int type)
-> +{
-> +	unsigned char value = intc_irqpin_sense[type & IRQ_TYPE_SENSE_MASK];
-> +	struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
-> +
-> +	if (!(value & INTC_IRQ_SENSE_VALID))
-> +		return -EINVAL;
-> +
-> +	return intc_irqpin_set_sense(p, irqd_to_hwirq(d),
-> +				     value ^ INTC_IRQ_SENSE_VALID);
-> +}
-> +
-> +static irqreturn_t intc_irqpin_irq_handler(int irq, void *dev_id)
-> +{
-> +	struct intc_irqpin_irq *i = dev_id;
-> +	struct intc_irqpin_priv *p = i->p;
-> +	unsigned long bit;
-> +
-> +	intc_irqpin_dbg(i, "demux1");
-> +	bit = intc_irqpin_hwirq_mask(p, INTC_IRQPIN_REG_SOURCE, i->hw_irq);
-> +
-> +	if (intc_irqpin_read(p, INTC_IRQPIN_REG_SOURCE) & bit) {
-> +		intc_irqpin_write(p, INTC_IRQPIN_REG_SOURCE, ~bit);
-> +		intc_irqpin_dbg(i, "demux2");
-> +		generic_handle_irq(irq_find_mapping(p->irq_domain, i->hw_irq));
-
-Shouldn't you cache that mapping value somewhere ?
-
-> +		return IRQ_HANDLED;
-> +	}
-> +	return IRQ_NONE;
-> +}
-> +
-> +static int intc_irqpin_irq_domain_map(struct irq_domain *h, unsigned int virq,
-> +				      irq_hw_number_t hw)
-> +{
-> +	struct intc_irqpin_priv *p = h->host_data;
-> +
-> +	intc_irqpin_dbg(&p->irq[hw], "map");
-> +	irq_set_chip_data(virq, h->host_data);
-> +	irq_set_chip_and_handler(virq, &p->irq_chip, handle_level_irq);
-> +	set_irq_flags(virq, IRQF_VALID); /* kill me now */
-
-What needs to be killed? -ENOPARSE
-
-Thanks,
-
-	tglx
+--PEkEgRdBLZYkpbX2--
