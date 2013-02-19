@@ -1,56 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934802Ab3BSWxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 17:53:55 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56916 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933020Ab3BSWxy (ORCPT
+	id S934818Ab3BSW4A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 17:56:00 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33411 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933520Ab3BSWz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 17:53:54 -0500
-Message-ID: <512402A7.9020500@infradead.org>
-Date: Tue, 19 Feb 2013 14:54:31 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 19 Feb 2013 17:55:57 -0500
+Date: Tue, 19 Feb 2013 22:55:47 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 2/2] arm: Set the page table freeing ceiling to TASK_SIZE
+Message-ID: <20130219225547.GB6889@MacBook-Pro.local>
+References: <1361204311-14127-1-git-send-email-catalin.marinas@arm.com>
+ <1361204311-14127-3-git-send-email-catalin.marinas@arm.com>
+ <alpine.LNX.2.00.1302191008290.2139@eggly.anvils>
 MIME-Version: 1.0
-To: Alexander Holler <holler@ahsoftware.de>
-CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: What is tip-bot?
-References: <512348A1.4000305@ahsoftware.de> <CAFLxGvzuL+w-yfApiLGwWWbB8Om7JUypppoovmSGS2k51Yjgmw@mail.gmail.com> <512355C2.3050009@ahsoftware.de>
-In-Reply-To: <512355C2.3050009@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1302191008290.2139@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2013 02:36 AM, Alexander Holler wrote:
-> Am 19.02.2013 10:54, schrieb richard -rw- weinberger:
->> On Tue, Feb 19, 2013 at 10:40 AM, Alexander Holler
->> <holler@ahsoftware.de> wrote:
->>> Hello,
->>>
->>> until now I could successfully suppress my curiosity about those tip:foo
->>> messages, but as the bot (or one of them) has now catched me too, I
->>> want to
->>> ask what it is.
->>>
->>> Searching for "tip(-)bot" or similiar doesn't reveal some useful info
->>> (for
->>> obvious reasons). Could someone give me an URL to source or
->>> documentation
->>> about that tool so that I can enlight myself about it's meaning?
->>
->> AFAIK tip-bot is a set of shell scripts used by _T_glx, _I_ngo and
->> _P_eter. :)
->>
->
-> So messages from tip-bot are just acknowledgments (like those from Greg)
-> that a patch has found it's way into one of the trees, with the
-> difference that tip-bot sends those acknowledgments to lkml too, whereas
-> Greg's scripts send them only to involved parties and not the lkml?
+Hugh,
 
-Yes, that is my understanding of it.
+On Tue, Feb 19, 2013 at 06:20:50PM +0000, Hugh Dickins wrote:
+> On Mon, 18 Feb 2013, Catalin Marinas wrote:
+> 
+> > ARM processors with LPAE enabled use 3 levels of page tables, with an
+> > entry in the top level (pgd) covering 1GB of virtual space. Because of
+> > the branch relocation limitations on ARM, the loadable modules are
+> > mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
+> > between kernel modules and user space.
+> > 
+> > If free_pgtables() is called with the default ceiling 0,
+> > free_pgd_range() (and subsequently called functions) also frees the page
+> > table shared between user space and kernel modules (which is normally
+> > handled by the ARM-specific pgd_free() function). This patch changes
+> > defines the ARM USER_PGTABLES_CEILING to TASK_SIZE.
+> 
+> I don't have an ARM to test on, so I won't ack or nack this,
+> but I am a little worried or puzzled.
+> 
+> I thought CONFIG_ARM_LPAE came in v3.3: so I would expect these
+> patches to need "Cc: stable@vger.kernel.org" for porting back there.
+
+Yes, I'll add this.
+
+> But then, did v3.3..v3.8 have the appropriate arch/arm code to handle
+> the freeing of the user+kernel pgd?  I'm not asserting that it could
+> not, but when doing the similar arch/x86 thing, I had to make changes
+> down there, so it's not necessarily something that works automatically.
+
+Unfortunately it doesn't have any code to handle this, though it is
+relatively hard to trigger the problem. The pgd entry shared between
+user and kernel on ARM is used for loadable modules and kmap. It
+triggers for example if we get an interrupt handled by a loadable module
+during a task exit. The rest of the kernel pgd is fine as PAGE_OFFSET is
+an entirely new pgd entry.
+
+I had a workaround for arch/arm only but after discussions with rmk, we
+decided that ceiling is the mode elegant solution.
+
+> And does the ARM !LPAE case work correctly (not leaking page tables
+> at any level) with this change from 0 to TASK_SIZE?  Again, I'm not
+> asserting that it does not, but your commit description doesn't give
+> enough confidence that you've tried that.
+
+In the ARM !LPAE case, we only have two levels of page tables and the
+pmd pages are allocated by pgd_alloc() and freed in pgd_free(). The next
+pte level is not shared between user and kernel (actually for module
+space and kmap below PAGE_OFFSET we don't even allocate new ptes, just
+point the pmd to the existing kernel pte).
+
+I'll add more information to the commit message.
+
+> Perhaps you have some other patches to arch/arm, that of course I
+> wouldn't have noticed, which make this all work together; and it's
+> accepted that CONFIG_ARM_LPAE is broken on v3.3..v3.8, and too
+> much risk to backport it all for -stable.
+
+I think it makes sense to backport to v3.3 as we don't have any other
+ARM patches addressing this. The shared pgd entry with LPAE is handled
+explicitly in pgd_free() (I've done this from the beginning as a
+precaution, though the condition never triggered because of the 0
+ceiling).
+
+> Maybe all I'm asking for is a more reassuring commit description.
+
+I agree. I'm also waiting for rmk's ack.
+
+Thanks.
 
 -- 
-~Randy
+Catalin
