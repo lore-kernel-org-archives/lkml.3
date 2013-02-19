@@ -1,116 +1,394 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934332Ab3BSVEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 16:04:49 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:55960 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934289Ab3BSVEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 16:04:47 -0500
-Message-ID: <5123E8E1.9000302@interlog.com>
-Date: Tue, 19 Feb 2013 16:04:33 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S934348Ab3BSVLm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 16:11:42 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58115 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933289Ab3BSVLl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 16:11:41 -0500
+Date: Tue, 19 Feb 2013 21:12:08 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH v5 4/4] devcg: propagate local changes down the
+ hierarchy
+Message-ID: <20130219211208.GC5399@mail.hallyn.com>
+References: <20130215165543.131282532@napanee.usersys.redhat.com>
+ <20130215165543.733711059@napanee.usersys.redhat.com>
 MIME-Version: 1.0
-To: Tommi Rantala <tt.rantala@gmail.com>
-CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: at drivers/ata/libata-core.c:5049 ata_qc_issue+0x1c7/0x3a0()
-References: <CA+ydwtooKGVOVq246d1DdROs_ytezTt1JqwX4-TyvNdDi7o+jQ@mail.gmail.com>
-In-Reply-To: <CA+ydwtooKGVOVq246d1DdROs_ytezTt1JqwX4-TyvNdDi7o+jQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130215165543.733711059@napanee.usersys.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-02-19 01:37 PM, Tommi Rantala wrote:
-> Hello,
->
-> Hit this WARNING once while fuzzing the kernel with trinity in a qemu
-> virtual machine as the root user.
->
-> Does this make any sense? I have occasionally seen some ATA related
-> troubles while fuzzing in a VM, but this warning is new to me.
->
-> [  490.717030] WARNING: at
-> /home/ttrantal/git/linux-2.6/drivers/ata/libata-core.c:5049
-> ata_qc_issue+0x1c7/0x3a0()
-> [  490.717030] Hardware name: Bochs
-> [  490.717030] Pid: 2548, comm: trinity-child6 Not tainted 3.8.0+ #87
-> [  490.717030] Call Trace:
-> [  490.717030]  [<ffffffff81097b86>] warn_slowpath_common+0x86/0xb0
-> [  490.717030]  [<ffffffff81097c75>] warn_slowpath_null+0x15/0x20
-> [  490.717030]  [<ffffffff8150efd7>] ata_qc_issue+0x1c7/0x3a0
-> [  490.717030]  [<ffffffff81516550>] ? ata_scsi_set_sense.constprop.13+0x30/0x30
-> [  490.717030]  [<ffffffff815155c0>] ata_scsi_translate+0x120/0x190
-> [  490.717030]  [<ffffffff81518f4e>] ? ata_scsi_queuecmd+0x2e/0x2d0
-> [  490.717030]  [<ffffffff81519173>] ata_scsi_queuecmd+0x253/0x2d0
-> [  490.717030]  [<ffffffff814e3e91>] scsi_dispatch_cmd+0x161/0x230
-> [  490.717030]  [<ffffffff814e9fd4>] scsi_request_fn+0x544/0x580
-> [  490.717030]  [<ffffffff813473a6>] ? cfq_dispatch_requests+0x56/0xb30
-> [  490.717030]  [<ffffffff810f173a>] ? __lock_is_held+0x5a/0x80
-> [  490.717030]  [<ffffffff81332112>] __blk_run_queue+0x32/0x40
-> [  490.717030]  [<ffffffff8132d0ea>] __elv_add_request+0x10a/0x280
-> [  490.717030]  [<ffffffff813391f6>] blk_execute_rq_nowait+0xb6/0xf0
-> [  490.717030]  [<ffffffff810c0151>] ? __init_waitqueue_head+0x41/0x60
-> [  490.717030]  [<ffffffff813392d8>] blk_execute_rq+0xa8/0x110
-> [  490.717030]  [<ffffffff810f557e>] ? lock_release_non_nested+0xde/0x310
-> [  490.717030]  [<ffffffff812fc1a4>] ? selinux_capable+0x34/0x50
-> [  490.717030]  [<ffffffff812f8aa3>] ? security_capable+0x13/0x20
-> [  490.717030]  [<ffffffff810a55d3>] ? ns_capable+0x53/0x80
-> [  490.717030]  [<ffffffff8133f6c1>] sg_scsi_ioctl+0x2b1/0x3a0
-> [  490.717030]  [<ffffffff8133fbc2>] scsi_cmd_ioctl+0x412/0x4a0
-> [  490.717030]  [<ffffffff810f41d7>] ? __lock_acquire+0x957/0x1c20
-> [  490.717030]  [<ffffffff81084adf>] ? kvm_clock_read+0x1f/0x30
-> [  490.717030]  [<ffffffff81342d36>] bsg_ioctl+0x146/0x270
-> [  490.717030]  [<ffffffff810f5b18>] ? trace_hardirqs_off_caller+0x28/0xd0
-> [  490.717030]  [<ffffffff810f5bcd>] ? trace_hardirqs_off+0xd/0x10
-> [  490.717030]  [<ffffffff810d552a>] ? local_clock+0x4a/0x70
-> [  490.717030]  [<ffffffff810f1e98>] ? lock_release_holdtime+0x28/0x170
-> [  490.717030]  [<ffffffff812fb640>] ? avc_has_perm_flags+0x1d0/0x2a0
-> [  490.717030]  [<ffffffff812fb498>] ? avc_has_perm_flags+0x28/0x2a0
-> [  490.717030]  [<ffffffff810f5b18>] ? trace_hardirqs_off_caller+0x28/0xd0
-> [  490.717030]  [<ffffffff810f5bcd>] ? trace_hardirqs_off+0xd/0x10
-> [  490.717030]  [<ffffffff811b5ff2>] do_vfs_ioctl+0x532/0x580
-> [  490.717030]  [<ffffffff812fc7d3>] ? file_has_perm+0x83/0xa0
-> [  490.717030]  [<ffffffff811b609d>] sys_ioctl+0x5d/0xa0
-> [  490.717030]  [<ffffffff813571de>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> [  490.717030]  [<ffffffff81ca07e9>] system_call_fastpath+0x16/0x1b
-> [  490.717030] ---[ end trace fce35d2b40bd0565 ]---
-> [  490.810874] ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x0
-> [  490.812538] ata1.00: failed command: READ DMA
-> [  490.813715] ata1.00: cmd c8/00:2c:00:01:00/00:00:00:00:00/e0 tag 0
-> [  490.813715]          res 50/01:00:b0:16:04/00:00:00:00:00/a0 Emask
-> 0x40 (internal error)
-> [  490.817269] ata1.00: status: { DRDY }
-> [watchdog] 333615 iterations. [F:326712 S:6891]
-> [watchdog] kernel became tainted! Last seed was 71022097
-> [  491.266158] ata1.00: configured for MWDMA2
-> [  491.267358] ata1: EH complete
-> child 2548 exitting
-> child 2492 exitting
-> child 2500 exitting
-> [2351] Bailing main loop. Exit reason: kernel became tainted
-> [2350] Watchdog exiting
->
-> Ran 333617 syscalls. Successes: 6892  Failures: 326714
+Quoting Aristeu Rozanski (aris@redhat.com):
+> This patch makes exception changes to propagate down in hierarchy respecting
+> when possible local exceptions.
+> 
+> New exceptions allowing additional access to devices won't be propagated, but
+> it'll be possible to add an exception to access all of part of the newly
+> allowed device(s).
+> 
+> New exceptions disallowing access to devices will be propagated down and the
+> local group's exceptions will be revalidated for the new situation.
+> Example:
+>       A
+>      / \
+>         B
+> 
+>     group        behavior          exceptions
+>     A            allow             "b 8:* rwm", "c 116:1 rw"
+>     B            deny              "c 1:3 rwm", "c 116:2 rwm", "b 3:* rwm"
+> 
+> If a new exception is added to group A:
+> 	# echo "c 116:* r" > A/devices.deny
+> it'll propagate down and after revalidating B's local exceptions, the exception
+> "c 116:2 rwm" will be removed.
+> 
+> In case parent's exceptions change and local exceptions are not allowed anymore,
+> they'll be deleted.
+> 
+> v7:
+> - do not allow behavior change when the cgroup has children
+> - update documentation
+> 
+> v6: fixed issues pointed by Serge Hallyn
+> - only copy parent's exceptions while propagating behavior if the local
+>   behavior is different
+> - while propagating exceptions, do not clear and copy parent's: it'd be against
+>   the premise we don't propagate access to more devices
+> 
+> v5: fixed issues pointed by Serge Hallyn
+> - updated documentation
+> - not propagating when an exception is written to devices.allow
+> - when propagating a new behavior, clean the local exceptions list if they're
+>   for a different behavior
+> 
+> v4: fixed issues pointed by Tejun Heo
+> - separated function to walk the tree and collect valid propagation targets
+> 
+> v3: fixed issues pointed by Tejun Heo
+> - update documentation
+> - move css_online/css_offline changes to a new patch
+> - use cgroup_for_each_descendant_pre() instead of own descendant walk
+> - move exception_copy rework to a separared patch
+> - move exception_clean rework to a separated patch
+> 
+> v2: fixed issues pointed by Tejun Heo
+> - instead of keeping the local settings that won't apply anymore, remove them
+> 
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
 
-Looks like some application is using the deprecated
-SCSI_IOCTL_SEND_COMMAND ioctl via a bsg node to send
-a SCSI ATA PASS-THROUGH command tunnelling a ATA READ
-DMA command.
+Thanks!
 
-Looking for something positive to say: only a very skilled
-professional tester could come up with such a mismatch.
+Reviewed-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-Is this a recent kernel (linux-2.6 shown in path)? Processes
-using the SCSI_IOCTL_SEND_COMMAND ioctl now get a yellow flag
-in the logs.
+(one minor comment below)
 
+> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+> 
+> ---
+>  Documentation/cgroups/devices.txt |   70 ++++++++++++++++++-
+>  security/device_cgroup.c          |  139 ++++++++++++++++++++++++++++++++++++--
+>  2 files changed, 199 insertions(+), 10 deletions(-)
+> 
+> --- github.orig/security/device_cgroup.c	2013-02-15 11:30:25.450085632 -0500
+> +++ github/security/device_cgroup.c	2013-02-15 11:30:37.510258447 -0500
+> @@ -49,6 +49,8 @@ struct dev_cgroup {
+>  	struct cgroup_subsys_state css;
+>  	struct list_head exceptions;
+>  	enum devcg_behavior behavior;
+> +	/* temporary list for pending propagation operations */
+> +	struct list_head propagate_pending;
+>  };
+>  
+>  static inline struct dev_cgroup *css_to_devcgroup(struct cgroup_subsys_state *s)
+> @@ -180,6 +182,11 @@ static void dev_exception_clean(struct d
+>  	}
+>  }
+>  
+> +static inline bool is_devcg_online(const struct dev_cgroup *devcg)
+> +{
+> +	return (devcg->behavior != DEVCG_DEFAULT_NONE);
+> +}
+> +
+>  /**
+>   * devcgroup_online - initializes devcgroup's behavior and exceptions based on
+>   * 		      parent's
+> @@ -230,6 +237,7 @@ static struct cgroup_subsys_state *devcg
+>  	if (!dev_cgroup)
+>  		return ERR_PTR(-ENOMEM);
+>  	INIT_LIST_HEAD(&dev_cgroup->exceptions);
+> +	INIT_LIST_HEAD(&dev_cgroup->propagate_pending);
+>  	dev_cgroup->behavior = DEVCG_DEFAULT_NONE;
+>  	parent_cgroup = cgroup->parent;
+>  
+> @@ -410,6 +418,111 @@ static inline int may_allow_all(struct d
+>  	return parent->behavior == DEVCG_DEFAULT_ALLOW;
+>  }
+>  
+> +/**
+> + * revalidate_active_exceptions - walks through the active exception list and
+> + * 				  revalidates the exceptions based on parent's
+> + * 				  behavior and exceptions. The exceptions that
+> + * 				  are no longer valid will be removed.
+> + * 				  Called with devcgroup_mutex held.
+> + * @devcg: cgroup which exceptions will be checked
+> + *
+> + * This is one of the three key functions for hierarchy implementation.
+> + * This function is responsible for re-evaluating all the cgroup's active
+> + * exceptions due to a parent's exception change.
+> + * Refer to Documentation/cgroups/devices.txt for more details.
+> + */
+> +static void revalidate_active_exceptions(struct dev_cgroup *devcg)
+> +{
+> +	struct dev_exception_item *ex;
+> +	struct list_head *this, *tmp;
+> +
+> +	list_for_each_safe(this, tmp, &devcg->exceptions) {
+> +		ex = container_of(this, struct dev_exception_item, list);
+> +		if (!parent_has_perm(devcg, ex))
+> +			dev_exception_rm(devcg, ex);
+> +	}
+> +}
+> +
+> +/**
+> + * get_online_devcg - walks the cgroup tree and fills a list with the online
+> + * 		      groups
+> + * @root: cgroup used as starting point
+> + * @online: list that will be filled with online groups
+> + *
+> + * Must be called with devcgroup_mutex held. Grabs RCU lock.
+> + * Because devcgroup_mutex is held, no devcg will become online or offline
+> + * during the tree walk (see devcgroup_online, devcgroup_offline)
+> + * A separated list is needed because propagate_behavior() and
+> + * propagate_exception() need to allocate memory and can block.
+> + */
+> +static void get_online_devcg(struct cgroup *root, struct list_head *online)
+> +{
+> +	struct cgroup *pos;
+> +	struct dev_cgroup *devcg;
+> +
+> +	lockdep_assert_held(&devcgroup_mutex);
+> +
+> +	rcu_read_lock();
+> +	cgroup_for_each_descendant_pre(pos, root) {
+> +		devcg = cgroup_to_devcgroup(pos);
+> +		if (is_devcg_online(devcg))
+> +			list_add_tail(&devcg->propagate_pending, online);
+> +	}
+> +	rcu_read_unlock();
+> +}
+> +
+> +/**
+> + * propagate_exception - propagates a new exception to the children
+> + * @devcg_root: device cgroup that added a new exception
+> + * @ex: new exception to be propagated
+> + *
+> + * returns: 0 in case of success, != 0 in case of error
+> + */
+> +static int propagate_exception(struct dev_cgroup *devcg_root,
+> +			       struct dev_exception_item *ex)
+> +{
+> +	struct cgroup *root = devcg_root->css.cgroup;
+> +	struct dev_cgroup *devcg, *parent, *tmp;
+> +	int rc = 0;
+> +	LIST_HEAD(pending);
+> +
+> +	get_online_devcg(root, &pending);
+> +
+> +	list_for_each_entry_safe(devcg, tmp, &pending, propagate_pending) {
+> +		parent = cgroup_to_devcgroup(devcg->css.cgroup->parent);
+> +
+> +		/*
+> +		 * in case both root's behavior and devcg is allow, a new
+> +		 * restriction means adding to the exception list
+> +		 */
+> +		if (devcg_root->behavior == DEVCG_DEFAULT_ALLOW &&
+> +		    devcg->behavior == DEVCG_DEFAULT_ALLOW) {
+> +			rc = dev_exception_add(devcg, ex);
+> +			if (rc)
+> +				break;
+> +		} else {
+> +			/*
+> +			 * in the other possible cases:
+> +			 * root's behavior: allow, devcg's: deny
+> +			 * root's behavior: deny, devcg's: deny
+> +			 * the exception will be removed
+> +			 */
 
-Doug Gilbert
+Technically this case isn't needed, right?  Will the dev_exception_rm()
+also be done by revalidate_active_exceptions()?  So it's safe (but
+not necessary) to drop the else here.  Though the comment is very
+informative, and it might be worth keeping the code as is for clarity.
 
-
+> +			dev_exception_rm(devcg, ex);
+> +		}
+> +		revalidate_active_exceptions(devcg);
+> +
+> +		list_del_init(&devcg->propagate_pending);
+> +	}
+> +	return rc;
+> +}
+> +
+> +static inline bool has_children(struct dev_cgroup *devcgroup)
+> +{
+> +	struct cgroup *cgrp = devcgroup->css.cgroup;
+> +
+> +	return !list_empty(&cgrp->children);
+> +}
+> +
+>  /*
+>   * Modify the exception list using allow/deny rules.
+>   * CAP_SYS_ADMIN is needed for this.  It's at least separate from CAP_MKNOD
+> @@ -446,6 +559,9 @@ 	memset(&ex, 0, sizeof(ex));
+>  	case 'a':
+>  		switch (filetype) {
+>  		case DEVCG_ALLOW:
+> +			if (has_children(devcgroup))
+> +				return -EINVAL;
+> +
+>  			if (!may_allow_all(parent))
+>  				return -EPERM;
+>  			dev_exception_clean(devcgroup);
+> @@ -459,6 +575,9 @@ 	memset(&ex, 0, sizeof(ex));
+>  				return rc;
+>  			break;
+>  		case DEVCG_DENY:
+> +			if (has_children(devcgroup))
+> +				return -EINVAL;
+> +
+>  			dev_exception_clean(devcgroup);
+>  			devcgroup->behavior = DEVCG_DEFAULT_DENY;
+>  			break;
+> @@ -553,22 +672,28 @@ 		case '\0':
+>  			dev_exception_rm(devcgroup, &ex);
+>  			return 0;
+>  		}
+> -		return dev_exception_add(devcgroup, &ex);
+> +		rc = dev_exception_add(devcgroup, &ex);
+> +		break;
+>  	case DEVCG_DENY:
+>  		/*
+>  		 * If the default policy is to deny by default, try to remove
+>  		 * an matching exception instead. And be silent about it: we
+>  		 * don't want to break compatibility
+>  		 */
+> -		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
+> +		if (devcgroup->behavior == DEVCG_DEFAULT_DENY)
+>  			dev_exception_rm(devcgroup, &ex);
+> -			return 0;
+> -		}
+> -		return dev_exception_add(devcgroup, &ex);
+> +		else
+> +			rc = dev_exception_add(devcgroup, &ex);
+> +
+> +		if (rc)
+> +			break;
+> +		/* we only propagate new restrictions */
+> +		rc = propagate_exception(devcgroup, &ex);
+> +		break;
+>  	default:
+> -		return -EINVAL;
+> +		rc = -EINVAL;
+>  	}
+> -	return 0;
+> +	return rc;
+>  }
+>  
+>  static int devcgroup_access_write(struct cgroup *cgrp, struct cftype *cft,
+> --- github.orig/Documentation/cgroups/devices.txt	2013-02-15 11:30:20.907020535 -0500
+> +++ github/Documentation/cgroups/devices.txt	2013-02-15 11:30:37.511258462 -0500
+> @@ -13,9 +13,7 @@ either an integer or * for all.  Access 
+>  The root device cgroup starts with rwm to 'all'.  A child device
+>  cgroup gets a copy of the parent.  Administrators can then remove
+>  devices from the whitelist or add new entries.  A child cgroup can
+> -never receive a device access which is denied by its parent.  However
+> -when a device access is removed from a parent it will not also be
+> -removed from the child(ren).
+> +never receive a device access which is denied by its parent.
+>  
+>  2. User Interface
+>  
+> @@ -50,3 +48,69 @@ task to a new cgroup.  (Again we'll prob
+>  
+>  A cgroup may not be granted more permissions than the cgroup's
+>  parent has.
+> +
+> +4. Hierarchy
+> +
+> +device cgroups maintain hierarchy by making sure a cgroup never has more
+> +access permissions than its parent.  Every time an entry is written to
+> +a cgroup's devices.deny file, all its children will have that entry removed
+> +from their whitelist and all the locally set whitelist entries will be
+> +re-evaluated.  In case one of the locally set whitelist entries would provide
+> +more access than the cgroup's parent, it'll be removed from the whitelist.
+> +
+> +Example:
+> +      A
+> +     / \
+> +        B
+> +
+> +    group        behavior	exceptions
+> +    A            allow		"b 8:* rwm", "c 116:1 rw"
+> +    B            deny		"c 1:3 rwm", "c 116:2 rwm", "b 3:* rwm"
+> +
+> +If a device is denied in group A:
+> +	# echo "c 116:* r" > A/devices.deny
+> +it'll propagate down and after revalidating B's entries, the whitelist entry
+> +"c 116:2 rwm" will be removed:
+> +
+> +    group        whitelist entries                        denied devices
+> +    A            all                                      "b 8:* rwm", "c 116:* rw"
+> +    B            "c 1:3 rwm", "b 3:* rwm"                 all the rest
+> +
+> +In case parent's exceptions change and local exceptions are not allowed
+> +anymore, they'll be deleted.
+> +
+> +Notice that new whitelist entries will not be propagated:
+> +      A
+> +     / \
+> +        B
+> +
+> +    group        whitelist entries                        denied devices
+> +    A            "c 1:3 rwm", "c 1:5 r"                   all the rest
+> +    B            "c 1:3 rwm", "c 1:5 r"                   all the rest
+> +
+> +when adding "c *:3 rwm":
+> +	# echo "c *:3 rwm" >A/devices.allow
+> +
+> +the result:
+> +    group        whitelist entries                        denied devices
+> +    A            "c *:3 rwm", "c 1:5 r"                   all the rest
+> +    B            "c 1:3 rwm", "c 1:5 r"                   all the rest
+> +
+> +but now it'll be possible to add new entries to B:
+> +	# echo "c 2:3 rwm" >B/devices.allow
+> +	# echo "c 50:3 r" >B/devices.allow
+> +or even
+> +	# echo "c *:3 rwm" >B/devices.allow
+> +
+> +Allowing or denying all by writing 'a' to devices.allow or devices.deny will
+> +not be possible once the device cgroups has children.
+> +
+> +4.1 Hierarchy (internal implementation)
+> +
+> +device cgroups is implemented internally using a behavior (ALLOW, DENY) and a
+> +list of exceptions.  The internal state is controlled using the same user
+> +interface to preserve compatibility with the previous whitelist-only
+> +implementation.  Removal or addition of exceptions that will reduce the access
+> +to devices will be propagated down the hierarchy.
+> +For every propagated exception, the effective rules will be re-evaluated based
+> +on current parent's access rules.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
