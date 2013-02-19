@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757991Ab3BSFya (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 00:54:30 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42626 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757034Ab3BSFy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 00:54:26 -0500
+	id S1757428Ab3BSFyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 00:54:19 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50916 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757191Ab3BSFyO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 00:54:14 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
         <eballetbo@gmail.com>, <javier@dowhile0.org>, <kishon@ti.com>,
@@ -16,88 +17,131 @@ To: <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: [PATCH v2 0/5] Generic PHY Framework
-Date: Tue, 19 Feb 2013 11:23:13 +0530
-Message-ID: <1361253198-7401-1-git-send-email-kishon@ti.com>
+Subject: [PATCH v2 2/5] usb: phy: omap-usb2: use the new generic PHY framework
+Date: Tue, 19 Feb 2013 11:23:15 +0530
+Message-ID: <1361253198-7401-3-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1361253198-7401-1-git-send-email-kishon@ti.com>
+References: <1361253198-7401-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a generic PHY framework that provides a set of APIs for the PHY drivers
-to create/destroy a PHY and APIs for the PHY users to obtain a reference to
-the PHY with or without using phandle. To obtain a reference to the PHY
-without using phandle, the platform specfic intialization code (say from board
-file) should have already called phy_bind with the binding information. The
-binding information consists of phy's device name, phy user device name and an
-index. The index is used when the same phy user binds to mulitple phys.
+Used the generic PHY framework API to create the PHY. omap_usb2_suspend
+is split into omap_usb_suspend and omap_usb_resume in order to align
+with the new framework.
 
-This framework will be of use only to devices that uses external PHY (PHY
-functionality is not embedded within the controller).
+However using the old USB PHY library cannot be completely removed
+because OTG is intertwined with PHY and moving to the new framework
+will break OTG. Once we have a separate OTG state machine, we
+can get rid of the USB PHY library.
 
-The intention of creating this framework is to bring the phy drivers spread
-all over the Linux kernel to drivers/phy to increase code re-use and to
-increase code maintainability.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/usb/phy/omap-usb2.c  |   49 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/usb/omap_usb.h |    3 +++
+ 2 files changed, 52 insertions(+)
 
-Comments to make PHY as bus wasn't done because PHY devices can be part of
-other bus and making a same device attached to multiple bus leads to bad
-design.
-
-Changes from v1:
-* Added Documentation for the PHY framework
-* Added few more APIs mostly w.r.t devres
-* Modified omap-usb2 and twl4030 to make use of the new framework
-
-Did USB enumeration testing in panda and beagle.
-
-Kishon Vijay Abraham I (5):
-  drivers: phy: add generic PHY framework
-  usb: phy: omap-usb2: use the new generic PHY framework
-  usb: otg: twl4030: use the new generic PHY framework
-  ARM: OMAP: USB: Add phy binding information
-  usb: musb: omap2430: use the new generic PHY framework
-
- Documentation/ABI/testing/sysfs-class-phy    |   15 +
- Documentation/phy.txt                        |  113 ++++++
- MAINTAINERS                                  |    7 +
- arch/arm/mach-omap2/board-2430sdp.c          |    2 +
- arch/arm/mach-omap2/board-3430sdp.c          |    2 +
- arch/arm/mach-omap2/board-4430sdp.c          |    2 +
- arch/arm/mach-omap2/board-cm-t35.c           |    2 +
- arch/arm/mach-omap2/board-devkit8000.c       |    2 +
- arch/arm/mach-omap2/board-igep0020.c         |    2 +
- arch/arm/mach-omap2/board-ldp.c              |    2 +
- arch/arm/mach-omap2/board-omap3beagle.c      |    2 +
- arch/arm/mach-omap2/board-omap3evm.c         |    2 +
- arch/arm/mach-omap2/board-omap3logic.c       |    2 +
- arch/arm/mach-omap2/board-omap3pandora.c     |    2 +
- arch/arm/mach-omap2/board-omap3stalker.c     |    2 +
- arch/arm/mach-omap2/board-omap3touchbook.c   |    2 +
- arch/arm/mach-omap2/board-omap4panda.c       |    2 +
- arch/arm/mach-omap2/board-overo.c            |    2 +
- arch/arm/mach-omap2/board-rm680.c            |    2 +
- arch/arm/mach-omap2/board-zoom-peripherals.c |    2 +
- drivers/Kconfig                              |    2 +
- drivers/Makefile                             |    2 +
- drivers/phy/Kconfig                          |   13 +
- drivers/phy/Makefile                         |    5 +
- drivers/phy/phy-core.c                       |  519 ++++++++++++++++++++++++++
- drivers/usb/musb/musb_core.h                 |    2 +
- drivers/usb/musb/omap2430.c                  |   22 +-
- drivers/usb/otg/twl4030-usb.c                |   41 ++
- drivers/usb/phy/omap-usb2.c                  |   49 +++
- include/linux/phy/phy.h                      |  198 ++++++++++
- include/linux/usb/omap_usb.h                 |    3 +
- 31 files changed, 1019 insertions(+), 6 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-class-phy
- create mode 100644 Documentation/phy.txt
- create mode 100644 drivers/phy/Kconfig
- create mode 100644 drivers/phy/Makefile
- create mode 100644 drivers/phy/phy-core.c
- create mode 100644 include/linux/phy/phy.h
-
+diff --git a/drivers/usb/phy/omap-usb2.c b/drivers/usb/phy/omap-usb2.c
+index 844ab68..924ae59 100644
+--- a/drivers/usb/phy/omap-usb2.c
++++ b/drivers/usb/phy/omap-usb2.c
+@@ -119,9 +119,48 @@ static int omap_usb2_suspend(struct usb_phy *x, int suspend)
+ 	return 0;
+ }
+ 
++static int omap_usb_suspend(struct phy_descriptor *desc)
++{
++	struct omap_usb *phy = desc_to_omapusb(desc);
++
++	if (!phy->is_suspended) {
++		omap_control_usb_phy_power(phy->control_dev, 0);
++		pm_runtime_put_sync(phy->dev);
++		phy->is_suspended = 1;
++	}
++
++	return 0;
++}
++
++static int omap_usb_resume(struct phy_descriptor *desc)
++{
++	u32 ret;
++	struct omap_usb *phy = desc_to_omapusb(desc);
++
++	if (phy->is_suspended) {
++		ret = pm_runtime_get_sync(phy->dev);
++		if (ret < 0) {
++			dev_err(phy->dev, "get_sync failed with err %d\n",
++									ret);
++			return ret;
++		}
++		omap_control_usb_phy_power(phy->control_dev, 1);
++		phy->is_suspended = 0;
++	}
++
++	return 0;
++}
++
++static struct phy_ops ops = {
++	.suspend	= omap_usb_suspend,
++	.resume		= omap_usb_resume,
++	.owner		= THIS_MODULE,
++};
++
+ static int omap_usb2_probe(struct platform_device *pdev)
+ {
+ 	struct omap_usb			*phy;
++	struct phy			*generic_phy;
+ 	struct usb_otg			*otg;
+ 
+ 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
+@@ -144,6 +183,16 @@ static int omap_usb2_probe(struct platform_device *pdev)
+ 	phy->phy.otg		= otg;
+ 	phy->phy.type		= USB_PHY_TYPE_USB2;
+ 
++	phy->desc.ops		= &ops;
++	phy->desc.label		= "omap-usb2";
++	phy->desc.of_node	= pdev->dev.of_node;
++
++	generic_phy = devm_phy_create(phy->dev, &phy->desc);
++	if (IS_ERR(generic_phy)) {
++		dev_dbg(&pdev->dev, "Failed to create PHY\n");
++		return PTR_ERR(generic_phy);
++	}
++
+ 	phy->control_dev = omap_get_control_dev();
+ 	if (IS_ERR(phy->control_dev)) {
+ 		dev_dbg(&pdev->dev, "Failed to get control device\n");
+diff --git a/include/linux/usb/omap_usb.h b/include/linux/usb/omap_usb.h
+index 6ae2936..4c6878e 100644
+--- a/include/linux/usb/omap_usb.h
++++ b/include/linux/usb/omap_usb.h
+@@ -20,6 +20,7 @@
+ #define __DRIVERS_OMAP_USB2_H
+ 
+ #include <linux/io.h>
++#include <linux/phy/phy.h>
+ #include <linux/usb/otg.h>
+ 
+ struct usb_dpll_params {
+@@ -32,6 +33,7 @@ struct usb_dpll_params {
+ 
+ struct omap_usb {
+ 	struct usb_phy		phy;
++	struct phy_descriptor	desc;
+ 	struct phy_companion	*comparator;
+ 	void __iomem		*pll_ctrl_base;
+ 	struct device		*dev;
+@@ -43,6 +45,7 @@ struct omap_usb {
+ };
+ 
+ #define	phy_to_omapusb(x)	container_of((x), struct omap_usb, phy)
++#define	desc_to_omapusb(x)	container_of((x), struct omap_usb, desc)
+ 
+ #if defined(CONFIG_OMAP_USB2) || defined(CONFIG_OMAP_USB2_MODULE)
+ extern int omap_usb2_set_comparator(struct phy_companion *comparator);
 -- 
 1.7.10.4
 
