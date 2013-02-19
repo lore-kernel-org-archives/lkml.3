@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933253Ab3BSUSr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 15:18:47 -0500
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:39379 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933158Ab3BSUSp (ORCPT
+	id S933476Ab3BSUTs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 15:19:48 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:33313 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932491Ab3BSUTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 15:18:45 -0500
+	Tue, 19 Feb 2013 15:19:47 -0500
+Date: Tue, 19 Feb 2013 12:19:41 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] workqueue: allow more off-queue flag space
+Message-ID: <20130219201941.GU17414@htj.dyndns.org>
+References: <1361203940-6300-1-git-send-email-laijs@cn.fujitsu.com>
+ <1361203940-6300-3-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20130219100849.72d2330b@jbarnes-desktop>
-References: <CANeU7QmbzX4Tx1Dtu6xOiYzr6h6_8tPQvVG32Wvkt=5wAwEEAg@mail.gmail.com>
-	<20130219100849.72d2330b@jbarnes-desktop>
-Date: Tue, 19 Feb 2013 12:18:45 -0800
-X-Google-Sender-Auth: _YQSG90jfli7zBkOXeaQ0h2_Vw4
-Message-ID: <CANeU7QmJb+yUGu9mVgq=_pHhvpPu6ORrikm=E6PkuHpOz9OREA@mail.gmail.com>
-Subject: Re: i915 black screen introduced by ACPI changes
-From: Chris Li <lkml@chrisli.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-kernel@vger.kernel.org, robert.moore@intel.com, feng.tang@intel.com,
-        len.brown@intel.com, daniel.vetter@ffwll.ch,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361203940-6300-3-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC Linus for suggestion of debugging.
+>From 4acd43237af61d55ac128bbaf46ca092d560809c Mon Sep 17 00:00:00 2001
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date: Tue, 19 Feb 2013 12:17:01 -0800
 
-Linus, it seems very hard to extract information from the dead kernel.
-Black screen prevents seeing the kernel OOPS, if there is one.
-The laptop has no serial port. Ethernet driver is not working on that
-laptop. Only wifi works.
+When a work item is off-queue, its work->data contains WORK_STRUCT_*
+and WORK_OFFQ_* flags.  As WORK_OFFQ_* flags are used only while a
+work item is off-queue, it can occupy bits of work->data which aren't
+used while off-queue.  WORK_OFFQ_* currently only use bits used by
+on-queue CWQ pointer.  As color bits aren't used while off-queue,
+there's no reason to not use them.
 
-Any suggestion?
+Lower WORK_OFFQ_FLAG_BASE from WORK_STRUCT_FLAG_BITS to
+WORK_STRUCT_COLOR_SHIFT thus giving 4 more bits to off-queue flag
+space which is also used to record worker_pool ID while off-queue.
 
-On Tue, Feb 19, 2013 at 10:08 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
->> The black screen happens about the time kernel switch to using VT console.
->> At the point of black screen, no response of cap locks key led no network
->> connection. The machine seems dead.
->
-> Can you set up netconsole and see if you can get any output from the
-> boot, if we're lucky maybe you'll see a panic...
+This doesn't introduce any visible behavior difference.
 
-The kernel does not support the Gigabit Ethernet on that laptop.
-I am not sure netconsole through wifi will work or not in that early
-stage of the boot up. There seems to be a out of kernel driver
-to support that ethernet card, but I haven't able to get to compile
-on FC18.
+tj: Rewrote the description.
 
-Last time I try the kernel crashdump it does not seem to produce
-dump. I can give it more try and get back to you.
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Applied to wq/for-3.10-tmp.  Note that I'm gonna reabse the branch
+once 3.9-rc1 is out.
 
-BTW, does any one know limiting the kernel memory via "mem=1024M"
-will work with the kernel crashdump? The laptop has 8G of memory, it will take
-a long time to dump all the memory.
+Thanks.
 
->
->> The CPU is i7 and it has two video card. The Intel build-in video card
->> and Gtx 660M Nvidia card.
->>
->> This is very annoying. I did some poking around it:
->> - It was fine on the FC18 3.6.xxx kernel before the upgrade.
->> - The black screen exists with FC18 3.7.xxx kernel
->> - The black screen also exists in latest tip of linux-2.6.
->> - Switch to multi-user mode booting does not get rid of the black screen.
->> - Get rid of the "rhrb quit" does not help either.
->> - When the black screen happen, cap lock LED does not response to cap locks.
->> - No networking when black screen happen. The only thing to do is
->> reboot the system.
->> - Adding "i915.modeset=0" will allow the kernel to boot into GUI login. However,
->>   logout of X will cause the machine to hang similar to the black screen.
->> - Suspend and resume will get stuck at the black screen with"i915.modeset=0".
->> - Kernel console and X is using the Intel driver for display.
->
-> I don't know about the ACPI change mentioned, but ACPI is involved in
-> dual-GPU configurations.  Maybe the change affected the default
-> behavior and pointed more functions at the nVidia device rather than
-> the Intel?
+ include/linux/workqueue.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I don't think so. First of all, I want to clarify that I did the experiment
-without the Nvidia commercial driver. I even blacklist the nouveau
-driver it does
-not change the test result. In that case, I assume the functions at
-the nVidia driver
-does not come into play. No?
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index 8afab27..5bd030f 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -68,7 +68,7 @@ enum {
+ 				  WORK_STRUCT_COLOR_BITS,
+ 
+ 	/* data contains off-queue information when !WORK_STRUCT_PWQ */
+-	WORK_OFFQ_FLAG_BASE	= WORK_STRUCT_FLAG_BITS,
++	WORK_OFFQ_FLAG_BASE	= WORK_STRUCT_COLOR_SHIFT,
+ 
+ 	WORK_OFFQ_CANCELING	= (1 << WORK_OFFQ_FLAG_BASE),
+ 
+-- 
+1.8.1
 
-Secondly, the one clue is that, setting "i915.modeset=0" alone will allow
-the kernel to boot into X GUI login. It seems that the mode switch alone in
-i915 can trigger the black screen. It is consistent with kernel lockup when I
-logout of X desktop, where X want to reset the screen.
-
-Instead of guess which driver were at fault, can you suggest some experiment
-to confirm or denial which driver is at fault?
-
-Chris
