@@ -1,192 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab3BSKeO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:34:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37167 "EHLO mx1.redhat.com"
+	id S932685Ab3BSKeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:34:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5791 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932600Ab3BSKeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:34:08 -0500
+	id S932600Ab3BSKeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 05:34:15 -0500
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
 Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 05/10] GFS2: Merge gfs2_attach_bufdata() into trans.c
-Date: Tue, 19 Feb 2013 10:07:35 +0000
-Message-Id: <1361268460-3092-6-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 10/10] GFS2: Reinstate withdraw ack system
+Date: Tue, 19 Feb 2013 10:07:40 +0000
+Message-Id: <1361268460-3092-11-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1361268460-3092-1-git-send-email-swhiteho@redhat.com>
 References: <1361268460-3092-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The locking in gfs2_attach_bufdata() was type specific (data/meta)
-which made the function rather confusing. This patch moves the core
-of gfs2_attach_bufdata() into trans.c renaming it gfs2_alloc_bufdata()
-and moving the locking into gfs2_trans_add_data()/gfs2_trans_add_meta()
+This patch reinstates the ack system which withdraw should be using. It
+appears to have been accidentally forgotten when the lock module was
+merged into GFS2, due to two different sysfs files having the same name.
 
-As a result all of the locking related to adding data and metadata to
-the journal is now in these two functions. This should help to clarify
-what is going on, and give us some opportunities to simplify in
-some cases.
-
+Reported-by: David Teigland <teigland@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/lops.h b/fs/gfs2/lops.h
-index d85b376..ba77b7d 100644
---- a/fs/gfs2/lops.h
-+++ b/fs/gfs2/lops.h
-@@ -47,13 +47,6 @@ static inline unsigned int databuf_limit(struct gfs2_sbd *sdp)
- 	return limit;
+diff --git a/fs/gfs2/incore.h b/fs/gfs2/incore.h
+index 1533cf8..e2601ba 100644
+--- a/fs/gfs2/incore.h
++++ b/fs/gfs2/incore.h
+@@ -642,6 +642,7 @@ struct gfs2_sbd {
+ 	wait_queue_head_t sd_glock_wait;
+ 	atomic_t sd_glock_disposal;
+ 	struct completion sd_locking_init;
++	struct completion sd_wdack;
+ 	struct delayed_work sd_control_work;
+ 
+ 	/* Inode Stuff */
+diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
+index e063f22..1b612be 100644
+--- a/fs/gfs2/ops_fstype.c
++++ b/fs/gfs2/ops_fstype.c
+@@ -81,6 +81,7 @@ static struct gfs2_sbd *init_sbd(struct super_block *sb)
+ 	init_waitqueue_head(&sdp->sd_glock_wait);
+ 	atomic_set(&sdp->sd_glock_disposal, 0);
+ 	init_completion(&sdp->sd_locking_init);
++	init_completion(&sdp->sd_wdack);
+ 	spin_lock_init(&sdp->sd_statfs_spin);
+ 
+ 	spin_lock_init(&sdp->sd_rindex_spin);
+diff --git a/fs/gfs2/sys.c b/fs/gfs2/sys.c
+index 462e841..4fb9ad8 100644
+--- a/fs/gfs2/sys.c
++++ b/fs/gfs2/sys.c
+@@ -330,6 +330,28 @@ static ssize_t block_store(struct gfs2_sbd *sdp, const char *buf, size_t len)
+ 	return ret;
  }
  
--static inline void lops_init_le(struct gfs2_bufdata *bd,
--				const struct gfs2_log_operations *lops)
--{
--	INIT_LIST_HEAD(&bd->bd_list);
--	bd->bd_ops = lops;
--}
--
- static inline void lops_before_commit(struct gfs2_sbd *sdp)
- {
- 	int x;
-diff --git a/fs/gfs2/meta_io.c b/fs/gfs2/meta_io.c
-index 22255d9..b059bbb 100644
---- a/fs/gfs2/meta_io.c
-+++ b/fs/gfs2/meta_io.c
-@@ -271,41 +271,6 @@ int gfs2_meta_wait(struct gfs2_sbd *sdp, struct buffer_head *bh)
- 	return 0;
- }
- 
--/**
-- * gfs2_attach_bufdata - attach a struct gfs2_bufdata structure to a buffer
-- * @gl: the glock the buffer belongs to
-- * @bh: The buffer to be attached to
-- * @meta: Flag to indicate whether its metadata or not
-- */
--
--void gfs2_attach_bufdata(struct gfs2_glock *gl, struct buffer_head *bh,
--			 int meta)
--{
--	struct gfs2_bufdata *bd;
--
--	if (meta)
--		lock_page(bh->b_page);
--
--	if (bh->b_private) {
--		if (meta)
--			unlock_page(bh->b_page);
--		return;
--	}
--
--	bd = kmem_cache_zalloc(gfs2_bufdata_cachep, GFP_NOFS | __GFP_NOFAIL);
--	bd->bd_bh = bh;
--	bd->bd_gl = gl;
--
--	if (meta)
--		lops_init_le(bd, &gfs2_buf_lops);
--	else
--		lops_init_le(bd, &gfs2_databuf_lops);
--	bh->b_private = bd;
--
--	if (meta)
--		unlock_page(bh->b_page);
--}
--
- void gfs2_remove_from_journal(struct buffer_head *bh, struct gfs2_trans *tr, int meta)
- {
- 	struct address_space *mapping = bh->b_page->mapping;
-diff --git a/fs/gfs2/meta_io.h b/fs/gfs2/meta_io.h
-index c30973b..0d4c843 100644
---- a/fs/gfs2/meta_io.h
-+++ b/fs/gfs2/meta_io.h
-@@ -56,9 +56,6 @@ int gfs2_meta_read(struct gfs2_glock *gl, u64 blkno,
- int gfs2_meta_wait(struct gfs2_sbd *sdp, struct buffer_head *bh);
- struct buffer_head *gfs2_getbuf(struct gfs2_glock *gl, u64 blkno, int create);
- 
--void gfs2_attach_bufdata(struct gfs2_glock *gl, struct buffer_head *bh,
--			 int meta);
--
- void gfs2_remove_from_journal(struct buffer_head *bh, struct gfs2_trans *tr,
- 			      int meta);
- 
-diff --git a/fs/gfs2/trans.c b/fs/gfs2/trans.c
-index 1fbd57e..14dbf6d 100644
---- a/fs/gfs2/trans.c
-+++ b/fs/gfs2/trans.c
-@@ -143,6 +143,21 @@ void gfs2_trans_end(struct gfs2_sbd *sdp)
- 	sb_end_intwrite(sdp->sd_vfs);
- }
- 
-+static struct gfs2_bufdata *gfs2_alloc_bufdata(struct gfs2_glock *gl,
-+					       struct buffer_head *bh,
-+					       const struct gfs2_log_operations *lops)
++static ssize_t wdack_show(struct gfs2_sbd *sdp, char *buf)
 +{
-+	struct gfs2_bufdata *bd;
++	int val = completion_done(&sdp->sd_wdack) ? 1 : 0;
 +
-+	bd = kmem_cache_zalloc(gfs2_bufdata_cachep, GFP_NOFS | __GFP_NOFAIL);
-+	bd->bd_bh = bh;
-+	bd->bd_gl = gl;
-+	bd->bd_ops = lops;
-+	INIT_LIST_HEAD(&bd->bd_list);
-+	bh->b_private = bd;
-+	return bd;
++	return sprintf(buf, "%d\n", val);
 +}
 +
- /**
-  * databuf_lo_add - Add a databuf to the transaction.
-  *
-@@ -190,16 +205,15 @@ void gfs2_trans_add_data(struct gfs2_glock *gl, struct buffer_head *bh)
- 	lock_buffer(bh);
- 	gfs2_log_lock(sdp);
- 	bd = bh->b_private;
--	if (bd)
--		gfs2_assert(sdp, bd->bd_gl == gl);
--	else {
-+	if (bd == NULL) {
- 		gfs2_log_unlock(sdp);
- 		unlock_buffer(bh);
--		gfs2_attach_bufdata(gl, bh, 0);
--		bd = bh->b_private;
-+		if (bh->b_private == NULL)
-+			bd = gfs2_alloc_bufdata(gl, bh, &gfs2_databuf_lops);
- 		lock_buffer(bh);
- 		gfs2_log_lock(sdp);
- 	}
-+	gfs2_assert(sdp, bd->bd_gl == gl);
- 	databuf_lo_add(sdp, bd);
- 	gfs2_log_unlock(sdp);
- 	unlock_buffer(bh);
-@@ -240,16 +254,17 @@ void gfs2_trans_add_meta(struct gfs2_glock *gl, struct buffer_head *bh)
- 	lock_buffer(bh);
- 	gfs2_log_lock(sdp);
- 	bd = bh->b_private;
--	if (bd)
--		gfs2_assert(sdp, bd->bd_gl == gl);
--	else {
-+	if (bd == NULL) {
- 		gfs2_log_unlock(sdp);
- 		unlock_buffer(bh);
--		gfs2_attach_bufdata(gl, bh, 1);
--		bd = bh->b_private;
-+		lock_page(bh->b_page);
-+		if (bh->b_private == NULL)
-+			bd = gfs2_alloc_bufdata(gl, bh, &gfs2_buf_lops);
-+		unlock_page(bh->b_page);
- 		lock_buffer(bh);
- 		gfs2_log_lock(sdp);
- 	}
-+	gfs2_assert(sdp, bd->bd_gl == gl);
- 	meta_lo_add(sdp, bd);
- 	gfs2_log_unlock(sdp);
- 	unlock_buffer(bh);
-@@ -263,7 +278,7 @@ void gfs2_trans_add_revoke(struct gfs2_sbd *sdp, struct gfs2_bufdata *bd)
- 	BUG_ON(!list_empty(&bd->bd_list));
- 	BUG_ON(!list_empty(&bd->bd_ail_st_list));
- 	BUG_ON(!list_empty(&bd->bd_ail_gl_list));
--	lops_init_le(bd, &gfs2_revoke_lops);
-+	bd->bd_ops = &gfs2_revoke_lops;
- 	tr->tr_touched = 1;
- 	tr->tr_num_revoke++;
- 	sdp->sd_log_num_revoke++;
++static ssize_t wdack_store(struct gfs2_sbd *sdp, const char *buf, size_t len)
++{
++	ssize_t ret = len;
++	int val;
++
++	val = simple_strtol(buf, NULL, 0);
++
++	if ((val == 1) &&
++	    !strcmp(sdp->sd_lockstruct.ls_ops->lm_proto_name, "lock_dlm"))
++		complete(&sdp->sd_wdack);
++	else
++		ret = -EINVAL;
++	return ret;
++}
++
+ static ssize_t lkfirst_show(struct gfs2_sbd *sdp, char *buf)
+ {
+ 	struct lm_lockstruct *ls = &sdp->sd_lockstruct;
+@@ -461,7 +483,7 @@ static struct gfs2_attr gdlm_attr_##_name = __ATTR(_name,_mode,_show,_store)
+ 
+ GDLM_ATTR(proto_name,		0444, proto_name_show,		NULL);
+ GDLM_ATTR(block,		0644, block_show,		block_store);
+-GDLM_ATTR(withdraw,		0644, withdraw_show,		withdraw_store);
++GDLM_ATTR(withdraw,		0644, wdack_show,		wdack_store);
+ GDLM_ATTR(jid,			0644, jid_show,			jid_store);
+ GDLM_ATTR(first,		0644, lkfirst_show,		lkfirst_store);
+ GDLM_ATTR(first_done,		0444, first_done_show,		NULL);
+diff --git a/fs/gfs2/util.c b/fs/gfs2/util.c
+index f00d7c5..6402fb6 100644
+--- a/fs/gfs2/util.c
++++ b/fs/gfs2/util.c
+@@ -54,6 +54,9 @@ int gfs2_lm_withdraw(struct gfs2_sbd *sdp, char *fmt, ...)
+ 
+ 		kobject_uevent(&sdp->sd_kobj, KOBJ_OFFLINE);
+ 
++		if (!strcmp(sdp->sd_lockstruct.ls_ops->lm_proto_name, "lock_dlm"))
++			wait_for_completion(&sdp->sd_wdack);
++
+ 		if (lm->lm_unmount) {
+ 			fs_err(sdp, "telling LM to unmount\n");
+ 			lm->lm_unmount(sdp);
 -- 
 1.7.4
 
