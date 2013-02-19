@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab3BSHHJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 02:07:09 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:65093 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab3BSHHI (ORCPT
+	id S1756647Ab3BSHHo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 02:07:44 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:55026 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755273Ab3BSHHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 02:07:08 -0500
-Date: Tue, 19 Feb 2013 11:07:03 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, xemul@parallels.com,
-        hpa@zytor.com, akpm@linux-foundation.org,
-        Alexander Kartashov <alekskartashov@parallels.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [patch 2/2] arm: Wire up kcmp syscall
-Message-ID: <20130219070703.GC20312@moon>
-References: <20130219064800.719149796@openvz.org>
- <20130219065210.148067470@openvz.org>
+	Tue, 19 Feb 2013 02:07:42 -0500
+Date: Tue, 19 Feb 2013 08:07:44 +0100
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: bskeggs@redhat.com, dri-devel@lists.freedesktop.org,
+        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
+Subject: Re: WARNING: at drivers/gpu/drm/nouveau/core/core/mm.c:242
+Message-ID: <20130219070744.GA3032@joi.lan>
+References: <5122021F.1060207@suse.cz>
+ <20130218232335.GA9730@joi.lan>
+ <5122BC8A.6040503@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130219065210.148067470@openvz.org>
+In-Reply-To: <5122BC8A.6040503@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-quilt eat original header, here is the former, sorry
-for incovenience.
----
-From: Alexander Kartashov <alekskartashov@parallels.com>
-Subject: arm: Wire up kcmp syscall
+On Tue, Feb 19, 2013 at 12:43:06AM +0100, Jiri Slaby wrote:
+> On 02/19/2013 12:23 AM, Marcin Slusarz wrote:
+> > On Mon, Feb 18, 2013 at 11:27:43AM +0100, Jiri Slaby wrote:
+> >> Hi,
+> >>
+> >> we have a report of WARNING from 3.7.6 in nouveau at
+> >> drivers/gpu/drm/nouveau/core/core/mm.c:242 here:
+> >> https://bugzilla.novell.com/show_bug.cgi?id=802347#c11
+> >>
+> >> There is an order 4 allocation failure in nouveau_drm_open ->
+> >> nouveau_vm_create, i.e. this one failed:
+> >> vm->pgt  = kcalloc(vm->lpde - vm->fpde + 1, sizeof(*vm->pgt), GFP_KERNEL);
+> >>
+> >> Then, on the error path in still in nouveau_drm_open, it is followed by
+> >> a call to nouveau_cli_destroy. But that one calls nouveau_vm_ref ->
+> >> nouveau_mm_fini -> nouveau_vm_del -> nouveau_mm_fini which triggers the
+> >> warning.
+> >>
+> >> Any ideas?
+> > 
+> > Crash/warning should be fixed by commit cfd376b6bfccf33782a0748a9c70f7f752f8b869
+> > "drm/nouveau/vm: fix memory corruption when pgt allocation fails".
+> 
+> Oh, thanks for the pointer. Could that bug cause real "memory
+> corruption"? As we're hunting one there...
 
-Signed-off-by: Alexander Kartashov <alekskartashov@parallels.com>
-Cc: Russell King <linux@arm.linux.org.uk>
----
- arch/arm/include/uapi/asm/unistd.h |    2 +-
- arch/arm/kernel/calls.S            |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Yes.
 
-Index: linux-2.6.git/arch/arm/include/uapi/asm/unistd.h
-===================================================================
---- linux-2.6.git.orig/arch/arm/include/uapi/asm/unistd.h
-+++ linux-2.6.git/arch/arm/include/uapi/asm/unistd.h
-@@ -404,7 +404,7 @@
- #define __NR_setns			(__NR_SYSCALL_BASE+375)
- #define __NR_process_vm_readv		(__NR_SYSCALL_BASE+376)
- #define __NR_process_vm_writev		(__NR_SYSCALL_BASE+377)
--					/* 378 for kcmp */
-+#define __NR_kcmp			(__NR_SYSCALL_BASE+378)
- #define __NR_finit_module		(__NR_SYSCALL_BASE+379)
- 
- /*
-Index: linux-2.6.git/arch/arm/kernel/calls.S
-===================================================================
---- linux-2.6.git.orig/arch/arm/kernel/calls.S
-+++ linux-2.6.git/arch/arm/kernel/calls.S
-@@ -387,7 +387,7 @@
- /* 375 */	CALL(sys_setns)
- 		CALL(sys_process_vm_readv)
- 		CALL(sys_process_vm_writev)
--		CALL(sys_ni_syscall)	/* reserved for sys_kcmp */
-+		CALL(sys_kcmp)
- 		CALL(sys_finit_module)
- #ifndef syscalls_counted
- .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
+> Isn't this a stable-3.7 candidate?
+
+Should have been :/.
+
+> > Tomorrow I'll post a patch for page allocation failure.
+> 
+> What do you mean -- what kind of patch?
+
+A patch which will change pgt allocation to use vmalloc.
+
+Marcin
