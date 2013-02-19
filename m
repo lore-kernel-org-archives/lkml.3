@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934512Ab3BSTFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:05:46 -0500
-Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.89]:49349 "EHLO
-	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934255Ab3BSTFn (ORCPT
+	id S934323Ab3BSTGS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:06:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54342 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933458Ab3BSSwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 14:05:43 -0500
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
- Driver
-Thread-Topic: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
- Driver
-Thread-Index: AQHOC6xQKsSDc1Q1WkuxN29CXfjd55iB8XAA//+EDqCAAJpbgP//f3Dg
-Date: Tue, 19 Feb 2013 19:04:48 +0000
-Message-ID: <7267f77544c24531b8fcccc2192b9f48@DFM-TK5MBX15-06.exchange.corp.microsoft.com>
-References: <1360955396-14183-1-git-send-email-haiyangz@microsoft.com>
- <20130219165118.GA17715@aepfle.de>
- <1ca36b5d55c64ac6b8854c4f216ef8e5@DFM-TK5MBX15-06.exchange.corp.microsoft.com>
- <20130219184009.GA21783@aepfle.de>
-In-Reply-To: <20130219184009.GA21783@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-Forefront-Antispam-Report: CIP:131.107.1.27;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(199002)(51704002)(24454001)(189002)(13464002)(164054002)(377454001)(74662001)(50466001)(23676001)(44976002)(47976001)(66066001)(16406001)(31966008)(33646001)(47776003)(63696002)(20776003)(77982001)(54316002)(76482001)(79102001)(59766001)(5343655001)(54356001)(49866001)(876001)(4396001)(56776001)(47736001)(51856001)(53806001)(50986001)(56816002)(65816001)(46102001)(80022001)(47446002)(74502001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:CH1SR01MB611;H:hybrid.exchange.microsoft.com;RD:mail7.exchange.microsoft.com;A:1;MX:1;LANG:en;
-X-Forefront-PRVS: 0762FFD075
-X-OriginatorOrg: DuplicateDomain-7923a859-03c9-4312-a77c-440aa45aaf52.microsoft.com
+	Tue, 19 Feb 2013 13:52:32 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Nicholas Santos <nicholas.santos@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 40/81] HID: usbhid: quirk for Formosa IR receiver
+Date: Tue, 19 Feb 2013 15:49:03 -0300
+Message-Id: <1361299784-8830-41-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1JJ5lu9031923
 
-> -----Original Message-----
-> From: linux-fbdev-owner@vger.kernel.org [mailto:linux-fbdev-
-> owner@vger.kernel.org] On Behalf Of Olaf Hering
-> Sent: Tuesday, February 19, 2013 1:40 PM
-> To: Haiyang Zhang
-> Cc: FlorianSchandinat@gmx.de; linux-fbdev@vger.kernel.org; KY Srinivasan;
-> jasowang@redhat.com; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org
-> Subject: Re: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
-> Driver
-> 
-> On Tue, Feb 19, Haiyang Zhang wrote:
-> 
-> > The emulated video device is a separate device from the synthetic
-> video.
-> > The synthetic driver can only take control of the synthetic video, but
-> not
-> > the emulated video.
-> 
-> Please add this to the comment above.
+3.5.7.6 -stable review patch.  If anyone has any objections, please let me know.
 
-Will do.
+------------------
 
-> > Actually, we already have a similar mechanism in ata/ata_piix.c to
-> disable
-> > emulated IDE drive on Hyper-V, so it won't conflict with the synthetic
-> drive.
-> 
-> I havent read the vesafb code, but I think it can kind of give up the
-> hardware, something ata_piix can not do.
+From: Nicholas Santos <nicholas.santos@gmail.com>
 
-In my test, the vesafb doesn't automatically give up the emulated video device,
-unless I add the DMI based mechanism to let it exit on Hyper-V.
+commit 320cde19a4e8f122b19d2df7a5c00636e11ca3fb upstream.
 
-Thanks,
-- Haiyang
+Patch to add the Formosa Industrial Computing, Inc. Infrared Receiver
+[IR605A/Q] to hid-ids.h and hid-quirks.c.  This IR receiver causes about a 10
+second timeout when the usbhid driver attempts to initialze the device.  Adding
+this device to the quirks list with HID_QUIRK_NO_INIT_REPORTS removes the
+delay.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Signed-off-by: Nicholas Santos <nicholas.santos@gmail.com>
+[jkosina@suse.cz: fix ordering]
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+---
+ drivers/hid/hid-ids.h           |    3 +++
+ drivers/hid/usbhid/hid-quirks.c |    1 +
+ 2 files changed, 4 insertions(+)
+
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 5ddfcc7..dc48cd1 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -296,6 +296,9 @@
+ #define USB_VENDOR_ID_EZKEY		0x0518
+ #define USB_DEVICE_ID_BTC_8193		0x0002
+ 
++#define USB_VENDOR_ID_FORMOSA          0x147a
++#define USB_DEVICE_ID_FORMOSA_IR_RECEIVER      0xe03e
++
+ #define USB_VENDOR_ID_FREESCALE		0x15A2
+ #define USB_DEVICE_ID_FREESCALE_MX28	0x004F
+ 
+diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+index 8865fa3..1a4bc41 100644
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -70,6 +70,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
+-- 
+1.7.9.5
+
