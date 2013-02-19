@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934468Ab3BSSzZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:55:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54575 "EHLO
+	id S933876Ab3BSSzu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:55:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54578 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758785Ab3BSSzT (ORCPT
+	with ESMTP id S933701Ab3BSSzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:55:19 -0500
+	Tue, 19 Feb 2013 13:55:22 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 81/81] mm: fix pageblock bitmap allocation
-Date: Tue, 19 Feb 2013 15:49:44 -0300
-Message-Id: <1361299784-8830-82-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 80/81] efi: Clear EFI_RUNTIME_SERVICES rather than EFI_BOOT by "noefi" boot parameter
+Date: Tue, 19 Feb 2013 15:49:43 -0300
+Message-Id: <1361299784-8830-81-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,85 +29,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
 
-commit 7c45512df987c5619db041b5c9b80d281e26d3db upstream.
+commit 1de63d60cd5b0d33a812efa455d5933bf1564a51 upstream.
 
-Commit c060f943d092 ("mm: use aligned zone start for pfn_to_bitidx
-calculation") fixed out calculation of the index into the pageblock
-bitmap when a !SPARSEMEM zome was not aligned to pageblock_nr_pages.
+There was a serious problem in samsung-laptop that its platform driver is
+designed to run under BIOS and running under EFI can cause the machine to
+become bricked or can cause Machine Check Exceptions.
 
-However, the _allocation_ of that bitmap had never taken this alignment
-requirement into accout, so depending on the exact size and alignment of
-the zone, the use of that index could then access past the allocation,
-resulting in some very subtle memory corruption.
+    Discussion about this problem:
+    https://bugs.launchpad.net/ubuntu-cdimage/+bug/1040557
+    https://bugzilla.kernel.org/show_bug.cgi?id=47121
 
-This was reported (and bisected) by Ingo Molnar: one of his random
-config builds would hang with certain very specific kernel command line
-options.
+    The patches to fix this problem:
+    efi: Make 'efi_enabled' a function to query EFI facilities
+    83e68189745ad931c2afd45d8ee3303929233e7f
 
-In the meantime, commit c060f943d092 has been marked for stable, so this
-fix needs to be back-ported to the stable kernels that backported the
-commit to use the right alignment.
+    samsung-laptop: Disable on EFI hardware
+    e0094244e41c4d0c7ad69920681972fc45d8ce34
 
-Bisected-and-tested-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Unfortunately this problem comes back again if users specify "noefi" option.
+This parameter clears EFI_BOOT and that driver continues to run even if running
+under EFI. Refer to the document, this parameter should clear
+EFI_RUNTIME_SERVICES instead.
+
+Documentation/kernel-parameters.txt:
+===============================================================================
+...
+	noefi		[X86] Disable EFI runtime services support.
+...
+===============================================================================
+
+Documentation/x86/x86_64/uefi.txt:
+===============================================================================
+...
+- If some or all EFI runtime services don't work, you can try following
+  kernel command line parameters to turn off some or all EFI runtime
+  services.
+	noefi		turn off all EFI runtime services
+...
+===============================================================================
+
+Signed-off-by: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+Link: http://lkml.kernel.org/r/511C2C04.2070108@jp.fujitsu.com
+Cc: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- mm/page_alloc.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ arch/x86/platform/efi/efi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 007bf3b..0ed96c7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4272,10 +4272,11 @@ static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
-  * round what is now in bits to nearest long in bits, then return it in
-  * bytes.
-  */
--static unsigned long __init usemap_size(unsigned long zonesize)
-+static unsigned long __init usemap_size(unsigned long zone_start_pfn, unsigned long zonesize)
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 6fcd4ad..3705bb0 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -86,7 +86,7 @@ EXPORT_SYMBOL(efi_enabled);
+ 
+ static int __init setup_noefi(char *arg)
  {
- 	unsigned long usemapsize;
- 
-+	zonesize += zone_start_pfn & (pageblock_nr_pages-1);
- 	usemapsize = roundup(zonesize, pageblock_nr_pages);
- 	usemapsize = usemapsize >> pageblock_order;
- 	usemapsize *= NR_PAGEBLOCK_BITS;
-@@ -4285,17 +4286,19 @@ static unsigned long __init usemap_size(unsigned long zonesize)
+-	clear_bit(EFI_BOOT, &x86_efi_facility);
++	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
+ 	return 0;
  }
- 
- static void __init setup_usemap(struct pglist_data *pgdat,
--				struct zone *zone, unsigned long zonesize)
-+				struct zone *zone,
-+				unsigned long zone_start_pfn,
-+				unsigned long zonesize)
- {
--	unsigned long usemapsize = usemap_size(zonesize);
-+	unsigned long usemapsize = usemap_size(zone_start_pfn, zonesize);
- 	zone->pageblock_flags = NULL;
- 	if (usemapsize)
- 		zone->pageblock_flags = alloc_bootmem_node_nopanic(pgdat,
- 								   usemapsize);
- }
- #else
--static inline void setup_usemap(struct pglist_data *pgdat,
--				struct zone *zone, unsigned long zonesize) {}
-+static inline void setup_usemap(struct pglist_data *pgdat, struct zone *zone,
-+				unsigned long zone_start_pfn, unsigned long zonesize) {}
- #endif /* CONFIG_SPARSEMEM */
- 
- #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
-@@ -4414,7 +4417,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 			continue;
- 
- 		set_pageblock_order();
--		setup_usemap(pgdat, zone, size);
-+		setup_usemap(pgdat, zone, zone_start_pfn, size);
- 		ret = init_currently_empty_zone(zone, zone_start_pfn,
- 						size, MEMMAP_EARLY);
- 		BUG_ON(ret);
+ early_param("noefi", setup_noefi);
 -- 
 1.7.9.5
 
