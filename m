@@ -1,140 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932535Ab3BSKaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:30:00 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:38911 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932342Ab3BSK36 (ORCPT
+	id S932560Ab3BSKa1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:30:27 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:33824 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932342Ab3BSKaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:29:58 -0500
+	Tue, 19 Feb 2013 05:30:24 -0500
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, "Nori, Sekhar" <nsekhar@ti.com>,
+        "Syed Mohammed, Khasim" <khasim@ti.com>
+Subject: RE: [PATCH, RFC 4/8] ARM: am33xx: ll debug config help
+Thread-Topic: [PATCH, RFC 4/8] ARM: am33xx: ll debug config help
+Thread-Index: AQHODcx+kdLj0nOlYUe5tmShRfx+0JiAnziAgABc8FA=
+Date: Tue, 19 Feb 2013 10:30:05 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EAA867A@DBDE01.ent.ti.com>
+References: <cover.1361186097.git.afzal@ti.com>
+ <bfe941adb98a5000c2817f9fd6160070e59e53c9.1361186097.git.afzal@ti.com>
+ <51235337.60209@ti.com>
+In-Reply-To: <51235337.60209@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAFTL4hxxWBfi5Ad+X27ouFDFBM-LttRJiEn3f83T1Q2z=v1k7g@mail.gmail.com>
-References: <1359455940-1710-1-git-send-email-vincent.guittot@linaro.org>
-	<1359455940-1710-2-git-send-email-vincent.guittot@linaro.org>
-	<CAFTL4hzboD8Mv_-pRDHc+39QwXGWiT3MGtL8gJ=_ajnHdDCBcA@mail.gmail.com>
-	<CAKfTPtD2jRke2CUXiJdmaYYki_Voi4eTqJKgsyTnRpna7p8mJg@mail.gmail.com>
-	<CAFTL4hzriJm1mK1A_9U5kX9Z0RCMGpxy8M3gKuzFtt9Bky5htQ@mail.gmail.com>
-	<CAKfTPtCWudftS2XSM1OC2sR050mYvcAU6Fkt0vjV=C2V+w84Ew@mail.gmail.com>
-	<CAFTL4hzu-7uAXLqP+J48DaqLUYQWTESMNwPMYiiwrU2ZoOsgqw@mail.gmail.com>
-	<CAFTL4hyR=_ftCxycyvCBR0xwj6aOix9op40ps7htogpkkqVz+A@mail.gmail.com>
-	<CAKfTPtC3c50yo8AcQ7K9m73gP95dEsetjbhNXDN4RiR-nZ8UqA@mail.gmail.com>
-	<CAFTL4hxxWBfi5Ad+X27ouFDFBM-LttRJiEn3f83T1Q2z=v1k7g@mail.gmail.com>
-Date: Tue, 19 Feb 2013 11:29:56 +0100
-Message-ID: <CAKfTPtCCS2ACCco-eQUtKO4ZF4ybBMCEmOzFKMThZTE=Cw19Ng@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] sched: fix init NOHZ_IDLE flag
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, Mike Galbraith <efault@gmx.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1JAUS9x028848
 
-On 18 February 2013 16:40, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 2013/2/18 Vincent Guittot <vincent.guittot@linaro.org>:
->> On 18 February 2013 15:38, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>> I pasted the original at: http://pastebin.com/DMm5U8J8
->>
->> We can clear the idle flag only in the nohz_kick_needed which will not
->> be called if the sched_domain is NULL so the sequence will be
->>
->> = CPU 0 =                                            = CPU 1=
->>
->> detach_and_destroy_domain {
->>             rcu_assign_pointer(cpu1_dom, NULL);
->> }
->>
->> dom = new_domain(...) {
->>              nr_cpus_busy = 0;
->>              set_idle(CPU 1);
->> }
->>                                                     dom =
->> rcu_dereference(cpu1_dom)
->>                                                     //dom == NULL, return
->>
->> rcu_assign_pointer(cpu1_dom, dom);
->>
->>                                                     dom =
->> rcu_dereference(cpu1_dom)
->>                                                     //dom != NULL,
->>                                                     nohz_kick_needed {
->>
->> set_idle(CPU 1)
->>                                                                    dom
->> = rcu_dereference(cpu1_dom)
->>
->> //dec nr_cpus_busy,
->>                                                     }
->>
->> Vincent
->
-> Ok but CPU 0 can assign NULL to the domain of cpu1 while CPU 1 is
-> already in the middle of nohz_kick_needed().
+Hi Santosh,
 
-Yes nothing prevents the sequence below to occur
+On Tue, Feb 19, 2013 at 15:55:59, Shilimkar, Santosh wrote:
 
-= CPU 0 =                                            = CPU 1=
-                                                    dom =
-rcu_dereference(cpu1_dom)
-                                                    //dom != NULL
-detach_and_destroy_domain {
-            rcu_assign_pointer(cpu1_dom, NULL);
-}
+> With DT, IIRC DEBUGLL is broken. So did you hack debug-macro.S
+> to get the earlyprintk working ?
 
-dom = new_domain(...) {
-             nr_cpus_busy = 0;
-             //nr_cpus_busy in the new_dom
-             set_idle(CPU 1);
-}
-                                                    nohz_kick_needed {
-                                                             clear_idle(CPU 1)
-                                                             dom =
-rcu_dereference(cpu1_dom)
+No, on linux-next, ll debug works properly.
 
-//cpu1_dom == old_dom
-                                                             inc nr_cpus_busy,
-
-//nr_cpus_busy in the old_dom
-                                                    }
-
-rcu_assign_pointer(cpu1_dom, dom);
-//cpu1_dom == new_dom
-
-I'm not sure that this can happen in practice because CPU1 is in
-interrupt handler but we don't have any mechanism to prevent the
-sequence.
-
-The NULL sched_domain can be used to detect this situation and the
-set_cpu_sd_state_busy function can be modified like below
-
-inline void set_cpu_sd_state_busy
- {
- 	struct sched_domain *sd;
- 	int cpu = smp_processor_id();
-+	int clear = 0;
-
- 	if (!test_bit(NOHZ_IDLE, nohz_flags(cpu)))
- 		return;
--	clear_bit(NOHZ_IDLE, nohz_flags(cpu));
-
- 	rcu_read_lock();
- 	for_each_domain(cpu, sd) {
- 		atomic_inc(&sd->groups->sgp->nr_busy_cpus);
-+		clear = 1;
- 	}
- 	rcu_read_unlock();
-+
-+	if (likely(clear))
-+		clear_bit(NOHZ_IDLE, nohz_flags(cpu));
- }
-
-The NOHZ_IDLE flag will not be clear if we have a NULL sched_domain
-attached to the CPU.
-With this implementation, we still don't need to get the sched_domain
-for testing the NOHZ_IDLE flag which occurs each time CPU becomes idle
-
-The patch 2 become useless
-
-Vincent
+Regards
+Afzal 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
