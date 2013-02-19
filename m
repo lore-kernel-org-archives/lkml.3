@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933854Ab3BSSuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:50:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54153 "EHLO
+	id S933889Ab3BSSud (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:50:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54163 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933792Ab3BSSuS (ORCPT
+	with ESMTP id S933792Ab3BSSuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:50:18 -0500
+	Tue, 19 Feb 2013 13:50:24 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 06/81] usb: Using correct way to clear usb3.0 device's remote wakeup feature.
-Date: Tue, 19 Feb 2013 15:48:29 -0300
-Message-Id: <1361299784-8830-7-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 08/81] USB: EHCI: fix timer bug affecting port resume
+Date: Tue, 19 Feb 2013 15:48:31 -0300
+Message-Id: <1361299784-8830-9-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,146 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 54a3ac0c9e5b7213daa358ce74d154352657353a upstream.
+commit ee74290b7853db9d5fd64db70e5c175241c59fba upstream.
 
-Usb3.0 device defines function remote wakeup which is only for interface
-recipient rather than device recipient. This is different with usb2.0 device's
-remote wakeup feature which is defined for device recipient. According usb3.0
-spec 9.4.5, the function remote wakeup can be modified by the SetFeature()
-requests using the FUNCTION_SUSPEND feature selector. This patch is to use
-correct way to disable usb3.0 device's function remote wakeup after suspend
-error and resuming.
+This patch (as1652) fixes a long-standing bug in ehci-hcd.  The driver
+relies on status polls to know when to stop port-resume signalling.
+It uses the root-hub status timer to schedule these status polls.  But
+when the driver for the root hub is resumed, the timer is rescheduled
+to go off immediately -- before the port is ready.  When this happens
+the timer does not get re-enabled, which prevents the port resume from
+finishing until some other event occurs.
 
-This should be backported to kernels as old as 3.4, that contain the
-commit 623bef9e03a60adc623b09673297ca7a1cdfb367 "USB/xhci: Enable remote
-wakeup for USB3 devices."
+The symptom is that when a new device is plugged in, it doesn't get
+recognized or enumerated until lsusb is run or something else happens.
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-[ herton: include/uapi/linux/usb/ch9.h -> include/linux/usb/ch9.h,
-  adjust context ]
+The solution is to re-enable the root-hub status timer after every
+status poll while a port resume is in progress.
+
+This bug hasn't surfaced before now because we never used to try to
+suspend the root hub in the middle of a port resume (except by
+coincidence).
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Norbert Preining <preining@logic.at>
+Tested-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/core/hub.c  |   70 +++++++++++++++++++++++++++++++++++------------
- include/linux/usb/ch9.h |    6 ++++
- 2 files changed, 58 insertions(+), 18 deletions(-)
+ drivers/usb/host/ehci-hub.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 92c0229..c9590c6 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2685,6 +2685,23 @@ static int check_port_resume_type(struct usb_device *udev,
- }
- 
- #ifdef	CONFIG_USB_SUSPEND
-+/*
-+ * usb_disable_function_remotewakeup - disable usb3.0
-+ * device's function remote wakeup
-+ * @udev: target device
-+ *
-+ * Assume there's only one function on the USB 3.0
-+ * device and disable remote wake for the first
-+ * interface. FIXME if the interface association
-+ * descriptor shows there's more than one function.
-+ */
-+static int usb_disable_function_remotewakeup(struct usb_device *udev)
-+{
-+	return usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
-+				USB_REQ_CLEAR_FEATURE, USB_RECIP_INTERFACE,
-+				USB_INTRF_FUNC_SUSPEND,	0, NULL, 0,
-+				USB_CTRL_SET_TIMEOUT);
-+}
- 
- /*
-  * usb_port_suspend - suspend a usb device's upstream port
-@@ -2797,12 +2814,19 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
- 		dev_dbg(hub->intfdev, "can't suspend port %d, status %d\n",
- 				port1, status);
- 		/* paranoia:  "should not happen" */
--		if (udev->do_remote_wakeup)
--			(void) usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
--				USB_REQ_CLEAR_FEATURE, USB_RECIP_DEVICE,
--				USB_DEVICE_REMOTE_WAKEUP, 0,
--				NULL, 0,
--				USB_CTRL_SET_TIMEOUT);
-+		if (udev->do_remote_wakeup) {
-+			if (!hub_is_superspeed(hub->hdev)) {
-+				(void) usb_control_msg(udev,
-+						usb_sndctrlpipe(udev, 0),
-+						USB_REQ_CLEAR_FEATURE,
-+						USB_RECIP_DEVICE,
-+						USB_DEVICE_REMOTE_WAKEUP, 0,
-+						NULL, 0,
-+						USB_CTRL_SET_TIMEOUT);
-+			} else
-+				(void) usb_disable_function_remotewakeup(udev);
-+
-+		}
- 
- 		/* Try to enable USB2 hardware LPM again */
- 		if (udev->usb2_hw_lpm_capable == 1)
-@@ -2892,20 +2916,30 @@ static int finish_port_resume(struct usb_device *udev)
- 	 * udev->reset_resume
- 	 */
- 	} else if (udev->actconfig && !udev->reset_resume) {
--		le16_to_cpus(&devstatus);
--		if (devstatus & (1 << USB_DEVICE_REMOTE_WAKEUP)) {
--			status = usb_control_msg(udev,
--					usb_sndctrlpipe(udev, 0),
--					USB_REQ_CLEAR_FEATURE,
-+		if (!hub_is_superspeed(udev->parent)) {
-+			le16_to_cpus(&devstatus);
-+			if (devstatus & (1 << USB_DEVICE_REMOTE_WAKEUP))
-+				status = usb_control_msg(udev,
-+						usb_sndctrlpipe(udev, 0),
-+						USB_REQ_CLEAR_FEATURE,
- 						USB_RECIP_DEVICE,
--					USB_DEVICE_REMOTE_WAKEUP, 0,
--					NULL, 0,
--					USB_CTRL_SET_TIMEOUT);
--			if (status)
--				dev_dbg(&udev->dev,
--					"disable remote wakeup, status %d\n",
--					status);
-+						USB_DEVICE_REMOTE_WAKEUP, 0,
-+						NULL, 0,
-+						USB_CTRL_SET_TIMEOUT);
-+		} else {
-+			status = usb_get_status(udev, USB_RECIP_INTERFACE, 0,
-+					&devstatus);
-+			le16_to_cpus(&devstatus);
-+			if (!status && devstatus & (USB_INTRF_STAT_FUNC_RW_CAP
-+					| USB_INTRF_STAT_FUNC_RW))
-+				status =
-+					usb_disable_function_remotewakeup(udev);
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index fc9e7cc..349d3fe 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -613,7 +613,11 @@ ehci_hub_status_data (struct usb_hcd *hcd, char *buf)
+ 			status = STS_PCD;
  		}
-+
-+		if (status)
-+			dev_dbg(&udev->dev,
-+				"disable remote wakeup, status %d\n",
-+				status);
- 		status = 0;
  	}
- 	return status;
-diff --git a/include/linux/usb/ch9.h b/include/linux/usb/ch9.h
-index d1d732c..17de73a 100644
---- a/include/linux/usb/ch9.h
-+++ b/include/linux/usb/ch9.h
-@@ -152,6 +152,12 @@
- #define USB_INTRF_FUNC_SUSPEND_LP	(1 << (8 + 0))
- #define USB_INTRF_FUNC_SUSPEND_RW	(1 << (8 + 1))
- 
-+/*
-+ * Interface status, Figure 9-5 USB 3.0 spec
-+ */
-+#define USB_INTRF_STAT_FUNC_RW_CAP     1
-+#define USB_INTRF_STAT_FUNC_RW         2
+-	/* FIXME autosuspend idle root hubs */
 +
- #define USB_ENDPOINT_HALT		0	/* IN/OUT will STALL */
- 
- /* Bit array elements as returned by the USB_REQ_GET_STATUS request. */
++	/* If a resume is in progress, make sure it can finish */
++	if (ehci->resuming_ports)
++		mod_timer(&hcd->rh_timer, jiffies + msecs_to_jiffies(25));
++
+ 	spin_unlock_irqrestore (&ehci->lock, flags);
+ 	return status ? retval : 0;
+ }
 -- 
 1.7.9.5
 
