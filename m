@@ -1,133 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757860Ab3BSEqx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 23:46:53 -0500
-Received: from norkia.v3.sk ([91.210.183.14]:53397 "EHLO norkia.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757274Ab3BSEqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 23:46:51 -0500
-Subject: RE: [PATCH] libertas sdio: remove CMD_FUNC_INIT call
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: Bing Zhao <bzhao@marvell.com>
-Cc: Harro Haan <hrhaan@gmail.com>, Dan Williams <dcbw@redhat.com>,
-        "libertas-dev@lists.infradead.org" <libertas-dev@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+	id S1757816Ab3BSEsW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 23:48:22 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:39387 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755869Ab3BSEsV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 23:48:21 -0500
+Message-ID: <5123040C.4070302@linux.vnet.ibm.com>
+Date: Tue, 19 Feb 2013 12:48:12 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <477F20668A386D41ADCC57781B1F70430D140B07DE@SC-VEXCH1.marvell.com>
-References: <1358493883-28433-1-git-send-email-lkundrak@v3.sk>
-	 <477F20668A386D41ADCC57781B1F70430D140B07DE@SC-VEXCH1.marvell.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Feb 2013 05:46:43 +0100
-Message-ID: <1361249203.14137.27.camel@unicorn.kokotovo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-27.el6) 
+Subject: Re: sched: circular dependency between sched_domains_mutex and oom_notify_list
+References: <51206DAB.7030701@oracle.com>
+In-Reply-To: <51206DAB.7030701@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021904-2000-0000-0000-00000AFFCB7F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-18 at 12:28 -0800, Bing Zhao wrote:
-> Hi Lubomir,
+On 02/17/2013 01:42 PM, Sasha Levin wrote:
+> Hi all,
 > 
-> > It actually times out on a 8688 present in GuruPlug with sd8688.bin
-> > (md5=7233401e9687f8c880da547beed4324e) firmware (that's present in
-> > linux-firmware tree), but the adapter works fine.
-> > 
-> > For that firmware times out with libertas_uap [1] as well, though it succeeds
-> > with sd8688_ap.bin (md5=52cd8f8296b9a7e1d3835d57416256b2) that was originally
-> > shipped with GuruPlug. That firmware is not in linux-firmware tree and btmrvl
-> > driver might win the race programming the 8688 with sd8688.bin anyway.
-> > 
-> > [1] https://github.com/lkundrak/linux/tree/libertas_uap
-> > ---
-> >  drivers/net/wireless/libertas/if_sdio.c |   14 --------------
-> >  1 files changed, 0 insertions(+), 14 deletions(-)
-> > 
-> > diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
-> > index 2ecab49..3c4c555 100644
-> > --- a/drivers/net/wireless/libertas/if_sdio.c
-> > +++ b/drivers/net/wireless/libertas/if_sdio.c
-> > @@ -825,20 +825,6 @@ static void if_sdio_finish_power_on(struct if_sdio_card *card)
-> > 
-> >  	sdio_release_host(func);
-> > 
-> > -	/*
-> > -	 * FUNC_INIT is required for SD8688 WLAN/BT multiple functions
-> > -	 */
-> > -	if (card->model == MODEL_8688) {
-> > -		struct cmd_header cmd;
-> > -
-> > -		memset(&cmd, 0, sizeof(cmd));
-> > -
-> > -		lbs_deb_sdio("send function INIT command\n");
-> > -		if (__lbs_cmd(priv, CMD_FUNC_INIT, &cmd, sizeof(cmd),
-> > -				lbs_cmd_copyback, (unsigned long) &cmd))
-> > -			netdev_alert(priv->dev, "CMD_FUNC_INIT cmd failed\n");
-> > -	}
-> > -
+> I was fuzzing with trinity inside a KVM tools guest, with today's -next kernel
+> when I've hit the following spew.
 > 
-> Removing FUNC_INIT could break things in some scenarios.
-> Could you please test the following case?
+> I suspect it's the result of adding the new rcu_oom_notify, but that happened
+> about half a year ago so I'm not sure why this showed up only now.
+
+Hi, Sasha
+
+This is a rarely one, isn't it? require 2 conditions:
+1. system is oom.
+2. rebooting.
+
+The possible dead lock related to oom_notify_list I suppose is:
+
+	CONTEXT A			CONTEXT B
+
+1	oom				reboot
+
+2	LOCK oom_notify_list		cpu_down()
+
+3	rcu_oom_notify()		LOCK cpu_hotplug.lock
+
+4	get_online_cpus()		partition_sched_domains()
+
+5	LOCK cpu_hotplug.lock		__sdt_alloc()		
+
+6					oom
+
+7					LOCK oom_notify_list
+
+	DEAD LOCK
+
+So rcu_oom_notify() trying to lock cpu_hotplug.lock with oom_notify_list
+locked, and __sdt_alloc() trying to lock oom_notify_list with
+cpu_hotplug.lock locked, a circular locking case.
+
+But I'm not sure why the log show the "sched_domains_mutex" as a target,
+so is your system really dead lock or it's just a fake report?
+
+Regards,
+Michael Wang
+
 > 
-> 1. insmod liberates -> download firmware, send FUNC_INIT, ...
-> 2. rmmod libertas -> send FUNC_SHUTDOWN command to firmware; BT is still working.
-> 3. insmod libertas -> skip firmware downloading, send FUNC_INIT, ...
+> [ 1039.634183] ======================================================
+> [ 1039.635717] [ INFO: possible circular locking dependency detected ]
+> [ 1039.637255] 3.8.0-rc7-next-20130215-sasha-00003-gea816fa #286 Tainted: G        W
+> [ 1039.639104] -------------------------------------------------------
+> [ 1039.640579] init/1 is trying to acquire lock:
+> [ 1039.641224]  ((oom_notify_list).rwsem){.+.+..}, at: [<ffffffff81141c8f>] __blocking_notifier_call_chain+0x7f/0xc0
+> [ 1039.641224]
+> [ 1039.641224] but task is already holding lock:
+> [ 1039.641224]  (sched_domains_mutex){+.+.+.}, at: [<ffffffff811522d8>] partition_sched_domains+0x28/0x3f0
+> [ 1039.641224]
+> [ 1039.641224] which lock already depends on the new lock.
+> [ 1039.641224]
+> [ 1039.641224]
+> [ 1039.641224] the existing dependency chain (in reverse order) is:
+> [ 1039.641224]
+> -> #2 (sched_domains_mutex){+.+.+.}:
+> [ 1039.641224]        [<ffffffff8118013a>] check_prevs_add+0xba/0x1a0
+> [ 1039.641224]        [<ffffffff811808c0>] validate_chain.isra.21+0x6a0/0x7b0
+> [ 1039.641224]        [<ffffffff81183b43>] __lock_acquire+0xa13/0xb00
+> [ 1039.641224]        [<ffffffff8118451a>] lock_acquire+0x1ca/0x270
+> [ 1039.641224]        [<ffffffff83d8a19a>] __mutex_lock_common+0x5a/0x560
+> [ 1039.641224]        [<ffffffff83d8a7cf>] mutex_lock_nested+0x3f/0x50
+> [ 1039.641224]        [<ffffffff811522d8>] partition_sched_domains+0x28/0x3f0
+> [ 1039.641224]        [<ffffffff8115274b>] cpuset_cpu_inactive+0x3b/0x50
+> [ 1039.641224]        [<ffffffff83d9174e>] notifier_call_chain+0xee/0x130
+> [ 1039.641224]        [<ffffffff81141b09>] __raw_notifier_call_chain+0x9/0x10
+> [ 1039.641224]        [<ffffffff8110dd1b>] __cpu_notify+0x1b/0x30
+> [ 1039.641224]        [<ffffffff83ce34ef>] _cpu_down+0xaf/0x350
+> [ 1039.641224]        [<ffffffff8110e164>] disable_nonboot_cpus+0x84/0x1c0
+> [ 1039.641224]        [<ffffffff811288f6>] kernel_restart+0x16/0x60
+> [ 1039.641224]        [<ffffffff81128ab1>] sys_reboot+0x161/0x2b0
+> [ 1039.641224]        [<ffffffff83d96198>] tracesys+0xe1/0xe6
+> [ 1039.641224]
+> -> #1 (cpu_hotplug.lock){+.+.+.}:
+> [ 1039.641224]        [<ffffffff8118013a>] check_prevs_add+0xba/0x1a0
+> [ 1039.641224]        [<ffffffff811808c0>] validate_chain.isra.21+0x6a0/0x7b0
+> [ 1039.641224]        [<ffffffff81183b43>] __lock_acquire+0xa13/0xb00
+> [ 1039.641224]        [<ffffffff8118451a>] lock_acquire+0x1ca/0x270
+> [ 1039.641224]        [<ffffffff83d8a19a>] __mutex_lock_common+0x5a/0x560
+> [ 1039.641224]        [<ffffffff83d8a7cf>] mutex_lock_nested+0x3f/0x50
+> [ 1039.641224]        [<ffffffff8110de77>] get_online_cpus+0x37/0x50
+> [ 1039.641224]        [<ffffffff811d01b4>] rcu_oom_notify+0x94/0x150
+> [ 1039.641224]        [<ffffffff83d9174e>] notifier_call_chain+0xee/0x130
+> [ 1039.641224]        [<ffffffff81141ca8>] __blocking_notifier_call_chain+0x98/0xc0
+> [ 1039.641224]        [<ffffffff81141ce1>] blocking_notifier_call_chain+0x11/0x20
+> [ 1039.641224]        [<ffffffff81212155>] out_of_memory+0x45/0x1f0
+> [ 1039.641224]        [<ffffffff812184dd>] __alloc_pages_nodemask+0x83d/0xbf0
+> [ 1039.641224]        [<ffffffff8125d6ac>] alloc_pages_vma+0xfc/0x150
+> [ 1039.641224]        [<ffffffff812509f0>] read_swap_cache_async+0x90/0x220
+> [ 1039.641224]        [<ffffffff81250c1e>] swapin_readahead+0x9e/0xf0
+> [ 1039.641224]        [<ffffffff8123af57>] do_swap_page.isra.41+0x107/0x5a0
+> [ 1039.641224]        [<ffffffff8123d056>] handle_pte_fault+0x126/0x200
+> [ 1039.641224]        [<ffffffff8123e4a7>] handle_mm_fault+0x397/0x3e0
+> [ 1039.641224]        [<ffffffff8123e9d8>] __get_user_pages+0x418/0x5f0
+> [ 1039.641224]        [<ffffffff81240563>] __mlock_vma_pages_range+0xb3/0xc0
+> [ 1039.641224]        [<ffffffff81240a74>] __mm_populate+0xf4/0x170
+> [ 1039.641224]        [<ffffffff81240e10>] sys_mlockall+0x160/0x1a0
+> [ 1039.641224]        [<ffffffff83d96198>] tracesys+0xe1/0xe6
+> [ 1039.641224]
+> -> #0 ((oom_notify_list).rwsem){.+.+..}:
+> [ 1039.641224]        [<ffffffff8117fb55>] check_prev_add+0x115/0x640
+> [ 1039.641224]        [<ffffffff8118013a>] check_prevs_add+0xba/0x1a0
+> [ 1039.641224]        [<ffffffff811808c0>] validate_chain.isra.21+0x6a0/0x7b0
+> [ 1039.641224]        [<ffffffff81183b43>] __lock_acquire+0xa13/0xb00
+> [ 1039.641224]        [<ffffffff8118451a>] lock_acquire+0x1ca/0x270
+> [ 1039.641224]        [<ffffffff83d8adb7>] down_read+0x47/0x8e
+> [ 1039.641224]        [<ffffffff81141c8f>] __blocking_notifier_call_chain+0x7f/0xc0
+> [ 1039.641224]        [<ffffffff81141ce1>] blocking_notifier_call_chain+0x11/0x20
+> [ 1039.641224]        [<ffffffff81212155>] out_of_memory+0x45/0x1f0
+> [ 1039.641224]        [<ffffffff812184dd>] __alloc_pages_nodemask+0x83d/0xbf0
+> [ 1039.641224]        [<ffffffff8126629a>] allocate_slab+0x13a/0x1f0
+> [ 1039.641224]        [<ffffffff8126637b>] new_slab+0x2b/0x1b0
+> [ 1039.641224]        [<ffffffff83d030e1>] __slab_alloc.isra.34+0x1c5/0x31f
+> [ 1039.641224]        [<ffffffff81268e14>] kmem_cache_alloc_node_trace+0x114/0x390
+> [ 1039.641224]        [<ffffffff8114b567>] __sdt_alloc+0x137/0x1f0
+> [ 1039.641224]        [<ffffffff81151d2c>] build_sched_domains+0x2c/0x4e0
+> [ 1039.641224]        [<ffffffff81152603>] partition_sched_domains+0x353/0x3f0
+> [ 1039.641224]        [<ffffffff8115274b>] cpuset_cpu_inactive+0x3b/0x50
+> [ 1039.641224]        [<ffffffff83d9174e>] notifier_call_chain+0xee/0x130
+> [ 1039.641224]        [<ffffffff81141b09>] __raw_notifier_call_chain+0x9/0x10
+> [ 1039.641224]        [<ffffffff8110dd1b>] __cpu_notify+0x1b/0x30
+> [ 1039.641224]        [<ffffffff83ce34ef>] _cpu_down+0xaf/0x350
+> [ 1039.641224]        [<ffffffff8110e164>] disable_nonboot_cpus+0x84/0x1c0
+> [ 1039.641224]        [<ffffffff811288f6>] kernel_restart+0x16/0x60
+> [ 1039.641224]        [<ffffffff81128ab1>] sys_reboot+0x161/0x2b0
+> [ 1039.641224]        [<ffffffff83d96198>] tracesys+0xe1/0xe6
+> [ 1039.641224]
+> [ 1039.641224] other info that might help us debug this:
+> [ 1039.641224]
+> [ 1039.641224] Chain exists of:
+>   (oom_notify_list).rwsem --> cpu_hotplug.lock --> sched_domains_mutex
 > 
-> If FUNC_INIT is removed, I don't expect step 3 to work.
-
-In case btmrvl_sdio is loaded, the driver always locks up in FUNC_INIT
-upon probe time, thus I'm not able to proceed to further steps.
-
-[  209.338953] [<c0502248>] (__schedule+0x610/0x764) from [<bf20ae24>] (__lbs_cmd+0xb8/0x130 [libertas])
-[  209.348340] [<bf20ae24>] (__lbs_cmd+0xb8/0x130 [libertas]) from [<bf222474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio])
-[  209.360136] [<bf222474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio]) from [<bf2226c4>] (if_sdio_power_on+0x18c/0x20c [libertas_sdio])
-[  209.373052] [<bf2226c4>] (if_sdio_power_on+0x18c/0x20c [libertas_sdio]) from [<bf222944>] (if_sdio_probe+0x200/0x31c [libertas_sdio])
-[  209.385316] [<bf222944>] (if_sdio_probe+0x200/0x31c [libertas_sdio]) from [<bf01d820>] (sdio_bus_probe+0x94/0xfc [mmc_core])
-[  209.396748] [<bf01d820>] (sdio_bus_probe+0x94/0xfc [mmc_core]) from [<c02e729c>] (driver_probe_device+0x12c/0x348)
-[  209.407214] [<c02e729c>] (driver_probe_device+0x12c/0x348) from [<c02e7530>] (__driver_attach+0x78/0x9c)
-[  209.416798] [<c02e7530>] (__driver_attach+0x78/0x9c) from [<c02e5658>] (bus_for_each_dev+0x50/0x88)
-[  209.425946] [<c02e5658>] (bus_for_each_dev+0x50/0x88) from [<c02e6810>] (bus_add_driver+0x108/0x268)
-[  209.435180] [<c02e6810>] (bus_add_driver+0x108/0x268) from [<c02e782c>] (driver_register+0xa4/0x134)
-[  209.444426] [<c02e782c>] (driver_register+0xa4/0x134) from [<bf22601c>] (if_sdio_init_module+0x1c/0x3c [libertas_sdio])
-[  209.455339] [<bf22601c>] (if_sdio_init_module+0x1c/0x3c [libertas_sdio]) from [<c00085b8>] (do_one_initcall+0x98/0x174)
-[  209.466236] [<c00085b8>] (do_one_initcall+0x98/0x174) from [<c0076504>] (load_module+0x1c5c/0x1f80)
-[  209.475390] [<c0076504>] (load_module+0x1c5c/0x1f80) from [<c007692c>] (sys_init_module+0x104/0x128)
-[  209.484632] [<c007692c>] (sys_init_module+0x104/0x128) from [<c0008c40>] (ret_fast_syscall+0x0/0x38)
-
-In case btmrvl_sdio is _not_ loaded, insmod returns, but driver locks up
-waiting for FUNC_INIT to finish:
-
-[  300.538859] [<c0502248>] (__schedule+0x610/0x764) from [<bf1fae24>] (__lbs_cmd+0xb8/0x130 [libertas])
-[  300.548600] [<bf1fae24>] (__lbs_cmd+0xb8/0x130 [libertas]) from [<bf212474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio])
-[  300.560398] [<bf212474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio]) from [<bf213230>] (if_sdio_do_prog_firmware+0x414/0x454 [libertas_sdio])
-[  300.574052] [<bf213230>] (if_sdio_do_prog_firmware+0x414/0x454 [libertas_sdio]) from [<bf1fffbc>] (lbs_fw_loaded+0x24/0x58 [libertas])
-[  300.586907] [<bf1fffbc>] (lbs_fw_loaded+0x24/0x58 [libertas]) from [<c02f02c0>] (request_firmware_work_func+0xb0/0xf4)
-[  300.597746] [<c02f02c0>] (request_firmware_work_func+0xb0/0xf4) from [<c003ae0c>] (process_one_work+0x348/0x6a8)
-[  300.608288] [<c003ae0c>] (process_one_work+0x348/0x6a8) from [<c003b408>] (worker_thread+0x268/0x390)
-[  300.617630] [<c003b408>] (worker_thread+0x268/0x390) from [<c00414b0>] (kthread+0xc0/0xd4)
-[  300.625947] [<c00414b0>] (kthread+0xc0/0xd4) from [<c0008ce8>] (ret_from_fork+0x14/0x20)
-[  300.634135] 2 locks held by kworker/0:1/19:
-[  300.638383]  #0:  (events){.+.+.+}, at: [<c003accc>] process_one_work+0x208/0x6a8
-[  300.646512]  #1:  ((&fw_work->work)){+.+.+.}, at: [<c003accc>] process_one_work+0x208/0x6a8
-
-If I remove the FUNC_INIT call, wifi works fine, but bluetooth stops
-working after a network scan:
-
-[root@megalodon lkundrak]# iwlist scan >/dev/null 2>&1
-[root@megalodon lkundrak]# hcitool scan --flush
-Device is not available: No such device
-[root@megalodon lkundrak]# 
-
+> [ 1039.641224]  Possible unsafe locking scenario:
+> [ 1039.641224]
+> [ 1039.641224]        CPU0                    CPU1
+> [ 1039.641224]        ----                    ----
+> [ 1039.641224]   lock(sched_domains_mutex);
+> [ 1039.641224]                                lock(cpu_hotplug.lock);
+> [ 1039.641224]                                lock(sched_domains_mutex);
+> [ 1039.641224]   lock((oom_notify_list).rwsem);
+> [ 1039.641224]
+> [ 1039.641224]  *** DEADLOCK ***
+> [ 1039.641224]
+> [ 1039.641224] 4 locks held by init/1:
+> [ 1039.641224]  #0:  (reboot_mutex){+.+.+.}, at: [<ffffffff81128a2e>] sys_reboot+0xde/0x2b0
+> [ 1039.641224]  #1:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff8110dea2>] cpu_maps_update_begin+0x12/0x20
+> [ 1039.641224]  #2:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff8110dd87>] cpu_hotplug_begin+0x27/0x60
+> [ 1039.641224]  #3:  (sched_domains_mutex){+.+.+.}, at: [<ffffffff811522d8>] partition_sched_domains+0x28/0x3f0
+> [ 1039.641224]
+> [ 1039.641224] stack backtrace:
+> [ 1039.641224] Pid: 1, comm: init Tainted: G        W    3.8.0-rc7-next-20130215-sasha-00003-gea816fa #286
+> [ 1039.641224] Call Trace:
+> [ 1039.641224]  [<ffffffff83cff50f>] print_circular_bug+0xd3/0xe4
+> [ 1039.641224]  [<ffffffff8117fb55>] check_prev_add+0x115/0x640
+> [ 1039.641224]  [<ffffffff8118013a>] check_prevs_add+0xba/0x1a0
+> [ 1039.641224]  [<ffffffff81074ef5>] ? sched_clock+0x15/0x20
+> [ 1039.641224]  [<ffffffff811808c0>] validate_chain.isra.21+0x6a0/0x7b0
+> [ 1039.641224]  [<ffffffff81183b43>] __lock_acquire+0xa13/0xb00
+> [ 1039.641224]  [<ffffffff81074ef5>] ? sched_clock+0x15/0x20
+> [ 1039.641224]  [<ffffffff810a1258>] ? kvm_clock_read+0x38/0x70
+> [ 1039.641224]  [<ffffffff8118451a>] lock_acquire+0x1ca/0x270
+> [ 1039.641224]  [<ffffffff81141c8f>] ? __blocking_notifier_call_chain+0x7f/0xc0
+> [ 1039.641224]  [<ffffffff83d8adb7>] down_read+0x47/0x8e
+> [ 1039.641224]  [<ffffffff81141c8f>] ? __blocking_notifier_call_chain+0x7f/0xc0
+> [ 1039.641224]  [<ffffffff81141c8f>] __blocking_notifier_call_chain+0x7f/0xc0
+> [ 1039.641224]  [<ffffffff81141ce1>] blocking_notifier_call_chain+0x11/0x20
+> [ 1039.641224]  [<ffffffff81212155>] out_of_memory+0x45/0x1f0
+> [ 1039.641224]  [<ffffffff812184dd>] __alloc_pages_nodemask+0x83d/0xbf0
+> [ 1039.641224]  [<ffffffff8126629a>] allocate_slab+0x13a/0x1f0
+> [ 1039.641224]  [<ffffffff8126637b>] new_slab+0x2b/0x1b0
+> [ 1039.641224]  [<ffffffff83d030e1>] __slab_alloc.isra.34+0x1c5/0x31f
+> [ 1039.641224]  [<ffffffff81182492>] ? __lock_is_held+0x52/0x80
+> [ 1039.641224]  [<ffffffff8114b567>] ? __sdt_alloc+0x137/0x1f0
+> [ 1039.641224]  [<ffffffff81268e14>] kmem_cache_alloc_node_trace+0x114/0x390
+> [ 1039.641224]  [<ffffffff8123349b>] ? pcpu_alloc+0x32b/0x3e0
+> [ 1039.641224]  [<ffffffff8114b52b>] ? __sdt_alloc+0xfb/0x1f0
+> [ 1039.641224]  [<ffffffff8114b567>] ? __sdt_alloc+0x137/0x1f0
+> [ 1039.641224]  [<ffffffff8114b567>] __sdt_alloc+0x137/0x1f0
+> [ 1039.641224]  [<ffffffff811524d0>] ? partition_sched_domains+0x220/0x3f0
+> [ 1039.641224]  [<ffffffff81151d2c>] build_sched_domains+0x2c/0x4e0
+> [ 1039.641224]  [<ffffffff81152603>] partition_sched_domains+0x353/0x3f0
+> [ 1039.641224]  [<ffffffff81152397>] ? partition_sched_domains+0xe7/0x3f0
+> [ 1039.641224]  [<ffffffff8115274b>] cpuset_cpu_inactive+0x3b/0x50
+> [ 1039.641224]  [<ffffffff83d9174e>] notifier_call_chain+0xee/0x130
+> [ 1039.641224]  [<ffffffff81141b09>] __raw_notifier_call_chain+0x9/0x10
+> [ 1039.641224]  [<ffffffff8110dd1b>] __cpu_notify+0x1b/0x30
+> [ 1039.641224]  [<ffffffff83ce34ef>] _cpu_down+0xaf/0x350
+> [ 1039.641224]  [<ffffffff83cfd6b8>] ? printk+0x5c/0x5e
+> [ 1039.641224]  [<ffffffff8110e164>] disable_nonboot_cpus+0x84/0x1c0
+> [ 1039.641224]  [<ffffffff811288f6>] kernel_restart+0x16/0x60
+> [ 1039.641224]  [<ffffffff81128ab1>] sys_reboot+0x161/0x2b0
+> [ 1039.641224]  [<ffffffff811d5dc4>] ? rcu_eqs_exit_common+0x64/0x340
+> [ 1039.641224]  [<ffffffff811d7146>] ? rcu_eqs_enter_common+0x306/0x3a0
+> [ 1039.641224]  [<ffffffff8120cac5>] ? user_exit+0xa5/0xd0
+> [ 1039.641224]  [<ffffffff811813e8>] ? trace_hardirqs_on_caller+0x128/0x160
+> [ 1039.641224]  [<ffffffff8118142d>] ? trace_hardirqs_on+0xd/0x10
+> [ 1039.641224]  [<ffffffff8107ad34>] ? syscall_trace_enter+0x24/0x2e0
+> [ 1039.641224]  [<ffffffff811813e8>] ? trace_hardirqs_on_caller+0x128/0x160
+> [ 1039.641224]  [<ffffffff83d96198>] tracesys+0xe1/0xe6
+> 
 > 
 > Thanks,
-> Bing
+> Sasha
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> >  	priv->fw_ready = 1;
-> >  	wake_up(&card->pwron_waitq);
-> > 
-> > --
-> > 1.7.1
-
 
