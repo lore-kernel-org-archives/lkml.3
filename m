@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934001Ab3BSSvJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:51:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54214 "EHLO
+	id S934035Ab3BSSvT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:51:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54223 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933985Ab3BSSvG (ORCPT
+	with ESMTP id S933985Ab3BSSvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:51:06 -0500
+	Tue, 19 Feb 2013 13:51:13 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 18/81] drm/radeon: protect against div by 0 in backend setup
-Date: Tue, 19 Feb 2013 15:48:41 -0300
-Message-Id: <1361299784-8830-19-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 20/81] USB: EHCI: fix bug in scheduling periodic split transfers
+Date: Tue, 19 Feb 2013 15:48:43 -0300
+Message-Id: <1361299784-8830-21-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,45 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikko Tiihonen <mikko.tiihonen@iki.fi>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit f689e3acbd2e48cc4101e0af454193f81af4baaf upstream.
+commit 3e619d04159be54b3daa0b7036b0ce9e067f4b5d upstream.
 
-Make sure at least one RB is enabled in
-r6xx_remap_render_backend() to avoid an division by
-zero in some corner cases.
+This patch (as1654) fixes a very old bug in ehci-hcd, connected with
+scheduling of periodic split transfers.  The calculations for
+full/low-speed bus usage are all carried out after the correction for
+bit-stuffing has been applied, but the values in the max_tt_usecs
+array assume it hasn't been.  The array should allow for allocation of
+up to 90% of the bus capacity, which is 900 us, not 780 us.
 
-See:
-https://bugzilla.redhat.com/show_bug.cgi?id=892233
+The symptom caused by this bug is that any isochronous transfer to a
+full-speed device with a maxpacket size larger than about 980 bytes is
+always rejected with a -ENOSPC error.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/radeon/r600.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/usb/host/ehci-sched.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index bff6272..0c7476d 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -1383,12 +1383,15 @@ u32 r6xx_remap_render_backend(struct radeon_device *rdev,
- 			      u32 disabled_rb_mask)
- {
- 	u32 rendering_pipe_num, rb_num_width, req_rb_num;
--	u32 pipe_rb_ratio, pipe_rb_remain;
-+	u32 pipe_rb_ratio, pipe_rb_remain, tmp;
- 	u32 data = 0, mask = 1 << (max_rb_num - 1);
- 	unsigned i, j;
+diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
+index 33182c6..ccc9f70 100644
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -236,7 +236,7 @@ static inline unsigned char tt_start_uframe(struct ehci_hcd *ehci, __hc32 mask)
+ }
  
- 	/* mask out the RBs that don't exist on that asic */
--	disabled_rb_mask |= (0xff << max_rb_num) & 0xff;
-+	tmp = disabled_rb_mask | ((0xff << max_rb_num) & 0xff);
-+	/* make sure at least one RB is available */
-+	if ((tmp & 0xff) != 0xff)
-+		disabled_rb_mask = tmp;
+ static const unsigned char
+-max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 30, 0 };
++max_tt_usecs[] = { 125, 125, 125, 125, 125, 125, 125, 25 };
  
- 	rendering_pipe_num = 1 << tiling_pipe_num;
- 	req_rb_num = total_max_rb_num - r600_count_pipe_bits(disabled_rb_mask);
+ /* carryover low/fullspeed bandwidth that crosses uframe boundries */
+ static inline void carryover_tt_bandwidth(unsigned short tt_usecs[8])
 -- 
 1.7.9.5
 
