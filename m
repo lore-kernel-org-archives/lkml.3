@@ -1,191 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab3BSIBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 03:01:46 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36787 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932108Ab3BSIBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 03:01:43 -0500
-Date: Tue, 19 Feb 2013 10:01:10 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <eballetbo@gmail.com>, <javier@dowhile0.org>, <balbi@ti.com>,
-        <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
-        <mchehab@redhat.com>, <cesarb@cesarb.net>, <davem@davemloft.net>,
-        <arnd@arndb.de>, <santosh.shilimkar@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH v2 1/5] drivers: phy: add generic PHY framework
-Message-ID: <20130219080109.GD23197@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1361253198-7401-1-git-send-email-kishon@ti.com>
- <1361253198-7401-2-git-send-email-kishon@ti.com>
+	id S1758043Ab3BSICi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 03:02:38 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:58729 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755035Ab3BSICg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 03:02:36 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VMt1DrMGOVs3KQwf"
-Content-Disposition: inline
-In-Reply-To: <1361253198-7401-2-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1361257381.497560655@f376.mail.ru>
+References: <1361198522-23789-1-git-send-email-shc_work@mail.ru>
+	<201302181602.47157.arnd@arndb.de>
+	<1361257381.497560655@f376.mail.ru>
+Date: Tue, 19 Feb 2013 15:55:02 +0800
+Message-ID: <CAP1dx+zv60Df_8brjnJuBEC=EGUE=9ZacpR74VM5zomY=-K+cw@mail.gmail.com>
+Subject: Re: Re[2]: [PATCH v3] mfd: syscon: Add non-DT support
+From: Dong Aisheng <dong.aisheng@linaro.org>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---VMt1DrMGOVs3KQwf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 19 February 2013 15:03, Alexander Shiyan <shc_work@mail.ru> wrote:
+> Hello.
+>
+> Strange, but I not received an original answer from Arnd, have only this mail.
+>
+> ...
+>> >> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+>> >> index 4a7ed5a..3c0abcb 100644
+>> >> --- a/drivers/mfd/syscon.c
+>> >> +++ b/drivers/mfd/syscon.c
+>> >
+>> > Hi Alexander,
+>> >
+>> >>  struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
+>> >>  {
+>> >>       struct device_node *syscon_np;
+>> >>       struct regmap *regmap;
+>> >> +     struct syscon *syscon;
+>> >> +     struct device *dev;
+>> >>
+>> >>       syscon_np = of_find_compatible_node(NULL, NULL, s);
+>> >> -     if (!syscon_np)
+>> >> +     if (syscon_np) {
+>> >> +             regmap = syscon_node_to_regmap(syscon_np);
+>> >> +             of_node_put(syscon_np);
+>> >> +
+>> >> +             return regmap;
+>> >> +     }
+>> >> +
+>> >> +     /* Fallback to search by id_entry.name string */
+>> >> +     dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
+>> >> +                              syscon_match_id);
+>> >> +     if (!dev)
+>> >>               return ERR_PTR(-ENODEV);
+>> >>
+>> >> -     regmap = syscon_node_to_regmap(syscon_np);
+>> >> -     of_node_put(syscon_np);
+>> >> +     syscon = dev_get_drvdata(dev);
+>> >>
+>> >> -     return regmap;
+>> >> +     return syscon->regmap;
+>> >>  }
+>> >>  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
+>> >
+>> > Since you are not actually comparing the "compatible" property here,
+>> > I would suggest adding another function here,
+>>
+>> Yes, i also think like that.
+>
+> In this case we should provide two paths for drivers which can work as with DT
+> and without DT.
 
-Hi,
+Yes.
 
-On Tue, Feb 19, 2013 at 11:23:14AM +0530, Kishon Vijay Abraham I wrote:
-> The PHY framework provides a set of APIs for the PHY drivers to
-> create/destroy a PHY and APIs for the PHY users to obtain a reference to =
-the
-> PHY with or without using phandle. To obtain a reference to the PHY witho=
-ut
-> using phandle, the platform specfic intialization code (say from board fi=
-le)
-> should have already called phy_bind with the binding information. The bin=
-ding
-> information consists of phy's device name, phy user device name and an in=
-dex.
-> The index is used when the same phy user binds to mulitple phys.
->=20
-> PHY drivers should create the PHY by passing phy_descriptor that has
-> describes the PHY (label, type etc..) and ops like init, exit, suspend, r=
-esume,
+> In my case we can use platform_device_id.name field with
+> "compatible" string. My way in this case is transparency for driver which is
+> using "syscon".
+>
 
-s/has describes/describes
+Yes, but it also brings misleading and mass.
+And i wonder even the API can cover the two type of matches, the
+caller still can't use
+the only one name for two cases since the name is different.
+So it looks to me not make too much sense to provide only one API.
 
-> poweron, shutdown.
->=20
-> The documentation for the generic PHY framework is added in
-> Documentation/phy.txt and the documentation for the sysfs entry is added
-> in Documentation/ABI/testing/sysfs-class-phy.
+>>
+>> > something like
+>> > syscon_regmap_lookup_by_pdevname() that you can use in device
+>> > drivers that are not DT-enabled.
+>>
+>> IMHO i would like syscon_dev_to_regmap, then we do not need to
+>> care in case pdevname changes.
+>> See:
+>> http://www.gossamer-threads.com/lists/linux/kernel/1675210#1675210
+>> What do you think?
+>
+> For me, I still do not understand how we get syscon_dev from driver.
+>
 
-you forgot to mention here that one case of re-use is OMAP5 where the
-same PHY IP (different instances of it) is used for SATA and USB3
-functionality, which means that we would have to maintain 2 drivers for
-the same thing.
+Can't via platform_data?
 
-> diff --git a/Documentation/ABI/testing/sysfs-class-phy b/Documentation/AB=
-I/testing/sysfs-class-phy
-> new file mode 100644
-> index 0000000..ffd9930
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-class-phy
-> @@ -0,0 +1,15 @@
-> +What:		/sys/class/phy/<phy>/label
-> +Date:		Feb 2013
-> +KernelVersion:	3.10
-> +Contact:	Kishon Vijay Abraham I <kishon@ti.com>
-> +Description:
-> +		This is a read-only file for getting the label of the phy.
-> +
-> +What:		/sys/class/phy/<phy>/bind
+>> > I would also recommend enclosing
+>> > that function in #ifdef CONFIG_ATAGS.
+>> >
+>> > Which code do you have in mind that would call this anyway?
+>> > The changeset description does not really explain what ATAG
+>> > boot support in syscon is good for.
+>> >
+>> >> +     if (IS_ENABLED(CONFIG_OF) && np) {
+>> >> +             syscon->base = of_iomap(np, 0);
+>> >> +             if (!syscon->base)
+>> >> +                     return -EADDRNOTAVAIL;
+>> >> +
+>> >> +             res = &res_of;
+>> >> +             ret = of_address_to_resource(np, 0, res);
+>> >> +             if (ret) {
+>> >> +                     iounmap(syscon->base);
+>> >> +                     return ret;
+>> >> +             }
+>> >> +     } else {
+>> >> +             res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> >> +             if (!res)
+>> >> +                     return -ENOENT;
+>> >> +
+>> >> +             if (!devm_request_mem_region(dev, res->start,
+>> >> +                                          resource_size(res),
+>> >> +                                          dev_name(&pdev->dev)))
+>> >> +                     return -EBUSY;
+>> >> +
+>> >> +             syscon->base = ioremap(res->start, resource_size(res));
+>> >> +             if (!syscon->base)
+>> >> +                     return -EADDRNOTAVAIL;
+>> >> +     }
+>> >
+>> > These two code paths look equivalent. Why not always use the second
+>> > one? Also, you might want to convert this to devm_ioremap_resource()
+>> > to simplify the code in the process.
+>> >
+>>
+>> These two code paths have a slight difference.
+>> The path1 does not request the mem region, the main reason of that is we meet
+>> some devices register ranges used as syscon maybe overlapped with
+>> other exist drivers.
+>> e.g imx6q.dtsi
+>> The gpr is a few registers contained in iomuxc.
+>> gpr: iomuxc-gpr@020e0000 {
+>>         compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
+>>         reg = <0x020e0000 0x38>;
+>> };
+>>
+>> iomuxc: iomuxc@020e0000 {
+>>         compatible = "fsl,imx6q-iomuxc";
+>>         reg = <0x020e0000 0x4000>;
+>> ...
+>> };
+>>
+>> The iomuxc already has a pinctrl driver, so there are conflicts if both
+>> request the same mem region.
+>>
+>> So i wonder maybe we also do not need request mem region in non-dt case,
+>> then we can only  use second code path.
+>
+> So, you suggest completely remove CONFIG_OF-dependent code from "probe"?
+> I am not a guru in DT, is it will work correct?
+>
 
-this will cause problems with the generic bind/unbind sysfs files which
-are write-only. You should probably rename it to something else.
+I think yes.
+The core will create resource for the populated devices.
+See: of_platform_populate
 
-> +4. Getting a reference to the PHY
-> +
-> +Before the controller can make use of the PHY, it has to get a reference=
- to
-> +the PHY. The PHY framework provides 4 APIs to get a reference to the PHY.
-
-'it has to get a reference to it. This framework', decreases the
-duplication of 'PHY'.
-
-> +struct phy *phy_get(struct device *dev, u8 index);
-> +struct phy *devm_phy_get(struct device *dev, u8 index);
-> +struct phy *of_phy_get(struct device *dev, const char *phandle, u8 index=
-);
-> +struct phy *devm_of_phy_get(struct device *dev, const char *phandle, u8 =
-index);
-> +
-> +phy_get and devm_phy_get can be used to get the PHY in non-dt boot. This=
- API
-> +uses the binding information added using the phy_bind API to find and re=
-turn
-> +the appropriate PHY. The only difference between the two APIs is that
-> +devm_phy_get associates the device with the PHY using devres on successf=
-ul PHY
-> +get. On driver detach, release function is invoked on the the devres dat=
-a and
-
-s/the the/the/
-
-> +devres data is freed.
-
-s/devres data/it/
-
-> +7. Current Status
-> +
-> +Currently only USB in OMAP is made to use this framework. However using =
-the
-> +USB PHY library cannot be completely removed because it is intertwined w=
-ith
-> +OTG. Once we move OTG out of PHY completely, using the old PHY library c=
-an be
-> +completely removed. SATA in OMAP will also more likely use this new fram=
-ework
-> +and we should have a patch for it soon.
-
-not sure if this should be in the documentation, but fair enough.
-
-> +static DEFINE_MUTEX(phy_list_mutex);
-
-not sure if a mutex is enough to protect list traversal...
-
-> +struct phy_ops {
-> +	int	(*init)(struct phy_descriptor *desc);
-> +	int	(*exit)(struct phy_descriptor *desc);
-> +	int	(*suspend)(struct phy_descriptor *desc);
-> +	int	(*resume)(struct phy_descriptor *desc);
-
-should you really have these two pointers ? I wonder if it wouldn't be
-better to force runtime_pm down on the users and have phy_suspend() and
-phy_resume() just be wrappers to pm_runtime_get() and pm_runtime_put().
-
-Up to discussion, I guess.
-
-> +#if defined(CONFIG_GENERIC_PHY) || defined(CONFIG_GENERIC_PHY_MODULE)
-
-#if IS_ENABLED(CONFIG_GENERIC_PHY)
-
-> +static inline struct phy *devm_phy_get(struct device *dev, u8 index)
-> +{
-> +	return ERR_PTR(-EINVAL);
-
-would -EOPNOTSUPP fit better here (and all others)
-
-
---=20
-balbi
-
---VMt1DrMGOVs3KQwf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRIzFFAAoJEIaOsuA1yqREPaYP/irrHfuqqW4w/g0J72bLTLs+
-cmGd1SCSpvbgdo9oD7vQSHWaPDVPfFqxXjMKUxomLmhCnEtNY6sjpnz8HAXANtjd
-ajh/0sh+fCby/Lj+3x8J9cBgqsNmwfhmuPYskcBcsE/BmZ7YY+aS30hMLgpIvLRP
-q5Z45sJLMm6w1rNDNvXnYzFFQ2fC26Z/T96YpAM7uSGncrITDkVxAzE0qEjvKC+R
-W90+3iXalwbZmGK6Q8zBNrtqybLpmuIz6mj7gkKBskV2hXdlviwhA5Z53F70WyhE
-TB6KkS32U4vu21iOZUHG7aGLcujjtnCnmthz8vOZ6YFr12Rl2OSl5DE/ormhSSDL
-yO0FEnmzBrXtujAHgCxfR9IrkUf84Z+y1xmAry2FZada1HjlU8qBrKnCdpBl8A8r
-D278mqZXgFstuD5QgMGibGTLCInMbIGNewXlMuhHCdhy29EPKgdX9+jXL1FaqJzo
-UCthTndf46Rk56hAGbE6FEgZ8UrV0Rk9VU5imXsrF/kqxgourz2yyKLuNEyKyTHB
-+Mwc/+Jtsi5NJi+WlZHQFAT4lPv/iM+OAC7ozG5M1JO8e6vSImeiYF28R36ILmMq
-2mS4hz+rUl6LAE2rM/j4A3OrRndqENDueefCg3zDTBsNwep/bDegFK5WZmzLtdd7
-XvCAsrVI3fM2Vr1uKSZt
-=jXHf
------END PGP SIGNATURE-----
-
---VMt1DrMGOVs3KQwf--
+Regards
+Dong Aisheng
