@@ -1,51 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932624Ab3BSL5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 06:57:10 -0500
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:60601 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932202Ab3BSL45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 06:56:57 -0500
-Date: Tue, 19 Feb 2013 13:56:53 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: linux-mm@vger.kernel.org
-cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        sparclinux@vgker.kernel.org
-Subject: THP bug and crash on sparc64 3.8
-Message-ID: <alpine.SOC.1.00.1302191350280.10147@math.ut.ee>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S932641Ab3BSL5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 06:57:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49439 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932202Ab3BSL5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 06:57:33 -0500
+Date: Tue, 19 Feb 2013 11:57:30 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rob van der Heij <rvdheij@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: fadvise: Drain all pagevecs if POSIX_FADV_DONTNEED
+ fails to discard all pages
+Message-ID: <20130219115729.GS4365@suse.de>
+References: <20130214120349.GD7367@suse.de>
+ <20130214123926.599fcef8.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130214123926.599fcef8.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am receiving this with 3.8.0 on Sun E420R (4G RAM, 4 CPUs). System 
-hangs after logging this to syslog. It was busy  running ap at the 
-moment of crash.
+On Thu, Feb 14, 2013 at 12:39:26PM -0800, Andrew Morton wrote:
+> On Thu, 14 Feb 2013 12:03:49 +0000
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > Rob van der Heij reported the following (paraphrased) on private mail.
+> > 
+> > 	The scenario is that I want to avoid backups to fill up the page
+> > 	cache and purge stuff that is more likely to be used again (this is
+> > 	with s390x Linux on z/VM, so I don't give it as much memory that
+> > 	we don't care anymore). So I have something with LD_PRELOAD that
+> > 	intercepts the close() call (from tar, in this case) and issues
+> > 	a posix_fadvise() just before closing the file.
+> > 
+> > 	This mostly works, except for small files (less than 14 pages)
+> > 	that remains in page cache after the face.
+> 
+> Sigh.  We've had the "my backups swamp pagecache" thing for 15 years
+> and it's still happening.
+> 
 
-CONFIG_TRANSPARENT_HUGEPAGE=y
-CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y
-# CONFIG_TRANSPARENT_HUGEPAGE_MADVISE is not set
+Yes. There have been variations of it too such as applications being pushed
+prematurely into swap. I'm not certain how well we currently handle that
+because I haven't checked in a few months.
 
-BUG: sleeping function called from invalid context at mm/slub.c:925
-in_atomic(): 1, irqs_disabled(): 0, pid: 327, name: khugepaged
-2 locks held by khugepaged/327:
- #0:  (&mm->mmap_sem){++++++}, at: [<0000000000516964>] 
-khugepaged+0x624/0xf80
- #1:  (&(&mm->page_table_lock)->rlock){+.+.+.}, at: [<0000000000517078>] 
-khugepaged+0xd38/0xf
+> It should be possible nowadays to toss your backup application into a
+> container to constrain its pagecache usage.  So we can type
+> 
+> 	run-in-a-memcg -m 200MB /my/backup/program
+> 
+> and voila.  Does such a script exist and work?
+> 
 
-Call Trace:
- [0000000000488d9c] __might_sleep+0x13c/0x240
- [000000000051204c] kmem_cache_alloc+0xcc/0x120
- [000000000044bfc0] tsb_grow+0x80/0x480
- [000000000044e814] hugetlb_setup+0x14/0xc0
- [000000000044bcb0] set_pmd_at+0x110/0x120
- [00000000005170b8] khugepaged+0xd78/0xf80
- [000000000047e508] kthread+0x88/0xa0
- [00000000004060a4] ret_from_syscall+0x1c/0x2c
- [0000000000000000]           (null)
+Michal already gave an example. It might work slower if the backup
+application has to stall in direct reclaim to keep the container within
+limits though.
+
+> > --- a/mm/fadvise.c
+> > +++ b/mm/fadvise.c
+> > @@ -17,6 +17,7 @@
+> >  #include <linux/fadvise.h>
+> >  #include <linux/writeback.h>
+> >  #include <linux/syscalls.h>
+> > +#include <linux/swap.h>
+> >  
+> >  #include <asm/unistd.h>
+> >  
+> > @@ -120,9 +121,22 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+> >  		start_index = (offset+(PAGE_CACHE_SIZE-1)) >> PAGE_CACHE_SHIFT;
+> >  		end_index = (endbyte >> PAGE_CACHE_SHIFT);
+> >  
+> > -		if (end_index >= start_index)
+> > -			invalidate_mapping_pages(mapping, start_index,
+> > +		if (end_index >= start_index) {
+> > +			unsigned long count = invalidate_mapping_pages(mapping,
+> > +						start_index, end_index);
+> > +
+> > +			/*
+> > +			 * If fewer pages were invalidated than expected then
+> > +			 * it is possible that some of the pages were on
+> > +			 * a per-cpu pagevec for a remote CPU. Drain all
+> > +			 * pagevecs and try again.
+> > +			 */
+> > +			if (count < (end_index - start_index + 1)) {
+> > +				lru_add_drain_all();
+> > +				invalidate_mapping_pages(mapping, start_index,
+> >  						end_index);
+> > +			}
+> > +		}
+> >  		break;
+> >  	default:
+> >  		ret = -EINVAL;
+> 
+> Those LRU pagevecs are a right pain.  They provided useful gains way
+> back when I first inflicted them upon Linux, but it would be nice to
+> confirm whether they're still worthwhile and if so, whether the
+> benefits can be replicated with some less intrusive scheme.
+> 
+
+I know. Unfortunately I've had "Implement pagevec removal and test" on my
+TODO list for the guts of a year now. It's long overdue to actually sit down
+and just do it. It's a similar story for the per-cpu lists in front of the
+page allocator which are overdue to see if they can be replaced. I actually
+have a prototype replacement for that lying around but it performed slower
+in tests and has bit-rotted since but it ran slower and has bit-rotted
+since as it was based on kernel 3.4.
 
 -- 
-Meelis Roos (mroos@linux.ee)
+Mel Gorman
+SUSE Labs
