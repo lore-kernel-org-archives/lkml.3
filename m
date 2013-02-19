@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751756Ab3BSFG2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 00:06:28 -0500
-Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:4030 "EHLO
-	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab3BSFG1 (ORCPT
+	id S1752017Ab3BSFKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 00:10:06 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:34748
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751161Ab3BSFKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 00:06:27 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Andrey Smirnov <andrew.smirnov@gmail.com>
-Subject: Re: [PATCH v4 0/7] Driver for Si476x series of chips
-Date: Mon, 18 Feb 2013 21:05:19 -0800
-User-Agent: KMail/1.13.7 (Linux/3.8.0-rc3-prime; KDE/4.8.4; x86_64; ; )
-Cc: broonie@opensource.wolfsonmicro.com, mchehab@redhat.com,
-        sameo@linux.intel.com, perex@perex.cz, tiwai@suse.de,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1361246375-8848-1-git-send-email-andrew.smirnov@gmail.com>
-In-Reply-To: <1361246375-8848-1-git-send-email-andrew.smirnov@gmail.com>
+	Tue, 19 Feb 2013 00:10:05 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI1432I4015Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Tue, 19 Feb 2013 13:10:09 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>, Pavel Machek <pavel@denx.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>, <linux-kernel@vger.kernel.org>,
+        <arm@kernel.org>, Simon Horman <horms+renesas@verge.net.au>,
+        Dinh Nguyen <dinguyen@altera.com>
+Subject: Re: [PATCH 8/9] [HACK] ARM: imx: work around v7_cpu_resume link error
+Message-ID: <20130219051006.GB3108@S2101-09.ap.freescale.net>
+References: <1360882071-4072668-1-git-send-email-arnd@arndb.de>
+ <1360882071-4072668-9-git-send-email-arnd@arndb.de>
+ <20130215110720.GL17833@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.03.1302152336520.6419@syhkavp.arg>
+ <20130218055541.GK6782@S2101-09.ap.freescale.net>
+ <alpine.LFD.2.03.1302181204050.6419@syhkavp.arg>
+ <20130219014238.GA3108@S2101-09.ap.freescale.net>
+ <alpine.LFD.2.03.1302182245400.6419@syhkavp.arg>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302182105.20090.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.03.1302182245400.6419@syhkavp.arg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 18, 2013 19:59:28 Andrey Smirnov wrote:
-> This is a fourth version of the patchset originaly posted here:
-> https://lkml.org/lkml/2012/9/13/590
+On Mon, Feb 18, 2013 at 11:11:30PM -0500, Nicolas Pitre wrote:
+> On Tue, 19 Feb 2013, Shawn Guo wrote:
 > 
-> Second version of the patch was posted here:
-> https://lkml.org/lkml/2012/10/5/598
+> > On Mon, Feb 18, 2013 at 12:06:32PM -0500, Nicolas Pitre wrote:
+> > > Try the following instead.  It makes the code simpler and easier to 
+> > > debug.
+> > > 
+> > It works now.  Thanks, Nico.  Care to send a patch for it?  I'd like
+> > to apply it.
 > 
-> Third version of the patch was posted here:
-> https://lkml.org/lkml/2012/10/23/510
+> ----- >8
 > 
-> To save everyone's time I'll repost the original description of it:
+> FRom: Nicolas Pitre <nicolas.pitre@linaro.org>
+> Date: Mon, 18 Feb 2013 12:06:32 -0500 (EST)
+> Subject: ARM: mach-imx: move early resume code out of the .data section
 > 
-> This patchset contains a driver for a Silicon Laboratories 476x series
-> of radio tuners. The driver itself is implemented as an MFD devices
-> comprised of three parts: 
->  1. Core device that provides all the other devices with basic
-> functionality and locking scheme.
->  2. Radio device that translates between V4L2 subsystem requests into
-> Core device commands.
->  3. Codec device that does similar to the earlier described task, but
-> for ALSA SoC subsystem.
+> Building the kernel with allyesconfig fails because the i.mx early
+> resume code located in the .data section is unable to fixup the bl
+> relocation as the branch target gets too far away.
 > 
-> v4 of this driver has following changes:
->  - All of the adjustable timeouts(expose via sysfs) are gone
->  - Names of the controls are changes as was requested
->  - Added documentation for exposed debugfs files 
->  - Minor fix in si476x_radio_fops_poll
->  - DBG_BUFFER is removed
->  - Tested for compilation w/o debugfs enabled
+> The idea of having code in the .data section allows for easy access to 
+> nearby data using relative addressing while the MMU is off. However it 
+> is probably best to move the code back to the .text section where it 
+> belongs and fixup the data access instead.  This solves the bl reloc
+> issue (at least until this becomes a general problem) and simplifies
+> the code as well.
 > 
-> This version still has all the radio controls being private. The
-> reason for that is because I am not sure how that should be handled.
-> 
-> Hans, do you want me to move all the controls to be standard, that is
-> exted V4L's with the needed controls? Should I pick up the parts of
-> http://lists-archives.com/linux-kernel/27641304-radio-fixes-and-new-features-for-fm.html and take relevants bits and pieces of it?
+> Signed-off-by: Nicolas Pitre <nico@linaro.org>
 
-Yes, please do that. It's too bad that never made it into the kernel, so let's
-do it now.
+Applied as a fix for 3.9-rc, thanks.
 
-So take the controls that you can use from that patch and leave out those that
-do not apply to your driver. From the remaining controls not covered by that
-patch you will have to decide which are truly chip-specific and which are
-valid for any advanced radio receiver.
+Shawn
 
-The really chip(set) specific controls should be put in their own header,
-but add the base control ID to v4l2-controls.h (see for example the way that
-is done for the MEYE controls).
-
-If you can do that quickly and post a v5, then I will do my best to review
-it this week or Monday at the latest. Let's finish this driver asap.
-
-Regards,
-
-	Hans
