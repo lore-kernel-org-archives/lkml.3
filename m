@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934135Ab3BSSvw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:51:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54276 "EHLO
+	id S934553Ab3BSTK4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:10:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54271 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934123Ab3BSSvt (ORCPT
+	with ESMTP id S934089Ab3BSSvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:51:49 -0500
+	Tue, 19 Feb 2013 13:51:43 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sven Killig <sven@killig.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 29/81] USB: ftdi_sio: add PID/VID entries for ELV WS 300 PC II
-Date: Tue, 19 Feb 2013 15:48:52 -0300
-Message-Id: <1361299784-8830-30-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 28/81] can: c_can: Set reserved bit in IFx_MASK2 to 1 on write
+Date: Tue, 19 Feb 2013 15:48:51 -0300
+Message-Id: <1361299784-8830-29-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,54 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Killig <sven@killig.de>
+From: Alexander Stein <alexander.stein@systec-electronic.com>
 
-commit c249f911406efcc7456cb4af79396726bf7b8c57 upstream.
+commit 2bd3bc4e8472424f1a6009825397639a8968920a upstream.
 
-Add PID/VID entries for ELV WS 300 PC II weather station
+According to C_CAN documentation, the reserved bit in IFx_MASK2 register is
+fixed 1.
 
-Signed-off-by: Sven Killig <sven@killig.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    4 +++-
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/can/c_can/c_can.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 653139b..031b23c 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -590,6 +590,7 @@ static struct usb_device_id id_table_combined [] = {
- 	/*
- 	 * ELV devices:
- 	 */
-+	{ USB_DEVICE(FTDI_ELV_VID, FTDI_ELV_WS300_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_USR_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_MSM1_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_KL100_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index fa5d560..7c89cfc 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -204,7 +204,7 @@
+diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
+index 21a3d77..64647d4 100644
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -446,8 +446,12 @@ static void c_can_setup_receive_object(struct net_device *dev, int iface,
  
- /*
-  * ELV USB devices submitted by Christian Abt of ELV (www.elv.de).
-- * All of these devices use FTDI's vendor ID (0x0403).
-+ * Almost all of these devices use FTDI's vendor ID (0x0403).
-  * Further IDs taken from ELV Windows .inf file.
-  *
-  * The previously included PID for the UO 100 module was incorrect.
-@@ -212,6 +212,8 @@
-  *
-  * Armin Laeuger originally sent the PID for the UM 100 module.
-  */
-+#define FTDI_ELV_VID	0x1B1F	/* ELV AG */
-+#define FTDI_ELV_WS300_PID	0xC006	/* eQ3 WS 300 PC II */
- #define FTDI_ELV_USR_PID	0xE000	/* ELV Universal-Sound-Recorder */
- #define FTDI_ELV_MSM1_PID	0xE001	/* ELV Mini-Sound-Modul */
- #define FTDI_ELV_KL100_PID	0xE002	/* ELV Kfz-Leistungsmesser KL 100 */
+ 	priv->write_reg(priv, &priv->regs->ifregs[iface].mask1,
+ 			IFX_WRITE_LOW_16BIT(mask));
++
++	/* According to C_CAN documentation, the reserved bit
++	 * in IFx_MASK2 register is fixed 1
++	 */
+ 	priv->write_reg(priv, &priv->regs->ifregs[iface].mask2,
+-			IFX_WRITE_HIGH_16BIT(mask));
++			IFX_WRITE_HIGH_16BIT(mask) | BIT(13));
+ 
+ 	priv->write_reg(priv, &priv->regs->ifregs[iface].arb1,
+ 			IFX_WRITE_LOW_16BIT(id));
 -- 
 1.7.9.5
 
