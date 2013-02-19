@@ -1,51 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934205Ab3BSVjN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 16:39:13 -0500
-Received: from mga11.intel.com ([192.55.52.93]:42966 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933761Ab3BSVjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 16:39:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,697,1355126400"; 
-   d="scan'208";a="289248368"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Xishi Qiu <qiuxishi@huawei.com>
-CC: "Fleming, Matt" <matt.fleming@intel.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>, Liujiang <jiang.liu@huawei.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Hanjun Guo <guohanjun@huawei.com>, WuJianguo <wujianguo@huawei.com>
-Subject: RE: [PATCH V3] ia64/mm: fix a bad_page bug when crash kernel booting
-Thread-Topic: [PATCH V3] ia64/mm: fix a bad_page bug when crash kernel
- booting
-Thread-Index: AQHOBPnODCGg30S+yEmlbZnCpqVtiJiBxyIg
-Date: Tue, 19 Feb 2013 21:38:52 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1E06A8F1@ORSMSX108.amr.corp.intel.com>
-References: <51074786.5030007@huawei.com>
- <1359995565.7515.178.camel@mfleming-mobl1.ger.corp.intel.com>
- <51131248.3080203@huawei.com> <5113450C.1080109@huawei.com>
-In-Reply-To: <5113450C.1080109@huawei.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S934378Ab3BSVnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 16:43:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58409 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933545Ab3BSVm7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 16:42:59 -0500
+Date: Tue, 19 Feb 2013 13:42:56 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        ebiederm@xmission.com, xemul@parallels.com,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [patch 1/2] kcmp: Make it to depend on CONFIG_KCMP
+Message-Id: <20130219134256.f4cedf44.akpm@linux-foundation.org>
+In-Reply-To: <20130219182838.GL20312@moon>
+References: <20130219064800.719149796@openvz.org>
+	<20130219065210.030802820@openvz.org>
+	<5123444D.6000806@suse.cz>
+	<20130219093154.GF20312@moon>
+	<5123BC2B.6000304@zytor.com>
+	<20130219182838.GL20312@moon>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1JLdHK3032650
 
-> In efi_init() memory aligns in IA64_GRANULE_SIZE(16M). If set "crashkernel=1024M-:600M"
+On Tue, 19 Feb 2013 22:28:38 +0400
+Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 
-Is this where the real problem begins?  Should we insist that users provide crashkernel
-parameters rounded to GRANULE boundaries?
+> Since kcmp syscall has been implemented (initially on
+> x86 architecture) a number of other archs wire it up
+> as well: xtensa, sparc, sh, s390, mips, microblaze,
+> m68k (not taking into account those who uses
+> <asm-generic/unistd.h> for syscall numbers
+> definitions).
+> 
+> But the Makefile, which turns kcmp.o generation on
+> still depends on former config-x86. Thus get rid
+> of this limitation and make kcmp.o depend on CONFIG_KCMP
+> option.
+> 
+> ...
+>
+> --- linux-2.6.git.orig/init/Kconfig
+> +++ linux-2.6.git/init/Kconfig
+> @@ -279,6 +279,15 @@ config FHANDLE
+>  	  get renamed. Enables open_by_handle_at(2) and name_to_handle_at(2)
+>  	  syscalls.
+>  
+> +config KCMP
+> +	bool "kcmp syscall"
+> +	default CHECKPOINT_RESTORE
+> +	help
+> +	  If you say Y here, a user level program will be able to use
+> +	  kcmp(2) syscall.
+> +
+> +	  If unsure, say Y.
+> +
+>  config AUDIT
+>  	bool "Auditing support"
+>  	depends on NET
+> Index: linux-2.6.git/kernel/Makefile
+> ===================================================================
+> --- linux-2.6.git.orig/kernel/Makefile
+> +++ linux-2.6.git/kernel/Makefile
+> @@ -25,9 +25,7 @@ endif
+>  obj-y += sched/
+>  obj-y += power/
+>  
+> -ifeq ($(CONFIG_CHECKPOINT_RESTORE),y)
+> -obj-$(CONFIG_X86) += kcmp.o
+> -endif
+> +obj-$(CONFIG_KCMP) += kcmp.o
+>  obj-$(CONFIG_FREEZER) += freezer.o
+>  obj-$(CONFIG_PROFILING) += profile.o
+>  obj-$(CONFIG_STACKTRACE) += stacktrace.o
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+This permits people to select kcmp with CONFIG_CHECKPOINT_RESTORE=n. 
+Is there any point in doing that?
+
+What would be wrong with just doing
+
+	obj-$(CONFIG_CHECKPOINT_RESTORE) += kcmp.o
+
+?
+
