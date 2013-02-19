@@ -1,77 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934408Ab3BSSy0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:54:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54495 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933441Ab3BSSyW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:54:22 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Neal Cardwell <ncardwell@google.com>, Eric Dumazet <edumazet@google.com>,
-        =?UTF-8?q?Ilpo=20J=C3=A4rvinen?= <ilpo.jarvinen@helsinki.fi>,
-        Yuchung Cheng <ycheng@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 67/81] tcp: frto should not set snd_cwnd to 0
-Date: Tue, 19 Feb 2013 15:49:30 -0300
-Message-Id: <1361299784-8830-68-git-send-email-herton.krzesinski@canonical.com>
+	id S934015Ab3BSS7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:59:11 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:60527 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933237Ab3BSS7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 13:59:09 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Manu Abraham <manu@linuxtv.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] [media] stv090x: do not unlock unheld mutex in stv090x_sleep()
+Date: Tue, 19 Feb 2013 22:58:53 +0400
+Message-Id: <1361300333-9410-1-git-send-email-khoroshilov@ispras.ru>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.6 -stable review patch.  If anyone has any objections, please let me know.
+goto err and goto err_gateoff before mutex_lock(&state->internal->demod_lock)
+lead to unlock of unheld mutex in stv090x_sleep().
 
-------------------
+Found by Linux Driver Verification project (linuxtesting.org).
 
-From: Eric Dumazet <edumazet@google.com>
-
-commit 2e5f421211ff76c17130b4597bc06df4eeead24f upstream.
-
-Commit 9dc274151a548 (tcp: fix ABC in tcp_slow_start())
-uncovered a bug in FRTO code :
-tcp_process_frto() is setting snd_cwnd to 0 if the number
-of in flight packets is 0.
-
-As Neal pointed out, if no packet is in flight we lost our
-chance to disambiguate whether a loss timeout was spurious.
-
-We should assume it was a proper loss.
-
-Reported-by: Pasi Kärkkäinen <pasik@iki.fi>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
-Cc: Yuchung Cheng <ycheng@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- net/ipv4/tcp_input.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/media/dvb-frontends/stv090x.c |   22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 19c430c..6affa92 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -3695,7 +3695,8 @@ static bool tcp_process_frto(struct sock *sk, int flag)
- 	    ((tp->frto_counter >= 2) && (flag & FLAG_RETRANS_DATA_ACKED)))
- 		tp->undo_marker = 0;
+diff --git a/drivers/media/dvb-frontends/stv090x.c b/drivers/media/dvb-frontends/stv090x.c
+index 13caec0..4f600ac 100644
+--- a/drivers/media/dvb-frontends/stv090x.c
++++ b/drivers/media/dvb-frontends/stv090x.c
+@@ -3906,12 +3906,12 @@ static int stv090x_sleep(struct dvb_frontend *fe)
+ 		reg = stv090x_read_reg(state, STV090x_TSTTNR1);
+ 		STV090x_SETFIELD(reg, ADC1_PON_FIELD, 0);
+ 		if (stv090x_write_reg(state, STV090x_TSTTNR1, reg) < 0)
+-			goto err;
++			goto err_unlock;
+ 		/* power off DiSEqC 1 */
+ 		reg = stv090x_read_reg(state, STV090x_TSTTNR2);
+ 		STV090x_SETFIELD(reg, DISEQC1_PON_FIELD, 0);
+ 		if (stv090x_write_reg(state, STV090x_TSTTNR2, reg) < 0)
+-			goto err;
++			goto err_unlock;
  
--	if (!before(tp->snd_una, tp->frto_highmark)) {
-+	if (!before(tp->snd_una, tp->frto_highmark) ||
-+	    !tcp_packets_in_flight(tp)) {
- 		tcp_enter_frto_loss(sk, (tp->frto_counter == 1 ? 2 : 3), flag);
- 		return true;
+ 		/* check whether path 2 is already sleeping, that is when
+ 		   ADC2 is off */
+@@ -3930,7 +3930,7 @@ static int stv090x_sleep(struct dvb_frontend *fe)
+ 		if (full_standby)
+ 			STV090x_SETFIELD(reg, STOP_CLKFEC_FIELD, 1);
+ 		if (stv090x_write_reg(state, STV090x_STOPCLK1, reg) < 0)
+-			goto err;
++			goto err_unlock;
+ 		reg = stv090x_read_reg(state, STV090x_STOPCLK2);
+ 		/* sampling 1 clock */
+ 		STV090x_SETFIELD(reg, STOP_CLKSAMP1_FIELD, 1);
+@@ -3941,7 +3941,7 @@ static int stv090x_sleep(struct dvb_frontend *fe)
+ 		if (full_standby)
+ 			STV090x_SETFIELD(reg, STOP_CLKTS_FIELD, 1);
+ 		if (stv090x_write_reg(state, STV090x_STOPCLK2, reg) < 0)
+-			goto err;
++			goto err_unlock;
+ 		break;
+ 
+ 	case STV090x_DEMODULATOR_1:
+@@ -3949,12 +3949,12 @@ static int stv090x_sleep(struct dvb_frontend *fe)
+ 		reg = stv090x_read_reg(state, STV090x_TSTTNR3);
+ 		STV090x_SETFIELD(reg, ADC2_PON_FIELD, 0);
+ 		if (stv090x_write_reg(state, STV090x_TSTTNR3, reg) < 0)
+-			goto err;
++			goto err_unlock;
+ 		/* power off DiSEqC 2 */
+ 		reg = stv090x_read_reg(state, STV090x_TSTTNR4);
+ 		STV090x_SETFIELD(reg, DISEQC2_PON_FIELD, 0);
+ 		if (stv090x_write_reg(state, STV090x_TSTTNR4, reg) < 0)
+-			goto err;
++			goto err_unlock;
+ 
+ 		/* check whether path 1 is already sleeping, that is when
+ 		   ADC1 is off */
+@@ -3973,7 +3973,7 @@ static int stv090x_sleep(struct dvb_frontend *fe)
+ 		if (full_standby)
+ 			STV090x_SETFIELD(reg, STOP_CLKFEC_FIELD, 1);
+ 		if (stv090x_write_reg(state, STV090x_STOPCLK1, reg) < 0)
+-			goto err;
++			goto err_unlock;
+ 		reg = stv090x_read_reg(state, STV090x_STOPCLK2);
+ 		/* sampling 2 clock */
+ 		STV090x_SETFIELD(reg, STOP_CLKSAMP2_FIELD, 1);
+@@ -3984,7 +3984,7 @@ static int stv090x_sleep(struct dvb_frontend *fe)
+ 		if (full_standby)
+ 			STV090x_SETFIELD(reg, STOP_CLKTS_FIELD, 1);
+ 		if (stv090x_write_reg(state, STV090x_STOPCLK2, reg) < 0)
+-			goto err;
++			goto err_unlock;
+ 		break;
+ 
+ 	default:
+@@ -3997,7 +3997,7 @@ static int stv090x_sleep(struct dvb_frontend *fe)
+ 		reg = stv090x_read_reg(state, STV090x_SYNTCTRL);
+ 		STV090x_SETFIELD(reg, STANDBY_FIELD, 0x01);
+ 		if (stv090x_write_reg(state, STV090x_SYNTCTRL, reg) < 0)
+-			goto err;
++			goto err_unlock;
  	}
+ 
+ 	mutex_unlock(&state->internal->demod_lock);
+@@ -4005,8 +4005,10 @@ static int stv090x_sleep(struct dvb_frontend *fe)
+ 
+ err_gateoff:
+ 	stv090x_i2c_gate_ctrl(state, 0);
+-err:
++	goto err;
++err_unlock:
+ 	mutex_unlock(&state->internal->demod_lock);
++err:
+ 	dprintk(FE_ERROR, 1, "I/O error");
+ 	return -1;
+ }
 -- 
 1.7.9.5
 
