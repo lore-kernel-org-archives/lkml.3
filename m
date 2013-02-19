@@ -1,799 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960Ab3BSO13 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 09:27:29 -0500
-Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:34501 "EHLO
-	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932914Ab3BSO11 (ORCPT
+	id S932978Ab3BSO2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 09:28:05 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:33972 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932470Ab3BSO2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 09:27:27 -0500
-From: Lars Poeschel <larsi@wh2.tu-dresden.de>
-To: poeschel@lemonage.de, thierry.reding@avionic-design.de, rob@landley.net,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [PATCH RFC] pwm: add sysfs interface
-Date: Tue, 19 Feb 2013 15:27:41 +0100
-Message-Id: <1361284061-2874-1-git-send-email-larsi@wh2.tu-dresden.de>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 19 Feb 2013 09:28:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130218013720.GC10963@localhost>
+References: <20130218013720.GC10963@localhost>
+Date: Tue, 19 Feb 2013 14:28:00 +0000
+Message-ID: <CAMuW1wfEW2ECthuCkWW_=QimXX9xUJQNfeM9U9gNRuLaJXZ_AQ@mail.gmail.com>
+Subject: Re: WARNING: at kernel/mutex.c:386 __mutex_lock_common()
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lars Poeschel <poeschel@lemonage.de>
+Hey,
 
-This adds a simple sysfs interface to the pwm subsystem. It is
-heavily inspired by the gpio sysfs interface.
+2013/2/18 Fengguang Wu <fengguang.wu@intel.com>:
+> Greetings,
+>
+> I got the below warning and the first bad commit is
+>
+> commit 11eb5a2ce9655ee552f705f2da6b8f96f466c0d4
+> Author: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> Date:   Wed Nov 7 11:53:51 2012 +0100
+>
+>     mutex: add support for reservation style locks
+>
+>     GPU's do operations that commonly involve many buffers.  Those buffers
+>     can be shared across contexts/processes, exist in different memory
+>     domains (for example VRAM vs system memory), and so on.  And with
+>     PRIME / dmabuf, they can even be shared across devices.  So there are
+>     a handful of situations where the driver needs to wait for buffers to
+>     become ready.  If you think about this in terms of waiting on a buffer
+>     mutex for it to become available, this presents a problem because
+>     there is no way to guarantee that buffers appear in a execbuf/batch in
+>     the same order in all contexts.  That is directly under control of
+>     userspace, and a result of the sequence of GL calls that an application
+>     makes.  Which results in the potential for deadlock.  The problem gets
+>     more complex when you consider that the kernel may need to migrate the
+>     buffer(s) into VRAM before the GPU operates on the buffer(s), which
+>     may in turn require evicting some other buffers (and you don't want to
+>     evict other buffers which are already queued up to the GPU), but for a
+>     simplified understanding of the problem you can ignore this.
+>
+>     The algorithm that TTM came up with for dealing with this problem is
+>     quite simple.  For each group of buffers (execbuf) that need to be
+>     locked, the caller would be assigned a unique reservation_id, from a
+>     global counter.  In case of deadlock in the process of locking all the
+>     buffers associated with a execbuf, the one with the lowest
+>     reservation_id wins, and the one with the higher reservation_id
+>     unlocks all of the buffers that it has already locked, and then tries
+>     again.
+>
+>     How it is used:
+>     ---------------
+>
+>     A very simplified version:
+>
+>         int lock_execbuf(execbuf)
+>         {
+>             struct buf *res_buf = NULL;
+>
+>             /* acquiring locks, before queuing up to GPU: */
+>             seqno = assign_global_seqno();
+>
+>         retry:
+>             for (buf in execbuf->buffers) {
+>                 if (buf == res_buf) {
+>                     res_buf = NULL;
+>                     continue;
+>                 }
+>                 ret = mutex_reserve_lock(&buf->lock, seqno);
+>                 if (ret < 0)
+>                     goto err;
+>             }
+>
+>             /* now everything is good to go, submit job to GPU: */
+>             ...
+>
+>             return 0;
+>
+>         err:
+>             for (all buf2 before buf in execbuf->buffers)
+>                 mutex_unreserve_unlock(&buf2->lock);
+>             if (res_buf)
+>                 mutex_unreserve_unlock(&res_buf->lock);
+>
+>             if (ret == -EAGAIN) {
+>                 /* we lost out in a seqno race, lock and retry.. */
+>                 mutex_reserve_lock_slow(&buf->lock, seqno);
+>                 res_buf = buf;
+>                 goto retry;
+>             }
+>
+>             return ret;
+>         }
+>
+>         int unlock_execbuf(execbuf)
+>         {
+>             /* when GPU is finished; */
+>             for (buf in execbuf->buffers)
+>                 mutex_unreserve_unlock(&buf->lock);
+>         }
+>
+>     Functions:
+>     ----------
+>
+>     mutex_reserve_lock, and mutex_reserve_lock_interruptible:
+>       Lock a buffer with a reservation_id set. reservation_id must not be
+>       set to 0, since this is a special value that means no reservation_id.
+>
+>       Normally if reservation_id is not set, or is older than the
+>       reservation_id that's currently set on the mutex, the behavior will
+>       be to wait normally.  However, if  the reservation_id is newer than
+>       the current reservation_id, -EAGAIN will be returned.
+>
+>       These functions will return -EDEADLK instead of -EAGAIN if
+>       reservation_id is the same as the reservation_id that's attempted to
+>       lock the mutex with, since in that case you presumably attempted to
+>       lock the same lock twice.
+>
+>     mutex_reserve_lock_slow and mutex_reserve_lock_intr_slow:
+>       Similar to mutex_reserve_lock, except it won't backoff with -EAGAIN.
+>       This is useful when mutex_reserve_lock failed with -EAGAIN, and you
+>       unreserved all buffers so no deadlock can occur.
+>
+>     mutex_unreserve_unlock:
+>        Unlock a buffer reserved with one of the mutex_reserve_*lock* calls.
+>
+>     Missing at the moment, maybe TODO?
+>       * Check if lockdep warns if you unlock a lock that other locks were nested
+>         to.
+>         - spin_lock(m);
+>           spin_lock_nest_lock(a, m);
+>           spin_unlock(m);
+>           spin_unlock(a);
+>           It would be nice if this would give a splat on spin_unlock(m),
+>           I'm not 100% sure if it does right now, though..
+>       * In the *_slow calls, maybe add a check to ensure no other locks of the same
+>         lockdep class are nested in the lock we have to nest to?
+>         - This is making sure that mutex_unreserve_unlock have been called on all other locks.
+>
+>     Design:
+>       I chose for ticket_mutex to encapsulate struct mutex, so the extra memory usage and
+>       atomic set on init will only happen when you deliberately create a ticket lock.
+>
+>       Since the mutexes are mostly meant to protect buffer object serialization in ttm, not
+>       much contention is expected. I could be slightly smarter with wakeups, but this would
+>       be at the expense at adding a field to struct mutex_waiter. This would add
+>       overhead to all cases where normal mutexes are used, and ticket_mutexes are less
+>       performance sensitive anyway since they only protect buffer objects. As a result
+>       I chose not to do this.
+>
+>       I needed this in kernel/mutex.c because of the extensions to __lock_common, which are
+>       hopefully optimized away for all normal paths.
+>
+>       It is not illegal to use mutex_lock and mutex_unlock on ticket mutexes. This will work,
+>       as long you don't mix lock/unlock calls. This is useful if you want to lock only a single
+>       buffer.
+>
+>       All the mutex_reserve calls are nested into another lock. The idea is that the
+>       seqno ticket you use functions as a lockdep class you have locked too. This will
+>       prevent lockdep false positives on locking 2 objects of the same class. It's allowed
+>       because they're nested to the seqno ticket. There are extensive tests for this in the
+>       patch that introduces locking tests for reservation objects and reservation tickets.
+>
+>     Changes since RFC patch v1:
+>      - Updated to use atomic_long instead of atomic, since the reservation_id was a long.
+>      - added mutex_reserve_lock_slow and mutex_reserve_lock_intr_slow
+>      - removed mutex_locked_set_reservation_id (or w/e it was called)
+>     Changes since RFC patch v2:
+>      - remove use of __mutex_lock_retval_arg, add warnings when using wrong combination of
+>        mutex_(,reserve_)lock/unlock.
+>
+>     Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>
+> [    0.000000]
+> [    0.000000] ------------[ cut here ]------------
+> [    0.000000] WARNING: at /c/kernel-tests/src/tip/kernel/mutex.c:386 __mutex_lock_common+0x5a9/0x870()
+> [    0.000000] Hardware name: Bochs
+> [    0.000000] Modules linked in:
+> [    0.000000] Pid: 0, comm: swapper/0 Not tainted 3.8.0-rc7-00071-g11eb5a2 #180
+> [    0.000000] Call Trace:
+> [    0.000000]  [<ffffffff81047102>] warn_slowpath_common+0xb2/0x120
+> [    0.000000]  [<ffffffff81047195>] warn_slowpath_null+0x25/0x30
+> [    0.000000]  [<ffffffff814ebdd9>] __mutex_lock_common+0x5a9/0x870
+> [    0.000000]  [<ffffffff81a66ef8>] ? rcu_cpu_notify+0xa8/0x451
+> [    0.000000]  [<ffffffff810bcb8f>] ? trace_hardirqs_off_caller+0xaf/0x120
+> [    0.000000]  [<ffffffff81a66ef8>] ? rcu_cpu_notify+0xa8/0x451
+> [    0.000000]  [<ffffffff810be38c>] ? lockdep_init_map+0xfc/0x230
+> [    0.000000]  [<ffffffff814ec621>] mutex_lock_nested+0x61/0x80
+> [    0.000000]  [<ffffffff810bcc1d>] ? trace_hardirqs_off+0x1d/0x30
+> [    0.000000]  [<ffffffff81a66ef8>] rcu_cpu_notify+0xa8/0x451
+> [    0.000000]  [<ffffffff814ecc31>] ? mutex_unlock+0x11/0x20
+> [    0.000000]  [<ffffffff81a3f952>] rcu_init+0x3b3/0x408
+> [    0.000000]  [<ffffffff81a21e0c>] start_kernel+0x34a/0x744
+> [    0.000000]  [<ffffffff81a216e6>] ? repair_env_string+0x81/0x81
+> [    0.000000]  [<ffffffff81a21120>] ? early_idt_handlers+0x120/0x120
+> [    0.000000]  [<ffffffff81a212fd>] x86_64_start_reservations+0x185/0x190
+> [    0.000000]  [<ffffffff81a214a8>] x86_64_start_kernel+0x1a0/0x1b6
+> [    0.000000] ---[ end trace 8e966724b1809892 ]---
+Weird, that code path should not be hit from __mutex_lock_common from
+mutex_lock_nested, I'll create a patch with some tests to make sure
+that lib/locking-selftests.c will perform tests on common mutexes to
+ensure that code path is not hit, and this bug will not happen again.
 
-        /sys/class/pwm
-                /export ... asks the kernel to export a PWM to userspace
-                /unexport ... to return a PWM to the kernel
-            /pwmN ... for each exported PWM #N
-            /duty_ns ... r/w, length of duty portion
-            /period_ns ... r/w, length of the pwm period
-            /polarity ... r/w, normal(0) or inverse(1) polarity
-                               only created if driver supports it
-            /run ... r/w, write 1 to start and 0 to stop the pwm
-        /pwmchipN ... for each pwmchip; #N is its first PWM
-            /base ... (r/o) same as N
-            /ngpio ... (r/o) number of PWM; numbered N .. MAX_PWMS
+Can you change __mutex_lock_common from inline to __always_inline and
+check if that gets rid of the warning?
 
-Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
----
- Documentation/pwm.txt |   46 +++++
- drivers/pwm/Kconfig   |   15 ++
- drivers/pwm/core.c    |  526 ++++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/pwm.h   |   27 ++-
- 4 files changed, 608 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
-index 7d2b4c9..b349d16 100644
---- a/Documentation/pwm.txt
-+++ b/Documentation/pwm.txt
-@@ -45,6 +45,52 @@ int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
- 
- To start/stop toggling the PWM output use pwm_enable()/pwm_disable().
- 
-+Using PWMs with the sysfs interface
-+-----------------------------------
-+
-+You have to enable CONFIG_PWM_SYSFS in your kernel configuration to use
-+the sysfs interface. It is exposed at /sys/class/pwm/. If there are pwm
-+drivers loaded and these drivers successfully probed a chip, this chip
-+is exported as pwmchipX . Note that a single driver can probe multiple chips.
-+Inside the directory you can read these properties:
-+
-+base - This is the linux global start where the chips pwm channels get
-+exposed.
-+
-+npwm - This is the number of pwm channels this chip supports.
-+
-+If you want to start using a pwm channel with sysfs first you have to
-+export it. If you are finished with it and want to free the pwm for other
-+uses, you can unexport it:
-+
-+export - Write the global pwm channel number to this file to start using
-+the channel with sysfs.
-+
-+unexport - Write the global pwm channel number of the channel you are finshed
-+with to this file to make the channel available for other uses.
-+
-+Once a pwm is exported a pwmX (X ranging from 0 to MAX_PWMS) directory appears
-+with the following read/write properties inside to control the pwm:
-+
-+duty_ns - Write the number of nanoseconds the active portion of the pwm period
-+should last to this file. This can not be longer than the period_ns.
-+
-+period_ns - Write the length of the pwm period in nanoseconds to this file.
-+This includes the active and inactive portion of the pwm period and can not
-+be smaller than duty_ns.
-+
-+polarity - The normal behaviour is to put out a high for the active portion of
-+the pwm period. Write a 1 to this file to inverse the signal and output a low
-+on the active portion. Write a 0 to switch back to the normal behaviour. The
-+polarity can only be changed if the pwm is not running. This file is only
-+visible if the underlying driver/device supports changing the polarity.
-+
-+run - Write a 1 to this file to start the pwm signal generation, write a 0 to
-+stop it. Set your desired period_ns, duty_ns and polarity before starting the
-+pwm.
-+
-+It is recommend to set the period_ns at first and duty_ns after that.
-+
- Implementing a PWM driver
- -------------------------
- 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index e513cd9..1c3432e 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -28,6 +28,21 @@ menuconfig PWM
- 
- if PWM
- 
-+config PWM_SYSFS
-+	bool "/sys/class/pwm/... (sysfs interface)"
-+	depends on SYSFS
-+	help
-+	  Say Y here to add a sysfs interface for PWMs.
-+
-+	  This exports directories and files to userspace using sysfs.
-+	  This way the PWM outputs of a device can easyly be used,
-+	  controlled and tested. For every instance of an PWM capable
-+	  device there is a pwmchipX directory exported to
-+	  /sys/class/pwm. If you want to use a PWM, you have to export
-+	  it to sysfs, which is done by writing the number into
-+	  /sys/class/pwm/export. After that /sys/class/pwm/pwmX is
-+	  reaady to be used.
-+
- config PWM_AB8500
- 	tristate "AB8500 PWM support"
- 	depends on AB8500_CORE && ARCH_U8500
-diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-index 903138b..f7a6bf1 100644
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -30,8 +30,6 @@
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
- 
--#define MAX_PWMS 1024
--
- /* flags in the third cell of the DT PWM specifier */
- #define PWM_SPEC_POLARITY	(1 << 0)
- 
-@@ -42,6 +40,497 @@ static LIST_HEAD(pwm_chips);
- static DECLARE_BITMAP(allocated_pwms, MAX_PWMS);
- static RADIX_TREE(pwm_tree, GFP_KERNEL);
- 
-+
-+#ifdef CONFIG_PWM_SYSFS
-+
-+/* lock protects against unexport_pwm() being called while
-+ * sysfs files are active.
-+ */
-+static DEFINE_MUTEX(sysfs_lock);
-+static struct class pwm_class;
-+static struct pwm_device *pwm_table[MAX_PWMS];
-+
-+/*
-+ * /sys/class/pwm/pwm... only for PWMs that are exported
-+ *   /polarity
-+ *      * only visible if the underlying driver has registered a
-+ *        set_polarity function
-+ *      * always readable
-+ *      * may be written as "1" for inverted polarity or "0" for
-+ *        normal polarity
-+ *      * can only be written if PWM is not running
-+ *   /period_ns
-+ *      * always readable
-+ *      * write with desired pwm period in nanoseconds
-+ *      * may return with error depending on duty_ns
-+ *   /duty_ns
-+ *      * always readable
-+ *      * write with desired duty portion in nanoseconds
-+ *      * may return with error depending on period_ns
-+ *   /run
-+ *      * always readable
-+ *      * write with "1" to start generating pwm signal, "0" to stop it
-+ */
-+static ssize_t pwm_polarity_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	const struct pwm_device *pwm = dev_get_drvdata(dev);
-+	ssize_t	status;
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	if (!test_bit(PWMF_EXPORT, &pwm->flags))
-+		status = -EIO;
-+	else
-+		status = sprintf(buf, "%d\n", pwm->polarity);
-+
-+	mutex_unlock(&sysfs_lock);
-+
-+	return status;
-+}
-+
-+static ssize_t pwm_polarity_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	struct pwm_device *pwm = dev_get_drvdata(dev);
-+	ssize_t status;
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	if (!test_bit(PWMF_EXPORT, &pwm->flags))
-+		status = -EIO;
-+	else {
-+		long value;
-+
-+		status = kstrtol(buf, 0, &value);
-+		if (status == 0) {
-+			if (value == 0) {
-+				if (pwm->polarity == PWM_POLARITY_NORMAL)
-+					goto fail_unlock;
-+				status = pwm_set_polarity(pwm,
-+							PWM_POLARITY_NORMAL);
-+			} else {
-+				if (pwm->polarity == PWM_POLARITY_INVERSED)
-+					goto fail_unlock;
-+				status = pwm_set_polarity(pwm,
-+							PWM_POLARITY_INVERSED);
-+			}
-+		}
-+	}
-+
-+fail_unlock:
-+	mutex_unlock(&sysfs_lock);
-+	return status ? : size;
-+}
-+
-+static const DEVICE_ATTR(polarity, 0644,
-+		pwm_polarity_show, pwm_polarity_store);
-+
-+
-+static ssize_t pwm_period_ns_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	const struct pwm_device *pwm = dev_get_drvdata(dev);
-+	ssize_t	status;
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	if (!test_bit(PWMF_EXPORT, &pwm->flags))
-+		status = -EIO;
-+	else
-+		status = sprintf(buf, "%d\n", pwm->period);
-+
-+	mutex_unlock(&sysfs_lock);
-+
-+	return status;
-+}
-+
-+static ssize_t pwm_period_ns_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	struct pwm_device *pwm = dev_get_drvdata(dev);
-+	ssize_t status;
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	if (!test_bit(PWMF_EXPORT, &pwm->flags))
-+		status = -EIO;
-+	else {
-+		long value;
-+
-+		status = kstrtol(buf, 0, &value);
-+		if (status == 0) {
-+			if (pwm->duty < 0)
-+				pwm->period = value;
-+			else
-+				status = pwm_config(pwm, pwm->duty, value);
-+		}
-+	}
-+
-+	mutex_unlock(&sysfs_lock);
-+
-+	return status ? : size;
-+}
-+
-+static const DEVICE_ATTR(period_ns, 0644,
-+		pwm_period_ns_show, pwm_period_ns_store);
-+
-+static ssize_t pwm_duty_ns_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	const struct pwm_device *pwm = dev_get_drvdata(dev);
-+	ssize_t	status;
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	if (!test_bit(PWMF_EXPORT, &pwm->flags))
-+		status = -EIO;
-+	else
-+		status = sprintf(buf, "%d\n", pwm->duty);
-+
-+	mutex_unlock(&sysfs_lock);
-+
-+	return status;
-+}
-+
-+static ssize_t pwm_duty_ns_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	struct pwm_device *pwm = dev_get_drvdata(dev);
-+	ssize_t status;
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	if (!test_bit(PWMF_EXPORT, &pwm->flags))
-+		status = -EIO;
-+	else {
-+		long value;
-+
-+		status = kstrtol(buf, 0, &value);
-+		if (status == 0) {
-+			if (pwm->period <= 0)
-+				pwm->duty = value;
-+			else
-+				status = pwm_config(pwm, value, pwm->period);
-+		}
-+	}
-+
-+	mutex_unlock(&sysfs_lock);
-+
-+	return status ? : size;
-+}
-+
-+static const DEVICE_ATTR(duty_ns, 0644,
-+		pwm_duty_ns_show, pwm_duty_ns_store);
-+
-+
-+static ssize_t pwm_run_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	const struct pwm_device *pwm = dev_get_drvdata(dev);
-+	ssize_t	status;
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	if (!test_bit(PWMF_EXPORT, &pwm->flags))
-+		status = -EIO;
-+	else
-+		status = sprintf(buf, "%d\n",
-+				!!test_bit(PWMF_ENABLED, &pwm->flags));
-+
-+	mutex_unlock(&sysfs_lock);
-+
-+	return status;
-+}
-+
-+static ssize_t pwm_run_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	struct pwm_device *pwm = dev_get_drvdata(dev);
-+	ssize_t	status;
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	if (!test_bit(PWMF_EXPORT, &pwm->flags))
-+		status = -EIO;
-+	else {
-+		long		value;
-+
-+		status = kstrtol(buf, 0, &value);
-+		if (status == 0) {
-+			if (value)
-+				status = pwm_enable(pwm);
-+			else
-+				pwm_disable(pwm);
-+		}
-+	}
-+
-+	mutex_unlock(&sysfs_lock);
-+
-+	return status ? : size;
-+}
-+
-+static DEVICE_ATTR(run, 0644, pwm_run_show, pwm_run_store);
-+
-+static const struct attribute *pwm_attrs[] = {
-+	&dev_attr_period_ns.attr,
-+	&dev_attr_duty_ns.attr,
-+	&dev_attr_run.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group pwm_attr_group = {
-+	.attrs = (struct attribute **) pwm_attrs,
-+};
-+
-+/*
-+ * /sys/class/pwm/pwmchipN/
-+ *   /base ... matching pwm_chip.base (N)
-+ *   /ngpio ... matching pwm_chip.npwm
-+ */
-+
-+static ssize_t chip_base_show(struct device *dev,
-+			       struct device_attribute *attr, char *buf)
-+{
-+	const struct pwm_chip	*chip = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", chip->base);
-+}
-+static DEVICE_ATTR(base, 0444, chip_base_show, NULL);
-+
-+static ssize_t chip_npwm_show(struct device *dev,
-+			       struct device_attribute *attr, char *buf)
-+{
-+	const struct pwm_chip	*chip = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%u\n", chip->npwm);
-+}
-+static DEVICE_ATTR(npwm, 0444, chip_npwm_show, NULL);
-+
-+static const struct attribute *pwmchip_attrs[] = {
-+	&dev_attr_base.attr,
-+	&dev_attr_npwm.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group pwmchip_attr_group = {
-+	.attrs = (struct attribute **) pwmchip_attrs,
-+};
-+
-+static int pwm_export(struct pwm_device *pwm)
-+{
-+	struct device *dev;
-+	int status;
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	if (!test_bit(PWMF_REQUESTED, &pwm->flags) ||
-+		test_bit(PWMF_EXPORT, &pwm->flags)) {
-+		pr_debug("pwm %d unavailable (requested=%d, exported=%d)\n",
-+			pwm->pwm,
-+			test_bit(PWMF_REQUESTED, &pwm->flags),
-+			test_bit(PWMF_EXPORT, &pwm->flags));
-+
-+		status = -EPERM;
-+		goto fail_unlock;
-+	}
-+
-+	dev = device_create(&pwm_class, pwm->chip->dev, MKDEV(0, 0),
-+			pwm, "pwm%u", pwm->pwm);
-+	if (IS_ERR(dev)) {
-+		status = PTR_ERR(dev);
-+		goto fail_unlock;
-+	}
-+
-+	status = sysfs_create_group(&dev->kobj, &pwm_attr_group);
-+	if (status)
-+		goto fail_unregister_device;
-+
-+	if (pwm->chip->ops->set_polarity) {
-+		status = device_create_file(dev, &dev_attr_polarity);
-+		if (status)
-+			goto fail_unregister_device;
-+	}
-+
-+	set_bit(PWMF_EXPORT, &pwm->flags);
-+	mutex_unlock(&sysfs_lock);
-+	return 0;
-+
-+fail_unregister_device:
-+	device_unregister(dev);
-+fail_unlock:
-+	mutex_unlock(&sysfs_lock);
-+	return status;
-+}
-+
-+static int match_export(struct device *dev, void *data)
-+{
-+	return dev_get_drvdata(dev) == data;
-+}
-+
-+/*
-+ * /sys/class/pwm/export ... write-only
-+ *	integer N ... number of pwm to export (full access)
-+ * /sys/class/pwm/unexport ... write-only
-+ *	integer N ... number of pwm to unexport
-+ */
-+static ssize_t export_store(struct class *class,
-+				struct class_attribute *attr,
-+				const char *buf, size_t len)
-+{
-+	long pwm;
-+	int status;
-+	struct pwm_device *dev;
-+	struct pwm_chip *chip;
-+
-+	status = kstrtol(buf, 0, &pwm);
-+	if (status < 0)
-+		goto done;
-+
-+	if (!pwm_is_valid(pwm) || !pwm_table[pwm]) {
-+		status = -ENODEV;
-+		goto done;
-+	}
-+	chip = pwm_table[pwm]->chip;
-+	if (!chip) {
-+		status = -ENODEV;
-+		goto done;
-+	}
-+	dev = pwm_request_from_chip(chip, pwm - chip->base, "sysfs");
-+	if (IS_ERR(dev)) {
-+		status = -ENODEV;
-+		goto done;
-+	}
-+	status = pwm_export(dev);
-+	if (status < 0)
-+		pwm_free(dev);
-+done:
-+	if (status)
-+		pr_debug("%s: status %d\n", __func__, status);
-+	return status ? : len;
-+}
-+
-+static ssize_t unexport_store(struct class *class,
-+				struct class_attribute *attr,
-+				const char *buf, size_t len)
-+{
-+	long pwm;
-+	int status;
-+	struct pwm_device *dev;
-+	struct device *d;
-+
-+	status = kstrtol(buf, 0, &pwm);
-+	if (status < 0)
-+		goto done;
-+
-+	status = -EINVAL;
-+
-+	/* reject bogus pwms */
-+	if (!pwm_is_valid(pwm))
-+		goto done;
-+
-+	dev = pwm_table[pwm];
-+	if (dev && test_and_clear_bit(PWMF_EXPORT, &dev->flags)) {
-+		d = class_find_device(&pwm_class, NULL, dev, match_export);
-+		if (d)
-+			device_unregister(d);
-+		status = 0;
-+		pwm_put(dev);
-+	}
-+done:
-+	if (status)
-+		pr_debug("%s: status %d\n", __func__, status);
-+	return status ? : len;
-+}
-+
-+static struct class_attribute pwm_class_attrs[] = {
-+	__ATTR(export, 0200, NULL, export_store),
-+	__ATTR(unexport, 0200, NULL, unexport_store),
-+	__ATTR_NULL,
-+};
-+
-+static struct class pwm_class = {
-+	.name =		"pwm",
-+	.owner =	THIS_MODULE,
-+	.class_attrs =	pwm_class_attrs,
-+};
-+
-+static int pwmchip_export(struct pwm_chip *chip)
-+{
-+	int status;
-+	struct device *dev;
-+
-+	mutex_lock(&sysfs_lock);
-+	dev = device_create(&pwm_class, chip->dev, MKDEV(0, 0), chip,
-+				"pwmchip%d", chip->base);
-+	if (!IS_ERR(dev))
-+		status = sysfs_create_group(&dev->kobj, &pwmchip_attr_group);
-+	else
-+		status = PTR_ERR(dev);
-+
-+	chip->exported = (status == 0);
-+	mutex_unlock(&sysfs_lock);
-+
-+	if (status) {
-+		unsigned i;
-+
-+		mutex_lock(&pwm_lock);
-+		i = chip->base;
-+		while (pwm_table[i]->chip == chip)
-+			pwm_table[i++]->chip = NULL;
-+
-+		mutex_unlock(&pwm_lock);
-+
-+		pr_debug("%s: pwm chip status %d\n", __func__, status);
-+	}
-+
-+	return status;
-+}
-+
-+static void pwmchip_unexport(struct pwm_chip *chip)
-+{
-+	int status, i;
-+	struct device *dev;
-+
-+	mutex_lock(&sysfs_lock);
-+	dev = class_find_device(&pwm_class, NULL, chip, match_export);
-+	if (dev) {
-+		put_device(dev);
-+		device_unregister(dev);
-+		for (i = chip->base; i < chip->base + chip->npwm; i++)
-+			pwm_table[i] = NULL;
-+		chip->exported = 0;
-+		status = 0;
-+	} else
-+		status = -ENODEV;
-+	mutex_unlock(&sysfs_lock);
-+
-+	if (status)
-+		pr_debug("%s: pwm chip status %d\n", __func__, status);
-+}
-+
-+static int __init pwmlib_sysfs_init(void)
-+{
-+	int status;
-+
-+	status = class_register(&pwm_class);
-+	return status;
-+}
-+postcore_initcall(pwmlib_sysfs_init);
-+
-+#else
-+static inline int pwmchip_export(struct pwm_chip *chip)
-+{
-+	return 0;
-+}
-+
-+static inline void pwmchip_unexport(struct pwm_chip *chip)
-+{
-+}
-+
-+#endif /* CONFIG_PWM_SYSFS */
-+
-+
- static struct pwm_device *pwm_to_device(unsigned int pwm)
- {
- 	return radix_tree_lookup(&pwm_tree, pwm);
-@@ -77,8 +566,10 @@ static void free_pwms(struct pwm_chip *chip)
- 	for (i = 0; i < chip->npwm; i++) {
- 		struct pwm_device *pwm = &chip->pwms[i];
- 		radix_tree_delete(&pwm_tree, pwm->pwm);
-+#ifdef CONFIG_PWM_SYSFS
-+		pwm_table[i + chip->base]->chip = NULL;
-+#endif
- 	}
--
- 	bitmap_clear(allocated_pwms, chip->base, chip->npwm);
- 
- 	kfree(chip->pwms);
-@@ -258,6 +749,9 @@ int pwmchip_add(struct pwm_chip *chip)
- 		pwm->chip = chip;
- 		pwm->pwm = chip->base + i;
- 		pwm->hwpwm = i;
-+#ifdef CONFIG_PWM_SYSFS
-+		pwm_table[i + chip->base] = pwm;
-+#endif
- 
- 		radix_tree_insert(&pwm_tree, pwm->pwm, pwm);
- 	}
-@@ -272,6 +766,8 @@ int pwmchip_add(struct pwm_chip *chip)
- 	if (IS_ENABLED(CONFIG_OF))
- 		of_pwmchip_add(chip);
- 
-+	ret = pwmchip_export(chip);
-+
- out:
- 	mutex_unlock(&pwm_lock);
- 	return ret;
-@@ -307,6 +803,7 @@ int pwmchip_remove(struct pwm_chip *chip)
- 		of_pwmchip_remove(chip);
- 
- 	free_pwms(chip);
-+	pwmchip_unexport(chip);
- 
- out:
- 	mutex_unlock(&pwm_lock);
-@@ -400,10 +897,19 @@ EXPORT_SYMBOL_GPL(pwm_free);
-  */
- int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
- {
-+	int status;
-+
- 	if (!pwm || duty_ns < 0 || period_ns <= 0 || duty_ns > period_ns)
- 		return -EINVAL;
- 
--	return pwm->chip->ops->config(pwm->chip, pwm, duty_ns, period_ns);
-+	status = pwm->chip->ops->config(pwm->chip, pwm, duty_ns, period_ns);
-+#ifdef CONFIG_PWM_SYSFS
-+	if (status == 0) {
-+		pwm->period = period_ns;
-+		pwm->duty = duty_ns;
-+	}
-+#endif
-+	return status;
- }
- EXPORT_SYMBOL_GPL(pwm_config);
- 
-@@ -416,6 +922,8 @@ EXPORT_SYMBOL_GPL(pwm_config);
-  */
- int pwm_set_polarity(struct pwm_device *pwm, enum pwm_polarity polarity)
- {
-+	int status;
-+
- 	if (!pwm || !pwm->chip->ops)
- 		return -EINVAL;
- 
-@@ -425,7 +933,12 @@ int pwm_set_polarity(struct pwm_device *pwm, enum pwm_polarity polarity)
- 	if (test_bit(PWMF_ENABLED, &pwm->flags))
- 		return -EBUSY;
- 
--	return pwm->chip->ops->set_polarity(pwm->chip, pwm, polarity);
-+	status = pwm->chip->ops->set_polarity(pwm->chip, pwm, polarity);
-+#ifdef CONFIG_PWM_SYSFS
-+	if (!status)
-+		pwm->polarity = polarity;
-+#endif
-+	return status;
- }
- EXPORT_SYMBOL_GPL(pwm_set_polarity);
- 
-@@ -749,6 +1262,9 @@ static void pwm_dbg_show(struct pwm_chip *chip, struct seq_file *s)
- 		if (test_bit(PWMF_ENABLED, &pwm->flags))
- 			seq_printf(s, " enabled");
- 
-+		if (test_bit(PWMF_EXPORT, &pwm->flags))
-+			seq_printf(s, " sysfs_exported");
-+
- 		seq_printf(s, "\n");
- 	}
- }
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 6d661f3..afc22c6 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -4,10 +4,27 @@
- #include <linux/err.h>
- #include <linux/of.h>
- 
-+#define MAX_PWMS 1024
-+
- struct pwm_device;
- struct seq_file;
- 
- #if IS_ENABLED(CONFIG_PWM) || IS_ENABLED(CONFIG_HAVE_PWM)
-+
-+/*
-+ * "valid" PWM numbers are nonnegative and may be passed to
-+ * setup routines like pwm_get().  only some valid numbers
-+ * can successfully be requested and used.
-+ *
-+ * Invalid PWM numbers are useful for indicating no-such-PWM in
-+ * platform data and other tables.
-+ */
-+
-+static inline bool pwm_is_valid(int number)
-+{
-+	return number >= 0 && number < MAX_PWMS;
-+}
-+
- /*
-  * pwm_request - request a PWM device
-  */
-@@ -75,7 +92,8 @@ enum pwm_polarity {
- 
- enum {
- 	PWMF_REQUESTED = 1 << 0,
--	PWMF_ENABLED = 1 << 1,
-+	PWMF_ENABLED = 1 << 1, /* set running via /sys/class/pwm/pwmX/run */
-+	PWMF_EXPORT = 1 << 2, /* exported via /sys/class/pwm/export */
- };
- 
- struct pwm_device {
-@@ -87,6 +105,10 @@ struct pwm_device {
- 	void			*chip_data;
- 
- 	unsigned int		period; /* in nanoseconds */
-+#ifdef CONFIG_PWM_SYSFS
-+	unsigned int		duty; /* in nanoseconds */
-+	enum pwm_polarity	polarity;
-+#endif
- };
- 
- static inline void pwm_set_period(struct pwm_device *pwm, unsigned int period)
-@@ -159,6 +181,9 @@ struct pwm_chip {
- 	struct pwm_device *	(*of_xlate)(struct pwm_chip *pc,
- 					    const struct of_phandle_args *args);
- 	unsigned int		of_pwm_n_cells;
-+#ifdef CONFIG_PWM_SYSFS
-+	unsigned		exported:1;
-+#endif
- };
- 
- #if IS_ENABLED(CONFIG_PWM)
--- 
-1.7.10.4
-
+~Maarten
