@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab3BSEGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 23:06:44 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29962 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab3BSEGn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 23:06:43 -0500
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=btn4o-XVpwEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=5m8K6IL_vW8A:10 a=b7AVe0XaBIFk4HxM3DgA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1361246801.23152.195.camel@gandalf.local.home>
-Subject: Re: [PREEMPT RT] SLUB and split softirq lock for v3.2-rt
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Carsten Emde <C.Emde@osadl.org>
-Date: Mon, 18 Feb 2013 23:06:41 -0500
-In-Reply-To: <5122DBC1.6010507@huawei.com>
-References: <1360771932-27150-1-git-send-email-bigeasy@linutronix.de>
-	 <1360776274.23152.7.camel@gandalf.local.home> <5122DB72.7030100@huawei.com>
-	 <5122DBC1.6010507@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932225Ab3BSEJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 23:09:18 -0500
+Received: from mout.gmx.net ([212.227.15.18]:52687 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932103Ab3BSEJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 23:09:17 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/DcaMRBiTDuUVVKsx+kiaTvfXoCPCFrWGxMhEz87
+	7t+eBxv/9vOH6U
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Devendra Naga <devendra.aaru@gmail.com>, Peter Huewe <peterhuewe@gmx.de>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Cruz Julian Bishop <cruzjbishop@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] staging/slicoss: Check pointer before dereferencing
+Date: Tue, 19 Feb 2013 05:13:50 +0100
+Message-Id: <1361247234-1754-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-19 at 09:56 +0800, Li Zefan wrote:
+Smatch complains that the variable adapter is dereferenced before it is
+checked:
+slicoss.c:906 slic_timer_load_check() warn: variable dereferenced before
+check 'adapter' (see line 904)
 
-> Oh ignore me. Just saw the patchset for 3.4-rt.
+-> move the assignment after the check.
 
-Note, I already have part of the 3.4-feature (softirq backport) tested
-and ready. What I'm waiting on is trying to figure out the best way to
-process it.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/slicoss/slicoss.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-I already know I'll have a v3.4-features branch, but I'm thinking about
-patches and tarballs, if it should be posted as well, or just be in git?
-
-If I choose to post them, I want the scripts done before I do so, but
-right now I'll be leaving for ELC and wont get to it till I get back.
-
--- Steve
-
+diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
+index 76fc2e5..753993c 100644
+--- a/drivers/staging/slicoss/slicoss.c
++++ b/drivers/staging/slicoss/slicoss.c
+@@ -901,10 +901,9 @@ static void slic_timer_load_check(ulong cardaddr)
+ 	u32 load = card->events;
+ 	u32 level = 0;
+ 
+-	intagg = &adapter->slic_regs->slic_intagg;
+-
+ 	if ((adapter) && (adapter->state == ADAPT_UP) &&
+ 	    (card->state == CARD_UP) && (slic_global.dynamic_intagg)) {
++		intagg = &adapter->slic_regs->slic_intagg;
+ 		if (adapter->devid == SLIC_1GB_DEVICE_ID) {
+ 			if (adapter->linkspeed == LINK_1000MB)
+ 				level = 100;
+-- 
+1.7.8.6
 
