@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934596Ab3BSTPr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:15:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54175 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933881Ab3BSSuc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:50:32 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Christopher Staite <chris@yourdreamnet.co.uk>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 10/81] drm/radeon: fix MC blackout on evergreen+
-Date: Tue, 19 Feb 2013 15:48:33 -0300
-Message-Id: <1361299784-8830-11-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	id S934617Ab3BSTQG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:16:06 -0500
+Received: from mga01.intel.com ([192.55.52.88]:64231 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933896Ab3BSTQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 14:16:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,697,1355126400"; 
+   d="scan'208";a="289193619"
+Date: Tue, 19 Feb 2013 21:20:16 +0200
+From: "Westerberg, Mika" <mika.westerberg@intel.com>
+To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Subject: Re: How to populate Battery information through ACPI tables
+Message-ID: <20130219192016.GL2439@intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD24661392@BGSMSX102.gar.corp.intel.com>
+ <20130219152008.GG2439@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD2466175B@BGSMSX102.gar.corp.intel.com>
+ <20130219174210.GH2439@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD2466187B@BGSMSX102.gar.corp.intel.com>
+ <20130219180400.GJ2439@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD24661A83@BGSMSX102.gar.corp.intel.com>
+ <20130219183816.GK2439@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD24661DB3@BGSMSX102.gar.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD24661DB3@BGSMSX102.gar.corp.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.6 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Feb 19, 2013 at 08:59:29PM +0200, Pallala, Ramakrishna wrote:
+> > > Mika, I want to populate this characterization data as device
+> > > specific/custom data which could be anything And may not be entirely
+> > > related to battery. Is this is possible?
+> > 
+> > Yes, for example you could have a custom ACPI method with your device which
+> > then returns this information.
+> > 
+> > See for example chapter 10.2.2.1 from the ACPI spec. It describes _BIF method
+> > that returns some battery data to the caller.
+> 
+> Mika, _BIF method returns battery data/struct which is defined Table. 10-233.
 
-------------------
+Yes, it was just an example. You can have your own custom method for that,
+lets say:
 
-From: Christopher Staite <chris@yourdreamnet.co.uk>
+	BLAH()
 
-commit bb588820ef421c6098dca1fec29c3b347f1c8c19 upstream.
+that then returns whatever you need.
 
-Force the crtc mem requests on/off immediately rather
-than waiting for the double buffered updates to kick in.
-Seems we miss the update in certain conditions.  Also
-handle the DCE6 case.
+> If I want to pass some device specific data seems like I can use
+> _DSM(9.14.1) method and pass custom /device specific data to the driver.
 
-Signed-off-by: Christopher Staite <chris@yourdreamnet.co.uk>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/gpu/drm/radeon/evergreen.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+_DSM is also an option, yes.
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 2aa7fdb..c490d16 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1147,14 +1147,18 @@ void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *sav
- 				if (!(tmp & EVERGREEN_CRTC_BLANK_DATA_EN)) {
- 					radeon_wait_for_vblank(rdev, i);
- 					tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 				}
- 			} else {
- 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
- 				if (!(tmp & EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE)) {
- 					radeon_wait_for_vblank(rdev, i);
- 					tmp |= EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 					WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
-+					WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 				}
- 			}
- 			/* wait for the next frame */
-@@ -1212,11 +1216,15 @@ void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *s
- 			if (ASIC_IS_DCE6(rdev)) {
- 				tmp = RREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i]);
- 				tmp |= EVERGREEN_CRTC_BLANK_DATA_EN;
-+				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 				WREG32(EVERGREEN_CRTC_BLANK_CONTROL + crtc_offsets[i], tmp);
-+				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 			} else {
- 				tmp = RREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i]);
- 				tmp &= ~EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
-+				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 1);
- 				WREG32(EVERGREEN_CRTC_CONTROL + crtc_offsets[i], tmp);
-+				WREG32(EVERGREEN_CRTC_UPDATE_LOCK + crtc_offsets[i], 0);
- 			}
- 			/* wait for the next frame */
- 			frame_count = radeon_get_vblank_counter(rdev, i);
--- 
-1.7.9.5
+> And I believe this data format can be anything and private to the device?
+> Can you confirm?
 
+Yes.
