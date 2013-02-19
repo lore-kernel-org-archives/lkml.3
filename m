@@ -1,99 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758388Ab3BSJ6q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 04:58:46 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:51690 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756851Ab3BSJ6o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 04:58:44 -0500
+	id S1758553Ab3BSJ72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 04:59:28 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:39370 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757087Ab3BSJ70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 04:59:26 -0500
+Date: Tue, 19 Feb 2013 11:59:10 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BONUS PATCH 2/2] base: core: WARN() about bogus permissions on
+ device attributes
+Message-ID: <20130219095910.GH23197@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1361214544-14403-1-git-send-email-balbi@ti.com>
+ <1361214544-14403-2-git-send-email-balbi@ti.com>
+ <20130218191719.GB19724@kroah.com>
+ <20130218192010.GE10755@arwen.pp.htv.fi>
 MIME-Version: 1.0
-In-Reply-To: <1361264161.333682302@f131.mail.ru>
-References: <1361198522-23789-1-git-send-email-shc_work@mail.ru>
-	<1361257381.497560655@f376.mail.ru>
-	<1361264161.333682302@f131.mail.ru>
-Date: Tue, 19 Feb 2013 17:58:43 +0800
-Message-ID: <CAP1dx+ybgio3y-BURHLa1BnCMAABoZXrrMm5CUf5CEGtBk6=Kw@mail.gmail.com>
-Subject: Re: Re[4]: [PATCH v3] mfd: syscon: Add non-DT support
-From: Dong Aisheng <dong.aisheng@linaro.org>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="K1n7F7fSdjvFAEnM"
+Content-Disposition: inline
+In-Reply-To: <20130218192010.GE10755@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 February 2013 16:56, Alexander Shiyan <shc_work@mail.ru> wrote:
-> ...
->> >> >>  struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
->> >> >>  {
->> >> >>       struct device_node *syscon_np;
->> >> >>       struct regmap *regmap;
->> >> >> +     struct syscon *syscon;
->> >> >> +     struct device *dev;
->> >> >>
->> >> >>       syscon_np = of_find_compatible_node(NULL, NULL, s);
->> >> >> -     if (!syscon_np)
->> >> >> +     if (syscon_np) {
->> >> >> +             regmap = syscon_node_to_regmap(syscon_np);
->> >> >> +             of_node_put(syscon_np);
->> >> >> +
->> >> >> +             return regmap;
->> >> >> +     }
->> >> >> +
->> >> >> +     /* Fallback to search by id_entry.name string */
->> >> >> +     dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
->> >> >> +                              syscon_match_id);
->> >> >> +     if (!dev)
->> >> >>               return ERR_PTR(-ENODEV);
->> >> >>
->> >> >> -     regmap = syscon_node_to_regmap(syscon_np);
->> >> >> -     of_node_put(syscon_np);
->> >> >> +     syscon = dev_get_drvdata(dev);
->> >> >>
->> >> >> -     return regmap;
->> >> >> +     return syscon->regmap;
->> >> >>  }
->> >> >>  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
->> >> >
->> >> > Since you are not actually comparing the "compatible" property here,
->> >> > I would suggest adding another function here,
->> >>
->> >> Yes, i also think like that.
->> >
->> > In this case we should provide two paths for drivers which can work as with DT
->> > and without DT.
->>
->> Yes.
->
-> I still think the universal procedure is better for the driver.
->
+--K1n7F7fSdjvFAEnM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Why?
-I did not see your reply on my other comments on the problems of using universal
-procedure?
-Please let me know if you think they're not issues.
+Hi,
 
->> > In my case we can use platform_device_id.name field with
->> > "compatible" string. My way in this case is transparency for driver which is
->> > using "syscon".
->> >
->>
->> Yes, but it also brings misleading and mass.
->> And i wonder even the API can cover the two type of matches, the
->> caller still can't use
->> the only one name for two cases since the name is different.
->> So it looks to me not make too much sense to provide only one API.
->
-> The previous version of the patch keep conformity to the name of
-> procedure ("compatible" field in platform_data)...
->
-> So, now I'm totally confused what we do with the search function.
->
+On Mon, Feb 18, 2013 at 09:20:10PM +0200, Felipe Balbi wrote:
+> On Mon, Feb 18, 2013 at 11:17:19AM -0800, Greg KH wrote:
+> > On Mon, Feb 18, 2013 at 09:09:04PM +0200, Felipe Balbi wrote:
+> > > Whenever a struct device_attribute is registered
+> > > with mismatched permissions - read permission without
+> > > a show routine or write permission without store
+> > > routine - we will issue a big warning so we catch
+> > > those early enough.
+> > >=20
+> > > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > > ---
+> > >=20
+> > > This is completely untested. I have only compile tested
+> > > to make sure I'm not breaking anything.
+> > >=20
+> > > Greg, do you think this would be nice to have ? I could
+> > > fire up kvm tomorrow and run on a few of my OMAP-based
+> > > boards to make sure it works as expected.
+> >=20
+> > Looks good, but you better fix up all of the big offenders that this
+> > points out, before I apply it, otherwise we will get a ton of bug
+> > reports :)
+>=20
+> sure, will do that tomorrow though ;-)
 
-You can do as you currently do but with a different API for non-dt.
+Just tested $SUBJECT and it didn't trigger any extra warnings. Only the
+one whose fix you already applied (I reverted it to make sure $SUBJECT
+was working as expected).
 
-Regards
-Dong Aisheng
+--=20
+balbi
+
+--K1n7F7fSdjvFAEnM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRI0zuAAoJEIaOsuA1yqREawEP/1jnH7qeONp0Zu5JxBDpkXWr
+dfuYcKX8ngcCgjDD+CQo/xWQuY8m+tcwpoW7bd61WYD+QZTwz/nkvIX89+8nHcyT
+yIkFZYPiN5U+BzTkCcuuG2ioGPdwKfcfeveKW9rlFIKe4ntys4ScCgelLiNfPTA9
+u4eLzd9Gxx70J13cvJidhHqtxa6QUSnPfx2qtk6Usoe+L0Ibp7pICdk0VmOD/Zmu
+NvW+jdvSbJzaK/urXwN7Xt4E7Gfo4MbX23bMwtHfN3/u33v5AYKzEYsdrG/ilZyq
+90SqIUak/d8ONut3XVNQ5Rs1ggnXhmw6QoLV4QeRqJ6AudOFBG5micWBIXC/cWf5
+XR8uq7N6Gzlz+bCGYwBReIX4tPSzI1W0wI5+GLJ/LxVDw2KtfJ2YXMSGBpGSwtdJ
+OP94H17GRHMaQRrXs15XbA5oIjysBFqwgpEkLkrl1zEAH7uWCmsosMrP3ieCRT7l
+PkOVAFRhc+Zeu6hSDdXInGoVC6vLWHdb3oda+wL8gj4tpJHOyuzBeQtdCI6RHmUK
+Pv9iKB2tozpptxAN/tnh7npXXeqPL9dBSe+jGwuqsZZ1DfCoeQUltCykkKAs9zbu
+WuCoFXJscFwqBVHH52Ls/K6bFVGbJ6q0oGb0N0YjDAhPgu+qjb4KgI3HkbhcbAjC
+Oai7tPGmL0sV29mRzdwD
+=k08+
+-----END PGP SIGNATURE-----
+
+--K1n7F7fSdjvFAEnM--
