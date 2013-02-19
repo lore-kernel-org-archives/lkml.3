@@ -1,202 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab3BSFYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 00:24:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27926 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751532Ab3BSFYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 00:24:14 -0500
-Message-ID: <1361251440.2801.142.camel@bling.home>
-Subject: Re: [PATCH] iommu: making IOMMU sysfs nodes API public
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Joerg Roedel <joerg.roedel@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Date: Mon, 18 Feb 2013 22:24:00 -0700
-In-Reply-To: <5121C709.80007@ozlabs.ru>
-References: <1360628713.3248.8.camel@bling.home>
-	   <1360642004-7419-1-git-send-email-aik@ozlabs.ru>
-	  <1360645643.3248.91.camel@bling.home> <511A54DC.9030908@ozlabs.ru>
-	 <1360689304.3248.154.camel@bling.home> <5121C709.80007@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
+	id S1753853Ab3BSF2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 00:28:33 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:42531 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870Ab3BSF2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 00:28:31 -0500
+Date: Tue, 19 Feb 2013 16:28:22 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: linux-next: manual merge of the akpm tree with the wireless-next
+ tree
+Message-Id: <20130219162822.dcf6f5bf65252d2b25420051@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__19_Feb_2013_16_28_22_+1100_v4onkqf7zX7Qj8dD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-18 at 17:15 +1100, Alexey Kardashevskiy wrote:
-> On 13/02/13 04:15, Alex Williamson wrote:
-> > On Wed, 2013-02-13 at 01:42 +1100, Alexey Kardashevskiy wrote:
-> >> On 12/02/13 16:07, Alex Williamson wrote:
-> >>> On Tue, 2013-02-12 at 15:06 +1100, Alexey Kardashevskiy wrote:
-> >>>> Having this patch in a tree, adding new nodes in sysfs
-> >>>> for IOMMU groups is going to be easier.
-> >>>>
-> >>>> The first candidate for this change is a "dma-window-size"
-> >>>> property which tells a size of a DMA window of the specific
-> >>>> IOMMU group which can be used later for locked pages accounting.
-> >>>
-> >>> I'm still churning on this one; I'm nervous this would basically creat
-> >>> a /proc free-for-all under /sys/kernel/iommu_group/$GROUP/ where any
-> >>> iommu driver can add random attributes.  That can get ugly for
-> >>> userspace.
-> >>
-> >> Is not it exactly what sysfs is for (unlike /proc)? :)
-> >
-> > Um, I hope it's a little more thought out than /proc.
-> >
-> >>> On the other hand, for the application of userspace knowing how much
-> >>> memory to lock for vfio use of a group, it's an appealing location to
-> >>> get that information.  Something like libvirt would already be poking
-> >>> around here to figure out which devices to bind.  Page limits need to be
-> >>> setup prior to use through vfio, so sysfs is more convenient than
-> >>> through vfio ioctls.
-> >>
-> >> True. DMA window properties do not change since boot so sysfs is the right
-> >> place to expose them.
-> >>
-> >>> But then is dma-window-size just a vfio requirement leaking over into
-> >>> iommu groups?  Can we allow iommu driver based attributes without giving
-> >>> up control of the namespace?  Thanks,
-> >>
-> >> Who are you asking these questions? :)
-> >
-> > Anyone, including you.  Rather than dropping misc files in sysfs to
-> > describe things about the group, I think the better solution in your
-> > case might be a link from the group to an existing sysfs directory
-> > describing the PE.  I believe your PE is rooted in a PCI bridge, so that
-> > presumably already has a representation in sysfs.  Can the aperture size
-> > be determined from something in sysfs for that bridge already?  I'm just
-> > not ready to create a grab bag of sysfs entries for a group yet.
-> > Thanks,
-> 
-> 
-> At the moment there is no information neither in sysfs nor 
-> /proc/device-tree about the dma-window. And adding a sysfs entry per PE 
-> (powerpc partitionable end-point which is often a PHB but not always) just 
-> for VFIO is quite heavy.
+--Signature=_Tue__19_Feb_2013_16_28_22_+1100_v4onkqf7zX7Qj8dD
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How do you learn the window size and PE extents in the host kernel?
+Hi Andrew,
 
-> We could add a ppc64 subfolder under /sys/kernel/iommu/xxx/ and put the 
-> "dma-window" property there. And replace it with a symlink when and if we 
-> add something for PE later. Would work?
+Today's linux-next merge of the akpm tree got a conflict in
+net/mac80211/mesh_pathtbl.c between commit bf7cd94dcc71 ("mac80211: clean
+up mesh code") from the wireless-next tree and commit "hlist: drop the
+node parameter from iterators" from the akpm tree.
 
-To be clear, you're suggesting /sys/kernel/iommu_groups/$GROUP/xxx/,
-right?  A subfolder really only limits the scope of the mess, so it's
-not much improvement.  What does the interface look like to make those
-subfolders?
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-The problem we're trying to solve is this call flow:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-containerfd = open("/dev/vfio/vfio");
-ioctl(containerfd, VFIO_GET_API_VERSION);
-ioctl(containerfd, VFIO_CHECK_EXTENSION, ...);
-groupfd = open("/dev/vfio/$GROUP");
-ioctl(groupfd, VFIO_GROUP_GET_STATUS);
-ioctl(groupfd, VFIO_GROUP_SET_CONTAINER, &containerfd);
+diff --cc net/mac80211/mesh_pathtbl.c
+index 6b3c4e1,ddf48f6..0000000
+--- a/net/mac80211/mesh_pathtbl.c
++++ b/net/mac80211/mesh_pathtbl.c
+@@@ -455,27 -448,30 +452,27 @@@ err_rcu
+   * @tbl: table which holds our list of known gates
+   * @mpath: gate mpath
+   *
+ - * Returns: 0 on success
+ - *
+   * Locking: must be called inside rcu_read_lock() section
+   */
+ -static int mesh_gate_del(struct mesh_table *tbl, struct mesh_path *mpath)
+ +static void mesh_gate_del(struct mesh_table *tbl, struct mesh_path *mpath)
+  {
+  	struct mpath_node *gate;
+- 	struct hlist_node *p, *q;
++ 	struct hlist_node *q;
+ =20
+- 	hlist_for_each_entry_safe(gate, p, q, tbl->known_gates, list) {
+ -	hlist_for_each_entry_safe(gate, q, tbl->known_gates, list)
+ -		if (gate->mpath =3D=3D mpath) {
+ -			spin_lock_bh(&tbl->gates_lock);
+ -			hlist_del_rcu(&gate->list);
+ -			kfree_rcu(gate, rcu);
+ -			spin_unlock_bh(&tbl->gates_lock);
+ -			mpath->sdata->u.mesh.num_gates--;
+ -			mpath->is_gate =3D false;
+ -			mpath_dbg(mpath->sdata,
+ -				  "Mesh path: Deleted gate: %pM. %d known gates\n",
+ -				  mpath->dst, mpath->sdata->u.mesh.num_gates);
+ -			break;
+ -		}
+ -
+ -	return 0;
+++	hlist_for_each_entry_safe(gate, q, tbl->known_gates, list) {
+ +		if (gate->mpath !=3D mpath)
+ +			continue;
+ +		spin_lock_bh(&tbl->gates_lock);
+ +		hlist_del_rcu(&gate->list);
+ +		kfree_rcu(gate, rcu);
+ +		spin_unlock_bh(&tbl->gates_lock);
+ +		mpath->sdata->u.mesh.num_gates--;
+ +		mpath->is_gate =3D false;
+ +		mpath_dbg(mpath->sdata,
+ +			  "Mesh path: Deleted gate: %pM. %d known gates\n",
+ +			  mpath->dst, mpath->sdata->u.mesh.num_gates);
+ +		break;
+ +	}
+  }
+ =20
+  /**
 
-You wanted to lock all the memory for the DMA window here, before we can
-call VFIO_IOMMU_GET_INFO, but does it need to happen there?  We still
-have a MAP_DMA hook.  We could do it all on the first mapping.  It also
-has a flags field that could augment the behavior to trigger page
-locking.  Adding the window size to sysfs seems more readily convenient,
-but is it so hard for userspace to open the files and call a couple
-ioctls to get far enough to call IOMMU_GET_INFO?  I'm unconvinced the
-clutter in sysfs more than just a quick fix.  Thanks,
+--Signature=_Tue__19_Feb_2013_16_28_22_+1100_v4onkqf7zX7Qj8dD
+Content-Type: application/pgp-signature
 
-Alex
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> >>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> >>>> ---
-> >>>>    drivers/iommu/iommu.c |   19 ++-----------------
-> >>>>    include/linux/iommu.h |   20 ++++++++++++++++++++
-> >>>>    2 files changed, 22 insertions(+), 17 deletions(-)
-> >>>>
-> >>>> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> >>>> index b0afd3d..58cc298 100644
-> >>>> --- a/drivers/iommu/iommu.c
-> >>>> +++ b/drivers/iommu/iommu.c
-> >>>> @@ -52,22 +52,6 @@ struct iommu_device {
-> >>>>    	char *name;
-> >>>>    };
-> >>>>
-> >>>> -struct iommu_group_attribute {
-> >>>> -	struct attribute attr;
-> >>>> -	ssize_t (*show)(struct iommu_group *group, char *buf);
-> >>>> -	ssize_t (*store)(struct iommu_group *group,
-> >>>> -			 const char *buf, size_t count);
-> >>>> -};
-> >>>> -
-> >>>> -#define IOMMU_GROUP_ATTR(_name, _mode, _show, _store)		\
-> >>>> -struct iommu_group_attribute iommu_group_attr_##_name =		\
-> >>>> -	__ATTR(_name, _mode, _show, _store)
-> >>>> -
-> >>>> -#define to_iommu_group_attr(_attr)	\
-> >>>> -	container_of(_attr, struct iommu_group_attribute, attr)
-> >>>> -#define to_iommu_group(_kobj)		\
-> >>>> -	container_of(_kobj, struct iommu_group, kobj)
-> >>>> -
-> >>>>    static ssize_t iommu_group_attr_show(struct kobject *kobj,
-> >>>>    				     struct attribute *__attr, char *buf)
-> >>>>    {
-> >>>> @@ -98,11 +82,12 @@ static const struct sysfs_ops iommu_group_sysfs_ops = {
-> >>>>    	.store = iommu_group_attr_store,
-> >>>>    };
-> >>>>
-> >>>> -static int iommu_group_create_file(struct iommu_group *group,
-> >>>> +int iommu_group_create_file(struct iommu_group *group,
-> >>>>    				   struct iommu_group_attribute *attr)
-> >>>>    {
-> >>>>    	return sysfs_create_file(&group->kobj, &attr->attr);
-> >>>>    }
-> >>>> +EXPORT_SYMBOL_GPL(iommu_group_create_file);
-> >>>>
-> >>>>    static void iommu_group_remove_file(struct iommu_group *group,
-> >>>>    				    struct iommu_group_attribute *attr)
-> >>>> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-> >>>> index f3b99e1..6d24ba7 100644
-> >>>> --- a/include/linux/iommu.h
-> >>>> +++ b/include/linux/iommu.h
-> >>>> @@ -21,6 +21,7 @@
-> >>>>
-> >>>>    #include <linux/errno.h>
-> >>>>    #include <linux/types.h>
-> >>>> +#include <linux/stat.h>
-> >>>>
-> >>>>    #define IOMMU_READ	(1)
-> >>>>    #define IOMMU_WRITE	(2)
-> >>>> @@ -197,6 +198,25 @@ static inline int report_iommu_fault(struct iommu_domain *domain,
-> >>>>    	return ret;
-> >>>>    }
-> >>>>
-> >>>> +struct iommu_group_attribute {
-> >>>> +	struct attribute attr;
-> >>>> +	ssize_t (*show)(struct iommu_group *group, char *buf);
-> >>>> +	ssize_t (*store)(struct iommu_group *group,
-> >>>> +			 const char *buf, size_t count);
-> >>>> +};
-> >>>> +
-> >>>> +#define IOMMU_GROUP_ATTR(_name, _mode, _show, _store)		\
-> >>>> +struct iommu_group_attribute iommu_group_attr_##_name =		\
-> >>>> +	__ATTR(_name, _mode, _show, _store)
-> >>>> +
-> >>>> +#define to_iommu_group_attr(_attr)	\
-> >>>> +	container_of(_attr, struct iommu_group_attribute, attr)
-> >>>> +#define to_iommu_group(_kobj)		\
-> >>>> +	container_of(_kobj, struct iommu_group, kobj)
-> >>>> +
-> >>>> +extern int iommu_group_create_file(struct iommu_group *group,
-> >>>> +				   struct iommu_group_attribute *attr);
-> >>>> +
-> >>>>    #else /* CONFIG_IOMMU_API */
-> >>>>
-> >>>>    struct iommu_ops {};
-> 
-> 
+iQIcBAEBCAAGBQJRIw12AAoJEECxmPOUX5FE4xsP/ip3D6rxwTa7NhdFjUX9G5G7
+xucSMomzkAOd4tYQuYa5ecL5Tjj7AkNLgofYKp5B7n9mlzX2F85aUd4TE2WMt7sE
+DRnp9oBZG+TmitS/L+JlOykgdxg2AO45jwwz/vU+jztbKOLwMbCsHy24RpBkiqWm
+FV630aS7x4GWxm+S9kmEX2Yhp0tBxHM3ySwj6jSaAXsIRC2vEtBygHR6AsfO8+Tv
+72HHUoSD7INxWAZRxn8qJM8qs3H8oW5l5X265SrGoubUWcoU8E2qCRm3iOl3mhd+
+ryAgr3Yot1Lv9IvWaWmBkj4ad3NC2+oK3LUB6mKvQi+68cdYlDFjUsV96kjBMw/m
+ixup+dTk+AS6PlwRgJyUFlR/5j+wBddoe0w4no++bWEn1riWSwB/SgToki/ISaDO
+NVAnrpDXSTSHaeUyReKEekkf86xCq/UdNg/r7ePbzRfIh36bjtl6WR4D2PylZvYC
+UP8wX5rZbxFLrLygDNHMpTb7DuzE4Oer6gIE1KuhnpIEUEH52zvgNnWiD3Yg1p7c
+lmtzvPz8/XwLb6+RhSTx4DA4dgaL0BohQuX8Svt5jAPm7MGmfnFeXOxJpkb1p9M1
+CJe9YyxL/zqojfdqHTHdGHNq+IXsD3KserBP7aEqCyHBTW4hGT3D9kjaIGjticuv
+HiDDyTYAuIppL4EKLGGO
+=D7j9
+-----END PGP SIGNATURE-----
 
-
-
+--Signature=_Tue__19_Feb_2013_16_28_22_+1100_v4onkqf7zX7Qj8dD--
