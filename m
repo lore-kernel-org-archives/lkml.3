@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758731Ab3BSRxT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 12:53:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44613 "EHLO mail.zytor.com"
+	id S1758781Ab3BSRzG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 12:55:06 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:27623 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757885Ab3BSRxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 12:53:18 -0500
-Message-ID: <5123BBBC.2080008@zytor.com>
-Date: Tue, 19 Feb 2013 09:51:56 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752238Ab3BSRzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 12:55:04 -0500
+Message-ID: <5123BC20.9040405@parallels.com>
+Date: Tue, 19 Feb 2013 21:53:36 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/cpu changes for v3.9
-References: <20130219152503.GA14862@gmail.com> <20130219153655.GD26748@pd.tnic> <20130219154721.GA15876@gmail.com> <5123B897.9010607@zytor.com> <20130219174758.GB4465@pd.tnic>
-In-Reply-To: <20130219174758.GB4465@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: mtk.manpages@gmail.com, Oleg Nesterov <oleg@redhat.com>
+CC: Andrey Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        criu@openvz.org, linux-api@vger.kernel.org,
+        Roland McGrath <roland@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] ptrace: add ability to retrieve signals without removing
+ them from a queue
+References: <1360768595-31943-1-git-send-email-avagin@openvz.org> <CAKgNAkicAGEkvNFnSso__wK6QKao8jyDu5yuRmeyUOeaXLGChw@mail.gmail.com>
+In-Reply-To: <CAKgNAkicAGEkvNFnSso__wK6QKao8jyDu5yuRmeyUOeaXLGChw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2013 09:47 AM, Borislav Petkov wrote:
-> On Tue, Feb 19, 2013 at 09:38:31AM -0800, H. Peter Anvin wrote:
->> My fault... I was tracking the fix and lost track of the thread.
+On 02/19/2013 04:15 PM, Michael Kerrisk (man-pages) wrote:
+> On Wed, Feb 13, 2013 at 4:16 PM, Andrey Vagin <avagin@openvz.org> wrote:
+>> This patch adds a new ptrace request PTRACE_PEEKSIGINFO.
 >>
->> The problem is that the fix is necessary but not sufficient, as it
->> introduces an undesirable host-guest dependency.  In order to allow
->> neerw guests to work on older hosts we also should use the
->> {rd,wr}msr_safe() functions to manipulate this MSR, with a comment
->> as to why.
+>> This request is used to retrieve information about a signal with the
+>> specified sequence number. A siginfo_t structure is copied from the child
+>> to location data in the parent.
 >>
->> Boris, could you prepare such a patch, please?
->
-> I don't think Boris O. is at AMD anymore. Want me to add that to my fix
-> for kvm or prep a separate patch?
->
+>> The low 16 bits of addr contains a sequence number of signal in a queue:
+> 
+> I think 16 bits is probably not enough.... Already, on the "out of the
+> box" system that I have at hand, one can queue more than 2^16-1
+> signals:
+> 
+>     $ cat /proc/$$/status | grep SigQ
+>     SigQ:	2/126065
 
-Separate patch, please, and yes, I would greatly appreciate it.
+Yup :( Well, actually it would be enough to have only 1 bit as "flags"
+and the rest (31 at least) for the number. But taking into account
+Oleg's wish to have an ability to extend the amount of flags in the
+future, we should make addr point to something like
 
-	-hpa
+struct siginfo_peek_options {
+	unsigned int flags;
+	unsigned int pos;
+};
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+and force flags to contain zero in all the bits but one, and this
+latter bit is to select between private or shared queue. In this case
+the patch loses its main advantage -- the simplicity.
 
+Oleg, please, suggest which way would be more preferable?
+
+> Cheers,
+> 
+> Michael
