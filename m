@@ -1,74 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757891Ab3BSBOE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 20:14:04 -0500
-Received: from 1-1-12-13a.han.sth.bostream.se ([82.182.30.168]:52669 "EHLO
-	palpatine.hardeman.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499Ab3BSBOC (ORCPT
+	id S1757936Ab3BSBO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 20:14:28 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:51118 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757910Ab3BSBO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 20:14:02 -0500
-Date: Tue, 19 Feb 2013 02:13:51 +0100
-From: David =?iso-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>
-To: Hannes Reinecke <hare@suse.de>
-Cc: linux-kernel@vger.kernel.org, Frederik Himpe <fhimpe@vub.ac.be>,
-        Oliver Neukum <oneukum@suse.de>, linux-usb@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH] pci: do not try to assign irq 255
-Message-ID: <20130219011351.GA4756@hardeman.nu>
-Mail-Followup-To: Hannes Reinecke <hare@suse.de>,
-	linux-kernel@vger.kernel.org, Frederik Himpe <fhimpe@vub.ac.be>,
-	Oliver Neukum <oneukum@suse.de>, linux-usb@vger.kernel.org,
-	linux-pci@vger.kernel.org
-References: <1361182193-31894-1-git-send-email-hare@suse.de>
+	Mon, 18 Feb 2013 20:14:26 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlQKAIzRIlF5LHbb/2dsb2JhbAA8CIVgtTeFEoEEF3OCHwEBBAEnExwcBwULCAMVAwklDwUlAyETGYdzBbFDj3YVjVQGYCIyCweDQAOWK5BZgxuBVg
+Date: Tue, 19 Feb 2013 12:14:22 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-fsdevel@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>
+Subject: Re: [PATCH review 03/16] xfs: Always read uids and gids from the vfs
+ inode
+Message-ID: <20130219011422.GG26694@dastard>
+References: <87txpaph4n.fsf@xmission.com>
+ <1361149870-27732-1-git-send-email-ebiederm@xmission.com>
+ <1361149870-27732-3-git-send-email-ebiederm@xmission.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1361182193-31894-1-git-send-email-hare@suse.de>
+In-Reply-To: <1361149870-27732-3-git-send-email-ebiederm@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 18, 2013 at 11:09:53AM +0100, Hannes Reinecke wrote:
->The PCI config space reseves a byte for the interrupt line,
->so irq 255 actually refers to 'not set'.
->However, the 'irq' field for struct pci_dev is an integer,
->so the original meaning is lost, causing the system to
->assign an interrupt '255', which fails.
->
->So we should _not_ assign an interrupt value here, and
->allow upper layers to fixup things.
->
->This patch make PCI devices with MSI interrupts only
->(like the xhci device on certain HP laptops) work properly.
-
-Just tested and it works for me. Thank you.
-
-Tested-by: David Härdeman <david@hardeman.nu>
-
->Cc: Frederik Himpe <fhimpe@vub.ac.be>
->Cc: Oliver Neukum <oneukum@suse.de>
->Cc: David Haerdeman <david@hardeman.nu>
->Cc: linux-usb@vger.kernel.org
->Cc: linux-pci@vger.kernel.org
->Signed-off-by: Hannes Reinecke <hare@suse.de>
->
->diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->index 6186f03..a2db887f 100644
->--- a/drivers/pci/probe.c
->+++ b/drivers/pci/probe.c
->@@ -923,7 +923,8 @@ static void pci_read_irq(struct pci_dev *dev)
-> 	dev->pin = irq;
-> 	if (irq)
-> 		pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &irq);
->-	dev->irq = irq;
->+	if (irq < 255)
->+		dev->irq = irq;
-> }
+On Sun, Feb 17, 2013 at 05:10:56PM -0800, Eric W. Biederman wrote:
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
 > 
-> void set_pcie_port_type(struct pci_dev *pdev)
+> Add xfs_set_uid and xfs_set_gid to encapsulate the double write
+> needed when updating uid and gids, and uset them for all uid
+> and gid writes.
 >
+> Update VFS()->i_uid and VFS_I()->i_gid immediately after reading
+> on-disk inode values so that all of the cached uid and gid values
+> are always in sync allowing VFS()->i_uid and VFS()->i_gid to safely
+> be used everywhere.
+>
+> Replace reads of i_d.di_uid and i_d.di_gid with VFS_I()->i_uid and
+> VFS_I()->i_gid.
 
+tl;dr: gross layering violation.
+
+> diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
+> index 51c2597..846166d 100644
+> --- a/fs/xfs/xfs_inode.c
+> +++ b/fs/xfs/xfs_inode.c
+> @@ -1016,6 +1016,8 @@ xfs_iread(
+>  
+>  		ip->i_projid = ((projid_t)ip->i_d.di_projid_hi << 16) |
+>  					  ip->i_d.di_projid_lo;
+> +		VFS_I(ip)->i_uid = ip->i_d.di_uid;
+> +		VFS_I(ip)->i_gid = ip->i_d.di_gid;
+
+This is layers below anything VFS related and as such is a a gross
+layering violation. There are many operations done in XFS on inodes
+outside the life cycle of the struct inode, and so we cannot safely
+use anything in the struct inode outside of those contexts.
+
+The VFS struct inode values are only valid inside the defined life
+cycle of the VFS inode, and that means from xfs_setup_inode() to
+xfs_fs_evict_inode()/xfs_inactive(). Any use of uid/gid/prid outside
+those boundaries is completely internal to XFS and needs to be
+treated as such.
+
+> @@ -1201,8 +1203,8 @@ xfs_ialloc(
+>  	ip->i_d.di_onlink = 0;
+>  	ip->i_d.di_nlink = nlink;
+>  	ASSERT(ip->i_d.di_nlink == nlink);
+> -	ip->i_d.di_uid = current_fsuid();
+> -	ip->i_d.di_gid = current_fsgid();
+> +	xfs_set_uid(ip, current_fsuid());
+> +	xfs_set_gid(ip, current_fsgid());
+
+Same layering violation.
+
+
+>  	xfs_set_projid(ip, prid);
+>  	memset(&(ip->i_d.di_pad[0]), 0, sizeof(ip->i_d.di_pad));
+>  
+> @@ -1228,7 +1230,7 @@ xfs_ialloc(
+>  		xfs_bump_ino_vers2(tp, ip);
+>  
+>  	if (pip && XFS_INHERIT_GID(pip)) {
+> -		ip->i_d.di_gid = pip->i_d.di_gid;
+> +		xfs_set_gid(ip, VFS_I(pip)->i_gid);
+
+NACK. This is a pure parent->child value inheritence internal to
+XFS, and is way below the visibility of the VFS.
+
+>  		if ((pip->i_d.di_mode & S_ISGID) && S_ISDIR(mode)) {
+>  			ip->i_d.di_mode |= S_ISGID;
+>  		}
+> @@ -1241,7 +1243,7 @@ xfs_ialloc(
+>  	 */
+>  	if ((irix_sgid_inherit) &&
+>  	    (ip->i_d.di_mode & S_ISGID) &&
+> -	    (!in_group_p((gid_t)ip->i_d.di_gid))) {
+> +	    (!in_group_p(VFS_I(ip)->i_gid))) {
+>  		ip->i_d.di_mode &= ~S_ISGID;
+>  	}
+
+If this needs to be namespace aware, then convert the
+ip->i_d.di_gid to the namespace structure dynamically for the call
+to in_group_p().
+
+> diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
+> index 4afb509..db274d4 100644
+> --- a/fs/xfs/xfs_ioctl.c
+> +++ b/fs/xfs/xfs_ioctl.c
+> @@ -949,8 +949,8 @@ xfs_ioctl_setattr(
+>  	 * because the i_*dquot fields will get updated anyway.
+>  	 */
+>  	if (XFS_IS_QUOTA_ON(mp) && (mask & FSX_PROJID)) {
+> -		code = xfs_qm_vop_dqalloc(ip, ip->i_d.di_uid,
+> -					 ip->i_d.di_gid, fa->fsx_projid,
+> +		code = xfs_qm_vop_dqalloc(ip, VFS_I(ip)->i_uid,
+> +					 VFS_I(ip)->i_gid, fa->fsx_projid,
+>  					 XFS_QMOPT_PQUOTA, &udqp, &gdqp);
+
+The quota code assumes a direct relationship between the values in
+the struct xfs_inode and the dquot ID. It is not a relationship that
+namespaces enter into. namespace conversion should happen at the
+edge of the filesystem quota subsystem, (i.e. into an xfs_dqid_t)
+and the rest of the code left alone.
+
+> @@ -500,13 +500,13 @@ xfs_setattr_nonsize(
+>  			uid = iattr->ia_uid;
+>  			qflags |= XFS_QMOPT_UQUOTA;
+>  		} else {
+> -			uid = ip->i_d.di_uid;
+> +			uid = VFS_I(ip)->i_uid;
+>  		}
+>  		if ((mask & ATTR_GID) && XFS_IS_GQUOTA_ON(mp)) {
+>  			gid = iattr->ia_gid;
+>  			qflags |= XFS_QMOPT_GQUOTA;
+>  		}  else {
+> -			gid = ip->i_d.di_gid;
+> +			gid = VFS_I(ip)->i_gid;
+>  		}
+
+Same again - quota IDs are related to the on disk inode value, not
+the VFS, namespace aware value.
+
+> @@ -539,8 +539,8 @@ xfs_setattr_nonsize(
+>  		 * while we didn't have the inode locked, inode's dquot(s)
+>  		 * would have changed also.
+>  		 */
+> -		iuid = ip->i_d.di_uid;
+> -		igid = ip->i_d.di_gid;
+> +		iuid = VFS_I(ip)->i_uid;
+> +		igid = VFS_I(ip)->i_gid;
+>  		gid = (mask & ATTR_GID) ? iattr->ia_gid : igid;
+>  		uid = (mask & ATTR_UID) ? iattr->ia_uid : iuid;
+>  
+> @@ -587,8 +587,7 @@ xfs_setattr_nonsize(
+>  				olddquot1 = xfs_qm_vop_chown(tp, ip,
+>  							&ip->i_udquot, udqp);
+>  			}
+> -			ip->i_d.di_uid = uid;
+> -			inode->i_uid = uid;
+> +			xfs_set_uid(ip, uid);
+
+PLease keep these as separate updates, that way we can see clearly
+that we are updating both the VFS inode and the XFS inode here.
+
+> @@ -1155,8 +1153,6 @@ xfs_setup_inode(
+>  
+>  	inode->i_mode	= ip->i_d.di_mode;
+>  	set_nlink(inode, ip->i_d.di_nlink);
+> -	inode->i_uid	= ip->i_d.di_uid;
+> -	inode->i_gid	= ip->i_d.di_gid;
+
+Which further empahsises the layer violation...
+
+>  	switch (inode->i_mode & S_IFMT) {
+>  	case S_IFBLK:
+> diff --git a/fs/xfs/xfs_itable.c b/fs/xfs/xfs_itable.c
+> index cf5b1d0..a9e07dd 100644
+> --- a/fs/xfs/xfs_itable.c
+> +++ b/fs/xfs/xfs_itable.c
+> @@ -95,8 +95,8 @@ xfs_bulkstat_one_int(
+>  	buf->bs_projid_hi = (u16)(ip->i_projid >> 16);
+>  	buf->bs_ino = ino;
+>  	buf->bs_mode = dic->di_mode;
+> -	buf->bs_uid = dic->di_uid;
+> -	buf->bs_gid = dic->di_gid;
+> +	buf->bs_uid = VFS_I(ip)->i_uid;
+> +	buf->bs_gid = VFS_I(ip)->i_gid;
+
+Same as the project ID changes - bulkstat is supposed to return the
+raw on disk values, not namespace munged values.
+
+Cheers,
+
+Dave.
 -- 
-David Härdeman
+Dave Chinner
+david@fromorbit.com
