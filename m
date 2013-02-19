@@ -1,141 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab3BSAgO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 19:36:14 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:52709 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753460Ab3BSAgN (ORCPT
+	id S1757003Ab3BSAjX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 19:39:23 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:55429 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755170Ab3BSAjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 19:36:13 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlMKAOXHIlF5LHbb/2dsb2JhbABEhWC1MoUSgQQXc4IfAQEEAScTHCMFCwgDFQMJJQ8FJQMhE4gMBbFFj3oVjjoiPQeCX2EDliuQWYMb
-Date: Tue, 19 Feb 2013 11:36:08 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-fsdevel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>
-Subject: Re: [PATCH review 02/16] xfs: Store projectid as a single variable.
-Message-ID: <20130219003608.GF26694@dastard>
-References: <87txpaph4n.fsf@xmission.com>
- <1361149870-27732-1-git-send-email-ebiederm@xmission.com>
- <1361149870-27732-2-git-send-email-ebiederm@xmission.com>
+	Mon, 18 Feb 2013 19:39:21 -0500
+Message-ID: <5122C9B3.10306@gmail.com>
+Date: Tue, 19 Feb 2013 08:39:15 +0800
+From: Will Huck <will.huckk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361149870-27732-2-git-send-email-ebiederm@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hugh Dickins <hughd@google.com>
+CC: Li Haifeng <omycle@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: Should a swapped out page be deleted from swap cache?
+References: <CAFNq8R4UYvygk8+X+NZgyGjgU5vBsEv1UM6MiUxah6iW8=0HrQ@mail.gmail.com> <alpine.LNX.2.00.1302180939200.2246@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1302180939200.2246@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 17, 2013 at 05:10:55PM -0800, Eric W. Biederman wrote:
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> 
-> xfs_get_projid is torturous to read and it will not work at all when
-> project ids are stored in a kprojid_t.  So add a i_projid to
-> xfs_inode, that is cheap to read and can handle future needs, and
-> update all callers of xfs_get_projid to use i_projid.
-> 
-> Retain xfs_set_projid to handle the needed double updates, as there
-> are now two places the value needs to be set.
-> 
-> In xfs_iread after filling in i_d drom the on-disk inode update the
-> new i_projid field.
-> 
-> Cc: Ben Myers <bpm@sgi.com>
-> Cc: Alex Elder <elder@kernel.org>
-> Cc: Dave Chinner <david@fromorbit.com>
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  fs/xfs/xfs_icache.c   |    2 +-
->  fs/xfs/xfs_inode.c    |    6 +++++-
->  fs/xfs/xfs_inode.h    |    7 ++-----
->  fs/xfs/xfs_ioctl.c    |    6 +++---
->  fs/xfs/xfs_iops.c     |    2 +-
->  fs/xfs/xfs_itable.c   |    4 ++--
->  fs/xfs/xfs_qm.c       |   10 +++++-----
->  fs/xfs/xfs_qm_bhv.c   |    2 +-
->  fs/xfs/xfs_rename.c   |    2 +-
->  fs/xfs/xfs_vnodeops.c |    6 +++---
->  10 files changed, 24 insertions(+), 23 deletions(-)
-> 
-> diff --git a/fs/xfs/xfs_icache.c b/fs/xfs/xfs_icache.c
-> index 96e344e..4f109ca 100644
-> --- a/fs/xfs/xfs_icache.c
-> +++ b/fs/xfs/xfs_icache.c
-> @@ -1210,7 +1210,7 @@ xfs_inode_match_id(
->  		return 0;
->  
->  	if (eofb->eof_flags & XFS_EOF_FLAGS_PRID &&
-> -	    xfs_get_projid(ip) != eofb->eof_prid)
-> +	    ip->i_projid != eofb->eof_prid)
->  		return 0;
+Hi Hugh,
+On 02/19/2013 02:06 AM, Hugh Dickins wrote:
 
-Please retain the xfs_get_projid(ip) wrapper and do all the
-necessary conversions via that wrapper. We don't need a second copy
-of the project ID to support namespace aware project ID support.
+Another question:
 
->  	return 1;
-> diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
-> index 66282dc..51c2597 100644
-> --- a/fs/xfs/xfs_inode.c
-> +++ b/fs/xfs/xfs_inode.c
-> @@ -1013,6 +1013,10 @@ xfs_iread(
->  	 */
->  	if (dip->di_mode) {
->  		xfs_dinode_from_disk(&ip->i_d, dip);
-> +
-> +		ip->i_projid = ((projid_t)ip->i_d.di_projid_hi << 16) |
-> +					  ip->i_d.di_projid_lo;
-> +
+Why kernel memory mapping use direct mapping instead of kmalloc/vmalloc 
+which will setup mapping on demand?
 
-This does not belong here. At minimum, it would need to be in
-xfs_iformat(). Further, if there is a requirement it is initialised
-correctly, it needs to be zeroed in xfs_inode_alloc() where we pull
-a newly allocated inode out of the slab.
+> On Mon, 18 Feb 2013, Li Haifeng wrote:
+>
+>> For explain my question, the two points should be displayed as below.
+>>
+>> 1.  If an anonymous page is swapped out, this page will be deleted
+>> from swap cache and be put back into buddy system.
+> Yes, unless the page is referenced again before it comes to be
+> deleted from swap cache.
+>
+>> 2. When a page is swapped out, the sharing count of swap slot must not
+>> be zero. That is, page_swapcount(page) will not return zero.
+> I would not say "must not": we just prefer not to waste time on swapping
+> a page out if its use count has already gone to 0.  And its use count
+> might go down to 0 an instant after swap_writepage() makes that check.
+>
+>> Are both of them above right?
+>>
+>> According the two points above, I was confused to the line 655 below.
+>> When a page is swapped out, the return value of page_swapcount(page)
+>> will not be zero. So, the page couldn't be deleted from swap cache.
+> Yes, we cannot free the swap as long as its data might be needed again.
+>
+> But a swap cache page may linger in memory for an indefinite time,
+> in between being queued for write out, and actually being freed from
+> the end of the lru by memory pressure.
+>
+> At various points where we hold the page lock on a swap cache page,
+> it's worth checking whether it is still actually needed, or could
+> now be freed from swap cache, and the corresponding swap slot freed:
+> that's what try_to_free_swap() does.
+>
+> Hugh
+>
+>>   644  * If swap is getting full, or if there are no more mappings of this page,
+>>   645  * then try_to_free_swap is called to free its swap space.
+>>   646  */
+>>   647 int try_to_free_swap(struct page *page)
+>>   648 {
+>>   649         VM_BUG_ON(!PageLocked(page));
+>>   650
+>>   651         if (!PageSwapCache(page))
+>>   652                 return 0;
+>>   653         if (PageWriteback(page))
+>>   654                 return 0;
+>>   655         if (page_swapcount(page))//Has referenced by other swap out page.
+>>   656                 return 0;
+>>   657
+>>   658         /*
+>>   659          * Once hibernation has begun to create its image of memory,
+>>   660          * there's a danger that one of the calls to try_to_free_swap()
+>>   661          * - most probably a call from __try_to_reclaim_swap() while
+>>   662          * hibernation is allocating its own swap pages for the image,
+>>   663          * but conceivably even a call from memory reclaim - will free
+>>   664          * the swap from a page which has already been recorded in the
+>>   665          * image as a clean swapcache page, and then reuse its swap for
+>>   666          * another page of the image.  On waking from hibernation, the
+>>   667          * original page might be freed under memory pressure, then
+>>   668          * later read back in from swap, now with the wrong data.
+>>   669          *
+>>   670          * Hibration suspends storage while it is writing the image
+>>   671          * to disk so check that here.
+>>   672          */
+>>   673         if (pm_suspended_storage())
+>>   674                 return 0;
+>>   675
+>>   676         delete_from_swap_cache(page);
+>>   677         SetPageDirty(page);
+>>   678         return 1;
+>>   679 }
+>>
+>> Thanks.
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-As it is, however, having read further through the patches, I can't
-really see why we need even need a separate variable - the
-conversions shoul dbe done at the edge of the filesystem (i.e. VFS
-and ioctl interfaces, and the core of the filesystem left completely
-untouched.
-
->  static inline void
->  xfs_set_projid(struct xfs_inode *ip,
->  		prid_t projid)
->  {
-> +	ip->i_projid = projid;
->  	ip->i_d.di_projid_hi = (__uint16_t) (projid >> 16);
->  	ip->i_d.di_projid_lo = (__uint16_t) (projid & 0xffff);
->  }
-
-As all you are doing is introduing a requirement that we keep two
-variables in sync and increase the size of the struct xfs_inode
-unnecessarily. History says this sort of duplication is a source of
-subtle bugs....
-
-> diff --git a/fs/xfs/xfs_itable.c b/fs/xfs/xfs_itable.c
-> index 2ea7d40..cf5b1d0 100644
-> --- a/fs/xfs/xfs_itable.c
-> +++ b/fs/xfs/xfs_itable.c
-> @@ -91,8 +91,8 @@ xfs_bulkstat_one_int(
->  	 * further change.
->  	 */
->  	buf->bs_nlink = dic->di_nlink;
-> -	buf->bs_projid_lo = dic->di_projid_lo;
-> -	buf->bs_projid_hi = dic->di_projid_hi;
-> +	buf->bs_projid_lo = (u16)(ip->i_projid & 0xffff);
-> +	buf->bs_projid_hi = (u16)(ip->i_projid >> 16);
-
-There is no need for this change at all. Even if we have a second
-variable, the two are in sync and of reading from the dic is
-perfectly OK.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
