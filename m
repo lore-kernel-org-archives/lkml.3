@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933876Ab3BSSzu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:55:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54578 "EHLO
+	id S934081Ab3BSS41 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:56:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54567 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933701Ab3BSSzW (ORCPT
+	with ESMTP id S1758787Ab3BSSzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:55:22 -0500
+	Tue, 19 Feb 2013 13:55:14 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 80/81] efi: Clear EFI_RUNTIME_SERVICES rather than EFI_BOOT by "noefi" boot parameter
-Date: Tue, 19 Feb 2013 15:49:43 -0300
-Message-Id: <1361299784-8830-81-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 78/81] x86/mm: Check if PUD is large when validating a kernel address
+Date: Tue, 19 Feb 2013 15:49:41 -0300
+Message-Id: <1361299784-8830-79-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,69 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 1de63d60cd5b0d33a812efa455d5933bf1564a51 upstream.
+commit 0ee364eb316348ddf3e0dfcd986f5f13f528f821 upstream.
 
-There was a serious problem in samsung-laptop that its platform driver is
-designed to run under BIOS and running under EFI can cause the machine to
-become bricked or can cause Machine Check Exceptions.
+A user reported the following oops when a backup process reads
+/proc/kcore:
 
-    Discussion about this problem:
-    https://bugs.launchpad.net/ubuntu-cdimage/+bug/1040557
-    https://bugzilla.kernel.org/show_bug.cgi?id=47121
+ BUG: unable to handle kernel paging request at ffffbb00ff33b000
+ IP: [<ffffffff8103157e>] kern_addr_valid+0xbe/0x110
+ [...]
 
-    The patches to fix this problem:
-    efi: Make 'efi_enabled' a function to query EFI facilities
-    83e68189745ad931c2afd45d8ee3303929233e7f
+ Call Trace:
+  [<ffffffff811b8aaa>] read_kcore+0x17a/0x370
+  [<ffffffff811ad847>] proc_reg_read+0x77/0xc0
+  [<ffffffff81151687>] vfs_read+0xc7/0x130
+  [<ffffffff811517f3>] sys_read+0x53/0xa0
+  [<ffffffff81449692>] system_call_fastpath+0x16/0x1b
 
-    samsung-laptop: Disable on EFI hardware
-    e0094244e41c4d0c7ad69920681972fc45d8ce34
+Investigation determined that the bug triggered when reading
+system RAM at the 4G mark. On this system, that was the first
+address using 1G pages for the virt->phys direct mapping so the
+PUD is pointing to a physical address, not a PMD page.
 
-Unfortunately this problem comes back again if users specify "noefi" option.
-This parameter clears EFI_BOOT and that driver continues to run even if running
-under EFI. Refer to the document, this parameter should clear
-EFI_RUNTIME_SERVICES instead.
+The problem is that the page table walker in kern_addr_valid() is
+not checking pud_large() and treats the physical address as if
+it was a PMD.  If it happens to look like pmd_none then it'll
+silently fail, probably returning zeros instead of real data. If
+the data happens to look like a present PMD though, it will be
+walked resulting in the oops above.
 
-Documentation/kernel-parameters.txt:
-===============================================================================
-...
-	noefi		[X86] Disable EFI runtime services support.
-...
-===============================================================================
+This patch adds the necessary pud_large() check.
 
-Documentation/x86/x86_64/uefi.txt:
-===============================================================================
-...
-- If some or all EFI runtime services don't work, you can try following
-  kernel command line parameters to turn off some or all EFI runtime
-  services.
-	noefi		turn off all EFI runtime services
-...
-===============================================================================
+Unfortunately the problem was not readily reproducible and now
+they are running the backup program without accessing
+/proc/kcore so the patch has not been validated but I think it
+makes sense.
 
-Signed-off-by: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-Link: http://lkml.kernel.org/r/511C2C04.2070108@jp.fujitsu.com
-Cc: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.coM>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org
+Link: http://lkml.kernel.org/r/20130211145236.GX21389@suse.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- arch/x86/platform/efi/efi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/pgtable.h |    5 +++++
+ arch/x86/mm/init_64.c          |    3 +++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 6fcd4ad..3705bb0 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -86,7 +86,7 @@ EXPORT_SYMBOL(efi_enabled);
- 
- static int __init setup_noefi(char *arg)
- {
--	clear_bit(EFI_BOOT, &x86_efi_facility);
-+	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
- 	return 0;
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index c3520d7..3f3dd52 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -142,6 +142,11 @@ static inline unsigned long pmd_pfn(pmd_t pmd)
+ 	return (pmd_val(pmd) & PTE_PFN_MASK) >> PAGE_SHIFT;
  }
- early_param("noefi", setup_noefi);
+ 
++static inline unsigned long pud_pfn(pud_t pud)
++{
++	return (pud_val(pud) & PTE_PFN_MASK) >> PAGE_SHIFT;
++}
++
+ #define pte_page(pte)	pfn_to_page(pte_pfn(pte))
+ 
+ static inline int pmd_large(pmd_t pte)
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 3baff25..ce42da7 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -829,6 +829,9 @@ int kern_addr_valid(unsigned long addr)
+ 	if (pud_none(*pud))
+ 		return 0;
+ 
++	if (pud_large(*pud))
++		return pfn_valid(pud_pfn(*pud));
++
+ 	pmd = pmd_offset(pud, addr);
+ 	if (pmd_none(*pmd))
+ 		return 0;
 -- 
 1.7.9.5
 
