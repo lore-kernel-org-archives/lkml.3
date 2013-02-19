@@ -1,104 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758103Ab3BSCAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 21:00:01 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:22809 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758024Ab3BSB77 (ORCPT
+	id S1758111Ab3BSCCB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 21:02:01 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:47877 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758027Ab3BSCB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 20:59:59 -0500
-X-AuditID: cbfee68f-b7f656d000000d78-34-5122dc9e2f58
-From: Boojin Kim <boojin.kim@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: "'Dan Williams'" <djbw@fb.com>, "'Vinod Koul'" <vinod.koul@intel.com>,
-        "'Jaswinder Singh'" <jassi.brar@samsung.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>
-Subject: [PATCH 1/2] dma: pl330: support burst mode for dev-to-mem and
- mem-to-dev transmit
-Date: Tue, 19 Feb 2013 10:59:57 +0900
-Message-id: <00ea01ce0e44$d1a9e360$74fdaa20$%kim@samsung.com>
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4ORNEloL6pleRKSRCwKBmaENW5Ew==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t8zY915d5QCDRa/Fbe4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZhxZcZi64zFcxaStXA+Mf7i5GTg4JAROJ17ceskHYYhIX7q0H
-	srk4hASWMUp8ePCEFaZozuF7jBCJRYwS64/eZ4Jw5jFJrJz+gQmkik1AU2LG9+nsILaIgILE
-	5t5nrCBFzALzGCU+P/oHlhAWiJG482YeC4jNIqAqcXvyfbDdvAK2Emd7eoFsDqB16hKP/upC
-	zNGT2H1tAlgrs4CIxL4X7xghLrrOJvFylQHEGAGJb5MPsUC0ykpsOsAMUSIpcXDFDZYJjMKz
-	kHQvYGRcxSiaWpBcUJyUXmSsV5yYW1yal66XnJ+7iRESmP07GO8esD7EmAw0eiKzlGhyPjCw
-	80riDY2NTcxMTE3MLU3NTUkTVhLnlb8kEygkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBUWFf
-	+eIHGf83s5nFrpJQjyl9dtvBm1vj8wvZzX6iRrXR8/c7TLuht0B6emHFl3epUh2unqVs13de
-	YF+neUMiqCY5JW7JSvOo1NzTQX+UO6ZdW/Foi2+wFYfp174PDoq16qubI5kZ9XfLvlwkWsG/
-	x2bXnt/dKwslL0kkeZfF/ayQDtnH0X1SiaU4I9FQi7moOBEAwTFmxGICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t9jAd15d5QCDbZOELG4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGYcWXGYuuMxXMWkrVwPj
-	H+4uRk4OCQETiTmH7zFC2GISF+6tZ+ti5OIQEljEKLH+6H0mCGcek8TK6R+YQKrYBDQlZnyf
-	zg5iiwgoSGzufcYKUsQsMI9R4vOjf2AJYYEYiTtv5rGA2CwCqhK3J99nA7F5BWwlzvb0Atkc
-	QOvUJR791YWYoyex+9oEsFZmARGJfS/eMU5g5J2FxF3AyLiKUTS1ILmgOCk910ivODG3uDQv
-	XS85P3cTIzjwn0nvYFzVYHGIUYCDUYmH94OjUqAQa2JZcWXuIUYJDmYlEd6OdqAQb0piZVVq
-	UX58UWlOavEhxmSgAycyS4km5wOjMq8k3tDYxMzI0sjMwsjE3Jw0YSVxXsZTTwKEBNITS1Kz
-	U1MLUotgtjBxcEo1ME79tHT5+QOiR6e0Tz0jFBsRf4n3nnRe88VGh2XfnqlKc1XU9SYnHug3
-	+fSd+fkWrcu5Gy47Jt5nXBH4eVdK5p8JHf7rgr35zVs2yxzNaG1g2P2pordxyf2Vbe63Smsa
-	5tjGbBRwiZyh3fYm76WzZe6sI5mrzVWX2xuEyDZOm/ImP7lpf4epgRJLcUaioRZzUXEiACHO
-	x5TAAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 18 Feb 2013 21:01:59 -0500
+Date: Tue, 19 Feb 2013 13:01:49 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the drm-intel tree
+Message-Id: <20130219130149.a3762b8a2f38879d3e0e6243@canb.auug.org.au>
+In-Reply-To: <20130215081626.6cbb2e74@jbarnes-desktop>
+References: <20130215133714.6f55139ad1a037b7b9fa1b70@canb.auug.org.au>
+	<CAKMK7uGG4R68ED4M1uYRUZAhxRMzao0vk9oFg_vxZ8ofhx1=yw@mail.gmail.com>
+	<20130215081626.6cbb2e74@jbarnes-desktop>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__19_Feb_2013_13_01_49_+1100_MrUVldn9EGF7b8Jk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds to support burst mode for dev-to-mem and mem-to-dev transmit
+--Signature=_Tue__19_Feb_2013_13_01_49_+1100_MrUVldn9EGF7b8Jk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Boojin Kim <boojin.kim@samsung.com>
----
- drivers/dma/pl330.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+Hi Daniel,
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 80680ee..a070160 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -1271,10 +1271,11 @@ static inline int _ldst_devtomem(unsigned dry_run, u8 buf[],
- 		const struct _xfer_spec *pxs, int cyc)
- {
- 	int off = 0;
-+	enum pl330_cond cond = (pxs->r->cfg->brst_size == 1) ? SINGLE : BURST;
+On Fri, 15 Feb 2013 08:16:26 -0800 Jesse Barnes <jbarnes@virtuousgeek.org> =
+wrote:
+>
+> On Fri, 15 Feb 2013 10:30:16 +0100
+> Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+>=20
+> > On Fri, Feb 15, 2013 at 3:37 AM, Stephen Rothwell <sfr@canb.auug.org.au=
+> wrote:
+> > >
+> > > After merging the drm-intel tree, today's linux-next build (x86_64
+> > > allmodconfig) failed like this:
+> > >
+> > > ERROR: "pm_vt_switch_unregister" [drivers/video/fb.ko] undefined!
+> > >
+> > > I have dropped the tree for today.
+> >=20
+> > Meh, that fail was already reported from Wu's kernel builder a few
+> > days ago, but no patch yet showed up to fix things. Since the i915
+> > side of that work isn't ready yet either I've dropped the offending
+> > patches.
+>=20
+> I sent a patch yesterday for this.  I'll bounce it over again.
 
- 	while (cyc--) {
--		off += _emit_WFP(dry_run, &buf[off], SINGLE, pxs->r->peri);
--		off += _emit_LDP(dry_run, &buf[off], SINGLE, pxs->r->peri);
-+		off += _emit_WFP(dry_run, &buf[off], cond, pxs->r->peri);
-+		off += _emit_LDP(dry_run, &buf[off], cond, pxs->r->peri);
- 		off += _emit_ST(dry_run, &buf[off], ALWAYS);
- 		off += _emit_FLUSHP(dry_run, &buf[off], pxs->r->peri);
- 	}
-@@ -1286,11 +1287,12 @@ static inline int _ldst_memtodev(unsigned dry_run, u8 buf[],
- 		const struct _xfer_spec *pxs, int cyc)
- {
- 	int off = 0;
-+	enum pl330_cond cond = (pxs->r->cfg->brst_size == 1) ? SINGLE : BURST;
+I am still getting that build failure.
 
- 	while (cyc--) {
--		off += _emit_WFP(dry_run, &buf[off], SINGLE, pxs->r->peri);
-+		off += _emit_WFP(dry_run, &buf[off], cond, pxs->r->peri);
- 		off += _emit_LD(dry_run, &buf[off], ALWAYS);
--		off += _emit_STP(dry_run, &buf[off], SINGLE, pxs->r->peri);
-+		off += _emit_STP(dry_run, &buf[off], cond, pxs->r->peri);
- 		off += _emit_FLUSHP(dry_run, &buf[off], pxs->r->peri);
- 	}
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-@@ -2835,7 +2837,7 @@ pl330_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
- 		}
+--Signature=_Tue__19_Feb_2013_13_01_49_+1100_MrUVldn9EGF7b8Jk
+Content-Type: application/pgp-signature
 
- 		desc->rqcfg.brst_size = pch->burst_sz;
--		desc->rqcfg.brst_len = 1;
-+		desc->rqcfg.brst_len = pch->burst_len;
- 	}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
- 	/* Return the last desc in the chain */
---
-1.7.5.4
+iQIcBAEBCAAGBQJRIt0NAAoJEECxmPOUX5FEV8cP/02gjDo1iZ2sDfzxWCdSSKgy
+klRFZf0Y6/8ipsDSdLeRN2MSu9JmsrthHvH+dlqPxlWmsAGV+bAUDTxL2Kd5Mq/z
+WQN73qtiVNaiWSSQKA5dgv1Z1awrOu/5hXYyqdMPto/HP8N7AaKhvqJlO1t9/YB2
+2z3BAY/9EUY4jMHcj9LrIgQ7OmED+qZz3HpOBNQAF7ptvrvkzOV8V6v6ifPUqvmI
+WaZ55VtnxGnh6V8ndCV/IwQRiuNIkTZkYa17HYxt0kRtDt7FQd31Xbz+rcTHmHD7
+Mh0DGQeqWIYo8KWJpYS3lh64z0aSNZj4rUtUC/sMBeM8aPxPE54d4YT9ND1cIWyD
+tgkWTUeM1UssVZUZCWrXtt4r4EsFQhMGlnzQP2IGq1T+M3/6DIjBKHDqFIxC8Loz
+wsWwapuohLvfm/zuvBrnIPaKRj4jbDf6yCrtAi3+x7JxSvHBmI/aqwtypwdW8XVn
+OzamX04FEFkHeH6oNyXn13ZvjeR4rTDakrz+OvrhXq1pCC6aPekFf3rM5NM2mlVM
+QushcSQlm2XUsmvttYRXvaPGxm+CIi8WIaQnJYkXYKzfZlb1Zjfp/E9Igj6W5ni3
+2UUqi9gw2+U3GrOTX6LVyWqhFvTomAuuVC8UnpnDO6WG6odgyTH6IDOPa+nbJ6xv
+yEplGlechG545bNqAvkX
+=w4Yt
+-----END PGP SIGNATURE-----
 
-
+--Signature=_Tue__19_Feb_2013_13_01_49_+1100_MrUVldn9EGF7b8Jk--
