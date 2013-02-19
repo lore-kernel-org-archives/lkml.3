@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758346Ab3BSNRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 08:17:19 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62129 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757957Ab3BSNRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 08:17:18 -0500
-X-IronPort-AV: E=Sophos;i="4.84,695,1355068800"; 
-   d="scan'208";a="6730249"
-Message-ID: <51237B37.8080207@cn.fujitsu.com>
-Date: Tue, 19 Feb 2013 21:16:39 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932769Ab3BSN2E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 08:28:04 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:40620 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932624Ab3BSN2D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 08:28:03 -0500
+Message-ID: <51237DDB.2050305@gmail.com>
+Date: Tue, 19 Feb 2013 21:27:55 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: akpm@linux-foundation.org, jiang.liu@huawei.com, wujianguo@huawei.com,
-        hpa@zytor.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        linfeng@cn.fujitsu.com, yinghai@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
-        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
-        glommer@parallels.com, Shaohua Li <shli@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [Bug fix PATCH 1/2] acpi, movablemem_map: Do not zero numa_meminfo
- in numa_init().
-References: <1361278904-8690-1-git-send-email-tangchen@cn.fujitsu.com> <1361278904-8690-2-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1361278904-8690-2-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/19 21:16:36,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/19 21:16:37,
-	Serialize complete at 2013/02/19 21:16:37
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+CC: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mgorman@suse.de, kyungmin.park@samsung.com
+Subject: Re: [PATCH] mm: cma: fix accounting of CMA pages placed in high memory
+References: <1359973626-3900-1-git-send-email-m.szyprowski@samsung.com> <20130204233430.GA2610@blaptop> <5110B05B.5070109@samsung.com>
+In-Reply-To: <5110B05B.5070109@samsung.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, add cc Li Shaohua.
+On 02/05/2013 03:10 PM, Marek Szyprowski wrote:
+> Hello,
+>
+> On 2/5/2013 12:34 AM, Minchan Kim wrote:
+>> On Mon, Feb 04, 2013 at 11:27:05AM +0100, Marek Szyprowski wrote:
+>> > The total number of low memory pages is determined as
+>> > totalram_pages - totalhigh_pages, so without this patch all CMA
+>> > pageblocks placed in highmem were accounted to low memory.
+>>
+>> So what's the end user effect? With the effect, we have to decide
+>> routing it on stable.
+>>
+>> >
+>> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>> > ---
+>> >  mm/page_alloc.c |    4 ++++
+>> >  1 file changed, 4 insertions(+)
+>> >
+>> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> > index f5bab0a..6415d93 100644
+>> > --- a/mm/page_alloc.c
+>> > +++ b/mm/page_alloc.c
+>> > @@ -773,6 +773,10 @@ void __init init_cma_reserved_pageblock(struct 
+>> page *page)
+>> >      set_pageblock_migratetype(page, MIGRATE_CMA);
+>> >      __free_pages(page, pageblock_order);
+>> >      totalram_pages += pageblock_nr_pages;
+>> > +#ifdef CONFIG_HIGHMEM
+>>
+>> We don't need #ifdef/#endif.
+>
+> #ifdef is required to let this code compile when highmem is not enabled,
+> becuase totalhigh_pages is defined as 0, see include/linux/highmem.h
+>
 
-Reported-by: Li Shaohua <shli@kernel.org>
+Hi Marek,
 
+1) Why can support CMA regions placed in highmem? CMA is for dma buffer, 
+correct? Then how can old dma device access highmem?
+2) Why there is no totalhigh_pages variable define in the case of config 
+highmem?
 
-On 02/19/2013 09:01 PM, Tang Chen wrote:
-> early_parse_srat() is called before numa_init(), and has initialized
-> numa_meminfo. So do not zero numa_meminfo in numa_init(), otherwise
-> we will lose memory numa info.
+>> > +    if (PageHighMem(page))
+>> > +        totalhigh_pages += pageblock_nr_pages;
+>> > +#endif
+>> >  }
+>> >  #endif
+>> >
 >
-> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
-> ---
->   arch/x86/mm/numa.c |    6 ++++--
->   1 files changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-> index 3545585..ff3633c 100644
-> --- a/arch/x86/mm/numa.c
-> +++ b/arch/x86/mm/numa.c
-> @@ -559,10 +559,12 @@ static int __init numa_init(int (*init_func)(void))
->   	for (i = 0; i<  MAX_LOCAL_APIC; i++)
->   		set_apicid_to_node(i, NUMA_NO_NODE);
->
-> -	/* Do not clear numa_nodes_parsed because SRAT was parsed earlier. */
-> +	/*
-> +	 * Do not clear numa_nodes_parsed or zero numa_meminfo here, because
-> +	 * SRAT was parsed earlier in early_parse_srat().
-> +	 */
->   	nodes_clear(node_possible_map);
->   	nodes_clear(node_online_map);
-> -	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
->   	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
->   	numa_reset_distance();
->
+> Best regards
+
