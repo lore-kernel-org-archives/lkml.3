@@ -1,66 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758925Ab3BSXov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 18:44:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47291 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758700Ab3BSXou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 18:44:50 -0500
-Message-ID: <51240DC0.7020302@zytor.com>
-Date: Tue, 19 Feb 2013 15:41:52 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1758956Ab3BSXpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 18:45:20 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51657 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758700Ab3BSXpS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 18:45:18 -0500
+X-AuditID: 9c930179-b7c24ae00000119c-36-51240e8ca0f6
+Date: Wed, 20 Feb 2013 08:45:16 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Sealey <matt@genesi-usa.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: Re: [PATCH] zsmalloc: Fix TLB coherency and build problem
+Message-ID: <20130219234516.GB16950@blaptop>
+References: <1359334808-19794-1-git-send-email-minchan@kernel.org>
+ <51234EEC.3010700@gmail.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        ebiederm@xmission.com, xemul@parallels.com,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [patch 1/2] kcmp: Make it to depend on CONFIG_KCMP
-References: <20130219064800.719149796@openvz.org> <20130219065210.030802820@openvz.org> <5123444D.6000806@suse.cz> <20130219093154.GF20312@moon> <5123BC2B.6000304@zytor.com> <20130219182838.GL20312@moon> <20130219134256.f4cedf44.akpm@linux-foundation.org> <20130219215432.GP20312@moon> <20130219140035.373ce4d2.akpm@linux-foundation.org> <20130219221146.GR20312@moon>
-In-Reply-To: <20130219221146.GR20312@moon>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51234EEC.3010700@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2013 02:11 PM, Cyrill Gorcunov wrote:
-> On Tue, Feb 19, 2013 at 02:00:35PM -0800, Andrew Morton wrote:
->>>
->>> I think this syscall is usefull even without c/r stuff.
->>> That's why I made it with separate config option.
->>
->> hm, OK.
->>
->> But the patch also permits CONFIG_CHECKPOINT_RESTORE=y, CONFIG_KCMP=n
->> which surely isn't something which CRIU wants to support?
->
-> Hmm, yes from one pov this feature is useful for out-of-c/r user,
-> from another pov -- we will have to ask users to turn on additional
-> CONFIG entries (which i'm sure not set by default in wide range of distros).
-> Thus it seems less paiful way is either make it obj-(CHECKPOINT_RESTORE)
-> as you proposed, or obj-y by default. The last can't be undone, so I'll
-> prepare the patch for obj-(CHECKPOINT_RESTORE) I think.
->
+On Tue, Feb 19, 2013 at 06:07:40PM +0800, Simon Jeons wrote:
+> On 01/28/2013 09:00 AM, Minchan Kim wrote:
+> >Recently, Matt Sealey reported he fail to build zsmalloc caused by
+> >using of local_flush_tlb_kernel_range which are architecture dependent
+> >function so !CONFIG_SMP in ARM couldn't implement it so it ends up
+> >build error following as.
+> 
+> Confuse me!
+> 
+> 1) Why I see flush_tlb_kernel_range is different in different architecture?
 
-Well, that's what dependencies are for.
+IMHO, all architecture can do their best effort by thier own way.
 
-Either way we might just want to wait for such a use case to appear, I 
-don't know.
+> 2) Does local here means local cpu? If the answer is yes, why ARM
 
-	-hpa
+Yes.
+
+> doesn't support it?
+
+ARM supports it for some configuration and CPUs.
+The thing is that every architecture doesn't support so it's not a generic API.
+It means we should avoid it in general layer.
+
+> 
+> >
+> >   MODPOST 216 modules
+> >   LZMA    arch/arm/boot/compressed/piggy.lzma
+> >   AS      arch/arm/boot/compressed/lib1funcs.o
+> >ERROR: "v7wbi_flush_kern_tlb_range"
+> >[drivers/staging/zsmalloc/zsmalloc.ko] undefined!
+> >make[1]: *** [__modpost] Error 1
+> >make: *** [modules] Error 2
+> >make: *** Waiting for unfinished jobs....
+> >
+> >The reason we used that function is copy method by [1]
+> >was really slow in ARM but at that time.
+> >
+> >More severe problem is ARM can prefetch speculatively on other CPUs
+> >so under us, other TLBs can have an entry only if we do flush local
+> >CPU. Russell King pointed that. Thanks!
+> >We don't have many choices except using flush_tlb_kernel_range.
+> >
+> >My experiment in ARMv7 processor 4 core didn't make any difference with
+> >zsmapbench[2] between local_flush_tlb_kernel_range and flush_tlb_kernel_range
+> >but still page-table based is much better than copy-based.
+> >
+> >* bigger is better.
+> >
+> >1. local_flush_tlb_kernel_range: 3918795 mappings
+> >2. flush_tlb_kernel_range : 3989538 mappings
+> >3. copy-based: 635158 mappings
+> >
+> >This patch replace local_flush_tlb_kernel_range with
+> >flush_tlb_kernel_range which are avaialbe in all architectures
+> >because we already have used it in vmalloc allocator which are
+> >generic one so build problem should go away and performane loss
+> >shoud be void.
+> >
+> >[1] f553646, zsmalloc: add page table mapping method
+> >[2] https://github.com/spartacus06/zsmapbench
+> >
+> >Cc: stable@vger.kernel.org
+> >Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+> >Cc: Russell King <linux@arm.linux.org.uk>
+> >Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
+> >Cc: Nitin Gupta <ngupta@vflare.org>
+> >Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> >Reported-by: Matt Sealey <matt@genesi-usa.com>
+> >Signed-off-by: Minchan Kim <minchan@kernel.org>
+> >---
+> >
+> >Matt, Could you test this patch?
+> >
+> >  drivers/staging/zsmalloc/zsmalloc-main.c |   10 ++++------
+> >  1 file changed, 4 insertions(+), 6 deletions(-)
+> >
+> >diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+> >index eb00772..82e627c 100644
+> >--- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> >+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> >@@ -222,11 +222,9 @@ struct zs_pool {
+> >  /*
+> >   * By default, zsmalloc uses a copy-based object mapping method to access
+> >   * allocations that span two pages. However, if a particular architecture
+> >- * 1) Implements local_flush_tlb_kernel_range() and 2) Performs VM mapping
+> >- * faster than copying, then it should be added here so that
+> >- * USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use page table
+> >- * mapping rather than copying
+> >- * for object mapping.
+> >+ * performs VM mapping faster than copying, then it should be added here
+> >+ * so that USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use
+> >+ * page table mapping rather than copying for object mapping.
+> >  */
+> >  #if defined(CONFIG_ARM)
+> >  #define USE_PGTABLE_MAPPING
+> >@@ -663,7 +661,7 @@ static inline void __zs_unmap_object(struct mapping_area *area,
+> >  	flush_cache_vunmap(addr, end);
+> >  	unmap_kernel_range_noflush(addr, PAGE_SIZE * 2);
+> >-	local_flush_tlb_kernel_range(addr, end);
+> >+	flush_tlb_kernel_range(addr, end);
+> >  }
+> >  #else /* USE_PGTABLE_MAPPING */
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Kind regards,
+Minchan Kim
