@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261Ab3BSRtQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 12:49:16 -0500
-Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.90]:30855 "EHLO
-	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933041Ab3BSRtN (ORCPT
+	id S933272Ab3BSRvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 12:51:16 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:44356 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932746Ab3BSRvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 12:49:13 -0500
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
- Driver
-Thread-Topic: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
- Driver
-Thread-Index: AQHOC6xQKsSDc1Q1WkuxN29CXfjd55iB8XAA//+EDqA=
-Date: Tue, 19 Feb 2013 17:48:39 +0000
-Message-ID: <1ca36b5d55c64ac6b8854c4f216ef8e5@DFM-TK5MBX15-06.exchange.corp.microsoft.com>
-References: <1360955396-14183-1-git-send-email-haiyangz@microsoft.com>
- <20130219165118.GA17715@aepfle.de>
-In-Reply-To: <20130219165118.GA17715@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 19 Feb 2013 12:51:15 -0500
+Date: Tue, 19 Feb 2013 09:51:10 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Dan Williams <dcbw@redhat.com>
+Subject: [GIT PULL] workqueue [delayed_]work_pending() cleanups for 3.9-rc1
+Message-ID: <20130219175110.GN17414@htj.dyndns.org>
 MIME-Version: 1.0
-X-Forefront-Antispam-Report: CIP:131.107.1.17;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(51704002)(13464002)(377454001)(24454001)(164054002)(189002)(199002)(56816002)(4396001)(50466001)(31966008)(23676001)(79102001)(16406001)(50986001)(5343655001)(44976002)(74662001)(77982001)(59766001)(51856001)(74502001)(47446002)(56776001)(65816001)(76482001)(47976001)(47736001)(49866001)(876001)(54356001)(54316002)(63696002)(47776003)(33646001)(20776003)(66066001)(80022001)(53806001)(46102001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2SR01MB609;H:hybrid.exchange.microsoft.com;RD:mail1.exchange.microsoft.com;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 0762FFD075
-X-OriginatorOrg: DuplicateDomain-7923a859-03c9-4312-a77c-440aa45aaf52.microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1JHnGtn031072
 
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Tuesday, February 19, 2013 11:51 AM
-> To: Haiyang Zhang
-> Cc: FlorianSchandinat@gmx.de; linux-fbdev@vger.kernel.org; KY Srinivasan;
-> jasowang@redhat.com; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org
-> Subject: Re: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
-> Driver
-> 
-> On Fri, Feb 15, Haiyang Zhang wrote:
-> 
-> > @@ -508,6 +544,18 @@ static int __init vesafb_init(void)
-> >  	int ret;
-> >  	char *option = NULL;
-> >
-> > +#if IS_ENABLED(CONFIG_HYPERV_FB)
-> > +	/*
-> > +	 * On Hyper-V both the emulated and synthetic video devices are
-> > +	 * available. To avoid conflicts, we disable vesafb for the
-> emulated
-> > +	 * video if hyperv_fb is configured.
-> > +	 */
-> > +	if (is_hyperv()) {
-> > +		pr_info("Disabled vesafb on Hyper-V.\n");
-> > +		return -ENODEV;
-> > +	}
-> > +#endif
-> 
-> What is the reason for this hook? Is it not possible to claim the
-> display like its appearently done by other drivers (like radeonfb can
-> take over display from vesafb)?
+Hello, Linus.
 
-The emulated video device is a separate device from the synthetic video.
-The synthetic driver can only take control of the synthetic video, but not
-the emulated video.
+This is part of on-going cleanups to remove / minimize usages of
+workqueue interfaces which are deprecated and/or misleading.  This
+round drops a number of usages of [delayed_]work_pending(), which are
+dangerous as they lack any form of synchronization and thus often lead
+to buggy / unnecessary code.  There are a couple legitimate use cases
+in kernel.  Hopefully, they can be converted and
+[delayed_]work_pending() can be removed completely.  Even if not,
+removing most of misuses should make it more difficult to find
+examples of misuses and thus slow down growth of them.
 
-Actually, we already have a similar mechanism in ata/ata_piix.c to disable
-emulated IDE drive on Hyper-V, so it won't conflict with the synthetic drive.
+These changes are independent from other workqueue changes.
 
-Thanks,
-- Haiyang
+The changes are available in the following git branch
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.9-cleanups
+
+for you to fetch changes up to 23663c873154f01220ef679558e1ca110c4c4ca4:
+
+  wimax/i2400m: fix i2400m->wake_tx_skb handling (2013-02-09 11:34:19 -0800)
+
+----------------------------------------------------------------
+Tejun Heo (11):
+      sja1000: don't use [delayed_]work_pending()
+      mwifiex: don't use [delayed_]work_pending()
+      thinkpad_acpi: don't use [delayed_]work_pending()
+      wl1251: don't use [delayed_]work_pending()
+      rfkill: don't use [delayed_]work_pending()
+      x86/mce: don't use [delayed_]work_pending()
+      tty/max3100: don't use [delayed_]work_pending()
+      video/exynos: don't use [delayed_]work_pending()
+      ipw2x00: simplify scan_event handling
+      kprobes: fix wait_for_kprobe_optimizer()
+      wimax/i2400m: fix i2400m->wake_tx_skb handling
+
+ arch/x86/kernel/cpu/mcheck/mce.c       | 14 +++-----------
+ drivers/net/can/sja1000/peak_pci.c     |  3 +--
+ drivers/net/wimax/i2400m/netdev.c      | 31 +++++++++++++++++--------------
+ drivers/net/wireless/ipw2x00/ipw2100.c | 31 ++++++++-----------------------
+ drivers/net/wireless/ipw2x00/ipw2100.h |  3 +--
+ drivers/net/wireless/ipw2x00/ipw2200.c | 13 +++----------
+ drivers/net/wireless/mwifiex/sdio.c    |  9 ++++-----
+ drivers/net/wireless/ti/wl1251/ps.c    |  3 +--
+ drivers/platform/x86/thinkpad_acpi.c   |  3 +--
+ drivers/tty/serial/max3100.c           |  3 +--
+ drivers/video/exynos/exynos_dp_core.c  |  6 ++----
+ kernel/kprobes.c                       | 23 +++++++++++++++--------
+ net/rfkill/input.c                     |  8 +++-----
+ 13 files changed, 60 insertions(+), 90 deletions(-)
+
+Thanks.
+
+--
+tejun
