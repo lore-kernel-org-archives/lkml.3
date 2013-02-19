@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758659Ab3BSKOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:14:46 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39935 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758262Ab3BSKOp (ORCPT
+	id S1758685Ab3BSKRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:17:31 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:33333 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758633Ab3BSKR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:14:45 -0500
-Date: Tue, 19 Feb 2013 11:14:37 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Andy Ross <andy.ross@windriver.com>
-Subject: Re: [PATCH] vt: add init_hide parameter to suppress boot output
-Message-ID: <20130219101437.GA3396@xo-6d-61-c0.localdomain>
-References: <1361266690-19382-1-git-send-email-kirill.shutemov@linux.intel.com>
+	Tue, 19 Feb 2013 05:17:29 -0500
+Message-ID: <51235173.5020000@ti.com>
+Date: Tue, 19 Feb 2013 15:48:27 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361266690-19382-1-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Afzal Mohammed <afzal@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
+        Syed Mohammed Khasim <khasim@ti.com>
+Subject: Re: [PATCH, RFC 3/8] ARM: twd: clock rate from DT (if no DT clk tree)
+References: <cover.1361186097.git.afzal@ti.com> <94cb377171f84ceefd667aead4602d70adab6619.1361186097.git.afzal@ti.com>
+In-Reply-To: <94cb377171f84ceefd667aead4602d70adab6619.1361186097.git.afzal@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Monday 18 February 2013 05:07 PM, Afzal Mohammed wrote:
+> Add an optional property to find clock-frequency from DT. This helps
+> as a fallback mechanism in case there is no representation of clock
+> tree in DT.
+>
+> Signed-off-by: Afzal Mohammed <afzal@ti.com>
+> ---
+This won't work always because twd clock is CPU dependent and changes
+with CPU clock speed. And more importantly to get CPUFreq working, you
+need to provide the correct clock-node to TWD library. Refer OMAP4 clock
+data for reference.
 
-> --- a/drivers/tty/vt/vt.c
-> +++ b/drivers/tty/vt/vt.c
-> @@ -165,6 +165,9 @@ module_param(global_cursor_default, int, S_IRUGO | S_IWUSR);
->  static int cur_default = CUR_DEFAULT;
->  module_param(cur_default, int, S_IRUGO | S_IWUSR);
->  
-> +static int init_hide;
-> +module_param(init_hide, int, S_IRUGO);
-> +
->  /*
->   * ignore_poke: don't unblank the screen when things are typed.  This is
->   * mainly for the privacy of braille terminal users.
-> @@ -734,6 +737,7 @@ static void visual_init(struct vc_data *vc, int num, int init)
->  	__module_get(vc->vc_sw->owner);
->  	vc->vc_num = num;
->  	vc->vc_display_fg = &master_display_fg;
-> +	vc->vc_hidden = init_hide;
->  	vc->vc_uni_pagedir_loc = &vc->vc_uni_pagedir;
->  	vc->vc_uni_pagedir = 0;
->  	vc->vc_hi_font_mask = 0;
-> @@ -2336,6 +2340,9 @@ static void console_callback(struct work_struct *ignored)
->  	if (want_console >= 0) {
->  		if (want_console != fg_console &&
->  		    vc_cons_allocated(want_console)) {
-> +			if(want_console != SUSPEND_CONSOLE &&
+Regards,
+Santosh
 
-"if (", please.
 
-Otherwise looks ok.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
