@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab3BSM7U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 07:59:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53240 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755020Ab3BSM7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 07:59:18 -0500
-Date: Tue, 19 Feb 2013 13:59:13 +0100
-From: Jan Kara <jack@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andrew Morton <akpm@linux-foundation.org>, andi@firstfloor.org,
-        Wuqixuan <wuqixuan@huawei.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        gregkh@linuxfoundation.org
-Subject: Re: [RFC][PATCH] vfs: always protect diretory file->fpos with
- inode mutex
-Message-ID: <20130219125913.GD21945@quack.suse.cz>
-References: <5122D3E0.6070800@huawei.com>
- <20130219091931.GB21945@quack.suse.cz>
- <51236652.1050608@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51236652.1050608@huawei.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757957Ab3BSNAp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 08:00:45 -0500
+Received: from smtp-out-114.synserver.de ([212.40.185.114]:1322 "EHLO
+	smtp-out-114.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754572Ab3BSNAo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 08:00:44 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 22104
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        device-drivers-devel@blackfin.uclinux.org,
+        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] backlight: adp8860/adp8870: Fix resume
+Date: Tue, 19 Feb 2013 14:02:05 +0100
+Message-Id: <1361278925-11107-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 19-02-13 19:47:30, Li Zefan wrote:
-> On 2013/2/19 17:19, Jan Kara wrote:
-> > On Tue 19-02-13 09:22:40, Li Zefan wrote:
-> >> There's a long long-standing bug...As long as I don't know when it dates
-> >> from.
-> >>
-> >> I've written and attached a simple program to reproduce this bug, and it can
-> >> immediately trigger the bug in my box. It uses two threads, one keeps calling
-> >> read(), and the other calling readdir(), both on the same directory fd.
-> >   So the fact that read() or even write() to fd opened O_RDONLY has *any*
-> > effect on f_pos looks really unexpected to me. I think we really should
-> > have there:
-> > 	if (ret >= 0)
-> > 		file_pos_write(...);
-> 
-> I thought about this. The problem is then we have to check every fop->write()
-> to see if any of them can return -errno with file->f_pos changed and fix them,
-> though it's do-able.
-  But returning error and advancing f_pos would be a bug - specification
-says write() returns the number of bytes written or -1 and f_pos should be
-advanced by the number of bytes written.
+Clearing the NSTBY bit in the control register also automatically clears the
+BLEN bit. So we need to make sure to set it again during resume, otherwise the
+backlight will stay off.
 
-> >   That would solve problems with read() and write() on directories for
-> > pretty much every filesystem since the first usually returns -EISDIR and
-> > the second -EBADF.
-> 
-> Yeah, seems ceph is the only filesystem that allows read() on directories.
-> 
-> >> When I ran it on ext3 (can be replaced with ext2/ext4) which has _dir_index_
-> >> feature disabled, I got this:
-> >>
-> >> EXT3-fs error (device loop1): ext3_readdir: bad entry in directory #34817: rec_len is smaller than minimal - offset=993, inode=0, rec_len=0, name_len=0
-> >> EXT3-fs error (device loop1): ext3_readdir: bad entry in directory #34817: rec_len is smaller than minimal - offset=1009, inode=0, rec_len=0, name_len=0
-> >> EXT3-fs error (device loop1): ext3_readdir: bad entry in directory #34817: rec_len is smaller than minimal - offset=993, inode=0, rec_len=0, name_len=0
-> >> EXT3-fs error (device loop1): ext3_readdir: bad entry in directory #34817: rec_len is smaller than minimal - offset=1009, inode=0, rec_len=0, name_len=0
-> >> ...
-> >>
-> >> If we configured errors=remount-ro, the filesystem will become read-only.
-> >>
-> >> SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
-> >> {
-> >> 	...
-> >> 		loff_t pos = file_pos_read(file);
-> >> 		ret = vfs_read(file, buf, count, &pos);
-> >> 		file_pos_write(file, pos);
-> >> 		fput_light(file, fput_needed);
-> >> 	...
-> >> }
-> >>
-> >> While readdir() is protected with i_mutex, f_pos can be changed without
-> >> any locking in various read()/write() syscalls, which leads to this bug.
-> >>
-> >> What makes things worse is Andi removed i_mutex from generic_file_llseek,
-> >> so you can trigger the same bug by replacing read() with lseek() in the
-> >> test program.
-> >   Yes, and here I'd say it's a filesystem issue. If filesystem needs f_pos
-> > changed only under i_mutex, it should use default_llseek() or get the mutex
-> > itself. That's what the callback is for. We shouldn't unnecessarily impose
-> > the i_mutex restriction on llseek on a directory for every filesystem.
-> 
-> One of my concern is, concurrent lseek() and readdir() doesn't seem to be
-> well tested. I'll add a test case in xfstests.
-  Yes, that might be a useful test to add.
+Cc: stable@vger.kernel.org
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/video/backlight/adp8860_bl.c | 2 +-
+ drivers/video/backlight/adp8870_bl.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-								Honza
+diff --git a/drivers/video/backlight/adp8860_bl.c b/drivers/video/backlight/adp8860_bl.c
+index 6bb72c0..a77c9ca 100644
+--- a/drivers/video/backlight/adp8860_bl.c
++++ b/drivers/video/backlight/adp8860_bl.c
+@@ -783,7 +783,7 @@ static int adp8860_i2c_suspend(struct i2c_client *client, pm_message_t message)
+ 
+ static int adp8860_i2c_resume(struct i2c_client *client)
+ {
+-	adp8860_set_bits(client, ADP8860_MDCR, NSTBY);
++	adp8860_set_bits(client, ADP8860_MDCR, NSTBY | BLEN);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/video/backlight/adp8870_bl.c b/drivers/video/backlight/adp8870_bl.c
+index 63c882b..712c25a 100644
+--- a/drivers/video/backlight/adp8870_bl.c
++++ b/drivers/video/backlight/adp8870_bl.c
+@@ -957,7 +957,7 @@ static int adp8870_i2c_suspend(struct i2c_client *client, pm_message_t message)
+ 
+ static int adp8870_i2c_resume(struct i2c_client *client)
+ {
+-	adp8870_set_bits(client, ADP8870_MDCR, NSTBY);
++	adp8870_set_bits(client, ADP8870_MDCR, NSTBY | BLEN);
+ 
+ 	return 0;
+ }
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.0
+
