@@ -1,95 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933416Ab3BSSVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:21:34 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:39470 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933402Ab3BSSVc (ORCPT
+	id S933427Ab3BSSWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:22:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:51816 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933174Ab3BSSWH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:21:32 -0500
-Date: Tue, 19 Feb 2013 10:20:50 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Catalin Marinas <catalin.marinas@arm.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 2/2] arm: Set the page table freeing ceiling to
- TASK_SIZE
-In-Reply-To: <1361204311-14127-3-git-send-email-catalin.marinas@arm.com>
-Message-ID: <alpine.LNX.2.00.1302191008290.2139@eggly.anvils>
-References: <1361204311-14127-1-git-send-email-catalin.marinas@arm.com> <1361204311-14127-3-git-send-email-catalin.marinas@arm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 19 Feb 2013 13:22:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,696,1355126400"; 
+   d="scan'208";a="293163417"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: "Westerberg, Mika" <mika.westerberg@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Subject: RE: How to populate Battery information through ACPI tables
+Thread-Topic: How to populate Battery information through ACPI tables
+Thread-Index: Ac4Oskyv9anm0zdmSXmuXEKAabFeBP//qGcA//+HEBCAAKCfAP//pGJQgABhtwD//6AxsA==
+Date: Tue, 19 Feb 2013 18:22:01 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD24661A83@BGSMSX102.gar.corp.intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD24661392@BGSMSX102.gar.corp.intel.com>
+ <20130219152008.GG2439@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD2466175B@BGSMSX102.gar.corp.intel.com>
+ <20130219174210.GH2439@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD2466187B@BGSMSX102.gar.corp.intel.com>
+ <20130219180400.GJ2439@intel.com>
+In-Reply-To: <20130219180400.GJ2439@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Feb 2013, Catalin Marinas wrote:
-
-> ARM processors with LPAE enabled use 3 levels of page tables, with an
-> entry in the top level (pgd) covering 1GB of virtual space. Because of
-> the branch relocation limitations on ARM, the loadable modules are
-> mapped 16MB below PAGE_OFFSET, making the corresponding 1GB pgd shared
-> between kernel modules and user space.
+> > > > > > I am trying to populate battery related information through
+> > > > > > ACPI tables and do battery management through non acpi
+> > > > > > drivers.  Can you tell or point me on how to populate the ACPI
+> > > > > > tables in FW/BIOS and get them in OS? I am new to ACPI world.
+> > > > >
+> > > > > You should start by reading Documentation/acpi/enumeration.txt.
+> > > > >
+> > > > > Also can you describe with bit more details, what you are trying
+> > > > > to do? A new battery driver that is enumerated from ACPI namespace,
+> perhaps?
+> > > > >
+> > > > > Do you have a DSDT table in hand which we could take a peek?
+> > > >
+> > > > Thanks Mika for the pointers. I have looked at the documentation.
+> > > >
+> > > > we already have i2c driver for battery monitoring but the chip
+> > > > needs initialized with characterization data. We wanted to
+> > > > populate/pass this data through ACPI table to the i2c slave driver.
+> > > >
+> > > > How can I do that? Can I pass characterization data through ACPI
+> > > > table to the i2c slave device?
+> > >
+> > > Is the characterization data available in DSDT (or SSDT) table? If
+> > > yes, then you can just use the fact that
+> > > ACPI_HANDLE(&i2c_client->dev) returns a valid ACPI handle for your
+> > > device. You can use this handle to call some ACPI method or whaterver is
+> needed to extract that information.
+> >
+> > As of now this data is not there in any table. I want to put this data in DSDT
+> table.
+> > The data I want to put is specific to the device  and will be around 1K bytes.
+> >
+> > One question, How the table and device are linked? Is it by device name/id?
 > 
-> If free_pgtables() is called with the default ceiling 0,
-> free_pgd_range() (and subsequently called functions) also frees the page
-> table shared between user space and kernel modules (which is normally
-> handled by the ARM-specific pgd_free() function). This patch changes
-> defines the ARM USER_PGTABLES_CEILING to TASK_SIZE.
-
-I don't have an ARM to test on, so I won't ack or nack this,
-but I am a little worried or puzzled.
-
-I thought CONFIG_ARM_LPAE came in v3.3: so I would expect these
-patches to need "Cc: stable@vger.kernel.org" for porting back there.
-
-But then, did v3.3..v3.8 have the appropriate arch/arm code to handle
-the freeing of the user+kernel pgd?  I'm not asserting that it could
-not, but when doing the similar arch/x86 thing, I had to make changes
-down there, so it's not necessarily something that works automatically.
-
-And does the ARM !LPAE case work correctly (not leaking page tables
-at any level) with this change from 0 to TASK_SIZE?  Again, I'm not
-asserting that it does not, but your commit description doesn't give
-enough confidence that you've tried that.
-
-Perhaps you have some other patches to arch/arm, that of course I
-wouldn't have noticed, which make this all work together; and it's
-accepted that CONFIG_ARM_LPAE is broken on v3.3..v3.8, and too
-much risk to backport it all for -stable.
-
-Maybe all I'm asking for is a more reassuring commit description.
-
-Hugh
-
+> In principle, yes. We create devices based on the IDs on the DSDT table.
 > 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  arch/arm/include/asm/pgtable.h | 7 +++++++
->  1 file changed, 7 insertions(+)
+> > Next, how to put this characterization data into the DSDT table?
 > 
-> diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
-> index c094749..8f06ee5 100644
-> --- a/arch/arm/include/asm/pgtable.h
-> +++ b/arch/arm/include/asm/pgtable.h
-> @@ -61,6 +61,13 @@ extern void __pgd_error(const char *file, int line, pgd_t);
->  #define FIRST_USER_ADDRESS	PAGE_SIZE
->  
->  /*
-> + * Use TASK_SIZE as the ceiling argument for free_pgtables() and
-> + * free_pgd_range() to avoid freeing the modules pmd when LPAE is enabled (pmd
-> + * page shared between user and kernel).
-> + */
-> +#define USER_PGTABLES_CEILING	TASK_SIZE
-> +
-> +/*
->   * The pgprot_* and protection_map entries will be fixed up in runtime
->   * to include the cachable and bufferable bits based on memory policy,
->   * as well as any architecture dependent bits like global/ASID and SMP
+> Typically this is done by BIOS team but you can experiment yourself just by
+> taking an existing DSDT, disassembling it with iasl, do the changes and
+> reassembling it again. You can then include this with your kernel or initrd image.
+> 
+> I have no idea how that data is supposed to look like or be represented in the
+> DSDT.
+> 
+> You should also familiarize yourself with ACPI by reading the ACPI 5.0 spec from
+> acpi.info.
+
+Mika, I want to populate this characterization data as device specific/custom data which could be anything
+And may not be entirely related to battery. Is this is possible?
+
+I will also go through the spec but this info would help me to resolve some initial hurdles in my work.
+
+Note: I am not going to use ACPI based battery monitoring but I need this data from acpi tables.
+
+Thanks,
+Ram
