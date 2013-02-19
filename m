@@ -1,114 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab3BSOt1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 09:49:27 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:2852 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932973Ab3BSOtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 09:49:24 -0500
+	id S933039Ab3BSOuT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 09:50:19 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:14597 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932971Ab3BSOuR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 09:50:17 -0500
 X-IronPort-AV: E=Sophos;i="4.84,695,1355097600"; 
-   d="scan'208";a="8175496"
-From: Ian Campbell <ian.campbell@citrix.com>
-To: <xen-devel@lists.xen.org>
-CC: <linux-kernel@vger.kernel.org>, Ian Campbell <ian.campbell@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>, "Keir (Xen.org)" <keir@xen.org>,
-        Tim Deegan <tim@xen.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH XEN] xen: event channel arrays are xen_ulong_t and not unsigned long
-Date: Tue, 19 Feb 2013 14:49:22 +0000
-Message-ID: <1361285363-27133-1-git-send-email-ian.campbell@citrix.com>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
-References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
+   d="scan'208";a="1612414"
+Message-ID: <1361285414.1051.116.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH] xen: introduce xen_remap, use it instead of ioremap
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 19 Feb 2013 14:50:14 +0000
+In-Reply-To: <alpine.DEB.2.02.1302191445160.4654@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1302191332340.4654@kaball.uk.xensource.com>
+	 <20130219144253.GE7026@konrad-lan.dumpdata.com>
+	 <alpine.DEB.2.02.1302191445160.4654@kaball.uk.xensource.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ARM we want these to be the same size on 32- and 64-bit.
+On Tue, 2013-02-19 at 14:48 +0000, Stefano Stabellini wrote:
+> On Tue, 19 Feb 2013, Konrad Rzeszutek Wilk wrote:
+> > On Tue, Feb 19, 2013 at 01:59:19PM +0000, Stefano Stabellini wrote:
+> > > ioremap can't be used to map ring pages on ARM because it uses device
+> > > memory caching attributes (MT_DEVICE*).
+> > > 
+> > > Introduce a Xen specific abstraction to map ring pages, called
+> > > xen_remap, that is defined as ioremap on x86 (no behavioral changes).
+> > > On ARM it explicitly calls __arm_ioremap with the right caching
+> > > attributes: MT_MEMORY.
+> > 
+> > Do you want to push this to Linus yourself or should I just include it
+> > in my 'for-39' tree?
+> > 
+> > Do you have other patches for 3.9?
+> 
+> Ian has two patches ("linux: public interface changes for arm"), it
+> would be great if they could go in 3.9.
 
-This is an ABI change on ARM. X86 does not change.
+My two are one for Xen and one for Linux, so just one as far as the
+merge window is concerned, I just reposted them 10s ago..
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Jan Beulich <JBeulich@suse.com>
-Cc: Keir (Xen.org) <keir@xen.org>
-Cc: Tim Deegan <tim@xen.org>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: xen-devel@lists.xen.org
----
- tools/include/xen-foreign/mkheader.py |    6 ++++++
- xen/include/public/xen.h              |    8 ++++----
- 2 files changed, 10 insertions(+), 4 deletions(-)
+> Given the small number of patches (three all together), it is probably
+> easier to go via your tree, if you are OK with that.
+> 
+> 
+> 
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > 
+> > > diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+> > > index c6b9096..30cdacb 100644
+> > > --- a/arch/arm/include/asm/xen/page.h
+> > > +++ b/arch/arm/include/asm/xen/page.h
+> > > @@ -1,6 +1,7 @@
+> > >  #ifndef _ASM_ARM_XEN_PAGE_H
+> > >  #define _ASM_ARM_XEN_PAGE_H
+> > >  
+> > > +#include <asm/mach/map.h>
+> > >  #include <asm/page.h>
+> > >  #include <asm/pgtable.h>
+> > >  
+> > > @@ -86,4 +87,7 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+> > >  {
+> > >  	return __set_phys_to_machine(pfn, mfn);
+> > >  }
+> > > +
+> > > +#define xen_remap(cookie, size) __arm_ioremap((cookie), (size), MT_MEMORY);
+> > > +
+> > >  #endif /* _ASM_ARM_XEN_PAGE_H */
+> > > diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+> > > index 472b9b7..6aef9fb 100644
+> > > --- a/arch/x86/include/asm/xen/page.h
+> > > +++ b/arch/x86/include/asm/xen/page.h
+> > > @@ -212,4 +212,6 @@ unsigned long arbitrary_virt_to_mfn(void *vaddr);
+> > >  void make_lowmem_page_readonly(void *vaddr);
+> > >  void make_lowmem_page_readwrite(void *vaddr);
+> > >  
+> > > +#define xen_remap(cookie, size) ioremap((cookie), (size));
+> > > +
+> > >  #endif /* _ASM_X86_XEN_PAGE_H */
+> > > diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+> > > index 19843ec..682210d7 100644
+> > > --- a/drivers/tty/hvc/hvc_xen.c
+> > > +++ b/drivers/tty/hvc/hvc_xen.c
+> > > @@ -230,7 +230,7 @@ static int xen_hvm_console_init(void)
+> > >  	if (r < 0 || v == 0)
+> > >  		goto err;
+> > >  	mfn = v;
+> > > -	info->intf = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
+> > > +	info->intf = xen_remap(mfn << PAGE_SHIFT, PAGE_SIZE);
+> > >  	if (info->intf == NULL)
+> > >  		goto err;
+> > >  	info->vtermno = HVC_COOKIE;
+> > > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> > > index 7038de5..1c2a1e5 100644
+> > > --- a/drivers/xen/grant-table.c
+> > > +++ b/drivers/xen/grant-table.c
+> > > @@ -1146,7 +1146,7 @@ int gnttab_resume(void)
+> > >  		return gnttab_map(0, nr_grant_frames - 1);
+> > >  
+> > >  	if (gnttab_shared.addr == NULL) {
+> > > -		gnttab_shared.addr = ioremap(xen_hvm_resume_frames,
+> > > +		gnttab_shared.addr = xen_remap(xen_hvm_resume_frames,
+> > >  						PAGE_SIZE * max_nr_gframes);
+> > >  		if (gnttab_shared.addr == NULL) {
+> > >  			printk(KERN_WARNING
+> > > diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+> > > index 038b71d..3325884 100644
+> > > --- a/drivers/xen/xenbus/xenbus_probe.c
+> > > +++ b/drivers/xen/xenbus/xenbus_probe.c
+> > > @@ -769,7 +769,7 @@ static int __init xenbus_init(void)
+> > >  			goto out_error;
+> > >  		xen_store_mfn = (unsigned long)v;
+> > >  		xen_store_interface =
+> > > -			ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
+> > > +			xen_remap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
+> > >  		break;
+> > >  	default:
+> > >  		pr_warn("Xenstore state unknown\n");
+> > 
 
-diff --git a/tools/include/xen-foreign/mkheader.py b/tools/include/xen-foreign/mkheader.py
-index d189b07..57681fa 100644
---- a/tools/include/xen-foreign/mkheader.py
-+++ b/tools/include/xen-foreign/mkheader.py
-@@ -21,13 +21,18 @@ inttypes["arm"] = {
-     "unsigned long" : "uint32_t",
-     "long"          : "uint32_t",
-     "xen_pfn_t"     : "uint64_t",
-+    "xen_ulong_t"   : "uint64_t",
- };
-+header["arm"] = """
-+#define __arm___ARM32 1
-+""";
- 
- # x86_32
- inttypes["x86_32"] = {
-     "unsigned long" : "uint32_t",
-     "long"          : "uint32_t",
-     "xen_pfn_t"     : "uint32_t",
-+    "xen_ulong_t"   : "uint32_t",
- };
- header["x86_32"] = """
- #define __i386___X86_32 1
-@@ -42,6 +47,7 @@ inttypes["x86_64"] = {
-     "unsigned long" : "__align8__ uint64_t",
-     "long"          : "__align8__ uint64_t",
-     "xen_pfn_t"     : "__align8__ uint64_t",
-+    "xen_ulong_t"   : "__align8__ uint64_t",
- };
- header["x86_64"] = """
- #if defined(__GNUC__) && !defined(__STRICT_ANSI__)
-diff --git a/xen/include/public/xen.h b/xen/include/public/xen.h
-index 5593066..99c8212 100644
---- a/xen/include/public/xen.h
-+++ b/xen/include/public/xen.h
-@@ -556,7 +556,7 @@ DEFINE_XEN_GUEST_HANDLE(multicall_entry_t);
-  * Event channel endpoints per domain:
-  *  1024 if a long is 32 bits; 4096 if a long is 64 bits.
-  */
--#define NR_EVENT_CHANNELS (sizeof(unsigned long) * sizeof(unsigned long) * 64)
-+#define NR_EVENT_CHANNELS (sizeof(xen_ulong_t) * sizeof(xen_ulong_t) * 64)
- 
- struct vcpu_time_info {
-     /*
-@@ -613,7 +613,7 @@ struct vcpu_info {
-      */
-     uint8_t evtchn_upcall_pending;
-     uint8_t evtchn_upcall_mask;
--    unsigned long evtchn_pending_sel;
-+    xen_ulong_t evtchn_pending_sel;
-     struct arch_vcpu_info arch;
-     struct vcpu_time_info time;
- }; /* 64 bytes (x86) */
-@@ -663,8 +663,8 @@ struct shared_info {
-      * per-vcpu selector word to be set. Each bit in the selector covers a
-      * 'C long' in the PENDING bitfield array.
-      */
--    unsigned long evtchn_pending[sizeof(unsigned long) * 8];
--    unsigned long evtchn_mask[sizeof(unsigned long) * 8];
-+    xen_ulong_t evtchn_pending[sizeof(xen_ulong_t) * 8];
-+    xen_ulong_t evtchn_mask[sizeof(xen_ulong_t) * 8];
- 
-     /*
-      * Wallclock time: updated only by control software. Guests should base
--- 
-1.7.9.1
 
