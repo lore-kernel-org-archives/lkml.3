@@ -1,137 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934449Ab3BSVwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 16:52:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56520 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933545Ab3BSVw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 16:52:29 -0500
-Date: Tue, 19 Feb 2013 16:52:12 -0500
-From: Dave Jones <davej@redhat.com>
-To: Douglas Gilbert <dgilbert@interlog.com>
-Cc: Tommi Rantala <tt.rantala@gmail.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: at drivers/ata/libata-core.c:5049
- ata_qc_issue+0x1c7/0x3a0()
-Message-ID: <20130219215212.GA22720@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Douglas Gilbert <dgilbert@interlog.com>,
-	Tommi Rantala <tt.rantala@gmail.com>,
-	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-	Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-	Sasha Levin <sasha.levin@oracle.com>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <CA+ydwtooKGVOVq246d1DdROs_ytezTt1JqwX4-TyvNdDi7o+jQ@mail.gmail.com>
- <5123E8E1.9000302@interlog.com>
+	id S934465Ab3BSVyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 16:54:38 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:44786 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933545Ab3BSVyg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 16:54:36 -0500
+Date: Wed, 20 Feb 2013 01:54:32 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        ebiederm@xmission.com, xemul@parallels.com,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [patch 1/2] kcmp: Make it to depend on CONFIG_KCMP
+Message-ID: <20130219215432.GP20312@moon>
+References: <20130219064800.719149796@openvz.org>
+ <20130219065210.030802820@openvz.org>
+ <5123444D.6000806@suse.cz>
+ <20130219093154.GF20312@moon>
+ <5123BC2B.6000304@zytor.com>
+ <20130219182838.GL20312@moon>
+ <20130219134256.f4cedf44.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5123E8E1.9000302@interlog.com>
+In-Reply-To: <20130219134256.f4cedf44.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 04:04:33PM -0500, Douglas Gilbert wrote:
- > On 13-02-19 01:37 PM, Tommi Rantala wrote:
- > > Hello,
- > >
- > > Hit this WARNING once while fuzzing the kernel with trinity in a qemu
- > > virtual machine as the root user.
- > >
- > > Does this make any sense? I have occasionally seen some ATA related
- > > troubles while fuzzing in a VM, but this warning is new to me.
- > >
- > > [  490.717030] WARNING: at
- > > /home/ttrantal/git/linux-2.6/drivers/ata/libata-core.c:5049
- > > ata_qc_issue+0x1c7/0x3a0()
- > > [  490.717030] Hardware name: Bochs
- > > [  490.717030] Pid: 2548, comm: trinity-child6 Not tainted 3.8.0+ #87
- > > [  490.717030] Call Trace:
- > > [  490.717030]  [<ffffffff81097b86>] warn_slowpath_common+0x86/0xb0
- > > [  490.717030]  [<ffffffff81097c75>] warn_slowpath_null+0x15/0x20
- > > [  490.717030]  [<ffffffff8150efd7>] ata_qc_issue+0x1c7/0x3a0
- > > [  490.717030]  [<ffffffff81516550>] ? ata_scsi_set_sense.constprop.13+0x30/0x30
- > > [  490.717030]  [<ffffffff815155c0>] ata_scsi_translate+0x120/0x190
- > > [  490.717030]  [<ffffffff81518f4e>] ? ata_scsi_queuecmd+0x2e/0x2d0
- > > [  490.717030]  [<ffffffff81519173>] ata_scsi_queuecmd+0x253/0x2d0
- > > [  490.717030]  [<ffffffff814e3e91>] scsi_dispatch_cmd+0x161/0x230
- > > [  490.717030]  [<ffffffff814e9fd4>] scsi_request_fn+0x544/0x580
- > > [  490.717030]  [<ffffffff813473a6>] ? cfq_dispatch_requests+0x56/0xb30
- > > [  490.717030]  [<ffffffff810f173a>] ? __lock_is_held+0x5a/0x80
- > > [  490.717030]  [<ffffffff81332112>] __blk_run_queue+0x32/0x40
- > > [  490.717030]  [<ffffffff8132d0ea>] __elv_add_request+0x10a/0x280
- > > [  490.717030]  [<ffffffff813391f6>] blk_execute_rq_nowait+0xb6/0xf0
- > > [  490.717030]  [<ffffffff810c0151>] ? __init_waitqueue_head+0x41/0x60
- > > [  490.717030]  [<ffffffff813392d8>] blk_execute_rq+0xa8/0x110
- > > [  490.717030]  [<ffffffff810f557e>] ? lock_release_non_nested+0xde/0x310
- > > [  490.717030]  [<ffffffff812fc1a4>] ? selinux_capable+0x34/0x50
- > > [  490.717030]  [<ffffffff812f8aa3>] ? security_capable+0x13/0x20
- > > [  490.717030]  [<ffffffff810a55d3>] ? ns_capable+0x53/0x80
- > > [  490.717030]  [<ffffffff8133f6c1>] sg_scsi_ioctl+0x2b1/0x3a0
- > > [  490.717030]  [<ffffffff8133fbc2>] scsi_cmd_ioctl+0x412/0x4a0
- > > [  490.717030]  [<ffffffff810f41d7>] ? __lock_acquire+0x957/0x1c20
- > > [  490.717030]  [<ffffffff81084adf>] ? kvm_clock_read+0x1f/0x30
- > > [  490.717030]  [<ffffffff81342d36>] bsg_ioctl+0x146/0x270
- > > [  490.717030]  [<ffffffff810f5b18>] ? trace_hardirqs_off_caller+0x28/0xd0
- > > [  490.717030]  [<ffffffff810f5bcd>] ? trace_hardirqs_off+0xd/0x10
- > > [  490.717030]  [<ffffffff810d552a>] ? local_clock+0x4a/0x70
- > > [  490.717030]  [<ffffffff810f1e98>] ? lock_release_holdtime+0x28/0x170
- > > [  490.717030]  [<ffffffff812fb640>] ? avc_has_perm_flags+0x1d0/0x2a0
- > > [  490.717030]  [<ffffffff812fb498>] ? avc_has_perm_flags+0x28/0x2a0
- > > [  490.717030]  [<ffffffff810f5b18>] ? trace_hardirqs_off_caller+0x28/0xd0
- > > [  490.717030]  [<ffffffff810f5bcd>] ? trace_hardirqs_off+0xd/0x10
- > > [  490.717030]  [<ffffffff811b5ff2>] do_vfs_ioctl+0x532/0x580
- > > [  490.717030]  [<ffffffff812fc7d3>] ? file_has_perm+0x83/0xa0
- > > [  490.717030]  [<ffffffff811b609d>] sys_ioctl+0x5d/0xa0
- > > [  490.717030]  [<ffffffff813571de>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- > > [  490.717030]  [<ffffffff81ca07e9>] system_call_fastpath+0x16/0x1b
- > > [  490.717030] ---[ end trace fce35d2b40bd0565 ]---
- > > [  490.810874] ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x0
- > > [  490.812538] ata1.00: failed command: READ DMA
- > > [  490.813715] ata1.00: cmd c8/00:2c:00:01:00/00:00:00:00:00/e0 tag 0
- > > [  490.813715]          res 50/01:00:b0:16:04/00:00:00:00:00/a0 Emask
- > > 0x40 (internal error)
- > > [  490.817269] ata1.00: status: { DRDY }
- > > [watchdog] 333615 iterations. [F:326712 S:6891]
- > > [watchdog] kernel became tainted! Last seed was 71022097
- > > [  491.266158] ata1.00: configured for MWDMA2
- > > [  491.267358] ata1: EH complete
- > > child 2548 exitting
- > > child 2492 exitting
- > > child 2500 exitting
- > > [2351] Bailing main loop. Exit reason: kernel became tainted
- > > [2350] Watchdog exiting
- > >
- > > Ran 333617 syscalls. Successes: 6892  Failures: 326714
- > 
- > Looks like some application is using the deprecated
- > SCSI_IOCTL_SEND_COMMAND ioctl via a bsg node to send
- > a SCSI ATA PASS-THROUGH command tunnelling a ATA READ
- > DMA command.
- > 
- > Looking for something positive to say: only a very skilled
- > professional tester could come up with such a mismatch.
- 
-Unless Tommi has local modifications, what trinity does with sys_ioctl
-is incredibly naive compared to some of the other syscalls.
-It's a miracle it managed to pair an fd from a /dev node that understands
-this ioctl with this set of arguments tbh.
+On Tue, Feb 19, 2013 at 01:42:56PM -0800, Andrew Morton wrote:
+> > Index: linux-2.6.git/kernel/Makefile
+> > ===================================================================
+> > --- linux-2.6.git.orig/kernel/Makefile
+> > +++ linux-2.6.git/kernel/Makefile
+> > @@ -25,9 +25,7 @@ endif
+> >  obj-y += sched/
+> >  obj-y += power/
+> >  
+> > -ifeq ($(CONFIG_CHECKPOINT_RESTORE),y)
+> > -obj-$(CONFIG_X86) += kcmp.o
+> > -endif
+> > +obj-$(CONFIG_KCMP) += kcmp.o
+> >  obj-$(CONFIG_FREEZER) += freezer.o
+> >  obj-$(CONFIG_PROFILING) += profile.o
+> >  obj-$(CONFIG_STACKTRACE) += stacktrace.o
+> 
+> This permits people to select kcmp with CONFIG_CHECKPOINT_RESTORE=n. 
+> Is there any point in doing that?
+> 
+> What would be wrong with just doing
+> 
+> 	obj-$(CONFIG_CHECKPOINT_RESTORE) += kcmp.o
 
-The actual code it uses for fuzzing SG_IO looks like this..
-https://github.com/kernelslacker/trinity/blob/master/ioctls/scsi-generic-sgio.c
-It's not code I'm particularly proud of, it could be a lot more clever
-than what it's currently doing, which is why I'm surprised it's having
-positive results.
-
- > Is this a recent kernel (linux-2.6 shown in path)? Processes
- > using the SCSI_IOCTL_SEND_COMMAND ioctl now get a yellow flag
- > in the logs.
-
-The trace shows 3.8.0+
-
-	Dave
-
+I think this syscall is usefull even without c/r stuff.
+That's why I made it with separate config option.
