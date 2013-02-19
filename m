@@ -1,127 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932672Ab3BSPwk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 10:52:40 -0500
-Received: from mga14.intel.com ([143.182.124.37]:64267 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754441Ab3BSPwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 10:52:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,696,1355126400"; 
-   d="scan'208";a="204021642"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Andy Ross <andy.ross@windriver.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH v2] vt: add init_hide parameter to suppress boot output
-Date: Tue, 19 Feb 2013 17:53:44 +0200
-Message-Id: <1361289224-10678-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S932719Ab3BSP7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 10:59:49 -0500
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:2651 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932382Ab3BSP7s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 10:59:48 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z551bizbb2dI98dI9371Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1155h)
+Message-ID: <5123A169.9060100@freescale.com>
+Date: Tue, 19 Feb 2013 17:59:37 +0200
+From: Diana Craciun <diana.craciun@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Varun Sethi <Varun.Sethi@freescale.com>
+CC: <iommu@lists.linux-foundation.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <scottwood@freescale.com>,
+        <joro@8bytes.org>, <stuart.yoder@freescale.com>
+Subject: Re: [PATCH 6/6 v8] iommu/fsl: Freescale PAMU driver and IOMMU API
+ implementation.
+References: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com> <1361191939-21260-7-git-send-email-Varun.Sethi@freescale.com>
+In-Reply-To: <1361191939-21260-7-git-send-email-Varun.Sethi@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Ross <andy.ross@windriver.com>
+On 02/18/2013 02:52 PM, Varun Sethi wrote:
+> +/**
+> + * pamu_get_ppaace() - Return the primary PACCE
+> + * @liodn: liodn PAACT index for desired PAACE
+> + *
+> + * Returns the ppace pointer upon success else return
+> + * null.
+> + */
+> +static struct paace *pamu_get_ppaace(int liodn)
+> +{
+> +	if (!ppaact || liodn > PAACE_NUMBER_ENTRIES) {
 
-When vt.init_hide is set, suppress output on newly created consoles until
-an affirmative switched to that console.  This prevents boot output from
-displaying (and clobbering splash screens, etc...) without disabling the
-console entirely.
+Shouldn't be "liodn >= PAACE_NUMBER_ENTRIES" ?
 
-Signed-off-by: Andy Ross <andy.ross@windriver.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
---
- v2:
-  - style: add space after if keyword;
-  - change init_hide from int to bool;
----
- drivers/tty/vt/vt.c            |    7 +++++++
- include/linux/console_struct.h |    3 ++-
- include/linux/vt.h             |    2 ++
- kernel/power/console.c         |    2 --
- 4 files changed, 11 insertions(+), 3 deletions(-)
+> +		pr_err("PPAACT doesn't exist\n");
+> +		return NULL;
+> +	}
+> +
+> +	return &ppaact[liodn];
+> +}
+> +
 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 8fd8968..c68322c 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -165,6 +165,9 @@ module_param(global_cursor_default, int, S_IRUGO | S_IWUSR);
- static int cur_default = CUR_DEFAULT;
- module_param(cur_default, int, S_IRUGO | S_IWUSR);
- 
-+static bool init_hide;
-+module_param(init_hide, bool, S_IRUGO);
-+
- /*
-  * ignore_poke: don't unblank the screen when things are typed.  This is
-  * mainly for the privacy of braille terminal users.
-@@ -734,6 +737,7 @@ static void visual_init(struct vc_data *vc, int num, int init)
- 	__module_get(vc->vc_sw->owner);
- 	vc->vc_num = num;
- 	vc->vc_display_fg = &master_display_fg;
-+	vc->vc_hidden = init_hide;
- 	vc->vc_uni_pagedir_loc = &vc->vc_uni_pagedir;
- 	vc->vc_uni_pagedir = 0;
- 	vc->vc_hi_font_mask = 0;
-@@ -2336,6 +2340,9 @@ static void console_callback(struct work_struct *ignored)
- 	if (want_console >= 0) {
- 		if (want_console != fg_console &&
- 		    vc_cons_allocated(want_console)) {
-+			if (want_console != SUSPEND_CONSOLE &&
-+					fg_console != SUSPEND_CONSOLE)
-+				vc_cons[want_console].d->vc_hidden = 0;
- 			hide_cursor(vc_cons[fg_console].d);
- 			change_console(vc_cons[want_console].d);
- 			/* we only changed when the console had already
-diff --git a/include/linux/console_struct.h b/include/linux/console_struct.h
-index 7f0c329..fc96691 100644
---- a/include/linux/console_struct.h
-+++ b/include/linux/console_struct.h
-@@ -91,6 +91,7 @@ struct vc_data {
- 	unsigned int	vc_can_do_color	: 1;
- 	unsigned int	vc_report_mouse : 2;
- 	unsigned char	vc_utf		: 1;	/* Unicode UTF-8 encoding */
-+	unsigned int    vc_hidden	: 1;    /* Set by vt.init_hide */
- 	unsigned char	vc_utf_count;
- 		 int	vc_utf_char;
- 	unsigned int	vc_tab_stop[8];		/* Tab stops. 256 columns. */
-@@ -134,6 +135,6 @@ extern void vc_SAK(struct work_struct *work);
- 
- #define CUR_DEFAULT CUR_UNDERLINE
- 
--#define CON_IS_VISIBLE(conp) (*conp->vc_display_fg == conp)
-+#define CON_IS_VISIBLE(conp) (*conp->vc_display_fg == conp && !conp->vc_hidden)
- 
- #endif /* _LINUX_CONSOLE_STRUCT_H */
-diff --git a/include/linux/vt.h b/include/linux/vt.h
-index b186e04..0dc3e89 100644
---- a/include/linux/vt.h
-+++ b/include/linux/vt.h
-@@ -11,6 +11,8 @@
- #define VT_UPDATE		0x0004 /* A bigger update occurred */
- #define VT_PREWRITE		0x0005 /* A char is about to be written to the console */
- 
-+#define SUSPEND_CONSOLE	(MAX_NR_CONSOLES-1)
-+
- #ifdef CONFIG_VT_CONSOLE
- 
- extern int vt_kmsg_redirect(int new);
-diff --git a/kernel/power/console.c b/kernel/power/console.c
-index b1dc456..b74bdb8 100644
---- a/kernel/power/console.c
-+++ b/kernel/power/console.c
-@@ -10,8 +10,6 @@
- #include <linux/module.h>
- #include "power.h"
- 
--#define SUSPEND_CONSOLE	(MAX_NR_CONSOLES-1)
--
- static int orig_fgconsole, orig_kmsg;
- 
- int pm_prepare_console(void)
--- 
-1.7.10.4
+Diana
 
