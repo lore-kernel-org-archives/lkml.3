@@ -1,117 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777Ab3BSMeY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 07:34:24 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:56229 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932711Ab3BSMeW (ORCPT
+	id S932795Ab3BSMeb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 07:34:31 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:35915 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932711Ab3BSMe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 07:34:22 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: kishon <kishon@ti.com>
-Subject: Re: [PATCH v2 0/5] Generic PHY Framework
-Date: Tue, 19 Feb 2013 12:33:54 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: rob@landley.net, tony@atomide.com, linux@arm.linux.org.uk,
-        eballetbo@gmail.com, javier@dowhile0.org, balbi@ti.com,
-        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        mchehab@redhat.com, cesarb@cesarb.net, davem@davemloft.net,
-        santosh.shilimkar@ti.com, broonie@opensource.wolfsonmicro.com,
-        swarren@nvidia.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org
-References: <1361253198-7401-1-git-send-email-kishon@ti.com> <201302191044.28653.arnd@arndb.de> <512361F0.1070500@ti.com>
-In-Reply-To: <512361F0.1070500@ti.com>
+	Tue, 19 Feb 2013 07:34:28 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302191233.54677.arnd@arndb.de>
-X-Provags-ID: V02:K0:DQ5/ZptoXKmHW2PedhzkUNsQPkI2D9EXd1Z33iRRQRP
- bHRWJS2xMhZYEeBCz7ImNSbl2kMQaohVlPkYqZzNjK0Qwjd1v8
- MqDsH5EfRj8DX6ADqqL2z2ALT7ZDBfg+vEPzZIOx88zZvdQeM5
- z/+qHXyO+GFckWq6gGFJOrbGIBpg2vY0Gha/qoBpRRPNrX0Xef
- GyVj9DZYakO4pVM+VjMTuq21HB+DTntsOZG9kzwuHrcR9B0ZFE
- mMN5tZ49pGQgUxy4S7Nb5fwDz7rqMtHy8Y02F2ChkoPU8hA3Oe
- mgWiAPS9eKTeJNGoaqFnOc3rousA30fhYQV+0/V4DPUCPRTcrD
- GYV9ZgzSPD6f67bF+vP4=
+In-Reply-To: <000501ce0e8a$91ef7c30$b5ce7490$%jun@samsung.com>
+References: <1361210793-5710-1-git-send-email-tobetter@gmail.com>
+	<000501ce0e8a$91ef7c30$b5ce7490$%jun@samsung.com>
+Date: Tue, 19 Feb 2013 21:34:27 +0900
+Message-ID: <CADoNuNc2cjOU-PjWgwtB2wo9USMABGdwP=udCBHBYO9jgiLnvw@mail.gmail.com>
+Subject: Re: [PATCH v3] mmc: dw_mmc: Add MSHC compatible for Exynos4412
+From: Dongjin Kim <tobetter@gmail.com>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: "'unlisted-recipients:'"@samsung.com,
+        "'no To-header on input'"@samsung.com,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Will Newton <will.newton@imgtec.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 February 2013, kishon wrote:
-> On Tuesday 19 February 2013 04:14 PM, Arnd Bergmann wrote:
-> > On Tuesday 19 February 2013, Kishon Vijay Abraham I wrote:
-> >> Added a generic PHY framework that provides a set of APIs for the PHY drivers
-> >> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
-> >> the PHY with or without using phandle. To obtain a reference to the PHY
-> >> without using phandle, the platform specfic intialization code (say from board
-> >> file) should have already called phy_bind with the binding information. The
-> >> binding information consists of phy's device name, phy user device name and an
-> >> index. The index is used when the same phy user binds to mulitple phys.
-> >>
-> >> This framework will be of use only to devices that uses external PHY (PHY
-> >> functionality is not embedded within the controller).
-> >>
-> >> The intention of creating this framework is to bring the phy drivers spread
-> >> all over the Linux kernel to drivers/phy to increase code re-use and to
-> >> increase code maintainability.
-> >>
-> >> Comments to make PHY as bus wasn't done because PHY devices can be part of
-> >> other bus and making a same device attached to multiple bus leads to bad
-> >> design.
-> >
-> > How does this relate to the generic PHY interfaces in drivers/net/phy?
-> 
-> Currently drivers/phy and drivers/net/phy are independent and are not 
-> related to each other. There are some fundamental differences on how 
-> these frameworks work. IIUC, the *net* uses bus layer (MDIO bus) to 
-> match a PHY device with a PHY driver and the Ethernet device uses the 
-> bus layer to get the PHY.
-> The Generic PHY Framework however doesn't have any bus layer. The PHY 
-> should be like any other Platform Devices and Drivers and the framework 
-> will provide some APIs to register with the framework. And there are 
-> other APIs which any controller can use to get the PHY (for e.g., in the 
-> case of dt boot, it can use phandle to get a reference to the PHY).
+Hello Seungwon,
 
-Hmm, I think the use of a bus_type for a PHY actually sounds quite
-appropriate. The actual PHY device would then be a child of the
-platform_device (or something else) that gets probed by its parent
-bus or the DT. The operations that you define for the PHY
-actually mirror some of the things that we have for a 'struct device',
-so I think it would be quite logical to do it the same way.
+Thank you for reviewing and I understand what you mean.
 
-Note that MDIO has both a 'bus' and a 'class', and what we want here is more
-like what the 'class' was meant for, except that for new classes, we
-should actually use a 'bus', since the long-term plan is to kill off
-the concept of a 'class'. I hope that was not too confusing. :)
+I agree that Exynos5250 and Exynos4412 are not same, no idea how much
+they are different because no Exynos5250 spec on my hand. But at least
+I assumed that the capabilities below are supported by Exynos4412 in
+terms of its datasheet and it does work on my end as expected. :) Also
+I assumed it will be separated if one of both become different to add
+more capabilities.
 
-> > Do you expect that to get merged into drivers/phy in the long run, or
-> > do you want to keep the generic phy only for everything but ethernet?
-> 
-> We'd like the PHY drivers spread all over the kernel to get merged to 
-> drivers/phy including Ethernet. Having said that, Ethernet itself has a 
-> huge PHY framework and it's going to be little challenging to adapt to 
-> the new PHY framework (of course there'll be changes in this PHY 
-> framework when we want to have network PHY added here). But adapting USB 
-> PHYs to the new framework will be simpler and will be taken first. Also 
-> when we add SATA PHY (OMAP5), it will make use of this framework as both 
-> SATA and USB3 uses the same PHY IP.
+        MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
+               MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
 
-I think you need to have at least a concept of where you want to end up.
-It's totally fine to introduce a new subsystem that does only the
-minimum of what you need here, and add things as you go, but if you
-already plan to merge the existing mdio bus into this, you should really
-have an idea of what that will mean in the long run.
+Maybe my understanding or approach is wrong since I do not have the
+information of Exynos5250.
+And suggestion do you have?
 
-> > I think it would be problematic to have two alternative interfaces for
-> > ethernet PHYs because then an ethernet driver still needs to decide
-> > which subsystem to interface with.
-> 
-> Right. For now Ethernet should continue to use their own PHY abstraction 
-> layer till we are a bit more clear on how to move it to drivers/phy.
+Regards,
+Dongjin.
 
-Ok.
-
-	Arnd
+On Tue, Feb 19, 2013 at 7:19 PM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> On Tuesday, February 19, 2013, Dongjin Kim wrote:
+>> This patch adds the compatible string for MSHC controller of Exynos4412, and
+>> share the controller specific properties with Exynos5250 since they have same
+>> features. Its driver data name is changed to exynos_drv_data instead SoC
+>> specific name.
+>
+> It's not actually same.
+> Exynos4412 doesn't have forward compatibilities for Exynos5250.
+> I agree that functionality of exynos_drv_data is common.
+> These functions have been implemented for existing Exynos*.
+> But in case of caps, it can't applied completely.
+> I'm concerning about this.
+>
+> Thanks,
+> Seungwon Jeon
+>>
+>> Cc: Jaehoon Chung <jh80.chung@samsung.com>
+>> Cc: Sachin Kamat <sachin.kamat@linaro.org>
+>> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+>> ---
+>>  drivers/mmc/host/dw_mmc-exynos.c |   12 +++++++-----
+>>  1 file changed, 7 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
+>> index 4d50da6..38cd03c 100644
+>> --- a/drivers/mmc/host/dw_mmc-exynos.c
+>> +++ b/drivers/mmc/host/dw_mmc-exynos.c
+>> @@ -199,8 +199,8 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
+>>       return 0;
+>>  }
+>>
+>> -/* Exynos5250 controller specific capabilities */
+>> -static unsigned long exynos5250_dwmmc_caps[4] = {
+>> +/* Exynos4412/Exynos5250 controller specific capabilities */
+>> +static unsigned long exynos_dwmmc_caps[4] = {
+>>       MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
+>>               MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
+>>       MMC_CAP_CMD23,
+>> @@ -208,8 +208,8 @@ static unsigned long exynos5250_dwmmc_caps[4] = {
+>>       MMC_CAP_CMD23,
+>>  };
+>>
+>> -static const struct dw_mci_drv_data exynos5250_drv_data = {
+>> -     .caps                   = exynos5250_dwmmc_caps,
+>> +static const struct dw_mci_drv_data exynos_drv_data = {
+>> +     .caps                   = exynos_dwmmc_caps,
+>>       .init                   = dw_mci_exynos_priv_init,
+>>       .setup_clock            = dw_mci_exynos_setup_clock,
+>>       .prepare_command        = dw_mci_exynos_prepare_command,
+>> @@ -219,8 +219,10 @@ static const struct dw_mci_drv_data exynos5250_drv_data = {
+>>  };
+>>
+>>  static const struct of_device_id dw_mci_exynos_match[] = {
+>> +     { .compatible = "samsung,exynos4412-dw-mshc",
+>> +                     .data = &exynos_drv_data, },
+>>       { .compatible = "samsung,exynos5250-dw-mshc",
+>> -                     .data = &exynos5250_drv_data, },
+>> +                     .data = &exynos_drv_data, },
+>>       {},
+>>  };
+>>  MODULE_DEVICE_TABLE(of, dw_mci_exynos_match);
+>> --
+>> 1.7.10.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
