@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488Ab3BSKMa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:12:30 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42265 "EHLO arroyo.ext.ti.com"
+	id S932467Ab3BSKNJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:13:09 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:53844 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932187Ab3BSKM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:12:27 -0500
-Date: Tue, 19 Feb 2013 12:12:09 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-Subject: Re: SYSFS "errors"
-Message-ID: <20130219101209.GK23197@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130218153316.GA2663@arwen.pp.htv.fi>
- <20130218172700.GH2663@arwen.pp.htv.fi>
- <20130218174916.GA2070@kroah.com>
- <2721602.qxhJKWaVil@ws-stein>
+	id S932209Ab3BSKNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 05:13:07 -0500
+Message-ID: <51235076.8040200@ti.com>
+Date: Tue, 19 Feb 2013 15:44:14 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ee6FjwWxuMujAVRe"
-Content-Disposition: inline
-In-Reply-To: <2721602.qxhJKWaVil@ws-stein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Afzal Mohammed <afzal@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
+        Syed Mohammed Khasim <khasim@ti.com>
+Subject: Re: [PATCH, RFC 2/8] ARM: twd: register clock event for 1 core SMP
+References: <cover.1361186097.git.afzal@ti.com> <a7f62b8580aa4b33d5658f4f03371a453adaea9b.1361186097.git.afzal@ti.com>
+In-Reply-To: <a7f62b8580aa4b33d5658f4f03371a453adaea9b.1361186097.git.afzal@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ee6FjwWxuMujAVRe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Monday 18 February 2013 05:07 PM, Afzal Mohammed wrote:
+> Register percpu local timer for scheduler tick in the case of one core
+> SMP configuration. In other cases - secondary cpu's as well as boot
+> cpu's having more than one core, this is being registered as per
+> existing boot flow, with a difference that they happens after delay
+> calibration. Registering the clock for tick in case of one core should
+> be done before Kernel calibrates delay (this is required to boot,
+> unless local timer is the only one registered for tick). Registering
+> twd local timer at init_time (which platforms are doing now) helps
+> achieve that with the proposed change.
+>
+> This helps in an almost booting Kernel (minimal) by only relying on
+> ARM parts for an A9 one core SMP.
+>
+> Signed-off-by: Afzal Mohammed <afzal@ti.com>
+> ---
+As mentioned in cover-letter, I don't think we have good
+reasoning to make TWD to work with UP configuration. Even
+you fix the timer code, there are more cascaded dependencies
+which is not worth the effort.
 
-+netdev
+Regards,
+Samtosh
 
-On Tue, Feb 19, 2013 at 08:41:47AM +0100, Alexander Stein wrote:
-> On Monday 18 February 2013 09:49:16, Greg KH wrote:
-> > > Invalid argument - /sys/devices/virtual/net/lo/speed
-> > > Invalid argument - /sys/devices/virtual/net/lo/duplex
->=20
-> This is even true for ethernet devices which do not have a link currently=
- or non-ethernet devices (e.g. CAN).
-> > LANG=3DC cat /sys/class/net/enp1s8/speed
-> > cat: /sys/class/net/enp1s8/speed: Invalid argument
-> > ethtool enp1s8 | grep -A1 Speed
-> >         Speed: Unknown!
-> >         Duplex: Unknown! (255)
-> > LANG=3DC cat /sys/class/net/can0/speed
-> > cat: /sys/class/net/can0/speed: Invalid argument
->=20
-> Regards,
-> Alexander
->=20
-
---=20
-balbi
-
---ee6FjwWxuMujAVRe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRI0/5AAoJEIaOsuA1yqREGeIP/2ZAuPIyUkxI8eoU7E7Xw0vn
-8Tq/Jz2uJjhULrkpPm35EtyY2pzSpED+yqaoOrgrXmXusbS7OYL5GDZjlP+cFDWW
-hXt2l9I/MuKkB7hH3d0dq1fkaWUhg0aNVE4dHFCkgIU8nU6j25mJh3zyVU8a4n8Z
-wyyYpiKFRZmdsoWKExYLDRudbKUARQXlIWe2DffmwwFeRf9zcncvkOryE7meh3YW
-OzQ1JK6HGmHTyvA7WPNJkyvLC1npggmZa9vockGOlE1nLVjmh8fpGJssNdc58tZt
-LRD2feX0wLhwPmHvk7B/Ydzkoi20FYJ+mFAb0JcsR9URRTJE4aVTTaefiB7A1eZ5
-AGvazRnHhb5V91+yHBXvvZ0YdspZ3vIU4A21jwknG+D+i3YNYJfdl64rmODHCf4b
-3fdW6gjqoPpuOYI3tato81S+Xc+sfYSaIJWuaaLXlV2eRh2CPQz1715LQdFWB5VD
-PUVIZhMyuZlduE0cVpOnMwZpCRFKFtBze+RoUixQDVn/Wo88QBkJkyxYAp1ORPxC
-soYUMZcEzr21EKJaG4mGw4XGoEqdMRV+A5JRyRVJpmrrz2H4BQ/aBhjR2ZWSX2cm
-59B6349WQJFytG6J1xuZ1HtUbqal/Of1Zm97AfV8LnMZxRttzFVx5qp0vZvIqXYX
-beIYFeahvKlzsvLJzo56
-=dOuU
------END PGP SIGNATURE-----
-
---ee6FjwWxuMujAVRe--
