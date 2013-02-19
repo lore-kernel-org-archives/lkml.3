@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932917Ab3BSOKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 09:10:06 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:64049 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757062Ab3BSOKE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 09:10:04 -0500
-Message-ID: <51238628.7000000@linaro.org>
-Date: Tue, 19 Feb 2013 15:03:20 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>,
+	id S932945Ab3BSOKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 09:10:34 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:60465 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932921Ab3BSOKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 09:10:30 -0500
+Date: Tue, 19 Feb 2013 15:10:26 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Hannes Reinecke <hare@suse.de>
+Cc: Felipe Balbi <balbi@ti.com>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Timer broadcast question
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+        Ingo Molnar <mingo@redhat.com>, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, davem@davemloft.net,
+        netdev@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
+        linux-edac@vger.kernel.org, rjw@sisk.pl, linux-pm@vger.kernel.org
+Subject: Re: SYSFS "errors"
+Message-ID: <20130219141026.GB26748@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Hannes Reinecke <hare@suse.de>, Felipe Balbi <balbi@ti.com>,
+	Mauro Carvalho Chehab <mchehab@redhat.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Ingo Molnar <mingo@redhat.com>, JBottomley@parallels.com,
+	linux-scsi@vger.kernel.org, davem@davemloft.net,
+	netdev@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
+	linux-edac@vger.kernel.org, rjw@sisk.pl, linux-pm@vger.kernel.org
+References: <20130219114345.GA26623@pd.tnic>
+ <20130219091610.2b746a30@redhat.com>
+ <20130219123502.GD26623@pd.tnic>
+ <20130219094640.2abf1a66@redhat.com>
+ <20130219130626.GE26623@pd.tnic>
+ <20130219131500.GW23197@arwen.pp.htv.fi>
+ <20130219132853.GG26623@pd.tnic>
+ <20130219133809.GA4390@arwen.pp.htv.fi>
+ <20130219135056.GH26623@pd.tnic>
+ <512384EF.9020602@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <512384EF.9020602@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 19, 2013 at 02:58:07PM +0100, Hannes Reinecke wrote:
+> Please consider adding a default attribute which return '-EINVAL' or
+> somesuch when the function pointers are not set. But _not_ adding it
+> via device_create_file(). That's evil.
 
-Hi John, Frederic,
+This is what we do now. We probably could add the permissions fiddling
+out in the the code but remain using DEVICE_ATTR.
 
-I am working on identifying the different wakeup sources from the
-interrupts and I have a question regarding the timer broadcast.
-
-The broadcast timer is setup to the next event and that will wake up any
-cpu, right ?
-
-The time framework will look at the different cpus next-event and send
-them an IPI to wake them up.
-
-Although, it is possible the sender of this IPI may not be concerned by
-the timer expiration and has been woken up just for sending the IPI, right ?
-
-If this is correct, is it possible to setup the timer irq affinity to a
-cpu which will be concerned by the timer expiration ? so we prevent an
-unnecessary wake up for a cpu.
-
-Did I missed something or does it sound correct ?
-
-Thanks
-  -- Daniel
-
+Thanks.
 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+Regards/Gruss,
+    Boris.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
