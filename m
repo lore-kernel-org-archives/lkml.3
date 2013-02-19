@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758353Ab3BSJKO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 04:10:14 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56505 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757774Ab3BSJKM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 04:10:12 -0500
-Date: Tue, 19 Feb 2013 10:10:05 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Durgadoss R <durgadoss.r@intel.com>
-Cc: rui.zhang@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eduardo.valentin@ti.com,
-        hongbo.zhang@linaro.org, wni@nvidia.com
-Subject: Re: [PATCH 8/9] Thermal: Add ABI Documentation for sysfs interfaces
-Message-ID: <20130219091005.GA17219@xo-6d-61-c0.localdomain>
-References: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
- <1357542806-20449-9-git-send-email-durgadoss.r@intel.com>
+	id S1758393Ab3BSJKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 04:10:53 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39968 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758150Ab3BSJKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 04:10:50 -0500
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: "Balbi, Felipe" <balbi@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, "Nori, Sekhar" <nsekhar@ti.com>,
+        "Syed Mohammed, Khasim" <khasim@ti.com>
+Subject: RE: [PATCH, RFC 7/8] ARM: dts: am4372: initial support
+Thread-Topic: [PATCH, RFC 7/8] ARM: dts: am4372: initial support
+Thread-Index: AQHODcyhekrN7w0cOUWaNV2FPnrjXZh/khIAgAFQ+EA=
+Date: Tue, 19 Feb 2013 09:10:17 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EAA85B2@DBDE01.ent.ti.com>
+References: <cover.1361186097.git.afzal@ti.com>
+ <c9c131c0508b875c0893e8557504372a1564568a.1361186097.git.afzal@ti.com>
+ <20130218182240.GA10755@arwen.pp.htv.fi>
+In-Reply-To: <20130218182240.GA10755@arwen.pp.htv.fi>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357542806-20449-9-git-send-email-durgadoss.r@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1J9Asrs028483
 
-On Mon 2013-01-07 12:43:25, Durgadoss R wrote:
-> This patch adds Documentation for ABI's introduced
-> for thermal subsystem (under /sys/class/thermal/).
+Hi Felipe,
 
-So... we have deciCelsius and deciKelvin in ACPI (IIRC) and miliCelsius here.
+On Mon, Feb 18, 2013 at 23:52:40, Balbi, Felipe wrote:
+> On Mon, Feb 18, 2013 at 05:08:16PM +0530, Afzal Mohammed wrote:
 
-Perhaps using deciCelsius to be consistent with ACPI would be nice?
+> > +		uart1: serial@44e09000 {
+> > +			compatible = "ti,am4372-uart","ti,omap2-uart";
+> > +			clock-frequency = <48000000>;
+> > +			reg = <0x44e09000 0x2000>;
+> > +			interrupts = <0 72 0x4>;
+> 
+> missing ti,hwmods ??
 
-What do lm_sensors use?
-									Pavel
-> index 0000000..d1a450e
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-class-thermal
-> @@ -0,0 +1,93 @@
-> +What:		/sys/class/thermal/sensorX/temp
-> +Date:		January 2013
-> +KernelVersion:	3.8
-> +Contact:	Linux PM Mailing list <linux-pm@vger.kernel.org>
-> +Description:
-> +		Exposes 'temperature' of a thermal sensor in mC
-> +Users:		Kernel/User space thermal governors
-> +
+It is a deliberate omission. For minimal bootconsole booting, hwmod
+help is not required. Hwmod details would be added gradually later,
+current series doesn't register hwmod.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Regards
+Afzal
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
