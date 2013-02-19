@@ -1,230 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab3BSFsn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 00:48:43 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:58129 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab3BSFsl (ORCPT
+	id S1756243Ab3BSFwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 00:52:39 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:48600 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754980Ab3BSFwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 00:48:41 -0500
-Message-ID: <51231231.1040908@ozlabs.ru>
-Date: Tue, 19 Feb 2013 16:48:33 +1100
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Tue, 19 Feb 2013 00:52:38 -0500
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Joerg Roedel <joerg.roedel@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: Re: [PATCH] iommu: making IOMMU sysfs nodes API public
-References: <1360628713.3248.8.camel@bling.home>    <1360642004-7419-1-git-send-email-aik@ozlabs.ru>   <1360645643.3248.91.camel@bling.home> <511A54DC.9030908@ozlabs.ru>  <1360689304.3248.154.camel@bling.home> <5121C709.80007@ozlabs.ru> <1361251440.2801.142.camel@bling.home>
-In-Reply-To: <1361251440.2801.142.camel@bling.home>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201302181602.47157.arnd@arndb.de>
+References: <1361198522-23789-1-git-send-email-shc_work@mail.ru>
+	<201302181602.47157.arnd@arndb.de>
+Date: Tue, 19 Feb 2013 13:52:37 +0800
+Message-ID: <CAP1dx+xiReJO-fZFFh7wjH1+bS9xKyWAxQ3kuSgOs4VRyh_exQ@mail.gmail.com>
+Subject: Re: [PATCH v3] mfd: syscon: Add non-DT support
+From: Dong Aisheng <dong.aisheng@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Alexander Shiyan <shc_work@mail.ru>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/02/13 16:24, Alex Williamson wrote:
-> On Mon, 2013-02-18 at 17:15 +1100, Alexey Kardashevskiy wrote:
->> On 13/02/13 04:15, Alex Williamson wrote:
->>> On Wed, 2013-02-13 at 01:42 +1100, Alexey Kardashevskiy wrote:
->>>> On 12/02/13 16:07, Alex Williamson wrote:
->>>>> On Tue, 2013-02-12 at 15:06 +1100, Alexey Kardashevskiy wrote:
->>>>>> Having this patch in a tree, adding new nodes in sysfs
->>>>>> for IOMMU groups is going to be easier.
->>>>>>
->>>>>> The first candidate for this change is a "dma-window-size"
->>>>>> property which tells a size of a DMA window of the specific
->>>>>> IOMMU group which can be used later for locked pages accounting.
->>>>>
->>>>> I'm still churning on this one; I'm nervous this would basically creat
->>>>> a /proc free-for-all under /sys/kernel/iommu_group/$GROUP/ where any
->>>>> iommu driver can add random attributes.  That can get ugly for
->>>>> userspace.
->>>>
->>>> Is not it exactly what sysfs is for (unlike /proc)? :)
->>>
->>> Um, I hope it's a little more thought out than /proc.
->>>
->>>>> On the other hand, for the application of userspace knowing how much
->>>>> memory to lock for vfio use of a group, it's an appealing location to
->>>>> get that information.  Something like libvirt would already be poking
->>>>> around here to figure out which devices to bind.  Page limits need to be
->>>>> setup prior to use through vfio, so sysfs is more convenient than
->>>>> through vfio ioctls.
->>>>
->>>> True. DMA window properties do not change since boot so sysfs is the right
->>>> place to expose them.
->>>>
->>>>> But then is dma-window-size just a vfio requirement leaking over into
->>>>> iommu groups?  Can we allow iommu driver based attributes without giving
->>>>> up control of the namespace?  Thanks,
->>>>
->>>> Who are you asking these questions? :)
->>>
->>> Anyone, including you.  Rather than dropping misc files in sysfs to
->>> describe things about the group, I think the better solution in your
->>> case might be a link from the group to an existing sysfs directory
->>> describing the PE.  I believe your PE is rooted in a PCI bridge, so that
->>> presumably already has a representation in sysfs.  Can the aperture size
->>> be determined from something in sysfs for that bridge already?  I'm just
->>> not ready to create a grab bag of sysfs entries for a group yet.
->>> Thanks,
+On 19 February 2013 00:02, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 18 February 2013, Alexander Shiyan wrote:
+>> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+>> index 4a7ed5a..3c0abcb 100644
+>> --- a/drivers/mfd/syscon.c
+>> +++ b/drivers/mfd/syscon.c
+>
+> Hi Alexander,
+>
+>>  struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
+>>  {
+>>       struct device_node *syscon_np;
+>>       struct regmap *regmap;
+>> +     struct syscon *syscon;
+>> +     struct device *dev;
 >>
+>>       syscon_np = of_find_compatible_node(NULL, NULL, s);
+>> -     if (!syscon_np)
+>> +     if (syscon_np) {
+>> +             regmap = syscon_node_to_regmap(syscon_np);
+>> +             of_node_put(syscon_np);
+>> +
+>> +             return regmap;
+>> +     }
+>> +
+>> +     /* Fallback to search by id_entry.name string */
+>> +     dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
+>> +                              syscon_match_id);
+>> +     if (!dev)
+>>               return ERR_PTR(-ENODEV);
 >>
->> At the moment there is no information neither in sysfs nor
->> /proc/device-tree about the dma-window. And adding a sysfs entry per PE
->> (powerpc partitionable end-point which is often a PHB but not always) just
->> for VFIO is quite heavy.
->
-> How do you learn the window size and PE extents in the host kernel?
-
-
-When the ppc64 code does PCI scan, it creates iommu_table structs per PE. 
-When new PE (i.e. new iommu_table) is discovered I call iommu_group_alloc() 
-and iommu_group_set_iommudata() to link iommu_group with iommu_table. These 
-iommu_table structs have DMA window properties.
-
-
->> We could add a ppc64 subfolder under /sys/kernel/iommu/xxx/ and put the
->> "dma-window" property there. And replace it with a symlink when and if we
->> add something for PE later. Would work?
->
-> To be clear, you're suggesting /sys/kernel/iommu_groups/$GROUP/xxx/,
-> right?  A subfolder really only limits the scope of the mess, so it's
-> not much improvement.
-
-You suggested some symlink to some ppc64 or pci tree in sysfs, it is not 
-that different.
-
-> What does the interface look like to make those
-> subfolders?
-
-int iommu_group_create_platform_file(struct iommu_group *group,
-                      struct iommu_group_attribute *attr)
-
-and that's it.
-
-> The problem we're trying to solve is this call flow:
->
-> containerfd = open("/dev/vfio/vfio");
-> ioctl(containerfd, VFIO_GET_API_VERSION);
-> ioctl(containerfd, VFIO_CHECK_EXTENSION, ...);
-> groupfd = open("/dev/vfio/$GROUP");
-> ioctl(groupfd, VFIO_GROUP_GET_STATUS);
-> ioctl(groupfd, VFIO_GROUP_SET_CONTAINER, &containerfd);
->
-> You wanted to lock all the memory for the DMA window here, before we can
-> call VFIO_IOMMU_GET_INFO, but does it need to happen there?  We still
-> have a MAP_DMA hook.  We could do it all on the first mapping.  It also
-> has a flags field that could augment the behavior to trigger page
-> locking.  Adding the window size to sysfs seems more readily convenient,
-> but is it so hard for userspace to open the files and call a couple
-> ioctls to get far enough to call IOMMU_GET_INFO?  I'm unconvinced the
-> clutter in sysfs more than just a quick fix.  Thanks,
-
-
-I thought the problem is that we want to let user set correct rlimit before 
-running QEMU, no? We do not change rlimit from QEMU.
-
-
-
->
-> Alex
->
->>>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->>>>>> ---
->>>>>>     drivers/iommu/iommu.c |   19 ++-----------------
->>>>>>     include/linux/iommu.h |   20 ++++++++++++++++++++
->>>>>>     2 files changed, 22 insertions(+), 17 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
->>>>>> index b0afd3d..58cc298 100644
->>>>>> --- a/drivers/iommu/iommu.c
->>>>>> +++ b/drivers/iommu/iommu.c
->>>>>> @@ -52,22 +52,6 @@ struct iommu_device {
->>>>>>     	char *name;
->>>>>>     };
->>>>>>
->>>>>> -struct iommu_group_attribute {
->>>>>> -	struct attribute attr;
->>>>>> -	ssize_t (*show)(struct iommu_group *group, char *buf);
->>>>>> -	ssize_t (*store)(struct iommu_group *group,
->>>>>> -			 const char *buf, size_t count);
->>>>>> -};
->>>>>> -
->>>>>> -#define IOMMU_GROUP_ATTR(_name, _mode, _show, _store)		\
->>>>>> -struct iommu_group_attribute iommu_group_attr_##_name =		\
->>>>>> -	__ATTR(_name, _mode, _show, _store)
->>>>>> -
->>>>>> -#define to_iommu_group_attr(_attr)	\
->>>>>> -	container_of(_attr, struct iommu_group_attribute, attr)
->>>>>> -#define to_iommu_group(_kobj)		\
->>>>>> -	container_of(_kobj, struct iommu_group, kobj)
->>>>>> -
->>>>>>     static ssize_t iommu_group_attr_show(struct kobject *kobj,
->>>>>>     				     struct attribute *__attr, char *buf)
->>>>>>     {
->>>>>> @@ -98,11 +82,12 @@ static const struct sysfs_ops iommu_group_sysfs_ops = {
->>>>>>     	.store = iommu_group_attr_store,
->>>>>>     };
->>>>>>
->>>>>> -static int iommu_group_create_file(struct iommu_group *group,
->>>>>> +int iommu_group_create_file(struct iommu_group *group,
->>>>>>     				   struct iommu_group_attribute *attr)
->>>>>>     {
->>>>>>     	return sysfs_create_file(&group->kobj, &attr->attr);
->>>>>>     }
->>>>>> +EXPORT_SYMBOL_GPL(iommu_group_create_file);
->>>>>>
->>>>>>     static void iommu_group_remove_file(struct iommu_group *group,
->>>>>>     				    struct iommu_group_attribute *attr)
->>>>>> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
->>>>>> index f3b99e1..6d24ba7 100644
->>>>>> --- a/include/linux/iommu.h
->>>>>> +++ b/include/linux/iommu.h
->>>>>> @@ -21,6 +21,7 @@
->>>>>>
->>>>>>     #include <linux/errno.h>
->>>>>>     #include <linux/types.h>
->>>>>> +#include <linux/stat.h>
->>>>>>
->>>>>>     #define IOMMU_READ	(1)
->>>>>>     #define IOMMU_WRITE	(2)
->>>>>> @@ -197,6 +198,25 @@ static inline int report_iommu_fault(struct iommu_domain *domain,
->>>>>>     	return ret;
->>>>>>     }
->>>>>>
->>>>>> +struct iommu_group_attribute {
->>>>>> +	struct attribute attr;
->>>>>> +	ssize_t (*show)(struct iommu_group *group, char *buf);
->>>>>> +	ssize_t (*store)(struct iommu_group *group,
->>>>>> +			 const char *buf, size_t count);
->>>>>> +};
->>>>>> +
->>>>>> +#define IOMMU_GROUP_ATTR(_name, _mode, _show, _store)		\
->>>>>> +struct iommu_group_attribute iommu_group_attr_##_name =		\
->>>>>> +	__ATTR(_name, _mode, _show, _store)
->>>>>> +
->>>>>> +#define to_iommu_group_attr(_attr)	\
->>>>>> +	container_of(_attr, struct iommu_group_attribute, attr)
->>>>>> +#define to_iommu_group(_kobj)		\
->>>>>> +	container_of(_kobj, struct iommu_group, kobj)
->>>>>> +
->>>>>> +extern int iommu_group_create_file(struct iommu_group *group,
->>>>>> +				   struct iommu_group_attribute *attr);
->>>>>> +
->>>>>>     #else /* CONFIG_IOMMU_API */
->>>>>>
->>>>>>     struct iommu_ops {};
+>> -     regmap = syscon_node_to_regmap(syscon_np);
+>> -     of_node_put(syscon_np);
+>> +     syscon = dev_get_drvdata(dev);
 >>
->>
+>> -     return regmap;
+>> +     return syscon->regmap;
+>>  }
+>>  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
 >
+> Since you are not actually comparing the "compatible" property here,
+> I would suggest adding another function here,
+
+Yes, i also think like that.
+
+> something like
+> syscon_regmap_lookup_by_pdevname() that you can use in device
+> drivers that are not DT-enabled.
+
+IMHO i would like syscon_dev_to_regmap, then we do not need to
+care in case pdevname changes.
+See:
+http://www.gossamer-threads.com/lists/linux/kernel/1675210#1675210
+What do you think?
+
+> I would also recommend enclosing
+> that function in #ifdef CONFIG_ATAGS.
 >
+> Which code do you have in mind that would call this anyway?
+> The changeset description does not really explain what ATAG
+> boot support in syscon is good for.
+>
+>> +     if (IS_ENABLED(CONFIG_OF) && np) {
+>> +             syscon->base = of_iomap(np, 0);
+>> +             if (!syscon->base)
+>> +                     return -EADDRNOTAVAIL;
+>> +
+>> +             res = &res_of;
+>> +             ret = of_address_to_resource(np, 0, res);
+>> +             if (ret) {
+>> +                     iounmap(syscon->base);
+>> +                     return ret;
+>> +             }
+>> +     } else {
+>> +             res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +             if (!res)
+>> +                     return -ENOENT;
+>> +
+>> +             if (!devm_request_mem_region(dev, res->start,
+>> +                                          resource_size(res),
+>> +                                          dev_name(&pdev->dev)))
+>> +                     return -EBUSY;
+>> +
+>> +             syscon->base = ioremap(res->start, resource_size(res));
+>> +             if (!syscon->base)
+>> +                     return -EADDRNOTAVAIL;
+>> +     }
+>
+> These two code paths look equivalent. Why not always use the second
+> one? Also, you might want to convert this to devm_ioremap_resource()
+> to simplify the code in the process.
 >
 
+These two code paths have a slight difference.
+The path1 does not request the mem region, the main reason of that is we meet
+some devices register ranges used as syscon maybe overlapped with
+other exist drivers.
+e.g imx6q.dtsi
+The gpr is a few registers contained in iomuxc.
+gpr: iomuxc-gpr@020e0000 {
+        compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
+        reg = <0x020e0000 0x38>;
+};
 
--- 
-Alexey
+iomuxc: iomuxc@020e0000 {
+        compatible = "fsl,imx6q-iomuxc";
+        reg = <0x020e0000 0x4000>;
+...
+};
+
+The iomuxc already has a pinctrl driver, so there are conflicts if both
+request the same mem region.
+
+So i wonder maybe we also do not need request mem region in non-dt case,
+then we can only  use second code path.
+
+Regards
+Dong Aisheng
