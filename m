@@ -1,158 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933056Ab3BSPEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 10:04:36 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:42878 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932998Ab3BSPEe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 10:04:34 -0500
+	id S933068Ab3BSPF5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 10:05:57 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41649 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932995Ab3BSPFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 10:05:55 -0500
+Date: Tue, 19 Feb 2013 16:05:51 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Peter Feuerer <peter@piie.net>, Alexander Lam <azl@andrew.cmu.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andreas Mohr <andi@lisas.de>
+Subject: Re: thermal governor: does it actually work??
+Message-ID: <20130219150551.GL26623@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Zhang Rui <rui.zhang@intel.com>, Peter Feuerer <peter@piie.net>,
+	Alexander Lam <azl@andrew.cmu.edu>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Andreas Mohr <andi@lisas.de>
+References: <744357E9AAD1214791ACBA4B0B90926329ED72@SHSMSX101.ccr.corp.intel.com>
+ <20130215154931.GA26213@rhlx01.hs-esslingen.de>
+ <CACWwPiuk0GynEwe3RuKndWnsYwTuPhO0ob6sJ6ve34u1_RtkYw@mail.gmail.com>
+ <20130216214712.GA13494@pd.tnic>
+ <cone.1361068993.271211.4532.1000@galar>
+ <20130217140908.GA20323@pd.tnic>
+ <cone.1361115717.636831.25189.1000@galar>
+ <20130218135012.GB16622@pd.tnic>
+ <cone.1361206053.493518.2246.1000@galar>
+ <1361285464.2323.20.camel@rzhang1-mobl4>
 MIME-Version: 1.0
-In-Reply-To: <20130218195023.GJ17414@htj.dyndns.org>
-References: <1361203940-6300-1-git-send-email-laijs@cn.fujitsu.com>
-	<1361203940-6300-14-git-send-email-laijs@cn.fujitsu.com>
-	<20130218195023.GJ17414@htj.dyndns.org>
-Date: Tue, 19 Feb 2013 23:04:31 +0800
-Message-ID: <CACvQF52DsDXopHEdDAy42nY78+O6sr3RUd3s3Ehsd1Per6ms7w@mail.gmail.com>
-Subject: Re: [PATCH V2 13/15] workqueue: also record worker in work->data if running&&queued
-From: Lai Jiangshan <eag0628@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1361285464.2323.20.camel@rzhang1-mobl4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, TJ
+On Tue, Feb 19, 2013 at 10:51:04PM +0800, Zhang Rui wrote:
+> Okay, here I see the problem, say you want to turn on the fan at 60C and
+> turn it off at 55C, is this what you want?
+> hmmm, is it possible to do some tricks in acerhdf driver?
+> say,
+> only one active trip point as before. but change acerhdf_get_trip_temp
+> to:
+> acerhdf_get_trip_temp()
+> {
+> 	if (fan is on)
+> 		return 55;
+> 	else
+> 		return 60;
+> }
+> 
+> In this way, when the fan is off and the temperature is raising, the fan
+> will be turned on at 60C because we have an active trip point of 60C.
+> And when the fan is turned on and the temperature starts to drop, the
+> fan will be turned off at 55C.
 
-Thank you for reviews and comments.
-First, the patchset can't be merged to 3.9 since there are under
-discussion and are not shown they benefit.
-(But are patch 1, 5-8 possible merged after rebased and revised?)
-Second, the removal of the hash table is very possible in future with
-different implementation.
+Makes a sense to me. I was questioning the need for 4 trip points too.
+We probably would need a second, critical trip point though, just in
+case.
 
-On Tue, Feb 19, 2013 at 3:50 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Lai.
->
-> On Tue, Feb 19, 2013 at 12:12:14AM +0800, Lai Jiangshan wrote:
->> +/**
->> + * get_work_cwq - get cwq of the work
->> + * @work: the work item of interest
->> + *
->> + * CONTEXT:
->> + * spin_lock_irq(&pool->lock), the work must be queued on this pool
->> + */
->> +static struct cpu_workqueue_struct *get_work_cwq(struct work_struct *work)
->> +{
->> +     unsigned long data = atomic_long_read(&work->data);
->> +     struct worker *worker;
->> +
->> +     if (data & WORK_STRUCT_CWQ) {
->> +             return (void *)(data & WORK_STRUCT_WQ_DATA_MASK);
->> +     } else if (data & WORK_OFFQ_REQUEUED) {
->> +             worker = worker_by_id(data >> WORK_OFFQ_WORKER_SHIFT);
->> +             BUG_ON(!worker || !worker->requeue);
->> +             return worker->current_cwq;
->> +     } else {
->> +             BUG();
->> +             return NULL;
->> +     }
->> +}
->
-> So, work->data points to the last worker ID if off-queue or on-queue
-> with another worker executing it and points to cwq if on-queue w/o
-> another worker executing.  If on-queue w/ concurrent execution, the
-> excuting worker updates work->data when it finishes execution, right?
+Thanks.
 
-right.
+-- 
+Regards/Gruss,
+    Boris.
 
->
-> Why no documentation about it at all?  The mechanism is convoluted
-> with interlocking from both work and worker sides.  Lack of
-> documentation makes things difficult for reviewers and later readers
-> of the code.
-
-sorry.
-
->
->> @@ -1296,8 +1283,16 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
->>               worklist = &cwq->delayed_works;
->>       }
->>
->> -     color_flags = work_color_to_flags(cwq->work_color);
->> -     insert_work(cwq, work, worklist, color_flags | delayed_flags);
->> +     if (worker) {
->> +             worker->requeue = true;
->> +             worker->requeue_color = cwq->work_color;
->> +             set_work_worker_and_keep_pending(work, worker->id,
->> +                             delayed_flags | WORK_OFFQ_REQUEUED);
->> +             list_add_tail(&work->entry, worklist);
->> +     } else {
->> +             color_flags = work_color_to_flags(cwq->work_color);
->> +             insert_work(cwq, work, worklist, color_flags | delayed_flags);
->> +     }
->
-> I can't say I like this.  In interlocks the work being queued and the
-> worker so that both have to watch out for each other.  It's kinda
-> nasty.
->
->> @@ -2236,6 +2241,16 @@ __acquires(&pool->lock)
->>       worker->current_func = NULL;
->>       worker->current_cwq = NULL;
->>       cwq_dec_nr_in_flight(cwq, work_color);
->> +
->> +     if (unlikely(worker->requeue)) {
->> +             unsigned long color_flags, keep_flags;
->> +
->> +             worker->requeue = false;
->> +             keep_flags = atomic_long_read(&work->data);
->> +             keep_flags &= WORK_STRUCT_LINKED | WORK_STRUCT_DELAYED;
->> +             color_flags = work_color_to_flags(worker->requeue_color);
->> +             set_work_cwq(work, cwq, color_flags | keep_flags);
->> +     }
->
-> So, what was before mostly one way "is it still executing?" query
-> becomes three party handshake among the queuer, executing worker and
-> try_to_grab_pending(), and we end up shifting information from the
-> queuer through the executing worker because work->data can't hold both
-> workqueue and worker information.
->
-> I don't know, Lai.  While removal of busy_hash is nice, I'm not really
-> sure whether we're ending up with better or worse code by doing this.
-> It's more convoluted for sure.  Performance-wise, now that idr_find()
-> for pool costs almost nothing (because we're very unlikely to have
-> more than 256 pools), we're comparing one idr lookup (which can easily
-> blow through 256 single layer optimization limit) against two simple
-> hash table lookup.  I don't really think either would be noticeably
-> better than the other in any measureable way.
->
-> The trade-off, while doesn't seem too bad, doesn't seem much
-> beneficial either.  It's different from what we're currently doing but
-> I'm not sure we're making it better by doing this.
->
-
-I agree your comments.
-
-Thanks,
-Lai
-
-PS: Some small benefits of this patchset
-1) work_busy() can be reimplement lockless.
-2) the user can issue *reentrance" works by re-init the work.
-    (w/o this patchset, the users must defer the free and alloc new
-work item if they want reentrancable)
-3) natural immunity of such
-bugs(https://bugzilla.kernel.org/show_bug.cgi?id=51701)
-
-but small.
-need to find a better way in future.
-
->
-> --
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Sent from a fat crate under my desk. Formatting is fine.
+--
