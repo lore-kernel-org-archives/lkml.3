@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933700Ab3BSSyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:54:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54512 "EHLO
+	id S934069Ab3BSSyu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:54:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54525 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933698Ab3BSSyc (ORCPT
+	with ESMTP id S933698Ab3BSSyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:54:32 -0500
+	Tue, 19 Feb 2013 13:54:45 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nithin Nayak Sujir <nsujir@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 70/81] tg3: Avoid null pointer dereference in tg3_interrupt in netconsole mode
-Date: Tue, 19 Feb 2013 15:49:33 -0300
-Message-Id: <1361299784-8830-71-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 73/81] s390/timer: avoid overflow when programming clock comparator
+Date: Tue, 19 Feb 2013 15:49:36 -0300
+Message-Id: <1361299784-8830-74-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -29,46 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nithin Nayak Sujir <nsujir@broadcom.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 9c13cb8bb477a83b9a3c9e5a5478a4e21294a760 upstream.
+commit d911e03d097bdc01363df5d81c43f69432eb785c upstream.
 
-When netconsole is enabled, logging messages generated during tg3_open
-can result in a null pointer dereference for the uninitialized tg3
-status block. Use the irq_sync flag to disable polling in the early
-stages. irq_sync is cleared when the driver is enabling interrupts after
-all initialization is completed.
+Since ed4f209 "s390/time: fix sched_clock() overflow" a new helper function
+is used to avoid overflows when converting TOD format values to nanosecond
+values.
+The kvm interrupt code formerly however only worked by accident because of
+an overflow. It tried to program a timer that would expire in more than ~29
+years. Because of the old TOD-to-nanoseconds overflow bug the real expiry
+value however was much smaller, but now it isn't anymore.
+This however triggers yet another bug in the function that programs the clock
+comparator s390_next_ktime(): if the absolute "expires" value is after 2042
+this will result in an overflow and the programmed value is lower than the
+current TOD value which immediatly triggers a clock comparator (= timer)
+interrupt.
+Since the timer isn't expired it will be programmed immediately again and so
+on... the result is a dead system.
+To fix this simply program the maximum possible value if an overflow is
+detected.
 
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Tested-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/s390/kernel/time.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 15f8b00..82a8ed2 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -6594,6 +6594,9 @@ static void tg3_poll_controller(struct net_device *dev)
- 	int i;
- 	struct tg3 *tp = netdev_priv(dev);
- 
-+	if (tg3_irq_sync(tp))
-+		return;
-+
- 	for (i = 0; i < tp->irq_cnt; i++)
- 		tg3_interrupt(tp->napi[i].irq_vec, &tp->napi[i]);
+diff --git a/arch/s390/kernel/time.c b/arch/s390/kernel/time.c
+index c5531db..747ab28 100644
+--- a/arch/s390/kernel/time.c
++++ b/arch/s390/kernel/time.c
+@@ -121,6 +121,9 @@ static int s390_next_ktime(ktime_t expires,
+ 	nsecs = ktime_to_ns(ktime_add(timespec_to_ktime(ts), expires));
+ 	do_div(nsecs, 125);
+ 	S390_lowcore.clock_comparator = sched_clock_base_cc + (nsecs << 9);
++	/* Program the maximum value if we have an overflow (== year 2042) */
++	if (unlikely(S390_lowcore.clock_comparator < sched_clock_base_cc))
++		S390_lowcore.clock_comparator = -1ULL;
+ 	set_clock_comparator(S390_lowcore.clock_comparator);
+ 	return 0;
  }
-@@ -15556,6 +15559,7 @@ static int __devinit tg3_init_one(struct pci_dev *pdev,
- 	tp->pm_cap = pm_cap;
- 	tp->rx_mode = TG3_DEF_RX_MODE;
- 	tp->tx_mode = TG3_DEF_TX_MODE;
-+	tp->irq_sync = 1;
- 
- 	if (tg3_debug > 0)
- 		tp->msg_enable = tg3_debug;
 -- 
 1.7.9.5
 
