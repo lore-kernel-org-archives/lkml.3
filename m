@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816Ab3BSQeR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 11:34:17 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60180 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758588Ab3BSQeQ (ORCPT
+	id S1758637Ab3BSQeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 11:34:37 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59576 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758438Ab3BSQee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 11:34:16 -0500
-Message-ID: <5123A984.4000704@numascale-asia.com>
-Date: Wed, 20 Feb 2013 00:34:12 +0800
-From: Daniel J Blueman <daniel@numascale-asia.com>
-Organization: Numascale Asia
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 19 Feb 2013 11:34:34 -0500
+Date: Tue, 19 Feb 2013 11:34:33 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        Aaron Lu <aaron.lwe@gmail.com>, Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v9 3/4] block: implement runtime pm strategy
+In-Reply-To: <20130219022900.GA2285@aaronlu.sh.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1302191134050.2215-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paul.mckenney@linaro.org>
-CC: Steffen Persvold <sp@numascale.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: False-positive RCU stall warnings on large systems...
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Tue, 19 Feb 2013, Aaron Lu wrote:
 
-On some of our larger servers with many hundreds of cores and when under 
-high duress, we can see scheduler RCU stall warnings [1], so find we 
-have to increase the hardcoded RCU_STALL_RAT_DELAY up from 2 and 
-RCU_JIFFIES_TILL_FORCE_QS up from 3.
+> Hi Alan,
+> 
+> On Tue, Feb 05, 2013 at 04:03:15PM +0800, Aaron Lu wrote:
+> > From: Lin Ming <ming.m.lin@intel.com>
+> > 
+> > When a request is added:
+> >     If device is suspended or is suspending and the request is not a
+> >     PM request, resume the device.
+> > 
+> > When the last request finishes:
+> >     Call pm_runtime_mark_last_busy().
+> > 
+> > When pick a request:
+> >     If device is resuming/suspending, then only PM request is allowed
+> >     to go.
+> 
+> I think I should add the following words in patch 2 & 3's changelog:
+> 
+> The idea and API is designed by Alan Stern and described here:
+> http://marc.info/?l=linux-scsi&m=133727953625963&w=2
+> 
+> to reflect your credit if you don't object.
+> 
+> Please let me know what do you think, or if there is a better way to
+> reflect this, please feel free to let me know.
 
-Is there a more sustainable way to account for this to avoid it being 
-hard-coded, such as making it and dependent timeouts a fraction of 
-CONFIG_RCU_CPU_STALL_TIMEOUT?
+That's fine, go right ahead.
 
-On the other hand, perhaps this is just caused by clock jitter (eg due 
-to distance from a contended clock source)? So increasing these a bit 
-may just be adequate in general...
+Alan Stern
 
-Many thanks,
-   Daniel
-
---- [1]
-
-[ 3939.010085] INFO: rcu_sched detected stalls on CPUs/tasks: {} 
-(detected by 1, t=29662 jiffies, g=3053, c=3052, q=598)
-[ 3939.020008] INFO: Stall ended before state dump start
--- 
-Daniel J Blueman
-Principal Software Engineer, Numascale Asia
