@@ -1,78 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab3BSJ5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 04:57:10 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:10389 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755812Ab3BSJ5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 04:57:07 -0500
-X-IronPort-AV: E=Sophos;i="4.84,694,1355068800"; 
-   d="scan'208";a="6729673"
-Message-ID: <51234C12.4020404@cn.fujitsu.com>
-Date: Tue, 19 Feb 2013 17:55:30 +0800
-From: Lin Feng <linfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1758346Ab3BSJ6J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 04:58:09 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:48233 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758213Ab3BSJ6F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 04:58:05 -0500
+Message-ID: <51234C23.2030909@linux.vnet.ibm.com>
+Date: Tue, 19 Feb 2013 15:25:47 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, bcrl@kvack.org,
-        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org, riel@redhat.com,
-        rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, jiang.liu@huawei.com,
-        linux-mm@kvack.org, linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: hotplug: implement non-movable version of get_user_pages()
- called get_user_pages_non_movable()
-References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com> <1359972248-8722-2-git-send-email-linfeng@cn.fujitsu.com> <20130204160624.5c20a8a0.akpm@linux-foundation.org> <20130205115722.GF21389@suse.de> <512203C4.8010608@cn.fujitsu.com> <20130218151716.GL4365@suse.de>
-In-Reply-To: <20130218151716.GL4365@suse.de>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/19 17:56:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/19 17:56:26,
-	Serialize complete at 2013/02/19 17:56:26
+To: Michel Lespinasse <walken@google.com>
+CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vincent.guittot@linaro.org
+Subject: Re: [PATCH v6 08/46] CPU hotplug: Provide APIs to prevent CPU offline
+ from atomic context
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123920.26245.56709.stgit@srivatsabhat.in.ibm.com> <CANN689HhVxDv+3Bn9UAxOMzj0egTvVp_c7oAmQ2nnQ8Xjn_aMA@mail.gmail.com> <51225A36.40600@linux.vnet.ibm.com> <CANN689FJPLfz06MFRJ9T+BuToejAzjYP_yrw_H4iGi1Kb3p2-g@mail.gmail.com> <51227810.6090009@linux.vnet.ibm.com> <CANN689E-98zK69pGeojbm30n3sswQYVBvhk3i3OzqvbeqSrSrg@mail.gmail.com>
+In-Reply-To: <CANN689E-98zK69pGeojbm30n3sswQYVBvhk3i3OzqvbeqSrSrg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-15
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021909-1618-0000-0000-0000035D7A43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+On 02/19/2013 03:10 PM, Michel Lespinasse wrote:
+> On Tue, Feb 19, 2013 at 2:50 AM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> But, the whole intention behind removing the parts depending on the
+>> recursive property of rwlocks would be to make it easier to make rwlocks
+>> fair (going forward) right? Then, that won't work for CPU hotplug, because,
+>> just like we have a legitimate reason to have recursive
+>> get_online_cpus_atomic(), we also have a legitimate reason to have
+>> unfairness in locking (i.e., for deadlock-safety). So we simply can't
+>> afford to make the locking fair - we'll end up in too many deadlock
+>> possibilities, as hinted in the changelog of patch 1.
+> 
+> Grumpf - I hadn't realized that making the underlying rwlock fair
+> would break your hotplug use case. But you are right, it would. Oh
+> well :/
+> 
 
-On 02/18/2013 11:17 PM, Mel Gorman wrote:
->>> > > <SNIP>
->>> > >
->>> > > result. It's a little clumsy but the memory hot-remove failure message
->>> > > could list what applications have pinned the pages that cannot be removed
->>> > > so the administrator has the option of force-killing the application. It
->>> > > is possible to discover what application is pinning a page from userspace
->>> > > but it would involve an expensive search with /proc/kpagemap
->>> > > 
->>>>> > >>> +	if (migrate_pre_flag && !isolate_err) {
->>>>> > >>> +		ret = migrate_pages(&pagelist, alloc_migrate_target, 1,
->>>>> > >>> +					false, MIGRATE_SYNC, MR_SYSCALL);
->>> > > 
->>> > > The conversion of alloc_migrate_target is a bit problematic. It strips
->>> > > the __GFP_MOVABLE flag and the consequence of this is that it converts
->>> > > those allocation requests to MIGRATE_UNMOVABLE. This potentially is a large
->>> > > number of pages, particularly if the number of get_user_pages_non_movable()
->>> > > increases for short-lived pins like direct IO.
->> >
->> > Sorry, I don't quite understand here neither. If we use the following new 
->> > migration allocation function as you said, the increasing number of 
->> > get_user_pages_non_movable() will also lead to large numbers of MIGRATE_UNMOVABLE
->> > pages. What's the difference, do I miss something?
->> > 
-> The replacement function preserves the __GFP_MOVABLE flag. It cannot use
-> ZONE_MOVABLE but otherwise the newly allocated page will be grouped with
-> other movable pages.
+Yeah :-/
 
-Ah, got it " But GFP_MOVABLE is not only a zone specifier but also an allocation policy.".
+>> So the only long-term solution I can think of is to decouple
+>> percpu-rwlocks and rwlock_t (like what Tejun suggested) by implementing
+>> our own unfair locking scheme inside. What do you think?
+> 
+> I have no idea how hard would it be to change get_online_cpus_atomic()
+> call sites so that the hotplug rwlock read side has a defined order vs
+> other locks (thus making sure the situation you describe in patch 1
+> doesn't happen). I agree we shouldn't base our short term plans around
+> that, but maybe that's doable in the long term ???
+>
 
-Could I clear __GFP_HIGHMEM flag in alloc_migrate_target depending on private parameter so
-that we can keep MIGRATE_UNMOVABLE policy also allocate page none movable zones with little
-change?
+I think it should be possible in the longer term. I'm expecting it to be
+*much much* harder to audit and convert (requiring a lot of subsystem
+knowledge of each subsystem that we are touching), than the simpler
+tree-wide conversion that I did in this patchset... but I don't think it
+is impossible.
+ 
+> Otherwise, I think we should add some big-fat-warning that percpu
+> rwlocks don't have reader/writer fairness, that the hotplug use case
+> actually depends on the unfairness / would break if the rwlock was
+> made fair, and that any new uses of percpu rwlocks should be very
+> carefully considered because of the reader/writer fairness issues.
 
-Does that approach work? Otherwise I have to follow your suggestion.
+In fact, when I started out, I actually contained all the new locking code
+inside CPU hotplug itself, and didn't even expose it as a generic percpu
+rwlock in some of the previous versions of this patchset... :-)
 
-thanks,
-linfeng
+But now that we already have a generic locking scheme exposed, we could
+add a warning against using it without due consideration.
+
+> Maybe even give percpu rwlocks a less generic sounding name, given how
+> constrained they are by the hotplug use case.
+ 
+I wouldn't go that far... ;-) Unfairness is not a show-stopper right?
+IMHO, the warning/documentation should suffice for anybody wanting to
+try out this locking scheme for other use-cases.
+
+Regards,
+Srivatsa S. Bhat
+
