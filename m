@@ -1,156 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758681Ab3BSUMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 15:12:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48694 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758264Ab3BSUL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 15:11:59 -0500
-Message-ID: <1361304711.2801.232.camel@bling.home>
-Subject: Re: [PATCH] iommu: making IOMMU sysfs nodes API public
-From: Alex Williamson <alex.williamson@redhat.com>
-To: David Gibson <david@gibson.dropbear.id.au>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Joerg Roedel <joerg.roedel@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 19 Feb 2013 13:11:51 -0700
-In-Reply-To: <20130219073853.GS21067@truffula.fritz.box>
-References: <1360628713.3248.8.camel@bling.home>
-	 <1360642004-7419-1-git-send-email-aik@ozlabs.ru>
-	 <1360645643.3248.91.camel@bling.home> <511A54DC.9030908@ozlabs.ru>
-	 <1360689304.3248.154.camel@bling.home> <5121C709.80007@ozlabs.ru>
-	 <1361251440.2801.142.camel@bling.home>
-	 <20130219073853.GS21067@truffula.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758732Ab3BSUNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 15:13:23 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46613 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757042Ab3BSUNW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 15:13:22 -0500
+Date: Tue, 19 Feb 2013 20:13:16 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "J, KEERTHY" <j-keerthy@ti.com>
+Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
+Subject: Re: [PATCH 4/4] regulator: palmas: Change the DT node property names
+ to follow the convention
+Message-ID: <20130219201315.GF23508@opensource.wolfsonmicro.com>
+References: <1361164460-3251-1-git-send-email-j-keerthy@ti.com>
+ <20130219124133.GC23508@opensource.wolfsonmicro.com>
+ <DC88CAD03C0052499C1907B327FC63229BBB5C@DBDE01.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Zi0sgQQBxRFxMTsj"
+Content-Disposition: inline
+In-Reply-To: <DC88CAD03C0052499C1907B327FC63229BBB5C@DBDE01.ent.ti.com>
+X-Cookie: Reply hazy, ask again later.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-19 at 18:38 +1100, David Gibson wrote:
-> On Mon, Feb 18, 2013 at 10:24:00PM -0700, Alex Williamson wrote:
-> > On Mon, 2013-02-18 at 17:15 +1100, Alexey Kardashevskiy wrote:
-> > > On 13/02/13 04:15, Alex Williamson wrote:
-> > > > On Wed, 2013-02-13 at 01:42 +1100, Alexey Kardashevskiy wrote:
-> > > >> On 12/02/13 16:07, Alex Williamson wrote:
-> > > >>> On Tue, 2013-02-12 at 15:06 +1100, Alexey Kardashevskiy wrote:
-> > > >>>> Having this patch in a tree, adding new nodes in sysfs
-> > > >>>> for IOMMU groups is going to be easier.
-> > > >>>>
-> > > >>>> The first candidate for this change is a "dma-window-size"
-> > > >>>> property which tells a size of a DMA window of the specific
-> > > >>>> IOMMU group which can be used later for locked pages accounting.
-> > > >>>
-> > > >>> I'm still churning on this one; I'm nervous this would basically creat
-> > > >>> a /proc free-for-all under /sys/kernel/iommu_group/$GROUP/ where any
-> > > >>> iommu driver can add random attributes.  That can get ugly for
-> > > >>> userspace.
-> > > >>
-> > > >> Is not it exactly what sysfs is for (unlike /proc)? :)
-> > > >
-> > > > Um, I hope it's a little more thought out than /proc.
-> > > >
-> > > >>> On the other hand, for the application of userspace knowing how much
-> > > >>> memory to lock for vfio use of a group, it's an appealing location to
-> > > >>> get that information.  Something like libvirt would already be poking
-> > > >>> around here to figure out which devices to bind.  Page limits need to be
-> > > >>> setup prior to use through vfio, so sysfs is more convenient than
-> > > >>> through vfio ioctls.
-> > > >>
-> > > >> True. DMA window properties do not change since boot so sysfs is the right
-> > > >> place to expose them.
-> > > >>
-> > > >>> But then is dma-window-size just a vfio requirement leaking over into
-> > > >>> iommu groups?  Can we allow iommu driver based attributes without giving
-> > > >>> up control of the namespace?  Thanks,
-> > > >>
-> > > >> Who are you asking these questions? :)
-> > > >
-> > > > Anyone, including you.  Rather than dropping misc files in sysfs to
-> > > > describe things about the group, I think the better solution in your
-> > > > case might be a link from the group to an existing sysfs directory
-> > > > describing the PE.  I believe your PE is rooted in a PCI bridge, so that
-> > > > presumably already has a representation in sysfs.  Can the aperture size
-> > > > be determined from something in sysfs for that bridge already?  I'm just
-> > > > not ready to create a grab bag of sysfs entries for a group yet.
-> > > > Thanks,
-> > > 
-> > > 
-> > > At the moment there is no information neither in sysfs nor 
-> > > /proc/device-tree about the dma-window. And adding a sysfs entry per PE 
-> > > (powerpc partitionable end-point which is often a PHB but not always) just 
-> > > for VFIO is quite heavy.
-> > 
-> > How do you learn the window size and PE extents in the host kernel?
-> > 
-> > > We could add a ppc64 subfolder under /sys/kernel/iommu/xxx/ and put the 
-> > > "dma-window" property there. And replace it with a symlink when and if we 
-> > > add something for PE later. Would work?
-> 
-> Fwiw, I'd suggest a subfolder named for the type of IOMMU, rather than
-> "ppc64".
-> 
-> > To be clear, you're suggesting /sys/kernel/iommu_groups/$GROUP/xxx/,
-> > right?  A subfolder really only limits the scope of the mess, so it's
-> > not much improvement.  What does the interface look like to make those
-> > subfolders?
-> > 
-> > The problem we're trying to solve is this call flow:
-> > 
-> > containerfd = open("/dev/vfio/vfio");
-> > ioctl(containerfd, VFIO_GET_API_VERSION);
-> > ioctl(containerfd, VFIO_CHECK_EXTENSION, ...);
-> > groupfd = open("/dev/vfio/$GROUP");
-> > ioctl(groupfd, VFIO_GROUP_GET_STATUS);
-> > ioctl(groupfd, VFIO_GROUP_SET_CONTAINER, &containerfd);
-> > 
-> > You wanted to lock all the memory for the DMA window here, before we can
-> > call VFIO_IOMMU_GET_INFO, but does it need to happen there?  We still
-> > have a MAP_DMA hook.  We could do it all on the first mapping.
-> 
-> MAP_DMA isn't quite enough, since the guest can also directly cause
-> mappings using hypercalls directly implemented in KVM.  I think it
-> would be feasible to lock on the first mapping (either via MAP_DMA, or
-> H_PUT_TCE) though it would be a bit ugly and require that the first
-> H_PUT_TCE always bounce out to virtual mode (Alexey, correct me if I'm
-> wrong here).  IIRC there is also a call to bind the vfio container to
-> a (qemu assigned) LIOBN, before the guest can use H_PUT_TCE directly,
-> so that might be another place we could do the lock.
 
-Somehow hypercall mappings have to be gated by the userspace setup,
-right?
+--Zi0sgQQBxRFxMTsj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> >  It also
-> > has a flags field that could augment the behavior to trigger page
-> > locking.
-> 
-> I don't see how the flags help us - we can't have userspace choose to
-> skip the locked memory accounting.  Or are you suggesting a flag to
-> open the container in some sort of dummy mode where only GET_INFO is
-> possible, then re-open with the full locking?
+On Tue, Feb 19, 2013 at 05:10:01PM +0000, J, KEERTHY wrote:
 
-Sort of, I don't think it needs to be re-opened, but we had previously
-talked about some kind of enable and disable ioctl.  "enable" would be
-the logical place to lock pages, but then we probably got stuck in
-questions around what it means to enable an iommu generically.  So what
-if instead of a separate enable ioctl we had a flag on DMA_MAP that was
-defined as SET_WINDOW where iova and size are passed and specify the
-portion of the DMA window that userspace intends to use and which is
-therefore locked.  If you don't support subwindows, fine, just fail it.
-You could have a matching PUT_WINDOW on DMA_UNMAP if you wanted.
+> > This must need an update to the binding document too, and probably any
+> > DT files that ended up getting merged for it?
 
-> >  Adding the window size to sysfs seems more readily convenient,
-> > but is it so hard for userspace to open the files and call a couple
-> > ioctls to get far enough to call IOMMU_GET_INFO?  I'm unconvinced the
-> > clutter in sysfs more than just a quick fix.  Thanks,
-> 
-> And finally, as Alexey points out, isn't the point here so we know how
-> much rlimit to give qemu?  Using ioctls we'd need a special tool just
-> to check the dma window sizes, which seems a bit hideous.
+> I have sent a patch with the document update. That is the first patch in
+> The series.
 
-Is it more hideous that using iommu groups to report a vfio imposed
-restriction?  Are a couple open files and a handful of ioctls worse than
-code to parse directory entries and the future maintenance of an
-unrestricted grab bag of sysfs entries?
+You sent the patches as unthreaded mails and didn't CC me on the
+first patch so I've not actually seen the documentation.  Incremental
+updates like this really ought to be done as part of a single patch
+anyway, there's no point in splitting things up and as we've just seen
+it can make it harder to review.
 
+--Zi0sgQQBxRFxMTsj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRI9x7AAoJELSic+t+oim9Vy4P/1SsN4FXiFNPparS+18DWpsG
+i78Ey0IYsIxET3LZwmRam7CaHRcVQOrR1ls8U44DNmcpClf4bzdxFQWQ202bteiB
+0tEcx5LgvB1BbuYLiPdocVZzGHM9orSkv29j4LVUpWbYFa8DoOaOZhbQI35D4Rsf
+prFxfFQq++qHmF+tmbJwBtYylg4vXD8OFfNiqI7deg7BTGhle6TYFsmwQjxemM+7
+1cSa3zbaasGIGXWhCl+I35prec7b6qgRW77JRolBu1nbciPr83LyHul//tfPmJJG
+E3HNJzxClLNtJIPs9HajxKpxtfmVP0/BeNpQH+sX2WsmdfNTAJz76egZIpYqpHqy
+sZTAcDRFQhTMaN/0fe0wCmW/UvZyXVkN5nQkTey5TUajibV69qfGs9QO7ewM/irK
+6eb8f+Rrs+dpYcPW3+kRRyMeq9mRBqVIAO2HTJ7abaXgOkCuiFDwjUmP/U9eu7QN
+38PEBEC8Ri3bSlI8vIesogukqvwL1YBgOcHFtCHaTqQ7qgqJqCEe1j1yO4FJNem7
+TL2XvxgfMBtRecmZXkqalhzmB5/utlR9+59JnKBnucM6xaAADscPocIKYfGMtqlV
+/LaACWnumMCKiyzsPFK0KAKioEGt7/oKC4RCi6k8WIlA8eT5QRWrQiwMeDiB5E6J
+QOeQkdu5kxpshlj0CmTW
+=uKQO
+-----END PGP SIGNATURE-----
+
+--Zi0sgQQBxRFxMTsj--
