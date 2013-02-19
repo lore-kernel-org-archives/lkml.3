@@ -1,64 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758877Ab3BSSIM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:08:12 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:35247 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758727Ab3BSSIL (ORCPT
+	id S1758895Ab3BSSJB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:09:01 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:49735 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758727Ab3BSSI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:08:11 -0500
-Date: Tue, 19 Feb 2013 10:08:49 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Chris Li <lkml@chrisli.org>
-Cc: linux-kernel@vger.kernel.org, robert.moore@intel.com, feng.tang@intel.com,
-        len.brown@intel.com, daniel.vetter@ffwll.ch
-Subject: Re: i915 black screen introduced by ACPI changes
-Message-ID: <20130219100849.72d2330b@jbarnes-desktop>
-In-Reply-To: <CANeU7QmbzX4Tx1Dtu6xOiYzr6h6_8tPQvVG32Wvkt=5wAwEEAg@mail.gmail.com>
-References: <CANeU7QmbzX4Tx1Dtu6xOiYzr6h6_8tPQvVG32Wvkt=5wAwEEAg@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Tue, 19 Feb 2013 13:08:59 -0500
+Date: Tue, 19 Feb 2013 10:08:12 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Catalin Marinas <catalin.marinas@arm.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: Allow arch code to control the user page table
+ ceiling
+In-Reply-To: <1361204311-14127-2-git-send-email-catalin.marinas@arm.com>
+Message-ID: <alpine.LNX.2.00.1302191005320.2139@eggly.anvils>
+References: <1361204311-14127-1-git-send-email-catalin.marinas@arm.com> <1361204311-14127-2-git-send-email-catalin.marinas@arm.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Feb 2013 20:43:47 -0800
-Chris Li <lkml@chrisli.org> wrote:
+On Mon, 18 Feb 2013, Catalin Marinas wrote:
 
-> My Lenovo Y580 laptop with FC18 start to get black screen after the kernel
-> upgrade to 3.7.xxx
+> From: Hugh Dickins <hughd@google.com>
+
+You're being generous to me :)
+Thanks for doing most of the work, yes, this looks fine.
+BUt I'd have expected a Cc stable below: see comment on 2/2.
+
+Hugh
+
 > 
-> The black screen happens about the time kernel switch to using VT console.
-> At the point of black screen, no response of cap locks key led no network
-> connection. The machine seems dead.
-
-Can you set up netconsole and see if you can get any output from the
-boot, if we're lucky maybe you'll see a panic...
-
-> The CPU is i7 and it has two video card. The Intel build-in video card
-> and Gtx 660M Nvidia card.
+> On architectures where a pgd entry may be shared between user and kernel
+> (ARM+LPAE), freeing page tables needs a ceiling other than 0. This patch
+> introduces a generic USER_PGTABLES_CEILING that arch code can override.
 > 
-> This is very annoying. I did some poking around it:
-> - It was fine on the FC18 3.6.xxx kernel before the upgrade.
-> - The black screen exists with FC18 3.7.xxx kernel
-> - The black screen also exists in latest tip of linux-2.6.
-> - Switch to multi-user mode booting does not get rid of the black screen.
-> - Get rid of the "rhrb quit" does not help either.
-> - When the black screen happen, cap lock LED does not response to cap locks.
-> - No networking when black screen happen. The only thing to do is
-> reboot the system.
-> - Adding "i915.modeset=0" will allow the kernel to boot into GUI login. However,
->   logout of X will cause the machine to hang similar to the black screen.
-> - Suspend and resume will get stuck at the black screen with"i915.modeset=0".
-> - Kernel console and X is using the Intel driver for display.
-
-I don't know about the ACPI change mentioned, but ACPI is involved in
-dual-GPU configurations.  Maybe the change affected the default
-behavior and pointed more functions at the nVidia device rather than
-the Intel?
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> [catalin.marinas@arm.com: commit log; shift_arg_pages(), asm-generic/pgtables.h changes]
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  fs/exec.c                     |  4 ++--
+>  include/asm-generic/pgtable.h | 10 ++++++++++
+>  mm/mmap.c                     |  4 ++--
+>  3 files changed, 14 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 20df02c..547eaaa 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -613,7 +613,7 @@ static int shift_arg_pages(struct vm_area_struct *vma, unsigned long shift)
+>  		 * when the old and new regions overlap clear from new_end.
+>  		 */
+>  		free_pgd_range(&tlb, new_end, old_end, new_end,
+> -			vma->vm_next ? vma->vm_next->vm_start : 0);
+> +			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
+>  	} else {
+>  		/*
+>  		 * otherwise, clean from old_start; this is done to not touch
+> @@ -622,7 +622,7 @@ static int shift_arg_pages(struct vm_area_struct *vma, unsigned long shift)
+>  		 * for the others its just a little faster.
+>  		 */
+>  		free_pgd_range(&tlb, old_start, old_end, new_end,
+> -			vma->vm_next ? vma->vm_next->vm_start : 0);
+> +			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
+>  	}
+>  	tlb_finish_mmu(&tlb, new_end, old_end);
+>  
+> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+> index 5cf680a..f50a87d 100644
+> --- a/include/asm-generic/pgtable.h
+> +++ b/include/asm-generic/pgtable.h
+> @@ -7,6 +7,16 @@
+>  #include <linux/mm_types.h>
+>  #include <linux/bug.h>
+>  
+> +/*
+> + * On almost all architectures and configurations, 0 can be used as the
+> + * upper ceiling to free_pgtables(): on many architectures it has the same
+> + * effect as using TASK_SIZE.  However, there is one configuration which
+> + * must impose a more careful limit, to avoid freeing kernel pgtables.
+> + */
+> +#ifndef USER_PGTABLES_CEILING
+> +#define USER_PGTABLES_CEILING	0UL
+> +#endif
+> +
+>  #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
+>  extern int ptep_set_access_flags(struct vm_area_struct *vma,
+>  				 unsigned long address, pte_t *ptep,
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index d1e4124..e262710 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -2262,7 +2262,7 @@ static void unmap_region(struct mm_struct *mm,
+>  	update_hiwater_rss(mm);
+>  	unmap_vmas(&tlb, vma, start, end);
+>  	free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
+> -				 next ? next->vm_start : 0);
+> +				 next ? next->vm_start : USER_PGTABLES_CEILING);
+>  	tlb_finish_mmu(&tlb, start, end);
+>  }
+>  
+> @@ -2640,7 +2640,7 @@ void exit_mmap(struct mm_struct *mm)
+>  	/* Use -1 here to ensure all VMAs in the mm are unmapped */
+>  	unmap_vmas(&tlb, vma, 0, -1);
+>  
+> -	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, 0);
+> +	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, USER_PGTABLES_CEILING);
+>  	tlb_finish_mmu(&tlb, 0, -1);
+>  
+>  	/*
+> 
