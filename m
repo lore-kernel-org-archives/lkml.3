@@ -1,96 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758152Ab3BSCvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 21:51:21 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:52963 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757359Ab3BSCvT (ORCPT
+	id S1758135Ab3BSCwK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 21:52:10 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16022 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757359Ab3BSCwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 21:51:19 -0500
-X-AuditID: cbfee68f-b7f656d000000d78-b6-5122e8a6fb48
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
-Cc: "'linux-fbdev'" <linux-fbdev@vger.kernel.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [GIT PULL] samsung-fb updates for v3.9
-Date: Tue, 19 Feb 2013 11:51:17 +0900
-Message-id: <003901ce0e4b$fd839c40$f88ad4c0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4OS/1fL9hv0snASVq56iN5hSEFSA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsVy+t8zA91lL5QCDR6tZbM40feB1eLyrjls
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGXMm/GWteAIV8WTRcdZGhhPcHQxcnJICJhIrJ87gQXC
-	FpO4cG89WxcjF4eQwDJGiRkz25lgihbv+gOVWMQo0XPqDyuE84tR4kvDMVaQKjYBNYkvXw6z
-	g9giQB0PPi5kBCliFnjLKPHx0V5GkISwgL7E5d3rwcayCKhKXH/4FszmFbCVuHDpIZQtKPFj
-	8j2wm5gFtCTW7zzOBGHLS2xe85a5i5ED6CR1iUd/dSF26UkcPdHOCFEiIrHvxTuwvRIC/ewS
-	Z7atYYTYJSDxbfIhFoheWYlNB5ghPpOUOLjiBssERrFZSDbPQrJ5FpLNs5CsWMDIsopRNLUg
-	uaA4Kb3IWK84Mbe4NC9dLzk/dxMjJG76dzDePWB9iDEZaP1EZinR5Hxg3OWVxBsaG5uYmZia
-	mFuampuSJqwkzit/SSZQSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA2PttJocZjeraw4iE7V4
-	shOlM+dLPj1XnfY2M9ZHbZftnQCW1gD9okvqcQ91Dxk3ShnvF0hsN6+LmrnoWubmCLbb2xRk
-	gpbPsjvAeFz+u0nv8+T287H3WArXrzwReF8n7r2UvfChpXH1aokT1V4UncndemdNfcwqPfsj
-	+8xYVLjPy62aG31AW4mlOCPRUIu5qDgRACVWUmexAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jAd1lL5QCDS5eYLI40feB1eLyrjls
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmzJvxlrXgCFfF
-	k0XHWRoYT3B0MXJySAiYSCze9YcNwhaTuHBvPZDNxSEksIhRoufUH1YI5xejxJeGY6wgVWwC
-	ahJfvhxmB7FFgLoffFzICFLELPCWUeLjo72MIAlhAX2Jy7vXM4HYLAKqEtcfvgWzeQVsJS5c
-	eghlC0r8mHyPBcRmFtCSWL/zOBOELS+xec1b5i5GDqCT1CUe/dWF2KUncfREOyNEiYjEvhfv
-	GCcwCsxCMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgqHwmvYNx
-	VYPFIUYBDkYlHt4PjkqBQqyJZcWVuYcYJTiYlUR4O9qBQrwpiZVVqUX58UWlOanFhxiTgR6d
-	yCwlmpwPTBh5JfGGxiZmRpZGZhZGJubmpAkrifMynnoSICSQnliSmp2aWpBaBLOFiYNTqoGx
-	S4hL1XPel4fLmiYJP/YUVNZbuMx0LaOiT0D7Ghaupc+cAuzeSOS2983LNFs090qcz5596SXv
-	eLpPVN68VlnCpMV59OEH27dtNgK62vp7mDb/sL1xdYH7266kLz6vX6wSX59rnF2yzebVs08y
-	WZvC3LSnJjduy9m2zOjUg8dTHdiev95nu+mKEktxRqKhFnNRcSIA4AJtUA4DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 18 Feb 2013 21:52:08 -0500
+X-Authority-Analysis: v=2.0 cv=It2cgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=MFl-PuF5JLYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=3xO-tVoUQDAA:10 a=hD80L64hAAAA:8 a=nJy3uJ-UIIgZrwBub-MA:9 a=PUjeQqilurYA:10 a=v3rLFGiuRE8A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1361242326.23152.189.camel@gandalf.local.home>
+Subject: Re: [PATCH 2/8] f2fs: add tracepoints for inode operations
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: jaegeuk.kim@samsung.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>
+Date: Mon, 18 Feb 2013 21:52:06 -0500
+In-Reply-To: <1361241190-18073-1-git-send-email-linkinjeon@gmail.com>
+References: <1361241190-18073-1-git-send-email-linkinjeon@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 2013-02-19 at 11:33 +0900, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Florian, the fbdev maintainer, has been very busy lately, so I send the pull request
-for samsung-fb for this merge window.
+> +TRACE_EVENT(f2fs_unlink_exit,
+> +	TP_PROTO(struct dentry *dentry, int ret),
+> +
+> +	TP_ARGS(dentry, ret),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(ino_t,	ino)
+> +		__field(dev_t,	dev)
+> +		__field(int,	ret)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->ino		= dentry->d_inode->i_ino;
+> +		__entry->dev		= dentry->d_inode->i_sb->s_dev;
+> +		__entry->ret		= ret;
+> +	),
+> +
+> +	TP_printk("dev %d,%d ino %lu ret %d",
+> +		  MAJOR(__entry->dev), MINOR(__entry->dev),
+> +		  (unsigned long) __entry->ino,
+> +		  __entry->ret)
+> +);
+> +
+>  #endif /* _TRACE_F2FS_H */
+>  
+>   /* This part must be outside protection */
 
-The following changes since commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200:
+If at all possible, try to combine as many tracepoints as possible by a
+class. A TRACE_EVENT() is really a DECLARE_EVENT_CLASS();
+DEFINE_EVENT(); pair that totals about 5k per TRACE_EVENT(). The
+DECLARE_EVENT_CLASS() being the majority of that. A DEFINE_EVENT() adds
+approximately 250 bytes each. Thus, combining the above with the
+TRACE_EVENT() from the previous patch:
 
- Linux 3.8 (Mon Feb 18 15:58:34 2013 -0800)
++TRACE_EVENT(f2fs_sync_file_exit,
++       TP_PROTO(struct inode *inode, int ret),
++
++       TP_ARGS(inode, ret),
++
++       TP_STRUCT__entry(
++               __field(int,    ret)
++               __field(ino_t,  ino)
++               __field(dev_t,  dev)
++       ),
++
++       TP_fast_assign(
++               __entry->ret            = ret;
++               __entry->ino            = inode->i_ino;
++               __entry->dev            = inode->i_sb->s_dev;
++       ),
++
++       TP_printk("dev %d,%d ino %lu ret %d",
++                 MAJOR(__entry->dev), MINOR(__entry->dev),
++                 (unsigned long) __entry->ino,
++                 __entry->ret)
++);
 
-are available in the git repository at:
-  git://github.com/jingoo/linux.git samsung-fb-next
+into:
 
-for you to fetch changes up to 5a415ae252d5922de9eadefabe8510115395fbc6:
+DECLARE_EVENT_CLASS(f2fs_dev_inode_ret,
+       TP_PROTO(struct inode *inode, int ret),
 
- video: s3c-fb: Fix typo in definition of VIDCON1_VSTATUS_FRONTPORCH value (Sat Nov 17 21:31:00 2012 +0000)
+       TP_ARGS(inode, ret),
 
-----------------------------------------------------------------
-samsung-fb updates for the v3.9:
+       TP_STRUCT__entry(
+               __field(int,    ret)
+               __field(ino_t,  ino)
+               __field(dev_t,  dev)
+       ),
 
-- The bit definitions of header file are updated.
-- The dependancy is fixed.
-----------------------------------------------------------------
+       TP_fast_assign(
+               __entry->ret            = ret;
+               __entry->ino            = inode->i_ino;
+               __entry->dev            = inode->i_sb->s_dev;
+       ),
 
-Jingoo Han (4):
-      video: s3c-fb: use ARCH_ dependancy
-      video: s3c-fb: remove duplicated S3C_FB_MAX_WIN
-      video: s3c-fb: remove unnecessary brackets
-      video: s3c-fb: add the bit definitions for CSC EQ709 and EQ601
+       TP_printk("dev %d,%d ino %lu ret %d",
+                 MAJOR(__entry->dev), MINOR(__entry->dev),
+                 (unsigned long) __entry->ino,
+                 __entry->ret)
+);
 
-Tomasz Figa (1):
-      video: s3c-fb: Fix typo in definition of VIDCON1_VSTATUS_FRONTPORCH value
+DEFINE_EVENT(f2fs_sync_file_exit,
+       TP_PROTO(struct inode *inode, int ret),
+       TP_ARGS(inode, ret));
 
- drivers/video/Kconfig        |    3 +-
- include/video/samsung_fimd.h |  205 ++++++++++++++++++++---------------------
- 2 files changed, 102 insertions(+), 106 deletions(-)
+DEFINE_EVENT(f2fs_unlink_exit,
+       TP_PROTO(struct inode *inode, int ret),
+       TP_ARGS(inode, ret));
 
---
-Best regards,
-Jingoo Han
+You can save ~4750 bytes. Note, you will need to pass the inode instead
+of the dentry into f2fs_unlink_exit(), but you don't use the dentry
+anyway.
+
+-- Steve
+
 
