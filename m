@@ -1,221 +1,385 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978Ab3BSO2F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 09:28:05 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:33972 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932470Ab3BSO2D (ORCPT
+	id S932982Ab3BSO2n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 09:28:43 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:60079 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932470Ab3BSO2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 09:28:03 -0500
+	Tue, 19 Feb 2013 09:28:41 -0500
+Date: Tue, 19 Feb 2013 15:28:37 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] smp/hotplug changes for v3.9
+Message-ID: <20130219142836.GA13196@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130218013720.GC10963@localhost>
-References: <20130218013720.GC10963@localhost>
-Date: Tue, 19 Feb 2013 14:28:00 +0000
-Message-ID: <CAMuW1wfEW2ECthuCkWW_=QimXX9xUJQNfeM9U9gNRuLaJXZ_AQ@mail.gmail.com>
-Subject: Re: WARNING: at kernel/mutex.c:386 __mutex_lock_common()
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+Linus,
 
-2013/2/18 Fengguang Wu <fengguang.wu@intel.com>:
-> Greetings,
->
-> I got the below warning and the first bad commit is
->
-> commit 11eb5a2ce9655ee552f705f2da6b8f96f466c0d4
-> Author: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> Date:   Wed Nov 7 11:53:51 2012 +0100
->
->     mutex: add support for reservation style locks
->
->     GPU's do operations that commonly involve many buffers.  Those buffers
->     can be shared across contexts/processes, exist in different memory
->     domains (for example VRAM vs system memory), and so on.  And with
->     PRIME / dmabuf, they can even be shared across devices.  So there are
->     a handful of situations where the driver needs to wait for buffers to
->     become ready.  If you think about this in terms of waiting on a buffer
->     mutex for it to become available, this presents a problem because
->     there is no way to guarantee that buffers appear in a execbuf/batch in
->     the same order in all contexts.  That is directly under control of
->     userspace, and a result of the sequence of GL calls that an application
->     makes.  Which results in the potential for deadlock.  The problem gets
->     more complex when you consider that the kernel may need to migrate the
->     buffer(s) into VRAM before the GPU operates on the buffer(s), which
->     may in turn require evicting some other buffers (and you don't want to
->     evict other buffers which are already queued up to the GPU), but for a
->     simplified understanding of the problem you can ignore this.
->
->     The algorithm that TTM came up with for dealing with this problem is
->     quite simple.  For each group of buffers (execbuf) that need to be
->     locked, the caller would be assigned a unique reservation_id, from a
->     global counter.  In case of deadlock in the process of locking all the
->     buffers associated with a execbuf, the one with the lowest
->     reservation_id wins, and the one with the higher reservation_id
->     unlocks all of the buffers that it has already locked, and then tries
->     again.
->
->     How it is used:
->     ---------------
->
->     A very simplified version:
->
->         int lock_execbuf(execbuf)
->         {
->             struct buf *res_buf = NULL;
->
->             /* acquiring locks, before queuing up to GPU: */
->             seqno = assign_global_seqno();
->
->         retry:
->             for (buf in execbuf->buffers) {
->                 if (buf == res_buf) {
->                     res_buf = NULL;
->                     continue;
->                 }
->                 ret = mutex_reserve_lock(&buf->lock, seqno);
->                 if (ret < 0)
->                     goto err;
->             }
->
->             /* now everything is good to go, submit job to GPU: */
->             ...
->
->             return 0;
->
->         err:
->             for (all buf2 before buf in execbuf->buffers)
->                 mutex_unreserve_unlock(&buf2->lock);
->             if (res_buf)
->                 mutex_unreserve_unlock(&res_buf->lock);
->
->             if (ret == -EAGAIN) {
->                 /* we lost out in a seqno race, lock and retry.. */
->                 mutex_reserve_lock_slow(&buf->lock, seqno);
->                 res_buf = buf;
->                 goto retry;
->             }
->
->             return ret;
->         }
->
->         int unlock_execbuf(execbuf)
->         {
->             /* when GPU is finished; */
->             for (buf in execbuf->buffers)
->                 mutex_unreserve_unlock(&buf->lock);
->         }
->
->     Functions:
->     ----------
->
->     mutex_reserve_lock, and mutex_reserve_lock_interruptible:
->       Lock a buffer with a reservation_id set. reservation_id must not be
->       set to 0, since this is a special value that means no reservation_id.
->
->       Normally if reservation_id is not set, or is older than the
->       reservation_id that's currently set on the mutex, the behavior will
->       be to wait normally.  However, if  the reservation_id is newer than
->       the current reservation_id, -EAGAIN will be returned.
->
->       These functions will return -EDEADLK instead of -EAGAIN if
->       reservation_id is the same as the reservation_id that's attempted to
->       lock the mutex with, since in that case you presumably attempted to
->       lock the same lock twice.
->
->     mutex_reserve_lock_slow and mutex_reserve_lock_intr_slow:
->       Similar to mutex_reserve_lock, except it won't backoff with -EAGAIN.
->       This is useful when mutex_reserve_lock failed with -EAGAIN, and you
->       unreserved all buffers so no deadlock can occur.
->
->     mutex_unreserve_unlock:
->        Unlock a buffer reserved with one of the mutex_reserve_*lock* calls.
->
->     Missing at the moment, maybe TODO?
->       * Check if lockdep warns if you unlock a lock that other locks were nested
->         to.
->         - spin_lock(m);
->           spin_lock_nest_lock(a, m);
->           spin_unlock(m);
->           spin_unlock(a);
->           It would be nice if this would give a splat on spin_unlock(m),
->           I'm not 100% sure if it does right now, though..
->       * In the *_slow calls, maybe add a check to ensure no other locks of the same
->         lockdep class are nested in the lock we have to nest to?
->         - This is making sure that mutex_unreserve_unlock have been called on all other locks.
->
->     Design:
->       I chose for ticket_mutex to encapsulate struct mutex, so the extra memory usage and
->       atomic set on init will only happen when you deliberately create a ticket lock.
->
->       Since the mutexes are mostly meant to protect buffer object serialization in ttm, not
->       much contention is expected. I could be slightly smarter with wakeups, but this would
->       be at the expense at adding a field to struct mutex_waiter. This would add
->       overhead to all cases where normal mutexes are used, and ticket_mutexes are less
->       performance sensitive anyway since they only protect buffer objects. As a result
->       I chose not to do this.
->
->       I needed this in kernel/mutex.c because of the extensions to __lock_common, which are
->       hopefully optimized away for all normal paths.
->
->       It is not illegal to use mutex_lock and mutex_unlock on ticket mutexes. This will work,
->       as long you don't mix lock/unlock calls. This is useful if you want to lock only a single
->       buffer.
->
->       All the mutex_reserve calls are nested into another lock. The idea is that the
->       seqno ticket you use functions as a lockdep class you have locked too. This will
->       prevent lockdep false positives on locking 2 objects of the same class. It's allowed
->       because they're nested to the seqno ticket. There are extensive tests for this in the
->       patch that introduces locking tests for reservation objects and reservation tickets.
->
->     Changes since RFC patch v1:
->      - Updated to use atomic_long instead of atomic, since the reservation_id was a long.
->      - added mutex_reserve_lock_slow and mutex_reserve_lock_intr_slow
->      - removed mutex_locked_set_reservation_id (or w/e it was called)
->     Changes since RFC patch v2:
->      - remove use of __mutex_lock_retval_arg, add warnings when using wrong combination of
->        mutex_(,reserve_)lock/unlock.
->
->     Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->
-> [    0.000000]
-> [    0.000000] ------------[ cut here ]------------
-> [    0.000000] WARNING: at /c/kernel-tests/src/tip/kernel/mutex.c:386 __mutex_lock_common+0x5a9/0x870()
-> [    0.000000] Hardware name: Bochs
-> [    0.000000] Modules linked in:
-> [    0.000000] Pid: 0, comm: swapper/0 Not tainted 3.8.0-rc7-00071-g11eb5a2 #180
-> [    0.000000] Call Trace:
-> [    0.000000]  [<ffffffff81047102>] warn_slowpath_common+0xb2/0x120
-> [    0.000000]  [<ffffffff81047195>] warn_slowpath_null+0x25/0x30
-> [    0.000000]  [<ffffffff814ebdd9>] __mutex_lock_common+0x5a9/0x870
-> [    0.000000]  [<ffffffff81a66ef8>] ? rcu_cpu_notify+0xa8/0x451
-> [    0.000000]  [<ffffffff810bcb8f>] ? trace_hardirqs_off_caller+0xaf/0x120
-> [    0.000000]  [<ffffffff81a66ef8>] ? rcu_cpu_notify+0xa8/0x451
-> [    0.000000]  [<ffffffff810be38c>] ? lockdep_init_map+0xfc/0x230
-> [    0.000000]  [<ffffffff814ec621>] mutex_lock_nested+0x61/0x80
-> [    0.000000]  [<ffffffff810bcc1d>] ? trace_hardirqs_off+0x1d/0x30
-> [    0.000000]  [<ffffffff81a66ef8>] rcu_cpu_notify+0xa8/0x451
-> [    0.000000]  [<ffffffff814ecc31>] ? mutex_unlock+0x11/0x20
-> [    0.000000]  [<ffffffff81a3f952>] rcu_init+0x3b3/0x408
-> [    0.000000]  [<ffffffff81a21e0c>] start_kernel+0x34a/0x744
-> [    0.000000]  [<ffffffff81a216e6>] ? repair_env_string+0x81/0x81
-> [    0.000000]  [<ffffffff81a21120>] ? early_idt_handlers+0x120/0x120
-> [    0.000000]  [<ffffffff81a212fd>] x86_64_start_reservations+0x185/0x190
-> [    0.000000]  [<ffffffff81a214a8>] x86_64_start_kernel+0x1a0/0x1b6
-> [    0.000000] ---[ end trace 8e966724b1809892 ]---
-Weird, that code path should not be hit from __mutex_lock_common from
-mutex_lock_nested, I'll create a patch with some tests to make sure
-that lib/locking-selftests.c will perform tests on common mutexes to
-ensure that code path is not hit, and this bug will not happen again.
+Please pull the latest smp-hotplug-for-linus git tree from:
 
-Can you change __mutex_lock_common from inline to __always_inline and
-check if that gets rid of the warning?
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git smp-hotplug-for-linus
 
-~Maarten
+   HEAD: 14e568e78f6f80ca1e27256641ddf524c7dbdc51 stop_machine: Use smpboot threads
+
+Some early preparatory changes for the WIP hotplug rework by 
+Thomas Gleixner.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Thomas Gleixner (3):
+      smpboot: Allow selfparking per cpu threads
+      stop_machine: Store task reference in a separate per cpu variable
+      stop_machine: Use smpboot threads
+
+
+ include/linux/smpboot.h |   5 ++
+ kernel/cpu.c            |   2 +
+ kernel/smpboot.c        |   5 +-
+ kernel/stop_machine.c   | 156 +++++++++++++++++++-----------------------------
+ 4 files changed, 70 insertions(+), 98 deletions(-)
+
+diff --git a/include/linux/smpboot.h b/include/linux/smpboot.h
+index e0106d8..c65dee0 100644
+--- a/include/linux/smpboot.h
++++ b/include/linux/smpboot.h
+@@ -14,6 +14,8 @@ struct smpboot_thread_data;
+  * @thread_should_run:	Check whether the thread should run or not. Called with
+  *			preemption disabled.
+  * @thread_fn:		The associated thread function
++ * @create:		Optional setup function, called when the thread gets
++ *			created (Not called from the thread context)
+  * @setup:		Optional setup function, called when the thread gets
+  *			operational the first time
+  * @cleanup:		Optional cleanup function, called when the thread
+@@ -22,6 +24,7 @@ struct smpboot_thread_data;
+  *			parked (cpu offline)
+  * @unpark:		Optional unpark function, called when the thread is
+  *			unparked (cpu online)
++ * @selfparking:	Thread is not parked by the park function.
+  * @thread_comm:	The base name of the thread
+  */
+ struct smp_hotplug_thread {
+@@ -29,10 +32,12 @@ struct smp_hotplug_thread {
+ 	struct list_head		list;
+ 	int				(*thread_should_run)(unsigned int cpu);
+ 	void				(*thread_fn)(unsigned int cpu);
++	void				(*create)(unsigned int cpu);
+ 	void				(*setup)(unsigned int cpu);
+ 	void				(*cleanup)(unsigned int cpu, bool online);
+ 	void				(*park)(unsigned int cpu);
+ 	void				(*unpark)(unsigned int cpu);
++	bool				selfparking;
+ 	const char			*thread_comm;
+ };
+ 
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 3046a50..c91e30d 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -254,6 +254,8 @@ static int __ref take_cpu_down(void *_param)
+ 		return err;
+ 
+ 	cpu_notify(CPU_DYING | param->mod, param->hcpu);
++	/* Park the stopper thread */
++	kthread_park(current);
+ 	return 0;
+ }
+ 
+diff --git a/kernel/smpboot.c b/kernel/smpboot.c
+index d6c5fc0..d4abac2 100644
+--- a/kernel/smpboot.c
++++ b/kernel/smpboot.c
+@@ -183,9 +183,10 @@ __smpboot_create_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
+ 		kfree(td);
+ 		return PTR_ERR(tsk);
+ 	}
+-
+ 	get_task_struct(tsk);
+ 	*per_cpu_ptr(ht->store, cpu) = tsk;
++	if (ht->create)
++		ht->create(cpu);
+ 	return 0;
+ }
+ 
+@@ -225,7 +226,7 @@ static void smpboot_park_thread(struct smp_hotplug_thread *ht, unsigned int cpu)
+ {
+ 	struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
+ 
+-	if (tsk)
++	if (tsk && !ht->selfparking)
+ 		kthread_park(tsk);
+ }
+ 
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 2f194e9..95d178c 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -18,7 +18,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/interrupt.h>
+ #include <linux/kallsyms.h>
+-
++#include <linux/smpboot.h>
+ #include <linux/atomic.h>
+ 
+ /*
+@@ -37,10 +37,10 @@ struct cpu_stopper {
+ 	spinlock_t		lock;
+ 	bool			enabled;	/* is this stopper enabled? */
+ 	struct list_head	works;		/* list of pending works */
+-	struct task_struct	*thread;	/* stopper thread */
+ };
+ 
+ static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
++static DEFINE_PER_CPU(struct task_struct *, cpu_stopper_task);
+ static bool stop_machine_initialized = false;
+ 
+ static void cpu_stop_init_done(struct cpu_stop_done *done, unsigned int nr_todo)
+@@ -62,16 +62,18 @@ static void cpu_stop_signal_done(struct cpu_stop_done *done, bool executed)
+ }
+ 
+ /* queue @work to @stopper.  if offline, @work is completed immediately */
+-static void cpu_stop_queue_work(struct cpu_stopper *stopper,
+-				struct cpu_stop_work *work)
++static void cpu_stop_queue_work(unsigned int cpu, struct cpu_stop_work *work)
+ {
++	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
++	struct task_struct *p = per_cpu(cpu_stopper_task, cpu);
++
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&stopper->lock, flags);
+ 
+ 	if (stopper->enabled) {
+ 		list_add_tail(&work->list, &stopper->works);
+-		wake_up_process(stopper->thread);
++		wake_up_process(p);
+ 	} else
+ 		cpu_stop_signal_done(work->done, false);
+ 
+@@ -108,7 +110,7 @@ int stop_one_cpu(unsigned int cpu, cpu_stop_fn_t fn, void *arg)
+ 	struct cpu_stop_work work = { .fn = fn, .arg = arg, .done = &done };
+ 
+ 	cpu_stop_init_done(&done, 1);
+-	cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu), &work);
++	cpu_stop_queue_work(cpu, &work);
+ 	wait_for_completion(&done.completion);
+ 	return done.executed ? done.ret : -ENOENT;
+ }
+@@ -130,7 +132,7 @@ void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
+ 			struct cpu_stop_work *work_buf)
+ {
+ 	*work_buf = (struct cpu_stop_work){ .fn = fn, .arg = arg, };
+-	cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu), work_buf);
++	cpu_stop_queue_work(cpu, work_buf);
+ }
+ 
+ /* static data for stop_cpus */
+@@ -159,8 +161,7 @@ static void queue_stop_cpus_work(const struct cpumask *cpumask,
+ 	 */
+ 	preempt_disable();
+ 	for_each_cpu(cpu, cpumask)
+-		cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu),
+-				    &per_cpu(stop_cpus_work, cpu));
++		cpu_stop_queue_work(cpu, &per_cpu(stop_cpus_work, cpu));
+ 	preempt_enable();
+ }
+ 
+@@ -244,20 +245,25 @@ int try_stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
+ 	return ret;
+ }
+ 
+-static int cpu_stopper_thread(void *data)
++static int cpu_stop_should_run(unsigned int cpu)
++{
++	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
++	unsigned long flags;
++	int run;
++
++	spin_lock_irqsave(&stopper->lock, flags);
++	run = !list_empty(&stopper->works);
++	spin_unlock_irqrestore(&stopper->lock, flags);
++	return run;
++}
++
++static void cpu_stopper_thread(unsigned int cpu)
+ {
+-	struct cpu_stopper *stopper = data;
++	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
+ 	struct cpu_stop_work *work;
+ 	int ret;
+ 
+ repeat:
+-	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
+-
+-	if (kthread_should_stop()) {
+-		__set_current_state(TASK_RUNNING);
+-		return 0;
+-	}
+-
+ 	work = NULL;
+ 	spin_lock_irq(&stopper->lock);
+ 	if (!list_empty(&stopper->works)) {
+@@ -273,8 +279,6 @@ repeat:
+ 		struct cpu_stop_done *done = work->done;
+ 		char ksym_buf[KSYM_NAME_LEN] __maybe_unused;
+ 
+-		__set_current_state(TASK_RUNNING);
+-
+ 		/* cpu stop callbacks are not allowed to sleep */
+ 		preempt_disable();
+ 
+@@ -290,88 +294,55 @@ repeat:
+ 					  ksym_buf), arg);
+ 
+ 		cpu_stop_signal_done(done, true);
+-	} else
+-		schedule();
+-
+-	goto repeat;
++		goto repeat;
++	}
+ }
+ 
+ extern void sched_set_stop_task(int cpu, struct task_struct *stop);
+ 
+-/* manage stopper for a cpu, mostly lifted from sched migration thread mgmt */
+-static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+-					   unsigned long action, void *hcpu)
++static void cpu_stop_create(unsigned int cpu)
++{
++	sched_set_stop_task(cpu, per_cpu(cpu_stopper_task, cpu));
++}
++
++static void cpu_stop_park(unsigned int cpu)
+ {
+-	unsigned int cpu = (unsigned long)hcpu;
+ 	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
+-	struct task_struct *p;
+-
+-	switch (action & ~CPU_TASKS_FROZEN) {
+-	case CPU_UP_PREPARE:
+-		BUG_ON(stopper->thread || stopper->enabled ||
+-		       !list_empty(&stopper->works));
+-		p = kthread_create_on_node(cpu_stopper_thread,
+-					   stopper,
+-					   cpu_to_node(cpu),
+-					   "migration/%d", cpu);
+-		if (IS_ERR(p))
+-			return notifier_from_errno(PTR_ERR(p));
+-		get_task_struct(p);
+-		kthread_bind(p, cpu);
+-		sched_set_stop_task(cpu, p);
+-		stopper->thread = p;
+-		break;
+-
+-	case CPU_ONLINE:
+-		/* strictly unnecessary, as first user will wake it */
+-		wake_up_process(stopper->thread);
+-		/* mark enabled */
+-		spin_lock_irq(&stopper->lock);
+-		stopper->enabled = true;
+-		spin_unlock_irq(&stopper->lock);
+-		break;
+-
+-#ifdef CONFIG_HOTPLUG_CPU
+-	case CPU_UP_CANCELED:
+-	case CPU_POST_DEAD:
+-	{
+-		struct cpu_stop_work *work;
+-
+-		sched_set_stop_task(cpu, NULL);
+-		/* kill the stopper */
+-		kthread_stop(stopper->thread);
+-		/* drain remaining works */
+-		spin_lock_irq(&stopper->lock);
+-		list_for_each_entry(work, &stopper->works, list)
+-			cpu_stop_signal_done(work->done, false);
+-		stopper->enabled = false;
+-		spin_unlock_irq(&stopper->lock);
+-		/* release the stopper */
+-		put_task_struct(stopper->thread);
+-		stopper->thread = NULL;
+-		break;
+-	}
+-#endif
+-	}
++	struct cpu_stop_work *work;
++	unsigned long flags;
+ 
+-	return NOTIFY_OK;
++	/* drain remaining works */
++	spin_lock_irqsave(&stopper->lock, flags);
++	list_for_each_entry(work, &stopper->works, list)
++		cpu_stop_signal_done(work->done, false);
++	stopper->enabled = false;
++	spin_unlock_irqrestore(&stopper->lock, flags);
+ }
+ 
+-/*
+- * Give it a higher priority so that cpu stopper is available to other
+- * cpu notifiers.  It currently shares the same priority as sched
+- * migration_notifier.
+- */
+-static struct notifier_block __cpuinitdata cpu_stop_cpu_notifier = {
+-	.notifier_call	= cpu_stop_cpu_callback,
+-	.priority	= 10,
++static void cpu_stop_unpark(unsigned int cpu)
++{
++	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
++
++	spin_lock_irq(&stopper->lock);
++	stopper->enabled = true;
++	spin_unlock_irq(&stopper->lock);
++}
++
++static struct smp_hotplug_thread cpu_stop_threads = {
++	.store			= &cpu_stopper_task,
++	.thread_should_run	= cpu_stop_should_run,
++	.thread_fn		= cpu_stopper_thread,
++	.thread_comm		= "migration/%u",
++	.create			= cpu_stop_create,
++	.setup			= cpu_stop_unpark,
++	.park			= cpu_stop_park,
++	.unpark			= cpu_stop_unpark,
++	.selfparking		= true,
+ };
+ 
+ static int __init cpu_stop_init(void)
+ {
+-	void *bcpu = (void *)(long)smp_processor_id();
+ 	unsigned int cpu;
+-	int err;
+ 
+ 	for_each_possible_cpu(cpu) {
+ 		struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
+@@ -380,15 +351,8 @@ static int __init cpu_stop_init(void)
+ 		INIT_LIST_HEAD(&stopper->works);
+ 	}
+ 
+-	/* start one for the boot cpu */
+-	err = cpu_stop_cpu_callback(&cpu_stop_cpu_notifier, CPU_UP_PREPARE,
+-				    bcpu);
+-	BUG_ON(err != NOTIFY_OK);
+-	cpu_stop_cpu_callback(&cpu_stop_cpu_notifier, CPU_ONLINE, bcpu);
+-	register_cpu_notifier(&cpu_stop_cpu_notifier);
+-
++	BUG_ON(smpboot_register_percpu_thread(&cpu_stop_threads));
+ 	stop_machine_initialized = true;
+-
+ 	return 0;
+ }
+ early_initcall(cpu_stop_init);
