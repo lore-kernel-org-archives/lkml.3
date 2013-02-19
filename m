@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934323Ab3BSTGS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:06:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54342 "EHLO
+	id S934507Ab3BSTGn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:06:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54329 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933458Ab3BSSwc (ORCPT
+	with ESMTP id S933459Ab3BSSw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:52:32 -0500
+	Tue, 19 Feb 2013 13:52:26 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicholas Santos <nicholas.santos@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Nathaniel Doherty <ntdoherty@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 40/81] HID: usbhid: quirk for Formosa IR receiver
-Date: Tue, 19 Feb 2013 15:49:03 -0300
-Message-Id: <1361299784-8830-41-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 34/81] rtlwifi: Fix scheduling while atomic bug
+Date: Tue, 19 Feb 2013 15:48:57 -0300
+Message-Id: <1361299784-8830-35-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,51 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Santos <nicholas.santos@gmail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 320cde19a4e8f122b19d2df7a5c00636e11ca3fb upstream.
+commit a5ffbe0a1993a27072742ef7db6cf9839956fce9 upstream.
 
-Patch to add the Formosa Industrial Computing, Inc. Infrared Receiver
-[IR605A/Q] to hid-ids.h and hid-quirks.c.  This IR receiver causes about a 10
-second timeout when the usbhid driver attempts to initialze the device.  Adding
-this device to the quirks list with HID_QUIRK_NO_INIT_REPORTS removes the
-delay.
+Kernel commits 41affd5 and 6539306 changed the locking in rtl_lps_leave()
+from a spinlock to a mutex by doing the calls indirectly from a work queue
+to reduce the time that interrupts were disabled. This change was fine for
+most systems; however a scheduling while atomic bug was reported in
+https://bugzilla.redhat.com/show_bug.cgi?id=903881. The backtrace indicates
+that routine rtl_is_special(), which calls rtl_lps_leave() in three places
+was entered in atomic context. These direct calls are replaced by putting a
+request on the appropriate work queue.
 
-Signed-off-by: Nicholas Santos <nicholas.santos@gmail.com>
-[jkosina@suse.cz: fix ordering]
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-and-tested-by: Nathaniel Doherty <ntdoherty@gmail.com>
+Cc: Nathaniel Doherty <ntdoherty@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ drivers/net/wireless/rtlwifi/base.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 5ddfcc7..dc48cd1 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -296,6 +296,9 @@
- #define USB_VENDOR_ID_EZKEY		0x0518
- #define USB_DEVICE_ID_BTC_8193		0x0002
+diff --git a/drivers/net/wireless/rtlwifi/base.c b/drivers/net/wireless/rtlwifi/base.c
+index f4c852c..4110a6d 100644
+--- a/drivers/net/wireless/rtlwifi/base.c
++++ b/drivers/net/wireless/rtlwifi/base.c
+@@ -980,7 +980,8 @@ u8 rtl_is_special_data(struct ieee80211_hw *hw, struct sk_buff *skb, u8 is_tx)
+ 					 is_tx ? "Tx" : "Rx");
  
-+#define USB_VENDOR_ID_FORMOSA          0x147a
-+#define USB_DEVICE_ID_FORMOSA_IR_RECEIVER      0xe03e
-+
- #define USB_VENDOR_ID_FREESCALE		0x15A2
- #define USB_DEVICE_ID_FREESCALE_MX28	0x004F
+ 				if (is_tx) {
+-					rtl_lps_leave(hw);
++					schedule_work(&rtlpriv->
++						      works.lps_leave_work);
+ 					ppsc->last_delaylps_stamp_jiffies =
+ 					    jiffies;
+ 				}
+@@ -990,7 +991,7 @@ u8 rtl_is_special_data(struct ieee80211_hw *hw, struct sk_buff *skb, u8 is_tx)
+ 		}
+ 	} else if (ETH_P_ARP == ether_type) {
+ 		if (is_tx) {
+-			rtl_lps_leave(hw);
++			schedule_work(&rtlpriv->works.lps_leave_work);
+ 			ppsc->last_delaylps_stamp_jiffies = jiffies;
+ 		}
  
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 8865fa3..1a4bc41 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -70,6 +70,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
+@@ -1000,7 +1001,7 @@ u8 rtl_is_special_data(struct ieee80211_hw *hw, struct sk_buff *skb, u8 is_tx)
+ 			 "802.1X %s EAPOL pkt!!\n", is_tx ? "Tx" : "Rx");
+ 
+ 		if (is_tx) {
+-			rtl_lps_leave(hw);
++			schedule_work(&rtlpriv->works.lps_leave_work);
+ 			ppsc->last_delaylps_stamp_jiffies = jiffies;
+ 		}
+ 
 -- 
 1.7.9.5
 
