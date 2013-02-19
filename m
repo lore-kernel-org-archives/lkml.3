@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934054Ab3BSTOX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:14:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54199 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933806Ab3BSSuy (ORCPT
+	id S934144Ab3BSTPB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:15:01 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:38782 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933908Ab3BSSun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:50:54 -0500
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Daniele Palmas <dnlplm@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 15/81] USB: qcserial: add Telit Gobi QDL device
-Date: Tue, 19 Feb 2013 15:48:38 -0300
-Message-Id: <1361299784-8830-16-git-send-email-herton.krzesinski@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
-References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
-X-Extended-Stable: 3.5
+	Tue, 19 Feb 2013 13:50:43 -0500
+Date: Tue, 19 Feb 2013 10:49:40 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sha Zhengju <handai.szj@gmail.com>
+cc: Li Haifeng <omycle@gmail.com>, Will Huck <will.huckk@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: Should a swapped out page be deleted from swap cache?
+In-Reply-To: <CAFj3OHXredBPjjLMaqnAq0tYKbLXaO0DOfs8zGYzV4ntsXvi6A@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1302191040010.2248@eggly.anvils>
+References: <CAFNq8R4UYvygk8+X+NZgyGjgU5vBsEv1UM6MiUxah6iW8=0HrQ@mail.gmail.com> <alpine.LNX.2.00.1302180939200.2246@eggly.anvils> <CAFNq8R5x3tD9Fn4TWna58VfdiRedPkrTDkeHXStkL7yBngL1mw@mail.gmail.com> <5122E591.5090108@gmail.com>
+ <CAFNq8R5Y+obN0pufXriqmRUajPPq=N6XMAhQUgbzObvCpbbpxA@mail.gmail.com> <CAFj3OHXredBPjjLMaqnAq0tYKbLXaO0DOfs8zGYzV4ntsXvi6A@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.6 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, 19 Feb 2013, Sha Zhengju wrote:
+> On Tue, Feb 19, 2013 at 2:53 PM, Li Haifeng <omycle@gmail.com> wrote:
+> > 2013/2/19 Will Huck <will.huckk@gmail.com>:
+> >> On 02/19/2013 10:04 AM, Li Haifeng wrote:
+> >>>
+> >>> If a anonymous page is swapped out and  comes to be reclaimable,
+> >>> shrink_page_list() will call __remove_mapping() to delete the page
+> >>> swapped out from swap cache. Corresponding code lists as below.
 
-------------------
+Correct.
 
-From: Daniele Palmas <dnlplm@gmail.com>
+> >>
+> >>
+> >> I'm not sure if
+> >> if (PageAnon(page) && !PageSwapCache(page)) {
+> >>  .................
+> >> }
+> >> will add the page to swap cache again.
 
-commit 78796ae17eacedcdcaaeb03ba73d2e532a4c8f83 upstream.
+No, it's already in the swap cache.  Of course, the original pageframe
+may be removed from swap cache, freed, data later read back from swap into
+a new swap cache pageframe, that be mapped into user memory, removed from
+swap cache and swap freed, then later arrive here in page reclaim at the
+PageAnon(page) && !PageSwapCache(page) to be added to swap again.
 
-Add VID and PID for Telit Gobi QDL device
+> >>
+> >
+> > Adding the page to swap cache is the first stage of memory reclaiming.
+> >
+> > When an anonymous page will be reclaimed, it should be swapped out. If
+> > it's not in the swap cache, it will insert into swap cache first and
+> > set the bit of PG_swapcache on page->flags. Then, it will be swapped
+> > out by try_to_unmap(). After it's swapped out, and no processes swap
 
-Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
----
- drivers/usb/serial/qcserial.c |    1 +
- 1 file changed, 1 insertion(+)
+Almost correct...
 
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 996015c..4302733 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -55,6 +55,7 @@ static const struct usb_device_id id_table[] = {
- 	{DEVICE_G1K(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
- 	{DEVICE_G1K(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
- 	{DEVICE_G1K(0x1f45, 0x0001)},	/* Unknown Gobi QDL device */
-+	{DEVICE_G1K(0x1bc7, 0x900e)},	/* Telit Gobi QDL device */
- 
- 	/* Gobi 2000 devices */
- 	{USB_DEVICE(0x1410, 0xa010)},	/* Novatel Gobi 2000 QDL device */
--- 
-1.7.9.5
+> 
+> Swapout(writing to swap disk) is not done by try_to_unmap() which only
+> tries to remove all page table mappings to a page. Before unmapping,
+> add_to_swap() will set the swap cache page dirty and it will be
+> written out by pageout()->swap_writepage().
 
+... but yes, try_to_unmap() is not the one that writes out to swap.
+
+Hugh
