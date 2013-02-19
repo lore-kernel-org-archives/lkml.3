@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab3BSKhD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:37:03 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:40340 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498Ab3BSKhA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:37:00 -0500
-Message-ID: <512355C2.3050009@ahsoftware.de>
-Date: Tue, 19 Feb 2013 11:36:50 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: What is tip-bot?
-References: <512348A1.4000305@ahsoftware.de> <CAFLxGvzuL+w-yfApiLGwWWbB8Om7JUypppoovmSGS2k51Yjgmw@mail.gmail.com>
-In-Reply-To: <CAFLxGvzuL+w-yfApiLGwWWbB8Om7JUypppoovmSGS2k51Yjgmw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932611Ab3BSKhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:37:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23648 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932578Ab3BSKeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 05:34:01 -0500
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+Cc: Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 01/10] GFS2: Separate LRU scanning from shrinker
+Date: Tue, 19 Feb 2013 10:07:31 +0000
+Message-Id: <1361268460-3092-2-git-send-email-swhiteho@redhat.com>
+In-Reply-To: <1361268460-3092-1-git-send-email-swhiteho@redhat.com>
+References: <1361268460-3092-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 19.02.2013 10:54, schrieb richard -rw- weinberger:
-> On Tue, Feb 19, 2013 at 10:40 AM, Alexander Holler <holler@ahsoftware.de> wrote:
->> Hello,
->>
->> until now I could successfully suppress my curiosity about those tip:foo
->> messages, but as the bot (or one of them) has now catched me too, I want to
->> ask what it is.
->>
->> Searching for "tip(-)bot" or similiar doesn't reveal some useful info (for
->> obvious reasons). Could someone give me an URL to source or documentation
->> about that tool so that I can enlight myself about it's meaning?
->
-> AFAIK tip-bot is a set of shell scripts used by _T_glx, _I_ngo and _P_eter. :)
->
+This breaks out the LRU scanning function from the shrinker in
+preparation for adding other callers to the LRU scanner.
 
-So messages from tip-bot are just acknowledgments (like those from Greg) 
-that a patch has found it's way into one of the trees, with the 
-difference that tip-bot sends those acknowledgments to lkml too, whereas 
-Greg's scripts send them only to involved parties and not the lkml?
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-Regards,
+diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
+index 992c5c0..3ad8fd3 100644
+--- a/fs/gfs2/glock.c
++++ b/fs/gfs2/glock.c
+@@ -1376,23 +1376,19 @@ void gfs2_glock_complete(struct gfs2_glock *gl, int ret)
+ 		gfs2_glock_put(gl);
+ }
+ 
++/**
++ * gfs2_scan_glock_lru - Scan the LRU looking for locks to demote
++ * @nr: The number of entries to scan
++ *
++ */
+ 
+-static int gfs2_shrink_glock_memory(struct shrinker *shrink,
+-				    struct shrink_control *sc)
++static void gfs2_scan_glock_lru(int nr)
+ {
+ 	struct gfs2_glock *gl;
+ 	int may_demote;
+ 	int nr_skipped = 0;
+-	int nr = sc->nr_to_scan;
+-	gfp_t gfp_mask = sc->gfp_mask;
+ 	LIST_HEAD(skipped);
+ 
+-	if (nr == 0)
+-		goto out;
+-
+-	if (!(gfp_mask & __GFP_FS))
+-		return -1;
+-
+ 	spin_lock(&lru_lock);
+ 	while(nr && !list_empty(&lru_list)) {
+ 		gl = list_entry(lru_list.next, struct gfs2_glock, gl_lru);
+@@ -1425,7 +1421,17 @@ static int gfs2_shrink_glock_memory(struct shrinker *shrink,
+ 	list_splice(&skipped, &lru_list);
+ 	atomic_add(nr_skipped, &lru_count);
+ 	spin_unlock(&lru_lock);
+-out:
++}
++
++static int gfs2_shrink_glock_memory(struct shrinker *shrink,
++				    struct shrink_control *sc)
++{
++	if (sc->nr_to_scan) {
++		if (!(sc->gfp_mask & __GFP_FS))
++			return -1;
++		gfs2_scan_glock_lru(sc->nr_to_scan);
++	}
++
+ 	return (atomic_read(&lru_count) / 100) * sysctl_vfs_cache_pressure;
+ }
+ 
+-- 
+1.7.4
 
-Alexander
