@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706Ab3BSKuc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:50:32 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:43179 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932339Ab3BSKua (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:50:30 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexander Shiyan <shc_work@mail.ru>
-Subject: Re: Re[2]: [PATCH v3] mfd: syscon: Add non-DT support
-Date: Tue, 19 Feb 2013 10:49:31 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: Dong Aisheng <dong.aisheng@linaro.org>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-References: <1361198522-23789-1-git-send-email-shc_work@mail.ru> <201302181602.47157.arnd@arndb.de> <1361257381.497560655@f376.mail.ru>
-In-Reply-To: <1361257381.497560655@f376.mail.ru>
+	id S1758438Ab3BSKxX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:53:23 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:55894 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750791Ab3BSKxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 05:53:21 -0500
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, "Nori, Sekhar" <nsekhar@ti.com>,
+        "Syed Mohammed, Khasim" <khasim@ti.com>
+Subject: RE: [PATCH, RFC 8/8] ARM: dts: am43-pre-silicon support
+Thread-Topic: [PATCH, RFC 8/8] ARM: dts: am43-pre-silicon support
+Thread-Index: AQHODcygtuLZa7sL9USp61P5AKr//JiAodcAgABfFQA=
+Date: Tue, 19 Feb 2013 10:52:44 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EAA86DE@DBDE01.ent.ti.com>
+References: <cover.1361186097.git.afzal@ti.com>
+ <e344f74da47579c11db68d9f6efe25259ed7f25d.1361186097.git.afzal@ti.com>
+ <5123556A.9050109@ti.com>
+In-Reply-To: <5123556A.9050109@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302191049.31327.arnd@arndb.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1JArO6M028996
 
-On Tuesday 19 February 2013, Alexander Shiyan wrote:
-> Hello.
-> 
-> Strange, but I not received an original answer from Arnd, have only this mail.
+Hi Santosh,
 
-I got a reject notice from mail.ru, which apparently didn't like the
-SMTP server of my German ISP. I already tried to resend my mail to you,
-and now try to send it out through the gmail server. Please let me know
-if you get it.
+On Tue, Feb 19, 2013 at 16:05:22, Shilimkar, Santosh wrote:
+> On Monday 18 February 2013 05:08 PM, Afzal Mohammed wrote:
 
-> > >> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-> > >> index 4a7ed5a..3c0abcb 100644
-> > >> --- a/drivers/mfd/syscon.c
-> > >> +++ b/drivers/mfd/syscon.c
-> > >
-> > > Hi Alexander,
-> > >
-> > >>  struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
-> > >>  {
-> > >>       struct device_node *syscon_np;
-> > >>       struct regmap *regmap;
-> > >> +     struct syscon *syscon;
-> > >> +     struct device *dev;
-> > >>
-> > >>       syscon_np = of_find_compatible_node(NULL, NULL, s);
-> > >> -     if (!syscon_np)
-> > >> +     if (syscon_np) {
-> > >> +             regmap = syscon_node_to_regmap(syscon_np);
-> > >> +             of_node_put(syscon_np);
-> > >> +
-> > >> +             return regmap;
-> > >> +     }
-> > >> +
-> > >> +     /* Fallback to search by id_entry.name string */
-> > >> +     dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
-> > >> +                              syscon_match_id);
-> > >> +     if (!dev)
-> > >>               return ERR_PTR(-ENODEV);
-> > >>
-> > >> -     regmap = syscon_node_to_regmap(syscon_np);
-> > >> -     of_node_put(syscon_np);
-> > >> +     syscon = dev_get_drvdata(dev);
-> > >>
-> > >> -     return regmap;
-> > >> +     return syscon->regmap;
-> > >>  }
-> > >>  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
-> > >
-> > > Since you are not actually comparing the "compatible" property here,
-> > > I would suggest adding another function here,
-> > 
-> > Yes, i also think like that.
-> 
-> In this case we should provide two paths for drivers which can work as with DT
-> and without DT. In my case we can use platform_device_id.name field with
-> "compatible" string. My way in this case is transparency for driver which is
-> using "syscon".
+> > AM43 SoC is in pre-silicon stage, meanwhile it has been modelled in
+> > a pre-silicon platform. To validate and boot Linux in pre-silicon
+> > platform that emulates an AM43 SoC, add DT build support.
 
-But drivers should use the _by_phandle variant normally, which does
-not work without DT, so you already have separate code paths.
+> > Note: This would be replaced by an original board support.
 
-	Arnd
+> > -	am335x-bone.dtb
+> > +	am335x-bone.dtb \
+> > +	am43-pre-silicon.dtb
+
+> Well the pre-silicon platform and the SOC are very
+> close and at least the support you are adding here is
+> exactly same. So lets just use am437x.dtb or something
+> like that.
+
+SoC support is already added in patch 7/8. This is board (which doesn't
+exist now) support, hence a pre-silicon temporary one to validate it.
+
+Regards
+Afzal
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
