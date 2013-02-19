@@ -1,111 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933088Ab3BSOx7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 09:53:59 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:37825 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932958Ab3BSOx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 09:53:56 -0500
-Date: Tue, 19 Feb 2013 16:53:24 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Borislav Petkov <bp@alien8.de>, Felipe Balbi <balbi@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>, <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Doug Thompson <dougthompson@xmission.com>,
-        <linux-edac@vger.kernel.org>, <rjw@sisk.pl>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: SYSFS "errors"
-Message-ID: <20130219145324.GE4390@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130219114345.GA26623@pd.tnic>
- <20130219091610.2b746a30@redhat.com>
- <20130219123502.GD26623@pd.tnic>
- <20130219094640.2abf1a66@redhat.com>
- <20130219130626.GE26623@pd.tnic>
- <20130219131500.GW23197@arwen.pp.htv.fi>
- <20130219132853.GG26623@pd.tnic>
- <20130219133809.GA4390@arwen.pp.htv.fi>
- <20130219135056.GH26623@pd.tnic>
- <20130219113521.510db290@redhat.com>
+	id S933023Ab3BSOy6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 09:54:58 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56120 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932958Ab3BSOy5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 09:54:57 -0500
+Message-ID: <51239234.8080702@gmail.com>
+Date: Tue, 19 Feb 2013 16:54:44 +0200
+From: Nick Kossifidis <mickflemm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130218 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3XA6nns4nE4KvaS/"
-Content-Disposition: inline
-In-Reply-To: <20130219113521.510db290@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Slaby <jslaby@suse.cz>
+CC: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        ath5k-devel@venema.h4ckr.net, linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [PATCH] NET: ath5k, check ath5k_eeprom_mode_from_channel retval
+References: <1360244680-10370-1-git-send-email-jslaby@suse.cz> <CAFtRNNwUaGFejpGHydDKD1Sn4zLYbmAeyO5zkS7wsHFZ_2yRfA@mail.gmail.com> <51237FC7.3070509@suse.cz>
+In-Reply-To: <51237FC7.3070509@suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3XA6nns4nE4KvaS/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue Feb 19 15:36:07 2013, Jiri Slaby wrote:
+> On 02/18/2013 01:47 AM, Nick Kossifidis wrote:
+>> int
+>> ath5k_eeprom_mode_from_channel(struct ieee80211_channel *channel)
+>> {
+>>         switch (channel->hw_value) {
+>>         case AR5K_MODE_11A:
+>>                 return AR5K_EEPROM_MODE_11A;
+>>         case AR5K_MODE_11G:
+>>                 return AR5K_EEPROM_MODE_11G;
+>>         case AR5K_MODE_11B:
+>>                 return AR5K_EEPROM_MODE_11B;
+>>         default:
+>>                 return -1;
+>>         }
+>> }
+>>
+>> I think we should just change that default to return 0 instead and add
+>> an ATH5K_WARN there.
+>
+> Something like the attached patch? It needs ah to be propagated to
+> eeprom. If you are fine with that, I'll send it as patch...
+>
+> thanks,
 
-On Tue, Feb 19, 2013 at 11:35:21AM -0300, Mauro Carvalho Chehab wrote:
-> Em Tue, 19 Feb 2013 14:50:56 +0100
-> Borislav Petkov <bp@alien8.de> escreveu:
->=20
-> > On Tue, Feb 19, 2013 at 03:38:09PM +0200, Felipe Balbi wrote:
-> > > because changing the permission will cause the same issue:
-> >=20
-> > Actually, I take that back. Mauro's patch will already create the file
-> > anyway:
-> >=20
-> > 	if (mci->set_sdram_scrub_rate || mci->get_sdram_scrub_rate)
-> >=20
-> > Adjusting the permissions is simply the last missing piece to this patch
-> > to make the interface to userspace 100% coherent.
->=20
-> That's covers everything but Hannes arguments. I don't think that
-> adding just one more device_create_file() on a driver that creates
-> dozens (or hundreds) of sys nodes, depending on the number of DIMMS
-> on the system would make it any worse.
->=20
-> Regards,
-> Mauro
->=20
-> [PATCH EDAC] edac: only create sdram_scrub_rate where supported
->=20
-> Currently, sdram_scrub_rate sysfs node is created even if the device
-> doesn't support get/set the scub rate. Change the logic to only
-> create this device node when the operation is supported.
->=20
-> Reported-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Just move the prototype on ath5k.h with the rest of them...
 
-looks alright to me:
-
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-
---=20
-balbi
-
---3XA6nns4nE4KvaS/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRI5HkAAoJEIaOsuA1yqREa5kP/0Zv2X9u7znMsYofXocxvmX3
-BCrtM3ZDIn4ygfMJfbA+eVLTxDXanThEiM15PwXj9xiJRoWfQt2TG+MtmaYNS8QA
-SmALUtFvg6Azm337Nn23/E0QEjxh0XXc9hz4O5pOyKQWRTRl+GIh52CWEPHkpGqA
-3I4NANCKm3j2vrG2Paia/+PJ0sX7sGkmx88qb2WJESXCMOeUe8Lvyim6957mkOaO
-40JPJriYMByEEpMs7HnALz7vIUn/vh7bZ2VhE7PHgs5QyunKmoEueR0fXpCQUHaO
-FtiZNmEPdlkEw1ZruEihbma1IvjyWoTqmEUhHhwnWddxpVc87y0EJ8Hw6hHDXOW5
-c9COqI3GtSt3jtJa/wGrt4N8P9Qa6SlmW4GjFk1k5qXP/mC63/hL1GmtAaInj+EL
-VhUOk04yt4lXGnCkANNuJkAVgUqMXhSUGU2pJUq3TTe/wi1yMMPQ3KZ5g2pCE3T8
-swyvZ8r67mac7oHBoCGGKTlX18mZALw/hbkGjtxY/9i3G1MmKulwTtA93OtHxd7f
-yjX92juXSP5gksj+xGPmaITItLTzX5YiCFNAcw2H6et8z6P/I8W0qpyWMnRf5rqx
-XXUqJlj+prHo9Nyk7Rr+LCB7m1wMLdZMsNKEwiO0ndtYWXtPZkC9s0ne4oGVxYPY
-GDm7+tNoOyst5JvLm+tj
-=uOh6
------END PGP SIGNATURE-----
-
---3XA6nns4nE4KvaS/--
+1523 /* EEPROM access functions */
+1524 int ath5k_eeprom_init(struct ath5k_hw *ah);
+1525 void ath5k_eeprom_detach(struct ath5k_hw *ah);
