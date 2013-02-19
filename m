@@ -1,38 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039Ab3BSOuT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 09:50:19 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:14597 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932971Ab3BSOuR (ORCPT
+	id S933065Ab3BSOuW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 09:50:22 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:33733 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932971Ab3BSOuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 09:50:17 -0500
-X-IronPort-AV: E=Sophos;i="4.84,695,1355097600"; 
-   d="scan'208";a="1612414"
-Message-ID: <1361285414.1051.116.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH] xen: introduce xen_remap, use it instead of ioremap
-From: Ian Campbell <Ian.Campbell@citrix.com>
+	Tue, 19 Feb 2013 09:50:20 -0500
+Date: Tue, 19 Feb 2013 09:50:05 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 19 Feb 2013 14:50:14 +0000
-In-Reply-To: <alpine.DEB.2.02.1302191445160.4654@kaball.uk.xensource.com>
+Subject: Re: [PATCH] xen: introduce xen_remap, use it instead of ioremap
+Message-ID: <20130219145003.GG7026@konrad-lan.dumpdata.com>
 References: <alpine.DEB.2.02.1302191332340.4654@kaball.uk.xensource.com>
-	 <20130219144253.GE7026@konrad-lan.dumpdata.com>
-	 <alpine.DEB.2.02.1302191445160.4654@kaball.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+ <20130219144253.GE7026@konrad-lan.dumpdata.com>
+ <alpine.DEB.2.02.1302191445160.4654@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1302191445160.4654@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-19 at 14:48 +0000, Stefano Stabellini wrote:
+On Tue, Feb 19, 2013 at 02:48:30PM +0000, Stefano Stabellini wrote:
 > On Tue, 19 Feb 2013, Konrad Rzeszutek Wilk wrote:
 > > On Tue, Feb 19, 2013 at 01:59:19PM +0000, Stefano Stabellini wrote:
 > > > ioremap can't be used to map ring pages on ARM because it uses device
@@ -50,12 +48,10 @@ On Tue, 2013-02-19 at 14:48 +0000, Stefano Stabellini wrote:
 > 
 > Ian has two patches ("linux: public interface changes for arm"), it
 > would be great if they could go in 3.9.
-
-My two are one for Xen and one for Linux, so just one as far as the
-merge window is concerned, I just reposted them 10s ago..
-
 > Given the small number of patches (three all together), it is probably
 > easier to go via your tree, if you are OK with that.
+
+Sure. Can you Ack them please?
 > 
 > 
 > 
@@ -132,5 +128,3 @@ merge window is concerned, I just reposted them 10s ago..
 > > >  	default:
 > > >  		pr_warn("Xenstore state unknown\n");
 > > 
-
-
