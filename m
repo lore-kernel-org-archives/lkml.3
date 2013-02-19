@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934052Ab3BSSvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:51:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54235 "EHLO
+	id S934020Ab3BSSvR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:51:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54224 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934038Ab3BSSvV (ORCPT
+	with ESMTP id S934004Ab3BSSvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:51:21 -0500
+	Tue, 19 Feb 2013 13:51:13 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 22/81] drm/radeon/evergreen+: wait for the MC to settle after MC blackout
-Date: Tue, 19 Feb 2013 15:48:45 -0300
-Message-Id: <1361299784-8830-23-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 19/81] mwifiex: fix incomplete scan in case of IE parsing error
+Date: Tue, 19 Feb 2013 15:48:42 -0300
+Message-Id: <1361299784-8830-20-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,36 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit ed39fadd6df01095378e499fac3674883f16b853 upstream.
+commit 8a7d7cbf7b5ff9912ef50b3e94c9ad9f37b1c75f upstream.
 
-Some chips seem to need a little delay after blacking out
-the MC before the requests actually stop.
+A scan request is split into multiple scan commands queued in
+scan_pending_q. Each scan command will be sent to firmware and
+its response is handlded one after another.
 
-May fix:
-https://bugs.freedesktop.org/show_bug.cgi?id=56139
-https://bugs.freedesktop.org/show_bug.cgi?id=57567
+If any error is detected while parsing IE in command response
+buffer the remaining data will be ignored and error is returned.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+We should check if there is any more scan commands pending in
+the queue before returning error. This ensures that we will call
+cfg80211_scan_done if this is the last scan command, or send
+next scan command in scan_pending_q to firmware.
+
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/gpu/drm/radeon/evergreen.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/mwifiex/scan.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 4170e1e..ccac010 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -1183,6 +1183,8 @@ void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *sav
- 		blackout &= ~BLACKOUT_MODE_MASK;
- 		WREG32(MC_SHARED_BLACKOUT_CNTL, blackout | 1);
+diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
+index 74f0457..9ca1b9c 100644
+--- a/drivers/net/wireless/mwifiex/scan.c
++++ b/drivers/net/wireless/mwifiex/scan.c
+@@ -1553,7 +1553,7 @@ int mwifiex_ret_802_11_scan(struct mwifiex_private *priv,
+ 		dev_err(adapter->dev, "SCAN_RESP: too many AP returned (%d)\n",
+ 			scan_rsp->number_of_sets);
+ 		ret = -1;
+-		goto done;
++		goto check_next_scan;
  	}
-+	/* wait for the MC to settle */
-+	udelay(100);
+ 
+ 	bytes_left = le16_to_cpu(scan_rsp->bss_descript_size);
+@@ -1624,7 +1624,8 @@ int mwifiex_ret_802_11_scan(struct mwifiex_private *priv,
+ 		if (!beacon_size || beacon_size > bytes_left) {
+ 			bss_info += bytes_left;
+ 			bytes_left = 0;
+-			return -1;
++			ret = -1;
++			goto check_next_scan;
+ 		}
+ 
+ 		/* Initialize the current working beacon pointer for this BSS
+@@ -1680,7 +1681,7 @@ int mwifiex_ret_802_11_scan(struct mwifiex_private *priv,
+ 				dev_err(priv->adapter->dev,
+ 					"%s: bytes left < IE length\n",
+ 					__func__);
+-				goto done;
++				goto check_next_scan;
+ 			}
+ 			if (element_id == WLAN_EID_DS_PARAMS) {
+ 				channel = *(u8 *) (current_ptr +
+@@ -1744,6 +1745,7 @@ int mwifiex_ret_802_11_scan(struct mwifiex_private *priv,
+ 		}
+ 	}
+ 
++check_next_scan:
+ 	spin_lock_irqsave(&adapter->scan_pending_q_lock, flags);
+ 	if (list_empty(&adapter->scan_pending_q)) {
+ 		spin_unlock_irqrestore(&adapter->scan_pending_q_lock, flags);
+@@ -1782,7 +1784,6 @@ int mwifiex_ret_802_11_scan(struct mwifiex_private *priv,
+ 		mwifiex_insert_cmd_to_pending_q(adapter, cmd_node, true);
+ 	}
+ 
+-done:
+ 	return ret;
  }
  
- void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *save)
 -- 
 1.7.9.5
 
