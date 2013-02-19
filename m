@@ -1,74 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501Ab3BSJkz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 04:40:55 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:37653 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758558Ab3BSJkv (ORCPT
+	id S932524Ab3BSJlD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 04:41:03 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:42779 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932446Ab3BSJk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 04:40:51 -0500
+	Tue, 19 Feb 2013 04:40:59 -0500
+Message-ID: <512348A1.4000305@ahsoftware.de>
+Date: Tue, 19 Feb 2013 10:40:49 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <51227810.6090009@linux.vnet.ibm.com>
-References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
-	<20130218123920.26245.56709.stgit@srivatsabhat.in.ibm.com>
-	<CANN689HhVxDv+3Bn9UAxOMzj0egTvVp_c7oAmQ2nnQ8Xjn_aMA@mail.gmail.com>
-	<51225A36.40600@linux.vnet.ibm.com>
-	<CANN689FJPLfz06MFRJ9T+BuToejAzjYP_yrw_H4iGi1Kb3p2-g@mail.gmail.com>
-	<51227810.6090009@linux.vnet.ibm.com>
-Date: Tue, 19 Feb 2013 17:40:50 +0800
-Message-ID: <CANN689E-98zK69pGeojbm30n3sswQYVBvhk3i3OzqvbeqSrSrg@mail.gmail.com>
-Subject: Re: [PATCH v6 08/46] CPU hotplug: Provide APIs to prevent CPU offline
- from atomic context
-From: Michel Lespinasse <walken@google.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vincent.guittot@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: "'linux-kernel'" <linux-kernel@vger.kernel.org>
+Subject: What is tip-bot?
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 2:50 AM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> But, the whole intention behind removing the parts depending on the
-> recursive property of rwlocks would be to make it easier to make rwlocks
-> fair (going forward) right? Then, that won't work for CPU hotplug, because,
-> just like we have a legitimate reason to have recursive
-> get_online_cpus_atomic(), we also have a legitimate reason to have
-> unfairness in locking (i.e., for deadlock-safety). So we simply can't
-> afford to make the locking fair - we'll end up in too many deadlock
-> possibilities, as hinted in the changelog of patch 1.
+Hello,
 
-Grumpf - I hadn't realized that making the underlying rwlock fair
-would break your hotplug use case. But you are right, it would. Oh
-well :/
+until now I could successfully suppress my curiosity about those tip:foo 
+messages, but as the bot (or one of them) has now catched me too, I want 
+to ask what it is.
 
-> So the only long-term solution I can think of is to decouple
-> percpu-rwlocks and rwlock_t (like what Tejun suggested) by implementing
-> our own unfair locking scheme inside. What do you think?
+Searching for "tip(-)bot" or similiar doesn't reveal some useful info 
+(for obvious reasons). Could someone give me an URL to source or 
+documentation about that tool so that I can enlight myself about it's 
+meaning?
 
-I have no idea how hard would it be to change get_online_cpus_atomic()
-call sites so that the hotplug rwlock read side has a defined order vs
-other locks (thus making sure the situation you describe in patch 1
-doesn't happen). I agree we shouldn't base our short term plans around
-that, but maybe that's doable in the long term ???
+Thanks in advance,
 
-Otherwise, I think we should add some big-fat-warning that percpu
-rwlocks don't have reader/writer fairness, that the hotplug use case
-actually depends on the unfairness / would break if the rwlock was
-made fair, and that any new uses of percpu rwlocks should be very
-carefully considered because of the reader/writer fairness issues.
-Maybe even give percpu rwlocks a less generic sounding name, given how
-constrained they are by the hotplug use case.
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Alexander
