@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758662Ab3BSKIO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:08:14 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:47804 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758568Ab3BSKIM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:08:12 -0500
+	id S1758644Ab3BSKIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:08:44 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42155 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757503Ab3BSKIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 05:08:41 -0500
+Message-ID: <51234F5C.6050500@ti.com>
+Date: Tue, 19 Feb 2013 15:39:32 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFw+KOg1z_bx=WFLpY5mhJ2AiAfEa5FW6XsU8YBKfUWThg@mail.gmail.com>
-References: <20130213193411.GA15928@redhat.com>
-	<CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
-	<20130215011503.GA11914@redhat.com>
-	<CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com>
-	<20130215174435.GA2792@linux.vnet.ibm.com>
-	<CA+55aFy8FeGMOnWwkfmyFYyVCw+k1LSVg7BG0tsTNZzqi5EKYg@mail.gmail.com>
-	<CAFTL4hyTfwAZWz=gMokk5oG3HO8iGh7=FtoNv89CMg_Lm-TPNg@mail.gmail.com>
-	<CA+55aFz4vO-JGv+A7h=uxwfyWEMcK=Q3gntwHfr=a4OUVs-f+g@mail.gmail.com>
-	<CAFTL4hx7iX8vZFu7pO5wLSPpEzfMD8K7n0bUsY-wK-uCsDAsEw@mail.gmail.com>
-	<CAFTL4hzUy+2qDaCDK3jCUs+6Fe48-uU9KSB+Ssk+-i=zYhqaRg@mail.gmail.com>
-	<20130218155324.GA5816@somewhere.redhat.com>
-	<CA+55aFw+KOg1z_bx=WFLpY5mhJ2AiAfEa5FW6XsU8YBKfUWThg@mail.gmail.com>
-Date: Tue, 19 Feb 2013 11:08:10 +0100
-Message-ID: <CAFTL4hw_rs7WLx_yav6aAE-AhS1bLvbup4k7UfPAs3j+sjBYvw@mail.gmail.com>
-Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paul.mckenney@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Afzal Mohammed <afzal@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
+        Syed Mohammed Khasim <khasim@ti.com>
+Subject: Re: [PATCH, RFC 0/8] ARM: AM43 (OMAP2+) boot support
+References: <cover.1361186097.git.afzal@ti.com>
+In-Reply-To: <cover.1361186097.git.afzal@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/18 Linus Torvalds <torvalds@linux-foundation.org>:
-> On Mon, Feb 18, 2013 at 7:53 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>
->> Here is an updated version. It cleans up things a bit and boots fine with my usual
->> config. There might be still some small details to work on but here is the big picture.
->>
->> What do you think?
+On Monday 18 February 2013 05:05 PM, Afzal Mohammed wrote:
+> (Resending, since it seems, LAKML doesn't accept patches with subject
+> prefix only as "RFC", but requires "PATCH" prefix also)
 >
-> Looks fine to me. Did this get tested with lockdep and spinlock
-> debugging etc? Those are the ones that are the primary users of all
-> the irq state and preempt tracing..
+> Hi,
+>
+> This series adds minimal support to boot Linux on platforms having
+> AM43 based SoC's.
+>
+> This is being sent as an RFC to seek opinion about modification in
+> twd to register percpu local timer clock event for scheduler tick in
+> the case of one core SMP.
+>
+> AM43 SoC's are based on ARM Cortex-A9. It is an ARM Cortex-A9 SMP
+> configuration with one core (not uniprocessor configuration). AM43 is
+> similar to AM335x in it's peripheral capabilities, with many of the
+> peripheral register mapping's similar like that of uart.
+>
+After looking at the specs, you don't need the SMP mode since ACP
+isn't being used.
 
-Yeah I always keep those options turned on to test my patches. But I
-need to test with and without preempt, check if I can reuse more
-local_bh_disable, etc... So there will be more iterations.
+
+> AM43 is in pre-silicon stage and currently there are no public
+> documents.
+>
+> This series has been tested on a pre-silicon platform that emulates
+> AM43 SoC, changes proposed here are minimal - to get it booting.
+> Kernel was directly run without the help of bootloader - Images were
+> directly loaded onto a pre-initialized RAM and ARM registers updated
+> as required for booting.
+>
+> Changes have been made over linux-next (next-20130213) with three "OF"
+> related reverts (which otherwise causes problem in other platforms
+> also) and compiled with omap2plus_defconfig. Multiplatform option was
+> enabled, while most of CONFIG options were deselected for a faster
+> boot. Beagle bone boots as earlier with these changes.
+>
+> An interesting observation is that it may be possible to boot this
+> platform to console without any platform specific modification to
+> proper Kernel (by that I mean excluding DT sources) using Arnd's,
+>
+> "[PATCH,RFC] default machine descriptor for multiplatform",
+>
+> along with a "CLOCKSOURCE_OF_DECLARE" for smp twd.
+>
+TWD use for AM437x is also limited because these times stops in
+low power sates and there you will need broad-cast mechanism which
+again more of SMP machine feature.
+
+So I suggest to use the wakeup timer(GPT1) clock-event instead
+of local timer for the mentioned reason.
+
+Regards,
+Santosh
+
