@@ -1,53 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932813Ab3BSNig (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 08:38:36 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47772 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932718Ab3BSNif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 08:38:35 -0500
-Date: Tue, 19 Feb 2013 16:38:06 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Shankar Brahadeeswaran <shankoo77@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, Cruz Julian Bishop <cruzjbishop@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: [PATCH] staging: android: ashmem: get_name, set_name not to hold
- ashmem_mutex
-Message-ID: <20130219133806.GC9138@mwanda>
-References: <CAJsYZ5nnAHW9Uu-ee09ttFZZT-DeBVSiHzUnpwt3ZE0hjTFA=g@mail.gmail.com>
+	id S932832Ab3BSNjY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 08:39:24 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:34210 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932753Ab3BSNjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 08:39:22 -0500
+Date: Tue, 19 Feb 2013 15:38:09 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Borislav Petkov <bp@alien8.de>, Felipe Balbi <balbi@ti.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, <JBottomley@parallels.com>,
+        <linux-scsi@vger.kernel.org>, <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, Doug Thompson <dougthompson@xmission.com>,
+        <linux-edac@vger.kernel.org>, <rjw@sisk.pl>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: SYSFS "errors"
+Message-ID: <20130219133809.GA4390@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130219070310.2cadad7a@redhat.com>
+ <20130219101121.GJ23197@arwen.pp.htv.fi>
+ <20130219081149.46972f56@redhat.com>
+ <20130219114345.GA26623@pd.tnic>
+ <20130219091610.2b746a30@redhat.com>
+ <20130219123502.GD26623@pd.tnic>
+ <20130219094640.2abf1a66@redhat.com>
+ <20130219130626.GE26623@pd.tnic>
+ <20130219131500.GW23197@arwen.pp.htv.fi>
+ <20130219132853.GG26623@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
 Content-Disposition: inline
-In-Reply-To: <CAJsYZ5nnAHW9Uu-ee09ttFZZT-DeBVSiHzUnpwt3ZE0hjTFA=g@mail.gmail.com>
+In-Reply-To: <20130219132853.GG26623@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good job fixing the bug.  :)
+--bp/iNruPH9dso1Pn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-My one concern would be that in set_name() there is a race caused
-by dropping the lock.  It would be better to do that
-copy_from_user() first, before taking the lock.  I don't expect this
-to actually be a problem in real life.
+Hi,
 
-+       /*
-+        * Local variable to hold the name copied from user space
-+        * This variable is approx of size 270 bytes, not huge
-+        */
-+       char local_name[ASHMEM_NAME_LEN];
+On Tue, Feb 19, 2013 at 02:28:54PM +0100, Borislav Petkov wrote:
+> On Tue, Feb 19, 2013 at 03:15:00PM +0200, Felipe Balbi wrote:
+> > what's the problem with that ?
+>=20
+> Not a problem - simply annoying.
+>=20
+> $ ./test.sh
+> cat: /path/to/file/that/doesnt/exist.txt: No such file or directory
+> Setting scrubrate to:
+>=20
+> I'm sure someone would ask themselves why all of a sudden the file is
+> gone.
+>=20
+> > $ cat /path/to/file/that/doesnt/exist.txt
+> > cat: /path/to/file/that/doesnt/exist.txt: No such file or directory
+> >=20
+> > Didn't see any gates to hell opening here...
+>=20
+> And I don't see why we have to debate such a trivial thing when we can
+> fix it *properly* without *absolutely* *not* upsetting userspace.
 
-These obvious comments are not needed.  We trust you do not overflow
-the stack.  ;)  Also it's checked automatically during build.
+because changing the permission will cause the same issue:
 
-Looks good generally.
+$ cat temporary.txt=20
+cat: temporary.txt: Permission denied
+$ ls -l temporary.txt=20
+---------- 1 balbi balbi 0 Feb 19 15:37 temporary.txt
+$ cat temporary.txt=20
+cat: temporary.txt: Permission denied
+$ cat non-existent.txt
+cat: non-existent.txt: No such file or directory
 
-regards,
-dan carpenter
+just a different error code is returned...
 
+--=20
+balbi
+
+--bp/iNruPH9dso1Pn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRI4BBAAoJEIaOsuA1yqREk08P/3ty8uikzGRMcoaDI6aVGBW5
+UHlJQga00Y7bMpZmhdTWleB92rsFvwcOL53Yc6YYCwcTgHkYE8dcAYALRfVpO4Y0
+kNq/wtMSXqx7H1JBo15pm2XIq6FLUudZkXOCjKiBG/miVDqogzINUZ758ofcXelY
+wOeYMs5WKUxdkj41oqgN624gwyf/O81VT1paQ4eSXr1zTCjWx8KJz7JZkQY+daZn
+3panntFRUJvDDWsrZ1fKoztxaWAO0s3pyctT8yXJYv9o1JVDjADtkNgMSqVxF+0m
+zD+fHhmPTT627ZE3gmwmw2rk0jcqCYMjBMp2OuFlqeNivSKLXs03BRisvq8g3IUI
+pcFNmbVaF7vJ6Oam6CO7zpOPgykmxWb4oRqFBXMri5biY0it3KicIxeL8ZnqMU/o
+OXpKrF5W50bd0CfQTH9kEd6g/a/nmTWXA9hCTVzpH7Ln//njmBA3nDp7ciXL2J6F
+krgdK9wtXSfxf2fs8AGldw05FO2rwq45dhFvohDZXCP34pYvqTDCK+iAOC+Xmvxm
+tw8dUrs3L/Pm0U97e7FW4peJBmjuDHB6WU9Q4PNXedkuiE3qK8/5VzsB+bzGEnsD
+HASmiR+0d2m2LzWwVa+y2kIJ/ByNBbiHbMsbb3XTWdHqVPPuPkGEfbIJvdjI0+7N
+t2F+JanJfKfUMHEDaWVb
+=oWer
+-----END PGP SIGNATURE-----
+
+--bp/iNruPH9dso1Pn--
