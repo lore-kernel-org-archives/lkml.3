@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933528Ab3BSSav (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:30:51 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:46992 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933152Ab3BSSau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:30:50 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [patch 1/1] early_printk: Consolidate random copies of identical code
-Date: Tue, 19 Feb 2013 13:30:57 -0500
-User-Agent: KMail/1.13.7 (Linux/3.7.6; KDE/4.6.5; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Richard Weinberger <richard@nod.at>, x86@kernel.org
-References: <20130219124038.365937990@linutronix.de>
-In-Reply-To: <20130219124038.365937990@linutronix.de>
+	id S933555Ab3BSSbi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:31:38 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:40340 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933537Ab3BSSbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 13:31:35 -0500
+Message-ID: <5123C482.5070704@linux.vnet.ibm.com>
+Date: Tue, 19 Feb 2013 23:59:22 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1381256.Ym9K5LIMLt";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 29/45] x86/xen: Use get/put_online_cpus_atomic() to
+ prevent CPU offline
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com> <20130122074046.13822.61950.stgit@srivatsabhat.in.ibm.com> <20130219181038.GB18244@phenom.dumpdata.com>
+In-Reply-To: <20130219181038.GB18244@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201302191331.00187.vapier@gentoo.org>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021918-8878-0000-0000-000005F4B994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1381256.Ym9K5LIMLt
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+On 02/19/2013 11:40 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Jan 22, 2013 at 01:10:51PM +0530, Srivatsa S. Bhat wrote:
+>> Once stop_machine() is gone from the CPU offline path, we won't be able to
+>> depend on preempt_disable() or local_irq_disable() to prevent CPUs from
+>> going offline from under us.
+>>
+>> Use the get/put_online_cpus_atomic() APIs to prevent CPUs from going offline,
+>> while invoking from atomic context.
+>>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> Weird. I see this in the patch but I don't see it in the header?
 
-On Tuesday 19 February 2013 07:44:29 Thomas Gleixner wrote:
-> The early console implementations are the same all over the
-> place. Move the print function to kernel/printk and get rid of the
-> copies.
+Meaning, you didn't get this email at all?
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+> Did you
+> explicitly suppress the CC part?
+> 
 
---nextPart1381256.Ym9K5LIMLt
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+No.. I sent the entire patchset to a set of email ids and in addition to
+that I CC'ed individual patches to the respective maintainers/lists (the
+CC: list in the changelog). I used the --auto knob from stgit to do that.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+> 
+> Anyhow, the patch looks sane enough, thought I need to to run it through
+> a test framework just to be on a sure side.
+>
 
-iQIcBAABAgAGBQJRI8TkAAoJEEFjO5/oN/WBGW0P/3hnQsCXMF2gnu4akQytlQl5
-an6lPPz08nTiPLgFAe05OC5YiWO2RxL3HvG0Qx5x/Uop+wg9roju6EbBXPBytbdw
-w221MRn6TLAa1taVCM4IzbfSy4Q9sC0BsIPtu2YlBMpLQMt81RNCNSJ7Zka7wYhf
-72IBpKMXimlKgRMg38j6KgEXVbXlkGwkCMC+pi1qp7wqzQLD96BwZIAi10wWJsV2
-D1HiCuOgjewCKBiOhD+oKYH4758ieifxpeoTK1Du0GueG6d9jT8MV4IcyhDUQWtJ
-1spBjS7CXda+7eW425rJBeYDYqfGQD7yrumVBQkWgeDLq2xOoOm7034ZdKsP2sz1
-Z5B+LojGgwWzVRMDz8YMefGtBhU/uazGl5Lg6Q01xQ4xEeLd+3IZIwby5tIiXJHr
-CAt/pB8SCpW2+Pn9efGmSKJFs4kiFWLEFnaD2r5r3u29xathHJ2fSlbaCNjYUm//
-at/CBPR5dwH5nqEAoPJwGax/CzX3x/ZeRcSPuh4TjQzJUV9LdJ1Z4ytnOwFy7KV/
-yhqEQhqLEyFnXiOeHg9mz6UmlljprSsM3YWk7svOFjswgSUA/xd6lEmPRIfWh0r2
-L2VvNeZ80/RjZti/74OsOjDQZp8us49lMQC2XfMQI9XwD+Qw5cbVUSLHPWvSLUNh
-A1h2yAj0kNk02ZSsl5RU
-=KyvN
------END PGP SIGNATURE-----
+Sure, thank you. But you might want to test the v6 that I sent out
+yesterday instead of v5. Oh, wait a min, you didn't get the v6 mail also?
 
---nextPart1381256.Ym9K5LIMLt--
+Here it is, for your reference:
+http://marc.info/?l=linux-kernel&m=136119260122255&w=2
+
+Regards,
+Srivatsa S. Bhat
+
+>> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+>> Cc: x86@kernel.org
+>> Cc: xen-devel@lists.xensource.com
+>> Cc: virtualization@lists.linux-foundation.org
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> ---
+
