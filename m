@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757786Ab3BSBIW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 20:08:22 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:13919 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799Ab3BSBIU (ORCPT
+	id S1757872Ab3BSBMf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 20:12:35 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:51231 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754499Ab3BSBMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 20:08:20 -0500
-X-AuditID: cbfee68f-b7f656d000000d78-f1-5122d083608a
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Samuel Ortiz'" <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] mfd: twl4030-madc: add __exit macro to remove
-Date: Tue, 19 Feb 2013 10:08:18 +0900
-Message-id: <000101ce0e3d$9a9e42a0$cfdac7e0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4OPZqJHNio5XJvR8u8Q36MxoUVqw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t8zfd3mC0qBBt8eCVlc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MLzNfsRbcY63o/HyWsYHxDUsXIyeHhICJxJvVn9khbDGJC/fW
-	s3UxcnEICSxjlJj/4gRrFyMHWFFTNzdEfBGjxMvzL5khnNlMEte+TgDrZhNQk/jy5TCYLSKg
-	JdF97DwbSDOzgIvE0WkiIKawgJ3E++tuIBUsAqoSK3ZfYwOxeQVsJR5fO8wKYQtK/Jh8D+w2
-	ZqAp63ceZ4Kw5SU2r3nLDHGOusSjv7oQi/QkZk/4BFUuIrHvxTtGkMskBJrZJXZ8hpjPIiAg
-	8W3yIRaIXlmJTQeYId6VlDi44gbLBEaxWUg2z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCm9yFiv
-	ODG3uDQvXS85P3cTIyRK+ncw3j1gfYgxGWj9RGYp0eR8YJTllcQbGhubmJmYmphbmpqbkias
-	JM4rf0kmUEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOj6mXHvc8aIgxnOvx4mezdvnT21e82
-	jyabhvccUvr58cJtRYGEwyXN+4WuByv7a/lcTK/dPuMS86EFSqF+d5YHzfvRIfh77tlbW938
-	X3UscIhL/BF2dWHY3ML8txO95Hn3ZL07s8EjOPKEk3qGxur3dR/73RboXvfKnRalcFVuzvJH
-	gilv2J2XKLEUZyQaajEXFScCABysItWoAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsVy+t9jAd3mC0qBBl3r+Swu75rD5sDo8XmT
-	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
-	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxpeZr1gL7rFWdH4+y9jA
-	+Iali5GDQ0LARKKpm7uLkRPIFJO4cG89WxcjF4eQwCJGiZfnXzJDOLOZJK59ncAOUsUmoCbx
-	5cthMFtEQEui+9h5NpBBzAIuEkeniYCYwgJ2Eu+vu4FUsAioSqzYfY0NxOYVsJV4fO0wK4Qt
-	KPFj8j0WEJsZaMr6nceZIGx5ic1r3jJDnKYu8eivLsQiPYnZEz5BlYtI7HvxjnECo8AsJJNm
-	IZk0C8mkWUhaFjCyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQIjsFn0jsYVzVYHGIU4GBU
-	4uH94KgUKMSaWFZcmXuIUYKDWUmEt6MdKMSbklhZlVqUH19UmpNafIgxGejRicxSosn5wPSQ
-	VxJvaGxiZmRpZGZhZGJuTpqwkjgv46knAUIC6YklqdmpqQWpRTBbmDg4pRoYWe199N9GXHNI
-	/Gnx1efzldQJnEovubdlzJh8e/2FnXsTE87q229M01qUKdugbcvwJl+94ujhw+cyOoME76nL
-	aSk+euBmp1U/kWvJx6yVh3XPM1y+/cwobtPrzUX1GXxxjILXJQ6uaJGbfYRT5eAJqZlL07ir
-	/7h78v84ej3kiVhqjoHcus7HSizFGYmGWsxFxYkAzyEw9gUDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 18 Feb 2013 20:12:34 -0500
+Message-ID: <1361236341.3263.11.camel@thor.lan>
+Subject: Re: [Bisected][-next-20130204+] [x86/kvm] udevd:[97]: segfault at
+ ffffffffff5fd020 ip 00007fff069e277f sp 00007fff068c9ef8 error d
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Date: Mon, 18 Feb 2013 20:12:21 -0500
+In-Reply-To: <20130218225955.GA6166@amt.cnet>
+References: <1360715210.31472.20.camel@thor.lan>
+	 <511AE0A7.2000101@linux.intel.com> <20130213105129.GB9817@redhat.com>
+	 <1360756629.4803.5.camel@thor.lan> <20130218225955.GA6166@amt.cnet>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed build warning as below:
+On Mon, 2013-02-18 at 19:59 -0300, Marcelo Tosatti wrote:
+> On Wed, Feb 13, 2013 at 06:57:09AM -0500, Peter Hurley wrote:
+> > On Wed, 2013-02-13 at 12:51 +0200, Gleb Natapov wrote:
+> > > On Tue, Feb 12, 2013 at 04:39:03PM -0800, H. Peter Anvin wrote:
+> > > > On 02/12/2013 04:26 PM, Peter Hurley wrote:
+> > > > > With -next-20130204+ in ubuntu 12.10 VM (so the 80x25 VGA
+> > > > > device/console):
+> > > > > 
+> > > > > [    0.666410] udevd[97]: starting version 175
+> > > > > [    0.674043] udevd[97]: udevd:[97]: segfault at ffffffffff5fd020 ip 00007fff069e277f sp 00007fff068c9ef8 error d
+> > > > > 
+> > > > > and boots to an initramfs prompt.
+> > > > > 
+> > > > > git bisect (log attached) blames:
+> > > > > 
+> > > > > commit 7b5c4a65cc27f017c170b025f8d6d75dabb11c6f
+> > > > > Merge: 3596f5b 949db15
+> > > > > Author: H. Peter Anvin <hpa@linux.intel.com>
+> > > > > Date:   Fri Jan 25 16:31:21 2013 -0800
+> > > > > 
+> > > > >     Merge tag 'v3.8-rc5' into x86/mm
+> > > > >     
+> > > > >     The __pa() fixup series that follows touches KVM code that is not
+> > > > >     present in the existing branch based on v3.7-rc5, so merge in the
+> > > > >     current upstream from Linus.
+> > > > >     
+> > > > >     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > > > > 
+> > > > > 
+> > > > > This only happens with the VGA device/console but that is the default
+> > > > > configuration for Ubuntu/KVM because it blacklists pretty much every fb
+> > > > > driver.
+> > > > > 
+> > > > 
+> > > > I am guessing this is another bad use of __pa()... need to look into that.
+> 
+> Can't find this commit on kvm.git or linux-2.6.git. Is it reproducible
+> there?
 
-drivers/mfd/twl4030-madc.c:788:12: warning: 'twl4030_madc_remove' defined but not used [-Wunused-function]
+This is in the linux-next repo (any git tag after 'next-20130204' will
+reproduce this). It's a pretty large merge commit.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/mfd/twl4030-madc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+This doesn't happen on 3.8-rc7.
 
-diff --git a/drivers/mfd/twl4030-madc.c b/drivers/mfd/twl4030-madc.c
-index 88ff9dc..86ba920 100644
---- a/drivers/mfd/twl4030-madc.c
-+++ b/drivers/mfd/twl4030-madc.c
-@@ -785,7 +785,7 @@ err_power:
- 	return ret;
- }
- 
--static int twl4030_madc_remove(struct platform_device *pdev)
-+static int __exit twl4030_madc_remove(struct platform_device *pdev)
- {
- 	struct twl4030_madc_data *madc = platform_get_drvdata(pdev);
- 
--- 
-1.7.2.5
+I'll try to repro this on kvm.git sometime this week. Otherwise, we can
+wait for it to show up in 3.9.
 
+Regards,
+Peter Hurley
 
