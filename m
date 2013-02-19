@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932996Ab3BSRKN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 12:10:13 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:46237 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758479Ab3BSRKM convert rfc822-to-8bit (ORCPT
+	id S933074Ab3BSRKZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 12:10:25 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60994 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933012Ab3BSRKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 12:10:12 -0500
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Subject: RE: [PATCH 4/4] regulator: palmas: Change the DT node property
- names to follow the convention
-Thread-Topic: [PATCH 4/4] regulator: palmas: Change the DT node property
- names to follow the convention
-Thread-Index: AQHODZb8EcxJDCPQKkyLFndA8TN3D5iAxYOAgACmrxA=
-Date: Tue, 19 Feb 2013 17:10:01 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229BBB5C@DBDE01.ent.ti.com>
-References: <1361164460-3251-1-git-send-email-j-keerthy@ti.com>
- <20130219124133.GC23508@opensource.wolfsonmicro.com>
-In-Reply-To: <20130219124133.GC23508@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.112.245]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Feb 2013 12:10:21 -0500
+Message-ID: <5123B1F8.4040102@wwwdotorg.org>
+Date: Tue, 19 Feb 2013 10:10:16 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Rob Landley <rob@landley.net>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
+        pdeschrijver@nvidia.com, pgaikwad@nvidia.com,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [v3 0/6] ARM: tegra: convert device tree files to use CLK defines
+References: <1360917814-27236-1-git-send-email-hdoyu@nvidia.com> <1361138717.29465.2@driftwood>
+In-Reply-To: <1361138717.29465.2@driftwood>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> Sent: Tuesday, February 19, 2013 6:12 PM
-> To: J, KEERTHY
-> Cc: lgirdwood@gmail.com; linux-kernel@vger.kernel.org;
-> gg@slimlogic.co.uk
-> Subject: Re: [PATCH 4/4] regulator: palmas: Change the DT node property
-> names to follow the convention
+On 02/17/2013 03:05 PM, Rob Landley wrote:
+> On 02/15/2013 02:43:11 AM, Hiroshi Doyu wrote:
+>> Hi,
+>>
+>> With new dtc+cpp feature, we could get rid of magic numbers in dts*
+>> files. This patch replaces CLK IDs.
+>>
+>> We also plan to share those DT header files with kernel source
+>> later[1].
+> ...
+>> [1]
+>> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149804.html
+>>
 > 
-> On Mon, Feb 18, 2013 at 10:44:20AM +0530, J Keerthy wrote:
-> > DT node properties should not have "_". Replacing them by "-".
-> >
-> > Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> 
-> This must need an update to the binding document too, and probably any
-> DT files that ended up getting merged for it?
+> This really smells like documentation should be updated, probably
+> booting-without-of.txt or similar. Alas, I'm not capable of writing such
+> an update...
 
-I have sent a patch with the document update. That is the first patch in
-The series.
+I'm not sure what documentation would be updated nor why. Can you
+describe that?
 
-Regards,
-Keerthy
+This patch is (or should be) editing the device tree binding
+documentation to (include by) reference the header file that is being
+added in this patch. I don't believe there's any more general
+documentation that is affected by this series.
