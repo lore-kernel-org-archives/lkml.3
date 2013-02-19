@@ -1,147 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932701Ab3BSMQw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 07:16:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7899 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932530Ab3BSMQt convert rfc822-to-8bit (ORCPT
+	id S932690Ab3BSMSG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 07:18:06 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37387 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932535Ab3BSMSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 07:16:49 -0500
-Date: Tue, 19 Feb 2013 09:16:10 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: balbi@ti.com, Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, davem@davemloft.net,
-        netdev@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
-        linux-edac@vger.kernel.org, rjw@sisk.pl, linux-pm@vger.kernel.org
-Subject: Re: SYSFS "errors"
-Message-ID: <20130219091610.2b746a30@redhat.com>
-In-Reply-To: <20130219114345.GA26623@pd.tnic>
-References: <20130218164638.7cb53baa@redhat.com>
-	<20130218200542.GB20137@arwen.pp.htv.fi>
-	<20130218184742.5a4c3c06@redhat.com>
-	<20130218215434.GB16794@kroah.com>
-	<20130218221306.GA21493@pd.tnic>
-	<20130218222618.GA21818@kroah.com>
-	<20130218224405.GB21493@pd.tnic>
-	<20130219070310.2cadad7a@redhat.com>
-	<20130219101121.GJ23197@arwen.pp.htv.fi>
-	<20130219081149.46972f56@redhat.com>
-	<20130219114345.GA26623@pd.tnic>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Feb 2013 07:18:04 -0500
+Date: Tue, 19 Feb 2013 12:18:01 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: wm8994: add missing variable initialization
+Message-ID: <20130219121801.GB23508@opensource.wolfsonmicro.com>
+References: <000001ce0e3b$f1d99170$d58cb450$%han@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Pd0ReVV5GZGQvF3a"
+Content-Disposition: inline
+In-Reply-To: <000001ce0e3b$f1d99170$d58cb450$%han@samsung.com>
+X-Cookie: Reply hazy, ask again later.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 19 Feb 2013 12:43:46 +0100
-Borislav Petkov <bp@alien8.de> escreveu:
 
-> On Tue, Feb 19, 2013 at 08:11:49AM -0300, Mauro Carvalho Chehab wrote:
-> > > > I remember I saw some discussions about it in the past at bluesmoke ML,
-> > > > saying that -ENODEV is the expected behavior when this is not supported.
-> > > > 
-> > > > Changing from -ENODEV to "N/A" will break anything that would be relying
-> > > > on the previous behavior. So, I think that such change will for sure break
-> > > > userspace.
-> > > > 
-> > > > If we're willing to change it, not creating the "sdram_scrub_rate" sysfs 
-> > > > node is less likely to affect userspace.
-> 
-> This will break scripts which assume this file's presence implicitly.
+--Pd0ReVV5GZGQvF3a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If are there any script like that, then yes.
+On Tue, Feb 19, 2013 at 09:56:26AM +0900, Jingoo Han wrote:
 
-> [ … ]
-> 
-> > @@ -1017,6 +1010,14 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
-> >  		return err;
-> >  	}
-> >  
-> > +	if (mci->set_sdram_scrub_rate && mci->get_sdram_scrub_rate) {
-> 
-> This will break cpc925_edac.c because it defines a
-> ->get_sdram_scrub_rate but not a ->set_sdram_scrub_rate.
+> -	int ret, i, patch_regs;
+> +	int ret, i, patch_regs = 0;
 
-True. Patch below fixes it.
+As with all such changes you really need to explain why it's safe to
+just blindly initialise to this particular value and why this isn't just
+masking a real issue in the code.  Initialising with a random value will
+fix the warning but that might just be turning off the compiler's
+checks.
 
-> I think a maybe better fix would be to figure out the sysfs file
-> permissions based on the presence of the two functions and *then* add
-> the attribute.
-> 
-> This way, the only visible change to userspace is the corrected sysfs
-> file permissions.
+--Pd0ReVV5GZGQvF3a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I'm not sure if is there a way to pass fs permissions to something similar
-to device_create_file().
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-On both cases, an error will happen at open:
-	- if file doesn't exist (this approach), it will return -ENOENT;
-	- if file is opened with wrong permissions, open will return -EPERM.
+iQIcBAEBAgAGBQJRI21IAAoJELSic+t+oim9GPEP/RxL66K5STGdedWKDBa9khzn
+m33aZqcGKT8KKluvHBfFZWXo5lGqDv51Uw8b6u5HGa4+5845RlxGcE/jCz7JSQv6
+sR1jDR5QPuq1DUWCGbC/Sufan3AA70gX8j1WLx5QhBna3fXaya4qEawI2x/VqYLi
+ZPK8frbQMZjq4xWuqB6AXPM11vwJZ0QyZ6Z/FrlD6s/yPcX9tWSqJ2LHBYOU0CqQ
+PTo6vB4NjiloEDHAZOv0Zqz4pyt450iRSk3yZHNVqG/JowLvxNRgLOxcGRVsbOwh
+PbqXQ9/yGBzEoWIEP09pjjl/XNN/E2CJmlTaRcD5ggmGmH9tEcfAUbqcu7dLZNQa
+qdzQcY3+5jNy6wJ97EJH4onyvucWL3og3E9NOlfN29OLg27yot5QL0wM5B58frTo
+T3IZ/6ntiV8StG8qZJRXqhXiWhtbtqO+0lizYxxFG0XIvfhODwRv9+Y/aFznxhzI
+Mpuu/d1VvXbg6kjWuOs8XuGboK9Q1bmcLvPlYJwK5ewvqZ/vc7poiUHU8WGNHPRu
+JmZt5j0AX3rre4lyqGhb1gDdmOpLv+Fy6Gu9ibM0698diT/VuyAev1XPB+whmZlD
+HCZiDiZaG7KDybSoIqRH4Wf6JWz0AUCU0Y0VbFcA0OLZVFhe1xeB7M5y/2t0kOn5
+4acpDzbbBmjgWwq6WP+f
+=nJkv
+-----END PGP SIGNATURE-----
 
-However, if the file is not created, readdir() won't show the file.
-So, if userspace first seeks for the sdram_scrub_rate, it won't fail.
-That makes the logic below a little safer, IMO.
-
-
-[PATCH EDAC] edac: only create sdram_scrub_rate where supported
-
-Currently, sdram_scrub_rate sysfs node is created even if the device
-doesn't support get/set the scub rate. Change the logic to only
-create this device node when the operation is supported.
-
-If only read or only write is supported, it will keep returning -ENODEV
-just like before.
-
-Reported-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index 9c58da6..29b66a2 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -7,7 +7,7 @@
-  *
-  * Written Doug Thompson <norsk5@xmission.com> www.softwarebitmaker.com
-  *
-- * (c) 2012 - Mauro Carvalho Chehab <mchehab@redhat.com>
-+ * (c) 2012-2013 - Mauro Carvalho Chehab <mchehab@redhat.com>
-  *	The entire API were re-written, and ported to use struct device
-  *
-  */
-@@ -882,7 +882,6 @@ static struct attribute *mci_attrs[] = {
- 	&dev_attr_ce_noinfo_count.attr,
- 	&dev_attr_ue_count.attr,
- 	&dev_attr_ce_count.attr,
--	&dev_attr_sdram_scrub_rate.attr,
- 	&dev_attr_max_location.attr,
- 	NULL
- };
-@@ -1017,6 +1016,14 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 		return err;
- 	}
- 
-+	if (mci->set_sdram_scrub_rate || mci->get_sdram_scrub_rate) {
-+		err = device_create_file(&mci->dev,
-+					 &dev_attr_sdram_scrub_rate);
-+		if (err) {
-+			edac_dbg(1, "failure: create sdram_scrub_rate\n");
-+			goto fail2;
-+		}
-+	}
- 	/*
- 	 * Create the dimm/rank devices
- 	 */
-@@ -1061,6 +1068,7 @@ fail:
- 			continue;
- 		device_unregister(&dimm->dev);
- 	}
-+fail2:
- 	device_unregister(&mci->dev);
- 	bus_unregister(&mci->bus);
- 	kfree(mci->bus.name);
+--Pd0ReVV5GZGQvF3a--
