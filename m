@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934553Ab3BSTK4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:10:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54271 "EHLO
+	id S934566Ab3BSTLA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:11:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54268 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934089Ab3BSSvn (ORCPT
+	with ESMTP id S933409Ab3BSSvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Feb 2013 13:51:43 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexander Stein <alexander.stein@systec-electronic.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        James Morris <james.l.morris@oracle.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 28/81] can: c_can: Set reserved bit in IFx_MASK2 to 1 on write
-Date: Tue, 19 Feb 2013 15:48:51 -0300
-Message-Id: <1361299784-8830-29-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 27/81] digsig: Fix memory leakage in digsig_verify_rsa()
+Date: Tue, 19 Feb 2013 15:48:50 -0300
+Message-Id: <1361299784-8830-28-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,39 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Stein <alexander.stein@systec-electronic.com>
+From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 
-commit 2bd3bc4e8472424f1a6009825397639a8968920a upstream.
+commit 7810cc1e7721220f1ed2a23ca95113d6434f6dcd upstream.
 
-According to C_CAN documentation, the reserved bit in IFx_MASK2 register is
-fixed 1.
+digsig_verify_rsa() does not free kmalloc'ed buffer returned by
+mpi_get_buffer().
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-[ herton: adjust context ]
+Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/can/c_can/c_can.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ lib/digsig.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
-index 21a3d77..64647d4 100644
---- a/drivers/net/can/c_can/c_can.c
-+++ b/drivers/net/can/c_can/c_can.c
-@@ -446,8 +446,12 @@ static void c_can_setup_receive_object(struct net_device *dev, int iface,
+diff --git a/lib/digsig.c b/lib/digsig.c
+index 8c0e629..dc2be7e 100644
+--- a/lib/digsig.c
++++ b/lib/digsig.c
+@@ -162,6 +162,8 @@ static int digsig_verify_rsa(struct key *key,
+ 	memset(out1, 0, head);
+ 	memcpy(out1 + head, p, l);
  
- 	priv->write_reg(priv, &priv->regs->ifregs[iface].mask1,
- 			IFX_WRITE_LOW_16BIT(mask));
++	kfree(p);
 +
-+	/* According to C_CAN documentation, the reserved bit
-+	 * in IFx_MASK2 register is fixed 1
-+	 */
- 	priv->write_reg(priv, &priv->regs->ifregs[iface].mask2,
--			IFX_WRITE_HIGH_16BIT(mask));
-+			IFX_WRITE_HIGH_16BIT(mask) | BIT(13));
- 
- 	priv->write_reg(priv, &priv->regs->ifregs[iface].arb1,
- 			IFX_WRITE_LOW_16BIT(id));
+ 	err = pkcs_1_v1_5_decode_emsa(out1, len, mblen, out2, &len);
+ 	if (err)
+ 		goto err;
 -- 
 1.7.9.5
 
