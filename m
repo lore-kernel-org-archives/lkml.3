@@ -1,17 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758524Ab3BSJWj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 04:22:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42464 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754598Ab3BSJWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 04:22:37 -0500
-Message-ID: <5123444D.6000806@suse.cz>
-Date: Tue, 19 Feb 2013 10:22:21 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
+	id S1758560Ab3BSJcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 04:32:04 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:45594 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757350Ab3BSJb7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 04:31:59 -0500
+Date: Tue, 19 Feb 2013 13:31:54 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Michal Marek <mmarek@suse.cz>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         ebiederm@xmission.com, xemul@parallels.com, hpa@zytor.com,
         akpm@linux-foundation.org, Andrey Vagin <avagin@openvz.org>,
@@ -25,27 +23,114 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Alexey Dobriyan <adobriyan@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>
 Subject: Re: [patch 1/2] kcmp: Make it to depend on CONFIG_KCMP
-References: <20130219064800.719149796@openvz.org> <20130219065210.030802820@openvz.org>
-In-Reply-To: <20130219065210.030802820@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Message-ID: <20130219093154.GF20312@moon>
+References: <20130219064800.719149796@openvz.org>
+ <20130219065210.030802820@openvz.org>
+ <5123444D.6000806@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5123444D.6000806@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.2.2013 07:48, Cyrill Gorcunov wrote:
-> --- linux-2.6.git.orig/init/Kconfig
-> +++ linux-2.6.git/init/Kconfig
-> @@ -279,6 +279,15 @@ config FHANDLE
->  	  get renamed. Enables open_by_handle_at(2) and name_to_handle_at(2)
->  	  syscalls.
->  
-> +config KCMP
-> +	bool "kcmp syscall"
-> +	default n
+On Tue, Feb 19, 2013 at 10:22:21AM +0100, Michal Marek wrote:
+> On 19.2.2013 07:48, Cyrill Gorcunov wrote:
+> > --- linux-2.6.git.orig/init/Kconfig
+> > +++ linux-2.6.git/init/Kconfig
+> > @@ -279,6 +279,15 @@ config FHANDLE
+> >  	  get renamed. Enables open_by_handle_at(2) and name_to_handle_at(2)
+> >  	  syscalls.
+> >  
+> > +config KCMP
+> > +	bool "kcmp syscall"
+> > +	default n
+> 
+> Previously, kcmp was enabled with CONFIG_CHECKPOINT_RESTORE. Maybe
+> change it to 'default CHECKPOINT_RESTORE', so that make oldconfig does
+> the right thing?
 
-Previously, kcmp was enabled with CONFIG_CHECKPOINT_RESTORE. Maybe
-change it to 'default CHECKPOINT_RESTORE', so that make oldconfig does
-the right thing?
+Yes, thanks, good point! I've been adviced that make it obj-y by default
+may be a good option as well, not sure.
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: kcmp: Make it to depend on CONFIG_KCMP
 
-Michal
+Since kcmp syscall has been implemented (initially on
+x86 architecture) a number of other archs wire it up
+as well: xtensa, sparc, sh, s390, mips, microblaze,
+m68k (not taking into account those who uses
+<asm-generic/unistd.h> for syscall numbers
+definitions).
+
+But the Makefile, which turns kcmp.o generation on
+still depends on former config-x86. Thus get rid
+of this limitation and make kcmp.o depend on CONFIG_KCMP
+option.
+
+v2:
+ - As Michal pointed the old configs might already use of
+   CHECKPOINT_RESTORE, so make "default" accordingly.
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Andrey Vagin <avagin@openvz.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Glauber Costa <glommer@parallels.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Matt Helsley <matthltc@us.ibm.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Valdis.Kletnieks@vt.edu
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ init/Kconfig    |    9 +++++++++
+ kernel/Makefile |    4 +---
+ 2 files changed, 10 insertions(+), 3 deletions(-)
+
+Index: linux-2.6.git/init/Kconfig
+===================================================================
+--- linux-2.6.git.orig/init/Kconfig
++++ linux-2.6.git/init/Kconfig
+@@ -279,6 +279,15 @@ config FHANDLE
+ 	  get renamed. Enables open_by_handle_at(2) and name_to_handle_at(2)
+ 	  syscalls.
+ 
++config KCMP
++	bool "kcmp syscall"
++	default CHECKPOINT_RESTORE
++	help
++	  If you say Y here, a user level program will be able to use
++	  kcmp(2) syscall.
++
++	  If unsure, say N.
++
+ config AUDIT
+ 	bool "Auditing support"
+ 	depends on NET
+Index: linux-2.6.git/kernel/Makefile
+===================================================================
+--- linux-2.6.git.orig/kernel/Makefile
++++ linux-2.6.git/kernel/Makefile
+@@ -25,9 +25,7 @@ endif
+ obj-y += sched/
+ obj-y += power/
+ 
+-ifeq ($(CONFIG_CHECKPOINT_RESTORE),y)
+-obj-$(CONFIG_X86) += kcmp.o
+-endif
++obj-$(CONFIG_KCMP) += kcmp.o
+ obj-$(CONFIG_FREEZER) += freezer.o
+ obj-$(CONFIG_PROFILING) += profile.o
+ obj-$(CONFIG_STACKTRACE) += stacktrace.o
