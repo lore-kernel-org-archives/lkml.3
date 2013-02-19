@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933946Ab3BSThe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:37:34 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44952 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933515Ab3BSThc (ORCPT
+	id S934190Ab3BSTjK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:39:10 -0500
+Received: from mga11.intel.com ([192.55.52.93]:21385 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933049Ab3BSTjI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 14:37:32 -0500
-Date: Tue, 19 Feb 2013 11:37:30 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: David Miller <davem@davemloft.net>
-cc: mroos@ut.ee, linux-mm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sparclinux@vger.kernel.org
-Subject: Re: THP bug and crash on sparc64 3.8
-In-Reply-To: <20130219.143320.1413047009797673492.davem@davemloft.net>
-Message-ID: <alpine.DEB.2.02.1302191134570.790@chino.kir.corp.google.com>
-References: <alpine.SOC.1.00.1302191350280.10147@math.ut.ee> <alpine.SOC.1.00.1302191405140.10147@math.ut.ee> <20130219.143320.1413047009797673492.davem@davemloft.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 19 Feb 2013 14:39:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,697,1355126400"; 
+   d="scan'208";a="293198110"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: "Westerberg, Mika" <mika.westerberg@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Subject: RE: How to populate Battery information through ACPI tables
+Thread-Topic: How to populate Battery information through ACPI tables
+Thread-Index: Ac4Oskyv9anm0zdmSXmuXEKAabFeBP//qGcA//+HEBCAAKCfAP//pGJQgABhtwD//6AxsAANLFUA//+g47D//5UmAP/+yTbw
+Date: Tue, 19 Feb 2013 19:39:01 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD246620C6@BGSMSX102.gar.corp.intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD24661392@BGSMSX102.gar.corp.intel.com>
+ <20130219152008.GG2439@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD2466175B@BGSMSX102.gar.corp.intel.com>
+ <20130219174210.GH2439@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD2466187B@BGSMSX102.gar.corp.intel.com>
+ <20130219180400.GJ2439@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD24661A83@BGSMSX102.gar.corp.intel.com>
+ <20130219183816.GK2439@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD24661DB3@BGSMSX102.gar.corp.intel.com>
+ <20130219192016.GL2439@intel.com>
+In-Reply-To: <20130219192016.GL2439@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Feb 2013, David Miller wrote:
 
-> diff --git a/arch/sparc/mm/tsb.c b/arch/sparc/mm/tsb.c
-> index 7f64743..338b406 100644
-> --- a/arch/sparc/mm/tsb.c
-> +++ b/arch/sparc/mm/tsb.c
-> @@ -288,14 +288,13 @@ static unsigned long tsb_size_to_rss_limit(unsigned long new_size)
->   * the number of entries that the current TSB can hold at once.  Currently,
->   * we trigger when the RSS hits 3/4 of the TSB capacity.
->   */
-> -void tsb_grow(struct mm_struct *mm, unsigned long tsb_index, unsigned long rss)
-> +void tsb_grow(struct mm_struct *mm, unsigned long tsb_index, unsigned long rss, gfp_t gfp)
->  {
->  	unsigned long max_tsb_size = 1 * 1024 * 1024;
->  	unsigned long new_size, old_size, flags;
->  	struct tsb *old_tsb, *new_tsb;
->  	unsigned long new_cache_index, old_cache_index;
->  	unsigned long new_rss_limit;
-> -	gfp_t gfp_flags;
->  
->  	if (max_tsb_size > (PAGE_SIZE << MAX_ORDER))
->  		max_tsb_size = (PAGE_SIZE << MAX_ORDER);
-> @@ -312,12 +311,11 @@ void tsb_grow(struct mm_struct *mm, unsigned long tsb_index, unsigned long rss)
->  		new_rss_limit = ~0UL;
->  
->  retry_tsb_alloc:
-> -	gfp_flags = GFP_KERNEL;
->  	if (new_size > (PAGE_SIZE * 2))
-> -		gfp_flags = __GFP_NOWARN | __GFP_NORETRY;
-> +		gfp = __GFP_NOWARN | __GFP_NORETRY;
+> > Mika, _BIF method returns battery data/struct which is defined Table. 10-233.
+> 
+> Yes, it was just an example. You can have your own custom method for that, lets
+> say:
+> 
+> 	BLAH()
+> 
+> that then returns whatever you need.
+> 
+> > If I want to pass some device specific data seems like I can use
+> > _DSM(9.14.1) method and pass custom /device specific data to the driver.
+> 
+> _DSM is also an option, yes.
+> 
+> > And I believe this data format can be anything and private to the device?
+> > Can you confirm?
+> 
+> Yes.
 
-The existing code here already looks buggy for a different reason, it 
-should be gfp |= __GFP_NOWARN | __GFP_NORETRY;
-
-I was wondering if you could get away with just a simple one-liner fix 
-above by doing
-
-	gfp_flags = rss ? GFP_KERNEL : GFP_NOWAIT;
-
-but I agree this is more robust.
+Gr8. Appreciate your prompt response and help.
+Have nice day :-)
