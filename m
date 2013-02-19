@@ -1,72 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476Ab3BSUTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 15:19:48 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:33313 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932491Ab3BSUTr (ORCPT
+	id S933674Ab3BSUUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 15:20:08 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:43579 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933529Ab3BSUUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 15:19:47 -0500
-Date: Tue, 19 Feb 2013 12:19:41 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] workqueue: allow more off-queue flag space
-Message-ID: <20130219201941.GU17414@htj.dyndns.org>
-References: <1361203940-6300-1-git-send-email-laijs@cn.fujitsu.com>
- <1361203940-6300-3-git-send-email-laijs@cn.fujitsu.com>
+	Tue, 19 Feb 2013 15:20:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361203940-6300-3-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130219194517.GA9986@redhat.com>
+References: <1361008406-2307-1-git-send-email-msb@chromium.org>
+	<1361008406-2307-5-git-send-email-msb@chromium.org>
+	<20130216171010.GE4910@redhat.com>
+	<20130216194643.GA31569@redhat.com>
+	<CACBanvpOVxdiM3FWMiZMM5sAkxXbguT1VhFMkyQv-ntVPE8Y=Q@mail.gmail.com>
+	<20130219142721.GA5709@redhat.com>
+	<CACBanvq+Sdtv-tNXTmJyb3EvXGshC=D4NjR8aVOCjRXcTKp+Mw@mail.gmail.com>
+	<20130219194517.GA9986@redhat.com>
+Date: Tue, 19 Feb 2013 12:20:04 -0800
+X-Google-Sender-Auth: 9kSGaRrVgU4IlJ3GtqCIIqIfCfc
+Message-ID: <CACBanvo6NqbG7mzD76rM-5kEZ3bOXKfGSbRghvuejSD5S_jnBQ@mail.gmail.com>
+Subject: Re: [PATCH 5/5] coredump: ignore non-fatal signals when core dumping
+ to a pipe
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ben Chan <benchan@chromium.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 4acd43237af61d55ac128bbaf46ca092d560809c Mon Sep 17 00:00:00 2001
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date: Tue, 19 Feb 2013 12:17:01 -0800
+On Tue, Feb 19, 2013 at 11:45 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 02/19, Mandeep Singh Baines wrote:
+>>
+>> On Tue, Feb 19, 2013 at 6:27 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> > Please look at 1-3 I sent. Btw, I slightly tested this series, seems
+>> > to work...
+>> >
+>>
+>> They look good to me. I plan on applying them to our tree since we
+>> need a fix ASAP.
+>
+> Great!
+>
+>> >> You'd need to prevent the fake signal from freeezer from setting
+>> >> TIF_SIGPENDING. Maybe just add a SIGNAL_GROUP_EXIT check in freezer.c.
+>> >
+>> > I am thinking about checking SIGNAL_GROUP_COREDUMP but I am not sure,
+>> > perhaps we can make a simpler solution. As for wait_for_dump_helper()
+>> > we do not need any check at all, but we should either fix
+>> > wait_event_freezable (it is actually not right) or change pipe_release()
+>>
+>> Is the bug that it will exit on the fake_signal.
+>
+> Yes, I understand, but
+>
+>> I don't think that bug will affects this patch though.  I think this
+>> should all work if we add a check to freezer.c (or something similar
+>> that is cleaner).
+>>
+>> If you add SIGNAL_GROUP_COREDUMP check to freezer.c:
+>>
+>> static void fake_signal_wake_up(struct task_struct *p)
+>> {
+>>         unsigned long flags;
+>>
+>>         if (lock_task_sighand(p, &flags)) {
+>> -                signal_wake_up(p, 0);
+>> +              if (!p->signal->flags & SIGNAL_GROUP_COREDUMP)
+>> +                              signal_wake_up(p, 0);
+>>                 unlock_task_sighand(p, &flags);
+>>         }
+>> }
+>>
+>> And change the wait_event_freezekillable() in this patch to just
+>> wait_event_freezable(), shouldn't that just work.
+>
+> I doubt,
+>
+>> The fake signal will never get sent.
+>
+> Yes but try_to_freeze_tasks() can fail.
+>
 
-When a work item is off-queue, its work->data contains WORK_STRUCT_*
-and WORK_OFFQ_* flags.  As WORK_OFFQ_* flags are used only while a
-work item is off-queue, it can occupy bits of work->data which aren't
-used while off-queue.  WORK_OFFQ_* currently only use bits used by
-on-queue CWQ pointer.  As color bits aren't used while off-queue,
-there's no reason to not use them.
+Ah. Good point. How about this then:
 
-Lower WORK_OFFQ_FLAG_BASE from WORK_STRUCT_FLAG_BITS to
-WORK_STRUCT_COLOR_SHIFT thus giving 4 more bits to off-queue flag
-space which is also used to record worker_pool ID while off-queue.
+/* can't use wait_event_freezable since we suppress the fake signal on
+SIGNAL_GROUP_COREDUMP */
+freezer_do_not_count();
+wait_event_interruptible(pipe->wait, pipe->readers == 1);
+freezer_count();
 
-This doesn't introduce any visible behavior difference.
+Regards,
+Mandeep
 
-tj: Rewrote the description.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-Applied to wq/for-3.10-tmp.  Note that I'm gonna reabse the branch
-once 3.9-rc1 is out.
-
-Thanks.
-
- include/linux/workqueue.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 8afab27..5bd030f 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -68,7 +68,7 @@ enum {
- 				  WORK_STRUCT_COLOR_BITS,
- 
- 	/* data contains off-queue information when !WORK_STRUCT_PWQ */
--	WORK_OFFQ_FLAG_BASE	= WORK_STRUCT_FLAG_BITS,
-+	WORK_OFFQ_FLAG_BASE	= WORK_STRUCT_COLOR_SHIFT,
- 
- 	WORK_OFFQ_CANCELING	= (1 << WORK_OFFQ_FLAG_BASE),
- 
--- 
-1.8.1
-
+> And once again, if wait_event_freezable() was correct we do not care
+> about the fake signal (in wait_for_dump_helper), so we do not need
+> to change fake_signal_wake_up. So perhaps we should fix it but this
+> needs some discussion.
+>
+> Sorry again for the terse reply (and perhaps I misunderstood you),
+> I'll try to return to this problem asap. In any case I still think
+> we should do the freezer fixes on top of signal fixes I sent, and
+> you seem to agree. Good ;)
+>
+> Oleg.
+>
