@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934299Ab3BSSxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:53:08 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54387 "EHLO
+	id S934323Ab3BSSxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:53:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54405 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933462Ab3BSSxD (ORCPT
+	with ESMTP id S933559Ab3BSSxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:53:03 -0500
+	Tue, 19 Feb 2013 13:53:16 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rob Herring <rob.herring@calxeda.com>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Tilman Schmidt <tilman@imap.cc>, "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 48/81] net: calxedaxgmac: throw away overrun frames
-Date: Tue, 19 Feb 2013 15:49:11 -0300
-Message-Id: <1361299784-8830-49-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 51/81] isdn/gigaset: fix zero size border case in debug dump
+Date: Tue, 19 Feb 2013 15:49:14 -0300
+Message-Id: <1361299784-8830-52-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,40 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rob Herring <rob.herring@calxeda.com>
+From: Tilman Schmidt <tilman@imap.cc>
 
-commit d6fb3be544b46a7611a3373fcaa62b5b0be01888 upstream.
+commit d721a1752ba544df8d7d36959038b26bc92bdf80 upstream.
 
-The xgmac driver assumes 1 frame per descriptor. If a frame larger than
-the descriptor's buffer size is received, the frame will spill over into
-the next descriptor. So check for received frames that span more than one
-descriptor and discard them. This prevents a crash if we receive erroneous
-large packets.
+If subtracting 12 from l leaves zero we'd do a zero size allocation,
+leading to an oops later when we try to set the NUL terminator.
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/ethernet/calxeda/xgmac.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/isdn/gigaset/capi.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
-index 8b0a0e4..8a3cd87 100644
---- a/drivers/net/ethernet/calxeda/xgmac.c
-+++ b/drivers/net/ethernet/calxeda/xgmac.c
-@@ -546,6 +546,10 @@ static int desc_get_rx_status(struct xgmac_priv *priv, struct xgmac_dma_desc *p)
- 		return -1;
- 	}
- 
-+	/* All frames should fit into a single buffer */
-+	if (!(status & RXDESC_FIRST_SEG) || !(status & RXDESC_LAST_SEG))
-+		return -1;
-+
- 	/* Check if packet has checksum already */
- 	if ((status & RXDESC_FRAME_TYPE) && (status & RXDESC_EXT_STATUS) &&
- 		!(ext_status & RXDESC_IP_PAYLOAD_MASK))
+diff --git a/drivers/isdn/gigaset/capi.c b/drivers/isdn/gigaset/capi.c
+index 27e4a3e..f45b5b0 100644
+--- a/drivers/isdn/gigaset/capi.c
++++ b/drivers/isdn/gigaset/capi.c
+@@ -248,6 +248,8 @@ static inline void dump_rawmsg(enum debuglevel level, const char *tag,
+ 		CAPIMSG_APPID(data), CAPIMSG_MSGID(data), l,
+ 		CAPIMSG_CONTROL(data));
+ 	l -= 12;
++	if (l <= 0)
++		return;
+ 	dbgline = kmalloc(3 * l, GFP_ATOMIC);
+ 	if (!dbgline)
+ 		return;
 -- 
 1.7.9.5
 
