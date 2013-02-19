@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934455Ab3BSSzR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:55:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54565 "EHLO
+	id S934468Ab3BSSzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:55:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54575 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934432Ab3BSSzL (ORCPT
+	with ESMTP id S1758785Ab3BSSzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:55:11 -0500
+	Tue, 19 Feb 2013 13:55:19 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 79/81] PCI/PM: Clean up PME state when removing a device
-Date: Tue, 19 Feb 2013 15:49:42 -0300
-Message-Id: <1361299784-8830-80-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 81/81] mm: fix pageblock bitmap allocation
+Date: Tue, 19 Feb 2013 15:49:44 -0300
+Message-Id: <1361299784-8830-82-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,47 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 249bfb83cf8ba658955f0245ac3981d941f746ee upstream.
+commit 7c45512df987c5619db041b5c9b80d281e26d3db upstream.
 
-Devices are added to pci_pme_list when drivers use pci_enable_wake()
-or pci_wake_from_d3(), but they aren't removed from the list unless
-the driver explicitly disables wakeup.  Many drivers never disable
-wakeup, so their devices remain on the list even after they are
-removed, e.g., via hotplug.  A subsequent PME poll will oops when
-it tries to touch the device.
+Commit c060f943d092 ("mm: use aligned zone start for pfn_to_bitidx
+calculation") fixed out calculation of the index into the pageblock
+bitmap when a !SPARSEMEM zome was not aligned to pageblock_nr_pages.
 
-This patch disables PME# on a device before removing it, which removes
-the device from pci_pme_list.  This is safe even if the device never
-had PME# enabled.
+However, the _allocation_ of that bitmap had never taken this alignment
+requirement into accout, so depending on the exact size and alignment of
+the zone, the use of that index could then access past the allocation,
+resulting in some very subtle memory corruption.
 
-This oops can be triggered by unplugging a Thunderbolt ethernet adapter
-on a Macbook Pro, as reported by Daniel below.
+This was reported (and bisected) by Ingo Molnar: one of his random
+config builds would hang with certain very specific kernel command line
+options.
 
-[bhelgaas: changelog]
-Reference: http://lkml.kernel.org/r/CAMVG2svG21yiM1wkH4_2pen2n+cr2-Zv7TbH3Gj+8MwevZjDbw@mail.gmail.com
-Reported-and-tested-by: Daniel J Blueman <daniel@quora.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+In the meantime, commit c060f943d092 has been marked for stable, so this
+fix needs to be back-ported to the stable kernels that backported the
+commit to use the right alignment.
+
+Bisected-and-tested-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/pci/remove.c |    2 ++
- 1 file changed, 2 insertions(+)
+ mm/page_alloc.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index fd77e2b..eae55c7 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -19,6 +19,8 @@ static void pci_free_resources(struct pci_dev *dev)
- 
- static void pci_stop_dev(struct pci_dev *dev)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 007bf3b..0ed96c7 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4272,10 +4272,11 @@ static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
+  * round what is now in bits to nearest long in bits, then return it in
+  * bytes.
+  */
+-static unsigned long __init usemap_size(unsigned long zonesize)
++static unsigned long __init usemap_size(unsigned long zone_start_pfn, unsigned long zonesize)
  {
-+	pci_pme_active(dev, false);
-+
- 	if (dev->is_added) {
- 		pci_proc_detach_device(dev);
- 		pci_remove_sysfs_dev_files(dev);
+ 	unsigned long usemapsize;
+ 
++	zonesize += zone_start_pfn & (pageblock_nr_pages-1);
+ 	usemapsize = roundup(zonesize, pageblock_nr_pages);
+ 	usemapsize = usemapsize >> pageblock_order;
+ 	usemapsize *= NR_PAGEBLOCK_BITS;
+@@ -4285,17 +4286,19 @@ static unsigned long __init usemap_size(unsigned long zonesize)
+ }
+ 
+ static void __init setup_usemap(struct pglist_data *pgdat,
+-				struct zone *zone, unsigned long zonesize)
++				struct zone *zone,
++				unsigned long zone_start_pfn,
++				unsigned long zonesize)
+ {
+-	unsigned long usemapsize = usemap_size(zonesize);
++	unsigned long usemapsize = usemap_size(zone_start_pfn, zonesize);
+ 	zone->pageblock_flags = NULL;
+ 	if (usemapsize)
+ 		zone->pageblock_flags = alloc_bootmem_node_nopanic(pgdat,
+ 								   usemapsize);
+ }
+ #else
+-static inline void setup_usemap(struct pglist_data *pgdat,
+-				struct zone *zone, unsigned long zonesize) {}
++static inline void setup_usemap(struct pglist_data *pgdat, struct zone *zone,
++				unsigned long zone_start_pfn, unsigned long zonesize) {}
+ #endif /* CONFIG_SPARSEMEM */
+ 
+ #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
+@@ -4414,7 +4417,7 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 			continue;
+ 
+ 		set_pageblock_order();
+-		setup_usemap(pgdat, zone, size);
++		setup_usemap(pgdat, zone, zone_start_pfn, size);
+ 		ret = init_currently_empty_zone(zone, zone_start_pfn,
+ 						size, MEMMAP_EARLY);
+ 		BUG_ON(ret);
 -- 
 1.7.9.5
 
