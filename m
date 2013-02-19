@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757957Ab3BSNAp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 08:00:45 -0500
-Received: from smtp-out-114.synserver.de ([212.40.185.114]:1322 "EHLO
-	smtp-out-114.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754572Ab3BSNAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 08:00:44 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 22104
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        device-drivers-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] backlight: adp8860/adp8870: Fix resume
-Date: Tue, 19 Feb 2013 14:02:05 +0100
-Message-Id: <1361278925-11107-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	id S1758346Ab3BSNC2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 08:02:28 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:40757 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757062Ab3BSNC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 08:02:26 -0500
+X-IronPort-AV: E=Sophos;i="4.84,695,1355068800"; 
+   d="scan'208";a="6730210"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: akpm@linux-foundation.org, jiang.liu@huawei.com, wujianguo@huawei.com,
+        hpa@zytor.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [Bug fix PATCH 2/2] acpi, movablemem_map: Set numa_nodes_hotplug nodemask when using SRAT info.
+Date: Tue, 19 Feb 2013 21:01:44 +0800
+Message-Id: <1361278904-8690-3-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1361278904-8690-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1361278904-8690-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/19 21:01:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/19 21:01:44,
+	Serialize complete at 2013/02/19 21:01:44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clearing the NSTBY bit in the control register also automatically clears the
-BLEN bit. So we need to make sure to set it again during resume, otherwise the
-backlight will stay off.
+We should also set movablemem_map.numa_nodes_hotplug nodemask when we
+insert a hot-pluggable range in SRAT into movablemem_map.map[].
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- drivers/video/backlight/adp8860_bl.c | 2 +-
- drivers/video/backlight/adp8870_bl.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/mm/srat.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/video/backlight/adp8860_bl.c b/drivers/video/backlight/adp8860_bl.c
-index 6bb72c0..a77c9ca 100644
---- a/drivers/video/backlight/adp8860_bl.c
-+++ b/drivers/video/backlight/adp8860_bl.c
-@@ -783,7 +783,7 @@ static int adp8860_i2c_suspend(struct i2c_client *client, pm_message_t message)
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index b20b5b7..62ba97b 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -164,6 +164,12 @@ handle_movablemem(int node, u64 start, u64 end, u32 hotpluggable)
+ 	 */
+ 	if (hotpluggable && movablemem_map.acpi) {
+ 		insert_movablemem_map(start_pfn, end_pfn);
++
++		/*
++		 * numa_nodes_hotplug nodemask represents which nodes are put
++		 * into movablemem_map.map[].
++		 */
++		node_set(node, movablemem_map.numa_nodes_hotplug);
+ 		goto out;
+ 	}
  
- static int adp8860_i2c_resume(struct i2c_client *client)
- {
--	adp8860_set_bits(client, ADP8860_MDCR, NSTBY);
-+	adp8860_set_bits(client, ADP8860_MDCR, NSTBY | BLEN);
- 
- 	return 0;
- }
-diff --git a/drivers/video/backlight/adp8870_bl.c b/drivers/video/backlight/adp8870_bl.c
-index 63c882b..712c25a 100644
---- a/drivers/video/backlight/adp8870_bl.c
-+++ b/drivers/video/backlight/adp8870_bl.c
-@@ -957,7 +957,7 @@ static int adp8870_i2c_suspend(struct i2c_client *client, pm_message_t message)
- 
- static int adp8870_i2c_resume(struct i2c_client *client)
- {
--	adp8870_set_bits(client, ADP8870_MDCR, NSTBY);
-+	adp8870_set_bits(client, ADP8870_MDCR, NSTBY | BLEN);
- 
- 	return 0;
- }
 -- 
-1.8.0
+1.7.1
 
