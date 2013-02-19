@@ -1,128 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933051Ab3BSOxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 09:53:41 -0500
-Received: from mga11.intel.com ([192.55.52.93]:13803 "EHLO mga11.intel.com"
+	id S933088Ab3BSOx7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 09:53:59 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:37825 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932958Ab3BSOxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 09:53:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,696,1355126400"; 
-   d="scan'208";a="289076589"
-Message-ID: <1361285612.2323.22.camel@rzhang1-mobl4>
-Subject: RE: thermal governor: does it actually work??
-From: Zhang Rui <rui.zhang@intel.com>
-To: Alexander Lam <azl@andrew.cmu.edu>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Andreas Mohr <andi@lisas.de>, "R, Durgadoss" <durgadoss.r@intel.com>,
-        "peter@piie.net" <peter@piie.net>
-Date: Tue, 19 Feb 2013 22:53:32 +0800
-In-Reply-To: <CACWwPit=xxeeCW1+jfxE8eww+P545B5xebh3YT2yE78zcsqSMg@mail.gmail.com>
-References: <20130214153255.GA5033@rhlx01.hs-esslingen.de>
-	 <744357E9AAD1214791ACBA4B0B90926329ED72@SHSMSX101.ccr.corp.intel.com>
-	 <20130215154931.GA26213@rhlx01.hs-esslingen.de>
-	 <CACWwPisqpmLjiqEh+J2DjnEtNObmmA0w=qMQYTgBsb6Ntad7Pw@mail.gmail.com>
-	 <744357E9AAD1214791ACBA4B0B90926329F98E@SHSMSX101.ccr.corp.intel.com>
-	 <CACWwPit=xxeeCW1+jfxE8eww+P545B5xebh3YT2yE78zcsqSMg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932958Ab3BSOx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 09:53:56 -0500
+Date: Tue, 19 Feb 2013 16:53:24 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: Borislav Petkov <bp@alien8.de>, Felipe Balbi <balbi@ti.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, <JBottomley@parallels.com>,
+        <linux-scsi@vger.kernel.org>, <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, Doug Thompson <dougthompson@xmission.com>,
+        <linux-edac@vger.kernel.org>, <rjw@sisk.pl>,
+        <linux-pm@vger.kernel.org>
+Subject: Re: SYSFS "errors"
+Message-ID: <20130219145324.GE4390@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130219114345.GA26623@pd.tnic>
+ <20130219091610.2b746a30@redhat.com>
+ <20130219123502.GD26623@pd.tnic>
+ <20130219094640.2abf1a66@redhat.com>
+ <20130219130626.GE26623@pd.tnic>
+ <20130219131500.GW23197@arwen.pp.htv.fi>
+ <20130219132853.GG26623@pd.tnic>
+ <20130219133809.GA4390@arwen.pp.htv.fi>
+ <20130219135056.GH26623@pd.tnic>
+ <20130219113521.510db290@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3XA6nns4nE4KvaS/"
+Content-Disposition: inline
+In-Reply-To: <20130219113521.510db290@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-18 at 15:26 -0500, Alexander Lam wrote:
-> 
-> On Feb 18, 2013 7:11 AM, "Zhang, Rui" <rui.zhang@intel.com> wrote:
-> >
-> > Sorry I missed that patch.
-> >
-> > So the problem happens when the acerhdf thermal zone is registered
-> when the fan has already been spinning, right?
-> 
-> Correct, when the acerhdf driver is switched into kernel controlled
-> mode and the fan is spinning, it stays spinning until the temperature
-> goes above the fan-on trip point and then below the fan-off trip
-> point. then the fan shuts off.
-> 
-> I don't have an opinion on how this is fixed, so do whatever you want
-> with my patch. Maybe you should drop it entirely if we do end up
-> applying Peter's fix.
+--3XA6nns4nE4KvaS/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> >
-> >  
-> >
-> > Thanks,
-> >
-> > rui
-> >
-> >  
-> >
-> > From: Alexander Lam [mailto:azl@andrew.cmu.edu] 
-> > Sent: Sunday, February 17, 2013 4:56 AM
-> > To: Andreas Mohr
-> > Cc: Zhang, Rui; linux-kernel@vger.kernel.org; R, Durgadoss;
-> peter@piie.net; lenb@kernel.org
-> > Subject: Re: thermal governor: does it actually work??
-> > Importance: High
-> >
-> >  
-> >
-> > I wrote a patch to fix this:
-> >
-> >
-> > http://lkml.org/lkml/2012/12/30/47
+On Tue, Feb 19, 2013 at 11:35:21AM -0300, Mauro Carvalho Chehab wrote:
+> Em Tue, 19 Feb 2013 14:50:56 +0100
+> Borislav Petkov <bp@alien8.de> escreveu:
+>=20
+> > On Tue, Feb 19, 2013 at 03:38:09PM +0200, Felipe Balbi wrote:
+> > > because changing the permission will cause the same issue:
+> >=20
+> > Actually, I take that back. Mauro's patch will already create the file
+> > anyway:
+> >=20
+> > 	if (mci->set_sdram_scrub_rate || mci->get_sdram_scrub_rate)
+> >=20
+> > Adjusting the permissions is simply the last missing piece to this patch
+> > to make the interface to userspace 100% coherent.
+>=20
+> That's covers everything but Hannes arguments. I don't think that
+> adding just one more device_create_file() on a driver that creates
+> dozens (or hundreds) of sys nodes, depending on the number of DIMMS
+> on the system would make it any worse.
+>=20
+> Regards,
+> Mauro
+>=20
+> [PATCH EDAC] edac: only create sdram_scrub_rate where supported
+>=20
+> Currently, sdram_scrub_rate sysfs node is created even if the device
+> doesn't support get/set the scub rate. Change the logic to only
+> create this device node when the operation is supported.
+>=20
+> Reported-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-I think this is the right fix, but I still need to check if there is
-some extra work needed before applying it.
+looks alright to me:
 
-thanks,
-rui
-> >
-> > But nobody picked it up and since then I have been too busy to
-> respin the patch for new -rc kernels.
-> >
-> > -Alexander Lam
-> >
-> > On Fri, Feb 15, 2013 at 10:49 AM, Andreas Mohr <andi@lisas.de>
-> wrote:
-> >
-> > Hi,
-> >
-> >
-> > On Fri, Feb 15, 2013 at 09:47:07AM +0000, Zhang, Rui wrote:
-> > > Please attach the output of
-> > > "grep . /sys/class/thermal/thermal_zone*/cdev*/*"?
-> >
-> > # grep . /sys/class/thermal/thermal_zone*/cdev*/*
-> > /sys/class/thermal/thermal_zone0/cdev0/cur_state:1
-> > /sys/class/thermal/thermal_zone0/cdev0/max_state:1
-> > grep: /sys/class/thermal/thermal_zone0/cdev0/power: Is a directory
-> > grep: /sys/class/thermal/thermal_zone0/cdev0/subsystem: Is a
-> directory
-> > /sys/class/thermal/thermal_zone0/cdev0/type:acerhdf-fan
-> >
-> >
-> > > The question is that if we can also call it "throttle" when
-> reducing the device performance to generate less heat.
-> >
-> > I won't continue to elaborate on this separate issue now, given that
-> my time
-> > currently is very limited ;)
-> >
-> >
-> > Andreas Mohr
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe
-> linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> >  
-> 
-> -Alexander Lam
-> 
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 
+--=20
+balbi
 
+--3XA6nns4nE4KvaS/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRI5HkAAoJEIaOsuA1yqREa5kP/0Zv2X9u7znMsYofXocxvmX3
+BCrtM3ZDIn4ygfMJfbA+eVLTxDXanThEiM15PwXj9xiJRoWfQt2TG+MtmaYNS8QA
+SmALUtFvg6Azm337Nn23/E0QEjxh0XXc9hz4O5pOyKQWRTRl+GIh52CWEPHkpGqA
+3I4NANCKm3j2vrG2Paia/+PJ0sX7sGkmx88qb2WJESXCMOeUe8Lvyim6957mkOaO
+40JPJriYMByEEpMs7HnALz7vIUn/vh7bZ2VhE7PHgs5QyunKmoEueR0fXpCQUHaO
+FtiZNmEPdlkEw1ZruEihbma1IvjyWoTqmEUhHhwnWddxpVc87y0EJ8Hw6hHDXOW5
+c9COqI3GtSt3jtJa/wGrt4N8P9Qa6SlmW4GjFk1k5qXP/mC63/hL1GmtAaInj+EL
+VhUOk04yt4lXGnCkANNuJkAVgUqMXhSUGU2pJUq3TTe/wi1yMMPQ3KZ5g2pCE3T8
+swyvZ8r67mac7oHBoCGGKTlX18mZALw/hbkGjtxY/9i3G1MmKulwTtA93OtHxd7f
+yjX92juXSP5gksj+xGPmaITItLTzX5YiCFNAcw2H6et8z6P/I8W0qpyWMnRf5rqx
+XXUqJlj+prHo9Nyk7Rr+LCB7m1wMLdZMsNKEwiO0ndtYWXtPZkC9s0ne4oGVxYPY
+GDm7+tNoOyst5JvLm+tj
+=uOh6
+-----END PGP SIGNATURE-----
+
+--3XA6nns4nE4KvaS/--
