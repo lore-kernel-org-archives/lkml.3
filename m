@@ -1,129 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933507Ab3BSS2o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:28:44 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:65134 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933152Ab3BSS2m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:28:42 -0500
-Date: Tue, 19 Feb 2013 22:28:38 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, ebiederm@xmission.com,
-        xemul@parallels.com, akpm@linux-foundation.org,
-        Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [patch 1/2] kcmp: Make it to depend on CONFIG_KCMP
-Message-ID: <20130219182838.GL20312@moon>
-References: <20130219064800.719149796@openvz.org>
- <20130219065210.030802820@openvz.org>
- <5123444D.6000806@suse.cz>
- <20130219093154.GF20312@moon>
- <5123BC2B.6000304@zytor.com>
+	id S933528Ab3BSSav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:30:51 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:46992 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933152Ab3BSSau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 13:30:50 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [patch 1/1] early_printk: Consolidate random copies of identical code
+Date: Tue, 19 Feb 2013 13:30:57 -0500
+User-Agent: KMail/1.13.7 (Linux/3.7.6; KDE/4.6.5; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Richard Weinberger <richard@nod.at>, x86@kernel.org
+References: <20130219124038.365937990@linutronix.de>
+In-Reply-To: <20130219124038.365937990@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5123BC2B.6000304@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart1381256.Ym9K5LIMLt";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302191331.00187.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 09:53:47AM -0800, H. Peter Anvin wrote:
-> On 02/19/2013 01:31 AM, Cyrill Gorcunov wrote:
-> >+
-> >+	  If unsure, say N.
-> >+
-> 
-> Wrong advice.  In this particular case, Y is the safe alternative.
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: kcmp: Make it to depend on CONFIG_KCMP
+--nextPart1381256.Ym9K5LIMLt
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 
-Since kcmp syscall has been implemented (initially on
-x86 architecture) a number of other archs wire it up
-as well: xtensa, sparc, sh, s390, mips, microblaze,
-m68k (not taking into account those who uses
-<asm-generic/unistd.h> for syscall numbers
-definitions).
+On Tuesday 19 February 2013 07:44:29 Thomas Gleixner wrote:
+> The early console implementations are the same all over the
+> place. Move the print function to kernel/printk and get rid of the
+> copies.
 
-But the Makefile, which turns kcmp.o generation on
-still depends on former config-x86. Thus get rid
-of this limitation and make kcmp.o depend on CONFIG_KCMP
-option.
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
 
-v2:
- - As Michal pointed the old configs might already use of
-   CHECKPOINT_RESTORE, so make "default" accordingly.
- - Advice Y if unsure
+--nextPart1381256.Ym9K5LIMLt
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Andrey Vagin <avagin@openvz.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Glauber Costa <glommer@parallels.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Matt Helsley <matthltc@us.ibm.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Valdis.Kletnieks@vt.edu
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- init/Kconfig    |    9 +++++++++
- kernel/Makefile |    4 +---
- 2 files changed, 10 insertions(+), 3 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-Index: linux-2.6.git/init/Kconfig
-===================================================================
---- linux-2.6.git.orig/init/Kconfig
-+++ linux-2.6.git/init/Kconfig
-@@ -279,6 +279,15 @@ config FHANDLE
- 	  get renamed. Enables open_by_handle_at(2) and name_to_handle_at(2)
- 	  syscalls.
- 
-+config KCMP
-+	bool "kcmp syscall"
-+	default CHECKPOINT_RESTORE
-+	help
-+	  If you say Y here, a user level program will be able to use
-+	  kcmp(2) syscall.
-+
-+	  If unsure, say Y.
-+
- config AUDIT
- 	bool "Auditing support"
- 	depends on NET
-Index: linux-2.6.git/kernel/Makefile
-===================================================================
---- linux-2.6.git.orig/kernel/Makefile
-+++ linux-2.6.git/kernel/Makefile
-@@ -25,9 +25,7 @@ endif
- obj-y += sched/
- obj-y += power/
- 
--ifeq ($(CONFIG_CHECKPOINT_RESTORE),y)
--obj-$(CONFIG_X86) += kcmp.o
--endif
-+obj-$(CONFIG_KCMP) += kcmp.o
- obj-$(CONFIG_FREEZER) += freezer.o
- obj-$(CONFIG_PROFILING) += profile.o
- obj-$(CONFIG_STACKTRACE) += stacktrace.o
+iQIcBAABAgAGBQJRI8TkAAoJEEFjO5/oN/WBGW0P/3hnQsCXMF2gnu4akQytlQl5
+an6lPPz08nTiPLgFAe05OC5YiWO2RxL3HvG0Qx5x/Uop+wg9roju6EbBXPBytbdw
+w221MRn6TLAa1taVCM4IzbfSy4Q9sC0BsIPtu2YlBMpLQMt81RNCNSJ7Zka7wYhf
+72IBpKMXimlKgRMg38j6KgEXVbXlkGwkCMC+pi1qp7wqzQLD96BwZIAi10wWJsV2
+D1HiCuOgjewCKBiOhD+oKYH4758ieifxpeoTK1Du0GueG6d9jT8MV4IcyhDUQWtJ
+1spBjS7CXda+7eW425rJBeYDYqfGQD7yrumVBQkWgeDLq2xOoOm7034ZdKsP2sz1
+Z5B+LojGgwWzVRMDz8YMefGtBhU/uazGl5Lg6Q01xQ4xEeLd+3IZIwby5tIiXJHr
+CAt/pB8SCpW2+Pn9efGmSKJFs4kiFWLEFnaD2r5r3u29xathHJ2fSlbaCNjYUm//
+at/CBPR5dwH5nqEAoPJwGax/CzX3x/ZeRcSPuh4TjQzJUV9LdJ1Z4ytnOwFy7KV/
+yhqEQhqLEyFnXiOeHg9mz6UmlljprSsM3YWk7svOFjswgSUA/xd6lEmPRIfWh0r2
+L2VvNeZ80/RjZti/74OsOjDQZp8us49lMQC2XfMQI9XwD+Qw5cbVUSLHPWvSLUNh
+A1h2yAj0kNk02ZSsl5RU
+=KyvN
+-----END PGP SIGNATURE-----
+
+--nextPart1381256.Ym9K5LIMLt--
