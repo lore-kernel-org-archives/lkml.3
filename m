@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757991Ab3BSMuB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 07:50:01 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47814 "EHLO arroyo.ext.ti.com"
+	id S1758135Ab3BSMu0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 07:50:26 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:45715 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752300Ab3BSMt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 07:49:59 -0500
+	id S1755051Ab3BSMuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 07:50:22 -0500
 From: Philip Avinash <avinashphilip@ti.com>
 To: <khilman@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
         <dwmw2@infradead.org>
@@ -14,9 +14,9 @@ CC: <afzal@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-mtd@lists.infradead.org>, <nsekhar@ti.com>,
         <gururaja.hebbar@ti.com>, <hvaibhav@ti.com>,
         Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH v3 2/3] arm: gpmc: Low power transition support
-Date: Tue, 19 Feb 2013 18:20:18 +0530
-Message-ID: <1361278219-23108-3-git-send-email-avinashphilip@ti.com>
+Subject: [PATCH v3 3/3] mtd: devices: elm: Low power transition support
+Date: Tue, 19 Feb 2013 18:20:19 +0530
+Message-ID: <1361278219-23108-4-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361278219-23108-1-git-send-email-avinashphilip@ti.com>
 References: <1361278219-23108-1-git-send-email-avinashphilip@ti.com>
@@ -26,51 +26,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With GPMC converted to platform driver recently, adds low power
-transition support in driver itself.
+In low power modes of AM335X platforms, peripherals power is cut off.
+This patch supports low power sleep transition support for ELM driver.
 
 Signed-off-by: Philip Avinash <avinashphilip@ti.com>
 ---
-Changes since v1:
-	Module disable & enable added using pm_runtime support.
+Changes Since v2:
+	- Removes wait queue mechanism. The order of device creation ensures
+	  that nand driver got suspended well before elm module suspend.
+	  Hence no need to check elm module state on suspend.
 
- arch/arm/mach-omap2/gpmc.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/mtd/devices/elm.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-index b1cd6c1..cc57988 100644
---- a/arch/arm/mach-omap2/gpmc.c
-+++ b/arch/arm/mach-omap2/gpmc.c
-@@ -1361,9 +1361,29 @@ static __devexit int gpmc_remove(struct platform_device *pdev)
+diff --git a/drivers/mtd/devices/elm.c b/drivers/mtd/devices/elm.c
+index f034239..a41c968 100644
+--- a/drivers/mtd/devices/elm.c
++++ b/drivers/mtd/devices/elm.c
+@@ -20,6 +20,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/of.h>
++#include <linux/sched.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/platform_data/elm.h>
+ 
+@@ -379,6 +380,23 @@ static int elm_remove(struct platform_device *pdev)
  	return 0;
  }
  
-+#ifdef CONFIG_PM
-+static int gpmc_suspend(struct platform_device *pdev, pm_message_t state)
++static int elm_suspend(struct device *dev)
 +{
-+	omap3_gpmc_save_context();
-+	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_put_sync(dev);
 +	return 0;
 +}
 +
-+static int gpmc_resume(struct platform_device *pdev)
++static int elm_resume(struct device *dev)
 +{
-+	pm_runtime_get_sync(&pdev->dev);
-+	omap3_gpmc_restore_context();
++	struct elm_info *info = dev_get_drvdata(dev);
++
++	pm_runtime_get_sync(dev);
++	elm_config(dev, info->bch_type);
 +	return 0;
 +}
-+#endif
 +
- static struct platform_driver gpmc_driver = {
- 	.probe		= gpmc_probe,
- 	.remove		= __devexit_p(gpmc_remove),
-+#ifdef CONFIG_PM
-+	.suspend	= gpmc_suspend,
-+	.resume		= gpmc_resume,
-+#endif
- 	.driver		= {
- 		.name	= DEVICE_NAME,
++static SIMPLE_DEV_PM_OPS(elm_pm_ops, elm_suspend, elm_resume);
++
+ #ifdef CONFIG_OF
+ static const struct of_device_id elm_of_match[] = {
+ 	{ .compatible = "ti,am3352-elm" },
+@@ -392,6 +410,7 @@ static struct platform_driver elm_driver = {
+ 		.name	= "elm",
  		.owner	= THIS_MODULE,
+ 		.of_match_table = of_match_ptr(elm_of_match),
++		.pm	= &elm_pm_ops,
+ 	},
+ 	.probe	= elm_probe,
+ 	.remove	= elm_remove,
 -- 
 1.7.9.5
 
