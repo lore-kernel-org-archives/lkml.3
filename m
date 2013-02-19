@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab3BSCHM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 21:07:12 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:64664 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757954Ab3BSCHL (ORCPT
+	id S1757331Ab3BSCPZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 21:15:25 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:41207 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab3BSCPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 21:07:11 -0500
-MIME-Version: 1.0
-X-Originating-IP: [114.39.104.37]
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F792729F9@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F792729F9@DQHE02.ent.ti.com>
-Date: Tue, 19 Feb 2013 10:07:10 +0800
-Message-ID: <CAFRkauA60-LgBuPmMuW34cHFcBuH8AZpj3VtKyNabMSVdwYoiA@mail.gmail.com>
-Subject: Re: [PATCH v3 2/4] regulator: core: manage enable GPIO list
-From: Axel Lin <axel.lin@ingics.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 18 Feb 2013 21:15:24 -0500
+Date: Tue, 19 Feb 2013 13:15:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-next@vger.kernel.org
+Subject: Re: Linux 3.8
+Message-Id: <20130219131515.8d59aeeb8023ed5d0bfc620b@canb.auug.org.au>
+In-Reply-To: <CA+55aFwdyYa0ajqgzUoAQmUD2frBe2-gvxgny_9gD6PCoOYrqw@mail.gmail.com>
+References: <CA+55aFwdyYa0ajqgzUoAQmUD2frBe2-gvxgny_9gD6PCoOYrqw@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__19_Feb_2013_13_15_15_+1100_F4sS9_2j3RXvh2o4"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +/**
-> + * Balance enable_count of each GPIO and actual GPIO pin control.
-> + * GPIO is enabled in case of initial use. (enable_count is 0)
-> + * GPIO is disabled when it is not shared any more. (enable_count <= 1)
-I think you mean "GPIO is disabled when it is not used any more."
-"It is not shared" sounds like it can has one user.
+--Signature=_Tue__19_Feb_2013_13_15_15_+1100_F4sS9_2j3RXvh2o4
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> + */
-> +static int regulator_ena_gpio_ctrl(struct regulator_dev *rdev, bool enable)
-> +{
-> +       struct regulator_enable_gpio *pin = rdev->ena_pin;
-> +
-> +       if (!pin)
-> +               return -EINVAL;
-> +
-> +       if (enable) {
-> +               /* Enable GPIO at initial use */
-> +               if (pin->enable_count == 0)
-> +                       gpio_set_value_cansleep(pin->gpio,
-> +                                               !pin->ena_gpio_invert);
-> +
-> +               pin->enable_count++;
-> +       } else {
-> +               if (pin->enable_count > 1) {
-> +                       pin->enable_count--;
-> +                       return 0;
-> +               }
-> +
-> +               /* Disable GPIO if not used */
-> +               if (pin->enable_count <= 1) {
-> +                       gpio_set_value_cansleep(pin->gpio,
-> +                                               pin->ena_gpio_invert);
-> +                       pin->enable_count = 0;
-> +               }
-How about:
+Hi all,
 
-/* No action to disable if enable_count is already 0 */
-if (pin->enable_count == 0)
-        return 0;
+On Mon, 18 Feb 2013 16:28:03 -0800 Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
+>
+> The release got delayed a couple of days because I was waiting for
+> confirmation of a small patch, but hey, we could also say that it was
+> all intentional, and that this is the special "Presidents' Day
+> Release". It sounds more planned that way, no?
 
-/* Disable GPIO if not used */
-if (--pin->enable_count == 0)
-        gpio_set_value_cansleep(pin->gpio, pin->ena_gpio_invert);
+So, presumably the merge window is open and Linus will start pulling
+trees shortly.  So, here I go again:
+
+Please do *not* rebase your tree before asking Linus to pull it.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__19_Feb_2013_13_15_15_+1100_F4sS9_2j3RXvh2o4
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRIuAzAAoJEECxmPOUX5FEAaoP/j9Ax4gEGaQyZdj0R5v/SEhs
+k8dUDZAgkmOEuAD58ampKBWUqTclOjCfJrn24K20pEb9ku3zr0C+BNn7uGrHapsC
+hXS5M6OoiZrPcn2Py6PAcue2ZjmN0Qne3xLhLfY/5IGhr9uXe3dsntmBBzZ+yI6d
+sSE4xHaobWQmtCTEOZpdm2aK16mdIz5LcX4bnkpYRhwtwwJdvHWTt/dGdjGr3UAL
+If2f4xnnoBUx5JYAv4jHrGU/uBUKHOswsCGsYGbtwxUHrbVjNo1FTF66ugFjmviQ
+WKuZH2h9gTLgufgE/JeWqYQV4Rcvaz5V9mBqXqudvXQKuql1XGG7hnlQEdGR60vu
+I0eBovMrkZOy7Oa/sBINNiBLkg36pZLpao7yxFSSAHhW71szWdLQrzK5jeRxlL6N
+Nmj5ZRG2afnrBY8WWj2DCh6fIXvTrLjVh5C+25e5Ra0JXN+OLPvFTwpGRrtWFnvd
+gW7M7NpWwGgOlnQ4oWnaYO2j6l6eEm3ZwiYzi7aMleLIBokT2/zwOoeyK++X+QNj
+PO4zaNWIxSOlglEfpPAciowAnw4fN1DNuYNBNj+N1xjZ/P8Nb8KS+JRP5980r1jb
+v//4oT09lQ+3VOOHqKlWevbc/s28ffyau1PDyYyd5JNa81worI39vGY3fUpTU4/J
+UVVVNQWRwgz/26dMlF2r
+=IB0+
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__19_Feb_2013_13_15_15_+1100_F4sS9_2j3RXvh2o4--
