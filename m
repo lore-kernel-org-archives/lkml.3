@@ -1,200 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab3BSMPe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 07:15:34 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:53724 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932565Ab3BSMP3 (ORCPT
+	id S932701Ab3BSMQw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 07:16:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7899 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932530Ab3BSMQt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 07:15:29 -0500
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <1360768595-31943-1-git-send-email-avagin@openvz.org>
-References: <1360768595-31943-1-git-send-email-avagin@openvz.org>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Tue, 19 Feb 2013 13:15:06 +0100
-Message-ID: <CAKgNAkicAGEkvNFnSso__wK6QKao8jyDu5yuRmeyUOeaXLGChw@mail.gmail.com>
-Subject: Re: [PATCH] ptrace: add ability to retrieve signals without removing
- them from a queue
-To: Andrey Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, criu@openvz.org, linux-api@vger.kernel.org,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Feb 2013 07:16:49 -0500
+Date: Tue, 19 Feb 2013 09:16:10 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: balbi@ti.com, Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, davem@davemloft.net,
+        netdev@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
+        linux-edac@vger.kernel.org, rjw@sisk.pl, linux-pm@vger.kernel.org
+Subject: Re: SYSFS "errors"
+Message-ID: <20130219091610.2b746a30@redhat.com>
+In-Reply-To: <20130219114345.GA26623@pd.tnic>
+References: <20130218164638.7cb53baa@redhat.com>
+	<20130218200542.GB20137@arwen.pp.htv.fi>
+	<20130218184742.5a4c3c06@redhat.com>
+	<20130218215434.GB16794@kroah.com>
+	<20130218221306.GA21493@pd.tnic>
+	<20130218222618.GA21818@kroah.com>
+	<20130218224405.GB21493@pd.tnic>
+	<20130219070310.2cadad7a@redhat.com>
+	<20130219101121.GJ23197@arwen.pp.htv.fi>
+	<20130219081149.46972f56@redhat.com>
+	<20130219114345.GA26623@pd.tnic>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 13, 2013 at 4:16 PM, Andrey Vagin <avagin@openvz.org> wrote:
-> This patch adds a new ptrace request PTRACE_PEEKSIGINFO.
->
-> This request is used to retrieve information about a signal with the
-> specified sequence number. A siginfo_t structure is copied from the child
-> to location data in the parent.
->
-> The low 16 bits of addr contains a sequence number of signal in a queue:
+Em Tue, 19 Feb 2013 12:43:46 +0100
+Borislav Petkov <bp@alien8.de> escreveu:
 
-I think 16 bits is probably not enough.... Already, on the "out of the
-box" system that I have at hand, one can queue more than 2^16-1
-signals:
+> On Tue, Feb 19, 2013 at 08:11:49AM -0300, Mauro Carvalho Chehab wrote:
+> > > > I remember I saw some discussions about it in the past at bluesmoke ML,
+> > > > saying that -ENODEV is the expected behavior when this is not supported.
+> > > > 
+> > > > Changing from -ENODEV to "N/A" will break anything that would be relying
+> > > > on the previous behavior. So, I think that such change will for sure break
+> > > > userspace.
+> > > > 
+> > > > If we're willing to change it, not creating the "sdram_scrub_rate" sysfs 
+> > > > node is less likely to affect userspace.
+> 
+> This will break scripts which assume this file's presence implicitly.
 
-    $ cat /proc/$$/status | grep SigQ
-    SigQ:	2/126065
+If are there any script like that, then yes.
 
-Cheers,
+> [ … ]
+> 
+> > @@ -1017,6 +1010,14 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
+> >  		return err;
+> >  	}
+> >  
+> > +	if (mci->set_sdram_scrub_rate && mci->get_sdram_scrub_rate) {
+> 
+> This will break cpc925_edac.c because it defines a
+> ->get_sdram_scrub_rate but not a ->set_sdram_scrub_rate.
 
-Michael
+True. Patch below fixes it.
 
+> I think a maybe better fix would be to figure out the sysfs file
+> permissions based on the presence of the two functions and *then* add
+> the attribute.
+> 
+> This way, the only visible change to userspace is the corrected sysfs
+> file permissions.
 
-> All other bits of addr is used for flags. Currently here is only one
-> flag PTRACE_PEEK_SHARED for dumping signals from process-wide shared
-> queue. If this flag is not set, a signal is read from a per-thread
-> queue.  A result siginfo contains a kernel part of si_code which usually
-> striped, but it's required for queuing the same siginfo back during
-> restore of pending signals.
->
-> If a signal with the specified sequence number doesn't exist, ptrace
-> returns ENOENT.
->
-> This functionality is required for checkpointing pending signals.
->
-> The prototype of this code was developed by Oleg Nesterov.
->
-> Cc: Roland McGrath <roland@redhat.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Dave Jones <davej@redhat.com>
-> Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
-> ---
->  include/uapi/linux/ptrace.h |  9 +++++++
->  kernel/ptrace.c             | 64 +++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 73 insertions(+)
->
-> diff --git a/include/uapi/linux/ptrace.h b/include/uapi/linux/ptrace.h
-> index 022ab18..5d851d5 100644
-> --- a/include/uapi/linux/ptrace.h
-> +++ b/include/uapi/linux/ptrace.h
-> @@ -52,6 +52,15 @@
->  #define PTRACE_INTERRUPT       0x4207
->  #define PTRACE_LISTEN          0x4208
->
-> +#define PTRACE_PEEKSIGINFO     0x4209
-> +
-> +/*
-> + * The lower 16 bits of addr is a sequence number of a signal.
-> + * All other bits can be used for flags.
-> + */
-> +#define PTRACE_PEEKSIGINFO_FLAGS_MASK  (~0UL << 16)
-> +#define PTRACE_PEEK_SHARED             (1UL << 31)
-> +
->  /* Wait extended result codes for the above trace options.  */
->  #define PTRACE_EVENT_FORK      1
->  #define PTRACE_EVENT_VFORK     2
-> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-> index 1599157..27fd31a 100644
-> --- a/kernel/ptrace.c
-> +++ b/kernel/ptrace.c
-> @@ -579,6 +579,40 @@ static int ptrace_setsiginfo(struct task_struct *child, const siginfo_t *info)
->         return error;
->  }
->
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +static int ptrace_peek_siginfo(struct task_struct *child,
-> +                               unsigned long addr, siginfo_t *siginfo)
-> +{
-> +       struct sigpending *pending;
-> +       struct sigqueue *q;
-> +       unsigned long flags;
-> +       unsigned int nr;
-> +       int ret = -ENOENT;
-> +
-> +       nr = addr & ~PTRACE_PEEKSIGINFO_FLAGS_MASK;
-> +       flags = addr & PTRACE_PEEKSIGINFO_FLAGS_MASK;
-> +
-> +       if (flags & PTRACE_PEEK_SHARED)
-> +               pending = &child->signal->shared_pending;
-> +       else
-> +               pending = &child->pending;
-> +
-> +       if (flags & ~PTRACE_PEEK_SHARED)
-> +               return -EINVAL; /* unknown flags */
-> +
-> +       spin_lock_irq(&child->sighand->siglock);
-> +       list_for_each_entry(q, &pending->list, list) {
-> +               if (!nr--) {
-> +                       copy_siginfo(siginfo, &q->info);
-> +                       ret = 0;
-> +                       break;
-> +               }
-> +       }
-> +       spin_unlock_irq(&child->sighand->siglock);
-> +
-> +       return ret;
-> +}
-> +#endif
->
->  #ifdef PTRACE_SINGLESTEP
->  #define is_singlestep(request)         ((request) == PTRACE_SINGLESTEP)
-> @@ -703,6 +737,21 @@ int ptrace_request(struct task_struct *child, long request,
->                 ret = put_user(child->ptrace_message, datalp);
->                 break;
->
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +       case PTRACE_PEEKSIGINFO:
-> +       {
-> +               siginfo_t __user *uinfo = (siginfo_t __user *) data;
-> +
-> +               ret = ptrace_peek_siginfo(child, addr, &siginfo);
-> +
-> +               if (!ret)
-> +                       ret = copy_siginfo_to_user(uinfo, &siginfo);
-> +               if (!ret)
-> +                       ret = __put_user(siginfo.si_code, &uinfo->si_code);
-> +               break;
-> +       }
-> +#endif
-> +
->         case PTRACE_GETSIGINFO:
->                 ret = ptrace_getsiginfo(child, &siginfo);
->                 if (!ret)
-> @@ -959,6 +1008,21 @@ int compat_ptrace_request(struct task_struct *child, compat_long_t request,
->                 ret = put_user((compat_ulong_t) child->ptrace_message, datap);
->                 break;
->
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +       case PTRACE_PEEKSIGINFO:
-> +       {
-> +               compat_siginfo_t __user *uinfo = compat_ptr(data);
-> +
-> +               ret = ptrace_peek_siginfo(child, addr, &siginfo);
-> +
-> +               if (!ret)
-> +                       ret = copy_siginfo_to_user32(uinfo, &siginfo);
-> +               if (!ret)
-> +                       ret = __put_user(siginfo.si_code, &uinfo->si_code);
-> +               break;
-> +       }
-> +#endif
-> +
->         case PTRACE_GETSIGINFO:
->                 ret = ptrace_getsiginfo(child, &siginfo);
->                 if (!ret)
-> --
-> 1.7.11.7
->
+I'm not sure if is there a way to pass fs permissions to something similar
+to device_create_file().
+
+On both cases, an error will happen at open:
+	- if file doesn't exist (this approach), it will return -ENOENT;
+	- if file is opened with wrong permissions, open will return -EPERM.
+
+However, if the file is not created, readdir() won't show the file.
+So, if userspace first seeks for the sdram_scrub_rate, it won't fail.
+That makes the logic below a little safer, IMO.
 
 
+[PATCH EDAC] edac: only create sdram_scrub_rate where supported
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+Currently, sdram_scrub_rate sysfs node is created even if the device
+doesn't support get/set the scub rate. Change the logic to only
+create this device node when the operation is supported.
+
+If only read or only write is supported, it will keep returning -ENODEV
+just like before.
+
+Reported-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index 9c58da6..29b66a2 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -7,7 +7,7 @@
+  *
+  * Written Doug Thompson <norsk5@xmission.com> www.softwarebitmaker.com
+  *
+- * (c) 2012 - Mauro Carvalho Chehab <mchehab@redhat.com>
++ * (c) 2012-2013 - Mauro Carvalho Chehab <mchehab@redhat.com>
+  *	The entire API were re-written, and ported to use struct device
+  *
+  */
+@@ -882,7 +882,6 @@ static struct attribute *mci_attrs[] = {
+ 	&dev_attr_ce_noinfo_count.attr,
+ 	&dev_attr_ue_count.attr,
+ 	&dev_attr_ce_count.attr,
+-	&dev_attr_sdram_scrub_rate.attr,
+ 	&dev_attr_max_location.attr,
+ 	NULL
+ };
+@@ -1017,6 +1016,14 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
+ 		return err;
+ 	}
+ 
++	if (mci->set_sdram_scrub_rate || mci->get_sdram_scrub_rate) {
++		err = device_create_file(&mci->dev,
++					 &dev_attr_sdram_scrub_rate);
++		if (err) {
++			edac_dbg(1, "failure: create sdram_scrub_rate\n");
++			goto fail2;
++		}
++	}
+ 	/*
+ 	 * Create the dimm/rank devices
+ 	 */
+@@ -1061,6 +1068,7 @@ fail:
+ 			continue;
+ 		device_unregister(&dimm->dev);
+ 	}
++fail2:
+ 	device_unregister(&mci->dev);
+ 	bus_unregister(&mci->bus);
+ 	kfree(mci->bus.name);
