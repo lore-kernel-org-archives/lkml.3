@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934445Ab3BSTAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:00:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54459 "EHLO
+	id S934419Ab3BSTAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:00:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54467 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933600Ab3BSSxz (ORCPT
+	with ESMTP id S933626Ab3BSSx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:53:55 -0500
+	Tue, 19 Feb 2013 13:53:57 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neil Horman <nhorman@tuxdriver.com>,
-        Jamie Parsons <Jamie.Parsons@metaswitch.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 60/81] sctp: refactor sctp_outq_teardown to insure proper re-initalization
-Date: Tue, 19 Feb 2013 15:49:23 -0300
-Message-Id: <1361299784-8830-61-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 62/81] net: sctp: sctp_endpoint_free: zero out secret key data
+Date: Tue, 19 Feb 2013 15:49:25 -0300
+Message-Id: <1361299784-8830-63-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -30,74 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 2f94aabd9f6c925d77aecb3ff020f1cc12ed8f86 upstream.
+commit b5c37fe6e24eec194bb29d22fdd55d73bcc709bf upstream.
 
-Jamie Parsons reported a problem recently, in which the re-initalization of an
-association (The duplicate init case), resulted in a loss of receive window
-space.  He tracked down the root cause to sctp_outq_teardown, which discarded
-all the data on an outq during a re-initalization of the corresponding
-association, but never reset the outq->outstanding_data field to zero.  I wrote,
-and he tested this fix, which does a proper full re-initalization of the outq,
-fixing this problem, and hopefully future proofing us from simmilar issues down
-the road.
+On sctp_endpoint_destroy, previously used sensitive keying material
+should be zeroed out before the memory is returned, as we already do
+with e.g. auth keys when released.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: Jamie Parsons <Jamie.Parsons@metaswitch.com>
-Tested-by: Jamie Parsons <Jamie.Parsons@metaswitch.com>
-CC: Jamie Parsons <Jamie.Parsons@metaswitch.com>
-CC: Vlad Yasevich <vyasevich@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: netdev@vger.kernel.org
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- net/sctp/outqueue.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ net/sctp/endpointola.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-index a0fa19f..0716290 100644
---- a/net/sctp/outqueue.c
-+++ b/net/sctp/outqueue.c
-@@ -223,7 +223,7 @@ void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
- 
- /* Free the outqueue structure and any related pending chunks.
-  */
--void sctp_outq_teardown(struct sctp_outq *q)
-+static void __sctp_outq_teardown(struct sctp_outq *q)
+diff --git a/net/sctp/endpointola.c b/net/sctp/endpointola.c
+index 68a385d..58cd035 100644
+--- a/net/sctp/endpointola.c
++++ b/net/sctp/endpointola.c
+@@ -248,6 +248,8 @@ void sctp_endpoint_free(struct sctp_endpoint *ep)
+ /* Final destructor for endpoint.  */
+ static void sctp_endpoint_destroy(struct sctp_endpoint *ep)
  {
- 	struct sctp_transport *transport;
- 	struct list_head *lchunk, *temp;
-@@ -276,8 +276,6 @@ void sctp_outq_teardown(struct sctp_outq *q)
- 		sctp_chunk_free(chunk);
- 	}
- 
--	q->error = 0;
--
- 	/* Throw away any leftover control chunks. */
- 	list_for_each_entry_safe(chunk, tmp, &q->control_chunk_list, list) {
- 		list_del_init(&chunk->list);
-@@ -285,11 +283,17 @@ void sctp_outq_teardown(struct sctp_outq *q)
- 	}
- }
- 
-+void sctp_outq_teardown(struct sctp_outq *q)
-+{
-+	__sctp_outq_teardown(q);
-+	sctp_outq_init(q->asoc, q);
-+}
++	int i;
 +
- /* Free the outqueue structure and any related pending chunks.  */
- void sctp_outq_free(struct sctp_outq *q)
- {
- 	/* Throw away leftover chunks. */
--	sctp_outq_teardown(q);
-+	__sctp_outq_teardown(q);
+ 	SCTP_ASSERT(ep->base.dead, "Endpoint is not dead", return);
  
- 	/* If we were kmalloc()'d, free the memory.  */
- 	if (q->malloced)
+ 	/* Free up the HMAC transform. */
+@@ -270,6 +272,9 @@ static void sctp_endpoint_destroy(struct sctp_endpoint *ep)
+ 	sctp_inq_free(&ep->base.inqueue);
+ 	sctp_bind_addr_free(&ep->base.bind_addr);
+ 
++	for (i = 0; i < SCTP_HOW_MANY_SECRETS; ++i)
++		memset(&ep->secret_key[i], 0, SCTP_SECRET_SIZE);
++
+ 	/* Remove and free the port */
+ 	if (sctp_sk(ep->base.sk)->bind_hash)
+ 		sctp_put_port(ep->base.sk);
 -- 
 1.7.9.5
 
