@@ -1,71 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932819Ab3BSQMP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 11:12:15 -0500
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:39650 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758562Ab3BSQMM (ORCPT
+	id S1758508Ab3BSQR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 11:17:27 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:46929 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764Ab3BSQRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 11:12:12 -0500
+	Tue, 19 Feb 2013 11:17:25 -0500
+Date: Tue, 19 Feb 2013 08:17:20 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Yaniv Gardi <ygardi@codeaurora.org>
+Cc: linux-mmc@vger.kernel.org, vgoyal@redhat.com, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v9 0/2] *** adding and exposing SANITIZE capability to
+ the user space via a unique IOCTL ***
+Message-ID: <20130219161720.GK17414@htj.dyndns.org>
+References: <1361290252-6004-1-git-send-email-ygardi@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20130131144026.bd735c07.akpm@linux-foundation.org>
-References: <20130118155724.GA8507@otc-wbsnb-06>
-	<20130131144026.bd735c07.akpm@linux-foundation.org>
-Date: Wed, 20 Feb 2013 00:12:11 +0800
-Message-ID: <CANN689Gvf9SeF9PG+8f_eBBM4vZLyroRr2nhjTcqiHuja-WUSQ@mail.gmail.com>
-Subject: Re: PAGE_CACHE_SIZE vs. PAGE_SIZE
-From: Michel Lespinasse <walken@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361290252-6004-1-git-send-email-ygardi@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 1, 2013 at 6:40 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Fri, 18 Jan 2013 17:57:25 +0200
-> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
->
->> Hi,
->>
->> PAGE_CACHE_* macros were introduced long time ago in hope to implement
->> page cache with larger chunks than one page in future.
->>
->> In fact it was never done.
->>
->> Some code paths assume PAGE_CACHE_SIZE <= PAGE_SIZE. E.g. we use
->> zero_user_segments() to clear stale parts of page on cache filling, but
->> the function is implemented only for individual small page.
->>
->> It's unlikely that global switch to PAGE_CACHE_SIZE > PAGE_SIZE will never
->> happen since it will affect to much code at once.
->>
->> I think support of larger chunks in page cache can be in implemented in
->> some form of THP with per-fs enabling.
->>
->> Is it time to get rid of PAGE_CACHE_* macros?
->> I can prepare patchset if it's okay.
->
-> The distinct PAGE_CACHE_SIZE has never been used for anything, but I do
-> kinda like it for documentary reasons: PAGE_SIZE is a raw, low-level
-> thing and PAGE_CACHE_SIZE is the specialized
-> we're-doing-pagecache-stuff thing.
->
-> But I'm sure I could get used to not having it ;)
+On Tue, Feb 19, 2013 at 06:10:50PM +0200, Yaniv Gardi wrote:
+> *** adding and exposing SANITIZE capability to the user space via a unique IOCTL ***
 
-Personally I always find such distinctions without a difference - like
-page_cache_release vs put_page - rather confusing, especially when
-working near the fs/mm boundary (for example in and under
-handle_pte_fault())
+If this is something eMMC specific and not expected to have in-kernel
+consumer, unlike DISCARD which filesystems use, why not just use
+SG_IO?
+
+Thanks.
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+tejun
