@@ -1,80 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757456Ab3BSC1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 21:27:13 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:9371 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755170Ab3BSC1L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 21:27:11 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlMKAG3iIlF5LHbb/2dsb2JhbABEhWC1PYUSgQQXc4IfAQEEAScTHCMQCAMVAwklDwUlAyETiAwFsUaPfRWNUwdgIj0Hg0ADliuJWYcAgVKBSYFW
-Date: Tue, 19 Feb 2013 13:27:07 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-fsdevel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>
-Subject: Re: [PATCH review 10/16] xfs: Push struct kqid into
- xfs_qm_scall_qmlim and xfs_qm_scall_getquota
-Message-ID: <20130219022707.GL26694@dastard>
-References: <87txpaph4n.fsf@xmission.com>
- <1361149870-27732-1-git-send-email-ebiederm@xmission.com>
- <1361149870-27732-10-git-send-email-ebiederm@xmission.com>
+	id S1757600Ab3BSC2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 21:28:04 -0500
+Received: from mga01.intel.com ([192.55.52.88]:20910 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755170Ab3BSC2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 21:28:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,692,1355126400"; 
+   d="scan'208";a="292847244"
+Date: Tue, 19 Feb 2013 10:29:00 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Aaron Lu <aaron.lwe@gmail.com>, Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v9 3/4] block: implement runtime pm strategy
+Message-ID: <20130219022900.GA2285@aaronlu.sh.intel.com>
+References: <1360051396-3080-1-git-send-email-aaron.lu@intel.com>
+ <1360051396-3080-4-git-send-email-aaron.lu@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1361149870-27732-10-git-send-email-ebiederm@xmission.com>
+In-Reply-To: <1360051396-3080-4-git-send-email-aaron.lu@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 17, 2013 at 05:11:03PM -0800, Eric W. Biederman wrote:
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
+Hi Alan,
+
+On Tue, Feb 05, 2013 at 04:03:15PM +0800, Aaron Lu wrote:
+> From: Lin Ming <ming.m.lin@intel.com>
 > 
-> - In xfs_qm_scall_getquota map the quota id into the callers
->   user namespace in the returned struct fs_disk_quota
+> When a request is added:
+>     If device is suspended or is suspending and the request is not a
+>     PM request, resume the device.
 > 
-> - Add a helper is_superquota and use it in xfs_qm_scall_setqlimi
->   to see if we are setting the superusers quota limit.  Setting
->   the superuses quota limit on xfs sets the default quota limits
->   for all users.
+> When the last request finishes:
+>     Call pm_runtime_mark_last_busy().
+> 
+> When pick a request:
+>     If device is resuming/suspending, then only PM request is allowed
+>     to go.
 
-These seem fine.
+I think I should add the following words in patch 2 & 3's changelog:
 
-> - Move xfs_quota_type into xfs_qm_syscalls.c where it is now used.
+The idea and API is designed by Alan Stern and described here:
+http://marc.info/?l=linux-scsi&m=133727953625963&w=2
 
-Now that I've seen the code, I really don't see any advantage to
-driving the kqid into XFS quota subsystem. (i.e the rest of this
-patch and the subsequent follow up patches that drive it further
-inward).
+to reflect your credit if you don't object.
 
-I did say previously:
+Please let me know what do you think, or if there is a better way to
+reflect this, please feel free to let me know.
 
->> From there, targetted patches can drive the kernel structures
->> inward from the entry points where it makes sense to do so (e.g.
->> common places that the quota entry points call that take a
->> type/id pair).  The last thing that should happen is internal
->> structures be converted from type/id pairs to the kernel types if
->> it makes sense to do so and it makes the code simpler and easier
->> to read....
+Thanks,
+Aaron
 
-But seeing the result, IMO, it doesn't actually improve the code
-(it's neither simpler nor easier to read), and it doesn't actually
-add any functionality. It makes the code strange and different and
-somewhat inconsistent and litters id/namespace conversions all over
-the place, so i don't think these cahgnes are necessary.
-
-Hence I'd say just do absolute minimum needed for the
-is_superquota() checks to work and leave all the kqid ->
-xfs_dqid_t+type conversion at the boundary of the quota subsystem
-where it already is....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> ---
+>  block/blk-core.c | 39 +++++++++++++++++++++++++++++++++++++++
+>  block/elevator.c | 26 ++++++++++++++++++++++++++
+>  2 files changed, 65 insertions(+)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index ce7d366..81f173e 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -1264,6 +1264,16 @@ void part_round_stats(int cpu, struct hd_struct *part)
+>  }
+>  EXPORT_SYMBOL_GPL(part_round_stats);
+>  
+> +#ifdef CONFIG_PM_RUNTIME
+> +static void blk_pm_put_request(struct request *rq)
+> +{
+> +	if (rq->q->dev && !(rq->cmd_flags & REQ_PM) && !--rq->q->nr_pending)
+> +		pm_runtime_mark_last_busy(rq->q->dev);
+> +}
+> +#else
+> +static inline void blk_pm_put_request(struct request *rq) {}
+> +#endif
+> +
+>  /*
+>   * queue lock must be held
+>   */
+> @@ -1274,6 +1284,8 @@ void __blk_put_request(struct request_queue *q, struct request *req)
+>  	if (unlikely(--req->ref_count))
+>  		return;
+>  
+> +	blk_pm_put_request(req);
+> +
+>  	elv_completed_request(q, req);
+>  
+>  	/* this is a bio leak */
+> @@ -2051,6 +2063,28 @@ static void blk_account_io_done(struct request *req)
+>  	}
+>  }
+>  
+> +#ifdef CONFIG_PM_RUNTIME
+> +/*
+> + * Don't process normal requests when queue is suspended
+> + * or in the process of suspending/resuming
+> + */
+> +static struct request *blk_pm_peek_request(struct request_queue *q,
+> +					   struct request *rq)
+> +{
+> +	if (q->dev && (q->rpm_status == RPM_SUSPENDED ||
+> +	    (q->rpm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM))))
+> +		return NULL;
+> +	else
+> +		return rq;
+> +}
+> +#else
+> +static inline struct request *blk_pm_peek_request(struct request_queue *q,
+> +						  struct request *rq)
+> +{
+> +	return rq;
+> +}
+> +#endif
+> +
+>  /**
+>   * blk_peek_request - peek at the top of a request queue
+>   * @q: request queue to peek at
+> @@ -2073,6 +2107,11 @@ struct request *blk_peek_request(struct request_queue *q)
+>  	int ret;
+>  
+>  	while ((rq = __elv_next_request(q)) != NULL) {
+> +
+> +		rq = blk_pm_peek_request(q, rq);
+> +		if (!rq)
+> +			break;
+> +
+>  		if (!(rq->cmd_flags & REQ_STARTED)) {
+>  			/*
+>  			 * This is the first time the device driver
+> diff --git a/block/elevator.c b/block/elevator.c
+> index 11683bb..29c5c7e 100644
+> --- a/block/elevator.c
+> +++ b/block/elevator.c
+> @@ -34,6 +34,7 @@
+>  #include <linux/blktrace_api.h>
+>  #include <linux/hash.h>
+>  #include <linux/uaccess.h>
+> +#include <linux/pm_runtime.h>
+>  
+>  #include <trace/events/block.h>
+>  
+> @@ -515,6 +516,27 @@ void elv_bio_merged(struct request_queue *q, struct request *rq,
+>  		e->type->ops.elevator_bio_merged_fn(q, rq, bio);
+>  }
+>  
+> +#ifdef CONFIG_PM_RUNTIME
+> +static void blk_pm_requeue_request(struct request *rq)
+> +{
+> +	if (rq->q->dev && !(rq->cmd_flags & REQ_PM))
+> +		rq->q->nr_pending--;
+> +}
+> +
+> +static void blk_pm_add_request(struct request_queue *q, struct request *rq)
+> +{
+> +	if (q->dev && !(rq->cmd_flags & REQ_PM) && q->nr_pending++ == 0 &&
+> +	    (q->rpm_status == RPM_SUSPENDED || q->rpm_status == RPM_SUSPENDING))
+> +		pm_request_resume(q->dev);
+> +}
+> +#else
+> +static inline void blk_pm_requeue_request(struct request *rq) {}
+> +static inline void blk_pm_add_request(struct request_queue *q,
+> +				      struct request *rq)
+> +{
+> +}
+> +#endif
+> +
+>  void elv_requeue_request(struct request_queue *q, struct request *rq)
+>  {
+>  	/*
+> @@ -529,6 +551,8 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
+>  
+>  	rq->cmd_flags &= ~REQ_STARTED;
+>  
+> +	blk_pm_requeue_request(rq);
+> +
+>  	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
+>  }
+>  
+> @@ -551,6 +575,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
+>  {
+>  	trace_block_rq_insert(q, rq);
+>  
+> +	blk_pm_add_request(q, rq);
+> +
+>  	rq->q = q;
+>  
+>  	if (rq->cmd_flags & REQ_SOFTBARRIER) {
+> -- 
+> 1.8.1
+> 
