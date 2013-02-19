@@ -1,152 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933143Ab3BSP1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 10:27:52 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:55012 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933068Ab3BSP1v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 10:27:51 -0500
-Date: Tue, 19 Feb 2013 16:27:47 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/debug changes for v3.9
-Message-ID: <20130219152747.GA15164@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933154Ab3BSP2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 10:28:03 -0500
+Received: from mga03.intel.com ([143.182.124.21]:3836 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933036Ab3BSP2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 10:28:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,696,1355126400"; 
+   d="scan'208";a="204012241"
+Message-ID: <1361287675.2323.26.camel@rzhang1-mobl4>
+Subject: Re: thermal governor: does it actually work??
+From: Zhang Rui <rui.zhang@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Peter Feuerer <peter@piie.net>, Alexander Lam <azl@andrew.cmu.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andreas Mohr <andi@lisas.de>
+Date: Tue, 19 Feb 2013 23:27:55 +0800
+In-Reply-To: <20130219150551.GL26623@pd.tnic>
+References: <744357E9AAD1214791ACBA4B0B90926329ED72@SHSMSX101.ccr.corp.intel.com>
+	 <20130215154931.GA26213@rhlx01.hs-esslingen.de>
+	 <CACWwPiuk0GynEwe3RuKndWnsYwTuPhO0ob6sJ6ve34u1_RtkYw@mail.gmail.com>
+	 <20130216214712.GA13494@pd.tnic> <cone.1361068993.271211.4532.1000@galar>
+	 <20130217140908.GA20323@pd.tnic> <cone.1361115717.636831.25189.1000@galar>
+	 <20130218135012.GB16622@pd.tnic> <cone.1361206053.493518.2246.1000@galar>
+	 <1361285464.2323.20.camel@rzhang1-mobl4> <20130219150551.GL26623@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, 2013-02-19 at 16:05 +0100, Borislav Petkov wrote:
+> On Tue, Feb 19, 2013 at 10:51:04PM +0800, Zhang Rui wrote:
+> > Okay, here I see the problem, say you want to turn on the fan at 60C and
+> > turn it off at 55C, is this what you want?
+> > hmmm, is it possible to do some tricks in acerhdf driver?
+> > say,
+> > only one active trip point as before. but change acerhdf_get_trip_temp
+> > to:
+> > acerhdf_get_trip_temp()
+> > {
+> > 	if (fan is on)
+> > 		return 55;
+> > 	else
+> > 		return 60;
+> > }
+> > 
+> > In this way, when the fan is off and the temperature is raising, the fan
+> > will be turned on at 60C because we have an active trip point of 60C.
+> > And when the fan is turned on and the temperature starts to drop, the
+> > fan will be turned off at 55C.
+> 
+> Makes a sense to me. I was questioning the need for 4 trip points too.
 
-Please pull the latest x86-debug-for-linus git tree from:
+I do not understand why you need 4 trip points for the issue above,
+unless I missed another gap here.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-debug-for-linus
+> We probably would need a second, critical trip point though, just in
+> case.
+> 
+yeah, it is okay to have a critical trip point.
 
-   HEAD: 20bf062c6575e162ede00308ca3a5714ca112009 x86/memtest: Shorten time for tests
+thanks,
+rui
 
-Two init annotations and a built-in memtest speedup.
-
- Thanks,
-
-	Ingo
-
------------------->
-Alexander Holler (1):
-      x86/memtest: Shorten time for tests
-
-Jan Beulich (2):
-      x86/EFI: Properly init-annotate BGRT code
-      x86: Convert a few mistaken __cpuinit annotations to __init
-
-
- arch/x86/kernel/cpu/intel_cacheinfo.c |  2 +-
- arch/x86/mm/memtest.c                 | 10 ++--------
- arch/x86/mm/tlb.c                     |  2 +-
- arch/x86/platform/efi/efi-bgrt.c      |  7 ++++---
- arch/x86/platform/sfi/sfi.c           |  2 +-
- 5 files changed, 9 insertions(+), 14 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index fe9edec..0e46240 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -1227,7 +1227,7 @@ static struct notifier_block __cpuinitdata cacheinfo_cpu_notifier = {
- 	.notifier_call = cacheinfo_cpu_callback,
- };
- 
--static int __cpuinit cache_sysfs_init(void)
-+static int __init cache_sysfs_init(void)
- {
- 	int i;
- 
-diff --git a/arch/x86/mm/memtest.c b/arch/x86/mm/memtest.c
-index c80b9fb..8dabbed 100644
---- a/arch/x86/mm/memtest.c
-+++ b/arch/x86/mm/memtest.c
-@@ -9,6 +9,7 @@
- #include <linux/memblock.h>
- 
- static u64 patterns[] __initdata = {
-+	/* The first entry has to be 0 to leave memtest with zeroed memory */
- 	0,
- 	0xffffffffffffffffULL,
- 	0x5555555555555555ULL,
-@@ -110,15 +111,8 @@ void __init early_memtest(unsigned long start, unsigned long end)
- 		return;
- 
- 	printk(KERN_INFO "early_memtest: # of tests: %d\n", memtest_pattern);
--	for (i = 0; i < memtest_pattern; i++) {
-+	for (i = memtest_pattern-1; i < UINT_MAX; --i) {
- 		idx = i % ARRAY_SIZE(patterns);
- 		do_one_pass(patterns[idx], start, end);
- 	}
--
--	if (idx > 0) {
--		printk(KERN_INFO "early_memtest: wipe out "
--		       "test pattern from memory\n");
--		/* additional test with pattern 0 will do this */
--		do_one_pass(0, start, end);
--	}
- }
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 13a6b29..282375f 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -335,7 +335,7 @@ static const struct file_operations fops_tlbflush = {
- 	.llseek = default_llseek,
- };
- 
--static int __cpuinit create_tlb_flushall_shift(void)
-+static int __init create_tlb_flushall_shift(void)
- {
- 	debugfs_create_file("tlb_flushall_shift", S_IRUSR | S_IWUSR,
- 			    arch_debugfs_dir, NULL, &fops_tlbflush);
-diff --git a/arch/x86/platform/efi/efi-bgrt.c b/arch/x86/platform/efi/efi-bgrt.c
-index d9c1b95..7145ec6 100644
---- a/arch/x86/platform/efi/efi-bgrt.c
-+++ b/arch/x86/platform/efi/efi-bgrt.c
-@@ -11,20 +11,21 @@
-  * published by the Free Software Foundation.
-  */
- #include <linux/kernel.h>
-+#include <linux/init.h>
- #include <linux/acpi.h>
- #include <linux/efi.h>
- #include <linux/efi-bgrt.h>
- 
- struct acpi_table_bgrt *bgrt_tab;
--void *bgrt_image;
--size_t bgrt_image_size;
-+void *__initdata bgrt_image;
-+size_t __initdata bgrt_image_size;
- 
- struct bmp_header {
- 	u16 id;
- 	u32 size;
- } __packed;
- 
--void efi_bgrt_init(void)
-+void __init efi_bgrt_init(void)
- {
- 	acpi_status status;
- 	void __iomem *image;
-diff --git a/arch/x86/platform/sfi/sfi.c b/arch/x86/platform/sfi/sfi.c
-index 7785b72..bcd1a70 100644
---- a/arch/x86/platform/sfi/sfi.c
-+++ b/arch/x86/platform/sfi/sfi.c
-@@ -35,7 +35,7 @@
- static unsigned long sfi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
- 
- /* All CPUs enumerated by SFI must be present and enabled */
--static void __cpuinit mp_sfi_register_lapic(u8 id)
-+static void __init mp_sfi_register_lapic(u8 id)
- {
- 	if (MAX_LOCAL_APIC - id <= 0) {
- 		pr_warning("Processor #%d invalid (max %d)\n",
