@@ -1,116 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab3BSL5f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 06:57:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49439 "EHLO mx2.suse.de"
+	id S932596Ab3BSL74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 06:59:56 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:51786 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932202Ab3BSL5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 06:57:33 -0500
-Date: Tue, 19 Feb 2013 11:57:30 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rob van der Heij <rvdheij@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: fadvise: Drain all pagevecs if POSIX_FADV_DONTNEED
- fails to discard all pages
-Message-ID: <20130219115729.GS4365@suse.de>
-References: <20130214120349.GD7367@suse.de>
- <20130214123926.599fcef8.akpm@linux-foundation.org>
+	id S932202Ab3BSL7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 06:59:55 -0500
+Date: Tue, 19 Feb 2013 12:59:51 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] param, charp: Cache val length
+Message-ID: <20130219115951.GB26623@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Rusty Russell <rusty@rustcorp.com.au>,
+	LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <1361178750-17915-1-git-send-email-bp@alien8.de>
+ <87txp9j255.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130214123926.599fcef8.akpm@linux-foundation.org>
+In-Reply-To: <87txp9j255.fsf@rustcorp.com.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 14, 2013 at 12:39:26PM -0800, Andrew Morton wrote:
-> On Thu, 14 Feb 2013 12:03:49 +0000
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > Rob van der Heij reported the following (paraphrased) on private mail.
-> > 
-> > 	The scenario is that I want to avoid backups to fill up the page
-> > 	cache and purge stuff that is more likely to be used again (this is
-> > 	with s390x Linux on z/VM, so I don't give it as much memory that
-> > 	we don't care anymore). So I have something with LD_PRELOAD that
-> > 	intercepts the close() call (from tar, in this case) and issues
-> > 	a posix_fadvise() just before closing the file.
-> > 
-> > 	This mostly works, except for small files (less than 14 pages)
-> > 	that remains in page cache after the face.
-> 
-> Sigh.  We've had the "my backups swamp pagecache" thing for 15 years
-> and it's still happening.
-> 
+On Mon, Feb 18, 2013 at 09:54:22PM +1030, Rusty Russell wrote:
+> I'm delighted with your enthusiasm for making trivial changes,
 
-Yes. There have been variations of it too such as applications being pushed
-prematurely into swap. I'm not certain how well we currently handle that
-because I haven't checked in a few months.
+Who says I'm enthusiastic about it?
 
-> It should be possible nowadays to toss your backup application into a
-> container to constrain its pagecache usage.  So we can type
-> 
-> 	run-in-a-memcg -m 200MB /my/backup/program
-> 
-> and voila.  Does such a script exist and work?
-> 
+> but I have trouble sharing in it.
 
-Michal already gave an example. It might work slower if the backup
-application has to stall in direct reclaim to keep the container within
-limits though.
+I just assumed that noodling for a second time over a string of possible
+length of 1024 chars (I know, I know, we will never have params of that
+length, yadda yadda...) should be avoided.
 
-> > --- a/mm/fadvise.c
-> > +++ b/mm/fadvise.c
-> > @@ -17,6 +17,7 @@
-> >  #include <linux/fadvise.h>
-> >  #include <linux/writeback.h>
-> >  #include <linux/syscalls.h>
-> > +#include <linux/swap.h>
-> >  
-> >  #include <asm/unistd.h>
-> >  
-> > @@ -120,9 +121,22 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
-> >  		start_index = (offset+(PAGE_CACHE_SIZE-1)) >> PAGE_CACHE_SHIFT;
-> >  		end_index = (endbyte >> PAGE_CACHE_SHIFT);
-> >  
-> > -		if (end_index >= start_index)
-> > -			invalidate_mapping_pages(mapping, start_index,
-> > +		if (end_index >= start_index) {
-> > +			unsigned long count = invalidate_mapping_pages(mapping,
-> > +						start_index, end_index);
-> > +
-> > +			/*
-> > +			 * If fewer pages were invalidated than expected then
-> > +			 * it is possible that some of the pages were on
-> > +			 * a per-cpu pagevec for a remote CPU. Drain all
-> > +			 * pagevecs and try again.
-> > +			 */
-> > +			if (count < (end_index - start_index + 1)) {
-> > +				lru_add_drain_all();
-> > +				invalidate_mapping_pages(mapping, start_index,
-> >  						end_index);
-> > +			}
-> > +		}
-> >  		break;
-> >  	default:
-> >  		ret = -EINVAL;
-> 
-> Those LRU pagevecs are a right pain.  They provided useful gains way
-> back when I first inflicted them upon Linux, but it would be nice to
-> confirm whether they're still worthwhile and if so, whether the
-> benefits can be replicated with some less intrusive scheme.
-> 
-
-I know. Unfortunately I've had "Implement pagevec removal and test" on my
-TODO list for the guts of a year now. It's long overdue to actually sit down
-and just do it. It's a similar story for the per-cpu lists in front of the
-page allocator which are overdue to see if they can be replaced. I actually
-have a prototype replacement for that lying around but it performed slower
-in tests and has bit-rotted since but it ran slower and has bit-rotted
-since as it was based on kernel 3.4.
+Nevermind.
 
 -- 
-Mel Gorman
-SUSE Labs
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
