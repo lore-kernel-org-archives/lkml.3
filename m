@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758201Ab3BSJJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 04:09:31 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:47922 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757774Ab3BSJJ2 convert rfc822-to-8bit (ORCPT
+	id S1758353Ab3BSJKO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 04:10:14 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56505 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757774Ab3BSJKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 04:09:28 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 19 Feb 2013 10:09:07 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
-        linux1394-devel@lists.sourceforge.net, Tejun Heo <tj@kernel.org>
-Subject: [PATCH linux-next v2] firewire: fw_device_init: 'minor' may be used
- uninitialized
-Message-ID: <20130219100907.5dff3124@stein>
-In-Reply-To: <1361222676-113069-1-git-send-email-tim.gardner@canonical.com>
-References: <1361222343-112898-1-git-send-email-tim.gardner@canonical.com>
-	<1361222676-113069-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Feb 2013 04:10:12 -0500
+Date: Tue, 19 Feb 2013 10:10:05 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Durgadoss R <durgadoss.r@intel.com>
+Cc: rui.zhang@intel.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eduardo.valentin@ti.com,
+        hongbo.zhang@linaro.org, wni@nvidia.com
+Subject: Re: [PATCH 8/9] Thermal: Add ABI Documentation for sysfs interfaces
+Message-ID: <20130219091005.GA17219@xo-6d-61-c0.localdomain>
+References: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
+ <1357542806-20449-9-git-send-email-durgadoss.r@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357542806-20449-9-git-send-email-durgadoss.r@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Date: Mon, 18 Feb 2013 14:24:36 -0700
-From: Tim Gardner <tim.gardner@canonical.com>
+On Mon 2013-01-07 12:43:25, Durgadoss R wrote:
+> This patch adds Documentation for ABI's introduced
+> for thermal subsystem (under /sys/class/thermal/).
 
-'firewire: convert to idr_alloc()' accidentally orphaned 'minor'.
+So... we have deciCelsius and deciKelvin in ACPI (IIRC) and miliCelsius here.
 
-drivers/firewire/core-device.c: In function ‘fw_device_init’:
-drivers/firewire/core-device.c:1029:24: warning: ‘minor’ may be used uninitialized in this function [-Wuninitialized]
+Perhaps using deciCelsius to be consistent with ACPI would be nice?
 
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
-Andrew, please send this on together with the other idr patches,
-or even merge this into patch "firewire: convert to idr_alloc()" before
-the latter reaches upstream.
-
- drivers/firewire/core-device.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/firewire/core-device.c b/drivers/firewire/core-device.c
-index b946330..03ce7d9 100644
---- a/drivers/firewire/core-device.c
-+++ b/drivers/firewire/core-device.c
-@@ -1017,10 +1017,11 @@ static void fw_device_init(struct work_struct *work)
- 
- 	fw_device_get(device);
- 	down_write(&fw_device_rwsem);
--	ret = idr_alloc(&fw_device_idr, device, 0, 1 << MINORBITS, GFP_KERNEL);
-+	minor = idr_alloc(&fw_device_idr, device, 0, 1 << MINORBITS,
-+			GFP_KERNEL);
- 	up_write(&fw_device_rwsem);
- 
--	if (ret < 0)
-+	if (minor < 0)
- 		goto error;
- 
- 	device->device.bus = &fw_bus_type;
-
+What do lm_sensors use?
+									Pavel
+> index 0000000..d1a450e
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-class-thermal
+> @@ -0,0 +1,93 @@
+> +What:		/sys/class/thermal/sensorX/temp
+> +Date:		January 2013
+> +KernelVersion:	3.8
+> +Contact:	Linux PM Mailing list <linux-pm@vger.kernel.org>
+> +Description:
+> +		Exposes 'temperature' of a thermal sensor in mC
+> +Users:		Kernel/User space thermal governors
+> +
 
 -- 
-Stefan Richter
--=====-===-= --=- =--==
-http://arcgraph.de/sr/
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
