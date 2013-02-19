@@ -1,122 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758736Ab3BSRjn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 12:39:43 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:47718 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229Ab3BSRjl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 12:39:41 -0500
-Date: Tue, 19 Feb 2013 09:39:37 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [GIT PULL] workqueue core changes for 3.9-rc1
-Message-ID: <20130219173937.GM17414@htj.dyndns.org>
+	id S1758764Ab3BSRkF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 12:40:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44479 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755229Ab3BSRkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 12:40:04 -0500
+Message-ID: <5123B897.9010607@zytor.com>
+Date: Tue, 19 Feb 2013 09:38:31 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>, Boris Ostrovsky <boris.ostrovsky@amd.com>
+CC: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/cpu changes for v3.9
+References: <20130219152503.GA14862@gmail.com> <20130219153655.GD26748@pd.tnic> <20130219154721.GA15876@gmail.com>
+In-Reply-To: <20130219154721.GA15876@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On 02/19/2013 07:47 AM, Ingo Molnar wrote:
+>>
+>> Those kill a kvm guest with a #GP. Can we apply the fix for it too pls?
+>>
+>> http://marc.info/?l=linux-kernel&m=136077007423065&w=2
+>
+> Linus, please skip this pull request, we'll sort it out.
+>
 
-This is pull request for workqueue core changes.  A lot of
-reorganization is going on mostly to prepare for worker pools with
-custom attributes so that workqueue can replace custom pool
-implementations in places including writeback and btrfs and make CPU
-assignment in crypto more flexible.
+My fault... I was tracking the fix and lost track of the thread.
 
-workqueue evolved from purely per-cpu design and implementation, so
-there are a lot of assumptions regarding being bound to CPUs and even
-unbound workqueues are implemented as an extension of the model -
-workqueues running on the special unbound CPU.  Bulk of changes this
-round are about promoting worker_pools as the top level abstraction
-replacing global_cwq (global cpu workqueue).  At this point, I'm
-fairly confident about getting custom worker pools working pretty
-soon and ready for the next merge window.
+The problem is that the fix is necessary but not sufficient, as it 
+introduces an undesirable host-guest dependency.  In order to allow 
+neerw guests to work on older hosts we also should use the 
+{rd,wr}msr_safe() functions to manipulate this MSR, with a comment as to 
+why.
 
-Lai's patches are replacing the convoluted mb() dancing workqueue has
-been doing with much simpler mechanism which only depends on
-assignment atomicity of long.  For details, please read the commit
-message of 0b3dae68ac ("workqueue: simplify is-work-item-queued-here
-test").  While the change ends up adding one pointer to struct
-delayed_work, the inflation in percentage is less than five percent
-and it decouples delayed_work logic a lot more cleaner from usual work
-handling, removes the unusual memory barrier dancing, and allows for
-further simplification, so I think the trade-off is acceptable.
+Boris, could you prepare such a patch, please?
 
-There will be two more workqueue related pull requests and there are
-some shared commits among them.  I'll write further pull requests
-assuming this pull request is pulled first.
+	-hpa
 
-The above described changes (and some one-off ones) are available in
-the following git branch
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.9
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-for you to fetch changes up to 112202d9098aae2c36436e5178c0cf3ced423c7b:
-
-  workqueue: rename cpu_workqueue to pool_workqueue (2013-02-13 19:29:12 -0800)
-
-----------------------------------------------------------------
-Lai Jiangshan (7):
-      workqueue: replace WORK_CPU_NONE/LAST with WORK_CPU_END
-      workqueue: make work_busy() test WORK_STRUCT_PENDING first
-      workqueue: add delayed_work->wq to simplify reentrancy handling
-      workqueue: make work->data point to pool after try_to_grab_pending()
-      workqueue: simplify is-work-item-queued-here test
-      workqueue: make get_work_pool_id() cheaper
-      workqueue: pick cwq instead of pool in __queue_work()
-
-Sasha Levin (1):
-      workqueue: use new hashtable implementation
-
-Tejun Heo (28):
-      workqueue: consider work function when searching for busy work items
-      workqueue: fix find_worker_executing_work() brekage from hashtable conversion
-      workqueue: set PF_WQ_WORKER on rescuers
-      workqueue: rename kernel/workqueue_sched.h to kernel/workqueue_internal.h
-      workqueue: move struct worker definition to workqueue_internal.h
-      workqueue: implement current_is_async()
-      workqueue: unexport work_cpu()
-      workqueue: use std_ prefix for the standard per-cpu pools
-      workqueue: make GCWQ_DISASSOCIATED a pool flag
-      workqueue: make GCWQ_FREEZING a pool flag
-      workqueue: introduce WORK_OFFQ_CPU_NONE
-      workqueue: add worker_pool->id
-      workqueue: record pool ID instead of CPU in work->data when off-queue
-      workqueue: move busy_hash from global_cwq to worker_pool
-      workqueue: move global_cwq->cpu to worker_pool
-      workqueue: move global_cwq->lock to worker_pool
-      workqueue: make hotplug processing per-pool
-      workqueue: make freezing/thawing per-pool
-      workqueue: replace for_each_worker_pool() with for_each_std_worker_pool()
-      workqueue: remove worker_pool->gcwq
-      workqueue: remove global_cwq
-      workqueue: rename nr_running variables
-      workqueue: post global_cwq removal cleanups
-      workqueue: cosmetic update in try_to_grab_pending()
-      workqueue: move nr_running into worker_pool
-      workqueue: fix is_chained_work() regression
-      workqueue: reimplement is_chained_work() using current_wq_worker()
-      workqueue: rename cpu_workqueue to pool_workqueue
-
- include/linux/async.h            |    1 +
- include/linux/workqueue.h        |   35 +-
- include/trace/events/workqueue.h |   10 +-
- kernel/async.c                   |   14 +
- kernel/sched/core.c              |    2 +-
- kernel/workqueue.c               | 1528 ++++++++++++++++++--------------------
- kernel/workqueue_internal.h      |   65 ++
- kernel/workqueue_sched.h         |    9 -
- 8 files changed, 817 insertions(+), 847 deletions(-)
- create mode 100644 kernel/workqueue_internal.h
- delete mode 100644 kernel/workqueue_sched.h
-
-Thanks.
-
---
-tejun
