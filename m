@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124Ab3BSPVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 10:21:07 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:53762 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933077Ab3BSPVF (ORCPT
+	id S933131Ab3BSPZL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 10:25:11 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:41567 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933092Ab3BSPZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 10:21:05 -0500
-Date: Tue, 19 Feb 2013 16:21:00 +0100
+	Tue, 19 Feb 2013 10:25:10 -0500
+Date: Tue, 19 Feb 2013 16:25:03 +0100
 From: Ingo Molnar <mingo@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 cleanups for v3.9
-Message-ID: <20130219152100.GA14819@gmail.com>
+Subject: [GIT PULL] x86/cpu changes for v3.9
+Message-ID: <20130219152503.GA14862@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,107 +25,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-cleanups-for-linus git tree from:
+Please pull the latest x86-cpu-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cleanups-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cpu-for-linus
 
-   HEAD: 19348e749e9515c429f5d561d2f2c724862a4bee x86: ptrace.c only needs export.h and not the full module.h
+   HEAD: f0322bd341fd63261527bf84afd3272bcc2e8dd3 x86, AMD: Enable WC+ memory type on family 10 processors
 
-Misc smaller cleanups.
+The biggest change is the enabling of the WC+ memory type on 
+family 10 processors. (This is a BIOS bug workaround in essence: 
+if the BIOS fails to do this then we fall back to uncacheable, 
+degrading performance, for example for virtualized guests using 
+nested pages.)
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Paul Gortmaker (1):
-      x86: ptrace.c only needs export.h and not the full module.h
+Boris Ostrovsky (2):
+      x86, AMD: Clean up init_amd()
+      x86, AMD: Enable WC+ memory type on family 10 processors
 
-Sasha Levin (3):
-      arch/x86/platform/uv: use ARRAY_SIZE where possible
-      um: don't compare a pointer to 0
-      x86, apb_timer: remove unused variable percpu_timer
+Chen Gang (1):
+      x86/process: Change %8s to %s for pr_warn() in release_thread()
+
+Kees Cook (1):
+      x86/cpu/hotplug: Remove CONFIG_EXPERIMENTAL dependency
 
 
- arch/x86/kernel/apb_timer.c   | 8 ++------
- arch/x86/kernel/ptrace.c      | 2 +-
- arch/x86/platform/uv/tlb_uv.c | 4 ++--
- arch/x86/um/fault.c           | 2 +-
- 4 files changed, 6 insertions(+), 10 deletions(-)
+ arch/x86/Kconfig                      |  4 +--
+ arch/x86/include/uapi/asm/msr-index.h |  1 +
+ arch/x86/kernel/cpu/amd.c             | 50 ++++++++++++++++++++---------------
+ arch/x86/kernel/process_64.c          |  2 +-
+ 4 files changed, 32 insertions(+), 25 deletions(-)
 
-diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
-index afdc3f75..cc74fd0 100644
---- a/arch/x86/kernel/apb_timer.c
-+++ b/arch/x86/kernel/apb_timer.c
-@@ -311,7 +311,6 @@ void __init apbt_time_init(void)
- #ifdef CONFIG_SMP
- 	int i;
- 	struct sfi_timer_table_entry *p_mtmr;
--	unsigned int percpu_timer;
- 	struct apbt_dev *adev;
- #endif
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 79795af..2d62103 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1699,7 +1699,7 @@ config HOTPLUG_CPU
+ config BOOTPARAM_HOTPLUG_CPU0
+ 	bool "Set default setting of cpu0_hotpluggable"
+ 	default n
+-	depends on HOTPLUG_CPU && EXPERIMENTAL
++	depends on HOTPLUG_CPU
+ 	---help---
+ 	  Set whether default state of cpu0_hotpluggable is on or off.
  
-@@ -346,13 +345,10 @@ void __init apbt_time_init(void)
- 		return;
+@@ -1728,7 +1728,7 @@ config BOOTPARAM_HOTPLUG_CPU0
+ config DEBUG_HOTPLUG_CPU0
+ 	def_bool n
+ 	prompt "Debug CPU0 hotplug"
+-	depends on HOTPLUG_CPU && EXPERIMENTAL
++	depends on HOTPLUG_CPU
+ 	---help---
+ 	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
+ 	  soon as possible and boots up userspace with CPU0 offlined. User
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index 433a59f..158cde9 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -173,6 +173,7 @@
+ #define MSR_AMD64_OSVW_ID_LENGTH	0xc0010140
+ #define MSR_AMD64_OSVW_STATUS		0xc0010141
+ #define MSR_AMD64_DC_CFG		0xc0011022
++#define MSR_AMD64_BU_CFG2		0xc001102a
+ #define MSR_AMD64_IBSFETCHCTL		0xc0011030
+ #define MSR_AMD64_IBSFETCHLINAD		0xc0011031
+ #define MSR_AMD64_IBSFETCHPHYSAD	0xc0011032
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 15239ff..721ef32 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -518,10 +518,9 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
+ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ {
+ 	u32 dummy;
+-
+-#ifdef CONFIG_SMP
+ 	unsigned long long value;
+ 
++#ifdef CONFIG_SMP
+ 	/*
+ 	 * Disable TLB flush filter by setting HWCR.FFDIS on K8
+ 	 * bit 6 of msr C001_0015
+@@ -559,12 +558,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		 * (AMD Erratum #110, docId: 25759).
+ 		 */
+ 		if (c->x86_model < 0x14 && cpu_has(c, X86_FEATURE_LAHF_LM)) {
+-			u64 val;
+-
+ 			clear_cpu_cap(c, X86_FEATURE_LAHF_LM);
+-			if (!rdmsrl_amd_safe(0xc001100d, &val)) {
+-				val &= ~(1ULL << 32);
+-				wrmsrl_amd_safe(0xc001100d, val);
++			if (!rdmsrl_amd_safe(0xc001100d, &value)) {
++				value &= ~(1ULL << 32);
++				wrmsrl_amd_safe(0xc001100d, value);
+ 			}
+ 		}
+ 
+@@ -617,13 +614,12 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 	if ((c->x86 == 0x15) &&
+ 	    (c->x86_model >= 0x10) && (c->x86_model <= 0x1f) &&
+ 	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
+-		u64 val;
+ 
+-		if (!rdmsrl_safe(0xc0011005, &val)) {
+-			val |= 1ULL << 54;
+-			wrmsrl_safe(0xc0011005, val);
+-			rdmsrl(0xc0011005, val);
+-			if (val & (1ULL << 54)) {
++		if (!rdmsrl_safe(0xc0011005, &value)) {
++			value |= 1ULL << 54;
++			wrmsrl_safe(0xc0011005, value);
++			rdmsrl(0xc0011005, value);
++			if (value & (1ULL << 54)) {
+ 				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
+ 				printk(KERN_INFO FW_INFO "CPU: Re-enabling "
+ 				  "disabled Topology Extensions Support\n");
+@@ -637,11 +633,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 	 */
+ 	if ((c->x86 == 0x15) &&
+ 	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
+-		u64 val;
+ 
+-		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
+-			val |= 0x1E;
+-			wrmsrl_safe(0xc0011021, val);
++		if (!rdmsrl_safe(0xc0011021, &value) && !(value & 0x1E)) {
++			value |= 0x1E;
++			wrmsrl_safe(0xc0011021, value);
+ 		}
  	}
- 	pr_debug("%s: %d CPUs online\n", __func__, num_online_cpus());
--	if (num_possible_cpus() <= sfi_mtimer_num) {
--		percpu_timer = 1;
-+	if (num_possible_cpus() <= sfi_mtimer_num)
- 		apbt_num_timers_used = num_possible_cpus();
--	} else {
--		percpu_timer = 0;
-+	else
- 		apbt_num_timers_used = 1;
--	}
- 	pr_debug("%s: %d APB timers used\n", __func__, apbt_num_timers_used);
  
- 	/* here we set up per CPU timer data structure */
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index b629bbe..29a8120 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -22,7 +22,7 @@
- #include <linux/perf_event.h>
- #include <linux/hw_breakpoint.h>
- #include <linux/rcupdate.h>
--#include <linux/module.h>
-+#include <linux/export.h>
- #include <linux/context_tracking.h>
+@@ -703,13 +698,11 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 	if (c->x86 > 0x11)
+ 		set_cpu_cap(c, X86_FEATURE_ARAT);
  
- #include <asm/uaccess.h>
-diff --git a/arch/x86/platform/uv/tlb_uv.c b/arch/x86/platform/uv/tlb_uv.c
-index b8b3a37..933bea5 100644
---- a/arch/x86/platform/uv/tlb_uv.c
-+++ b/arch/x86/platform/uv/tlb_uv.c
-@@ -1463,7 +1463,7 @@ static ssize_t ptc_proc_write(struct file *file, const char __user *user,
+-	/*
+-	 * Disable GART TLB Walk Errors on Fam10h. We do this here
+-	 * because this is always needed when GART is enabled, even in a
+-	 * kernel which has no MCE support built in.
+-	 */
+ 	if (c->x86 == 0x10) {
+ 		/*
++		 * Disable GART TLB Walk Errors on Fam10h. We do this here
++		 * because this is always needed when GART is enabled, even in a
++		 * kernel which has no MCE support built in.
+ 		 * BIOS should disable GartTlbWlk Errors themself. If
+ 		 * it doesn't do it here as suggested by the BKDG.
+ 		 *
+@@ -723,6 +716,19 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 			mask |= (1 << 10);
+ 			wrmsrl_safe(MSR_AMD64_MCx_MASK(4), mask);
+ 		}
++
++		/*
++		 * On family 10h BIOS may not have properly enabled WC+ support,
++		 * causing it to be converted to CD memtype. This may result in
++		 * performance degradation for certain nested-paging guests.
++		 * Prevent this conversion by clearing bit 24 in
++		 * MSR_AMD64_BU_CFG2.
++		 */
++		if (c->x86 == 0x10) {
++			rdmsrl(MSR_AMD64_BU_CFG2, value);
++			value &= ~(1ULL << 24);
++			wrmsrl(MSR_AMD64_BU_CFG2, value);
++		}
  	}
  
- 	if (input_arg == 0) {
--		elements = sizeof(stat_description)/sizeof(*stat_description);
-+		elements = ARRAY_SIZE(stat_description);
- 		printk(KERN_DEBUG "# cpu:      cpu number\n");
- 		printk(KERN_DEBUG "Sender statistics:\n");
- 		for (i = 0; i < elements; i++)
-@@ -1504,7 +1504,7 @@ static int parse_tunables_write(struct bau_control *bcp, char *instr,
- 	char *q;
- 	int cnt = 0;
- 	int val;
--	int e = sizeof(tunables) / sizeof(*tunables);
-+	int e = ARRAY_SIZE(tunables);
- 
- 	p = instr + strspn(instr, WHITESPACE);
- 	q = p;
-diff --git a/arch/x86/um/fault.c b/arch/x86/um/fault.c
-index 8784ab3..84ac7f7 100644
---- a/arch/x86/um/fault.c
-+++ b/arch/x86/um/fault.c
-@@ -20,7 +20,7 @@ int arch_fixup(unsigned long address, struct uml_pt_regs *regs)
- 	const struct exception_table_entry *fixup;
- 
- 	fixup = search_exception_tables(address);
--	if (fixup != 0) {
-+	if (fixup) {
- 		UPT_IP(regs) = fixup->fixup;
- 		return 1;
- 	}
+ 	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 6e68a61..0f49677 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -117,7 +117,7 @@ void release_thread(struct task_struct *dead_task)
+ {
+ 	if (dead_task->mm) {
+ 		if (dead_task->mm->context.size) {
+-			pr_warn("WARNING: dead process %8s still has LDT? <%p/%d>\n",
++			pr_warn("WARNING: dead process %s still has LDT? <%p/%d>\n",
+ 				dead_task->comm,
+ 				dead_task->mm->context.ldt,
+ 				dead_task->mm->context.size);
