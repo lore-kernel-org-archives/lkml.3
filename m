@@ -1,125 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758602Ab3BSKHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:07:51 -0500
-Received: from mail-gh0-f173.google.com ([209.85.160.173]:51512 "EHLO
-	mail-gh0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755812Ab3BSKHt (ORCPT
+	id S1758662Ab3BSKIO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:08:14 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:47804 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758568Ab3BSKIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:07:49 -0500
-Message-ID: <51234EEC.3010700@gmail.com>
-Date: Tue, 19 Feb 2013 18:07:40 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 19 Feb 2013 05:08:12 -0500
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Sealey <matt@genesi-usa.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: Re: [PATCH] zsmalloc: Fix TLB coherency and build problem
-References: <1359334808-19794-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1359334808-19794-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFw+KOg1z_bx=WFLpY5mhJ2AiAfEa5FW6XsU8YBKfUWThg@mail.gmail.com>
+References: <20130213193411.GA15928@redhat.com>
+	<CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com>
+	<20130215011503.GA11914@redhat.com>
+	<CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com>
+	<20130215174435.GA2792@linux.vnet.ibm.com>
+	<CA+55aFy8FeGMOnWwkfmyFYyVCw+k1LSVg7BG0tsTNZzqi5EKYg@mail.gmail.com>
+	<CAFTL4hyTfwAZWz=gMokk5oG3HO8iGh7=FtoNv89CMg_Lm-TPNg@mail.gmail.com>
+	<CA+55aFz4vO-JGv+A7h=uxwfyWEMcK=Q3gntwHfr=a4OUVs-f+g@mail.gmail.com>
+	<CAFTL4hx7iX8vZFu7pO5wLSPpEzfMD8K7n0bUsY-wK-uCsDAsEw@mail.gmail.com>
+	<CAFTL4hzUy+2qDaCDK3jCUs+6Fe48-uU9KSB+Ssk+-i=zYhqaRg@mail.gmail.com>
+	<20130218155324.GA5816@somewhere.redhat.com>
+	<CA+55aFw+KOg1z_bx=WFLpY5mhJ2AiAfEa5FW6XsU8YBKfUWThg@mail.gmail.com>
+Date: Tue, 19 Feb 2013 11:08:10 +0100
+Message-ID: <CAFTL4hw_rs7WLx_yav6aAE-AhS1bLvbup4k7UfPAs3j+sjBYvw@mail.gmail.com>
+Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paul.mckenney@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2013 09:00 AM, Minchan Kim wrote:
-> Recently, Matt Sealey reported he fail to build zsmalloc caused by
-> using of local_flush_tlb_kernel_range which are architecture dependent
-> function so !CONFIG_SMP in ARM couldn't implement it so it ends up
-> build error following as.
+2013/2/18 Linus Torvalds <torvalds@linux-foundation.org>:
+> On Mon, Feb 18, 2013 at 7:53 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>
+>> Here is an updated version. It cleans up things a bit and boots fine with my usual
+>> config. There might be still some small details to work on but here is the big picture.
+>>
+>> What do you think?
+>
+> Looks fine to me. Did this get tested with lockdep and spinlock
+> debugging etc? Those are the ones that are the primary users of all
+> the irq state and preempt tracing..
 
-Confuse me!
-
-1) Why I see flush_tlb_kernel_range is different in different architecture?
-2) Does local here means local cpu? If the answer is yes, why ARM 
-doesn't support it?
-
->
->    MODPOST 216 modules
->    LZMA    arch/arm/boot/compressed/piggy.lzma
->    AS      arch/arm/boot/compressed/lib1funcs.o
-> ERROR: "v7wbi_flush_kern_tlb_range"
-> [drivers/staging/zsmalloc/zsmalloc.ko] undefined!
-> make[1]: *** [__modpost] Error 1
-> make: *** [modules] Error 2
-> make: *** Waiting for unfinished jobs....
->
-> The reason we used that function is copy method by [1]
-> was really slow in ARM but at that time.
->
-> More severe problem is ARM can prefetch speculatively on other CPUs
-> so under us, other TLBs can have an entry only if we do flush local
-> CPU. Russell King pointed that. Thanks!
-> We don't have many choices except using flush_tlb_kernel_range.
->
-> My experiment in ARMv7 processor 4 core didn't make any difference with
-> zsmapbench[2] between local_flush_tlb_kernel_range and flush_tlb_kernel_range
-> but still page-table based is much better than copy-based.
->
-> * bigger is better.
->
-> 1. local_flush_tlb_kernel_range: 3918795 mappings
-> 2. flush_tlb_kernel_range : 3989538 mappings
-> 3. copy-based: 635158 mappings
->
-> This patch replace local_flush_tlb_kernel_range with
-> flush_tlb_kernel_range which are avaialbe in all architectures
-> because we already have used it in vmalloc allocator which are
-> generic one so build problem should go away and performane loss
-> shoud be void.
->
-> [1] f553646, zsmalloc: add page table mapping method
-> [2] https://github.com/spartacus06/zsmapbench
->
-> Cc: stable@vger.kernel.org
-> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-> Cc: Nitin Gupta <ngupta@vflare.org>
-> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> Reported-by: Matt Sealey <matt@genesi-usa.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->
-> Matt, Could you test this patch?
->
->   drivers/staging/zsmalloc/zsmalloc-main.c |   10 ++++------
->   1 file changed, 4 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index eb00772..82e627c 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -222,11 +222,9 @@ struct zs_pool {
->   /*
->    * By default, zsmalloc uses a copy-based object mapping method to access
->    * allocations that span two pages. However, if a particular architecture
-> - * 1) Implements local_flush_tlb_kernel_range() and 2) Performs VM mapping
-> - * faster than copying, then it should be added here so that
-> - * USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use page table
-> - * mapping rather than copying
-> - * for object mapping.
-> + * performs VM mapping faster than copying, then it should be added here
-> + * so that USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use
-> + * page table mapping rather than copying for object mapping.
->   */
->   #if defined(CONFIG_ARM)
->   #define USE_PGTABLE_MAPPING
-> @@ -663,7 +661,7 @@ static inline void __zs_unmap_object(struct mapping_area *area,
->   
->   	flush_cache_vunmap(addr, end);
->   	unmap_kernel_range_noflush(addr, PAGE_SIZE * 2);
-> -	local_flush_tlb_kernel_range(addr, end);
-> +	flush_tlb_kernel_range(addr, end);
->   }
->   
->   #else /* USE_PGTABLE_MAPPING */
-
+Yeah I always keep those options turned on to test my patches. But I
+need to test with and without preempt, check if I can reuse more
+local_bh_disable, etc... So there will be more iterations.
