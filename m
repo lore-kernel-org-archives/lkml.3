@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933154Ab3BSP2D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 10:28:03 -0500
-Received: from mga03.intel.com ([143.182.124.21]:3836 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933036Ab3BSP2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 10:28:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,696,1355126400"; 
-   d="scan'208";a="204012241"
-Message-ID: <1361287675.2323.26.camel@rzhang1-mobl4>
-Subject: Re: thermal governor: does it actually work??
-From: Zhang Rui <rui.zhang@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Peter Feuerer <peter@piie.net>, Alexander Lam <azl@andrew.cmu.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andreas Mohr <andi@lisas.de>
-Date: Tue, 19 Feb 2013 23:27:55 +0800
-In-Reply-To: <20130219150551.GL26623@pd.tnic>
-References: <744357E9AAD1214791ACBA4B0B90926329ED72@SHSMSX101.ccr.corp.intel.com>
-	 <20130215154931.GA26213@rhlx01.hs-esslingen.de>
-	 <CACWwPiuk0GynEwe3RuKndWnsYwTuPhO0ob6sJ6ve34u1_RtkYw@mail.gmail.com>
-	 <20130216214712.GA13494@pd.tnic> <cone.1361068993.271211.4532.1000@galar>
-	 <20130217140908.GA20323@pd.tnic> <cone.1361115717.636831.25189.1000@galar>
-	 <20130218135012.GB16622@pd.tnic> <cone.1361206053.493518.2246.1000@galar>
-	 <1361285464.2323.20.camel@rzhang1-mobl4> <20130219150551.GL26623@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S933166Ab3BSP2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 10:28:33 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:63889 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933036Ab3BSP2a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 10:28:30 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: balbi@ti.com
+Subject: Re: [PATCH v2 0/5] Generic PHY Framework
+Date: Tue, 19 Feb 2013 15:28:17 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: kishon <kishon@ti.com>, rob@landley.net, tony@atomide.com,
+        linux@arm.linux.org.uk, eballetbo@gmail.com, javier@dowhile0.org,
+        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        mchehab@redhat.com, cesarb@cesarb.net, davem@davemloft.net,
+        santosh.shilimkar@ti.com, broonie@opensource.wolfsonmicro.com,
+        swarren@nvidia.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org
+References: <1361253198-7401-1-git-send-email-kishon@ti.com> <201302191434.40495.arnd@arndb.de> <20130219150500.GG4390@arwen.pp.htv.fi>
+In-Reply-To: <20130219150500.GG4390@arwen.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <201302191528.17698.arnd@arndb.de>
+X-Provags-ID: V02:K0:ZHKBpAaBd3PjMGieP1oXPy+btmP57Wbtccrm5TU83b/
+ UznycnDzm/jQHgJR/A3VW+kYlhRNB9iIsejgkejWnTd7tj3tM4
+ cgEFU2lSpMlelX6G1uEcaZra53sKtoF0U5mogJQdTX0dBK2Urc
+ Ij7n947MjUN2GWtsNL1LLOkn7j+LTJTT8vZPFn0G6owrrm61Z1
+ fG9WeJMuU1TPC7PQzW3CyegYAmro5SDmy+EvvrCmAR/Hw+iUYk
+ X76NiGyk6NtPJv2RSBiEqv5ciNcdAAMJ+HlBgE+Tzqqqd4Z5cv
+ vxzG7utr3BYnqWp68+7adJJv3r7RHl7hAfXJBanIMYbHb8WLfD
+ NtHNmrGEDM1eCpvRN+Xg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-19 at 16:05 +0100, Borislav Petkov wrote:
-> On Tue, Feb 19, 2013 at 10:51:04PM +0800, Zhang Rui wrote:
-> > Okay, here I see the problem, say you want to turn on the fan at 60C and
-> > turn it off at 55C, is this what you want?
-> > hmmm, is it possible to do some tricks in acerhdf driver?
-> > say,
-> > only one active trip point as before. but change acerhdf_get_trip_temp
-> > to:
-> > acerhdf_get_trip_temp()
-> > {
-> > 	if (fan is on)
-> > 		return 55;
-> > 	else
-> > 		return 60;
-> > }
+On Tuesday 19 February 2013, Felipe Balbi wrote:
+> On Tue, Feb 19, 2013 at 02:34:40PM +0000, Arnd Bergmann wrote:
+> > On Tuesday 19 February 2013, Felipe Balbi wrote:
+> > > On Tue, Feb 19, 2013 at 12:33:54PM +0000, Arnd Bergmann wrote:
+> > It's a fine line, but I think a phy is something that resembles a device
+> > more than an LED does. When I read patch 1, I also noticed and commented
+> > on the fact that it does use a 'class'. Now, according to Greg, we should
+> > use 'bus_type' instead of 'class' in new code. I originally disagreed with
+> > that concept, but he's the boss here and it's good if he has a vision
+> > how things should be lined out.
 > > 
-> > In this way, when the fan is off and the temperature is raising, the fan
-> > will be turned on at 60C because we have an active trip point of 60C.
-> > And when the fan is turned on and the temperature starts to drop, the
-> > fan will be turned off at 55C.
+> > In practice, there is little difference between a 'bus_type' and a 'class',
+> > so just replace any instance of the former with the latter in your head
+> > when reading the code ;-)
 > 
-> Makes a sense to me. I was questioning the need for 4 trip points too.
+> it's not so simple :-) if we must use bus_type we need to introduce all
+> the device/driver matching mechanism which isn't necessary with a class.
 
-I do not understand why you need 4 trip points for the issue above,
-unless I missed another gap here.
+I think the idea is to use a bus_type that has devices but no drivers
+associated with it, but I might be misremembering things.
 
-> We probably would need a second, critical trip point though, just in
-> case.
+> > I understand that there is not a real common bus here, and the bus_type
+> > infrastructure would basically be used as a way to represent each PHY
+> > in sysfs and provide a way to enumerate and look them up inside of the
+> > kernel.
 > 
-yeah, it is okay to have a critical trip point.
+> right, but maybe we need another mechanism. If, in the long run we must
+> use bus_type, then eventually pwm, led, regulators, etc will all be
+> converted to bus_type. It will look quite weird IMHO.
 
-thanks,
-rui
+Yes, it would be a bit unusual, I agree.
 
+> Greg, can you pitch your suggestion here ? It would be great to hear
+> your rationale behind dropping class infrastructure, couldn't find
+> anything through Google and since feature-removal-schedule.txt has been
+> removed (without adding it to feature-removal-schedule.txt, I must add
+> :-) I don't know what's the idea behind removing classes.
+
+I believe for now, the idea is to not add any new classes, but keep
+the existing ones for compatibility. 'struct class_device' however
+was already removed and got turned into 'struct device'.
+
+	Arnd
