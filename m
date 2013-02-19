@@ -1,337 +1,496 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933416Ab3BSSwF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:52:05 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:41847 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933434Ab3BSSwC (ORCPT
+	id S934185Ab3BSSwO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:52:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54296 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933434Ab3BSSwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:52:02 -0500
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] dcache: Don't take unncessary lock in d_count update
-Date: Tue, 19 Feb 2013 13:50:56 -0500
-Message-Id: <1361299859-27056-2-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1361299859-27056-1-git-send-email-Waiman.Long@hp.com>
-References: <1361299859-27056-1-git-send-email-Waiman.Long@hp.com>
-To: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>
+	Tue, 19 Feb 2013 13:52:06 -0500
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: fangxiaozhi <huananhu@huawei.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: [PATCH 33/81] USB: storage: optimize to match the Huawei USB storage devices and support new switch command
+Date: Tue, 19 Feb 2013 15:48:56 -0300
+Message-Id: <1361299784-8830-34-git-send-email-herton.krzesinski@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
+References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code takes the dentry's d_lock lock whenever the d_count
-reference count is being updated. In reality, nothing big really
-happens until d_count goes to 0 in dput(). So it is not necessary to
-take the lock if the reference count won't go to 0.
+3.5.7.6 -stable review patch.  If anyone has any objections, please let me know.
 
-Without using a lock, multiple threads may update d_count
-simultaneously.  Therefore, atomic instructions must be used to
-ensure consistency except in shrink_dcache_for_umount*() where the
-whole superblock is being dismounted and locking is not needed.
+------------------
 
-The worst case scenarios are:
+From: fangxiaozhi <huananhu@huawei.com>
 
-1. d_lock taken in dput with d_count = 2 in one thread and another
-   thread comes in to atomically decrement d_count without taking
-   the lock. This may result in a d_count of 0 with no deleting
-   action taken.
+commit 200e0d994d9d1919b28c87f1a5fb99a8e13b8a0f upstream.
 
-2. d_lock taken in dput with d_count = 1 in one thread and another
-   thread comes in to atomically increment d_count without taking
-   the lock. This may result in the dentry in the deleted state while
-   having a d_count of 1.
+1. Optimize the match rules with new macro for Huawei USB storage devices,
+   to avoid to load USB storage driver for the modem interface
+   with Huawei devices.
+2. Add to support new switch command for new Huawei USB dongles.
 
-Without taking a lock, we need to make sure the decrementing or
-incrementing action should not be taken while other threads are
-updating d_count simultaneously. This can be done by using the
-atomic cmpxchg instruction which will fail if the underlying value
-is changed.  If the lock is taken, it should be safe to use a simpler
-atomic increment or decrement instruction.
-
-To make sure that the above worst case scenerios will not happen,
-the dget() function must take the lock if d_count <= 1. Similarly,
-the dput() function must take the lock if d_count <= 2. The cmpxchg()
-call to update d_count will be tried twice before falling back to
-using the lock as there is a fairly good chance that the cmpxchg()
-may fail in a busy situation.
-
-Finally, the CPU must have an instructional level cmpxchg instruction
-or the emulated cmpxchg() function may be too expensive to
-use. Therefore, the above mentioned changes will only be applied if
-the __HAVE_ARCH_CMPXCHG flag is set. Most of the major architectures
-supported by Linux have this flag set with the notation exception
-of ARM.
-
-As for the performance of the updated reference counting code, it
-all depends on whether the cmpxchg instruction is used or not. The
-original code has 2 atomic instructions to lock and unlock the
-spinlock. The new code path has either 1 atomic cmpxchg instruction
-or 3 atomic instructions if the lock has to be taken. Depending on
-how frequent the cmpxchg instruction is used (d_count > 1 or 2),
-the new code can be faster or slower than the original one.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Signed-off-by: fangxiaozhi <huananhu@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- fs/dcache.c            |   23 ++++++----
- fs/namei.c             |    2 +-
- include/linux/dcache.h |  105 ++++++++++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 117 insertions(+), 13 deletions(-)
+ drivers/usb/storage/initializers.c |   76 ++++++++-
+ drivers/usb/storage/initializers.h |    4 +-
+ drivers/usb/storage/unusual_devs.h |  329 +-----------------------------------
+ 3 files changed, 78 insertions(+), 331 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 19153a0..20cc789 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -484,7 +484,7 @@ relock:
- 	}
- 
- 	if (ref)
--		dentry->d_count--;
-+		dcount_dec(dentry);
- 	/*
- 	 * if dentry was on the d_lru list delete it from there.
- 	 * inform the fs via d_prune that this dentry is about to be
-@@ -530,10 +530,13 @@ void dput(struct dentry *dentry)
- repeat:
- 	if (dentry->d_count == 1)
- 		might_sleep();
-+	if (dcount_dec_cmpxchg(dentry))
-+		return;
-+
- 	spin_lock(&dentry->d_lock);
- 	BUG_ON(!dentry->d_count);
- 	if (dentry->d_count > 1) {
--		dentry->d_count--;
-+		dcount_dec(dentry);
- 		spin_unlock(&dentry->d_lock);
- 		return;
- 	}
-@@ -550,7 +553,7 @@ repeat:
- 	dentry->d_flags |= DCACHE_REFERENCED;
- 	dentry_lru_add(dentry);
- 
--	dentry->d_count--;
-+	dcount_dec(dentry);
- 	spin_unlock(&dentry->d_lock);
- 	return;
- 
-@@ -621,11 +624,13 @@ EXPORT_SYMBOL(d_invalidate);
- /* This must be called with d_lock held */
- static inline void __dget_dlock(struct dentry *dentry)
- {
--	dentry->d_count++;
-+	dcount_inc(dentry);
+diff --git a/drivers/usb/storage/initializers.c b/drivers/usb/storage/initializers.c
+index 105d900..16b0bf0 100644
+--- a/drivers/usb/storage/initializers.c
++++ b/drivers/usb/storage/initializers.c
+@@ -92,8 +92,8 @@ int usb_stor_ucr61s2b_init(struct us_data *us)
+ 	return 0;
  }
  
- static inline void __dget(struct dentry *dentry)
+-/* This places the HUAWEI E220 devices in multi-port mode */
+-int usb_stor_huawei_e220_init(struct us_data *us)
++/* This places the HUAWEI usb dongles in multi-port mode */
++static int usb_stor_huawei_feature_init(struct us_data *us)
  {
-+	if (dcount_inc_cmpxchg(dentry))
-+		return;
- 	spin_lock(&dentry->d_lock);
- 	__dget_dlock(dentry);
- 	spin_unlock(&dentry->d_lock);
-@@ -650,7 +655,7 @@ repeat:
- 	}
- 	rcu_read_unlock();
- 	BUG_ON(!ret->d_count);
--	ret->d_count++;
-+	dcount_inc(ret);
- 	spin_unlock(&ret->d_lock);
- 	return ret;
+ 	int result;
+ 
+@@ -104,3 +104,75 @@ int usb_stor_huawei_e220_init(struct us_data *us)
+ 	US_DEBUGP("Huawei mode set result is %d\n", result);
+ 	return 0;
  }
-@@ -782,7 +787,7 @@ static void try_prune_one_dentry(struct dentry *dentry)
- 	while (dentry) {
- 		spin_lock(&dentry->d_lock);
- 		if (dentry->d_count > 1) {
--			dentry->d_count--;
-+			dcount_dec(dentry);
- 			spin_unlock(&dentry->d_lock);
- 			return;
- 		}
-@@ -1980,7 +1985,7 @@ struct dentry *__d_lookup(struct dentry *parent, struct qstr *name)
- 				goto next;
- 		}
- 
--		dentry->d_count++;
-+		dcount_inc(dentry);
- 		found = dentry;
- 		spin_unlock(&dentry->d_lock);
- 		break;
-@@ -2984,7 +2989,7 @@ resume:
- 		}
- 		if (!(dentry->d_flags & DCACHE_GENOCIDE)) {
- 			dentry->d_flags |= DCACHE_GENOCIDE;
--			dentry->d_count--;
-+			dcount_dec(dentry);
- 		}
- 		spin_unlock(&dentry->d_lock);
- 	}
-@@ -2992,7 +2997,7 @@ resume:
- 		struct dentry *child = this_parent;
- 		if (!(this_parent->d_flags & DCACHE_GENOCIDE)) {
- 			this_parent->d_flags |= DCACHE_GENOCIDE;
--			this_parent->d_count--;
-+			dcount_dec(this_parent);
- 		}
- 		this_parent = try_to_ascend(this_parent, locked, seq);
- 		if (!this_parent)
-diff --git a/fs/namei.c b/fs/namei.c
-index 43a97ee..a1d5a36 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -537,7 +537,7 @@ static int unlazy_walk(struct nameidata *nd, struct dentry *dentry)
- 		 */
- 		BUG_ON(!IS_ROOT(dentry) && dentry->d_parent != parent);
- 		BUG_ON(!parent->d_count);
--		parent->d_count++;
-+		dcount_inc(parent);
- 		spin_unlock(&dentry->d_lock);
- 	}
- 	spin_unlock(&parent->d_lock);
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index c1754b5..09495ba 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -255,6 +255,103 @@ extern int have_submounts(struct dentry *);
- extern void d_rehash(struct dentry *);
- 
- /**
-+ *	dcount_inc, dcount_dec - increment or decrement the dentry reference
-+ *				 count
-+ *	@dentry: dentry to get a reference to
++
++/*
++ * It will send a scsi switch command called rewind' to huawei dongle.
++ * When the dongle receives this command at the first time,
++ * it will reboot immediately. After rebooted, it will ignore this command.
++ * So it is  unnecessary to read its response.
 + */
-+static inline void dcount_inc(struct dentry *dentry)
++static int usb_stor_huawei_scsi_init(struct us_data *us)
 +{
-+#ifdef __HAVE_ARCH_CMPXCHG
-+	atomic_inc((atomic_t *)&dentry->d_count);
-+#else
-+	dentry->d_count++;
-+#endif
++	int result = 0;
++	int act_len = 0;
++	struct bulk_cb_wrap *bcbw = (struct bulk_cb_wrap *) us->iobuf;
++	char rewind_cmd[] = {0x11, 0x06, 0x20, 0x00, 0x00, 0x01, 0x01, 0x00,
++			0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
++
++	bcbw->Signature = cpu_to_le32(US_BULK_CB_SIGN);
++	bcbw->Tag = 0;
++	bcbw->DataTransferLength = 0;
++	bcbw->Flags = bcbw->Lun = 0;
++	bcbw->Length = sizeof(rewind_cmd);
++	memset(bcbw->CDB, 0, sizeof(bcbw->CDB));
++	memcpy(bcbw->CDB, rewind_cmd, sizeof(rewind_cmd));
++
++	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, bcbw,
++					US_BULK_CB_WRAP_LEN, &act_len);
++	US_DEBUGP("transfer actual length=%d, result=%d\n", act_len, result);
++	return result;
 +}
 +
-+static inline void dcount_dec(struct dentry *dentry)
-+{
-+#ifdef __HAVE_ARCH_CMPXCHG
-+	atomic_dec((atomic_t *)&dentry->d_count);
-+#else
-+	dentry->d_count--;
-+#endif
-+}
-+
-+/**
-+ *	dcount_inc_cmpxchg - increment dentry reference count using cmpxchg
-+ *	@dentry: dentry to get a reference to
-+ *	Return : 0 on failure, else 1
-+ *
-+ *	N.B. For architectures that do not have a cmpxchg instruction, the
-+ *	     substitute code may not perform better than taking the lock.
-+ *	     So this cmpxchg code path is disabled for those cases.
++/*
++ * It tries to find the supported Huawei USB dongles.
++ * In Huawei, they assign the following product IDs
++ * for all of their mobile broadband dongles,
++ * including the new dongles in the future.
++ * So if the product ID is not included in this list,
++ * it means it is not Huawei's mobile broadband dongles.
 + */
-+static inline int dcount_inc_cmpxchg(struct dentry *dentry)
++static int usb_stor_huawei_dongles_pid(struct us_data *us)
 +{
-+#ifdef __HAVE_ARCH_CMPXCHG
-+	int oldc = dentry->d_count,
-+	    newc;
++	struct usb_interface_descriptor *idesc;
++	int idProduct;
 +
-+	if (oldc > 1) {
-+		/*
-+		 * If reference count > 1, we can safely increment its
-+		 * value using atomic cmpxchg without locking. If the
-+		 * operation fails, fall back to using the lock.
-+		 */
-+		newc = oldc + 1;
-+		if (cmpxchg(&dentry->d_count, oldc, newc) == oldc)
++	idesc = &us->pusb_intf->cur_altsetting->desc;
++	idProduct = us->pusb_dev->descriptor.idProduct;
++	/* The first port is CDROM,
++	 * means the dongle in the single port mode,
++	 * and a switch command is required to be sent. */
++	if (idesc && idesc->bInterfaceNumber == 0) {
++		if ((idProduct == 0x1001)
++			|| (idProduct == 0x1003)
++			|| (idProduct == 0x1004)
++			|| (idProduct >= 0x1401 && idProduct <= 0x1500)
++			|| (idProduct >= 0x1505 && idProduct <= 0x1600)
++			|| (idProduct >= 0x1c02 && idProduct <= 0x2202)) {
 +			return 1;
-+		cpu_relax();
-+		/* Retry one more time */
-+		oldc = ACCESS_ONCE(dentry->d_count);
-+		if (likely(oldc > 1)) {
-+			newc = oldc + 1;
-+			if (cmpxchg(&dentry->d_count, oldc, newc) == oldc)
-+				return 1;
-+			cpu_relax();
 +		}
 +	}
-+#endif
 +	return 0;
 +}
 +
-+/**
-+ *	dcount_dec_cmpxchg - decrement dentry reference count using cmpxchg
-+ *	@dentry: dentry to get a reference to
-+ *	Return : 0 on failure, else 1
-+ */
-+static inline int dcount_dec_cmpxchg(struct dentry *dentry)
++int usb_stor_huawei_init(struct us_data *us)
 +{
-+#ifdef __HAVE_ARCH_CMPXCHG
-+	int oldc = dentry->d_count,
-+	    newc;
++	int result = 0;
 +
-+	/*
-+	 * If d_count is bigger than 2, we can safely decrement the
-+	 * reference count using atomic cmpxchg instruction without locking.
-+	 * Even if d_lock is taken by a thread running dput() with a parallel
-+	 * atomic_dec(), the reference count won't go to 0 without anyone
-+	 * noticing.
-+	 */
-+	if (oldc > 2) {
-+		newc = oldc - 1;
-+		if (cmpxchg(&dentry->d_count, oldc, newc) == oldc)
-+			return 1;
-+		cpu_relax();
-+		/* Retry one more time */
-+		oldc = ACCESS_ONCE(dentry->d_count);
-+		if (likely(oldc > 2)) {
-+			newc = oldc - 1;
-+			if (cmpxchg(&dentry->d_count, oldc, newc) == oldc)
-+				return 1;
-+			cpu_relax();
-+		}
++	if (usb_stor_huawei_dongles_pid(us)) {
++		if (us->pusb_dev->descriptor.idProduct >= 0x1446)
++			result = usb_stor_huawei_scsi_init(us);
++		else
++			result = usb_stor_huawei_feature_init(us);
 +	}
-+#endif
-+	return 0;
++	return result;
 +}
-+
-+/**
-  * d_add - add dentry to hash queues
-  * @entry: dentry to add
-  * @inode: The inode to attach to this dentry
-@@ -316,7 +413,7 @@ static inline int __d_rcu_to_refcount(struct dentry *dentry, unsigned seq)
- 	assert_spin_locked(&dentry->d_lock);
- 	if (!read_seqcount_retry(&dentry->d_seq, seq)) {
- 		ret = 1;
--		dentry->d_count++;
-+		dcount_inc(dentry);
- 	}
+diff --git a/drivers/usb/storage/initializers.h b/drivers/usb/storage/initializers.h
+index 529327f..5376d4f 100644
+--- a/drivers/usb/storage/initializers.h
++++ b/drivers/usb/storage/initializers.h
+@@ -46,5 +46,5 @@ int usb_stor_euscsi_init(struct us_data *us);
+  * flash reader */
+ int usb_stor_ucr61s2b_init(struct us_data *us);
  
- 	return ret;
-@@ -338,7 +435,6 @@ extern char *dentry_path_raw(struct dentry *, char *, int);
- extern char *dentry_path(struct dentry *, char *, int);
+-/* This places the HUAWEI E220 devices in multi-port mode */
+-int usb_stor_huawei_e220_init(struct us_data *us);
++/* This places the HUAWEI usb dongles in multi-port mode */
++int usb_stor_huawei_init(struct us_data *us);
+diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+index dd2c64f..fff5d10 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1515,335 +1515,10 @@ UNUSUAL_DEV(  0x1210, 0x0003, 0x0100, 0x0100,
+ /* Reported by fangxiaozhi <huananhu@huawei.com>
+  * This brings the HUAWEI data card devices into multi-port mode
+  */
+-UNUSUAL_DEV(  0x12d1, 0x1001, 0x0000, 0x0000,
++UNUSUAL_VENDOR_INTF(0x12d1, 0x08, 0x06, 0x50,
+ 		"HUAWEI MOBILE",
+ 		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1003, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1004, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1401, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1402, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1403, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1404, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1405, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1406, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1407, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1408, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1409, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x140A, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x140B, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x140C, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x140D, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x140E, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x140F, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1410, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1411, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1412, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1413, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1414, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1415, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1416, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1417, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1418, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1419, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x141A, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x141B, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x141C, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x141D, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x141E, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x141F, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1420, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1421, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1422, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1423, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1424, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1425, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1426, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1427, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1428, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1429, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x142A, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x142B, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x142C, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x142D, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x142E, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x142F, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1430, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1431, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1432, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1433, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1434, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1435, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1436, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1437, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1438, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x1439, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x143A, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x143B, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x143C, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x143D, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x143E, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
+-		0),
+-UNUSUAL_DEV(  0x12d1, 0x143F, 0x0000, 0x0000,
+-		"HUAWEI MOBILE",
+-		"Mass Storage",
+-		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_e220_init,
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_huawei_init,
+ 		0),
  
- /* Allocation counts.. */
--
- /**
-  *	dget, dget_dlock -	get a reference to a dentry
-  *	@dentry: dentry to get a reference to
-@@ -350,13 +446,16 @@ extern char *dentry_path(struct dentry *, char *, int);
- static inline struct dentry *dget_dlock(struct dentry *dentry)
- {
- 	if (dentry)
--		dentry->d_count++;
-+		dcount_inc(dentry);
- 	return dentry;
- }
- 
- static inline struct dentry *dget(struct dentry *dentry)
- {
- 	if (dentry) {
-+		if (dcount_inc_cmpxchg(dentry))
-+			return dentry;
-+
- 		spin_lock(&dentry->d_lock);
- 		dget_dlock(dentry);
- 		spin_unlock(&dentry->d_lock);
+ /* Reported by Vilius Bilinkevicius <vilisas AT xxx DOT lt) */
 -- 
-1.7.1
+1.7.9.5
 
