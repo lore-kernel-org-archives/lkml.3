@@ -1,109 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab3BSCCR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 21:02:17 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:43690 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758027Ab3BSCCO (ORCPT
+	id S932148Ab3BSCEz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 21:04:55 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:63186 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758027Ab3BSCEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 21:02:14 -0500
-X-AuditID: cbfee68e-b7fc26d000001938-d0-5122dd210a02
-From: Boojin Kim <boojin.kim@samsung.com>
-To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Dan Williams'" <djbw@fb.com>, "'Vinod Koul'" <vinod.koul@intel.com>,
-        "'Jaswinder Singh'" <jassi.brar@samsung.com>,
-        "'Ben Dooks'" <ben-linux@fluff.org>
-References: 
-In-reply-to: 
-Subject: [PATCH 2/2] ARM: EXYNOS: support burst mode for for dev-to-mem and
- dev-to-mem transmit
-Date: Tue, 19 Feb 2013 11:02:09 +0900
-Message-id: <00eb01ce0e45$20223c90$6066b5b0$%kim@samsung.com>
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4ORNEloL6pleRKSRCwKBmaENW5EwAAAdYQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t8zI13Fu0qBBq9bTS0u75rDZjHj/D4m
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDImzDjPVnCRr+LUlTbGBsbVPF2MnBwSAiYS++d9ZIGw
-	xSQu3FvP1sXIxSEksIxRYvnOdWwwRYfvzYRKLAJKTH7LCuH8ZZSYcOASM0gVm4CmxIzv09lB
-	bBGBbIkrjfeZQYqYBV4yStzadgOonQOog1tidXMQSA2nAI/Euj+dYL3CAokSF2+sBLNZBFQl
-	rvZMA7N5BWwlZt5YxwzSKiGgLvHory7EeCOJB+s7wI5jFhCR2PfiHSPIKgmB32wSxxdsgZoj
-	IPFt8iEWiF5ZiU0HmCGekZQ4uOIGywRG0VlI2hcwMq5iFE0tSC4oTkovMtIrTswtLs1L10vO
-	z93ECAnqvh2MNw9YH2JMBho9kVlKNDkfGBV5JfGGxsYmZiamJuaWpuampAkrifPKX5IJFBJI
-	TyxJzU5NLUgtii8qzUktPsTIxMEp1cCYVCye/7H2uv/8e3JuV7o9vr7v2enzuHOucISiy5J3
-	ufnzs0LusmVMOur76kb+vIgeue1ie79nHO3oZAz/b6HSrSqvzp1RJXzjmLG7d0zIJ8tb7ELf
-	t3FEPF0WrC5q4/KGzanUqseO5/xyphxdy7x3Fu1Czx7Hmx9mZD/tpHZIbabeSen5v5RYijMS
-	DbWYi4oTATyDO5qAAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t9jAV3Fu0qBBh9/6llc3jWHzWLG+X1M
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmTJhxnq3gIl/F
-	qSttjA2Mq3m6GDk5JARMJA7fm8kGYYtJXLi3Hsjm4hASWMQosXzyW1YI5y+jxIQDl5hBqtgE
-	NCVmfJ/ODmKLCGRLXGm8zwxSxCzwklHi1rYbQO0cQB3cEqubg0BqOAV4JNb96QTrFRZIlLh4
-	YyWYzSKgKnG1ZxqYzStgKzHzxjpmkFYJAXWJR391IcYbSTxY3wF2HLOAiMS+F+8YJzDyz0Li
-	LmBkXMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHDPPpHcwrmqwOMQowMGoxMP7wVEpUIg1
-	say4MvcQowQHs5IIb0c7UIg3JbGyKrUoP76oNCe1+BBjMtCBE5mlRJPzgfGcVxJvaGxiZmRp
-	ZGZhZGJuTpqwkjgv46knAUIC6YklqdmpqQWpRTBbmDg4pRoYK35u/3OnynAiE8N5t/0Tlx+f
-	+s4xT+vSC6X92afzuqYmPRR7ZNBg97p3j8x1pm+z25e1aut3rtqe/dhn6tSmbVu5vOdmcp2J
-	CDx3/8rZrl+cTyY1zwttWNXkVBy806ayyfzajYeb7I+v6X3jMufzk5/NT9e9VJXOnT4t84b1
-	HeOwPK6FRy+9r1ZiKc5INNRiLipOBADu6Dlx3QIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 18 Feb 2013 21:04:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1302180939200.2246@eggly.anvils>
+References: <CAFNq8R4UYvygk8+X+NZgyGjgU5vBsEv1UM6MiUxah6iW8=0HrQ@mail.gmail.com>
+	<alpine.LNX.2.00.1302180939200.2246@eggly.anvils>
+Date: Tue, 19 Feb 2013 10:04:53 +0800
+Message-ID: <CAFNq8R5x3tD9Fn4TWna58VfdiRedPkrTDkeHXStkL7yBngL1mw@mail.gmail.com>
+Subject: Re: Should a swapped out page be deleted from swap cache?
+From: Li Haifeng <omycle@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds to support burst mode for for dev-to-mem and dev-to-mem transmit
+2013/2/19 Hugh Dickins <hughd@google.com>
+>
+> On Mon, 18 Feb 2013, Li Haifeng wrote:
+>
+> > For explain my question, the two points should be displayed as below.
+> >
+> > 1.  If an anonymous page is swapped out, this page will be deleted
+> > from swap cache and be put back into buddy system.
+>
+> Yes, unless the page is referenced again before it comes to be
+> deleted from swap cache.
+>
+> >
+> > 2. When a page is swapped out, the sharing count of swap slot must not
+> > be zero. That is, page_swapcount(page) will not return zero.
+>
+> I would not say "must not": we just prefer not to waste time on swapping
+> a page out if its use count has already gone to 0.  And its use count
+> might go down to 0 an instant after swap_writepage() makes that check.
+>
 
-Signed-off-by: Boojin Kim <boojin.kim@samsung.com>
----
- arch/arm/plat-samsung/dma-ops.c              |   10 ++++++++--
- arch/arm/plat-samsung/include/plat/dma-ops.h |    1 +
- 2 files changed, 9 insertions(+), 2 deletions(-)
+Thanks for your reply and patience.
 
-diff --git a/arch/arm/plat-samsung/dma-ops.c b/arch/arm/plat-samsung/dma-ops.c
-index d088afa..c25e842 100644
---- a/arch/arm/plat-samsung/dma-ops.c
-+++ b/arch/arm/plat-samsung/dma-ops.c
-@@ -54,14 +54,20 @@ static int samsung_dmadev_config(unsigned ch,
- 		slave_config.direction = param->direction;
- 		slave_config.src_addr = param->fifo;
- 		slave_config.src_addr_width = param->width;
--		slave_config.src_maxburst = 1;
-+		if (param->maxburst)
-+			slave_config.src_maxburst = param->maxburst;
-+		else
-+			slave_config.src_maxburst = 1;
- 		dmaengine_slave_config(chan, &slave_config);
- 	} else if (param->direction == DMA_MEM_TO_DEV) {
- 		memset(&slave_config, 0, sizeof(struct dma_slave_config));
- 		slave_config.direction = param->direction;
- 		slave_config.dst_addr = param->fifo;
- 		slave_config.dst_addr_width = param->width;
--		slave_config.dst_maxburst = 1;
-+		if (param->maxburst)
-+			slave_config.dst_maxburst = param->maxburst;
-+		else
-+			slave_config.dst_maxburst = 1;
- 		dmaengine_slave_config(chan, &slave_config);
- 	} else {
- 		pr_warn("unsupported direction\n");
-diff --git a/arch/arm/plat-samsung/include/plat/dma-ops.h b/arch/arm/plat-samsung/include/plat/dma-ops.h
-index f5144cd..95893c7 100644
---- a/arch/arm/plat-samsung/include/plat/dma-ops.h
-+++ b/arch/arm/plat-samsung/include/plat/dma-ops.h
-@@ -35,6 +35,7 @@ struct samsung_dma_prep {
- struct samsung_dma_config {
- 	enum dma_transfer_direction direction;
- 	enum dma_slave_buswidth width;
-+	u32 maxburst;
- 	dma_addr_t fifo;
- };
+If a anonymous page is swapped out and  comes to be reclaimable,
+shrink_page_list() will call __remove_mapping() to delete the page
+swapped out from swap cache. Corresponding code lists as below.
 
---
-1.7.5.4
+ 765 static unsigned long shrink_page_list(struct list_head *page_list,
+ 766                                       struct mem_cgroup_zone *mz,
+ 767                                       struct scan_control *sc,
+ 768                                       int priority,
+ 769                                       unsigned long *ret_nr_dirty,
+ 770                                       unsigned long *ret_nr_writeback)
+ 771 {
+...
+ 971                 if (!mapping || !__remove_mapping(mapping, page))
+ 972                         goto keep_locked;
+ 973
+ 974                 /*
+ 975                  * At this point, we have no other references and there is
+ 976                  * no way to pick any more up (removed from LRU, removed
+ 977                  * from pagecache). Can use non-atomic bitops now (and
+ 978                  * we obviously don't have to worry about waking
+up a process
+ 979                  * waiting on the page lock, because there are no
+references.
+ 980                  */
+ 981                 __clear_page_locked(page);
+ 982 free_it:
+ 983                 nr_reclaimed++;
+ 984
+ 985                 /*
+ 986                  * Is there need to periodically free_page_list? It would
+ 987                  * appear not as the counts should be low
+ 988                  */
+ 989                 list_add(&page->lru, &free_pages);
+ 990                 continue;
 
+Please correct me if my understanding is wrong.
 
+Thanks.
+> >
+> > Are both of them above right?
+> >
+> > According the two points above, I was confused to the line 655 below.
+> > When a page is swapped out, the return value of page_swapcount(page)
+> > will not be zero. So, the page couldn't be deleted from swap cache.
+>
+> Yes, we cannot free the swap as long as its data might be needed again.
+>
+> But a swap cache page may linger in memory for an indefinite time,
+> in between being queued for write out, and actually being freed from
+> the end of the lru by memory pressure.
+>
+> At various points where we hold the page lock on a swap cache page,
+> it's worth checking whether it is still actually needed, or could
+> now be freed from swap cache, and the corresponding swap slot freed:
+> that's what try_to_free_swap() does.
 
+I do agree. Thanks again.
+>
+> Hugh
+>
+> >
+> >  644  * If swap is getting full, or if there are no more mappings of
+> > this page,
+> >  645  * then try_to_free_swap is called to free its swap space.
+> >  646  */
+> >  647 int try_to_free_swap(struct page *page)
+> >  648 {
+> >  649         VM_BUG_ON(!PageLocked(page));
+> >  650
+> >  651         if (!PageSwapCache(page))
+> >  652                 return 0;
+> >  653         if (PageWriteback(page))
+> >  654                 return 0;
+> >  655         if (page_swapcount(page))//Has referenced by other swap out
+> > page.
+> >  656                 return 0;
+> >  657
+> >  658         /*
+> >  659          * Once hibernation has begun to create its image of
+> > memory,
+> >  660          * there's a danger that one of the calls to
+> > try_to_free_swap()
+> >  661          * - most probably a call from __try_to_reclaim_swap()
+> > while
+> >  662          * hibernation is allocating its own swap pages for the
+> > image,
+> >  663          * but conceivably even a call from memory reclaim - will
+> > free
+> >  664          * the swap from a page which has already been recorded in
+> > the
+> >  665          * image as a clean swapcache page, and then reuse its swap
+> > for
+> >  666          * another page of the image.  On waking from hibernation,
+> > the
+> >  667          * original page might be freed under memory pressure, then
+> >  668          * later read back in from swap, now with the wrong data.
+> >  669          *
+> >  670          * Hibration suspends storage while it is writing the image
+> >  671          * to disk so check that here.
+> >  672          */
+> >  673         if (pm_suspended_storage())
+> >  674                 return 0;
+> >  675
+> >  676         delete_from_swap_cache(page);
+> >  677         SetPageDirty(page);
+> >  678         return 1;
+> >  679 }
+> >
+> > Thanks.
