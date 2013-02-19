@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632Ab3BSKoi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:44:38 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60368 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932339Ab3BSKog (ORCPT
+	id S932698Ab3BSKoy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:44:54 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:60259 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932339Ab3BSKov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:44:36 -0500
-Date: Tue, 19 Feb 2013 11:44:19 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paul.mckenney@linaro.org>, linux-arch@vger.kernel.org
-Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
-In-Reply-To: <CAFTL4hxaOKvNSWkHgw80Cp1JTNEGXREWHtyQJEzeNgUZHMyTyQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1302191141480.22263@ionos>
-References: <20130213193411.GA15928@redhat.com> <CA+55aFzmEDriX26Z7oJZg9yssFdCAaYwu6krmrwqfj2TBsxA4w@mail.gmail.com> <20130215011503.GA11914@redhat.com> <CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com> <20130215174435.GA2792@linux.vnet.ibm.com>
- <CA+55aFy8FeGMOnWwkfmyFYyVCw+k1LSVg7BG0tsTNZzqi5EKYg@mail.gmail.com> <CAFTL4hyTfwAZWz=gMokk5oG3HO8iGh7=FtoNv89CMg_Lm-TPNg@mail.gmail.com> <CA+55aFz4vO-JGv+A7h=uxwfyWEMcK=Q3gntwHfr=a4OUVs-f+g@mail.gmail.com> <CAFTL4hx7iX8vZFu7pO5wLSPpEzfMD8K7n0bUsY-wK-uCsDAsEw@mail.gmail.com>
- <CAFTL4hzUy+2qDaCDK3jCUs+6Fe48-uU9KSB+Ssk+-i=zYhqaRg@mail.gmail.com> <20130218155324.GA5816@somewhere.redhat.com> <alpine.LFD.2.02.1302182055040.22263@ionos> <CAFTL4hxaOKvNSWkHgw80Cp1JTNEGXREWHtyQJEzeNgUZHMyTyQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 19 Feb 2013 05:44:51 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH v2 0/5] Generic PHY Framework
+Date: Tue, 19 Feb 2013 10:44:28 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: rob@landley.net, tony@atomide.com, linux@arm.linux.org.uk,
+        eballetbo@gmail.com, javier@dowhile0.org, balbi@ti.com,
+        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        mchehab@redhat.com, cesarb@cesarb.net, davem@davemloft.net,
+        santosh.shilimkar@ti.com, broonie@opensource.wolfsonmicro.com,
+        swarren@nvidia.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org
+References: <1361253198-7401-1-git-send-email-kishon@ti.com>
+In-Reply-To: <1361253198-7401-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302191044.28653.arnd@arndb.de>
+X-Provags-ID: V02:K0:S/hgvDCK5t8K7HVDVArrXk2U5pQGfL2oGlZdlx3JDyo
+ FfpzESmBlm46uNODBr15wWjSZ2nU2L/ke1qsdCBTOXXLwjQMSo
+ 2yNWcwPEaR/cDF289waR21vkCtkGIpTAs6wa+0ZCcdW1DY0GEA
+ osEBhGBVzXU/RXU1GaAkAs7mIHaeZOouOEwDvIEbkUh1jvxL9Q
+ t4zFiuQ29SH0ADYA9Uycqlnk6qjquHDl01QiiA7p/xanViDW2B
+ T49dl35iof0C22CPlUK4PdUArGA2DSAsTmFXFtH0up1JNWkp37
+ xYAxzC9gQix6TqPP4NfDjF7ilregMQZUCPsVFkCW/AoDDsEiC0
+ IaDxv/J/TNWtTGm9nyBQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC'ing linux-arch, so the arch folks can scream murder if they have
-any objections.
-
-On Tue, 19 Feb 2013, Frederic Weisbecker wrote:
-> 2013/2/18 Thomas Gleixner <tglx@linutronix.de>:
-> > On Mon, 18 Feb 2013, Frederic Weisbecker wrote:
-> >> diff --git a/kernel/softirq.c b/kernel/softirq.c
-> >> index ed567ba..69fbefd 100644
-> >> --- a/kernel/softirq.c
-> >> +++ b/kernel/softirq.c
-> >> @@ -277,6 +277,17 @@ restart:
-> >>       tsk_restore_flags(current, old_flags, PF_MEMALLOC);
-> >>  }
-> >>
-> >> +#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
-> >
-> > We really should get rid of that and make irqs disabled on irq exit
-> > mandatory.
+On Tuesday 19 February 2013, Kishon Vijay Abraham I wrote:
+> Added a generic PHY framework that provides a set of APIs for the PHY drivers
+> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
+> the PHY with or without using phandle. To obtain a reference to the PHY
+> without using phandle, the platform specfic intialization code (say from board
+> file) should have already called phy_bind with the binding information. The
+> binding information consists of phy's device name, phy user device name and an
+> index. The index is used when the same phy user binds to mulitple phys.
 > 
-> Until now I even thought that having irqs disabled in irq_exit() was
-> mandatory. I need to have a second look at tick_nohz_irq_exit() as I
-> modified it with this requirement in mind...
-
-Duh.
- 
-> Also with this patch, if a nesting interrupt happens right after
-> tick_nohz_irq_exit(), this new irq will call tick_nohz_stop_idle() but
-> not tick_nohz_start_idle() on the end. Leaving that unbalanced. I
-> could work that around but I don't want to spaghettize further around
-> that ifdef.
+> This framework will be of use only to devices that uses external PHY (PHY
+> functionality is not embedded within the controller).
 > 
-> So this patch actually does depend on __ARCH_IRQ_EXIT_IRQS_DISABLED. I
-> need to convert all archs to force this first. Then think about the
-> softirq.c cleanup once its done.
+> The intention of creating this framework is to bring the phy drivers spread
+> all over the Linux kernel to drivers/phy to increase code re-use and to
+> increase code maintainability.
 > 
-> I wonder what's the right path to this, may be loop over archs until
-> they all have __ARCH_IRQ_EXIT_IRQS_DISABLED, then remove that? Sounds
-> like non-sense but the safest way at the same time.
+> Comments to make PHY as bus wasn't done because PHY devices can be part of
+> other bus and making a same device attached to multiple bus leads to bad
+> design.
 
-Yeah.
- 
-> >>  static inline void invoke_softirq(void)
-> >>  {
-> >> -     if (!force_irqthreads) {
-> >> +     /* Can we run softirq's at all? We migth be nesting interrupts */
-> >> +     if (in_nesting_interrupt())
-> >> +             return;
-> >
-> > We might also be in a softirq disabled region where it makes no sense
-> > to continue. So this should be
-> >
-> >    in_nesting_interrupt() || in_softirq()
-> 
-> in_nesting_interrupt() takes care of that as well.
- 
-Gah, misread the macro maze :(
+How does this relate to the generic PHY interfaces in drivers/net/phy?
 
-Thanks,
+Do you expect that to get merged into drivers/phy in the long run, or
+do you want to keep the generic phy only for everything but ethernet?
 
-	tglx
+I think it would be problematic to have two alternative interfaces for
+ethernet PHYs because then an ethernet driver still needs to decide
+which subsystem to interface with.
+
+	Arnd
