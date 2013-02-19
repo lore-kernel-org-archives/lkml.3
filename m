@@ -1,637 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757816Ab3BSEoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 23:44:06 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:34697 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757154Ab3BSEoD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 23:44:03 -0500
-Date: Mon, 18 Feb 2013 20:40:12 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: cgroups@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH v2] memcg: Add memory.pressure_level events
-Message-ID: <20130219044012.GA23356@lizard.sbx00618.mountca.wayport.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757860Ab3BSEqx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 23:46:53 -0500
+Received: from norkia.v3.sk ([91.210.183.14]:53397 "EHLO norkia.v3.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757274Ab3BSEqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 23:46:51 -0500
+Subject: RE: [PATCH] libertas sdio: remove CMD_FUNC_INIT call
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Bing Zhao <bzhao@marvell.com>
+Cc: Harro Haan <hrhaan@gmail.com>, Dan Williams <dcbw@redhat.com>,
+        "libertas-dev@lists.infradead.org" <libertas-dev@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <477F20668A386D41ADCC57781B1F70430D140B07DE@SC-VEXCH1.marvell.com>
+References: <1358493883-28433-1-git-send-email-lkundrak@v3.sk>
+	 <477F20668A386D41ADCC57781B1F70430D140B07DE@SC-VEXCH1.marvell.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Feb 2013 05:46:43 +0100
+Message-ID: <1361249203.14137.27.camel@unicorn.kokotovo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-27.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this patch userland applications that want to maintain the
-interactivity/memory allocation cost can use the pressure level
-notifications. The levels are defined like this:
+On Fri, 2013-01-18 at 12:28 -0800, Bing Zhao wrote:
+> Hi Lubomir,
+> 
+> > It actually times out on a 8688 present in GuruPlug with sd8688.bin
+> > (md5=7233401e9687f8c880da547beed4324e) firmware (that's present in
+> > linux-firmware tree), but the adapter works fine.
+> > 
+> > For that firmware times out with libertas_uap [1] as well, though it succeeds
+> > with sd8688_ap.bin (md5=52cd8f8296b9a7e1d3835d57416256b2) that was originally
+> > shipped with GuruPlug. That firmware is not in linux-firmware tree and btmrvl
+> > driver might win the race programming the 8688 with sd8688.bin anyway.
+> > 
+> > [1] https://github.com/lkundrak/linux/tree/libertas_uap
+> > ---
+> >  drivers/net/wireless/libertas/if_sdio.c |   14 --------------
+> >  1 files changed, 0 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
+> > index 2ecab49..3c4c555 100644
+> > --- a/drivers/net/wireless/libertas/if_sdio.c
+> > +++ b/drivers/net/wireless/libertas/if_sdio.c
+> > @@ -825,20 +825,6 @@ static void if_sdio_finish_power_on(struct if_sdio_card *card)
+> > 
+> >  	sdio_release_host(func);
+> > 
+> > -	/*
+> > -	 * FUNC_INIT is required for SD8688 WLAN/BT multiple functions
+> > -	 */
+> > -	if (card->model == MODEL_8688) {
+> > -		struct cmd_header cmd;
+> > -
+> > -		memset(&cmd, 0, sizeof(cmd));
+> > -
+> > -		lbs_deb_sdio("send function INIT command\n");
+> > -		if (__lbs_cmd(priv, CMD_FUNC_INIT, &cmd, sizeof(cmd),
+> > -				lbs_cmd_copyback, (unsigned long) &cmd))
+> > -			netdev_alert(priv->dev, "CMD_FUNC_INIT cmd failed\n");
+> > -	}
+> > -
+> 
+> Removing FUNC_INIT could break things in some scenarios.
+> Could you please test the following case?
+> 
+> 1. insmod liberates -> download firmware, send FUNC_INIT, ...
+> 2. rmmod libertas -> send FUNC_SHUTDOWN command to firmware; BT is still working.
+> 3. insmod libertas -> skip firmware downloading, send FUNC_INIT, ...
+> 
+> If FUNC_INIT is removed, I don't expect step 3 to work.
 
-The "low" level means that the system is reclaiming memory for new
-allocations. Monitoring this reclaiming activity might be useful for
-maintaining cache level. Upon notification, the program (typically
-"Activity Manager") might analyze vmstat and act in advance (i.e.
-prematurely shutdown unimportant services).
+In case btmrvl_sdio is loaded, the driver always locks up in FUNC_INIT
+upon probe time, thus I'm not able to proceed to further steps.
 
-The "medium" level means that the system is experiencing medium memory
-pressure, the system might be making swap, paging out active file caches,
-etc. Upon this event applications may decide to further analyze
-vmstat/zoneinfo/memcg or internal memory usage statistics and free any
-resources that can be easily reconstructed or re-read from a disk.
+[  209.338953] [<c0502248>] (__schedule+0x610/0x764) from [<bf20ae24>] (__lbs_cmd+0xb8/0x130 [libertas])
+[  209.348340] [<bf20ae24>] (__lbs_cmd+0xb8/0x130 [libertas]) from [<bf222474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio])
+[  209.360136] [<bf222474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio]) from [<bf2226c4>] (if_sdio_power_on+0x18c/0x20c [libertas_sdio])
+[  209.373052] [<bf2226c4>] (if_sdio_power_on+0x18c/0x20c [libertas_sdio]) from [<bf222944>] (if_sdio_probe+0x200/0x31c [libertas_sdio])
+[  209.385316] [<bf222944>] (if_sdio_probe+0x200/0x31c [libertas_sdio]) from [<bf01d820>] (sdio_bus_probe+0x94/0xfc [mmc_core])
+[  209.396748] [<bf01d820>] (sdio_bus_probe+0x94/0xfc [mmc_core]) from [<c02e729c>] (driver_probe_device+0x12c/0x348)
+[  209.407214] [<c02e729c>] (driver_probe_device+0x12c/0x348) from [<c02e7530>] (__driver_attach+0x78/0x9c)
+[  209.416798] [<c02e7530>] (__driver_attach+0x78/0x9c) from [<c02e5658>] (bus_for_each_dev+0x50/0x88)
+[  209.425946] [<c02e5658>] (bus_for_each_dev+0x50/0x88) from [<c02e6810>] (bus_add_driver+0x108/0x268)
+[  209.435180] [<c02e6810>] (bus_add_driver+0x108/0x268) from [<c02e782c>] (driver_register+0xa4/0x134)
+[  209.444426] [<c02e782c>] (driver_register+0xa4/0x134) from [<bf22601c>] (if_sdio_init_module+0x1c/0x3c [libertas_sdio])
+[  209.455339] [<bf22601c>] (if_sdio_init_module+0x1c/0x3c [libertas_sdio]) from [<c00085b8>] (do_one_initcall+0x98/0x174)
+[  209.466236] [<c00085b8>] (do_one_initcall+0x98/0x174) from [<c0076504>] (load_module+0x1c5c/0x1f80)
+[  209.475390] [<c0076504>] (load_module+0x1c5c/0x1f80) from [<c007692c>] (sys_init_module+0x104/0x128)
+[  209.484632] [<c007692c>] (sys_init_module+0x104/0x128) from [<c0008c40>] (ret_fast_syscall+0x0/0x38)
 
-The "critical" level means that the system is actively thrashing, it is
-about to out of memory (OOM) or even the in-kernel OOM killer is on its
-way to trigger. Applications should do whatever they can to help the
-system. It might be too late to consult with vmstat or any other
-statistics, so it's advisable to take an immediate action.
+In case btmrvl_sdio is _not_ loaded, insmod returns, but driver locks up
+waiting for FUNC_INIT to finish:
 
-The events are propagated upward until the event is handled, i.e. the
-events are not pass-through. Here is what this means: for example you have
-three cgroups: A->B->C. Now you set up an event listener on cgroups A, B
-and C, and suppose group C experiences some pressure. In this situation,
-only group C will receive the notification, i.e. groups A and B will not
-receive it. This is done to avoid excessive "broadcasting" of messages,
-which disturbs the system and which is especially bad if we are low on
-memory or thrashing. So, organize the cgroups wisely, or propagate the
-events manually (or, ask us to implement the pass-through events,
-explaining why would you need them.)
+[  300.538859] [<c0502248>] (__schedule+0x610/0x764) from [<bf1fae24>] (__lbs_cmd+0xb8/0x130 [libertas])
+[  300.548600] [<bf1fae24>] (__lbs_cmd+0xb8/0x130 [libertas]) from [<bf212474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio])
+[  300.560398] [<bf212474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio]) from [<bf213230>] (if_sdio_do_prog_firmware+0x414/0x454 [libertas_sdio])
+[  300.574052] [<bf213230>] (if_sdio_do_prog_firmware+0x414/0x454 [libertas_sdio]) from [<bf1fffbc>] (lbs_fw_loaded+0x24/0x58 [libertas])
+[  300.586907] [<bf1fffbc>] (lbs_fw_loaded+0x24/0x58 [libertas]) from [<c02f02c0>] (request_firmware_work_func+0xb0/0xf4)
+[  300.597746] [<c02f02c0>] (request_firmware_work_func+0xb0/0xf4) from [<c003ae0c>] (process_one_work+0x348/0x6a8)
+[  300.608288] [<c003ae0c>] (process_one_work+0x348/0x6a8) from [<c003b408>] (worker_thread+0x268/0x390)
+[  300.617630] [<c003b408>] (worker_thread+0x268/0x390) from [<c00414b0>] (kthread+0xc0/0xd4)
+[  300.625947] [<c00414b0>] (kthread+0xc0/0xd4) from [<c0008ce8>] (ret_from_fork+0x14/0x20)
+[  300.634135] 2 locks held by kworker/0:1/19:
+[  300.638383]  #0:  (events){.+.+.+}, at: [<c003accc>] process_one_work+0x208/0x6a8
+[  300.646512]  #1:  ((&fw_work->work)){+.+.+.}, at: [<c003accc>] process_one_work+0x208/0x6a8
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
----
+If I remove the FUNC_INIT call, wifi works fine, but bluetooth stops
+working after a network scan:
 
-Hi all,
+[root@megalodon lkundrak]# iwlist scan >/dev/null 2>&1
+[root@megalodon lkundrak]# hcitool scan --flush
+Device is not available: No such device
+[root@megalodon lkundrak]# 
 
-Many thanks for the previous reviews! In this revision:
-
-- Addressed Glauber Costa's comments:
-  o Use parent_mem_cgroup() instead of own parent function (also suggested
-    by Kamezawa). This change also affected events distribution logic, so
-    it became more like memory thresholds notifications, i.e. we deliver
-    the event to the cgroup where the event originated, not to the parent
-    cgroup; (This also addreses Kamezawa's remark regarding which cgroup
-    receives which event.)
-  o Register vmpressure cgroup file directly in memcontrol.c.
-
-- Addressed Greg Thelen's comments:
-  o Fixed bool/int inconsistency in the code;
-  o Fixed nr_scanned accounting;
-  o Don't use cryptic 's', 'r' abbreviations; get rid of confusing
-    'window' argument.
-
-- Addressed Kamezawa Hiroyuki's comments:
-  o Moved declarations from mm/internal.h into linux/vmpressue.h;
-  o Removed Kconfig symbol. Vmpressure is pretty lightweight (especially
-    comparing to the memcg accounting). If it ever causes any measurable
-    performance effect, we want to fix it, not paper it over with a
-    Kconfig option. :-)
-  o Removed read operation on pressure_level cgroup file. In apps, we only
-    use notifications, we don't need the content of the file, so let's
-    keep things simple for now. Plus this resolves questions like what
-    should we return there when the system is not reclaiming;
-  o Reworded documentation;
-  o Improved comments for vmpressure_prio().
+> 
+> Thanks,
+> Bing
+> 
+> >  	priv->fw_ready = 1;
+> >  	wake_up(&card->pwron_waitq);
+> > 
+> > --
+> > 1.7.1
 
 
-Old changelogs/submissions:
-  v1: http://lkml.org/lkml/2013/2/10/140
-  mempressure cgroup: http://lkml.org/lkml/2013/1/4/55
-
-Thanks!
-
-Anton
-
- Documentation/cgroups/memory.txt |  61 +++++++++-
- include/linux/vmpressure.h       |  47 ++++++++
- mm/Makefile                      |   2 +-
- mm/memcontrol.c                  |  28 +++++
- mm/vmpressure.c                  | 252 +++++++++++++++++++++++++++++++++++++++
- mm/vmscan.c                      |   8 ++
- 6 files changed, 396 insertions(+), 2 deletions(-)
- create mode 100644 include/linux/vmpressure.h
- create mode 100644 mm/vmpressure.c
-
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index addb1f1..0c004de 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -40,6 +40,7 @@ Features:
-  - soft limit
-  - moving (recharging) account at moving a task is selectable.
-  - usage threshold notifier
-+ - memory pressure notifier
-  - oom-killer disable knob and oom-notifier
-  - Root cgroup has no limit controls.
- 
-@@ -65,6 +66,7 @@ Brief summary of control files.
-  memory.stat			 # show various statistics
-  memory.use_hierarchy		 # set/show hierarchical account enabled
-  memory.force_empty		 # trigger forced move charge to parent
-+ memory.pressure_level		 # set memory pressure notifications
-  memory.swappiness		 # set/show swappiness parameter of vmscan
- 				 (See sysctl's vm.swappiness)
-  memory.move_charge_at_immigrate # set/show controls of moving charges
-@@ -778,7 +780,64 @@ At reading, current status of OOM is shown.
- 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
- 				 be stopped.)
- 
--11. TODO
-+11. Memory Pressure
-+
-+The pressure level notifications can be used to monitor the memory
-+allocation cost; based on the pressure, applications can implement
-+different strategies of managing their memory resources. The pressure
-+levels are defined as following:
-+
-+The "low" level means that the system is reclaiming memory for new
-+allocations. Monitoring this reclaiming activity might be useful for
-+maintaining cache level. Upon notification, the program (typically
-+"Activity Manager") might analyze vmstat and act in advance (i.e.
-+prematurely shutdown unimportant services).
-+
-+The "medium" level means that the system is experiencing medium memory
-+pressure, the system might be making swap, paging out active file caches,
-+etc. Upon this event applications may decide to further analyze
-+vmstat/zoneinfo/memcg or internal memory usage statistics and free any
-+resources that can be easily reconstructed or re-read from a disk.
-+
-+The "critical" level means that the system is actively thrashing, it is
-+about to out of memory (OOM) or even the in-kernel OOM killer is on its
-+way to trigger. Applications should do whatever they can to help the
-+system. It might be too late to consult with vmstat or any other
-+statistics, so it's advisable to take an immediate action.
-+
-+The events are propagated upward until the event is handled, i.e. the
-+events are not pass-through. Here is what this means: for example you have
-+three cgroups: A->B->C. Now you set up an event listener on cgroups A, B
-+and C, and suppose group C experiences some pressure. In this situation,
-+only group C will receive the notification, i.e. groups A and B will not
-+receive it. This is done to avoid excessive "broadcasting" of messages,
-+which disturbs the system and which is especially bad if we are low on
-+memory or thrashing. So, organize the cgroups wisely, or propagate the
-+events manually (or, ask us to implement the pass-through events,
-+explaining why would you need them.)
-+
-+The file memory.pressure_level is only used to setup an eventfd,
-+read/write operations are no implemented.
-+
-+Test:
-+
-+   Here is a small script example that makes a new cgroup, sets up a
-+   memory limit, sets up a notification in the cgroup and then makes child
-+   cgroup experience a critical pressure:
-+
-+   # cd /sys/fs/cgroup/memory/
-+   # mkdir foo
-+   # cd foo
-+   # cgroup_event_listener memory.pressure_level low &
-+   # echo 8000000 > memory.limit_in_bytes
-+   # echo 8000000 > memory.memsw.limit_in_bytes
-+   # echo $$ > tasks
-+   # dd if=/dev/zero | read x
-+
-+   (Expect a bunch of notifications, and eventually, the oom-killer will
-+   trigger.)
-+
-+12. TODO
- 
- 1. Add support for accounting huge pages (as a separate controller)
- 2. Make per-cgroup scanner reclaim not-shared pages first
-diff --git a/include/linux/vmpressure.h b/include/linux/vmpressure.h
-new file mode 100644
-index 0000000..fa84783
---- /dev/null
-+++ b/include/linux/vmpressure.h
-@@ -0,0 +1,47 @@
-+#ifndef __LINUX_VMPRESSURE_H
-+#define __LINUX_VMPRESSURE_H
-+
-+#include <linux/mutex.h>
-+#include <linux/list.h>
-+#include <linux/workqueue.h>
-+#include <linux/gfp.h>
-+#include <linux/types.h>
-+#include <linux/cgroup.h>
-+
-+struct vmpressure {
-+	unsigned int scanned;
-+	unsigned int reclaimed;
-+	/* The lock is used to keep the scanned/reclaimed above in sync. */
-+	struct mutex sr_lock;
-+
-+	struct list_head events;
-+	/* Have to grab the lock on events traversal or modifications. */
-+	struct mutex events_lock;
-+
-+	struct work_struct work;
-+};
-+
-+struct mem_cgroup;
-+
-+#ifdef CONFIG_MEMCG
-+extern void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
-+		       unsigned long scanned, unsigned long reclaimed);
-+extern void vmpressure_prio(gfp_t gfp, struct mem_cgroup *memcg, int prio);
-+#else
-+static inline void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
-+			      unsigned long scanned, unsigned long reclaimed) {}
-+static inline void vmpressure_prio(gfp_t gfp, struct mem_cgroup *memcg,
-+				   int prio) {}
-+#endif /* CONFIG_MEMCG */
-+
-+extern void vmpressure_init(struct vmpressure *vmpr);
-+extern struct vmpressure *memcg_to_vmpr(struct mem_cgroup *memcg);
-+extern struct cgroup_subsys_state *vmpr_to_css(struct vmpressure *vmpr);
-+extern struct vmpressure *css_to_vmpr(struct cgroup_subsys_state *css);
-+extern int vmpressure_register_event(struct cgroup *cg, struct cftype *cft,
-+				     struct eventfd_ctx *eventfd,
-+				     const char *args);
-+extern void vmpressure_unregister_event(struct cgroup *cg, struct cftype *cft,
-+					struct eventfd_ctx *eventfd);
-+
-+#endif /* __LINUX_VMPRESSURE_H */
-diff --git a/mm/Makefile b/mm/Makefile
-index 3a46287..72c5acb 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -50,7 +50,7 @@ obj-$(CONFIG_FS_XIP) += filemap_xip.o
- obj-$(CONFIG_MIGRATION) += migrate.o
- obj-$(CONFIG_QUICKLIST) += quicklist.o
- obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += huge_memory.o
--obj-$(CONFIG_MEMCG) += memcontrol.o page_cgroup.o
-+obj-$(CONFIG_MEMCG) += memcontrol.o page_cgroup.o vmpressure.o
- obj-$(CONFIG_CGROUP_HUGETLB) += hugetlb_cgroup.o
- obj-$(CONFIG_MEMORY_FAILURE) += memory-failure.o
- obj-$(CONFIG_HWPOISON_INJECT) += hwpoison-inject.o
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 25ac5f4..b41727b 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -49,6 +49,7 @@
- #include <linux/fs.h>
- #include <linux/seq_file.h>
- #include <linux/vmalloc.h>
-+#include <linux/vmpressure.h>
- #include <linux/mm_inline.h>
- #include <linux/page_cgroup.h>
- #include <linux/cpu.h>
-@@ -370,6 +371,9 @@ struct mem_cgroup {
- 	atomic_t	numainfo_events;
- 	atomic_t	numainfo_updating;
- #endif
-+
-+	struct vmpressure vmpr;
-+
- 	/*
- 	 * Per cgroup active and inactive list, similar to the
- 	 * per zone LRU lists.
-@@ -570,6 +574,24 @@ struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
- 	return container_of(s, struct mem_cgroup, css);
- }
- 
-+/* Some nice accessors for the vmpressure. */
-+struct vmpressure *memcg_to_vmpr(struct mem_cgroup *memcg)
-+{
-+	if (!memcg)
-+		memcg = root_mem_cgroup;
-+	return &memcg->vmpr;
-+}
-+
-+struct cgroup_subsys_state *vmpr_to_css(struct vmpressure *vmpr)
-+{
-+	return &container_of(vmpr, struct mem_cgroup, vmpr)->css;
-+}
-+
-+struct vmpressure *css_to_vmpr(struct cgroup_subsys_state *css)
-+{
-+	return &mem_cgroup_from_css(css)->vmpr;
-+}
-+
- static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
- {
- 	return (memcg == root_mem_cgroup);
-@@ -6000,6 +6022,11 @@ static struct cftype mem_cgroup_files[] = {
- 		.unregister_event = mem_cgroup_oom_unregister_event,
- 		.private = MEMFILE_PRIVATE(_OOM_TYPE, OOM_CONTROL),
- 	},
-+	{
-+		.name = "pressure_level",
-+		.register_event = vmpressure_register_event,
-+		.unregister_event = vmpressure_unregister_event,
-+	},
- #ifdef CONFIG_NUMA
- 	{
- 		.name = "numa_stat",
-@@ -6291,6 +6318,7 @@ mem_cgroup_css_alloc(struct cgroup *cont)
- 	memcg->move_charge_at_immigrate = 0;
- 	mutex_init(&memcg->thresholds_lock);
- 	spin_lock_init(&memcg->move_lock);
-+	vmpressure_init(&memcg->vmpr);
- 
- 	return &memcg->css;
- 
-diff --git a/mm/vmpressure.c b/mm/vmpressure.c
-new file mode 100644
-index 0000000..ae0ff8e
---- /dev/null
-+++ b/mm/vmpressure.c
-@@ -0,0 +1,252 @@
-+/*
-+ * Linux VM pressure
-+ *
-+ * Copyright 2012 Linaro Ltd.
-+ *		  Anton Vorontsov <anton.vorontsov@linaro.org>
-+ *
-+ * Based on ideas from Andrew Morton, David Rientjes, KOSAKI Motohiro,
-+ * Leonid Moiseichuk, Mel Gorman, Minchan Kim and Pekka Enberg.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ */
-+
-+#include <linux/cgroup.h>
-+#include <linux/fs.h>
-+#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <linux/vmstat.h>
-+#include <linux/eventfd.h>
-+#include <linux/swap.h>
-+#include <linux/printk.h>
-+#include <linux/vmpressure.h>
-+
-+/*
-+ * The window size is the number of scanned pages before we try to analyze
-+ * the scanned/reclaimed ratio (or difference).
-+ *
-+ * It is used as a rate-limit tunable for the "low" level notification,
-+ * and for averaging medium/critical levels. Using small window sizes can
-+ * cause lot of false positives, but too big window size will delay the
-+ * notifications.
-+ *
-+ * TODO: Make the window size depend on machine size, as we do for vmstat
-+ * thresholds.
-+ */
-+static const unsigned int vmpressure_win = SWAP_CLUSTER_MAX * 16;
-+static const unsigned int vmpressure_level_med = 60;
-+static const unsigned int vmpressure_level_critical = 95;
-+static const unsigned int vmpressure_level_critical_prio = 3;
-+
-+enum vmpressure_levels {
-+	VMPRESSURE_LOW = 0,
-+	VMPRESSURE_MEDIUM,
-+	VMPRESSURE_CRITICAL,
-+	VMPRESSURE_NUM_LEVELS,
-+};
-+
-+static const char *vmpressure_str_levels[] = {
-+	[VMPRESSURE_LOW] = "low",
-+	[VMPRESSURE_MEDIUM] = "medium",
-+	[VMPRESSURE_CRITICAL] = "critical",
-+};
-+
-+static enum vmpressure_levels vmpressure_level(unsigned int pressure)
-+{
-+	if (pressure >= vmpressure_level_critical)
-+		return VMPRESSURE_CRITICAL;
-+	else if (pressure >= vmpressure_level_med)
-+		return VMPRESSURE_MEDIUM;
-+	return VMPRESSURE_LOW;
-+}
-+
-+static enum vmpressure_levels vmpressure_calc_level(unsigned int scanned,
-+						    unsigned int reclaimed)
-+{
-+	unsigned long scale = scanned + reclaimed;
-+	unsigned long pressure;
-+
-+	if (!scanned)
-+		return VMPRESSURE_LOW;
-+
-+	/*
-+	 * We calculate the ratio (in percents) of how many pages were
-+	 * scanned vs. reclaimed in a given time frame (window). Note that
-+	 * time is in VM reclaimer's "ticks", i.e. number of pages
-+	 * scanned. This makes it possible to set desired reaction time
-+	 * and serves as a ratelimit.
-+	 */
-+	pressure = scale - (reclaimed * scale / scanned);
-+	pressure = pressure * 100 / scale;
-+
-+	pr_debug("%s: %3lu  (s: %6u  r: %6u)\n", __func__, pressure,
-+		 scanned, reclaimed);
-+
-+	return vmpressure_level(pressure);
-+}
-+
-+void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
-+		unsigned long scanned, unsigned long reclaimed)
-+{
-+	struct vmpressure *vmpr = memcg_to_vmpr(memcg);
-+
-+	/*
-+	 * So far we are only interested application memory, or, in case
-+	 * of low pressure, in FS/IO memory reclaim. We are also
-+	 * interested indirect reclaim (kswapd sets sc->gfp_mask to
-+	 * GFP_KERNEL).
-+	 */
-+	if (!(gfp & (__GFP_HIGHMEM | __GFP_MOVABLE | __GFP_IO | __GFP_FS)))
-+		return;
-+
-+	if (!scanned)
-+		return;
-+
-+	mutex_lock(&vmpr->sr_lock);
-+	vmpr->scanned += scanned;
-+	vmpr->reclaimed += reclaimed;
-+	mutex_unlock(&vmpr->sr_lock);
-+
-+	if (scanned < vmpressure_win || work_pending(&vmpr->work))
-+		return;
-+	schedule_work(&vmpr->work);
-+}
-+
-+void vmpressure_prio(gfp_t gfp, struct mem_cgroup *memcg, int prio)
-+{
-+	if (prio > vmpressure_level_critical_prio)
-+		return;
-+
-+	/*
-+	 * OK, the prio is below the threshold, updating vmpressure
-+	 * information before diving into long shrinking of long range
-+	 * vmscan.
-+	 */
-+	vmpressure(gfp, memcg, vmpressure_win, 0);
-+}
-+
-+static struct vmpressure *wk_to_vmpr(struct work_struct *wk)
-+{
-+	return container_of(wk, struct vmpressure, work);
-+}
-+
-+static struct vmpressure *cg_to_vmpr(struct cgroup *cg)
-+{
-+	return css_to_vmpr(cgroup_subsys_state(cg, mem_cgroup_subsys_id));
-+}
-+
-+struct vmpressure_event {
-+	struct eventfd_ctx *efd;
-+	enum vmpressure_levels level;
-+	struct list_head node;
-+};
-+
-+static bool vmpressure_event(struct vmpressure *vmpr,
-+			     unsigned long scanned, unsigned long reclaimed)
-+{
-+	struct vmpressure_event *ev;
-+	int level = vmpressure_calc_level(scanned, reclaimed);
-+	bool signalled = false;
-+
-+	mutex_lock(&vmpr->events_lock);
-+
-+	list_for_each_entry(ev, &vmpr->events, node) {
-+		if (level >= ev->level) {
-+			eventfd_signal(ev->efd, 1);
-+			signalled = true;
-+		}
-+	}
-+
-+	mutex_unlock(&vmpr->events_lock);
-+
-+	return signalled;
-+}
-+
-+static struct vmpressure *vmpressure_parent(struct vmpressure *vmpr)
-+{
-+	struct cgroup *cg = vmpr_to_css(vmpr)->cgroup;
-+	struct mem_cgroup *memcg = mem_cgroup_from_cont(cg);
-+
-+	memcg = parent_mem_cgroup(memcg);
-+	if (!memcg)
-+		return NULL;
-+	return memcg_to_vmpr(memcg);
-+}
-+
-+static void vmpressure_wk_fn(struct work_struct *wk)
-+{
-+	struct vmpressure *vmpr = wk_to_vmpr(wk);
-+	unsigned long s;
-+	unsigned long r;
-+
-+	mutex_lock(&vmpr->sr_lock);
-+	s = vmpr->scanned;
-+	r = vmpr->reclaimed;
-+	vmpr->scanned = 0;
-+	vmpr->reclaimed = 0;
-+	mutex_unlock(&vmpr->sr_lock);
-+
-+	do {
-+		if (vmpressure_event(vmpr, s, r))
-+			break;
-+		/*
-+		 * If not handled, propagate the event upward into the
-+		 * hierarchy.
-+		 */
-+	} while ((vmpr = vmpressure_parent(vmpr)));
-+}
-+
-+int vmpressure_register_event(struct cgroup *cg, struct cftype *cft,
-+			      struct eventfd_ctx *eventfd, const char *args)
-+{
-+	struct vmpressure *vmpr = cg_to_vmpr(cg);
-+	struct vmpressure_event *ev;
-+	int lvl;
-+
-+	for (lvl = 0; lvl < VMPRESSURE_NUM_LEVELS; lvl++) {
-+		if (!strcmp(vmpressure_str_levels[lvl], args))
-+			break;
-+	}
-+
-+	if (lvl >= VMPRESSURE_NUM_LEVELS)
-+		return -EINVAL;
-+
-+	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
-+	if (!ev)
-+		return -ENOMEM;
-+
-+	ev->efd = eventfd;
-+	ev->level = lvl;
-+
-+	mutex_lock(&vmpr->events_lock);
-+	list_add(&ev->node, &vmpr->events);
-+	mutex_unlock(&vmpr->events_lock);
-+
-+	return 0;
-+}
-+
-+void vmpressure_unregister_event(struct cgroup *cg, struct cftype *cft,
-+				 struct eventfd_ctx *eventfd)
-+{
-+	struct vmpressure *vmpr = cg_to_vmpr(cg);
-+	struct vmpressure_event *ev;
-+
-+	mutex_lock(&vmpr->events_lock);
-+	list_for_each_entry(ev, &vmpr->events, node) {
-+		if (ev->efd != eventfd)
-+			continue;
-+		list_del(&ev->node);
-+		kfree(ev);
-+		break;
-+	}
-+	mutex_unlock(&vmpr->events_lock);
-+}
-+
-+void vmpressure_init(struct vmpressure *vmpr)
-+{
-+	mutex_init(&vmpr->sr_lock);
-+	mutex_init(&vmpr->events_lock);
-+	INIT_LIST_HEAD(&vmpr->events);
-+	INIT_WORK(&vmpr->work, vmpressure_wk_fn);
-+}
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 88c5fed..9530777 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -19,6 +19,7 @@
- #include <linux/pagemap.h>
- #include <linux/init.h>
- #include <linux/highmem.h>
-+#include <linux/vmpressure.h>
- #include <linux/vmstat.h>
- #include <linux/file.h>
- #include <linux/writeback.h>
-@@ -1982,6 +1983,11 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
- 			}
- 			memcg = mem_cgroup_iter(root, memcg, &reclaim);
- 		} while (memcg);
-+
-+		vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
-+			   sc->nr_scanned - nr_scanned,
-+			   sc->nr_reclaimed - nr_reclaimed);
-+
- 	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
- 					 sc->nr_scanned - nr_scanned, sc));
- }
-@@ -2167,6 +2173,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		count_vm_event(ALLOCSTALL);
- 
- 	do {
-+		vmpressure_prio(sc->gfp_mask, sc->target_mem_cgroup,
-+				sc->priority);
- 		sc->nr_scanned = 0;
- 		aborted_reclaim = shrink_zones(zonelist, sc);
- 
--- 
-1.8.1.1
