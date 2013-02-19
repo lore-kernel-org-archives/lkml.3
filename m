@@ -1,97 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758535Ab3BSJSL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 04:18:11 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:37788 "EHLO comal.ext.ti.com"
+	id S1758501Ab3BSJTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 04:19:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42329 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757774Ab3BSJSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 04:18:03 -0500
-Date: Tue, 19 Feb 2013 11:17:28 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: "Mohammed, Afzal" <afzal@ti.com>
-CC: "Balbi, Felipe" <balbi@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, "Nori, Sekhar" <nsekhar@ti.com>,
-        "Syed Mohammed, Khasim" <khasim@ti.com>
-Subject: Re: [PATCH, RFC 7/8] ARM: dts: am4372: initial support
-Message-ID: <20130219091728.GF23197@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <cover.1361186097.git.afzal@ti.com>
- <c9c131c0508b875c0893e8557504372a1564568a.1361186097.git.afzal@ti.com>
- <20130218182240.GA10755@arwen.pp.htv.fi>
- <C8443D0743D26F4388EA172BF4E2A7A93EAA85B2@DBDE01.ent.ti.com>
+	id S1757774Ab3BSJTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 04:19:35 -0500
+Date: Tue, 19 Feb 2013 10:19:31 +0100
+From: Jan Kara <jack@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andrew Morton <akpm@linux-foundation.org>, andi@firstfloor.org,
+        Wuqixuan <wuqixuan@huawei.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        gregkh@linuxfoundation.org
+Subject: Re: [RFC][PATCH] vfs: always protect diretory file->fpos with
+ inode mutex
+Message-ID: <20130219091931.GB21945@quack.suse.cz>
+References: <5122D3E0.6070800@huawei.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IvGM3kKqwtniy32b"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A93EAA85B2@DBDE01.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5122D3E0.6070800@huawei.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---IvGM3kKqwtniy32b
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue 19-02-13 09:22:40, Li Zefan wrote:
+> There's a long long-standing bug...As long as I don't know when it dates
+> from.
+> 
+> I've written and attached a simple program to reproduce this bug, and it can
+> immediately trigger the bug in my box. It uses two threads, one keeps calling
+> read(), and the other calling readdir(), both on the same directory fd.
+  So the fact that read() or even write() to fd opened O_RDONLY has *any*
+effect on f_pos looks really unexpected to me. I think we really should
+have there:
+	if (ret >= 0)
+		file_pos_write(...);
+  That would solve problems with read() and write() on directories for
+pretty much every filesystem since the first usually returns -EISDIR and
+the second -EBADF.
 
-On Tue, Feb 19, 2013 at 10:10:17AM +0100, Mohammed, Afzal wrote:
-> Hi Felipe,
->=20
-> On Mon, Feb 18, 2013 at 23:52:40, Balbi, Felipe wrote:
-> > On Mon, Feb 18, 2013 at 05:08:16PM +0530, Afzal Mohammed wrote:
->=20
-> > > +		uart1: serial@44e09000 {
-> > > +			compatible =3D "ti,am4372-uart","ti,omap2-uart";
-> > > +			clock-frequency =3D <48000000>;
-> > > +			reg =3D <0x44e09000 0x2000>;
-> > > +			interrupts =3D <0 72 0x4>;
-> >=20
-> > missing ti,hwmods ??
->=20
-> It is a deliberate omission. For minimal bootconsole booting, hwmod
-> help is not required. Hwmod details would be added gradually later,
-> current series doesn't register hwmod.
+> When I ran it on ext3 (can be replaced with ext2/ext4) which has _dir_index_
+> feature disabled, I got this:
+> 
+> EXT3-fs error (device loop1): ext3_readdir: bad entry in directory #34817: rec_len is smaller than minimal - offset=993, inode=0, rec_len=0, name_len=0
+> EXT3-fs error (device loop1): ext3_readdir: bad entry in directory #34817: rec_len is smaller than minimal - offset=1009, inode=0, rec_len=0, name_len=0
+> EXT3-fs error (device loop1): ext3_readdir: bad entry in directory #34817: rec_len is smaller than minimal - offset=993, inode=0, rec_len=0, name_len=0
+> EXT3-fs error (device loop1): ext3_readdir: bad entry in directory #34817: rec_len is smaller than minimal - offset=1009, inode=0, rec_len=0, name_len=0
+> ...
+> 
+> If we configured errors=remount-ro, the filesystem will become read-only.
+> 
+> SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+> {
+> 	...
+> 		loff_t pos = file_pos_read(file);
+> 		ret = vfs_read(file, buf, count, &pos);
+> 		file_pos_write(file, pos);
+> 		fput_light(file, fput_needed);
+> 	...
+> }
+> 
+> While readdir() is protected with i_mutex, f_pos can be changed without
+> any locking in various read()/write() syscalls, which leads to this bug.
+> 
+> What makes things worse is Andi removed i_mutex from generic_file_llseek,
+> so you can trigger the same bug by replacing read() with lseek() in the
+> test program.
+  Yes, and here I'd say it's a filesystem issue. If filesystem needs f_pos
+changed only under i_mutex, it should use default_llseek() or get the mutex
+itself. That's what the callback is for. We shouldn't unnecessarily impose
+the i_mutex restriction on llseek on a directory for every filesystem.
 
-understood, thanks
-
---=20
-balbi
-
---IvGM3kKqwtniy32b
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRI0MoAAoJEIaOsuA1yqREcWwP/0SaFx29vPQKn8AsgF5j9IPF
-1m5/CxsFSpR3C+voOuJWLW/5JxYHWKiHNucYPyvoyafhFIj3nNrJERW6Bq5PGSSP
-v+AhwNdsQczPSSgaCK+LM/dkssgAoGU8hjbrzSxAAXFYQmfATJqJBAmEDyWfrz4+
-OJrAEAs76InLiC1eYaOgQQIPiHTEsPoWRYxHYQV2O+QKMwn9uMxinVauIVHZ1+2H
-6mKUm1D7HMU7VudxytoMFDfPhDoNR4wlKg3Ri3mXhNG7zy0avyUxPkOyMo+1ycXM
-cQ9HuZNLSNSdoVLuQtcidvNp439eZ0sn/8hZvZLx24PMD2G3laG0ZgIztpgMAhGy
-kC6vE6+r4J3XH/Me1KftAkA3o1d58+lzzaF7NcplgC50HpwNvhSg1vhz4S5dA6BW
-Q2KUpEkco7bv2p3vrpPcBjukfb4ISBUSIq4wYMvhrTiSLh/HDBw9WO3A4Kkwwk1w
-CusS1IfhmmuTPJQ5aNchBCk1CQRZCQZnWH/hVg6uR04TH28hJSBCT2nzLuHmG53U
-eRdmJqdzfjt5XA8yPbMspkrJKJLOcbLCzTZPb+gzAjr0JVfeTwtF+l+7N9cYH5oY
-qGwNpZmxGCd8IfjPPRbKcnCngQCJT2VtVjQ0ACaunKsjsUZaVtS8lOEMkVK6F2WX
-Dj7fH/YDqoaKjrdQbdx/
-=SA+Y
------END PGP SIGNATURE-----
-
---IvGM3kKqwtniy32b--
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
