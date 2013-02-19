@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698Ab3BSKoy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:44:54 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:60259 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932339Ab3BSKov (ORCPT
+	id S932645Ab3BSKql (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:46:41 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45567 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932339Ab3BSKqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:44:51 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH v2 0/5] Generic PHY Framework
-Date: Tue, 19 Feb 2013 10:44:28 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: rob@landley.net, tony@atomide.com, linux@arm.linux.org.uk,
-        eballetbo@gmail.com, javier@dowhile0.org, balbi@ti.com,
-        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        mchehab@redhat.com, cesarb@cesarb.net, davem@davemloft.net,
-        santosh.shilimkar@ti.com, broonie@opensource.wolfsonmicro.com,
-        swarren@nvidia.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org
-References: <1361253198-7401-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1361253198-7401-1-git-send-email-kishon@ti.com>
+	Tue, 19 Feb 2013 05:46:40 -0500
+Date: Tue, 19 Feb 2013 11:46:33 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Li, Fei" <fei.li@intel.com>, Miklos Szeredi <miklos@szeredi.hu>,
+        Goswin von Brederlow <goswin-v-b@web.de>,
+        "Brown, Len" <len.brown@intel.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "Wang, Biao" <biao.wang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH]
+ fuse: make fuse daemon frozen along with kernel threads]
+Message-ID: <20130219104633.GA23279@xo-6d-61-c0.localdomain>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <6332427.iqPUMjtDaQ@vostro.rjw.lan>
+ <BEC9F67575FA1E429CA7CF5AE9BE3634400F30@SHSMSX102.ccr.corp.intel.com>
+ <3321530.AgvEeduuPx@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302191044.28653.arnd@arndb.de>
-X-Provags-ID: V02:K0:S/hgvDCK5t8K7HVDVArrXk2U5pQGfL2oGlZdlx3JDyo
- FfpzESmBlm46uNODBr15wWjSZ2nU2L/ke1qsdCBTOXXLwjQMSo
- 2yNWcwPEaR/cDF289waR21vkCtkGIpTAs6wa+0ZCcdW1DY0GEA
- osEBhGBVzXU/RXU1GaAkAs7mIHaeZOouOEwDvIEbkUh1jvxL9Q
- t4zFiuQ29SH0ADYA9Uycqlnk6qjquHDl01QiiA7p/xanViDW2B
- T49dl35iof0C22CPlUK4PdUArGA2DSAsTmFXFtH0up1JNWkp37
- xYAxzC9gQix6TqPP4NfDjF7ilregMQZUCPsVFkCW/AoDDsEiC0
- IaDxv/J/TNWtTGm9nyBQ=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3321530.AgvEeduuPx@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 February 2013, Kishon Vijay Abraham I wrote:
-> Added a generic PHY framework that provides a set of APIs for the PHY drivers
-> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
-> the PHY with or without using phandle. To obtain a reference to the PHY
-> without using phandle, the platform specfic intialization code (say from board
-> file) should have already called phy_bind with the binding information. The
-> binding information consists of phy's device name, phy user device name and an
-> index. The index is used when the same phy user binds to mulitple phys.
+Hi!
+
+> > > > > Well, I suppose that information is available to user space.
+> > > > >
+> > > > > Do we need an interface for a process to mark itself as PF_FREEZE_LATE or
+> > > > > do we need an interface for one process to mark another process as
+> > > > > PF_FREEZE_LATE, or both?
+> > > >
+> > > > As a first step marking self with PF_FREEZE_LATE and inheriting this
+> > > > flag across fork/clone would work for most cases, I think.
+> > > 
+> > > OK, so we can just have a switch for that in /proc I suppose.
+> > 
+> > Thanks for feedback and suggestion.
+> > 
+> > We have ever tried similar idea, expose interface /sys/power/pm_freeze_daemon,
+> > userspace tasks write 1 to this attribute to make itself to be frozen at the same time
+> > with kernel tasks, and it worked in our experiment.
+> > 
+> > Do you think it's suitable and enough to use such attribute /sys/power/pm_freeze_late, 
+> > or other more suitable place under /proc suggested?
 > 
-> This framework will be of use only to devices that uses external PHY (PHY
-> functionality is not embedded within the controller).
-> 
-> The intention of creating this framework is to bring the phy drivers spread
-> all over the Linux kernel to drivers/phy to increase code re-use and to
-> increase code maintainability.
-> 
-> Comments to make PHY as bus wasn't done because PHY devices can be part of
-> other bus and making a same device attached to multiple bus leads to bad
-> design.
+> I think it should be inder /proc, because that's where controls related to
+> process behavior are located.  E.g. /proc/PID/freeze_late or something like
+> that.
 
-How does this relate to the generic PHY interfaces in drivers/net/phy?
+freeze_priority?
 
-Do you expect that to get merged into drivers/phy in the long run, or
-do you want to keep the generic phy only for everything but ethernet?
-
-I think it would be problematic to have two alternative interfaces for
-ethernet PHYs because then an ethernet driver still needs to decide
-which subsystem to interface with.
-
-	Arnd
+I _hope_ we will not need more than three priorities, (user, fused, kernel), but 
+I hoped not no need more than two before, so...
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
