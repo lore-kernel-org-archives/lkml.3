@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933760Ab3BSVZO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 16:25:14 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:39227 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758932Ab3BSVZM (ORCPT
+	id S934371Ab3BSVby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 16:31:54 -0500
+Received: from georges.telenet-ops.be ([195.130.137.68]:48849 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934343Ab3BSVbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 16:25:12 -0500
-Date: Tue, 19 Feb 2013 13:25:09 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: liguang <lig.fnst@cn.fujitsu.com>
-cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [PATCH v4 2/4] numa: avoid export acpi_numa variable
-In-Reply-To: <1360894992-14818-3-git-send-email-lig.fnst@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.02.1302191324520.6322@chino.kir.corp.google.com>
-References: <1360894992-14818-1-git-send-email-lig.fnst@cn.fujitsu.com> <1360894992-14818-3-git-send-email-lig.fnst@cn.fujitsu.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 19 Feb 2013 16:31:53 -0500
+Date: Tue, 19 Feb 2013 22:31:50 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] m68k updates for 3.9
+Message-ID: <alpine.DEB.2.00.1302192229230.12529@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Feb 2013, liguang wrote:
+	Hi Linus,
 
-> acpi_numa is used to prevent srat table
-> being parsed, seems a little miss-named,
-> if 'noacpi' was specified by cmdline and
-> CONFIG_ACPI_NUMA was enabled, acpi_numa
-> will be operated directly from everywhere
-> it needed to disable/enable numa in acpi
-> mode which was a bad thing, so, try to
-> export a fuction to get srat table
-> enable/disable info.
-> 
-> Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
+The following changes since commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200:
+  Linus Torvalds (1):
+        Linux 3.8
 
-Acked-by: David Rientjes <rientjes@google.com>
+are available in the git repository at:
+
+  ra.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+
+Geert Uytterhoeven (1):
+      m68k: Sort out !CONFIG_MMU_SUN3 vs. CONFIG_HAS_DMA
+
+Jean Delvare (1):
+      swim: Add missing spinlock init
+
+ arch/m68k/include/asm/dma-mapping.h |    5 -----
+ arch/m68k/kernel/Makefile           |    4 +---
+ drivers/block/swim.c                |    1 +
+ 3 files changed, 2 insertions(+), 8 deletions(-)
+
+Thanks for pulling!
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
