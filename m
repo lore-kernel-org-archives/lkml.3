@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933562Ab3BSS6K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:58:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54521 "EHLO
+	id S933728Ab3BSS6b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:58:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54506 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757977Ab3BSSyj (ORCPT
+	with ESMTP id S934416Ab3BSSy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:54:39 -0500
+	Tue, 19 Feb 2013 13:54:29 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 72/81] Revert "USB: Handle warm reset failure on empty port."
-Date: Tue, 19 Feb 2013 15:49:35 -0300
-Message-Id: <1361299784-8830-73-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 69/81] bridge: Pull ip header into skb->data before looking into ip header.
+Date: Tue, 19 Feb 2013 15:49:32 -0300
+Message-Id: <1361299784-8830-70-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,54 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
 
-This reverts commit ff88c5021f17139d961478e40372f6bb028321bc, which is a
-cherry-pick of commit 65bdac5effd15d6af619b3b7218627ef4d84ed6a upstream.
+commit 6caab7b0544e83e6c160b5e80f5a4a7dd69545c7 upstream.
 
-As discussed on a recent thread on stable/lkml/etc. ("[regression]
-external HDD in USB3 enclosure cannot be dynamically removed"), this
-changed caused issues, and shall be reapplied later with the proper
-fixes, once they go into Linus tree.
+If lower layer driver leaves the ip header in the skb fragment, it needs to
+be first pulled into skb->data before inspecting ip header length or ip version
+number.
 
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/core/hub.c |   12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+ net/bridge/br_netfilter.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index c9590c6..1e8b3bd 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2488,11 +2488,6 @@ static int hub_port_wait_reset(struct usb_hub *hub, int port1,
- 				return 0;
- 			}
- 		} else {
--			if (!(portstatus & USB_PORT_STAT_CONNECTION) ||
--					hub_port_warm_reset_required(hub,
--						portstatus))
--				return -ENOTCONN;
--
- 			return 0;
- 		}
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index e41456b..ab52468 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -256,6 +256,9 @@ static int br_parse_ip_options(struct sk_buff *skb)
+ 	struct net_device *dev = skb->dev;
+ 	u32 len;
  
-@@ -4537,14 +4532,9 @@ static void hub_events(void)
- 			 * SS.Inactive state.
- 			 */
- 			if (hub_port_warm_reset_required(hub, portstatus)) {
--				int status;
--
- 				dev_dbg(hub_dev, "warm reset port %d\n", i);
--				status = hub_port_reset(hub, i, NULL,
-+				hub_port_reset(hub, i, NULL,
- 						HUB_BH_RESET_TIME, true);
--				if (status < 0)
--					hub_port_disable(hub, i, 1);
--				connect_change = 0;
- 			}
++	if (!pskb_may_pull(skb, sizeof(struct iphdr)))
++		goto inhdr_error;
++
+ 	iph = ip_hdr(skb);
+ 	opt = &(IPCB(skb)->opt);
  
- 			if (connect_change)
 -- 
 1.7.9.5
 
