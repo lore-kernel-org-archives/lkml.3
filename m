@@ -1,58 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514Ab3BSFfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 00:35:44 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6855 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab3BSFfn (ORCPT
+	id S1755529Ab3BSFsn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 00:48:43 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:58129 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017Ab3BSFsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 00:35:43 -0500
-X-Authority-Analysis: v=2.0 cv=It2cgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0R-a5YKfcbIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Rs552NDWfssA:10 a=VwQbUJbxAAAA:8 a=mPfwxr5BTY6dX3nUOJsA:9 a=PUjeQqilurYA:10 a=U62fhAwekXMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1361252142.23152.201.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/4] [ANNOUNCE] 3.0.65-rt92-rc1 stable review
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Tue, 19 Feb 2013 00:35:42 -0500
-In-Reply-To: <20130219053021.721159211@goodmis.org>
-References: <20130219053021.721159211@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Tue, 19 Feb 2013 00:48:41 -0500
+Message-ID: <51231231.1040908@ozlabs.ru>
+Date: Tue, 19 Feb 2013 16:48:33 +1100
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Joerg Roedel <joerg.roedel@amd.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: Re: [PATCH] iommu: making IOMMU sysfs nodes API public
+References: <1360628713.3248.8.camel@bling.home>    <1360642004-7419-1-git-send-email-aik@ozlabs.ru>   <1360645643.3248.91.camel@bling.home> <511A54DC.9030908@ozlabs.ru>  <1360689304.3248.154.camel@bling.home> <5121C709.80007@ozlabs.ru> <1361251440.2801.142.camel@bling.home>
+In-Reply-To: <1361251440.2801.142.camel@bling.home>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops! I used the wrong script to send. It used my "Ingo Pull" script
-instead of my "stable RT review". Subject is missing "[PATCH RT]" and it
-went to the wrong people.
+On 19/02/13 16:24, Alex Williamson wrote:
+> On Mon, 2013-02-18 at 17:15 +1100, Alexey Kardashevskiy wrote:
+>> On 13/02/13 04:15, Alex Williamson wrote:
+>>> On Wed, 2013-02-13 at 01:42 +1100, Alexey Kardashevskiy wrote:
+>>>> On 12/02/13 16:07, Alex Williamson wrote:
+>>>>> On Tue, 2013-02-12 at 15:06 +1100, Alexey Kardashevskiy wrote:
+>>>>>> Having this patch in a tree, adding new nodes in sysfs
+>>>>>> for IOMMU groups is going to be easier.
+>>>>>>
+>>>>>> The first candidate for this change is a "dma-window-size"
+>>>>>> property which tells a size of a DMA window of the specific
+>>>>>> IOMMU group which can be used later for locked pages accounting.
+>>>>>
+>>>>> I'm still churning on this one; I'm nervous this would basically creat
+>>>>> a /proc free-for-all under /sys/kernel/iommu_group/$GROUP/ where any
+>>>>> iommu driver can add random attributes.  That can get ugly for
+>>>>> userspace.
+>>>>
+>>>> Is not it exactly what sysfs is for (unlike /proc)? :)
+>>>
+>>> Um, I hope it's a little more thought out than /proc.
+>>>
+>>>>> On the other hand, for the application of userspace knowing how much
+>>>>> memory to lock for vfio use of a group, it's an appealing location to
+>>>>> get that information.  Something like libvirt would already be poking
+>>>>> around here to figure out which devices to bind.  Page limits need to be
+>>>>> setup prior to use through vfio, so sysfs is more convenient than
+>>>>> through vfio ioctls.
+>>>>
+>>>> True. DMA window properties do not change since boot so sysfs is the right
+>>>> place to expose them.
+>>>>
+>>>>> But then is dma-window-size just a vfio requirement leaking over into
+>>>>> iommu groups?  Can we allow iommu driver based attributes without giving
+>>>>> up control of the namespace?  Thanks,
+>>>>
+>>>> Who are you asking these questions? :)
+>>>
+>>> Anyone, including you.  Rather than dropping misc files in sysfs to
+>>> describe things about the group, I think the better solution in your
+>>> case might be a link from the group to an existing sysfs directory
+>>> describing the PE.  I believe your PE is rooted in a PCI bridge, so that
+>>> presumably already has a representation in sysfs.  Can the aperture size
+>>> be determined from something in sysfs for that bridge already?  I'm just
+>>> not ready to create a grab bag of sysfs entries for a group yet.
+>>> Thanks,
+>>
+>>
+>> At the moment there is no information neither in sysfs nor
+>> /proc/device-tree about the dma-window. And adding a sysfs entry per PE
+>> (powerpc partitionable end-point which is often a PHB but not always) just
+>> for VFIO is quite heavy.
+>
+> How do you learn the window size and PE extents in the host kernel?
 
-Sorry for the noise, I'm in a hurry to get finished packing for ELC.
 
--- Steve
-
-
-On Tue, 2013-02-19 at 00:30 -0500, Steven Rostedt wrote:
-> Dear RT Folks,
-> 
-> This is the RT stable review cycle of patch 3.0.65-rt92-rc1.
-> 
-> Please scream at me if I messed something up. Please test the patches too.
-> 
-> The -rc release will be uploaded to kernel.org and will be deleted when
-> the final release is out. This is just a review release (or release candidate).
-> 
-> The pre-releases will not be pushed to the git repository, only the
-> final release is.
-> 
-> If all goes well, this patch will be converted to the next main release
-> on 2/22/2013.
-> 
-> Enjoy,
+When the ppc64 code does PCI scan, it creates iommu_table structs per PE. 
+When new PE (i.e. new iommu_table) is discovered I call iommu_group_alloc() 
+and iommu_group_set_iommudata() to link iommu_group with iommu_table. These 
+iommu_table structs have DMA window properties.
 
 
+>> We could add a ppc64 subfolder under /sys/kernel/iommu/xxx/ and put the
+>> "dma-window" property there. And replace it with a symlink when and if we
+>> add something for PE later. Would work?
+>
+> To be clear, you're suggesting /sys/kernel/iommu_groups/$GROUP/xxx/,
+> right?  A subfolder really only limits the scope of the mess, so it's
+> not much improvement.
+
+You suggested some symlink to some ppc64 or pci tree in sysfs, it is not 
+that different.
+
+> What does the interface look like to make those
+> subfolders?
+
+int iommu_group_create_platform_file(struct iommu_group *group,
+                      struct iommu_group_attribute *attr)
+
+and that's it.
+
+> The problem we're trying to solve is this call flow:
+>
+> containerfd = open("/dev/vfio/vfio");
+> ioctl(containerfd, VFIO_GET_API_VERSION);
+> ioctl(containerfd, VFIO_CHECK_EXTENSION, ...);
+> groupfd = open("/dev/vfio/$GROUP");
+> ioctl(groupfd, VFIO_GROUP_GET_STATUS);
+> ioctl(groupfd, VFIO_GROUP_SET_CONTAINER, &containerfd);
+>
+> You wanted to lock all the memory for the DMA window here, before we can
+> call VFIO_IOMMU_GET_INFO, but does it need to happen there?  We still
+> have a MAP_DMA hook.  We could do it all on the first mapping.  It also
+> has a flags field that could augment the behavior to trigger page
+> locking.  Adding the window size to sysfs seems more readily convenient,
+> but is it so hard for userspace to open the files and call a couple
+> ioctls to get far enough to call IOMMU_GET_INFO?  I'm unconvinced the
+> clutter in sysfs more than just a quick fix.  Thanks,
+
+
+I thought the problem is that we want to let user set correct rlimit before 
+running QEMU, no? We do not change rlimit from QEMU.
+
+
+
+>
+> Alex
+>
+>>>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+>>>>>> ---
+>>>>>>     drivers/iommu/iommu.c |   19 ++-----------------
+>>>>>>     include/linux/iommu.h |   20 ++++++++++++++++++++
+>>>>>>     2 files changed, 22 insertions(+), 17 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+>>>>>> index b0afd3d..58cc298 100644
+>>>>>> --- a/drivers/iommu/iommu.c
+>>>>>> +++ b/drivers/iommu/iommu.c
+>>>>>> @@ -52,22 +52,6 @@ struct iommu_device {
+>>>>>>     	char *name;
+>>>>>>     };
+>>>>>>
+>>>>>> -struct iommu_group_attribute {
+>>>>>> -	struct attribute attr;
+>>>>>> -	ssize_t (*show)(struct iommu_group *group, char *buf);
+>>>>>> -	ssize_t (*store)(struct iommu_group *group,
+>>>>>> -			 const char *buf, size_t count);
+>>>>>> -};
+>>>>>> -
+>>>>>> -#define IOMMU_GROUP_ATTR(_name, _mode, _show, _store)		\
+>>>>>> -struct iommu_group_attribute iommu_group_attr_##_name =		\
+>>>>>> -	__ATTR(_name, _mode, _show, _store)
+>>>>>> -
+>>>>>> -#define to_iommu_group_attr(_attr)	\
+>>>>>> -	container_of(_attr, struct iommu_group_attribute, attr)
+>>>>>> -#define to_iommu_group(_kobj)		\
+>>>>>> -	container_of(_kobj, struct iommu_group, kobj)
+>>>>>> -
+>>>>>>     static ssize_t iommu_group_attr_show(struct kobject *kobj,
+>>>>>>     				     struct attribute *__attr, char *buf)
+>>>>>>     {
+>>>>>> @@ -98,11 +82,12 @@ static const struct sysfs_ops iommu_group_sysfs_ops = {
+>>>>>>     	.store = iommu_group_attr_store,
+>>>>>>     };
+>>>>>>
+>>>>>> -static int iommu_group_create_file(struct iommu_group *group,
+>>>>>> +int iommu_group_create_file(struct iommu_group *group,
+>>>>>>     				   struct iommu_group_attribute *attr)
+>>>>>>     {
+>>>>>>     	return sysfs_create_file(&group->kobj, &attr->attr);
+>>>>>>     }
+>>>>>> +EXPORT_SYMBOL_GPL(iommu_group_create_file);
+>>>>>>
+>>>>>>     static void iommu_group_remove_file(struct iommu_group *group,
+>>>>>>     				    struct iommu_group_attribute *attr)
+>>>>>> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+>>>>>> index f3b99e1..6d24ba7 100644
+>>>>>> --- a/include/linux/iommu.h
+>>>>>> +++ b/include/linux/iommu.h
+>>>>>> @@ -21,6 +21,7 @@
+>>>>>>
+>>>>>>     #include <linux/errno.h>
+>>>>>>     #include <linux/types.h>
+>>>>>> +#include <linux/stat.h>
+>>>>>>
+>>>>>>     #define IOMMU_READ	(1)
+>>>>>>     #define IOMMU_WRITE	(2)
+>>>>>> @@ -197,6 +198,25 @@ static inline int report_iommu_fault(struct iommu_domain *domain,
+>>>>>>     	return ret;
+>>>>>>     }
+>>>>>>
+>>>>>> +struct iommu_group_attribute {
+>>>>>> +	struct attribute attr;
+>>>>>> +	ssize_t (*show)(struct iommu_group *group, char *buf);
+>>>>>> +	ssize_t (*store)(struct iommu_group *group,
+>>>>>> +			 const char *buf, size_t count);
+>>>>>> +};
+>>>>>> +
+>>>>>> +#define IOMMU_GROUP_ATTR(_name, _mode, _show, _store)		\
+>>>>>> +struct iommu_group_attribute iommu_group_attr_##_name =		\
+>>>>>> +	__ATTR(_name, _mode, _show, _store)
+>>>>>> +
+>>>>>> +#define to_iommu_group_attr(_attr)	\
+>>>>>> +	container_of(_attr, struct iommu_group_attribute, attr)
+>>>>>> +#define to_iommu_group(_kobj)		\
+>>>>>> +	container_of(_kobj, struct iommu_group, kobj)
+>>>>>> +
+>>>>>> +extern int iommu_group_create_file(struct iommu_group *group,
+>>>>>> +				   struct iommu_group_attribute *attr);
+>>>>>> +
+>>>>>>     #else /* CONFIG_IOMMU_API */
+>>>>>>
+>>>>>>     struct iommu_ops {};
+>>
+>>
+>
+>
+>
+
+
+-- 
+Alexey
