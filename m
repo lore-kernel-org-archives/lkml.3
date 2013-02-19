@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557Ab3BSKbh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:31:37 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40784 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932273Ab3BSKbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:31:35 -0500
-Message-ID: <512354C7.1000409@ti.com>
-Date: Tue, 19 Feb 2013 16:02:39 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932556Ab3BSKdr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:33:47 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:42095 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932411Ab3BSKdo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 05:33:44 -0500
 MIME-Version: 1.0
-To: Afzal Mohammed <afzal@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
-        Syed Mohammed Khasim <khasim@ti.com>
-Subject: Re: [PATCH, RFC 6/8] ARM: OMAP2+: am43: basic dt support
-References: <cover.1361186097.git.afzal@ti.com> <64d18c5a07bf7680b8299f3ef98303e60522e738.1361186097.git.afzal@ti.com>
-In-Reply-To: <64d18c5a07bf7680b8299f3ef98303e60522e738.1361186097.git.afzal@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1361217204.23152.171.camel@gandalf.local.home>
+References: <20130122073210.13822.50434.stgit@srivatsabhat.in.ibm.com>
+	<510FBC01.2030405@linux.vnet.ibm.com>
+	<87haloiwv0.fsf@rustcorp.com.au>
+	<51134596.4080106@linux.vnet.ibm.com>
+	<20130208154113.GV17833@n2100.arm.linux.org.uk>
+	<51152B81.2050501@linux.vnet.ibm.com>
+	<51153F72.1060005@linux.vnet.ibm.com>
+	<CAKfTPtCe+cD7LLkb+D6pqG1SwG2V08ws=4XO3ttHEHV2qgmqPg@mail.gmail.com>
+	<5118E2CD.90401@linux.vnet.ibm.com>
+	<20130211190852.GA5695@linux.vnet.ibm.com>
+	<5119BDFD.1000909@linux.vnet.ibm.com>
+	<CAKfTPtAo2hQTfBKTVUuLKgsGJ2ZLD0UTR3fH9UFuJwyFt4n__w@mail.gmail.com>
+	<511E8F3C.2010406@linux.vnet.ibm.com>
+	<CAKfTPtD=2jn1AVjuhVP1ot7_8x9-W4==hNGZET5N9tRE7gtyMw@mail.gmail.com>
+	<512203B3.7090002@linux.vnet.ibm.com>
+	<512207A6.4000402@linux.vnet.ibm.com>
+	<CAKfTPtA1aTseD6Gntkf_zbCEbfZzt3P2-P1un6iF5_1TdVLjRQ@mail.gmail.com>
+	<1361201422.23152.154.camel@gandalf.local.home>
+	<CAKfTPtC4hbXXWO=_zsGYryM9hpWaGFLbiY+jiLf=koLa4xGJOQ@mail.gmail.com>
+	<1361217204.23152.171.camel@gandalf.local.home>
+Date: Tue, 19 Feb 2013 11:33:42 +0100
+Message-ID: <CAKfTPtBRv8ffewiXP0740YRn6TxmKOLS5Tzo=a98=60vAqyBEw@mail.gmail.com>
+Subject: Re: [PATCH v5 00/45] CPU hotplug: stop_machine()-free CPU hotplug
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        paulmck@linux.vnet.ibm.com,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, walken@google.com, mingo@kernel.org,
+        linux-arch@vger.kernel.org, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        rjw@sisk.pl, namhyung@kernel.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 February 2013 05:08 PM, Afzal Mohammed wrote:
-> Describe minimal DT boot machine details for AM43 based SoC's. AM43
-> family of SoC's are ARM Cortex-A9 based with one core in SMP
-> configuration. Low level debug could be achieved by selecting
-> DEBUG_AM33XXUART1. To boot AM43 SoC, this change is sufficient w.r.t
-> Kernel (considering the fact that strictly speaking DT sources does
-> not classify as a part of Kernel). Here private timer of the one and
-> only core is being used as clock event (as well as, as time source).
+On 18 February 2013 20:53, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 2013-02-18 at 17:50 +0100, Vincent Guittot wrote:
 >
-> Signed-off-by: Afzal Mohammed <afzal@ti.com>
-> ---
-As discussed already, lets just call this as Cortex-A9 single core
-machine to avoid confusion.
-
->   arch/arm/mach-omap2/board-generic.c | 18 ++++++++++++++++++
->   1 file changed, 18 insertions(+)
+>> yes for sure.
+>> The problem is more linked to cpuidle and function tracer.
+>>
+>> cpu hotplug and function tracer work when cpuidle is disable.
+>> cpu hotplug and cpuidle works if i don't enable function tracer.
+>> my platform is dead as soon as I enable function tracer if cpuidle is
+>> enabled. It looks like some notrace are missing in my platform driver
+>> but we haven't completely fix the issue yet
+>>
 >
-> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-> index 0274ff7..e083f08 100644
-> --- a/arch/arm/mach-omap2/board-generic.c
-> +++ b/arch/arm/mach-omap2/board-generic.c
-> @@ -15,7 +15,10 @@
->   #include <linux/of_irq.h>
->   #include <linux/of_platform.h>
->   #include <linux/irqdomain.h>
-> +#include <linux/irqchip.h>
+> You can bisect to find out exactly what function is the problem:
 >
-> +#include <asm/mach/map.h>
-> +#include <asm/smp_twd.h>
->   #include <asm/mach/arch.h>
+>  cat /debug/tracing/available_filter_functions > t
 >
->   #include "common.h"
-> @@ -182,3 +185,18 @@ DT_MACHINE_START(OMAP5_DT, "Generic OMAP5 (Flattened Device Tree)")
->   	.restart	= omap44xx_restart,
->   MACHINE_END
->   #endif
-> +
-> +#ifdef CONFIG_SOC_AM43
-> +static const char *am43_boards_compat[] __initdata = {
-> +	"ti,am43",
-> +	NULL,
-> +};
-> +
-> +DT_MACHINE_START(AM43_DT, "Generic AM43 (Flattened Device Tree)")
-> +	.map_io		= debug_ll_io_init,
-> +	.init_irq	= irqchip_init,
-With Arnds patch [1], the above can be dropped..
+> f(t) {
+>  num=`wc -l t`
+>  sed -ne "1,${num}p" t > t1
+>  let num=num+1
+>  sed -ne "${num},$p" t > t2
+>
+>  cat t1 > /debug/tracing/set_ftrace_filter
+>  # note this may take a long time to finish
+>
+>  echo function > /debug/tracing/current_tracer
+>
+>  <failed? bisect f(t1), if not bisect f(t2)>
+> }
+>
 
-> +	.init_machine	= omap_generic_init,
-> +	.init_time	= twd_local_timer_of_register,
-This one needs to take care of other timers as well from start. So
-better to take that approach from start.
+Thanks, i'm going to have a look
 
-Regards,
-Santosh
+Vincent
 
-[1] https://patchwork.kernel.org/patch/2074871/
+> -- Steve
+>
+>
+>
