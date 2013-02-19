@@ -1,67 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932690Ab3BSMSG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 07:18:06 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37387 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932535Ab3BSMSE (ORCPT
+	id S932738Ab3BSMS0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 07:18:26 -0500
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:51583 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932535Ab3BSMSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 07:18:04 -0500
-Date: Tue, 19 Feb 2013 12:18:01 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: wm8994: add missing variable initialization
-Message-ID: <20130219121801.GB23508@opensource.wolfsonmicro.com>
-References: <000001ce0e3b$f1d99170$d58cb450$%han@samsung.com>
+	Tue, 19 Feb 2013 07:18:24 -0500
+Message-ID: <51236C11.1010208@gmail.com>
+Date: Tue, 19 Feb 2013 20:12:01 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Pd0ReVV5GZGQvF3a"
-Content-Disposition: inline
-In-Reply-To: <000001ce0e3b$f1d99170$d58cb450$%han@samsung.com>
-X-Cookie: Reply hazy, ask again later.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Questin about swap_slot free and invalidate page
+References: <20130131051140.GB23548@blaptop> <alpine.LNX.2.00.1302031732520.4050@eggly.anvils> <20130204024950.GD2688@blaptop> <d6fc41b7-8448-40be-84c3-c24d0833bd85@default>
+In-Reply-To: <d6fc41b7-8448-40be-84c3-c24d0833bd85@default>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/05/2013 05:28 AM, Dan Magenheimer wrote:
+>> From: Minchan Kim [mailto:minchan@kernel.org]
+>> Sent: Sunday, February 03, 2013 7:50 PM
+>> To: Hugh Dickins
+>> Cc: Nitin Gupta; Dan Magenheimer; Seth Jennings; Konrad Rzeszutek Wilk; linux-mm@kvack.org; linux-
+>> kernel@vger.kernel.org; Andrew Morton
+>> Subject: Re: Questin about swap_slot free and invalidate page
+>>
+>> Hi Hugh,
+>>
+>> On Sun, Feb 03, 2013 at 05:51:14PM -0800, Hugh Dickins wrote:
+>>> On Thu, 31 Jan 2013, Minchan Kim wrote:
+>>>
+>>>> When I reviewed zswap, I was curious about frontswap_store.
+>>>> It said following as.
+>>>>
+>>>>   * If frontswap already contains a page with matching swaptype and
+>>>>   * offset, the frontswap implementation may either overwrite the data and
+>>>>   * return success or invalidate the page from frontswap and return failure.
+>>>>
+>>>> It didn't say why it happens. we already have __frontswap_invalidate_page
+>>>> and call it whenever swap_slot frees. If we don't free swap slot,
+>>>> scan_swap_map can't find the slot for swap out so I thought overwriting of
+>>>> data shouldn't happen in frontswap.
+>>>>
+>>>> As I looked the code, the curplit is reuse_swap_page. It couldn't free swap
+>>>> slot if the page founded is PG_writeback but miss calling frontswap_invalidate_page
+>>>> so data overwriting on frontswap can happen. I'm not sure frontswap guys
+>>>> already discussed it long time ago.
+>>>>
+>>>> If we can fix it, we can remove duplication entry handling logic
+>>>> in all of backend of frontswap. All of backend should handle it although
+>>>> it's pretty rare. Of course, zram could be fixed. It might be trivial now
+>>>> but more there are many backend of frontswap, more it would be a headache.
+>>>>
+>>>> If we are trying to fix it in swap layer,  we might fix it following as
+>>>>
+>>>> int reuse_swap_page(struct page *page)
+>>>> {
+>>>>          ..
+>>>>          ..
+>>>>          if (count == 1) {
+>>>>                  if (!PageWriteback(page)) {
+>>>>                          delete_from_swap_cache(page);
+>>>>                          SetPageDirty(page);
+>>>>                  } else {
+>>>>                          frontswap_invalidate_page();
+>>>>                          swap_slot_free_notify();
+>>>>                  }
+>>>>          }
+>>>> }
+>>>>
+>>>> But not sure, it is worth at the moment and there might be other places
+>>>> to be fixed.(I hope Hugh can point out if we are missing something if he
+>>>> has a time)
+>>> I expect you are right that reuse_swap_page() is the only way it would
+>>> happen for frontswap; but I'm too unfamiliar with frontswap to promise
+>>> you that - it's better that you insert WARN_ONs in your testing to verify.
+>>>
+>>> But I think it's a general tmem property, isn't it?  To define what
+>>> happens if you do give it the same key again.  So I doubt it's something
+>> I am too unfamiliar with tmem property but thing I am seeing is
+>> EXPORT_SYMBOL(__frontswap_store). It's a one of frontend and is tighly very
+>> coupled with swap subsystem.
+>>
+>>> that has to be fixed; but if you do find it helpful to fix it, bear in
+>>> mind that reuse_swap_page() is an odd corner, which may one day give the
+>>> "stable pages" DIF/DIX people trouble, though they've not yet complained.
+>>>
+>>> I'd prefer a patch not specific to frontswap, but along the lines below:
+>>> I think that's the most robust way to express it, though I don't think
+>>> the (count == 0) case can actually occur inside that block (whereas
+>>> count == 0 certainly can occur in the !PageSwapCache case).
+>>>
+>>> I believe that I once upon a time took statistics of how often the
+>>> PageWriteback case happens here, and concluded that it wasn't often
+>>> enough that refusing to reuse in this case would be likely to slow
+>>> anyone down noticeably.
+>> I agree. I had a test about that with zram and that case wasn't common.
+>> so your patch looks good to me.
+>>
+>> I am waiting Dan's reply(He will come in this week) and then, judge what's
+>> the best.
+> Hugh is right that handling the possibility of duplicates is
+> part of the tmem ABI.  If there is any possibility of duplicates,
+> the ABI defines how a backend must handle them to avoid data
+> coherency issues.
+>
+> The kernel implements an in-kernel API which implements the tmem
+> ABI.  If the frontend and backend can always agree that duplicate
 
---Pd0ReVV5GZGQvF3a
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Which ABI in zcache implement that?
 
-On Tue, Feb 19, 2013 at 09:56:26AM +0900, Jingoo Han wrote:
+> are never possible, I agree that the backend could avoid that
+> special case.  However, duplicates occur rarely enough and the
+> consequences (data loss) are bad enough that I think the case
+> should still be checked, at least with a BUG_ON.  I also wonder
+> if it is worth it to make changes to the core swap subsystem
+> to avoid code to implement a zswap corner case.
+>
+> Remember that zswap is an oversimplified special case of tmem
+> that handles only one frontend (Linux frontswap) and one backend
+> (zswap).  Tmem goes well beyond that and already supports other
+> more general backends including Xen and ramster, and could also
+> support other frontends such as a BSD or Solaris equivalent
+> of frontswap, for example with a Linux ramster/zcache backend.
+> I'm not sure how wise it is to tear out generic code and replace
+> it with simplistic code unless there is absolutely no chance that
+> the generic code will be necessary.
+>
+> My two cents,
+> Dan
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=ilto:"dont@kvack.org"> email@kvack.org </a>
 
-> -	int ret, i, patch_regs;
-> +	int ret, i, patch_regs = 0;
-
-As with all such changes you really need to explain why it's safe to
-just blindly initialise to this particular value and why this isn't just
-masking a real issue in the code.  Initialising with a random value will
-fix the warning but that might just be turning off the compiler's
-checks.
-
---Pd0ReVV5GZGQvF3a
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRI21IAAoJELSic+t+oim9GPEP/RxL66K5STGdedWKDBa9khzn
-m33aZqcGKT8KKluvHBfFZWXo5lGqDv51Uw8b6u5HGa4+5845RlxGcE/jCz7JSQv6
-sR1jDR5QPuq1DUWCGbC/Sufan3AA70gX8j1WLx5QhBna3fXaya4qEawI2x/VqYLi
-ZPK8frbQMZjq4xWuqB6AXPM11vwJZ0QyZ6Z/FrlD6s/yPcX9tWSqJ2LHBYOU0CqQ
-PTo6vB4NjiloEDHAZOv0Zqz4pyt450iRSk3yZHNVqG/JowLvxNRgLOxcGRVsbOwh
-PbqXQ9/yGBzEoWIEP09pjjl/XNN/E2CJmlTaRcD5ggmGmH9tEcfAUbqcu7dLZNQa
-qdzQcY3+5jNy6wJ97EJH4onyvucWL3og3E9NOlfN29OLg27yot5QL0wM5B58frTo
-T3IZ/6ntiV8StG8qZJRXqhXiWhtbtqO+0lizYxxFG0XIvfhODwRv9+Y/aFznxhzI
-Mpuu/d1VvXbg6kjWuOs8XuGboK9Q1bmcLvPlYJwK5ewvqZ/vc7poiUHU8WGNHPRu
-JmZt5j0AX3rre4lyqGhb1gDdmOpLv+Fy6Gu9ibM0698diT/VuyAev1XPB+whmZlD
-HCZiDiZaG7KDybSoIqRH4Wf6JWz0AUCU0Y0VbFcA0OLZVFhe1xeB7M5y/2t0kOn5
-4acpDzbbBmjgWwq6WP+f
-=nJkv
------END PGP SIGNATURE-----
-
---Pd0ReVV5GZGQvF3a--
