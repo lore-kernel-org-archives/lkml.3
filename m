@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484Ab3BSI4c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 03:56:32 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:60124 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932426Ab3BSI4b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 03:56:31 -0500
-Date: Tue, 19 Feb 2013 09:56:26 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paul.mckenney@linaro.org>
-Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
-Message-ID: <20130219085626.GA6466@gmail.com>
-References: <CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com>
- <20130215174435.GA2792@linux.vnet.ibm.com>
- <CA+55aFy8FeGMOnWwkfmyFYyVCw+k1LSVg7BG0tsTNZzqi5EKYg@mail.gmail.com>
- <CA+55aFwHtFeN97E-zW2QKQWH8vu=g29cxevvEnpEnHc8dx7oWA@mail.gmail.com>
- <CA+55aFyXo89LQ0mboxVYB5SJ08D8=Kv0=cqYHAd6-H7nmp=S-w@mail.gmail.com>
- <20130216192554.GB7035@linux.vnet.ibm.com>
- <CA+55aFy821kt0cz=nNB45e0K-hGUfairbTEgNP6E65jkA6bWaA@mail.gmail.com>
- <51215E6C.5090102@zytor.com>
- <20130218084130.GB15989@gmail.com>
- <20130219085019.GC3093@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130219085019.GC3093@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932487Ab3BSI6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 03:58:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38423 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932426Ab3BSI6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 03:58:16 -0500
+Date: Tue, 19 Feb 2013 09:58:03 +0100
+From: Andrew Jones <drjones@redhat.com>
+To: "Jan Beulich" <JBeulich@suse.com>
+Cc: "David Miller" <davem@davemloft.net>, <ian.campbell@citrix.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>, liuw@liuw.name
+Subject: Re: [Xen-devel] [PATCH] xen: netback: remove redundant xenvif_put
+Message-ID: <20130219095803.17b28ec3@hawk.usersys.redhat.com>
+In-Reply-To: <51233FF502000078000BF4AE@nat28.tlf.novell.com>
+References: <1361219360-29176-1-git-send-email-drjones@redhat.com>
+	<20130219.005356.2288460992654639558.davem@davemloft.net>
+	<51233FF502000078000BF4AE@nat28.tlf.novell.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 19 Feb 2013 08:03:49 +0000
+"Jan Beulich" <JBeulich@suse.com> wrote:
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-
-> On Mon, Feb 18, 2013 at 09:41:30AM +0100, Ingo Molnar wrote:
+> >>> On 19.02.13 at 06:53, David Miller <davem@davemloft.net> wrote:
+> > From: Andrew Jones <drjones@redhat.com>
+> > Date: Mon, 18 Feb 2013 21:29:20 +0100
 > > 
-> > * H. Peter Anvin <hpa@zytor.com> wrote:
+> >> netbk_fatal_tx_err() calls xenvif_carrier_off(), which does
+> >> a xenvif_put(). As callers of netbk_fatal_tx_err should only
+> >> have one reference to the vif at this time, then the xenvif_put
+> >> in netbk_fatal_tx_err is one too many.
+> >> 
+> >> Signed-off-by: Andrew Jones <drjones@redhat.com>
 > > 
-> > > On 02/16/2013 11:46 AM, Linus Torvalds wrote:
-> > > >Adding Peter Anvin to the people, just in case he sees what's wrong
-> > > >with the system call stub generation that keeps excessively old object
-> > > >files around. If it's easy to fix, it might be worth trying to make it
-> > > >ok to switch from i386 to x86-64 and back in the same tree.
-> > > 
-> > > I have not been able to reproduce this; it seems to Just 
-> > > Work[TM].
-> > > 
-> > > The syscall header stuff is definitely not to blame: it 
-> > > doesn't even *see* the CONFIG_ settings; instead they are only 
-> > > used to determine which subset of files to create, but the 
-> > > files themselves are configuration-independent.  This is by 
-> > > design.
-> > > 
-> > > As such, without an actual known to fail test case there isn't 
-> > > much I can do.
-> > 
-> > I tried (based on the versions given by Paul):
-> > 
-> >   git checkout v3.7-rc7
-> >   make ARCH=i386 defconfig
-> >   make -j64 bzImage
-> > 
-> >   git checkout v3.8-rc7
-> >   make ARCH=x86_64 olddefconfig
-> >   make -j64 bzImage
-> > 
-> > but it built just fine. The build bug might depend on the 
-> > specific config file, or might depend on tooling details?
+> > Applied.
 > 
-> The problem is that the git tree I used is one that I build out of
-> very infrequently, and so all I really know about the previous
-> build was that it was done a long time ago.  :-(
+> But this is wrong from all we can tell, we discussed this before
+> (Wei pointed to the discussion in an earlier reply). The core of
+> it is that the put here parallels the one in netbk_tx_err(), and
+> the one in xenvif_carrier_off() matches the get from
+> xenvif_connect() (which normally would be done on the path
+> coming through xenvif_disconnect()).
 
-Unless you recreated the Git repo from scratch, you could find 
-clues about past versions used in .git/logs/HEAD.
+I see the balance described by Ian in [1] now. Sorry that I missed
+that previous discussion and generated this noise.
 
-Except if you used it to pull bits frequently - but built rarely 
-out of it. In that case the information is probably lost.
+[1] http://marc.info/?l=xen-devel&m=136084174026977&w=2
 
-(Don't worry about it too much - someone will eventually hit it 
-again during bisection or so.)
+drew
 
-Thanks,
+> 
+> And anyway - shouldn't changes to netback require an ack from
+> Ian?
+> 
+> Jan
+> 
 
-	Ingo
