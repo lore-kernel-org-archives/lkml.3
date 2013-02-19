@@ -1,86 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757768Ab3BRX7J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 18:59:09 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:63258 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757617Ab3BRX7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 18:59:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=HGil6fmmUsrCv6xBL/dDek5MKcLCm9YN
-	1Clj+eOz0BvBkxL5uD+Q9/g9/Cer9SCkIAs0K4TK6q4oaeZFMyN1+v32TAcoPIui
-	zze2Z7L6iBIypYwo9WcyYmUnKACM+qY/42nwKWo2uu26jInVtxO0WndEhH9OGsXw
-	FE97ODMnZyw=
-From: Junio C Hamano <gitster@pobox.com>
-To: Matthieu Moy <Matthieu.Moy@grenoble-inp.fr>
-Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Git v1.8.2-rc0
-References: <7vk3q6e94s.fsf@alter.siamese.dyndns.org>
- <vpq4nh9v5an.fsf@grenoble-inp.fr> <7vobfh8bjc.fsf@alter.siamese.dyndns.org>
-Date: Mon, 18 Feb 2013 15:59:04 -0800
-In-Reply-To: <7vobfh8bjc.fsf@alter.siamese.dyndns.org> (Junio C. Hamano's
- message of "Mon, 18 Feb 2013 15:09:11 -0800")
-Message-ID: <7vk3q58987.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 2D70F6A4-7A27-11E2-89BA-21622E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+	id S1757748Ab3BSABY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 19:01:24 -0500
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:35217 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757230Ab3BSABX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Feb 2013 19:01:23 -0500
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: [PATCH] MIPS: loongson: fix random early boot hang
+Date: Tue, 19 Feb 2013 02:00:39 +0200
+Message-Id: <1361232039-12555-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Junio C Hamano <gitster@pobox.com> writes:
+Some Loongson boards (e.g. Lemote FuLoong mini-PC) use ISA/southbridge
+device (CS5536 general purpose timer) for the timer interrupt. It starts
+running early and is already enabled during the PCI configuration,
+during which there is a small window in pci_read_base() when the register
+access is temporarily disabled. If the timer interrupts at this point,
+the system will hang. Fix this by adding a fixup that keeps the register
+access always enabled.
 
->> I don't understand: wasn't this supposed to happen in Git 2.0? Did you
->> mean "In the upcoming major release (tentatively called *2.0*)"?
->
-> Thanks.  I am not sure what I was thinking.  Perhaps when we started
-> this cycle we did want to merge the push-2.0-default-to-simple series
->
-> Will update.
->
->> Also, you may want to mention the argumentless "git add -u" change too.
->> It currently has an item below, but this is a future
->> backward-incompatible change so it may deserve to appear in this section
->> too.
+The hang the patch fixes usually looks like this:
 
-OK, let's do this.  Thanks for sharp eyes.
+[    0.844000] pci 0000:00:0e.0: [1022:2090] type 00 class 0x060100
+[    0.848000] pci 0000:00:0e.0: reg 10: [io  0xb410-0xb417]
+[    0.852000] pci 0000:00:0e.0: reg 14: [io  0xb000-0xb0ff]
+[    0.856000] pci 0000:00:0e.0: reg 18: [io  0xb380-0xb3bf]
+[   28.140000] BUG: soft lockup - CPU#0 stuck for 23s! [swapper:1]
+[   28.140000] Modules linked in:
+[   28.140000] irq event stamp: 37965
+[   28.140000] hardirqs last  enabled at (37964): [<ffffffff80204c0c>] restore_partial+0x6c/0x13c
+[   28.140000] hardirqs last disabled at (37965): [<ffffffff80204f8c>] handle_int+0x144/0x15c
+[   28.140000] softirqs last  enabled at (24316): [<ffffffff802381f4>] __do_softirq+0x1cc/0x258
+[   28.140000] softirqs last disabled at (24327): [<ffffffff80238420>] do_softirq+0xc8/0xd0
+[   28.140000] Cpu 0
+[   28.140000] $ 0   : 0000000000000000 00000000140044e1 980000009f090000 0000000000000001
+[   28.140000] $ 4   : 980000009f090000 0000000000000000 0000000000000100 03b7fff87fbde011
+[   28.140000] $ 8   : ffffffff812b1928 000000000001e000 043ffff87fbde011 fffffff87fbde011
+[   28.140000] $12   : 000000000000000e ffffffff807a0000 0000000000000698 0000000000000000
+[   28.140000] $16   : 0000000000000002 ffffffff81055e20 ffffffff80786810 0000000000000000
+[   28.140000] $20   : 000000000000000a ffffffff807bc244 ffffffff807e6350 ffffffff80770000
+[   28.140000] $24   : 0000000000000d80 00000000fffedbe0
+[   28.140000] $28   : 980000009f07c000 980000009f07fa10 ffffffff81050000 ffffffff802380f8
+[   28.140000] Hi    : 0000000000d0fc00
+[   28.140000] Lo    : 0000000000f82b40
+[   28.140000] epc   : ffffffff8023810c __do_softirq+0xe4/0x258
+[   28.140000]     Not tainted
+[   28.140000] ra    : ffffffff802380f8 __do_softirq+0xd0/0x258
+[   28.140000] Status: 140044e3    KX SX UX KERNEL EXL IE
+[   28.140000] Cause : 10008400
+[   28.140000] PrId  : 00006303 (ICT Loongson-2)
 
- Documentation/RelNotes/1.8.2.txt | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+---
+ arch/mips/loongson/common/cs5536/cs5536_isa.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/Documentation/RelNotes/1.8.2.txt b/Documentation/RelNotes/1.8.2.txt
-index a5a1d4e..a287f24 100644
---- a/Documentation/RelNotes/1.8.2.txt
-+++ b/Documentation/RelNotes/1.8.2.txt
-@@ -4,8 +4,8 @@ Git v1.8.2 Release Notes
- Backward compatibility notes
- ----------------------------
+diff --git a/arch/mips/loongson/common/cs5536/cs5536_isa.c b/arch/mips/loongson/common/cs5536/cs5536_isa.c
+index 4d9f65a..7b31ea7 100644
+--- a/arch/mips/loongson/common/cs5536/cs5536_isa.c
++++ b/arch/mips/loongson/common/cs5536/cs5536_isa.c
+@@ -13,6 +13,7 @@
+  * option) any later version.
+  */
  
--In the upcoming major release (tentatively called 1.8.2), we will
--change the behavior of the "git push" command.
-+In the next major release Git 2.0 (not *this* one), we will change the
-+behavior of the "git push" command.
++#include <linux/pci.h>
+ #include <cs5536/cs5536.h>
+ #include <cs5536/cs5536_pci.h>
  
- When "git push [$there]" does not say what to push, we have used the
- traditional "matching" semantics so far (all your branches were sent
-@@ -22,6 +22,18 @@ that the old tag v1.2.3 points at.  This was found to be error prone
- and starting with this release, any attempt to update an existing
- ref under refs/tags/ hierarchy will fail, without "--force".
+@@ -314,3 +315,16 @@ u32 pci_isa_read_reg(int reg)
  
-+When "git add -u" and "git add -A", that does not specify what paths
-+to add on the command line, is run from inside a subdirectory, the
-+scope of the operation has always been limited to the subirectory.
-+Many users found this counter-intuitive, given that "git commit -a"
-+and other commands operate on the entire tree regardless of where you
-+are. In this release, these commands give warning in such a case and
-+encourage the user to say "git add -u/-A ." instead when restricting
-+the scope to the current directory. At Git 2.0 (not *this* one), we
-+plan to change these commands without pathspec to operate on the
-+entire tree, and training your fingers to type "." will protect you
-+against the future change.
+ 	return conf_data;
+ }
 +
- 
- Updates since v1.8.1
- --------------------
++/*
++ * The mfgpt timer interrupt is running early, so we must keep the south bridge
++ * mmio always enabled. Otherwise we may race with the PCI configuration which
++ * may temporarily disable it. When that happens and the timer interrupt fires,
++ * we are not able to clear it and the system will hang.
++ */
++static void cs5536_isa_mmio_always_on(struct pci_dev *dev)
++{
++	dev->mmio_always_on = 1;
++}
++DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA,
++	PCI_CLASS_BRIDGE_ISA, 8, cs5536_isa_mmio_always_on);
+-- 
+1.7.10.4
+
