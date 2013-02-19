@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934625Ab3BSXV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 18:21:57 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:40740 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933422Ab3BSXVz (ORCPT
+	id S934872Ab3BSX3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 18:29:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59236 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933654Ab3BSX3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 18:21:55 -0500
-Date: Wed, 20 Feb 2013 10:21:47 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "linux-next@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: ARC Port's linux-next URL update
-Message-Id: <20130220102147.dc301eef8d32f0a88d066794@canb.auug.org.au>
-In-Reply-To: <5123C036.2020202@synopsys.com>
-References: <5123C036.2020202@synopsys.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Tue, 19 Feb 2013 18:29:39 -0500
+Date: Tue, 19 Feb 2013 15:29:36 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: dormando <dormando@rydia.net>
+Cc: Rik van Riel <riel@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "hughd@google.com" <hughd@google.com>
+Subject: Re: [PATCH] add extra free kbytes tunable
+Message-Id: <20130219152936.f079c971.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.02.1302171546120.10836@dflat>
+References: <alpine.DEB.2.02.1302111734090.13090@dflat>
+	<A5ED84D3BB3A384992CBB9C77DEDA4D414A98EBF@USINDEM103.corp.hds.com>
+	<511EB5CB.2060602@redhat.com>
+	<alpine.DEB.2.02.1302171546120.10836@dflat>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__20_Feb_2013_10_21_47_+1100_AS2nMu1irSXBgkAf"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Feb_2013_10_21_47_+1100_AS2nMu1irSXBgkAf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 17 Feb 2013 15:48:31 -0800 (PST)
+dormando <dormando@rydia.net> wrote:
 
-Hi Vineet,
+> Add a userspace visible knob to tell the VM to keep an extra amount
+> of memory free, by increasing the gap between each zone's min and
+> low watermarks.
 
-On Tue, 19 Feb 2013 23:41:02 +0530 Vineet Gupta <Vineet.Gupta1@synopsys.com=
-> wrote:
->
-> Can you please point ARC's next tree to following:
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc.git for-next
+The problem is that adding this tunable will constrain future VM
+implementations.  We will forever need to at least retain the
+pseudo-file.  We will also need to make some effort to retain its
+behaviour.
 
-Done.
+It would of course be better to fix things so you don't need to tweak
+VM internals to get acceptable behaviour.
 
-> This is an exact copy of what I had in github (based off 3.8-rc5)
+You said:
 
-Not just a copy, but you did the right thing and it is the same commits.
-Thanks.
+: We have a server workload wherein machines with 100G+ of "free" memory
+: (used by page cache), scattered but frequent random io reads from 12+
+: SSD's, and 5gbps+ of internet traffic, will frequently hit direct reclaim
+: in a few different ways.
+: 
+: 1) It'll run into small amounts of reclaim randomly (a few hundred
+: thousand).
+: 
+: 2) A burst of reads or traffic can cause extra pressure, which kswapd
+: occasionally responds to by freeing up 40g+ of the pagecache all at once
+: (!) while pausing the system (Argh).
+: 
+: 3) A blip in an upstream provider or failover from a peer causes the
+: kernel to allocate massive amounts of memory for retransmission
+: queues/etc, potentially along with buffered IO reads and (some, but not
+: often a ton) of new allocations from an application. This paired with 2)
+: can cause the box to stall for 15+ seconds.
 
-> I suppose a week's worth of cooking should be enough to send a pull reque=
-st to Linus.
-
-Well, you have not rebased it so just moving sites should not affect
-you.  However, even what is there has only been in -next for 2 days, so
-maybe a couple of days wait wouldn't hurt.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__20_Feb_2013_10_21_47_+1100_AS2nMu1irSXBgkAf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRJAkLAAoJEECxmPOUX5FEpnYQAJPpAaOHbhNrvvqR+p33gHbd
-mzOkHPyrdMZ6UVRJ13lV23M1z6kKEi4iINpzw5W0kAPVcIFQJMWekuzWE1lou+Ut
-tEZ5SQakKFz7uDmevwXXipcAdbEaQEUZs6u37P+OHYk6uiHDi1kIxbBVj5khk07h
-M4GtGE3P9Sm6hO6TN0ogj97bncCcH7hz0P26P3nWuPxmdUx5UqCJ948J8NDk6B48
-3YL72PapO33MBkEF6ce5k5Nt7/K3xTu4Wn49v7dg9+04TECtnGLdySoxbBEB+0q/
-ttYU0GTQGMFkWJ+LvaU5TEs8vibNa9+0gpcdEeN9lKs4vUB1++b2cWGdK0bbMQV+
-WYADFGOyuaFtFIdMGzQ36eCOMHu6QLnujJ1VikVWevwJvhnGVvKgDlaVDpfWGcTe
-ipfdrVLbJ6UTj8VLa3DcVZZxFNKBp8EBnHeIjhjaCF0yZqzjpgI7sX3Byu0UJQ1l
-JNUKh9EEF9REUJ8VQm7kO3XmK2nVpoT+G5wYqYLMe9C53twfC/uoxdAIcuJtVpLK
-+Zcbc5M2uINkgfzPgTD+Ka1h4ad+DwWKv0QLhLgupZGFLJeq6nc7apGiYdfDmyq0
-g7+zeV84On2UrTg1ZqQzv77o7gTP0mSIU4a9JbOatYCZ6z/wV0ygQhe7GjRXVLqu
-QasS71GO4QOzbAUhGYyR
-=CtoP
------END PGP SIGNATURE-----
-
---Signature=_Wed__20_Feb_2013_10_21_47_+1100_AS2nMu1irSXBgkAf--
+Can we prioritise these?  2) looks just awful - kswapd shouldn't just
+go off and free 40G of pagecache.  Do you know what's actually in that
+pagecache?  Large number of small files or small number of (very) large
+files?
