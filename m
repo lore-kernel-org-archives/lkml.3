@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934658Ab3BSTrn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:47:43 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:55237 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932823Ab3BSTrm (ORCPT
+	id S934677Ab3BSTr5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:47:57 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:64168 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934664Ab3BSTrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 14:47:42 -0500
-From: Mathias Krause <minipli@googlemail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, PaX Team <pageexec@freemail.hu>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH] x86: apic: Fix parsing of lapic cmdline option
-Date: Tue, 19 Feb 2013 20:47:07 +0100
-Message-Id: <1361303227-13174-1-git-send-email-minipli@googlemail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 19 Feb 2013 14:47:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <1361182193-31894-1-git-send-email-hare@suse.de>
+References: <1361182193-31894-1-git-send-email-hare@suse.de>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 19 Feb 2013 12:47:32 -0700
+Message-ID: <CAErSpo5j5WXx-Y4ML22yzsVzXgXnT9JoD1EGvGRMy55GGRdn6A@mail.gmail.com>
+Subject: Re: [PATCH] pci: do not try to assign irq 255
+To: Hannes Reinecke <hare@suse.de>
+Cc: linux-kernel@vger.kernel.org, Frederik Himpe <fhimpe@vub.ac.be>,
+        Oliver Neukum <oneukum@suse.de>, David Haerdeman <david@hardeman.nu>,
+        linux-usb@vger.kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Including " lapic " in the kernel cmdline on an x86-64 kernel makes it
-panic while parsing early params -- e.g. with no user visible output.
+On Mon, Feb 18, 2013 at 3:09 AM, Hannes Reinecke <hare@suse.de> wrote:
+> The PCI config space reseves a byte for the interrupt line,
+> so irq 255 actually refers to 'not set'.
+> However, the 'irq' field for struct pci_dev is an integer,
+> so the original meaning is lost, causing the system to
+> assign an interrupt '255', which fails.
+>
+> So we should _not_ assign an interrupt value here, and
+> allow upper layers to fixup things.
+>
+> This patch make PCI devices with MSI interrupts only
+> (like the xhci device on certain HP laptops) work properly.
+>
+> Cc: Frederik Himpe <fhimpe@vub.ac.be>
+> Cc: Oliver Neukum <oneukum@suse.de>
+> Cc: David Haerdeman <david@hardeman.nu>
+> Cc: linux-usb@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> Signed-off-by: Hannes Reinecke <hare@suse.de>
+>
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 6186f03..a2db887f 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -923,7 +923,8 @@ static void pci_read_irq(struct pci_dev *dev)
+>         dev->pin = irq;
+>         if (irq)
+>                 pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &irq);
+> -       dev->irq = irq;
+> +       if (irq < 255)
+> +               dev->irq = irq;
+>  }
+>
+>  void set_pcie_port_type(struct pci_dev *pdev)
 
-Fix this bug by ensuring arg is non-NULL before passing it to strncmp().
+Is there a bugzilla or other URL with more information (problem
+description, hardware involved, dmesg logs, acpidump, etc)?
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Reported-by: PaX Team <pageexec@freemail.hu>
-Cc: stable@vger.kernel.org	# v3.8
----
- arch/x86/kernel/apic/apic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index b994cc8..cbf5121 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -131,7 +131,7 @@ static int __init parse_lapic(char *arg)
- {
- 	if (config_enabled(CONFIG_X86_32) && !arg)
- 		force_enable_local_apic = 1;
--	else if (!strncmp(arg, "notscdeadline", 13))
-+	else if (arg && !strncmp(arg, "notscdeadline", 13))
- 		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
- 	return 0;
- }
--- 
-1.7.10.4
-
+Bjorn
