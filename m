@@ -1,95 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934693Ab3BSWKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 17:10:10 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:34646 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933538Ab3BSWKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 17:10:08 -0500
-Message-ID: <1361310864.13508.20.camel@falcor1.watson.ibm.com>
-Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 19 Feb 2013 16:54:24 -0500
-In-Reply-To: <20130218182114.GB25922@redhat.com>
-References: <20130212185725.GC23410@redhat.com>
-	 <CALLzPKaD==fj3GSE3SnaWg5=VVNW7A_+caFzoh=_cBv8+BVKEA@mail.gmail.com>
-	 <20130213132920.GA3540@redhat.com>
-	 <CALLzPKbj33dQ36tcwip_LKCOXgA6GcBDbSc5s4y4cYyv2=s=nw@mail.gmail.com>
-	 <20130213143807.GC3540@redhat.com>
-	 <CALLzPKZ=eRWDtW6eSKPX5Qbvs_N37daiULw+T7o+DpoGfw_Z_A@mail.gmail.com>
-	 <20130213153013.GB6750@redhat.com>
-	 <1360794421.3524.495.camel@falcor1.watson.ibm.com>
-	 <20130214150303.GA16671@redhat.com>
-	 <1360855815.3524.615.camel@falcor1.watson.ibm.com>
-	 <20130218182114.GB25922@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021922-5806-0000-0000-00001FDD261B
+	id S934704Ab3BSWLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 17:11:51 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:34055 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933538Ab3BSWLu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 17:11:50 -0500
+Date: Wed, 20 Feb 2013 02:11:46 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        ebiederm@xmission.com, xemul@parallels.com,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [patch 1/2] kcmp: Make it to depend on CONFIG_KCMP
+Message-ID: <20130219221146.GR20312@moon>
+References: <20130219064800.719149796@openvz.org>
+ <20130219065210.030802820@openvz.org>
+ <5123444D.6000806@suse.cz>
+ <20130219093154.GF20312@moon>
+ <5123BC2B.6000304@zytor.com>
+ <20130219182838.GL20312@moon>
+ <20130219134256.f4cedf44.akpm@linux-foundation.org>
+ <20130219215432.GP20312@moon>
+ <20130219140035.373ce4d2.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130219140035.373ce4d2.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-18 at 13:21 -0500, Vivek Goyal wrote:
-> On Thu, Feb 14, 2013 at 10:30:15AM -0500, Mimi Zohar wrote:
-> > On Thu, 2013-02-14 at 10:03 -0500, Vivek Goyal wrote:
-> > > On Wed, Feb 13, 2013 at 05:27:01PM -0500, Mimi Zohar wrote:
-> > > 
-> > > [..]
-> > > > > Yep, I got that. Default policy gets overruled when a new policy is
-> > > > > loaded.
-> > > > > 
-> > > > > In secureboot mode, somehow above rule needs to take effect by default.
-> > > > > One option would be that kernel can enforce above rule.
-> > > > > (I guess by adding it to both default_list as well as policy list).
-> > > > 
-> > > > The default policy is empty, but can be replaced with boot command line
-> > > > options.  The existing options are ima_tcb and/ ima_appraise_tcb.
-> > > > Please feel free to define an additional policy.
-> > > 
-> > > I think just defining a new command line option is not sufficient
-> > > for secureboot use case.
-> > > 
-> > > - One can easily remove kernel command line option without breaking
-> > >   booting and easily bypass secureboot restrictions.
+On Tue, Feb 19, 2013 at 02:00:35PM -0800, Andrew Morton wrote:
 > > 
-> > > - I guess this is one mandated rule by secureboot. There might still
-> > >   be a user policy which can co-exist with this rule.
-> > > 
-> > > So to me this is not a new policy. It is just one mandatory rule which
-> > > gets appended to any policy in secureboot mode. Think of it as mandatory
-> > > rule imposed by kernel for any policy user can define. And in secureboot
-> > > mode a user can not get rid of this rule. (Otherwise it breaks user
-> > > space signing and one can bypass secureboot and boot into unsigned
-> > > kernel).
-> > 
-> > Your rule allows both signed and unsigned files to be executed.  Signed
-> > files will just have more capabilities.  The ima_appraise_tcb option
-> > requires all files owned by root to be signed, otherwise access is
-> > denied.  The two policies simply can not co-exist.
+> > I think this syscall is usefull even without c/r stuff.
+> > That's why I made it with separate config option.
 > 
-> Thinking loud. I guess we might have to extend ima policy/rules to allow
-> multiple appraise rules to co-exist. And access permission will finally
-> depend on if all the rules in same category return success.
+> hm, OK.
+> 
+> But the patch also permits CONFIG_CHECKPOINT_RESTORE=y, CONFIG_KCMP=n
+> which surely isn't something which CRIU wants to support?
 
-ima_appraise_tcb rules:
-dont_appraise  fsmagic=PROC_SUPER_MAGIC
-.
-.
-.
-dont_appraise fsmagic=SELINUX_MAGIC
-appraise fowner=0
-
-ima_secureboot:
-appraise fowner=0 func=bprm appraise_type=optional
-
-The ima_appraise_tcb appraise rule includes everything that would match
-the ima_secureboot rule.  It isn't possible to combine the two policies.
-
-Mimi
-
+Hmm, yes from one pov this feature is useful for out-of-c/r user,
+from another pov -- we will have to ask users to turn on additional
+CONFIG entries (which i'm sure not set by default in wide range of distros).
+Thus it seems less paiful way is either make it obj-(CHECKPOINT_RESTORE)
+as you proposed, or obj-y by default. The last can't be undone, so I'll
+prepare the patch for obj-(CHECKPOINT_RESTORE) I think.
