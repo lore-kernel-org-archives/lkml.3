@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934536Ab3BSTJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:09:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54291 "EHLO
+	id S934546Ab3BSTKH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:10:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54281 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934162Ab3BSSwC (ORCPT
+	with ESMTP id S934138Ab3BSSvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:52:02 -0500
+	Tue, 19 Feb 2013 13:51:53 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: fangxiaozhi <huananhu@huawei.com>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 32/81] USB: storage: Define a new macro for USB storage match rules
-Date: Tue, 19 Feb 2013 15:48:55 -0300
-Message-Id: <1361299784-8830-33-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 30/81] USB: option: add Changhong CH690
+Date: Tue, 19 Feb 2013 15:48:53 -0300
+Message-Id: <1361299784-8830-31-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,85 +31,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: fangxiaozhi <huananhu@huawei.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 07c7be3d87e5cdaf5f94c271c516456364ef286c upstream.
+commit d4fa681541aa7bf8570d03426dd7ba663a71c467 upstream.
 
-1. Define a new macro for USB storage match rules:
-    matching with Vendor ID and interface descriptors.
+New device with 3 serial interfaces:
 
-Signed-off-by: fangxiaozhi <huananhu@huawei.com>
+ If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend) Sub=ff Prot=ff
+ If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend) Sub=ff Prot=ff
+ If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend) Sub=ff Prot=ff
+ If#= 3 Alt= 0 #EPs= 2 Cls=08(stor) Sub=06 Prot=50
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ herton: adjust context ]
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/storage/usb.c          |   12 ++++++++++++
- drivers/usb/storage/usual-tables.c |   15 +++++++++++++++
- 2 files changed, 27 insertions(+)
+ drivers/usb/serial/option.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
-index e23c30a..2f232a2 100644
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -120,6 +120,17 @@ MODULE_PARM_DESC(quirks, "supplemental list of device IDs and their quirks");
- 	.useTransport = use_transport,	\
- }
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index bafe018..5f4ce8e 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -454,6 +454,10 @@ static void option_instat_callback(struct urb *urb);
+ #define TPLINK_VENDOR_ID			0x2357
+ #define TPLINK_PRODUCT_MA180			0x0201
  
-+#define UNUSUAL_VENDOR_INTF(idVendor, cl, sc, pr, \
-+		vendor_name, product_name, use_protocol, use_transport, \
-+		init_function, Flags) \
-+{ \
-+	.vendorName = vendor_name,	\
-+	.productName = product_name,	\
-+	.useProtocol = use_protocol,	\
-+	.useTransport = use_transport,	\
-+	.initFunction = init_function,	\
-+}
++/* Changhong products */
++#define CHANGHONG_VENDOR_ID			0x2077
++#define CHANGHONG_PRODUCT_CH690			0x7001
 +
- static struct us_unusual_dev us_unusual_dev_list[] = {
- #	include "unusual_devs.h"
- 	{ }		/* Terminating entry */
-@@ -131,6 +142,7 @@ static struct us_unusual_dev for_dynamic_ids =
- #undef UNUSUAL_DEV
- #undef COMPLIANT_DEV
- #undef USUAL_DEV
-+#undef UNUSUAL_VENDOR_INTF
- 
- #ifdef CONFIG_LOCKDEP
- 
-diff --git a/drivers/usb/storage/usual-tables.c b/drivers/usb/storage/usual-tables.c
-index b969279..a9b5f2e 100644
---- a/drivers/usb/storage/usual-tables.c
-+++ b/drivers/usb/storage/usual-tables.c
-@@ -46,6 +46,20 @@
- { USB_INTERFACE_INFO(USB_CLASS_MASS_STORAGE, useProto, useTrans), \
-   .driver_info = ((useType)<<24) }
- 
-+/* Define the device is matched with Vendor ID and interface descriptors */
-+#define UNUSUAL_VENDOR_INTF(id_vendor, cl, sc, pr, \
-+			vendorName, productName, useProtocol, useTransport, \
-+			initFunction, flags) \
-+{ \
-+	.match_flags = USB_DEVICE_ID_MATCH_INT_INFO \
-+				| USB_DEVICE_ID_MATCH_VENDOR, \
-+	.idVendor    = (id_vendor), \
-+	.bInterfaceClass = (cl), \
-+	.bInterfaceSubClass = (sc), \
-+	.bInterfaceProtocol = (pr), \
-+	.driver_info = (flags) \
-+}
-+
- struct usb_device_id usb_storage_usb_ids[] = {
- #	include "unusual_devs.h"
- 	{ }		/* Terminating entry */
-@@ -57,6 +71,7 @@ MODULE_DEVICE_TABLE(usb, usb_storage_usb_ids);
- #undef UNUSUAL_DEV
- #undef COMPLIANT_DEV
- #undef USUAL_DEV
-+#undef UNUSUAL_VENDOR_INTF
- 
- 
- /*
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1326,6 +1330,7 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
+ 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 -- 
 1.7.9.5
 
