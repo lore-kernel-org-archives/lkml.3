@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934677Ab3BSTr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:47:57 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:64168 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934664Ab3BSTrx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 14:47:53 -0500
+	id S934689Ab3BSTsR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:48:17 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:11394 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933848Ab3BSTsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 14:48:16 -0500
+Message-ID: <5123D6D6.7010904@parallels.com>
+Date: Tue, 19 Feb 2013 23:47:34 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <1361182193-31894-1-git-send-email-hare@suse.de>
-References: <1361182193-31894-1-git-send-email-hare@suse.de>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 19 Feb 2013 12:47:32 -0700
-Message-ID: <CAErSpo5j5WXx-Y4ML22yzsVzXgXnT9JoD1EGvGRMy55GGRdn6A@mail.gmail.com>
-Subject: Re: [PATCH] pci: do not try to assign irq 255
-To: Hannes Reinecke <hare@suse.de>
-Cc: linux-kernel@vger.kernel.org, Frederik Himpe <fhimpe@vub.ac.be>,
-        Oliver Neukum <oneukum@suse.de>, David Haerdeman <david@hardeman.nu>,
-        linux-usb@vger.kernel.org, linux-pci@vger.kernel.org
+To: Oleg Nesterov <oleg@redhat.com>
+CC: mtk.manpages@gmail.com, Andrey Vagin <avagin@openvz.org>,
+        linux-kernel@vger.kernel.org, criu@openvz.org,
+        linux-api@vger.kernel.org, Roland McGrath <roland@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] ptrace: add ability to retrieve signals without removing
+ them from a queue
+References: <1360768595-31943-1-git-send-email-avagin@openvz.org> <CAKgNAkicAGEkvNFnSso__wK6QKao8jyDu5yuRmeyUOeaXLGChw@mail.gmail.com> <5123BC20.9040405@parallels.com> <20130219193424.GA9606@redhat.com>
+In-Reply-To: <20130219193424.GA9606@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 18, 2013 at 3:09 AM, Hannes Reinecke <hare@suse.de> wrote:
-> The PCI config space reseves a byte for the interrupt line,
-> so irq 255 actually refers to 'not set'.
-> However, the 'irq' field for struct pci_dev is an integer,
-> so the original meaning is lost, causing the system to
-> assign an interrupt '255', which fails.
->
-> So we should _not_ assign an interrupt value here, and
-> allow upper layers to fixup things.
->
-> This patch make PCI devices with MSI interrupts only
-> (like the xhci device on certain HP laptops) work properly.
->
-> Cc: Frederik Himpe <fhimpe@vub.ac.be>
-> Cc: Oliver Neukum <oneukum@suse.de>
-> Cc: David Haerdeman <david@hardeman.nu>
-> Cc: linux-usb@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> Signed-off-by: Hannes Reinecke <hare@suse.de>
->
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 6186f03..a2db887f 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -923,7 +923,8 @@ static void pci_read_irq(struct pci_dev *dev)
->         dev->pin = irq;
->         if (irq)
->                 pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &irq);
-> -       dev->irq = irq;
-> +       if (irq < 255)
-> +               dev->irq = irq;
->  }
->
->  void set_pcie_port_type(struct pci_dev *pdev)
+On 02/19/2013 11:34 PM, Oleg Nesterov wrote:
+> On 02/19, Pavel Emelyanov wrote:
+>>
+>> On 02/19/2013 04:15 PM, Michael Kerrisk (man-pages) wrote:
+>>> On Wed, Feb 13, 2013 at 4:16 PM, Andrey Vagin <avagin@openvz.org> wrote:
+>>>> This patch adds a new ptrace request PTRACE_PEEKSIGINFO.
+>>>>
+>>>> This request is used to retrieve information about a signal with the
+>>>> specified sequence number. A siginfo_t structure is copied from the child
+>>>> to location data in the parent.
+>>>>
+>>>> The low 16 bits of addr contains a sequence number of signal in a queue:
+>>>
+>>> I think 16 bits is probably not enough.... Already, on the "out of the
+>>> box" system that I have at hand, one can queue more than 2^16-1
+>>> signals:
+>>>
+>>>     $ cat /proc/$$/status | grep SigQ
+>>>     SigQ:	2/126065
+>>
+>> Yup :( Well, actually it would be enough to have only 1 bit as "flags"
+>> and the rest (31 at least) for the number. But taking into account
+>> Oleg's wish to have an ability to extend the amount of flags
+> 
+> I am not sure this is really needed, and we can add more PTRACE_PEEK_
+> codes later. I am fine either way, we can even add PEEK_PRIVATE/SHARED
+> right now.
+> 
+> But, given that every PEEK does list_for_each() until it finds the
+> necessary sequence number, I am wondering how this O(n**2) will work
+> if you want to dump 126065 signals ;)
 
-Is there a bugzilla or other URL with more information (problem
-description, hardware involved, dmesg logs, acpidump, etc)?
+Isn't it the great reason for making the addr point to a structure, that
+would look like
 
-Bjorn
+struct siginfo_peek_arg {
+	unsigned flags; /* all bits but 0th, that selects between private/shared
+			   queues, should be zero */
+	unsigned int off; /* from which siginfo to start */
+	unsigned int nr; /* how may siginfos to take */
+};
+
+? :)
+
+> Oleg.
+> 
+> .
+
+Thanks,
+Pavel
