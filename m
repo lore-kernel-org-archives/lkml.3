@@ -1,121 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895Ab3BSSJB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:09:01 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:49735 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758727Ab3BSSI7 (ORCPT
+	id S1758909Ab3BSSKN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:10:13 -0500
+Received: from www.linutronix.de ([62.245.132.108]:34497 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758727Ab3BSSKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:08:59 -0500
-Date: Tue, 19 Feb 2013 10:08:12 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Catalin Marinas <catalin.marinas@arm.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: Allow arch code to control the user page table
- ceiling
-In-Reply-To: <1361204311-14127-2-git-send-email-catalin.marinas@arm.com>
-Message-ID: <alpine.LNX.2.00.1302191005320.2139@eggly.anvils>
-References: <1361204311-14127-1-git-send-email-catalin.marinas@arm.com> <1361204311-14127-2-git-send-email-catalin.marinas@arm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 19 Feb 2013 13:10:11 -0500
+Date: Tue, 19 Feb 2013 19:10:06 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+cc: John Stultz <john.stultz@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linaro-dev >> Lists Linaro-dev" <linaro-dev@lists.linaro.org>
+Subject: Re: [resend] Timer broadcast question
+In-Reply-To: <5123BE35.8070902@linaro.org>
+Message-ID: <alpine.LFD.2.02.1302191904560.22263@ionos>
+References: <5123BE35.8070902@linaro.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Feb 2013, Catalin Marinas wrote:
-
-> From: Hugh Dickins <hughd@google.com>
-
-You're being generous to me :)
-Thanks for doing most of the work, yes, this looks fine.
-BUt I'd have expected a Cc stable below: see comment on 2/2.
-
-Hugh
-
+On Tue, 19 Feb 2013, Daniel Lezcano wrote:
+> I am working on identifying the different wakeup sources from the
+> interrupts and I have a question regarding the timer broadcast.
 > 
-> On architectures where a pgd entry may be shared between user and kernel
-> (ARM+LPAE), freeing page tables needs a ceiling other than 0. This patch
-> introduces a generic USER_PGTABLES_CEILING that arch code can override.
+> The broadcast timer is setup to the next event and that will wake up any
+> idle cpu belonging to the "broadcast cpumask", right ?
 > 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> [catalin.marinas@arm.com: commit log; shift_arg_pages(), asm-generic/pgtables.h changes]
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  fs/exec.c                     |  4 ++--
->  include/asm-generic/pgtable.h | 10 ++++++++++
->  mm/mmap.c                     |  4 ++--
->  3 files changed, 14 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index 20df02c..547eaaa 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -613,7 +613,7 @@ static int shift_arg_pages(struct vm_area_struct *vma, unsigned long shift)
->  		 * when the old and new regions overlap clear from new_end.
->  		 */
->  		free_pgd_range(&tlb, new_end, old_end, new_end,
-> -			vma->vm_next ? vma->vm_next->vm_start : 0);
-> +			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
->  	} else {
->  		/*
->  		 * otherwise, clean from old_start; this is done to not touch
-> @@ -622,7 +622,7 @@ static int shift_arg_pages(struct vm_area_struct *vma, unsigned long shift)
->  		 * for the others its just a little faster.
->  		 */
->  		free_pgd_range(&tlb, old_start, old_end, new_end,
-> -			vma->vm_next ? vma->vm_next->vm_start : 0);
-> +			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
->  	}
->  	tlb_finish_mmu(&tlb, new_end, old_end);
+> The cpu which has been woken up will look for each cpu the next-event
+> and send an IPI to wake it up.
 >  
-> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-> index 5cf680a..f50a87d 100644
-> --- a/include/asm-generic/pgtable.h
-> +++ b/include/asm-generic/pgtable.h
-> @@ -7,6 +7,16 @@
->  #include <linux/mm_types.h>
->  #include <linux/bug.h>
->  
-> +/*
-> + * On almost all architectures and configurations, 0 can be used as the
-> + * upper ceiling to free_pgtables(): on many architectures it has the same
-> + * effect as using TASK_SIZE.  However, there is one configuration which
-> + * must impose a more careful limit, to avoid freeing kernel pgtables.
-> + */
-> +#ifndef USER_PGTABLES_CEILING
-> +#define USER_PGTABLES_CEILING	0UL
-> +#endif
-> +
->  #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
->  extern int ptep_set_access_flags(struct vm_area_struct *vma,
->  				 unsigned long address, pte_t *ptep,
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index d1e4124..e262710 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -2262,7 +2262,7 @@ static void unmap_region(struct mm_struct *mm,
->  	update_hiwater_rss(mm);
->  	unmap_vmas(&tlb, vma, start, end);
->  	free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
-> -				 next ? next->vm_start : 0);
-> +				 next ? next->vm_start : USER_PGTABLES_CEILING);
->  	tlb_finish_mmu(&tlb, start, end);
->  }
->  
-> @@ -2640,7 +2640,7 @@ void exit_mmap(struct mm_struct *mm)
->  	/* Use -1 here to ensure all VMAs in the mm are unmapped */
->  	unmap_vmas(&tlb, vma, 0, -1);
->  
-> -	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, 0);
-> +	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, USER_PGTABLES_CEILING);
->  	tlb_finish_mmu(&tlb, 0, -1);
->  
->  	/*
-> 
+> Although, it is possible the sender of this IPI may not be concerned by
+> the timer expiration and has been woken up just for sending the IPI, right ?
+
+Correct.
+ 
+> If this is correct, is it possible to setup the timer irq affinity to a
+> cpu which will be concerned by the timer expiration ? so we prevent an
+> unnecessary wake up for a cpu.
+
+It is possible, but we never implemented it.
+
+If we go there, we want to make that conditional on a property flag,
+because some interrupt controllers especially on x86 only allow to
+move the affinity from interrupt context, which is pointless.
+
+Thanks,
+
+	tglx
+
+
+
