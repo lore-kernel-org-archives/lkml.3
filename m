@@ -1,119 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab3BSF43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 00:56:29 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50922 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757317Ab3BSFyS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 00:54:18 -0500
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <rob@landley.net>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <eballetbo@gmail.com>, <javier@dowhile0.org>, <kishon@ti.com>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        <akpm@linux-foundation.org>, <mchehab@redhat.com>, <cesarb@cesarb.net>,
-        <davem@davemloft.net>, <arnd@arndb.de>, <santosh.shilimkar@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: [PATCH v2 5/5] usb: musb: omap2430: use the new generic PHY framework
-Date: Tue, 19 Feb 2013 11:23:18 +0530
-Message-ID: <1361253198-7401-6-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1361253198-7401-1-git-send-email-kishon@ti.com>
-References: <1361253198-7401-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1757436Ab3BSF6J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 00:58:09 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:49690 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755644Ab3BSF6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 00:58:07 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH v2] tty: mxser: improve error handling in mxser_probe() and mxser_module_init()
+Date: Tue, 19 Feb 2013 09:57:43 +0400
+Message-Id: <1361253463-30627-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <51228a02.BjrxclRZRRerxqem%fengguang.wu@intel.com>
+References: <51228a02.BjrxclRZRRerxqem%fengguang.wu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the generic PHY framework API to get the PHY. The usb_phy_set_suspend
-and usb_phy_set_resume is replaced with phy_suspend and phy_resume to
-align with the new PHY framework.
+1. Currently mxser_probe() and mxser_module_init() ignore errors
+that can happen in tty_port_register_device().
+2. mxser_module_init() does not deallocate resources allocated in mxser_get_ISA_conf()
+if mxser_initbrd() failed.
 
-musb->xceiv can't be removed as of now because musb core uses xceiv.state and
-xceiv.otg. Once there is a separate state machine to handle otg, these can be
-moved out of xceiv and then we can start using the generic PHY framework.
+The patch adds proper error handling in all the cases.
+Also it moves free_irq() from mxser_release_ISA_res() to mxser_board_remove(),
+since it makes mxser_release_ISA_res() a counterpart for mxser_get_ISA_conf(),
+while free_irq() is relevant to both ISA and PCI boards.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- drivers/usb/musb/musb_core.h |    2 ++
- drivers/usb/musb/omap2430.c  |   22 ++++++++++++++++------
- 2 files changed, 18 insertions(+), 6 deletions(-)
+ drivers/tty/mxser.c |   42 +++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 35 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
-index 7fb4819..78251fd 100644
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -46,6 +46,7 @@
- #include <linux/usb.h>
- #include <linux/usb/otg.h>
- #include <linux/usb/musb.h>
-+#include <linux/phy/phy.h>
+diff --git a/drivers/tty/mxser.c b/drivers/tty/mxser.c
+index 4011386..deeb5ad 100644
+--- a/drivers/tty/mxser.c
++++ b/drivers/tty/mxser.c
+@@ -2364,7 +2364,6 @@ static void mxser_release_vector(struct mxser_board *brd)
  
- struct musb;
- struct musb_hw_ep;
-@@ -357,6 +358,7 @@ struct musb {
- 	u16			int_tx;
+ static void mxser_release_ISA_res(struct mxser_board *brd)
+ {
+-	free_irq(brd->irq, brd);
+ 	release_region(brd->ports[0].ioaddr, 8 * brd->info->nports);
+ 	mxser_release_vector(brd);
+ }
+@@ -2430,6 +2429,7 @@ static void mxser_board_remove(struct mxser_board *brd)
+ 		tty_unregister_device(mxvar_sdriver, brd->idx + i);
+ 		tty_port_destroy(&brd->ports[i].port);
+ 	}
++	free_irq(brd->irq, brd);
+ }
  
- 	struct usb_phy		*xceiv;
-+	struct phy		*phy;
+ static int __init mxser_get_ISA_conf(int cap, struct mxser_board *brd)
+@@ -2554,6 +2554,7 @@ static int mxser_probe(struct pci_dev *pdev,
+ 	struct mxser_board *brd;
+ 	unsigned int i, j;
+ 	unsigned long ioaddress;
++	struct device *tty_dev;
+ 	int retval = -EINVAL;
  
- 	int nIrq;
- 	unsigned		irq_wake:1;
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 1762354..99378af 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -345,14 +345,24 @@ static int omap2430_musb_init(struct musb *musb)
- 	 * up through ULPI.  TWL4030-family PMICs include one,
- 	 * which needs a driver, drivers aren't always needed.
- 	 */
--	if (dev->parent->of_node)
-+	if (dev->parent->of_node) {
-+		musb->phy = devm_of_phy_get(dev->parent, "usb-phy", 0);
-+
-+		/* We can't totally remove musb->xceiv as of now because
-+		 * musb core uses xceiv.state and xceiv.otg. Once we have
-+		 * a separate state machine to handle otg, these can be moved
-+		 * out of xceiv and then we can start using the generic PHY
-+		 * framework
-+		 */
- 		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
- 		    "usb-phy", 0);
--	else
-+	} else {
- 		musb->xceiv = devm_usb_get_phy_dev(dev, 0);
-+		musb->phy = devm_phy_get(dev, 0);
+ 	for (i = 0; i < MXSER_BOARDS; i++)
+@@ -2637,13 +2638,25 @@ static int mxser_probe(struct pci_dev *pdev,
+ 	if (retval)
+ 		goto err_rel3;
+ 
+-	for (i = 0; i < brd->info->nports; i++)
+-		tty_port_register_device(&brd->ports[i].port, mxvar_sdriver,
+-				brd->idx + i, &pdev->dev);
++	for (i = 0; i < brd->info->nports; i++) {
++		tty_dev = tty_port_register_device(&brd->ports[i].port,
++				mxvar_sdriver, brd->idx + i, &pdev->dev);
++		if (IS_ERR(tty_dev)) {
++			retval = PTR_ERR(tty_dev);
++			for (; i > 0; i--)
++				tty_unregister_device(mxvar_sdriver,
++					brd->idx + i - 1);
++			goto err_relbrd;
++		}
 +	}
  
--	if (IS_ERR_OR_NULL(musb->xceiv)) {
--		pr_err("HS USB OTG: no transceiver configured\n");
-+	if (IS_ERR_OR_NULL(musb->xceiv) || IS_ERR_OR_NULL(musb->phy)) {
-+		dev_err(dev, "no transceiver configured\n");
- 		return -EPROBE_DEFER;
- 	}
- 
-@@ -608,7 +618,7 @@ static int omap2430_runtime_suspend(struct device *dev)
- 				OTG_INTERFSEL);
- 
- 		omap2430_low_level_exit(musb);
--		usb_phy_set_suspend(musb->xceiv, 1);
-+		phy_suspend(musb->phy);
- 	}
+ 	pci_set_drvdata(pdev, brd);
  
  	return 0;
-@@ -624,7 +634,7 @@ static int omap2430_runtime_resume(struct device *dev)
- 		musb_writel(musb->mregs, OTG_INTERFSEL,
- 				musb->context.otg_interfsel);
++err_relbrd:
++	for (i = 0; i < brd->info->nports; i++)
++		tty_port_destroy(&brd->ports[i].port);
++	free_irq(brd->irq, brd);
+ err_rel3:
+ 	pci_release_region(pdev, 3);
+ err_zero:
+@@ -2665,7 +2678,6 @@ static void mxser_remove(struct pci_dev *pdev)
  
--		usb_phy_set_suspend(musb->xceiv, 0);
-+		phy_resume(musb->phy);
+ 	mxser_board_remove(brd);
+ 
+-	free_irq(pdev->irq, brd);
+ 	pci_release_region(pdev, 2);
+ 	pci_release_region(pdev, 3);
+ 	pci_disable_device(pdev);
+@@ -2683,6 +2695,7 @@ static struct pci_driver mxser_driver = {
+ static int __init mxser_module_init(void)
+ {
+ 	struct mxser_board *brd;
++	struct device *tty_dev;
+ 	unsigned int b, i, m;
+ 	int retval;
+ 
+@@ -2728,14 +2741,29 @@ static int __init mxser_module_init(void)
+ 
+ 		/* mxser_initbrd will hook ISR. */
+ 		if (mxser_initbrd(brd, NULL) < 0) {
++			mxser_release_ISA_res(brd);
+ 			brd->info = NULL;
+ 			continue;
+ 		}
+ 
+ 		brd->idx = m * MXSER_PORTS_PER_BOARD;
+-		for (i = 0; i < brd->info->nports; i++)
+-			tty_port_register_device(&brd->ports[i].port,
++		for (i = 0; i < brd->info->nports; i++) {
++			tty_dev = tty_port_register_device(&brd->ports[i].port,
+ 					mxvar_sdriver, brd->idx + i, NULL);
++			if (IS_ERR(tty_dev)) {
++				for (; i > 0; i--)
++					tty_unregister_device(mxvar_sdriver,
++						brd->idx + i - 1);
++				for (i = 0; i < brd->info->nports; i++)
++					tty_port_destroy(&brd->ports[i].port);
++				free_irq(brd->irq, brd);
++				mxser_release_ISA_res(brd);
++				brd->info = NULL;
++				break;
++			}
++		}
++		if (brd->info == NULL)
++			continue;
+ 
+ 		m++;
  	}
- 
- 	return 0;
 -- 
-1.7.10.4
+1.7.9.5
 
