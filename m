@@ -1,120 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933363Ab3BSUSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 15:18:49 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:63108 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932491Ab3BSUSp (ORCPT
+	id S933253Ab3BSUSr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 15:18:47 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:39379 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933158Ab3BSUSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Feb 2013 15:18:45 -0500
-From: Benson Leung <bleung@chromium.org>
-To: len.brown@intel.com, colin.king@canonical.com,
-        linux-kernel@vger.kernel.org
-Cc: bleung@chromium.org, vapier@gentoo.org
-Subject: [PATCH v4 1/1] tools/power x86_energy_perf_policy: fix cpuid for i686
-Date: Tue, 19 Feb 2013 12:18:33 -0800
-Message-Id: <1361305113-5627-2-git-send-email-bleung@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1361305113-5627-1-git-send-email-bleung@chromium.org>
-References: <1360870558-11711-1-git-send-email-bleung@chromium.org>
- <1361305113-5627-1-git-send-email-bleung@chromium.org>
+MIME-Version: 1.0
+In-Reply-To: <20130219100849.72d2330b@jbarnes-desktop>
+References: <CANeU7QmbzX4Tx1Dtu6xOiYzr6h6_8tPQvVG32Wvkt=5wAwEEAg@mail.gmail.com>
+	<20130219100849.72d2330b@jbarnes-desktop>
+Date: Tue, 19 Feb 2013 12:18:45 -0800
+X-Google-Sender-Auth: _YQSG90jfli7zBkOXeaQ0h2_Vw4
+Message-ID: <CANeU7QmJb+yUGu9mVgq=_pHhvpPu6ORrikm=E6PkuHpOz9OREA@mail.gmail.com>
+Subject: Re: i915 black screen introduced by ACPI changes
+From: Chris Li <lkml@chrisli.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-kernel@vger.kernel.org, robert.moore@intel.com, feng.tang@intel.com,
+        len.brown@intel.com, daniel.vetter@ffwll.ch,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86_energy_perf_policy reads cpuid using the cpuid instruction.
-On i686, when building with PIC, this clobbers ebx, the PIC register.
+CC Linus for suggestion of debugging.
 
-Fixed using the cpuid accessor function that vapier@gentoo.org wrote:
-https://raw.github.com/linux-test-project/ltp/master/include/ltp_cpuid.h
+Linus, it seems very hard to extract information from the dead kernel.
+Black screen prevents seeing the kernel OOPS, if there is one.
+The laptop has no serial port. Ethernet driver is not working on that
+laptop. Only wifi works.
 
-Signed-off-by: Benson Leung <bleung@chromium.org>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
-v4 : Cleaned up checkpatch.pl style errors. Used vapier's newer better cpuid.
-v3 : No changes.
-v2 : make cpuid static inline. Remove unused eax from validate_cpuid and
-clean up return variables from cpuid().
----
- .../x86_energy_perf_policy.c                       | 42 ++++++++++++++++++----
- 1 file changed, 35 insertions(+), 7 deletions(-)
+Any suggestion?
 
-diff --git a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
-index 40b3e54..4372bd2 100644
---- a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
-+++ b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
-@@ -130,20 +130,48 @@ void cmdline(int argc, char **argv)
- 	}
- }
- 
-+static inline void cpuid(unsigned int info, unsigned int *eax,
-+			 unsigned int *ebx, unsigned int *ecx,
-+			 unsigned int *edx)
-+{
-+#if defined(__i386__) || defined(__x86_64__)
-+	unsigned int _eax = info, _ebx, _ecx, _edx;
-+	asm volatile (
-+# ifdef __i386__
-+		      "xchg %%ebx, %%esi;" /* save ebx (for PIC) */
-+		      "cpuid;"
-+		      "xchg %%esi, %%ebx;" /* restore ebx & pass to caller */
-+		      : "=S" (_ebx),
-+#else
-+		      "cpuid;"
-+		      : "=b" (_ebx),
-+#endif
-+			"+a" (_eax), "=c" (_ecx), "=d" (_edx)
-+		      : /* inputs: eax is handled above */
-+	);
-+	if (eax)
-+		*eax = _eax;
-+	if (ebx)
-+		*ebx = _ebx;
-+	if (ecx)
-+		*ecx = _ecx;
-+	if (edx)
-+		*edx = _edx;
-+#endif
-+}
-+
- /*
-  * validate_cpuid()
-  * returns on success, quietly exits on failure (make verbose with -v)
-  */
- void validate_cpuid(void)
- {
--	unsigned int eax, ebx, ecx, edx, max_level;
-+	unsigned int ebx, ecx, edx, max_level;
- 	unsigned int fms, family, model, stepping;
- 
--	eax = ebx = ecx = edx = 0;
--
--	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx),
--		"=d" (edx) : "a" (0));
-+	ebx = ecx = edx = 0;
- 
-+	cpuid(0, &max_level, &ebx, &ecx, &edx);
- 	if (ebx != 0x756e6547 || edx != 0x49656e69 || ecx != 0x6c65746e) {
- 		if (verbose)
- 			fprintf(stderr, "%.4s%.4s%.4s != GenuineIntel",
-@@ -151,7 +179,7 @@ void validate_cpuid(void)
- 		exit(1);
- 	}
- 
--	asm("cpuid" : "=a" (fms), "=c" (ecx), "=d" (edx) : "a" (1) : "ebx");
-+	cpuid(1, &fms, NULL, NULL, &edx);
- 	family = (fms >> 8) & 0xf;
- 	model = (fms >> 4) & 0xf;
- 	stepping = fms & 0xf;
-@@ -173,7 +201,7 @@ void validate_cpuid(void)
- 	 * Support for MSR_IA32_ENERGY_PERF_BIAS
- 	 * is indicated by CPUID.06H.ECX.bit3
- 	 */
--	asm("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (6));
-+	cpuid(6, NULL, NULL, &ecx, NULL);
- 	if (verbose)
- 		printf("CPUID.06H.ECX: 0x%x\n", ecx);
- 	if (!(ecx & (1 << 3))) {
--- 
-1.8.1.3
+On Tue, Feb 19, 2013 at 10:08 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+>> The black screen happens about the time kernel switch to using VT console.
+>> At the point of black screen, no response of cap locks key led no network
+>> connection. The machine seems dead.
+>
+> Can you set up netconsole and see if you can get any output from the
+> boot, if we're lucky maybe you'll see a panic...
 
+The kernel does not support the Gigabit Ethernet on that laptop.
+I am not sure netconsole through wifi will work or not in that early
+stage of the boot up. There seems to be a out of kernel driver
+to support that ethernet card, but I haven't able to get to compile
+on FC18.
+
+Last time I try the kernel crashdump it does not seem to produce
+dump. I can give it more try and get back to you.
+
+BTW, does any one know limiting the kernel memory via "mem=1024M"
+will work with the kernel crashdump? The laptop has 8G of memory, it will take
+a long time to dump all the memory.
+
+>
+>> The CPU is i7 and it has two video card. The Intel build-in video card
+>> and Gtx 660M Nvidia card.
+>>
+>> This is very annoying. I did some poking around it:
+>> - It was fine on the FC18 3.6.xxx kernel before the upgrade.
+>> - The black screen exists with FC18 3.7.xxx kernel
+>> - The black screen also exists in latest tip of linux-2.6.
+>> - Switch to multi-user mode booting does not get rid of the black screen.
+>> - Get rid of the "rhrb quit" does not help either.
+>> - When the black screen happen, cap lock LED does not response to cap locks.
+>> - No networking when black screen happen. The only thing to do is
+>> reboot the system.
+>> - Adding "i915.modeset=0" will allow the kernel to boot into GUI login. However,
+>>   logout of X will cause the machine to hang similar to the black screen.
+>> - Suspend and resume will get stuck at the black screen with"i915.modeset=0".
+>> - Kernel console and X is using the Intel driver for display.
+>
+> I don't know about the ACPI change mentioned, but ACPI is involved in
+> dual-GPU configurations.  Maybe the change affected the default
+> behavior and pointed more functions at the nVidia device rather than
+> the Intel?
+
+I don't think so. First of all, I want to clarify that I did the experiment
+without the Nvidia commercial driver. I even blacklist the nouveau
+driver it does
+not change the test result. In that case, I assume the functions at
+the nVidia driver
+does not come into play. No?
+
+Secondly, the one clue is that, setting "i915.modeset=0" alone will allow
+the kernel to boot into X GUI login. It seems that the mode switch alone in
+i915 can trigger the black screen. It is consistent with kernel lockup when I
+logout of X desktop, where X want to reset the screen.
+
+Instead of guess which driver were at fault, can you suggest some experiment
+to confirm or denial which driver is at fault?
+
+Chris
