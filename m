@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698Ab3BSNQA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 08:16:00 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:39848 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758232Ab3BSNP6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 08:15:58 -0500
-Date: Tue, 19 Feb 2013 15:15:00 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Borislav Petkov <bp@alien8.de>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>, <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Doug Thompson <dougthompson@xmission.com>,
-        <linux-edac@vger.kernel.org>, <rjw@sisk.pl>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: SYSFS "errors"
-Message-ID: <20130219131500.GW23197@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130218222618.GA21818@kroah.com>
- <20130218224405.GB21493@pd.tnic>
- <20130219070310.2cadad7a@redhat.com>
- <20130219101121.GJ23197@arwen.pp.htv.fi>
- <20130219081149.46972f56@redhat.com>
- <20130219114345.GA26623@pd.tnic>
- <20130219091610.2b746a30@redhat.com>
- <20130219123502.GD26623@pd.tnic>
- <20130219094640.2abf1a66@redhat.com>
- <20130219130626.GE26623@pd.tnic>
+	id S1758346Ab3BSNRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 08:17:19 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:62129 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757957Ab3BSNRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 08:17:18 -0500
+X-IronPort-AV: E=Sophos;i="4.84,695,1355068800"; 
+   d="scan'208";a="6730249"
+Message-ID: <51237B37.8080207@cn.fujitsu.com>
+Date: Tue, 19 Feb 2013 21:16:39 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZcaUvQ23gCOmDTXi"
-Content-Disposition: inline
-In-Reply-To: <20130219130626.GE26623@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: akpm@linux-foundation.org, jiang.liu@huawei.com, wujianguo@huawei.com,
+        hpa@zytor.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com, Shaohua Li <shli@kernel.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [Bug fix PATCH 1/2] acpi, movablemem_map: Do not zero numa_meminfo
+ in numa_init().
+References: <1361278904-8690-1-git-send-email-tangchen@cn.fujitsu.com> <1361278904-8690-2-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1361278904-8690-2-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/19 21:16:36,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/19 21:16:37,
+	Serialize complete at 2013/02/19 21:16:37
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ZcaUvQ23gCOmDTXi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sorry, add cc Li Shaohua.
 
-On Tue, Feb 19, 2013 at 02:06:26PM +0100, Borislav Petkov wrote:
-> On Tue, Feb 19, 2013 at 09:46:40AM -0300, Mauro Carvalho Chehab wrote:
-> > Ah, now I see what you're meaning. That would require to dynamically
-> > create a per-mci DEVICE_ATTR().
->=20
-> Dude, look at the code, we do that already. And you're using it with
-> dev_attr_sdram_scrub_rate.
->=20
-> Simply change the permissions of the attribute before calling
-> device_create_file.
->=20
-> pseudo:
->=20
-> 	umode_t mode =3D 0;
->=20
-> 	if (mci->set...)
-> 		mode |=3D S_IWUSR;
->=20
-> 	if (mci->get...)
-> 		mode |=3D S_IRUGO;
->=20
->=20
-> 	dev_attr_sdram_scrub_rate.attr.mode =3D mode;
->=20
-> 	device_create_file(&mci->dev, &dev_attr_sdram_scrub_rate);
->=20
-> > No, on both cases, open() will return an error (-ENOENT against -EPERM).
->=20
-> What if it is a shell script doing:
->=20
-> cat /sys/devices/system/edac/mc/mc0/sdram_scrub_rate
+Reported-by: Li Shaohua <shli@kernel.org>
 
-what's the problem with that ?
 
-$ cat /path/to/file/that/doesnt/exist.txt
-cat: /path/to/file/that/doesnt/exist.txt: No such file or directory
-
-Didn't see any gates to hell opening here...
-
---=20
-balbi
-
---ZcaUvQ23gCOmDTXi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRI3rUAAoJEIaOsuA1yqREp/wP/AoA2wUA0ToOzavHNs50dGnG
-VxS3PV4P73EFKSYjOB5Wh9OM9w23nD9EHnC6/A4dCxNUmeyRZOpXDzt1Fs55cOuU
-iP7WiABg4sghiP7hXI1F+ghiCdS6KDJZfdy7MG2p8W2oBUXQYiHa9JreT+ZgmH65
-C0yXFsPRtTtjbP+EXCDMUlsG8x0+I1R+cM2CWfO3lyKewzlk29EO6gidEw9vDZbL
-X1LwhudfXgbtu3qOZzMFlpBPTHQxDa6WQ77NjHUZHgEkmr33WoULeyyzS1HAekHL
-uoW8JSTa5+Ap9kO0aOhUDQu0LnYDtTacUpplcXNCW8rnvBBiTTfUvRYCaMrd9hEp
-7ZA3li/FgNbk5AGsF5g0MSCIPNVqNR2ZuVt8Fzy2bkR50sVc8j4/b5J6xvt31Lcs
-j3QeYriKpKCM/aUg0YYApbTuE+H0rX5TtcE99Vbka82ipbqPgBbcjHMV/EPRpucr
-6/Ga/oE0oW7nI8/UK5Sab7ZDTjEiKM9mjPsCPWosZOByhPJQR/8O5BLIgmdZGSSs
-w/NC8YRzGrNi4+m7gcv679kU0t9xhXk5y64RL5Akls4Ynn7e0wfbxif/ArRrVWUK
-8ygIYN90pytl20GA5wndLUcSBzngDQfHK71qO69jqBZe7OB3HPduJPDmdfZMOah6
-qm8LQfxczrSIvM5/kx65
-=RvxY
------END PGP SIGNATURE-----
-
---ZcaUvQ23gCOmDTXi--
+On 02/19/2013 09:01 PM, Tang Chen wrote:
+> early_parse_srat() is called before numa_init(), and has initialized
+> numa_meminfo. So do not zero numa_meminfo in numa_init(), otherwise
+> we will lose memory numa info.
+>
+> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+> ---
+>   arch/x86/mm/numa.c |    6 ++++--
+>   1 files changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> index 3545585..ff3633c 100644
+> --- a/arch/x86/mm/numa.c
+> +++ b/arch/x86/mm/numa.c
+> @@ -559,10 +559,12 @@ static int __init numa_init(int (*init_func)(void))
+>   	for (i = 0; i<  MAX_LOCAL_APIC; i++)
+>   		set_apicid_to_node(i, NUMA_NO_NODE);
+>
+> -	/* Do not clear numa_nodes_parsed because SRAT was parsed earlier. */
+> +	/*
+> +	 * Do not clear numa_nodes_parsed or zero numa_meminfo here, because
+> +	 * SRAT was parsed earlier in early_parse_srat().
+> +	 */
+>   	nodes_clear(node_possible_map);
+>   	nodes_clear(node_online_map);
+> -	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
+>   	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
+>   	numa_reset_distance();
+>
