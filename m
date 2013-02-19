@@ -1,50 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934621Ab3BSWHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 17:07:46 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:49461 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933538Ab3BSWHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 17:07:45 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 10/35] mfd: ab8500-core: Rework MFD sub-device initialisation structures
-Date: Tue, 19 Feb 2013 22:07:31 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, linus.walleij@stericsson.com
-References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org> <1360933026-30325-11-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1360933026-30325-11-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	id S934693Ab3BSWKK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 17:10:10 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:34646 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933538Ab3BSWKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 17:10:08 -0500
+Message-ID: <1361310864.13508.20.camel@falcor1.watson.ibm.com>
+Subject: Re: [PATCH 2/2] ima: Support appraise_type=imasig_optional
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 19 Feb 2013 16:54:24 -0500
+In-Reply-To: <20130218182114.GB25922@redhat.com>
+References: <20130212185725.GC23410@redhat.com>
+	 <CALLzPKaD==fj3GSE3SnaWg5=VVNW7A_+caFzoh=_cBv8+BVKEA@mail.gmail.com>
+	 <20130213132920.GA3540@redhat.com>
+	 <CALLzPKbj33dQ36tcwip_LKCOXgA6GcBDbSc5s4y4cYyv2=s=nw@mail.gmail.com>
+	 <20130213143807.GC3540@redhat.com>
+	 <CALLzPKZ=eRWDtW6eSKPX5Qbvs_N37daiULw+T7o+DpoGfw_Z_A@mail.gmail.com>
+	 <20130213153013.GB6750@redhat.com>
+	 <1360794421.3524.495.camel@falcor1.watson.ibm.com>
+	 <20130214150303.GA16671@redhat.com>
+	 <1360855815.3524.615.camel@falcor1.watson.ibm.com>
+	 <20130218182114.GB25922@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201302192207.31465.arnd@arndb.de>
-X-Provags-ID: V02:K0:Xz4T7KTqZgqL1cybWP9pXsHoIRuqnpfH2pTKU1eKnNE
- miADOUfXMeIi+QJzqnkjruDkjLAp283gMS0LwX3fIR+E5dweeY
- BXcbXS4kcFbLEzHZILmqBq+7iR7CQpgjtFF2PlA923ktoLTj1K
- YZEZu9FG9a9boWRtG3ZuGTAmX4/5uBJRmI2gDZBvM7OvRodjGn
- zMTUQ1KO9jIs0r+4mIejJe9+EhLlrCHe/+gvX0q1D3zR2ABII/
- 0nTtJKaVkv4vzG74NL3SBQ+wKQEaUyMNji0q7ka/QAyWtpm3W+
- IsDk5/Ry0LrJiP2dAO7L5XEhCL5zGYnRkY9XRjuBvMd/tBmtoy
- OJ6kalMjx6dKb3lrr3HI=
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021922-5806-0000-0000-00001FDD261B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 February 2013, Lee Jones wrote:
-> +       {
-> +               .name = "ab8500-charger",
-> +               .of_compatible = "stericsson,ab8500-charger",
-> +               .num_resources = ARRAY_SIZE(ab8500_charger_resources),
-> +               .resources = ab8500_charger_resources,
-> +#ifndef CONFIG_OF
-> +               .platform_data = &ab8500_bm_data,
-> +               .pdata_size = sizeof(ab8500_bm_data),
-> +#endif
-> +       },
+On Mon, 2013-02-18 at 13:21 -0500, Vivek Goyal wrote:
+> On Thu, Feb 14, 2013 at 10:30:15AM -0500, Mimi Zohar wrote:
+> > On Thu, 2013-02-14 at 10:03 -0500, Vivek Goyal wrote:
+> > > On Wed, Feb 13, 2013 at 05:27:01PM -0500, Mimi Zohar wrote:
+> > > 
+> > > [..]
+> > > > > Yep, I got that. Default policy gets overruled when a new policy is
+> > > > > loaded.
+> > > > > 
+> > > > > In secureboot mode, somehow above rule needs to take effect by default.
+> > > > > One option would be that kernel can enforce above rule.
+> > > > > (I guess by adding it to both default_list as well as policy list).
+> > > > 
+> > > > The default policy is empty, but can be replaced with boot command line
+> > > > options.  The existing options are ima_tcb and/ ima_appraise_tcb.
+> > > > Please feel free to define an additional policy.
+> > > 
+> > > I think just defining a new command line option is not sufficient
+> > > for secureboot use case.
+> > > 
+> > > - One can easily remove kernel command line option without breaking
+> > >   booting and easily bypass secureboot restrictions.
+> > 
+> > > - I guess this is one mandated rule by secureboot. There might still
+> > >   be a user policy which can co-exist with this rule.
+> > > 
+> > > So to me this is not a new policy. It is just one mandatory rule which
+> > > gets appended to any policy in secureboot mode. Think of it as mandatory
+> > > rule imposed by kernel for any policy user can define. And in secureboot
+> > > mode a user can not get rid of this rule. (Otherwise it breaks user
+> > > space signing and one can bypass secureboot and boot into unsigned
+> > > kernel).
+> > 
+> > Your rule allows both signed and unsigned files to be executed.  Signed
+> > files will just have more capabilities.  The ima_appraise_tcb option
+> > requires all files owned by root to be signed, otherwise access is
+> > denied.  The two policies simply can not co-exist.
+> 
+> Thinking loud. I guess we might have to extend ima policy/rules to allow
+> multiple appraise rules to co-exist. And access permission will finally
+> depend on if all the rules in same category return success.
 
-Is this #ifdef correct? I would have expected "#ifdef CONFIG_ATAGS" here.
+ima_appraise_tcb rules:
+dont_appraise  fsmagic=PROC_SUPER_MAGIC
+.
+.
+.
+dont_appraise fsmagic=SELINUX_MAGIC
+appraise fowner=0
 
-	Arnd
+ima_secureboot:
+appraise fowner=0 func=bprm appraise_type=optional
+
+The ima_appraise_tcb appraise rule includes everything that would match
+the ima_secureboot rule.  It isn't possible to combine the two policies.
+
+Mimi
+
