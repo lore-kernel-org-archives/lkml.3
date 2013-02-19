@@ -1,39 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757223Ab3BSMwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 07:52:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52884 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754510Ab3BSMws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 07:52:48 -0500
-Date: Tue, 19 Feb 2013 13:52:41 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Paul Sbarra <sbarra.paul@gmail.com>
-Cc: simon@mungewell.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] hid: Add report descriptor for Logitech Driving
- Force wheel
-In-Reply-To: <1361123594-2813-1-git-send-email-sbarra.paul@gmail.com>
-Message-ID: <alpine.LNX.2.00.1302191351380.17024@pobox.suse.cz>
-References: <1361123594-2813-1-git-send-email-sbarra.paul@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757885Ab3BSM4i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 07:56:38 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:52681 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab3BSM4g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 07:56:36 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH v2 1/5] drivers: phy: add generic PHY framework
+Date: Tue, 19 Feb 2013 12:56:24 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: rob@landley.net, tony@atomide.com, linux@arm.linux.org.uk,
+        eballetbo@gmail.com, javier@dowhile0.org, balbi@ti.com,
+        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        mchehab@redhat.com, cesarb@cesarb.net, davem@davemloft.net,
+        santosh.shilimkar@ti.com, broonie@opensource.wolfsonmicro.com,
+        swarren@nvidia.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org
+References: <1361253198-7401-1-git-send-email-kishon@ti.com> <1361253198-7401-2-git-send-email-kishon@ti.com>
+In-Reply-To: <1361253198-7401-2-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302191256.24557.arnd@arndb.de>
+X-Provags-ID: V02:K0:WPb+GZyaECWvzhCz2bdVlEQqpF3m95qtb9woetAcKTN
+ 6JSkS+3Hbq6n7yooQtKMpzhTR4XtxJD/IgAPVUuE02nfX8TWee
+ ntI6BO9HdB03KOP4tfm4e8bYtx+CVfCWx4iWBw+K5PRvtRria/
+ vG+Q8qkBDV4FupWK39Usm3LdWgqPeQGoR00MN92bkzh+rwXoUU
+ vuIKQJkwBOwlDhTn0r2hTQ/wtn2NPcnmk4Ju2A7B/nmZkeBnb1
+ UvMIefs5rDTwde5Fhup0djeM9y9CQ0xVKJEifAvTzDywPII58C
+ s8dv9YYK8KM5pxZHIXJUBAC6YH1HjKcj0gBXFIpioYb2taxRQz
+ iPzacdQkctnx2wbAWWbA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Feb 2013, Paul Sbarra wrote:
+On Tuesday 19 February 2013, Kishon Vijay Abraham I wrote:
+> +static struct class *phy_class;
+> +static LIST_HEAD(phy_list);
+> +static DEFINE_MUTEX(phy_list_mutex);
+> +static LIST_HEAD(phy_bind_list);
 
-> This is the original report descriptor as reported by lsusb -vd 046d:c294.
+Hmm, so you actually do have a 'class'. There is a GregKH mandated ban on
+new classes, meaning that one should be converted to a bus_type instead.
 
-I have now applied both patches.
+Also, you really should not need the global phy_list, phy_list_mutex
+and phy_bind_list variables, since the driver core already provides
+you with ways to iterate through devices on a class or bus.
 
-Paul, please try to provide more verbose changelogs in the future even for 
-such trivial changes as this.
+> +/**
+> + * of_phy_get - lookup and obtain a reference to a phy by phandle
+> + * @dev: device that requests this phy
+> + * @phandle: name of the property holding the phy phandle value
+> + * @index - the index of the phy
+> + *
+> + * Returns the phy associated with the given phandle value,
+> + * after getting a refcount to it or -ENODEV if there is no such phy or
+> + * -EPROBE_DEFER if there is a phandle to the phy, but the device is
+> + * not yet loaded.
+> + */
+> +struct phy *of_phy_get(struct device *dev, const char *phandle, u8 index)
+> +{
+> +	struct phy *phy = NULL;
+> +	struct phy_bind *phy_map = NULL;
+> +	struct device_node *node;
+> +
+> +	if (!dev->of_node) {
+> +		dev_dbg(dev, "device does not have a device node entry\n");
+> +		return ERR_PTR(-EINVAL);
+> +	}
+> +
+> +	node = of_parse_phandle(dev->of_node, phandle, index);
+> +	if (!node) {
+> +		dev_dbg(dev, "failed to get %s phandle in %s node\n", phandle,
+> +			dev->of_node->full_name);
+> +		return ERR_PTR(-ENODEV);
+> +	}
 
-Thanks.
+I wonder whether this one should be of_parse_phandle_with_args() instead,
+so you can have client-specific configuration in the property. Basically
+instead of 
 
--- 
-Jiri Kosina
-SUSE Labs
+	phy = <&usbphy0 &usbphy1>;
+
+you can pass an arbitrary number of arguments along with this, as
+determined by some property in the phy node:
+
+	usbphy0: phy@10000 {
+		#phy-cells = <1>;
+	};
+
+	ehci@20000 {
+		phy = <&usbphy0 23>;
+	};
+
+Which in turn leads to the argument (23) being passed into a phy_bind().
+
+I also wonder if you should allow arbitrary names for the property.
+Can't this always be called 'phy'? If you allow named phys, it would
+more more consistent with other bindings to have a list of phy handles
+in a property called "phy", and a second property called "phy-names"
+that contains the named strings.
+
+
+> +/**
+> + * phy_create - create a new phy
+> + * @dev: device that is creating the new phy
+> + * @desc: descriptor of the phy
+> + *
+> + * Called to create a phy using phy framework.
+> + */
+> +struct phy *phy_create(struct device *dev, struct phy_descriptor *desc)
+> +{
+> +	int ret;
+> +	struct phy *phy;
+> +	struct phy_bind *phy_bind;
+> +	const char *devname = NULL;
+> ...
+> +
+> +	devname = dev_name(dev);
+> +	device_initialize(&phy->dev);
+> +	phy->desc = desc;
+> +	phy->dev.class = phy_class;
+> +	phy->dev.parent = dev;
+> +	phy->dev.bus = desc->bus;
+> +	ret = dev_set_name(&phy->dev, "%s", devname);
+
+
+Passing a bus_type through the descriptor seems misplaced. What is this for?
+
+Why is this function not just:
+
+struct phy *phy_create(struct device *dev, const char *label, int type,
+			struct phy_ops *ops);
+
+Passing a structure like you do here seems dangerous because when someone
+decides to add members to the structure, existing code will not give a
+build error but silently break.
+
+> +/**
+> + * struct phy_ops - set of function pointers for performing phy operations
+> + * @init: operation to be performed for initializing phy
+> + * @exit: operation to be performed while exiting
+> + * @suspend: suspending the phy
+> + * @resume: resuming the phy
+> + * @poweron: powering on the phy
+> + * @shutdown: shutting down the phy
+> + * @owner: the module owner containing the ops
+> + */
+> +struct phy_ops {
+> +	int	(*init)(struct phy_descriptor *desc);
+> +	int	(*exit)(struct phy_descriptor *desc);
+> +	int	(*suspend)(struct phy_descriptor *desc);
+> +	int	(*resume)(struct phy_descriptor *desc);
+> +	int	(*poweron)(struct phy_descriptor *desc);
+> +	int	(*shutdown)(struct phy_descriptor *desc);
+> +	struct module *owner;
+> +};
+
+Shouldn't these take the 'struct phy' as an argument? struct phy_descriptor is
+not even based on a 'struct device'.
+
+> +struct phy {
+> +	struct device		dev;
+> +	struct phy_descriptor	*desc;
+> +	struct list_head	head;
+> +};
+
+Please kill off the 'head' member here and use the infrastructure we
+already have. The concept of the phy_descriptor seems even more foreign
+here, so best just collapse that into 'struct phy'. Maybe also rename
+the structure to 'phy_device'.
+
+	Arnd
