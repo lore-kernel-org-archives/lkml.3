@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933507Ab3BSSxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:53:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54422 "EHLO
+	id S934470Ab3BSTC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:02:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54417 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934321Ab3BSSx0 (ORCPT
+	with ESMTP id S933518Ab3BSSxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:53:26 -0500
+	Tue, 19 Feb 2013 13:53:23 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>,
         "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 54/81] net: loopback: fix a dst refcounting issue
-Date: Tue, 19 Feb 2013 15:49:17 -0300
-Message-Id: <1361299784-8830-55-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 53/81] r8169: remove the obsolete and incorrect AMD workaround
+Date: Tue, 19 Feb 2013 15:49:16 -0300
+Message-Id: <1361299784-8830-54-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,82 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>
 
-commit 794ed393b707f01858f5ebe2ae5eabaf89d00022 upstream.
+commit 5d0feaff230c0abfe4a112e6f09f096ed99e0b2d upstream.
 
-Ben Greear reported crashes in ip_rcv_finish() on a stress
-test involving many macvlans.
+This was introduced in commit 6dccd16 "r8169: merge with version
+6.001.00 of Realtek's r8169 driver". I did not find the version
+6.001.00 online, but in 6.002.00 or any later r8169 from Realtek
+this hunk is no longer present.
 
-We tracked the bug to a dst use after free. ip_rcv_finish()
-was calling dst->input() and got garbage for dst->input value.
+Also commit 05af214 "r8169: fix Ethernet Hangup for RTL8110SC
+rev d" claims to have fixed this issue otherwise.
 
-It appears the bug is in loopback driver, lacking
-a skb_dst_force() before calling netif_rx().
+The magic compare mask of 0xfffe000 is dubious as it masks
+parts of the Reserved part, and parts of the VLAN tag. But this
+does not make much sense as the VLAN tag parts are perfectly
+valid there. In matter of fact this seems to be triggered with
+any VLAN tagged packet as RxVlanTag bit is matched. I would
+suspect 0xfffe0000 was intended to test reserved part only.
 
-As a result, a non refcounted dst, normally protected by a
-RCU read_lock section, was escaping this section and could
-be freed before the packet being processed.
+Finally, this hunk is evil as it can cause more packets to be
+handled than what was NAPI quota causing net/core/dev.c:
+net_rx_action(): WARN_ON_ONCE(work > weight) to trigger, and
+mess up the NAPI state causing device to hang.
 
-  [<ffffffff813a3c4d>] loopback_xmit+0x64/0x83
-  [<ffffffff81477364>] dev_hard_start_xmit+0x26c/0x35e
-  [<ffffffff8147771a>] dev_queue_xmit+0x2c4/0x37c
-  [<ffffffff81477456>] ? dev_hard_start_xmit+0x35e/0x35e
-  [<ffffffff8148cfa6>] ? eth_header+0x28/0xb6
-  [<ffffffff81480f09>] neigh_resolve_output+0x176/0x1a7
-  [<ffffffff814ad835>] ip_finish_output2+0x297/0x30d
-  [<ffffffff814ad6d5>] ? ip_finish_output2+0x137/0x30d
-  [<ffffffff814ad90e>] ip_finish_output+0x63/0x68
-  [<ffffffff814ae412>] ip_output+0x61/0x67
-  [<ffffffff814ab904>] dst_output+0x17/0x1b
-  [<ffffffff814adb6d>] ip_local_out+0x1e/0x23
-  [<ffffffff814ae1c4>] ip_queue_xmit+0x315/0x353
-  [<ffffffff814adeaf>] ? ip_send_unicast_reply+0x2cc/0x2cc
-  [<ffffffff814c018f>] tcp_transmit_skb+0x7ca/0x80b
-  [<ffffffff814c3571>] tcp_connect+0x53c/0x587
-  [<ffffffff810c2f0c>] ? getnstimeofday+0x44/0x7d
-  [<ffffffff810c2f56>] ? ktime_get_real+0x11/0x3e
-  [<ffffffff814c6f9b>] tcp_v4_connect+0x3c2/0x431
-  [<ffffffff814d6913>] __inet_stream_connect+0x84/0x287
-  [<ffffffff814d6b38>] ? inet_stream_connect+0x22/0x49
-  [<ffffffff8108d695>] ? _local_bh_enable_ip+0x84/0x9f
-  [<ffffffff8108d6c8>] ? local_bh_enable+0xd/0x11
-  [<ffffffff8146763c>] ? lock_sock_nested+0x6e/0x79
-  [<ffffffff814d6b38>] ? inet_stream_connect+0x22/0x49
-  [<ffffffff814d6b49>] inet_stream_connect+0x33/0x49
-  [<ffffffff814632c6>] sys_connect+0x75/0x98
+As result, any system using VLANs and having high receive
+traffic (so that NAPI poll budget limits rtl_rx) would result
+in device hang.
 
-This bug was introduced in linux-2.6.35, in commit
-7fee226ad2397b (net: add a noref bit on skb dst)
-
-skb_dst_force() is enforced in dev_queue_xmit() for devices having a
-qdisc.
-
-Reported-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Timo Teräs <timo.teras@iki.fi>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/loopback.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/ethernet/realtek/r8169.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/drivers/net/loopback.c b/drivers/net/loopback.c
-index 32eb94e..a3d4707 100644
---- a/drivers/net/loopback.c
-+++ b/drivers/net/loopback.c
-@@ -77,6 +77,11 @@ static netdev_tx_t loopback_xmit(struct sk_buff *skb,
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 0e09bb8..67f73ae 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -5812,13 +5812,6 @@ process_pkt:
+ 			tp->rx_stats.bytes += pkt_size;
+ 			u64_stats_update_end(&tp->rx_stats.syncp);
+ 		}
+-
+-		/* Work around for AMD plateform. */
+-		if ((desc->opts2 & cpu_to_le32(0xfffe000)) &&
+-		    (tp->mac_version == RTL_GIGA_MAC_VER_05)) {
+-			desc->opts2 = 0;
+-			cur_rx++;
+-		}
+ 	}
  
- 	skb_orphan(skb);
- 
-+	/* Before queueing this packet to netif_rx(),
-+	 * make sure dst is refcounted.
-+	 */
-+	skb_dst_force(skb);
-+
- 	skb->protocol = eth_type_trans(skb, dev);
- 
- 	/* it's OK to use per_cpu_ptr() because BHs are off */
+ 	count = cur_rx - tp->cur_rx;
 -- 
 1.7.9.5
 
