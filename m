@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab3BSJD2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 04:03:28 -0500
-Received: from mga01.intel.com ([192.55.52.88]:48956 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755770Ab3BSJDW convert rfc822-to-8bit (ORCPT
+	id S1758201Ab3BSJJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 04:09:31 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:47922 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757774Ab3BSJJ2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 04:03:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,693,1355126400"; 
-   d="scan'208";a="292954006"
-Message-ID: <1361264544.28241.52.camel@smile>
-Subject: Re: [PATCH] dw_dmac: adjust slave_id accordingly to request line
- base
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Viresh Kumar <viresh.linux@gmail.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Svahn, Kai" <kai.svahn@intel.com>
-Date: Tue, 19 Feb 2013 11:02:24 +0200
-In-Reply-To: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-2 
+	Tue, 19 Feb 2013 04:09:28 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 19 Feb 2013 10:09:07 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        linux1394-devel@lists.sourceforge.net, Tejun Heo <tj@kernel.org>
+Subject: [PATCH linux-next v2] firewire: fw_device_init: 'minor' may be used
+ uninitialized
+Message-ID: <20130219100907.5dff3124@stein>
+In-Reply-To: <1361222676-113069-1-git-send-email-tim.gardner@canonical.com>
+References: <1361222343-112898-1-git-send-email-tim.gardner@canonical.com>
+	<1361222676-113069-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-28 at 13:04 +0200, Andy Shevchenko wrote: 
-> On some hardware configurations we have got the request line with the offset.
-> The patch introduces convert_slave_id() helper for that cases. The request line
-> base is got from the platform device resources provided by the IORESOURCE_DMA
-> type.
+Date: Mon, 18 Feb 2013 14:24:36 -0700
+From: Tim Gardner <tim.gardner@canonical.com>
 
-Hi, Vinod.
+'firewire: convert to idr_alloc()' accidentally orphaned 'minor'.
 
-v3.8 is just out, and we have not got any proposal from anyone how to
-make our approach better. So, I'm just wondering about current state.
+drivers/firewire/core-device.c: In function ‘fw_device_init’:
+drivers/firewire/core-device.c:1029:24: warning: ‘minor’ may be used uninitialized in this function [-Wuninitialized]
 
-Rafael, could you share your opinion about our case with CSRT and
-request line base (perhaps you need to go through the entire thread)?
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+Andrew, please send this on together with the other idr patches,
+or even merge this into patch "firewire: convert to idr_alloc()" before
+the latter reaches upstream.
+
+ drivers/firewire/core-device.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/firewire/core-device.c b/drivers/firewire/core-device.c
+index b946330..03ce7d9 100644
+--- a/drivers/firewire/core-device.c
++++ b/drivers/firewire/core-device.c
+@@ -1017,10 +1017,11 @@ static void fw_device_init(struct work_struct *work)
+ 
+ 	fw_device_get(device);
+ 	down_write(&fw_device_rwsem);
+-	ret = idr_alloc(&fw_device_idr, device, 0, 1 << MINORBITS, GFP_KERNEL);
++	minor = idr_alloc(&fw_device_idr, device, 0, 1 << MINORBITS,
++			GFP_KERNEL);
+ 	up_write(&fw_device_rwsem);
+ 
+-	if (ret < 0)
++	if (minor < 0)
+ 		goto error;
+ 
+ 	device->device.bus = &fw_bus_type;
+
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Stefan Richter
+-=====-===-= --=- =--==
+http://arcgraph.de/sr/
