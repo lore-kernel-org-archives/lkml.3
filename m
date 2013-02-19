@@ -1,151 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932624Ab3BSK45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:56:57 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:41546 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757937Ab3BSK44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:56:56 -0500
+	id S932711Ab3BSK5R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:57:17 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44356 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932641Ab3BSK5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 05:57:14 -0500
+Date: Tue, 19 Feb 2013 12:56:33 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Afzal Mohammed <afzal@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, Sekhar Nori <nsekhar@ti.com>,
+        Syed Mohammed Khasim <khasim@ti.com>
+Subject: Re: [PATCH, RFC 5/8] ARM: OMAP2+: am43: Kconfig
+Message-ID: <20130219105633.GN23197@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <cover.1361186097.git.afzal@ti.com>
+ <5951ba90110b97fb494743e1aedf26aaa92b97a9.1361186097.git.afzal@ti.com>
+ <5123537B.8050709@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKfTPtCCS2ACCco-eQUtKO4ZF4ybBMCEmOzFKMThZTE=Cw19Ng@mail.gmail.com>
-References: <1359455940-1710-1-git-send-email-vincent.guittot@linaro.org>
-	<1359455940-1710-2-git-send-email-vincent.guittot@linaro.org>
-	<CAFTL4hzboD8Mv_-pRDHc+39QwXGWiT3MGtL8gJ=_ajnHdDCBcA@mail.gmail.com>
-	<CAKfTPtD2jRke2CUXiJdmaYYki_Voi4eTqJKgsyTnRpna7p8mJg@mail.gmail.com>
-	<CAFTL4hzriJm1mK1A_9U5kX9Z0RCMGpxy8M3gKuzFtt9Bky5htQ@mail.gmail.com>
-	<CAKfTPtCWudftS2XSM1OC2sR050mYvcAU6Fkt0vjV=C2V+w84Ew@mail.gmail.com>
-	<CAFTL4hzu-7uAXLqP+J48DaqLUYQWTESMNwPMYiiwrU2ZoOsgqw@mail.gmail.com>
-	<CAFTL4hyR=_ftCxycyvCBR0xwj6aOix9op40ps7htogpkkqVz+A@mail.gmail.com>
-	<CAKfTPtC3c50yo8AcQ7K9m73gP95dEsetjbhNXDN4RiR-nZ8UqA@mail.gmail.com>
-	<CAFTL4hxxWBfi5Ad+X27ouFDFBM-LttRJiEn3f83T1Q2z=v1k7g@mail.gmail.com>
-	<CAKfTPtCCS2ACCco-eQUtKO4ZF4ybBMCEmOzFKMThZTE=Cw19Ng@mail.gmail.com>
-Date: Tue, 19 Feb 2013 11:56:54 +0100
-Message-ID: <CAKfTPtAfBq04b6e_y2e2PQGsoDg2e_Em=x9-kF+k1QL9pgjL-g@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] sched: fix init NOHZ_IDLE flag
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, Mike Galbraith <efault@gmx.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yK/6QRnH3Zanb0EF"
+Content-Disposition: inline
+In-Reply-To: <5123537B.8050709@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 February 2013 11:29, Vincent Guittot <vincent.guittot@linaro.org> wrote:
-> On 18 February 2013 16:40, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> 2013/2/18 Vincent Guittot <vincent.guittot@linaro.org>:
->>> On 18 February 2013 15:38, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>>> I pasted the original at: http://pastebin.com/DMm5U8J8
->>>
->>> We can clear the idle flag only in the nohz_kick_needed which will not
->>> be called if the sched_domain is NULL so the sequence will be
->>>
->>> = CPU 0 =                                            = CPU 1=
->>>
->>> detach_and_destroy_domain {
->>>             rcu_assign_pointer(cpu1_dom, NULL);
->>> }
->>>
->>> dom = new_domain(...) {
->>>              nr_cpus_busy = 0;
->>>              set_idle(CPU 1);
->>> }
->>>                                                     dom =
->>> rcu_dereference(cpu1_dom)
->>>                                                     //dom == NULL, return
->>>
->>> rcu_assign_pointer(cpu1_dom, dom);
->>>
->>>                                                     dom =
->>> rcu_dereference(cpu1_dom)
->>>                                                     //dom != NULL,
->>>                                                     nohz_kick_needed {
->>>
->>> set_idle(CPU 1)
->>>                                                                    dom
->>> = rcu_dereference(cpu1_dom)
->>>
->>> //dec nr_cpus_busy,
->>>                                                     }
->>>
->>> Vincent
->>
->> Ok but CPU 0 can assign NULL to the domain of cpu1 while CPU 1 is
->> already in the middle of nohz_kick_needed().
->
-> Yes nothing prevents the sequence below to occur
->
-> = CPU 0 =                                            = CPU 1=
->                                                     dom =
-> rcu_dereference(cpu1_dom)
->                                                     //dom != NULL
-> detach_and_destroy_domain {
->             rcu_assign_pointer(cpu1_dom, NULL);
-> }
->
-> dom = new_domain(...) {
->              nr_cpus_busy = 0;
->              //nr_cpus_busy in the new_dom
->              set_idle(CPU 1);
-> }
->                                                     nohz_kick_needed {
->                                                              clear_idle(CPU 1)
->                                                              dom =
-> rcu_dereference(cpu1_dom)
->
-> //cpu1_dom == old_dom
->                                                              inc nr_cpus_busy,
->
-> //nr_cpus_busy in the old_dom
->                                                     }
->
-> rcu_assign_pointer(cpu1_dom, dom);
-> //cpu1_dom == new_dom
+--yK/6QRnH3Zanb0EF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The sequence above is not correct in addition to become unreadable
-after going through gmail
+On Tue, Feb 19, 2013 at 03:57:07PM +0530, Santosh Shilimkar wrote:
+> On Monday 18 February 2013 05:08 PM, Afzal Mohammed wrote:
+> >Add Kconfig option for AM43 family of SoC's, these are ARM Cortex A9
+> >based (SMP configuration with 1 core).
+> >
+> >Signed-off-by: Afzal Mohammed <afzal@ti.com>
+> >---
+> >  arch/arm/mach-omap2/Kconfig | 11 +++++++++++
+> >  1 file changed, 11 insertions(+)
+> >
+> >diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+> >index 49ac3df..683fbaa 100644
+> >--- a/arch/arm/mach-omap2/Kconfig
+> >+++ b/arch/arm/mach-omap2/Kconfig
+> >@@ -141,6 +141,17 @@ config SOC_AM33XX
+> >  	select MULTI_IRQ_HANDLER
+> >  	select COMMON_CLK
+> >
+> >+config SOC_AM43
+> >+	bool "TI AM43"
+> >+	depends on ARCH_OMAP2PLUS
+> >+	default y
+> >+	select CPU_V7
+> >+	select HAVE_SMP
+> You don't need this
 
-The correct and readable version
-https://pastebin.linaro.org/1750/
+actually, this is needed for CONFIG_SMP_ON_UP
 
-Vincent
+--=20
+balbi
 
->
-> I'm not sure that this can happen in practice because CPU1 is in
-> interrupt handler but we don't have any mechanism to prevent the
-> sequence.
->
-> The NULL sched_domain can be used to detect this situation and the
-> set_cpu_sd_state_busy function can be modified like below
->
-> inline void set_cpu_sd_state_busy
->  {
->         struct sched_domain *sd;
->         int cpu = smp_processor_id();
-> +       int clear = 0;
->
->         if (!test_bit(NOHZ_IDLE, nohz_flags(cpu)))
->                 return;
-> -       clear_bit(NOHZ_IDLE, nohz_flags(cpu));
->
->         rcu_read_lock();
->         for_each_domain(cpu, sd) {
->                 atomic_inc(&sd->groups->sgp->nr_busy_cpus);
-> +               clear = 1;
->         }
->         rcu_read_unlock();
-> +
-> +       if (likely(clear))
-> +               clear_bit(NOHZ_IDLE, nohz_flags(cpu));
->  }
->
-> The NOHZ_IDLE flag will not be clear if we have a NULL sched_domain
-> attached to the CPU.
-> With this implementation, we still don't need to get the sched_domain
-> for testing the NOHZ_IDLE flag which occurs each time CPU becomes idle
->
-> The patch 2 become useless
->
-> Vincent
+--yK/6QRnH3Zanb0EF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRI1phAAoJEIaOsuA1yqREYwwQAKjMwrUzLNukfn2riXws4I8W
+6fi16GEdNQmLSjy/F8R8zB7liN/2yYi3cB5Q1E+YRCqyHQjXb5l3wPKvCrrHsMH/
+JCnP6BgbMBEKEEOqdjbFFOGexGvyS2ST757/hmifN8i1/zz1z1jJ1l3wprP+MBHe
+uPqmym7KVuWtbfeTHygjHmRdQ5KPRN5D+5MpK1QL/Vmt6FzPl31xH0k2i01X0qOn
+MGOj0EbeRnixhzaZSDg/N7Vts5wt3rLyoJII5nWVY7h0ZJgpcOsm+E7SGytPd5Ve
+no3AoAcrT5hPuW2e5L1h63ftaaYwN6BqiZi/n0UxsbtmUaArgyRUMSCrnhIkb0Ps
+u4CELAiqddTMFbYRLc3ms1bMMB1ye0X6YHeCCf9wCxxjYIYuV4T/EOurVFprp38A
+PwOse7JcZneZ25v2zilF9rikE/RoC7JlGFyXPygatzUTtVbpULR2DUWQm1+yC8Y0
+d+T1TGLhfLMJJ1xAKWw4tegA8kgIU+Ui6Sm/JWsDsvzmySLsc8CXcDaf8xSO7Sj4
+rRCw0/X21P2QrQ9mjD0yA02ADNFC6KgiqSMUTMw+AzawmjxMH3n0fo3+22KpwBeH
+t/wKSK40OQTqV+mtDVRwpHQ3EIx0Wt9cISTyhAFr0tdEr4zrmCGIbCCxBwTg6003
+7XWntEvtBqd+K6eaDXM0
+=GxrB
+-----END PGP SIGNATURE-----
+
+--yK/6QRnH3Zanb0EF--
