@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934315Ab3BSSxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:53:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54394 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934298Ab3BSSxI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934299Ab3BSSxI (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 19 Feb 2013 13:53:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54387 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933462Ab3BSSxD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 13:53:03 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yan Burman <yanb@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+Cc: Rob Herring <rob.herring@calxeda.com>, netdev@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 49/81] net/mlx4_en: Fix bridged vSwitch configuration for non SRIOV mode
-Date: Tue, 19 Feb 2013 15:49:12 -0300
-Message-Id: <1361299784-8830-50-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 48/81] net: calxedaxgmac: throw away overrun frames
+Date: Tue, 19 Feb 2013 15:49:11 -0300
+Message-Id: <1361299784-8830-49-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -28,53 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yan Burman <yanb@mellanox.com>
+From: Rob Herring <rob.herring@calxeda.com>
 
-commit 213815a1e6ae70b9648483b110bc5081795f99e8 upstream.
+commit d6fb3be544b46a7611a3373fcaa62b5b0be01888 upstream.
 
-Commit 5b4c4d36860e "mlx4_en: Allow communication between functions on
-same host" introduced a regression under which a bridge acting as vSwitch
-whose uplink is an mlx4 Ethernet device become non-operative in native
-(non sriov) mode. This happens since broadcast ARP requests sent by VMs
-were loopback-ed by the HW and hence the bridge learned VM source MACs
-on both the VM and the uplink ports.
+The xgmac driver assumes 1 frame per descriptor. If a frame larger than
+the descriptor's buffer size is received, the frame will spill over into
+the next descriptor. So check for received frames that span more than one
+descriptor and discard them. This prevents a crash if we receive erroneous
+large packets.
 
-The fix is to place the DMAC in the send WQE only under SRIOV/eSwitch
-configuration or when the device is in selftest.
-
-Reviewed-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Yan Burman <yanb@mellanox.com>
-Signed-off-by: Amir Vadai <amirv@mellanox.com>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/net/ethernet/mellanox/mlx4/en_tx.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/calxeda/xgmac.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_tx.c b/drivers/net/ethernet/mellanox/mlx4/en_tx.c
-index 019d856..8ba03c9 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_tx.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_tx.c
-@@ -633,10 +633,15 @@ netdev_tx_t mlx4_en_xmit(struct sk_buff *skb, struct net_device *dev)
- 		ring->tx_csum++;
+diff --git a/drivers/net/ethernet/calxeda/xgmac.c b/drivers/net/ethernet/calxeda/xgmac.c
+index 8b0a0e4..8a3cd87 100644
+--- a/drivers/net/ethernet/calxeda/xgmac.c
++++ b/drivers/net/ethernet/calxeda/xgmac.c
+@@ -546,6 +546,10 @@ static int desc_get_rx_status(struct xgmac_priv *priv, struct xgmac_dma_desc *p)
+ 		return -1;
  	}
  
--	/* Copy dst mac address to wqe */
--	ethh = (struct ethhdr *)skb->data;
--	tx_desc->ctrl.srcrb_flags16[0] = get_unaligned((__be16 *)ethh->h_dest);
--	tx_desc->ctrl.imm = get_unaligned((__be32 *)(ethh->h_dest + 2));
-+	if (mlx4_is_mfunc(mdev->dev) || priv->validate_loopback) {
-+		/* Copy dst mac address to wqe. This allows loopback in eSwitch,
-+		 * so that VFs and PF can communicate with each other
-+		 */
-+		ethh = (struct ethhdr *)skb->data;
-+		tx_desc->ctrl.srcrb_flags16[0] = get_unaligned((__be16 *)ethh->h_dest);
-+		tx_desc->ctrl.imm = get_unaligned((__be32 *)(ethh->h_dest + 2));
-+	}
++	/* All frames should fit into a single buffer */
++	if (!(status & RXDESC_FIRST_SEG) || !(status & RXDESC_LAST_SEG))
++		return -1;
 +
- 	/* Handle LSO (TSO) packets */
- 	if (lso_header_size) {
- 		/* Mark opcode as LSO */
+ 	/* Check if packet has checksum already */
+ 	if ((status & RXDESC_FRAME_TYPE) && (status & RXDESC_EXT_STATUS) &&
+ 		!(ext_status & RXDESC_IP_PAYLOAD_MASK))
 -- 
 1.7.9.5
 
