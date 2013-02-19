@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758318Ab3BSNDl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 08:03:41 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:46500 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757000Ab3BSNDj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 08:03:39 -0500
-Date: Tue, 19 Feb 2013 14:03:34 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Mike Frysinger <vapier@gentoo.org>, Michal Simek <monstr@monstr.eu>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Richard Weinberger <richard@nod.at>, x86@kernel.org
-Subject: Re: [patch 1/1] early_printk: Consolidate random copies of identical
- code
-Message-ID: <20130219130334.GA11137@gmail.com>
-References: <20130219124038.365937990@linutronix.de>
+	id S1758336Ab3BSNGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 08:06:34 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:58685 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757087Ab3BSNGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 08:06:31 -0500
+Date: Tue, 19 Feb 2013 14:06:26 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: balbi@ti.com, Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, davem@davemloft.net,
+        netdev@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
+        linux-edac@vger.kernel.org, rjw@sisk.pl, linux-pm@vger.kernel.org
+Subject: Re: SYSFS "errors"
+Message-ID: <20130219130626.GE26623@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Mauro Carvalho Chehab <mchehab@redhat.com>, balbi@ti.com,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Ingo Molnar <mingo@redhat.com>, JBottomley@parallels.com,
+	linux-scsi@vger.kernel.org, davem@davemloft.net,
+	netdev@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
+	linux-edac@vger.kernel.org, rjw@sisk.pl, linux-pm@vger.kernel.org
+References: <20130218221306.GA21493@pd.tnic>
+ <20130218222618.GA21818@kroah.com>
+ <20130218224405.GB21493@pd.tnic>
+ <20130219070310.2cadad7a@redhat.com>
+ <20130219101121.GJ23197@arwen.pp.htv.fi>
+ <20130219081149.46972f56@redhat.com>
+ <20130219114345.GA26623@pd.tnic>
+ <20130219091610.2b746a30@redhat.com>
+ <20130219123502.GD26623@pd.tnic>
+ <20130219094640.2abf1a66@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130219124038.365937990@linutronix.de>
+In-Reply-To: <20130219094640.2abf1a66@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 19, 2013 at 09:46:40AM -0300, Mauro Carvalho Chehab wrote:
+> Ah, now I see what you're meaning. That would require to dynamically
+> create a per-mci DEVICE_ATTR().
 
-* Thomas Gleixner <tglx@linutronix.de> wrote:
+Dude, look at the code, we do that already. And you're using it with
+dev_attr_sdram_scrub_rate.
 
-> The early console implementations are the same all over the
-> place. Move the print function to kernel/printk and get rid of the
-> copies.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Cc: Michal Simek <monstr@monstr.eu>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Richard Weinberger <richard@nod.at>
-> Cc: x86@kernel.org
-> 
-> ---
->  arch/arm/kernel/early_printk.c        |   17 +++--------------
->  arch/blackfin/kernel/early_printk.c   |    2 --
->  arch/microblaze/kernel/early_printk.c |   26 ++++----------------------
->  arch/mips/kernel/early_printk.c       |   11 +++++------
->  arch/powerpc/kernel/udbg.c            |    6 ++----
->  arch/sh/kernel/sh_bios.c              |    2 --
->  arch/sparc/kernel/setup_32.c          |    1 +
->  arch/sparc/kernel/setup_64.c          |    8 +++++++-
->  arch/tile/kernel/early_printk.c       |   27 +++++----------------------
->  arch/um/kernel/early_printk.c         |    8 +++++---
->  arch/unicore32/kernel/early_printk.c  |   12 ++++--------
->  arch/x86/kernel/early_printk.c        |   21 ++-------------------
->  include/linux/console.h               |    1 +
->  include/linux/printk.h                |    6 ++++++
->  kernel/printk.c                       |   30 +++++++++++++++++++++++-------
->  15 files changed, 68 insertions(+), 110 deletions(-)
+Simply change the permissions of the attribute before calling
+device_create_file.
 
-Reviewed-by: Ingo Molnar <mingo@kernel.org>
+pseudo:
 
-Thanks,
+	umode_t mode = 0;
 
-	Ingo
+	if (mci->set...)
+		mode |= S_IWUSR;
+
+	if (mci->get...)
+		mode |= S_IRUGO;
+
+
+	dev_attr_sdram_scrub_rate.attr.mode = mode;
+
+	device_create_file(&mci->dev, &dev_attr_sdram_scrub_rate);
+
+> No, on both cases, open() will return an error (-ENOENT against -EPERM).
+
+What if it is a shell script doing:
+
+cat /sys/devices/system/edac/mc/mc0/sdram_scrub_rate
+
+or similar?
+
+Simply fixing the permissions fixes *all* possible cases.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
