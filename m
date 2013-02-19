@@ -1,81 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab3BSKhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:37:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23648 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932578Ab3BSKeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:34:01 -0500
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 01/10] GFS2: Separate LRU scanning from shrinker
-Date: Tue, 19 Feb 2013 10:07:31 +0000
-Message-Id: <1361268460-3092-2-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1361268460-3092-1-git-send-email-swhiteho@redhat.com>
-References: <1361268460-3092-1-git-send-email-swhiteho@redhat.com>
+	id S932626Ab3BSKih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:38:37 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:48251 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932518Ab3BSKie (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 05:38:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <87d2vxf71h.wl%kuninori.morimoto.gx@renesas.com>
+References: <20130218142834.28739.39417.sendpatchset@w520>
+	<87d2vxf71h.wl%kuninori.morimoto.gx@renesas.com>
+Date: Tue, 19 Feb 2013 19:38:33 +0900
+Message-ID: <CANqRtoQYLPe5c7PYnMonz852NED6AeVB9-6kweR=M51TDPb-iw@mail.gmail.com>
+Subject: Re: [PATCH] irqchip: Renesas INTC External IRQ pin driver
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        benh@kernel.crashing.org, grant.likely@secretlab.ca,
+        horms@verge.net.au, tglx@linutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This breaks out the LRU scanning function from the shrinker in
-preparation for adding other callers to the LRU scanner.
+Hi Morimoto-san,
 
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+On Tue, Feb 19, 2013 at 10:04 AM, Kuninori Morimoto
+<kuninori.morimoto.gx@renesas.com> wrote:
+>
+> Hi Magnus
+>
+> Thank you for this patch.
+> Small comment from me :)
 
-diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index 992c5c0..3ad8fd3 100644
---- a/fs/gfs2/glock.c
-+++ b/fs/gfs2/glock.c
-@@ -1376,23 +1376,19 @@ void gfs2_glock_complete(struct gfs2_glock *gl, int ret)
- 		gfs2_glock_put(gl);
- }
- 
-+/**
-+ * gfs2_scan_glock_lru - Scan the LRU looking for locks to demote
-+ * @nr: The number of entries to scan
+Sure, thanks!
+
+>> +struct intc_irqpin_priv {
+>> +     struct intc_irqpin_iomem iomem[INTC_IRQPIN_REG_NR];
+>> +     struct intc_irqpin_irq irq[INTC_IRQPIN_MAX];
+>> +     struct renesas_intc_irqpin_config config;
+>> +     unsigned int number_of_irqs;
+>> +     struct platform_device *pdev;
+>> +     struct irq_chip irq_chip;
+>> +     struct irq_domain *irq_domain;
+>> +};
+>
+> (snip)
+>
+>> +static DEFINE_RAW_SPINLOCK(intc_irqpin_lock); /* only used by slow path */
+>> +
+>> +static void intc_irqpin_read_modify_write(struct intc_irqpin_priv *p,
+>> +                                       int reg, int shift,
+>> +                                       int width, int value)
+>> +{
+>> +     unsigned long flags;
+>> +     unsigned long tmp;
+>> +
+>> +     raw_spin_lock_irqsave(&intc_irqpin_lock, flags);
+>> +
+>> +     tmp = intc_irqpin_read(p, reg);
+>> +     tmp &= ~(((1 << width) - 1) << shift);
+>> +     tmp |= value << shift;
+>> +     intc_irqpin_write(p, reg, tmp);
+>> +
+>> +     raw_spin_unlock_irqrestore(&intc_irqpin_lock, flags);
+>> +}
+>
+> It is possible to include this spin lock into priv ?
+> This local static spin lock seems not wrong, but looks strange ?
+
+Please see this comment (that you snipped out above):
+
++/* INTC external IRQ PIN hardware register access:
 + *
++ * SENSE is read-write 32-bit with 2-bits or 4-bits per IRQ (*)
++ * PRIO is read-write 32-bit with 4-bits per IRQ (**)
++ * SOURCE is read-only 32-bit or 8-bit with 1-bit per IRQ (***)
++ * MASK is write-only 32-bit or 8-bit with 1-bit per IRQ (***)
++ * CLEAR is write-only 32-bit or 8-bit with 1-bit per IRQ (***)
++ *
++ * (*) May be accessed by more than one driver instance - lock needed
++ * (**) Read-modify-write access by one driver instance - lock needed
++ * (***) Accessed by one driver instance only - no locking needed
 + */
- 
--static int gfs2_shrink_glock_memory(struct shrinker *shrink,
--				    struct shrink_control *sc)
-+static void gfs2_scan_glock_lru(int nr)
- {
- 	struct gfs2_glock *gl;
- 	int may_demote;
- 	int nr_skipped = 0;
--	int nr = sc->nr_to_scan;
--	gfp_t gfp_mask = sc->gfp_mask;
- 	LIST_HEAD(skipped);
- 
--	if (nr == 0)
--		goto out;
--
--	if (!(gfp_mask & __GFP_FS))
--		return -1;
--
- 	spin_lock(&lru_lock);
- 	while(nr && !list_empty(&lru_list)) {
- 		gl = list_entry(lru_list.next, struct gfs2_glock, gl_lru);
-@@ -1425,7 +1421,17 @@ static int gfs2_shrink_glock_memory(struct shrinker *shrink,
- 	list_splice(&skipped, &lru_list);
- 	atomic_add(nr_skipped, &lru_count);
- 	spin_unlock(&lru_lock);
--out:
-+}
-+
-+static int gfs2_shrink_glock_memory(struct shrinker *shrink,
-+				    struct shrink_control *sc)
-+{
-+	if (sc->nr_to_scan) {
-+		if (!(sc->gfp_mask & __GFP_FS))
-+			return -1;
-+		gfs2_scan_glock_lru(sc->nr_to_scan);
-+	}
-+
- 	return (atomic_read(&lru_count) / 100) * sysctl_vfs_cache_pressure;
- }
- 
--- 
-1.7.4
 
+Basically, the lock is used for SENSE and PRIO. SENSE may be shared
+between multiple driver instances, so a lock in ->priv won't be
+enough. PRIO may be locked using ->priv but both SENSE and PRIV are in
+the slow path so I decided to handle both using a global lock.
+
+>> +static int intc_irqpin_probe(struct platform_device *pdev)
+>> +{
+>> +     struct renesas_intc_irqpin_config *pdata = pdev->dev.platform_data;
+>> +     struct intc_irqpin_priv *p;
+>> +     struct intc_irqpin_iomem *i;
+>> +     struct resource *io[INTC_IRQPIN_REG_NR];
+>> +     struct resource *irq;
+>> +     struct irq_chip *irq_chip;
+>> +     void (*enable_fn)(struct irq_data *d);
+>> +     void (*disable_fn)(struct irq_data *d);
+>> +     const char *name = dev_name(&pdev->dev);
+>> +     int ret;
+>> +     int k;
+>> +
+>> +     p = kzalloc(sizeof(*p), GFP_KERNEL);
+>
+> can you use devm_kzalloc() ?
+> devm_ioremap_nocache() or devm_request_and_ioremap()
+> Can you use devm_request_irq()
+> if you used devm_xxxx, you can remove kfree() / free_irq() / iounmap() here
+
+I somehow knew that this would come up. Will give devm a go in V2 -
+unless someone tells me such a change is going to make the driver more
+painful to back port to LTSI-3.4.
+
+>> --- /dev/null
+>> +++ work/include/linux/platform_data/irq-renesas-intc-irqpin.h        2013-02-18 18:28:24.000000000 +0900
+>> @@ -0,0 +1,10 @@
+>> +#ifndef __IRQ_RENESAS_INTC_IRQPIN_H__
+>> +#define __IRQ_RENESAS_INTC_IRQPIN_H__
+>
+> GPL license signage ?
+
+Let me check how other files in include/linux/platform_data/ handles
+this. I will follow the majority.
+
+Thanks,
+
+/ magnus
