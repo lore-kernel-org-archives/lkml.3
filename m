@@ -1,458 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab3BSHKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 02:10:46 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50925 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156Ab3BSHKo (ORCPT
+	id S1756409Ab3BSHNJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 02:13:09 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:58830 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754892Ab3BSHNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 02:10:44 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <51232557.2050302@jp.fujitsu.com>
-Date: Tue, 19 Feb 2013 16:10:15 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Tue, 19 Feb 2013 02:13:06 -0500
+Date: Mon, 18 Feb 2013 23:09:19 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] battery-2.6.git
+Message-ID: <20130219070918.GA27706@lizard.sbx00618.mountca.wayport.net>
+Reply-To: cbouatmailru@gmail.com
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH 2/7] ACPI / scan: Introduce common code for ACPI-based
- device hotplug
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <2540040.4NPGdn6Df0@vostro.rjw.lan> <51231EFC.5080006@jp.fujitsu.com>
-In-Reply-To: <51231EFC.5080006@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/02/19 15:43, Yasuaki Ishimatsu wrote:
-> Hi Rafael,
->
-> I have comments. Please see below.
->
-> 2013/02/18 0:21, Rafael J. Wysocki wrote:
->> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>
->> Multiple drivers handling hotplug-capable ACPI device nodes install
->> notify handlers covering the same types of events in a very similar
->> way.  Moreover, those handlers are installed in separate namespace
->> walks, although that really should be done during namespace scans
->> carried out by acpi_bus_scan().  This leads to substantial code
->> duplication, unnecessary overhead and behavior that is hard to
->> follow.
->>
->> For this reason, introduce common code in drivers/acpi/scan.c for
->> handling hotplug-related notification and carrying out device
->> insertion and eject operations in a generic fashion, such that it
->> may be used by all of the relevant drivers in the future.  To cover
->> the existing differences between those drivers introduce struct
->> acpi_hotplug_profile for representing collections of hotplug
->> settings associated with different ACPI scan handlers that can be
->> used by the drivers to make the common code reflect their current
->> behavior.
->>
->> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> ---
->>   drivers/acpi/scan.c     |  271 +++++++++++++++++++++++++++++++++++++-----------
->>   include/acpi/acpi_bus.h |    7 +
->>   2 files changed, 220 insertions(+), 58 deletions(-)
->>
->> Index: test/include/acpi/acpi_bus.h
->> ===================================================================
->> --- test.orig/include/acpi/acpi_bus.h
->> +++ test/include/acpi/acpi_bus.h
->> @@ -88,11 +88,18 @@ struct acpi_device;
->>    * -----------------
->>    */
->>
->> +struct acpi_hotplug_profile {
->> +    bool enabled:1;
->> +    bool uevents:1;
->> +    bool autoeject:1;
->> +};
->> +
->>   struct acpi_scan_handler {
->>       const struct acpi_device_id *ids;
->>       struct list_head list_node;
->>       int (*attach)(struct acpi_device *dev, const struct acpi_device_id *id);
->>       void (*detach)(struct acpi_device *dev);
->> +    struct acpi_hotplug_profile hotplug;
->>   };
->>
->>   /*
->> Index: test/drivers/acpi/scan.c
->> ===================================================================
->> --- test.orig/drivers/acpi/scan.c
->> +++ test/drivers/acpi/scan.c
->> @@ -107,32 +107,19 @@ acpi_device_modalias_show(struct device
->>   }
->>   static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
->>
->> -/**
->> - * acpi_bus_hot_remove_device: hot-remove a device and its children
->> - * @context: struct acpi_eject_event pointer (freed in this func)
->> - *
->> - * Hot-remove a device and its children. This function frees up the
->> - * memory space passed by arg context, so that the caller may call
->> - * this function asynchronously through acpi_os_hotplug_execute().
->> - */
->> -void acpi_bus_hot_remove_device(void *context)
->> +static int acpi_scan_hot_remove(struct acpi_device *device)
->>   {
->> -    struct acpi_eject_event *ej_event = context;
->> -    struct acpi_device *device = ej_event->device;
->>       acpi_handle handle = device->handle;
->> -    acpi_handle temp;
->> +    acpi_handle not_used;
->>       struct acpi_object_list arg_list;
->>       union acpi_object arg;
->> -    acpi_status status = AE_OK;
->> -    u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
->> -
->> -    mutex_lock(&acpi_scan_lock);
->> +    acpi_status status;
->>
->>       /* If there is no handle, the device node has been unregistered. */
->> -    if (!device->handle) {
->> +    if (!handle) {
->>           dev_dbg(&device->dev, "ACPI handle missing\n");
->>           put_device(&device->dev);
->> -        goto out;
->> +        return -EINVAL;
->>       }
->>
->>       ACPI_DEBUG_PRINT((ACPI_DB_INFO,
->> @@ -143,7 +130,7 @@ void acpi_bus_hot_remove_device(void *co
->>       put_device(&device->dev);
->>       device = NULL;
->>
->> -    if (ACPI_SUCCESS(acpi_get_handle(handle, "_LCK", &temp))) {
->> +    if (ACPI_SUCCESS(acpi_get_handle(handle, "_LCK", &not_used))) {
->>           arg_list.count = 1;
->>           arg_list.pointer = &arg;
->>           arg.type = ACPI_TYPE_INTEGER;
->> @@ -161,18 +148,162 @@ void acpi_bus_hot_remove_device(void *co
->>        */
->>       status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
->>       if (ACPI_FAILURE(status)) {
->> -        if (status != AE_NOT_FOUND)
->> +        if (status == AE_NOT_FOUND) {
->> +            return -ENODEV;
->> +        } else {
->>               acpi_handle_warn(handle, "Eject failed\n");
->> +            return -EIO;
->> +        }
->> +    }
->> +    return 0;
->> +}
->> +
->> +static void acpi_bus_device_eject(void *context)
->> +{
->> +    acpi_handle handle = context;
->> +    struct acpi_device *device = NULL;
->> +    struct acpi_scan_handler *handler;
->> +    u32 ost_source = ACPI_NOTIFY_EJECT_REQUEST;
->> +    u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
->> +
->> +    mutex_lock(&acpi_scan_lock);
->>
->> -        /* Tell the firmware the hot-remove operation has failed. */
->> -        acpi_evaluate_hotplug_ost(handle, ej_event->event,
->> -                      ost_code, NULL);
->> +    acpi_bus_get_device(handle, &device);
->> +    if (!device)
->> +        goto out;
->> +
->> +    handler = device->handler;
->> +    if (!handler || !handler->hotplug.enabled) {
->> +        ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
->> +        goto out;
->>       }
->> +    acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
->> +                  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
->
->> +    if (handler->hotplug.uevents)
->> +        kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
->> +
->> +    if (handler->hotplug.autoeject) {
->> +        int error;
->> +
->> +        ost_source = ACPI_OST_EC_OSPM_EJECT;
->> +        get_device(&device->dev);
->> +        error = acpi_scan_hot_remove(device);
->> +        if (!error)
->> +            ost_code = ACPI_OST_SC_SUCCESS;
->> +    } else {
->> +        device->flags.eject_pending = true;
->> +        goto out_unlock;
->> +    }
->
-> I want you to change the order of uevents and autoeject.
-> When user caught OFFLINE event, user thinks devices were removed.
-> But it is not guaranteed in this code since acpi_scan_hot_remove() may
-> be running.
->
->> +
->> + out:
->> +    acpi_evaluate_hotplug_ost(handle, ost_source, ost_code, NULL);
->> +
->> + out_unlock:
->> +    mutex_unlock(&acpi_scan_lock);
->> +}
->> +
+Hello Linus,
 
->> +static void acpi_scan_bus_device_check(acpi_handle handle, u32 ost_source)
->> +{
->> +    struct acpi_device *device = NULL;
->> +    u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
->> +    int error;
->> +
->> +    mutex_lock(&acpi_scan_lock);
->> +
->> +    acpi_bus_get_device(handle, &device);
->> +    if (device) {
->> +        dev_warn(&device->dev, "Attempt to re-insert\n");
->> +        goto out;
->> +    }
->> +    acpi_evaluate_hotplug_ost(handle, ost_source,
->> +                  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
->> +    ost_source = ACPI_OST_EC_OSPM_INSERTION;
->> +    error = acpi_bus_scan(handle);
->> +    if (error) {
->> +        acpi_handle_warn(handle, "Namespace scan failure\n");
->> +        goto out;
->> +    }
->> +    error = acpi_bus_get_device(handle, &device);
->> +    if (error) {
->> +        acpi_handle_warn(handle, "Missing device node object\n");
->> +        goto out;
->> +    }
->> +    ost_code = ACPI_OST_SC_SUCCESS;
->> +    if (device->handler && device->handler->hotplug.uevents)
->> +        kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
->>
->>    out:
->> +    acpi_evaluate_hotplug_ost(handle, ost_source, ost_code, NULL);
->> +    mutex_unlock(&acpi_scan_lock);
->> +}
+Here is a battery/power_supply queue for v3.9. There are two tags:
+for-v3.9 and for-v3.9-merged. The second one is exactly the same as the
+first one, except that in the -merged tag I merged v3.8 back into battery
+tree to fix some conflicts so that you wouldn't need to do it.
 
-Why don't you check _STA method in acpi_scan_bus_device_check()?
-When hot adding new device, we must check _STA method of the device.
+Highlights (included in tag message):
 
-Thanks,
-Yasuaki Ishimatsu
+- Four new drivers:
 
->> +
->> +static void acpi_scan_bus_check(void *context)
->> +{
->> +    acpi_scan_bus_device_check((acpi_handle)context,
->> +                   ACPI_NOTIFY_BUS_CHECK);
->> +}
->> +
->> +static void acpi_scan_device_check(void *context)
->> +{
->> +    acpi_scan_bus_device_check((acpi_handle)context,
->> +                   ACPI_NOTIFY_DEVICE_CHECK);
->> +}
->> +
->> +static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *not_used)
->> +{
->> +    acpi_osd_exec_callback callback;
->> +    acpi_status status;
->> +
->> +    switch (type) {
->> +    case ACPI_NOTIFY_BUS_CHECK:
->> +        acpi_handle_debug(handle, "ACPI_NOTIFY_BUS_CHECK event\n");
->> +        callback = acpi_scan_bus_check;
->> +        break;
->> +    case ACPI_NOTIFY_DEVICE_CHECK:
->> +        acpi_handle_debug(handle, "ACPI_NOTIFY_DEVICE_CHECK event\n");
->> +        callback = acpi_scan_device_check;
->> +        break;
->> +    case ACPI_NOTIFY_EJECT_REQUEST:
->> +        acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
->> +        callback = acpi_bus_device_eject;
->> +        break;
->> +    default:
->> +        /* non-hotplug event; possibly handled by other handler */
->> +        return;
->> +    }
->> +    status = acpi_os_hotplug_execute(callback, handle);
->> +    if (ACPI_FAILURE(status))
->> +        acpi_evaluate_hotplug_ost(handle, type,
->> +                      ACPI_OST_SC_NON_SPECIFIC_FAILURE,
->> +                      NULL);
->> +}
->> +
->> +/**
->> + * acpi_bus_hot_remove_device: hot-remove a device and its children
->> + * @context: struct acpi_eject_event pointer (freed in this func)
->> + *
->> + * Hot-remove a device and its children. This function frees up the
->> + * memory space passed by arg context, so that the caller may call
->> + * this function asynchronously through acpi_os_hotplug_execute().
->> + */
->> +void acpi_bus_hot_remove_device(void *context)
->> +{
->> +    struct acpi_eject_event *ej_event = context;
->> +    struct acpi_device *device = ej_event->device;
->> +    acpi_handle handle = device->handle;
->> +    u32 ost_code = ACPI_OST_SC_SUCCESS;
->> +    int error;
->> +
->> +    mutex_lock(&acpi_scan_lock);
->> +
->> +    error = acpi_scan_hot_remove(device);
->> +    if (error)
->> +        ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
->> +
->> +    acpi_evaluate_hotplug_ost(handle, ej_event->event, ost_code, NULL);
->> +
->>       mutex_unlock(&acpi_scan_lock);
->>       kfree(context);
->> -    return;
->>   }
->>   EXPORT_SYMBOL(acpi_bus_hot_remove_device);
->>
->> @@ -206,50 +337,48 @@ static ssize_t
->>   acpi_eject_store(struct device *d, struct device_attribute *attr,
->>           const char *buf, size_t count)
->>   {
->> -    int ret = count;
->> -    acpi_status status;
->> -    acpi_object_type type = 0;
->>       struct acpi_device *acpi_device = to_acpi_device(d);
->> -    struct acpi_eject_event *ej_event;
->> +    acpi_object_type not_used;
->> +    acpi_status status;
->> +    u32 ost_source;
->> +    u32 ost_code;
->> +    int ret;
->>
->> -    if ((!count) || (buf[0] != '1')) {
->> +    if (!count || buf[0] != '1')
->>           return -EINVAL;
->> -    }
->> -    if (!acpi_device->driver && !acpi_device->handler) {
->> -        ret = -ENODEV;
->> -        goto err;
->> -    }
->> -    status = acpi_get_type(acpi_device->handle, &type);
->> -    if (ACPI_FAILURE(status) || (!acpi_device->flags.ejectable)) {
->> -        ret = -ENODEV;
->> -        goto err;
->> -    }
->>
->> -    ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
->> -    if (!ej_event) {
->> -        ret = -ENOMEM;
->> -        goto err;
->> -    }
->> +    if ((!acpi_device->handler || !acpi_device->handler->hotplug.enabled)
->> +        && !acpi_device->driver)
->> +        return -ENODEV;
->> +
->> +    status = acpi_get_type(acpi_device->handle, &not_used);
->> +    if (ACPI_FAILURE(status) || !acpi_device->flags.ejectable)
->> +        return -ENODEV;
->> +
->> +    mutex_lock(&acpi_scan_lock);
->>
->> -    get_device(&acpi_device->dev);
->> -    ej_event->device = acpi_device;
->>       if (acpi_device->flags.eject_pending) {
->> -        /* event originated from ACPI eject notification */
->> -        ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
->> +        /* ACPI eject notification event. */
->> +        ost_source = ACPI_NOTIFY_EJECT_REQUEST;
->>           acpi_device->flags.eject_pending = 0;
->>       } else {
->> -        /* event originated from user */
->> -        ej_event->event = ACPI_OST_EC_OSPM_EJECT;
->> -        (void) acpi_evaluate_hotplug_ost(acpi_device->handle,
->> -            ej_event->event, ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
->> +        /* Eject initiated by user space. */
->> +        ost_source = ACPI_OST_EC_OSPM_EJECT;
->>       }
->> -
->
->> -    status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
->> -    if (ACPI_FAILURE(status)) {
->> -        put_device(&acpi_device->dev);
->> -        kfree(ej_event);
->> +    acpi_evaluate_hotplug_ost(acpi_device->handle, ost_source,
->> +                  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
->> +    get_device(&acpi_device->dev);
->> +    ret = acpi_scan_hot_remove(acpi_device);
->
-> Why don't you use acpi_os_hotplug_execute()? Do you have some reason?
->
-> Thanks,
-> Yasuaki Ishimatsu
->
->> +    if (ret) {
->> +        ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
->> +    } else {
->> +        ost_code = ACPI_OST_SC_SUCCESS;
->> +        ret = count;
->>       }
->> -err:
->> +    acpi_evaluate_hotplug_ost(acpi_device->handle, ACPI_OST_EC_OSPM_EJECT,
->> +                  ost_code, NULL);
->> +
->> +    mutex_unlock(&acpi_scan_lock);
->>       return ret;
->>   }
->>
->> @@ -1548,6 +1677,30 @@ static struct acpi_scan_handler *acpi_sc
->>       return NULL;
->>   }
->>
->> +static void acpi_scan_init_hotplug(acpi_handle handle)
->> +{
->> +    struct acpi_device_info *info;
->> +    struct acpi_scan_handler *handler;
->> +
->> +    if (ACPI_FAILURE(acpi_get_object_info(handle, &info)))
->> +        return;
->> +
->> +    if (!(info->valid & ACPI_VALID_HID)) {
->> +        kfree(info);
->> +        return;
->> +    }
->> +
->> +    /*
->> +     * This relies on the fact that acpi_install_notify_handler() will not
->> +     * install the same notify handler routine twice for the same handle.
->> +     */
->> +    handler = acpi_scan_match_handler(info->hardware_id.string, NULL);
->> +    kfree(info);
->> +    if (handler && handler->hotplug.enabled)
->> +        acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
->> +                        acpi_hotplug_notify_cb, NULL);
->> +}
->> +
->>   static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
->>                         void *not_used, void **return_value)
->>   {
->> @@ -1570,6 +1723,8 @@ static acpi_status acpi_bus_check_add(ac
->>           return AE_OK;
->>       }
->>
->> +    acpi_scan_init_hotplug(handle);
->> +
->>       if (!(sta & ACPI_STA_DEVICE_PRESENT) &&
->>           !(sta & ACPI_STA_DEVICE_FUNCTIONING)) {
->>           struct acpi_device_wakeup wakeup;
->>
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  o goldfish_battery:
+    This is Android Emulator battery driver. Originally from Google, but
+    Intel folks reshaped it for mainline;
+
+  o pm2301_charger:
+    A new driver for ST-Ericsson 2301 Power Management chip, uses AB8500
+    battery management core;
+
+  o qnap-poweroff:
+    The driver adds poweroff functionality for QNAP NAS boxes;
+
+  o restart-poweroff:
+    A generic driver that implements 'power off by restarting'. The actual
+    poweroff functionality is implemented through a bootloader, so Linux'
+    task is just to restart the box. The driver is useful on Buffalo
+    Linkstation LS-XHL and LS-CHLv2 boards. Andrew Lunn worked on
+    submitting the driver (as well as qnap-poweroff above).
+
+- A lot of fixes for ab8500 drivers. This is a part of efforts of syncing
+  internal ST-Ericsson development tree with the mainline. Lee Jones @
+  Linaro worked on compilation and reshaping these series;
+
+- New health properties for the power supplies: "Watchdog timer expire"
+  and "Safety timer expire";
+
+- As usual, a bunch of fixes/cleanups here and there.
+
+Please pull.
+
+Thanks!
 
 
+The following changes since commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200:
+
+  Linux 3.8 (2013-02-18 15:58:34 -0800)
+
+are available in the git repository at:
+
+  git://git.infradead.org/battery-2.6.git tags/for-v3.9-merged
+
+for you to fetch changes up to 845e37e009281b63fe15348f37bd7f815ea65da0:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux (2013-02-18 22:55:13 -0800)
+
+----------------------------------------------------------------
+Andrew Lunn (3):
+      power/reset: Add a new driver to turn QNAP board power off
+      power/reset: Add a new driver implementing 'power off by restarting'
+      qnap-poweroff: Fix license string
+
+Anton Vorontsov (4):
+      Merge branch 'for-anton' of git://git.linaro.org/people/ljones/linux-3.0-ux500
+      Merge branch 'ab8500-from-Rajanikanth'
+      Merge branch 'tb-power-2' of git://git.linaro.org/people/ljones/linux-3.0-ux500
+      Merge git://git.kernel.org/.../torvalds/linux
+
+Chanwoo Choi (1):
+      charger-manager: Split _probe funtion to make the code more clean
+
+Dan Carpenter (2):
+      lp8727_charger: Small cleanup in naming
+      generic-adc-battery: Fix forever loop in gab_remove()
+
+Devendra Naga (1):
+      max17040_battery: Use devm_kzalloc
+
+Evgeny Romanov (1):
+      ds2782_battery: Add power_supply_changed() calls for proper uevent support
+
+Hakan Berg (5):
+      ab8500_btemp: Ignore false btemp low interrupt
+      ab8500_bm: Adds support for Car/Travel Adapters
+      ab8500_btemp: Remove superfluous BTEMP thermal comp
+      ab8500_fg: Added support for BATT_OVV
+      ab8500-fg: Adjust for RF bursts voltage drops
+
+Heiko Carstens (1):
+      goldfish_battery: Add missing GENERIC_HARDIRQS dependency
+
+Henrik Sölver (1):
+      ab8500-charger: AB workaround for invalid charger
+
+Johan Bjornstedt (2):
+      ab8500_charger: Charger current step-up/down
+      ab8500_bm: Skip first CCEOC irq for instant current
+
+Jonas Aaberg (5):
+      ab8500_btemp: Detect battery type in workqueue
+      ab8500_fg: Replace msleep() with usleep_range() for greater accuracy
+      ab8500_charger: Handle gpadc errors
+      ab8500-bm: Flush all work queues before suspending
+      ab8500-charger: Do not touch VBUSOVV bits
+
+Julia Lawall (1):
+      88pm860x_battery: Eliminate possible references to released resources
+
+Kalle Komierowski (1):
+      ab8500_fg: Don't clear the CCMuxOffset bit
+
+Kim, Milo (4):
+      MAINTAINERS: Add LP8727 charger driver entry
+      MAINTAINERS: Add LP8788 MFD driver entry
+      lp8788-charger: Fix a parent device in _probe()
+      lp8788-charger: Fix a parent device in kernel messages
+
+Lee Jones (19):
+      ab8500_btemp: Fix crazy tabbing implementation
+      ab8500-bmdata: Re-jiggle bmdevs_of_probe to be more succinct
+      ab8500_bm: Rename battery management platform data to something more logical
+      ab8500_bm: Always send platform specific battery information via pdata
+      ab8500_btemp: Reorder obtainment of platform specific battery management data
+      ab8500_charger: Reorder obtainment of platform specific battery management data
+      ab8500_fg: Reorder obtainment of platform specific battery management data
+      abx500_chargalg: Reorder obtainment of platform specific battery management data
+      ab8500_bm: Make the battery Device Tree node reference less cryptic
+      ab8500_charger: Detect charger removal
+      ab8500_btemp: Allign battery temperature resolution with the framework
+      ab8500_fg: Remove pointless round_jiffies() call
+      ab8500-charger: Kick watchdog
+      ab8500-chargalg: Update battery health on safety timer exp
+      pm2301: Move all configuration and emum structs out to a header file
+      ab8500-chargalg: Only root should have write permission on sysfs file
+      abx500-chargalg: Add new sysfs interface to get current charge status
+      pm2301: LPN mode control support
+      ab8500-bm: Remove individual [charger|btemp|fg|chargalg] pdata structures
+
+Loic Pallardy (2):
+      pm2301: Remove volt_now & curr_now properties
+      pm2301: Update watchdog for pm2xxx support
+
+Marcus Cooper (3):
+      ab8500_bm: Recharge condition not optimal for battery
+      ab8500_charger: Remove unused defines
+      ab8500_charger: Adds support for legacy USB chargers
+
+Martin Bergström (1):
+      ab8500-fg: Go to INIT_RECOVERY when charger removed
+
+Michal Hocko (1):
+      da9030_battery: Include notifier.h
+
+Michel JAOUEN (2):
+      pm2301: Provide u9540 support for the pm2301 charger
+      ab8500-btemp: Adaptation to AB8505 and AB9540 platforms
+
+Mike Lockwood (1):
+      power: Add battery driver for goldfish emulator
+
+NeilBrown (1):
+      bq27x00_battery: Fix bugs introduced with BQ27425 support
+
+Nickolai Zeldovich (1):
+      da9052-battery: Avoid out-of-range array access
+
+Nicolas Guion (1):
+      ab8500-charger: Add support for autopower on AB8505 and AB9540
+
+Olivier Clergeaud (1):
+      pm2301: Clean-up PM2301 interrupt management
+
+Paer-Olof Haakansson (3):
+      ab8500_charger: Rename the power_loss function
+      ab8500_fg: Overflow in current calculation
+      u8500-charger: Delay for USB enumeration
+
+Pali Rohár (2):
+      bq27x00_battery: Fix reporting battery temperature
+      bq2415x_charger: Add support for offline and 100mA mode
+
+Rajanikanth H.V (4):
+      ab8500: remove explicit handling of battery type
+      ab8500: Remove initial "UNKNOWN" battery-type string assignment
+      ab8500: Promote ab8500_fg probe before ab8500_btemp probe
+      ab8500_btemp: Demote initcall sequence
+
+Rajkumar Kasirajan (2):
+      pm2301: Enable vbat low monitoring
+      ab8500-fg: Use correct battery charge full design
+
+Ramakrishna Pallala (1):
+      power_supply: Add watchdog and safety timer expiries under PROP_HEALTH_*
+
+Rickard Andersson (1):
+      ab8500_fg: Balance IRQ enable
+
+Sachin Kamat (4):
+      bq2415x_charger: Remove unneeded version.h inclusion
+      bq2415x_charger: Use module_i2c_driver
+      bq2415x_charger: Use devm_kzalloc()
+      ab8500_charger: Use devm_regulator_get API
+
+Tejun Heo (1):
+      charger_manager: Don't use [delayed_]work_pending()
+
+Thierry Reding (1):
+      power/reset: Remove newly introduced __dev* annotations
+
+pender01 (1):
+      ab8500_fg: Round capacity output
+
+ .../bindings/power_supply/qnap-poweroff.txt     |   13 +
+ .../bindings/power_supply/restart-poweroff.txt  |    8 +
+ MAINTAINERS                                     |   16 +
+ drivers/mfd/ab8500-core.c                       |   14 +-
+ drivers/power/88pm860x_battery.c                |   13 +-
+ drivers/power/Kconfig                           |   14 +
+ drivers/power/Makefile                          |    4 +-
+ drivers/power/ab8500_bmdata.c                   |  524 ++++----
+ drivers/power/ab8500_btemp.c                    |  192 +--
+ drivers/power/ab8500_charger.c                  | 1067 ++++++++++++----
+ drivers/power/ab8500_fg.c                       |  447 +++++--
+ drivers/power/abx500_chargalg.c                 |  204 ++--
+ drivers/power/bq2415x_charger.c                 |   54 +-
+ drivers/power/bq27x00_battery.c                 |   12 +-
+ drivers/power/charger-manager.c                 |  310 +++--
+ drivers/power/da9030_battery.c                  |    1 +
+ drivers/power/da9052-battery.c                  |    2 +-
+ drivers/power/ds2782_battery.c                  |   69 ++
+ drivers/power/generic-adc-battery.c             |   16 +-
+ drivers/power/goldfish_battery.c                |  236 ++++
+ drivers/power/lp8727_charger.c                  |    8 +-
+ drivers/power/lp8788-charger.c                  |   17 +-
+ drivers/power/max17040_battery.c                |    4 +-
+ drivers/power/pm2301_charger.c                  | 1088 +++++++++++++++++
+ drivers/power/pm2301_charger.h                  |  513 ++++++++
+ drivers/power/power_supply_sysfs.c              |    3 +-
+ drivers/power/reset/Kconfig                     |   17 +
+ drivers/power/reset/Makefile                    |    2 +
+ drivers/power/reset/qnap-poweroff.c             |  116 ++
+ drivers/power/reset/restart-poweroff.c          |   65 +
+ include/linux/mfd/abx500.h                      |   15 +-
+ include/linux/mfd/abx500/ab8500-bm.h            |   26 +-
+ include/linux/mfd/abx500/ab8500.h               |   24 +
+ include/linux/mfd/abx500/ux500_chargalg.h       |    5 +
+ include/linux/pm2301_charger.h                  |   61 +
+ include/linux/power/bq2415x_charger.h           |    3 +-
+ include/linux/power_supply.h                    |    2 +
+ 37 files changed, 4197 insertions(+), 988 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/qnap-poweroff.txt
+ create mode 100644 Documentation/devicetree/bindings/power_supply/restart-poweroff.txt
+ create mode 100644 drivers/power/goldfish_battery.c
+ create mode 100644 drivers/power/pm2301_charger.c
+ create mode 100644 drivers/power/pm2301_charger.h
+ create mode 100644 drivers/power/reset/qnap-poweroff.c
+ create mode 100644 drivers/power/reset/restart-poweroff.c
+ create mode 100644 include/linux/pm2301_charger.h
