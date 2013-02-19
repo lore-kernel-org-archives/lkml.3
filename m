@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933466Ab3BSS0p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:26:45 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:37782 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933276Ab3BSS0o (ORCPT
+	id S933481Ab3BSS0z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:26:55 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50498 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933152Ab3BSS0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:26:44 -0500
-Message-ID: <5123C3C5.9090100@oracle.com>
-Date: Tue, 19 Feb 2013 13:26:13 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 19 Feb 2013 13:26:52 -0500
+Date: Tue, 19 Feb 2013 18:26:48 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Axel Lin <axel.lin@ingics.com>, Mike Rapoport <mike@compulab.co.il>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: tps6586x: Having slew rate settings for other
+ than SM0/1 is not fatal
+Message-ID: <20130219182647.GD23508@opensource.wolfsonmicro.com>
+References: <1361015443.11226.1.camel@phoenix>
+ <5123ACA1.9000408@wwwdotorg.org>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ingo Molnar <mingo@kernel.org>, Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/cpu changes for v3.9
-References: <20130219152503.GA14862@gmail.com> <20130219153655.GD26748@pd.tnic> <20130219154721.GA15876@gmail.com> <5123B897.9010607@zytor.com> <20130219174758.GB4465@pd.tnic> <20130219175726.GA18244@phenom.dumpdata.com> <5123C217.3040609@oracle.com> <5123C28F.50405@zytor.com>
-In-Reply-To: <5123C28F.50405@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n/aVsWSeQ4JHkrmm"
+Content-Disposition: inline
+In-Reply-To: <5123ACA1.9000408@wwwdotorg.org>
+X-Cookie: Reply hazy, ask again later.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2013 01:21 PM, H. Peter Anvin wrote:
-> On 02/19/2013 10:19 AM, Boris Ostrovsky wrote:
->> On 02/19/2013 12:57 PM, Konrad Rzeszutek Wilk wrote:
->>> On Tue, Feb 19, 2013 at 06:47:58PM +0100, Borislav Petkov wrote:
->>>> On Tue, Feb 19, 2013 at 09:38:31AM -0800, H. Peter Anvin wrote:
->>>>> My fault... I was tracking the fix and lost track of the thread.
->>>>>
->>>>> The problem is that the fix is necessary but not sufficient, as it
->>>>> introduces an undesirable host-guest dependency.  In order to allow
->>>>> neerw guests to work on older hosts we also should use the
->>>>> {rd,wr}msr_safe() functions to manipulate this MSR, with a comment
->>>>> as to why.
->>>>>
->>>>> Boris, could you prepare such a patch, please?
->>>> I don't think Boris O. is at AMD anymore. Want me to add that to my 
->>>> fix
->>>> for kvm or prep a separate patch?
->>> CC-ing Boris.
->>
->> BorisP's patch is what I should have done. Can you take it?
->>
->
-> As I stated:
->
-> >>>> The problem is that the fix is necessary but not sufficient, as it
-> >>>> introduces an undesirable host-guest dependency. In order to allow
-> >>>> neerw guests to work on older hosts we also should use the
-> >>>> {rd,wr}msr_safe() functions to manipulate this MSR, with a comment
-> >>>> as to why.
 
-Ah, sorry --- I missed that part.
+--n/aVsWSeQ4JHkrmm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--boris
+On Tue, Feb 19, 2013 at 09:47:29AM -0700, Stephen Warren wrote:
+> On 02/16/2013 04:50 AM, Axel Lin wrote:
 
+> > Ignore the setting and show "Only SM0/SM1 can set slew rate" warning is=
+ enough,
+> > then we can return 0 instead of -EINVAL in tps6586x_regulator_set_slew_=
+rate().
+> >=20
+> > Otherwise, probe() fails.
+
+> Why does probe() fail; what is trying to set a slew rate on a regulator
+> that doesn't support it? At least a few days ago in linux-next, this
+> patch wasn't needed AFAIK. Is the problem something new?
+
+I rather suspect Axel is doing this based on code inspection and review
+rather than testing (either that or he has an enormous lab somewhere
+full of all sorts of hardware!) - what he's saying is that the error
+handling here seems excessive.
+
+--n/aVsWSeQ4JHkrmm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRI8PDAAoJELSic+t+oim9L5UP/0nH3LJl0wws6T+pLbjCPi85
+0MJddR+tLz8x7bJb0I1uv6T3mRfQU1o/V19fmeoj3K9Tp+WkdsIUEwn78J5XhS9x
+7AB6wFmBlqaS3hv7wUGongGFVKmSA+s0Pzk3EkF4Zqws4BiGtmGzRlvUJPFz4t9f
+B0khv/S+Hc8GCLbDbMoUOMrNgQMkppSUfTdy30V2+qI2o/PRRu+W8z9amOfr2v6V
+9oE/SHywmF6bmTV/dX35/noID0hibClqSp1ePT8oKbkHfB1LPMFO2hUqVORWx5Au
+n2iWO2qVZbAs56uCqowTI9JPd9wey7CYszWiRWD6m0/ntrr+w3OBCHJrWmypKqN5
+xQSLorNDEcW/JLnO5sz7MfUsPgKKXT0+4nuCBAZu6tbmq6HQnQ0n4tzFu7Vcrl0N
+IF4KVh/r9UQUAmuH9uAqR8YTcuXRigcFWp7bV2lWkOvqPniOTCzfpFKAJPHwT8bQ
+9Zxan8VWrzqxryuNtsxSGHY6PIPcILEeAPdU034oeuQoqhmAadAWO7BlOTp9KmQ6
+QuwK+KlAbmtUzpQ+V9NbYML46DHr5TL6NCFWaOO9YyJnr8bl4Ah7aTXXjwCO3tJe
+B3pkFd2nwRvF22Wv1abFWEWOGBJa2oYcEmAJU6ThL3b8oFLFUTrvmQUXqye8vuG4
+hbfttbNBqCy3N5r9d7lB
+=XkXL
+-----END PGP SIGNATURE-----
+
+--n/aVsWSeQ4JHkrmm--
