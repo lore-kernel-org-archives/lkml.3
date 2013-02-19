@@ -1,132 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911Ab3BSN6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 08:58:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57970 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932828Ab3BSN6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 08:58:12 -0500
-Message-ID: <512384EF.9020602@suse.de>
-Date: Tue, 19 Feb 2013 14:58:07 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	id S932903Ab3BSN7X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 08:59:23 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:17887 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932828Ab3BSN7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 08:59:22 -0500
+X-IronPort-AV: E=Sophos;i="4.84,695,1355097600"; 
+   d="scan'208";a="7757429"
+Date: Tue, 19 Feb 2013 13:59:19 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <xen-devel@lists.xensource.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH] xen: introduce xen_remap, use it instead of ioremap
+Message-ID: <alpine.DEB.2.02.1302191332340.4654@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Felipe Balbi <balbi@ti.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, davem@davemloft.net,
-        netdev@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
-        linux-edac@vger.kernel.org, rjw@sisk.pl, linux-pm@vger.kernel.org
-Subject: Re: SYSFS "errors"
-References: <20130219101121.GJ23197@arwen.pp.htv.fi> <20130219081149.46972f56@redhat.com> <20130219114345.GA26623@pd.tnic> <20130219091610.2b746a30@redhat.com> <20130219123502.GD26623@pd.tnic> <20130219094640.2abf1a66@redhat.com> <20130219130626.GE26623@pd.tnic> <20130219131500.GW23197@arwen.pp.htv.fi> <20130219132853.GG26623@pd.tnic> <20130219133809.GA4390@arwen.pp.htv.fi> <20130219135056.GH26623@pd.tnic>
-In-Reply-To: <20130219135056.GH26623@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2013 02:50 PM, Borislav Petkov wrote:
-> On Tue, Feb 19, 2013 at 03:38:09PM +0200, Felipe Balbi wrote:
->> because changing the permission will cause the same issue:
->
-> Actually, I take that back. Mauro's patch will already create the file
-> anyway:
->
-> 	if (mci->set_sdram_scrub_rate || mci->get_sdram_scrub_rate)
->
-> Adjusting the permissions is simply the last missing piece to this patch
-> to make the interface to userspace 100% coherent.
->
-> --
-> From: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Date: Tue, 19 Feb 2013 09:16:10 -0300
-> Subject: [PATCH] EDAC: only create sdram_scrub_rate where supported
->
-> Currently, sdram_scrub_rate sysfs node is created even if the device
-> doesn't support get/set the scub rate. Change the logic to only
-> create this device node when the operation is supported.
->
-> If only read or only write is supported, it will keep returning -ENODEV
-> just like before.
->
-> Reported-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->   drivers/edac/edac_mc_sysfs.c | 21 +++++++++++++++++++--
->   1 file changed, 19 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-> index 0ca1ca71157f..5a788e60ff67 100644
-> --- a/drivers/edac/edac_mc_sysfs.c
-> +++ b/drivers/edac/edac_mc_sysfs.c
-> @@ -7,7 +7,7 @@
->    *
->    * Written Doug Thompson <norsk5@xmission.com> www.softwarebitmaker.com
->    *
-> - * (c) 2012 - Mauro Carvalho Chehab <mchehab@redhat.com>
-> + * (c) 2012-2013 - Mauro Carvalho Chehab <mchehab@redhat.com>
->    *	The entire API were re-written, and ported to use struct device
->    *
->    */
-> @@ -878,7 +878,6 @@ static struct attribute *mci_attrs[] = {
->   	&dev_attr_ce_noinfo_count.attr,
->   	&dev_attr_ue_count.attr,
->   	&dev_attr_ce_count.attr,
-> -	&dev_attr_sdram_scrub_rate.attr,
->   	&dev_attr_max_location.attr,
->   	NULL
->   };
-> @@ -1012,6 +1011,23 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
->   		return err;
->   	}
->
-> +	if (mci->set_sdram_scrub_rate || mci->get_sdram_scrub_rate) {
-> +		umode_t mode = 0;
-> +
-> +		if (mci->get_sdram_scrub_rate)
-> +			mode = S_IRUGO;
-> +
-> +		if (mci->set_sdram_scrub_rate)
-> +			mode |= S_IWUSR;
-> +
-> +		dev_attr_sdram_scrub_rate.attr.mode = mode;
-> +
-> +		err = device_create_file(&mci->dev, &dev_attr_sdram_scrub_rate);
-> +		if (err) {
-> +			edac_dbg(1, "failure: create sdram_scrub_rate\n");
-> +			goto fail2;
-> +		}
-> +	}
->   	/*
->   	 * Create the dimm/rank devices
->   	 */
-> @@ -1056,6 +1072,7 @@ fail:
->   			continue;
->   		device_unregister(&dimm->dev);
->   	}
-> +fail2:
->   	device_unregister(&mci->dev);
->   	bus_unregister(&mci->bus);
->   	kfree(mci->bus.name);
->
-And of course you all know that creating sysfs attributes via 
-'device_create_file' opens all sort of funny race conditions, 
-especially when checking these attributes from udev ...
+ioremap can't be used to map ring pages on ARM because it uses device
+memory caching attributes (MT_DEVICE*).
 
-Please consider adding a default attribute which return '-EINVAL' or 
-somesuch when the function pointers are not set.
-But _not_ adding it via device_create_file(). That's evil.
+Introduce a Xen specific abstraction to map ring pages, called
+xen_remap, that is defined as ioremap on x86 (no behavioral changes).
+On ARM it explicitly calls __arm_ioremap with the right caching
+attributes: MT_MEMORY.
 
-Cheers,
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+index c6b9096..30cdacb 100644
+--- a/arch/arm/include/asm/xen/page.h
++++ b/arch/arm/include/asm/xen/page.h
+@@ -1,6 +1,7 @@
+ #ifndef _ASM_ARM_XEN_PAGE_H
+ #define _ASM_ARM_XEN_PAGE_H
+ 
++#include <asm/mach/map.h>
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+ 
+@@ -86,4 +87,7 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ {
+ 	return __set_phys_to_machine(pfn, mfn);
+ }
++
++#define xen_remap(cookie, size) __arm_ioremap((cookie), (size), MT_MEMORY);
++
+ #endif /* _ASM_ARM_XEN_PAGE_H */
+diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+index 472b9b7..6aef9fb 100644
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -212,4 +212,6 @@ unsigned long arbitrary_virt_to_mfn(void *vaddr);
+ void make_lowmem_page_readonly(void *vaddr);
+ void make_lowmem_page_readwrite(void *vaddr);
+ 
++#define xen_remap(cookie, size) ioremap((cookie), (size));
++
+ #endif /* _ASM_X86_XEN_PAGE_H */
+diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+index 19843ec..682210d7 100644
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@ -230,7 +230,7 @@ static int xen_hvm_console_init(void)
+ 	if (r < 0 || v == 0)
+ 		goto err;
+ 	mfn = v;
+-	info->intf = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
++	info->intf = xen_remap(mfn << PAGE_SHIFT, PAGE_SIZE);
+ 	if (info->intf == NULL)
+ 		goto err;
+ 	info->vtermno = HVC_COOKIE;
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index 7038de5..1c2a1e5 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -1146,7 +1146,7 @@ int gnttab_resume(void)
+ 		return gnttab_map(0, nr_grant_frames - 1);
+ 
+ 	if (gnttab_shared.addr == NULL) {
+-		gnttab_shared.addr = ioremap(xen_hvm_resume_frames,
++		gnttab_shared.addr = xen_remap(xen_hvm_resume_frames,
+ 						PAGE_SIZE * max_nr_gframes);
+ 		if (gnttab_shared.addr == NULL) {
+ 			printk(KERN_WARNING
+diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+index 038b71d..3325884 100644
+--- a/drivers/xen/xenbus/xenbus_probe.c
++++ b/drivers/xen/xenbus/xenbus_probe.c
+@@ -769,7 +769,7 @@ static int __init xenbus_init(void)
+ 			goto out_error;
+ 		xen_store_mfn = (unsigned long)v;
+ 		xen_store_interface =
+-			ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
++			xen_remap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
+ 		break;
+ 	default:
+ 		pr_warn("Xenstore state unknown\n");
