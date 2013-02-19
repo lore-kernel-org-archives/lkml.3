@@ -1,149 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738Ab3BSMS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 07:18:26 -0500
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:51583 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932535Ab3BSMSY (ORCPT
+	id S932743Ab3BSMTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 07:19:06 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:46834 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab3BSMTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 07:18:24 -0500
-Message-ID: <51236C11.1010208@gmail.com>
-Date: Tue, 19 Feb 2013 20:12:01 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 19 Feb 2013 07:19:04 -0500
+Date: Tue, 19 Feb 2013 20:33:44 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andrew Morton <akpm@linux-foundation.org>, andi@firstfloor.org,
+        Wuqixuan <wuqixuan@huawei.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        gregkh@linuxfoundation.org
+Subject: Re: [RFC][PATCH] vfs: always protect diretory file->fpos with inode
+ mutex
+Message-ID: <20130219123344.GA18350@gmail.com>
+Mail-Followup-To: Li Zefan <lizefan@huawei.com>,
+	linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+	Ext4 Developers List <linux-ext4@vger.kernel.org>,
+	Jan Kara <jack@suse.cz>, Theodore Ts'o <tytso@mit.edu>,
+	Andrew Morton <akpm@linux-foundation.org>, andi@firstfloor.org,
+	Wuqixuan <wuqixuan@huawei.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+	gregkh@linuxfoundation.org
+References: <5122D3E0.6070800@huawei.com>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Questin about swap_slot free and invalidate page
-References: <20130131051140.GB23548@blaptop> <alpine.LNX.2.00.1302031732520.4050@eggly.anvils> <20130204024950.GD2688@blaptop> <d6fc41b7-8448-40be-84c3-c24d0833bd85@default>
-In-Reply-To: <d6fc41b7-8448-40be-84c3-c24d0833bd85@default>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5122D3E0.6070800@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 05:28 AM, Dan Magenheimer wrote:
->> From: Minchan Kim [mailto:minchan@kernel.org]
->> Sent: Sunday, February 03, 2013 7:50 PM
->> To: Hugh Dickins
->> Cc: Nitin Gupta; Dan Magenheimer; Seth Jennings; Konrad Rzeszutek Wilk; linux-mm@kvack.org; linux-
->> kernel@vger.kernel.org; Andrew Morton
->> Subject: Re: Questin about swap_slot free and invalidate page
->>
->> Hi Hugh,
->>
->> On Sun, Feb 03, 2013 at 05:51:14PM -0800, Hugh Dickins wrote:
->>> On Thu, 31 Jan 2013, Minchan Kim wrote:
->>>
->>>> When I reviewed zswap, I was curious about frontswap_store.
->>>> It said following as.
->>>>
->>>>   * If frontswap already contains a page with matching swaptype and
->>>>   * offset, the frontswap implementation may either overwrite the data and
->>>>   * return success or invalidate the page from frontswap and return failure.
->>>>
->>>> It didn't say why it happens. we already have __frontswap_invalidate_page
->>>> and call it whenever swap_slot frees. If we don't free swap slot,
->>>> scan_swap_map can't find the slot for swap out so I thought overwriting of
->>>> data shouldn't happen in frontswap.
->>>>
->>>> As I looked the code, the curplit is reuse_swap_page. It couldn't free swap
->>>> slot if the page founded is PG_writeback but miss calling frontswap_invalidate_page
->>>> so data overwriting on frontswap can happen. I'm not sure frontswap guys
->>>> already discussed it long time ago.
->>>>
->>>> If we can fix it, we can remove duplication entry handling logic
->>>> in all of backend of frontswap. All of backend should handle it although
->>>> it's pretty rare. Of course, zram could be fixed. It might be trivial now
->>>> but more there are many backend of frontswap, more it would be a headache.
->>>>
->>>> If we are trying to fix it in swap layer,  we might fix it following as
->>>>
->>>> int reuse_swap_page(struct page *page)
->>>> {
->>>>          ..
->>>>          ..
->>>>          if (count == 1) {
->>>>                  if (!PageWriteback(page)) {
->>>>                          delete_from_swap_cache(page);
->>>>                          SetPageDirty(page);
->>>>                  } else {
->>>>                          frontswap_invalidate_page();
->>>>                          swap_slot_free_notify();
->>>>                  }
->>>>          }
->>>> }
->>>>
->>>> But not sure, it is worth at the moment and there might be other places
->>>> to be fixed.(I hope Hugh can point out if we are missing something if he
->>>> has a time)
->>> I expect you are right that reuse_swap_page() is the only way it would
->>> happen for frontswap; but I'm too unfamiliar with frontswap to promise
->>> you that - it's better that you insert WARN_ONs in your testing to verify.
->>>
->>> But I think it's a general tmem property, isn't it?  To define what
->>> happens if you do give it the same key again.  So I doubt it's something
->> I am too unfamiliar with tmem property but thing I am seeing is
->> EXPORT_SYMBOL(__frontswap_store). It's a one of frontend and is tighly very
->> coupled with swap subsystem.
->>
->>> that has to be fixed; but if you do find it helpful to fix it, bear in
->>> mind that reuse_swap_page() is an odd corner, which may one day give the
->>> "stable pages" DIF/DIX people trouble, though they've not yet complained.
->>>
->>> I'd prefer a patch not specific to frontswap, but along the lines below:
->>> I think that's the most robust way to express it, though I don't think
->>> the (count == 0) case can actually occur inside that block (whereas
->>> count == 0 certainly can occur in the !PageSwapCache case).
->>>
->>> I believe that I once upon a time took statistics of how often the
->>> PageWriteback case happens here, and concluded that it wasn't often
->>> enough that refusing to reuse in this case would be likely to slow
->>> anyone down noticeably.
->> I agree. I had a test about that with zram and that case wasn't common.
->> so your patch looks good to me.
->>
->> I am waiting Dan's reply(He will come in this week) and then, judge what's
->> the best.
-> Hugh is right that handling the possibility of duplicates is
-> part of the tmem ABI.  If there is any possibility of duplicates,
-> the ABI defines how a backend must handle them to avoid data
-> coherency issues.
->
-> The kernel implements an in-kernel API which implements the tmem
-> ABI.  If the frontend and backend can always agree that duplicate
+On Tue, Feb 19, 2013 at 09:22:40AM +0800, Li Zefan wrote:
+> There's a long long-standing bug...As long as I don't know when it dates
+> from.
+> 
+> I've written and attached a simple program to reproduce this bug, and it can
+> immediately trigger the bug in my box. It uses two threads, one keeps calling
+> read(), and the other calling readdir(), both on the same directory fd.
 
-Which ABI in zcache implement that?
+Hi Zefan,
 
-> are never possible, I agree that the backend could avoid that
-> special case.  However, duplicates occur rarely enough and the
-> consequences (data loss) are bad enough that I think the case
-> should still be checked, at least with a BUG_ON.  I also wonder
-> if it is worth it to make changes to the core swap subsystem
-> to avoid code to implement a zswap corner case.
->
-> Remember that zswap is an oversimplified special case of tmem
-> that handles only one frontend (Linux frontswap) and one backend
-> (zswap).  Tmem goes well beyond that and already supports other
-> more general backends including Xen and ramster, and could also
-> support other frontends such as a BSD or Solaris equivalent
-> of frontswap, for example with a Linux ramster/zcache backend.
-> I'm not sure how wise it is to tear out generic code and replace
-> it with simplistic code unless there is absolutely no chance that
-> the generic code will be necessary.
->
-> My two cents,
-> Dan
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=ilto:"dont@kvack.org"> email@kvack.org </a>
+Out of curiosity, why do you call read(2) on a directory fd?  I only
+open(2) a directory in order to execute a flush operation to make sure
+that a file is really created.
+
+Regards,
+                                                - Zheng
+
+> 
+> When I ran it on ext3 (can be replaced with ext2/ext4) which has _dir_index_
+> feature disabled, I got this:
+> 
+> EXT3-fs error (device loop1): ext3_readdir: bad entry in directory #34817: rec_len is smaller than minimal - offset=993, inode=0, rec_len=0, name_len=0
+> EXT3-fs error (device loop1): ext3_readdir: bad entry in directory #34817: rec_len is smaller than minimal - offset=1009, inode=0, rec_len=0, name_len=0
+> EXT3-fs error (device loop1): ext3_readdir: bad entry in directory #34817: rec_len is smaller than minimal - offset=993, inode=0, rec_len=0, name_len=0
+> EXT3-fs error (device loop1): ext3_readdir: bad entry in directory #34817: rec_len is smaller than minimal - offset=1009, inode=0, rec_len=0, name_len=0
+> ...
+> 
+> If we configured errors=remount-ro, the filesystem will become read-only.
+> 
+> SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+> {
+> 	...
+> 		loff_t pos = file_pos_read(file);
+> 		ret = vfs_read(file, buf, count, &pos);
+> 		file_pos_write(file, pos);
+> 		fput_light(file, fput_needed);
+> 	...
+> }
+> 
+> While readdir() is protected with i_mutex, f_pos can be changed without any locking
+> in various read()/write() syscalls, which leads to this bug.
+> 
+> What makes things worse is Andi removed i_mutex from generic_file_llseek, so you
+> can trigger the same bug by replacing read() with lseek() in the test program.
+> 
+> commit ef3d0fd27e90f67e35da516dafc1482c82939a60
+> Author: Andi Kleen <ak@linux.intel.com>
+> Date:   Thu Sep 15 16:06:48 2011 -0700
+> 
+>     vfs: do (nearly) lockless generic_file_llseek
+> 
+> I've tested ext3 with dir_index enabled and btrfs, nothing bad happened, but there
+> should be some other vulnerabilities. For example, running the test program on /sys
+> for a few minutes triggered this warning:
+> 
+> [  917.994600] ------------[ cut here ]------------
+> [  917.994614] WARNING: at fs/sysfs/sysfs.h:195 sysfs_readdir+0x24c/0x260()
+> [  917.994621] Hardware name: Tecal RH2285
+> ...
+> [  917.994725] Pid: 8754, comm: a.out Not tainted 3.8.0-rc2-tj-0.7-default+ #69
+> [  917.994731] Call Trace:
+> [  917.994736]  [<ffffffff81205c6c>] ? sysfs_readdir+0x24c/0x260
+> [  917.994743]  [<ffffffff81205c6c>] ? sysfs_readdir+0x24c/0x260
+> [  917.994752]  [<ffffffff81041fff>] warn_slowpath_common+0x7f/0xc0
+> [  917.994759]  [<ffffffff8104205a>] warn_slowpath_null+0x1a/0x20
+> [  917.994766]  [<ffffffff81205c6c>] sysfs_readdir+0x24c/0x260
+> [  917.994774]  [<ffffffff8119cbd0>] ? sys_ioctl+0x90/0x90
+> [  917.994780]  [<ffffffff8119cbd0>] ? sys_ioctl+0x90/0x90
+> [  917.994787]  [<ffffffff8119cfc1>] vfs_readdir+0xb1/0xd0
+> [  917.994794]  [<ffffffff8119d07b>] sys_getdents64+0x9b/0x110
+> [  917.994803]  [<ffffffff814a45d9>] system_call_fastpath+0x16/0x1b
+> [  917.994809] ---[ end trace 6efe15a65b89022a ]---
+> [  917.994816] ida_remove called for id=13073 which is not allocated.
+> 
+> 
+> We can fix this bug in each filesystem, but can't we just make sure i_mutex is
+> acquired in lseek(), read(), write() and readdir() for directory file operations?
+> 
+> (the patch is for demonstration only)
+> 
+> diff --git a/fs/read_write.c b/fs/read_write.c
+> index bb34af3..41f76e5 100644
+> --- a/fs/read_write.c
+> +++ b/fs/read_write.c
+> @@ -218,14 +218,25 @@ EXPORT_SYMBOL(default_llseek);
+>  
+>  loff_t vfs_llseek(struct file *file, loff_t offset, int whence)
+>  {
+> +	struct inode *inode = file->f_path.dentry->d_inode;
+>  	loff_t (*fn)(struct file *, loff_t, int);
+> +	int ret;
+>  
+>  	fn = no_llseek;
+>  	if (file->f_mode & FMODE_LSEEK) {
+>  		if (file->f_op && file->f_op->llseek)
+>  			fn = file->f_op->llseek;
+>  	}
+> -	return fn(file, offset, whence);
+> +
+> +	if (S_ISDIR(inode->i_mode)) {
+> +		mutex_lock(&inode->i_mutex);
+> +		ret = fn(file, offset, whence);
+> +		mutex_unlock(&inode->i_mutex);
+> +	} else {
+> +		ret = fn(file, offset, whence);
+> +	}
+> +
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL(vfs_llseek);
+>  
+> @@ -442,12 +453,32 @@ EXPORT_SYMBOL(vfs_write);
+>  
+>  static inline loff_t file_pos_read(struct file *file)
+>  {
+> -	return file->f_pos;
+> +	struct inode *inode = file->f_path.dentry->d_inode;
+> +	loff_t pos;
+> +
+> +	if (S_ISDIR(inode->i_mode)) {
+> +		mutex_lock(&inode->i_mutex);
+> +		pos = file->f_pos;
+> +		mutex_unlock(&inode->i_mutex);
+> +	} else {
+> +		pos = file->f_pos;
+> +	}
+> +
+> +	return pos;
+>  }
+>  
+>  static inline void file_pos_write(struct file *file, loff_t pos)
+>  {
+> -	file->f_pos = pos;
+> +	struct inode *inode = file->f_path.dentry->d_inode;
+> +
+> +	if (S_ISDIR(inode->i_mode)) {
+> +		mutex_lock(&inode->i_mutex);
+> +		file->f_pos = pos;
+> +		file->f_version = 0;
+> +		mutex_unlock(&inode->i_mutex);
+> +	} else {
+> +		file->f_pos = pos;
+> +	}
+>  }
+>  
+>  SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+> 
+> 
+
+> #include <unistd.h>
+> #include <stdio.h>
+> #include <stdlib.h>
+> #include <string.h>
+> #include <dirent.h>
+> #include <fcntl.h>
+> #include <sys/stat.h>
+> #include <sys/types.h>
+> 
+> int main(int argc, char *argv[])
+> {
+> 	int fd;
+> 	int ret;
+> 	DIR *dir;
+> 	struct dirent *ptr;
+> 
+> 	if (argc != 2)
+> 		errx(1, "Please specify a directory");
+> 
+> 	dir = opendir(argv[1]);
+> 	if (!dir)
+> 		err(1, "Failed to open directory %s", argv[1]);
+> 
+> 	fd = dirfd(dir);
+> 	if (fd < 0)
+> 		err(1, "Failed to get dirfd");
+> 
+> 	ret = fork();
+> 	if (ret == 0) {
+> 		char buf[100];
+> 
+> 		while (1)
+> 			read(fd, buf, 100);
+> 	} else {
+> 		int ret2;
+> 
+> 		while (1) {
+> 			ret2 = lseek(fd, 0, SEEK_SET);
+> 			if (ret2 < -1)
+> 				err(1, "seek failed");
+> 
+> 			while (ptr = readdir(dir))
+> 				;
+> 		}
+> 	}	
+> 
+> 	closedir(dir);
+> 	return 0;
+> }
 
