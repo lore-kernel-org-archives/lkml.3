@@ -1,184 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932727Ab3BSLMm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 06:12:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57807 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932354Ab3BSLMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 06:12:40 -0500
-Date: Tue, 19 Feb 2013 08:11:49 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: <balbi@ti.com>
-Cc: Borislav Petkov <bp@alien8.de>, Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, <JBottomley@parallels.com>,
-        <linux-scsi@vger.kernel.org>, <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Doug Thompson <dougthompson@xmission.com>,
-        <linux-edac@vger.kernel.org>, <rjw@sisk.pl>,
-        <linux-pm@vger.kernel.org>
-Subject: Re: SYSFS "errors"
-Message-ID: <20130219081149.46972f56@redhat.com>
-In-Reply-To: <20130219101121.GJ23197@arwen.pp.htv.fi>
-References: <20130218174916.GA2070@kroah.com>
-	<20130218184633.GC10755@arwen.pp.htv.fi>
-	<20130218164638.7cb53baa@redhat.com>
-	<20130218200542.GB20137@arwen.pp.htv.fi>
-	<20130218184742.5a4c3c06@redhat.com>
-	<20130218215434.GB16794@kroah.com>
-	<20130218221306.GA21493@pd.tnic>
-	<20130218222618.GA21818@kroah.com>
-	<20130218224405.GB21493@pd.tnic>
-	<20130219070310.2cadad7a@redhat.com>
-	<20130219101121.GJ23197@arwen.pp.htv.fi>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/kE7axfAqYO72=xudnJiWZpI"; protocol="application/pgp-signature"
+	id S932533Ab3BSLY2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 06:24:28 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:36015 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab3BSLY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 06:24:26 -0500
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, "Nori, Sekhar" <nsekhar@ti.com>,
+        "Syed Mohammed, Khasim" <khasim@ti.com>
+Subject: RE: [PATCH, RFC 0/8] ARM: AM43 (OMAP2+) boot support
+Thread-Topic: [PATCH, RFC 0/8] ARM: AM43 (OMAP2+) boot support
+Thread-Index: AQHODcwskq1EWMr09keU4I6SYOFnppiAmqAAgABsi3A=
+Date: Tue, 19 Feb 2013 11:24:01 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EAA8776@DBDE01.ent.ti.com>
+References: <cover.1361186097.git.afzal@ti.com> <51234F5C.6050500@ti.com>
+In-Reply-To: <51234F5C.6050500@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1JBOVVU029174
 
---Sig_/kE7axfAqYO72=xudnJiWZpI
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Santosh,
 
-Em Tue, 19 Feb 2013 12:11:21 +0200
-Felipe Balbi <balbi@ti.com> escreveu:
+On Tue, Feb 19, 2013 at 15:39:32, Shilimkar, Santosh wrote:
 
-> Hi,
->=20
-> On Tue, Feb 19, 2013 at 07:03:10AM -0300, Mauro Carvalho Chehab wrote:
-> > > But my gut feeling says to stay concervative and not touch this code -
-> > > we don't know what uses it and how much we would break by "fixing" it.
-> > > The current situation is not that big of a deal IMVHO and I'd be will=
-ing
-> > > to accept the small inconcistency versus possibly breaking userspace.
-> >=20
-> > I remember I saw some discussions about it in the past at bluesmoke ML,
-> > saying that -ENODEV is the expected behavior when this is not supported.
-> >=20
-> > Changing from -ENODEV to "N/A" will break anything that would be relying
-> > on the previous behavior. So, I think that such change will for sure br=
-eak
-> > userspace.
-> >=20
-> > If we're willing to change it, not creating the "sdram_scrub_rate" sysf=
-s=20
-> > node is less likely to affect userspace.
->=20
-> yeah, I agree with this. Guess we shouldn't be creating files which
-> aren't supported by the underlying HW and having a read() return -ENODEV
-> is quite weird IMO since that's actually 'breaking' read() interface
-> although that's up to interpretations.
+> After looking at the specs, you don't need the SMP mode since ACP
+> isn't being used.
 
-The enclosed (untested) patch will likely do the trick. It needs to be
-tested with one of the drivers that support scrub setting (amd64_edac.c,
-cpc925_edac.c, e752x_edac.c, i5100_edac.c or i7core_edac.c).
+> TWD use for AM437x is also limited because these times stops in
+> low power sates and there you will need broad-cast mechanism which
+> again more of SMP machine feature.
+> 
+> So I suggest to use the wakeup timer(GPT1) clock-event instead
+> of local timer for the mentioned reason.
 
-Regards,
-Mauro
+Ok, all your remaining comments are w.r.t SMP and usage of TWD
+as clock event.
 
--
+I am not that familiar with SMP things, upon starting on AM43,
+observing the fact that it is an SMP with one core configuration
+and that as per ARM MP Core TRM it can have local timer, I saw
+it as a ray of hope to get Kernel booting early without hwmod,
+and I jumped on that idea which I feel was natural. Without
+spending too much time on it, though of taking feedback on this
+approach, resulting this rfc.
 
-[PATCH] edac: only create sdram_scrub_rate where supported
+Let me understand more on SMP, TWD, and explore possibility
+of using GPT1 instead of TWD for clock event.
 
-Currently, sdram_scrub_rate sysfs node is created even if the device
-doesn't support get/set the scub rate. Change the logic to only
-create this device node when the operation is supported.
+>From the beginning I wondered on seeing that as per ARM TRM's
+Cortex-A9 can be MP core with 1-4 core (instead of 2-4), while
+another uniprocessor A9 configuration is present.
 
-Reported-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Regards
+Afzal
 
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index 9c58da6..937975b 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -7,7 +7,7 @@
-  *
-  * Written Doug Thompson <norsk5@xmission.com> www.softwarebitmaker.com
-  *
-- * (c) 2012 - Mauro Carvalho Chehab <mchehab@redhat.com>
-+ * (c) 2012-2013 - Mauro Carvalho Chehab <mchehab@redhat.com>
-  *	The entire API were re-written, and ported to use struct device
-  *
-  */
-@@ -681,9 +681,6 @@ static ssize_t mci_sdram_scrub_rate_store(struct device=
- *dev,
- 	unsigned long bandwidth =3D 0;
- 	int new_bw =3D 0;
-=20
--	if (!mci->set_sdram_scrub_rate)
--		return -ENODEV;
--
- 	if (strict_strtoul(data, 10, &bandwidth) < 0)
- 		return -EINVAL;
-=20
-@@ -707,9 +704,6 @@ static ssize_t mci_sdram_scrub_rate_show(struct device =
-*dev,
- 	struct mem_ctl_info *mci =3D to_mci(dev);
- 	int bandwidth =3D 0;
-=20
--	if (!mci->get_sdram_scrub_rate)
--		return -ENODEV;
--
- 	bandwidth =3D mci->get_sdram_scrub_rate(mci);
- 	if (bandwidth < 0) {
- 		edac_printk(KERN_DEBUG, EDAC_MC, "Error reading scrub rate\n");
-@@ -882,7 +876,6 @@ static struct attribute *mci_attrs[] =3D {
- 	&dev_attr_ce_noinfo_count.attr,
- 	&dev_attr_ue_count.attr,
- 	&dev_attr_ce_count.attr,
--	&dev_attr_sdram_scrub_rate.attr,
- 	&dev_attr_max_location.attr,
- 	NULL
- };
-@@ -1017,6 +1010,14 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info=
- *mci)
- 		return err;
- 	}
-=20
-+	if (mci->set_sdram_scrub_rate && mci->get_sdram_scrub_rate) {
-+		err =3D device_create_file(&mci->dev,
-+					 &dev_attr_sdram_scrub_rate);
-+		if (err) {
-+			edac_dbg(1, "failure: create sdram_scrub_rate\n");
-+			goto fail2;
-+		}
-+	}
- 	/*
- 	 * Create the dimm/rank devices
- 	 */
-@@ -1061,6 +1062,7 @@ fail:
- 			continue;
- 		device_unregister(&dimm->dev);
- 	}
-+fail2:
- 	device_unregister(&mci->dev);
- 	bus_unregister(&mci->bus);
- 	kfree(mci->bus.name);
-
-
---Sig_/kE7axfAqYO72=xudnJiWZpI
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRI14HAAoJEGO08Bl/PELnvNgP/j/qBNdLQgOv7gSArNQiB3Za
-TzfbFPTpsSAPSM8RIjqAdct6tP+0zBYVMCeqG28xHpV0z735UAFxztoUmtU/wvPc
-kn5tRRaI6ktnLQknCCI9Xi5zPESPH4HSvWH/+ilKe0tGVCBBlA70Q9u+99ooLhxP
-bEAaw2/saAfMN6tzi+OidZc5RjizXRGW6hqXXw2Rxf3QikAP0Tuo8kQUpU6kj7LZ
-ue4QPqRmp6Ij0Gwn+eH7ChPv+rrqj17x+CKs4tvmdOil0HLTfUZjPuSINa1wW6xk
-Dm6W8ERDXMmtsglIh06bwAZ8Of6tRIks2IvNhfqLLFtib4dXB4O5A7FfD/74DAY7
-E5XI3rMIkSiMI1SDpQYIEO3JhksrjhCy5G3HeK//Ky7nNOTiy9hCTwRmZjrAy2EX
-TrAMDXPDlpyej9Qig3hVVkifZO6/wVKw0U0jWW72KprUtmyALO8SItAbjqPc5le2
-jlTmwb50vD7scGHsolGiDe5tSkz7fQBb9m0bgfAdFqdGmhArK0ElRijRIFlcR+gP
-yMC1n3GDv5XOW5YHA3W/w40/FuvkDhPdGWo/RHMnxBdDMpK1Uedc3/xUGmuYqoSj
-axHEUFO2Nbzw6JRp1ATQQD39e4FnPau8+bBCfvwx3I9GaqlGelQVSlbfOJA/9dLV
-SLajhH+KoAF/aChzml0j
-=CXMw
------END PGP SIGNATURE-----
-
---Sig_/kE7axfAqYO72=xudnJiWZpI--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
