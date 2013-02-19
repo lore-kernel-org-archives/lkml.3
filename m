@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526Ab3BSGZf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 01:25:35 -0500
-Received: from miso.sublimeip.com ([203.12.5.51]:57764 "EHLO
-	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755143Ab3BSGZd (ORCPT
+	id S1757880Ab3BSGiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 01:38:08 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:47501 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755839Ab3BSGiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 01:25:33 -0500
-Subject: Re: prctl(PR_SET_MM)
-To: rostedt@goodmis.org (Steven Rostedt)
-Date: Tue, 19 Feb 2013 17:25:31 +1100 (EST)
-Cc: u3557@dialix.com.au, oleg@redhat.com (Oleg Nesterov),
-        palves@redhat.com (Pedro Alves), dvlasenk@redhat.com (Denys Vlasenko),
-        jan.kratochvil@redhat.com (Jan Kratochvil),
-        gorcunov@openvz.org (Cyrill Gorcunov),
-        xemul@parallels.com (Pavel Emelyanov),
-        fweisbec@gmail.com (Frederic Weisbecker),
-        mingo@redhat.com (Ingo Molnar),
-        a.p.zijlstra@chello.nl (Peter Zijlstra), linux-kernel@vger.kernel.org
-Reply-To: u3557@dialix.com.au
-In-Reply-To: <1361216963.23152.168.camel@gandalf.local.home>
-X-Mailer: ELM [version 2.5 PL8]
+	Tue, 19 Feb 2013 01:38:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130219062531.4F317592076@miso.sublimeip.com>
-From: u3557@miso.sublimeip.com (Amnon Shiloh)
+In-Reply-To: <CAHbM+PPcATz+QdY3=8ns_oFnv5vNi_NerU8hLnQ-EPVDwqSQpw@mail.gmail.com>
+References: <CAHbM+PPcATz+QdY3=8ns_oFnv5vNi_NerU8hLnQ-EPVDwqSQpw@mail.gmail.com>
+Date: Tue, 19 Feb 2013 14:38:03 +0800
+Message-ID: <CAFNq8R5q7=wx6WgDwYUrgntMfewHEU=YHTCG4CZp3JcYZsCzhw@mail.gmail.com>
+Subject: Re: A noobish question on mm
+From: Li Haifeng <omycle@gmail.com>
+To: Soham Chakraborty <sohamwonderpiku4u@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
+2013/2/19 Soham Chakraborty <sohamwonderpiku4u@gmail.com>:
+> Hey dude,
+>
+> Apologies for this kind of approach but I was not sure whether I can
+> directly mail the list with such a noobish question. I have been poking
+> around in mm subsystem for around 2 years now and I have never got a fine,
+> bullet proof answer to this question.
+>
+> Why would something swap even if there is free or cached memory available.
 
-> If only you, or a few people are using it (ie. distros don't see a
-> need), then it will be up to you to make the changes.
+It's known that swap operation is done with memory reclaiming.There
+are three occasions for memory reclaiming: low on memory reclaiming,
+Hibernation reclaiming, periodic reclaiming.
 
-I believe that this functionality is of a general nature and is needed
-by many, not only by myself and by the CRIU group, but by all user-level
-software packages, past present and future, that provide some form or
-another of reconstructing a Linux process.
+For periodic reclaiming, some page may be swapped out even if there is
+free or cached memory available.
 
-For example:
-1) Checkpoint-restore
-   - the ability to resume a computation after computer crashes.
-2) Process-migration
-   - the ability to have a running computation change computers.
-     (for numerous reasons, including planned shutdown; overheating;
-     load-balancing; increased memory demands; the original computer
-     being required by higher-priority users, etc. etc.)
-3) Process-duplication
-   - the ability to have a running computation continue in parallel from
-     a point in time on two or more computers, so that if one of them
-     fails, at least one copy will still be running (in time-critical
-     missions, a periodic checkpointing may not be sufficient).
+Please correct me if my understanding is wrong.
 
-To reconstruct Linux process(es), one must be able to restore all their
-memory contents, states and registers to their original and consistent
-values.    
-
-Other than the code currently enclosed in "CONFIG_CHECKPOINT_RESTORE",
-nothing else in the kernel provides the ability to set those 11 fields:
-
-     start_code, end_code, start_data, end_data, start_brk, brk,
-     start_stack, arg_start, arg_end, env_start, env_end.
-
-There are many possible ways to implement this functionality and if you
-believe that it would be a good idea, I could instead send a simple,
-independent kernel patch that sets those 11 fields.  It would be shorter
-than the current and perhaps implemented as a new "ptrace" function,
-but given that the CRIU group already wrote this code and that it is
-already in the kernel, I am concerned that trying to duplicate it might
-interfere with their work, so I first ask for the relevant code in
-"kernel/sys.c" to no longer be enclosed by an #ifdef.  What do you think?
-
-Best Regards,
-Amnon.
+Regards,
+Haifeng Li
+>
+> I have read about all possible theories including lru algorithm,
+> vm.swappiness, kernel heuristics, overcommit of memory and all. But I for
+> the heck of me, can't understand what is the issue. And I can't make the end
+> users satisfied too. I keep blabbering kernel heuristics too much.
+>
+> Do you have any answer to this question. If you think this is worthy of
+> going to list, I will surely do so.
+>
+> Soham
