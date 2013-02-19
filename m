@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933454Ab3BSSZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:25:56 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55591 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933285Ab3BSSZz (ORCPT
+	id S933466Ab3BSS0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:26:45 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:37782 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933276Ab3BSS0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:25:55 -0500
-Message-ID: <5123C3AF.8060100@linaro.org>
-Date: Tue, 19 Feb 2013 10:25:51 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 19 Feb 2013 13:26:44 -0500
+Message-ID: <5123C3C5.9090100@oracle.com>
+Date: Tue, 19 Feb 2013 13:26:13 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Stephane Eranian <eranian@google.com>, Pawel Moll <pawel.moll@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user samples
- with kernel samples
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com> <1350408232.2336.42.camel@laptop> <1359728280.8360.15.camel@hornet> <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com> <51118797.9080800@linaro.org> <alpine.LFD.2.02.1302182132230.22263@ionos>
-In-Reply-To: <alpine.LFD.2.02.1302182132230.22263@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@kernel.org>, Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/cpu changes for v3.9
+References: <20130219152503.GA14862@gmail.com> <20130219153655.GD26748@pd.tnic> <20130219154721.GA15876@gmail.com> <5123B897.9010607@zytor.com> <20130219174758.GB4465@pd.tnic> <20130219175726.GA18244@phenom.dumpdata.com> <5123C217.3040609@oracle.com> <5123C28F.50405@zytor.com>
+In-Reply-To: <5123C28F.50405@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2013 12:35 PM, Thomas Gleixner wrote:
-> On Tue, 5 Feb 2013, John Stultz wrote:
->> On 02/05/2013 02:13 PM, Stephane Eranian wrote:
->>> But if people are strongly opposed to the clock_gettime() approach, then
->>> I can go with the ioctl() because the functionality is definitively needed
->>> ASAP.
->> I prefer the ioctl method, since its less likely to be re-purposed/misused.
-> Urgh. No! With a dedicated CLOCK_PERF we might have a decent chance to
-> put this into a vsyscall. With an ioctl not so much.
->   
->> Though I'd be most comfortable with finding some way for perf-timestamps to be
->> CLOCK_MONOTONIC based (or maybe CLOCK_MONOTONIC_RAW if it would be easier),
->> and just avoid all together adding another time domain that doesn't really
->> have clear definition (other then "what perf uses").
-> What's wrong with that. We already have the infrastructure to create
-> dynamic time domains which can be completely disconnected from
-> everything else.
+On 02/19/2013 01:21 PM, H. Peter Anvin wrote:
+> On 02/19/2013 10:19 AM, Boris Ostrovsky wrote:
+>> On 02/19/2013 12:57 PM, Konrad Rzeszutek Wilk wrote:
+>>> On Tue, Feb 19, 2013 at 06:47:58PM +0100, Borislav Petkov wrote:
+>>>> On Tue, Feb 19, 2013 at 09:38:31AM -0800, H. Peter Anvin wrote:
+>>>>> My fault... I was tracking the fix and lost track of the thread.
+>>>>>
+>>>>> The problem is that the fix is necessary but not sufficient, as it
+>>>>> introduces an undesirable host-guest dependency.  In order to allow
+>>>>> neerw guests to work on older hosts we also should use the
+>>>>> {rd,wr}msr_safe() functions to manipulate this MSR, with a comment
+>>>>> as to why.
+>>>>>
+>>>>> Boris, could you prepare such a patch, please?
+>>>> I don't think Boris O. is at AMD anymore. Want me to add that to my 
+>>>> fix
+>>>> for kvm or prep a separate patch?
+>>> CC-ing Boris.
+>>
+>> BorisP's patch is what I should have done. Can you take it?
+>>
+>
+> As I stated:
+>
+> >>>> The problem is that the fix is necessary but not sufficient, as it
+> >>>> introduces an undesirable host-guest dependency. In order to allow
+> >>>> neerw guests to work on older hosts we also should use the
+> >>>> {rd,wr}msr_safe() functions to manipulate this MSR, with a comment
+> >>>> as to why.
 
-Right, but those are for actual hardware domains that we had no other 
-way of interacting with.
+Ah, sorry --- I missed that part.
 
-
-> Tracing/perf/instrumentation is a different domain and the main issue
-> there is performance. So going for a vsyscall enabled clock_gettime()
-> approach is definitely the best thing to do.
-
-So describe how the perf time domain is different then CLOCK_MONOTONIC_RAW.
-
-
-My concern here is that we're basically creating a kernel interface that 
-exports implementation-defined semantics (again: whatever perf does 
-right now). And I think folks want to do this, because adding CLOCK_PERF 
-is easier then trying to:
-
-1) Get a lock-free method for accessing CLOCK_MONOTONIC_RAW
-
-2) Having perf interpolate its timestamps to CLOCK_MONOTONIC, or 
-CLOCKMONOTONIC_RAW when it exports the data
-
-
-The semantics on sched_clock() have been very flexible and hand-wavy in 
-the past. And I agree with the need for the kernel to have a 
-"fast-and-loose" clock as well as the benefits to that flexibility as 
-the scheduler code has evolved.  But non-the-less, the changes in its 
-semantics have bitten us badly a few times.
-
-So I totally understand why the vsyscall is attractive. I'm just very 
-cautious about exporting a similarly fuzzily defined interface to 
-userland. So until its clear what the semantics will need to be going 
-forward (forever!), my preference will be that we not add it.
-
-
-thanks
--john
+-boris
 
