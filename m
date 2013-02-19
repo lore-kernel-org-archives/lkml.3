@@ -1,158 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002Ab3BSOgA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 09:36:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22410 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932945Ab3BSOf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 09:35:58 -0500
-Date: Tue, 19 Feb 2013 11:35:21 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+	id S932984Ab3BSOkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 09:40:33 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:40813 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932877Ab3BSOkc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 09:40:32 -0500
+Message-ID: <51238EDA.7060700@numascale-asia.com>
+Date: Tue, 19 Feb 2013 22:40:26 +0800
+From: Daniel J Blueman <daniel@numascale-asia.com>
+Organization: Numascale Asia
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
 To: Borislav Petkov <bp@alien8.de>
-Cc: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, davem@davemloft.net,
-        netdev@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
-        linux-edac@vger.kernel.org, rjw@sisk.pl, linux-pm@vger.kernel.org
-Subject: Re: SYSFS "errors"
-Message-ID: <20130219113521.510db290@redhat.com>
-In-Reply-To: <20130219135056.GH26623@pd.tnic>
-References: <20130219101121.GJ23197@arwen.pp.htv.fi>
-	<20130219081149.46972f56@redhat.com>
-	<20130219114345.GA26623@pd.tnic>
-	<20130219091610.2b746a30@redhat.com>
-	<20130219123502.GD26623@pd.tnic>
-	<20130219094640.2abf1a66@redhat.com>
-	<20130219130626.GE26623@pd.tnic>
-	<20130219131500.GW23197@arwen.pp.htv.fi>
-	<20130219132853.GG26623@pd.tnic>
-	<20130219133809.GA4390@arwen.pp.htv.fi>
-	<20130219135056.GH26623@pd.tnic>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4 v8] AMD64 EDAC: Fix type usage in NB IDs and memory
+ ranges
+References: <1354265060-22956-1-git-send-email-daniel@numascale-asia.com> <1354265060-22956-2-git-send-email-daniel@numascale-asia.com> <20121130171749.GB23034@liondog.tnic> <50BDC140.8060004@numascale-asia.com> <20121204160156.GH4369@liondog.tnic>
+In-Reply-To: <20121204160156.GH4369@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 19 Feb 2013 14:50:56 +0100
-Borislav Petkov <bp@alien8.de> escreveu:
+Hi Boris,
 
-> On Tue, Feb 19, 2013 at 03:38:09PM +0200, Felipe Balbi wrote:
-> > because changing the permission will cause the same issue:
-> 
-> Actually, I take that back. Mauro's patch will already create the file
-> anyway:
-> 
-> 	if (mci->set_sdram_scrub_rate || mci->get_sdram_scrub_rate)
-> 
-> Adjusting the permissions is simply the last missing piece to this patch
-> to make the interface to userspace 100% coherent.
+On 05/12/2012 00:01, Borislav Petkov wrote:
+> On Tue, Dec 04, 2012 at 05:24:16PM +0800, Daniel J Blueman wrote:
+>> It works well on fam10h and fam15h boxes, with and without Numaconnect.
+>
+> Good, thanks for testing.
+>
+> I will send it upstream after the upcoming merge window closes since it
+> is too late for this one now and I wouldn't want to rush it if it is not
+> necessary to do so and it hasn't seen enough testing in linux-next and
+> -tip trees. Which means that it will end up in 3.9; I hope that is OK
+> with you guys.
 
-That's covers everything but Hannes arguments. I don't think that
-adding just one more device_create_file() on a driver that creates
-dozens (or hundreds) of sys nodes, depending on the number of DIMMS
-on the system would make it any worse.
+Alas your merges missed the v3.8 merge window, but it looks like your 
+v3.9 pull request has dropped these patches [1].
 
-Regards,
-Mauro
+Any chance you can get them in during this merge window?
 
-[PATCH EDAC] edac: only create sdram_scrub_rate where supported
+Many thanks,
+   Daniel
 
-Currently, sdram_scrub_rate sysfs node is created even if the device
-doesn't support get/set the scub rate. Change the logic to only
-create this device node when the operation is supported.
-
-Reported-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index 9c58da6..4f4b613 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -7,7 +7,7 @@
-  *
-  * Written Doug Thompson <norsk5@xmission.com> www.softwarebitmaker.com
-  *
-- * (c) 2012 - Mauro Carvalho Chehab <mchehab@redhat.com>
-+ * (c) 2012-2013 - Mauro Carvalho Chehab <mchehab@redhat.com>
-  *	The entire API were re-written, and ported to use struct device
-  *
-  */
-@@ -681,9 +681,6 @@ static ssize_t mci_sdram_scrub_rate_store(struct device *dev,
- 	unsigned long bandwidth = 0;
- 	int new_bw = 0;
- 
--	if (!mci->set_sdram_scrub_rate)
--		return -ENODEV;
--
- 	if (strict_strtoul(data, 10, &bandwidth) < 0)
- 		return -EINVAL;
- 
-@@ -707,9 +704,6 @@ static ssize_t mci_sdram_scrub_rate_show(struct device *dev,
- 	struct mem_ctl_info *mci = to_mci(dev);
- 	int bandwidth = 0;
- 
--	if (!mci->get_sdram_scrub_rate)
--		return -ENODEV;
--
- 	bandwidth = mci->get_sdram_scrub_rate(mci);
- 	if (bandwidth < 0) {
- 		edac_printk(KERN_DEBUG, EDAC_MC, "Error reading scrub rate\n");
-@@ -870,8 +864,7 @@ DEVICE_ATTR(ce_count, S_IRUGO, mci_ce_count_show, NULL);
- DEVICE_ATTR(max_location, S_IRUGO, mci_max_location_show, NULL);
- 
- /* memory scrubber attribute file */
--DEVICE_ATTR(sdram_scrub_rate, S_IRUGO | S_IWUSR, mci_sdram_scrub_rate_show,
--	mci_sdram_scrub_rate_store);
-+DEVICE_ATTR(sdram_scrub_rate, 0, NULL, NULL);
- 
- static struct attribute *mci_attrs[] = {
- 	&dev_attr_reset_counters.attr,
-@@ -882,7 +875,6 @@ static struct attribute *mci_attrs[] = {
- 	&dev_attr_ce_noinfo_count.attr,
- 	&dev_attr_ue_count.attr,
- 	&dev_attr_ce_count.attr,
--	&dev_attr_sdram_scrub_rate.attr,
- 	&dev_attr_max_location.attr,
- 	NULL
- };
-@@ -1017,6 +1009,22 @@ int edac_create_sysfs_mci_device(struct mem_ctl_info *mci)
- 		return err;
- 	}
- 
-+	if (mci->set_sdram_scrub_rate || mci->get_sdram_scrub_rate) {
-+		if (mci->get_sdram_scrub_rate) {
-+			dev_attr_sdram_scrub_rate.attr.mode |= S_IRUGO;
-+			dev_attr_sdram_scrub_rate.show = &mci_sdram_scrub_rate_show;
-+		}
-+		if (mci->set_sdram_scrub_rate) {
-+			dev_attr_sdram_scrub_rate.attr.mode |= S_IWUSR;
-+			dev_attr_sdram_scrub_rate.store = &mci_sdram_scrub_rate_store;
-+		}
-+		err = device_create_file(&mci->dev,
-+					 &dev_attr_sdram_scrub_rate);
-+		if (err) {
-+			edac_dbg(1, "failure: create sdram_scrub_rate\n");
-+			goto fail2;
-+		}
-+	}
- 	/*
- 	 * Create the dimm/rank devices
- 	 */
-@@ -1061,6 +1069,7 @@ fail:
- 			continue;
- 		device_unregister(&dimm->dev);
- 	}
-+fail2:
- 	device_unregister(&mci->dev);
- 	bus_unregister(&mci->bus);
- 	kfree(mci->bus.name);
-
+[1] 
+https://groups.google.com/forum/?fromgroups=#!topic/linux.kernel/2DLVw1Rv8bQ
 -- 
-
-Cheers,
-Mauro
+Daniel J Blueman
+Principal Software Engineer, Numascale Asia
