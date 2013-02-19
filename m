@@ -1,369 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932306Ab3BSDzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 22:55:12 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7075 "EHLO
+	id S932287Ab3BSDzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 22:55:10 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22007 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932138Ab3BSDyM (ORCPT
+	with ESMTP id S932153Ab3BSDyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Feb 2013 22:54:12 -0500
-X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Am9_0fWrfsoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=0iNmNvofj3wA:10 a=z2W-X94jAAAA:8 a=F4h0XTaexkmBu77tHeYA:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=NQHpE78nX1MA:10 a=ruJ86dBXXdYMYnWs:21 a=M58nQp7_i_f90rtk:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=It2cgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=SM_E_W5WZlwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=gXKFKoqqhuYA:10 a=EUspDBNiAAAA:8 a=VwQbUJbxAAAA:8 a=3bbGOjw-qwAXQl4_qLUA:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130219035410.717119765@goodmis.org>
+Message-Id: <20130219035410.384095545@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Feb 2013 22:53:44 -0500
+Date: Mon, 18 Feb 2013 22:53:42 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 5/7] wait-simple: Simple waitqueue implementation
+        John Kacur <jkacur@redhat.com>, ybu <ybu@qti.qualcomm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, <stable@vger.kernel.org>,
+        <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 3/7] printk: Fix rq->lock vs logbuf_lock unlock lock inversion
 References: <20130219035339.428477998@goodmis.org>
-Content-Disposition: inline; filename=0005-wait-simple-Simple-waitqueue-implementation.patch
+Content-Disposition: inline; filename=0003-printk-Fix-rq-lock-vs-logbuf_lock-unlock-lock-invers.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: "Bu, Yitian" <ybu@qti.qualcomm.com>
 
-wait_queue is a swiss army knife and in most of the cases the
-complexity is not needed. For RT waitqueues are a constant source of
-trouble as we can't convert the head lock to a raw spinlock due to
-fancy and long lasting callbacks.
+commit 07354eb1a74d1 ("locking printk: Annotate logbuf_lock as raw")
+reintroduced a lock inversion problem which was fixed in commit
+0b5e1c5255 ("printk: Release console_sem after logbuf_lock"). This
+happened probably when fixing up patch rejects.
 
-Provide a slim version, which allows RT to replace wait queues. This
-should go mainline as well, as it lowers memory consumption and
-runtime overhead.
+Restore the ordering and unlock logbuf_lock before releasing
+console_sem.
 
+Signed-off-by: ybu <ybu@qti.qualcomm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: stable@vger.kernel.org
+Cc: stable-rt@vger.kernel.org
+Link: http://lkml.kernel.org/r/E807E903FE6CBE4D95E420FBFCC273B827413C@nasanexd01h.na.qualcomm.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[backport by: Tim Sander <tim.sander@hbm.com> ]
 ---
- include/linux/wait-simple.h |  172 +++++++++++++++++++++++++++++++++++++++++++
- kernel/Makefile             |    2 +-
- kernel/wait-simple.c        |  119 ++++++++++++++++++++++++++++++
- 3 files changed, 292 insertions(+), 1 deletion(-)
- create mode 100644 include/linux/wait-simple.h
- create mode 100644 kernel/wait-simple.c
+ kernel/printk.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/wait-simple.h b/include/linux/wait-simple.h
-new file mode 100644
-index 0000000..44fee60
---- /dev/null
-+++ b/include/linux/wait-simple.h
-@@ -0,0 +1,172 @@
-+#ifndef _LINUX_WAIT_SIMPLE_H
-+#define _LINUX_WAIT_SIMPLE_H
-+
-+#include <linux/spinlock.h>
-+#include <linux/list.h>
-+
-+#include <asm/current.h>
-+
-+struct swaiter {
-+	struct task_struct	*task;
-+	struct list_head	node;
-+};
-+
-+#define DEFINE_SWAITER(name)					\
-+	struct swaiter name = {					\
-+		.task	= current,				\
-+		.node	= LIST_HEAD_INIT((name).node),		\
-+	}
-+
-+struct swait_head {
-+	raw_spinlock_t		lock;
-+	struct list_head	list;
-+};
-+
-+#define SWAIT_HEAD_INITIALIZER(name) {				\
-+		.lock	= __RAW_SPIN_LOCK_UNLOCKED(name.lock),	\
-+		.list	= LIST_HEAD_INIT((name).list),		\
-+	}
-+
-+#define DEFINE_SWAIT_HEAD(name)					\
-+	struct swait_head name = SWAIT_HEAD_INITIALIZER(name)
-+
-+extern void __init_swait_head(struct swait_head *h, struct lock_class_key *key);
-+
-+#define init_swait_head(swh)					\
-+	do {							\
-+		static struct lock_class_key __key;		\
-+								\
-+		__init_swait_head((swh), &__key);		\
-+	} while (0)
-+
-+/*
-+ * Waiter functions
-+ */
-+extern void swait_prepare_locked(struct swait_head *head, struct swaiter *w);
-+extern void swait_prepare(struct swait_head *head, struct swaiter *w, int state);
-+extern void swait_finish_locked(struct swait_head *head, struct swaiter *w);
-+extern void swait_finish(struct swait_head *head, struct swaiter *w);
-+
-+/*
-+ * Wakeup functions
-+ */
-+extern unsigned int __swait_wake(struct swait_head *head, unsigned int state, unsigned int num);
-+extern unsigned int __swait_wake_locked(struct swait_head *head, unsigned int state, unsigned int num);
-+
-+#define swait_wake(head)			__swait_wake(head, TASK_NORMAL, 1)
-+#define swait_wake_interruptible(head)		__swait_wake(head, TASK_INTERRUPTIBLE, 1)
-+#define swait_wake_all(head)			__swait_wake(head, TASK_NORMAL, 0)
-+#define swait_wake_all_interruptible(head)	__swait_wake(head, TASK_INTERRUPTIBLE, 0)
-+
-+/*
-+ * Event API
-+ */
-+#define __swait_event(wq, condition)					\
-+do {									\
-+	DEFINE_SWAITER(__wait);						\
-+									\
-+	for (;;) {							\
-+		swait_prepare(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
-+		if (condition)						\
-+			break;						\
-+		schedule();						\
-+	}								\
-+	swait_finish(&wq, &__wait);					\
-+} while (0)
-+
-+/**
-+ * swait_event - sleep until a condition gets true
-+ * @wq: the waitqueue to wait on
-+ * @condition: a C expression for the event to wait for
-+ *
-+ * The process is put to sleep (TASK_UNINTERRUPTIBLE) until the
-+ * @condition evaluates to true. The @condition is checked each time
-+ * the waitqueue @wq is woken up.
-+ *
-+ * wake_up() has to be called after changing any variable that could
-+ * change the result of the wait condition.
-+ */
-+#define swait_event(wq, condition)					\
-+do {									\
-+	if (condition)							\
-+		break;							\
-+	__swait_event(wq, condition);					\
-+} while (0)
-+
-+#define __swait_event_interruptible(wq, condition, ret)			\
-+do {									\
-+	DEFINE_SWAITER(__wait);						\
-+									\
-+	for (;;) {							\
-+		swait_prepare(&wq, &__wait, TASK_INTERRUPTIBLE);	\
-+		if (condition)						\
-+			break;						\
-+		if (signal_pending(current)) {				\
-+			ret = -ERESTARTSYS;				\
-+			break;						\
-+		}							\
-+		schedule();						\
-+	}								\
-+	swait_finish(&wq, &__wait);					\
-+} while (0)
-+
-+/**
-+ * swait_event_interruptible - sleep until a condition gets true
-+ * @wq: the waitqueue to wait on
-+ * @condition: a C expression for the event to wait for
-+ *
-+ * The process is put to sleep (TASK_INTERRUPTIBLE) until the
-+ * @condition evaluates to true. The @condition is checked each time
-+ * the waitqueue @wq is woken up.
-+ *
-+ * wake_up() has to be called after changing any variable that could
-+ * change the result of the wait condition.
-+ */
-+#define swait_event_interruptible(wq, condition)			\
-+({									\
-+	int __ret = 0;							\
-+	if (!(condition))						\
-+		__swait_event_interruptible(wq, condition, __ret);	\
-+	__ret;								\
-+})
-+
-+#define __swait_event_timeout(wq, condition, ret)			\
-+do {									\
-+	DEFINE_SWAITER(__wait);						\
-+									\
-+	for (;;) {							\
-+		swait_prepare(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
-+		if (condition)						\
-+			break;						\
-+		ret = schedule_timeout(ret);				\
-+		if (!ret)						\
-+			break;						\
-+	}								\
-+	swait_finish(&wq, &__wait);					\
-+} while (0)
-+
-+/**
-+ * swait_event_timeout - sleep until a condition gets true or a timeout elapses
-+ * @wq: the waitqueue to wait on
-+ * @condition: a C expression for the event to wait for
-+ * @timeout: timeout, in jiffies
-+ *
-+ * The process is put to sleep (TASK_UNINTERRUPTIBLE) until the
-+ * @condition evaluates to true. The @condition is checked each time
-+ * the waitqueue @wq is woken up.
-+ *
-+ * wake_up() has to be called after changing any variable that could
-+ * change the result of the wait condition.
-+ *
-+ * The function returns 0 if the @timeout elapsed, and the remaining
-+ * jiffies if the condition evaluated to true before the timeout elapsed.
-+ */
-+#define swait_event_timeout(wq, condition, timeout)			\
-+({									\
-+	long __ret = timeout;						\
-+	if (!(condition))						\
-+		__swait_event_timeout(wq, condition, __ret);		\
-+	__ret;								\
-+})
-+
-+#endif
-diff --git a/kernel/Makefile b/kernel/Makefile
-index f4bf68a..e7bbd15 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -10,7 +10,7 @@ obj-y     = fork.o exec_domain.o panic.o printk.o \
- 	    kthread.o wait.o kfifo.o sys_ni.o posix-cpu-timers.o \
- 	    hrtimer.o nsproxy.o srcu.o semaphore.o \
- 	    notifier.o ksysfs.o cred.o \
--	    async.o range.o groups.o
-+	    async.o range.o groups.o wait-simple.o
- 
- ifdef CONFIG_FUNCTION_TRACER
- # Do not trace debug files and internal ftrace files
-diff --git a/kernel/wait-simple.c b/kernel/wait-simple.c
-new file mode 100644
-index 0000000..c35ec78
---- /dev/null
-+++ b/kernel/wait-simple.c
-@@ -0,0 +1,119 @@
-+/*
-+ * Simple waitqueues without fancy flags and callbacks
-+ *
-+ * (C) 2011 Thomas Gleixner <tglx@linutronix.de>
-+ *
-+ * Based on kernel/wait.c
-+ *
-+ * For licencing details see kernel-base/COPYING
-+ */
-+#include <linux/init.h>
-+#include <linux/export.h>
-+#include <linux/sched.h>
-+#include <linux/wait-simple.h>
-+
-+/* Adds w to head->list. Must be called with head->lock locked. */
-+static inline void __swait_enqueue(struct swait_head *head, struct swaiter *w)
-+{
-+	list_add(&w->node, &head->list);
-+}
-+
-+/* Removes w from head->list. Must be called with head->lock locked. */
-+static inline void __swait_dequeue(struct swaiter *w)
-+{
-+	list_del_init(&w->node);
-+}
-+
-+/* Check whether a head has waiters enqueued */
-+static inline bool swait_head_has_waiters(struct swait_head *h)
-+{
-+	return !list_empty(&h->list);
-+}
-+
-+void __init_swait_head(struct swait_head *head, struct lock_class_key *key)
-+{
-+	raw_spin_lock_init(&head->lock);
-+	lockdep_set_class(&head->lock, key);
-+	INIT_LIST_HEAD(&head->list);
-+}
-+EXPORT_SYMBOL_GPL(__init_swait_head);
-+
-+void swait_prepare_locked(struct swait_head *head, struct swaiter *w)
-+{
-+	w->task = current;
-+	if (list_empty(&w->node))
-+		__swait_enqueue(head, w);
-+}
-+
-+void swait_prepare(struct swait_head *head, struct swaiter *w, int state)
-+{
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&head->lock, flags);
-+	swait_prepare_locked(head, w);
-+	__set_current_state(state);
-+	raw_spin_unlock_irqrestore(&head->lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(swait_prepare);
-+
-+void swait_finish_locked(struct swait_head *head, struct swaiter *w)
-+{
-+	__set_current_state(TASK_RUNNING);
-+	if (w->task)
-+		__swait_dequeue(w);
-+}
-+
-+void swait_finish(struct swait_head *head, struct swaiter *w)
-+{
-+	unsigned long flags;
-+
-+	__set_current_state(TASK_RUNNING);
-+	if (w->task) {
-+		raw_spin_lock_irqsave(&head->lock, flags);
-+		__swait_dequeue(w);
-+		raw_spin_unlock_irqrestore(&head->lock, flags);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(swait_finish);
-+
-+unsigned int
-+__swait_wake_locked(struct swait_head *head, unsigned int state, unsigned int num)
-+{
-+	struct swaiter *curr, *next;
-+	int woken = 0;
-+
-+	list_for_each_entry_safe(curr, next, &head->list, node) {
-+		if (wake_up_state(curr->task, state)) {
-+			__swait_dequeue(curr);
-+			/*
-+			 * The waiting task can free the waiter as
-+			 * soon as curr->task = NULL is written,
-+			 * without taking any locks. A memory barrier
-+			 * is required here to prevent the following
-+			 * store to curr->task from getting ahead of
-+			 * the dequeue operation.
-+			 */
-+			smp_wmb();
-+			curr->task = NULL;
-+			if (++woken == num)
-+				break;
-+		}
-+	}
-+	return woken;
-+}
-+
-+unsigned int
-+__swait_wake(struct swait_head *head, unsigned int state, unsigned int num)
-+{
-+	unsigned long flags;
-+	int woken;
-+
-+	if (!swait_head_has_waiters(head))
-+		return 0;
-+
-+	raw_spin_lock_irqsave(&head->lock, flags);
-+	woken = __swait_wake_locked(head, state, num);
-+	raw_spin_unlock_irqrestore(&head->lock, flags);
-+	return woken;
-+}
-+EXPORT_SYMBOL_GPL(__swait_wake);
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 7109711..56d7497 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -868,9 +868,9 @@ static int console_trylock_for_printk(unsigned int cpu, unsigned long flags)
+ 		}
+ 	}
+ 	printk_cpu = UINT_MAX;
++	raw_spin_unlock(&logbuf_lock);
+ 	if (wake)
+ 		up(&console_sem);
+-	raw_spin_unlock(&logbuf_lock);
+ 	return retval;
+ }
+ static const char recursion_bug_msg [] =
 -- 
 1.7.10.4
 
