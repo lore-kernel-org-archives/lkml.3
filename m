@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934190Ab3BSTjK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:39:10 -0500
-Received: from mga11.intel.com ([192.55.52.93]:21385 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933049Ab3BSTjI convert rfc822-to-8bit (ORCPT
+	id S934384Ab3BSTlD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 14:41:03 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:51304 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933049Ab3BSTlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 14:39:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,697,1355126400"; 
-   d="scan'208";a="293198110"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: "Westerberg, Mika" <mika.westerberg@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Subject: RE: How to populate Battery information through ACPI tables
-Thread-Topic: How to populate Battery information through ACPI tables
-Thread-Index: Ac4Oskyv9anm0zdmSXmuXEKAabFeBP//qGcA//+HEBCAAKCfAP//pGJQgABhtwD//6AxsAANLFUA//+g47D//5UmAP/+yTbw
-Date: Tue, 19 Feb 2013 19:39:01 +0000
-Message-ID: <D854C92F57B1B347B57E531E78D05EAD246620C6@BGSMSX102.gar.corp.intel.com>
-References: <D854C92F57B1B347B57E531E78D05EAD24661392@BGSMSX102.gar.corp.intel.com>
- <20130219152008.GG2439@intel.com>
- <D854C92F57B1B347B57E531E78D05EAD2466175B@BGSMSX102.gar.corp.intel.com>
- <20130219174210.GH2439@intel.com>
- <D854C92F57B1B347B57E531E78D05EAD2466187B@BGSMSX102.gar.corp.intel.com>
- <20130219180400.GJ2439@intel.com>
- <D854C92F57B1B347B57E531E78D05EAD24661A83@BGSMSX102.gar.corp.intel.com>
- <20130219183816.GK2439@intel.com>
- <D854C92F57B1B347B57E531E78D05EAD24661DB3@BGSMSX102.gar.corp.intel.com>
- <20130219192016.GL2439@intel.com>
-In-Reply-To: <20130219192016.GL2439@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Feb 2013 14:41:00 -0500
 MIME-Version: 1.0
+In-Reply-To: <1361182193-31894-1-git-send-email-hare@suse.de>
+References: <1361182193-31894-1-git-send-email-hare@suse.de>
+Date: Tue, 19 Feb 2013 11:40:59 -0800
+X-Google-Sender-Auth: F5MVutWdi2b7uLSL4eopzM95Qyg
+Message-ID: <CAE9FiQWP1F5mLUoHoTHXy-wQoGxVK66QuuHYydaq3YfysS5Etg@mail.gmail.com>
+Subject: Re: [PATCH] pci: do not try to assign irq 255
+From: Yinghai Lu <yinghai@kernel.org>
+To: Hannes Reinecke <hare@suse.de>, Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, Frederik Himpe <fhimpe@vub.ac.be>,
+        Oliver Neukum <oneukum@suse.de>, David Haerdeman <david@hardeman.nu>,
+        linux-usb@vger.kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Feb 18, 2013 at 2:09 AM, Hannes Reinecke <hare@suse.de> wrote:
+> The PCI config space reseves a byte for the interrupt line,
+> so irq 255 actually refers to 'not set'.
+> However, the 'irq' field for struct pci_dev is an integer,
+> so the original meaning is lost, causing the system to
+> assign an interrupt '255', which fails.
+>
+> So we should _not_ assign an interrupt value here, and
+> allow upper layers to fixup things.
+>
+> This patch make PCI devices with MSI interrupts only
+> (like the xhci device on certain HP laptops) work properly.
 
-> > Mika, _BIF method returns battery data/struct which is defined Table. 10-233.
-> 
-> Yes, it was just an example. You can have your own custom method for that, lets
-> say:
-> 
-> 	BLAH()
-> 
-> that then returns whatever you need.
-> 
-> > If I want to pass some device specific data seems like I can use
-> > _DSM(9.14.1) method and pass custom /device specific data to the driver.
-> 
-> _DSM is also an option, yes.
-> 
-> > And I believe this data format can be anything and private to the device?
-> > Can you confirm?
-> 
-> Yes.
+looks like the bios does not provide _PRT for device in ACPI.
 
-Gr8. Appreciate your prompt response and help.
-Have nice day :-)
+also according to PCI spec, BIOS *must* set interrupt line.
+
+>
+> Cc: Frederik Himpe <fhimpe@vub.ac.be>
+> Cc: Oliver Neukum <oneukum@suse.de>
+> Cc: David Haerdeman <david@hardeman.nu>
+> Cc: linux-usb@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> Signed-off-by: Hannes Reinecke <hare@suse.de>
+>
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 6186f03..a2db887f 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -923,7 +923,8 @@ static void pci_read_irq(struct pci_dev *dev)
+>         dev->pin = irq;
+>         if (irq)
+>                 pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &irq);
+> -       dev->irq = irq;
+> +       if (irq < 255)
+> +               dev->irq = irq;
+>  }
+>
+>  void set_pcie_port_type(struct pci_dev *pdev)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
