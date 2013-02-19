@@ -1,123 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758574Ab3BSJg6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 04:36:58 -0500
-Received: from mga03.intel.com ([143.182.124.21]:8469 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756669Ab3BSJgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 04:36:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,694,1355126400"; 
-   d="scan'208";a="203915705"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Andy Ross <andy.ross@windriver.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH] vt: add init_hide parameter to suppress boot output
-Date: Tue, 19 Feb 2013 11:38:10 +0200
-Message-Id: <1361266690-19382-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1758579Ab3BSJi1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 04:38:27 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:45131 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757464Ab3BSJiY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 04:38:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAFNq8R5Y+obN0pufXriqmRUajPPq=N6XMAhQUgbzObvCpbbpxA@mail.gmail.com>
+References: <CAFNq8R4UYvygk8+X+NZgyGjgU5vBsEv1UM6MiUxah6iW8=0HrQ@mail.gmail.com>
+	<alpine.LNX.2.00.1302180939200.2246@eggly.anvils>
+	<CAFNq8R5x3tD9Fn4TWna58VfdiRedPkrTDkeHXStkL7yBngL1mw@mail.gmail.com>
+	<5122E591.5090108@gmail.com>
+	<CAFNq8R5Y+obN0pufXriqmRUajPPq=N6XMAhQUgbzObvCpbbpxA@mail.gmail.com>
+Date: Tue, 19 Feb 2013 17:38:22 +0800
+Message-ID: <CAFj3OHXredBPjjLMaqnAq0tYKbLXaO0DOfs8zGYzV4ntsXvi6A@mail.gmail.com>
+Subject: Re: Should a swapped out page be deleted from swap cache?
+From: Sha Zhengju <handai.szj@gmail.com>
+To: Li Haifeng <omycle@gmail.com>
+Cc: Will Huck <will.huckk@gmail.com>, Hugh Dickins <hughd@google.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Ross <andy.ross@windriver.com>
+On Tue, Feb 19, 2013 at 2:53 PM, Li Haifeng <omycle@gmail.com> wrote:
+> 2013/2/19 Will Huck <will.huckk@gmail.com>:
+>> On 02/19/2013 10:04 AM, Li Haifeng wrote:
+>>>
+>>> 2013/2/19 Hugh Dickins <hughd@google.com>
+>>>>
+>>>> On Mon, 18 Feb 2013, Li Haifeng wrote:
+>>>>
+>>>>> For explain my question, the two points should be displayed as below.
+>>>>>
+>>>>> 1.  If an anonymous page is swapped out, this page will be deleted
+>>>>> from swap cache and be put back into buddy system.
+>>>>
+>>>> Yes, unless the page is referenced again before it comes to be
+>>>> deleted from swap cache.
+>>>>
+>>>>> 2. When a page is swapped out, the sharing count of swap slot must not
+>>>>> be zero. That is, page_swapcount(page) will not return zero.
+>>>>
+>>>> I would not say "must not": we just prefer not to waste time on swapping
+>>>> a page out if its use count has already gone to 0.  And its use count
+>>>> might go down to 0 an instant after swap_writepage() makes that check.
+>>>>
+>>> Thanks for your reply and patience.
+>>>
+>>> If a anonymous page is swapped out and  comes to be reclaimable,
+>>> shrink_page_list() will call __remove_mapping() to delete the page
+>>> swapped out from swap cache. Corresponding code lists as below.
+>>
+>>
+>> I'm not sure if
+>> if (PageAnon(page) && !PageSwapCache(page)) {
+>>  .................
+>> }
+>> will add the page to swap cache again.
+>>
+>
+> Adding the page to swap cache is the first stage of memory reclaiming.
+>
+> When an anonymous page will be reclaimed, it should be swapped out. If
+> it's not in the swap cache, it will insert into swap cache first and
+> set the bit of PG_swapcache on page->flags. Then, it will be swapped
+> out by try_to_unmap(). After it's swapped out, and no processes swap
 
-When vt.init_hide=1 is set, suppress output on newly created consoles
-until an affirmative switched to that console.  This prevents boot
-output from displaying (and clobbering splash screens, etc...) without
-disabling the console entirely.
+Swapout(writing to swap disk) is not done by try_to_unmap() which only
+tries to remove all page table mappings to a page. Before unmapping,
+add_to_swap() will set the swap cache page dirty and it will be
+written out by pageout()->swap_writepage().
 
-Signed-off-by: Andy Ross <andy.ross@windriver.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- drivers/tty/vt/vt.c            |    7 +++++++
- include/linux/console_struct.h |    3 ++-
- include/linux/vt.h             |    2 ++
- kernel/power/console.c         |    2 --
- 4 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 8fd8968..3966ff5 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -165,6 +165,9 @@ module_param(global_cursor_default, int, S_IRUGO | S_IWUSR);
- static int cur_default = CUR_DEFAULT;
- module_param(cur_default, int, S_IRUGO | S_IWUSR);
- 
-+static int init_hide;
-+module_param(init_hide, int, S_IRUGO);
-+
- /*
-  * ignore_poke: don't unblank the screen when things are typed.  This is
-  * mainly for the privacy of braille terminal users.
-@@ -734,6 +737,7 @@ static void visual_init(struct vc_data *vc, int num, int init)
- 	__module_get(vc->vc_sw->owner);
- 	vc->vc_num = num;
- 	vc->vc_display_fg = &master_display_fg;
-+	vc->vc_hidden = init_hide;
- 	vc->vc_uni_pagedir_loc = &vc->vc_uni_pagedir;
- 	vc->vc_uni_pagedir = 0;
- 	vc->vc_hi_font_mask = 0;
-@@ -2336,6 +2340,9 @@ static void console_callback(struct work_struct *ignored)
- 	if (want_console >= 0) {
- 		if (want_console != fg_console &&
- 		    vc_cons_allocated(want_console)) {
-+			if(want_console != SUSPEND_CONSOLE &&
-+			   fg_console != SUSPEND_CONSOLE)
-+				vc_cons[want_console].d->vc_hidden = 0;
- 			hide_cursor(vc_cons[fg_console].d);
- 			change_console(vc_cons[want_console].d);
- 			/* we only changed when the console had already
-diff --git a/include/linux/console_struct.h b/include/linux/console_struct.h
-index 7f0c329..817db0e 100644
---- a/include/linux/console_struct.h
-+++ b/include/linux/console_struct.h
-@@ -91,6 +91,7 @@ struct vc_data {
- 	unsigned int	vc_can_do_color	: 1;
- 	unsigned int	vc_report_mouse : 2;
- 	unsigned char	vc_utf		: 1;	/* Unicode UTF-8 encoding */
-+	unsigned int    vc_hidden	: 1;    /* Set by vt.init_hide=1 */
- 	unsigned char	vc_utf_count;
- 		 int	vc_utf_char;
- 	unsigned int	vc_tab_stop[8];		/* Tab stops. 256 columns. */
-@@ -134,6 +135,6 @@ extern void vc_SAK(struct work_struct *work);
- 
- #define CUR_DEFAULT CUR_UNDERLINE
- 
--#define CON_IS_VISIBLE(conp) (*conp->vc_display_fg == conp)
-+#define CON_IS_VISIBLE(conp) (*conp->vc_display_fg == conp && !conp->vc_hidden)
- 
- #endif /* _LINUX_CONSOLE_STRUCT_H */
-diff --git a/include/linux/vt.h b/include/linux/vt.h
-index b186e04..0dc3e89 100644
---- a/include/linux/vt.h
-+++ b/include/linux/vt.h
-@@ -11,6 +11,8 @@
- #define VT_UPDATE		0x0004 /* A bigger update occurred */
- #define VT_PREWRITE		0x0005 /* A char is about to be written to the console */
- 
-+#define SUSPEND_CONSOLE	(MAX_NR_CONSOLES-1)
-+
- #ifdef CONFIG_VT_CONSOLE
- 
- extern int vt_kmsg_redirect(int new);
-diff --git a/kernel/power/console.c b/kernel/power/console.c
-index b1dc456..b74bdb8 100644
---- a/kernel/power/console.c
-+++ b/kernel/power/console.c
-@@ -10,8 +10,6 @@
- #include <linux/module.h>
- #include "power.h"
- 
--#define SUSPEND_CONSOLE	(MAX_NR_CONSOLES-1)
--
- static int orig_fgconsole, orig_kmsg;
- 
- int pm_prepare_console(void)
--- 
-1.7.10.4
+Thanks,
+Sha
 
+
+> in this page, the page will be deleted from swap cache and be put into
+> buddy system.
+>
+> Please correct me if my understanding is wrong.
+>
+> Regards,
+> Haifeng Li.
+>
+>>>
+>>>   765 static unsigned long shrink_page_list(struct list_head *page_list,
+>>>   766                                       struct mem_cgroup_zone *mz,
+>>>   767                                       struct scan_control *sc,
+>>>   768                                       int priority,
+>>>   769                                       unsigned long *ret_nr_dirty,
+>>>   770                                       unsigned long
+>>> *ret_nr_writeback)
+>>>   771 {
+>>> ...
+>>>   971                 if (!mapping || !__remove_mapping(mapping, page))
+>>>   972                         goto keep_locked;
+>>>   973
+>>>   974                 /*
+>>>   975                  * At this point, we have no other references and
+>>> there is
+>>>   976                  * no way to pick any more up (removed from LRU,
+>>> removed
+>>>   977                  * from pagecache). Can use non-atomic bitops now
+>>> (and
+>>>   978                  * we obviously don't have to worry about waking
+>>> up a process
+>>>   979                  * waiting on the page lock, because there are no
+>>> references.
+>>>   980                  */
+>>>   981                 __clear_page_locked(page);
+>>>   982 free_it:
+>>>   983                 nr_reclaimed++;
+>>>   984
+>>>   985                 /*
+>>>   986                  * Is there need to periodically free_page_list? It
+>>> would
+>>>   987                  * appear not as the counts should be low
+>>>   988                  */
+>>>   989                 list_add(&page->lru, &free_pages);
+>>>   990                 continue;
+>>>
+>>> Please correct me if my understanding is wrong.
+>>>
+>>> Thanks.
+>>>>>
+>>>>> Are both of them above right?
+>>>>>
+>>>>> According the two points above, I was confused to the line 655 below.
+>>>>> When a page is swapped out, the return value of page_swapcount(page)
+>>>>> will not be zero. So, the page couldn't be deleted from swap cache.
+>>>>
+>>>> Yes, we cannot free the swap as long as its data might be needed again.
+>>>>
+>>>> But a swap cache page may linger in memory for an indefinite time,
+>>>> in between being queued for write out, and actually being freed from
+>>>> the end of the lru by memory pressure.
+>>>>
+>>>> At various points where we hold the page lock on a swap cache page,
+>>>> it's worth checking whether it is still actually needed, or could
+>>>> now be freed from swap cache, and the corresponding swap slot freed:
+>>>> that's what try_to_free_swap() does.
+>>>
+>>> I do agree. Thanks again.
+>>>>
+>>>> Hugh
+>>>>
+>>>>>   644  * If swap is getting full, or if there are no more mappings of
+>>>>> this page,
+>>>>>   645  * then try_to_free_swap is called to free its swap space.
+>>>>>   646  */
+>>>>>   647 int try_to_free_swap(struct page *page)
+>>>>>   648 {
+>>>>>   649         VM_BUG_ON(!PageLocked(page));
+>>>>>   650
+>>>>>   651         if (!PageSwapCache(page))
+>>>>>   652                 return 0;
+>>>>>   653         if (PageWriteback(page))
+>>>>>   654                 return 0;
+>>>>>   655         if (page_swapcount(page))//Has referenced by other swap
+>>>>> out
+>>>>> page.
+>>>>>   656                 return 0;
+>>>>>   657
+>>>>>   658         /*
+>>>>>   659          * Once hibernation has begun to create its image of
+>>>>> memory,
+>>>>>   660          * there's a danger that one of the calls to
+>>>>> try_to_free_swap()
+>>>>>   661          * - most probably a call from __try_to_reclaim_swap()
+>>>>> while
+>>>>>   662          * hibernation is allocating its own swap pages for the
+>>>>> image,
+>>>>>   663          * but conceivably even a call from memory reclaim - will
+>>>>> free
+>>>>>   664          * the swap from a page which has already been recorded in
+>>>>> the
+>>>>>   665          * image as a clean swapcache page, and then reuse its
+>>>>> swap
+>>>>> for
+>>>>>   666          * another page of the image.  On waking from hibernation,
+>>>>> the
+>>>>>   667          * original page might be freed under memory pressure,
+>>>>> then
+>>>>>   668          * later read back in from swap, now with the wrong data.
+>>>>>   669          *
+>>>>>   670          * Hibration suspends storage while it is writing the
+>>>>> image
+>>>>>   671          * to disk so check that here.
+>>>>>   672          */
+>>>>>   673         if (pm_suspended_storage())
+>>>>>   674                 return 0;
+>>>>>   675
+>>>>>   676         delete_from_swap_cache(page);
+>>>>>   677         SetPageDirty(page);
+>>>>>   678         return 1;
+>>>>>   679 }
+>>>>>
+>>>>> Thanks.
+>>>
+>>> --
+>>>
+>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>> see: http://www.linux-mm.org/ .
+>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
