@@ -1,125 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758651Ab3BSQj6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 11:39:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45865 "EHLO mx1.redhat.com"
+	id S1758656Ab3BSQmU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 11:42:20 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:12776 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758438Ab3BSQj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 11:39:57 -0500
-Subject: GFS2: Pull request (merge window)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-ezKJShqmIJk+6B9sTAy4"
-Organization: Red Hat UK Ltd
-Date: Tue, 19 Feb 2013 16:38:34 +0000
-Message-ID: <1361291914.2704.19.camel@menhir>
-Mime-Version: 1.0
+	id S1758434Ab3BSQmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 11:42:19 -0500
+X-IronPort-AV: E=Sophos;i="4.84,696,1355097600"; 
+   d="scan'208";a="8210039"
+Date: Tue, 19 Feb 2013 16:42:15 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Ian Campbell <ian.campbell@citrix.com>
+CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>, "Keir (Xen.org)" <keir@xen.org>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH XEN] xen: event channel arrays are xen_ulong_t and not
+ unsigned long
+In-Reply-To: <1361285363-27133-1-git-send-email-ian.campbell@citrix.com>
+Message-ID: <alpine.DEB.2.02.1302191642060.4654@kaball.uk.xensource.com>
+References: <1361285327.1051.115.camel@zakaz.uk.xensource.com> <1361285363-27133-1-git-send-email-ian.campbell@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 19 Feb 2013, Ian Campbell wrote:
+> On ARM we want these to be the same size on 32- and 64-bit.
+> 
+> This is an ABI change on ARM. X86 does not change.
+> 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Cc: Jan Beulich <JBeulich@suse.com>
+> Cc: Keir (Xen.org) <keir@xen.org>
+> Cc: Tim Deegan <tim@xen.org>
+> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: xen-devel@lists.xen.org
 
---=-ezKJShqmIJk+6B9sTAy4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-Please consider pulling the following GFS2 patches for the merge window,
-
-Steve.
-
----------------------------------------------------------------------------
-This is one of the smallest collections of patches for the merge
-window for some time. There are some clean ups relating to the
-transaction code and the shrinker, which are mostly in preparation
-for further development, but also make the code much easier to
-follow in these areas.
-
-There is a patch which allows the use of ->writepages even in the
-default ordered write mode for all writebacks. This results in
-sending larger i/os to the block layer, and a subsequent increase
-in performance. It also reduces the number of different i/o paths
-by one.
-
-There is also a bug fix reinstating the withdraw ack system which
-somehow got lost when the lock modules were merged into GFS2.
-
----------------------------------------------------------------------------
-The following changes since commit 6abb7c25775b7fb2225ad0508236d63ca710e65f=
-:
-
-  Merge tag 'regulator-3.8-rc5' of git://git.kernel.org/pub/scm/linux/kerne=
-l/git/broonie/regulator (2013-01-28 22:44:53 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-nmw.git mast=
-er
-
-Bob Peterson (1):
-      GFS2: Get a block reservation before resizing a file
-
-Steven Whitehouse (9):
-      GFS2: Separate LRU scanning from shrinker
-      GFS2: Merge revoke adding functions
-      GFS2: Split gfs2_trans_add_bh() into two
-      GFS2: Copy gfs2_trans_add_bh into new data/meta functions
-      GFS2: Merge gfs2_attach_bufdata() into trans.c
-      GFS2: Clean up freeze code
-      GFS2: Use ->writepages for ordered writes
-      GFS2: Split glock lru processing into two parts
-      GFS2: Reinstate withdraw ack system
-
- fs/gfs2/aops.c       |   17 +++----
- fs/gfs2/bmap.c       |   30 +++++++-----
- fs/gfs2/dir.c        |   30 ++++++------
- fs/gfs2/file.c       |    4 +-
- fs/gfs2/glock.c      |  116 +++++++++++++++++++++++++++++++++-------------
- fs/gfs2/incore.h     |    8 ++--
- fs/gfs2/inode.c      |    8 ++--
- fs/gfs2/log.c        |   76 ++++++++++++++----------------
- fs/gfs2/log.h        |   12 +++++
- fs/gfs2/lops.c       |   83 +---------------------------------
- fs/gfs2/lops.h       |   14 +-----
- fs/gfs2/meta_io.c    |   35 --------------
- fs/gfs2/meta_io.h    |    3 -
- fs/gfs2/ops_fstype.c |    4 +-
- fs/gfs2/quota.c      |    4 +-
- fs/gfs2/rgrp.c       |   18 ++++----
- fs/gfs2/super.c      |   70 ++++------------------------
- fs/gfs2/super.h      |    3 -
- fs/gfs2/sys.c        |   48 ++++++++++++++------
- fs/gfs2/trans.c      |  124 +++++++++++++++++++++++++++++++++++++++++++++-=
-----
- fs/gfs2/trans.h      |    3 +-
- fs/gfs2/util.c       |    3 +
- fs/gfs2/xattr.c      |   36 +++++++-------
- 23 files changed, 375 insertions(+), 374 deletions(-)
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
 
---=-ezKJShqmIJk+6B9sTAy4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJRI6qFAAoJEMrg3m4a/8jSWaYP/jZsga/9ts5wiyVieyRuDjV8
-ncMPi+Mmne5iCWixbg3BRkkA5LQrsj3o1fPvVdx0QtwnQVHx5g9erDlsAp7PquUC
-9hXjgYy27SJAM5S1GwXsPZNQQ2PLD59ErpF7FBD7e0DPOpWhI7HbuySglGNI3L+S
-VZWh4RB0tcb/JwEU1Wt9lSjDoVH8mH8kgsOGJYZn9D3LCiRDIeuFTbAKnYk2BVQ/
-2brKxjaoUgSufchOlTnI65a8CIPorDa60Ab9j3Xp0c+Kgk0wEfyoxwWeUfZ68zQ5
-vmRUxiEyAa0PEc1yfu3KZxZfQJnO/u16PXioMSg9Q1zhK1yghAv+h/OU3vQ12/jY
-88JeH1zMR2Bm7KLqOMXQnXNFdJfGQ/ADQyAYAFGr+YiQqw1gkFyxZgqEdPkrG6gF
-z2/Jilwx7d6gC/1hhj5OMw/UDXFHYvPjYrcPrOGRx6ac1GSacmVEOkoxFFg6XjdH
-xaAYfDL2CsZ47WCSbp2Ip/+OHA/4pza8zW/qSccrg/s6t5R6J7hvFZfx4v2wMhqW
-BCQypwb55ejHOXd6mE9tZTKPoPtprlSdabJ5VumF5v3nZ5nCzWOn09khmXzJVn4C
-kyHEb1iPqYQgeqIstwNqD+F7pLiwmV0/i5qS1DAcUi7D9NoiaYGD9R4ROQzLJYBR
-ocsIPB/mW/14w1AG6NuZ
-=OauT
------END PGP SIGNATURE-----
-
---=-ezKJShqmIJk+6B9sTAy4--
-
+>  tools/include/xen-foreign/mkheader.py |    6 ++++++
+>  xen/include/public/xen.h              |    8 ++++----
+>  2 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/tools/include/xen-foreign/mkheader.py b/tools/include/xen-foreign/mkheader.py
+> index d189b07..57681fa 100644
+> --- a/tools/include/xen-foreign/mkheader.py
+> +++ b/tools/include/xen-foreign/mkheader.py
+> @@ -21,13 +21,18 @@ inttypes["arm"] = {
+>      "unsigned long" : "uint32_t",
+>      "long"          : "uint32_t",
+>      "xen_pfn_t"     : "uint64_t",
+> +    "xen_ulong_t"   : "uint64_t",
+>  };
+> +header["arm"] = """
+> +#define __arm___ARM32 1
+> +""";
+>  
+>  # x86_32
+>  inttypes["x86_32"] = {
+>      "unsigned long" : "uint32_t",
+>      "long"          : "uint32_t",
+>      "xen_pfn_t"     : "uint32_t",
+> +    "xen_ulong_t"   : "uint32_t",
+>  };
+>  header["x86_32"] = """
+>  #define __i386___X86_32 1
+> @@ -42,6 +47,7 @@ inttypes["x86_64"] = {
+>      "unsigned long" : "__align8__ uint64_t",
+>      "long"          : "__align8__ uint64_t",
+>      "xen_pfn_t"     : "__align8__ uint64_t",
+> +    "xen_ulong_t"   : "__align8__ uint64_t",
+>  };
+>  header["x86_64"] = """
+>  #if defined(__GNUC__) && !defined(__STRICT_ANSI__)
+> diff --git a/xen/include/public/xen.h b/xen/include/public/xen.h
+> index 5593066..99c8212 100644
+> --- a/xen/include/public/xen.h
+> +++ b/xen/include/public/xen.h
+> @@ -556,7 +556,7 @@ DEFINE_XEN_GUEST_HANDLE(multicall_entry_t);
+>   * Event channel endpoints per domain:
+>   *  1024 if a long is 32 bits; 4096 if a long is 64 bits.
+>   */
+> -#define NR_EVENT_CHANNELS (sizeof(unsigned long) * sizeof(unsigned long) * 64)
+> +#define NR_EVENT_CHANNELS (sizeof(xen_ulong_t) * sizeof(xen_ulong_t) * 64)
+>  
+>  struct vcpu_time_info {
+>      /*
+> @@ -613,7 +613,7 @@ struct vcpu_info {
+>       */
+>      uint8_t evtchn_upcall_pending;
+>      uint8_t evtchn_upcall_mask;
+> -    unsigned long evtchn_pending_sel;
+> +    xen_ulong_t evtchn_pending_sel;
+>      struct arch_vcpu_info arch;
+>      struct vcpu_time_info time;
+>  }; /* 64 bytes (x86) */
+> @@ -663,8 +663,8 @@ struct shared_info {
+>       * per-vcpu selector word to be set. Each bit in the selector covers a
+>       * 'C long' in the PENDING bitfield array.
+>       */
+> -    unsigned long evtchn_pending[sizeof(unsigned long) * 8];
+> -    unsigned long evtchn_mask[sizeof(unsigned long) * 8];
+> +    xen_ulong_t evtchn_pending[sizeof(xen_ulong_t) * 8];
+> +    xen_ulong_t evtchn_mask[sizeof(xen_ulong_t) * 8];
+>  
+>      /*
+>       * Wallclock time: updated only by control software. Guests should base
+> -- 
+> 1.7.9.1
+> 
