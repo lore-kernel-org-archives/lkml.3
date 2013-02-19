@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769Ab3BSN2E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 08:28:04 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:40620 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932624Ab3BSN2D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 08:28:03 -0500
-Message-ID: <51237DDB.2050305@gmail.com>
-Date: Tue, 19 Feb 2013 21:27:55 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S932802Ab3BSN3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 08:29:00 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41131 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932624Ab3BSN26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 08:28:58 -0500
+Date: Tue, 19 Feb 2013 14:28:54 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, davem@davemloft.net,
+        netdev@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
+        linux-edac@vger.kernel.org, rjw@sisk.pl, linux-pm@vger.kernel.org
+Subject: Re: SYSFS "errors"
+Message-ID: <20130219132853.GG26623@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Felipe Balbi <balbi@ti.com>,
+	Mauro Carvalho Chehab <mchehab@redhat.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Ingo Molnar <mingo@redhat.com>, JBottomley@parallels.com,
+	linux-scsi@vger.kernel.org, davem@davemloft.net,
+	netdev@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
+	linux-edac@vger.kernel.org, rjw@sisk.pl, linux-pm@vger.kernel.org
+References: <20130218224405.GB21493@pd.tnic>
+ <20130219070310.2cadad7a@redhat.com>
+ <20130219101121.GJ23197@arwen.pp.htv.fi>
+ <20130219081149.46972f56@redhat.com>
+ <20130219114345.GA26623@pd.tnic>
+ <20130219091610.2b746a30@redhat.com>
+ <20130219123502.GD26623@pd.tnic>
+ <20130219094640.2abf1a66@redhat.com>
+ <20130219130626.GE26623@pd.tnic>
+ <20130219131500.GW23197@arwen.pp.htv.fi>
 MIME-Version: 1.0
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mgorman@suse.de, kyungmin.park@samsung.com
-Subject: Re: [PATCH] mm: cma: fix accounting of CMA pages placed in high memory
-References: <1359973626-3900-1-git-send-email-m.szyprowski@samsung.com> <20130204233430.GA2610@blaptop> <5110B05B.5070109@samsung.com>
-In-Reply-To: <5110B05B.5070109@samsung.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130219131500.GW23197@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2013 03:10 PM, Marek Szyprowski wrote:
-> Hello,
->
-> On 2/5/2013 12:34 AM, Minchan Kim wrote:
->> On Mon, Feb 04, 2013 at 11:27:05AM +0100, Marek Szyprowski wrote:
->> > The total number of low memory pages is determined as
->> > totalram_pages - totalhigh_pages, so without this patch all CMA
->> > pageblocks placed in highmem were accounted to low memory.
->>
->> So what's the end user effect? With the effect, we have to decide
->> routing it on stable.
->>
->> >
->> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
->> > ---
->> >  mm/page_alloc.c |    4 ++++
->> >  1 file changed, 4 insertions(+)
->> >
->> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> > index f5bab0a..6415d93 100644
->> > --- a/mm/page_alloc.c
->> > +++ b/mm/page_alloc.c
->> > @@ -773,6 +773,10 @@ void __init init_cma_reserved_pageblock(struct 
->> page *page)
->> >      set_pageblock_migratetype(page, MIGRATE_CMA);
->> >      __free_pages(page, pageblock_order);
->> >      totalram_pages += pageblock_nr_pages;
->> > +#ifdef CONFIG_HIGHMEM
->>
->> We don't need #ifdef/#endif.
->
-> #ifdef is required to let this code compile when highmem is not enabled,
-> becuase totalhigh_pages is defined as 0, see include/linux/highmem.h
->
+On Tue, Feb 19, 2013 at 03:15:00PM +0200, Felipe Balbi wrote:
+> what's the problem with that ?
 
-Hi Marek,
+Not a problem - simply annoying.
 
-1) Why can support CMA regions placed in highmem? CMA is for dma buffer, 
-correct? Then how can old dma device access highmem?
-2) Why there is no totalhigh_pages variable define in the case of config 
-highmem?
+$ ./test.sh
+cat: /path/to/file/that/doesnt/exist.txt: No such file or directory
+Setting scrubrate to:
 
->> > +    if (PageHighMem(page))
->> > +        totalhigh_pages += pageblock_nr_pages;
->> > +#endif
->> >  }
->> >  #endif
->> >
->
-> Best regards
+I'm sure someone would ask themselves why all of a sudden the file is
+gone.
 
+> $ cat /path/to/file/that/doesnt/exist.txt
+> cat: /path/to/file/that/doesnt/exist.txt: No such file or directory
+> 
+> Didn't see any gates to hell opening here...
+
+And I don't see why we have to debate such a trivial thing when we can
+fix it *properly* without *absolutely* *not* upsetting userspace.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
