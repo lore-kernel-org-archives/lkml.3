@@ -1,59 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933280Ab3BSSPK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:15:10 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:55736 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932858Ab3BSSPI (ORCPT
+	id S933184Ab3BSSQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:16:48 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35360 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757977Ab3BSSQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:15:08 -0500
+	Tue, 19 Feb 2013 13:16:46 -0500
+Message-ID: <5123C18A.9010604@wwwdotorg.org>
+Date: Tue, 19 Feb 2013 11:16:42 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Date: Tue, 19 Feb 2013 20:14:57 +0200
-Message-ID: <CA+ydwtpAKaY08q_hr+pNZdDZ0BDnojnG9LHf_m0B4PTT+ya9gg@mail.gmail.com>
-Subject: autofs ioctl() => impossibly large user copy
-From: Tommi Rantala <tt.rantala@gmail.com>
-To: Ian Kent <raven@themaw.net>, autofs@vger.kernel.org
-Cc: Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        broonie@opensource.wolfsonmicro.com, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net, linux-tegra@vger.kernel.org,
+        swarren@nvidia.com
+Subject: Re: [PATCH] spi: tegra114: add spi driver
+References: <1361281115-20436-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1361281115-20436-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 02/19/2013 06:38 AM, Laxman Dewangan wrote:
+> Add spi driver for NVIDIA's Tegra114 spi controller. This controller
+> is different than the older SoCs spi controller in internal design as
+> well as register interface.
 
-Saw this WARNING while fuzzing the kernel with trinity in qemu virtual
-machine as the root user:
+Nit: SPI should be capitalized. Also in Kconfig below.
 
-[  392.585489] ------------[ cut here ]------------
-[  392.586464] WARNING: at
-/home/ttrantal/git/linux-2.6/mm/page_alloc.c:2376
-__alloc_pages_nodemask+0x20e/0x970()
-[  392.588446] Hardware name: Bochs
-[  392.589170] Pid: 2811, comm: trinity-child12 Not tainted 3.8.0+ #87
-[  392.590486] Call Trace:
-[  392.591023]  [<ffffffff81097b86>] warn_slowpath_common+0x86/0xb0
-[  392.592374]  [<ffffffff81097c75>] warn_slowpath_null+0x15/0x20
-[  392.593507]  [<ffffffff81159b8e>] __alloc_pages_nodemask+0x20e/0x970
-[  392.594650]  [<ffffffff810d51a5>] ? sched_clock_local+0x25/0xa0
-[  392.595862]  [<ffffffff810f5b18>] ? trace_hardirqs_off_caller+0x28/0xd0
-[  392.597304]  [<ffffffff810f5b18>] ? trace_hardirqs_off_caller+0x28/0xd0
-[  392.599000]  [<ffffffff8118fba4>] alloc_pages_current+0x124/0x150
-[  392.600547]  [<ffffffff81156639>] __get_free_pages+0x9/0x50
-[  392.601927]  [<ffffffff81195779>] kmalloc_order_trace+0x39/0xd0
-[  392.603501]  [<ffffffff81197f46>] __kmalloc_track_caller+0x46/0x1d0
-[  392.605203]  [<ffffffff812d2b7a>] ? _autofs_dev_ioctl+0x9a/0x3e0
-[  392.606724]  [<ffffffff8116b44b>] memdup_user+0x2b/0x80
-[  392.608076]  [<ffffffff8117a1f0>] ? might_fault+0x40/0x90
-[  392.609403]  [<ffffffff812d2b7a>] _autofs_dev_ioctl+0x9a/0x3e0
-[  392.610845]  [<ffffffff812fb640>] ? avc_has_perm_flags+0x1d0/0x2a0
-[  392.612380]  [<ffffffff812fb498>] ? avc_has_perm_flags+0x28/0x2a0
-[  392.613817]  [<ffffffff812d2ece>] autofs_dev_ioctl+0xe/0x20
-[  392.615191]  [<ffffffff811b5ff2>] do_vfs_ioctl+0x532/0x580
-[  392.616554]  [<ffffffff812fc7d3>] ? file_has_perm+0x83/0xa0
-[  392.617623]  [<ffffffff811b609d>] sys_ioctl+0x5d/0xa0
-[  392.618599]  [<ffffffff813571de>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[  392.619796]  [<ffffffff81ca07e9>] system_call_fastpath+0x16/0x1b
-[  392.620956] ---[ end trace 6628336fa0115cb7 ]---
+> diff --git a/Documentation/devicetree/bindings/spi/nvidia,spi-tegra114.txt b/Documentation/devicetree/bindings/spi/nvidia,spi-tegra114.txt
 
-Tommi
+This file should be named nvidia,tegra114-spi.txt, so that it matches
+the compatible value it describes.
+
+> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+
+> +config SPI_TEGRA114
+> +	tristate "Nvidia Tegra114 SPI Controller"
+
+NVIDIA should be capitalized. Also in the help description below.
+
+> diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+
+>  obj-$(CONFIG_SPI_SIRF)		+= spi-sirf.o
+>  obj-$(CONFIG_SPI_TEGRA20_SFLASH)	+= spi-tegra20-sflash.o
+> +obj-$(CONFIG_SPI_TEGRA114)			+= spi-tegra114.o
+>  obj-$(CONFIG_SPI_TEGRA20_SLINK)		+= spi-tegra20-slink.o
+>  obj-$(CONFIG_SPI_TI_SSP)		+= spi-ti-ssp.o
+
+The Makefile should be sorted; Tegra114 comes before Tegra20*.
+
+> diff --git a/drivers/spi/spi-tegra114.c b/drivers/spi/spi-tegra114.c
+
+> +static unsigned tegra_spi_calculate_curr_xfer_param(
+...
+> +	bits_per_word = t->bits_per_word ? t->bits_per_word :
+> +						spi->bits_per_word;
+
+I thought I'd seen patches so this conditional wasn't needed any more;
+isn't t->bit_per_word always set correctly by the SPI core now?
+Certainly the existing spi-tegra20-slink.c doesn't seem to have any
+conditional here.
+
+A similar comment applies in tegra_spi_read_rx_fifo_to_client_rxbuf()
+and tegra_spi_copy_spi_rxbuf_to_client_rxbuf().
+
+> +		total_fifo_words = (max_len + 3)/4;
+
+Need spaces around /. The same comment applies in some other places;
+please search for them. Was checkpatch run? I'm not sure if catches this.
+
+spi-tegra20-slink.c doesn't have that rounding; is just says:
+
+    total_fifo_words = max_len / 4;
+
+Is that a bug in the old driver?
+
+> +static int tegra_spi_start_dma_based_transfer(
+> +		struct tegra_spi_data *tspi, struct spi_transfer *t)
+...
+> +	if (tspi->cur_direction & DATA_DIR_TX) {
+> +		tegra_spi_copy_client_txbuf_to_spi_txbuf(tspi, t);
+> +		ret = tegra_spi_start_tx_dma(tspi, len);
+
+In spi-tegra20-slink.c, there's a wmb() right between those last two
+lines. Is it needed here?
+
+> +static int tegra_spi_start_transfer_one(struct spi_device *spi,
+> +		struct spi_transfer *t, bool is_first_of_msg,
+> +		bool is_single_xfer)
+...
+> +		/* possibly use the hw based chip select */
+> +		command1 |= SPI_CS_SW_HW;
+> +		if (spi->mode & SPI_CS_HIGH)
+> +			command1 |= SPI_CS_SS_VAL;
+> +		else
+> +			command1 &= ~SPI_CS_SS_VAL;
+
+Why "possibly"; the code seems to always use HW chip select.
+
+> +static int tegra_spi_transfer_one_message(struct spi_master *master,
+> +			struct spi_message *msg)
+...
+> +	ret = pm_runtime_get_sync(tspi->dev);
+> +	if (ret < 0) {
+> +		dev_err(tspi->dev, "runtime PM get failed: %d\n", ret);
+> +		msg->status = ret;
+> +		spi_finalize_current_message(master);
+> +		return ret;
+> +	}
+
+In the older Tegra SPI drivers, the PM runtime logic was was of
+master->{un,}prepare_transfer. I'm curious why it's implemented
+differently here.
+
+> +static void tegra_spi_parse_dt(struct platform_device *pdev,
+> +	struct tegra_spi_data *tspi)
+...
+> +	prop = of_get_property(np, "spi-max-frequency", NULL);
+> +	if (prop)
+> +		tspi->spi_max_frequency = be32_to_cpup(prop);
+
+The following might be better:
+
+        if (of_property_read_u32(np, "spi-max-frequency",
+                                        &tspi->spi_max_frequency))
+                tspi->spi_max_frequency = 25000000; /* 25MHz */
+
+(and you can remove the check of !tspi->spi_max_frequency from probe()
+then too)
+
+> +static int tegra_spi_probe(struct platform_device *pdev)
+...
+> +	if (!pdev->dev.of_node) {
+> +		dev_err(&pdev->dev, "Driver support DT registration only\n");
+> +		return -ENODEV;
+> +	}
+
+I don't think there's much point checking that; see the Tegra20 SPI
+cleanup patches I posted a couple days ago.
+
+> +	tspi->base = devm_request_and_ioremap(&pdev->dev, r);
+> +	if (!tspi->base) {
+
+The existing Tegra20 driver checks if (IS_ERR(tspi->base)) here. Which
+is wrong?
+
+> +	tspi->clk = devm_clk_get(&pdev->dev, "spi");
+
+Does this HW block use multiple clocks? If not, I think s/"spi"/NULL/
+there, just like the Tegra20 driver.
+
+As an overall comment, this driver is textually perhaps 80-90% the same
+as spi-tegra20-slink.c. Instead of creating a completely new driver, how
+nasty would a unified driver look; one which contained some runtime
+conditionals for the register layout and programming differences? It
+might be worth looking at, although perhaps it would turn out to be a
+crazy mess, so a separate driver really is appropriate.
