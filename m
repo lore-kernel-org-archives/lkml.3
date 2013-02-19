@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489Ab3BSJjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 04:39:45 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:50595 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757464Ab3BSJjn (ORCPT
+	id S932501Ab3BSJkz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 04:40:55 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:37653 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758558Ab3BSJkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 04:39:43 -0500
+	Tue, 19 Feb 2013 04:40:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <511E9480.5070202@redhat.com>
-References: <1360768595-31943-1-git-send-email-avagin@openvz.org>
-	<511E8223.6010506@redhat.com>
-	<20130215194356.GA12413@redhat.com>
-	<511E9480.5070202@redhat.com>
-Date: Tue, 19 Feb 2013 13:39:42 +0400
-Message-ID: <CANaxB-yS5pFNBDe8v7jhRDk=zcxavR=Oxn_mD7wD2ygJKjs=fQ@mail.gmail.com>
-Subject: Re: [PATCH] ptrace: add ability to retrieve signals without removing
- them from a queue
-From: Andrey Wagin <avagin@gmail.com>
-To: Pedro Alves <palves@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, linux-api@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <51227810.6090009@linux.vnet.ibm.com>
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
+	<20130218123920.26245.56709.stgit@srivatsabhat.in.ibm.com>
+	<CANN689HhVxDv+3Bn9UAxOMzj0egTvVp_c7oAmQ2nnQ8Xjn_aMA@mail.gmail.com>
+	<51225A36.40600@linux.vnet.ibm.com>
+	<CANN689FJPLfz06MFRJ9T+BuToejAzjYP_yrw_H4iGi1Kb3p2-g@mail.gmail.com>
+	<51227810.6090009@linux.vnet.ibm.com>
+Date: Tue, 19 Feb 2013 17:40:50 +0800
+Message-ID: <CANN689E-98zK69pGeojbm30n3sswQYVBvhk3i3OzqvbeqSrSrg@mail.gmail.com>
+Subject: Re: [PATCH v6 08/46] CPU hotplug: Provide APIs to prevent CPU offline
+ from atomic context
+From: Michel Lespinasse <walken@google.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, rostedt@goodmis.org,
+        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
+        rjw@sisk.pl, sbw@mit.edu, fweisbec@gmail.com, linux@arm.linux.org.uk,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vincent.guittot@linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/16 Pedro Alves <palves@redhat.com>:
-> Forgot to reply to this bit:
->
-> On 02/15/2013 07:43 PM, Oleg Nesterov wrote:
->>> We'd miss the poke
->>> > variant, but that looks like something that could be always be added
->>> > later.
->> Yes. _POKE_ or _QUEUE_ or _DEQUEUE_, we can add more features if user-
->> space wants them.
->
-> In general, IMO, I agree with Roland at https://lkml.org/lkml/2002/12/20/84
-> in that it's good to have setters for completeness, so that you can
-> change all the state via ptrace that you can read via ptrace.
->
-> But I'm not doing any of this work, hence my "could always be
-> added later" comment instead of actually requesting it.  But if
-> we had it, we could make e.g., gdb inspect the signal queues,
-> and then be able to tweak a realtime signal before it is
-> delivered.
+On Tue, Feb 19, 2013 at 2:50 AM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> But, the whole intention behind removing the parts depending on the
+> recursive property of rwlocks would be to make it easier to make rwlocks
+> fair (going forward) right? Then, that won't work for CPU hotplug, because,
+> just like we have a legitimate reason to have recursive
+> get_online_cpus_atomic(), we also have a legitimate reason to have
+> unfairness in locking (i.e., for deadlock-safety). So we simply can't
+> afford to make the locking fair - we'll end up in too many deadlock
+> possibilities, as hinted in the changelog of patch 1.
 
-PTRACE_POKESIGINFO is more complicated than PTRACE_PEEKSIGINFO.
-Looks like PTRACE_POKESIGINFO should replace a siginfo with the
-specified sequence number. Should it be able to change signo? If it is
-able, what to do with signalfd, which already got a notification about
-the previous signal?..
+Grumpf - I hadn't realized that making the underlying rwlock fair
+would break your hotplug use case. But you are right, it would. Oh
+well :/
 
-My opinion is that it "could always be added later", when we will
-understand what exactly we want to have.
+> So the only long-term solution I can think of is to decouple
+> percpu-rwlocks and rwlock_t (like what Tejun suggested) by implementing
+> our own unfair locking scheme inside. What do you think?
 
->
-> --
-> Pedro Alves
+I have no idea how hard would it be to change get_online_cpus_atomic()
+call sites so that the hotplug rwlock read side has a defined order vs
+other locks (thus making sure the situation you describe in patch 1
+doesn't happen). I agree we shouldn't base our short term plans around
+that, but maybe that's doable in the long term ???
+
+Otherwise, I think we should add some big-fat-warning that percpu
+rwlocks don't have reader/writer fairness, that the hotplug use case
+actually depends on the unfairness / would break if the rwlock was
+made fair, and that any new uses of percpu rwlocks should be very
+carefully considered because of the reader/writer fairness issues.
+Maybe even give percpu rwlocks a less generic sounding name, given how
+constrained they are by the hotplug use case.
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
