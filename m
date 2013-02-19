@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab3BSMrV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 07:47:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25784 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751812Ab3BSMrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 07:47:18 -0500
-Date: Tue, 19 Feb 2013 09:46:40 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: balbi@ti.com, Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, davem@davemloft.net,
-        netdev@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
-        linux-edac@vger.kernel.org, rjw@sisk.pl, linux-pm@vger.kernel.org
-Subject: Re: SYSFS "errors"
-Message-ID: <20130219094640.2abf1a66@redhat.com>
-In-Reply-To: <20130219123502.GD26623@pd.tnic>
-References: <20130218184742.5a4c3c06@redhat.com>
-	<20130218215434.GB16794@kroah.com>
-	<20130218221306.GA21493@pd.tnic>
-	<20130218222618.GA21818@kroah.com>
-	<20130218224405.GB21493@pd.tnic>
-	<20130219070310.2cadad7a@redhat.com>
-	<20130219101121.GJ23197@arwen.pp.htv.fi>
-	<20130219081149.46972f56@redhat.com>
-	<20130219114345.GA26623@pd.tnic>
-	<20130219091610.2b746a30@redhat.com>
-	<20130219123502.GD26623@pd.tnic>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756362Ab3BSMtK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 07:49:10 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38857 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510Ab3BSMtI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 07:49:08 -0500
+From: Philip Avinash <avinashphilip@ti.com>
+To: <khilman@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <dwmw2@infradead.org>
+CC: <afzal@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>, <nsekhar@ti.com>,
+        <gururaja.hebbar@ti.com>, <hvaibhav@ti.com>,
+        Philip Avinash <avinashphilip@ti.com>
+Subject: [PATCH v3 0/3] suspend/resume support for OMAP nand driver
+Date: Tue, 19 Feb 2013 18:20:16 +0530
+Message-ID: <1361278219-23108-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 19 Feb 2013 13:35:02 +0100
-Borislav Petkov <bp@alien8.de> escreveu:
+This patch series adds low power transition support for OMAP NAND driver.
+With recent driver conversion of GPMC to platform_driver, pm_runtime calls
+can be used to handle module enable & disable of GPMC. This is taken care
+patch #1.
 
-> On Tue, Feb 19, 2013 at 09:16:10AM -0300, Mauro Carvalho Chehab wrote:
-> > I'm not sure if is there a way to pass fs permissions to something similar
-> > to device_create_file().
-> 
-> struct device_attribute.attr.mode? I.e., second arg.
+patch #2 is for GPMC suspend/resume support.
 
-Ah, now I see what you're meaning. That would require to dynamically
-create a per-mci DEVICE_ATTR().
+This includes low power transition support of
+- GPMC module
+- ELM module
 
-> > On both cases, an error will happen at open:
-> > 	- if file doesn't exist (this approach), it will return -ENOENT;
-> > 	- if file is opened with wrong permissions, open will return -EPERM.
-> > 
-> > However, if the file is not created, readdir() won't show the file.
-> 
-> Right, and in that case userspace which *assumes* it is always created -
-> like it is now - will fail when accessing it.
-> 
-> If simply you adjust the attributes accordingly but *always* create the
-> file and it has the correct permissions, everyone is happy. Right?
+User initiated suspend/resume sequence tested on am335x-evm with NAND
+flash support. Also tested in omap3-evm for user initiated
+suspend/resume sequence with NAND flash.
+This patch series based on [1] and is present in [2].
 
-No, on both cases, open() will return an error (-ENOENT against -EPERM). 
+1. ARM: OMAP2+: AM33XX: Add suspend-resume support
+   http://comments.gmane.org/gmane.linux.ports.arm.omap/91405
+2. https://github.com/avinashphilip/am335x_linux/commits/NAND_supend_resume_support
 
-If userspace doesn't check if open() failed, I can't see why
-changing the open return error code would help.
+Changes Since v2:
+- Remove calll back of nand_suspend from omap2 nand driver, as the same call already
+  done from suspend activity mtd class driver.
+
+Philip Avinash (3):
+  arm: gpmc: Converts GPMC driver to pm_runtime capable
+  arm: gpmc: Low power transition support
+  mtd: devices: elm: Low power transition support
+
+ arch/arm/mach-omap2/gpmc.c |   30 +++++++++++++++++++++---
+ drivers/mtd/devices/elm.c  |   54 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 81 insertions(+), 3 deletions(-)
 
 -- 
+1.7.9.5
 
-Cheers,
-Mauro
