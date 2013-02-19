@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934546Ab3BSTKH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 14:10:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54281 "EHLO
+	id S934135Ab3BSSvw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:51:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54276 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934138Ab3BSSvx (ORCPT
+	with ESMTP id S934123Ab3BSSvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:51:53 -0500
+	Tue, 19 Feb 2013 13:51:49 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+Cc: Sven Killig <sven@killig.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 30/81] USB: option: add Changhong CH690
-Date: Tue, 19 Feb 2013 15:48:53 -0300
-Message-Id: <1361299784-8830-31-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 29/81] USB: ftdi_sio: add PID/VID entries for ELV WS 300 PC II
+Date: Tue, 19 Feb 2013 15:48:52 -0300
+Message-Id: <1361299784-8830-30-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,47 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Sven Killig <sven@killig.de>
 
-commit d4fa681541aa7bf8570d03426dd7ba663a71c467 upstream.
+commit c249f911406efcc7456cb4af79396726bf7b8c57 upstream.
 
-New device with 3 serial interfaces:
+Add PID/VID entries for ELV WS 300 PC II weather station
 
- If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend) Sub=ff Prot=ff
- If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend) Sub=ff Prot=ff
- If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend) Sub=ff Prot=ff
- If#= 3 Alt= 0 #EPs= 2 Cls=08(stor) Sub=06 Prot=50
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Sven Killig <sven@killig.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/usb/serial/option.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    4 +++-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index bafe018..5f4ce8e 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -454,6 +454,10 @@ static void option_instat_callback(struct urb *urb);
- #define TPLINK_VENDOR_ID			0x2357
- #define TPLINK_PRODUCT_MA180			0x0201
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 653139b..031b23c 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -590,6 +590,7 @@ static struct usb_device_id id_table_combined [] = {
+ 	/*
+ 	 * ELV devices:
+ 	 */
++	{ USB_DEVICE(FTDI_ELV_VID, FTDI_ELV_WS300_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_USR_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_MSM1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_KL100_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index fa5d560..7c89cfc 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -204,7 +204,7 @@
  
-+/* Changhong products */
-+#define CHANGHONG_VENDOR_ID			0x2077
-+#define CHANGHONG_PRODUCT_CH690			0x7001
-+
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1326,6 +1330,7 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
- 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+ /*
+  * ELV USB devices submitted by Christian Abt of ELV (www.elv.de).
+- * All of these devices use FTDI's vendor ID (0x0403).
++ * Almost all of these devices use FTDI's vendor ID (0x0403).
+  * Further IDs taken from ELV Windows .inf file.
+  *
+  * The previously included PID for the UO 100 module was incorrect.
+@@ -212,6 +212,8 @@
+  *
+  * Armin Laeuger originally sent the PID for the UM 100 module.
+  */
++#define FTDI_ELV_VID	0x1B1F	/* ELV AG */
++#define FTDI_ELV_WS300_PID	0xC006	/* eQ3 WS 300 PC II */
+ #define FTDI_ELV_USR_PID	0xE000	/* ELV Universal-Sound-Recorder */
+ #define FTDI_ELV_MSM1_PID	0xE001	/* ELV Mini-Sound-Modul */
+ #define FTDI_ELV_KL100_PID	0xE002	/* ELV Kfz-Leistungsmesser KL 100 */
 -- 
 1.7.9.5
 
