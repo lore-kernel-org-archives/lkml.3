@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103Ab3BSBdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 20:33:50 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:53628 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757540Ab3BSBdt (ORCPT
+	id S1757954Ab3BSBlZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 20:41:25 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:47051 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755798Ab3BSBlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 20:33:49 -0500
+	Mon, 18 Feb 2013 20:41:24 -0500
 MIME-Version: 1.0
-In-Reply-To: <5122BF88.1050007@gmail.com>
-References: <5122BF88.1050007@gmail.com>
-Date: Mon, 18 Feb 2013 22:33:48 -0300
-Message-ID: <CAOMZO5BXVX8=QOV4+tN_w27ztSVkHAnOG2ifbS_Jpd=-cPnAdw@mail.gmail.com>
-Subject: Re: Question about fixed-clock
-From: Fabio Estevam <festevam@gmail.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAH2r5mvKwYtmzDV+8sb32Qw5SdrsFYg11-O6R-ZwAOTxPOb2VA@mail.gmail.com>
+References: <20130219094716.530b3d75b4fc850fe1629456@canb.auug.org.au>
+	<CAH2r5mvKwYtmzDV+8sb32Qw5SdrsFYg11-O6R-ZwAOTxPOb2VA@mail.gmail.com>
+Date: Mon, 18 Feb 2013 19:41:23 -0600
+Message-ID: <CAH2r5mvt5Oo-M1EZR6PeEEFaudXB2+sAT1AhAG=Ybj57U2qmYg@mail.gmail.com>
+Subject: Re: linux-next: interesting commits in the cifs tree
+From: Steve French <smfrench@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Ouyang Maochun <ouyang.maochun@zte.com.cn>,
+        Jiang Yong <jian.yong5@zte.com.cn>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Mon, Feb 18, 2013 at 5:09 PM, Steve French <smfrench@gmail.com> wrote:
+> I will fix it - the patch had to be hand edited due to formatting
+> issues, and obviously screwed up the subject line.
 
-On Mon, Feb 18, 2013 at 8:55 PM, Daniel Mack <zonque@gmail.com> wrote:
-> Hi,
->
-> This might be a stupid question, but I'm somehow stuck here. I'm using a
-> driver with the following DTS sub-node:
->
->         ref25: ref25M {
->                 compatible = "fixed-clock";
->                 #clock-cells = <0>;
->                 clock-frequency = <25000000>;
->         };
->
->         clock-generator@0 {
->                                 /* ... */
->                                 #clock-cells = <1>;
->                                 clocks = <&ref25>;
->         }
->
-> The device driver for clock-generator uses something like the following
-> call to get its clock:
->
->         clk = of_clk_get(np, 0);
->
-> but the return value is ERR_PTR(-ENOENT) and I also can't find this
-> clock in the clk debugfs tree.
->
-> This is on a OMAP/AM33xx device with kernel 3.8-rc7 plus the -next tips
-> of arm-soc and omap, but with no other special clock options selected in
-> the config. Is there anything I'm missing to correctly instantiate the
-> dummy clock?
+I fixed the patch title, and repopulated the pending patches in
+cifs-2.6.git for-next
 
-Have you registered it with clk_register_fixed_rate() ?
+> On Mon, Feb 18, 2013 at 4:47 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>> Hi Steve,
+>>
+>> I noticed this commit in the cifs tree today:
+>>
+>> cc67d17bffd7 "This patch applies to the kernel version of linux-3.8-rc6."
+>>
+>> That really is not a good summary line for the commit and this commit
+>> appears to be authored by you and committed by you, but has no
+>> Signed-off-by line from you.
+>>
+>> --
+>> Cheers,
+>> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+>
+>
+>
+> --
+> Thanks,
+>
+> Steve
 
-In imx we use imx_clk_fixed, which in turns call  clk_register_fixed_rate().
 
-Take a look at arch/arm/mach-imx/clk-imx51-imx53.c for a reference.
+
+-- 
+Thanks,
+
+Steve
