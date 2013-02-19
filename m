@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757775Ab3BSA41 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 19:56:27 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:24670 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757346Ab3BSA40 (ORCPT
+	id S1757835Ab3BSA4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 19:56:32 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:28948 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757346Ab3BSA42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 19:56:26 -0500
-Message-ID: <5122CD9C.9070702@oracle.com>
-Date: Mon, 18 Feb 2013 19:55:56 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-CC: Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: sched: BUG in load_balance
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 18 Feb 2013 19:56:28 -0500
+X-AuditID: cbfee690-b7f066d00000169f-9f-5122cdbaab75
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Samuel Ortiz'" <sameo@linux.intel.com>
+Cc: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] mfd: wm8994: add missing variable initialization
+Date: Tue, 19 Feb 2013 09:56:26 +0900
+Message-id: <000001ce0e3b$f1d99170$d58cb450$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4OO/E3Xt6wSVqpSmmLBoSQXn1aZg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsVy+t8zA91dZ5UCDTp/aFpc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mn+9XMBcsYK/oPBjZwNjD1sXIySEhYCJx4GoHM4QtJnHh3nqg
+	OBeHkMAyRomVP16zwBS9PrUSrEhIYDqjxPpJ2hBFs5kkvi3fxw6SYBNQk/jy5TCYLSKgJdF9
+	7DzYJGaBhYwS0/pPgE0SFnCU+LlgEiuIzSKgKvH09kEwm1fAVuLj84mMELagxI/J98DqmYEG
+	rd95nAnClpfYvOYt0BUcQBepSzz6qwuxS09iyvEbUOUiEvtevGME2Ssh0Mwu8ersNXaIXQIS
+	3yYfYoHolZXYdADqY0mJgytusExgFJuFZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0otM9IoT
+	c4tL89L1kvNzNzFCImXCDsZ7B6wPMSYDrZ/ILCWanA+MtLySeENjYxMzE1MTc0tTc1PShJXE
+	eeUvyQQKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYEzKjJy7jGcnf9ma1ObVyaoeO/rTLtdF
+	JG7nK9nuorkntmrB91/Bz4sWdMoEX9t75PZsK5lkc6/C3EJ/tcdbnvJKRJ2T5J4gz5ywKcjw
+	flTMJpaDUQZrBPrcGv49No5s0o8KEl02v7Qj9VPtvPSaNCvdbTGbzqlZhM5uePlS4dtkNvtd
+	t1fLKLEUZyQaajEXFScCANZkeRSqAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t9jQd1dZ5UCDd6sV7O4vGsOmwOjx+dN
+	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
+	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGT/fr2AuWMBe0XkwsoGx
+	h62LkZNDQsBE4vWplcwQtpjEhXvrweJCAtMZJdZP0u5i5AKyZzNJfFu+jx0kwSagJvHly2Ew
+	W0RAS6L72Hk2kCJmgYWMEtP6T7CAJIQFHCV+LpjECmKzCKhKPL19EMzmFbCV+Ph8IiOELSjx
+	Y/I9sHpmoEHrdx5ngrDlJTaveQt0EQfQReoSj/7qQuzSk5hy/AZUuYjEvhfvGCcwCsxCMmkW
+	kkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgOHwmvYNxVYPFIUYBDkYl
+	Ht4PjkqBQqyJZcWVuYcYJTiYlUR4O9qBQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTBF5
+	JfGGxiZmRpZGZhZGJubmpAkrifMynnoSICSQnliSmp2aWpBaBLOFiYNTCpiWzsqsnfj1fsS7
+	Q1zNz7mn/l0Wq6/rIx++/4XTk+7Ff0PEeJ8ozJkj0Vly+e39v7//r+oX31G25U9r03lWy29n
+	6ppmPsrR9shpOsHaX3WDjfPOjE/3H5tduq7jue7M5OeruZa8+vYkqPHI33MnZBPLXv7wswyd
+	v7BiUa6s0bI/J2/oSioGNVb9VmIpzkg01GIuKk4EAKlimlIHAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Fixed build warning as below:
 
-While fuzzing with trinity inside a KVM tools guest, running today's -next,
-I've stumbled on the following spew.
+drivers/mfd/wm8994-core.c: In function 'wm8994_i2c_probe':
+drivers/mfd/wm8994-core.c:595:7: warning: 'patch_regs' may be used uninitialized in this function [-Wuninitialized]
+drivers/mfd/wm8994-core.c:408:14: note: 'patch_regs' was declared here
 
-I've cc'ed Steven Rostedt since the culprit looks like "sched: Enable
-interrupts in idle_balance()".
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/mfd/wm8994-core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-[  119.938711] ------------[ cut here ]------------
-[  119.940026] kernel BUG at kernel/sched/fair.c:5032!
-[  119.940026] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  119.945222] Dumping ftrace buffer:
-[  119.945222]    (ftrace buffer empty)
-[  119.945222] Modules linked in:
-[  119.945222] CPU 2
-[  119.945222] Pid: 11768, comm: trinity Tainted: G        W    3.8.0-rc7-next-20130218-sasha-00028-gc234b2b #289
-[  119.945222] RIP: 0010:[<ffffffff8115d0c6>]  [<ffffffff8115d0c6>] load_balance+0x176/0x700
-[  119.945222] RSP: 0000:ffff8800a5041db8  EFLAGS: 00010246
-[  119.945222] RAX: ffff8800bb7d7180 RBX: ffff8800bb7d7180 RCX: 000000000000003b
-[  119.945222] RDX: 000000000000001f RSI: 0000000000000005 RDI: 0000000000000005
-[  119.945222] RBP: ffff8800a5041e98 R08: ffff8800b9e91018 R09: 0000000000000000
-[  119.945222] R10: 0000000000100000 R11: ffff8800b9e92800 R12: ffff8800a5041e18
-[  119.945222] R13: 00000000ffffba0d R14: 0000000000000001 R15: 0000000000000000
-[  119.945222] FS:  00007fd2cf680700(0000) GS:ffff8800bba00000(0000) knlGS:0000000000000000
-[  119.945222] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  119.945222] CR2: 00007fd2cf56f064 CR3: 00000000a660a000 CR4: 00000000000406e0
-[  119.945222] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  119.945222] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  119.945222] Process trinity (pid: 11768, threadinfo ffff8800a5040000, task ffff8800a66d8000)
-[  119.945222] Stack:
-[  119.945222]  ffffffff83d93b85 0000000000000286 ffff8800bbbd79a8 ffff8800a66d8910
-[  119.945222]  ffff8800a5041ed4 ffff8800bb0084a0 0000000200000002 ffff8800b9e92400
-[  119.945222]  00000000001d7180 0000000000000002 00000000001d7180 0000000000000286
-[  119.945222] Call Trace:
-[  119.945222]  [<ffffffff83d93b85>] ? _raw_spin_unlock_irqrestore+0x55/0xa0
-[  119.945222]  [<ffffffff8115de26>] idle_balance+0x306/0x400
-[  119.945222]  [<ffffffff8115dcd3>] ? idle_balance+0x1b3/0x400
-[  119.945222]  [<ffffffff811552ab>] post_schedule_idle+0x1b/0x30
-[  119.945222]  [<ffffffff8114e769>] schedule_tail+0x59/0xb0
-[  119.945222]  [<ffffffff83d9c48f>] ret_from_fork+0xf/0xb0
-[  119.945222] Code: 48 85 c0 48 89 c3 75 1d 4c 8b b5 58 ff ff ff 48 8b 95 68 ff ff ff 41 83 84 96 c4 00 00 00 01 e9 20 05 00 00
-90 48 3b 45 98 75 0a <0f> 0b 0f 1f 84 00 00 00 00 00 48 8b 45 b0 48 8b 8d 68 ff ff ff
-[  119.945222] RIP  [<ffffffff8115d0c6>] load_balance+0x176/0x700
-[  119.945222]  RSP <ffff8800a5041db8>
-[  120.050138] ---[ end trace cece54224dce81b2 ]---
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 803e93f..97e929e 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -405,7 +405,7 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 	struct regmap_config *regmap_config;
+ 	const struct reg_default *regmap_patch = NULL;
+ 	const char *devname;
+-	int ret, i, patch_regs;
++	int ret, i, patch_regs = 0;
+ 	int pulls = 0;
+ 
+ 	if (dev_get_platdata(wm8994->dev)) {
+-- 
+1.7.2.5
 
 
-Thanks,
-Sasha
