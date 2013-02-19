@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460Ab3BSIr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 03:47:57 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:40494 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932441Ab3BSIr4 (ORCPT
+	id S932466Ab3BSIuj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 03:50:39 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:55005 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932409Ab3BSIui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 03:47:56 -0500
-Message-ID: <51233C36.4020804@gmail.com>
-Date: Tue, 19 Feb 2013 03:47:50 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Tue, 19 Feb 2013 03:50:38 -0500
+Date: Tue, 19 Feb 2013 00:50:19 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Jones <davej@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paul.mckenney@linaro.org>
+Subject: Re: Debugging Thinkpad T430s occasional suspend failure.
+Message-ID: <20130219085019.GC3093@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130215011503.GA11914@redhat.com>
+ <CA+55aFyVE0jyu9uw659ERw5E2DdOhwkQp3gk=gcXP0xrmMh9qA@mail.gmail.com>
+ <20130215174435.GA2792@linux.vnet.ibm.com>
+ <CA+55aFy8FeGMOnWwkfmyFYyVCw+k1LSVg7BG0tsTNZzqi5EKYg@mail.gmail.com>
+ <CA+55aFwHtFeN97E-zW2QKQWH8vu=g29cxevvEnpEnHc8dx7oWA@mail.gmail.com>
+ <CA+55aFyXo89LQ0mboxVYB5SJ08D8=Kv0=cqYHAd6-H7nmp=S-w@mail.gmail.com>
+ <20130216192554.GB7035@linux.vnet.ibm.com>
+ <CA+55aFy821kt0cz=nNB45e0K-hGUfairbTEgNP6E65jkA6bWaA@mail.gmail.com>
+ <51215E6C.5090102@zytor.com>
+ <20130218084130.GB15989@gmail.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        ebiederm@xmission.com, xemul@parallels.com, hpa@zytor.com,
-        akpm@linux-foundation.org, Andrey Vagin <avagin@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [patch 1/2] kcmp: Make it to depend on CONFIG_KCMP
-References: <20130219064800.719149796@openvz.org> <20130219065210.030802820@openvz.org>
-In-Reply-To: <20130219065210.030802820@openvz.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130218084130.GB15989@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13021908-3620-0000-0000-00000142E356
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2/19/13 1:48 AM), Cyrill Gorcunov wrote:
-> Since kcmp syscall has been implemented (initially on
-> x86 architecture) a number of other archs wire it up
-> as well: xtensa, sparc, sh, s390, mips, microblaze,
-> m68k (not taking into account those who uses
-> <asm-generic/unistd.h> for syscall numbers
-> definitions).
+On Mon, Feb 18, 2013 at 09:41:30AM +0100, Ingo Molnar wrote:
 > 
-> But the Makefile, which turns kcmp.o generation on
-> still depends on former config-x86. Thus get rid
-> of this limitation and make kcmp.o depend on CONFIG_KCMP
-> option.
+> * H. Peter Anvin <hpa@zytor.com> wrote:
+> 
+> > On 02/16/2013 11:46 AM, Linus Torvalds wrote:
+> > >Adding Peter Anvin to the people, just in case he sees what's wrong
+> > >with the system call stub generation that keeps excessively old object
+> > >files around. If it's easy to fix, it might be worth trying to make it
+> > >ok to switch from i386 to x86-64 and back in the same tree.
+> > 
+> > I have not been able to reproduce this; it seems to Just 
+> > Work[TM].
+> > 
+> > The syscall header stuff is definitely not to blame: it 
+> > doesn't even *see* the CONFIG_ settings; instead they are only 
+> > used to determine which subset of files to create, but the 
+> > files themselves are configuration-independent.  This is by 
+> > design.
+> > 
+> > As such, without an actual known to fail test case there isn't 
+> > much I can do.
+> 
+> I tried (based on the versions given by Paul):
+> 
+>   git checkout v3.7-rc7
+>   make ARCH=i386 defconfig
+>   make -j64 bzImage
+> 
+>   git checkout v3.8-rc7
+>   make ARCH=x86_64 olddefconfig
+>   make -j64 bzImage
+> 
+> but it built just fine. The build bug might depend on the 
+> specific config file, or might depend on tooling details?
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+The problem is that the git tree I used is one that I build out of
+very infrequently, and so all I really know about the previous
+build was that it was done a long time ago.  :-(
 
-
+							Thanx, Paul
 
