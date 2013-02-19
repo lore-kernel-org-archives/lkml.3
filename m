@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934323Ab3BSSxU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:53:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54405 "EHLO
+	id S934351Ab3BSSxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:53:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54427 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933559Ab3BSSxQ (ORCPT
+	with ESMTP id S933531Ab3BSSx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:53:16 -0500
+	Tue, 19 Feb 2013 13:53:29 -0500
 From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tilman Schmidt <tilman@imap.cc>, "David S. Miller" <davem@davemloft.net>,
+Cc: "David S. Miller" <davem@davemloft.net>, Cong Wang <amwang@redhat.com>,
         Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH 51/81] isdn/gigaset: fix zero size border case in debug dump
-Date: Tue, 19 Feb 2013 15:49:14 -0300
-Message-Id: <1361299784-8830-52-git-send-email-herton.krzesinski@canonical.com>
+Subject: [PATCH 55/81] pktgen: correctly handle failures when adding a device
+Date: Tue, 19 Feb 2013 15:49:18 -0300
+Message-Id: <1361299784-8830-56-git-send-email-herton.krzesinski@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
 References: <1361299784-8830-1-git-send-email-herton.krzesinski@canonical.com>
@@ -27,34 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Cong Wang <amwang@redhat.com>
 
-commit d721a1752ba544df8d7d36959038b26bc92bdf80 upstream.
+commit 604dfd6efc9b79bce432f2394791708d8e8f6efc upstream.
 
-If subtracting 12 from l leaves zero we'd do a zero size allocation,
-leading to an oops later when we try to set the NUL terminator.
+The return value of pktgen_add_device() is not checked, so
+even if we fail to add some device, for example, non-exist one,
+we still see "OK:...". This patch fixes it.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+After this patch, I got:
+
+	# echo "add_device non-exist" > /proc/net/pktgen/kpktgend_0
+	-bash: echo: write error: No such device
+	# cat /proc/net/pktgen/kpktgend_0
+	Running:
+	Stopped:
+	Result: ERROR: can not add device non-exist
+	# echo "add_device eth0" > /proc/net/pktgen/kpktgend_0
+	# cat /proc/net/pktgen/kpktgend_0
+	Running:
+	Stopped: eth0
+	Result: OK: add_device=eth0
+
+(Candidate for -stable)
+
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cong Wang <amwang@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 ---
- drivers/isdn/gigaset/capi.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/core/pktgen.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/isdn/gigaset/capi.c b/drivers/isdn/gigaset/capi.c
-index 27e4a3e..f45b5b0 100644
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -248,6 +248,8 @@ static inline void dump_rawmsg(enum debuglevel level, const char *tag,
- 		CAPIMSG_APPID(data), CAPIMSG_MSGID(data), l,
- 		CAPIMSG_CONTROL(data));
- 	l -= 12;
-+	if (l <= 0)
-+		return;
- 	dbgline = kmalloc(3 * l, GFP_ATOMIC);
- 	if (!dbgline)
- 		return;
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index aa278cd..2a42802 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -1797,10 +1797,13 @@ static ssize_t pktgen_thread_write(struct file *file,
+ 			return -EFAULT;
+ 		i += len;
+ 		mutex_lock(&pktgen_thread_lock);
+-		pktgen_add_device(t, f);
++		ret = pktgen_add_device(t, f);
+ 		mutex_unlock(&pktgen_thread_lock);
+-		ret = count;
+-		sprintf(pg_result, "OK: add_device=%s", f);
++		if (!ret) {
++			ret = count;
++			sprintf(pg_result, "OK: add_device=%s", f);
++		} else
++			sprintf(pg_result, "ERROR: can not add device %s", f);
+ 		goto out;
+ 	}
+ 
 -- 
 1.7.9.5
 
