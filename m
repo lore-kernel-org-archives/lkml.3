@@ -1,59 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758609Ab3BSKzQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 05:55:16 -0500
-Received: from mail-gh0-f173.google.com ([209.85.160.173]:65113 "EHLO
-	mail-gh0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab3BSKzM (ORCPT
+	id S932624Ab3BSK45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 05:56:57 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:41546 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757937Ab3BSK44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 05:55:12 -0500
-Message-ID: <512354C4.2040705@gmail.com>
-Date: Tue, 19 Feb 2013 18:32:36 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 19 Feb 2013 05:56:56 -0500
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: PAGE_CACHE_SIZE vs. PAGE_SIZE
-References: <20130118155724.GA8507@otc-wbsnb-06>
-In-Reply-To: <20130118155724.GA8507@otc-wbsnb-06>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAKfTPtCCS2ACCco-eQUtKO4ZF4ybBMCEmOzFKMThZTE=Cw19Ng@mail.gmail.com>
+References: <1359455940-1710-1-git-send-email-vincent.guittot@linaro.org>
+	<1359455940-1710-2-git-send-email-vincent.guittot@linaro.org>
+	<CAFTL4hzboD8Mv_-pRDHc+39QwXGWiT3MGtL8gJ=_ajnHdDCBcA@mail.gmail.com>
+	<CAKfTPtD2jRke2CUXiJdmaYYki_Voi4eTqJKgsyTnRpna7p8mJg@mail.gmail.com>
+	<CAFTL4hzriJm1mK1A_9U5kX9Z0RCMGpxy8M3gKuzFtt9Bky5htQ@mail.gmail.com>
+	<CAKfTPtCWudftS2XSM1OC2sR050mYvcAU6Fkt0vjV=C2V+w84Ew@mail.gmail.com>
+	<CAFTL4hzu-7uAXLqP+J48DaqLUYQWTESMNwPMYiiwrU2ZoOsgqw@mail.gmail.com>
+	<CAFTL4hyR=_ftCxycyvCBR0xwj6aOix9op40ps7htogpkkqVz+A@mail.gmail.com>
+	<CAKfTPtC3c50yo8AcQ7K9m73gP95dEsetjbhNXDN4RiR-nZ8UqA@mail.gmail.com>
+	<CAFTL4hxxWBfi5Ad+X27ouFDFBM-LttRJiEn3f83T1Q2z=v1k7g@mail.gmail.com>
+	<CAKfTPtCCS2ACCco-eQUtKO4ZF4ybBMCEmOzFKMThZTE=Cw19Ng@mail.gmail.com>
+Date: Tue, 19 Feb 2013 11:56:54 +0100
+Message-ID: <CAKfTPtAfBq04b6e_y2e2PQGsoDg2e_Em=x9-kF+k1QL9pgjL-g@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] sched: fix init NOHZ_IDLE flag
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, Mike Galbraith <efault@gmx.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2013 11:57 PM, Kirill A. Shutemov wrote:
-> Hi,
+On 19 February 2013 11:29, Vincent Guittot <vincent.guittot@linaro.org> wrote:
+> On 18 February 2013 16:40, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> 2013/2/18 Vincent Guittot <vincent.guittot@linaro.org>:
+>>> On 18 February 2013 15:38, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>>> I pasted the original at: http://pastebin.com/DMm5U8J8
+>>>
+>>> We can clear the idle flag only in the nohz_kick_needed which will not
+>>> be called if the sched_domain is NULL so the sequence will be
+>>>
+>>> = CPU 0 =                                            = CPU 1=
+>>>
+>>> detach_and_destroy_domain {
+>>>             rcu_assign_pointer(cpu1_dom, NULL);
+>>> }
+>>>
+>>> dom = new_domain(...) {
+>>>              nr_cpus_busy = 0;
+>>>              set_idle(CPU 1);
+>>> }
+>>>                                                     dom =
+>>> rcu_dereference(cpu1_dom)
+>>>                                                     //dom == NULL, return
+>>>
+>>> rcu_assign_pointer(cpu1_dom, dom);
+>>>
+>>>                                                     dom =
+>>> rcu_dereference(cpu1_dom)
+>>>                                                     //dom != NULL,
+>>>                                                     nohz_kick_needed {
+>>>
+>>> set_idle(CPU 1)
+>>>                                                                    dom
+>>> = rcu_dereference(cpu1_dom)
+>>>
+>>> //dec nr_cpus_busy,
+>>>                                                     }
+>>>
+>>> Vincent
+>>
+>> Ok but CPU 0 can assign NULL to the domain of cpu1 while CPU 1 is
+>> already in the middle of nohz_kick_needed().
 >
-> PAGE_CACHE_* macros were introduced long time ago in hope to implement
-> page cache with larger chunks than one page in future.
+> Yes nothing prevents the sequence below to occur
 >
-> In fact it was never done.
+> = CPU 0 =                                            = CPU 1=
+>                                                     dom =
+> rcu_dereference(cpu1_dom)
+>                                                     //dom != NULL
+> detach_and_destroy_domain {
+>             rcu_assign_pointer(cpu1_dom, NULL);
+> }
 >
-> Some code paths assume PAGE_CACHE_SIZE <= PAGE_SIZE. E.g. we use
-> zero_user_segments() to clear stale parts of page on cache filling, but
-> the function is implemented only for individual small page.
+> dom = new_domain(...) {
+>              nr_cpus_busy = 0;
+>              //nr_cpus_busy in the new_dom
+>              set_idle(CPU 1);
+> }
+>                                                     nohz_kick_needed {
+>                                                              clear_idle(CPU 1)
+>                                                              dom =
+> rcu_dereference(cpu1_dom)
 >
-> It's unlikely that global switch to PAGE_CACHE_SIZE > PAGE_SIZE will never
-> happen since it will affect to much code at once.
+> //cpu1_dom == old_dom
+>                                                              inc nr_cpus_busy,
 >
-> I think support of larger chunks in page cache can be in implemented in
-> some form of THP with per-fs enabling.
+> //nr_cpus_busy in the old_dom
+>                                                     }
+>
+> rcu_assign_pointer(cpu1_dom, dom);
+> //cpu1_dom == new_dom
 
-IIRC, you try to implement THP support page cache, then PAGE_CACHE_SIZE 
-maybe don't need any more.
+The sequence above is not correct in addition to become unreadable
+after going through gmail
+
+The correct and readable version
+https://pastebin.linaro.org/1750/
+
+Vincent
 
 >
-> Is it time to get rid of PAGE_CACHE_* macros?
-> I can prepare patchset if it's okay.
+> I'm not sure that this can happen in practice because CPU1 is in
+> interrupt handler but we don't have any mechanism to prevent the
+> sequence.
 >
-
+> The NULL sched_domain can be used to detect this situation and the
+> set_cpu_sd_state_busy function can be modified like below
+>
+> inline void set_cpu_sd_state_busy
+>  {
+>         struct sched_domain *sd;
+>         int cpu = smp_processor_id();
+> +       int clear = 0;
+>
+>         if (!test_bit(NOHZ_IDLE, nohz_flags(cpu)))
+>                 return;
+> -       clear_bit(NOHZ_IDLE, nohz_flags(cpu));
+>
+>         rcu_read_lock();
+>         for_each_domain(cpu, sd) {
+>                 atomic_inc(&sd->groups->sgp->nr_busy_cpus);
+> +               clear = 1;
+>         }
+>         rcu_read_unlock();
+> +
+> +       if (likely(clear))
+> +               clear_bit(NOHZ_IDLE, nohz_flags(cpu));
+>  }
+>
+> The NOHZ_IDLE flag will not be clear if we have a NULL sched_domain
+> attached to the CPU.
+> With this implementation, we still don't need to get the sched_domain
+> for testing the NOHZ_IDLE flag which occurs each time CPU becomes idle
+>
+> The patch 2 become useless
+>
+> Vincent
