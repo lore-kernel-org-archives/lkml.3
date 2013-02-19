@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933586Ab3BSSdW (ORCPT <rfc822;w@1wt.eu>);
+	id S933618Ab3BSSdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:33:49 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:51593 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933575Ab3BSSdW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Feb 2013 13:33:22 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:58330 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933221Ab3BSSdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:33:20 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@suse.de>, Gleb Natapov <gleb@redhat.com>
-Subject: [PATCH 1/2] x86, CPU, AMD: Fix WC+ workaround for older hosts
-Date: Tue, 19 Feb 2013 19:33:12 +0100
-Message-Id: <1361298793-31834-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.1.3.535.ga923c31
-In-Reply-To: <5123BBBC.2080008@zytor.com>
-References: <5123BBBC.2080008@zytor.com>
+Message-ID: <5123C558.5080909@oracle.com>
+Date: Tue, 19 Feb 2013 13:32:56 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>, mpm@selenic.com,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: slab: odd BUG on kzalloc
+References: <5120FDA4.2060704@oracle.com> <0000013cefe056e0-daedd018-43cd-472f-9b20-27b2a897ae2a-000000@email.amazonses.com> <5123C1F1.6050102@oracle.com> <20130219182952.GB27141@redhat.com>
+In-Reply-To: <20130219182952.GB27141@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+On 02/19/2013 01:29 PM, Dave Jones wrote:
+> On Tue, Feb 19, 2013 at 01:18:25PM -0500, Sasha Levin wrote:
+> 
+>  > >> [  169.930103] ---[ end trace 4d135f3def21b4bd ]---
+>  > >>
+>  > >> The code translates to the following in fs/pipe.c:alloc_pipe_info :
+>  > >>
+>  > >>         pipe = kzalloc(sizeof(struct pipe_inode_info), GFP_KERNEL);
+>  > >>         if (pipe) {
+>  > >>                 pipe->bufs = kzalloc(sizeof(struct pipe_buffer) * PIPE_DEF_BUFFERS, GFP_KERNEL); <=== this
+>  > >>                 if (pipe->bufs) {
+>  > >>                         init_waitqueue_head(&pipe->wait);
+>  > 
+>  > Looks like it's not specific to pipe(). I've also got this one now:
+>  > 
+>  > Since I've managed to reproduce it, I'll go ahead and add slub_debug and see what it tells us.
+> 
+> I'm curious, did you recently upgrade gcc, or other parts of the toolchain ?
+> This, and one of the other 'weird' bugs you reported recently have me wondering
+> if perhaps you're seeing a compiler bug.
 
-The WC+ workaround for F10h introduces a new MSR and kvm host #GPs
-on accesses to unknown MSRs if paravirt is not compiled in. Use the
-exception-handling MSR accessors so as not to break 3.8 and later guests
-booting on older hosts.
+It happened once on a kernel built on my gentoo box with is generally up to date,
+but the other time the kernel was built on my mini-server running ubuntu, which
+isn't updated that often.
 
-Remove a redundant family check while at it.
+So I don't think compiler trickery is involved.
 
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Link: http://lkml.kernel.org/r/20130219153655.GD26748@pd.tnic
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/kernel/cpu/amd.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 721ef3208eb5..163af4a91d09 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -723,12 +723,14 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 		 * performance degradation for certain nested-paging guests.
- 		 * Prevent this conversion by clearing bit 24 in
- 		 * MSR_AMD64_BU_CFG2.
-+		 *
-+		 * NOTE: we want to use the _safe accessors so as not to #GP kvm
-+		 * guests on older kvm hosts.
- 		 */
--		if (c->x86 == 0x10) {
--			rdmsrl(MSR_AMD64_BU_CFG2, value);
--			value &= ~(1ULL << 24);
--			wrmsrl(MSR_AMD64_BU_CFG2, value);
--		}
-+
-+		rdmsrl_safe(MSR_AMD64_BU_CFG2, &value);
-+		value &= ~(1ULL << 24);
-+		wrmsrl_safe(MSR_AMD64_BU_CFG2, value);
- 	}
- 
- 	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
--- 
-1.8.1.3.535.ga923c31
+Thanks,
+Sasha
 
