@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab3BSCxs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 21:53:48 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19283 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757600Ab3BSCxq (ORCPT
+	id S1758198Ab3BSC4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 21:56:54 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:49313 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757779Ab3BSC4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 21:53:46 -0500
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Kj4EzYV-Q1YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=UBABGCGrqOkA:10 a=hD80L64hAAAA:8 a=yo55gvePGu3n3PxAc7AA:9 a=PUjeQqilurYA:10 a=v3rLFGiuRE8A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1361242425.23152.190.camel@gandalf.local.home>
-Subject: Re: [PATCH 4/8] f2fs: add tracepoint for tracing the page i/o
- operations
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: jaegeuk.kim@samsung.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
-Date: Mon, 18 Feb 2013 21:53:45 -0500
-In-Reply-To: <1361241215-18141-1-git-send-email-linkinjeon@gmail.com>
-References: <1361241215-18141-1-git-send-email-linkinjeon@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Feb 2013 21:56:52 -0500
+Date: Mon, 18 Feb 2013 21:56:51 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Jiri Slaby <jslaby@suse.cz>
+cc: =?UTF-8?B?QW5qYSBOw7x0emVs?= <Anja@nuetzel-hh.de>,
+        Jeff Mahoney <jeffm@suse.com>, <mmarek@suse.cz>,
+        =?UTF-8?B?RGlldGVyIE7DvHR6ZWw=?= <Dieter@nuetzel-hh.de>,
+        stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [regression] openSUSE 12.2 stable kernel 3.7.8-1 big USB 2.0
+ slowdown
+In-Reply-To: <5121FD36.3010200@suse.cz>
+Message-ID: <Pine.LNX.4.44L0.1302182155510.12532-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-19 at 11:33 +0900, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
+On Mon, 18 Feb 2013, Jiri Slaby wrote:
+
+> On 02/18/2013 06:25 AM, Anja Nützel wrote:
+> > Maybe it startet with 3.7.7.
+> > I could copy several MB onto my USB 2.0 sticks with 3.7.6. (I think).
+> > Even with full speed.
+> > 
+> > With openSUSE 12.2 DVD (kernel 3.4.x) it works OK, too.
+> > 
+> > Now it degrates to 12 mbits (full-speed USB only).
 > 
+> This is an upstream 3.7.7 stable regression, I think. Some of these
+> patches perhaps:
+> d7da098 USB: EHCI: fix for leaking isochronous data
+> caa891a USB: storage: optimize to match the Huawei USB storage devices
+> and support new switch command
+> 08b4bfd USB: storage: Define a new macro for USB storage match rules
+> 390077b usb: Using correct way to clear usb3.0 device's remote wakeup
+> feature.
+> 93dffb7 USB: EHCI: fix bug in scheduling periodic split transfers
+> bf79379 USB: EHCI: fix timer bug affecting port resume
+> d01875f USB: EHCI: unlink one async QH at a time
+> 269ef9f USB: EHCI: remove ASS/PSS polling timeout
+> 
+> Alan, any ideas?
 
-I see you already took my advice in patch 3, but here's another one that
-could be fixed.
+A lot of people have reported problems caused by the last one 
+(269ef9f).  I haven't had time to investigate yet (just got back from 
+vacation).
 
--- Steve
-
-> +TRACE_EVENT(f2fs_get_data_block_exit,
-> +	TP_PROTO(struct inode *inode, int ret),
-> +
-> +	TP_ARGS(inode, ret),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(dev_t,	dev)
-> +		__field(ino_t,	ino)
-> +		__field(int,	ret)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->dev	= inode->i_sb->s_dev;
-> +		__entry->ino	= inode->i_ino;
-> +		__entry->ret	= ret;
-> +	),
-> +
-> +	TP_printk("dev %d,%d ino %lu return value %d",
-> +		  MAJOR(__entry->dev), MINOR(__entry->dev),
-> +		  (unsigned long) __entry->ino, __entry->ret)
-> +);
-> +
->  #endif /* _TRACE_F2FS_H */
->  
->   /* This part must be outside protection */
-
+Alan Stern
 
