@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab3BSBMf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 20:12:35 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:51231 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499Ab3BSBMe (ORCPT
+	id S1757891Ab3BSBOE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 20:14:04 -0500
+Received: from 1-1-12-13a.han.sth.bostream.se ([82.182.30.168]:52669 "EHLO
+	palpatine.hardeman.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754499Ab3BSBOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 20:12:34 -0500
-Message-ID: <1361236341.3263.11.camel@thor.lan>
-Subject: Re: [Bisected][-next-20130204+] [x86/kvm] udevd:[97]: segfault at
- ffffffffff5fd020 ip 00007fff069e277f sp 00007fff068c9ef8 error d
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Mon, 18 Feb 2013 20:12:21 -0500
-In-Reply-To: <20130218225955.GA6166@amt.cnet>
-References: <1360715210.31472.20.camel@thor.lan>
-	 <511AE0A7.2000101@linux.intel.com> <20130213105129.GB9817@redhat.com>
-	 <1360756629.4803.5.camel@thor.lan> <20130218225955.GA6166@amt.cnet>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Mon, 18 Feb 2013 20:14:02 -0500
+Date: Tue, 19 Feb 2013 02:13:51 +0100
+From: David =?iso-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>
+To: Hannes Reinecke <hare@suse.de>
+Cc: linux-kernel@vger.kernel.org, Frederik Himpe <fhimpe@vub.ac.be>,
+        Oliver Neukum <oneukum@suse.de>, linux-usb@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] pci: do not try to assign irq 255
+Message-ID: <20130219011351.GA4756@hardeman.nu>
+Mail-Followup-To: Hannes Reinecke <hare@suse.de>,
+	linux-kernel@vger.kernel.org, Frederik Himpe <fhimpe@vub.ac.be>,
+	Oliver Neukum <oneukum@suse.de>, linux-usb@vger.kernel.org,
+	linux-pci@vger.kernel.org
+References: <1361182193-31894-1-git-send-email-hare@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1361182193-31894-1-git-send-email-hare@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-18 at 19:59 -0300, Marcelo Tosatti wrote:
-> On Wed, Feb 13, 2013 at 06:57:09AM -0500, Peter Hurley wrote:
-> > On Wed, 2013-02-13 at 12:51 +0200, Gleb Natapov wrote:
-> > > On Tue, Feb 12, 2013 at 04:39:03PM -0800, H. Peter Anvin wrote:
-> > > > On 02/12/2013 04:26 PM, Peter Hurley wrote:
-> > > > > With -next-20130204+ in ubuntu 12.10 VM (so the 80x25 VGA
-> > > > > device/console):
-> > > > > 
-> > > > > [    0.666410] udevd[97]: starting version 175
-> > > > > [    0.674043] udevd[97]: udevd:[97]: segfault at ffffffffff5fd020 ip 00007fff069e277f sp 00007fff068c9ef8 error d
-> > > > > 
-> > > > > and boots to an initramfs prompt.
-> > > > > 
-> > > > > git bisect (log attached) blames:
-> > > > > 
-> > > > > commit 7b5c4a65cc27f017c170b025f8d6d75dabb11c6f
-> > > > > Merge: 3596f5b 949db15
-> > > > > Author: H. Peter Anvin <hpa@linux.intel.com>
-> > > > > Date:   Fri Jan 25 16:31:21 2013 -0800
-> > > > > 
-> > > > >     Merge tag 'v3.8-rc5' into x86/mm
-> > > > >     
-> > > > >     The __pa() fixup series that follows touches KVM code that is not
-> > > > >     present in the existing branch based on v3.7-rc5, so merge in the
-> > > > >     current upstream from Linus.
-> > > > >     
-> > > > >     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> > > > > 
-> > > > > 
-> > > > > This only happens with the VGA device/console but that is the default
-> > > > > configuration for Ubuntu/KVM because it blacklists pretty much every fb
-> > > > > driver.
-> > > > > 
-> > > > 
-> > > > I am guessing this is another bad use of __pa()... need to look into that.
+On Mon, Feb 18, 2013 at 11:09:53AM +0100, Hannes Reinecke wrote:
+>The PCI config space reseves a byte for the interrupt line,
+>so irq 255 actually refers to 'not set'.
+>However, the 'irq' field for struct pci_dev is an integer,
+>so the original meaning is lost, causing the system to
+>assign an interrupt '255', which fails.
+>
+>So we should _not_ assign an interrupt value here, and
+>allow upper layers to fixup things.
+>
+>This patch make PCI devices with MSI interrupts only
+>(like the xhci device on certain HP laptops) work properly.
+
+Just tested and it works for me. Thank you.
+
+Tested-by: David Härdeman <david@hardeman.nu>
+
+>Cc: Frederik Himpe <fhimpe@vub.ac.be>
+>Cc: Oliver Neukum <oneukum@suse.de>
+>Cc: David Haerdeman <david@hardeman.nu>
+>Cc: linux-usb@vger.kernel.org
+>Cc: linux-pci@vger.kernel.org
+>Signed-off-by: Hannes Reinecke <hare@suse.de>
+>
+>diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+>index 6186f03..a2db887f 100644
+>--- a/drivers/pci/probe.c
+>+++ b/drivers/pci/probe.c
+>@@ -923,7 +923,8 @@ static void pci_read_irq(struct pci_dev *dev)
+> 	dev->pin = irq;
+> 	if (irq)
+> 		pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &irq);
+>-	dev->irq = irq;
+>+	if (irq < 255)
+>+		dev->irq = irq;
+> }
 > 
-> Can't find this commit on kvm.git or linux-2.6.git. Is it reproducible
-> there?
+> void set_pcie_port_type(struct pci_dev *pdev)
+>
 
-This is in the linux-next repo (any git tag after 'next-20130204' will
-reproduce this). It's a pretty large merge commit.
-
-This doesn't happen on 3.8-rc7.
-
-I'll try to repro this on kvm.git sometime this week. Otherwise, we can
-wait for it to show up in 3.9.
-
-Regards,
-Peter Hurley
-
+-- 
+David Härdeman
