@@ -1,68 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934747Ab3BSWRa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 17:17:30 -0500
-Received: from mga09.intel.com ([134.134.136.24]:36180 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933538Ab3BSWR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 17:17:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,697,1355126400"; 
-   d="scan'208";a="264763819"
-Message-ID: <5123F9F4.70409@intel.com>
-Date: Tue, 19 Feb 2013 23:17:24 +0100
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S934738Ab3BSWUf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 17:20:35 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:39939 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933538Ab3BSWUd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 17:20:33 -0500
+Message-ID: <5123FAAE.3030706@linaro.org>
+Date: Tue, 19 Feb 2013 14:20:30 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: Vinod Koul <vinod.koul@intel.com>, Viresh Kumar <viresh.linux@gmail.com>,
-        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Svahn, Kai" <kai.svahn@intel.com>
-Subject: Re: [PATCH] dw_dmac: adjust slave_id accordingly to request line
- base
-References: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com> <1361264544.28241.52.camel@smile>
-In-Reply-To: <1361264544.28241.52.camel@smile>
-Content-Type: text/plain; charset="utf-8"; format="flowed"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Stephane Eranian <eranian@google.com>, Pawel Moll <pawel.moll@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user samples
+ with kernel samples
+References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com> <1350408232.2336.42.camel@laptop> <1359728280.8360.15.camel@hornet> <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com> <51118797.9080800@linaro.org> <alpine.LFD.2.02.1302182132230.22263@ionos> <5123C3AF.8060100@linaro.org> <alpine.LFD.2.02.1302192021370.22263@ionos> <alpine.LFD.2.02.1302192056330.22263@ionos> <5123E20E.60307@linaro.org> <alpine.LFD.2.02.1302192152240.22263@ionos>
+In-Reply-To: <alpine.LFD.2.02.1302192152240.22263@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1JMHUvf000382
 
-On 2/19/2013 10:02 AM, Andy Shevchenko wrote:
-> On Mon, 2013-01-28 at 13:04 +0200, Andy Shevchenko wrote:
->> On some hardware configurations we have got the request line with the offset.
->> The patch introduces convert_slave_id() helper for that cases. The request line
->> base is got from the platform device resources provided by the IORESOURCE_DMA
->> type.
-> Hi, Vinod.
+On 02/19/2013 01:50 PM, Thomas Gleixner wrote:
+> On Tue, 19 Feb 2013, John Stultz wrote:
+>> On 02/19/2013 12:15 PM, Thomas Gleixner wrote:
+>>> Depending on the length of the delay which kept VCPU0 away from
+>>> executing and depending on the direction of the ntp update of the
+>>> timekeeping variables __vdso_clock_gettime()#2 can observe time going
+>>> backwards.
+>>>
+>>> You can reproduce that by pinning VCPU0 to physical core 0 and VCPU1
+>>> to physical core 1. Now remove all load from physical core 1 except
+>>> VCPU1 and put massive load on physical core 0 and make sure that the
+>>> NTP adjustment lowers the mult factor.
+>>>
+>>> Fun, isn't it ?
+>> Yea, this has always worried me. I had a patch for this way way back, blocking
+>> vdso readers for the entire timekeeping update.
+>> But it was ugly, hurt performance and no one seemed to be hitting the window
+>> you hit above.  None the less, you're probably right, we should find a way to
+>> do it right. I'll try to revive those patches.
+> Let me summarize the IRC discussion we just had about that:
 >
-> v3.8 is just out, and we have not got any proposal from anyone how to
-> make our approach better. So, I'm just wondering about current state.
+> 1) We really want to reduce the seq write hold time of the timekeeper
+>     to the bare minimum.
 >
-> Rafael, could you share your opinion about our case with CSRT and
-> request line base (perhaps you need to go through the entire thread)?
+>     That's doable and I have working patches for this by splitting the
+>     timekeeper seqlock into a spin_lock and a seqcount and doing the
+>     update calculations on a shadow timekeeper structure. The seq write
+>     hold time then gets reduced to switching a pointer and updating the
+>     gtod data.
 >
+>     So the sequence would look like:
+>
+>     raw_spin_lock(&timekeeper_lock);
+>     copy_shadow_data(current_timekeeper, shadow_timekeeper);
+>     do_timekeeping_and_ntp_update(shadow_timekeeper);
+>     write_seqcount_begin(&timekeeper_seq);
+>     switch_pointers(current_timekeeper, shadow_timekeeper);
+>     update_vsyscall();
+>     write_seqcount_end(&timekeeper_seq);
+>     raw_spin_unlock(&timekeeper_lock);
+>
+>     It's really worth the trouble. On one of my optimized RT systems I
+>     get the maximum latency of the non timekeeping cores (timekeeping
+>     duty is pinned to core 0) down from 8us to 4 us. That's a whopping
+>     factor of 2.
+>
+> 2) Doing #1 will allow to observe the described time going backwards
+>     scenario in kernel as well.
+>
+>     The reason why we did not get complaints about that scenario at all
+>     (yet) is that the window and the probability to hit it are small
+>     enough. Nevertheless it's a real issue for virtualized systems.
+>
+>     Now you came up with the great idea, that the timekeeping core is
+>     able to calculate what the approximate safe value is for the
+>     clocksource readout to be in a state where wreckage relative to the
+>     last update of the clocksource is not observable, not matter how
+>     long the scheduled out delay is and in which direction the NTP
+>     update is going.
 
-Well, I can do that, but Mika is the author of the patches, so he should 
-know. :-)
+So the other bit of caution here, is I realize my idea of "valid cycle 
+ranges" has the potential for deadlock.
 
----------------------------------------------------------------------
-Intel Technology Poland sp. z o.o.
-z siedziba w Gdansku
-ul. Slowackiego 173
-80-298 Gdansk
+While it should be fine for use with vdso, we have to be careful if we 
+use this in-kernel, because if we're in the update path, the valid 
+interval check could trigger the ktime_get() in hrtimer_interrupt() to 
+spin forever. So we need to be sure we don't use this method anywhere in 
+the code paths that trigger the update_wall_time() code.
 
-Sad Rejonowy Gdansk Polnoc w Gdansku, 
-VII Wydzial Gospodarczy Krajowego Rejestru Sadowego, 
-numer KRS 101882
+So some additional thinking may be necessary here. Though it may be as 
+simple as making sure we don't loop on the cpu that does the timekeeping 
+update.
 
-NIP 957-07-52-316
-Kapital zakladowy 200.000 zl
+thanks
+-john
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
