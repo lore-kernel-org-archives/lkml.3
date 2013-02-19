@@ -1,96 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934716Ab3BSWOX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 17:14:23 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36933 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933538Ab3BSWOV (ORCPT
+	id S934736Ab3BSWPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 17:15:53 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:57858 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933538Ab3BSWPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 17:14:21 -0500
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: kconfig-frontends-3.8.0.0 release
-Date: Tue, 19 Feb 2013 23:14:15 +0100
-User-Agent: KMail/1.13.5 (Linux/3.8.0-treguer; KDE/4.4.5; x86_64; ; )
-Cc: Jan Engelhardt <jengelh@inai.de>, lwn@lwn.net,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>
+	Tue, 19 Feb 2013 17:15:51 -0500
+Date: Wed, 20 Feb 2013 02:15:48 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        ebiederm@xmission.com, xemul@parallels.com,
+        Andrey Vagin <avagin@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [patch 1/2] kcmp: Make it to depend on CONFIG_KCMP
+Message-ID: <20130219221548.GK5627@moon>
+References: <20130219064800.719149796@openvz.org>
+ <20130219065210.030802820@openvz.org>
+ <5123444D.6000806@suse.cz>
+ <20130219093154.GF20312@moon>
+ <5123BC2B.6000304@zytor.com>
+ <20130219182838.GL20312@moon>
+ <20130219134256.f4cedf44.akpm@linux-foundation.org>
+ <20130219215432.GP20312@moon>
+ <20130219140035.373ce4d2.akpm@linux-foundation.org>
+ <20130219221146.GR20312@moon>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302192314.15995.yann.morin.1998@free.fr>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130219221146.GR20312@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All!
+On Wed, Feb 20, 2013 at 02:11:46AM +0400, Cyrill Gorcunov wrote:
+> On Tue, Feb 19, 2013 at 02:00:35PM -0800, Andrew Morton wrote:
+> > > 
+> > > I think this syscall is usefull even without c/r stuff.
+> > > That's why I made it with separate config option.
+> > 
+> > hm, OK.
+> > 
+> > But the patch also permits CONFIG_CHECKPOINT_RESTORE=y, CONFIG_KCMP=n
+> > which surely isn't something which CRIU wants to support?
+> 
+> Hmm, yes from one pov this feature is useful for out-of-c/r user,
+> from another pov -- we will have to ask users to turn on additional
+> CONFIG entries (which i'm sure not set by default in wide range of distros).
+> Thus it seems less paiful way is either make it obj-(CHECKPOINT_RESTORE)
+> as you proposed, or obj-y by default. The last can't be undone, so I'll
+> prepare the patch for obj-(CHECKPOINT_RESTORE) I think.
 
-I'm pleased to announce the release of kconfig-frontends 3.8.0.0!
-Go download it there:
-    http://ymorin.is-a-geek.org/download/kconfig-frontends/kconfig-frontends-3.8.0.0.tar.xz
-    http://ymorin.is-a-geek.org/download/kconfig-frontends/kconfig-frontends-3.8.0.0.tar.bz2
+Here is update. Peter, does it look good for you too?
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: kcmp: Make it to depend on CHECKPOINT_RESTORE
 
-The kconfig-frontends package provides the kconfig parser, as well as all the
-kconfig frontends and utilities, packaged using the traditional autotools, so
-the kconfig infrastructure is easy to deploy, either locally or system-wide.
+Since kcmp syscall has been implemented (initially on x86
+architecture) a number of other archs wire it up as well:
+xtensa, sparc, sh, s390, mips, microblaze, m68k (not taking
+into account those who uses <asm-generic/unistd.h> for syscall
+numbers definitions).
 
-What's new since 3.7.0.0:
-  - some huge cleanups to the auto-tools infrastructure, kindly
-    suggested and mentored by Jan Engelhardt
-  - there was no kconfig changes in 3.8
+But the Makefile, which turns kcmp.o generation on still
+depends on former config-x86. Thus get rid of this
+limitation and make kcmp.o depend on CHECKPOINT_RESTORE
+option.
 
-This release marks the first anniversary at maintaining this project. It
-has been fun, and I learnt quite a bit since the first announcement here,
-roughly one year ago [0].
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Andrey Vagin <avagin@openvz.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Glauber Costa <glommer@parallels.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Matt Helsley <matthltc@us.ibm.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Valdis.Kletnieks@vt.edu
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ kernel/Makefile |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-The first release, 3.3.0-0, has been covered [1] by LWN.net (Hello! :-) ),
-and I'm quite proud of such an achievement!
-
-Work on kconfig-frontends would not have been so easy without the works of
-the many kernel contributors, and I'd like to take the opportunity to thank
-you all for your amazing work!
-
-So, time has come to lay out the plans for the future:
-  - continue to release as soon as possible after each kernel release:
-    this has proved to be challenging at times, when there are agenda
-    conflicts (kernel release during holidays, or just before a conference)
-    but is globally manageable;
-
-  - migrate the repository from Hg to git (on-going) ;-)
-    being a noob at git at the time I spawned kconfig-frontends, I used
-    the tools I knew how to use at the time, in order not to bust the
-    repository. Hg has proved to do the job well for me, but now that I'm
-    up to speed with git, time has come for a switch;
-
-  - present (lightning-talk-like) the project at a conference
-    I'm self-funded, so will concentrate on Europe (and specifically,
-    France and neighbouring countries). Not too sure which conference
-    for now. Any help chosing? ;-)
-
-As a reminder, the home for kconfig-frontends is:
-  http://ymorin.is-a-geek.org/projects/kconfig-frontends
-
-And the repository can be browsed or hg-cloned from:
-  http://ymorin.is-a-geek.org/hg/kconfig-frontends
-
-kconfig-frontends is not meant to replace the in-tree Linux kconfig, but
-really targets third-party projects that want an easy path to following
-the evolution of kconfig, without the burden to manually synchronise from
-the Linux kernel source tree.
-
-Any comment, any feedback, any patch is welcome! ;-)
-
-[0] http://marc.info/?l=linux-kbuild&m=132753216310722
-[1] https://lwn.net/Articles/487487/
-
-Regards,
-Yann E. MORIN.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+Index: linux-2.6.git/kernel/Makefile
+===================================================================
+--- linux-2.6.git.orig/kernel/Makefile
++++ linux-2.6.git/kernel/Makefile
+@@ -25,9 +25,7 @@ endif
+ obj-y += sched/
+ obj-y += power/
+ 
+-ifeq ($(CONFIG_CHECKPOINT_RESTORE),y)
+-obj-$(CONFIG_X86) += kcmp.o
+-endif
++obj-$(CHECKPOINT_RESTORE) += kcmp.o
+ obj-$(CONFIG_FREEZER) += freezer.o
+ obj-$(CONFIG_PROFILING) += profile.o
+ obj-$(CONFIG_STACKTRACE) += stacktrace.o
