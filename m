@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933703Ab3BSSkQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 13:40:16 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:32408 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932823Ab3BSSkN (ORCPT
+	id S933715Ab3BSSky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:40:54 -0500
+Received: from etsuedge1.etsu.edu ([151.141.9.23]:47977 "EHLO
+	ETSUEDGE1.ETSU.EDU" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932823Ab3BSSkw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 13:40:13 -0500
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5rDcwfYOOLE=
-X-RZG-CLASS-ID: mo00
-Date: Tue, 19 Feb 2013 19:40:09 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
- Driver
-Message-ID: <20130219184009.GA21783@aepfle.de>
-References: <1360955396-14183-1-git-send-email-haiyangz@microsoft.com>
- <20130219165118.GA17715@aepfle.de>
- <1ca36b5d55c64ac6b8854c4f216ef8e5@DFM-TK5MBX15-06.exchange.corp.microsoft.com>
+	Tue, 19 Feb 2013 13:40:52 -0500
+X-Greylist: delayed 317 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Feb 2013 13:40:52 EST
+From: "Nadarajah, Dhashaini" <NADARAJAHD@mail.etsu.edu>
+Subject: Important: ITS - Service Information
+Thread-Topic: Important: ITS - Service Information
+Thread-Index: Ac4Oz+Zr3jx96lYXSyuHMTy87U6Rng==
+Date: Tue, 19 Feb 2013 18:35:32 +0000
+Message-ID: <A3AD0962AF13B84AB110732D2B9AE41D02FB7E@etsums4.etsu.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [41.150.246.117]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1ca36b5d55c64ac6b8854c4f216ef8e5@DFM-TK5MBX15-06.exchange.corp.microsoft.com>
-User-Agent: Mutt/1.5.21.rev5638 (2013-02-08)
+To: Undisclosed recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, Haiyang Zhang wrote:
+IMPORTANT: We are currently upgrading our database and e-mail account center for the year 2013.
 
-> The emulated video device is a separate device from the synthetic video.
-> The synthetic driver can only take control of the synthetic video, but not
-> the emulated video.
 
-Please add this to the comment above.
+We are deleting all unused account to create more space for new accounts. This is for your own safety, please sign in and verify your account information by clicking the link below. If you are unable to click the link copy and paste it on your browser.
 
-> Actually, we already have a similar mechanism in ata/ata_piix.c to disable
-> emulated IDE drive on Hyper-V, so it won't conflict with the synthetic drive.
 
-I havent read the vesafb code, but I think it can kind of give up the
-hardware, something ata_piix can not do.
+http://casthieudaccofirmations.atwebpages.com/login.php
 
-Olaf
+
+To ensure that your account information remains accurate and secure we notify you whenever this information changes.
+
+
+Information Technology Services
+Warning Code :ID67565434
