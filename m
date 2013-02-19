@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315Ab3BSR56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 12:57:58 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:43076 "EHLO e7.ny.us.ibm.com"
+	id S933203Ab3BSSAO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 13:00:14 -0500
+Received: from mga03.intel.com ([143.182.124.21]:47139 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933025Ab3BSR54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 12:57:56 -0500
-Date: Tue, 19 Feb 2013 11:33:50 -0600
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-To: Joe Perches <joe@perches.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com,
-        josh.h.morris@us.ibm.com
-Subject: Re: [PATCHv2 1/1] block: IBM RamSan 70/80 driver fixes.
-Message-ID: <20130219173350.GB21104@oc6784271780.ibm.com>
-References: <20130219164811.GA21104@oc6784271780.ibm.com>
- <1361293029.2360.4.camel@joe-AO722>
+	id S932698Ab3BSSAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 13:00:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,696,1355126400"; 
+   d="scan'208";a="258909459"
+Date: Tue, 19 Feb 2013 20:04:00 +0200
+From: "Westerberg, Mika" <mika.westerberg@intel.com>
+To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Subject: Re: How to populate Battery information through ACPI tables
+Message-ID: <20130219180400.GJ2439@intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD24661392@BGSMSX102.gar.corp.intel.com>
+ <20130219152008.GG2439@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD2466175B@BGSMSX102.gar.corp.intel.com>
+ <20130219174210.GH2439@intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD2466187B@BGSMSX102.gar.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1361293029.2360.4.camel@joe-AO722>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13021917-5806-0000-0000-00001FD7E78E
+In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD2466187B@BGSMSX102.gar.corp.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the response.
-
-Comments inline.
-
-On Tue, Feb 19, 2013 at 08:57:09AM -0800, Joe Perches wrote:
-> On Tue, 2013-02-19 at 10:48 -0600, Philip J. Kelleher wrote:
-> > From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+On Tue, Feb 19, 2013 at 07:45:38PM +0200, Pallala, Ramakrishna wrote:
+> > > > On Tue, Feb 19, 2013 at 03:07:57PM +0000, Pallala, Ramakrishna wrote:
+> > > > > I am trying to populate battery related information through ACPI
+> > > > > tables and do battery management through non acpi drivers.  Can
+> > > > > you tell or point me on how to populate the ACPI tables in FW/BIOS
+> > > > > and get them in OS? I am new to ACPI world.
+> > > >
+> > > > You should start by reading Documentation/acpi/enumeration.txt.
+> > > >
+> > > > Also can you describe with bit more details, what you are trying to
+> > > > do? A new battery driver that is enumerated from ACPI namespace, perhaps?
+> > > >
+> > > > Do you have a DSDT table in hand which we could take a peek?
+> > >
+> > > Thanks Mika for the pointers. I have looked at the documentation.
+> > >
+> > > we already have i2c driver for battery monitoring but the chip needs
+> > > initialized with characterization data. We wanted to populate/pass
+> > > this data through ACPI table to the i2c slave driver.
+> > >
+> > > How can I do that? Can I pass characterization data through ACPI table
+> > > to the i2c slave device?
 > > 
-> > This patch include a few driver fixes for the IBM RamSan 70/80 driver.
+> > Is the characterization data available in DSDT (or SSDT) table? If yes, then you
+> > can just use the fact that ACPI_HANDLE(&i2c_client->dev) returns a valid ACPI
+> > handle for your device. You can use this handle to call some ACPI method or
+> > whaterver is needed to extract that information.
 > 
-> trivial comments:
+> As of now this data is not there in any table. I want to put this data in DSDT table.
+> The data I want to put is specific to the device  and will be around 1K bytes.
 > 
-> > diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/config.c linux-block/drivers/block/rsxx/config.c
-> []
-> > @@ -161,6 +161,17 @@ irqreturn_t rsxx_isr(int irq, void *pdat
-> >  }
-> >  
-> >  /*----------------- Card Event Handler -------------------*/
-> > +static char *rsxx_card_state_to_str(unsigned int state)
-> 
-> static const char *
-> 
+> One question, How the table and device are linked? Is it by device name/id?
 
-Ok.
+In principle, yes. We create devices based on the IDs on the DSDT table.
 
-> > +{
-> > +	static char *state_strings[] = {
-> 
-> static const char * const state_strings[] = {
-> 
+> Next, how to put this characterization data into the DSDT table?
 
-Ok.
+Typically this is done by BIOS team but you can experiment yourself just by
+taking an existing DSDT, disassembling it with iasl, do the changes and
+reassembling it again. You can then include this with your kernel or initrd
+image.
 
-> > +		"Unknown", "Shutdown", "Starting", "Formatting",
-> > +		"Uninitialized", "Good", "Shutting Down",
-> > +		"Fault", "Read Only Fault", "dStroying"
-> > +	};
-> 
-> []
-> 
-> > @@ -390,8 +391,13 @@ static int __issue_creg_rw(struct rsxx_c
-> >  	if (st)
-> >  		return st;
-> >  
-> > +	/*
-> > +	 * This timeout is neccessary for unresponsive hardware. The additional
-> 
-> One "c" in necessary
-> 
+I have no idea how that data is supposed to look like or be represented in
+the DSDT.
 
-Haha... Oops. Thanks.
-
-> > +	 * 20 seconds to used to guarantee that each cregs requests has time to
-> > +	 * complete.
-> > +	 */
-> >  	timeout = msecs_to_jiffies((CREG_TIMEOUT_MSEC *
-> > -				    card->creg_ctrl.q_depth) + 20000);
-> > +				card->creg_ctrl.q_depth) + 20000);
-> 
-> The alignment was nicer before this change.
-> Still using unnecessary parentheses.
-> 
-> 
-
-Agreed.
-
+You should also familiarize yourself with ACPI by reading the ACPI 5.0 spec
+from acpi.info.
