@@ -1,94 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab3BSD4t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Feb 2013 22:56:49 -0500
+	id S932269Ab3BSD6g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Feb 2013 22:58:36 -0500
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2898 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932130Ab3BSD4q (ORCPT
+	with ESMTP id S932203Ab3BSD4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Feb 2013 22:56:46 -0500
-X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=SNojsEbPBX8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=evC8euxjDUgA:10 a=VwQbUJbxAAAA:8 a=Dy9FSkG8L0gs_orUxm0A:9 a=U62fhAwekXMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Mon, 18 Feb 2013 22:56:48 -0500
+X-Authority-Analysis: v=2.0 cv=UN5f7Vjy c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=XHIcPCUdav8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Ys_0Hq5Qgs4A:10 a=CodCKRyIAAAA:8 a=ag1SF4gXAAAA:8 a=6ohNodAXAAAA:8 a=hVcwujEvAAAA:8 a=KKAkSRfTAAAA:8 a=VwQbUJbxAAAA:8 a=xUygav32fABiviVreRgA:9 a=Zh68SRI7RUMA:10 a=j0Y22Z3SadcA:10 a=1TSTQ8KKaH4A:10 a=gDjHQkheYgsA:10 a=WwgC8nHKvroA:10 a=XNN-oNMjSfgA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130219035623.277664914@goodmis.org>
+Message-Id: <20130219035646.071287104@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 18 Feb 2013 22:56:23 -0500
+Date: Mon, 18 Feb 2013 22:56:27 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 0/7] [ANNOUNCE] 3.2.38-rt58-rc1 stable review
+        John Kacur <jkacur@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Xinyu Chen <xinyu.chen@freescale.com>,
+        Dirk Behme <dirk.behme@de.bosch.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Tim Sander <tim@krieglstein.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 4/7] serial: Imx: Fix recursive locking bug
+References: <20130219035623.277664914@goodmis.org>
+Content-Disposition: inline; filename=0004-serial-Imx-Fix-recursive-locking-bug.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Dear RT Folks,
+commit 9ec1882df2 (tty: serial: imx: console write routing is unsafe
+on SMP) introduced a recursive locking bug in imx_console_write().
 
-This is the RT stable review cycle of patch 3.2.38-rt58-rc1.
+The callchain is:
 
-Please scream at me if I messed something up. Please test the patches too.
+imx_rxint()
+  spin_lock_irqsave(&sport->port.lock,flags);
+  ...
+  uart_handle_sysrq_char();
+    sysrq_function();
+      printk();
+        imx_console_write();
+          spin_lock_irqsave(&sport->port.lock,flags); <--- DEAD
 
-The -rc release will be uploaded to kernel.org and will be deleted when
-the final release is out. This is just a review release (or release candidate).
+The bad news is that the kernel debugging facilities can dectect the
+problem, but the printks never surface on the serial console for
+obvious reasons.
 
-The pre-releases will not be pushed to the git repository, only the
-final release is.
+There is a similar issue with oops_in_progress. If the kernel crashes
+we really don't want to be stuck on the lock and unable to tell what
+happened.
 
-If all goes well, this patch will be converted to the next main release
-on 2/22/2013.
+In general most UP originated drivers miss these checks and nobody
+ever notices because CONFIG_PROVE_LOCKING seems to be still ignored by
+a large number of developers.
 
-Enjoy,
+The solution is to avoid locking in the sysrq case and trylock in the
+oops_in_progress case.
 
--- Steve
+This scheme is used in other drivers as well and it would be nice if
+we could move this to a common place, so the usual copy/paste/modify
+bugs can be avoided.
 
+Now there is another issue with this scheme:
 
-To build 3.2.38-rt58-rc1 directly, the following patches should be applied:
+CPU0 	    	     	 CPU1
+printk()
+			 rxint()
+			   sysrq_detection() -> sets port->sysrq
+			 return from interrupt
+  console_write()
+     if (port->sysrq)
+     	avoid locking
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+port->sysrq is reset with the next receive character. So as long as
+the port->sysrq is not reset and this can take an endless amount of
+time if after the break no futher receive character follows, all
+console writes happen unlocked.
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.38.xz
+While the current writer is protected against other console writers by
+the console sem, it's unprotected against open/close or other
+operations which fiddle with the port. That's what the above mentioned
+commit tried to solve.
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.38-rt58-rc1.patch.xz
+That's an issue in all drivers which use that scheme and unfortunately
+there is no easy workaround. The only solution is to have a separate
+indicator port->sysrq_cpu. uart_handle_sysrq_char() then sets it to
+smp_processor_id() before calling into handle_sysrq() and resets it to
+-1 after that. Then change the locking check to:
 
-You can also build from 3.2.38-rt57 by applying the incremental patch:
+     if (port->sysrq_cpu == smp_processor_id())
+     	 locked = 0;
+     else if (oops_in_progress)
+         locked = spin_trylock_irqsave(port->lock, flags);
+     else
+  	 spin_lock_irqsave(port->lock, flags);
 
-http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.38-rt57-rt58-rc1.patch.xz
+That would force all other cpus into the spin_lock path. Problem
+solved, but that's way beyond the scope of this fix and really wants
+to be implemented in a common function which calls the uart specific
+write function to avoid another gazillion of hard to debug
+copy/paste/modify bugs.
 
-
-Changes from 3.2.38-rt57:
-
+Reported-and-tested-by: Tim Sander <tim@krieglstein.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Xinyu Chen <xinyu.chen@freescale.com>
+Cc: Dirk Behme <dirk.behme@de.bosch.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Tim Sander <tim@krieglstein.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: stable-rt@vger.kernel.org
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1302142006050.22263@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
+ drivers/tty/serial/imx.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 8e68f79..5f5c214 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -1115,8 +1115,14 @@ imx_console_write(struct console *co, const char *s, unsigned int count)
+ 	struct imx_port *sport = imx_ports[co->index];
+ 	unsigned int old_ucr1, old_ucr2, ucr1;
+ 	unsigned long flags;
++	int locked = 1;
+ 
+-	spin_lock_irqsave(&sport->port.lock, flags);
++	if (sport->port.sysrq)
++		locked = 0;
++	else if (oops_in_progress)
++		locked = spin_trylock_irqsave(&sport->port.lock, flags);
++	else
++		spin_lock_irqsave(&sport->port.lock, flags);
+ 
+ 	/*
+ 	 *	First, save UCR1/2 and then disable interrupts
+@@ -1144,7 +1150,8 @@ imx_console_write(struct console *co, const char *s, unsigned int count)
+ 	writel(old_ucr1, sport->port.membase + UCR1);
+ 	writel(old_ucr2, sport->port.membase + UCR2);
+ 
+-	spin_unlock_irqrestore(&sport->port.lock, flags);
++	if (locked)
++		spin_unlock_irqrestore(&sport->port.lock, flags);
+ }
+ 
+ /*
+-- 
+1.7.10.4
 
 
-Bu, Yitian (1):
-      printk: Fix rq->lock vs logbuf_lock unlock lock inversion
-
-Steven Rostedt (2):
-      acpi/rt: Convert acpi_gbl_hardware lock back to a raw_spinlock_t
-      Linux 3.2.38-rt58-rc1
-
-Thomas Gleixner (4):
-      x86/32: Use kmap switch for non highmem as well
-      serial: Imx: Fix recursive locking bug
-      wait-simple: Simple waitqueue implementation
-      rcutiny: Use simple waitqueue
-
-----
- arch/x86/kernel/process_32.c    |    2 +-
- drivers/acpi/acpica/acglobal.h  |    2 +-
- drivers/acpi/acpica/hwregs.c    |    4 +-
- drivers/acpi/acpica/hwxface.c   |    4 +-
- drivers/acpi/acpica/utmutex.c   |    4 +-
- drivers/tty/serial/imx.c        |   11 ++-
- include/acpi/platform/aclinux.h |   14 ++++
- include/linux/sched.h           |    4 +-
- include/linux/wait-simple.h     |  172 +++++++++++++++++++++++++++++++++++++++
- kernel/Makefile                 |    2 +-
- kernel/printk.c                 |    2 +-
- kernel/rcutiny_plugin.h         |   17 ++--
- kernel/wait-simple.c            |  119 +++++++++++++++++++++++++++
- localversion-rt                 |    2 +-
- 14 files changed, 337 insertions(+), 22 deletions(-)
