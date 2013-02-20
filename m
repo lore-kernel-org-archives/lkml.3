@@ -1,96 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936008Ab3BTUTb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 15:19:31 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:64441 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934802Ab3BTUT2 (ORCPT
+	id S936015Ab3BTUTv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 15:19:51 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:54869 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935999Ab3BTUP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 15:19:28 -0500
-Message-ID: <5125303C.3080507@metafoo.de>
-Date: Wed, 20 Feb 2013 21:21:16 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Len Brown <lenb@kernel.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH 05/16] blackfin idle: delete pm_idle
-References: <1360475903-30007-1-git-send-email-lenb@kernel.org> <1656351.lki82jZfSs@vostro.rjw.lan> <512529C2.4050909@metafoo.de> <1759773.UdmLmFNAfS@vostro.rjw.lan>
-In-Reply-To: <1759773.UdmLmFNAfS@vostro.rjw.lan>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 20 Feb 2013 15:15:57 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v4 28/32] tty: Clarify ldisc variable
+Date: Wed, 20 Feb 2013 15:03:15 -0500
+Message-Id: <1361390599-15195-29-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+References: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 08:59 PM, Rafael J. Wysocki wrote:
-> On Wednesday, February 20, 2013 08:53:38 PM Lars-Peter Clausen wrote:
->> On 02/20/2013 08:52 PM, Rafael J. Wysocki wrote:
->>> On Monday, February 18, 2013 05:28:19 PM Lars-Peter Clausen wrote:
->>>> On 02/10/2013 06:58 AM, Len Brown wrote:
->>>>> From: Len Brown <len.brown@intel.com>
->>>>>
->>>>> pm_idle is dead code on blackfin.
->>>>>
->>>>> Signed-off-by: Len Brown <len.brown@intel.com>
->>>>> Cc: uclinux-dist-devel@blackfin.uclinux.org
->>>>> ---
->>>>>  arch/blackfin/kernel/process.c | 7 -------
->>>>>  1 file changed, 7 deletions(-)
->>>>>
->>>>> diff --git a/arch/blackfin/kernel/process.c b/arch/blackfin/kernel/process.c
->>>>> index 3e16ad9..8061426 100644
->>>>> --- a/arch/blackfin/kernel/process.c
->>>>> +++ b/arch/blackfin/kernel/process.c
->>>>> @@ -39,12 +39,6 @@ int nr_l1stack_tasks;
->>>>>  void *l1_stack_base;
->>>>>  unsigned long l1_stack_len;
->>>>>  
->>>>> -/*
->>>>> - * Powermanagement idle function, if any..
->>>>> - */
->>>>> -void (*pm_idle)(void) = NULL;
->>>>> -EXPORT_SYMBOL(pm_idle);
->>>>> -
->>>>>  void (*pm_power_off)(void) = NULL;
->>>>>  EXPORT_SYMBOL(pm_power_off);
->>>>>  
->>>>> @@ -81,7 +75,6 @@ void cpu_idle(void)
->>>>>  {
->>>>>  	/* endless idle loop with no priority at all */
->>>>>  	while (1) {
->>>>> -		void (*idle)(void) = pm_idle;
->>>>
->>>> Hi,
->>>>
->>>> This results in the following error:
->>>>
->>>> arch/blackfin/kernel/process.c: In function ‘cpu_idle’:
->>>> arch/blackfin/kernel/process.c:83: error: ‘idle’ undeclared (first use in
->>>> this function)
->>>> arch/blackfin/kernel/process.c:83: error: (Each undeclared identifier is
->>>> reported only once
->>>> arch/blackfin/kernel/process.c:83: error: for each function it appears in.)
->>>> arch/blackfin/kernel/process.c:88: error: implicit declaration of function
->>>> ‘idle’
->>>>
->>>>
->>>> This change on top of your patch, fixes it.
->>>
->>> Lars, I need your sign-off for the patch below.  May I add it?
->>>
->>> Rafael
->>
->> Sure, I didn't realize the patches had already been merged, otherwise I'd have
->> sent a proper patch.
-> 
-> Please do now, if you can.  Sorry for the trouble.
-> 
+Rename o_ldisc to avoid confusion with the ldisc of the
+'other' tty.
 
-I can send it tomorrow morning, it's on my machine at work.
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_ldisc.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-- Lars
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index a150f95..9ace119 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -516,7 +516,7 @@ static void tty_ldisc_restore(struct tty_struct *tty, struct tty_ldisc *old)
+ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ {
+ 	int retval;
+-	struct tty_ldisc *o_ldisc, *new_ldisc;
++	struct tty_ldisc *old_ldisc, *new_ldisc;
+ 	struct tty_struct *o_tty = tty->link;
+ 
+ 	new_ldisc = tty_ldisc_get(tty, ldisc);
+@@ -540,7 +540,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 	/* FIXME: why 'shutoff' input if the ldisc is locked? */
+ 	tty->receive_room = 0;
+ 
+-	o_ldisc = tty->ldisc;
++	old_ldisc = tty->ldisc;
+ 	tty_lock(tty);
+ 
+ 	/* FIXME: for testing only */
+@@ -555,8 +555,8 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 		return -EIO;
+ 	}
+ 
+-	/* Shutdown the current discipline. */
+-	tty_ldisc_close(tty, o_ldisc);
++	/* Shutdown the old discipline. */
++	tty_ldisc_close(tty, old_ldisc);
+ 
+ 	/* Now set up the new line discipline. */
+ 	tty->ldisc = new_ldisc;
+@@ -566,17 +566,17 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 	if (retval < 0) {
+ 		/* Back to the old one or N_TTY if we can't */
+ 		tty_ldisc_put(new_ldisc);
+-		tty_ldisc_restore(tty, o_ldisc);
++		tty_ldisc_restore(tty, old_ldisc);
+ 	}
+ 
+ 	/* At this point we hold a reference to the new ldisc and a
+ 	   a reference to the old ldisc. If we ended up flipping back
+ 	   to the existing ldisc we have two references to it */
+ 
+-	if (tty->ldisc->ops->num != o_ldisc->ops->num && tty->ops->set_ldisc)
++	if (tty->ldisc->ops->num != old_ldisc->ops->num && tty->ops->set_ldisc)
+ 		tty->ops->set_ldisc(tty);
+ 
+-	tty_ldisc_put(o_ldisc);
++	tty_ldisc_put(old_ldisc);
+ 
+ 	/*
+ 	 *	Allow ldisc referencing to occur again
+-- 
+1.8.1.2
 
