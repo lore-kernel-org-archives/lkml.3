@@ -1,122 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964885Ab3BTQM5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 11:12:57 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45132 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934558Ab3BTQM4 (ORCPT
+	id S935365Ab3BTQNI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 11:13:08 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:64242 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934558Ab3BTQND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 11:12:56 -0500
-Message-ID: <5124F5ED.9000608@oracle.com>
-Date: Wed, 20 Feb 2013 11:12:29 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
+	Wed, 20 Feb 2013 11:13:03 -0500
+Message-ID: <5124F600.9030908@redhat.com>
+Date: Wed, 20 Feb 2013 17:12:48 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: peterz@infradead.org, jamie.iles@oracle.com, penberg@kernel.org,
-        acme@ghostprotocols.net, paulus@samba.org,
-        linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [liblockdep] Re: [PATCH v2 01/11] liblockdep: remove the need
- for liblockdep_init
-References: <1360456781-32462-1-git-send-email-sasha.levin@oracle.com> <20130219075825.GA3741@gmail.com> <5124E628.3020008@oracle.com> <20130220154627.GB13388@gmail.com>
-In-Reply-To: <20130220154627.GB13388@gmail.com>
+CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v2 00/14] Corrections and customization of the SG_IO command
+ whitelist (CVE-2012-4542)
+References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1360163761-8541-1-git-send-email-pbonzini@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 10:46 AM, Ingo Molnar wrote:
+Il 06/02/2013 16:15, Paolo Bonzini ha scritto:
+> This series regards the whitelist that is used for the SG_IO ioctl.  This
+> whitelist has three problems:
 > 
-> * Sasha Levin <sasha.levin@oracle.com> wrote:
+> * the bitmap of allowed commands is designed for MMC devices (roughly,
+>   "play/burn CDs without requiring root") but some opcodes overlap across SCSI
+>   device classes and have different meanings for different classes.
 > 
->> On 02/19/2013 02:58 AM, Ingo Molnar wrote:
->>>
->>> * Sasha Levin <sasha.levin@oracle.com> wrote:
->>>
->>>> Use a constructor in the library instead of making the user manually
->>>> call liblockdep_init().
->>>>
->>>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->>>> ---
->>>>  tools/lib/lockdep/common.c                    | 2 +-
->>>>  tools/lib/lockdep/include/liblockdep/common.h | 1 -
->>>>  tools/lib/lockdep/tests/AA.c                  | 1 -
->>>>  tools/lib/lockdep/tests/ABBA.c                | 1 -
->>>>  tools/lib/lockdep/tests/ABBCCA.c              | 1 -
->>>>  tools/lib/lockdep/tests/ABBCCDDA.c            | 1 -
->>>>  tools/lib/lockdep/tests/ABCABC.c              | 1 -
->>>>  tools/lib/lockdep/tests/ABCDBCDA.c            | 1 -
->>>>  tools/lib/lockdep/tests/ABCDBDDA.c            | 1 -
->>>>  tools/lib/lockdep/tests/WW.c                  | 1 -
->>>>  tools/lib/lockdep/tests/unlock_balance.c      | 1 -
->>>>  tools/lib/lockdep/uinclude/linux/lockdep.h    | 1 -
->>>>  12 files changed, 1 insertion(+), 12 deletions(-)
->>>
->>> Note that due to the heavy objections in the kvmtool thread 
->>> I have removed the tools/lib/lockdep library and tooling 
->>> commits from the locking tree - to be able to merge the 
->>> other locking commits upstream.
->>
->> Understood.
->>
->>> I'm pretty sad about this outcome as your code really 
->>> brought new development life into lockdep - if you still 
->>> want to pursue this approach then you might want to try it 
->>> via the tools/kvm tree, or via a separate project.
->>
->> I'm most likely to just fold it into a standalone project 
->> since I'm not quite certain the purpose of tools/ at this 
->> point.
+> * also because the bitmap of allowed commands is designed for MMC devices
+>   only, some commands are missing even though they are generally useful and
+>   not insecure.  At least not more insecure than anything else you can
+>   do if you have access to /dev/sdX or /dev/stX nodes.
 > 
-> You could also tempt Linus with a standalone pull request - 
-> altough at this point I'm not sure he'd take it.
-
-So I've gone though the kvmtool thread and while liblockdep was
-referenced several times Linus didn't share his opinion on it.
-
-Linus, would you be interested in adding liblockdep to your
-tree? I'm not looking to start another threadnaught about
-pros and cons of userspace code in the kernel, I just want
-to know how to proceed with liblockdep. Thanks!
-
-> Sharing the source code between user-space and kernel space 
-> makes quite a bit of sense, and copying files, while it works, 
-> just encourages needless forking. The impact of your changes on 
-> kernel/lockdep.c was minimal:
+> * the whitelist can be disabled per-process but not per-disk.  In addition,
+>   the required capability (CAP_SYS_RAWIO) gives access to a range of other 
+>   resources, enough to make it insecure.
 > 
->  47dd80e801c3 lockdep: Be nice about building from userspace
->   kernel/lockdep.c | 4 ++++
->   1 file changed, 4 insertions(+)
+> The series corrects these problems.  Patches 1-4 solve the first problem,
+> which also has an assigned CVE, by using different bitmaps for the various
+> device classes.  Patches 5-11 solve the second by adding more commands
+> to the bitmaps.  Patches 12 and 13 solve the third, and were already
+> posted but ignored by the maintainers despite multiple pings.
 > 
-> So I don't see any substantial 'drag' or downside on the kernel 
-> lockdep subsystem - and I see a lot of upsides from exposing 
-> user-space to the lockdep code.
+> Note: checkpatch hates the formatting of the command table.  I know about this,
+> and ensured that there are no errors in the rest of the code.  The current
+> formatting is IMHO quite handy, and roughly based on the files available
+> from the SCSI standard body.
 > 
-> Have you tried to check the locking of something more complex, 
-> such as Firefox? (assuming it uses pthread mutexes and rwlocks - 
-> I'm not sure about that.)
+> Ok for the next merge window?
+> 
+> Paolo
+> 
+> v1->v2: remove 2 MMC commands and 6 SBC commands (see patches 6 and 9
+>         for details).  Added patch 14 and added a few more scanner
+>         commands based on SANE (scanners are not whitelisted by default,
+>         also were not in v1, but this makes it possible to opt into the
+>         whitelist out of paranoia).  Removed C++ comments.  Removed the
+>         large #if 0'd list of commands that the kernel does not pass
+>         though.  Marked blk_set_cmd_filter_defaults as __init.
 
-Yup! I was actually working on that the day before you've sent this
-mail :)
+Ping...
 
-firefox does use pthread locks.
+Jens/James, is anyone going to pick this up for 3.9?
 
-firefox/thunderbird use their own wrappers for malloc, which take locks
-on the allocation path - this is quite problematic for the current
-liblockdep code since it tries to allocate lock objects to store the
-extra lockdep data - which results in a deadlock. The fix is quite
-trivial, the discovery of this deadlock was quite interesting though :)
+Paolo
 
-Once I got firefox to work properly with liblockdep there was one spew
-showing up after browsing for a bit but I haven't dug into it yet - waiting
-for a quiet weekend to do that.
-
-
-Thanks,
-Sasha
-
+> 
+> Paolo Bonzini (14):
+>   sg_io: pass request_queue to blk_verify_command
+>   sg_io: reorganize list of allowed commands
+>   sg_io: use different default filters for each device class
+>   sg_io: resolve conflicts between commands assigned to multiple
+>     classes (CVE-2012-4542)
+>   sg_io: whitelist a few more commands for rare & obsolete device types
+>   sg_io: whitelist another command for multimedia devices
+>   sg_io: whitelist a few more commands for media changers
+>   sg_io: whitelist a few more commands for tapes
+>   sg_io: whitelist a few more commands for disks
+>   sg_io: whitelist a few obsolete commands
+>   sg_io: mark blk_set_cmd_filter_defaults as __init
+>   sg_io: remove remnants of sysfs SG_IO filters
+>   sg_io: introduce unpriv_sgio queue flag
+>   sg_io: use unpriv_sgio to disable whitelisting for scanners
+> 
+>  Documentation/block/queue-sysfs.txt |    8 +
+>  block/blk-sysfs.c                   |   33 +++
+>  block/bsg.c                         |    2 +-
+>  block/scsi_ioctl.c                  |  369 ++++++++++++++++++++++++++---------
+>  drivers/scsi/scsi_scan.c            |   14 ++-
+>  drivers/scsi/sg.c                   |    6 +-
+>  include/linux/blkdev.h              |    8 +-
+>  include/linux/genhd.h               |    9 -
+>  include/scsi/scsi.h                 |    3 +
+>  9 files changed, 344 insertions(+), 108 deletions(-)
+> 
 
