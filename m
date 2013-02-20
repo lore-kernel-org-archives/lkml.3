@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935566Ab3BTVA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 16:00:58 -0500
-Received: from www.linutronix.de ([62.245.132.108]:42914 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935243Ab3BTVA4 (ORCPT
+	id S964873Ab3BTVBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 16:01:24 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:64754 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935392Ab3BTVBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 16:00:56 -0500
-Date: Wed, 20 Feb 2013 22:00:48 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org
-Subject: Re: [PATCH] nohz: Make tick_nohz_irq_exit() irq safe
-In-Reply-To: <1361373336-11337-1-git-send-email-fweisbec@gmail.com>
-Message-ID: <alpine.LFD.2.02.1302202155320.22263@ionos>
-References: <1361373336-11337-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 20 Feb 2013 16:01:21 -0500
+Date: Wed, 20 Feb 2013 13:01:16 -0800
+From: Tejun Heo <tj@kernel.org>
+To: akpm@linux-foundation.org, Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] posix-timer: don't call idr_find() w/ negative ID
+Message-ID: <20130220210116.GD3570@htj.dyndns.org>
+References: <1361385853-29010-1-git-send-email-sasha.levin@oracle.com>
+ <CAOS58YMT3NS-8zvwx1tNQoLKM1WtKtT-YXBPi=4pAeAMi=rYeA@mail.gmail.com>
+ <512522CF.1020901@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <512522CF.1020901@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Feb 2013, Frederic Weisbecker wrote:
+Recent idr updates make idr_find() trigger WARN_ON_ONCE() before
+returning NULL when a negative ID is specified.  Apparently,
+posix-timer::__lock_timer() was depending on idr_find() returning NULL
+on negative ID, thus triggering the new WARN_ON_ONCE().  Make
+__lock_timer() first check whether @timer_id is negative and return
+NULL without invoking idr_find() if so.
 
-> As it stands, irq_exit() may or may not be called with
-> irqs disabled, depending on __ARCH_IRQ_EXIT_IRQS_DISABLED
-> that the arch can define.
-> 
-> It makes tick_nohz_irq_exit() unsafe. For example two
-> interrupts can race in tick_nohz_stop_sched_tick(): the inner
-> most one computes the expiring time on top of the timer list,
-> then it's interrupted right before reprogramming the
-> clock. The new interrupt enqueues a new timer list timer,
-> it reprogram the clock to take it into account and it exits.
-> The CPUs resumes the inner most interrupt and performs the clock
-> reprogramming without considering the new timer list timer.
-> 
-> This regression has been introduced by:
->      280f06774afedf849f0b34248ed6aff57d0f6908
->      ("nohz: Separate out irq exit and idle loop dyntick logic")
-> 
-> Let's fix it right now with the appropriate protections.
+Note that the previous code was theoretically broken.  idr_find()
+masked off the sign bit before performing lookup and if the matching
+IDs were in use, it would have returned pointer for the incorrect
+entry.
 
-That's not a fix. That's an hack.
- 
-> A saner long term solution will be to remove
-> __ARCH_IRQ_EXIT_IRQS_DISABLED.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+Sasha, can you please test whether this makes the warning go away?
 
-We really want to enforce that interrupt disabled condition for
-calling irq_exit(). So why make this exclusive to tick_nohz_irq_exit()?
+Thanks.
 
-Thanks,
+ kernel/posix-timers.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-	tglx
-
-Index: linux-2.6/kernel/softirq.c
-===================================================================
---- linux-2.6.orig/kernel/softirq.c
-+++ linux-2.6/kernel/softirq.c
-@@ -322,18 +322,10 @@ void irq_enter(void)
- 
- static inline void invoke_softirq(void)
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index b51bb08..92465f9 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -637,6 +637,9 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
  {
--	if (!force_irqthreads) {
--#ifdef __ARCH_IRQ_EXIT_IRQS_DISABLED
-+	if (!force_irqthreads)
- 		__do_softirq();
--#else
--		do_softirq();
--#endif
--	} else {
--		__local_bh_disable((unsigned long)__builtin_return_address(0),
--				SOFTIRQ_OFFSET);
-+	else
- 		wakeup_softirqd();
--		__local_bh_enable(SOFTIRQ_OFFSET);
--	}
- }
+ 	struct k_itimer *timr;
  
- /*
-@@ -341,6 +333,14 @@ static inline void invoke_softirq(void)
-  */
- void irq_exit(void)
- {
-+#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
-+	unsigned long flags;
++	if ((int)timer_id < 0)
++		return NULL;
 +
-+	local_irq_save(flags);
-+#else
-+	BUG_ON(!irqs_disabled();
-+#endif
-+
- 	account_irq_exit_time(current);
- 	trace_hardirq_exit();
- 	sub_preempt_count(IRQ_EXIT_OFFSET);
-@@ -354,6 +354,9 @@ void irq_exit(void)
- #endif
- 	rcu_irq_exit();
- 	sched_preempt_enable_no_resched();
-+#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
-+	local_irq_restore(flags);
-+#endif
- }
- 
- /*
+ 	rcu_read_lock();
+ 	timr = idr_find(&posix_timers_id, (int)timer_id);
+ 	if (timr) {
