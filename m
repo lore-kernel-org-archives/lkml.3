@@ -1,69 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935698Ab3BTNwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:52:37 -0500
-Received: from mga01.intel.com ([192.55.52.88]:43383 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935422Ab3BTNwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:52:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,702,1355126400"; 
-   d="scan'208";a="293578430"
-Message-ID: <5124D514.70302@intel.com>
-Date: Wed, 20 Feb 2013 21:52:20 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S935712Ab3BTNx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:53:59 -0500
+Received: from clients.imail.ciril.fr ([193.54.6.108]:59986 "EHLO
+	clients.imail.ciril.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935405Ab3BTNx6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 08:53:58 -0500
+X-Greylist: delayed 642 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Feb 2013 08:53:58 EST
+Message-ID: <5124D2ED.1090703@univ-lorraine.fr>
+Date: Wed, 20 Feb 2013 14:43:09 +0100
+From: Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 11/15] sched: add power/performance balance allow flag
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>   <1361164062-20111-12-git-send-email-alex.shi@intel.com>  <1361353681.10155.10.camel@laptop> <5124BBEA.3040806@intel.com> <1361367469.10155.34.camel@laptop>
-In-Reply-To: <1361367469.10155.34.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Alexandre SIMON <Alexandre.Simon@univ-lorraine.fr>
+Subject: Re: [ 1/1] printk: fix buffer overflow when calling log_prefix function
+ from call_console_drivers
+References: <20130218181454.615592566@linuxfoundation.org> <20130218181454.976143076@linuxfoundation.org> <87ip5njfze.wl%satoru.takeuchi@gmail.com>
+In-Reply-To: <87ip5njfze.wl%satoru.takeuchi@gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-AS-Test: me
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 09:37 PM, Peter Zijlstra wrote:
-> On Wed, 2013-02-20 at 20:04 +0800, Alex Shi wrote:
+[Satoru Takeuchi] wrote the following on [20/02/2013 14:02]:
+[...]
 > 
->>>> @@ -5195,6 +5197,8 @@ static int load_balance(int this_cpu, struct rq
->>>> *this_rq,
->>>>                 .idle           = idle,
->>>>                 .loop_break     = sched_nr_migrate_break,
->>>>                 .cpus           = cpus,
->>>> +               .power_lb       = 0,
->>>> +               .perf_lb        = 1,
->>>>         };
->>>>  
->>>>         cpumask_copy(cpus, cpu_active_mask);
->>>
->>> This construct allows for the possibility of power_lb=1,perf_lb=1, does
->>> that make sense? Why not have a single balance_policy enumeration?
->>
->> (power_lb == 1 && perf_lb == 1) is incorrect and impossible to have.
->>
->> (power_lb == 0 && perf_lb == 0) is possible and it means there is no any
->> balance on this cpu.
->>
->> So, enumeration is not enough.
-> 
-> Huh.. both 0 doesn't make any sense either. If there's no balancing, we
-> shouldn't be here to begin with.
-> 
+> I reviewed this patch and it seems to be good for me. Since I'm not good at
+> printk code, I want to confirm whether what I think is correct or not.
+> Is the following my understanding correct?
 
-Um, both 0 means, there is a balance happen, and we think a power
-balance is appropriate for this domain, but maybe this group is already
-empty, so the cpu is inappropriate to pull a task, than we exit this
-time balancing, to wait another cpu from another appropriate group do
-balance and pull a task.
+  No problem, it's nice to talk about this patch !
 
--- 
-Thanks
-    Alex
+
+>> -			cur_index += log_prefix(&LOG_BUF(cur_index), &msg_level, NULL);
+> 
+> Here is one example of the problematic case.
+> 
+>   +---- start of log_buf
+>   |
+>   |                           +--- end of log_buf
+>   |                           |
+>   v                           v
+>   <-------- log_buf ----------><------- * outside of log_buf. Don't access here !!! * --- ~~~
+>                               ^
+>                               |
+>                               cur_index
+> 
+> In this case, only LOG_BUF(cur_index) is safe to access and
+> 
+>  - "LOG_BUF(cur_index) + 1" as p[1],
+>  - "LOG_BUF(cur_index) + 2" as p[2], and
+>  - "LOG_BUF(cur_index) + 1 or more" as simple_strtoul(&p[1], &endp, 10)
+> 
+> in log_prefix() are not to do so. Hence touching them would cause the system hang as you
+> said as follows.
+
+  Yes, your analyze is totally right. Your figure is clear and shows exactly when the problem occurs in the "borderline case".
+  The initial code does not check that the "cur_index" can be at the end of "log_buf" whereas "log_prefix" function may access to one, two or more indexes after.
+
+
+[...]
+>> +			/*
+>> +			 * prepare buf_prefix, as a contiguous array,
+>> +			 * to be processed by log_prefix function
+>> +			 */
+>> +			char buf_prefix[SYSLOG_PRI_MAX_LENGTH+1];
+>> +			unsigned i;
+>> +			for (i = 0; i < ((end - cur_index)) && (i < SYSLOG_PRI_MAX_LENGTH); i++) {
+> 
+> The condition, "i < ((end - cur_index)) && (i < SYSLOG_PRI_MAX_LENGTH)", is to prevent
+> access over
+> 
+>  - the region to write out, and
+
+  Yes, because buf_prefix has a fixed length.
+
+
+>  - the max length of log_prefix.
+
+  In another term : to do not exceed the end boundary of "log_buf".
+
+
+> In addition, "min(end - cur_index, SYSLOG_PRI_MAX_LENGTH)" has the same meaning here.
+
+  Yes, that may also work.
+
+
+>> +				buf_prefix[i] = LOG_BUF(cur_index + i);
+> 
+> You ensure that all characters (not only first character) in the candidate of log_prefix
+> are inside of log_buf here by copying each character of them one by one.
+
+  Yes, I also take care of the index that must be masked to wrap around the log_buf : we restart at index=0 when cur_index > length(log_buf).
+  At this point, we are sure that the buffer passed to log_prefix is consistent and all the access (through p[1], p[2], simple_strtoul(...)) may not cause a buffer overflow.
+
+
+> Thanks,
+> Satoru
+
+  Bye, Alex.
+
