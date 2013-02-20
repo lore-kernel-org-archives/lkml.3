@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935959Ab3BTUVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 15:21:31 -0500
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:52938 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964841Ab3BTUPj (ORCPT
+	id S964821Ab3BTUPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 15:15:33 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:54724 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935858Ab3BTUPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 15:15:39 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AidGAOQtJVFV5qjOPGdsb2JhbABFhWAiAYR9tV+BARcDAQEBATg0gh8BAQQBOhwjBQsIAyElDwUNGAoaE4gAAwkKtngNiVoVjCKCVweCX2EDkm2BZIFahgKDWYFsiB0
-X-IronPort-AV: E=Sophos;i="4.84,704,1355094000"; 
-   d="scan'208";a="503874101"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 20 Feb 2013 21:16:56 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/7] hid: use hid_hw_request() instead of direct call to
- usbhid
-Message-ID: <20130220201656.GA1346@polaris.bitmath.org>
-References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
- <1360334256-22127-5-git-send-email-benjamin.tissoires@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360334256-22127-5-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Feb 2013 15:15:25 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v4 17/32] tty: Bracket ldisc release with TTY_DEBUG_HANGUP messages
+Date: Wed, 20 Feb 2013 15:03:04 -0500
+Message-Id: <1361390599-15195-18-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+References: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+Expected typical log output:
+[    2.437211] tty_open: opening pts1...
+[    2.443376] tty_open: opening pts5...
+[    2.447830] tty_release: ptm0 (tty count=1)...
+[    2.447849] pts0 vhangup...
+[    2.447865] tty_release: ptm0: final close
+[    2.447876] tty_release: ptm0: freeing structure...
+[    2.451634] tty_release: tty1 (tty count=1)...
+[    2.451638] tty_release: tty1: final close
+[    2.451654] tty_release: tty1: freeing structure...
+[    2.452505] tty_release: pts5 (tty count=2)...
+[    2.453029] tty_open: opening pts0...
 
-> This allows the hid drivers to be independent from the transport layer.
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_io.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Since the patch is pretty large, a few lines on how it was constructed
-might be in order. Something like "by replacing all occurences of
-usbhid_submit_report() by its hid_hw_request() counterpart".
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index f1303da..cfcd849 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1790,7 +1790,7 @@ int tty_release(struct inode *inode, struct file *filp)
+ 		return 0;
+ 
+ #ifdef TTY_DEBUG_HANGUP
+-	printk(KERN_DEBUG "%s: freeing tty structure...\n", __func__);
++	printk(KERN_DEBUG "%s: %s: final close\n", __func__, tty_name(tty, buf));
+ #endif
+ 	/*
+ 	 * Ask the line discipline code to release its structures
+@@ -1802,6 +1802,9 @@ int tty_release(struct inode *inode, struct file *filp)
+ 	if (o_tty)
+ 		tty_flush_works(o_tty);
+ 
++#ifdef TTY_DEBUG_HANGUP
++	printk(KERN_DEBUG "%s: %s: freeing structure...\n", __func__, tty_name(tty, buf));
++#endif
+ 	/*
+ 	 * The release_tty function takes care of the details of clearing
+ 	 * the slots and preserving the termios structure. The tty_unlock_pair
+-- 
+1.8.1.2
 
-Also, the list of dependency changes only contains the drivers that
-actually become completely decoupled with this patch. The drivers that
-also depend on the io wait are found in the next patch.
-
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
-
-Thanks,
-Henrik
