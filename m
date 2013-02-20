@@ -1,58 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934345Ab3BTSAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 13:00:09 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46056 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756469Ab3BTSAG (ORCPT
+	id S934466Ab3BTSGL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 13:06:11 -0500
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:56191 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab3BTSGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 13:00:06 -0500
-Message-ID: <51250F22.8050401@wwwdotorg.org>
-Date: Wed, 20 Feb 2013 11:00:02 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 20 Feb 2013 13:06:09 -0500
+Message-ID: <5125108D.3010508@gmail.com>
+Date: Wed, 20 Feb 2013 13:06:05 -0500
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Laxman Dewangan <ldewangan@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] spi: tegra114: add spi driver
-References: <1361281115-20436-1-git-send-email-ldewangan@nvidia.com> <5123C18A.9010604@wwwdotorg.org> <5124C18F.6070108@nvidia.com> <20130220131112.GE2726@opensource.wolfsonmicro.com> <5124CEF5.3060605@nvidia.com> <512506F9.2030508@wwwdotorg.org> <20130220173109.GU2726@opensource.wolfsonmicro.com> <512509A9.6020208@wwwdotorg.org> <20130220175721.GW2726@opensource.wolfsonmicro.com>
-In-Reply-To: <20130220175721.GW2726@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: "Roberts, Lee A." <lee.roberts@hp.com>
+CC: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] sctp: fix association hangs due to reassembly/ordering
+ logic
+References: <1361374996.3450.3.camel@laptop.lroberts> <D64EC45690EF85409BA6C4730E0162244310CBC1@G4W3231.americas.hpqcorp.net>
+In-Reply-To: <D64EC45690EF85409BA6C4730E0162244310CBC1@G4W3231.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 10:57 AM, Mark Brown wrote:
-> On Wed, Feb 20, 2013 at 10:36:41AM -0700, Stephen Warren wrote:
->> On 02/20/2013 10:31 AM, Mark Brown wrote:
-> 
->>> Since we can extend the list of clocks it doesn't seem like
->>> there's much issue here, especially if some of them are
->>> optional?
-> 
->> Yes, there's certainly a way to extend the binding in a 
->> backwards-compatible way.
-> 
->> However, I have seen in Rob and/or Grant push back on not fully 
->> defining bindings in the past - i.e. actively planning to
->> initially create a minimal binding and extend it in the future,
->> rather than completely defining it up-front.
-> 
-> That sounds like the current stuff with a minimal definition is
-> OK?
+Hi Lee
 
-I'm personally OK with defining a minimal binding first and extending
-it later. But, I'm worried if when we actually try to extend the
-binding later, we'll get push-back.
+On 02/20/2013 10:56 AM, Roberts, Lee A. wrote:
+> From: Lee A. Roberts <lee.roberts@hp.com>
+>
+> Resolve SCTP association hangs observed during SCTP stress
+> testing.  Observable symptoms include communications hangs
+> with data being held in the association reassembly and/or lobby
+> (ordering) queues.  Close examination of reassembly queue shows
+> missing packets.
+
+As a general note for this patch series, you could really benefit
+from a cover letter that describes the symptoms and all the different
+issues you found.
+
+Also, please title your patches based on the context of the patch.
+Giving them all the same title is very confusing and at quick glance
+makes appear that the same patch was applied 3 times.
+
+>
+> In sctp_eat_data(), enter partial delivery mode only if the
+> data on the head of the reassembly queue is at or before the
+> cumulative TSN ACK point.
+>
+> In sctp_ulpq_retrieve_partial() and sctp_ulpq_retrieve_first(),
+> correct message reassembly logic for SCTP partial delivery.
+> Change logic to ensure that as much data as possible is sent
+> with the initial partial delivery and that following partial
+> deliveries contain all available data.
+>
+> In sctp_ulpq_renege(), adjust logic to enter partial delivery
+> only if the incoming chunk remains on the reassembly queue
+> after processing by sctp_ulpq_tail_data().  Remove call to
+> sctp_tsnmap_mark(), as this is handled correctly in call to
+> sctp_ulpq_tail_data().
+>
+> Patch applies to linux-3.8 kernel.
+>
+> Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
+> ---
+>   net/sctp/sm_statefuns.c |   12 ++++++++++--
+>   net/sctp/ulpqueue.c     |   33 ++++++++++++++++++++++++++-------
+>   2 files changed, 36 insertions(+), 9 deletions(-)
+>
+> diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
+> +2/net/sctp/sm_statefuns.c linux-3.8-SCTP+3/net/sctp/sm_statefuns.c
+> --- linux-3.8-SCTP+2/net/sctp/sm_statefuns.c	2013-02-18
+> 16:58:34.000000000 -0700
+> +++ linux-3.8-SCTP+3/net/sctp/sm_statefuns.c	2013-02-20
+> 08:31:51.092132884 -0700
+> @@ -6090,7 +6090,8 @@ static int sctp_eat_data(const struct sc
+>   	size_t datalen;
+>   	sctp_verb_t deliver;
+>   	int tmp;
+> -	__u32 tsn;
+> +	__u32 tsn, ctsn;
+> +	struct sk_buff *skb;
+>   	struct sctp_tsnmap *map = (struct sctp_tsnmap *)&asoc->peer.tsn_map;
+>   	struct sock *sk = asoc->base.sk;
+>   	struct net *net = sock_net(sk);
+> @@ -6160,7 +6161,14 @@ static int sctp_eat_data(const struct sc
+>   		/* Even if we don't accept this chunk there is
+>   		 * memory pressure.
+>   		 */
+> -		sctp_add_cmd_sf(commands, SCTP_CMD_PART_DELIVER, SCTP_NULL());
+> +		skb = skb_peek(&asoc->ulpq.reasm);
+> +		if (skb != NULL) {
+> +			ctsn = sctp_skb2event(skb)->tsn;
+> +			if (TSN_lte(ctsn,
+> +				sctp_tsnmap_get_ctsn(&asoc->peer.tsn_map)))
+> +				sctp_add_cmd_sf(commands,
+> +					SCTP_CMD_PART_DELIVER, SCTP_NULL());
+> +		}
+
+What if the tsn you are currently processing will advance the
+CUM TSN?  You may still need to eneter PD.  This is why
+sctp_eat_data() is not the right place to place this check.
+
+The more I look at the SCTP_CMD_PART_DELIVERY the more I am thinking 
+that it has to come after the current TSN has been delivered to the 
+queue.  That way, if we are currently processing the first fragment, 
+we'll queue it, then enter PD and pull it off the queue properly.
+If we are processing the middle or last, it will get queued first, and
+then PD will be entered to fetch anything that we can fetch.
+
+In fact, the above is what happens when we issue a RENEGE command, but 
+the order is reversed is RENEGE is skipped for some reason.  I am still
+trying to figure out if it's possible to enter PD without RENEGE, but I 
+did notice the above aberration.
+
+
+>   	}
+>
+>   	/* Spill over rwnd a little bit.  Note: While allowed, this spill over
+> diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
+> +2/net/sctp/ulpqueue.c linux-3.8-SCTP+3/net/sctp/ulpqueue.c
+> --- linux-3.8-SCTP+2/net/sctp/ulpqueue.c	2013-02-20 08:17:53.679233365
+> -0700
+> +++ linux-3.8-SCTP+3/net/sctp/ulpqueue.c	2013-02-20 08:27:02.785042744
+> -0700
+> @@ -540,14 +540,19 @@ static struct sctp_ulpevent *sctp_ulpq_r
+>   		ctsn = cevent->tsn;
+>
+>   		switch (cevent->msg_flags & SCTP_DATA_FRAG_MASK) {
+> +		case SCTP_DATA_FIRST_FRAG:
+> +			if (!first_frag)
+> +				return NULL;
+> +			goto done;
+>   		case SCTP_DATA_MIDDLE_FRAG:
+>   			if (!first_frag) {
+>   				first_frag = pos;
+>   				next_tsn = ctsn + 1;
+>   				last_frag = pos;
+> -			} else if (next_tsn == ctsn)
+> +			} else if (next_tsn == ctsn) {
+>   				next_tsn++;
+> -			else
+> +				last_frag = pos;
+> +			} else
+>   				goto done;
+>   			break;
+>   		case SCTP_DATA_LAST_FRAG:
+
+This may still allow you to skip over a gap if the first middle fragment 
+in the queue starts after the gap.  We need to make sure that
+TSN of the current chunk is less then equal to sctp_tsnmap_get_ctsn(map).
+
+> @@ -651,6 +656,14 @@ static struct sctp_ulpevent *sctp_ulpq_r
+>   			} else
+>   				goto done;
+>   			break;
+> +
+> +		case SCTP_DATA_LAST_FRAG:
+> +			if (!first_frag)
+> +				return NULL;
+> +			else
+> +				goto done;
+> +			break;
+> +
+>   		default:
+>   			return NULL;
+
+Same thing here.  Both, FIRST and MIDDLE fragments need to be validated
+against sctp_tsnmap_get_ctsn(), otherwise you may be stepping over a gap.
+
+>   		}
+> @@ -1054,6 +1067,7 @@ void sctp_ulpq_renege(struct sctp_ulpq *
+>   		      gfp_t gfp)
+>   {
+>   	struct sctp_association *asoc;
+> +	struct sk_buff *skb;
+>   	__u16 needed, freed;
+>
+>   	asoc = ulpq->asoc;
+> @@ -1074,12 +1088,17 @@ void sctp_ulpq_renege(struct sctp_ulpq *
+>   	}
+>   	/* If able to free enough room, accept this chunk. */
+>   	if (chunk && (freed >= needed)) {
+> -		__u32 tsn;
+> +		__u32 tsn, ctsn;
+>   		tsn = ntohl(chunk->subh.data_hdr->tsn);
+> -		sctp_tsnmap_mark(&asoc->peer.tsn_map, tsn, chunk->transport);
+> -		sctp_ulpq_tail_data(ulpq, chunk, gfp);
+> -
+> -		sctp_ulpq_partial_delivery(ulpq, gfp);
+> +		if (sctp_ulpq_tail_data(ulpq, chunk, gfp) == 0) {
+> +			skb = skb_peek(&ulpq->reasm);
+> +			if (skb != NULL) {
+> +				ctsn = sctp_skb2event(skb)->tsn;
+> +				if (TSN_lte(ctsn, tsn))
+> +					sctp_ulpq_partial_delivery(ulpq, chunk,
+> +						gfp);
+> +			}
+> +		}
+>   	}
+
+I am not sure this hunk is really needed.
+
+You are trying to use this code make sure that you start PD with 
+something to deliver, but the PD code already takes care of that.
+You also get some basic cum_tsn checking for the current chunk because
+of how renege is called, but you still don't do the checks for 
+subsequent chunks in the queue as I stated above, so you are still
+subject to possible hangs.
+
+-vlad
+
+>
+>   	sk_mem_reclaim(asoc->base.sk);
+>
+> N�����r��y���b�X��ǧv�^�)޺{.n�+����{���i�{ay�ʇڙ�,j��f���h���z��w������j:+v���w�j�m��������zZ+��ݢj"��!tml=
+>
+
