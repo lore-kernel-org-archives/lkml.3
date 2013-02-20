@@ -1,128 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751221Ab3BTVec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 16:34:32 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:50418 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab3BTVeb (ORCPT
+	id S1751498Ab3BTVgp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 16:36:45 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:52148 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751278Ab3BTVgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 16:34:31 -0500
-Date: Wed, 20 Feb 2013 16:34:23 -0500 (EST)
-Message-Id: <20130220.163423.1512055704917729172.davem@davemloft.net>
-To: mroos@linux.ee
-Cc: rientjes@google.com, linux-mm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: THP bug and crash on sparc64 3.8
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.SOC.1.00.1302201437190.20165@math.ut.ee>
-References: <20130219.144608.1425049879680985441.davem@davemloft.net>
-	<20130220.014137.1184382041985855584.davem@davemloft.net>
-	<alpine.SOC.1.00.1302201437190.20165@math.ut.ee>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 20 Feb 2013 13:34:34 -0800 (PST)
+	Wed, 20 Feb 2013 16:36:43 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Li Fei <fei.li@intel.com>, <pavel@ucw.cz>, <rjw@sisk.pl>,
+        <len.brown@intel.com>, <mingo@redhat.com>, <peterz@infradead.org>,
+        <akpm@linux-foundation.org>, <viro@zeniv.linux.org.uk>,
+        <gorcunov@openvz.org>, <rientjes@google.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <chuansheng.liu@intel.com>, <biao.wang@intel.com>
+References: <Pine.LNX.4.44L0.1302201541000.1671-100000@iolanthe.rowland.org>
+Date: Wed, 20 Feb 2013 13:36:19 -0800
+In-Reply-To: <Pine.LNX.4.44L0.1302201541000.1671-100000@iolanthe.rowland.org>
+	(Alan Stern's message of "Wed, 20 Feb 2013 15:48:43 -0500 (EST)")
+Message-ID: <87zjyyekh8.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19KB1V0cIRXFAcBe3Xf56xHfBWuCKK29Po=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0083]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_14 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Alan Stern <stern@rowland.harvard.edu>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] freezer: configure user space process frozen along with kernel threads
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Meelis Roos <mroos@linux.ee>
-Date: Wed, 20 Feb 2013 15:35:52 +0200 (EET)
+Alan Stern <stern@rowland.harvard.edu> writes:
 
-> Works much better. aptitude worked fine, as did 5 times
-> cp -a linux test; rm -r linux
-> 
-> However, "git gc" in a copy of the repository hung the machine hard, 
-> nothing in the logs.
-> 
-> 3.8.0 with THP disabled can run both cp;rm and git gc several 
-> times without a problem.
+> On Wed, 20 Feb 2013, Eric W. Biederman wrote:
+>
+>> >> Why can't the fuse filesystem freeze when there are requests pending?
+>> >
+>> > It _can_ freeze (that is, the fuse daemon can).  The problem is that
+>> > tasks _using_ the fuse filsystem can't if the daemon doesn't respond. 
+>> 
+>> Which is what I meant when I said that the fuse filesystem couldn't
+>> freeze.
+>
+> Oh, okay.  But it's no different from any other filesystem in that
+> respect.  Processes generally can't be frozen while they are waiting
+> for filesystem I/O to complete.  In many cases they can't receive 
+> signals either (they are in an uninterruptible wait state).
 
-Ok, I think this patch will fix the problem, at least it fixes
-"git gc" crashes for me on UltraSPARC-IIIi:
+Ick.  So the process freezer and all network filesystems has problems?
+Especially nfs?
 
-====================
-[PATCH] sparc64: Fix huge PMD to PTE translation for sun4u in TLB miss handler.
+>> > These tasks are stuck in uninterruptible wait states deep in the
+>> > filesystem layer, probably holding important locks.  They can't be
+>> > frozen until the outstanding requests complete.
+>> 
+>> Why is it that processes that can be preempted can't be frozen?
+>
+> There's a big difference between preemption and freezing: Preemption
+> is involuntary whereas freezing is voluntary.  It's like the difference
+> between preemptive and cooperative multitasking.
 
-When we set the sun4u version of the PTE execute bit, it's:
+I hadn't realized freezing was voluntary.  That certainly seems like a
+pain.
 
-	or	REG, _PAGE_EXEC_4U, REG
+> Processes can be frozen only by making explicit checks, and they 
+> mustn't be frozen while they are holding locks that would prevent other 
+> processes from reaching one of those checks.
+>
+>> At most I would suggest that processes be frozen in reverse priority
+>> order.  Which unless there is a priority inversion should solve this
+>> problem without an additional proc file.
+>
+> Do fuse daemons (and the processes they rely upon) run with elevated 
+> priority?
 
-_PAGE_EXEC_4U is 0x1000, unfortunately the immedate field of the
-'or' instruction is a signed 13-bit value.  So the above actually
-assembles into:
+I don't know if the daemons are of an elevated scheduling priority today
+but if they aren't it is as easy to require an elevated scheduling
+priority as it is to require a magic freezer priority.  Furthermore if
+they don't run at an elevated priority there is the possibility of
+priority inversion.
 
-	or	REG, -4096, REG
+With a little care you might even be able to drop the kernel thread
+special case if you freeze processes by prirority.
 
-completely corrupting the final PTE value.
-
-Set it with a:
-
-	sethi	%hi(_PAGE_EXEC_4U), TMP
-	or	REG, TMP, REG
-
-sequence instead.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- arch/sparc/include/asm/tsb.h | 28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
-
-diff --git a/arch/sparc/include/asm/tsb.h b/arch/sparc/include/asm/tsb.h
-index b4c258d..e696432 100644
---- a/arch/sparc/include/asm/tsb.h
-+++ b/arch/sparc/include/asm/tsb.h
-@@ -157,17 +157,26 @@ extern struct tsb_phys_patch_entry __tsb_phys_patch, __tsb_phys_patch_end;
- 	andn		REG2, 0x7, REG2; \
- 	add		REG1, REG2, REG1;
- 
--	/* This macro exists only to make the PMD translator below easier
--	 * to read.  It hides the ELF section switch for the sun4v code
--	 * patching.
-+	/* These macros exists only to make the PMD translator below
-+	 * easier to read.  It hides the ELF section switch for the
-+	 * sun4v code patching.
- 	 */
--#define OR_PTE_BIT(REG, NAME)				\
-+#define OR_PTE_BIT_1INSN(REG, NAME)			\
- 661:	or		REG, _PAGE_##NAME##_4U, REG;	\
- 	.section	.sun4v_1insn_patch, "ax";	\
- 	.word		661b;				\
- 	or		REG, _PAGE_##NAME##_4V, REG;	\
- 	.previous;
- 
-+#define OR_PTE_BIT_2INSN(REG, TMP, NAME)		\
-+661:	sethi		%hi(_PAGE_##NAME##_4U), TMP;	\
-+	or		REG, TMP, REG;			\
-+	.section	.sun4v_2insn_patch, "ax";	\
-+	.word		661b;				\
-+	mov		-1, TMP;			\
-+	or		REG, _PAGE_##NAME##_4V, REG;	\
-+	.previous;
-+
- 	/* Load into REG the PTE value for VALID, CACHE, and SZHUGE.  */
- #define BUILD_PTE_VALID_SZHUGE_CACHE(REG)				   \
- 661:	sethi		%uhi(_PAGE_VALID|_PAGE_SZHUGE_4U), REG;		   \
-@@ -214,12 +223,13 @@ extern struct tsb_phys_patch_entry __tsb_phys_patch, __tsb_phys_patch_end;
- 	 andn		REG1, PMD_HUGE_PROTBITS, REG2;			      \
- 	sllx		REG2, PMD_PADDR_SHIFT, REG2;			      \
- 	/* REG2 now holds PFN << PAGE_SHIFT */				      \
--	andcc		REG1, PMD_HUGE_EXEC, %g0;			      \
--	bne,a,pt	%xcc, 1f;					      \
--	 OR_PTE_BIT(REG2, EXEC);					      \
--1:	andcc		REG1, PMD_HUGE_WRITE, %g0;			      \
-+	andcc		REG1, PMD_HUGE_WRITE, %g0;			      \
- 	bne,a,pt	%xcc, 1f;					      \
--	 OR_PTE_BIT(REG2, W);						      \
-+	 OR_PTE_BIT_1INSN(REG2, W);					      \
-+1:	andcc		REG1, PMD_HUGE_EXEC, %g0;			      \
-+	be,pt		%xcc, 1f;					      \
-+	 nop;								      \
-+	OR_PTE_BIT_2INSN(REG2, REG1, EXEC);				      \
- 	/* REG1 can now be clobbered, build final PTE */		      \
- 1:	BUILD_PTE_VALID_SZHUGE_CACHE(REG1);				      \
- 	ba,pt		%xcc, PTE_LABEL;				      \
--- 
-1.8.1.2
-
+Eric
