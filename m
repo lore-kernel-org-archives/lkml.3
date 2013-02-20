@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab3BTWni (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 17:43:38 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:33971 "EHLO mail.gnudd.com"
+	id S1752200Ab3BTWpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 17:45:53 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:33987 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752574Ab3BTWmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 17:42:36 -0500
-Date: Wed, 20 Feb 2013 23:42:01 +0100
+	id S1751071Ab3BTWpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 17:45:52 -0500
+Date: Wed, 20 Feb 2013 23:45:28 +0100
 From: Alessandro Rubini <rubini@gnudd.com>
-To: linux-kernel@vger.kernel.org
-Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Davide Ciminaghi <ciminaghi@gnudd.com>, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Subject: [PATCH V6 5/5] x86: add CONFIG_ARM_AMBA, selected by STA2X11
-Message-ID: <d8d231385fe61411ff843a4e9376adf9f5f9431a.1361398614.git.rubini@gnudd.com>
+To: hpa@zytor.com
+Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        giancarlo.asnaghi@st.com, ciminaghi@gnudd.com, alan@linux.intel.com,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org
+Subject: Re: [PATCH V5 4/5] drivers/amba: add support for a PCI bridge
+Message-ID: <20130220224528.GA24819@mail.gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-References: <cover.1361398606.git.rubini@gnudd.com>
-In-Reply-To: <cover.1361398606.git.rubini@gnudd.com>
+In-Reply-To: <51254F57.7060603@zytor.com>
+References: <51254F57.7060603@zytor.com>
+  <cover.1361393832.git.rubini@gnudd.com>
+ <52b9f4e1cc04b7c656e10ee16020090601f6f537.1361393832.git.rubini@gnudd.com>
+ <20130220222419.GX17833@n2100.arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sta2x11 I/O Hub is a bridge from PCIe to AMBA. It reuses a number
-of amba drivers and needs to activate core bus support.
+[meanwhile I posted V6 with the acked-by of linusw and others, that
+were missing in V5]
 
-Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/Kconfig |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+rmk:
+>> I'm happy to take it through my tree if everyone is now happy with this.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b11f082..fc06c25 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -548,6 +548,7 @@ config STA2X11
- 	select SWIOTLB
- 	select MFD_STA2X11
- 	select ARCH_REQUIRE_GPIOLIB
-+	select ARM_AMBA
- 	default n
- 	---help---
- 	  This adds support for boards based on the STA2X11 IO-Hub,
-@@ -2271,6 +2272,9 @@ config TS5500
- 
- endif # X86_32
- 
-+config ARM_AMBA
-+        bool
-+
- config AMD_NB
- 	def_bool y
- 	depends on CPU_SUP_AMD && PCI
--- 
-1.7.7.2
+hpa: 
+> I am okay with that, although I would like to make sure we do a bunch of
+> x86 randconfigs on it before pushing it to Linus.
+
+I did like this:
+  - disable STA2X11 (and thus AMBA) and build
+  - enable STA2X11, answer y to all new questions and build
+
+So there's nothing left (you'll have two unrelated warnings, that I'm
+working on and I'll post a fix tomorrow).  Sure, Peter, first time I
+didn't do that test and missed some of the drivers.
+
+Thanks
+/alessandro
