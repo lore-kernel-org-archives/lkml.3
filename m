@@ -1,37 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759268Ab3BTVWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 16:22:11 -0500
-Received: from mx3.suomi24.fi ([80.76.154.16]:51343 "EHLO
-	s24-maa02.sth.basefarm.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759170Ab3BTVWJ (ORCPT
+	id S1759279Ab3BTVXD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 16:23:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40707 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759095Ab3BTVXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 16:22:09 -0500
-Message-ID: <3357744.379851361395321082.JavaMail.defaultUser@defaultHost>
-Date: Wed, 20 Feb 2013 22:22:01 +0100 (CET)
-From: Grace Efuna <grace0efuna@suomi24.fi>
-Subject: Hello dear,
-MIME-Version: 1.0
-Content-Type: text/plain;charset="iso-8859-15"
+	Wed, 20 Feb 2013 16:23:01 -0500
+Date: Wed, 20 Feb 2013 13:23:00 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] posix-timer: don't call idr_find() w/ negative ID
+Message-Id: <20130220132300.ccffde44.akpm@linux-foundation.org>
+In-Reply-To: <20130220210116.GD3570@htj.dyndns.org>
+References: <1361385853-29010-1-git-send-email-sasha.levin@oracle.com>
+	<CAOS58YMT3NS-8zvwx1tNQoLKM1WtKtT-YXBPi=4pAeAMi=rYeA@mail.gmail.com>
+	<512522CF.1020901@oracle.com>
+	<20130220210116.GD3570@htj.dyndns.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 20 Feb 2013 13:01:16 -0800
+Tejun Heo <tj@kernel.org> wrote:
 
+> Recent idr updates make idr_find() trigger WARN_ON_ONCE() before
+> returning NULL when a negative ID is specified.  Apparently,
+> posix-timer::__lock_timer() was depending on idr_find() returning NULL
+> on negative ID, thus triggering the new WARN_ON_ONCE().  Make
+> __lock_timer() first check whether @timer_id is negative and return
+> NULL without invoking idr_find() if so.
+> 
+> Note that the previous code was theoretically broken.  idr_find()
+> masked off the sign bit before performing lookup and if the matching
+> IDs were in use, it would have returned pointer for the incorrect
+> entry.
+> 
+> ...
+>
+> --- a/kernel/posix-timers.c
+> +++ b/kernel/posix-timers.c
+> @@ -637,6 +637,9 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
+>  {
+>  	struct k_itimer *timr;
+>  
+> +	if ((int)timer_id < 0)
+> +		return NULL;
+> +
+>  	rcu_read_lock();
+>  	timr = idr_find(&posix_timers_id, (int)timer_id);
+>  	if (timr) {
 
+This is a bit risky - if some arch defines timer_t to be a u64 then we
+will incorrectly treat 0x0000 0001 ffff ffff as a negative number. 
+(That's a lot of timers!)
 
---
-Hello dear,
+A fancy way of avoiding this is
 
-I am miss  Grace Efuna 24years and single, hope am not offending you by 
-expressing my feelings of having a friendship or relationship with you, can you 
-please write to me back with my email below for more communication and exchange 
-of pictures to know more about each other for a better unions-hip.
+	if (timer_id & ((typeof timer_id)1 << (sizeof(timer_id) - 1)))
 
-Thanks,
+(approximately ;))
 
-Yours Grace.
---
-
+But I think casting to (long) should be good enough?
