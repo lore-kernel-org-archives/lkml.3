@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab3BTXja (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 18:39:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60104 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457Ab3BTXj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 18:39:29 -0500
-Message-ID: <51255E57.2010803@zytor.com>
-Date: Wed, 20 Feb 2013 15:37:59 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752192Ab3BTXsR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 18:48:17 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35439 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494Ab3BTXsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 18:48:16 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51256042.5030704@jp.fujitsu.com>
+Date: Thu, 21 Feb 2013 08:46:10 +0900
+From: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org,
-        giancarlo.asnaghi@st.com, ciminaghi@gnudd.com, alan@linux.intel.com,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org
-Subject: Re: [PATCH V5 4/5] drivers/amba: add support for a PCI bridge
-References: <51254F57.7060603@zytor.com> <cover.1361393832.git.rubini@gnudd.com> <52b9f4e1cc04b7c656e10ee16020090601f6f537.1361393832.git.rubini@gnudd.com> <20130220222419.GX17833@n2100.arm.linux.org.uk> <20130220224528.GA24819@mail.gnudd.com> <51255329.4070506@zytor.com> <20130220233532.GY17833@n2100.arm.linux.org.uk>
-In-Reply-To: <20130220233532.GY17833@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
+To: Matt Fleming <matt@console-pimps.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-efi@vger.kernel.org>, Matt Fleming <matt.fleming@intel.com>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] x86, efi: Make "noefi" really disable EFI runtime serivces
+References: <1361392572-25657-1-git-send-email-matt@console-pimps.org>
+In-Reply-To: <1361392572-25657-1-git-send-email-matt@console-pimps.org>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 03:35 PM, Russell King - ARM Linux wrote:
-> On Wed, Feb 20, 2013 at 02:50:17PM -0800, H. Peter Anvin wrote:
->> On 02/20/2013 02:45 PM, Alessandro Rubini wrote:
->>> [meanwhile I posted V6 with the acked-by of linusw and others, that
->>> were missing in V5]
->>>
->>> rmk:
->>>>> I'm happy to take it through my tree if everyone is now happy with this.
->>>
->>> hpa: 
->>>> I am okay with that, although I would like to make sure we do a bunch of
->>>> x86 randconfigs on it before pushing it to Linus.
->>>
->>> I did like this:
->>>   - disable STA2X11 (and thus AMBA) and build
->>>   - enable STA2X11, answer y to all new questions and build
->>>
->>> So there's nothing left (you'll have two unrelated warnings, that I'm
->>> working on and I'll post a fix tomorrow).  Sure, Peter, first time I
->>> didn't do that test and missed some of the drivers.
->>>
->>
->> I was just concerned that rmk wouldn't necessarily do those tests as a
->> matter of process.
->>
->> So Russell -- how do you want to handle this?  Should I take them (and
->> ask Ingo to put them through his test machinery) or do you want to (and
->> run x86 randconfigs as part of your testing)?
+Hi Matt,
+
+(2013/02/21 5:36), Matt Fleming wrote:
+> From: Matt Fleming <matt.fleming@intel.com>
 > 
-> Well, I'm happy to take the non-x86 bits if that's what others want (for
-> the _next_ merge window, not this one.)  That _should_ result in x86 not
-> seeing this stuff until it gets the ARM_AMBA definition enabled, and
-> giving it a full cycle of testing.
+> commit 1de63d60cd5b ("efi: Clear EFI_RUNTIME_SERVICES rather than
+> EFI_BOOT by "noefi" boot parameter") attempted to make "noefi" true to
+> its documentation and disable EFI runtime services to prevent the
+> bricking bug described in commit e0094244e41c ("samsung-laptop:
+> Disable on EFI hardware"). However, it's not possible to clear
+> EFI_RUNTIME_SERVICES from an early param function because
+> EFI_RUNTIME_SERVICES is set in efi_init() *after* parse_early_param().
 > 
-> However, if we want to keep the patch set together and route it via
-> another tree, I'm also fine with that too.
+> This resulted in "noefi" effectively becoming a no-op and no longer
+> providing users with a way to disable EFI, which is bad for those
+> users that have buggy machines.
+
+Sorry, my patch was imperfect. This patch looks good to me.
+
+Reviewed-by: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+
+Thanks,
+Satoru
+
+> 
+> Reported-by: Walt Nelson Jr <walt0924@gmail.com>
+> Cc: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> ---
+>  arch/x86/platform/efi/efi.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+> index 928bf83..e2cd38f 100644
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -85,9 +85,10 @@ int efi_enabled(int facility)
+>  }
+>  EXPORT_SYMBOL(efi_enabled);
+>  
+> +static bool disable_runtime = false;
+>  static int __init setup_noefi(char *arg)
+>  {
+> -	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
+> +	disable_runtime = true;
+>  	return 0;
+>  }
+>  early_param("noefi", setup_noefi);
+> @@ -734,7 +735,7 @@ void __init efi_init(void)
+>  	if (!efi_is_native())
+>  		pr_info("No EFI runtime due to 32/64-bit mismatch with kernel\n");
+>  	else {
+> -		if (efi_runtime_init())
+> +		if (disable_runtime || efi_runtime_init())
+>  			return;
+>  		set_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
+>  	}
 > 
 
-Actually, between linux-next and Fengguang's zeroday testbot I suspect
-we'll get all the coverage we need.  So yes, go ahead and take them.
-
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
-
-	-hpa
 
