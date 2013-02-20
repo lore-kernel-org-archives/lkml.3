@@ -1,95 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab3BTX1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 18:27:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60016 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802Ab3BTX1J (ORCPT
+	id S1752270Ab3BTXan (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 18:30:43 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:47842 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533Ab3BTXal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 18:27:09 -0500
-Date: Wed, 20 Feb 2013 15:25:50 -0800
-From: tip-bot for Matt Fleming <tipbot@zytor.com>
-Message-ID: <tip-fb834c7acc5e140cf4f9e86da93a66de8c0514da@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        stable@vger.kernel.org, matt.fleming@intel.com,
-        takeuchi_satoru@jp.fujitsu.com, tglx@linutronix.de,
-        hpa@linux.intel.com, walt0924@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, matt.fleming@intel.com,
-        takeuchi_satoru@jp.fujitsu.com, tglx@linutronix.de, walt0924@gmail.com,
-        hpa@linux.intel.com
-In-Reply-To: <1361392572-25657-1-git-send-email-matt@console-pimps.org>
-References: <1361392572-25657-1-git-send-email-matt@console-pimps.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, efi: Make "noefi"
-  really disable EFI runtime serivces
-Git-Commit-ID: fb834c7acc5e140cf4f9e86da93a66de8c0514da
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 20 Feb 2013 18:30:41 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 20 Feb 2013 15:25:56 -0800 (PST)
+In-Reply-To: <CACBanvo6NqbG7mzD76rM-5kEZ3bOXKfGSbRghvuejSD5S_jnBQ@mail.gmail.com>
+References: <1361008406-2307-1-git-send-email-msb@chromium.org>
+	<1361008406-2307-5-git-send-email-msb@chromium.org>
+	<20130216171010.GE4910@redhat.com>
+	<20130216194643.GA31569@redhat.com>
+	<CACBanvpOVxdiM3FWMiZMM5sAkxXbguT1VhFMkyQv-ntVPE8Y=Q@mail.gmail.com>
+	<20130219142721.GA5709@redhat.com>
+	<CACBanvq+Sdtv-tNXTmJyb3EvXGshC=D4NjR8aVOCjRXcTKp+Mw@mail.gmail.com>
+	<20130219194517.GA9986@redhat.com>
+	<CACBanvo6NqbG7mzD76rM-5kEZ3bOXKfGSbRghvuejSD5S_jnBQ@mail.gmail.com>
+Date: Wed, 20 Feb 2013 15:30:41 -0800
+X-Google-Sender-Auth: MXkMmyX-Ic2WZdtkdDgmDVVexVc
+Message-ID: <CACBanvqF8GjPM0yfEy=7yHCQk5vct6G_T9MD4KJsDiCfwkCQnQ@mail.gmail.com>
+Subject: Re: [PATCH 5/5] coredump: ignore non-fatal signals when core dumping
+ to a pipe
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ben Chan <benchan@chromium.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fb834c7acc5e140cf4f9e86da93a66de8c0514da
-Gitweb:     http://git.kernel.org/tip/fb834c7acc5e140cf4f9e86da93a66de8c0514da
-Author:     Matt Fleming <matt.fleming@intel.com>
-AuthorDate: Wed, 20 Feb 2013 20:36:12 +0000
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 20 Feb 2013 13:18:36 -0800
+On Tue, Feb 19, 2013 at 12:20 PM, Mandeep Singh Baines <msb@chromium.org> wrote:
+> On Tue, Feb 19, 2013 at 11:45 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> On 02/19, Mandeep Singh Baines wrote:
+>>>
+>>> On Tue, Feb 19, 2013 at 6:27 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>> > Please look at 1-3 I sent. Btw, I slightly tested this series, seems
+>>> > to work...
+>>> >
+>>>
+>>> They look good to me. I plan on applying them to our tree since we
+>>> need a fix ASAP.
+>>
+>> Great!
+>>
+>>> >> You'd need to prevent the fake signal from freeezer from setting
+>>> >> TIF_SIGPENDING. Maybe just add a SIGNAL_GROUP_EXIT check in freezer.c.
+>>> >
+>>> > I am thinking about checking SIGNAL_GROUP_COREDUMP but I am not sure,
+>>> > perhaps we can make a simpler solution. As for wait_for_dump_helper()
+>>> > we do not need any check at all, but we should either fix
+>>> > wait_event_freezable (it is actually not right) or change pipe_release()
+>>>
+>>> Is the bug that it will exit on the fake_signal.
+>>
+>> Yes, I understand, but
+>>
+>>> I don't think that bug will affects this patch though.  I think this
+>>> should all work if we add a check to freezer.c (or something similar
+>>> that is cleaner).
+>>>
+>>> If you add SIGNAL_GROUP_COREDUMP check to freezer.c:
+>>>
+>>> static void fake_signal_wake_up(struct task_struct *p)
+>>> {
+>>>         unsigned long flags;
+>>>
+>>>         if (lock_task_sighand(p, &flags)) {
+>>> -                signal_wake_up(p, 0);
+>>> +              if (!p->signal->flags & SIGNAL_GROUP_COREDUMP)
+>>> +                              signal_wake_up(p, 0);
+>>>                 unlock_task_sighand(p, &flags);
+>>>         }
+>>> }
+>>>
+>>> And change the wait_event_freezekillable() in this patch to just
+>>> wait_event_freezable(), shouldn't that just work.
+>>
+>> I doubt,
+>>
+>>> The fake signal will never get sent.
+>>
+>> Yes but try_to_freeze_tasks() can fail.
+>>
+>
+> Ah. Good point. How about this then:
+>
+> /* can't use wait_event_freezable since we suppress the fake signal on
+> SIGNAL_GROUP_COREDUMP */
+> freezer_do_not_count();
+> wait_event_interruptible(pipe->wait, pipe->readers == 1);
+> freezer_count();
+>
 
-x86, efi: Make "noefi" really disable EFI runtime serivces
+No that won't work either. You can't block the fake signal. Since the
+dump catcher can keep pipe_write blocked for unbounded time,
+user-space can block suspend for unbounded time.
 
-commit 1de63d60cd5b ("efi: Clear EFI_RUNTIME_SERVICES rather than
-EFI_BOOT by "noefi" boot parameter") attempted to make "noefi" true to
-its documentation and disable EFI runtime services to prevent the
-bricking bug described in commit e0094244e41c ("samsung-laptop:
-Disable on EFI hardware"). However, it's not possible to clear
-EFI_RUNTIME_SERVICES from an early param function because
-EFI_RUNTIME_SERVICES is set in efi_init() *after* parse_early_param().
+Even worse than bad core dumps is unreliable suspend/resume.
 
-This resulted in "noefi" effectively becoming a no-op and no longer
-providing users with a way to disable EFI, which is bad for those
-users that have buggy machines.
+Here the patch I eventually applied to out tree:
 
-Reported-by: Walt Nelson Jr <walt0924@gmail.com>
-Cc: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Link: http://lkml.kernel.org/r/1361392572-25657-1-git-send-email-matt@console-pimps.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/platform/efi/efi.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+{
+        struct pipe_inode_info *pipe;
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 928bf83..e2cd38f 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -85,9 +85,10 @@ int efi_enabled(int facility)
- }
- EXPORT_SYMBOL(efi_enabled);
- 
-+static bool disable_runtime = false;
- static int __init setup_noefi(char *arg)
- {
--	clear_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
-+	disable_runtime = true;
- 	return 0;
- }
- early_param("noefi", setup_noefi);
-@@ -734,7 +735,7 @@ void __init efi_init(void)
- 	if (!efi_is_native())
- 		pr_info("No EFI runtime due to 32/64-bit mismatch with kernel\n");
- 	else {
--		if (efi_runtime_init())
-+		if (disable_runtime || efi_runtime_init())
- 			return;
- 		set_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
- 	}
+        pipe = file->f_path.dentry->d_inode->i_pipe;
+
+        pipe_lock(pipe);
+        pipe->readers++;
+        pipe->writers--;
+
+        while (pipe->readers > 1) {
+                unsigned long flags;
+
+                wake_up_interruptible_sync(&pipe->wait);
+                kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+                pipe_wait(pipe);
+
+                pipe_unlock(pipe);
+                try_to_freeze();
+                pipe_lock(pipe);
+
+                if (fatal_signal_pending(current))
+                        break;
+
+                /* Clear fake signal from freeze_task(). */
+                spin_lock_irqsave(&current->sighand->siglock, flags);
+                recalc_sigpending();
+                spin_unlock_irqrestore(&current->sighand->siglock, flags);
+        }
+
+        pipe->readers--;
+        pipe->writers++;
+        pipe_unlock(pipe);
+
+}
+
+On suspend, you might truncate a core-dump but at least you can
+reliably suspend.
+
+Regards,
+Mandeep
+
+> Regards,
+> Mandeep
+>
+>> And once again, if wait_event_freezable() was correct we do not care
+>> about the fake signal (in wait_for_dump_helper), so we do not need
+>> to change fake_signal_wake_up. So perhaps we should fix it but this
+>> needs some discussion.
+>>
+>> Sorry again for the terse reply (and perhaps I misunderstood you),
+>> I'll try to return to this problem asap. In any case I still think
+>> we should do the freezer fixes on top of signal fixes I sent, and
+>> you seem to agree. Good ;)
+>>
+>> Oleg.
+>>
