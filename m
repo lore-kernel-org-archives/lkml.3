@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935112Ab3BTUsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 15:48:18 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:43795 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934716Ab3BTUsR (ORCPT
+	id S935250Ab3BTUsq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 15:48:46 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:35057 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S935163Ab3BTUso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 15:48:17 -0500
-Subject: Re: Read I/O starvation with writeback RAID controller
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Martin Svec <martin.svec@zoner.cz>
-Cc: target-devel <target-devel@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        linux-scsi <linux-scsi@vger.kernel.org>
-In-Reply-To: <5124EDF4.4010309@zoner.cz>
-References: <5124EDF4.4010309@zoner.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Feb 2013 12:48:15 -0800
-Message-ID: <1361393295.3667.21.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Feb 2013 15:48:44 -0500
+Date: Wed, 20 Feb 2013 15:48:43 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Li Fei <fei.li@intel.com>, <pavel@ucw.cz>, <rjw@sisk.pl>,
+        <len.brown@intel.com>, <mingo@redhat.com>, <peterz@infradead.org>,
+        <akpm@linux-foundation.org>, <viro@zeniv.linux.org.uk>,
+        <gorcunov@openvz.org>, <rientjes@google.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <chuansheng.liu@intel.com>, <biao.wang@intel.com>
+Subject: Re: [PATCH] freezer: configure user space process frozen along with
+ kernel threads
+In-Reply-To: <87obfeivc3.fsf@xmission.com>
+Message-ID: <Pine.LNX.4.44L0.1302201541000.1671-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin,
+On Wed, 20 Feb 2013, Eric W. Biederman wrote:
 
-CC'ing linux-scsi here, as aacraid doesn't have an official maintainer
-atm.
+> >> Why can't the fuse filesystem freeze when there are requests pending?
+> >
+> > It _can_ freeze (that is, the fuse daemon can).  The problem is that
+> > tasks _using_ the fuse filsystem can't if the daemon doesn't respond. 
+> 
+> Which is what I meant when I said that the fuse filesystem couldn't
+> freeze.
 
---nab
+Oh, okay.  But it's no different from any other filesystem in that
+respect.  Processes generally can't be frozen while they are waiting
+for filesystem I/O to complete.  In many cases they can't receive 
+signals either (they are in an uninterruptible wait state).
 
-On Wed, 2013-02-20 at 16:38 +0100, Martin Svec wrote:
-> Hello,
+> > These tasks are stuck in uninterruptible wait states deep in the
+> > filesystem layer, probably holding important locks.  They can't be
+> > frozen until the outstanding requests complete.
 > 
-> I've noticed read I/O starvation problems of LIO iSCSI target when
-> used on top of writeback-enabled HW RAID controller (PERC H700 with
-> 1GB cache). For intensive mixed read-write workload in virtualized
-> environments, writes are able to consume over 95% of the IOPS
-> throughput and cause starvation of reads.
-> 
-> After a number of tests it seems to me it's a general issue of block
-> layer I/O scheduling when running on top of a writeback device. If
-> there is a write-intensive task, all writes go to the writeback cache
-> with near-zero latency. This allows writer to quickly saturate the
-> device with thousands of writes while using only a minimal fraction of
-> queue depth. However, non-cached reads depend on spinning drive
-> latencies which are orders of magnitude higher than writeback cache
-> latencies, and so readers cannot submit so many requests per second as
-> writers. Consequently, I guess the controller has totally wrong view
-> of the incoming workload pattern, tries to satisfy the write flood
-> first and the net result is inacceptable starvation of reads, with
-> latencies up to hundreds of milliseconds.
-> 
-> A simple fio test with 1TiB block device where one thread does 4k
-> random sync writes with iodepth=32 and one thread does 4k random reads
-> with iodepth=32 shows that instead of the theoretical 50:50 IOPS
-> ratio, the block device runs with 95:5 ratio in favor of writes. In
-> fact, the imbalance is so high that even write iodepth=2 is enaugh to
-> achieve the same numbers.
-> 
-> Real workloads that tend to exhibit this problem are: initial zeroing
-> of a virtual machine disk, virtual machine migration, virtual machine
-> cloning, intensive swapping of one virtual machine etc.
-> 
-> I tried to set WCE=1 on target iblock device, played with queue
-> depths, tested all three I/O schedulers and their parameters,
-> controller's parameters, but with no luck. To achieve reasonably good
-> fairness, the only solution is to set nr_requests to 1 or disable
-> controller's writeback cache at all -- at the expense of degraded
-> overall performance :-(
-> 
-> Regarding nr_requests, there's obvious relation between iodepths and
-> read starvation: if (nr_requests >= workload iodepth) then starvation
-> surely occurs. Lowering nr_requests below this threshold slowly starts
-> improving fairness and for every rd+wr iodepths pair, there exists
-> sufficiently low nr_requests value at which IOPS ratio is finally
-> balanced according to rd:wr iodepth ratio. Unfortunately it means
-> there is no minimal nr_requests value suitable for all workloads. For
-> iodepths around 2 to 8, only nr_requests=1 provides fair load balancing.
-> 
-> Is this a known problem? Does anybody find block layer parameters that
-> elliminate this problem for iscsi-target storage in mixed random
-> read-write environments like virtualization? Or should I start writing
-> my own I/O scheduler? ;-)
-> 
-> Update: I've just found https://lkml.org/lkml/2012/12/10/550 (Read
-> starvation by sync writes), where Jan Kara describes identical
-> symptoms. But setting nr_requests=10000 doesn't help in my case.
-> CC'ing LKML too (I'm not LKML subscriber).
-> 
-> Thanks,
-> 
-> Martin
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe target-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Why is it that processes that can be preempted can't be frozen?
 
+There's a big difference between preemption and freezing: Preemption
+is involuntary whereas freezing is voluntary.  It's like the difference
+between preemptive and cooperative multitasking.
+
+Processes can be frozen only by making explicit checks, and they 
+mustn't be frozen while they are holding locks that would prevent other 
+processes from reaching one of those checks.
+
+> At most I would suggest that processes be frozen in reverse priority
+> order.  Which unless there is a priority inversion should solve this
+> problem without an additional proc file.
+
+Do fuse daemons (and the processes they rely upon) run with elevated 
+priority?
+
+Alan Stern
 
