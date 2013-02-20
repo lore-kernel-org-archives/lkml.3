@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935878Ab3BTUXu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 15:23:50 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:47541 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935790Ab3BTUXm (ORCPT
+	id S935903Ab3BTUYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 15:24:13 -0500
+Received: from smtprelay-h21.telenor.se ([195.54.99.196]:55141 "EHLO
+	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935700Ab3BTUYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 15:23:42 -0500
+	Wed, 20 Feb 2013 15:24:11 -0500
+X-SENDER-IP: [85.230.168.206]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AghGAMcvJVFV5qjOPGdsb2JhbABFhWCFILVfgQEXAwEBAQE4NIIfAQEEAScTHCMFCwgDISUPBQ0YChoTiAADCQq2eA2JWhWMIoJXB4JfYQOUUYFahgKFRYgd
+X-IronPort-AV: E=Sophos;i="4.84,704,1355094000"; 
+   d="scan'208";a="206336561"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 20 Feb 2013 21:25:31 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] HID: multitouch: remove usbhid dependency
+Message-ID: <20130220202531.GA1413@polaris.bitmath.org>
+References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1360334256-22127-7-git-send-email-benjamin.tissoires@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKMK7uGDpSKga9=2SrGQDxBGzY5B1cGJAchZvfKfQy1ivRONMg@mail.gmail.com>
-References: <CANeU7QmbzX4Tx1Dtu6xOiYzr6h6_8tPQvVG32Wvkt=5wAwEEAg@mail.gmail.com>
-	<20130219100849.72d2330b@jbarnes-desktop>
-	<CANeU7QmJb+yUGu9mVgq=_pHhvpPu6ORrikm=E6PkuHpOz9OREA@mail.gmail.com>
-	<20130219125217.6b6f55ff@jbarnes-desktop>
-	<CANeU7QnQmKYXHA=aEuRGZDc7hVdY6037i=+s_n3FZNMN2njDsw@mail.gmail.com>
-	<CAKMK7uG7TgiAn0ZQ=E_-QBPNAVhTSxpORkX3Z1mY=54mgTzM-g@mail.gmail.com>
-	<CANeU7QnMzYuG6iiU3nLh4k0dGFMEDOyfUDQgxQSKj20_y-oL+Q@mail.gmail.com>
-	<CAKMK7uGDpSKga9=2SrGQDxBGzY5B1cGJAchZvfKfQy1ivRONMg@mail.gmail.com>
-Date: Wed, 20 Feb 2013 12:23:41 -0800
-X-Google-Sender-Auth: zD5WpxjsBh-qSku31pzMnBFMfPw
-Message-ID: <CANeU7Qko6o9nJ-Rm3+hdQQC2iYDXKZq019H+B8ekxFULHwpB=Q@mail.gmail.com>
-Subject: Re: i915 black screen introduced by ACPI changes
-From: Chris Li <lkml@chrisli.org>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-        robert.moore@intel.com, feng.tang@intel.com, len.brown@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360334256-22127-7-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 12:19 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> The debug option did not stick for some reason. Also you're hitting a
-> bunch of WARNs in our driver self-checks. Iirc those should be fixed
-> in the latest code. Can you please test with the latest
-> drm-intel-nightly branch from
->
-> http://cgit.freedesktop.org/~danvet/drm-intel
+Hi Benjamin,
 
-Sure, working on that.
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> ---
+>  drivers/hid/hid-multitouch.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 
+Since removing the transport layer dependency has a rationale, it
+might be good to mention that here.
 
->
-> Also can you please attach a dmesg from a working kernel without the
-> i915.modeset=0 option?
+Also, what about the explicit usb dependency, was that going to be
+moved to a usbhid quirk?
 
-I did in one of my previous email, the attach file is "dmesg.3.6.10".
-I just double check it without the "i915.modeset=0".
+> 
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 32258ba..184ac0a 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -32,7 +32,6 @@
+>  #include <linux/slab.h>
+>  #include <linux/usb.h>
+>  #include <linux/input/mt.h>
+> -#include "usbhid/usbhid.h"
+>  
+>  
+>  MODULE_AUTHOR("Stephane Chatty <chatty@enac.fr>");
+> @@ -907,7 +906,7 @@ static int mt_resume(struct hid_device *hdev)
+>  
+>  	intf = to_usb_interface(hdev->dev.parent);
+>  	interface = intf->cur_altsetting;
+> -	dev = hid_to_usb_dev(hdev);
+> +	dev = interface_to_usbdev(intf);
+>  
+>  	/* Some Elan legacy devices require SET_IDLE to be set on resume.
+>  	 * It should be safe to send it to other devices too.
+> -- 
+> 1.8.1
+> 
 
-Chris
+Thanks,
+Henrik
