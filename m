@@ -1,75 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934176Ab3BTA3X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 19:29:23 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:36971 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933618Ab3BTA3H (ORCPT
+	id S934361Ab3BTA3p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 19:29:45 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:48250 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934893Ab3BTAWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 19:29:07 -0500
-Date: Wed, 20 Feb 2013 11:29:03 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hauke Mehrtens <hauke@hauke-m.de>, John Crispin <blogic@openwrt.org>
-Subject: Re: linux-next: build failure after merge of the mips tree
-Message-Id: <20130220112903.69946023ad0d9739bc063dc1@canb.auug.org.au>
-In-Reply-To: <20130218104340.eb5e20da05dffe89ac4da693@canb.auug.org.au>
-References: <20130218104340.eb5e20da05dffe89ac4da693@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__20_Feb_2013_11_29_03_+1100_eHDrrPqiAT1inR=J"
+	Tue, 19 Feb 2013 19:22:52 -0500
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk
+Subject: [PATCH 05/27] block: Add bio_advance()
+Date: Tue, 19 Feb 2013 16:22:19 -0800
+Message-Id: <1361319761-23873-6-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1361319761-23873-1-git-send-email-koverstreet@google.com>
+References: <1361319761-23873-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Feb_2013_11_29_03_+1100_eHDrrPqiAT1inR=J
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is prep work for immutable bio vecs; we first want to centralize
+where bvecs are modified.
 
-Hi Ralf,
+Next two patches convert some existing code to use this function.
 
-On Mon, 18 Feb 2013 10:43:40 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the mips tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->=20
-> drivers/ssb/driver_gpio.c: In function 'ssb_gpio_chipco_to_irq':
-> drivers/ssb/driver_gpio.c:82:3: error: implicit declaration of function '=
-ssb_mips_irq' [-Werror=3Dimplicit-function-declaration]
->=20
-> Caused by commit d630dd4ef20f ("ssb: add gpio_to_irq again").
->=20
-> I have used the mips tree from next-20130215 for today.
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+CC: Jens Axboe <axboe@kernel.dk>
+---
+ fs/bio.c                  | 41 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/bio.h       |  2 ++
+ include/linux/blk_types.h |  2 ++
+ 3 files changed, 45 insertions(+)
 
-I am still getting this build problem.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/fs/bio.c b/fs/bio.c
+index 40aa96e..7edc08d 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -752,6 +752,47 @@ int bio_add_page(struct bio *bio, struct page *page, unsigned int len,
+ }
+ EXPORT_SYMBOL(bio_add_page);
+ 
++/**
++ * bio_advance - increment/complete a bio by some number of bytes
++ * @bio:	bio to advance
++ * @bytes:	number of bytes to complete
++ *
++ * This updates bi_sector, bi_size and bi_idx; if the number of bytes to
++ * complete doesn't align with a bvec boundary, then bv_len and bv_offset will
++ * be updated on the last bvec as well.
++ *
++ * @bio will then represent the remaining, uncompleted portion of the io.
++ */
++void bio_advance(struct bio *bio, unsigned bytes)
++{
++	if (bio_integrity(bio))
++		bio_integrity_advance(bio, bytes);
++
++	bio->bi_sector += bytes >> 9;
++	bio->bi_size -= bytes;
++
++	if (bio->bi_rw & BIO_NO_ADVANCE_ITER_MASK)
++		return;
++
++	while (bytes) {
++		if (unlikely(bio->bi_idx >= bio->bi_vcnt)) {
++			WARN_ONCE(1, "bio idx %d >= vcnt %d\n",
++				  bio->bi_idx, bio->bi_vcnt);
++			break;
++		}
++
++		if (bytes >= bio_iovec(bio)->bv_len) {
++			bytes -= bio_iovec(bio)->bv_len;
++			bio->bi_idx++;
++		} else {
++			bio_iovec(bio)->bv_len -= bytes;
++			bio_iovec(bio)->bv_offset += bytes;
++			bytes = 0;
++		}
++	}
++}
++EXPORT_SYMBOL(bio_advance);
++
+ struct bio_map_data {
+ 	struct bio_vec *iovecs;
+ 	struct sg_iovec *sgvecs;
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 669b1cb..fcb4dba 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -248,6 +248,8 @@ extern void bio_endio(struct bio *, int);
+ struct request_queue;
+ extern int bio_phys_segments(struct request_queue *, struct bio *);
+ 
++extern void bio_advance(struct bio *, unsigned);
++
+ extern void bio_init(struct bio *);
+ extern void bio_reset(struct bio *);
+ 
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index cdf1119..c178d25 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -197,6 +197,8 @@ enum rq_flag_bits {
+ 	 REQ_SECURE)
+ #define REQ_CLONE_MASK		REQ_COMMON_MASK
+ 
++#define BIO_NO_ADVANCE_ITER_MASK	(REQ_DISCARD|REQ_WRITE_SAME)
++
+ /* This mask is used for both bio and request merge checking */
+ #define REQ_NOMERGE_FLAGS \
+ 	(REQ_NOMERGE | REQ_STARTED | REQ_SOFTBARRIER | REQ_FLUSH | REQ_FUA)
+-- 
+1.7.12
 
---Signature=_Wed__20_Feb_2013_11_29_03_+1100_eHDrrPqiAT1inR=J
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRJBjPAAoJEECxmPOUX5FE5GIP/jABwPgdGmwRCdzBCQXW37N/
-IrvgSJY3AkKj19y6dvbnD7R3J0r2vuSCg6YzK+59s3IuH87xZrbhtYUK8hZ0+vVr
-cEFULEwq3lAWmfVxGaYJpRHXtRvgPMWkK3JL+NM4FXvl8kdctmuCE0X3r4g9lPdG
-5r8wYT5K9HMBaOjD5RBQO9463MrtUCoyBJgez7GxEwg88Dxw9yqIAwC+fQeZ9w6S
-QfcSh/y02Gl26VFJmRy8GoyG4wE1EZVqGGTh4wLg8ujlrh24n3eq151QPK26aQ/0
-ebBSY1zt/hqzKt18YTntEcul4UyBAG7LVrrMGxVXQIqySYSFPvn9hBIjPvikNA97
-CaaCuMjkCg8gHVHdeEtGf16OZ0k/n2T5UrDQnUsiejJmNUQ67ILOzez+H7ZGIjU1
-ivZ4C6pD2+Q91s1NFLMqnBDfkp7E/CH5PI7KpYeS/4k5RKLzHhs6Do1WkV5wHee5
-YV/K8WVm4tdWfvYRkq03ynjGd6hcOEhC0hHUknhbQps51Sml+ePqAiH5XI4Oxivi
-5M4lTV+vijDuohd0XaWFUYeEvpxlc2/3Oxq+x8h1fK/bUBd0nB93j5sqZ57cdcEt
-43cCUrJ6AmlXEIXxFTEO/SmjTOGx2j8PmvIBNYqBK0NcxyZ1ddF7JGl/HiE/dsSY
-fyEGjT0vNrXHpMfBWYgp
-=4hUr
------END PGP SIGNATURE-----
-
---Signature=_Wed__20_Feb_2013_11_29_03_+1100_eHDrrPqiAT1inR=J--
