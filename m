@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934579Ab3BTRdo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 12:33:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462Ab3BTRdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 12:33:43 -0500
-Date: Wed, 20 Feb 2013 18:32:29 +0100
-From: Karel Zak <kzak@redhat.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@linuxfoundation.org, alan@linux.intel.com, jirislaby@gmail.com,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Bryan Mason <bmason@redhat.com>
-Subject: Re: [PATCH] TTY: do not reset master's packet mode
-Message-ID: <20130220173229.GA32279@x2.net.home>
-References: <1358288782-2946-1-git-send-email-jslaby@suse.cz>
- <20130220131903.GA8501@x2.net.home>
- <5124FC82.5040305@suse.cz>
+	id S934485Ab3BTRgs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 12:36:48 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39870 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933904Ab3BTRgq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 12:36:46 -0500
+Message-ID: <512509A9.6020208@wwwdotorg.org>
+Date: Wed, 20 Feb 2013 10:36:41 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5124FC82.5040305@suse.cz>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Laxman Dewangan <ldewangan@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] spi: tegra114: add spi driver
+References: <1361281115-20436-1-git-send-email-ldewangan@nvidia.com> <5123C18A.9010604@wwwdotorg.org> <5124C18F.6070108@nvidia.com> <20130220131112.GE2726@opensource.wolfsonmicro.com> <5124CEF5.3060605@nvidia.com> <512506F9.2030508@wwwdotorg.org> <20130220173109.GU2726@opensource.wolfsonmicro.com>
+In-Reply-To: <20130220173109.GU2726@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 05:40:34PM +0100, Jiri Slaby wrote:
-> On 02/20/2013 02:19 PM, Karel Zak wrote:
-> > On Tue, Jan 15, 2013 at 11:26:22PM +0100, Jiri Slaby wrote:
-> >> Now that login from util-linux is forced to drop all references to a
-> >> TTY which it wants to hangup (to reach reference count 1) we are
-> >> seeing issues with telnet. When login closes its last reference to the
-> >> slave PTY, it also resets packet mode on the *master* side. And we
-> >> have a race here.
-> > 
-> > [...]
-> > 
-> >> By this I am resurrecting an old bug, see References. We are hitting
-> >> it regularly now, i.e. with updated util-linux, ergo login.
-> >>
-> >> Here, I am changing a behavior introduced back in 2.1 times. It would
-> >> better have a long time testing before goes upstream.
-> > 
-> >  It would be nice to found a quick way how to resolve this problem,
-> >  because telnet+login is broken now... and for end users it seems like
-> >  a regression.
+On 02/20/2013 10:31 AM, Mark Brown wrote:
+> On Wed, Feb 20, 2013 at 10:25:13AM -0700, Stephen Warren wrote:
 > 
-> Oh, the patch is in the TTY tree and I suppose it will go to 3.9-rc1
-> (and to stable as we will get to same later -rc -- to have some testing).
+>> But, please do think this approach through fully. The DT binding
+>> needs to define which clock-names the driver requires to be
+>> present, and any optional clock names. DT bindings are supposed
+>> to be immutable, or perhaps extendible in a completely
+>> backwards-compatible fashion. This implies that you need to have
+>> thought through the entire list of clocks that the driver might
+>> want in the DT clock-names property when you first write the DT
+>> binding documentation...
+> 
+> Since we can extend the list of clocks it doesn't seem like there's
+> much issue here, especially if some of them are optional?
 
- Cool. Thanks for feedback.
+Yes, there's certainly a way to extend the binding in a
+backwards-compatible way.
 
-    Karel
+However, I have seen in Rob and/or Grant push back on not fully
+defining bindings in the past - i.e. actively planning to initially
+create a minimal binding and extend it in the future, rather than
+completely defining it up-front.
 
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+I don't know how strong of a rule they intend that to be though. If we
+get to the point of moving the DT bindings out of the kernel, it'd be
+good to get a concrete definition of what can and can't be changed in
+bindings.
+
+> Though in general it seems like this sort of mux really should be
+> in the clock stuff anyway.
+
+How do you see that working: something automatic inside clk_set_rate()
+seeing that some other parent could provide the rate, so the clock
+could be reparented, or ...?
