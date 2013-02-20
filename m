@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934438Ab3BTRzB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 12:55:01 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43237 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933919Ab3BTRy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 12:54:59 -0500
-Message-ID: <1361379050.29360.12.camel@falcor1>
-Subject: Re: linux-next: Tree for Feb 19 (security/integrity/ima)
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mimi Zohar <zohar@us.ibm.com>
-Date: Wed, 20 Feb 2013 11:50:50 -0500
-In-Reply-To: <512418A5.9010006@infradead.org>
-References: <20130219170309.efb90173fcd879bf32a7e89b@canb.auug.org.au>
-	 <512418A5.9010006@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S1759072Ab3BTR5T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 12:57:19 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:48099 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758718Ab3BTR5S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 12:57:18 -0500
+Date: Wed, 20 Feb 2013 12:57:15 -0500 (EST)
+Message-Id: <20130220.125715.2150428275032134361.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: bind@enas.net, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: Kernel 3.7.2 strange warning and short system hang
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1361379176.19353.187.camel@edumazet-glaptop>
+References: <5124F57A.6080908@enas.net>
+	<1361379176.19353.187.camel@edumazet-glaptop>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022017-7182-0000-0000-0000055E57B0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 20 Feb 2013 09:57:21 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-19 at 16:28 -0800, Randy Dunlap wrote:
-> On 02/18/13 22:03, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Changes since 20130218:
-> > 
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 20 Feb 2013 08:52:56 -0800
+
+> I guess tg3 needs to call dev_kfree_skb_any()
 > 
-> on x86_64:
-> 
->   CC      security/integrity/ima/ima_policy.o
-> security/integrity/ima/ima_policy.c: In function 'ima_parse_rule':
-> security/integrity/ima/ima_policy.c:538:4: error: implicit declaration of function 'part_pack_uuid' [-Werror=implicit-function-declaration]
-> cc1: some warnings being treated as errors
-> make[4]: *** [security/integrity/ima/ima_policy.o] Error 1
-> 
-> 
-> Full randconfig file is attached.
+> diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+> index bdb0869..22d9e44 100644
+> --- a/drivers/net/ethernet/broadcom/tg3.c
+> +++ b/drivers/net/ethernet/broadcom/tg3.c
+> @@ -5942,7 +5942,7 @@ static void tg3_tx(struct tg3_napi *tnapi)
+>  		pkts_compl++;
+>  		bytes_compl += skb->len;
+>  
+> -		dev_kfree_skb(skb);
+> +		dev_kfree_skb_any(skb);
+>  
+>  		if (unlikely(tx_bug)) {
+>  			tg3_tx_recover(tp);
 
-part_pack_uuid() is only defined for CONFIG_BLOCK in
-include/linux/genhd.h.  One solution would be to add a stub function
-definition in include/linux/genhd.h, the other option would be to ifndef
-CONFIG_BLOCK in C code.
+I've seen this pattern on several occasions and I have to wonder...
 
-thanks,
+Do we really require, therefore, every NAPI driver to use dev_kfree_skb_any()
+in it's TX reclaim if it supports netpoll?
 
-Mimi
+That seems completely bogus.
 
+netpoll is supposed to provide an execution environment when it invokes
+->poll() that is identical to the normal NAPI execution.  If that would
+be true, then this change above would be completely unnecessary.
 
-
-
+We need to figure out what is the case here, and audit all the NAPI
+drivers to make sure they do the right thing once we know what the
+right thing actually is.
