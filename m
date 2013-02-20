@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934687Ab3BTSsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 13:48:12 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:58809 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934293Ab3BTSsK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 13:48:10 -0500
-Date: Wed, 20 Feb 2013 10:48:02 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Simon Glass <sjg@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Che-Liang Chiou <clchiou@chromium.org>
-Subject: Re: [PATCH v5 3/6] mfd: Add ChromeOS EC I2C driver
-Message-ID: <20130220184802.GE15152@core.coreip.homeip.net>
-References: <1361381079-26747-1-git-send-email-sjg@chromium.org>
- <1361381079-26747-4-git-send-email-sjg@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361381079-26747-4-git-send-email-sjg@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934727Ab3BTSsq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 13:48:46 -0500
+Received: from mail.tpi.com ([70.99.223.143]:4762 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934293Ab3BTSsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 13:48:45 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org
+Subject: [PATCH linux/linux-next] mpt2sas: _scsih_sas_broadcast_primitive_event: Quiet unused variable warning
+Date: Wed, 20 Feb 2013 11:48:27 -0700
+Message-Id: <1361386107-49136-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 09:24:36AM -0800, Simon Glass wrote:
-> +#ifdef DEBUG
-> +	dev_dbg(ec_dev->dev, "packet: ");
-> +	for (i = 0; i < i2c_msg[1].len; i++)
-> +		dev_cont(ec_dev->dev, " %02x", in_buf[i]);
-> +	dev_cont(ec_dev->dev, ", sum = %02x\n", sum);
+If CONFIG_SCSI_MPT2SAS_LOGGING is undefined, then these warnings are emitted:
 
-There is "%ph" now so you can simply write:
+drivers/scsi/mpt2sas/mpt2sas_scsih.c: In function '_scsih_sas_broadcast_primitive_event':
+drivers/scsi/mpt2sas/mpt2sas_scsih.c:5810:40: warning: unused variable 'event_data' [-Wunused-variable]
 
-	dev_dbg(ec_dev->dev, "packet: %*ph, sum = %02x\n",
-		i2c_msg[1].len, in_buf[i], sum);
+Add __maybe_unused to the definition of event_data.
 
-> +#endif
+Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
+Cc: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+Cc: support@lsi.com
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: DL-MPTFusionLinux@lsi.com
+Cc: linux-scsi@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks.
-
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index c6bdc92..416f907 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -5807,7 +5807,8 @@ _scsih_sas_broadcast_primitive_event(struct MPT2SAS_ADAPTER *ioc,
+ 	u32 termination_count;
+ 	u32 query_count;
+ 	Mpi2SCSITaskManagementReply_t *mpi_reply;
+-	Mpi2EventDataSasBroadcastPrimitive_t *event_data = fw_event->event_data;
++	Mpi2EventDataSasBroadcastPrimitive_t *event_data __maybe_unused =
++		fw_event->event_data;
+ 	u16 ioc_status;
+ 	unsigned long flags;
+ 	int r;
 -- 
-Dmitry
+1.7.9.5
+
