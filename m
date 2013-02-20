@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934523Ab3BTGOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 01:14:12 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:37629 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933047Ab3BTGOH (ORCPT
+	id S934628Ab3BTGOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 01:14:34 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:18594 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934429Ab3BTGOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 01:14:07 -0500
-X-AuditID: cbfee68e-b7fc26d000001938-4a-512469aeccbd
+	Wed, 20 Feb 2013 01:14:31 -0500
+X-AuditID: cbfee691-b7f556d000001a24-38-512469c6b131
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
 In-reply-to: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
-Subject: [PATCH 10/11] mfd: tps65010: use devm_request_irq() and devm_kzalloc()
-Date: Wed, 20 Feb 2013 15:14:05 +0900
-Message-id: <002f01ce0f31$7cb08380$76118a80$%han@samsung.com>
+Subject: [PATCH 11/11] mfd: tc3589x: use devm_request_irq() and devm_kzalloc()
+Date: Wed, 20 Feb 2013 15:14:30 +0900
+Message-id: <003001ce0f31$8b5460a0$a1fd21e0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4PMNZl2zNDd+kPTaydPUTuUPUSLQAAJYnA
+Thread-index: Ac4PMNZl2zNDd+kPTaydPUTuUPUSLQAAKSpQ
 Content-language: ko
-x-cr-hashedpuzzle: F6IC F9nW Gj+G GzQq HVF/ N0sR QNz/ QZ9K QyAi S1cV Xr/K Y8YB
- ZcZz Zhjz aw07
- be27;3;agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBzAGEAbQBlAG8AQABsAGkAbgB1AHgALgBpAG4AdABlAGwALgBjAG8AbQA=;Sosha1_v1;7;{C02CAADF-419E-4806-860D-C5E97BCE9C85};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Wed,
- 20 Feb 2013 06:14:01
- GMT;WwBQAEEAVABDAEgAIAAxADAALwAxADEAXQAgAG0AZgBkADoAIAB0AHAAcwA2ADUAMAAxADAAOgAgAHUAcwBlACAAZABlAHYAbQBfAHIAZQBxAHUAZQBzAHQAXwBpAHIAcQAoACkAIABhAG4AZAAgAGQAZQB2AG0AXwBrAHoAYQBsAGwAbwBjACgAKQA=
-x-cr-puzzleid: {C02CAADF-419E-4806-860D-C5E97BCE9C85}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsVy+t8zY911mSqBBlMfC1hc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MT5t+MBZ08Vec/HyeuYGxnaeLkZNDQsBEYn1nJzuELSZx4d56
-	ti5GLg4hgWWMEu/XnGCBKbo47QkTRGI6o8TanSdYIZzZTBI9dxcxg1SxCahJfPlyGGyUiICW
-	RPex80CjODiYBVwkjk4TAQkLCdhKfF/7jxXE5hSwk9j16DyYLSzgL3H/4F8wm0VAVeL73Nlg
-	i3mB6n+9fcEEYQtK/Jh8DyzODDR+/c7jTBC2vMTmNW+ZQVZJCKhLPPqrC3GBkUTXokZ2iBIR
-	iX0v3jGCnCwh8IZF4sTyO6wQ9aYSR7pFIH7cxy5xa3cqxAkCEt8mH2KBKJGV2HSAGaJEUuLg
-	ihssExilZiE5aBaSg2YhOWgWks0LGFlWMYqmFiQXFCelFxnpFSfmFpfmpesl5+duYoTEYd8O
-	xpsHrA8xJgOtn8gsJZqcD4zjvJJ4Q2NjEzMTUxNzS1NzU9KElcR55S/JBAoJpCeWpGanphak
-	FsUXleakFh9iZOLglGpgtFJu00vjn8m49MuxLZuOBC7h4CrL9zwzs4PdquVz3t2UTy42L8++
-	ce2dwXTg+/KNrxP3/Jz16lW5z0kWf98Y19fl9TmuzIfvZwSvWzf9G/fSPo9Vv2N+ff2UFtx5
-	yef1JJs/ygXNz5jSulUy5EVOql7fe1Xu76Rd+yNr+u/42bUebbcWdkjxVGIpzkg01GIuKk4E
-	AO2sJjHZAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t9jQd11mSqBBtsm8lhc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjE+bfjAWdPFXnPx8nrmB
-	sZ2ni5GTQ0LAROLitCdMELaYxIV769m6GLk4hASmM0qs3XmCFcKZzSTRc3cRM0gVm4CaxJcv
-	h9lBbBEBLYnuY+eBOjg4mAVcJI5OEwEJCwnYSnxf+48VxOYUsJPY9eg8mC0s4C9x/+BfMJtF
-	QFXi+9zZLCA2L1D9r7cvmCBsQYkfk++BxZmBxq/feZwJwpaX2LzmLTPIKgkBdYlHf3UhLjCS
-	6FrUyA5RIiKx78U7RpCTJQTesEicWH6HFaLeVOJIt8gERpFZSDbMQrJhFpINs5CMWsDIsopR
-	NLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOM6fSe1gXNlgcYhRgINRiYdXY75yoBBrYllxZe4h
-	RgkOZiUR3mYnlUAh3pTEyqrUovz4otKc1OJDjMnAAJjILCWanA9MQXkl8YbGJmZGlkZmFkYm
-	5uakCSuJ8zKeehIgJJCeWJKanZpakFoEs4WJg1OqgXHOj9M3UufPt+I3flzwaP+JN4fOioWY
-	Fe2/efC6tcitH38uHZ+uqGrNpfv+DGvJ3fMr7i8pvqh+Kevvq9VXJn/bfqq8c1/nv7ZlGQy3
-	aytidDfOv5LYmjBne87SNY9T7nKFrv37lPdms8aNBWWeorOPfIsJSepbxb/u56UV+3jl91dW
-	PPh6eNu/N0osxRmJhlrMRcWJAI5b+U03AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zY91jmSqBBs0vjSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGordrmQs+8Fac/TOPtYHxN1cXIyeHhICJxK65nxkhbDGJC/fW
+	s4HYQgLLGCXeNkvB1Fz494Cpi5ELKD6dUeLQllUsEEWzmSR+vhUGsdkE1CS+fDnMDmKLCGhJ
+	dB87DzSIg4NZwEXi6DQRiHJbie9r/7GC2JwCdhK7Hp0Hs4UF/CRWfekFs1kEVCX+vp8LNp4X
+	qH7P4VXsELagxI/J98DizEDj1+88zgRhy0tsXvOWGWSVhIC6xKO/uhAXGElcefGODaJERGLf
+	i3eMIOdLCCxil1g3YT4LxC4BiW+TD7FA9MpKbDrADPGupMTBFTdYJjBKzEKyeRaSzbOQbJ6F
+	ZMUCRpZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmbGCFRNXEH4/0D1ocYk4HWT2SWEk3OB0Zl
+	Xkm8obGxiZmJqYm5pam5KWnCSuK88pdkAoUE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwLl1x
+	ZV89E6OZ04OgaKbydQ2Hkq4vlWYXrHq0I1h7doz4k1s1NrbBMzkF9bU/Lr6+MC1OfOH3nha2
+	qZ32tWpxx9X2L3Tz2NJyJ1PpmnjiMsZwh7okvh+Zc1J+qBmcfht6cJJa1+Nk9+kNe+NWrZvg
+	5bHC/0tMcR+/ZMbDrv2WnVvss+a0v5FSYinOSDTUYi4qTgQAp/GkP8ACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xoO6xTJVAgxn9ehaXd81hc2D0+LxJ
+	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
+	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4xY9HbtcwFH3grzv6Zx9rA
+	+Juri5GTQ0LAROLCvwdMELaYxIV769m6GLk4hASmM0oc2rKKBSQhJDCbSeLnW2EQm01ATeLL
+	l8PsILaIgJZE97HzQA0cHMwCLhJHp4lAlNtKfF/7jxXE5hSwk9j16DyYLSzgJ7HqSy+YzSKg
+	KvH3/Vyw8bxA9XsOr2KHsAUlfky+BxZnBhq/fudxJghbXmLzmrfMIKskBNQlHv3VhbjASOLK
+	i3dsECUiEvtevGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLz
+	czcxgqP2mdQOxpUNFocYBTgYlXh4NeYrBwqxJpYVV+YeYpTgYFYS4W12UgkU4k1JrKxKLcqP
+	LyrNSS0+xJgM9OhEZinR5HxgQskriTc0NjEzsjQyszAyMTcnTVhJnJfx1JMAIYH0xJLU7NTU
+	gtQimC1MHJxSDYzC1X9mGFxS/PbWnHPJSQvWX28+PjzdGddmy6Kr/7JnboGQw8NzHP8sn1Vl
+	RforFFp27zw7Ufr37n/vnWZxVmyz5bHkkvV87nwq+1vWH282qc/POpXt+vw+1W+4ObvnV1lX
+	spWB2K1Al4l8DUpr+0TOHz+1+kin+MKZG1uO8F/4unhbutWjsH1KLMUZiYZazEXFiQABERnL
+	HgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -65,61 +58,72 @@ more simple.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/tps65010.c |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+ drivers/mfd/tc3589x.c |   21 ++++++---------------
+ 1 files changed, 6 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/mfd/tps65010.c b/drivers/mfd/tps65010.c
-index da2691f..a5438cc 100644
---- a/drivers/mfd/tps65010.c
-+++ b/drivers/mfd/tps65010.c
-@@ -525,11 +525,8 @@ static int __exit tps65010_remove(struct i2c_client *client)
- 			dev_dbg(&client->dev, "board %s %s err %d\n",
- 				"teardown", client->name, status);
- 	}
--	if (client->irq > 0)
--		free_irq(client->irq, tps);
- 	cancel_delayed_work_sync(&tps->work);
- 	debugfs_remove(tps->file);
--	kfree(tps);
- 	the_tps = NULL;
- 	return 0;
- }
-@@ -549,7 +546,7 @@ static int tps65010_probe(struct i2c_client *client,
- 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
- 		return -EINVAL;
+diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
+index ecc092c..4cb92bb 100644
+--- a/drivers/mfd/tc3589x.c
++++ b/drivers/mfd/tc3589x.c
+@@ -350,7 +350,8 @@ static int tc3589x_probe(struct i2c_client *i2c,
+ 				     | I2C_FUNC_SMBUS_I2C_BLOCK))
+ 		return -EIO;
  
--	tps = kzalloc(sizeof *tps, GFP_KERNEL);
-+	tps = devm_kzalloc(&client->dev, sizeof(*tps), GFP_KERNEL);
- 	if (!tps)
+-	tc3589x = kzalloc(sizeof(struct tc3589x), GFP_KERNEL);
++	tc3589x = devm_kzalloc(&i2c->dev, sizeof(struct tc3589x),
++				GFP_KERNEL);
+ 	if (!tc3589x)
  		return -ENOMEM;
  
-@@ -562,12 +559,13 @@ static int tps65010_probe(struct i2c_client *client,
- 	 * so this driver uses falling-edge triggers instead.
- 	 */
- 	if (client->irq > 0) {
--		status = request_irq(client->irq, tps65010_irq,
--				     IRQF_TRIGGER_FALLING, DRIVER_NAME, tps);
-+		status = devm_request_irq(&client->dev, client->irq,
-+					tps65010_irq, IRQF_TRIGGER_FALLING,
-+					DRIVER_NAME, tps);
- 		if (status < 0) {
- 			dev_dbg(&client->dev, "can't get IRQ %d, err %d\n",
- 					client->irq, status);
--			goto fail1;
-+			return status;
- 		}
- 		/* annoying race here, ideally we'd have an option
- 		 * to claim the irq now and enable it later.
-@@ -667,9 +665,6 @@ static int tps65010_probe(struct i2c_client *client,
+@@ -366,33 +367,27 @@ static int tc3589x_probe(struct i2c_client *i2c,
+ 
+ 	ret = tc3589x_chip_init(tc3589x);
+ 	if (ret)
+-		goto out_free;
++		return ret;
+ 
+ 	ret = tc3589x_irq_init(tc3589x, np);
+ 	if (ret)
+-		goto out_free;
++		return ret;
+ 
+ 	ret = request_threaded_irq(tc3589x->i2c->irq, NULL, tc3589x_irq,
+ 				   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+ 				   "tc3589x", tc3589x);
+ 	if (ret) {
+ 		dev_err(tc3589x->dev, "failed to request IRQ: %d\n", ret);
+-		goto out_free;
++		return ret;
+ 	}
+ 
+ 	ret = tc3589x_device_init(tc3589x);
+ 	if (ret) {
+ 		dev_err(tc3589x->dev, "failed to add child devices\n");
+-		goto out_freeirq;
++		return ret;
  	}
  
  	return 0;
--fail1:
--	kfree(tps);
--	return status;
+-
+-out_freeirq:
+-	free_irq(tc3589x->i2c->irq, tc3589x);
+-out_free:
+-	kfree(tc3589x);
+-	return ret;
  }
  
- static const struct i2c_device_id tps65010_id[] = {
+ static int tc3589x_remove(struct i2c_client *client)
+@@ -401,10 +396,6 @@ static int tc3589x_remove(struct i2c_client *client)
+ 
+ 	mfd_remove_devices(tc3589x->dev);
+ 
+-	free_irq(tc3589x->i2c->irq, tc3589x);
+-
+-	kfree(tc3589x);
+-
+ 	return 0;
+ }
+ 
 -- 
 1.7.2.5
 
