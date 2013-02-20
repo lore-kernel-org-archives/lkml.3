@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934450Ab3BTKTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 05:19:20 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:51015 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756254Ab3BTKTT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 05:19:19 -0500
-Message-ID: <1361355555.10155.14.camel@laptop>
-Subject: Re: [PATCH] Fix rq->lock vs logbuf_lock unlock race
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Bu, Yitian" <ybu@qti.qualcomm.com>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>
-Date: Wed, 20 Feb 2013 11:19:15 +0100
-In-Reply-To: <E807E903FE6CBE4D95E420FBFCC273B827522A@nasanexd01h.na.qualcomm.com>
-References: <E807E903FE6CBE4D95E420FBFCC273B827413C@nasanexd01h.na.qualcomm.com>
-	 <1361349910.10155.0.camel@laptop>
-	 <E807E903FE6CBE4D95E420FBFCC273B827522A@nasanexd01h.na.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S934579Ab3BTKUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 05:20:35 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:40122 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934384Ab3BTKUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 05:20:33 -0500
+Message-ID: <5124A360.8070208@ispras.ru>
+Date: Wed, 20 Feb 2013 14:20:16 +0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Manu Abraham <abraham.manu@gmail.com>
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Manu Abraham <manu@linuxtv.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: Re: [PATCH] [media] stv090x: do not unlock unheld mutex in stv090x_sleep()
+References: <1361300333-9410-1-git-send-email-khoroshilov@ispras.ru> <CAHFNz9+RnXh3AeSn70mpP-Z=26=MCZDtGPHnr67U++i7X6ELOA@mail.gmail.com>
+In-Reply-To: <CAHFNz9+RnXh3AeSn70mpP-Z=26=MCZDtGPHnr67U++i7X6ELOA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-20 at 09:38 +0000, Bu, Yitian wrote:
-> 
-> 2. from printk comment: "This is printk(). It can be called from any
-> context. 
-> We want it to work. ". I suppose to use printk in any context.
+On 02/20/2013 10:58 AM, Manu Abraham wrote:
+> Hi,
+>
+> On Wed, Feb 20, 2013 at 12:28 AM, Alexey Khoroshilov
+> <khoroshilov@ispras.ru> wrote:
+>> goto err and goto err_gateoff before mutex_lock(&state->internal->demod_lock)
+>> lead to unlock of unheld mutex in stv090x_sleep().
+> Out of curiosity, what happens when you try to unlock an unlocked mutex ?
+>
+> Regards,
+> Manu
+>
+Bad things can happen if someone else holds the mutex and it becomes
+unexpectedly unlocked.
+Also it can result that the next lock() operation leaves the mutex in
+unlocked state.
+The both cases can lead to data races with unpredictable consequences.
 
-Unfortunately that's not quite possible, rq->lock is really out of
-bounds. At one point I tried 'fixing' this but there's a whole bunch of
-nasty that's not going to go away.
-
-I've since forgotten most of the details, but aside from logbuf problems
-there's a whole host of issues with the console drivers themselves as
-well.
-
-If you really want to do this, use early_printk.
-
+--
+Alexey Khoroshilov
