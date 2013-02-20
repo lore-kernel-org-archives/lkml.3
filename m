@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935600Ab3BTNqz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:46:55 -0500
-Received: from mga11.intel.com ([192.55.52.93]:12607 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935580Ab3BTNqv convert rfc822-to-8bit (ORCPT
+	id S935622Ab3BTNsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:48:13 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44620
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935405Ab3BTNsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:46:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,702,1355126400"; 
-   d="scan'208";a="289567081"
-From: "Li, Fei" <fei.li@intel.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "pavel@ucw.cz" <pavel@ucw.cz>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        "Brown, Len" <len.brown@intel.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "Wang, Biao" <biao.wang@intel.com>
-Subject: RE: [PATCH] freezer: configure user space process frozen along with
- kernel threads
-Thread-Topic: [PATCH] freezer: configure user space process frozen along
- with kernel threads
-Thread-Index: AQHODxBpX7dUZj4OyEGrpnYpQgXwf5iB7oSAgADSlDA=
-Date: Wed, 20 Feb 2013 13:46:47 +0000
-Message-ID: <BEC9F67575FA1E429CA7CF5AE9BE3634403712@SHSMSX102.ccr.corp.intel.com>
-References: <1361326525.9753.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <20130220090507.GV20312@moon>
-In-Reply-To: <20130220090507.GV20312@moon>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 20 Feb 2013 08:48:12 -0500
+Message-ID: <1361368088.10155.36.camel@laptop>
+Subject: Re: [patch v5 11/15] sched: add power/performance balance allow flag
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Date: Wed, 20 Feb 2013 14:48:08 +0100
+In-Reply-To: <1361367469.10155.34.camel@laptop>
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
+	 <1361164062-20111-12-git-send-email-alex.shi@intel.com>
+	 <1361353681.10155.10.camel@laptop> <5124BBEA.3040806@intel.com>
+	 <1361367469.10155.34.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Cyrill Gorcunov [mailto:gorcunov@gmail.com] On Behalf Of Cyrill
-> Gorcunov
-> Sent: Wednesday, February 20, 2013 5:05 PM
-> To: Li, Fei
-> Cc: pavel@ucw.cz; rjw@sisk.pl; Brown, Len; mingo@redhat.com;
-> peterz@infradead.org; akpm@linux-foundation.org; viro@zeniv.linux.org.uk;
-> ebiederm@xmission.com; rientjes@google.com; linux-kernel@vger.kernel.org;
-> linux-pm@vger.kernel.org; Liu, Chuansheng; Wang, Biao
-> Subject: Re: [PATCH] freezer: configure user space process frozen along with
-> kernel threads
+On Wed, 2013-02-20 at 14:37 +0100, Peter Zijlstra wrote:
+> On Wed, 2013-02-20 at 20:04 +0800, Alex Shi wrote:
 > 
-> On Wed, Feb 20, 2013 at 10:15:25AM +0800, Li Fei wrote:
-> >
-> > +#ifdef CONFIG_FREEZER
-> > +
-> > +static ssize_t freeze_late_read(struct file *file, char __user *buf,
-> > +					size_t count, loff_t *ppos)
-> > +{
-> > +	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
-> > +	char buffer[PROC_NUMBUF];
-> > +	int freeze_late;
-> > +	size_t len;
-> > +	if (!task)
-> > +		return -ESRCH;
-> > +	freeze_late = (task->flags & PF_FREEZER_LATE) ? 1 : 0;
-> > +	len = snprintf(buffer, sizeof(buffer), "%d\n", freeze_late);
-> > +	return simple_read_from_buffer(buf, count, ppos, buffer, len);
-> > +}
+> > >> @@ -5195,6 +5197,8 @@ static int load_balance(int this_cpu, struct rq
+> > >> *this_rq,
+> > >>                 .idle           = idle,
+> > >>                 .loop_break     = sched_nr_migrate_break,
+> > >>                 .cpus           = cpus,
+> > >> +               .power_lb       = 0,
+> > >> +               .perf_lb        = 1,
+> > >>         };
+> > >>  
+> > >>         cpumask_copy(cpus, cpu_active_mask);
+> > > 
+> > > This construct allows for the possibility of power_lb=1,perf_lb=1, does
+> > > that make sense? Why not have a single balance_policy enumeration?
+> > 
+> > (power_lb == 1 && perf_lb == 1) is incorrect and impossible to have.
+> > 
+> > (power_lb == 0 && perf_lb == 0) is possible and it means there is no any
+> > balance on this cpu.
+> > 
+> > So, enumeration is not enough.
 > 
-> Don't you need put_task_struct() once you grabbed it?
+> Huh.. both 0 doesn't make any sense either. If there's no balancing, we
+> shouldn't be here to begin with.
 
-Thanks for your reminder. I'll update it in later version.
+Also, why is this in the lb_env at all, shouldn't we simply use the
+global sched_balance_policy all over the place? Its not like we want to
+change power/perf on a finer granularity.
 
-Best Regards,
-Li Fei
+
