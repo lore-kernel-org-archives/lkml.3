@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964789Ab3BTOGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 09:06:49 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:62810 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935312Ab3BTOGs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 09:06:48 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Wed, 20 Feb 2013 09:06:47 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: "Woodhouse, David" <david.woodhouse@intel.com>
-Cc: Kim Phillips <kim.phillips@freescale.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Rientjes <rientjes@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [RFC] arm: use built-in byte swap function
-In-reply-to: <1361367842.13482.279.camel@i7.infradead.org>
-Message-id: <alpine.LFD.2.03.1302200905300.6419@syhkavp.arg>
-References: <20130129181046.GC25415@pd.tnic>
- <20130131145947.f62474a0600848df86548b96@freescale.com>
- <20130201011712.GF23505@n2100.arm.linux.org.uk>
- <1359703995.23531.6.camel@shinybook.infradead.org>
- <20130205210436.670c62e26d2121330e87af35@freescale.com>
- <1360141322.6066.4.camel@shinybook.infradead.org>
- <20130206191905.ac8eb6743e69425f30888704@freescale.com>
- <20130207181315.GM17833@n2100.arm.linux.org.uk>
- <1360344301.6066.263.camel@shinybook.infradead.org>
- <alpine.LFD.2.02.1302081503430.6300@xanadu.home>
- <1360363233.6066.283.camel@shinybook.infradead.org>
- <alpine.LFD.2.02.1302081745500.6300@xanadu.home>
- <20130208191208.2ef3d78bda71aa7b44d00d7b@freescale.com>
- <alpine.LFD.2.02.1302082102380.6300@xanadu.home>
- <20130219203115.114eab79e8d2099c6306d921@freescale.com>
- <alpine.LFD.2.03.1302192151280.6419@syhkavp.arg>
- <1361356696.13482.269.camel@i7.infradead.org>
- <alpine.LFD.2.03.1302200835380.6419@syhkavp.arg>
- <1361367842.13482.279.camel@i7.infradead.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	id S964793Ab3BTOJN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 09:09:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:17730 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935393Ab3BTOJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 09:09:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,702,1355126400"; 
+   d="scan'208";a="265087132"
+Message-ID: <5124D8F4.6030108@intel.com>
+Date: Wed, 20 Feb 2013 22:08:52 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 11/15] sched: add power/performance balance allow flag
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>  <1361164062-20111-12-git-send-email-alex.shi@intel.com>  <1361353681.10155.10.camel@laptop> <5124BBEA.3040806@intel.com>  <1361367469.10155.34.camel@laptop> <1361368088.10155.36.camel@laptop>
+In-Reply-To: <1361368088.10155.36.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Feb 2013, Woodhouse, David wrote:
 
-> On Wed, 2013-02-20 at 08:36 -0500, Nicolas Pitre wrote:
-> > You'll have the same issue wrt the above whether or not the source
-> > file is C or assembly.
+>>> (power_lb == 1 && perf_lb == 1) is incorrect and impossible to have.
+>>>
+>>> (power_lb == 0 && perf_lb == 0) is possible and it means there is no any
+>>> balance on this cpu.
+>>>
+>>> So, enumeration is not enough.
+>>
+>> Huh.. both 0 doesn't make any sense either. If there's no balancing, we
+>> shouldn't be here to begin with.
 > 
-> Hm, true. I was thinking of the code itself (which is
-> position-independent anyway), rather than the flags in the object file.
+> Also, why is this in the lb_env at all, shouldn't we simply use the
+> global sched_balance_policy all over the place? Its not like we want to
+> change power/perf on a finer granularity.
+
+they are in lb_env, since we need to set them according to each group
+status, mostly in update_sd_lb_power_stats().
+
+Even the sched_balance_policy is powersaving, the domain may also need
+performance balance since there are maybe too much tasks or much
+imbalance in domain.
+
+when we find the domain is not suitable for power balance, we will set
+lb_perf = 1, then we don't need go through other groups for power info
+collection.
 > 
-> So just ship a .S file and for the decompressor (if we need it at all)
-> rebuild it just the same as we do the *other* libgcc code like ashldi3.S
-> etc.
-
-... in which case there is no harm shipping a .c file and trivially 
-enforcing -O2, the rest being equal.
 
 
-Nicolas
+-- 
+Thanks
+    Alex
