@@ -1,239 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934742Ab3BTG1J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 01:27:09 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:52360 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934071Ab3BTG1G (ORCPT
+	id S934779Ab3BTG2m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 01:28:42 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:49988 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934650Ab3BTG2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 01:27:06 -0500
-Date: Tue, 19 Feb 2013 22:27:03 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.9-rc0
-Message-ID: <20130220062703.GA2648@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OgqxwSJOaUobr8KG"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Feb 2013 01:28:41 -0500
+Date: Wed, 20 Feb 2013 17:28:31 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shahed Shaikh <shahed.shaikh@qlogic.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20130220172831.cf0bcb1b3bdc5e404d85f100@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__20_Feb_2013_17_28_31_+1100_mNwQZuB=X/Wq_Vux"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---OgqxwSJOaUobr8KG
-Content-Type: text/plain; charset=iso-8859-1
+--Signature=_Wed__20_Feb_2013_17_28_31_+1100_mNwQZuB=X/Wq_Vux
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Linus,
+Hi Andrew,
 
-Please pull from:
+After merging the akpm tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c: In function 'qlcnic_prune_l=
+b_filters':
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c:607:63: error: macro "hlist_=
+for_each_entry_safe" passed 5 arguments, but takes just 4
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c:607:3: error: 'hlist_for_eac=
+h_entry_safe' undeclared (first use in this function)
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c:608:3: error: expected ';' b=
+efore '{' token
 
-to receive first round of updates for the input subsystem.
+Caused by commit c4b75b428da3 ("hlist: drop the node parameter from
+iterators") interacting with commit 53643a75b147 ("qlcnic: fix ping
+resumption to a VM after a live migration") from the net-next tree.
 
-You will get 2 new touchpad drivers - Cypress APA I2C Trackpad and
-Cypress PS/2 touchpad and a big update to ALPS driver from Kevin
-Cernekee that adds support for "Rushmore" touchpads and paves way for
-adding support for "Dolphin" touchpads.
+I applied this merge fix:
 
-There is also a new input driver for Goldfish emulator and also Android
-keyreset driver was folded into SysRq code.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 20 Feb 2013 17:17:54 +1100
+Subject: [PATCH] hlist-drop-the-node-parameter-from-iterators-qlnic-fix
 
-A few more drivers were updated with device tree bindings and others
-got some small cleanups and fixes.
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c b/drivers/net/e=
+thernet/qlogic/qlcnic/qlcnic_hw.c
+index a5422cd..f89cc7a 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c
+@@ -604,7 +604,7 @@ void qlcnic_prune_lb_filters(struct qlcnic_adapter *ada=
+pter)
+ 	for (i =3D 0; i < adapter->rx_fhash.fbucket_size; i++) {
+ 		head =3D &(adapter->rx_fhash.fhead[i]);
+=20
+-		hlist_for_each_entry_safe(tmp_fil, tmp_hnode, n, head, fnode)
++		hlist_for_each_entry_safe(tmp_fil, n, head, fnode)
+ 		{
+ 			time =3D tmp_fil->ftime;
+ 			if (jiffies > (QLCNIC_FILTER_AGE * HZ + time)) {
+--=20
+1.8.1
 
-Changelog:
----------
+which then lead to these erroes:
 
-Benson Leung (2):
-      Input: add driver for Cypress APA I2C Trackpad
-      Input: cyapa - add support for smbus protocol
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c: In function 'qlcnic_add_lb_=
+filter':
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:182:63: error: macro "hlist_=
+for_each_entry_safe" passed 5 arguments, but takes just 4
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:182:3: error: 'hlist_for_eac=
+h_entry_safe' undeclared (first use in this function)
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:182:65: error: expected ';' =
+before '{' token
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:208:63: error: macro "hlist_=
+for_each_entry_safe" passed 5 arguments, but takes just 4
+drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c:208:65: error: expected ';' =
+before '{' token
 
-Brian Swetland (1):
-      Input: goldfish - virtual input event driver
+for which I applied this merge fix patch:
 
-Daniel Kurtz (1):
-      Input: synaptics - fix 1->3 contact transition reporting
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 20 Feb 2013 17:25:26 +1100
+Subject: [PATCH] hlist-drop-the-node-parameter-from-iterators-qlnic-2-fix
 
-Dmitry Torokhov (6):
-      Input: atkbd - fix a typo in a message
-      Input: walkera0701 - set up input device's parent
-      Input: walkera0701 - switch to using pr_xxx() for messages
-      Input: walkera0701 - use proper error codes
-      Input: walkera0701 - claim parport when opening the device
-      Input: cyttsp-spi - remove duplicate MODULE_ALIAS()
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Dudley Du (1):
-      Input: add support for Cypress PS/2 Trackpads
-
-Heiko Carstens (1):
-      Input: add couple of missing GENERIC_HARDIRQS dependencies
-
-Henrik Rydberg (2):
-      Input: MT - do not apply filtering on emulated events
-      Input: synaptics - initialize pointer emulation usage
-
-Javier Martin (1):
-      Input: qt2160 - add support for LEDs
-
-Kamal Mostafa (1):
-      Input: increase struct ps2dev cmdbuf[] to 8 bytes
-
-Kevin Cernekee (13):
-      Input: ALPS - document the alps.h data structures
-      Input: ALPS - copy "model" info into alps_data struct
-      Input: ALPS - move alps_get_model() down below hw_init code
-      Input: ALPS - introduce helper function for repeated commands
-      Input: ALPS - rework detection sequence
-      Input: ALPS - use function pointers for different protocol handlers
-      Input: ALPS - move {addr,nibble}_command settings into alps_set_defau=
-lts()
-      Input: ALPS - rework detection of Pinnacle AGx touchpads
-      Input: ALPS - fix command mode check
-      Input: ALPS - move pixel and bitmap info into alps_data struct
-      Input: ALPS - make the V3 packet field decoder "pluggable"
-      Input: ALPS - add support for "Rushmore" touchpads
-      Input: ALPS - enable trackstick on Rushmore touchpads
-
-Laxman Dewangan (4):
-      Input: tegra-kbc - fix build warning
-      Input: tegra-kbc - use devm_* for resource allocation
-      Input: tegra-kbc - add support for rows/columns configuration from dt
-      Input: tegra-kbc - remove default keymap
-
-Liu Ying (1):
-      Input: imx_keypad - add device tree support
-
-Mark Brown (2):
-      Input: wm831x-ts - convert to devm_input_allocate_device()
-      Input: wm831x-on - convert to devm_input_allocate_device()
-
-Mathieu Poirier (1):
-      Input: sysrq - allow specifying alternate reset sequence
-
-Michael Trimarchi (2):
-      Input: bma150 - fix checking pm_runtime_get_sync() return value
-      Input: bma150 - make some defines public and fix some comments
-
-Pali Roh=E1r (1):
-      Input: tsc2005 - add MODULE_ALIAS
-
-Peter Ujfalusi (4):
-      Input: twl4030-vibra - switch to using managed resources
-      Input: twl4030-vibra - Use system workqueue
-      Input: twl6040-vibra - code cleanup in probe with devm_* conversion
-      Input: twl6040-vibra - use system workqueue
-
-Ping Cheng (3):
-      Input: wacom - prepare for syncing with input-mt changes
-      Input: wacom - use new input-mt routines
-      Input: wacom - add support for DTH-2242
-
-Sachin Kamat (1):
-      Input: mms114 - switch to using managed resources
-
-Shawn Nematbakhsh (1):
-      Input: atkbd - fix multi-byte scancode handling on reconnect
-
-Stephen Warren (1):
-      Input: tegra-kbc - require CONFIG_OF, remove platform data
-
-Vipul Kumar Samar (1):
-      Input: stmpe-ts - report BTN_TOUCH event
-
-Wolfram Sang (4):
-      Input: adxl34x - consistently use read/write encapsulation
-      Input: adxl34x - don't set THRESH_TAP twice
-      Input: adxl34x - make platform_data include self contained
-      Input: adxl34x - default platform_data should not use defines from dr=
-iver
-
-
-Diffstat:
---------
-
- .../devicetree/bindings/input/imx-keypad.txt       |  53 ++
- .../bindings/input/nvidia,tegra20-kbc.txt          |  22 +
- drivers/input/Kconfig                              |   2 +-
- drivers/input/input-mt.c                           |   1 +
- drivers/input/joystick/walkera0701.c               |  82 +-
- drivers/input/keyboard/Kconfig                     |  16 +-
- drivers/input/keyboard/Makefile                    |   1 +
- drivers/input/keyboard/atkbd.c                     |  74 +-
- drivers/input/keyboard/goldfish_events.c           | 194 ++++
- drivers/input/keyboard/imx_keypad.c                |  43 +-
- drivers/input/keyboard/qt2160.c                    | 141 ++-
- drivers/input/keyboard/tegra-kbc.c                 | 478 ++++------
- drivers/input/misc/adxl34x.c                       |   7 +-
- drivers/input/misc/bma150.c                        |  14 +-
- drivers/input/misc/twl4030-vibra.c                 |  45 +-
- drivers/input/misc/twl6040-vibra.c                 | 100 +--
- drivers/input/misc/wm831x-on.c                     |   4 +-
- drivers/input/mouse/Kconfig                        |  22 +
- drivers/input/mouse/Makefile                       |   2 +
- drivers/input/mouse/alps.c                         | 773 ++++++++--------
- drivers/input/mouse/alps.h                         | 145 ++-
- drivers/input/mouse/cyapa.c                        | 973 +++++++++++++++++=
-++++
- drivers/input/mouse/cypress_ps2.c                  | 725 +++++++++++++++
- drivers/input/mouse/cypress_ps2.h                  | 191 ++++
- drivers/input/mouse/psmouse-base.c                 |  32 +
- drivers/input/mouse/psmouse.h                      |   1 +
- drivers/input/mouse/synaptics.c                    |  32 +-
- drivers/input/serio/Kconfig                        |   1 +
- drivers/input/tablet/wacom_wac.c                   | 192 ++--
- drivers/input/tablet/wacom_wac.h                   |   2 +-
- drivers/input/touchscreen/Kconfig                  |   2 +-
- drivers/input/touchscreen/cyttsp_spi.c             |   1 -
- drivers/input/touchscreen/mms114.c                 |  54 +-
- drivers/input/touchscreen/stmpe-ts.c               |   2 +
- drivers/input/touchscreen/tsc2005.c                |   1 +
- drivers/input/touchscreen/wm831x-ts.c              |   4 +-
- drivers/tty/sysrq.c                                | 276 ++++--
- include/linux/bma150.h                             |  16 +-
- include/linux/input/adxl34x.h                      |   2 +
- include/linux/input/tegra_kbc.h                    |  62 --
- include/linux/libps2.h                             |   2 +-
- 41 files changed, 3608 insertions(+), 1182 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/imx-keypad.txt
- create mode 100644 drivers/input/keyboard/goldfish_events.c
- create mode 100644 drivers/input/mouse/cyapa.c
- create mode 100644 drivers/input/mouse/cypress_ps2.c
- create mode 100644 drivers/input/mouse/cypress_ps2.h
- delete mode 100644 include/linux/input/tegra_kbc.h
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c b/drivers/net/e=
+thernet/qlogic/qlcnic/qlcnic_io.c
+index 27196ed..0e63006 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+@@ -162,7 +162,7 @@ void qlcnic_add_lb_filter(struct qlcnic_adapter *adapte=
+r, struct sk_buff *skb,
+ {
+ 	struct ethhdr *phdr =3D (struct ethhdr *)(skb->data);
+ 	struct qlcnic_filter *fil, *tmp_fil;
+-	struct hlist_node *tmp_hnode, *n;
++	struct hlist_node *n;
+ 	struct hlist_head *head;
+ 	unsigned long time;
+ 	u64 src_addr =3D 0;
+@@ -179,7 +179,7 @@ void qlcnic_add_lb_filter(struct qlcnic_adapter *adapte=
+r, struct sk_buff *skb,
+ 			 (adapter->fhash.fbucket_size - 1);
+ 		head =3D &(adapter->rx_fhash.fhead[hindex]);
+=20
+-		hlist_for_each_entry_safe(tmp_fil, tmp_hnode, n, head, fnode) {
++		hlist_for_each_entry_safe(tmp_fil, n, head, fnode) {
+ 			if (!memcmp(tmp_fil->faddr, &src_addr, ETH_ALEN) &&
+ 			    tmp_fil->vlan_id =3D=3D vlan_id) {
+ 				time =3D tmp_fil->ftime;
+@@ -205,7 +205,7 @@ void qlcnic_add_lb_filter(struct qlcnic_adapter *adapte=
+r, struct sk_buff *skb,
+ 			 (adapter->fhash.fbucket_size - 1);
+ 		head =3D &(adapter->rx_fhash.fhead[hindex]);
+ 		spin_lock(&adapter->rx_mac_learn_lock);
+-		hlist_for_each_entry_safe(tmp_fil, tmp_hnode, n, head, fnode) {
++		hlist_for_each_entry_safe(tmp_fil, n, head, fnode) {
+ 			if (!memcmp(tmp_fil->faddr, &src_addr, ETH_ALEN) &&
+ 			    tmp_fil->vlan_id =3D=3D vlan_id) {
+ 				found =3D 1;
+--=20
+1.8.1
 
 --=20
-Dmitry
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-
---OgqxwSJOaUobr8KG
+--Signature=_Wed__20_Feb_2013_17_28_31_+1100_mNwQZuB=X/Wq_Vux
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRJGy2AAoJEH70+W8r6ZYq2DkQAJs76pkuptFEb+FtQzKKkICn
-jLzOXH+OPPGL+zPxFG0ok5ds3Obk3aw3CGs7X1B9ddKRCfeybDzXflLJTg4Xkslb
-1B732RPWchm0p0pIPv8qpb0w6HfVxiOaHc/hvufFAKw6gzFwsy4co9gpDHvKLSce
-IAxdZjznp4Q5RAPFpAalQs+koIEdmQHIHzhKGaRZQoa8X3ZDkOcu1D1rKK8Y7131
-BCH9z12DAZcIfH9InnAMmRWvtLloB/Lj+ksNAoN8YaWanm/3h/2BUeQhA3+U+U5C
-k+sIgtGfjjGPNVxIcWnIDAbOo9qQvw2VBEcWkQo6Iki5E+NH+KqSo914CvUI7V2J
-LdHjHFQCqf5WtTIb4zcnMLy/5kaTOqvlYto3DhZ9U78PpopRIT2cHm27wea396bO
-s+qgIsoNwxwnupjSWrIshRNHzV+cvpbMrk5NR+bOIygFEBePYM3/zbF/IrP6tybn
-IKEDDEYOBbAW4IWE2bjnTRxEJipsmVWmWhDjgeZRAaYd+0Dk7RwEIcPJXa2LpeOK
-nu2X+l50aSxgAlHAgrCd1bCUFoHLXP57qgJp9foiTGsq0Hm+4koTz/s5WCgOIUAr
-cT9/dZZQQ1buehrciS3GSe4rQftsAlf62CTIX9p0nXSSsIkXoTrBjblr9czzPCNu
-hEukmrV8/0bkL4vdK2HP
-=VVBZ
+iQIcBAEBCAAGBQJRJG0PAAoJEECxmPOUX5FEnA4P/iEpplQ4dbAk+WbKsoUhfglk
+ECbWwr/82eYudZxkV/HZbYbn3cKAPRajy2JJPLYIW7B9dp5cLLKWr9G4R3xT1M8g
+q8CW+3Pa4YMh6BqMA1mMJG6v84c4A/e/AH7I1ZDzBbpyCbOD48kpOvYQU2G6EdSm
+7nlnLEd6ByVerzX1DOwUvoeGn+l2rFmW83B8p+WUQCSVp2HL5DUYq2dLV7JP4Vw4
+84qCKPVKjaYtTeH/GHMCfFf/+H+lJRMQaYWbQHZmaNydqJnTlxsNNpJhIxqnDEdB
+zxG35y9tzUaPZmOS0bnNMgZcnDrgnQaQBDEg2uSTpPPUnHhTpKE13rAGLpCwVvto
+hA/eGD9WsNZuoJNySoSUAcBhIRfyp1E2YfBn/zs9+LzR9b0Ia3dV+v+dMXcwlxtz
+Niyx78f8m2scp1RpedDBFvDxICRW0yH4iC/HPUAigyFMCvYWNk07xqaNUQJ6Qir2
+67Up1RN27Nvuyk6qKlsqANugNKLDwNSGHG4ucL8gAArqQAc+7EIwTG7ajXlBvX7S
+NTCMUr9/Qn7TOy5Mr3WcPvNVE0crYW/8VXndhyhBzHaqsHnXW+TYBjCI+NTr4fBy
+U1PkLRCkZ7WVOsjiIGbCdzzJetQ8T6OdJbUlum99tH1ExTxx3+jTjmBag+TXtmAH
+84bKpUOwFzE6htQONWo1
+=GAdh
 -----END PGP SIGNATURE-----
 
---OgqxwSJOaUobr8KG--
+--Signature=_Wed__20_Feb_2013_17_28_31_+1100_mNwQZuB=X/Wq_Vux--
