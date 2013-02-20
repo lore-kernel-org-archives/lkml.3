@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964856Ab3BTPoT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 10:44:19 -0500
-Received: from ham1.zoner.com ([217.198.112.147]:50469 "EHLO ham1.zoner.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964832Ab3BTPoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 10:44:17 -0500
-X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Feb 2013 10:44:17 EST
-Message-ID: <5124EDF4.4010309@zoner.cz>
-Date: Wed, 20 Feb 2013 16:38:28 +0100
-From: Martin Svec <martin.svec@zoner.cz>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S964876Ab3BTPoa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 10:44:30 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:62770 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964832Ab3BTPo0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 10:44:26 -0500
 MIME-Version: 1.0
-To: target-devel <target-devel@vger.kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Read I/O starvation with writeback RAID controller
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Feb 2013 15:38:25.0920 (UTC) FILETIME=[52C51000:01CE0F80]
+In-Reply-To: <87k3qa7333.fsf@linaro.org>
+References: <1359399845-10568-1-git-send-email-fweisbec@gmail.com>
+	<87k3qa7333.fsf@linaro.org>
+Date: Wed, 20 Feb 2013 16:44:24 +0100
+Message-ID: <CAFTL4hzH7avJLAvjBf3Px44s-BRRezTekrdQR4vSUhyFTYXwHA@mail.gmail.com>
+Subject: Re: [GIT PULL] cputime: Full dynticks task/cputime accounting v7
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sedat Dilek <sedat.dilek@gmail.com>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2013/2/15 Kevin Hilman <khilman@linaro.org>:
+> Frederic Weisbecker <fweisbec@gmail.com> writes:
+>
+>> Ingo,
+>>
+>> Please pull the new full dynticks cputime accounting code that
+>> can be found at:
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+>>       tags/full-dynticks-cputime-for-mingo
+>>
+>> My last concern is the dependency on CONFIG_64BIT. We rely on cputime_t
+>> being u64 for reasonable nanosec granularity implementation. And therefore
+>> we need a single instruction fetch to read kernel cpustat for atomicity
+>> requirement against concurrent incrementation, which only 64 bit archs
+>> can provide.
+>
+> Actually, moderately recent 32-bit ARMs can do atomic 64-bit load/stores
+> too.
 
-I've noticed read I/O starvation problems of LIO iSCSI target when
-used on top of writeback-enabled HW RAID controller (PERC H700 with
-1GB cache). For intensive mixed read-write workload in virtualized
-environments, writes are able to consume over 95% of the IOPS
-throughput and cause starvation of reads.
+Does gcc automatically handle 64 bit store/loads in one way or does
+that require specific CPU instructions?
 
-After a number of tests it seems to me it's a general issue of block
-layer I/O scheduling when running on top of a writeback device. If
-there is a write-intensive task, all writes go to the writeback cache
-with near-zero latency. This allows writer to quickly saturate the
-device with thousands of writes while using only a minimal fraction of
-queue depth. However, non-cached reads depend on spinning drive
-latencies which are orders of magnitude higher than writeback cache
-latencies, and so readers cannot submit so many requests per second as
-writers. Consequently, I guess the controller has totally wrong view
-of the incoming workload pattern, tries to satisfy the write flood
-first and the net result is inacceptable starvation of reads, with
-latencies up to hundreds of milliseconds.
+>
+> Also, is it just kernel_cpustat increments that need protection? or do
+> the various reads of the task_struct's cputime fields also need
+> protection (hmm, thinking twice, maybe those are already sufficiently
+> protected by the vtime_seqlock?)
 
-A simple fio test with 1TiB block device where one thread does 4k
-random sync writes with iodepth=32 and one thread does 4k random reads
-with iodepth=32 shows that instead of the theoretical 50:50 IOPS
-ratio, the block device runs with 95:5 ratio in favor of writes. In
-fact, the imbalance is so high that even write iodepth=2 is enaugh to
-achieve the same numbers.
+At least the task stats are protected with vtime_seqlock (hopefully I
+haven't missed some). But per cpu or global stats are not.
 
-Real workloads that tend to exhibit this problem are: initial zeroing
-of a virtual machine disk, virtual machine migration, virtual machine
-cloning, intensive swapping of one virtual machine etc.
+>
+>> It's probably no big deal to solve this issue. What we need is simply some
+>> atomic accessors.
+>
+> What about using the atomic64_* accessors?  Those would just use the
+> native loads/stores on arches that have them, otherwise
+> CONFIG_GENERIC_ATOMIC64 provides some fallbacks.
 
-I tried to set WCE=1 on target iblock device, played with queue
-depths, tested all three I/O schedulers and their parameters,
-controller's parameters, but with no luck. To achieve reasonably good
-fairness, the only solution is to set nr_requests to 1 or disable
-controller's writeback cache at all -- at the expense of degraded
-overall performance :-(
+Yeah may be we can try this.
 
-Regarding nr_requests, there's obvious relation between iodepths and
-read starvation: if (nr_requests >= workload iodepth) then starvation
-surely occurs. Lowering nr_requests below this threshold slowly starts
-improving fairness and for every rd+wr iodepths pair, there exists
-sufficiently low nr_requests value at which IOPS ratio is finally
-balanced according to rd:wr iodepth ratio. Unfortunately it means
-there is no minimal nr_requests value suitable for all workloads. For
-iodepths around 2 to 8, only nr_requests=1 provides fair load balancing.
+>
+> To give it a try, below is a quick patch to convert kernel_cpustat to
+> atomic64.  I only got as far as compile testing and basic boot testing
+> on a 32-bit ARM platform, but let me know if this is the right
+> direction.
 
-Is this a known problem? Does anybody find block layer parameters that
-elliminate this problem for iscsi-target storage in mixed random
-read-write environments like virtualization? Or should I start writing
-my own I/O scheduler? ;-)
+Ok, I'll comment on your second version.
 
-Update: I've just found https://lkml.org/lkml/2012/12/10/550 (Read
-starvation by sync writes), where Jan Kara describes identical
-symptoms. But setting nr_requests=10000 doesn't help in my case.
-CC'ing LKML too (I'm not LKML subscriber).
+>
+>> There is just no emergency though as this new option depends on the context
+>> tracking subsystem that only x86-64 (and soon ppc64) implements yet. And
+>> this set is complex enough already. I think we can deal with that later.
+>
+> I've started working on the ARM version of the context_tracker, so
+> "later" is coming quickly and I will do what I can to help this along.
 
-Thanks,
-
-Martin
-
+Ok. Thanks.
