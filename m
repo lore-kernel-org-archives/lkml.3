@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935401Ab3BTNLV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:11:21 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37311 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935129Ab3BTNLQ (ORCPT
+	id S935373Ab3BTNN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:13:58 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:32805 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934921Ab3BTNN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:11:16 -0500
-Date: Wed, 20 Feb 2013 13:11:12 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] spi: tegra114: add spi driver
-Message-ID: <20130220131112.GE2726@opensource.wolfsonmicro.com>
-References: <1361281115-20436-1-git-send-email-ldewangan@nvidia.com>
- <5123C18A.9010604@wwwdotorg.org>
- <5124C18F.6070108@nvidia.com>
+	Wed, 20 Feb 2013 08:13:56 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ILuaRSyQpoVaJ1HG"
-Content-Disposition: inline
-In-Reply-To: <5124C18F.6070108@nvidia.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <BEC9F67575FA1E429CA7CF5AE9BE3634403505@SHSMSX102.ccr.corp.intel.com>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+	<6332427.iqPUMjtDaQ@vostro.rjw.lan>
+	<BEC9F67575FA1E429CA7CF5AE9BE3634400F30@SHSMSX102.ccr.corp.intel.com>
+	<3321530.AgvEeduuPx@vostro.rjw.lan>
+	<20130219104633.GA23279@xo-6d-61-c0.localdomain>
+	<BEC9F67575FA1E429CA7CF5AE9BE3634403505@SHSMSX102.ccr.corp.intel.com>
+Date: Wed, 20 Feb 2013 14:13:54 +0100
+Message-ID: <CAJfpegvmrFywtwS5giuCgVc5Cr3G1+fXKTPYiCZsV5P1jinxXA@mail.gmail.com>
+Subject: Re: [fuse-devel] Getting rid of freezer for suspend [was Re: [PATCH]
+ fuse: make fuse daemon frozen along with kernel threads]
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "Li, Fei" <fei.li@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Brown, Len" <len.brown@intel.com>, "Wang, Biao" <biao.wang@intel.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 20, 2013 at 3:54 AM, Li, Fei <fei.li@intel.com> wrote:
 
---ILuaRSyQpoVaJ1HG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>> From: Pavel Machek [mailto:pavel@ucw.cz]
+>>
+>> freeze_priority?
+>>
+>> I _hope_ we will not need more than three priorities, (user, fused, kernel), but
+>> I hoped not no need more than two before, so...
 
-On Wed, Feb 20, 2013 at 05:59:03PM +0530, Laxman Dewangan wrote:
-> On Tuesday 19 February 2013 11:46 PM, Stephen Warren wrote:
+>
+> IMHO, we still use two priorities, with the exception that user space process such
+> as fuse daemon can be configured to be frozen in kernel threads frozen phase
+> instead of user space processes frozen phase.
 
-> >In the older Tegra SPI drivers, the PM runtime logic was was of
-> >master->{un,}prepare_transfer. I'm curious why it's implemented
-> >differently here.
+I'm not sure that will work.  Fuse processes are in fact ordinary
+userspace processes, and so should be frozen before kernel threads.
 
-> The prepare  is called in atomic context and in this we are calling
-> pm_runtime_get_sync() which is blocking and it can cause issue.
-
-> I have already bug reported by you that sometimes you saw locking in
-> tegra20 slink driver which we need to fix. When testing this, I ran
-> into similar case and hence now moving this out or prepare.
-
-> I will push the change for fixing this in tegra20_slink driver also.
-
-As I think I've said before I keep thinking we ought to just have some
-basic runtime PM code in the core - a substantial proportion of drivers
-end up following the same pattern, it'd be surprising to see hardware
-that needed a different pattern.
-
-> >>+	tspi->clk = devm_clk_get(&pdev->dev, "spi");
-
-> >Does this HW block use multiple clocks? If not, I think s/"spi"/NULL/
-> >there, just like the Tegra20 driver.
-
-> No, spi controller uses the only one clock. I will change to NULL.
-
-I'm never convinced that NULL is a helpful clock name to pick, it's not
-awesome if you ever acquire a second clock.
-
---ILuaRSyQpoVaJ1HG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRJMtpAAoJELSic+t+oim9kBsQAJY+ECq8UzL+o+K4tOJd1dnm
-3NpsTeMXCZeitEN2HKqTZxHsX/CBKP/59m9ZVQzoF49bH7bIsxOW1V+DE8xT6vmC
-JNQc+3yda9YdIzzBDwi+lQ29DfnxEUmLKlIwPIRnOpUzNPSTjQdJh7PgbwkAAIxW
-ivVMo4UdqKkzhj3db3eIrUNlFDFVfdZqBmn83hGN9A2+jB65E66btbeH+DprrEyY
-KsKGw4lX3xQ7XjdeAICraKlEXcdrmJ+zMsZSxHkZb6p2zWMnLknku0rDE4l9l192
-CXgruSsyqiPEMo/SFSfKbbgE8Ls0qjFcyDzN18tCUuFnqLpXpxYlxFgHzGK5+1iy
-w1MCODkBzpJwxxq6dPPZ1+3QGQUqzYk2YCTJfJ195n2/DXXa46bsff6bozoJvXWM
-7Hnhl16hWkAdeC2+2+Q6lWd9573sC/wccyhCe02HjiVEOnYpgrqmSVMn/EOC6dpG
-K6xpfhH2Qp+gveX/1QgJDkfW5QFWWyuPRf5CwEUduXgGhKDU5jrRpoU0///Tip9I
-EAzaBHRyXKklbXS6GkCUjIh1dwUiqgcU/j8iZOPSIz600n9hpBCLfZpgLwUF7pBb
-Nk1aofsSwgEh2HSESXQngQvItks4RSA9W326ysWcyhYlbauSC9N+a265aDG896ii
-60M8Ex5wnO51wyr+DeKB
-=AR5w
------END PGP SIGNATURE-----
-
---ILuaRSyQpoVaJ1HG--
+Thanks,
+Miklos
