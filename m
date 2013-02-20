@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935643Ab3BTDbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 22:31:07 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:60938 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933993Ab3BTDbF (ORCPT
+	id S935663Ab3BTDex (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 22:34:53 -0500
+Received: from smtp-out-04.shaw.ca ([64.59.134.12]:34066 "EHLO
+	smtp-out-04.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933844Ab3BTDev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 22:31:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130220025130.GA32589@kroah.com>
-References: <20130218181454.615592566@linuxfoundation.org>
-	<CAKocOOPShXASvWEJw7r_NxTAKYA34DH9BiaEKo0saWEobar9zQ@mail.gmail.com>
-	<20130220025130.GA32589@kroah.com>
-Date: Tue, 19 Feb 2013 20:31:02 -0700
-Message-ID: <CAKocOOP4cBit5NOZzu3gyij7-xfODVP8wZ+qEAjA3gDNEObXHw@mail.gmail.com>
-Subject: Re: [ 0/1] 3.4.33-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Feb 2013 22:34:51 -0500
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Feb 2013 22:34:51 EST
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=YO+FcVZrxpdWV6Mo6AkY2Rtp7tuV51ZJEd1ZQZEmJbs= c=1 sm=1
+ a=D7il1KcXhDIA:10 a=3762yOXauukA:10 a=BLceEmwcHowA:10
+ a=oaxjXb+On79cRBAvziGSJw==:17 a=47LbCVvxAAAA:8 a=h-rVzXr4HokMWlinBgYA:9
+ a=QhNQsjeWOoAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+From: Simon Wood <simon@mungewell.org>
+To: linux-input@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        simon@mungewell.org
+Subject: [PATCH 3/5] HID: LG: Prevent the Logitech Gaming Wheels deadzone
+Date: Tue, 19 Feb 2013 20:25:12 -0700
+Message-Id: <1361330714-5217-3-git-send-email-simon@mungewell.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1361330714-5217-1-git-send-email-simon@mungewell.org>
+References: <1361330714-5217-1-git-send-email-simon@mungewell.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 7:51 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Mon, Feb 18, 2013 at 07:50:16PM -0700, Shuah Khan wrote:
->> On Mon, Feb 18, 2013 at 11:24 AM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > This is the start of the stable review cycle for the 3.4.33 release.
->> > There is 1 patch in this series, which will be posted as a response to
->> > this one.  If anyone has any issues with it being applied, please let me
->> > know.
->> >
->> > Responses should be made by Wed Feb 20 18:13:44 UTC 2013.
->> > Anything received after that time might be too late.
->> >
->> > The whole patch series can be found in one patch at:
->> >         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.33-rc1.gz
->> > and the diffstat can be found below.
->> >
->> > thanks,
->> >
->> > greg k-h
->> >
->> > -------------
->>
->> Patches applied cleanly to 3.0.65, and 3.4.32
->> Compiled and booted on the following systems:
->> HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
->> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
->>
->> Reviewed patches
->>
->> Skipped Cross-compile tests
->
-> Thanks for testing, your kernel log messages looked correct, right?
->
-> greg k-h
+This patch ensures that the Logitech wheels are not initialised with
+default fuzz/flat values, by marking them as multiaxis devices (rather
+than joysticks).
 
-Yes, should have mentioned that I checked dmesg and syslog both and
-compared dmesg
-with the old dmesg I saved from the previous rc-1 testing for each of
-these releases. Didn't
-see anything that jumped out at me. I usually save dmesg from rc
-cycles to look for regressions
-if any from one rc cycle to the next.
+Signed-off-by: Simon Wood <simon@mungewell.org>
+---
+ drivers/hid/hid-lg.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
--- Shuah
+diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
+index c065598..5d3c861 100644
+--- a/drivers/hid/hid-lg.c
++++ b/drivers/hid/hid-lg.c
+@@ -479,6 +479,26 @@ static int lg_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+ 			 usage->type == EV_REL || usage->type == EV_ABS))
+ 		clear_bit(usage->code, *bit);
+ 
++	/* Ensure that Logitech wheels are not given a default fuzz/flat value */
++	if (usage->type == EV_ABS && (usage->code == ABS_X ||
++			usage->code == ABS_Y || usage->code == ABS_Z ||
++			usage->code == ABS_RZ)) {
++		switch (hdev->product) {
++		case USB_DEVICE_ID_LOGITECH_WHEEL:
++		case USB_DEVICE_ID_LOGITECH_MOMO_WHEEL:
++		case USB_DEVICE_ID_LOGITECH_DFP_WHEEL:
++		case USB_DEVICE_ID_LOGITECH_G25_WHEEL:
++		case USB_DEVICE_ID_LOGITECH_DFGT_WHEEL:
++		case USB_DEVICE_ID_LOGITECH_G27_WHEEL:
++		case USB_DEVICE_ID_LOGITECH_WII_WHEEL:
++		case USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2:
++			field->application = HID_GD_MULTIAXIS;
++			break;
++		default:
++			break;
++		}
++	}
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.10.4
+
