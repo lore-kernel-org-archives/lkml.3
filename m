@@ -1,65 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934819Ab3BTT2d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 14:28:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65185 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933548Ab3BTT2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 14:28:31 -0500
-Date: Wed, 20 Feb 2013 14:28:26 -0500
-From: Dave Jones <davej@redhat.com>
-To: x86@kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: odd GPF bug on resume from hibernate.
-Message-ID: <20130220192826.GA3137@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, x86@kernel.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S934876Ab3BTT36 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 14:29:58 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43330 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933536Ab3BTT34 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 14:29:56 -0500
+Message-ID: <51252454.1050609@infradead.org>
+Date: Wed, 20 Feb 2013 11:30:28 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>,
+        axboe@kernel.dk
+Subject: [PATCH -next] security/integrity/ima: make part_pack_uuid() always
+ visible
+References: <20130219170309.efb90173fcd879bf32a7e89b@canb.auug.org.au>  <512418A5.9010006@infradead.org> <1361379050.29360.12.camel@falcor1>
+In-Reply-To: <1361379050.29360.12.camel@falcor1>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had two users report hitting a bug that looks like this..
+On 02/20/13 08:50, Mimi Zohar wrote:
+> On Tue, 2013-02-19 at 16:28 -0800, Randy Dunlap wrote:
+>> On 02/18/13 22:03, Stephen Rothwell wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20130218:
+>>>
+>>
+>> on x86_64:
+>>
+>>   CC      security/integrity/ima/ima_policy.o
+>> security/integrity/ima/ima_policy.c: In function 'ima_parse_rule':
+>> security/integrity/ima/ima_policy.c:538:4: error: implicit declaration of function 'part_pack_uuid' [-Werror=implicit-function-declaration]
+>> cc1: some warnings being treated as errors
+>> make[4]: *** [security/integrity/ima/ima_policy.o] Error 1
+>>
+>>
+>> Full randconfig file is attached.
+> 
+> part_pack_uuid() is only defined for CONFIG_BLOCK in
+> include/linux/genhd.h.  One solution would be to add a stub function
+> definition in include/linux/genhd.h, the other option would be to ifndef
+> CONFIG_BLOCK in C code.
 
-general protection fault: 8800 [#1] SMP 
-PM: Restoring platform NVS memory
-Modules linked in: fuse ipt_MASQUERADE nf_conntrack_netbios_ns nf_conntrack_broadcast ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iTCO_wdt iTCO_vendor_support snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq coretemp kvm_intel snd_seq_device kvm arc4 microcode snd_pcm rtl8192se serio_raw rtlwifi mac80211 i2c_i801 intel_ips jme lpc_ich mfd_core cfg80211 mii jmb38x_ms snd_page_alloc memstick snd_timer rfkill snd mei soundcore uinput hid_logitech_dj i915 crc32c_intel i2c_algo_bit drm_kms_helper sdhci_pci drm sdhci mmc_core i2c_core wmi video
-CPU 2 
-Pid: 0, comm: swapper/2 Not tainted 3.7.5-201.fc18.x86_64 #1 System76, Inc.                        Lemur UltraThin                      /Lemur UltraThin                      
-RIP: 0010:[<ffffffff81038335>]  [<ffffffff81038335>] read_apic_id+0x5/0x30
-RSP: 0018:ffff880131ea3ee8  EFLAGS: 00010046
-RAX: 0000000000000020 RBX: ffff880131ea2010 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: 0000000000000003 RDI: 0000000000000001
-RBP: ffff880131ea3ef8 R08: ffff880131ea2000 R09: ffff880131ea3ed0
-R10: ffff880131ea3ed4 R11: 0000000000000000 R12: 0000000000000020
-R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
-FS:  0000000000000000(0000) GS:ffff880137d00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007f2f06237750 CR3: 0000000001c0b000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper/2 (pid: 0, threadinfo ffff880131ea2000, task ffff880131e9ae40)
-Stack:
- ffff880131ea3fd8 ffffffff81cdc5d0 ffff880131ea3f28 ffffffff8101d508
- ffff880131ea3f18 b9aafd27b651a356 0000000000000000 0000000000000000
- ffff880131ea3f48 ffffffff816248dd 0000000000000000 e0e608b14cc4dccd
-Call Trace:
- [<ffffffff8101d508>] cpu_idle+0x108/0x120
- [<ffffffff816248dd>] start_secondary+0x23e/0x240
-Code: 25 40 3b 01 00 3c 03 76 07 0f 09 66 66 90 66 90 f4 eb fd 41 bc ff ff ff ff eb b1 0f 1f 00 0f 1f 84 00 00 00 00 00 48 8b 05 41 31 <ca> 00 55 bf 20 00 00 00 48 89 e5 ff 90 20 01 00 00 89 c7 48 8b 
-RIP  [<ffffffff81038335>] read_apic_id+0x5/0x30
- RSP <ffff880131ea3ee8>
+ITYM #ifdef CONFIG_BLOCK to call part_pack_uuid().
+Yes, either of those would work.
+How about a third option -- just make part_pack_uuid() always visible
+and not just a stub?  Patch is below.
 
-That Code: line translates to..
 
-   0:	ca 00 55             	lret   $0x5500
+---
+From: Randy Dunlap <rdunlap@infradead.org>
 
-At this point I don't know where to begin debugging..
+Fix build error when CONFIG_BLOCK is not enabled
+by making the static inline function part_pack_uuid()
+visible independent of CONFIG_BLOCK's setting.
 
-Is that 8800 error code a clue ?
+security/integrity/ima/ima_policy.c:538:4: error: implicit declaration of function 'part_pack_uuid' [-Werror=implicit-function-declaration]
 
-	Dave
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: Mimi Zohar <zohar@us.ibm.com>
+---
+ include/linux/genhd.h |   36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
 
+--- linux-next-20130220.orig/include/linux/genhd.h
++++ linux-next-20130220/include/linux/genhd.h
+@@ -213,24 +213,6 @@ static inline struct gendisk *part_to_di
+ 	return NULL;
+ }
+ 
+-static inline void part_pack_uuid(const u8 *uuid_str, u8 *to)
+-{
+-	int i;
+-	for (i = 0; i < 16; ++i) {
+-		*to++ = (hex_to_bin(*uuid_str) << 4) |
+-			(hex_to_bin(*(uuid_str + 1)));
+-		uuid_str += 2;
+-		switch (i) {
+-		case 3:
+-		case 5:
+-		case 7:
+-		case 9:
+-			uuid_str++;
+-			continue;
+-		}
+-	}
+-}
+-
+ static inline int disk_max_parts(struct gendisk *disk)
+ {
+ 	if (disk->flags & GENHD_FL_EXT_DEVT)
+@@ -720,4 +702,22 @@ static inline dev_t blk_lookup_devt(cons
+ 
+ #endif /* CONFIG_BLOCK */
+ 
++static inline void part_pack_uuid(const u8 *uuid_str, u8 *to)
++{
++	int i;
++	for (i = 0; i < 16; ++i) {
++		*to++ = (hex_to_bin(*uuid_str) << 4) |
++			(hex_to_bin(*(uuid_str + 1)));
++		uuid_str += 2;
++		switch (i) {
++		case 3:
++		case 5:
++		case 7:
++		case 9:
++			uuid_str++;
++			continue;
++		}
++	}
++}
++
+ #endif /* _LINUX_GENHD_H */
