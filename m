@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758922Ab3BTRYe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 12:24:34 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:43996 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757402Ab3BTRYb (ORCPT
+	id S933861Ab3BTRZU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 12:25:20 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56598 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933529Ab3BTRZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 12:24:31 -0500
+	Wed, 20 Feb 2013 12:25:17 -0500
+Message-ID: <512506F9.2030508@wwwdotorg.org>
+Date: Wed, 20 Feb 2013 10:25:13 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130220171645.GB3570@htj.dyndns.org>
-References: <1361380176-15081-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20130220171645.GB3570@htj.dyndns.org>
-Date: Wed, 20 Feb 2013 19:24:29 +0200
-Message-ID: <CAHp75VcB2v=pqOHjUr_r=sp1git0vzYEdt0bLJo9QvD29-UO9g@mail.gmail.com>
-Subject: Re: [PATCH] events: always do slow path when trying to find a pmu
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-next@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] spi: tegra114: add spi driver
+References: <1361281115-20436-1-git-send-email-ldewangan@nvidia.com> <5123C18A.9010604@wwwdotorg.org> <5124C18F.6070108@nvidia.com> <20130220131112.GE2726@opensource.wolfsonmicro.com> <5124CEF5.3060605@nvidia.com>
+In-Reply-To: <5124CEF5.3060605@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 7:16 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Wed, Feb 20, 2013 at 07:09:36PM +0200, Andy Shevchenko wrote:
->> The guilty commit is cc5b5f6 "events: convert to idr_alloc()" together with
->> f49318a "idr: implement lookup hint". In our case the idr_alloc is never called, but idr_find is. The hint field is never initialized and could not be dereferenced.
->
-> Ah, right, ->hint is uninitialized at the beginning.
->
->> The proposed fix uses the idr_slowpath call which reflects old behaviour.
+On 02/20/2013 06:26 AM, Laxman Dewangan wrote:
+> On Wednesday 20 February 2013 06:41 PM, Mark Brown wrote:
+>> * PGP Signed by an unknown key
 >>
->> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->> Reported-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
->> ---
->>  kernel/events/core.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/kernel/events/core.c b/kernel/events/core.c
->> index 624e53f..20421ea 100644
->> --- a/kernel/events/core.c
->> +++ b/kernel/events/core.c
->> @@ -6076,7 +6076,7 @@ struct pmu *perf_init_event(struct perf_event *event)
->>       idx = srcu_read_lock(&pmus_srcu);
->>
->>       rcu_read_lock();
->> -     pmu = idr_find(&pmu_idr, event->attr.type);
->> +     pmu = idr_find_slowpath(&pmu_idr, event->attr.type);
->
-> But I don't think this is the right thing to do.  I'm working on
-> proper fix for idr_find().  Will post soon.
+>> On Wed, Feb 20, 2013 at 05:59:03PM +0530, Laxman Dewangan wrote:
+>>>>> +    tspi->clk = devm_clk_get(&pdev->dev, "spi");
+>>>> Does this HW block use multiple clocks? If not, I think s/"spi"/NULL/
+>>>> there, just like the Tegra20 driver.
+>>> No, spi controller uses the only one clock. I will change to NULL.
+>> I'm never convinced that NULL is a helpful clock name to pick, it's not
+>> awesome if you ever acquire a second clock.
+> 
+> I had other idea of okeeping clock name here for power optimization.
+> Spi controller can take the power source ffrom different clock source
+> say clk_m (crystal) and pllp.
+> 
+> I want to set the parent clock dynamically based on required speed so
+> that if the desire speed can be meet from clk_m, no need to increase pll
+> count and possible we may endup with siwtchng off pllp which can save
+> power.
+> 
+> So for this I may require
+> 
+> spi_clk = devm_clk_get(&pdev->dev, "spi");
+> spi_clkm = devm_clk_get(&pdev->dev, "clmkm");
+> spi_pllp = devm_clk_get(&pdev->dev, "pllp");
+> 
+> and call clk_set_parent(spi_clk, spi_clkm) or clk_set_parent(spi_clk,
+> spi_pllp).
 
-Check my v2
+OK, so that's certainly an argument for requesting a specific clock name
+rather than NULL.
 
-
-
--- 
-With Best Regards,
-Andy Shevchenko
+But, please do think this approach through fully. The DT binding needs
+to define which clock-names the driver requires to be present, and any
+optional clock names. DT bindings are supposed to be immutable, or
+perhaps extendible in a completely backwards-compatible fashion. This
+implies that you need to have thought through the entire list of clocks
+that the driver might want in the DT clock-names property when you first
+write the DT binding documentation...
