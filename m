@@ -1,142 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934563Ab3BTRcy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 12:32:54 -0500
-Received: from mail-qe0-f73.google.com ([209.85.128.73]:61505 "EHLO
-	mail-qe0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933100Ab3BTRcx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 12:32:53 -0500
-From: Simon Glass <sjg@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Simon Glass <sjg@chromium.org>,
-        Rob Landley <rob@landley.net>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Che-Liang Chiou <clchiou@chromium.org>,
-        Jonathan Kliegman <kliegs@chromium.org>, linux-input@vger.kernel.org,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        Roland Stigge <stigge@antcom.de>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-doc@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Bill Pemberton <wfp5p@virginia.edu>
-Subject: [PATCH v5 0/6] Add ChromeOS Embedded Controller support
-Date: Wed, 20 Feb 2013 09:24:33 -0800
-Message-Id: <1361381079-26747-1-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
+	id S934579Ab3BTRdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 12:33:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40471 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462Ab3BTRdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 12:33:43 -0500
+Date: Wed, 20 Feb 2013 18:32:29 +0100
+From: Karel Zak <kzak@redhat.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Bryan Mason <bmason@redhat.com>
+Subject: Re: [PATCH] TTY: do not reset master's packet mode
+Message-ID: <20130220173229.GA32279@x2.net.home>
+References: <1358288782-2946-1-git-send-email-jslaby@suse.cz>
+ <20130220131903.GA8501@x2.net.home>
+ <5124FC82.5040305@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5124FC82.5040305@suse.cz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ChromeOS Embedded Controller (EC) is an Open Source EC implementation
-used on ARM and Intel Chromebooks. Current implementations use a Cortex-M3
-connected on a bus (such as I2C, SPI, LPC) to the AP. A separate interrupt
-line is used to indicate when the EC needs service.
+On Wed, Feb 20, 2013 at 05:40:34PM +0100, Jiri Slaby wrote:
+> On 02/20/2013 02:19 PM, Karel Zak wrote:
+> > On Tue, Jan 15, 2013 at 11:26:22PM +0100, Jiri Slaby wrote:
+> >> Now that login from util-linux is forced to drop all references to a
+> >> TTY which it wants to hangup (to reach reference count 1) we are
+> >> seeing issues with telnet. When login closes its last reference to the
+> >> slave PTY, it also resets packet mode on the *master* side. And we
+> >> have a race here.
+> > 
+> > [...]
+> > 
+> >> By this I am resurrecting an old bug, see References. We are hitting
+> >> it regularly now, i.e. with updated util-linux, ergo login.
+> >>
+> >> Here, I am changing a behavior introduced back in 2.1 times. It would
+> >> better have a long time testing before goes upstream.
+> > 
+> >  It would be nice to found a quick way how to resolve this problem,
+> >  because telnet+login is broken now... and for end users it seems like
+> >  a regression.
+> 
+> Oh, the patch is in the TTY tree and I suppose it will go to 3.9-rc1
+> (and to stable as we will get to same later -rc -- to have some testing).
 
-Functions performed by the EC vary by platform, but typically include
-battery charging, keyboard scanning and power sequencing.
+ Cool. Thanks for feedback.
 
-This series includes support for the EC message protocol, and implements
-a matrix keyboard handler for Linux using the protocol. The EC performs
-key scanning and passes scan data in response to AP requests. This is
-used on the Samsung ARM Chromebook. No driver is available for LPC at
-present.
-
-This series can in principle operate on any hardware, but for it to actually
-work on the Samsung ARM Chromebook, it needs patches which are currently in
-progress to mainline: Exynos FDT interrupt support and I2C bus arbitration.
-
-The driver is device-tree-enabled and a suitable binding is included in
-this series. Example device tree nodes are included in the examples,
-but no device tree patch for exynos5250-snow is provided at this stage, since
-we must wait for the above-mentioned patches to land to avoid errors from
-dtc. This can be added with a follow-on patch when that work is complete.
-
-Changes in v5:
-- Remove cros_ec allocation functions
-- Remove name access functions in cros_ec, using strings instead
-- Fix Kconfig help message for MFD_CROS_EC_I2C
-- Remove I2C retry logic
-- Switch cros_ec_i2c driver to use devm
-- Update cros_ec_i2c to work with new cros_ec interface
-- Switch cros_ec_spi driver to use devm
-- Update cros_ec_spi to work with new cros_ec interface
-- Fix {} style nit in cros_ec_keyb_has_ghosting
-- Correct key lookup logic which was broken in previous version
-- Switch cros_ec_keyb driver to use devm
-
-Changes in v4:
-- Fix up trvial logging comments
-- Remove messages reporting out of memory
-- Add compatible string for cros-ec-keyb
-- Remove wake notifier and let drivers use their own handlers instead
-- Add 'depends on MFD_CROS_EC' to Kconfig
-- Remove use of wake_notifier
-- Remove manual code to locate device tree node
-- Add resume handler to clear keyboard scan buffer if required
-
-Changes in v3:
-- Add stub for matrix_keypad_parse_of_params() when no CONFIG_OF
-- Put back full DT range checking in tca8418 driver
-- Remove 'select MFD_CROS_EC' from Kconfig as it isn't necessary
-- Remove old_state by using input layer's idev->key
-- Move inner loop of cros_ec_keyb_has_ghosting() into its own function and simplify
-- Add check for not finding the device tree node
-- Remove comment about leaking matrix_keypad_build_keymap()
-- Use platform_get_drvdata() where possible
-- Remove call to input_free_device() after input_unregister_device()
-
-Changes in v2:
-- Remove use of __devinit/__devexit
-- Remove use of __devinit/__devexit
-- Remove use of __devinit/__devexit
-- Add new patch to decode matrix-keypad DT binding
-- Remove use of __devinit/__devexit
-- Use function to read matrix-keypad parameters from DT
-- Remove key autorepeat parameters from DT binding and driver
-- Use unsigned int for rows/cols
-
-Simon Glass (6):
-  mfd: Add ChromeOS EC messages header
-  mfd: Add ChromeOS EC implementation
-  mfd: Add ChromeOS EC I2C driver
-  mfd: Add ChromeOS EC SPI driver
-  Input: matrix-keymap: Add function to read the new DT binding
-  Input: Add ChromeOS EC keyboard driver
-
- .../devicetree/bindings/input/cros-ec-keyb.txt     |   72 +
- Documentation/devicetree/bindings/mfd/cros-ec.txt  |   56 +
- drivers/input/keyboard/Kconfig                     |   12 +
- drivers/input/keyboard/Makefile                    |    1 +
- drivers/input/keyboard/cros_ec_keyb.c              |  334 +++++
- drivers/input/keyboard/lpc32xx-keys.c              |   11 +-
- drivers/input/keyboard/omap4-keypad.c              |   16 +-
- drivers/input/keyboard/tca8418_keypad.c            |    7 +-
- drivers/input/matrix-keymap.c                      |   19 +
- drivers/mfd/Kconfig                                |   28 +
- drivers/mfd/Makefile                               |    3 +
- drivers/mfd/cros_ec.c                              |  189 +++
- drivers/mfd/cros_ec_i2c.c                          |  210 +++
- drivers/mfd/cros_ec_spi.c                          |  375 ++++++
- include/linux/input/matrix_keypad.h                |   19 +
- include/linux/mfd/cros_ec.h                        |  172 +++
- include/linux/mfd/cros_ec_commands.h               | 1369 ++++++++++++++++++++
- 17 files changed, 2875 insertions(+), 18 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/cros-ec-keyb.txt
- create mode 100644 Documentation/devicetree/bindings/mfd/cros-ec.txt
- create mode 100644 drivers/input/keyboard/cros_ec_keyb.c
- create mode 100644 drivers/mfd/cros_ec.c
- create mode 100644 drivers/mfd/cros_ec_i2c.c
- create mode 100644 drivers/mfd/cros_ec_spi.c
- create mode 100644 include/linux/mfd/cros_ec.h
- create mode 100644 include/linux/mfd/cros_ec_commands.h
+    Karel
 
 -- 
-1.8.1.3
-
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
