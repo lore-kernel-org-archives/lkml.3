@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935837Ab3BTPe2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 10:34:28 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:50999 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934944Ab3BTPci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 10:32:38 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 1/7] perf, debugfs: Remove a write-only variable
-Date: Wed, 20 Feb 2013 16:32:27 +0100
-Message-Id: <1361374353-30385-2-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.1.3.535.ga923c31
-In-Reply-To: <1361374353-30385-1-git-send-email-bp@alien8.de>
-References: <1361374353-30385-1-git-send-email-bp@alien8.de>
+	id S935505Ab3BTPlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 10:41:09 -0500
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:44153 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933631Ab3BTPlH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 10:41:07 -0500
+Date: Wed, 20 Feb 2013 16:41:01 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
+        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 04/15] sched: add sched balance policies in kernel
+Message-ID: <20130220154101.GA13388@gmail.com>
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
+ <1361164062-20111-5-git-send-email-alex.shi@intel.com>
+ <20130220093751.GA2444@gmail.com>
+ <5124D253.6090606@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5124D253.6090606@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
 
-debugfs_premounted is written-to only so drop it. This functionality is
-covered by debugfs_found now. Make it a bool while at it.
+* Alex Shi <alex.shi@intel.com> wrote:
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- tools/perf/util/debugfs.c | 13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+> Now there is just 2 types policy: performance and 
+> powersaving(with 2 degrees, powersaving and balance).
 
-diff --git a/tools/perf/util/debugfs.c b/tools/perf/util/debugfs.c
-index dd8b19319c03..e55495c7823a 100644
---- a/tools/perf/util/debugfs.c
-+++ b/tools/perf/util/debugfs.c
-@@ -5,7 +5,6 @@
- #include <linux/kernel.h>
- #include <sys/mount.h>
- 
--static int debugfs_premounted;
- char debugfs_mountpoint[PATH_MAX + 1] = "/sys/kernel/debug";
- char tracing_events_path[PATH_MAX + 1] = "/sys/kernel/debug/tracing/events";
- 
-@@ -15,7 +14,7 @@ static const char *debugfs_known_mountpoints[] = {
- 	0,
- };
- 
--static int debugfs_found;
-+static bool debugfs_found;
- 
- /* find the path to the mounted debugfs */
- const char *debugfs_find_mountpoint(void)
-@@ -30,7 +29,7 @@ const char *debugfs_find_mountpoint(void)
- 	ptr = debugfs_known_mountpoints;
- 	while (*ptr) {
- 		if (debugfs_valid_mountpoint(*ptr) == 0) {
--			debugfs_found = 1;
-+			debugfs_found = true;
- 			strcpy(debugfs_mountpoint, *ptr);
- 			return debugfs_mountpoint;
- 		}
-@@ -52,7 +51,7 @@ const char *debugfs_find_mountpoint(void)
- 	if (strcmp(type, "debugfs") != 0)
- 		return NULL;
- 
--	debugfs_found = 1;
-+	debugfs_found = true;
- 
- 	return debugfs_mountpoint;
- }
-@@ -82,10 +81,8 @@ static void debugfs_set_tracing_events_path(const char *mountpoint)
- char *debugfs_mount(const char *mountpoint)
- {
- 	/* see if it's already mounted */
--	if (debugfs_find_mountpoint()) {
--		debugfs_premounted = 1;
-+	if (debugfs_find_mountpoint())
- 		goto out;
--	}
- 
- 	/* if not mounted and no argument */
- 	if (mountpoint == NULL) {
-@@ -100,7 +97,7 @@ char *debugfs_mount(const char *mountpoint)
- 		return NULL;
- 
- 	/* save the mountpoint */
--	debugfs_found = 1;
-+	debugfs_found = true;
- 	strncpy(debugfs_mountpoint, mountpoint, sizeof(debugfs_mountpoint));
- out:
- 	debugfs_set_tracing_events_path(debugfs_mountpoint);
--- 
-1.8.1.3.535.ga923c31
+I don't think we really want to have 'degrees' to the policies 
+at this point - we want each policy to be extremely good at what 
+it aims to do:
 
+ - 'performance' should finish jobs in in the least amount of 
+    time possible. No ifs and whens.
+
+ - 'power saving' should finish jobs with the least amount of 
+    watts consumed. No ifs and whens.
+
+> powersaving policy will try to assign one task to each LCPU, 
+> whichever the LCPU is SMT thread or a core. The balance policy 
+> is also a kind of powersaving policy, just a bit less 
+> aggressive. It will try to assign tasks according group 
+> capacity, one task to one capacity.
+
+The thing is, 'a bit less aggressive' is an awfully vague 
+concept to maintain on a long term basis - while the two 
+definitions above are reasonably deterministic which can be 
+measured and improved upon.
+
+Those two policies and definitions are also much easier to 
+communicate to user-space and to users - it's much easier to 
+explain what each policy is supposed to do.
+
+I'd be totally glad if we got so far that those two policies 
+work really well. Any further nuance visible at the ABI level is 
+I think many years down the road - if at all. Simple things 
+first - those are complex enough already.
+
+Thanks,
+
+	Ingo
