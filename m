@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935907Ab3BTEom (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 23:44:42 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:48009 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934921Ab3BTEol (ORCPT
+	id S1750941Ab3BTFAl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 00:00:41 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:60162 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750698Ab3BTFAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 23:44:41 -0500
-Date: Tue, 19 Feb 2013 20:45:06 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Andy Ross <andy.ross@windriver.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Jiri Slaby <jslaby@suse.cz>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2] vt: add init_hide parameter to suppress boot output
-Message-ID: <20130220044506.GA2728@kroah.com>
-References: <1361289224-10678-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20130220014512.GC31018@kroah.com>
- <51244B35.8090006@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51244B35.8090006@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Feb 2013 00:00:39 -0500
+Date: Wed, 20 Feb 2013 16:00:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Asias He <asias@redhat.com>
+Subject: linux-next: manual merge of the vhost tree with the virtio tree
+Message-Id: <20130220160028.42f2b3b94f5eea4b3f6d4779@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__20_Feb_2013_16_00_28_+1100_r6PwDteDNtXqlT=_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 08:04:05PM -0800, Andy Ross wrote:
-> On 02/19/2013 05:45 PM, Greg Kroah-Hartman wrote:
-> >>When vt.init_hide is set, suppress output on newly created consoles
-> >>until an affirmative switched to that console.  This prevents boot
-> >>output from displaying (and clobbering splash screens, etc...)
-> >>without disabling the console entirely.
-> >
-> >What's wrong with the 'quiet' option we have?  And you forgot to
-> >document this.
-> 
-> You're right about docs, obviously.  I'll write something up and send
-> it tomorrow morning.
-> 
-> But setting "quiet" controls logging.  It won't prevent the console
-> from doing a buffer clear or mode switch, nor will it prevent
-> userspace from writing to it, nor will the buffer rewrites due to the
-> console switches that happen on suspend and resume (which I didn't
-> know existed) be suppressed.
-> 
-> There's a (sort of) similar commonly-used option, vga=current, which
-> prevents a mode switch for the special case of VGA/vesa.  But that
-> doesn't work with the framebuffer console.
+--Signature=_Wed__20_Feb_2013_16_00_28_+1100_r6PwDteDNtXqlT=_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Why not?  Can't you fix that?
+Hi Michael,
 
-> The idea here (and I'm clearly no domain expert) was to leave the
-> console enabled and active, but invisible by default.  So nothing
-> displays, the splash screen stays put, and nothing fights with other
-> users of the framebuffer.  And it stays that way until something
-> affirmatively switches to a different VT using chvt or Alt-Fn or
-> whatever.
-> 
-> To be fair, a lot of this could be managed in userspace with the VT_*
-> ioctl interface.
+Today's linux-next merge of the vhost tree got a conflict in
+drivers/vhost/Makefile between commit 4d8dc8b44748 ("vringh: host-side
+implementation of virtio rings") from the virtio tree and commit
+0b87bfefde9a ("vhost-blk: Add vhost-blk support v6") from the vhost tree.
 
-Yes, that's what "normal" systems do :)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> But the specific application here (Android's surfaceflinger) isn't set
-> up for that, and it's a non-trivial API (and even doing it "right"
-> involves racing against other users at startup).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-How could there be any other users at startup, you "own" the system
-here, there should not be anyone to race with.
+diff --cc drivers/vhost/Makefile
+index 1d37f5e,1a8a4a5..0000000
+--- a/drivers/vhost/Makefile
++++ b/drivers/vhost/Makefile
+@@@ -2,5 -2,5 +2,7 @@@ obj-$(CONFIG_VHOST_NET) +=3D vhost_net.
+  vhost_net-y :=3D vhost.o net.o
+ =20
+  obj-$(CONFIG_TCM_VHOST) +=3D tcm_vhost.o
+ +
+ +obj-$(CONFIG_VHOST_RING) +=3D vringh.o
++ obj-$(CONFIG_VHOST_BLK) +=3D vhost_blk.o
++ vhost_blk-y :=3D blk.o
 
-> This seemed like a much simpler metaphor that still meets the
-> requirements.
+--Signature=_Wed__20_Feb_2013_16_00_28_+1100_r6PwDteDNtXqlT=_
+Content-Type: application/pgp-signature
 
-I think you should use the ioctls, that is what they are there for, and
-is what you need to implement if you want to use a console anyway,
-right?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-greg k-h
+iQIcBAEBCAAGBQJRJFhsAAoJEECxmPOUX5FEyqkQAKRNf61wXhtn8RYI+dFlwHIr
+KQmMmY9MS/v5WbCmzYG7MHMaJxExSnFrcIE31PnN+LxJSwG+58PwBgzl1MiuD1Bv
+YIfwAqqmsYENGmnIRJLXfeRaq/iViOPqgW52OfRdmq8a2Tj2E3H9um1j5ATaeaCQ
+wyYLv94MG0CeiHLOrnnWiUMkuo8SmAwqIhKbzy3swCdr7QIin9Gs6I71vgcLBjDf
+HywIrigtYQdx40WAiLlVZ1cFkh4p7Ir3fCGaGgrp3dUahBDeW5gQzPbegZW54qMr
+eceNR87yfBf1+w1NY7KrK29AeBrLUWngU8daHJHXAoIWW+/atljiM/RGOI+hFD7A
+em1edabdONcGXTyzP32rTDb0kyv0N99eCgS7rAAXyQgV2ubHFCdTR2JtRLJOwcVH
+YJNemonZRoT0a2HXDQVDn1MyDWdfSlqavZWkX6PIhTBbOryKDNCYUwd/YdR8Voed
+3/SLQyan2HyZ7I0Y0wksPIlj1lWg72lUpJLpdBGuk+Yg4C9K+m+H8gPZwJXcwpvS
+rjc6NUa/7PKaZyLLNLSFA6i5mDdikcLtLEGfYtXlJmv6+mMHFsBlGOVGATFBLWAV
+fFxHZX0MDxIxu7AzzSdWf0oJTrhC+ZM6JzoVpuKr9LsNDi/3QvlWN1aqekU0U9LX
+qDvKICxzuj35m2kSQPJ7
+=buXj
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__20_Feb_2013_16_00_28_+1100_r6PwDteDNtXqlT=_--
