@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935235Ab3BTMOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 07:14:46 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36022 "EHLO
+	id S935259Ab3BTMP0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 07:15:26 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36026 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934203Ab3BTMOp (ORCPT
+	by vger.kernel.org with ESMTP id S935029Ab3BTMPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 07:14:45 -0500
-Date: Wed, 20 Feb 2013 12:14:42 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Query]: Regmap v3.8: Compilation Warning: regmap_read_debugfs()
-Message-ID: <20130220121441.GB2726@opensource.wolfsonmicro.com>
-References: <CAKohpomdJBWrwiNx8T2-vT-b5wponNCMw_PGDMAULgoWidbOZQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="i9LlY+UWpKt15+FH"
-Content-Disposition: inline
-In-Reply-To: <CAKohpomdJBWrwiNx8T2-vT-b5wponNCMw_PGDMAULgoWidbOZQ@mail.gmail.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Feb 2013 07:15:25 -0500
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [PATCH 1/2 v2] regmap: debugfs: Simplify calculation of `c->max_reg'
+Date: Wed, 20 Feb 2013 12:15:22 +0000
+Message-Id: <1361362523-8120-1-git-send-email-dp@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We don't need to use any of the file position information
+to calculate the base and max register of each block.  Just
+use the counter directly.
 
---i9LlY+UWpKt15+FH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Set `i = base' at the top to avoid GCC flow analysis bugs.  The
+value of `i' can never be undefined or 0 in the if (c) { ... }.
 
-On Wed, Feb 20, 2013 at 01:23:09PM +0530, Viresh Kumar wrote:
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap-debugfs.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-> I am unable to understand why this warning is coming and that too on
-> line 180 (as that doesn't use this variable). I can't see how this variable is
-> used uninitialized.
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index 78d5f20..e14cb2d 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -88,16 +88,15 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
+ 	 * If we don't have a cache build one so we don't have to do a
+ 	 * linear scan each time.
+ 	 */
++	i = base;
+ 	if (list_empty(&map->debugfs_off_cache)) {
+-		for (i = base; i <= map->max_register; i += map->reg_stride) {
++		for (; i <= map->max_register; i += map->reg_stride) {
+ 			/* Skip unprinted registers, closing off cache entry */
+ 			if (!regmap_readable(map, i) ||
+ 			    regmap_precious(map, i)) {
+ 				if (c) {
+ 					c->max = p - 1;
+-					fpos_offset = c->max - c->min;
+-					reg_offset = fpos_offset / map->debugfs_tot_len;
+-					c->max_reg = c->base_reg + reg_offset;
++					c->max_reg = i - map->reg_stride;
+ 					list_add_tail(&c->list,
+ 						      &map->debugfs_off_cache);
+ 					c = NULL;
+@@ -124,9 +123,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
+ 	/* Close the last entry off if we didn't scan beyond it */
+ 	if (c) {
+ 		c->max = p - 1;
+-		fpos_offset = c->max - c->min;
+-		reg_offset = fpos_offset / map->debugfs_tot_len;
+-		c->max_reg = c->base_reg + reg_offset;
++		c->max_reg = i - map->reg_stride;
+ 		list_add_tail(&c->list,
+ 			      &map->debugfs_off_cache);
+ 	}
+-- 
+1.8.1.3
 
-The compiler isn't as smart about code flow analysis as it thinks it is,
-the code is safe.  There's a patch going to Linus this merge window
-which shuts up the warning.
-
---i9LlY+UWpKt15+FH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRJL4nAAoJELSic+t+oim9WbgP+wadSYltpEHLJXsedLVi/xFN
-qYSoQDcLdQ2dY9hTRgeypd059Tfo4TttRo42VdoUusQQtvzX1RUwQdYUxzBGVsQI
-NVqu9jMDemO3hnElAQ5nxCVSy/H+zk6ldK+y4Mu7FOHi6VMwgsZ+ZCc5hZ+GLbnT
-yGggdp6OOh1poT4QoK2UW6jJmN3lyeeKblOmRg7O4FkeacIoXA0bTqKVDrK/W2Nu
-iq6DYOS+lP9fWzwQCfOXKm+Kbcxl7TQBStsEoBWPdysBwGalsX2hWGkYcg91eELX
-rs2VvodRTkLk3t9R+TVwlSDjy21iWy4kco3MuUeSAYbFJlJuaTOE2WpnXfPgpy2m
-GOryHc++vycm8EVEWQ3CU2k9SwmilxL9N4+4dyo6Mc3Jt0MIAU1a5NMILmf2SfjW
-gfSy+txgGQiooHmokT/++XJ5t/9SMtRDkO05pRRqpcOAOJ/1BOZxsMQWQAHTJzjO
-7kVwFiOk6nM7j3hciDptYlqP4ouQ6qtd89ABPbj4AdeDWFNjhldMZ5RHWJxBzPY9
-1RfXbVm/ohl2Bai1j1OKpO26cKAg1C1ZjlufZRLbEDF6OJbuJuMy5a6d5EQknaUp
-RY5OYAaQm9nswf+n+oS4Q0FATcHQXw7GC4iXtkc6gjDyzCwmeWBSu7G0I/ItwJ6q
-MRoW+uQLdcGRdg9qdDHH
-=h8qT
------END PGP SIGNATURE-----
-
---i9LlY+UWpKt15+FH--
