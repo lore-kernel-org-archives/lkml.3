@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934881Ab3BTTyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 14:54:11 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:61188 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934450Ab3BTTyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 14:54:09 -0500
+	id S934982Ab3BTT6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 14:58:35 -0500
+Received: from smtp12.ono.com ([62.42.230.20]:15445 "EHLO resmaa12.ono.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934926Ab3BTT6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 14:58:33 -0500
+Message-ID: <51252AE7.7040903@ono.com>
+Date: Wed, 20 Feb 2013 20:58:31 +0100
+From: =?UTF-8?B?SkEgTWFnYWxsw7Nu?= <jamagallon@ono.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130114 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130220154344.GD23293@tassilo.jf.intel.com>
-References: <1361355312-3323-1-git-send-email-eranian@google.com>
-	<20130220154344.GD23293@tassilo.jf.intel.com>
-Date: Wed, 20 Feb 2013 20:54:08 +0100
-Message-ID: <CABPqkBS58oMw8Gs7AVN0OMvLuFYH4iXXRHBx3Ep1Mbru=gLVtg@mail.gmail.com>
-Subject: Re: [PATCH] perf, x86: add Intel IvyBridge event scheduling constraints
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Corrupt packets with ath5k
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 4:43 PM, Andi Kleen <ak@linux.intel.com> wrote:
-> On Wed, Feb 20, 2013 at 11:15:12AM +0100, Stephane Eranian wrote:
->> Intel IvyBridge processor has different constraints compared
->> to SandyBridge. Therefore it needs its own contraint table.
->> This patch adds the constraint table. Without this patch,
->> the events listed in the patch may not be scheduled correctly
->> and bogus counts may be collected.
->
-> Thanks. I ran into this problem too and was about to write
-> a similar patch.
->
->> +     INTEL_UEVENT_CONSTRAINT(0x04a3, 0xf), /* CYCLE_ACTIVITY.CYCLES_NO_EXECUTE */
->> +     INTEL_UEVENT_CONSTRAINT(0x05a3, 0xf), /* CYCLE_ACTIVITY.STALLS_L2_PENDING */
->> +     INTEL_UEVENT_CONSTRAINT(0x06a3, 0xf), /* CYCLE_ACTIVITY.STALLS_LDM_PENDING */
->> +     INTEL_UEVENT_CONSTRAINT(0x08a3, 0x4), /* CYCLE_ACTIVITY.CYCLES_L1D_PENDING */
->> +     INTEL_UEVENT_CONSTRAINT(0x0ca3, 0x4), /* CYCLE_ACTIVITY.STALLS_L1D_PENDING */
->
->
-> Except for LDM_PENDING the CYCLE_ACTIVITY events have been also added to Sandy Bridge.
-> So it should be also added there.
->
-As far as I know and I double-checked the documentation I have, there
-is no CYCLE_ACTIVITY
-event on SNB or SNB-EP.
+Hi all...
 
-> In fact I think you can still share the table because it would just add some
-> non existent events to Sandy Bridge, which is a noop.
->
-I don't see the point of this, except saving a few bytes. Isn't it
-better to keep each PMU separate?
+I have a strange problem with latest kernels. When I update my netbook
+I get many "Installation failed, bad rpms:" mesages. First I thougt
+that the oldie cheap ssd was failing (it is an Aspire AOA110).
+But the updates work always fine when plugged to ethernet.
 
+Now i tried to copy a couple RPMS via ssh over wifi and got:
 
-> -Andi
->
+mplayer-1.1-11.r35916.1.mga3.tainted.i586.rpm  100% 2192KB   2.1MB/s   00:00
+Received disconnect from 192.168.1.51: 2: Packet corrupt
+lost connection
+
+Hardware/driver are these:
+
+03:00.0 Ethernet controller: Atheros Communications Inc. AR242x / AR542x Wireless Network Adapter (PCI-Express) (rev 01)
+	Subsystem: Foxconn International, Inc. Device e008
+	Kernel driver in use: ath5k
+
+Ist that hardware failing ? Is driver failing ? Other laptop/androids
+update fine with the router via wifi.
+Any idea ?
+
+I currently have 3.8.0, distro build.
+
+TIA
+
+-- 
+J.A. Magallon <jamagallon()ono!com>        \               Winter is coming...
