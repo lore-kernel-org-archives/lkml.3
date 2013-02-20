@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964846Ab3BTQGQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 11:06:16 -0500
-Received: from f173.mail.ru ([94.100.178.91]:35094 "EHLO f173.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935444Ab3BTQGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 11:06:15 -0500
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>
-Cc: =?UTF-8?B?RG9uZyBBaXNoZW5n?= <dong.aisheng@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
-        =?UTF-8?B?TWFyayBCcm93bg==?= <broonie@opensource.wolfsonmicro.com>
-Subject: =?UTF-8?B?UmVbMTJdOiBbUEFUQ0ggdjNdIG1mZDogc3lzY29uOiBBZGQgbm9uLURUIHN1?=
- =?UTF-8?B?cHBvcnQ=?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [188.134.40.128]
-Date: Wed, 20 Feb 2013 20:06:11 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1361376371.184258129@f173.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Spam: Not detected
-X-Mras: Ok
-In-Reply-To: <201302201500.18803.arnd@arndb.de>
-References: <1361198522-23789-1-git-send-email-shc_work@mail.ru> <1361364471.967042408@f233.mail.ru> <201302201500.18803.arnd@arndb.de>
+	id S935822Ab3BTQGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 11:06:25 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:49140 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964852Ab3BTQGU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 11:06:20 -0500
+MIME-Version: 1.0
+X-Originating-IP: [109.186.123.174]
+In-Reply-To: <1360669793-6921-2-git-send-email-sjur.brandeland@stericsson.com>
+References: <1360669793-6921-1-git-send-email-sjur.brandeland@stericsson.com> <1360669793-6921-2-git-send-email-sjur.brandeland@stericsson.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 20 Feb 2013 18:05:56 +0200
+Message-ID: <CAK=Wgbb0EeiCh504jsoX+izzi+ZogfEDttz2cHRd4pVXvQunQw@mail.gmail.com>
+Subject: Re: [PATCHv2 vringh 1/3] remoteproc: Add support for vringh (Host vrings)
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur@brendeland.net>,
+        netdev@vger.kernel.org,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Erwan Yvin <erwan.yvin@stericsson.com>, Ido Yariv <ido@wizery.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1KG6J2X004521
 
-> > OK. I can convert platform to DT, no so easy, but possible.
-> > But I will use syscon as way to using DT (and MULTIPLATFORM in the future),
-> > this mean that I should completely drop ATAG support from this platform
-> > (since I cannot use syscon device without DT support, but several platform devices
-> > need to use system-wide registers).
-> > Arnd, if its OK for you, I will use this way. (I talking about CLPS711X, you know it :) ).
-> 
-> Ah, I should have realized that this is about clps711x when the patch
-> is coming from you ;-)
-> 
-> This is an existing platform, and I would not require you to move it to
-> devicetree just for supporting syscon, although it may be a good idea
-> to make that move in the long run.
-> 
-> For clps711x, we know that there is only one syscon register set, so you
-> could do a very simple patch like below. Basically we don't need to
+Hi Sjur,
 
-No. Target have a three SYSCON registers and two SYSFLG. All these registers
-can be combined into three syscon devices.
-Only these registers will be handled via syscon device, so it is not only one.
-Or you mean about handle all register via syscon? It is not it.
+On Tue, Feb 12, 2013 at 1:49 PM,  <sjur.brandeland@stericsson.com> wrote:
+> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+>
+> Add functions for creating, deleting and kicking host-side virtio rings.
+>
+> The host ring is not integrated with virtiqueues and cannot be managed
+> through virtio-config.
 
-> treat the absence of DT information as an error, and a call to
-> syscon_regmap_lookup_by_compatible or syscon_regmap_lookup_by_phandle
-> will always return the syscon device that was registered first, or
-> -EPROBE_DEFER for any error.
+Is that an inherent design/issue of vringh or just a description of
+the current vringh code ?
 
-The initial idea is search desired syscon device from drivers only by one function
-(i.e. search syscon device by compatible string or by specific alias) and no depend
-on DT or non-DT. I.e. define syscon device always at machine start (even if we run
-machine from DTS), because device should be always present in system.
+> Remoteproc must export functions for handling the host-side virtio rings.
 
----
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Have you considered exporting this via virtio instead ?
+
+> The functions rproc_virtio_get_vringh(), rproc_virtio_del_vringh(),
+> rproc_virtio_kick_vringh() are added to remoteproc_virtio.c.
+
+I wonder if this is the way we want things to work.
+
+Following this design, virtio drivers that use these rproc_* functions
+will be coupled with the remoteproc framework.
+
+One issue with this is what happens if, e.g., a VIRTIO_ID_CAIF vdev is
+added by other than remoteproc (e.g. by virtio_pci or virtio_mmio).
+Not sure how probable this really is, and whether there's anything
+that prevents this, but things will go awry if this happens.
+
+But maybe the important aspect to consider is whether we really want
+to couple virtio drivers (such as the upcoming caif one) with the
+remoteproc framework.
+
+If you'll take a look at the rpmsg virtio driver, there's nothing
+there which couples it with remoteproc. It's just a standard virtio
+driver, that can be easily used with traditional virtio hosts as well.
+
+This is possible of course thanks to the abstraction provided by
+virtio: remoteproc only implements a set of callbacks which virtio
+invokes when needed.
+
+Do we not want to follow a similar design scheme with vringh ?
+
+I have some other questions as well but maybe it's better to discuss
+first the bigger picture.
+
+Thanks!
+Ohad.
