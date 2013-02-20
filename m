@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933486Ab3BTAxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 19:53:41 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:56175 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933366Ab3BTAxk (ORCPT
+	id S1759016Ab3BTAzj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 19:55:39 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:35974 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758999Ab3BTAzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 19:53:40 -0500
+	Tue, 19 Feb 2013 19:55:38 -0500
+Message-ID: <51241ED2.5080105@ahsoftware.de>
+Date: Wed, 20 Feb 2013 01:54:42 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-Originating-IP: [114.40.15.212]
-In-Reply-To: <5123ACA1.9000408@wwwdotorg.org>
-References: <1361015443.11226.1.camel@phoenix>
-	<5123ACA1.9000408@wwwdotorg.org>
-Date: Wed, 20 Feb 2013 08:53:39 +0800
-Message-ID: <CAFRkauAAdArpG5x8MeyZJXUYqi00e669Hr6gPHGO8fxTJnE5YQ@mail.gmail.com>
-Subject: Re: [PATCH] regulator: tps6586x: Having slew rate settings for other
- than SM0/1 is not fatal
-From: Axel Lin <axel.lin@ingics.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Mike Rapoport <mike@compulab.co.il>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: What is tip-bot?
+References: <512348A1.4000305@ahsoftware.de> <CAFLxGvzuL+w-yfApiLGwWWbB8Om7JUypppoovmSGS2k51Yjgmw@mail.gmail.com> <512355C2.3050009@ahsoftware.de> <512402A7.9020500@infradead.org>
+In-Reply-To: <512402A7.9020500@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/20 Stephen Warren <swarren@wwwdotorg.org>:
-> On 02/16/2013 04:50 AM, Axel Lin wrote:
->> Ignore the setting and show "Only SM0/SM1 can set slew rate" warning is enough,
->> then we can return 0 instead of -EINVAL in tps6586x_regulator_set_slew_rate().
+Am 19.02.2013 23:54, schrieb Randy Dunlap:
+> On 02/19/2013 02:36 AM, Alexander Holler wrote:
+>> Am 19.02.2013 10:54, schrieb richard -rw- weinberger:
+>>> On Tue, Feb 19, 2013 at 10:40 AM, Alexander Holler
+>>> <holler@ahsoftware.de> wrote:
+>>>> Hello,
+>>>>
+>>>> until now I could successfully suppress my curiosity about those
+>>>> tip:foo
+>>>> messages, but as the bot (or one of them) has now catched me too, I
+>>>> want to
+>>>> ask what it is.
+>>>>
+>>>> Searching for "tip(-)bot" or similiar doesn't reveal some useful info
+>>>> (for
+>>>> obvious reasons). Could someone give me an URL to source or
+>>>> documentation
+>>>> about that tool so that I can enlight myself about it's meaning?
+>>>
+>>> AFAIK tip-bot is a set of shell scripts used by _T_glx, _I_ngo and
+>>> _P_eter. :)
+>>>
 >>
->> Otherwise, probe() fails.
+>> So messages from tip-bot are just acknowledgments (like those from Greg)
+>> that a patch has found it's way into one of the trees, with the
+>> difference that tip-bot sends those acknowledgments to lkml too, whereas
+>> Greg's scripts send them only to involved parties and not the lkml?
 >
-> Why does probe() fail; what is trying to set a slew rate on a regulator
-> that doesn't support it? At least a few days ago in linux-next, this
-> patch wasn't needed AFAIK. Is the problem something new?
+> Yes, that is my understanding of it.
 >
 
-Oh, sorry for my poor Engilish.
-I mean probe fails because of having slew rate settings for other than SM0/1
-seems not necessary.
+Thanks a lot for clarification.
 
-In tps6586x_regulator_set_slew_rate() it uses dev_warn rather than dev_err
-for the default case.
-We can either using "dev_warn with return 0" or use "dev_err with
-return -EINVAL"
-in tps6586x_regulator_set_slew_rate().
+In the meanwhile I've found an article at lwn about the kernel 
+development process which lists many of the git repositories used by 
+various maintainers. And that list includes tip. ;)
 
-It looks to me that having slew rate settings for other than SM0/1 should be ok
-if it actually is harmless ( because we can just ignore the setting ).
+So the reason for my ignorance was that I didn't know that tip is 
+actually the name of a git repository used by the x86 maintainers.
 
+Regards,
 
-BTW, I read the code but I don't have this hardware.
-
-Axel
+Alexander
