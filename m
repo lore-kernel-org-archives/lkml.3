@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759010Ab3BTIuP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 03:50:15 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:41857 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877Ab3BTIuN (ORCPT
+	id S933344Ab3BTIxw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 03:53:52 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:46957 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877Ab3BTIxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 03:50:13 -0500
-Date: Wed, 20 Feb 2013 00:50:10 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] I2C: i2c-pxa - remove incorrect __exit annotations
-Message-ID: <20130220085008.GA11025@core.coreip.homeip.net>
+	Wed, 20 Feb 2013 03:53:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130220081311.GB3368@gmail.com>
+References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
+	<1360933026-30325-7-git-send-email-lee.jones@linaro.org>
+	<201302192204.45153.arnd@arndb.de>
+	<20130220081311.GB3368@gmail.com>
+Date: Wed, 20 Feb 2013 09:53:50 +0100
+Message-ID: <CAEKpxBk=bgTx18A2J6mVT5RBBq3ZJAqswz-6NvNpTRP=u9pgwQ@mail.gmail.com>
+Subject: Re: [PATCH 06/35] mfd: ab8500-core: Sysfs chip id modification
+From: Marcus Cooper <codekipper@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Marcus Cooper <marcus.xm.cooper@stericsson.com>,
+        linus.walleij@stericsson.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, sameo@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The remove() methods should not be marked __exit unless we are using
-platform_driver_probe() which disables unbinding device from driver
-via sysfs.
-
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
-
-Compiled only, no hardware.
-
- drivers/i2c/busses/i2c-pxa.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
-index 1034d93..4a79e76 100644
---- a/drivers/i2c/busses/i2c-pxa.c
-+++ b/drivers/i2c/busses/i2c-pxa.c
-@@ -1215,7 +1215,7 @@ emalloc:
- 	return ret;
- }
- 
--static int __exit i2c_pxa_remove(struct platform_device *dev)
-+static int i2c_pxa_remove(struct platform_device *dev)
- {
- 	struct pxa_i2c *i2c = platform_get_drvdata(dev);
- 
-@@ -1269,7 +1269,7 @@ static const struct dev_pm_ops i2c_pxa_dev_pm_ops = {
- 
- static struct platform_driver i2c_pxa_driver = {
- 	.probe		= i2c_pxa_probe,
--	.remove		= __exit_p(i2c_pxa_remove),
-+	.remove		= i2c_pxa_remove,
- 	.driver		= {
- 		.name	= "pxa2xx-i2c",
- 		.owner	= THIS_MODULE,
--- 
-1.7.11.7
-
-
--- 
-Dmitry
+On 20 February 2013 09:13, Lee Jones <lee.jones@linaro.org> wrote:
+> On Tue, 19 Feb 2013, Arnd Bergmann wrote:
+>
+>> On Friday 15 February 2013, Lee Jones wrote:
+>> >         struct ab8500 *ab8500;
+>> > +       int chip_id = -EINVAL;
+>> >
+>> >         ab8500 = dev_get_drvdata(dev);
+>> > -       return sprintf(buf, "%#x\n", ab8500 ? ab8500->chip_id : -EINVAL);
+>> > +       if(ab8500) {
+>> > +               chip_id = ab8500->chip_id;
+>> > +               if((is_ab8505(ab8500) || is_ab9540(ab8500)) && ab8500->version != 0xFF)
+>> > +                       chip_id = (ab8500->version << 8) | chip_id;
+>> > +       }
+>> > +       return sprintf(buf, "%#x\n", chip_id);
+>> >  }
+>>
+>> What's the use of printing "ffffffea" for unknown versions here?
+>
+> You mean instead of -EINVAL? No idea, Marcus?
+>
+Looks like I'm guilty of just making the minimal changes. Arnd is
+right though, getting ffffffea(-EINVAL) back is pretty useless.
+I'll have to check user land to see what is using this. Maybe not
+printing and returning 0 should be the correct behaviour
+when an unknown version is found.
