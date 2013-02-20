@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935526Ab3BTNf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:35:58 -0500
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:45602 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S935090Ab3BTNf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:35:56 -0500
-Date: Wed, 20 Feb 2013 15:35:52 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: David Miller <davem@davemloft.net>
-cc: rientjes@google.com, linux-mm@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        sparclinux@vger.kernel.org
-Subject: Re: THP bug and crash on sparc64 3.8
-In-Reply-To: <20130220.014137.1184382041985855584.davem@davemloft.net>
-Message-ID: <alpine.SOC.1.00.1302201437190.20165@math.ut.ee>
-References: <20130219.143320.1413047009797673492.davem@davemloft.net> <alpine.DEB.2.02.1302191134570.790@chino.kir.corp.google.com> <20130219.144608.1425049879680985441.davem@davemloft.net> <20130220.014137.1184382041985855584.davem@davemloft.net>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S935540Ab3BTNgQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:36:16 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44560
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935090Ab3BTNgO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 08:36:14 -0500
+Message-ID: <1361367371.10155.32.camel@laptop>
+Subject: Re: [patch v5 09/15] sched: add power aware scheduling in
+ fork/exec/wake
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Date: Wed, 20 Feb 2013 14:36:11 +0100
+In-Reply-To: <5124BCEB.8030606@intel.com>
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
+	  <1361164062-20111-10-git-send-email-alex.shi@intel.com>
+	 <1361353360.10155.9.camel@laptop> <5124BCEB.8030606@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ok I've written an alternative version of the fix that I've been busy
-> testing all evening.
+On Wed, 2013-02-20 at 20:09 +0800, Alex Shi wrote:
+> On 02/20/2013 05:42 PM, Peter Zijlstra wrote:
+> > On Mon, 2013-02-18 at 13:07 +0800, Alex Shi wrote:
+> >> +/*
+> >> + * Try to collect the task running number and capacity of the group.
+> >> + */
+> >> +static void get_sg_power_stats(struct sched_group *group,
+> >> +       struct sched_domain *sd, struct sg_lb_stats *sgs)
+> >> +{
+> >> +       int i;
+> >> +
+> >> +       for_each_cpu(i, sched_group_cpus(group)) {
+> >> +               struct rq *rq = cpu_rq(i);
+> >> +
+> >> +               sgs->group_utils += rq->nr_running;
+> >> +       }
+> >> +
+> >> +       sgs->group_capacity = DIV_ROUND_CLOSEST(group->sgp->power,
+> >> +                                               SCHED_POWER_SCALE);
+> >> +       if (!sgs->group_capacity)
+> >> +               sgs->group_capacity = fix_small_capacity(sd, group);
+> >> +       sgs->group_weight = group->group_weight;
+> >> +}
+> > 
+> > So you're trying to compute the group utilization, but what does that
+> > have to do with nr_running? In an earlier patch you introduced the
+> > per-cpu utilization, so why not avg that to compute the group
+> > utilization?
 > 
-> I think it's much better and it's about to be posted as a series of 3
-> patches.
+> I had tried to use rq utilisation in this balancing, but since the
+> utilisation need much time to accumulate itself(345ms). It's bad for
+> any burst balancing. So I use instant utilisation -- nr_running.
 
-Works much better. aptitude worked fine, as did 5 times
-cp -a linux test; rm -r linux
+But but but,... nr_running is completely unrelated to utilization.
 
-However, "git gc" in a copy of the repository hung the machine hard, 
-nothing in the logs.
-
-3.8.0 with THP disabled can run both cp;rm and git gc several 
-times without a problem.
-
--- 
-Meelis Roos (mroos@linux.ee)
