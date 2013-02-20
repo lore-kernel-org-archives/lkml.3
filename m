@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935466Ab3BTOLM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 09:11:12 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44726
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935211Ab3BTOLK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 09:11:10 -0500
-Date: Wed, 20 Feb 2013 11:10:57 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf fix for v3.9
-Message-ID: <20130220141056.GC1915@ghostprotocols.net>
-References: <20130219141642.GA12928@gmail.com>
- <CA+55aFwR=p9YL0UKo3E_e1PRZvga8TeWLbqQGvwTzKGaazHrvA@mail.gmail.com>
- <20130220091758.GB18213@gmail.com>
+	id S935446Ab3BTOU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 09:20:26 -0500
+Received: from mga11.intel.com ([192.55.52.93]:14040 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757742Ab3BTOUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 09:20:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,702,1355126400"; 
+   d="scan'208";a="289580374"
+Message-ID: <5124DBA3.20605@intel.com>
+Date: Wed, 20 Feb 2013 22:20:19 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130220091758.GB18213@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
+        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        morten.rasmussen@arm.com
+Subject: Re: [patch v5 11/15] sched: add power/performance balance allow flag
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-12-git-send-email-alex.shi@intel.com> <20130220121256.GD16775@pd.tnic>
+In-Reply-To: <20130220121256.GD16775@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Feb 20, 2013 at 10:17:58AM +0100, Ingo Molnar escreveu:
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> > On Tue, Feb 19, 2013 at 6:16 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> > > Please pull the latest perf-urgent-for-linus git tree from:
 
-> > >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
-> > >    HEAD: e97cbe3edf7d88aad4c21dd3de124d9f9d039881 perf/hwbp: Fix cleanup in case of kzalloc() failure
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 2e8131d..0047856 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -4053,6 +4053,8 @@ struct lb_env {
+>>  	unsigned int		loop;
+>>  	unsigned int		loop_break;
+>>  	unsigned int		loop_max;
+>> +	int			power_lb;  /* if power balance needed */
+>> +	int			perf_lb;   /* if performance balance needed */
+> 
+> Those look like they're used like simple boolean flags. Why not make
+> them such, i.e. bitfields? See struct perf_event_attr for an example.
 
-> > > Leftover fix from the v3.8 cycle.
+there are 11 long words in struct lb_env now. use boolean or bitfields
+can't save much space. and not use conveniently.
+> 
+> Thanks.
+> 
 
-> > This was already in the other (big) perf pull, as commit
-> > 02e176af92f3
 
-> Oops, sorry - Arnaldo picked up the fix too and I never noticed the
-> overlap.
-
-Yeah, I need to have a perf/kcore, for kernel bits that are not tied to
-userspace ones.
-
-- Arnaldo
+-- 
+Thanks
+    Alex
