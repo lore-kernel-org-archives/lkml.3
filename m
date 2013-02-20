@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935476Ab3BTUGD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 15:06:03 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:54012 "EHLO
+	id S964794Ab3BTUGf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 15:06:35 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:53971 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935358Ab3BTUFP (ORCPT
+	with ESMTP id S935294Ab3BTUFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 15:05:15 -0500
+	Wed, 20 Feb 2013 15:05:04 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
@@ -17,9 +17,9 @@ Cc: Sasha Levin <levinsasha928@gmail.com>,
         Michael Ellerman <michael@ellerman.id.au>,
         Shawn Guo <shawn.guo@linaro.org>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v4 08/32] tty: Strengthen no-subsequent-use guarantee of tty_ldisc_halt()
-Date: Wed, 20 Feb 2013 15:02:55 -0500
-Message-Id: <1361390599-15195-9-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v4 05/32] tty: Remove unnecessary re-test of ldisc ref count
+Date: Wed, 20 Feb 2013 15:02:52 -0500
+Message-Id: <1361390599-15195-6-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
 References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
@@ -30,145 +30,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for destructing and freeing the tty, the line discipline
-must first be brought to an inactive state before it can be destructed.
-This line discipline shutdown must:
- - disallow new users of the ldisc
- - wait for existing ldisc users to finish
- - only then, cancel/flush their pending/running work
+Since the tty->ldisc is prevented from being changed by tty_set_ldisc()
+when a tty is being hung up, re-testing the ldisc user count is
+unnecessary -- ie, it cannot be a different ldisc and the user count
+cannot have increased (assuming the caller meets the precondition that
+TTY_LDISC flag is cleared)
 
-Factor tty_ldisc_wait_idle() from tty_set_ldisc() and tty_ldisc_kill()
-to ensure this shutdown order.
-
-Failure to provide this guarantee can result in scheduled work
-running after the tty has already been freed, as indicated in the
-following log message:
-
-[   88.331234] WARNING: at drivers/tty/tty_buffer.c:435 flush_to_ldisc+0x194/0x1d0()
-[   88.334505] Hardware name: Bochs
-[   88.335618] tty is bad=-1
-[   88.335703] Modules linked in: netconsole configfs bnep rfcomm bluetooth ......
-[   88.345272] Pid: 39, comm: kworker/1:1 Tainted: G        W    3.7.0-next-20121129+ttydebug-xeon #20121129+ttydebug
-[   88.347736] Call Trace:
-[   88.349024]  [<ffffffff81058aff>] warn_slowpath_common+0x7f/0xc0
-[   88.350383]  [<ffffffff81058bf6>] warn_slowpath_fmt+0x46/0x50
-[   88.351745]  [<ffffffff81432bd4>] flush_to_ldisc+0x194/0x1d0
-[   88.353047]  [<ffffffff816f7fe1>] ? _raw_spin_unlock_irq+0x21/0x50
-[   88.354190]  [<ffffffff8108a809>] ? finish_task_switch+0x49/0xe0
-[   88.355436]  [<ffffffff81077ad1>] process_one_work+0x121/0x490
-[   88.357674]  [<ffffffff81432a40>] ? __tty_buffer_flush+0x90/0x90
-[   88.358954]  [<ffffffff81078c84>] worker_thread+0x164/0x3e0
-[   88.360247]  [<ffffffff81078b20>] ? manage_workers+0x120/0x120
-[   88.361282]  [<ffffffff8107e230>] kthread+0xc0/0xd0
-[   88.362284]  [<ffffffff816f0000>] ? cmos_do_probe+0x2eb/0x3bf
-[   88.363391]  [<ffffffff8107e170>] ? flush_kthread_worker+0xb0/0xb0
-[   88.364797]  [<ffffffff816fff6c>] ret_from_fork+0x7c/0xb0
-[   88.366087]  [<ffffffff8107e170>] ? flush_kthread_worker+0xb0/0xb0
-[   88.367266] ---[ end trace 453a7c9f38fbfec0 ]---
+Removal of the 'early-out' locking optimization is necessary for
+the subsequent patch 'tty: Fix ldisc halt sequence on hangup'.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_ldisc.c | 42 ++++++++++++++++++++++++------------------
- 1 file changed, 24 insertions(+), 18 deletions(-)
+ drivers/tty/tty_ldisc.c | 38 +++++++++++++++++++-------------------
+ 1 file changed, 19 insertions(+), 19 deletions(-)
 
 diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index f691c76..525ee53 100644
+index c5b848a..fa0170e 100644
 --- a/drivers/tty/tty_ldisc.c
 +++ b/drivers/tty/tty_ldisc.c
-@@ -530,24 +530,38 @@ static int tty_ldisc_wait_idle(struct tty_struct *tty, long timeout)
- /**
-  *	tty_ldisc_halt		-	shut down the line discipline
-  *	@tty: tty device
-+ *	@pending: returns true if work was scheduled when cancelled
-+ *		  (can be set to NULL)
-+ *	@timeout: # of jiffies to wait for ldisc refs to be released
+@@ -558,29 +558,29 @@ static int tty_ldisc_wait_idle(struct tty_struct *tty, long timeout)
+  *	have been halted for this to guarantee it remains idle.
   *
-  *	Shut down the line discipline and work queue for this tty device.
-  *	The TTY_LDISC flag being cleared ensures no further references can
-  *	be obtained while the delayed work queue halt ensures that no more
-  *	data is fed to the ldisc.
-  *
-+ *	Furthermore, guarantee that existing ldisc references have been
-+ *	released, which in turn, guarantees that no future buffer work
-+ *	can be rescheduled.
+  *	Caller must hold legacy and ->ldisc_mutex.
 + *
-  *	You need to do a 'flush_scheduled_work()' (outside the ldisc_mutex)
-  *	in order to make sure any currently executing ldisc work is also
-  *	flushed.
++ *	NB: tty_set_ldisc() is prevented from changing the ldisc concurrently
++ *	with this function by checking the TTY_HUPPING flag.
   */
- 
--static int tty_ldisc_halt(struct tty_struct *tty)
-+static int tty_ldisc_halt(struct tty_struct *tty, int *pending, long timeout)
+ static bool tty_ldisc_hangup_wait_idle(struct tty_struct *tty)
  {
--	int scheduled;
-+	int scheduled, retval;
+-	while (tty->ldisc) {	/* Not yet closed */
+-		if (atomic_read(&tty->ldisc->users) != 1) {
+-			char cur_n[TASK_COMM_LEN], tty_n[64];
+-			long timeout = 3 * HZ;
+-			tty_unlock(tty);
+-
+-			while (tty_ldisc_wait_idle(tty, timeout) == -EBUSY) {
+-				timeout = MAX_SCHEDULE_TIMEOUT;
+-				printk_ratelimited(KERN_WARNING
+-					"%s: waiting (%s) for %s took too long, but we keep waiting...\n",
+-					__func__, get_task_comm(cur_n, current),
+-					tty_name(tty, tty_n));
+-			}
+-			/* must reacquire both locks and preserve lock order */
+-			mutex_unlock(&tty->ldisc_mutex);
+-			tty_lock(tty);
+-			mutex_lock(&tty->ldisc_mutex);
+-			continue;
++	char cur_n[TASK_COMM_LEN], tty_n[64];
++	long timeout = 3 * HZ;
 +
- 	clear_bit(TTY_LDISC, &tty->flags);
-+	retval = tty_ldisc_wait_idle(tty, timeout);
-+	if (retval)
-+		return retval;
++	if (tty->ldisc) {	/* Not yet closed */
++		tty_unlock(tty);
 +
- 	scheduled = cancel_work_sync(&tty->port->buf.work);
- 	set_bit(TTY_LDISC_HALTED, &tty->flags);
--	return scheduled;
-+	if (pending)
-+		*pending = scheduled;
-+	return 0;
++		while (tty_ldisc_wait_idle(tty, timeout) == -EBUSY) {
++			timeout = MAX_SCHEDULE_TIMEOUT;
++			printk_ratelimited(KERN_WARNING
++				"%s: waiting (%s) for %s took too long, but we keep waiting...\n",
++				__func__, get_task_comm(cur_n, current),
++				tty_name(tty, tty_n));
+ 		}
+-		break;
++		/* must reacquire both locks and preserve lock order */
++		mutex_unlock(&tty->ldisc_mutex);
++		tty_lock(tty);
++		mutex_lock(&tty->ldisc_mutex);
+ 	}
+ 	return !!tty->ldisc;
  }
- 
- /**
-@@ -688,9 +702,9 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 	 *	parallel to the change and re-referencing the tty.
- 	 */
- 
--	work = tty_ldisc_halt(tty);
--	if (o_tty)
--		o_work = tty_ldisc_halt(o_tty);
-+	retval = tty_ldisc_halt(tty, &work, 5 * HZ);
-+	if (!retval && o_tty)
-+		retval = tty_ldisc_halt(o_tty, &o_work, 5 * HZ);
- 
- 	/*
- 	 * Wait for ->hangup_work and ->buf.work handlers to terminate.
-@@ -701,8 +715,6 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 
- 	tty_ldisc_flush_works(tty);
- 
--	retval = tty_ldisc_wait_idle(tty, 5 * HZ);
--
- 	tty_lock(tty);
- 	mutex_lock(&tty->ldisc_mutex);
- 
-@@ -921,11 +933,6 @@ int tty_ldisc_setup(struct tty_struct *tty, struct tty_struct *o_tty)
- 
- static void tty_ldisc_kill(struct tty_struct *tty)
- {
--	/* There cannot be users from userspace now. But there still might be
--	 * drivers holding a reference via tty_ldisc_ref. Do not steal them the
--	 * ldisc until they are done. */
--	tty_ldisc_wait_idle(tty, MAX_SCHEDULE_TIMEOUT);
--
- 	mutex_lock(&tty->ldisc_mutex);
- 	/*
- 	 * Now kill off the ldisc
-@@ -958,13 +965,12 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
- 	 * race with the set_ldisc code path.
- 	 */
- 
--	tty_ldisc_halt(tty);
--	if (o_tty)
--		tty_ldisc_halt(o_tty);
--
-+	tty_ldisc_halt(tty, NULL, MAX_SCHEDULE_TIMEOUT);
- 	tty_ldisc_flush_works(tty);
--	if (o_tty)
-+	if (o_tty) {
-+		tty_ldisc_halt(o_tty, NULL, MAX_SCHEDULE_TIMEOUT);
- 		tty_ldisc_flush_works(o_tty);
-+	}
- 
- 	tty_lock_pair(tty, o_tty);
- 	/* This will need doing differently if we need to lock */
 -- 
 1.8.1.2
 
