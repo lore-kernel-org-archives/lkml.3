@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964807Ab3BTDft (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 22:35:49 -0500
-Received: from smtp-out-04.shaw.ca ([64.59.134.12]:34069 "EHLO
-	smtp-out-04.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935646Ab3BTDew (ORCPT
+	id S934248Ab3BTDgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 22:36:06 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:47745 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933289Ab3BTDgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 22:34:52 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=YO+FcVZrxpdWV6Mo6AkY2Rtp7tuV51ZJEd1ZQZEmJbs= c=1 sm=1
- a=7rbM7X0_CQwA:10 a=3762yOXauukA:10 a=BLceEmwcHowA:10
- a=oaxjXb+On79cRBAvziGSJw==:17 a=47LbCVvxAAAA:8 a=VQujHiI9EXa9UuH7ttIA:9
- a=QhNQsjeWOoAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-From: Simon Wood <simon@mungewell.org>
-To: linux-input@vger.kernel.org
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        simon@mungewell.org
-Subject: [PATCH 2/5] HID: LG: Fix detection of Logitech Speed Force Wireless (WiiWheel)
-Date: Tue, 19 Feb 2013 20:25:11 -0700
-Message-Id: <1361330714-5217-2-git-send-email-simon@mungewell.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1361330714-5217-1-git-send-email-simon@mungewell.org>
-References: <1361330714-5217-1-git-send-email-simon@mungewell.org>
+	Tue, 19 Feb 2013 22:36:04 -0500
+Message-ID: <5124449D.3060808@numascale-asia.com>
+Date: Wed, 20 Feb 2013 11:35:57 +0800
+From: Daniel J Blueman <daniel@numascale-asia.com>
+Organization: Numascale Asia
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Steffen Persvold <sp@numascale.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: False-positive RCU stall warnings on large systems...
+References: <5123A984.4000704@numascale-asia.com> <20130219181624.GG3093@linux.vnet.ibm.com>
+In-Reply-To: <20130219181624.GG3093@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously 'LG4FF' was only used for the WiiWheel, however it is now used
-for all the Logitech Wheels. This patch corrects the detection mechanism
-for the patching the report descriptor to ensure only the WiiWheel will
-be patched.
+On 20/02/2013 02:16, Paul E. McKenney wrote:
+> On Wed, Feb 20, 2013 at 12:34:12AM +0800, Daniel J Blueman wrote:
+>> Hi Paul,
+>>
+>> On some of our larger servers with many hundreds of cores and when
+>> under high duress, we can see scheduler RCU stall warnings [1], so
+>> find we have to increase the hardcoded RCU_STALL_RAT_DELAY up from 2
+>> and RCU_JIFFIES_TILL_FORCE_QS up from 3.
+>>
+>> Is there a more sustainable way to account for this to avoid it
+>> being hard-coded, such as making it and dependent timeouts a
+>> fraction of CONFIG_RCU_CPU_STALL_TIMEOUT?
+>>
+>> On the other hand, perhaps this is just caused by clock jitter (eg
+>> due to distance from a contended clock source)? So increasing these
+>> a bit may just be adequate in general...
+>
+> Hmmm...  What version of the kernel are you running?
 
-Signed-off-by: Simon Wood <simon@mungewell.org>
----
- drivers/hid/hid-lg.c |   20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+The example below occurs with v3.8, but we see the same with previous 
+kernels eg v3.5.
 
-diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
-index 160c489..c065598 100644
---- a/drivers/hid/hid-lg.c
-+++ b/drivers/hid/hid-lg.c
-@@ -242,15 +242,6 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 			 "fixing up rel/abs in Logitech report descriptor\n");
- 		rdesc[33] = rdesc[50] = 0x02;
- 	}
--	if ((drv_data->quirks & LG_FF4) && *rsize >= 101 &&
--			rdesc[41] == 0x95 && rdesc[42] == 0x0B &&
--			rdesc[47] == 0x05 && rdesc[48] == 0x09) {
--		hid_info(hdev, "fixing up Logitech Speed Force Wireless button descriptor\n");
--		rdesc[41] = 0x05;
--		rdesc[42] = 0x09;
--		rdesc[47] = 0x95;
--		rdesc[48] = 0x0B;
--	}
- 
- 	switch (hdev->product) {
- 
-@@ -292,6 +283,17 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 			*rsize = sizeof(dfp_rdesc_fixed);
- 		}
- 		break;
-+
-+	case USB_DEVICE_ID_LOGITECH_WII_WHEEL:
-+		if (*rsize >= 101 && rdesc[41] == 0x95 && rdesc[42] == 0x0B &&
-+				rdesc[47] == 0x05 && rdesc[48] == 0x09) {
-+			hid_info(hdev, "fixing up Logitech Speed Force Wireless report descriptor\n");
-+			rdesc[41] = 0x05;
-+			rdesc[42] = 0x09;
-+			rdesc[47] = 0x95;
-+			rdesc[48] = 0x0B;
-+		}
-+		break;
- 	}
- 
- 	return rdesc;
+Of course, when using the local TSC, you'd see no jitter relative to 
+coherent transactions (eg memory writes), but when the HPET is used 
+across a large system, coherent transactions to distant cores are just 
+so much faster, as there's massive congestion to the shared HPET behind 
+various HT and PCIe bridges. This could be where the jitter arises from, 
+if I'm guessing jitter is the problem here.
+
+Thanks,
+   Daniel
+
+>> --- [1]
+>>
+>> [ 3939.010085] INFO: rcu_sched detected stalls on CPUs/tasks: {}
+>> (detected by 1, t=29662 jiffies, g=3053, c=3052, q=598)
+>> [ 3939.020008] INFO: Stall ended before state dump start
 -- 
-1.7.10.4
-
+Daniel J Blueman
+Principal Software Engineer, Numascale Asia
