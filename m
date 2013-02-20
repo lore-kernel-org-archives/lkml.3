@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933641Ab3BTOX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 09:23:56 -0500
-Received: from mga01.intel.com ([192.55.52.88]:41107 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933052Ab3BTOXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 09:23:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,702,1355126400"; 
-   d="scan'208";a="289581663"
-Message-ID: <5124DC76.2010801@intel.com>
-Date: Wed, 20 Feb 2013 22:23:50 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S934480Ab3BTOYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 09:24:08 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:41835 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933800Ab3BTOYE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 09:24:04 -0500
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 09/15] sched: add power aware scheduling in fork/exec/wake
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>   <1361164062-20111-10-git-send-email-alex.shi@intel.com>  <1361353360.10155.9.camel@laptop> <5124BCEB.8030606@intel.com> <1361367371.10155.32.camel@laptop>
-In-Reply-To: <1361367371.10155.32.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1359699013-7160-1-git-send-email-hannes@cmpxchg.org>
+References: <1359699013-7160-1-git-send-email-hannes@cmpxchg.org>
+Date: Wed, 20 Feb 2013 22:24:02 +0800
+Message-ID: <CANN689Hwp-fm-SUzAXAqLKGkGHxjw2X+pkQRr01=Fjq=BaSoDQ@mail.gmail.com>
+Subject: Re: [patch] mm: mlock: document scary-looking stack expansion mlock chain
+From: Michel Lespinasse <walken@google.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 09:36 PM, Peter Zijlstra wrote:
-> On Wed, 2013-02-20 at 20:09 +0800, Alex Shi wrote:
->> On 02/20/2013 05:42 PM, Peter Zijlstra wrote:
->>> On Mon, 2013-02-18 at 13:07 +0800, Alex Shi wrote:
->>>> +/*
->>>> + * Try to collect the task running number and capacity of the group.
->>>> + */
->>>> +static void get_sg_power_stats(struct sched_group *group,
->>>> +       struct sched_domain *sd, struct sg_lb_stats *sgs)
->>>> +{
->>>> +       int i;
->>>> +
->>>> +       for_each_cpu(i, sched_group_cpus(group)) {
->>>> +               struct rq *rq = cpu_rq(i);
->>>> +
->>>> +               sgs->group_utils += rq->nr_running;
->>>> +       }
->>>> +
->>>> +       sgs->group_capacity = DIV_ROUND_CLOSEST(group->sgp->power,
->>>> +                                               SCHED_POWER_SCALE);
->>>> +       if (!sgs->group_capacity)
->>>> +               sgs->group_capacity = fix_small_capacity(sd, group);
->>>> +       sgs->group_weight = group->group_weight;
->>>> +}
->>>
->>> So you're trying to compute the group utilization, but what does that
->>> have to do with nr_running? In an earlier patch you introduced the
->>> per-cpu utilization, so why not avg that to compute the group
->>> utilization?
->>
->> I had tried to use rq utilisation in this balancing, but since the
->> utilisation need much time to accumulate itself(345ms). It's bad for
->> any burst balancing. So I use instant utilisation -- nr_running.
-> 
-> But but but,... nr_running is completely unrelated to utilization.
-> 
+On Fri, Feb 1, 2013 at 2:10 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> The fact that mlock calls get_user_pages, and get_user_pages might
+> call mlock when expanding a stack looks like a potential recursion.
+>
+> However, mlock makes sure the requested range is already contained
+> within a vma, so no stack expansion will actually happen from mlock.
+>
+> Should this ever change: the stack expansion mlocks only the newly
+> expanded range and so will not result in recursive expansion.
+>
+> Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Actually, I also hesitated on the name, how about using nr_running to
-replace group_util directly?
-
-
+Acked-by: Michel Lespinasse <walken@google.com>
 
 -- 
-Thanks
-    Alex
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
