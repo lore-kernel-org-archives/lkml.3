@@ -1,74 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964866Ab3BTPWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 10:22:41 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:33730 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964852Ab3BTPWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 10:22:38 -0500
-Date: Wed, 20 Feb 2013 16:22:34 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alex Shi <alex.shi@intel.com>
-Cc: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 11/15] sched: add power/performance balance allow flag
-Message-ID: <20130220152234.GE16775@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Alex Shi <alex.shi@intel.com>, torvalds@linux-foundation.org,
-	mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-	akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-	namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
-	gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-	viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-	morten.rasmussen@arm.com
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
- <1361164062-20111-12-git-send-email-alex.shi@intel.com>
- <20130220121256.GD16775@pd.tnic>
- <5124DBA3.20605@intel.com>
+	id S935592Ab3BTPYP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 10:24:15 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:34638 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932396Ab3BTPYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 10:24:13 -0500
+Date: Wed, 20 Feb 2013 10:24:12 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Li Fei <fei.li@intel.com>, <pavel@ucw.cz>, <rjw@sisk.pl>,
+        <len.brown@intel.com>, <mingo@redhat.com>, <peterz@infradead.org>,
+        <akpm@linux-foundation.org>, <viro@zeniv.linux.org.uk>,
+        <gorcunov@openvz.org>, <rientjes@google.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <chuansheng.liu@intel.com>, <biao.wang@intel.com>
+Subject: Re: [PATCH] freezer: configure user space process frozen along with
+ kernel threads
+In-Reply-To: <878v6jjdoq.fsf@xmission.com>
+Message-ID: <Pine.LNX.4.44L0.1302201021210.1671-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5124DBA3.20605@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 10:20:19PM +0800, Alex Shi wrote:
-> >> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> >> index 2e8131d..0047856 100644
-> >> --- a/kernel/sched/fair.c
-> >> +++ b/kernel/sched/fair.c
-> >> @@ -4053,6 +4053,8 @@ struct lb_env {
-> >>  	unsigned int		loop;
-> >>  	unsigned int		loop_break;
-> >>  	unsigned int		loop_max;
-> >> +	int			power_lb;  /* if power balance needed */
-> >> +	int			perf_lb;   /* if performance balance needed */
-> > 
-> > Those look like they're used like simple boolean flags. Why not make
-> > them such, i.e. bitfields? See struct perf_event_attr for an example.
-> 
-> there are 11 long words in struct lb_env now. use boolean or bitfields
-> can't save much space.
+On Wed, 20 Feb 2013, Eric W. Biederman wrote:
 
-Now now maybe.
+> Why can't the fuse filesystem freeze when there are requests pending?
 
-Btw, there's a ->flags variable there which simply cries to get another
-LBF_* flag or two. This way you don't add any new members at all and
-don't enlarge the struct.
+It _can_ freeze (that is, the fuse daemon can).  The problem is that
+tasks _using_ the fuse filsystem can't if the daemon doesn't respond.  
+These tasks are stuck in uninterruptible wait states deep in the
+filesystem layer, probably holding important locks.  They can't be
+frozen until the outstanding requests complete.
 
-> and not use conveniently.
+Alan Stern
 
-Make yourself accessor functions or whatever.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
