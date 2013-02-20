@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab3BTWbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 17:31:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19903 "EHLO mx1.redhat.com"
+	id S1752334Ab3BTWeL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 17:34:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24984 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751295Ab3BTWbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 17:31:40 -0500
-Date: Wed, 20 Feb 2013 23:30:13 +0100
+	id S1752135Ab3BTWeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 17:34:02 -0500
+Date: Wed, 20 Feb 2013 23:32:26 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v3] lockdep: check that no locks held at freeze time
-Message-ID: <20130220223013.GA15760@redhat.com>
-References: <20130216170605.GC4910@redhat.com> <1361325468-7998-1-git-send-email-msb@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        Neil Horman <nhorman@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] coredump: fix the ancient signal problems
+Message-ID: <20130220223226.GA16194@redhat.com>
+References: <20130217191819.GA21778@redhat.com> <CACBanvoxwb341yO_hoJDDqZf9htgY2NNiOw0LfYj3TUe9zM5+w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1361325468-7998-1-git-send-email-msb@chromium.org>
+In-Reply-To: <CACBanvoxwb341yO_hoJDDqZf9htgY2NNiOw0LfYj3TUe9zM5+w@mail.gmail.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,17 +29,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 02/19, Mandeep Singh Baines wrote:
 >
-> We shouldn't try_to_freeze if locks are held. Verified that
-> I get no lockdep warnings after applying this patch and
-> "vfork: don't freezer_count() for in-kernel users of CLONE_VFORK".
+> For the whole series:
+>
+> Tested-by: Mandeep Singh Baines <msb@chromium.org>
 
-I believe the patch is fine.
+Oh, thanks a lot Mandeep.
 
-But I don't understand the changelog, unless I am totally confused
-(and I have a lot of unread emails so perhaps I missed something),
-this version do not need the changes in CLONE_VFORK.
+I tried to test it too, seems to work.
 
-And, Mandeep, I'll try to answer your emails asap...
+Andrew, could you take it? We will make more fixes on top.
 
 Oleg.
 
