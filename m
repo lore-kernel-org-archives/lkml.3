@@ -1,118 +1,453 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758700Ab3BTQxB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 11:53:01 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:34017 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755648Ab3BTQxA (ORCPT
+	id S1758883Ab3BTQxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 11:53:30 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:59542 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758768Ab3BTQx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 11:53:00 -0500
-Message-ID: <1361379176.19353.187.camel@edumazet-glaptop>
-Subject: Re: Kernel 3.7.2 strange warning and short system hang
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Urban Loesch <bind@enas.net>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Date: Wed, 20 Feb 2013 08:52:56 -0800
-In-Reply-To: <5124F57A.6080908@enas.net>
-References: <5124F57A.6080908@enas.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 20 Feb 2013 11:53:27 -0500
+X-Originating-IP: 108.223.40.66
+Date: Wed, 20 Feb 2013 08:53:59 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jonathan Cameron <jic23@jic23.retrosnub.co.uk>
+Cc: linux-iio@vger.kernel.org, Jonathan Cameron <jic23@kernel.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Doug Anderson <dianders@chromium.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH v5] iio: Add OF support
+Message-ID: <20130220165359.GA3424@roeck-us.net>
+References: <1360256940-19438-1-git-send-email-linux@roeck-us.net>
+ <5114B7B8.2080607@jic23.retrosnub.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5114B7B8.2080607@jic23.retrosnub.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-20 at 17:10 +0100, Urban Loesch wrote:
-> Hi,
+On Fri, Feb 08, 2013 at 08:30:48AM +0000, Jonathan Cameron wrote:
+> On 07/02/13 17:09, Guenter Roeck wrote:
+> >Provide bindings and parse OF data during initialization.
+> >
+> >Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> Looks fine to me.  Will give it a few more days to see what others
+> have to say.
 > 
-> today I had a strange system hang on one of our new Dell PER620 machines.
-> I'm running a self compiled kernel, version 3.7.2 with linux vserver patch included.
-> 
-> uname -a
-> Linux dbhost04 3.7.2-vs2.3.5.5-rol-em64t #4 SMP Sun Feb 3 14:08:37 CET 2013 x86_64 GNU/Linux
-> 
-> 15min. systemload between 1-3.
-> 
-> 
-> Today the system hangs for some seconds and I got the folling errors in syslog multiple times within one second:
-> 
-> ...
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196338] WARNING: at net/core/skbuff.c:573 skb_release_head_state+0xed/0x100()
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196338] Hardware name: PowerEdge R620
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196352] Modules linked in: lru_cache netconsole configfs act_police cls_basic cls_flow cls_fw cls_u32 
-> sch_tbf sch_prio sch_hfsc sch_htb sch_ingress sch_sfq xt_statistic xt_CT xt_realm xt_LOG xt_c
-> onnlimit iptable_raw xt_comment xt_nat xt_recent ipt_ULOG ipt_REJECT ipt_MASQUERADE ipt_ECN ipt_CLUSTERIP ipt_ah nf_nat_tftp nf_nat_sip nf_nat_pptp 
-> nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda nf_conntrack_tftp nf_con
-> ntrack_sane nf_conntrack_sip nf_conntrack_proto_udplite nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_netlink 
-> nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_irc ts_kmp nf_conntrack_h323 nf_con
-> ntrack_amanda nf_conntrack_ftp xt_TPROXY xt_time nf_tproxy_core xt_TCPMSS xt_tcpmss xt_sctp xt_policy xt_pkttype xt_NFLOG nfnetlink_log xt_physdev 
-> xt_owner xt_NFQUEUE xt_multiport xt_mark xt_mac xt_limit xt_length xt_iprange xt_helper xt
-> _hashlimit xt_DSCP xt_dscp xt_dccp xt_connmark xt_CLASSIFY iptable_nat nf_nat_ipv
-> Feb 20 15:58:04 dbhost04 kernel: 4 nf_nat ip6t_REJECT nf_conntrack_ipv4 xt_tcpudp nf_defrag_ipv4 xt_state nf_conntrack_ipv6 nf_defrag_ipv6 
-> xt_conntrack nf_conntrack iptable_mangle ip6table_raw ip6table_mangle nfnetlink ip6table_filter ip
-> 6_tables iptable_filter ip_tables x_tables ipmi_devintf ipmi_si ipmi_msghandler coretemp kvm_intel kvm ghash_clmulni_intel aesni_intel xts aes_x86_64 
-> lrw gf128mul ablk_helper cryptd iTCO_wdt iTCO_vendor_support dcdbas microcode pcspkr jo
-> ydev lpc_ich shpchp hed evbug hid_generic usbhid hid ahci libahci megaraid_sas tg3 [last unloaded: drbd]
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196368] Pid: 10942, comm: mysqld Tainted: G        W    3.7.2-vs2.3.5.5-rol-em64t #4
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196368] Call Trace:
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196370]  <IRQ> [<ffffffff81053bff>] warn_slowpath_common+0x7f/0xc0
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196371] [<ffffffff81594c52>] ? skb_release_data+0xf2/0x110
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196372] [<ffffffff81053c5a>] warn_slowpath_null+0x1a/0x20
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196373] [<ffffffff81594e9d>] skb_release_head_state+0xed/0x100
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196374] [<ffffffff81594c86>] __kfree_skb+0x16/0xa0
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196375] [<ffffffff8159521c>] consume_skb+0x2c/0x80
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196379] [<ffffffffa000b0af>] tg3_poll_work+0x5ef/0xdb0 [tg3]
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196384] [<ffffffffa000b055>] ? tg3_poll_work+0x595/0xdb0 [tg3]
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196388] [<ffffffffa00145cf>] tg3_poll+0x7f/0x390 [tg3]
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196392] [<ffffffffa000b927>] ? tg3_poll_msix+0xb7/0x140 [tg3]
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196394] [<ffffffff815b9622>] netpoll_poll_dev+0x162/0x580
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196395] [<ffffffff815b9bcc>] netpoll_send_skb_on_dev+0x18c/0x3a0
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196398] [<ffffffff815ba0f7>] netpoll_send_udp+0x277/0x290
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196400] [<ffffffffa03ae91f>] write_msg+0xaf/0x100 [netconsole]
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196401] [<ffffffff81054959>] call_console_drivers.constprop.16+0x99/0x100
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196403] [<ffffffff810553b9>] console_unlock+0x3d9/0x420
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196404] [<ffffffff81055ca5>] vprintk_emit+0x255/0x510
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196406] [<ffffffff8169f0b9>] printk+0x61/0x63
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196407] [<ffffffff81031e8e>] therm_throt_process+0x13e/0x180
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196408] [<ffffffff81032066>] intel_thermal_interrupt+0x196/0x1a0
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196410] [<ffffffff810320c1>] smp_thermal_interrupt+0x21/0x40
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196411] [<ffffffff816b1a1a>] thermal_interrupt+0x6a/0x70
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196413]  <EOI> [<ffffffff816b0e19>] ? system_call_fastpath+0x16/0x1b
-> Feb 20 15:58:04 dbhost04 kernel: [1463997.196414] ---[ end trace e3ec69533a534ff5 ]---
-> ...
-> 
-> After the last message I got this entries in syslog, too:
-> Feb 20 15:58:04 dbhost04 kernel: [1464001.755218] CPU18: Core power limit normal
-> Feb 20 15:58:04 dbhost04 kernel: [1464001.760038] Clocksource tsc unstable (delta = 299966106527 ns)
-> Feb 20 15:58:04 dbhost04 kernel: [1464001.769627] Switching to clocksource hpet
-> 
-> I searched the archives for this error, but I can't find any solution.
-> And my second PER620 doesn't show this error until now.
-> 
-> Have you any idea what this problem could be?
-> 
-> I'm not subscribed to lkml, if you need more information please contact me directly by email.
-> 
-> Many thanks for your help.
-> Urban
+Hi Jonathan,
 
-CC netdev
+Any further feedback on this ? If there is anything else I need to do
+to get it accepted, please let me know.
 
-I guess tg3 needs to call dev_kfree_skb_any()
+Thanks,
+Guenter
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index bdb0869..22d9e44 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -5942,7 +5942,7 @@ static void tg3_tx(struct tg3_napi *tnapi)
- 		pkts_compl++;
- 		bytes_compl += skb->len;
- 
--		dev_kfree_skb(skb);
-+		dev_kfree_skb_any(skb);
- 
- 		if (unlikely(tx_bug)) {
- 			tg3_tx_recover(tp);
-
-
+> Thanks Guenter
+> >---
+> >v5:
+> >- Updated examples in bindings.
+> >v4:
+> >- Fixed wrong parameter to dummy of_iio_channel_get_by_name if CONFIG_OF is
+> >   undefined, and wrong return value.
+> >- Initialize indio_dev->of_node in iio_device_register if the calling driver
+> >   neglected to do it.
+> >v3:
+> >- Cleaned up documentation (formatting, left-over clock references)
+> >- Updated bindings description to permit sub-devices
+> >- When searching for iio devices, use the pointer to the iio device type instead
+> >   of strcmp. Rename iio_dev_type to iio_device_type (to match other device
+> >   types) and make it global for that purpose. Check the OF node first, then the
+> >   device type, as the node is less likely to match.
+> >- Move the common code in of_iio_channel_get and of_iio_channel_get_all to
+> >   __of_iio_channel_get.
+> >- Return NULL from of_iio_channel_get_by_name if nothing is found, or
+> >   an error if there is a problem with consistency or if the provider device is
+> >   not yet available.
+> >- In iio_channel_get, return if of_iio_channel_get_by_name() returns a channel
+> >   or an error, and continue otherwise.
+> >v2:
+> >- Rebased to iio/togreg
+> >- Documentation update per feedback
+> >- Dropped io-channel-output-names from the bindings document. The property is
+> >   not used in the code, and it is not entirely clear what it would be used for.
+> >   If there is a need for it, we can add it back in later on.
+> >- Don't export OF specific API calls
+> >- For OF support, no longer depend on iio_map
+> >- Add #ifdef CONFIG_OF where appropriate, and ensure that the code still builds
+> >   if it is not selected.
+> >- Change iio_channel_get to take device pointer as argument instead of device
+> >   name. Retain old API as of_iio_channel_get_sys.
+> >- iio_channel_get now works for both OF and non-OF configurations
+> >- Use regulator to get vref for max1363 driver.
+> >
+> >  .../devicetree/bindings/iio/iio-bindings.txt       |   97 +++++++++++
+> >  drivers/iio/iio_core.h                             |    1 +
+> >  drivers/iio/industrialio-core.c                    |    8 +-
+> >  drivers/iio/inkern.c                               |  171 ++++++++++++++++++++
+> >  4 files changed, 275 insertions(+), 2 deletions(-)
+> >  create mode 100644 Documentation/devicetree/bindings/iio/iio-bindings.txt
+> >
+> >diff --git a/Documentation/devicetree/bindings/iio/iio-bindings.txt b/Documentation/devicetree/bindings/iio/iio-bindings.txt
+> >new file mode 100644
+> >index 0000000..1182845
+> >--- /dev/null
+> >+++ b/Documentation/devicetree/bindings/iio/iio-bindings.txt
+> >@@ -0,0 +1,97 @@
+> >+This binding is a work-in-progress. It is derived from clock bindings,
+> >+and based on suggestions from Lars-Peter Clausen [1].
+> >+
+> >+Sources of IIO channels can be represented by any node in the device
+> >+tree. Those nodes are designated as IIO providers. IIO consumer
+> >+nodes use a phandle and IIO specifier pair to connect IIO provider
+> >+outputs to IIO inputs. Similar to the gpio specifiers, an IIO
+> >+specifier is an array of one or more cells identifying the IIO
+> >+output on a device. The length of an IIO specifier is defined by the
+> >+value of a #io-channel-cells property in the IIO provider node.
+> >+
+> >+[1] http://marc.info/?l=linux-iio&m=135902119507483&w=2
+> >+
+> >+==IIO providers==
+> >+
+> >+Required properties:
+> >+#io-channel-cells: Number of cells in an IIO specifier; Typically 0 for nodes
+> >+		   with a single IIO output and 1 for nodes with multiple
+> >+		   IIO outputs.
+> >+
+> >+Example for a simple configuration with no trigger:
+> >+
+> >+	adc: voltage-sensor@35 {
+> >+		compatible = "maxim,max1139";
+> >+		reg = <0x35>;
+> >+		#io-channel-cells = <1>;
+> >+	};
+> >+
+> >+Example for a configuration with trigger:
+> >+
+> >+	adc@35 {
+> >+		compatible = "some-vendor,some-adc";
+> >+		reg = <0x35>;
+> >+
+> >+		adc1: iio-device@0 {
+> >+			#io-channel-cells = <1>;
+> >+			/* other properties */
+> >+		};
+> >+		adc2: iio-device@1 {
+> >+			#io-channel-cells = <1>;
+> >+			/* other properties */
+> >+		};
+> >+	};
+> >+
+> >+==IIO consumers==
+> >+
+> >+Required properties:
+> >+io-channels:	List of phandle and IIO specifier pairs, one pair
+> >+		for each IIO input to the device. Note: if the
+> >+		IIO provider specifies '0' for #io-channel-cells,
+> >+		then only the phandle portion of the pair will appear.
+> >+
+> >+Optional properties:
+> >+io-channel-names:
+> >+		List of IIO input name strings sorted in the same
+> >+		order as the io-channels property. Consumers drivers
+> >+		will use io-channel-names to match IIO input names
+> >+		with IIO specifiers.
+> >+io-channel-ranges:
+> >+		Empty property indicating that child nodes can inherit named
+> >+		IIO channels from this node. Useful for bus nodes to provide
+> >+		and IIO channel to their children.
+> >+
+> >+For example:
+> >+
+> >+	device {
+> >+		io-channels = <&adc 1>, <&ref 0>;
+> >+		io-channel-names = "vcc", "vdd";
+> >+	};
+> >+
+> >+This represents a device with two IIO inputs, named "vcc" and "vdd".
+> >+The vcc channel is connected to output 1 of the &adc device, and the
+> >+vdd channel is connected to output 0 of the &ref device.
+> >+
+> >+==Example==
+> >+
+> >+	adc: max1139@35 {
+> >+		compatible = "maxim,max1139";
+> >+		reg = <0x35>;
+> >+		#io-channel-cells = <1>;
+> >+	};
+> >+
+> >+	...
+> >+
+> >+	iio_hwmon {
+> >+		compatible = "iio-hwmon";
+> >+		io-channels = <&adc 0>, <&adc 1>, <&adc 2>,
+> >+			<&adc 3>, <&adc 4>, <&adc 5>,
+> >+			<&adc 6>, <&adc 7>, <&adc 8>,
+> >+			<&adc 9>;
+> >+	};
+> >+
+> >+	some_consumer {
+> >+		compatible = "some-consumer";
+> >+		io-channels = <&adc 10>, <&adc 11>;
+> >+		io-channel-names = "adc1", "adc2";
+> >+	};
+> >diff --git a/drivers/iio/iio_core.h b/drivers/iio/iio_core.h
+> >index f652e6a..05c1b74 100644
+> >--- a/drivers/iio/iio_core.h
+> >+++ b/drivers/iio/iio_core.h
+> >@@ -18,6 +18,7 @@
+> >  struct iio_chan_spec;
+> >  struct iio_dev;
+> >
+> >+extern struct device_type iio_device_type;
+> >
+> >  int __iio_add_chan_devattr(const char *postfix,
+> >  			   struct iio_chan_spec const *chan,
+> >diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+> >index 8848f16..6d8b027 100644
+> >--- a/drivers/iio/industrialio-core.c
+> >+++ b/drivers/iio/industrialio-core.c
+> >@@ -847,7 +847,7 @@ static void iio_dev_release(struct device *device)
+> >  	kfree(indio_dev);
+> >  }
+> >
+> >-static struct device_type iio_dev_type = {
+> >+struct device_type iio_device_type = {
+> >  	.name = "iio_device",
+> >  	.release = iio_dev_release,
+> >  };
+> >@@ -869,7 +869,7 @@ struct iio_dev *iio_device_alloc(int sizeof_priv)
+> >
+> >  	if (dev) {
+> >  		dev->dev.groups = dev->groups;
+> >-		dev->dev.type = &iio_dev_type;
+> >+		dev->dev.type = &iio_device_type;
+> >  		dev->dev.bus = &iio_bus_type;
+> >  		device_initialize(&dev->dev);
+> >  		dev_set_drvdata(&dev->dev, (void *)dev);
+> >@@ -960,6 +960,10 @@ int iio_device_register(struct iio_dev *indio_dev)
+> >  {
+> >  	int ret;
+> >
+> >+	/* If the calling driver did not initialize of_node, do it here */
+> >+	if (!indio_dev->dev.of_node && indio_dev->dev.parent)
+> >+		indio_dev->dev.of_node = indio_dev->dev.parent->of_node;
+> >+
+> >  	/* configure elements for the chrdev */
+> >  	indio_dev->dev.devt = MKDEV(MAJOR(iio_devt), indio_dev->id);
+> >
+> >diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+> >index b289915..795d100 100644
+> >--- a/drivers/iio/inkern.c
+> >+++ b/drivers/iio/inkern.c
+> >@@ -10,6 +10,7 @@
+> >  #include <linux/export.h>
+> >  #include <linux/slab.h>
+> >  #include <linux/mutex.h>
+> >+#include <linux/of.h>
+> >
+> >  #include <linux/iio/iio.h>
+> >  #include "iio_core.h"
+> >@@ -92,6 +93,164 @@ static const struct iio_chan_spec
+> >  	return chan;
+> >  }
+> >
+> >+#ifdef CONFIG_OF
+> >+
+> >+static int iio_dev_node_match(struct device *dev, void *data)
+> >+{
+> >+	return dev->of_node == data && dev->type == &iio_device_type;
+> >+}
+> >+
+> >+static int __of_iio_channel_get(struct iio_channel *channel,
+> >+				struct device_node *np, int index)
+> >+{
+> >+	struct device *idev;
+> >+	struct iio_dev *indio_dev;
+> >+	int err;
+> >+	struct of_phandle_args iiospec;
+> >+
+> >+	err = of_parse_phandle_with_args(np, "io-channels",
+> >+					 "#io-channel-cells",
+> >+					 index, &iiospec);
+> >+	if (err)
+> >+		return err;
+> >+
+> >+	idev = bus_find_device(&iio_bus_type, NULL, iiospec.np,
+> >+			       iio_dev_node_match);
+> >+	of_node_put(iiospec.np);
+> >+	if (idev == NULL)
+> >+		return -EPROBE_DEFER;
+> >+
+> >+	indio_dev = dev_to_iio_dev(idev);
+> >+	channel->indio_dev = indio_dev;
+> >+	index = iiospec.args_count ? iiospec.args[0] : 0;
+> >+	if (index >= indio_dev->num_channels) {
+> >+		return -EINVAL;
+> >+		goto err_put;
+> >+	}
+> >+	channel->channel = &indio_dev->channels[index];
+> >+
+> >+	return 0;
+> >+
+> >+err_put:
+> >+	iio_device_put(indio_dev);
+> >+	return err;
+> >+}
+> >+
+> >+static struct iio_channel *of_iio_channel_get(struct device_node *np, int index)
+> >+{
+> >+	struct iio_channel *channel;
+> >+	int err;
+> >+
+> >+	if (index < 0)
+> >+		return ERR_PTR(-EINVAL);
+> >+
+> >+	channel = kzalloc(sizeof(*channel), GFP_KERNEL);
+> >+	if (channel == NULL)
+> >+		return ERR_PTR(-ENOMEM);
+> >+
+> >+	err = __of_iio_channel_get(channel, np, index);
+> >+	if (err)
+> >+		goto err_free_channel;
+> >+
+> >+	return channel;
+> >+
+> >+err_free_channel:
+> >+	kfree(channel);
+> >+	return ERR_PTR(err);
+> >+}
+> >+
+> >+static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
+> >+						      const char *name)
+> >+{
+> >+	struct iio_channel *chan = NULL;
+> >+
+> >+	/* Walk up the tree of devices looking for a matching iio channel */
+> >+	while (np) {
+> >+		int index = 0;
+> >+
+> >+		/*
+> >+		 * For named iio channels, first look up the name in the
+> >+		 * "io-channel-names" property.  If it cannot be found, the
+> >+		 * index will be an error code, and of_iio_channel_get()
+> >+		 * will fail.
+> >+		 */
+> >+		if (name)
+> >+			index = of_property_match_string(np, "io-channel-names",
+> >+							 name);
+> >+		chan = of_iio_channel_get(np, index);
+> >+		if (!IS_ERR(chan))
+> >+			break;
+> >+		else if (name && index >= 0) {
+> >+			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+> >+				np->full_name, name ? name : "", index);
+> >+			return chan;
+> >+		}
+> >+
+> >+		/*
+> >+		 * No matching IIO channel found on this node.
+> >+		 * If the parent node has a "io-channel-ranges" property,
+> >+		 * then we can try one of its channels.
+> >+		 */
+> >+		np = np->parent;
+> >+		if (np && !of_get_property(np, "io-channel-ranges", NULL))
+> >+			break;
+> >+	}
+> >+	return chan;
+> >+}
+> >+
+> >+static struct iio_channel *of_iio_channel_get_all(struct device *dev)
+> >+{
+> >+	struct iio_channel *chans;
+> >+	int i, mapind, nummaps = 0;
+> >+	int ret;
+> >+
+> >+	do {
+> >+		ret = of_parse_phandle_with_args(dev->of_node,
+> >+						 "io-channels",
+> >+						 "#io-channel-cells",
+> >+						 nummaps, NULL);
+> >+		if (ret < 0)
+> >+			break;
+> >+	} while (++nummaps);
+> >+
+> >+	if (nummaps == 0)	/* no error, return NULL to search map table */
+> >+		return NULL;
+> >+
+> >+	/* NULL terminated array to save passing size */
+> >+	chans = kcalloc(nummaps + 1, sizeof(*chans), GFP_KERNEL);
+> >+	if (chans == NULL)
+> >+		return ERR_PTR(-ENOMEM);
+> >+
+> >+	/* Search for OF matches */
+> >+	for (mapind = 0; mapind < nummaps; mapind++) {
+> >+		ret = __of_iio_channel_get(&chans[mapind], dev->of_node,
+> >+					   mapind);
+> >+		if (ret)
+> >+			goto error_free_chans;
+> >+	}
+> >+	return chans;
+> >+
+> >+error_free_chans:
+> >+	for (i = 0; i < mapind; i++)
+> >+		iio_device_put(chans[i].indio_dev);
+> >+	kfree(chans);
+> >+	return ERR_PTR(ret);
+> >+}
+> >+
+> >+#else /* CONFIG_OF */
+> >+
+> >+static inline struct iio_channel *
+> >+of_iio_channel_get_by_name(struct device_node *np, const char *name)
+> >+{
+> >+	return NULL;
+> >+}
+> >+
+> >+static inline struct iio_channel *of_iio_channel_get_all(struct device *dev)
+> >+{
+> >+	return NULL;
+> >+}
+> >+
+> >+#endif /* CONFIG_OF */
+> >
+> >  static struct iio_channel *iio_channel_get_sys(const char *name,
+> >  					       const char *channel_name)
+> >@@ -150,7 +309,14 @@ struct iio_channel *iio_channel_get(struct device *dev,
+> >  				    const char *channel_name)
+> >  {
+> >  	const char *name = dev ? dev_name(dev) : NULL;
+> >+	struct iio_channel *channel;
+> >
+> >+	if (dev) {
+> >+		channel = of_iio_channel_get_by_name(dev->of_node,
+> >+						     channel_name);
+> >+		if (channel != NULL)
+> >+			return channel;
+> >+	}
+> >  	return iio_channel_get_sys(name, channel_name);
+> >  }
+> >  EXPORT_SYMBOL_GPL(iio_channel_get);
+> >@@ -173,6 +339,11 @@ struct iio_channel *iio_channel_get_all(struct device *dev)
+> >
+> >  	if (dev == NULL)
+> >  		return ERR_PTR(-EINVAL);
+> >+
+> >+	chans = of_iio_channel_get_all(dev);
+> >+	if (chans)
+> >+		return chans;
+> >+
+> >  	name = dev_name(dev);
+> >
+> >  	mutex_lock(&iio_map_list_lock);
+> >
+> 
+> 
