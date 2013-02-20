@@ -1,149 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758410Ab3BTINo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 03:13:44 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:49739 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756340Ab3BTINn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 03:13:43 -0500
-X-IronPort-AV: E=Sophos;i="4.84,700,1355068800"; 
-   d="scan'208";a="6735163"
-Date: Wed, 20 Feb 2013 16:13:49 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH v12 rebased 2/8] start vm after resetting it
-Message-ID: <20130220081348.GC23246@localhost.localdomain>
-References: <cover.1358920534.git.hutao@cn.fujitsu.com>
- <19fae3171e31ae90c208895d90ad912291936794.1358920534.git.hutao@cn.fujitsu.com>
- <20130208015028.GC3364@amt.cnet>
-MIME-Version: 1.0
-In-Reply-To: <20130208015028.GC3364@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/20 16:13:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/20 16:13:01,
-	Serialize complete at 2013/02/20 16:13:01
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	id S933464Ab3BTIRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 03:17:39 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:64523 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932597Ab3BTIRi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 03:17:38 -0500
+X-AuditID: cbfee68e-b7fc26d000001938-0f-5124869a8d98
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
+ <002c01ce0f31$48d55e00$da801a00$%han@samsung.com>
+ <20130220073044.GB2648@core.coreip.homeip.net>
+ <000801ce0f41$00e79170$02b6b450$%han@samsung.com>
+ <20130220081014.GA4268@core.coreip.homeip.net>
+In-reply-to: <20130220081014.GA4268@core.coreip.homeip.net>
+Subject: Re: [PATCH 07/11] mfd: menelaus: use devm_request_irq() and
+ devm_kzalloc()
+Date: Wed, 20 Feb 2013 17:17:30 +0900
+Message-id: <000d01ce0f42$ba3a1570$2eae4050$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4PQbjq5ZYTDbwYQWe0376wt+cLzQAAMQEg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zQ91ZbSqBBt+OWFtc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M9kfTmApOcldcvr6PvYHxGUcXIyeHhICJxN8HE1ggbDGJC/fW
+	s3UxcnEICSxjlPj4/xQzTNHVBc1gRUIC0xklHjabQBTNZpI48nUiG0iCTUBN4suXw+xdjBwc
+	IgKGEjPWVIGEmQXyJL4taoIa2s4k8aV/JztIglPAWmLV335WEFtYIFRiwub3YHEWAVWJXyv/
+	gi3mFbCVOHH7ACOELSjxY/I9FoihWhLrdx5ngrDlJTavecsMsldCQF3i0V9dkLCIgJHE8vtb
+	oMpFJPa9eMcI8csydokF0xIgVglIfJt8iAWiVVZi0wGodyUlDq64wTKBUWIWksWzkCyehWTx
+	LCQbFjCyrGIUTS1ILihOSi8y0itOzC0uzUvXS87P3cQIiau+HYw3D1gfYkwGWj+RWUo0OR8Y
+	l3kl8YbGxiZmJqYm5pam5qakCSuJ88pfkgkUEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwChQ
+	tnbJ/sy0g2+ndgadPOG/Y988wSihB5+Vi3gyo46u92FKqX5lsttbj+vK+lfhX9/NtfqcFPWw
+	9I4kr8KUqNMMrDefV278fdm5SEaUa5Oq5s8W9WMbZ86+OeNoyNXZklI79miePnM6Yp3pV/NT
+	QU0TExh7VWrbTcuk+6Ytf7lJ0vKWiQmH2GklluKMREMt5qLiRAC5bO3swQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xoO6sNpVAg7195haXd81hc2D0+LxJ
+	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
+	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4xo/3RNKaCk9wVl6/vY29g
+	fMbRxcjJISFgInF1QTMLhC0mceHeejYQW0hgOqPEw2aTLkYuIHs2k8SRrxPBEmwCahJfvhxm
+	72Lk4BARMJSYsaYKJMwskCfxbVETG0R9O5PEl/6d7CAJTgFriVV/+1lBbGGBUIkJm9+DxVkE
+	VCV+rfzLDGLzCthKnLh9gBHCFpT4MfkeC8RQLYn1O48zQdjyEpvXvGUG2SshoC7x6K8uSFhE
+	wEhi+f0tUOUiEvtevGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS
+	9ZLzczcxguP2mfQOxlUNFocYBTgYlXh4GxYqBwqxJpYVV+YeYpTgYFYS4W12UgkU4k1JrKxK
+	LcqPLyrNSS0+xJgM9OhEZinR5HxgSskriTc0NjEzsjQyszAyMTcnTVhJnJfx1JMAIYH0xJLU
+	7NTUgtQimC1MHJxSDYyiTR8n77nnION+LSMmbl1swGPnWU961Rhc+/6zLPD7pvs0zPiZyknR
+	ZNv3Jz6s/t1wd+/Uql+5jfNK0vRm2Nke5Sj4ZPI2sHc9wwFn5jCuksUPeJJvc08p17r/9Vr4
+	6pPa3bI3V4btvGaQKF1/yzHKR+fIKlumntXMmf2i2h98JBxqbfqjviqxFGckGmoxFxUnAgCa
+	YyGVHwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 11:50:28PM -0200, Marcelo Tosatti wrote:
-> On Wed, Jan 23, 2013 at 03:19:23PM +0800, Hu Tao wrote:
-> > From: Wen Congyang <wency@cn.fujitsu.com>
-> > 
-> > The guest should run after resetting it, but it does not run if its
-> > old state is RUN_STATE_INTERNAL_ERROR or RUN_STATE_PAUSED.
-> > 
-> > We don't set runstate to RUN_STATE_PAUSED when resetting the guest,
-> > so the runstate will be changed from RUN_STATE_INTERNAL_ERROR or
-> > RUN_STATE_PAUSED to RUN_STATE_RUNNING(not RUN_STATE_PAUSED).
+On Wednesday, February 20, 2013 5:10 PM, Dmitry Torokhov wrote:
 > 
-> It appears the last hunk will automatically reset state from 
-> RUN_STATE_INTERNAL_ERROR to RUN_STATE_RUNNING ?
+> On Wed, Feb 20, 2013 at 05:05:10PM +0900, Jingoo Han wrote:
+> > On Wednesday, February 20, 2013 4:31 PM, Dmitry Torokhov wrote:
+> > >
+> > > Hi Jongoo,
+> > >
+> > > On Wed, Feb 20, 2013 at 03:12:38PM +0900, Jingoo Han wrote:
+> > > > Use devm_request_irq() and devm_kzalloc() to make cleanup paths
+> > > > more simple.
+> > > >
+> > >
+> > > ...
+> > >
+> > > > @@ -1269,9 +1266,7 @@ static int __exit menelaus_remove(struct i2c_client *client)
+> > > >  {
+> > > >  	struct menelaus_chip	*menelaus = i2c_get_clientdata(client);
+> > > >
+> > > > -	free_irq(client->irq, menelaus);
+> > > >  	flush_work(&menelaus->work);
+> > > > -	kfree(menelaus);
+> > > >  	the_menelaus = NULL;
+> > > >  	return 0;
+> > >
+> > > This conversion is certainly wrong - you really want to disable IRQ and
+> > > then wait for the scheduled work to finish before freeing memory. Here
+> > > you flush work but nothing stops IRQ from firing and scheduling that
+> > > work again.
+> >
+> > Yes, you're right.
+> > I will use devm_free_irq() before flush_work().
+> 
+> Why change it at all if you have to call it manually in both error
+> unwinding and menelaus_remove() cases?
+> 
+> BTW, that __exit markup on menelaus_remove() is surprising... I am
+> pretty sure it can be unbound via sysfs and so there will be a nasty
+> oops.
 
-Yes.
+I see, I will not modify this menelaus mfd driver.
+Thank you.
 
 > 
-> I suppose the transition table allows, from RUN_STATE_INTERNAL_ERROR:
-> 
-> <monitor> system_reset
-> <monitor> cont
-> 
-> To resume the machine?
+> --
+> Dmitry
 
-True.
-
-I think the purpose of this patch is to always reset and _run_ the guest
-by `system_reset', avoiding an additional `cont' following `system_reset'.
-
-> 
-> > 
-> > Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> > ---
-> >  include/block/block.h | 2 ++
-> >  qmp.c                 | 2 +-
-> >  vl.c                  | 7 ++++---
-> >  3 files changed, 7 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/include/block/block.h b/include/block/block.h
-> > index ffd1936..5e82ccb 100644
-> > --- a/include/block/block.h
-> > +++ b/include/block/block.h
-> > @@ -366,6 +366,8 @@ void bdrv_disable_copy_on_read(BlockDriverState *bs);
-> >  void bdrv_set_in_use(BlockDriverState *bs, int in_use);
-> >  int bdrv_in_use(BlockDriverState *bs);
-> >  
-> > +void iostatus_bdrv_it(void *opaque, BlockDriverState *bs);
-> > +
-> >  #ifdef CONFIG_LINUX_AIO
-> >  int raw_get_aio_fd(BlockDriverState *bs);
-> >  #else
-> > diff --git a/qmp.c b/qmp.c
-> > index 55b056b..5f1bed1 100644
-> > --- a/qmp.c
-> > +++ b/qmp.c
-> > @@ -130,7 +130,7 @@ SpiceInfo *qmp_query_spice(Error **errp)
-> >  };
-> >  #endif
-> >  
-> > -static void iostatus_bdrv_it(void *opaque, BlockDriverState *bs)
-> > +void iostatus_bdrv_it(void *opaque, BlockDriverState *bs)
-> >  {
-> >      bdrv_iostatus_reset(bs);
-> >  }
-> > diff --git a/vl.c b/vl.c
-> > index b0bcf1e..1d2edaa 100644
-> > --- a/vl.c
-> > +++ b/vl.c
-> > @@ -534,7 +534,7 @@ static const RunStateTransition runstate_transitions_def[] = {
-> >      { RUN_STATE_INMIGRATE, RUN_STATE_RUNNING },
-> >      { RUN_STATE_INMIGRATE, RUN_STATE_PAUSED },
-> >  
-> > -    { RUN_STATE_INTERNAL_ERROR, RUN_STATE_PAUSED },
-> > +    { RUN_STATE_INTERNAL_ERROR, RUN_STATE_RUNNING },
-> >      { RUN_STATE_INTERNAL_ERROR, RUN_STATE_FINISH_MIGRATE },
-> >  
-> >      { RUN_STATE_IO_ERROR, RUN_STATE_RUNNING },
-> > @@ -569,7 +569,7 @@ static const RunStateTransition runstate_transitions_def[] = {
-> >  
-> >      { RUN_STATE_SAVE_VM, RUN_STATE_RUNNING },
-> >  
-> > -    { RUN_STATE_SHUTDOWN, RUN_STATE_PAUSED },
-> > +    { RUN_STATE_SHUTDOWN, RUN_STATE_RUNNING },
-> >      { RUN_STATE_SHUTDOWN, RUN_STATE_FINISH_MIGRATE },
-> >  
-> >      { RUN_STATE_DEBUG, RUN_STATE_SUSPENDED },
-> > @@ -1951,7 +1951,8 @@ static bool main_loop_should_exit(void)
-> >          resume_all_vcpus();
-> >          if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
-> >              runstate_check(RUN_STATE_SHUTDOWN)) {
-> > -            runstate_set(RUN_STATE_PAUSED);
-> > +            bdrv_iterate(iostatus_bdrv_it, NULL);
-> > +            vm_start();
-> >          }
-> >      }
-> >      if (qemu_wakeup_requested()) {
-> > -- 
-> > 1.8.0.1.240.ge8a1f5a
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe kvm" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Regards,
-Hu Tao
