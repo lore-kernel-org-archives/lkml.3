@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935267Ab3BTTWq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 14:22:46 -0500
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:51153 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934775Ab3BTTWo (ORCPT
+	id S1759211Ab3BTTYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 14:24:20 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:21888 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758898Ab3BTTYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 14:22:44 -0500
+	Wed, 20 Feb 2013 14:24:18 -0500
+Message-ID: <512522CF.1020901@oracle.com>
+Date: Wed, 20 Feb 2013 14:23:59 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130220175015.GA14541@gmail.com>
-References: <1361373550-4011-1-git-send-email-clark.williams@gmail.com>
-	<1361373550-4011-2-git-send-email-clark.williams@gmail.com>
-	<CA+8MBb+-Btdiga9omw0g_jU2eH5DwHDmNC5n1qqh9tgFjtXN7A@mail.gmail.com>
-	<20130220175015.GA14541@gmail.com>
-Date: Wed, 20 Feb 2013 11:17:39 -0800
-Message-ID: <CA+8MBb+ObhG4g4kcZ+JoygHJWENO+oKu61WgB_O3+D4mxHUt6A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] sched: move RR_TIMESLICE from sysctl.h to rt.h
-From: Tony Luck <tony.luck@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Clark Williams <clark.williams@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
+To: Tejun Heo <tj@kernel.org>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] idr: prevent NULL deref on lookups before insertions
+References: <1361385853-29010-1-git-send-email-sasha.levin@oracle.com> <CAOS58YMT3NS-8zvwx1tNQoLKM1WtKtT-YXBPi=4pAeAMi=rYeA@mail.gmail.com>
+In-Reply-To: <CAOS58YMT3NS-8zvwx1tNQoLKM1WtKtT-YXBPi=4pAeAMi=rYeA@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 9:50 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> Hm, didn't it get fixed via the commit below?
+On 02/20/2013 01:45 PM, Tejun Heo wrote:
+> Hello, Sasha.
+> 
+> On Wed, Feb 20, 2013 at 10:44 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>> 'hint' will be NULL if we're looking up before adding anything
+>> to the IDR.
+>>
+>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> 
+> Andy Shevchenko	already posted fix (and free_layer() needs an update too).
 
-Together with moving RR_TIMESLICE to rt.h ... ia64 is good. But I
-see commit 77852fea6e24 in the tree I built and still see the
-RR_TIMESLICE errors.
+Sorry about that, didn't see one on lkml so I've sent mine.
 
-I don't see the MAX_PRIO half of the problem - so it did help a bit.
+What about a patch that deals with:
 
--Tony
+[   67.992946] ------------[ cut here ]------------
+[   67.994133] WARNING: at lib/idr.c:669 idr_find_slowpath+0x36/0x170()
+[   67.999650] Modules linked in:
+[   68.000469] Pid: 7156, comm: trinity Tainted: G        W    3.8.0-next-20130220-sasha-00006-g3d6f01c-dirty #6
+[   68.005136] Call Trace:
+[   68.005719]  [<ffffffff8110c96b>] warn_slowpath_common+0x8b/0xc0
+[   68.011168]  [<ffffffff8110c9b5>] warn_slowpath_null+0x15/0x20
+[   68.012488]  [<ffffffff81a23506>] idr_find_slowpath+0x36/0x170
+[   68.013805]  [<ffffffff8113bbcf>] __lock_timer+0x12f/0x240
+[   68.015686]  [<ffffffff8113baa0>] ? posix_timer_fn+0xd0/0xd0
+[   68.016946]  [<ffffffff8113c64c>] sys_timer_delete+0x2c/0x180
+[   68.018478]  [<ffffffff83dab0f5>] ? tracesys+0x7e/0xe6
+[   68.019647]  [<ffffffff83dab158>] tracesys+0xe1/0xe6
+[   68.020941] ---[ end trace 6d02b1896fa2505b ]---
+
+
+Thanks,
+Sasha
