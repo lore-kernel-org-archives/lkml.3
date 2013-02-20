@@ -1,68 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757742Ab3BTQuY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 11:50:24 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:44882 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755501Ab3BTQuX (ORCPT
+	id S1758700Ab3BTQxB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 11:53:01 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:34017 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755648Ab3BTQxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 11:50:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <51248E59.2010907@intel.com>
-References: <1360377937-16297-1-git-send-email-walken@google.com>
-	<511B9B4F.3060404@intel.com>
-	<20130213144932.GA14260@gmail.com>
-	<CANN689FJcUZq1wcVZXO+jLOHOeCPnOf5kfYgYVykG6-YLSjj7g@mail.gmail.com>
-	<51248E59.2010907@intel.com>
-Date: Thu, 21 Feb 2013 00:50:22 +0800
-Message-ID: <CANN689HrFcBurM03XxjHTS14pAMu40mY50nKvzCb__ASQ+NM2w@mail.gmail.com>
-Subject: Re: [PATCH 0/4] rwsem: Implement writer lock-stealing
-From: Michel Lespinasse <walken@google.com>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        anton@samba.org, hpa@zytor.com, arjan@linux.intel.com,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        yuanhan.liu@linux.intel.com, dhowells@redhat.com,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Feb 2013 11:53:00 -0500
+Message-ID: <1361379176.19353.187.camel@edumazet-glaptop>
+Subject: Re: Kernel 3.7.2 strange warning and short system hang
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Urban Loesch <bind@enas.net>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Date: Wed, 20 Feb 2013 08:52:56 -0800
+In-Reply-To: <5124F57A.6080908@enas.net>
+References: <5124F57A.6080908@enas.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 4:50 PM, Alex Shi <alex.shi@intel.com> wrote:
-> I did a quick review on the patchset and tested the patches 1~3, and 1~3
-> plus 4th, my patch plus 4th.
->
-> The patch looks much complicated, and also goes writing slow path to
-> steal locking. My patch looks quite straight and simple.
->
-> This 1~3 patch has very very similar performance effect with mine.
->
-> The highlight patch is the 4th, seems it can provide about ~2% aim7
-> performance gain(base on both of mine or patches 1~3) on my 4S NHM EX
-> machine.
+On Wed, 2013-02-20 at 17:10 +0100, Urban Loesch wrote:
+> Hi,
+> 
+> today I had a strange system hang on one of our new Dell PER620 machines.
+> I'm running a self compiled kernel, version 3.7.2 with linux vserver patch included.
+> 
+> uname -a
+> Linux dbhost04 3.7.2-vs2.3.5.5-rol-em64t #4 SMP Sun Feb 3 14:08:37 CET 2013 x86_64 GNU/Linux
+> 
+> 15min. systemload between 1-3.
+> 
+> 
+> Today the system hangs for some seconds and I got the folling errors in syslog multiple times within one second:
+> 
+> ...
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196338] WARNING: at net/core/skbuff.c:573 skb_release_head_state+0xed/0x100()
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196338] Hardware name: PowerEdge R620
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196352] Modules linked in: lru_cache netconsole configfs act_police cls_basic cls_flow cls_fw cls_u32 
+> sch_tbf sch_prio sch_hfsc sch_htb sch_ingress sch_sfq xt_statistic xt_CT xt_realm xt_LOG xt_c
+> onnlimit iptable_raw xt_comment xt_nat xt_recent ipt_ULOG ipt_REJECT ipt_MASQUERADE ipt_ECN ipt_CLUSTERIP ipt_ah nf_nat_tftp nf_nat_sip nf_nat_pptp 
+> nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda nf_conntrack_tftp nf_con
+> ntrack_sane nf_conntrack_sip nf_conntrack_proto_udplite nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_netlink 
+> nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_irc ts_kmp nf_conntrack_h323 nf_con
+> ntrack_amanda nf_conntrack_ftp xt_TPROXY xt_time nf_tproxy_core xt_TCPMSS xt_tcpmss xt_sctp xt_policy xt_pkttype xt_NFLOG nfnetlink_log xt_physdev 
+> xt_owner xt_NFQUEUE xt_multiport xt_mark xt_mac xt_limit xt_length xt_iprange xt_helper xt
+> _hashlimit xt_DSCP xt_dscp xt_dccp xt_connmark xt_CLASSIFY iptable_nat nf_nat_ipv
+> Feb 20 15:58:04 dbhost04 kernel: 4 nf_nat ip6t_REJECT nf_conntrack_ipv4 xt_tcpudp nf_defrag_ipv4 xt_state nf_conntrack_ipv6 nf_defrag_ipv6 
+> xt_conntrack nf_conntrack iptable_mangle ip6table_raw ip6table_mangle nfnetlink ip6table_filter ip
+> 6_tables iptable_filter ip_tables x_tables ipmi_devintf ipmi_si ipmi_msghandler coretemp kvm_intel kvm ghash_clmulni_intel aesni_intel xts aes_x86_64 
+> lrw gf128mul ablk_helper cryptd iTCO_wdt iTCO_vendor_support dcdbas microcode pcspkr jo
+> ydev lpc_ich shpchp hed evbug hid_generic usbhid hid ahci libahci megaraid_sas tg3 [last unloaded: drbd]
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196368] Pid: 10942, comm: mysqld Tainted: G        W    3.7.2-vs2.3.5.5-rol-em64t #4
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196368] Call Trace:
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196370]  <IRQ> [<ffffffff81053bff>] warn_slowpath_common+0x7f/0xc0
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196371] [<ffffffff81594c52>] ? skb_release_data+0xf2/0x110
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196372] [<ffffffff81053c5a>] warn_slowpath_null+0x1a/0x20
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196373] [<ffffffff81594e9d>] skb_release_head_state+0xed/0x100
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196374] [<ffffffff81594c86>] __kfree_skb+0x16/0xa0
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196375] [<ffffffff8159521c>] consume_skb+0x2c/0x80
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196379] [<ffffffffa000b0af>] tg3_poll_work+0x5ef/0xdb0 [tg3]
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196384] [<ffffffffa000b055>] ? tg3_poll_work+0x595/0xdb0 [tg3]
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196388] [<ffffffffa00145cf>] tg3_poll+0x7f/0x390 [tg3]
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196392] [<ffffffffa000b927>] ? tg3_poll_msix+0xb7/0x140 [tg3]
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196394] [<ffffffff815b9622>] netpoll_poll_dev+0x162/0x580
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196395] [<ffffffff815b9bcc>] netpoll_send_skb_on_dev+0x18c/0x3a0
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196398] [<ffffffff815ba0f7>] netpoll_send_udp+0x277/0x290
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196400] [<ffffffffa03ae91f>] write_msg+0xaf/0x100 [netconsole]
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196401] [<ffffffff81054959>] call_console_drivers.constprop.16+0x99/0x100
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196403] [<ffffffff810553b9>] console_unlock+0x3d9/0x420
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196404] [<ffffffff81055ca5>] vprintk_emit+0x255/0x510
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196406] [<ffffffff8169f0b9>] printk+0x61/0x63
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196407] [<ffffffff81031e8e>] therm_throt_process+0x13e/0x180
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196408] [<ffffffff81032066>] intel_thermal_interrupt+0x196/0x1a0
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196410] [<ffffffff810320c1>] smp_thermal_interrupt+0x21/0x40
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196411] [<ffffffff816b1a1a>] thermal_interrupt+0x6a/0x70
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196413]  <EOI> [<ffffffff816b0e19>] ? system_call_fastpath+0x16/0x1b
+> Feb 20 15:58:04 dbhost04 kernel: [1463997.196414] ---[ end trace e3ec69533a534ff5 ]---
+> ...
+> 
+> After the last message I got this entries in syslog, too:
+> Feb 20 15:58:04 dbhost04 kernel: [1464001.755218] CPU18: Core power limit normal
+> Feb 20 15:58:04 dbhost04 kernel: [1464001.760038] Clocksource tsc unstable (delta = 299966106527 ns)
+> Feb 20 15:58:04 dbhost04 kernel: [1464001.769627] Switching to clocksource hpet
+> 
+> I searched the archives for this error, but I can't find any solution.
+> And my second PER620 doesn't show this error until now.
+> 
+> Have you any idea what this problem could be?
+> 
+> I'm not subscribed to lkml, if you need more information please contact me directly by email.
+> 
+> Many thanks for your help.
+> Urban
 
-Thanks for doing these measurements.
+CC netdev
 
-I think we can keep patches 1-2 out of this discussion as they don't
-have much complexity and don't have much to do with write stealing
-either.
+I guess tg3 needs to call dev_kfree_skb_any()
 
-Patch 4 is where fast path write stealing is implemented; however
-there are some parts of patch 3 that I think are required - the one I
-have in mind right now is when waking readers, the existing code
-assumes that writers can't get the lock while it counts how many
-reader locks need to be granted. There are several solutions to that -
-for example you could grant the first reader lock before counting how
-many more you need, but that would result in longer code than in my
-proposal. Either way, I believe if you go into fixing lib/rwsem.c to
-account for the possibility of fast path lock stealing you'll end up
-with something very similar to my proposed patch 3...
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index bdb0869..22d9e44 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -5942,7 +5942,7 @@ static void tg3_tx(struct tg3_napi *tnapi)
+ 		pkts_compl++;
+ 		bytes_compl += skb->len;
+ 
+-		dev_kfree_skb(skb);
++		dev_kfree_skb_any(skb);
+ 
+ 		if (unlikely(tx_bug)) {
+ 			tg3_tx_recover(tp);
 
-(This is kinda how I proceeded with this series, I wrote the fastpath
-lock stealing first, then I thought about what's required to support
-it in the slow path)
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
