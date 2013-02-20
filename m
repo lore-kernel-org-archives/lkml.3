@@ -1,90 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935490Ab3BTCxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 21:53:39 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:39119 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933341Ab3BTCxi (ORCPT
+	id S935500Ab3BTCy1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 21:54:27 -0500
+Received: from mga02.intel.com ([134.134.136.20]:46268 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933341Ab3BTCyZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 21:53:38 -0500
-X-AuditID: cbfee691-b7f556d000001a24-26-51243ab0967e
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000001ce0e3b$f1d99170$d58cb450$%han@samsung.com>
- <20130219121801.GB23508@opensource.wolfsonmicro.com>
-In-reply-to: <20130219121801.GB23508@opensource.wolfsonmicro.com>
-Subject: [PATCH v2] mfd: wm8994: silence bogus warning in wm8994_device_init()
-Date: Wed, 20 Feb 2013 11:53:36 +0900
-Message-id: <007101ce0f15$7a726410$6f572c30$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4Omy0efnQv5bXqQ9qplHdDUDc+8wAeiGEA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zY90NViqBBsu3q1tc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6M1R8nsBfc4ajY0ryIpYFxDXsXIyeHhICJxJpje1ghbDGJC/fW
-	s3UxcnEICSxjlPi35BQjTNG6CctYIRLTGSV2tV1lhHBmM0msWfINrIpNQE3iy5fDQGM5OEQE
-	zCR+HuQBqWEWmMooMeX7GyaQGiGBEoltrx6wgNicAo4SjQeugZ0hLOAn8ebWZzYQm0VAVeL+
-	wblgcV4BW4lfB46wQNiCEj8m3wOzmQW0JNbvPM4EYctLbF7zlhlkr4SAusSjv7ogYREBI4nd
-	829AlYhI7HvxDuxmCYFl7BLrNuxihtglIPFt8iEWiF5ZiU0HmCEelpQ4uOIGywRGiVlINs9C
-	snkWks2zkKxYwMiyilE0tSC5oDgpvchUrzgxt7g0L10vOT93EyMktibuYLx/wPoQYzLQ+onM
-	UqLJ+cDYzCuJNzQ2NjEzMTUxtzQ1NyVNWEmcV/6STKCQQHpiSWp2ampBalF8UWlOavEhRiYO
-	TqkGxubmA49Kdss9mOjs3vfYqzjd7q5P9ZffHttXHDA4tmiGburrx/sit38tn8qyY05638u9
-	8Uwl2nekEizWZj5YnHPDKWC+0a53JztfH568+uX2N9PVvfuyb3Fd5VT7bJdbv2iy2+XmM3HZ
-	boGSM89NkbZ/9rdR0sZymYJpYkNFiED8RC0/RevjMkosxRmJhlrMRcWJAPLI16LDAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xoO4GK5VAg6udShaXd81hc2D0+LxJ
-	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
-	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4xY/XHCewFdzgqtjQvYmlg
-	XMPexcjJISFgIrFuwjJWCFtM4sK99WxdjFwcQgLTGSV2tV1lhHBmM0msWfKNEaSKTUBN4suX
-	w0DdHBwiAmYSPw/ygNQwC0xllJjy/Q0TSI2QQInEtlcPWEBsTgFHicYD18C2CQv4Sby59ZkN
-	xGYRUJW4f3AuWJxXwFbi14EjLBC2oMSPyffAbGYBLYn1O48zQdjyEpvXvGUG2SshoC7x6K8u
-	SFhEwEhi9/wbUCUiEvtevGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzjfSKE3OL
-	S/PS9ZLzczcxgiP3mfQOxlUNFocYBTgYlXh4GxYqBwqxJpYVV+YeYpTgYFYS4XVnVQkU4k1J
-	rKxKLcqPLyrNSS0+xJgM9OhEZinR5HxgUskriTc0NjEzsjQyszAyMTcnTVhJnJfx1JMAIYH0
-	xJLU7NTUgtQimC1MHJxSDYzBH2d811H6ExfMlKErsMFd4NKr3gIOHT5nn7U/Oc73692eqXvW
-	3sLneKOkVU2XQv65ruTMd7NenfbPEX1yi3nWlJfTZMOvKUjeuzRBZxfH9tjvJ4texvT2hJSd
-	vHxgKitr2tosnXS7OEXDiSLhOWW8SwO33hRsUgsRtLOffW9DqPaKHY4Cc5VYijMSDbWYi4oT
-	AUFuaF0gAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 19 Feb 2013 21:54:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
+   d="scan'208";a="287997249"
+From: "Li, Fei" <fei.li@intel.com>
+To: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Miklos Szeredi <miklos@szeredi.hu>,
+        Goswin von Brederlow <goswin-v-b@web.de>,
+        "Brown, Len" <len.brown@intel.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "Wang, Biao" <biao.wang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "fuse-devel@lists.sourceforge.net" <fuse-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: RE: Getting rid of freezer for suspend [was Re: [fuse-devel]
+ [PATCH] fuse: make fuse daemon frozen along with kernel threads]
+Thread-Topic: Getting rid of freezer for suspend [was Re: [fuse-devel]
+ [PATCH] fuse: make fuse daemon frozen along with kernel threads]
+Thread-Index: AQHOB3olAHFPqtS62k684yYjcBqH9ZhylloAgAAImICAAExEgIAATRqAgACy/QCAACDEAIAAHwMAgAFcLwCAACkpgIAAARWAgAHaHwCAAD9mgIAA34sAgAAZE4CAABBvAIAASu8AgAXb/VCAABYzgIABdoGAgAGQC7A=
+Date: Wed, 20 Feb 2013 02:54:20 +0000
+Message-ID: <BEC9F67575FA1E429CA7CF5AE9BE3634403505@SHSMSX102.ccr.corp.intel.com>
+References: <1360113112.17267.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <6332427.iqPUMjtDaQ@vostro.rjw.lan>
+ <BEC9F67575FA1E429CA7CF5AE9BE3634400F30@SHSMSX102.ccr.corp.intel.com>
+ <3321530.AgvEeduuPx@vostro.rjw.lan>
+ <20130219104633.GA23279@xo-6d-61-c0.localdomain>
+In-Reply-To: <20130219104633.GA23279@xo-6d-61-c0.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'patch_regs' cannot be used uninitialized in wm8994_device_init(),
-because 'patch_regs' was already guarded by 'regmap_patch'.
-Thus, that's a bogus warning.
+> -----Original Message-----
+> From: Pavel Machek [mailto:pavel@ucw.cz]
+> Sent: Tuesday, February 19, 2013 6:47 PM
+> To: Rafael J. Wysocki
+> Cc: Li, Fei; Miklos Szeredi; Goswin von Brederlow; Brown, Len;
+> mingo@redhat.com; peterz@infradead.org; Wang, Biao;
+> linux-pm@vger.kernel.org; fuse-devel@lists.sourceforge.net;
+> linux-kernel@vger.kernel.org; Liu, Chuansheng
+> Subject: Re: Getting rid of freezer for suspend [was Re: [fuse-devel] [PATCH] fuse:
+> make fuse daemon frozen along with kernel threads]
+> 
+> Hi!
+> 
+> > > > > > Well, I suppose that information is available to user space.
+> > > > > >
+> > > > > > Do we need an interface for a process to mark itself as PF_FREEZE_LATE
+> or
+> > > > > > do we need an interface for one process to mark another process as
+> > > > > > PF_FREEZE_LATE, or both?
+> > > > >
+> > > > > As a first step marking self with PF_FREEZE_LATE and inheriting this
+> > > > > flag across fork/clone would work for most cases, I think.
+> > > >
+> > > > OK, so we can just have a switch for that in /proc I suppose.
+> > >
+> > > Thanks for feedback and suggestion.
+> > >
+> > > We have ever tried similar idea, expose interface
+> /sys/power/pm_freeze_daemon,
+> > > userspace tasks write 1 to this attribute to make itself to be frozen at the
+> same time
+> > > with kernel tasks, and it worked in our experiment.
+> > >
+> > > Do you think it's suitable and enough to use such attribute
+> /sys/power/pm_freeze_late,
+> > > or other more suitable place under /proc suggested?
+> >
+> > I think it should be inder /proc, because that's where controls related to
+> > process behavior are located.  E.g. /proc/PID/freeze_late or something like
+> > that.
+> 
+> freeze_priority?
+> 
+> I _hope_ we will not need more than three priorities, (user, fused, kernel), but
+> I hoped not no need more than two before, so...
+> 									Pavel
+> --
 
-Without this patch, the build warning happens as below:
+IMHO, we still use two priorities, with the exception that user space process such
+as fuse daemon can be configured to be frozen in kernel threads frozen phase
+instead of user space processes frozen phase.
 
-drivers/mfd/wm8994-core.c: In function 'wm8994_i2c_probe':
-drivers/mfd/wm8994-core.c:595:7: warning: 'patch_regs' may be used uninitialized in this function [-Wuninitialized]
-drivers/mfd/wm8994-core.c:408:14: note: 'patch_regs' was declared here
+I submit a patch on https://lkml.org/lkml/2013/2/19/705 for such implementation.
+Could you please help to check whether it's suitable?
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/mfd/wm8994-core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks and Regards,
+Li Fei
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index 803e93f..97e929e 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -405,7 +405,7 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
- 	struct regmap_config *regmap_config;
- 	const struct reg_default *regmap_patch = NULL;
- 	const char *devname;
--	int ret, i, patch_regs;
-+	int ret, i, patch_regs = 0;
- 	int pulls = 0;
- 
- 	if (dev_get_platdata(wm8994->dev)) {
--- 
-1.7.2.5
-
-
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
