@@ -1,150 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935837Ab3BTUcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 15:32:13 -0500
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:45712 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934126Ab3BTUcM (ORCPT
+	id S935529Ab3BTUeZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 15:34:25 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:4761 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934126Ab3BTUeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 15:32:12 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AptGAKgxJVFV5qjOOWdsb2JhbABFhWCFILVfgQEXAwEBAQEhFzSCHwEBBScTHBMBDxAIAxgJJQ8FDRgKGhOIAAMTtn0NiVoVjCKCVweCX2EDlFGBWoYCg1mBbIgd
-X-IronPort-AV: E=Sophos;i="4.84,704,1355094000"; 
-   d="scan'208";a="500974835"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Wed, 20 Feb 2013 21:33:35 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Rafi Rubin <rafi@seas.upenn.edu>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: ntrig: use input_configured() callback to set the
- name
-Message-ID: <20130220203335.GA1430@polaris.bitmath.org>
-References: <1360335090-24024-1-git-send-email-benjamin.tissoires@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360335090-24024-1-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Feb 2013 15:34:23 -0500
+Message-ID: <1361391814.9542.72.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/7] ACPI / scan: Introduce common code for ACPI-based
+ device hotplug
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>
+Date: Wed, 20 Feb 2013 13:23:34 -0700
+In-Reply-To: <2868646.oscSukR6ks@vostro.rjw.lan>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
+	 <2540040.4NPGdn6Df0@vostro.rjw.lan> <51231EFC.5080006@jp.fujitsu.com>
+	 <2868646.oscSukR6ks@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 08, 2013 at 03:51:30PM +0100, Benjamin Tissoires wrote:
-> The use of input_configured() allows the ntrig driver to actually
-> change the name of the input and its bitmask before it is added to the
-> input subsystem. Thus, the logs are coherents and udev catch the real
-> bitmask when the device is added.
+On Wed, 2013-02-20 at 14:23 +0100, Rafael J. Wysocki wrote:
+> On Tuesday, February 19, 2013 03:43:08 PM Yasuaki Ishimatsu wrote:
+ :
+> > 
+> > > -	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
+> > > -	if (ACPI_FAILURE(status)) {
+> > > -		put_device(&acpi_device->dev);
+> > > -		kfree(ej_event);
+> > > +	acpi_evaluate_hotplug_ost(acpi_device->handle, ost_source,
+> > > +				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+> > > +	get_device(&acpi_device->dev);
+> > > +	ret = acpi_scan_hot_remove(acpi_device);
+> > 
+> > Why don't you use acpi_os_hotplug_execute()? Do you have some reason?
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/hid-ntrig.c | 68 ++++++++++++++++++++++++-------------------------
->  1 file changed, 34 insertions(+), 34 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
-> index 2ffc0e3..7757e82 100644
-> --- a/drivers/hid/hid-ntrig.c
-> +++ b/drivers/hid/hid-ntrig.c
-> @@ -858,12 +858,43 @@ not_claimed_input:
->  	return 1;
->  }
->  
-> +static void ntrig_input_configured(struct hid_device *hid,
-> +		struct hid_input *hidinput)
-> +
-> +{
-> +	struct input_dev *input = hidinput->input;
-> +
-> +	if (hidinput->report->maxfield < 1)
-> +		return;
-> +
-> +	switch (hidinput->report->field[0]->application) {
-> +	case HID_DG_PEN:
-> +		input->name = "N-Trig Pen";
-> +		break;
-> +	case HID_DG_TOUCHSCREEN:
-> +		/* These keys are redundant for fingers, clear them
-> +		 * to prevent incorrect identification */
-> +		__clear_bit(BTN_TOOL_PEN, input->keybit);
-> +		__clear_bit(BTN_TOOL_FINGER, input->keybit);
-> +		__clear_bit(BTN_0, input->keybit);
-> +		__set_bit(BTN_TOOL_DOUBLETAP, input->keybit);
-> +		/*
-> +		 * The physical touchscreen (single touch)
-> +		 * input has a value for physical, whereas
-> +		 * the multitouch only has logical input
-> +		 * fields.
-> +		 */
-> +		input->name = (hidinput->report->field[0]->physical) ?
-> +							"N-Trig Touchscreen" :
-> +							"N-Trig MultiTouch";
-> +		break;
-> +	}
-> +}
-> +
->  static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  {
->  	int ret;
->  	struct ntrig_data *nd;
-> -	struct hid_input *hidinput;
-> -	struct input_dev *input;
->  	struct hid_report *report;
->  
->  	if (id->driver_data)
-> @@ -901,38 +932,6 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  		goto err_free;
->  	}
->  
-> -
-> -	list_for_each_entry(hidinput, &hdev->inputs, list) {
-> -		if (hidinput->report->maxfield < 1)
-> -			continue;
-> -
-> -		input = hidinput->input;
-> -		switch (hidinput->report->field[0]->application) {
-> -		case HID_DG_PEN:
-> -			input->name = "N-Trig Pen";
-> -			break;
-> -		case HID_DG_TOUCHSCREEN:
-> -			/* These keys are redundant for fingers, clear them
-> -			 * to prevent incorrect identification */
-> -			__clear_bit(BTN_TOOL_PEN, input->keybit);
-> -			__clear_bit(BTN_TOOL_FINGER, input->keybit);
-> -			__clear_bit(BTN_0, input->keybit);
-> -			__set_bit(BTN_TOOL_DOUBLETAP, input->keybit);
-> -			/*
-> -			 * The physical touchscreen (single touch)
-> -			 * input has a value for physical, whereas
-> -			 * the multitouch only has logical input
-> -			 * fields.
-> -			 */
-> -			input->name =
-> -				(hidinput->report->field[0]
-> -				 ->physical) ?
-> -				"N-Trig Touchscreen" :
-> -				"N-Trig MultiTouch";
-> -			break;
-> -		}
-> -	}
-> -
->  	/* This is needed for devices with more recent firmware versions */
->  	report = hdev->report_enum[HID_FEATURE_REPORT].report_id_hash[0x0a];
->  	if (report) {
-> @@ -1023,6 +1022,7 @@ static struct hid_driver ntrig_driver = {
->  	.remove = ntrig_remove,
->  	.input_mapping = ntrig_input_mapping,
->  	.input_mapped = ntrig_input_mapped,
-> +	.input_configured = ntrig_input_configured,
->  	.usage_table = ntrig_grabbed_usages,
->  	.event = ntrig_event,
->  };
-> -- 
-> 1.8.1
-> 
+> Yes, I do.  acpi_eject_store() is run in a separate thread anyway (started by
+> user space), so there's no need to use the workqueue for delayed execution here
+> and we are under acpi_scan_lock anyway, so there shouldn't be any concurrency
+> issues.
 
-    Acked-by: Henrik Rydberg <rydberg@euromail.se>
+Well, there is an issue...  I just tested your patchset and hit the
+following hang when I tried to delete a container through its sysfs
+eject.  This thread got stuck in trying to delete the sysfs eject file
+of the container.  I believe this is because the shell is still opening
+this sysfs eject file.
+
+PID: 1518   TASK: ffff88005f09c950  CPU: 1   COMMAND: "bash"
+ #0 [ffff88003392baf8] __schedule at ffffffff8151ba75
+ #1 [ffff88003392bb70] schedule at ffffffff8151bdc7
+ #2 [ffff88003392bb80] schedule_timeout at ffffffff8151aa55
+ #3 [ffff88003392bc00] wait_for_common at ffffffff8151bc43
+ #4 [ffff88003392bc70] wait_for_completion at ffffffff8151bd60
+ #5 [ffff88003392bc80] sysfs_addrm_finish at ffffffff811984ad
+ #6 [ffff88003392bcd0] sysfs_hash_and_remove at ffffffff81196deb
+ #7 [ffff88003392bd10] sysfs_remove_file at ffffffff81197051
+ #8 [ffff88003392bd40] device_remove_file at ffffffff81332950
+ #9 [ffff88003392bd50] acpi_device_unregister at ffffffff812a0556
+#10 [ffff88003392bd80] acpi_bus_remove at ffffffff812a0658
+#11 [ffff88003392bda0] acpi_bus_trim at ffffffff812a090e
+#12 [ffff88003392bdd0] acpi_scan_hot_remove at ffffffff812a09c9
+#13 [ffff88003392be30] acpi_eject_store at ffffffff812a0b45
+#14 [ffff88003392be70] dev_attr_store at ffffffff81332038
+#15 [ffff88003392be80] sysfs_write_file at ffffffff81197212
+#16 [ffff88003392bee0] vfs_write at ffffffff8113a3cb
+#17 [ffff88003392bf20] sys_write at ffffffff8113a5fd
+#18 [ffff88003392bf80] system_call_fastpath at ffffffff81523759
+    RIP: 00000033a16e4950  RSP: 00007fff4a5f5368  RFLAGS: 00000206
+    RAX: 0000000000000001  RBX: ffffffff81523759  RCX: ffffffffffffffff
+    RDX: 0000000000000002  RSI: 00007f2f8a3d8000  RDI: 0000000000000001
+    RBP: 00007f2f8a3d8000   R8: 000000000000000a   R9: 00007f2f8a3c4740
+    R10: 00007f2f8a3c4740  R11: 0000000000000246  R12: 00000033a19b1260
+    R13: 0000000000000002  R14: ffff880000000000  R15: ffff88003395d680
+    ORIG_RAX: 0000000000000001  CS: 0033  SS: 002b
 
 Thanks,
-Henrik
+-Toshi
+
+
