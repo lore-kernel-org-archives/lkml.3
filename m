@@ -1,113 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934795Ab3BTIEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 03:04:35 -0500
-Received: from mga11.intel.com ([192.55.52.93]:54338 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934729Ab3BTIEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 03:04:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
-   d="scan'208";a="289439385"
-Date: Wed, 20 Feb 2013 13:33:48 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Dan Williams <djbw@fb.com>, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-Subject: Re: [PATCH 0/4] dw_dmac: introduce generic DMA binding for DT
-Message-ID: <20130220080348.GF23302@intel.com>
-References: <1360952512-971558-1-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1360952512-971558-1-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934829Ab3BTIFO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 03:05:14 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:61861 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934800Ab3BTIFM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 03:05:12 -0500
+X-AuditID: cbfee691-b7f556d000001a24-a6-512483b63da0
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
+ <002c01ce0f31$48d55e00$da801a00$%han@samsung.com>
+ <20130220073044.GB2648@core.coreip.homeip.net>
+In-reply-to: <20130220073044.GB2648@core.coreip.homeip.net>
+Subject: RE: [PATCH 07/11] mfd: menelaus: use devm_request_irq() and
+ devm_kzalloc()
+Date: Wed, 20 Feb 2013 17:05:10 +0900
+Message-id: <000801ce0f41$00e79170$02b6b450$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4PPDRJvC5D59LuTUGx9e1qSg5RlAABCMUQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zY91tzSqBBq/3S1hc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MA7PvsRc8ZK94tuUxSwNjK1sXIweHhICJxNJraV2MnECmmMSF
+	e+uBwlwcQgLLGCUm/H/BCpEwkVjT2w2VWMQoca31GhtIQkhgNpNEU4MEiM0moCbx5cthdpCh
+	IgKGEjPWVIGEmQXyJL4takLofT3rHlgvp4C1xIPeKewgtrBAqMTVS3dYQHpZBFQlrvz1Awnz
+	CthKtD8+zAhhC0r8mHyPBWKmlsT6nceZIGx5ic1r3jJD/KIu8eivLkhYRMBIYsaTRqgSEYl9
+	L94xgpwgITCPXeLMuyvMIAkWAQGJb5MPsUD0ykpsOsAM8a6kxMEVN1gmMErMQrJ5FpLNs5Bs
+	noVkxQJGllWMoqkFyQXFSelFpnrFibnFpXnpesn5uZsYIVE1cQfj/QPWhxiTgdZPZJYSTc4H
+	RmVeSbyhsbGJmYmpibmlqbkpacJK4rzyl2QChQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTAa
+	L5i83zxBOzZd9vPJtW37sha2R04V9vG2vq1cuOeipU56BzNTisOuPoccpRsbC2tYGRZHSyf0
+	TJrq0RfqL/qrbbHBG9ZqK7uydI0JT3/f/cr1pTAk6IxQwVvn4ztfGU5WOJLzofIUt+G+K39j
+	DbXEyvZq13H/fS8zVaXM8fA+96yPnotfMiixFGckGmoxFxUnAgACsoamwAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgO62ZpVAgwdbRSwu75rD5sDo8XmT
+	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
+	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxoHZ99gLHrJXPNvymKWB
+	sZWti5GTQ0LARGJNbzeULSZx4d56IJuLQ0hgEaPEtdZrYAkhgdlMEk0NEiA2m4CaxJcvh9m7
+	GDk4RAQMJWasqQIJMwvkSXxb1ITQ+3rWPbBeTgFriQe9U9hBbGGBUImrl+6wgPSyCKhKXPnr
+	BxLmFbCVaH98mBHCFpT4MfkeC8RMLYn1O48zQdjyEpvXvGUGaZUQUJd49FcXJCwiYCQx40kj
+	VImIxL4X7xgnMArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M
+	4Kh9JrWDcWWDxSFGAQ5GJR5ejfnKgUKsiWXFlbmHGCU4mJVEeJudVAKFeFMSK6tSi/Lji0pz
+	UosPMSYD/TmRWUo0OR+YUPJK4g2NTcyMLI3MLIxMzM1JE1YS52U89SRASCA9sSQ1OzW1ILUI
+	ZgsTB6dUA6OM/55O1bOnTn+vyF631HyzZIXKrvaUA5P6ZAPql0/peHJ6F8MjwUzxWfNfcqXN
+	EQm6YvLRUTimR9LlWk+S0nOTz1P3Ze9NttyplLqoeqP5qe1i1+58Kw/pjz15a1//E2mnd9mt
+	b7Y6O8TvUXq5bEl3Z6dX8j7v+Zw9XZuMH79v2aqrv43ZY5ISS3FGoqEWc1FxIgCLE2nAHgMA	AA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 07:21:48PM +0100, Arnd Bergmann wrote:
-> Hi Vinod,
+On Wednesday, February 20, 2013 4:31 PM, Dmitry Torokhov wrote:
 > 
-> As Andy pointed out today, we don't have a good solution for the
-> dw_dmac DT binding in linux-next yet. I have posted my series
-> once before and then got distracted after getting feedback from
-> Viresh, Andy and Russell. I have now updated my earlier patch
-> based on the feedback and rebased on your tree without any
-> of the arm-soc patches mixed in.
+> Hi Jongoo,
 > 
-> Unfortunately the patches have never been tested on real hardware 
-> so I don't think it's a good idea to use them in v3.9 on the
-> spear platform. However, your dma-slave tree still contains Viresh's
-> earlier patches, causing a few problems:
+> On Wed, Feb 20, 2013 at 03:12:38PM +0900, Jingoo Han wrote:
+> > Use devm_request_irq() and devm_kzalloc() to make cleanup paths
+> > more simple.
+> >
 > 
-> * With those patches, the spear3xx platform currently does not build.
->   (this one would be easy to fix though)
-> * There is a conflict between those patches and my spear multiplatform
->   series, which I have not yet queued up for 3.9 because of this,
->   since that would have meant that Stephen Rothwell would have to
->   discard either the arm-soc tree or the dma-slave tree from linux-next.
-> * I really don't want the broken binding to appear in 3.9.
+> ...
 > 
-> I believe the best way out at this point is this series, which first
-> first reverts the patch f9965aa2 "ARM: SPEAr13xx: Pass DW DMAC
-> platform data from DT" from your tree and then adds my update.
+> > @@ -1269,9 +1266,7 @@ static int __exit menelaus_remove(struct i2c_client *client)
+> >  {
+> >  	struct menelaus_chip	*menelaus = i2c_get_clientdata(client);
+> >
+> > -	free_irq(client->irq, menelaus);
+> >  	flush_work(&menelaus->work);
+> > -	kfree(menelaus);
+> >  	the_menelaus = NULL;
+> >  	return 0;
 > 
-> This will give us the right DT binding for dw-dmac but no in-tree
-> users, which means that nothing should break if I get it slightly
-> wrong. Please apply the first two patches from these set, and
-> optionally the two patches that based on this convert the pl011
-> uart and pl022 spi controller drivers.
-Arnd,
+> This conversion is certainly wrong - you really want to disable IRQ and
+> then wait for the scheduled work to finish before freeing memory. Here
+> you flush work but nothing stops IRQ from firing and scheduling that
+> work again.
 
-Since there is still churn, would it make sense if I just revert the SPEAr13xx
-patch (your first patch) and send a pull request to Linus.
-Since there are no users and not much testing has been done, I think we can push
-these to 3.10 via arm-soc/slave-dma tree.
+Yes, you're right. 
+I will use devm_free_irq() before flush_work().
 
-Gives more testing and usage will go along as well.
-Since merge window is open, I would like my pull to go soonish and not churn the
-tree much.
+> 
+> Please, be *extra* careful with devm_request_irq() conversions.
+> 
+> Thanks.
+> 
+> --
+> Dmitry
 
---
-~Vinod
-> 
-> I can then decide with Olof whether or not to take the spear multiplatform
-> changes that no longer conflict with the dma slave tree as a "late"
-> branch into 3.9 or wait until 3.10, but that is something you don't
-> need to worry about then. Also the conversion of spear to use
-> the new binding (patch 5 of my original series) can go through the 
-> arm-soc tree for 3.10 after the ST folks have tested that it works.
-> 
-> 	Arnd
-> 
-> Arnd Bergmann (4):
->   Revert "ARM: SPEAr13xx: Pass DW DMAC platform data from DT"
->   dmaengine: dw_dmac: move to generic DMA binding
->   spi: pl022: use generic DMA slave configuration if possible
->   serial: pl011: use generic DMA slave configuration if possible
-> 
->  .../devicetree/bindings/arm/primecell.txt          |  19 ++-
->  Documentation/devicetree/bindings/dma/snps-dma.txt |  70 ++++++-----
->  Documentation/devicetree/bindings/serial/pl011.txt |  17 +++
->  .../devicetree/bindings/spi/spi_pl022.txt          |  36 ++++++
->  arch/arm/boot/dts/spear1340.dtsi                   |  19 ---
->  arch/arm/boot/dts/spear13xx.dtsi                   |  38 ------
->  arch/arm/mach-spear13xx/include/mach/spear.h       |   2 +
->  arch/arm/mach-spear13xx/spear1310.c                |   5 +-
->  arch/arm/mach-spear13xx/spear1340.c                |  33 +++--
->  arch/arm/mach-spear13xx/spear13xx.c                |  55 ++++++++-
->  drivers/dma/dw_dmac.c                              | 137 ++++++++++-----------
->  drivers/dma/dw_dmac_regs.h                         |   8 +-
->  drivers/spi/spi-pl022.c                            |  43 ++++++-
->  drivers/tty/serial/amba-pl011.c                    |  62 ++++++----
->  include/linux/dw_dmac.h                            |   5 -
->  15 files changed, 333 insertions(+), 216 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/serial/pl011.txt
-> 
-> -- 
-> 1.8.1.2
-> 
