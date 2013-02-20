@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758943Ab3BTIgU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 03:36:20 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38553 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758761Ab3BTIgP convert rfc822-to-8bit (ORCPT
+	id S1758982Ab3BTIgg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 03:36:36 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:47165 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756797Ab3BTIgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 03:36:15 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Bryan Wu <cooloney@gmail.com>
-CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jeong, Daniel" <Daniel.Jeong@ti.com>
-Subject: [PATCH 3/3] leds: lm355x, lm3642: support Camera LED triggers for
- flash/torch
-Thread-Topic: [PATCH 3/3] leds: lm355x, lm3642: support Camera LED triggers
- for flash/torch
-Thread-Index: Ac4PRVJ3SGmj92PeR3KMCnJVlQN+aA==
-Date: Wed, 20 Feb 2013 08:36:05 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F79273681@DQHE02.ent.ti.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Feb 2013 03:36:32 -0500
+Date: Wed, 20 Feb 2013 00:36:29 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/11] mfd: menelaus: use devm_request_irq() and
+ devm_kzalloc()
+Message-ID: <20130220083629.GB4268@core.coreip.homeip.net>
+References: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
+ <002c01ce0f31$48d55e00$da801a00$%han@samsung.com>
+ <20130220073044.GB2648@core.coreip.homeip.net>
+ <000801ce0f41$00e79170$02b6b450$%han@samsung.com>
+ <20130220081014.GA4268@core.coreip.homeip.net>
+ <000d01ce0f42$ba3a1570$2eae4050$%han@samsung.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000d01ce0f42$ba3a1570$2eae4050$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LM355x and LM3642 support flash and torch functionality.
+On Wed, Feb 20, 2013 at 05:17:30PM +0900, Jingoo Han wrote:
+> On Wednesday, February 20, 2013 5:10 PM, Dmitry Torokhov wrote:
+> > 
+> > On Wed, Feb 20, 2013 at 05:05:10PM +0900, Jingoo Han wrote:
+> > > On Wednesday, February 20, 2013 4:31 PM, Dmitry Torokhov wrote:
+> > > >
+> > > > Hi Jongoo,
+> > > >
+> > > > On Wed, Feb 20, 2013 at 03:12:38PM +0900, Jingoo Han wrote:
+> > > > > Use devm_request_irq() and devm_kzalloc() to make cleanup paths
+> > > > > more simple.
+> > > > >
+> > > >
+> > > > ...
+> > > >
+> > > > > @@ -1269,9 +1266,7 @@ static int __exit menelaus_remove(struct i2c_client *client)
+> > > > >  {
+> > > > >  	struct menelaus_chip	*menelaus = i2c_get_clientdata(client);
+> > > > >
+> > > > > -	free_irq(client->irq, menelaus);
+> > > > >  	flush_work(&menelaus->work);
+> > > > > -	kfree(menelaus);
+> > > > >  	the_menelaus = NULL;
+> > > > >  	return 0;
+> > > >
+> > > > This conversion is certainly wrong - you really want to disable IRQ and
+> > > > then wait for the scheduled work to finish before freeing memory. Here
+> > > > you flush work but nothing stops IRQ from firing and scheduling that
+> > > > work again.
+> > >
+> > > Yes, you're right.
+> > > I will use devm_free_irq() before flush_work().
+> > 
+> > Why change it at all if you have to call it manually in both error
+> > unwinding and menelaus_remove() cases?
+> > 
+> > BTW, that __exit markup on menelaus_remove() is surprising... I am
+> > pretty sure it can be unbound via sysfs and so there will be a nasty
+> > oops.
+> 
+> I see, I will not modify this menelaus mfd driver.
+> Thank you.
 
- (Camera driver)          (LED trigger for camera)       (LED driver)
- Turn on the flash  ...>  ledtrig_flash_ctrl(true) ...>  LM355x or LM3642
-                                                         brightness ctrl
-                                                       <actual driving here>
+Same goes for the other drivers that can't safely use devm_request_irq()
+please.
 
-Flash/torch LEDs are controlled by other driver using LED camera trigger
-APIs, ledtrig_flash_ctrl()/ledtrig_torch_ctrl().
-Then, actual device control is activated by each LED driver such like
-LM355x or LM3642.
+Thanks.
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- drivers/leds/leds-lm355x.c |    2 ++
- drivers/leds/leds-lm3642.c |    2 ++
- 2 files changed, 4 insertions(+)
-
-diff --git a/drivers/leds/leds-lm355x.c b/drivers/leds/leds-lm355x.c
-index 4117235..d81a8e7 100644
---- a/drivers/leds/leds-lm355x.c
-+++ b/drivers/leds/leds-lm355x.c
-@@ -477,6 +477,7 @@ static int lm355x_probe(struct i2c_client *client,
- 	chip->cdev_flash.name = "flash";
- 	chip->cdev_flash.max_brightness = 16;
- 	chip->cdev_flash.brightness_set = lm355x_strobe_brightness_set;
-+	chip->cdev_flash.default_trigger = "flash";
- 	err = led_classdev_register((struct device *)
- 				    &client->dev, &chip->cdev_flash);
- 	if (err < 0)
-@@ -486,6 +487,7 @@ static int lm355x_probe(struct i2c_client *client,
- 	chip->cdev_torch.name = "torch";
- 	chip->cdev_torch.max_brightness = 8;
- 	chip->cdev_torch.brightness_set = lm355x_torch_brightness_set;
-+	chip->cdev_torch.default_trigger = "torch";
- 	err = led_classdev_register((struct device *)
- 				    &client->dev, &chip->cdev_torch);
- 	if (err < 0)
-diff --git a/drivers/leds/leds-lm3642.c b/drivers/leds/leds-lm3642.c
-index 9f428d9..f361bbe 100644
---- a/drivers/leds/leds-lm3642.c
-+++ b/drivers/leds/leds-lm3642.c
-@@ -363,6 +363,7 @@ static int lm3642_probe(struct i2c_client *client,
- 	chip->cdev_flash.name = "flash";
- 	chip->cdev_flash.max_brightness = 16;
- 	chip->cdev_flash.brightness_set = lm3642_strobe_brightness_set;
-+	chip->cdev_flash.default_trigger = "flash";
- 	err = led_classdev_register((struct device *)
- 				    &client->dev, &chip->cdev_flash);
- 	if (err < 0) {
-@@ -380,6 +381,7 @@ static int lm3642_probe(struct i2c_client *client,
- 	chip->cdev_torch.name = "torch";
- 	chip->cdev_torch.max_brightness = 8;
- 	chip->cdev_torch.brightness_set = lm3642_torch_brightness_set;
-+	chip->cdev_torch.default_trigger = "torch";
- 	err = led_classdev_register((struct device *)
- 				    &client->dev, &chip->cdev_torch);
- 	if (err < 0) {
 -- 
-1.7.9.5
-
-
-Best Regards,
-Milo
-
-
+Dmitry
