@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759092Ab3BTLcH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 06:32:07 -0500
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:42640 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758727Ab3BTLcF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 06:32:05 -0500
-Message-ID: <5124B42A.1020908@gmail.com>
-Date: Wed, 20 Feb 2013 19:31:54 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S934161Ab3BTLkJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 06:40:09 -0500
+Received: from hibox-130.abo.fi ([130.232.216.130]:56396 "EHLO centre.hibox.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757742Ab3BTLkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 06:40:07 -0500
+Message-ID: <5124B613.6040400@hibox.fi>
+Date: Wed, 20 Feb 2013 13:40:03 +0200
+From: Marcus Sundman <marcus@hibox.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Lin Feng <linfeng@cn.fujitsu.com>
-CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        bcrl@kvack.org, viro@zeniv.linux.org.uk, khlebnikov@openvz.org,
-        walken@google.com, kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org,
-        riel@redhat.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, jiang.liu@huawei.com,
-        mhocko@suse.cz, linux-mm@kvack.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm: hotplug: implement non-movable version of get_user_pages()
- called get_user_pages_non_movable()
-References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com> <1359972248-8722-2-git-send-email-linfeng@cn.fujitsu.com> <20130204160624.5c20a8a0.akpm@linux-foundation.org> <20130205115722.GF21389@suse.de> <20130205133244.GH21389@suse.de> <51249E3E.9070909@gmail.com> <5124A42B.1020905@cn.fujitsu.com>
-In-Reply-To: <5124A42B.1020905@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Jan Kara <jack@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Debugging system freezes on filesystem writes
+References: <508DB432.2030208@hibox.fi> <20121101190119.GA27294@quack.suse.cz> <50932DAC.7040702@hibox.fi> <20121107161730.GB23654@quack.suse.cz> <509C4339.2090506@hibox.fi> <509D014B.2080709@hibox.fi> <20121113135159.GA18651@quack.suse.cz> <50A592BA.8050709@hibox.fi> <20121121233021.GA8730@quack.suse.cz> <50B4E6F2.6010000@hibox.fi> <20121205153216.GF5706@quack.suse.cz> <51248C5F.4040606@hibox.fi>
+In-Reply-To: <51248C5F.4040606@hibox.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Spam_score: -2.7
+X-Spam_bar: --
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 06:23 PM, Lin Feng wrote:
-> Hi Simon,
+On 20.02.2013 10:42, Marcus Sundman wrote:
+> On 05.12.2012 17:32, Jan Kara wrote:
+>>    I see. Maybe you could have something like
+>> while true; do echo w >/proc/sysrq-trigger; sleep 10; done
+>>    running in the background?
 >
-> On 02/20/2013 05:58 PM, Simon Jeons wrote:
->>> The other is that this almost certainly broken for transhuge page
->>> handling. gup returns the head and tail pages and ordinarily this is ok
->> When need gup thp? in kvm case?
-> gup just pins the wanted pages(for x86 is 4k size) of user address space in memory.
-> We can't expect the pages have been allocated for user address space are thp or
-> normal page. So we need to deal with them and I think it have nothing to do with kvm.
+> Sure, but I suspect it'll take until the worst is over before it 
+> manages to load and execute that "echo w".
 
-Ok, I'm curious about userspace process call which funtion(will call 
-gup) to pin pages except make_pages_present?
+Here is a big run of sysrq-triggering, all while I was uncompressing a 
+big rar file causing the whole system to be utterly unusable.
+NB: Even with realtime I/O-priority the sysrq couldn't be triggered 
+between 12:41:54 and 12:42:49, as you can see from the dmesg-3.txt file.
 
->
-> thanks,
-> linfeng
+$ sudo ionice -c 1 su
+# ionice
+realtime: prio 4
+# while true; do sleep 10; echo w >/proc/sysrq-trigger; done
+^C
+# tail -n +1700 /var/log/syslog >dmesg-3.txt
 
+http://sundman.iki.fi/dmesg-3.txt
+
+
+Regards,
+Marcus
