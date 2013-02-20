@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964841Ab3BTPUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 10:20:37 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44995
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935589Ab3BTPUg (ORCPT
+	id S964849Ab3BTPWd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 10:22:33 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36633 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932396Ab3BTPWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 10:20:36 -0500
-Message-ID: <1361373631.10155.40.camel@laptop>
+	Wed, 20 Feb 2013 10:22:32 -0500
+Message-ID: <1361373740.10155.42.camel@laptop>
 Subject: Re: [patch v5 06/15] sched: log the cpu utilization at rq
 From: Peter Zijlstra <peterz@infradead.org>
 To: Alex Shi <alex.shi@intel.com>
@@ -17,7 +17,7 @@ Cc: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
         vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
         linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Date: Wed, 20 Feb 2013 16:20:31 +0100
+Date: Wed, 20 Feb 2013 16:22:20 +0100
 In-Reply-To: <5124DED5.5050207@intel.com>
 References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
 	  <1361164062-20111-7-git-send-email-alex.shi@intel.com>
@@ -31,19 +31,15 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 2013-02-20 at 22:33 +0800, Alex Shi wrote:
-> > There's generally a better value than 100 when using computers..
-> seeing
-> > how 100 is 64+32+4.
+> > You don't actually compute the rq utilization, you only compute the
+> > utilization as per the fair class, so if there's significant RT
+> activity
+> > it'll think the cpu is under-utilized, whihc I think will result in
+> the
+> > wrong thing.
 > 
-> I didn't find a good example for this. and no idea of your suggestion,
-> would you like to explain a bit more?
+> yes. A bit complicit to resolve this. Any suggestions on this, guys?
 
-Basically what you're doing ends up being fixed point math, using 100 as
-unit is inefficient, pick a power-of-2 and everything reduces to
-bit-shifts.
-
-http://en.wikipedia.org/wiki/Fixed-point_arithmetic
-
-So use 128 or 1024 or whatever and you don't need mult and div
-instructions to represent [0,1]
+Shouldn't be too hard seeing as we already track cpu utilization for !
+fair usage; see rq::rt_avg and scale_rt_power.
 
