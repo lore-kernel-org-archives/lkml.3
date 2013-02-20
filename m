@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935671Ab3BTNwT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:52:19 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:64802 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757742Ab3BTNwQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:52:16 -0500
-Date: Wed, 20 Feb 2013 14:52:11 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v3] lockdep: check that no locks held at freeze time
-Message-ID: <20130220135211.GA11816@gmail.com>
-References: <20130216170605.GC4910@redhat.com>
- <1361325468-7998-1-git-send-email-msb@chromium.org>
- <20130220103719.GA7691@gmail.com>
- <7488660.sdbECaVo1t@vostro.rjw.lan>
+	id S935698Ab3BTNwh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:52:37 -0500
+Received: from mga01.intel.com ([192.55.52.88]:43383 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935422Ab3BTNwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 08:52:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,702,1355126400"; 
+   d="scan'208";a="293578430"
+Message-ID: <5124D514.70302@intel.com>
+Date: Wed, 20 Feb 2013 21:52:20 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7488660.sdbECaVo1t@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 11/15] sched: add power/performance balance allow flag
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>   <1361164062-20111-12-git-send-email-alex.shi@intel.com>  <1361353681.10155.10.camel@laptop> <5124BBEA.3040806@intel.com> <1361367469.10155.34.camel@laptop>
+In-Reply-To: <1361367469.10155.34.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Rafael J. Wysocki <rjw@sisk.pl> wrote:
-
-> On Wednesday, February 20, 2013 11:37:19 AM Ingo Molnar wrote:
-> > 
-> > * Mandeep Singh Baines <msb@chromium.org> wrote:
-> > 
-> > > We shouldn't try_to_freeze if locks are held. Verified that
-> > > I get no lockdep warnings after applying this patch and
-> > > "vfork: don't freezer_count() for in-kernel users of CLONE_VFORK".
-> > > 
-> > > Changes since v1:
-> > > * LKML: <20130215111635.GA26955@gmail.com> Ingo Molnar
-> > >   * Added a msg string that gets passed in.
-> > > * LKML: <20130215154449.GD30829@redhat.com> Oleg Nesterov
-> > >   * Check PF_NOFREEZE in try_to_freeze().
-> > > Changes since v2:
-> > > * LKML: <20130216170605.GC4910@redhat.com> Oleg Nesterov
-> > >   * Avoid unnecessary PF_NOFREEZE check when !CONFIG_LOCKDEP.
-> > > * Mandeep Singh Baines
-> > >   * Generalize an exit specific printk.
-> > > 
-> > > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> > > CC: Oleg Nesterov <oleg@redhat.com>
-> > > CC: Tejun Heo <tj@kernel.org>
-> > > CC: Andrew Morton <akpm@linux-foundation.org>
-> > > CC: Rafael J. Wysocki <rjw@sisk.pl>
-> > > CC: Ingo Molnar <mingo@redhat.com>
-> > 
-> > Looks good to me now.
-> > 
-> > Acked-by: Ingo Molnar <mingo@kernel.org>
-> > 
-> > Which tree should this go through?
+On 02/20/2013 09:37 PM, Peter Zijlstra wrote:
+> On Wed, 2013-02-20 at 20:04 +0800, Alex Shi wrote:
 > 
-> Well, I can take it if that's OK.
+>>>> @@ -5195,6 +5197,8 @@ static int load_balance(int this_cpu, struct rq
+>>>> *this_rq,
+>>>>                 .idle           = idle,
+>>>>                 .loop_break     = sched_nr_migrate_break,
+>>>>                 .cpus           = cpus,
+>>>> +               .power_lb       = 0,
+>>>> +               .perf_lb        = 1,
+>>>>         };
+>>>>  
+>>>>         cpumask_copy(cpus, cpu_active_mask);
+>>>
+>>> This construct allows for the possibility of power_lb=1,perf_lb=1, does
+>>> that make sense? Why not have a single balance_policy enumeration?
+>>
+>> (power_lb == 1 && perf_lb == 1) is incorrect and impossible to have.
+>>
+>> (power_lb == 0 && perf_lb == 0) is possible and it means there is no any
+>> balance on this cpu.
+>>
+>> So, enumeration is not enough.
+> 
+> Huh.. both 0 doesn't make any sense either. If there's no balancing, we
+> shouldn't be here to begin with.
+> 
 
-Sure, that's fine with me - this is mainly a freezer feature 
-after all.
+Um, both 0 means, there is a balance happen, and we think a power
+balance is appropriate for this domain, but maybe this group is already
+empty, so the cpu is inappropriate to pull a task, than we exit this
+time balancing, to wait another cpu from another appropriate group do
+balance and pull a task.
 
-Thanks,
-
-	Ingo
+-- 
+Thanks
+    Alex
