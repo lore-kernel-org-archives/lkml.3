@@ -1,111 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935027Ab3BTLwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 06:52:35 -0500
-Received: from mga14.intel.com ([143.182.124.37]:20723 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934842Ab3BTLwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 06:52:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,701,1355126400"; 
-   d="scan'208";a="204395021"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCHv2] dw_dmac: adjust slave_id accordingly to request line base
-Date: Wed, 20 Feb 2013 13:52:17 +0200
-Message-Id: <1361361137-15396-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S935094Ab3BTL6M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 06:58:12 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:36640 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935047Ab3BTL6J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 06:58:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <1360999167-17606-1-git-send-email-anilk4.v@gmail.com>
+References: <1360999167-17606-1-git-send-email-anilk4.v@gmail.com>
+Date: Wed, 20 Feb 2013 17:28:07 +0530
+Message-ID: <CAKDJKT6uMQN_MaPNDt4dDxEKNZHyuupBzD0KrFUQ2fpiUYzk3w@mail.gmail.com>
+Subject: Re: [PATCH V3] ARM: dts: add minimal DT support for DevKit8000
+From: Manish Badarkhe <badarkhe.manish@gmail.com>
+To: Anil Kumar <anilk4.v@gmail.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, b-cousson@ti.com, tony@atomide.com,
+        grant.likely@secretlab.ca, thomas@tomweber.eu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some hardware configurations we have got the request line with the offset.
-The patch introduces convert_slave_id() helper for that cases. The request line
-base is came from the driver data provided by the platform_device_id table.
+On Sat, Feb 16, 2013 at 12:49 PM, Anil Kumar <anilk4.v@gmail.com> wrote:
+> DevKit8000 is a beagle board clone from Timll, sold by
+> armkits.com. The DevKit8000 has RS232 serial port, LCD, DVI-D,
+> S-Video, Ethernet, SD/MMC, keyboard, camera, SPI, I2C, USB and
+> JTAG interface.
+>
+> This patch adds the basic DT support for devkit8000. At this time,
+> Information
+> of twl4030 (PMIC), MMC1, I2C1 and leds are added.
+>
+> Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
+> Tested-by: Thomas Weber <thomas@tomweber.eu>
+> ---
+>  -This patch is based on top of kernel 3.8-rc5.
+>
+>  -Tested on Devkit8000.
+>
+> For V3:
+>  - Remove pin mux as done at device boot time by default.
+>
+> For V2:
+>  - Change model name as "TimLL OMAP3 Devkit8000"
+>  - Change compatible as "timll,omap3-devkit8000"
+>  - Doing i2c1 pinmux default with pinctrl-single driver instead of i2c1
+>    driver probe time.
+>
+> :100644 100644 5ebb44f... 22ebc76... M  arch/arm/boot/dts/Makefile
+> :000000 100644 0000000... 6338993... A
+> arch/arm/boot/dts/omap3-devkit8000.dts
+> :100644 100644 53cb380b.. ccecb76... M
+> arch/arm/mach-omap2/board-generic.c
+>  arch/arm/boot/dts/Makefile             |    1 +
+>  arch/arm/boot/dts/omap3-devkit8000.dts |  103
+> ++++++++++++++++++++++++++++++++
+>  arch/arm/mach-omap2/board-generic.c    |    1 +
+>  3 files changed, 105 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 5ebb44f..22ebc76 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -102,6 +102,7 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
+>         imx28-tx28.dtb
+>  dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+>         omap3-beagle.dtb \
+> +       omap3-devkit8000.dtb \
+>         omap3-beagle-xm.dtb \
+>         omap3-evm.dtb \
+>         omap3-tobi.dtb \
+> diff --git a/arch/arm/boot/dts/omap3-devkit8000.dts
+> b/arch/arm/boot/dts/omap3-devkit8000.dts
+> new file mode 100644
+> index 0000000..6338993
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/omap3-devkit8000.dts
+> @@ -0,0 +1,103 @@
+> +/*
+> + * Author: Anil Kumar <anilk4.v@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +/dts-v1/;
+> +
+> +/include/ "omap3.dtsi"
+> +/ {
+> +       model = "TimLL OMAP3 Devkit8000";
+> +       compatible = "timll,omap3-devkit8000", "ti,omap3";
+> +
+> +       memory {
+> +               device_type = "memory";
+> +               reg = <0x80000000 0x10000000>;  /* 256 MB */
+> +       };
+> +
+> +       leds {
+> +               compatible = "gpio-leds";
+> +
+> +               heartbeat {
+> +                       label = "devkit8000::led1";
+> +                       gpios = <&gpio6 26 0>;  /* 186 -> LED1 */
+> +                       default-state = "on";
+> +                       linux,default-trigger = "heartbeat";
+> +               };
+> +
+> +               mmc {
+> +                       label = "devkit8000::led2";
+> +                       gpios = <&gpio6 3 0>;   /* 163 -> LED2 */
+> +                       default-state = "on";
+> +                       linux,default-trigger = "none";
+> +               };
+> +
+> +               usr {
+> +                       label = "devkit8000::led3";
+> +                       gpios = <&gpio6 4 0>;   /* 164 -> LED3 */
+> +                       default-state = "on";
+> +                       linux,default-trigger = "usr";
+> +                };
+> +
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
----
-Since v1:
- - use driver_data instead of parsing IORESOURCE_DMA
- drivers/dma/dw_dmac.c      |   17 ++++++++++++++++-
- drivers/dma/dw_dmac_regs.h |    1 +
- 2 files changed, 17 insertions(+), 1 deletion(-)
+No need of extra line over here.
 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 51c3ea2..67a868d 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -994,6 +994,13 @@ static inline void convert_burst(u32 *maxburst)
- 		*maxburst = 0;
- }
- 
-+static inline void convert_slave_id(struct dw_dma_chan *dwc)
-+{
-+	struct dw_dma *dw = to_dw_dma(dwc->chan.device);
-+
-+	dwc->dma_sconfig.slave_id -= dw->request_line_base;
-+}
-+
- static int
- set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
- {
-@@ -1008,6 +1015,7 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
- 
- 	convert_burst(&dwc->dma_sconfig.src_maxburst);
- 	convert_burst(&dwc->dma_sconfig.dst_maxburst);
-+	convert_slave_id(dwc);
- 
- 	return 0;
- }
-@@ -1637,6 +1645,7 @@ dw_dma_parse_dt(struct platform_device *pdev)
- 
- static int dw_probe(struct platform_device *pdev)
- {
-+	const struct platform_device_id *match;
- 	struct dw_dma_platform_data *pdata;
- 	struct resource		*io;
- 	struct dw_dma		*dw;
-@@ -1722,6 +1731,11 @@ static int dw_probe(struct platform_device *pdev)
- 		memcpy(dw->data_width, pdata->data_width, 4);
- 	}
- 
-+	/* Get the base request line if set */
-+	match = platform_get_device_id(pdev);
-+	if (match)
-+		dw->request_line_base = (unsigned int)match->driver_data;
-+
- 	/* Calculate all channel mask before DMA setup */
- 	dw->all_chan_mask = (1 << nr_channels) - 1;
- 
-@@ -1907,7 +1921,8 @@ MODULE_DEVICE_TABLE(of, dw_dma_id_table);
- #endif
- 
- static const struct platform_device_id dw_dma_ids[] = {
--	{ "INTL9C60", 0 },
-+	/* Name,	Request Line Base */
-+	{ "INTL9C60",	(kernel_ulong_t)16 },
- 	{ }
- };
- 
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index 88dd8eb..3eeb766 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -248,6 +248,7 @@ struct dw_dma {
- 	/* hardware configuration */
- 	unsigned char		nr_masters;
- 	unsigned char		data_width[4];
-+	unsigned int		request_line_base;
- 
- 	struct dw_dma_chan	chan[0];
- };
--- 
-1.7.10.4
-
+Thanks
+Manish Badarkhe
