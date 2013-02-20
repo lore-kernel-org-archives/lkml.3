@@ -1,70 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935259Ab3BTMP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 07:15:26 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36026 "EHLO
+	id S935269Ab3BTMPi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 07:15:38 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36027 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935029Ab3BTMPZ (ORCPT
+	by vger.kernel.org with ESMTP id S935040Ab3BTMPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Feb 2013 07:15:25 -0500
 From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH 1/2 v2] regmap: debugfs: Simplify calculation of `c->max_reg'
-Date: Wed, 20 Feb 2013 12:15:22 +0000
-Message-Id: <1361362523-8120-1-git-send-email-dp@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2 v2] regmap: debugfs: Add a registers `range' file
+Date: Wed, 20 Feb 2013 12:15:23 +0000
+Message-Id: <1361362523-8120-2-git-send-email-dp@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1361362523-8120-1-git-send-email-dp@opensource.wolfsonmicro.com>
+References: <1361362523-8120-1-git-send-email-dp@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to use any of the file position information
-to calculate the base and max register of each block.  Just
-use the counter directly.
+This file lists the register ranges in the register map.  The condition
+to split the range is based on whether the block is readable or not.
 
-Set `i = base' at the top to avoid GCC flow analysis bugs.  The
-value of `i' can never be undefined or 0 in the if (c) { ... }.
+Ensure that we lock the `debugfs_off_cache' list whenever we access
+and modify the list.  There is a possible race otherwise between the
+read() operations of the `registers' file and the `range' file.
 
 Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 ---
- drivers/base/regmap/regmap-debugfs.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ Hi,
 
+ Moved the locking of the `debugfs_off_cache' list over to this patch.
+ I think this should be the final version of the patch.
+
+ drivers/base/regmap/internal.h       |  1 +
+ drivers/base/regmap/regmap-debugfs.c | 83 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 84 insertions(+)
+
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 5a22bd3..dc23508 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -76,6 +76,7 @@ struct regmap {
+ 	unsigned int debugfs_tot_len;
+ 
+ 	struct list_head debugfs_off_cache;
++	struct mutex cache_lock;
+ #endif
+ 
+ 	unsigned int max_register;
 diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 78d5f20..e14cb2d 100644
+index e14cb2d..61e2c52 100644
 --- a/drivers/base/regmap/regmap-debugfs.c
 +++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -88,16 +88,15 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
+@@ -88,6 +88,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
  	 * If we don't have a cache build one so we don't have to do a
  	 * linear scan each time.
  	 */
-+	i = base;
++	mutex_lock(&map->cache_lock);
+ 	i = base;
  	if (list_empty(&map->debugfs_off_cache)) {
--		for (i = base; i <= map->max_register; i += map->reg_stride) {
-+		for (; i <= map->max_register; i += map->reg_stride) {
- 			/* Skip unprinted registers, closing off cache entry */
- 			if (!regmap_readable(map, i) ||
- 			    regmap_precious(map, i)) {
- 				if (c) {
- 					c->max = p - 1;
--					fpos_offset = c->max - c->min;
--					reg_offset = fpos_offset / map->debugfs_tot_len;
--					c->max_reg = c->base_reg + reg_offset;
-+					c->max_reg = i - map->reg_stride;
- 					list_add_tail(&c->list,
- 						      &map->debugfs_off_cache);
- 					c = NULL;
-@@ -124,9 +123,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
- 	/* Close the last entry off if we didn't scan beyond it */
- 	if (c) {
- 		c->max = p - 1;
--		fpos_offset = c->max - c->min;
--		reg_offset = fpos_offset / map->debugfs_tot_len;
--		c->max_reg = c->base_reg + reg_offset;
-+		c->max_reg = i - map->reg_stride;
- 		list_add_tail(&c->list,
- 			      &map->debugfs_off_cache);
+ 		for (; i <= map->max_register; i += map->reg_stride) {
+@@ -110,6 +111,7 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
+ 				c = kzalloc(sizeof(*c), GFP_KERNEL);
+ 				if (!c) {
+ 					regmap_debugfs_free_dump_cache(map);
++					mutex_unlock(&map->cache_lock);
+ 					return base;
+ 				}
+ 				c->min = p;
+@@ -142,12 +144,14 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
+ 			fpos_offset = from - c->min;
+ 			reg_offset = fpos_offset / map->debugfs_tot_len;
+ 			*pos = c->min + (reg_offset * map->debugfs_tot_len);
++			mutex_unlock(&map->cache_lock);
+ 			return c->base_reg + reg_offset;
+ 		}
+ 
+ 		*pos = c->max;
+ 		ret = c->max_reg;
  	}
++	mutex_unlock(&map->cache_lock);
+ 
+ 	return ret;
+ }
+@@ -308,6 +312,79 @@ static const struct file_operations regmap_range_fops = {
+ 	.llseek = default_llseek,
+ };
+ 
++static ssize_t regmap_reg_ranges_read_file(struct file *file,
++					   char __user *user_buf, size_t count,
++					   loff_t *ppos)
++{
++	struct regmap *map = file->private_data;
++	struct regmap_debugfs_off_cache *c;
++	loff_t p = 0;
++	size_t buf_pos = 0;
++	char *buf;
++	char *entry;
++	int ret;
++
++	if (*ppos < 0 || !count)
++		return -EINVAL;
++
++	buf = kmalloc(count, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	entry = kmalloc(PAGE_SIZE, GFP_KERNEL);
++	if (!entry) {
++		kfree(buf);
++		return -ENOMEM;
++	}
++
++	/* While we are at it, build the register dump cache
++	 * now so the read() operation on the `registers' file
++	 * can benefit from using the cache.  We do not care
++	 * about the file position information that is contained
++	 * in the cache, just about the actual register blocks */
++	regmap_calc_tot_len(map, buf, count);
++	regmap_debugfs_get_dump_start(map, 0, *ppos, &p);
++
++	/* Reset file pointer as the fixed-format of the `registers'
++	 * file is not compatible with the `range' file */
++	p = 0;
++	mutex_lock(&map->cache_lock);
++	list_for_each_entry(c, &map->debugfs_off_cache, list) {
++		snprintf(entry, PAGE_SIZE, "%x-%x",
++			 c->base_reg, c->max_reg);
++		if (p >= *ppos) {
++			if (buf_pos + 1 + strlen(entry) > count)
++				break;
++			snprintf(buf + buf_pos, count - buf_pos,
++				 "%s", entry);
++			buf_pos += strlen(entry);
++			buf[buf_pos] = '\n';
++			buf_pos++;
++		}
++		p += strlen(entry) + 1;
++	}
++	mutex_unlock(&map->cache_lock);
++
++	kfree(entry);
++	ret = buf_pos;
++
++	if (copy_to_user(user_buf, buf, buf_pos)) {
++		ret = -EFAULT;
++		goto out_buf;
++	}
++
++	*ppos += buf_pos;
++out_buf:
++	kfree(buf);
++	return ret;
++}
++
++static const struct file_operations regmap_reg_ranges_fops = {
++	.open = simple_open,
++	.read = regmap_reg_ranges_read_file,
++	.llseek = default_llseek,
++};
++
+ static ssize_t regmap_access_read_file(struct file *file,
+ 				       char __user *user_buf, size_t count,
+ 				       loff_t *ppos)
+@@ -382,6 +459,7 @@ void regmap_debugfs_init(struct regmap *map, const char *name)
+ 	struct regmap_range_node *range_node;
+ 
+ 	INIT_LIST_HEAD(&map->debugfs_off_cache);
++	mutex_init(&map->cache_lock);
+ 
+ 	if (name) {
+ 		map->debugfs_name = kasprintf(GFP_KERNEL, "%s-%s",
+@@ -400,6 +478,9 @@ void regmap_debugfs_init(struct regmap *map, const char *name)
+ 	debugfs_create_file("name", 0400, map->debugfs,
+ 			    map, &regmap_name_fops);
+ 
++	debugfs_create_file("range", 0400, map->debugfs,
++			    map, &regmap_reg_ranges_fops);
++
+ 	if (map->max_register) {
+ 		debugfs_create_file("registers", 0400, map->debugfs,
+ 				    map, &regmap_map_fops);
+@@ -432,7 +513,9 @@ void regmap_debugfs_init(struct regmap *map, const char *name)
+ void regmap_debugfs_exit(struct regmap *map)
+ {
+ 	debugfs_remove_recursive(map->debugfs);
++	mutex_lock(&map->cache_lock);
+ 	regmap_debugfs_free_dump_cache(map);
++	mutex_unlock(&map->cache_lock);
+ 	kfree(map->debugfs_name);
+ }
+ 
 -- 
 1.8.1.3
 
