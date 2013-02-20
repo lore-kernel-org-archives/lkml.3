@@ -1,516 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247Ab3BTTY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 14:24:29 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:53938 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759227Ab3BTTY0 (ORCPT
+	id S934771Ab3BTTZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 14:25:42 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:17814 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934179Ab3BTTZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 14:24:26 -0500
-X-Originating-IP: 108.223.40.66
-Date: Wed, 20 Feb 2013 11:24:58 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Rob Herring <robherring2@gmail.com>, linux-iio@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Subject: Re: [PATCH v5] iio: Add OF support
-Message-ID: <20130220192458.GA29247@roeck-us.net>
-References: <1360256940-19438-1-git-send-email-linux@roeck-us.net>
- <51250A0E.80806@gmail.com>
- <20130220181148.GA19278@roeck-us.net>
- <2dada206-6401-4a35-85d8-298dd08b0420@email.android.com>
+	Wed, 20 Feb 2013 14:25:40 -0500
+From: "Roberts, Lee A." <lee.roberts@hp.com>
+To: Vlad Yasevich <vyasevich@gmail.com>
+CC: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3] sctp: fix association hangs due to
+ reassembly/ordering logic
+Thread-Topic: [PATCH 3/3] sctp: fix association hangs due to
+ reassembly/ordering logic
+Thread-Index: AQHOD4EAM4/BtHowKUCUFo1BBBdc85iC5oiAgAAkXICAAAhgQA==
+Date: Wed, 20 Feb 2013 19:24:29 +0000
+Message-ID: <D64EC45690EF85409BA6C4730E0162244310CC65@G4W3231.americas.hpqcorp.net>
+References: <1361374996.3450.3.camel@laptop.lroberts>
+ <D64EC45690EF85409BA6C4730E0162244310CBC1@G4W3231.americas.hpqcorp.net>
+ <5125108D.3010508@gmail.com>
+In-Reply-To: <5125108D.3010508@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.14]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2dada206-6401-4a35-85d8-298dd08b0420@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1KJPkxk005400
 
-On Wed, Feb 20, 2013 at 06:51:08PM +0000, Jonathan Cameron wrote:
+Vlad,
+
+> -----Original Message-----
+> From: Vlad Yasevich [mailto:vyasevich@gmail.com]
+> Sent: Wednesday, February 20, 2013 11:06 AM
+> To: Roberts, Lee A.
+> Cc: linux-sctp@vger.kernel.org; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH 3/3] sctp: fix association hangs due to
+> reassembly/ordering logic
 > 
+> Hi Lee
 > 
-> Guenter Roeck <linux@roeck-us.net> wrote:
-> 
-> >On Wed, Feb 20, 2013 at 11:38:22AM -0600, Rob Herring wrote:
-> >> On 02/07/2013 11:09 AM, Guenter Roeck wrote:
-> >> > Provide bindings and parse OF data during initialization.
-> >> > 
-> >> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> >> > ---
-> >> > v5:
-> >> > - Updated examples in bindings.
-> >> > v4:
-> >> > - Fixed wrong parameter to dummy of_iio_channel_get_by_name if
-> >CONFIG_OF is
-> >> >   undefined, and wrong return value.
-> >> > - Initialize indio_dev->of_node in iio_device_register if the
-> >calling driver
-> >> >   neglected to do it.
-> >> > v3:
-> >> > - Cleaned up documentation (formatting, left-over clock references)
-> >> > - Updated bindings description to permit sub-devices
-> >> > - When searching for iio devices, use the pointer to the iio device
-> >type instead
-> >> >   of strcmp. Rename iio_dev_type to iio_device_type (to match other
-> >device
-> >> >   types) and make it global for that purpose. Check the OF node
-> >first, then the
-> >> >   device type, as the node is less likely to match.
-> >> > - Move the common code in of_iio_channel_get and
-> >of_iio_channel_get_all to
-> >> >   __of_iio_channel_get.
-> >> > - Return NULL from of_iio_channel_get_by_name if nothing is found,
-> >or
-> >> >   an error if there is a problem with consistency or if the
-> >provider device is
-> >> >   not yet available.
-> >> > - In iio_channel_get, return if of_iio_channel_get_by_name()
-> >returns a channel
-> >> >   or an error, and continue otherwise.
-> >> > v2:
-> >> > - Rebased to iio/togreg
-> >> > - Documentation update per feedback
-> >> > - Dropped io-channel-output-names from the bindings document. The
-> >property is
-> >> >   not used in the code, and it is not entirely clear what it would
-> >be used for.
-> >> >   If there is a need for it, we can add it back in later on.
-> >> > - Don't export OF specific API calls
-> >> > - For OF support, no longer depend on iio_map
-> >> > - Add #ifdef CONFIG_OF where appropriate, and ensure that the code
-> >still builds
-> >> >   if it is not selected.
-> >> > - Change iio_channel_get to take device pointer as argument instead
-> >of device
-> >> >   name. Retain old API as of_iio_channel_get_sys.
-> >> > - iio_channel_get now works for both OF and non-OF configurations
-> >> > - Use regulator to get vref for max1363 driver.
-> >> > 
-> >> >  .../devicetree/bindings/iio/iio-bindings.txt       |   97
-> >+++++++++++
-> >> >  drivers/iio/iio_core.h                             |    1 +
-> >> >  drivers/iio/industrialio-core.c                    |    8 +-
-> >> >  drivers/iio/inkern.c                               |  171
-> >++++++++++++++++++++
-> >> >  4 files changed, 275 insertions(+), 2 deletions(-)
-> >> >  create mode 100644
-> >Documentation/devicetree/bindings/iio/iio-bindings.txt
-> >> > 
-> >> > diff --git a/Documentation/devicetree/bindings/iio/iio-bindings.txt
-> >b/Documentation/devicetree/bindings/iio/iio-bindings.txt
-> >> > new file mode 100644
-> >> > index 0000000..1182845
-> >> > --- /dev/null
-> >> > +++ b/Documentation/devicetree/bindings/iio/iio-bindings.txt
-> >> > @@ -0,0 +1,97 @@
-> >> > +This binding is a work-in-progress. It is derived from clock
-> >bindings,
-> >> > +and based on suggestions from Lars-Peter Clausen [1].
-> >> 
-> >> Bindings are an ABI. It should not be a WIP. What part is a WIP?
-> >> 
-> >The text is copied from clock bindings. I do not claim to be better
-> >than the clock subsystem is doing in respect to its bindings.
+> On 02/20/2013 10:56 AM, Roberts, Lee A. wrote:
+> > From: Lee A. Roberts <lee.roberts@hp.com>
 > >
-> >I'll be more than happy to take this text out if it is a source of
-> >contention,
-> >even more so if that is what is holding up the patch. Jonathan ?
-> I don't really care about the wording though can see why Rob asked!
-> We will probably have other stuff to add anyway.
+> > Resolve SCTP association hangs observed during SCTP stress
+> > testing.  Observable symptoms include communications hangs
+> > with data being held in the association reassembly and/or lobby
+> > (ordering) queues.  Close examination of reassembly queue shows
+> > missing packets.
 > 
-
-Quite likely - for example, I did not add io-output-names since I did not
-know what to do with it.
-
-What do you want me to do ? Submit another version with the sentence deleted,
-or keep it as-is ?
-
-Thanks,
-Guenter
-
-> Jonathan
+> As a general note for this patch series, you could really benefit
+> from a cover letter that describes the symptoms and all the different
+> issues you found.
+> 
+> Also, please title your patches based on the context of the patch.
+> Giving them all the same title is very confusing and at quick glance
+> makes appear that the same patch was applied 3 times.
+> 
 > >
-> >Thanks,
-> >Guenter
+> > In sctp_eat_data(), enter partial delivery mode only if the
+> > data on the head of the reassembly queue is at or before the
+> > cumulative TSN ACK point.
 > >
-> >> Knowing nothing about IIO, the binding seems sane.
-> >> 
-> >> Rob
-> >> 
-> >> > +Sources of IIO channels can be represented by any node in the
-> >device
-> >> > +tree. Those nodes are designated as IIO providers. IIO consumer
-> >> > +nodes use a phandle and IIO specifier pair to connect IIO provider
-> >> > +outputs to IIO inputs. Similar to the gpio specifiers, an IIO
-> >> > +specifier is an array of one or more cells identifying the IIO
-> >> > +output on a device. The length of an IIO specifier is defined by
-> >the
-> >> > +value of a #io-channel-cells property in the IIO provider node.
-> >> > +
-> >> > +[1] http://marc.info/?l=linux-iio&m=135902119507483&w=2
-> >> > +
-> >> > +==IIO providers==
-> >> > +
-> >> > +Required properties:
-> >> > +#io-channel-cells: Number of cells in an IIO specifier; Typically
-> >0 for nodes
-> >> > +		   with a single IIO output and 1 for nodes with multiple
-> >> > +		   IIO outputs.
-> >> > +
-> >> > +Example for a simple configuration with no trigger:
-> >> > +
-> >> > +	adc: voltage-sensor@35 {
-> >> > +		compatible = "maxim,max1139";
-> >> > +		reg = <0x35>;
-> >> > +		#io-channel-cells = <1>;
-> >> > +	};
-> >> > +
-> >> > +Example for a configuration with trigger:
-> >> > +
-> >> > +	adc@35 {
-> >> > +		compatible = "some-vendor,some-adc";
-> >> > +		reg = <0x35>;
-> >> > +
-> >> > +		adc1: iio-device@0 {
-> >> > +			#io-channel-cells = <1>;
-> >> > +			/* other properties */
-> >> > +		};
-> >> > +		adc2: iio-device@1 {
-> >> > +			#io-channel-cells = <1>;
-> >> > +			/* other properties */
-> >> > +		};
-> >> > +	};
-> >> > +
-> >> > +==IIO consumers==
-> >> > +
-> >> > +Required properties:
-> >> > +io-channels:	List of phandle and IIO specifier pairs, one pair
-> >> > +		for each IIO input to the device. Note: if the
-> >> > +		IIO provider specifies '0' for #io-channel-cells,
-> >> > +		then only the phandle portion of the pair will appear.
-> >> > +
-> >> > +Optional properties:
-> >> > +io-channel-names:
-> >> > +		List of IIO input name strings sorted in the same
-> >> > +		order as the io-channels property. Consumers drivers
-> >> > +		will use io-channel-names to match IIO input names
-> >> > +		with IIO specifiers.
-> >> > +io-channel-ranges:
-> >> > +		Empty property indicating that child nodes can inherit named
-> >> > +		IIO channels from this node. Useful for bus nodes to provide
-> >> > +		and IIO channel to their children.
-> >> > +
-> >> > +For example:
-> >> > +
-> >> > +	device {
-> >> > +		io-channels = <&adc 1>, <&ref 0>;
-> >> > +		io-channel-names = "vcc", "vdd";
-> >> > +	};
-> >> > +
-> >> > +This represents a device with two IIO inputs, named "vcc" and
-> >"vdd".
-> >> > +The vcc channel is connected to output 1 of the &adc device, and
-> >the
-> >> > +vdd channel is connected to output 0 of the &ref device.
-> >> > +
-> >> > +==Example==
-> >> > +
-> >> > +	adc: max1139@35 {
-> >> > +		compatible = "maxim,max1139";
-> >> > +		reg = <0x35>;
-> >> > +		#io-channel-cells = <1>;
-> >> > +	};
-> >> > +
-> >> > +	...
-> >> > +
-> >> > +	iio_hwmon {
-> >> > +		compatible = "iio-hwmon";
-> >> > +		io-channels = <&adc 0>, <&adc 1>, <&adc 2>,
-> >> > +			<&adc 3>, <&adc 4>, <&adc 5>,
-> >> > +			<&adc 6>, <&adc 7>, <&adc 8>,
-> >> > +			<&adc 9>;
-> >> > +	};
-> >> > +
-> >> > +	some_consumer {
-> >> > +		compatible = "some-consumer";
-> >> > +		io-channels = <&adc 10>, <&adc 11>;
-> >> > +		io-channel-names = "adc1", "adc2";
-> >> > +	};
-> >> > diff --git a/drivers/iio/iio_core.h b/drivers/iio/iio_core.h
-> >> > index f652e6a..05c1b74 100644
-> >> > --- a/drivers/iio/iio_core.h
-> >> > +++ b/drivers/iio/iio_core.h
-> >> > @@ -18,6 +18,7 @@
-> >> >  struct iio_chan_spec;
-> >> >  struct iio_dev;
-> >> >  
-> >> > +extern struct device_type iio_device_type;
-> >> >  
-> >> >  int __iio_add_chan_devattr(const char *postfix,
-> >> >  			   struct iio_chan_spec const *chan,
-> >> > diff --git a/drivers/iio/industrialio-core.c
-> >b/drivers/iio/industrialio-core.c
-> >> > index 8848f16..6d8b027 100644
-> >> > --- a/drivers/iio/industrialio-core.c
-> >> > +++ b/drivers/iio/industrialio-core.c
-> >> > @@ -847,7 +847,7 @@ static void iio_dev_release(struct device
-> >*device)
-> >> >  	kfree(indio_dev);
-> >> >  }
-> >> >  
-> >> > -static struct device_type iio_dev_type = {
-> >> > +struct device_type iio_device_type = {
-> >> >  	.name = "iio_device",
-> >> >  	.release = iio_dev_release,
-> >> >  };
-> >> > @@ -869,7 +869,7 @@ struct iio_dev *iio_device_alloc(int
-> >sizeof_priv)
-> >> >  
-> >> >  	if (dev) {
-> >> >  		dev->dev.groups = dev->groups;
-> >> > -		dev->dev.type = &iio_dev_type;
-> >> > +		dev->dev.type = &iio_device_type;
-> >> >  		dev->dev.bus = &iio_bus_type;
-> >> >  		device_initialize(&dev->dev);
-> >> >  		dev_set_drvdata(&dev->dev, (void *)dev);
-> >> > @@ -960,6 +960,10 @@ int iio_device_register(struct iio_dev
-> >*indio_dev)
-> >> >  {
-> >> >  	int ret;
-> >> >  
-> >> > +	/* If the calling driver did not initialize of_node, do it here
-> >*/
-> >> > +	if (!indio_dev->dev.of_node && indio_dev->dev.parent)
-> >> > +		indio_dev->dev.of_node = indio_dev->dev.parent->of_node;
-> >> > +
-> >> >  	/* configure elements for the chrdev */
-> >> >  	indio_dev->dev.devt = MKDEV(MAJOR(iio_devt), indio_dev->id);
-> >> >  
-> >> > diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
-> >> > index b289915..795d100 100644
-> >> > --- a/drivers/iio/inkern.c
-> >> > +++ b/drivers/iio/inkern.c
-> >> > @@ -10,6 +10,7 @@
-> >> >  #include <linux/export.h>
-> >> >  #include <linux/slab.h>
-> >> >  #include <linux/mutex.h>
-> >> > +#include <linux/of.h>
-> >> >  
-> >> >  #include <linux/iio/iio.h>
-> >> >  #include "iio_core.h"
-> >> > @@ -92,6 +93,164 @@ static const struct iio_chan_spec
-> >> >  	return chan;
-> >> >  }
-> >> >  
-> >> > +#ifdef CONFIG_OF
-> >> > +
-> >> > +static int iio_dev_node_match(struct device *dev, void *data)
-> >> > +{
-> >> > +	return dev->of_node == data && dev->type == &iio_device_type;
-> >> > +}
-> >> > +
-> >> > +static int __of_iio_channel_get(struct iio_channel *channel,
-> >> > +				struct device_node *np, int index)
-> >> > +{
-> >> > +	struct device *idev;
-> >> > +	struct iio_dev *indio_dev;
-> >> > +	int err;
-> >> > +	struct of_phandle_args iiospec;
-> >> > +
-> >> > +	err = of_parse_phandle_with_args(np, "io-channels",
-> >> > +					 "#io-channel-cells",
-> >> > +					 index, &iiospec);
-> >> > +	if (err)
-> >> > +		return err;
-> >> > +
-> >> > +	idev = bus_find_device(&iio_bus_type, NULL, iiospec.np,
-> >> > +			       iio_dev_node_match);
-> >> > +	of_node_put(iiospec.np);
-> >> > +	if (idev == NULL)
-> >> > +		return -EPROBE_DEFER;
-> >> > +
-> >> > +	indio_dev = dev_to_iio_dev(idev);
-> >> > +	channel->indio_dev = indio_dev;
-> >> > +	index = iiospec.args_count ? iiospec.args[0] : 0;
-> >> > +	if (index >= indio_dev->num_channels) {
-> >> > +		return -EINVAL;
-> >> > +		goto err_put;
-> >> > +	}
-> >> > +	channel->channel = &indio_dev->channels[index];
-> >> > +
-> >> > +	return 0;
-> >> > +
-> >> > +err_put:
-> >> > +	iio_device_put(indio_dev);
-> >> > +	return err;
-> >> > +}
-> >> > +
-> >> > +static struct iio_channel *of_iio_channel_get(struct device_node
-> >*np, int index)
-> >> > +{
-> >> > +	struct iio_channel *channel;
-> >> > +	int err;
-> >> > +
-> >> > +	if (index < 0)
-> >> > +		return ERR_PTR(-EINVAL);
-> >> > +
-> >> > +	channel = kzalloc(sizeof(*channel), GFP_KERNEL);
-> >> > +	if (channel == NULL)
-> >> > +		return ERR_PTR(-ENOMEM);
-> >> > +
-> >> > +	err = __of_iio_channel_get(channel, np, index);
-> >> > +	if (err)
-> >> > +		goto err_free_channel;
-> >> > +
-> >> > +	return channel;
-> >> > +
-> >> > +err_free_channel:
-> >> > +	kfree(channel);
-> >> > +	return ERR_PTR(err);
-> >> > +}
-> >> > +
-> >> > +static struct iio_channel *of_iio_channel_get_by_name(struct
-> >device_node *np,
-> >> > +						      const char *name)
-> >> > +{
-> >> > +	struct iio_channel *chan = NULL;
-> >> > +
-> >> > +	/* Walk up the tree of devices looking for a matching iio channel
-> >*/
-> >> > +	while (np) {
-> >> > +		int index = 0;
-> >> > +
-> >> > +		/*
-> >> > +		 * For named iio channels, first look up the name in the
-> >> > +		 * "io-channel-names" property.  If it cannot be found, the
-> >> > +		 * index will be an error code, and of_iio_channel_get()
-> >> > +		 * will fail.
-> >> > +		 */
-> >> > +		if (name)
-> >> > +			index = of_property_match_string(np, "io-channel-names",
-> >> > +							 name);
-> >> > +		chan = of_iio_channel_get(np, index);
-> >> > +		if (!IS_ERR(chan))
-> >> > +			break;
-> >> > +		else if (name && index >= 0) {
-> >> > +			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
-> >> > +				np->full_name, name ? name : "", index);
-> >> > +			return chan;
-> >> > +		}
-> >> > +
-> >> > +		/*
-> >> > +		 * No matching IIO channel found on this node.
-> >> > +		 * If the parent node has a "io-channel-ranges" property,
-> >> > +		 * then we can try one of its channels.
-> >> > +		 */
-> >> > +		np = np->parent;
-> >> > +		if (np && !of_get_property(np, "io-channel-ranges", NULL))
-> >> > +			break;
-> >> > +	}
-> >> > +	return chan;
-> >> > +}
-> >> > +
-> >> > +static struct iio_channel *of_iio_channel_get_all(struct device
-> >*dev)
-> >> > +{
-> >> > +	struct iio_channel *chans;
-> >> > +	int i, mapind, nummaps = 0;
-> >> > +	int ret;
-> >> > +
-> >> > +	do {
-> >> > +		ret = of_parse_phandle_with_args(dev->of_node,
-> >> > +						 "io-channels",
-> >> > +						 "#io-channel-cells",
-> >> > +						 nummaps, NULL);
-> >> > +		if (ret < 0)
-> >> > +			break;
-> >> > +	} while (++nummaps);
-> >> > +
-> >> > +	if (nummaps == 0)	/* no error, return NULL to search map table */
-> >> > +		return NULL;
-> >> > +
-> >> > +	/* NULL terminated array to save passing size */
-> >> > +	chans = kcalloc(nummaps + 1, sizeof(*chans), GFP_KERNEL);
-> >> > +	if (chans == NULL)
-> >> > +		return ERR_PTR(-ENOMEM);
-> >> > +
-> >> > +	/* Search for OF matches */
-> >> > +	for (mapind = 0; mapind < nummaps; mapind++) {
-> >> > +		ret = __of_iio_channel_get(&chans[mapind], dev->of_node,
-> >> > +					   mapind);
-> >> > +		if (ret)
-> >> > +			goto error_free_chans;
-> >> > +	}
-> >> > +	return chans;
-> >> > +
-> >> > +error_free_chans:
-> >> > +	for (i = 0; i < mapind; i++)
-> >> > +		iio_device_put(chans[i].indio_dev);
-> >> > +	kfree(chans);
-> >> > +	return ERR_PTR(ret);
-> >> > +}
-> >> > +
-> >> > +#else /* CONFIG_OF */
-> >> > +
-> >> > +static inline struct iio_channel *
-> >> > +of_iio_channel_get_by_name(struct device_node *np, const char
-> >*name)
-> >> > +{
-> >> > +	return NULL;
-> >> > +}
-> >> > +
-> >> > +static inline struct iio_channel *of_iio_channel_get_all(struct
-> >device *dev)
-> >> > +{
-> >> > +	return NULL;
-> >> > +}
-> >> > +
-> >> > +#endif /* CONFIG_OF */
-> >> >  
-> >> >  static struct iio_channel *iio_channel_get_sys(const char *name,
-> >> >  					       const char *channel_name)
-> >> > @@ -150,7 +309,14 @@ struct iio_channel *iio_channel_get(struct
-> >device *dev,
-> >> >  				    const char *channel_name)
-> >> >  {
-> >> >  	const char *name = dev ? dev_name(dev) : NULL;
-> >> > +	struct iio_channel *channel;
-> >> >  
-> >> > +	if (dev) {
-> >> > +		channel = of_iio_channel_get_by_name(dev->of_node,
-> >> > +						     channel_name);
-> >> > +		if (channel != NULL)
-> >> > +			return channel;
-> >> > +	}
-> >> >  	return iio_channel_get_sys(name, channel_name);
-> >> >  }
-> >> >  EXPORT_SYMBOL_GPL(iio_channel_get);
-> >> > @@ -173,6 +339,11 @@ struct iio_channel *iio_channel_get_all(struct
-> >device *dev)
-> >> >  
-> >> >  	if (dev == NULL)
-> >> >  		return ERR_PTR(-EINVAL);
-> >> > +
-> >> > +	chans = of_iio_channel_get_all(dev);
-> >> > +	if (chans)
-> >> > +		return chans;
-> >> > +
-> >> >  	name = dev_name(dev);
-> >> >  
-> >> >  	mutex_lock(&iio_map_list_lock);
-> >> > 
-> >> 
-> >> 
+> > In sctp_ulpq_retrieve_partial() and sctp_ulpq_retrieve_first(),
+> > correct message reassembly logic for SCTP partial delivery.
+> > Change logic to ensure that as much data as possible is sent
+> > with the initial partial delivery and that following partial
+> > deliveries contain all available data.
+> >
+> > In sctp_ulpq_renege(), adjust logic to enter partial delivery
+> > only if the incoming chunk remains on the reassembly queue
+> > after processing by sctp_ulpq_tail_data().  Remove call to
+> > sctp_tsnmap_mark(), as this is handled correctly in call to
+> > sctp_ulpq_tail_data().
+> >
+> > Patch applies to linux-3.8 kernel.
+> >
+> > Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
+> > ---
+> >   net/sctp/sm_statefuns.c |   12 ++++++++++--
+> >   net/sctp/ulpqueue.c     |   33 ++++++++++++++++++++++++++-------
+> >   2 files changed, 36 insertions(+), 9 deletions(-)
+> >
+> > diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
+> > +2/net/sctp/sm_statefuns.c linux-3.8-SCTP+3/net/sctp/sm_statefuns.c
+> > --- linux-3.8-SCTP+2/net/sctp/sm_statefuns.c	2013-02-18
+> > 16:58:34.000000000 -0700
+> > +++ linux-3.8-SCTP+3/net/sctp/sm_statefuns.c	2013-02-20
+> > 08:31:51.092132884 -0700
+> > @@ -6090,7 +6090,8 @@ static int sctp_eat_data(const struct sc
+> >   	size_t datalen;
+> >   	sctp_verb_t deliver;
+> >   	int tmp;
+> > -	__u32 tsn;
+> > +	__u32 tsn, ctsn;
+> > +	struct sk_buff *skb;
+> >   	struct sctp_tsnmap *map = (struct sctp_tsnmap *)&asoc-
+> >peer.tsn_map;
+> >   	struct sock *sk = asoc->base.sk;
+> >   	struct net *net = sock_net(sk);
+> > @@ -6160,7 +6161,14 @@ static int sctp_eat_data(const struct sc
+> >   		/* Even if we don't accept this chunk there is
+> >   		 * memory pressure.
+> >   		 */
+> > -		sctp_add_cmd_sf(commands, SCTP_CMD_PART_DELIVER,
+> SCTP_NULL());
+> > +		skb = skb_peek(&asoc->ulpq.reasm);
+> > +		if (skb != NULL) {
+> > +			ctsn = sctp_skb2event(skb)->tsn;
+> > +			if (TSN_lte(ctsn,
+> > +				sctp_tsnmap_get_ctsn(&asoc->peer.tsn_map)))
+> > +				sctp_add_cmd_sf(commands,
+> > +					SCTP_CMD_PART_DELIVER, SCTP_NULL());
+> > +		}
 > 
-> -- 
-> Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+> What if the tsn you are currently processing will advance the
+> CUM TSN?  You may still need to eneter PD.  This is why
+> sctp_eat_data() is not the right place to place this check.
 > 
+> The more I look at the SCTP_CMD_PART_DELIVERY the more I am thinking
+> that it has to come after the current TSN has been delivered to the
+> queue.  That way, if we are currently processing the first fragment,
+> we'll queue it, then enter PD and pull it off the queue properly.
+> If we are processing the middle or last, it will get queued first, and
+> then PD will be entered to fetch anything that we can fetch.
+> 
+> In fact, the above is what happens when we issue a RENEGE command, but
+> the order is reversed is RENEGE is skipped for some reason.  I am still
+> trying to figure out if it's possible to enter PD without RENEGE, but I
+> did notice the above aberration.
+> 
+
+The current code enters partial delivery by calling sctp_ulpq_partial_delivery()
+in two locations.  In sctp_cmd_interpreter() [located in ../net/sctp/sm_sideeffect.c],
+as a result of the code in sctp_eat_data() [located in ../net/sctp/sctp_statefuns.c]:
+
+1675                 case SCTP_CMD_PART_DELIVER:
+1676                         sctp_ulpq_partial_delivery(&asoc->ulpq, GFP_ATOMIC)     ;
+1677                         break;
+
+and in sctp_ulpq_renege() [located in ../net/sctp/ulpqueue.c]
+
+
+1055         /* If able to free enough room, accept this chunk. */
+1056         if (chunk && (freed >= needed)) {
+1057                 __u32 tsn;
+1058                 tsn = ntohl(chunk->subh.data_hdr->tsn);
+1059                 sctp_tsnmap_mark(&asoc->peer.tsn_map, tsn, chunk->transport     );
+1060                 sctp_ulpq_tail_data(ulpq, chunk, gfp);
+1061 
+1062                 sctp_ulpq_partial_delivery(ulpq, gfp);
+1063         }
+
+Neither location checks to see whether the tsn on the head of the reassembly queue
+is less than or equal to the cumulative TSN ACK point.  Perhaps a better solution
+is to put this check in the beginning of sctp_ulpq_partial_delivery() and abort the
+partial delivery attempt if this condition isn't met.  I'll try this.
+
+The code in sctp_eat_data() involving SCTP_CMD_PART_DELIVER may be better if invoked
+after the current packet is handled, but that is probably an optimization.  As is,
+the partial delivery may not start until another packet arrives.
+
+> 
+> >   	}
+> >
+> >   	/* Spill over rwnd a little bit.  Note: While allowed, this spill
+> over
+> > diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
+> > +2/net/sctp/ulpqueue.c linux-3.8-SCTP+3/net/sctp/ulpqueue.c
+> > --- linux-3.8-SCTP+2/net/sctp/ulpqueue.c	2013-02-20
+> 08:17:53.679233365
+> > -0700
+> > +++ linux-3.8-SCTP+3/net/sctp/ulpqueue.c	2013-02-20
+> 08:27:02.785042744
+> > -0700
+> > @@ -540,14 +540,19 @@ static struct sctp_ulpevent *sctp_ulpq_r
+> >   		ctsn = cevent->tsn;
+> >
+> >   		switch (cevent->msg_flags & SCTP_DATA_FRAG_MASK) {
+> > +		case SCTP_DATA_FIRST_FRAG:
+> > +			if (!first_frag)
+> > +				return NULL;
+> > +			goto done;
+> >   		case SCTP_DATA_MIDDLE_FRAG:
+> >   			if (!first_frag) {
+> >   				first_frag = pos;
+> >   				next_tsn = ctsn + 1;
+> >   				last_frag = pos;
+> > -			} else if (next_tsn == ctsn)
+> > +			} else if (next_tsn == ctsn) {
+> >   				next_tsn++;
+> > -			else
+> > +				last_frag = pos;
+> > +			} else
+> >   				goto done;
+> >   			break;
+> >   		case SCTP_DATA_LAST_FRAG:
+> 
+> This may still allow you to skip over a gap if the first middle
+> fragment
+> in the queue starts after the gap.  We need to make sure that
+> TSN of the current chunk is less then equal to
+> sctp_tsnmap_get_ctsn(map).
+> 
+
+Currently, in sctp_ulpq_reasm() [located in ../net/sctp/ulpqueue.c], we
+only continue a partial delivery if the new tsn is less than or equal to
+sctp_tsnmap_get_ctsn(map):
+
+ 594         if (!ulpq->pd_mode)
+ 595                 retval = sctp_ulpq_retrieve_reassembled(ulpq);
+ 596         else {
+ 597                 __u32 ctsn, ctsnap;
+ 598 
+ 599                 /* Do not even bother unless this is the next tsn to
+ 600                  * be delivered.
+ 601                  */
+ 602                 ctsn = event->tsn;
+ 603                 ctsnap = sctp_tsnmap_get_ctsn(&ulpq->asoc->peer.tsn_map);
+ 604                 if (TSN_lte(ctsn, ctsnap))
+ 605                         retval = sctp_ulpq_retrieve_partial(ulpq);
+ 606         }
+
+This is the only place we call sctp_ulpq_retrieve_partial().
+
+> > @@ -651,6 +656,14 @@ static struct sctp_ulpevent *sctp_ulpq_r
+> >   			} else
+> >   				goto done;
+> >   			break;
+> > +
+> > +		case SCTP_DATA_LAST_FRAG:
+> > +			if (!first_frag)
+> > +				return NULL;
+> > +			else
+> > +				goto done;
+> > +			break;
+> > +
+> >   		default:
+> >   			return NULL;
+> 
+> Same thing here.  Both, FIRST and MIDDLE fragments need to be validated
+> against sctp_tsnmap_get_ctsn(), otherwise you may be stepping over a
+> gap.
+> 
+
+If we check that the head of the reassembly queue is at or below the cumulative tsn
+before entering partial delivery, we should be OK.
+
+In sctp_ulpq_retrieve_first(), we expect the first packet on the reassembly queue
+will be a FIRST.  (If not, something went wrong somewhere else.)  If we find another
+FIRST, we know that we've gone too far.  If the second packet is a MIDDLE, we check
+that it has the correct tsn.  We keep processing MIDDLE packets as long as the tsn
+values are sequential.  If the packet is a MIDDLE and the tsn isn't right, we've
+gone too far.  In sctp_ulpq_retreive_first(), we don't return a LAST, by definition,
+since that wouldn't be a partial delivery.
+
+In sctp_ulpq_retrieve_partial(), we expect that the first packet on the reassembly queue
+is not a FIRST.  We're looking for MIDDLE or LAST fragments to complete the message.
+Since we know that the head of the reassembly queue is at or before the cumulative TSN,
+we shouldn't have a gap.  We want to pick up MIDDLE packets until we see a tsn gap
+or until we find the right LAST packet.  When we find the right LAST packet, we set
+MSG_EOR and exit from partial delivery.
+
+> >   		}
+> > @@ -1054,6 +1067,7 @@ void sctp_ulpq_renege(struct sctp_ulpq *
+> >   		      gfp_t gfp)
+> >   {
+> >   	struct sctp_association *asoc;
+> > +	struct sk_buff *skb;
+> >   	__u16 needed, freed;
+> >
+> >   	asoc = ulpq->asoc;
+> > @@ -1074,12 +1088,17 @@ void sctp_ulpq_renege(struct sctp_ulpq *
+> >   	}
+> >   	/* If able to free enough room, accept this chunk. */
+> >   	if (chunk && (freed >= needed)) {
+> > -		__u32 tsn;
+> > +		__u32 tsn, ctsn;
+> >   		tsn = ntohl(chunk->subh.data_hdr->tsn);
+> > -		sctp_tsnmap_mark(&asoc->peer.tsn_map, tsn, chunk-
+> >transport);
+> > -		sctp_ulpq_tail_data(ulpq, chunk, gfp);
+> > -
+> > -		sctp_ulpq_partial_delivery(ulpq, gfp);
+> > +		if (sctp_ulpq_tail_data(ulpq, chunk, gfp) == 0) {
+> > +			skb = skb_peek(&ulpq->reasm);
+> > +			if (skb != NULL) {
+> > +				ctsn = sctp_skb2event(skb)->tsn;
+> > +				if (TSN_lte(ctsn, tsn))
+> > +					sctp_ulpq_partial_delivery(ulpq, chunk,
+> > +						gfp);
+> > +			}
+> > +		}
+> >   	}
+> 
+> I am not sure this hunk is really needed.
+> 
+> You are trying to use this code make sure that you start PD with
+> something to deliver, but the PD code already takes care of that.
+> You also get some basic cum_tsn checking for the current chunk because
+> of how renege is called, but you still don't do the checks for
+> subsequent chunks in the queue as I stated above, so you are still
+> subject to possible hangs.
+> 
+> -vlad
+> 
+
+If our incoming packet completes a message, the call to sctp_ulpq_tail_data()
+should cause it to be delivered.  If so, the whole message is gone, so we shouldn't
+need to enter partial delivery.  We don't want to enter partial delivery
+unnecessarily, since it can block delivery on other streams.
+
+
+> >
+> >   	sk_mem_reclaim(asoc->base.sk);
+> >
+> > Nï¿½ï¿½ï¿½ï¿½ï¿½rï¿½ï¿½yï¿½ï¿½ï¿½bï¿½Xï¿½ï¿½Ç§vï¿½^ï¿½)Şº{.nï¿½+ï¿½ï¿½ï¿½ï¿½{ï¿½ï¿½ï¿½iï¿½{ayï¿½Ê‡Ú™ï¿½,jï¿½ï¿½fï¿½ï¿½ï¿½hï¿½ï¿½ï¿½zï¿½ï¿½wï¿½ï¿½ï¿½
+> 
+> ï¿½ï¿½ï¿½j:+vï¿½ï¿½ï¿½wï¿½jï¿½mï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½zZ+ï¿½ï¿½İ¢j"ï¿½ï¿½!tml=
+> >
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
