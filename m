@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945Ab3BTKGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 05:06:49 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:61163 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645Ab3BTKGp (ORCPT
+	id S1758799Ab3BTKGr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 05:06:47 -0500
+Received: from www.linutronix.de ([62.245.132.108]:38267 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab3BTKGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Feb 2013 05:06:45 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexander Shiyan <shc_work@mail.ru>
-Subject: Re: Re[8]: [PATCH v3] mfd: syscon: Add non-DT support
-Date: Wed, 20 Feb 2013 10:06:41 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: Dong Aisheng <dong.aisheng@linaro.org>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-References: <1361198522-23789-1-git-send-email-shc_work@mail.ru> <1361271268.592027245@f310.mail.ru> <1361338882.986089809@f173.mail.ru>
-In-Reply-To: <1361338882.986089809@f173.mail.ru>
+Date: Wed, 20 Feb 2013 11:06:32 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: Stephane Eranian <eranian@google.com>, Pawel Moll <pawel.moll@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user samples
+ with kernel samples
+In-Reply-To: <5123FAAE.3030706@linaro.org>
+Message-ID: <alpine.LFD.2.02.1302201040180.22263@ionos>
+References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com> <1350408232.2336.42.camel@laptop> <1359728280.8360.15.camel@hornet> <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com> <51118797.9080800@linaro.org>
+ <alpine.LFD.2.02.1302182132230.22263@ionos> <5123C3AF.8060100@linaro.org> <alpine.LFD.2.02.1302192021370.22263@ionos> <alpine.LFD.2.02.1302192056330.22263@ionos> <5123E20E.60307@linaro.org> <alpine.LFD.2.02.1302192152240.22263@ionos>
+ <5123FAAE.3030706@linaro.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302201006.41287.arnd@arndb.de>
-X-Provags-ID: V02:K0:qyTy2g4PGWkHplLUuqrdBnf53VCxMKfgzzfiet/Tt+1
- izRVam58L8Aiqvknfqm1wWAyiWr6kBYbi5+Mdd1zYjysNgswd4
- lwo+Xc8FH/Ih6dDEgDo/JmHBnNNa9MUc+FTPE3X8rp2rtWAD5N
- Npz5rv5yBlJTaPK0gt0pXsyFidg9CYjPwXkO5PNdNYNEsdRZ9/
- 94GjRFOs411BOwdDO4K4HTPQ+fSMV2qa9UJIEW4n/s5ih/bY36
- TGjwKOFqhNJ0GXRxeF7/0kD2nG8jQfFdLsA1EXYrr7i2Zcp1bm
- kCNsZQjMTZTCRO8gv6yWPo3+Xl/bQ8EhM+DGRc0qiNy++Llpx4
- 3zqi9i1PvA1bEYZJX+qI=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 February 2013, Alexander Shiyan wrote:
-> On 20 February 2013 13:41, Alexander Shiyan <shc_work@mail.ru> wrote:
+On Tue, 19 Feb 2013, John Stultz wrote:
+> On 02/19/2013 01:50 PM, Thomas Gleixner wrote:
+> > 2) Doing #1 will allow to observe the described time going backwards
+> >     scenario in kernel as well.
 > > 
-> > One problem is that every user needs to add their syscon compatible device
-> > support(platform_device_id) in syscon driver first before they can use it.
-> > But it looks to me just like how other driver generally does.
+> >     The reason why we did not get complaints about that scenario at all
+> >     (yet) is that the window and the probability to hit it are small
+> >     enough. Nevertheless it's a real issue for virtualized systems.
+> > 
+> >     Now you came up with the great idea, that the timekeeping core is
+> >     able to calculate what the approximate safe value is for the
+> >     clocksource readout to be in a state where wreckage relative to the
+> >     last update of the clocksource is not observable, not matter how
+> >     long the scheduled out delay is and in which direction the NTP
+> >     update is going.
 > 
-> I agree, this is a more proper way, but in this case we should create a big table
-> here with records for each device...
+> So the other bit of caution here, is I realize my idea of "valid cycle ranges"
+> has the potential for deadlock.
 > 
-> > Arnd,
-> > Do you think this is an issue?
+> While it should be fine for use with vdso, we have to be careful if we use
+> this in-kernel, because if we're in the update path, the valid interval check
+> could trigger the ktime_get() in hrtimer_interrupt() to spin forever. So we
+> need to be sure we don't use this method anywhere in the code paths that
+> trigger the update_wall_time() code.
 
-I would first like to get an answer to the question I asked in my first mail,
-which is what the use case of non-DT support in this driver is. If this
-is used only by a new platform that has to use DT anyway, or by an existing
-platform that is easy enough to convert, we probably shouldn't do all this
-at all.
+Hmm, right.
+ 
+> So some additional thinking may be necessary here. Though it may be as simple
+> as making sure we don't loop on the cpu that does the timekeeping update.
 
-	Arnd
+Either that or make sure to use ktime_get_nocheck() in those code pathes.
+
+Thanks,
+
+	tglx
