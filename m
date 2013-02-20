@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339Ab3BTAc7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 19:32:59 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:61443 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932809Ab3BTAc6 (ORCPT
+	id S1758612Ab3BTAkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 19:40:14 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:33845 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758164Ab3BTAkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 19:32:58 -0500
-Date: Tue, 19 Feb 2013 16:32:53 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [GIT PULL UPDATED] workqueue core changes for 3.9-rc1
-Message-ID: <20130220003253.GA17414@htj.dyndns.org>
-References: <20130219173937.GM17414@htj.dyndns.org>
- <20130219181356.GP17414@htj.dyndns.org>
- <20130220111125.8040fb7cd9c74c80baab6dde@canb.auug.org.au>
- <20130220111413.b9444b48400f808d8921be89@canb.auug.org.au>
- <20130220001925.GZ17414@htj.dyndns.org>
- <20130220112709.cc28b5b07afd6475157bb6ad@canb.auug.org.au>
+	Tue, 19 Feb 2013 19:40:12 -0500
+Message-ID: <51241B66.7080004@gmail.com>
+Date: Wed, 20 Feb 2013 08:40:06 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130220112709.cc28b5b07afd6475157bb6ad@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hugh Dickins <hughd@google.com>
+CC: Li Haifeng <omycle@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: Should a swapped out page be deleted from swap cache?
+References: <CAFNq8R4UYvygk8+X+NZgyGjgU5vBsEv1UM6MiUxah6iW8=0HrQ@mail.gmail.com> <alpine.LNX.2.00.1302180939200.2246@eggly.anvils> <512338A6.1030602@gmail.com> <alpine.LNX.2.00.1302191050330.2248@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1302191050330.2248@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 11:27:09AM +1100, Stephen Rothwell wrote:
-> >   $ git rev-list --pretty --oneline tmp ^next-20130219
-> >   bd26f12 Merge branch 'for-3.9-async' into tmp
-> >   0f985c9 Merge branch 'for-3.9-cleanups' into tmp
-> >   1438ade5 workqueue: un-GPL function delayed_work_timer_fn()
-> > 
-> > tmp is for-3.9 + for-3.9-async + for-3.9-cleanups, so yeah other than
-> > the last cherry-pick, everything seems to be in order.
-> 
-> Thanks for checking - sorry for the noise.
 
-And the other direction too just in case.
+Hi Hugh,
 
- $ git rev-list --pretty --oneline for-next ^for-3.9 ^for-3.9-cleanups ^for-3.9-async
- a4791ca Merge branch 'for-3.9' into for-next
- 3b8d914 Merge branch 'for-3.9-cleanups' into for-next
- de16266 Merge branch 'for-3.9' into for-next
- 3437170 Merge branch 'for-3.9' into for-next
- 26c3d00 Merge branch 'for-3.9-cleanups' into for-next
- 93883c9 Merge branch 'for-3.9-async' into for-next
+On 02/20/2013 02:56 AM, Hugh Dickins wrote:
+> On Tue, 19 Feb 2013, Ric Mason wrote:
+>> There is a call of try_to_free_swap in function swap_writepage, if
+>> swap_writepage is call from shrink_page_list path, PageSwapCache(page) ==
+>> trure, PageWriteback(page) maybe false, page_swapcount(page) == 0, then will
+>> delete the page from swap cache and free swap slot, where I miss?
+> That's correct.  PageWriteback is sure to be false there.  page_swapcount
+> usually won't be 0 there, but sometimes it will be, and in that case we
+> do want to delete from swap cache and free the swap slot.
 
-So, yeah, they all match up.
+1) If PageSwapCache(page)  == true, PageWriteback(page) == false, 
+page_swapcount(page) == 0  in swap_writepage(shrink_page_list path), 
+then will delete the page from swap cache and free swap slot, in 
+function swap_writepage:
 
-Thanks for keeping an eye on it. :)
+if (try_to_free_swap(page)) {
+     unlock_page(page);
+     goto out;
+}
+writeback will not execute, that's wrong. Where I miss?
 
--- 
-tejun
+2) In the function pageout, page will be set PG_Reclaim flag, since this 
+flag is set, end_swap_bio_write->end_page_writeback:
+if (TestClearPageReclaim(page))
+      rotate_reclaimable_page(page);
+it means that page will be add to the tail of lru list, page is clean 
+anonymous page this time and will be reclaim to buddy system soon, correct?
+If is correct, what is the meaning of rotate here?
+
+>
+> Hugh
+
