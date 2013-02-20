@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759136Ab3BTRVi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 12:21:38 -0500
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:59780 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757525Ab3BTRVg (ORCPT
+	id S1758922Ab3BTRYe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 12:24:34 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:43996 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757402Ab3BTRYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 12:21:36 -0500
+	Wed, 20 Feb 2013 12:24:31 -0500
 MIME-Version: 1.0
-Reply-To: noloader@gmail.com
-In-Reply-To: <5124F571.4060503@ladisch.de>
-References: <CAH8yC8kQ1fqpaNXupkO+Rpaocw6gC3-kZuPpwD-DYds8hQ3SaQ@mail.gmail.com>
-	<5124F571.4060503@ladisch.de>
-Date: Wed, 20 Feb 2013 12:21:21 -0500
-Message-ID: <CAH8yC8npt_=+twdRyhUQ_+d2KazdfNwHYtLjjbJnxm+8JZwZfg@mail.gmail.com>
-Subject: Re: Undefined Code in .../include/linux.bitops.h
-From: Jeffrey Walton <noloader@gmail.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20130220171645.GB3570@htj.dyndns.org>
+References: <1361380176-15081-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20130220171645.GB3570@htj.dyndns.org>
+Date: Wed, 20 Feb 2013 19:24:29 +0200
+Message-ID: <CAHp75VcB2v=pqOHjUr_r=sp1git0vzYEdt0bLJo9QvD29-UO9g@mail.gmail.com>
+Subject: Re: [PATCH] events: always do slow path when trying to find a pmu
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-next@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 11:10 AM, Clemens Ladisch <clemens@ladisch.de> wrote:
-> Jeffrey Walton wrote:
->> http://www.tux.org/lkml/ is a tough read, and Item 4, "I think I found
->> a bug, how do I report it?" does not tell me how to report this.
+On Wed, Feb 20, 2013 at 7:16 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Wed, Feb 20, 2013 at 07:09:36PM +0200, Andy Shevchenko wrote:
+>> The guilty commit is cc5b5f6 "events: convert to idr_alloc()" together with
+>> f49318a "idr: implement lookup hint". In our case the idr_alloc is never called, but idr_find is. The hint field is never initialized and could not be dereferenced.
 >
-> From that page:
-> | A bug is when something (in the kernel, presumably) doesn't behave the
-> | way it should
+> Ah, right, ->hint is uninitialized at the beginning.
 >
-> So just tell us what it is that doesn't behave the way it should.
->
->> According to Section 5.8, "Shift Operators" of
->> http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2008/n2798.pdf:
->
-> The kernel doesn't try to be fully standard conformant.
->
->>     return (word >> shift) | (word << (32 - shift));
->
->> "The behavior is undefined if the right operand is ... equal to the
->> length in bits of the promoted left operand."
+>> The proposed fix uses the idr_slowpath call which reflects old behaviour.
 >>
->> If I ask for a shift of 0
+>> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+>> Reported-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+>> ---
+>>  kernel/events/core.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/events/core.c b/kernel/events/core.c
+>> index 624e53f..20421ea 100644
+>> --- a/kernel/events/core.c
+>> +++ b/kernel/events/core.c
+>> @@ -6076,7 +6076,7 @@ struct pmu *perf_init_event(struct perf_event *event)
+>>       idx = srcu_read_lock(&pmus_srcu);
+>>
+>>       rcu_read_lock();
+>> -     pmu = idr_find(&pmu_idr, event->attr.type);
+>> +     pmu = idr_find_slowpath(&pmu_idr, event->attr.type);
 >
-> Does the kernel ever do this?
->
->> the various ops will perform `32 - shift` (or `64 - shift`, etc). That
->> means the right operand *IS* equal to the length in bits of the
->> operand, so the code is undefined.
->
-> In practice, what CPUs actually do is to shift either by zero or by the
-> full 32/64 bits.  Both implementations give the correct result.
-Well, a few things come to mind.
+> But I don't think this is the right thing to do.  I'm working on
+> proper fix for idr_find().  Will post soon.
 
-First, the language is C and the kernel needs a compiler. The compiler
-might try hard to be C conforming. I could be wrong, but all that
-would be needed to break exiting code in some cases is better
-analysis. So the kernel is betting on a component it clearly does not
-control.
+Check my v2
 
-Second, I know that code will not work on some older processors that
-do not mask in its barrel shift as expected. I doubt they will be
-encountered today, but you never know. In addition, future processors
-may not offer the same [tolerant] behavior of current processors.
 
-Third, depending on non-standard behavior is a usually bad choice over
-the long run (not withstanding the comment on being non-conforming).
-Fedora/Adobe/Flash and glibc/memmove comes to mind
-(https://fedorahosted.org/fesco/ticket/501).
 
-Fourth, user land programs use the header too. This is expected
-because programmers are taught to reuse existing code. Unfortunately,
-many user land programmers lack the knowledge and experience of a
-kernel hacker, so they won't realize a potential minefield exists or
-how to navigate the minefield.
-
-Finally, I think its poor mentoring. Many junior programmers look up
-to experienced kernel programmers, and I think its poor leadership to
-provide them with bad habits. Obviously, this is just my opinion, and
-does not warrant a response.
-
-Jeff
+-- 
+With Best Regards,
+Andy Shevchenko
