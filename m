@@ -1,43 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab3BTWYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 17:24:37 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47262 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201Ab3BTWYg (ORCPT
+	id S1751963Ab3BTW1D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 17:27:03 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:47201 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab3BTW1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 17:24:36 -0500
-Date: Wed, 20 Feb 2013 22:24:19 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: linux-kernel@vger.kernel.org, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Davide Ciminaghi <ciminaghi@gnudd.com>, alan@linux.intel.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Subject: Re: [PATCH V5 4/5] drivers/amba: add support for a PCI bridge
-Message-ID: <20130220222419.GX17833@n2100.arm.linux.org.uk>
-References: <cover.1361393832.git.rubini@gnudd.com> <52b9f4e1cc04b7c656e10ee16020090601f6f537.1361393832.git.rubini@gnudd.com>
+	Wed, 20 Feb 2013 17:27:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52b9f4e1cc04b7c656e10ee16020090601f6f537.1361393832.git.rubini@gnudd.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <003901ce0e4b$fd839c40$f88ad4c0$%han@samsung.com>
+References: <003901ce0e4b$fd839c40$f88ad4c0$%han@samsung.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 20 Feb 2013 14:26:40 -0800
+X-Google-Sender-Auth: FZLubWK8NJ-7hEXonFr3RWUDA-Y
+Message-ID: <CA+55aFzbx19SnZgv5_OFRFR4AHicqQNY177mNf9cebKbkdLU8A@mail.gmail.com>
+Subject: Re: [GIT PULL] samsung-fb updates for v3.9
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: linux-fbdev <linux-fbdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 10:24:02PM +0100, Alessandro Rubini wrote:
-> This is a PCI driver that registers AMBA devices for the range of
-> supported devices.  It is currently used by STA2X11, which exports
-> AMBA peripherals under PCIe.  The original AMBA drivers work with no
-> changes or minimal ones.
-> 
-> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Alan Cox <alan@linux.intel.com>
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> ---
-> 
-> @Russell, Alan: I repost this after rebasing, on hpa's suggestion.
+On Mon, Feb 18, 2013 at 6:51 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+>
+> are available in the git repository at:
+>   git://github.com/jingoo/linux.git samsung-fb-next
 
-I'm happy to take it through my tree if everyone is now happy with this.
+I _really_ want signed tags when pulling from untrusted hosts like
+github. Same goes for your exynos-dp-next branch.
+
+Not pulled.
+
+             Linus
