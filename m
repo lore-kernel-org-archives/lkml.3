@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759097Ab3BTS2c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 13:28:32 -0500
-Received: from relay1.mentorg.com ([192.94.38.131]:64207 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758932Ab3BTS2a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 13:28:30 -0500
-From: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
-To: <devicetree-discuss@lists.ozlabs.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] of/i2c: don't register disabled devices
-Date: Wed, 20 Feb 2013 22:28:24 +0400
-Message-ID: <1361384904-13853-1-git-send-email-dmitry_eremin@mentor.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginalArrivalTime: 20 Feb 2013 18:28:26.0800 (UTC) FILETIME=[12F7D300:01CE0F98]
+	id S1759041Ab3BTSf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 13:35:58 -0500
+Received: from mail.tpi.com ([70.99.223.143]:3580 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753818Ab3BTSf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 13:35:57 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jack Wang <jack_wang@usish.com>, linux-scsi@vger.kernel.org
+Subject: [PATCH linux/linux-next] [SCSI] mvsas: Fix compile warnings by using correct enums
+Date: Wed, 20 Feb 2013 11:35:32 -0700
+Message-Id: <1361385332-48092-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't register i2c slave device tree nodes which have
-status = "disabled" property.
+Use enum symbols of the same value, but from the correct enum type definition.
 
-Signed-off-by: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jack Wang <jack_wang@usish.com>
+Cc: linux-scsi@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 ---
- drivers/of/of_i2c.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/mvsas/mv_sas.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
-index 1e173f3..63f3236 100644
---- a/drivers/of/of_i2c.c
-+++ b/drivers/of/of_i2c.c
-@@ -35,6 +35,9 @@ void of_i2c_register_devices(struct i2c_adapter *adap)
- 		const __be32 *addr;
- 		int len;
+diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
+index 078c639..90f3a77 100644
+--- a/drivers/scsi/mvsas/mv_sas.c
++++ b/drivers/scsi/mvsas/mv_sas.c
+@@ -1153,10 +1153,10 @@ void mvs_update_phyinfo(struct mvs_info *mvi, int i, int get_st)
+ 			phy->identify.device_type =
+ 				phy->att_dev_info & PORT_DEV_TYPE_MASK;
  
-+		if (!of_device_is_available(node))
-+			continue;
-+
- 		dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
- 
- 		if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
+-			if (phy->identify.device_type == SAS_END_DEV)
++			if (phy->identify.device_type == SAS_END_DEVICE)
+ 				phy->identify.target_port_protocols =
+ 							SAS_PROTOCOL_SSP;
+-			else if (phy->identify.device_type != NO_DEVICE)
++			else if (phy->identify.device_type != SAS_PHY_UNUSED)
+ 				phy->identify.target_port_protocols =
+ 							SAS_PROTOCOL_SMP;
+ 			if (oob_done)
 -- 
-1.7.10.4
+1.7.9.5
 
