@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934590Ab3BTHxL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 02:53:11 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:35364 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934531Ab3BTHxK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 02:53:10 -0500
+	id S934649Ab3BTHxe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 02:53:34 -0500
+Received: from ares07.inai.de ([5.9.24.206]:56125 "EHLO ares07.inai.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934593Ab3BTHxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 02:53:32 -0500
+Date: Wed, 20 Feb 2013 08:53:29 +0100 (CET)
+From: Jan Engelhardt <jengelh@inai.de>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: kconfig-frontends-3.8.0.0 release
+In-Reply-To: <201302200021.31123.yann.morin.1998@free.fr>
+Message-ID: <alpine.LNX.2.01.1302200847290.12390@nerf07.vanv.qr>
+References: <201302192314.15995.yann.morin.1998@free.fr> <alpine.LNX.2.01.1302192328280.5517@nerf07.vanv.qr> <201302200021.31123.yann.morin.1998@free.fr>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Date: Wed, 20 Feb 2013 13:23:09 +0530
-Message-ID: <CAKohpomdJBWrwiNx8T2-vT-b5wponNCMw_PGDMAULgoWidbOZQ@mail.gmail.com>
-Subject: [Query]: Regmap v3.8: Compilation Warning: regmap_read_debugfs()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
 
-I am getting compilation warning while compiling v3.8
+On Wednesday 2013-02-20 00:21, Yann E. MORIN wrote:
+>> This seems to install
+>> 	/usr/bin/diff    [...]
+>
+>By default, the binaries should all ne prefixed with 'kconfig-' to avoid
+>such name-clashing (as root, in a fresh debootstrap of squeeze here):
 
-commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Mon Feb 18 15:58:34 2013 -0800
+Aha. Seems I hit a peculiarity in rpmbuild. Problem solved, nothing to see. :)
 
-    Linux 3.8
-
-
-
-Warning:
-
-CC      drivers/base/regmap/regmap-debugfs.o
-drivers/base/regmap/regmap-debugfs.c: In function ‘regmap_read_debugfs’:
-drivers/base/regmap/regmap-debugfs.c:180:9: warning: ‘ret’ may be used
-uninitialized in this function [-Wmaybe-uninitialized]
-
-
-I am unable to understand why this warning is coming and that too on
-line 180 (as that doesn't use this variable). I can't see how this variable is
-used uninitialized.
-
-Toolchain i used:
-
-arm-linux-gnueabihf-gcc (crosstool-NG
-linaro-1.13.1-4.7-2012.12-20121214 - Linaro GCC 2012.12) 4.7.3
-20121205 (prerelease)
-
---
-viresh
+$ grep -A5 -e '^%configure' /usr/lib/rpm/macros
+%configure \
+  CFLAGS="${CFLAGS:-%optflags}" ; export CFLAGS ; \
+  CXXFLAGS="${CXXFLAGS:-%optflags}" ; export CXXFLAGS ; \
+  FFLAGS="${FFLAGS:-%optflags}" ; export FFLAGS ; \
+  %{_configure} --host=%{_host} --build=%{_build} \\\
+        --program-prefix=%{?_program_prefix} \\\
