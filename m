@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935071Ab3BTLKR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 06:10:17 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:63174 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935045Ab3BTLKP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 06:10:15 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH 0/4] dw_dmac: introduce generic DMA binding for DT
-Date: Wed, 20 Feb 2013 11:10:07 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: Dan Williams <djbw@fb.com>, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-References: <1360952512-971558-1-git-send-email-arnd@arndb.de> <201302200950.26182.arnd@arndb.de> <20130220095818.GI23302@intel.com>
-In-Reply-To: <20130220095818.GI23302@intel.com>
+	id S935123Ab3BTLL0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 06:11:26 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:43041 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S935073Ab3BTLLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 06:11:24 -0500
+X-IronPort-AV: E=Sophos;i="4.84,701,1355068800"; 
+   d="scan'208";a="6736123"
+Message-ID: <5124A182.5080806@cn.fujitsu.com>
+Date: Wed, 20 Feb 2013 18:12:18 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Paolo Bonzini <pbonzini@redhat.com>, Asias He <asias@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 11/16] virtio_rng: use simplified virtqueue accessors.
+References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au> <1361260594-601-12-git-send-email-rusty@rustcorp.com.au>
+In-Reply-To: <1361260594-601-12-git-send-email-rusty@rustcorp.com.au>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/20 18:12:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/20 18:12:55,
+	Serialize complete at 2013/02/20 18:12:55
 Content-Transfer-Encoding: 7bit
-Message-Id: <201302201110.07485.arnd@arndb.de>
-X-Provags-ID: V02:K0:rds6PRRiWA3eygRRQoau4tepoT3kT4mbOh4fBN+RIjH
- axcTr4xScPSOfr06aJxsFiGW8y5r5ei8wHisPlwhxdtliv0LPn
- p1biOt0F3mlOkQiGdVbSLvpP8nYGp+gnpc7PCcCCTtF2J9KA04
- 9bChxgHysbgxPWRWVgygI1mmts23bcK2EBcoEst0l4q44itUk2
- XYJm4YPdTlXss+cVBloFKupAS87I4xwqUoaNDDx/DTuol/Hxl/
- 2b9nnRq6rVahMgm1bhWg7ke6XINouR8r2YYIbKRozfbVoxkqgJ
- pFvKY3XgIVPp29TmU3Rru2Am3FpKCBDeF3/ADp8xmTC/AoJ1ln
- wI26zw/ZLSWBOtDEzhsQ=
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 February 2013, Vinod Koul wrote:
-> On Wed, Feb 20, 2013 at 09:50:25AM +0000, Arnd Bergmann wrote:
-> > On Wednesday 20 February 2013, Vinod Koul wrote:
-> > > Since there is still churn, would it make sense if I just revert the SPEAr13xx
-> > > patch (your first patch) and send a pull request to Linus.
-> > > Since there are no users and not much testing has been done, I think we can push
-> > > these to 3.10 via arm-soc/slave-dma tree.
-> > > 
-> > > Gives more testing and usage will go along as well.
-> > > Since merge window is open, I would like my pull to go soonish and not churn the
-> > > tree much.
-> > 
-> > Reverting the SPEAr13xx would definitely help, yes. The reason why I'd also like
-> > to see the second patch get merged is so that we can do the SPEAr changes in 3.10
-> > without having an interdependency between the trees. I tried very hard to
-> > make the patch have a minimal impact on the non-DT code path to avoid regressions.
-> Ok, i have applied your revert patch. Will send the PULL to linus by friday.
+On 02/19/2013 03:56 PM, Rusty Russell wrote:
+> We never add buffers with input and output parts, so use the new accessors.
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Ok, thanks.
+Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 
-> > Maybe you can send your tree now with just the revert applied, and then send the
-> > other one separately next week along with any bug fixes that may have accumulated
-> > by then?
-> And then makes sense to send second PULL with fixes accumulated and the second
-> patch, so that 3.10 is easier for all.  think we can compact() patch is second
-> request as well
+> ---
+>  drivers/char/hw_random/virtio-rng.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
+> index 10fd71c..842e2d5 100644
+> --- a/drivers/char/hw_random/virtio-rng.c
+> +++ b/drivers/char/hw_random/virtio-rng.c
+> @@ -47,7 +47,7 @@ static void register_buffer(u8 *buf, size_t size)
+>  	sg_init_one(&sg, buf, size);
+>  
+>  	/* There should always be room for one buffer. */
+> -	if (virtqueue_add_buf(vq, &sg, 0, 1, buf, GFP_KERNEL) < 0)
+> +	if (virtqueue_add_inbuf(vq, &sg, 1, buf, GFP_KERNEL) < 0)
+>  		BUG();
+>  
+>  	virtqueue_kick(vq);
+> 
 
-Yes, sounds good.
-
-	Arnd
