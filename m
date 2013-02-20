@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab3BTXu4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 18:50:56 -0500
-Received: from mga03.intel.com ([143.182.124.21]:54444 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab3BTXuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 18:50:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,705,1355126400"; 
-   d="scan'208";a="204664758"
-Message-ID: <51256157.6020205@linux.intel.com>
-Date: Wed, 20 Feb 2013 15:50:47 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
-CC: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] x86, efi: Make "noefi" really disable EFI runtime serivces
-References: <1361392572-25657-1-git-send-email-matt@console-pimps.org> <51256042.5030704@jp.fujitsu.com>
-In-Reply-To: <51256042.5030704@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752476Ab3BTX6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 18:58:09 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:51746 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637Ab3BTX6H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 18:58:07 -0500
+From: maxin.john@gmail.com
+To: gregkh@linuxfoundation.org, mina86@mina86.com
+Cc: matt.fleming@intel.com, matthias.fend@wolfvision.net, balbi@ti.com,
+        linux-usb@vger.kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, "Maxin B. John" <maxin.john@enea.com>
+Subject: [PATCH] tools: usb: ffs-test: Fix build failure
+Date: Thu, 21 Feb 2013 01:57:51 +0200
+Message-Id: <1361404671-11713-1-git-send-email-maxin.john@gmail.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 03:46 PM, Satoru Takeuchi wrote:
-> 
-> Sorry, my patch was imperfect. This patch looks good to me.
-> 
+From: "Maxin B. John" <maxin.john@enea.com>
 
-Perfection is something very rarely achieved.  That's why we work with
-gradual improvements.
+Fixes this build failure:
+gcc -Wall -Wextra -g -lpthread -I../include -o testusb testusb.c
+gcc -Wall -Wextra -g -lpthread -I../include -o ffs-test ffs-test.c
+In file included from ffs-test.c:41:0:
+../../include/linux/usb/functionfs.h:4:39: fatal error:
+uapi/linux/usb/functionfs.h: No such file or directory
+compilation terminated.
+make: *** [ffs-test] Error 1
 
-	-hpa
+Signed-off-by: Maxin B. John <maxin.john@enea.com>
+---
+ tools/usb/ffs-test.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
+index 8674b9e..fe1e66b 100644
+--- a/tools/usb/ffs-test.c
++++ b/tools/usb/ffs-test.c
+@@ -38,7 +38,7 @@
+ #include <unistd.h>
+ #include <tools/le_byteshift.h>
+ 
+-#include "../../include/linux/usb/functionfs.h"
++#include "../../include/uapi/linux/usb/functionfs.h"
+ 
+ 
+ /******************** Little Endian Handling ********************************/
+-- 
+1.7.7
 
