@@ -1,81 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758982Ab3BTIgg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 03:36:36 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:47165 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756797Ab3BTIgc (ORCPT
+	id S1758827Ab3BTIgL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 03:36:11 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42242 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756811Ab3BTIgI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 03:36:32 -0500
-Date: Wed, 20 Feb 2013 00:36:29 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/11] mfd: menelaus: use devm_request_irq() and
- devm_kzalloc()
-Message-ID: <20130220083629.GB4268@core.coreip.homeip.net>
-References: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
- <002c01ce0f31$48d55e00$da801a00$%han@samsung.com>
- <20130220073044.GB2648@core.coreip.homeip.net>
- <000801ce0f41$00e79170$02b6b450$%han@samsung.com>
- <20130220081014.GA4268@core.coreip.homeip.net>
- <000d01ce0f42$ba3a1570$2eae4050$%han@samsung.com>
+	Wed, 20 Feb 2013 03:36:08 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Bryan Wu <cooloney@gmail.com>
+CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jeong, Daniel" <Daniel.Jeong@ti.com>
+Subject: [PATCH 2/3] leds: add LED Trigger for camera function
+Thread-Topic: [PATCH 2/3] leds: add LED Trigger for camera function
+Thread-Index: Ac4PRVGs1jaCsF+dQo64EeKjGOQWtw==
+Date: Wed, 20 Feb 2013 08:36:04 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F79273676@DQHE02.ent.ti.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000d01ce0f42$ba3a1570$2eae4050$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 05:17:30PM +0900, Jingoo Han wrote:
-> On Wednesday, February 20, 2013 5:10 PM, Dmitry Torokhov wrote:
-> > 
-> > On Wed, Feb 20, 2013 at 05:05:10PM +0900, Jingoo Han wrote:
-> > > On Wednesday, February 20, 2013 4:31 PM, Dmitry Torokhov wrote:
-> > > >
-> > > > Hi Jongoo,
-> > > >
-> > > > On Wed, Feb 20, 2013 at 03:12:38PM +0900, Jingoo Han wrote:
-> > > > > Use devm_request_irq() and devm_kzalloc() to make cleanup paths
-> > > > > more simple.
-> > > > >
-> > > >
-> > > > ...
-> > > >
-> > > > > @@ -1269,9 +1266,7 @@ static int __exit menelaus_remove(struct i2c_client *client)
-> > > > >  {
-> > > > >  	struct menelaus_chip	*menelaus = i2c_get_clientdata(client);
-> > > > >
-> > > > > -	free_irq(client->irq, menelaus);
-> > > > >  	flush_work(&menelaus->work);
-> > > > > -	kfree(menelaus);
-> > > > >  	the_menelaus = NULL;
-> > > > >  	return 0;
-> > > >
-> > > > This conversion is certainly wrong - you really want to disable IRQ and
-> > > > then wait for the scheduled work to finish before freeing memory. Here
-> > > > you flush work but nothing stops IRQ from firing and scheduling that
-> > > > work again.
-> > >
-> > > Yes, you're right.
-> > > I will use devm_free_irq() before flush_work().
-> > 
-> > Why change it at all if you have to call it manually in both error
-> > unwinding and menelaus_remove() cases?
-> > 
-> > BTW, that __exit markup on menelaus_remove() is surprising... I am
-> > pretty sure it can be unbound via sysfs and so there will be a nasty
-> > oops.
-> 
-> I see, I will not modify this menelaus mfd driver.
-> Thank you.
+Some LED devices support flash/torch functionality through the LED subsystem.
+This patch enables direct LED trigger controls by the driver.
+Flash on/off and torch on/off can be done simply by other driver space.
+Two trigger APIs are added, ledtrig_flash_ctrl() and ledtrig_torch_ctrl().
 
-Same goes for the other drivers that can't safely use devm_request_irq()
-please.
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/leds/trigger/Kconfig          |    8 +++++
+ drivers/leds/trigger/Makefile         |    1 +
+ drivers/leds/trigger/ledtrig-camera.c |   57 +++++++++++++++++++++++++++++++++
+ include/linux/leds.h                  |    8 +++++
+ 4 files changed, 74 insertions(+)
+ create mode 100644 drivers/leds/trigger/ledtrig-camera.c
 
-Thanks.
-
+diff --git a/drivers/leds/trigger/Kconfig b/drivers/leds/trigger/Kconfig
+index eaa286d..49794b4 100644
+--- a/drivers/leds/trigger/Kconfig
++++ b/drivers/leds/trigger/Kconfig
+@@ -100,4 +100,12 @@ config LEDS_TRIGGER_TRANSIENT
+ 	  GPIO/PWM based hardware.
+ 	  If unsure, say Y.
+ 
++config LEDS_TRIGGER_CAMERA
++	tristate "LED Camera Flash/Torch Trigger"
++	depends on LEDS_TRIGGERS
++	help
++	  This allows LEDs to be controlled as a camera flash/torch device.
++	  This enables direct flash/torch on/off by the driver, kernel space.
++	  If unsure, say Y.
++
+ endif # LEDS_TRIGGERS
+diff --git a/drivers/leds/trigger/Makefile b/drivers/leds/trigger/Makefile
+index 554e46e..1abf48d 100644
+--- a/drivers/leds/trigger/Makefile
++++ b/drivers/leds/trigger/Makefile
+@@ -7,3 +7,4 @@ obj-$(CONFIG_LEDS_TRIGGER_GPIO)		+= ledtrig-gpio.o
+ obj-$(CONFIG_LEDS_TRIGGER_CPU)		+= ledtrig-cpu.o
+ obj-$(CONFIG_LEDS_TRIGGER_DEFAULT_ON)	+= ledtrig-default-on.o
+ obj-$(CONFIG_LEDS_TRIGGER_TRANSIENT)	+= ledtrig-transient.o
++obj-$(CONFIG_LEDS_TRIGGER_CAMERA)	+= ledtrig-camera.o
+diff --git a/drivers/leds/trigger/ledtrig-camera.c b/drivers/leds/trigger/ledtrig-camera.c
+new file mode 100644
+index 0000000..9bd73a8
+--- /dev/null
++++ b/drivers/leds/trigger/ledtrig-camera.c
+@@ -0,0 +1,57 @@
++/*
++ * Camera Flash and Torch On/Off Trigger
++ *
++ * based on ledtrig-ide-disk.c
++ *
++ * Copyright 2013 Texas Instruments
++ *
++ * Author: Milo(Woogyom) Kim <milo.kim@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/leds.h>
++
++DEFINE_LED_TRIGGER(ledtrig_flash);
++DEFINE_LED_TRIGGER(ledtrig_torch);
++
++void ledtrig_flash_ctrl(bool on)
++{
++	enum led_brightness brt = on ? LED_FULL : LED_OFF;
++
++	led_trigger_event(ledtrig_flash, brt);
++}
++EXPORT_SYMBOL_GPL(ledtrig_flash_ctrl);
++
++void ledtrig_torch_ctrl(bool on)
++{
++	enum led_brightness brt = on ? LED_FULL : LED_OFF;
++
++	led_trigger_event(ledtrig_torch, brt);
++}
++EXPORT_SYMBOL_GPL(ledtrig_torch_ctrl);
++
++static int __init ledtrig_camera_init(void)
++{
++	led_trigger_register_simple("flash", &ledtrig_flash);
++	led_trigger_register_simple("torch", &ledtrig_torch);
++	return 0;
++}
++module_init(ledtrig_camera_init);
++
++static void __exit ledtrig_camera_exit(void)
++{
++	led_trigger_unregister_simple(ledtrig_torch);
++	led_trigger_unregister_simple(ledtrig_flash);
++}
++module_exit(ledtrig_camera_exit);
++
++MODULE_DESCRIPTION("LED Trigger for Camera Flash/Torch Control");
++MODULE_AUTHOR("Milo Kim");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/leds.h b/include/linux/leds.h
+index 0d9b5ee..197ca9e 100644
+--- a/include/linux/leds.h
++++ b/include/linux/leds.h
+@@ -215,6 +215,14 @@ extern void ledtrig_ide_activity(void);
+ #define ledtrig_ide_activity() do {} while(0)
+ #endif
+ 
++#if defined(CONFIG_LEDS_TRIGGER_CAMERA) || defined(CONFIG_LEDS_TRIGGER_CAMERA_MODULE)
++extern void ledtrig_flash_ctrl(bool on);
++extern void ledtrig_torch_ctrl(bool on);
++#else
++#define ledtrig_flash_ctrl(x) do {} while(0)
++#define ledtrig_torch_ctrl(x) do {} while(0)
++#endif
++
+ /*
+  * Generic LED platform data for describing LED names and default triggers.
+  */
 -- 
-Dmitry
+1.7.9.5
+
+
+Best Regards,
+Milo
+
+
