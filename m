@@ -1,151 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab3BTFU7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 00:20:59 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:42098 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab3BTFU6 (ORCPT
+	id S1756216Ab3BTFbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 00:31:41 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:62830 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755830Ab3BTFbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 00:20:58 -0500
+	Wed, 20 Feb 2013 00:31:39 -0500
+Message-ID: <51245FB4.6050506@gmail.com>
+Date: Wed, 20 Feb 2013 13:31:32 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1361271268.592027245@f310.mail.ru>
-References: <1361198522-23789-1-git-send-email-shc_work@mail.ru>
-	<1361264161.333682302@f131.mail.ru>
-	<1361271268.592027245@f310.mail.ru>
-Date: Wed, 20 Feb 2013 13:20:57 +0800
-Message-ID: <CAP1dx+wKe_RrYGv0TNQrCoGssrrvOij+2JKa9=j2X+wWrrVTeg@mail.gmail.com>
-Subject: Re: Re[6]: [PATCH v3] mfd: syscon: Add non-DT support
-From: Dong Aisheng <dong.aisheng@linaro.org>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kyungmin Park <kmpark@infradead.org>
+CC: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mgorman@suse.de
+Subject: Re: [PATCH] mm: cma: fix accounting of CMA pages placed in high memory
+References: <1359973626-3900-1-git-send-email-m.szyprowski@samsung.com> <20130204233430.GA2610@blaptop> <5110B05B.5070109@samsung.com> <51237DDB.2050305@gmail.com> <CAH9JG2V4+qXLMq5nbuN37nb4xrPB11L91q=2NKrVDautyyK2Bw@mail.gmail.com>
+In-Reply-To: <CAH9JG2V4+qXLMq5nbuN37nb4xrPB11L91q=2NKrVDautyyK2Bw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 February 2013 18:54, Alexander Shiyan <shc_work@mail.ru> wrote:
-> ...
->> >> >> >>  struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
->> >> >> >>  {
->> >> >> >>       struct device_node *syscon_np;
->> >> >> >>       struct regmap *regmap;
->> >> >> >> +     struct syscon *syscon;
->> >> >> >> +     struct device *dev;
->> >> >> >>
->> >> >> >>       syscon_np = of_find_compatible_node(NULL, NULL, s);
->> >> >> >> -     if (!syscon_np)
->> >> >> >> +     if (syscon_np) {
->> >> >> >> +             regmap = syscon_node_to_regmap(syscon_np);
->> >> >> >> +             of_node_put(syscon_np);
->> >> >> >> +
->> >> >> >> +             return regmap;
->> >> >> >> +     }
->> >> >> >> +
->> >> >> >> +     /* Fallback to search by id_entry.name string */
->> >> >> >> +     dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
->> >> >> >> +                              syscon_match_id);
->> >> >> >> +     if (!dev)
->> >> >> >>               return ERR_PTR(-ENODEV);
->> >> >> >>
->> >> >> >> -     regmap = syscon_node_to_regmap(syscon_np);
->> >> >> >> -     of_node_put(syscon_np);
->> >> >> >> +     syscon = dev_get_drvdata(dev);
->> >> >> >>
->> >> >> >> -     return regmap;
->> >> >> >> +     return syscon->regmap;
->> >> >> >>  }
->> >> >> >>  EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
->> >> >> >
->> >> >> > Since you are not actually comparing the "compatible" property here,
->> >> >> > I would suggest adding another function here,
->> >> >>
->> >> >> Yes, i also think like that.
->> >> >
->> >> > In this case we should provide two paths for drivers which can work as with DT
->> >> > and without DT.
->> >>
->> >> Yes.
->> >
->> > I still think the universal procedure is better for the driver.
->> >
+On 02/20/2013 10:57 AM, Kyungmin Park wrote:
+> On Tue, Feb 19, 2013 at 10:27 PM, Simon Jeons <simon.jeons@gmail.com> wrote:
+>> On 02/05/2013 03:10 PM, Marek Szyprowski wrote:
+>>> Hello,
+>>>
+>>> On 2/5/2013 12:34 AM, Minchan Kim wrote:
+>>>> On Mon, Feb 04, 2013 at 11:27:05AM +0100, Marek Szyprowski wrote:
+>>>>> The total number of low memory pages is determined as
+>>>>> totalram_pages - totalhigh_pages, so without this patch all CMA
+>>>>> pageblocks placed in highmem were accounted to low memory.
+>>>> So what's the end user effect? With the effect, we have to decide
+>>>> routing it on stable.
+>>>>
+>>>>> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>>>>> ---
+>>>>>   mm/page_alloc.c |    4 ++++
+>>>>>   1 file changed, 4 insertions(+)
+>>>>>
+>>>>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>>>>> index f5bab0a..6415d93 100644
+>>>>> --- a/mm/page_alloc.c
+>>>>> +++ b/mm/page_alloc.c
+>>>>> @@ -773,6 +773,10 @@ void __init init_cma_reserved_pageblock(struct
+>>>>> page *page)
+>>>>>       set_pageblock_migratetype(page, MIGRATE_CMA);
+>>>>>       __free_pages(page, pageblock_order);
+>>>>>       totalram_pages += pageblock_nr_pages;
+>>>>> +#ifdef CONFIG_HIGHMEM
+>>>> We don't need #ifdef/#endif.
+>>>
+>>> #ifdef is required to let this code compile when highmem is not enabled,
+>>> becuase totalhigh_pages is defined as 0, see include/linux/highmem.h
+>>>
+>> Hi Marek,
 >>
->> Why?
->> I did not see your reply on my other comments on the problems of using universal
->> procedure?
->> Please let me know if you think they're not issues.
+>> 1) Why can support CMA regions placed in highmem?
+> Some vendors use reserved memory at highmem, and it's hard to modify
+> to use lowmem, so just CMA can support highmem and no need to adjust
+> address used at reserved memory.
+>> CMA is for dma buffer, correct? Then how can old dma device access highmem?
+> What's the "old dma device"? To support it, we also modify
+
+I mean dma devices which should still use bounce buffer, then these 
+devices will use bounce buffer to access CMA region in highmem or ...?
+
+> arch/arm/mm/dma-mapping.c for handling highmem address.
 >
-> Yes, I do not see a problem here.
-> I will try to show the code.
+>> 2) Why there is no totalhigh_pages variable define in the case of config
+>> highmem?
+> I don't know. it's just defined in case of highmem. that's reason to
+> use #ifdef/endif. we don't know hisotrical reason.
 >
-> In the driver:
-> struct regmap *r;
-> r = syscon_regmap_lookup_by_compatible("my_super_syscon");
->
-> For DT case:
-> syscon@123456 {
->   compatible = "my_super_syscon", "syscon";
->   ...
-> };
->
-> For non-DT case:
-> struct platform_device_id id = { .name = "my_super_syscon", };
-> struct platform_device syscon_pdev = {
->   .name = "syscon",
->   .id_entry = &id,
+> Thank you,
+> Kyungmin Park
+>>
+>>>>> +    if (PageHighMem(page))
+>>>>> +        totalhigh_pages += pageblock_nr_pages;
+>>>>> +#endif
+>>>>>   }
+>>>>>   #endif
+>>>>>
+>>>
+>>> Best regards
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-This is really strange to me and i've never seen such using.
-Usually the id_table is provided by the driver and the match process then will
-set the correct id_entry for the platform device once it matches.
-Please see the platform_bus match process: drivers/base/platform.c
-
->   ...
-> };
-> platform_device_register(&syscon_pdev);
->
-> Do I understand what you mean?
->
-
-My understanding for non-dt case is something like:
-In client driver:
-struct regmap *r;
-r = syscon_regmap_lookup_by_pdevname("my_super_syscon");
-
-In board code:
-struct platform_device syscon_pdev = {
-.name = "my_super_syscon",
-...
-};
- platform_device_register(&syscon_pdev);
-
-In syscon driver:
-static struct platform_device_id syscon_device_ids[] = {
-        {
-                .name = "my_super_syscon",
-        }, {
-                /* sentinel */
-        }
-};
-MODULE_DEVICE_TABLE(platform, syscon_device_ids);
-
-static struct platform_driver syscon_driver = {
-        .driver = {
-                .name = "syscon",
-                .owner = THIS_MODULE,
-                .of_match_table = of_syscon_match,
-        },
-        .id_table       = syscon_device_ids,
-        .probe          = syscon_probe,
-        .remove         = syscon_remove,
-};
-
-One problem is that every user needs to add their syscon compatible device
-support(platform_device_id) in syscon driver first before they can use it.
-But it looks to me just like how other driver generally does.
-
-Arnd,
-Do you think this is an issue?
-
-Regards
-Dong Aisheng
