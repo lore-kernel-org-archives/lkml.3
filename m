@@ -1,57 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934683Ab3BTJsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 04:48:08 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:56666 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933774Ab3BTJsF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 04:48:05 -0500
-Message-ID: <1361353681.10155.10.camel@laptop>
-Subject: Re: [patch v5 11/15] sched: add power/performance balance allow flag
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Date: Wed, 20 Feb 2013 10:48:01 +0100
-In-Reply-To: <1361164062-20111-12-git-send-email-alex.shi@intel.com>
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
-	 <1361164062-20111-12-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757985Ab3BTJsf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 04:48:35 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:44599 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S933774Ab3BTJs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 04:48:28 -0500
+X-IronPort-AV: E=Sophos;i="4.84,700,1355068800"; 
+   d="scan'208";a="6735787"
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: rusty@rustcorp.com.au
+Cc: pbonzini@redhat.com, asias@redhat.com, mst@redhat.com,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH 17/16 V2] virtio-scsi: use virtqueue_add_sgs for command buffers
+Date: Wed, 20 Feb 2013 17:47:19 +0800
+Message-Id: <1361353639-10623-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au>
+References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/20 17:47:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/20 17:47:45,
+	Serialize complete at 2013/02/20 17:47:45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-18 at 13:07 +0800, Alex Shi wrote:
-> @@ -4053,6 +4053,8 @@ struct lb_env {
->         unsigned int            loop;
->         unsigned int            loop_break;
->         unsigned int            loop_max;
-> +       int                     power_lb;  /* if power balance needed
-> */
-> +       int                     perf_lb;   /* if performance balance
-> needed */
->  };
->  
->  /*
-> @@ -5195,6 +5197,8 @@ static int load_balance(int this_cpu, struct rq
-> *this_rq,
->                 .idle           = idle,
->                 .loop_break     = sched_nr_migrate_break,
->                 .cpus           = cpus,
-> +               .power_lb       = 0,
-> +               .perf_lb        = 1,
->         };
->  
->         cpumask_copy(cpus, cpu_active_mask);
+Using the new virtqueue_add_sgs function lets us simplify the queueing
+path.  In particular, all data protected by the tgt_lock is just gone
+(multiqueue will find a new use for the lock).
 
-This construct allows for the possibility of power_lb=1,perf_lb=1, does
-that make sense? Why not have a single balance_policy enumeration?
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+V1->V2:
+	add the lost comments (Asias)
+
+ drivers/scsi/virtio_scsi.c | 91 +++++++++++++++++-----------------------------
+ 1 file changed, 34 insertions(+), 57 deletions(-)
+
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 3449a1f..bae0c95 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -59,11 +59,8 @@ struct virtio_scsi_vq {
+ 
+ /* Per-target queue state */
+ struct virtio_scsi_target_state {
+-	/* Protects sg.  Lock hierarchy is tgt_lock -> vq_lock.  */
++	/* Never held at the same time as vq_lock.  */
+ 	spinlock_t tgt_lock;
+-
+-	/* For sglist construction when adding commands to the virtqueue.  */
+-	struct scatterlist sg[];
+ };
+ 
+ /* Driver instance state */
+@@ -351,75 +348,61 @@ static void virtscsi_event_done(struct virtqueue *vq)
+ 	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
+ };
+ 
+-static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+-			     struct scsi_data_buffer *sdb)
+-{
+-	struct sg_table *table = &sdb->table;
+-	struct scatterlist *sg_elem;
+-	unsigned int idx = *p_idx;
+-	int i;
+-
+-	for_each_sg(table->sgl, sg_elem, table->nents, i)
+-		sg[idx++] = *sg_elem;
+-
+-	*p_idx = idx;
+-}
+-
+ /**
+- * virtscsi_map_cmd - map a scsi_cmd to a virtqueue scatterlist
+- * @vscsi	: virtio_scsi state
++ * virtscsi_add_cmd - add a virtio_scsi_cmd to a virtqueue
++ * @vq		: the struct virtqueue we're talking about
+  * @cmd		: command structure
+- * @out_num	: number of read-only elements
+- * @in_num	: number of write-only elements
+  * @req_size	: size of the request buffer
+  * @resp_size	: size of the response buffer
+- *
+- * Called with tgt_lock held.
++ * @gfp	: flags to use for memory allocations
+  */
+-static void virtscsi_map_cmd(struct virtio_scsi_target_state *tgt,
+-			     struct virtio_scsi_cmd *cmd,
+-			     unsigned *out_num, unsigned *in_num,
+-			     size_t req_size, size_t resp_size)
++static int virtscsi_add_cmd(struct virtqueue *vq,
++			    struct virtio_scsi_cmd *cmd,
++			    size_t req_size, size_t resp_size, gfp_t gfp)
+ {
+ 	struct scsi_cmnd *sc = cmd->sc;
+-	struct scatterlist *sg = tgt->sg;
+-	unsigned int idx = 0;
++	struct scatterlist *sgs[4], req, resp;
++	struct sg_table *out, *in;
++	unsigned out_num = 0, in_num = 0;
++
++	out = in = NULL;
++
++	if (sc && sc->sc_data_direction != DMA_NONE) {
++		if (sc->sc_data_direction != DMA_FROM_DEVICE)
++			out = &scsi_out(sc)->table;
++		if (sc->sc_data_direction != DMA_TO_DEVICE)
++			in = &scsi_in(sc)->table;
++	}
+ 
+ 	/* Request header.  */
+-	sg_set_buf(&sg[idx++], &cmd->req, req_size);
++	sg_init_one(&req, &cmd->req, req_size);
++	sgs[out_num++] = &req;
+ 
+ 	/* Data-out buffer.  */
+-	if (sc && sc->sc_data_direction != DMA_FROM_DEVICE)
+-		virtscsi_map_sgl(sg, &idx, scsi_out(sc));
+-
+-	*out_num = idx;
++	if (out)
++		sgs[out_num++] = out->sgl;
+ 
+ 	/* Response header.  */
+-	sg_set_buf(&sg[idx++], &cmd->resp, resp_size);
++	sg_init_one(&resp, &cmd->resp, resp_size);
++	sgs[out_num + in_num++] = &resp;
+ 
+ 	/* Data-in buffer */
+-	if (sc && sc->sc_data_direction != DMA_TO_DEVICE)
+-		virtscsi_map_sgl(sg, &idx, scsi_in(sc));
++	if (in)
++		sgs[out_num + in_num++] = in->sgl;
+ 
+-	*in_num = idx - *out_num;
++	return virtqueue_add_sgs(vq, sgs, out_num, in_num, cmd, gfp);
+ }
+ 
+-static int virtscsi_kick_cmd(struct virtio_scsi_target_state *tgt,
+-			     struct virtio_scsi_vq *vq,
++static int virtscsi_kick_cmd(struct virtio_scsi_vq *vq,
+ 			     struct virtio_scsi_cmd *cmd,
+ 			     size_t req_size, size_t resp_size, gfp_t gfp)
+ {
+-	unsigned int out_num, in_num;
+ 	unsigned long flags;
+ 	int err;
+ 	bool needs_kick = false;
+ 
+-	spin_lock_irqsave(&tgt->tgt_lock, flags);
+-	virtscsi_map_cmd(tgt, cmd, &out_num, &in_num, req_size, resp_size);
+-
+-	spin_lock(&vq->vq_lock);
+-	err = virtqueue_add_buf(vq->vq, tgt->sg, out_num, in_num, cmd, gfp);
+-	spin_unlock(&tgt->tgt_lock);
++	spin_lock_irqsave(&vq->vq_lock, flags);
++	err = virtscsi_add_cmd(vq->vq, cmd, req_size, resp_size, gfp);
+ 	if (!err)
+ 		needs_kick = virtqueue_kick_prepare(vq->vq);
+ 
+@@ -433,7 +416,6 @@ static int virtscsi_kick_cmd(struct virtio_scsi_target_state *tgt,
+ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+ {
+ 	struct virtio_scsi *vscsi = shost_priv(sh);
+-	struct virtio_scsi_target_state *tgt = vscsi->tgt[sc->device->id];
+ 	struct virtio_scsi_cmd *cmd;
+ 	int ret;
+ 
+@@ -467,7 +449,7 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+ 	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
+ 	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+ 
+-	if (virtscsi_kick_cmd(tgt, &vscsi->req_vq, cmd,
++	if (virtscsi_kick_cmd(&vscsi->req_vq, cmd,
+ 			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
+ 			      GFP_ATOMIC) == 0)
+ 		ret = 0;
+@@ -481,11 +463,10 @@ out:
+ static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+ {
+ 	DECLARE_COMPLETION_ONSTACK(comp);
+-	struct virtio_scsi_target_state *tgt = vscsi->tgt[cmd->sc->device->id];
+ 	int ret = FAILED;
+ 
+ 	cmd->comp = &comp;
+-	if (virtscsi_kick_cmd(tgt, &vscsi->ctrl_vq, cmd,
++	if (virtscsi_kick_cmd(&vscsi->ctrl_vq, cmd,
+ 			      sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
+ 			      GFP_NOIO) < 0)
+ 		goto out;
+@@ -591,15 +572,11 @@ static struct virtio_scsi_target_state *virtscsi_alloc_tgt(
+ 	struct virtio_scsi_target_state *tgt;
+ 	gfp_t gfp_mask = GFP_KERNEL;
+ 
+-	/* We need extra sg elements at head and tail.  */
+-	tgt = kmalloc(sizeof(*tgt) + sizeof(tgt->sg[0]) * (sg_elems + 2),
+-		      gfp_mask);
+-
++	tgt = kmalloc(sizeof(*tgt), gfp_mask);
+ 	if (!tgt)
+ 		return NULL;
+ 
+ 	spin_lock_init(&tgt->tgt_lock);
+-	sg_init_table(tgt->sg, sg_elems + 2);
+ 	return tgt;
+ }
+ 
+-- 
+1.8.1
 
