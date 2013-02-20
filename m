@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935540Ab3BTNgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:36:16 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44560
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935090Ab3BTNgO (ORCPT
+	id S935555Ab3BTNg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:36:29 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:45951 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935090Ab3BTNg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:36:14 -0500
-Message-ID: <1361367371.10155.32.camel@laptop>
-Subject: Re: [patch v5 09/15] sched: add power aware scheduling in
- fork/exec/wake
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Date: Wed, 20 Feb 2013 14:36:11 +0100
-In-Reply-To: <5124BCEB.8030606@intel.com>
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
-	  <1361164062-20111-10-git-send-email-alex.shi@intel.com>
-	 <1361353360.10155.9.camel@laptop> <5124BCEB.8030606@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Feb 2013 08:36:26 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Wed, 20 Feb 2013 08:36:25 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: "Woodhouse, David" <david.woodhouse@intel.com>
+Cc: Kim Phillips <kim.phillips@freescale.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Borislav Petkov <bp@alien8.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        David Rientjes <rientjes@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robherring2@gmail.com>
+Subject: Re: [RFC] arm: use built-in byte swap function
+In-reply-to: <1361356696.13482.269.camel@i7.infradead.org>
+Message-id: <alpine.LFD.2.03.1302200835380.6419@syhkavp.arg>
+References: <20130129181046.GC25415@pd.tnic>
+ <20130130200900.9d7cf7908caeaef4ecee1d61@freescale.com>
+ <20130131092801.GV23505@n2100.arm.linux.org.uk>
+ <20130131145947.f62474a0600848df86548b96@freescale.com>
+ <20130201011712.GF23505@n2100.arm.linux.org.uk>
+ <1359703995.23531.6.camel@shinybook.infradead.org>
+ <20130205210436.670c62e26d2121330e87af35@freescale.com>
+ <1360141322.6066.4.camel@shinybook.infradead.org>
+ <20130206191905.ac8eb6743e69425f30888704@freescale.com>
+ <20130207181315.GM17833@n2100.arm.linux.org.uk>
+ <1360344301.6066.263.camel@shinybook.infradead.org>
+ <alpine.LFD.2.02.1302081503430.6300@xanadu.home>
+ <1360363233.6066.283.camel@shinybook.infradead.org>
+ <alpine.LFD.2.02.1302081745500.6300@xanadu.home>
+ <20130208191208.2ef3d78bda71aa7b44d00d7b@freescale.com>
+ <alpine.LFD.2.02.1302082102380.6300@xanadu.home>
+ <20130219203115.114eab79e8d2099c6306d921@freescale.com>
+ <alpine.LFD.2.03.1302192151280.6419@syhkavp.arg>
+ <1361356696.13482.269.camel@i7.infradead.org>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-20 at 20:09 +0800, Alex Shi wrote:
-> On 02/20/2013 05:42 PM, Peter Zijlstra wrote:
-> > On Mon, 2013-02-18 at 13:07 +0800, Alex Shi wrote:
-> >> +/*
-> >> + * Try to collect the task running number and capacity of the group.
-> >> + */
-> >> +static void get_sg_power_stats(struct sched_group *group,
-> >> +       struct sched_domain *sd, struct sg_lb_stats *sgs)
-> >> +{
-> >> +       int i;
-> >> +
-> >> +       for_each_cpu(i, sched_group_cpus(group)) {
-> >> +               struct rq *rq = cpu_rq(i);
-> >> +
-> >> +               sgs->group_utils += rq->nr_running;
-> >> +       }
-> >> +
-> >> +       sgs->group_capacity = DIV_ROUND_CLOSEST(group->sgp->power,
-> >> +                                               SCHED_POWER_SCALE);
-> >> +       if (!sgs->group_capacity)
-> >> +               sgs->group_capacity = fix_small_capacity(sd, group);
-> >> +       sgs->group_weight = group->group_weight;
-> >> +}
+On Wed, 20 Feb 2013, Woodhouse, David wrote:
+
+> On Tue, 2013-02-19 at 22:17 -0500, Nicolas Pitre wrote:
 > > 
-> > So you're trying to compute the group utilization, but what does that
-> > have to do with nr_running? In an earlier patch you introduced the
-> > per-cpu utilization, so why not avg that to compute the group
-> > utilization?
+> > > +$(obj)/bswapsdi2.o: $(obj)/../../../../arch/$(SRCARCH)/lib/bswapsdi2.o
+> > > +     $(call cmd,shipped)
+> > > +
+> > 
+> > I don't think you can get away with this.  The decompressor code is 
+> > compiled with -fpic and the main kernel is not.  Most toolchains do mark 
+> > object files with some flags to prevent the link of incompatible objects 
+> > together (normally pic and non pic objects are not compatible even if in 
+> > this very simple case that would not matter).  Maybe you are able to 
+> > link zImage successfully simply because no references to __bswap* needed 
+> > to be resolved and therefore the linker didn't need to search/include 
+> > that object?
 > 
-> I had tried to use rq utilisation in this balancing, but since the
-> utilisation need much time to accumulate itself(345ms). It's bad for
-> any burst balancing. So I use instant utilisation -- nr_running.
+> This, and the issue with -Os vs. -O2, make me inclined to suggest that
+> we should just provide an asm version of these functions instead of
+> using the compiler.
 
-But but but,... nr_running is completely unrelated to utilization.
+You'll have the same issue wrt the above whether or not the source file 
+is C or assembly.
 
+
+Nicolas
