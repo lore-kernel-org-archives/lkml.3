@@ -1,42 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab3BTXRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 18:17:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41613 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab3BTXRY (ORCPT
+	id S1752317Ab3BTXR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 18:17:29 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:50877 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403Ab3BTXR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 18:17:24 -0500
-Date: Wed, 20 Feb 2013 15:17:23 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, xemul@parallels.com, hpa@zytor.com,
-        Alexander Kartashov <alekskartashov@parallels.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [patch 2/2] arm: Wire up kcmp syscall
-Message-Id: <20130220151723.0a22794a.akpm@linux-foundation.org>
-In-Reply-To: <20130219070703.GC20312@moon>
-References: <20130219064800.719149796@openvz.org>
-	<20130219065210.148067470@openvz.org>
-	<20130219070703.GC20312@moon>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Feb 2013 18:17:27 -0500
+From: Mandeep Singh Baines <msb@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Mandeep Singh Baines <msb@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [PATCH v4] lockdep: check that no locks held at freeze time
+Date: Wed, 20 Feb 2013 15:17:16 -0800
+Message-Id: <1361402236-28644-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.12.4
+In-Reply-To: <20130220223013.GA15760@redhat.com>
+References: <20130220223013.GA15760@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Feb 2013 11:07:03 +0400
-Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+We shouldn't try_to_freeze if locks are held.
 
-> From: Alexander Kartashov <alekskartashov@parallels.com>
-> Subject: arm: Wire up kcmp syscall
-> 
-> Signed-off-by: Alexander Kartashov <alekskartashov@parallels.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
+Changes since v1:
+* LKML: <20130215111635.GA26955@gmail.com> Ingo Molnar
+  * Added a msg string that gets passed in.
+* LKML: <20130215154449.GD30829@redhat.com> Oleg Nesterov
+  * Check PF_NOFREEZE in try_to_freeze().
+Changes since v2:
+* LKML: <20130216170605.GC4910@redhat.com> Oleg Nesterovw
+  * Avoid unnecessary PF_NOFREEZE check when !CONFIG_LOCKDEP.
+* Mandeep Singh Baines
+  * Generalize an exit specific printk.
+Changes since v3:
+* LKML: <20130220223013.GA15760@redhat.com> Oleg Nesterovw
+  * Remove stale vfork comment from commit message.
 
-This should have had signed-off-by:you, as you were on the patch's
-delivery path.
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Acked-by: Ingo Molnar <mingo@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>
+CC: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ include/linux/debug_locks.h |  5 +++--
+ include/linux/freezer.h     |  4 ++++
+ kernel/exit.c               |  2 +-
+ kernel/lockdep.c            | 10 +++++-----
+ 4 files changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/include/linux/debug_locks.h b/include/linux/debug_locks.h
+index 3bd46f7..e6c3c85 100644
+--- a/include/linux/debug_locks.h
++++ b/include/linux/debug_locks.h
+@@ -51,7 +51,8 @@ struct task_struct;
+ extern void debug_show_all_locks(void);
+ extern void debug_show_held_locks(struct task_struct *task);
+ extern void debug_check_no_locks_freed(const void *from, unsigned long len);
+-extern void debug_check_no_locks_held(struct task_struct *task);
++extern void debug_check_no_locks_held(struct task_struct *task,
++				      const char *msg);
+ #else
+ static inline void debug_show_all_locks(void)
+ {
+@@ -67,7 +68,7 @@ debug_check_no_locks_freed(const void *from, unsigned long len)
+ }
+ 
+ static inline void
+-debug_check_no_locks_held(struct task_struct *task)
++debug_check_no_locks_held(struct task_struct *task, const char *msg)
+ {
+ }
+ #endif
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index e4238ce..27ea080 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -3,6 +3,7 @@
+ #ifndef FREEZER_H_INCLUDED
+ #define FREEZER_H_INCLUDED
+ 
++#include <linux/debug_locks.h>
+ #include <linux/sched.h>
+ #include <linux/wait.h>
+ #include <linux/atomic.h>
+@@ -43,6 +44,9 @@ extern void thaw_kernel_threads(void);
+ 
+ static inline bool try_to_freeze(void)
+ {
++	if (!(current->flags & PF_NOFREEZE))
++		debug_check_no_locks_held(current,
++					  "lock held while trying to freeze");
+ 	might_sleep();
+ 	if (likely(!freezing(current)))
+ 		return false;
+diff --git a/kernel/exit.c b/kernel/exit.c
+index b4df219..88a706c 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -833,7 +833,7 @@ void do_exit(long code)
+ 	/*
+ 	 * Make sure we are holding no locks:
+ 	 */
+-	debug_check_no_locks_held(tsk);
++	debug_check_no_locks_held(tsk, "lock held at task exit time");
+ 	/*
+ 	 * We can do this unlocked here. The futex code uses this flag
+ 	 * just to verify whether the pi state cleanup has been done
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 7981e5b..f257b6d 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -4083,7 +4083,7 @@ void debug_check_no_locks_freed(const void *mem_from, unsigned long mem_len)
+ }
+ EXPORT_SYMBOL_GPL(debug_check_no_locks_freed);
+ 
+-static void print_held_locks_bug(struct task_struct *curr)
++static void print_held_locks_bug(struct task_struct *curr, const char *msg)
+ {
+ 	if (!debug_locks_off())
+ 		return;
+@@ -4092,10 +4092,10 @@ static void print_held_locks_bug(struct task_struct *curr)
+ 
+ 	printk("\n");
+ 	printk("=====================================\n");
+-	printk("[ BUG: lock held at task exit time! ]\n");
++	printk("[ BUG: %s! ]\n", msg);
+ 	print_kernel_ident();
+ 	printk("-------------------------------------\n");
+-	printk("%s/%d is exiting with locks still held!\n",
++	printk("%s/%d still has locks held!\n",
+ 		curr->comm, task_pid_nr(curr));
+ 	lockdep_print_held_locks(curr);
+ 
+@@ -4103,10 +4103,10 @@ static void print_held_locks_bug(struct task_struct *curr)
+ 	dump_stack();
+ }
+ 
+-void debug_check_no_locks_held(struct task_struct *task)
++void debug_check_no_locks_held(struct task_struct *task, const char *msg)
+ {
+ 	if (unlikely(task->lockdep_depth > 0))
+-		print_held_locks_bug(task);
++		print_held_locks_bug(task, msg);
+ }
+ 
+ void debug_show_all_locks(void)
+-- 
+1.7.12.4
 
