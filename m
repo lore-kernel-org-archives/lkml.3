@@ -1,46 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935247Ab3BTMQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 07:16:19 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:49732 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935029Ab3BTMQS (ORCPT
+	id S935262Ab3BTMQy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 07:16:54 -0500
+Received: from mail-pb0-f65.google.com ([209.85.160.65]:43651 "EHLO
+	mail-pb0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935029Ab3BTMQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 07:16:18 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dong Aisheng <dong.aisheng@linaro.org>
-Subject: Re: Re[8]: [PATCH v3] mfd: syscon: Add non-DT support
-Date: Wed, 20 Feb 2013 12:16:10 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alexander Shiyan <shc_work@mail.ru>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-References: <1361198522-23789-1-git-send-email-shc_work@mail.ru> <201302201114.49304.arnd@arndb.de> <CAP1dx+x_+jXTdWM2oH7JTBSQfy97hHkJVTmu8=3X_6iEiuAb4A@mail.gmail.com>
-In-Reply-To: <CAP1dx+x_+jXTdWM2oH7JTBSQfy97hHkJVTmu8=3X_6iEiuAb4A@mail.gmail.com>
+	Wed, 20 Feb 2013 07:16:52 -0500
+Message-ID: <5124BEAE.6060801@gmail.com>
+Date: Wed, 20 Feb 2013 20:16:46 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Hugh Dickins <hughd@google.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: shmem: use new radix tree iterator
+References: <1359699238-7327-1-git-send-email-hannes@cmpxchg.org> <alpine.LNX.2.00.1302031759240.4120@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1302031759240.4120@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201302201216.10721.arnd@arndb.de>
-X-Provags-ID: V02:K0:YaFdlqPdNvbIwxQY2l5PbxApG49FQ6cp0EG0qc9kXdM
- 1NniOBP7hhhRYGVRbSHe8C2fUMrTlSnYp6RU6sARo3gzAV9ypo
- hZ5IEIlS4ymeyjd8eP+Eacx376R6WQYyZLVXIxN/W13rJ6bOSQ
- 8Ci70vEsPEhu51E1FnZ+o5zzyrvQWQHZpIrVOb0N0YN4fHQfVI
- iollb5X0IZ5BRE1qR35WU0GMnWroQCcydgpXEGfeAfYIM+BZV2
- kZp5SVCGAJBrsDFDcAxioYL8YcmQgYKNc8Sx8aQJjVeI2cquNo
- uP6RoAEzMfqaiXqOLOuqyqQMpm27rmelF2pOr71M9cDuLiWB7N
- aMc1Zn1+tENA3/PhiNMs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 February 2013, Dong Aisheng wrote:
-> But one question i wonder is that it may be hard to know how many poteintial
-> non-dt platforms may use syscon.
+Hi Hugh,
+On 02/04/2013 10:01 AM, Hugh Dickins wrote:
+> On Fri, 1 Feb 2013, Johannes Weiner wrote:
+>
+>> In shmem_find_get_pages_and_swap, use the faster radix tree iterator
+>> construct from 78c1d78 "radix-tree: introduce bit-optimized iterator".
+>>
+>> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Yes, that looks fine, and is testing out fine, thanks.
+> Acked-by: Hugh Dickins <hughd@google.com>
 
-Yes, good point. Of course we want as many platforms as possible to
-use syscon, just like we want them to use DT, because both things
-are generally useful concepts, but they are not necessarily tied
-together.
+Could you share your testcase with me? It seems that you always can test 
+shmem patches.
 
-	Arnd
+>
+>> ---
+>>   mm/shmem.c | 25 ++++++++++++-------------
+>>   1 file changed, 12 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/mm/shmem.c b/mm/shmem.c
+>> index a368a1c..c5dc8ae 100644
+>> --- a/mm/shmem.c
+>> +++ b/mm/shmem.c
+>> @@ -336,19 +336,19 @@ static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
+>>   					pgoff_t start, unsigned int nr_pages,
+>>   					struct page **pages, pgoff_t *indices)
+>>   {
+>> -	unsigned int i;
+>> -	unsigned int ret;
+>> -	unsigned int nr_found;
+>> +	void **slot;
+>> +	unsigned int ret = 0;
+>> +	struct radix_tree_iter iter;
+>> +
+>> +	if (!nr_pages)
+>> +		return 0;
+>>   
+>>   	rcu_read_lock();
+>>   restart:
+>> -	nr_found = radix_tree_gang_lookup_slot(&mapping->page_tree,
+>> -				(void ***)pages, indices, start, nr_pages);
+>> -	ret = 0;
+>> -	for (i = 0; i < nr_found; i++) {
+>> +	radix_tree_for_each_slot(slot, &mapping->page_tree, &iter, start) {
+>>   		struct page *page;
+>>   repeat:
+>> -		page = radix_tree_deref_slot((void **)pages[i]);
+>> +		page = radix_tree_deref_slot(slot);
+>>   		if (unlikely(!page))
+>>   			continue;
+>>   		if (radix_tree_exception(page)) {
+>> @@ -365,17 +365,16 @@ static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
+>>   			goto repeat;
+>>   
+>>   		/* Has the page moved? */
+>> -		if (unlikely(page != *((void **)pages[i]))) {
+>> +		if (unlikely(page != *slot)) {
+>>   			page_cache_release(page);
+>>   			goto repeat;
+>>   		}
+>>   export:
+>> -		indices[ret] = indices[i];
+>> +		indices[ret] = iter.index;
+>>   		pages[ret] = page;
+>> -		ret++;
+>> +		if (++ret == nr_pages)
+>> +			break;
+>>   	}
+>> -	if (unlikely(!ret && nr_found))
+>> -		goto restart;
+>>   	rcu_read_unlock();
+>>   	return ret;
+>>   }
+>> -- 
+>> 1.7.11.7
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
