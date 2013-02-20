@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964797Ab3BTNVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:21:17 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44489
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934923Ab3BTNVP (ORCPT
+	id S935436Ab3BTNX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:23:27 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52904 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934923Ab3BTNX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:21:15 -0500
-Message-ID: <1361366462.10155.24.camel@laptop>
-Subject: Re: [RFC PATCH v3 1/3] sched: schedule balance map foundation
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Date: Wed, 20 Feb 2013 14:21:02 +0100
-In-Reply-To: <510791B2.6090506@linux.vnet.ibm.com>
-References: <51079178.3070002@linux.vnet.ibm.com>
-	 <510791B2.6090506@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Feb 2013 08:23:26 -0500
+Date: Wed, 20 Feb 2013 13:23:21 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, arnd@arndb.de, linus.walleij@stericsson.com,
+        Jonas Aaberg <jonas.aberg@stericsson.com>
+Subject: Re: [PATCH 02/35] mfd: ab8500-gpadc: Allow tvout regulator to be
+ missing
+Message-ID: <20130220132321.GC13049@sirena.org.uk>
+References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
+ <1360933026-30325-3-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360933026-30325-3-git-send-email-lee.jones@linaro.org>
+X-Cookie: That's what she said.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-29 at 17:09 +0800, Michael Wang wrote:
-> +       for_each_possible_cpu(cpu) {
-> +               sbm = &per_cpu(sbm_array, cpu);
-> +               node = cpu_to_node(cpu);
-> +               size = sizeof(struct sched_domain *) * sbm_max_level;
-> +
-> +               for (type = 0; type < SBM_MAX_TYPE; type++) {
-> +                       sbm->sd[type] = kmalloc_node(size, GFP_KERNEL,
-> node);
-> +                       WARN_ON(!sbm->sd[type]);
-> +                       if (!sbm->sd[type])
-> +                               goto failed;
-> +               }
-> +       }
+On Fri, Feb 15, 2013 at 12:56:33PM +0000, Lee Jones wrote:
 
-You can't readily use kmalloc_node() here, cpu_to_node() might return an
-invalid node for offline cpus here.
+> +	if (gpadc->regu)
+> +		regulator_disable(gpadc->regu);
 
-Also see: 2ea45800d8e1c3c51c45a233d6bd6289a297a386
-
+No explanation for this in the changelog and missing error handling like
+this is pretty much always terrible style.  Why are we doing this?
