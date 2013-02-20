@@ -1,86 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758247Ab3BTFz7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 00:55:59 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:58008 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757916Ab3BTFz5 (ORCPT
+	id S1758832Ab3BTF6H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 00:58:07 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:39142 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757916Ab3BTF6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 00:55:57 -0500
+	Wed, 20 Feb 2013 00:58:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <1361289343.16206.35.camel@anish-Inspiron-N5050>
-References: <CAJ8diHTq6ayQjciiu_9fXyHYTk4DorT=5uw=759zHo7B81-e4w@mail.gmail.com>
-	<CAJ8diHT5Ze3bsPGO7yLqPHu6niuDC_gtjJB=gKGoUXOfvoHtyw@mail.gmail.com>
-	<1361289343.16206.35.camel@anish-Inspiron-N5050>
-Date: Wed, 20 Feb 2013 11:25:57 +0530
-Message-ID: <CAJ8diHSUhqgKugY3Yvnst_cPxdXHAXPWe-itGJjQOiztu-obhw@mail.gmail.com>
-Subject: Re: Fwd: mmc card probe not getting called
-From: chetan cr123 <chetancr123@gmail.com>
-To: anish kumar <anish198519851985@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1361242326.23152.189.camel@gandalf.local.home>
+References: <1361241190-18073-1-git-send-email-linkinjeon@gmail.com>
+	<1361242326.23152.189.camel@gandalf.local.home>
+Date: Wed, 20 Feb 2013 14:58:04 +0900
+Message-ID: <CAKYAXd94oHDZUfV1MaS7eoSRKUbOXMid8rFjdxWWuwLa3Cdv=g@mail.gmail.com>
+Subject: Re: [PATCH 2/8] f2fs: add tracepoints for inode operations
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: jaegeuk.kim@samsung.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anish,
-
-Thanks for your reply,
-
-I was doing device registration for device by giving same name as
-driver name, This i used to do in platform driver registration,
-
-But i dont know how to do for mmc device registration,
-
-And i also want to know which part of the code(file name) is doing the
-string compare with the driver and device names and calling the probe
-function. can u please point me to that part of code. from many days i
-was searching from which part of code where string compare is done and
-calls the probe function.
-
-
-Kindly point me out to that part of code.
-
-
-
-On Tue, Feb 19, 2013 at 9:25 PM, anish kumar
-<anish198519851985@gmail.com> wrote:
-> On Tue, 2013-02-19 at 12:16 +0530, chetan cr123 wrote:
->> HI All,
->>
->> I am working on Sd Card/Block driver
->>
->> I am registering it as both
->>
->> 1. register_blkdev()-------------  BLOCK Regsiter
->> 2. mmc_register_driver ------  MMC regsiter
->>
->> and filling the mmc_driver structure.
->>
->> I am not able to see the probe of MMC, But i see the return value of
->> mmc_register function returning success.
-> I am not an expert on MMC driver but AFAIK it is no different in terms
-> of following device/driver model.
-> Probe of a function is only called when device name matches with driver
-> name and when it happens driver calls your probe.
+2013/2/19 Steven Rostedt <rostedt@goodmis.org>:
+> On Tue, 2013-02-19 at 11:33 +0900, Namjae Jeon wrote:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
 >
-> So in your case even though you have registered the driver, looks like
-> you are missing the device registration part.Do that and see the magic.
-> If this is SOC then that is done in the board file i.e.
-> arch/arm/plat-xyz/....
+>> +TRACE_EVENT(f2fs_unlink_exit,
+>> +     TP_PROTO(struct dentry *dentry, int ret),
+>> +
+>> +     TP_ARGS(dentry, ret),
+>> +
+>> +     TP_STRUCT__entry(
+>> +             __field(ino_t,  ino)
+>> +             __field(dev_t,  dev)
+>> +             __field(int,    ret)
+>> +     ),
+>> +
+>> +     TP_fast_assign(
+>> +             __entry->ino            = dentry->d_inode->i_ino;
+>> +             __entry->dev            = dentry->d_inode->i_sb->s_dev;
+>> +             __entry->ret            = ret;
+>> +     ),
+>> +
+>> +     TP_printk("dev %d,%d ino %lu ret %d",
+>> +               MAJOR(__entry->dev), MINOR(__entry->dev),
+>> +               (unsigned long) __entry->ino,
+>> +               __entry->ret)
+>> +);
+>> +
+>>  #endif /* _TRACE_F2FS_H */
+>>
+>>   /* This part must be outside protection */
 >
->>
->> Kindly let me know how i make the probe of mmc getting called
->>
->> Thanks
->>
->>
->> Chetan
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+> If at all possible, try to combine as many tracepoints as possible by a
+> class. A TRACE_EVENT() is really a DECLARE_EVENT_CLASS();
+> DEFINE_EVENT(); pair that totals about 5k per TRACE_EVENT(). The
+> DECLARE_EVENT_CLASS() being the majority of that. A DEFINE_EVENT() adds
+> approximately 250 bytes each. Thus, combining the above with the
+> TRACE_EVENT() from the previous patch:
+>
+> +TRACE_EVENT(f2fs_sync_file_exit,
+> +       TP_PROTO(struct inode *inode, int ret),
+> +
+> +       TP_ARGS(inode, ret),
+> +
+> +       TP_STRUCT__entry(
+> +               __field(int,    ret)
+> +               __field(ino_t,  ino)
+> +               __field(dev_t,  dev)
+> +       ),
+> +
+> +       TP_fast_assign(
+> +               __entry->ret            = ret;
+> +               __entry->ino            = inode->i_ino;
+> +               __entry->dev            = inode->i_sb->s_dev;
+> +       ),
+> +
+> +       TP_printk("dev %d,%d ino %lu ret %d",
+> +                 MAJOR(__entry->dev), MINOR(__entry->dev),
+> +                 (unsigned long) __entry->ino,
+> +                 __entry->ret)
+> +);
+>
+> into:
+>
+> DECLARE_EVENT_CLASS(f2fs_dev_inode_ret,
+>        TP_PROTO(struct inode *inode, int ret),
+>
+>        TP_ARGS(inode, ret),
+>
+>        TP_STRUCT__entry(
+>                __field(int,    ret)
+>                __field(ino_t,  ino)
+>                __field(dev_t,  dev)
+>        ),
+>
+>        TP_fast_assign(
+>                __entry->ret            = ret;
+>                __entry->ino            = inode->i_ino;
+>                __entry->dev            = inode->i_sb->s_dev;
+>        ),
+>
+>        TP_printk("dev %d,%d ino %lu ret %d",
+>                  MAJOR(__entry->dev), MINOR(__entry->dev),
+>                  (unsigned long) __entry->ino,
+>                  __entry->ret)
+> );
+>
+> DEFINE_EVENT(f2fs_sync_file_exit,
+>        TP_PROTO(struct inode *inode, int ret),
+>        TP_ARGS(inode, ret));
+>
+> DEFINE_EVENT(f2fs_unlink_exit,
+>        TP_PROTO(struct inode *inode, int ret),
+>        TP_ARGS(inode, ret));
+>
+> You can save ~4750 bytes. Note, you will need to pass the inode instead
+> of the dentry into f2fs_unlink_exit(), but you don't use the dentry
+> anyway.
+Hi Steven.
+Thanks for review :). I will update patches as your advice.
+
+
+> -- Steve
 >
 >
