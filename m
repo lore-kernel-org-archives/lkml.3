@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935723Ab3BTDts (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 22:49:48 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56665 "EHLO arroyo.ext.ti.com"
+	id S935738Ab3BTEB2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 23:01:28 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57030 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934892Ab3BTDtr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 22:49:47 -0500
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Subject: RE: [PATCH 4/4] regulator: palmas: Change the DT node property
- names to follow the convention
-Thread-Topic: [PATCH 4/4] regulator: palmas: Change the DT node property
- names to follow the convention
-Thread-Index: AQHODZb8EcxJDCPQKkyLFndA8TN3D5iAxYOAgACmrxD//9eHAIAA24KQ
-Date: Wed, 20 Feb 2013 03:49:37 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229BBC78@DBDE01.ent.ti.com>
-References: <1361164460-3251-1-git-send-email-j-keerthy@ti.com>
- <20130219124133.GC23508@opensource.wolfsonmicro.com>
- <DC88CAD03C0052499C1907B327FC63229BBB5C@DBDE01.ent.ti.com>
- <20130219201315.GF23508@opensource.wolfsonmicro.com>
-In-Reply-To: <20130219201315.GF23508@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S934010Ab3BTEB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 23:01:27 -0500
+From: J Keerthy <j-keerthy@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <j-keerthy@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <gg@slimlogic.co.uk>,
+        <broonie@opensource.wolfsonmicro.com>, <sameo@linux.intel.com>,
+        <liam.r.girdwood@intel.com>
+Subject: [PATCH 1/4] documentation: add palmas dts definition
+Date: Wed, 20 Feb 2013 09:30:15 +0530
+Message-ID: <1361332815-2348-1-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.5.4
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+From: Graeme Gregory <gg@slimlogic.co.uk>
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> Sent: Wednesday, February 20, 2013 1:43 AM
-> To: J, KEERTHY
-> Cc: lgirdwood@gmail.com; linux-kernel@vger.kernel.org;
-> gg@slimlogic.co.uk
-> Subject: Re: [PATCH 4/4] regulator: palmas: Change the DT node property
-> names to follow the convention
-> 
-> On Tue, Feb 19, 2013 at 05:10:01PM +0000, J, KEERTHY wrote:
-> 
-> > > This must need an update to the binding document too, and probably
-> > > any DT files that ended up getting merged for it?
-> 
-> > I have sent a patch with the document update. That is the first patch
-> > in The series.
-> 
-> You sent the patches as unthreaded mails and didn't CC me on the first
-> patch so I've not actually seen the documentation.  Incremental updates
-> like this really ought to be done as part of a single patch anyway,
-> there's no point in splitting things up and as we've just seen it can
-> make it harder to review.
+Add the DTS definition for the palmas device including the MFD children.
 
-Extremely sorry about that. I am resending the Patch 1.
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+[j-keerthy@ti.com: changed the DT node property names to follow the
+convention]
+Signed-off-by: J Keerthy <j-keerthy@ti.com>
+---
+ Documentation/devicetree/bindings/mfd/palmas.txt |   67 ++++++++++++++++++++++
+ 1 files changed, 67 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
 
-Regards,
-Keerthy
+diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
+new file mode 100644
+index 0000000..5fa922e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/palmas.txt
+@@ -0,0 +1,67 @@
++Texas Instruments Palmas family
++
++The Palmas familly are Integrated Power Management Chips.
++These chips are connected to an i2c bus.
++
++
++Required properties:
++- compatible : Must be "ti,palmas";
++  For Integrated power-management in the palmas series, twl6035, twl6037,
++  tps65913
++- interrupts : This i2c device has an IRQ line connected to the main SoC
++- interrupt-controller : Since the palmas support several interrupts internally,
++  it is considered as an interrupt controller cascaded to the SoC one.
++- #interrupt-cells = <1>;
++- interrupt-parent : The parent interrupt controller.
++
++Optional node:
++- Child nodes contain in the palmas. The palmas family is made of several
++  variants that support a different number of features.
++  The child nodes will thus depend of the capability of the variant.
++- mux-pad1 if a value is given it will be used for the pad1 mux
++- mux-pad2 if a value us given it will be used for the pad2 mux
++- power-ctrl if a value is given it will be written to the POWER_CTRL register
++
++Example:
++/*
++ * Integrated Power Management Chip Palmas
++ */
++palmas@48 {
++    compatible = "ti,palmas";
++    reg = <0x48>;
++    interrupts = <39>; /* IRQ_SYS_1N cascaded to gic */
++    interrupt-controller;
++    #interrupt-cells = <1>;
++    interrupt-parent = <&gic>;
++    #address-cells = <1>;
++    #size-cells = <0>;
++
++	ti,mux-pad1 = <0x00>;
++	ti,mux-pad2 = <0x00>;
++	ti,power-ctrl = <0x03>;
++
++	palmas_pmic {
++		compatible = "ti,palmas_pmic";
++		regulators {
++			smps12_reg: smps12 {
++				regulator-min-microvolt = < 600000>;
++                regulator-max-microvolt = <1500000>;
++				regulator-always-on;
++				regulator-boot-on;
++                ti,warm-sleep = <0>;
++                ti,roof-floor = <0>;
++                ti,mode-sleep = <0>;
++                ti,warm-reset = <0>;
++                ti,tstep = <0>;
++                ti,vsel = <0>;
++			};
++		};
++		ti,ldo6-vibrator = <0>;
++	};
++
++    palmas_rtc {
++        compatible = "ti,palmas_rtc";
++        interrupts = <8 9>;
++        reg = <0>;
++    };
++};
+-- 
+1.7.5.4
+
