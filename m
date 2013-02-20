@@ -1,56 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934887Ab3BTAVb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 19:21:31 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43593 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933798Ab3BTAV3 (ORCPT
+	id S934903Ab3BTAWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 19:22:48 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:49143 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933798Ab3BTAWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 19:21:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130220001743.GE16950@blaptop>
-References: <20130219044012.GA23356@lizard.sbx00618.mountca.wayport.net>
-	<20130220001743.GE16950@blaptop>
-Date: Tue, 19 Feb 2013 16:21:28 -0800
-X-Google-Sender-Auth: kTtwYM8x_mNs1muKVwXf63LT_Lg
-Message-ID: <CAOS58YOPjcH_pFFhPLJEAdaLkm5FoOy9mG2i-PkWAcb7O6V_Kw@mail.gmail.com>
-Subject: Re: [PATCH v2] memcg: Add memory.pressure_level events
-From: Tejun Heo <tj@kernel.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>, cgroups@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 19 Feb 2013 19:22:46 -0500
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk
+Subject: [PATCH 01/27] block: Reorder struct bio_set
+Date: Tue, 19 Feb 2013 16:22:15 -0800
+Message-Id: <1361319761-23873-2-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1361319761-23873-1-git-send-email-koverstreet@google.com>
+References: <1361319761-23873-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This is prep work for the next patch, which embeds a struct bio_list in
+struct bio_set.
 
-On Tue, Feb 19, 2013 at 4:17 PM, Minchan Kim <minchan@kernel.org> wrote:
-> Should we really enable memcg for just pressure notificaion in embedded side?
-> I didn't check the size(cgroup + memcg) and performance penalty but I don't want
-> to add unnecessary overhead if it is possible.
-> Do you have a plan to support it via global knob(ie, /proc/mempressure), NOT memcg?
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+CC: Jens Axboe <axboe@kernel.dk>
+---
+ include/linux/bio.h | 66 ++++++++++++++++++++++++++---------------------------
+ 1 file changed, 33 insertions(+), 33 deletions(-)
 
-That should be handled by mempressure at the root cgroup. If that adds
-significant amount of overhead code or memory-wise, we just need to
-fix root cgroup handling in memcg. No reason to further complicate the
-interface which already is pretty complex.
-
-Thanks.
-
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 820e7aa..93d3d17 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -298,39 +298,6 @@ static inline int bio_associate_current(struct bio *bio) { return -ENOENT; }
+ static inline void bio_disassociate_task(struct bio *bio) { }
+ #endif	/* CONFIG_BLK_CGROUP */
+ 
+-/*
+- * bio_set is used to allow other portions of the IO system to
+- * allocate their own private memory pools for bio and iovec structures.
+- * These memory pools in turn all allocate from the bio_slab
+- * and the bvec_slabs[].
+- */
+-#define BIO_POOL_SIZE 2
+-#define BIOVEC_NR_POOLS 6
+-#define BIOVEC_MAX_IDX	(BIOVEC_NR_POOLS - 1)
+-
+-struct bio_set {
+-	struct kmem_cache *bio_slab;
+-	unsigned int front_pad;
+-
+-	mempool_t *bio_pool;
+-#if defined(CONFIG_BLK_DEV_INTEGRITY)
+-	mempool_t *bio_integrity_pool;
+-#endif
+-	mempool_t *bvec_pool;
+-};
+-
+-struct biovec_slab {
+-	int nr_vecs;
+-	char *name;
+-	struct kmem_cache *slab;
+-};
+-
+-/*
+- * a small number of entries is fine, not going to be performance critical.
+- * basically we just need to survive
+- */
+-#define BIO_SPLIT_ENTRIES 2
+-
+ #ifdef CONFIG_HIGHMEM
+ /*
+  * remember never ever reenable interrupts between a bvec_kmap_irq and
+@@ -527,6 +494,39 @@ static inline struct bio *bio_list_get(struct bio_list *bl)
+ 	return bio;
+ }
+ 
++/*
++ * bio_set is used to allow other portions of the IO system to
++ * allocate their own private memory pools for bio and iovec structures.
++ * These memory pools in turn all allocate from the bio_slab
++ * and the bvec_slabs[].
++ */
++#define BIO_POOL_SIZE 2
++#define BIOVEC_NR_POOLS 6
++#define BIOVEC_MAX_IDX	(BIOVEC_NR_POOLS - 1)
++
++struct bio_set {
++	struct kmem_cache *bio_slab;
++	unsigned int front_pad;
++
++	mempool_t *bio_pool;
++#if defined(CONFIG_BLK_DEV_INTEGRITY)
++	mempool_t *bio_integrity_pool;
++#endif
++	mempool_t *bvec_pool;
++};
++
++struct biovec_slab {
++	int nr_vecs;
++	char *name;
++	struct kmem_cache *slab;
++};
++
++/*
++ * a small number of entries is fine, not going to be performance critical.
++ * basically we just need to survive
++ */
++#define BIO_SPLIT_ENTRIES 2
++
+ #if defined(CONFIG_BLK_DEV_INTEGRITY)
+ 
+ #define bip_vec_idx(bip, idx)	(&(bip->bip_vec[(idx)]))
 -- 
-tejun
+1.7.12
+
