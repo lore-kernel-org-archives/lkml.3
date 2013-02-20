@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934932Ab3BTIKG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 03:10:06 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:35717 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934838Ab3BTIKE (ORCPT
+	id S934959Ab3BTIKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 03:10:19 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:45799 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934838Ab3BTIKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 03:10:04 -0500
-Date: Wed, 20 Feb 2013 08:09:56 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sameo@linux.intel.com, linus.walleij@stericsson.com
-Subject: Re: [PATCH 10/35] mfd: ab8500-core: Rework MFD sub-device
- initialisation structures
-Message-ID: <20130220080956.GA3368@gmail.com>
-References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
- <1360933026-30325-11-git-send-email-lee.jones@linaro.org>
- <201302192207.31465.arnd@arndb.de>
+	Wed, 20 Feb 2013 03:10:17 -0500
+Date: Wed, 20 Feb 2013 00:10:14 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/11] mfd: menelaus: use devm_request_irq() and
+ devm_kzalloc()
+Message-ID: <20130220081014.GA4268@core.coreip.homeip.net>
+References: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
+ <002c01ce0f31$48d55e00$da801a00$%han@samsung.com>
+ <20130220073044.GB2648@core.coreip.homeip.net>
+ <000801ce0f41$00e79170$02b6b450$%han@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201302192207.31465.arnd@arndb.de>
+In-Reply-To: <000801ce0f41$00e79170$02b6b450$%han@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Feb 2013, Arnd Bergmann wrote:
-
-> On Friday 15 February 2013, Lee Jones wrote:
-> > +       {
-> > +               .name = "ab8500-charger",
-> > +               .of_compatible = "stericsson,ab8500-charger",
-> > +               .num_resources = ARRAY_SIZE(ab8500_charger_resources),
-> > +               .resources = ab8500_charger_resources,
-> > +#ifndef CONFIG_OF
-> > +               .platform_data = &ab8500_bm_data,
-> > +               .pdata_size = sizeof(ab8500_bm_data),
-> > +#endif
-> > +       },
+On Wed, Feb 20, 2013 at 05:05:10PM +0900, Jingoo Han wrote:
+> On Wednesday, February 20, 2013 4:31 PM, Dmitry Torokhov wrote:
+> > 
+> > Hi Jongoo,
+> > 
+> > On Wed, Feb 20, 2013 at 03:12:38PM +0900, Jingoo Han wrote:
+> > > Use devm_request_irq() and devm_kzalloc() to make cleanup paths
+> > > more simple.
+> > >
+> > 
+> > ...
+> > 
+> > > @@ -1269,9 +1266,7 @@ static int __exit menelaus_remove(struct i2c_client *client)
+> > >  {
+> > >  	struct menelaus_chip	*menelaus = i2c_get_clientdata(client);
+> > >
+> > > -	free_irq(client->irq, menelaus);
+> > >  	flush_work(&menelaus->work);
+> > > -	kfree(menelaus);
+> > >  	the_menelaus = NULL;
+> > >  	return 0;
+> > 
+> > This conversion is certainly wrong - you really want to disable IRQ and
+> > then wait for the scheduled work to finish before freeing memory. Here
+> > you flush work but nothing stops IRQ from firing and scheduling that
+> > work again.
 > 
-> Is this #ifdef correct? I would have expected "#ifdef CONFIG_ATAGS"
-> here.
+> Yes, you're right. 
+> I will use devm_free_irq() before flush_work().
 
-No, it's not correct. See: 23a04f9f40f2b32ee593b768483105b1c776814d
+Why change it at all if you have to call it manually in both error
+unwinding and menelaus_remove() cases?
 
-I will fixup when the branched is rebased post-merge.
+BTW, that __exit markup on menelaus_remove() is surprising... I am
+pretty sure it can be unbound via sysfs and so there will be a nasty
+oops.
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Dmitry
