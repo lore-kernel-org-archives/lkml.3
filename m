@@ -1,29 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759192Ab3BTSLo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 13:11:44 -0500
-Received: from usloft2266.serverloft.com ([209.239.127.111]:42436 "EHLO
-	oab3.share.netsol.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759160Ab3BTSLn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 13:11:43 -0500
-X-Greylist: delayed 466 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Feb 2013 13:11:43 EST
-Date: Wed, 20 Feb 2013 15:03:20 -0300 (BRT)
-From: "Mr. Barlow Moore." <isabelcristina@adv.oabmg.org.br>
-Reply-To: "Mr. Barlow Moore." <gmcpherson6102@gmail.com>
-Message-ID: <1640489300.56127.1361383400928.JavaMail.root@adv.oabmg.org.br>
-Subject: Final Notification.
+	id S934133Ab3BTSL6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 13:11:58 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:2034 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759114Ab3BTSL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 13:11:57 -0500
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+From: "Shankar Brahadeeswaran" <shankoo77@gmail.com>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>,
+        linux-kernel@vger.kernel.org
+cc: devel@driverdev.osuosl.org, "Cruz Julian Bishop" <cruzjbishop@gmail.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Hugh Dickins" <hughd@google.com>,
+        "Konstantin Khlebnikov" <khlebnikov@openvz.org>,
+        "Shankar Brahadeeswaran" <shankoo77@gmail.com>
+Subject: [PATCH V3 1/1] staging: android: ashmem: get_name,set_name not
+ to
+Date: Wed, 20 Feb 2013 23:41:25 +0530
+Message-ID: <1361383886-14805-1-git-send-email-shankoo77@gmail.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1361363039-11984-2-git-send-email-shankoo77@gmail.com>
+References: <1361363039-11984-2-git-send-email-shankoo77@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+X-WSS-ID: 7D3BCEE223C1096206-01-01
+Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.203.67.53]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC10 (Win)/7.2.0_GA_2669)
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dan,
 
+Oh, now I got what you say. Thanks for your patience. 
+I have done the necessary modifications.
+Re-submitting the patch here
 
-Hello, are you in need of urgent cash? We are currently offering Business Loan, Personal Loan, Home Loan, Auto Loans and Student Loans to private individuals and companies at 2% interest rate from 1 to 30 years duration of repayment period, with loan amounts ranging from USD5,000 - USD5 Million. For more details E-mail: kdf.ls001@xyan.us
+Shankar Brahadeeswaran (1):
+  staging: android: ashmem: get_name,set_name      not to hold
+    ashmem_mutex
+
+ drivers/staging/android/ashmem.c |   45 +++++++++++++++++++++++++++-----------
+ 1 files changed, 32 insertions(+), 13 deletions(-)
+
+-- 
+1.7.6
+
 
