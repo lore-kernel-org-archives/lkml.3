@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933777Ab3BTJCp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 04:02:45 -0500
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:59952 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661Ab3BTJCn (ORCPT
+	id S934027Ab3BTJFh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 04:05:37 -0500
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:57990 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933945Ab3BTJFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 04:02:43 -0500
-Date: Wed, 20 Feb 2013 10:02:38 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/platform changes for v3.9
-Message-ID: <20130220090238.GA18213@gmail.com>
-References: <20130219154128.GA15608@gmail.com>
- <CA+55aFxn=xFGhF8L2pJYP8wOe3VdCpGtaibB0bbRuH8FAKkCNg@mail.gmail.com>
+	Wed, 20 Feb 2013 04:05:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxn=xFGhF8L2pJYP8wOe3VdCpGtaibB0bbRuH8FAKkCNg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJn8CcEN3ky89qJMigD91+d6-bsTXZ9HeQ18VX0DZeU+rDiArA@mail.gmail.com>
+References: <1361345873-6440-1-git-send-email-handai.szj@taobao.com>
+	<CAJn8CcEN3ky89qJMigD91+d6-bsTXZ9HeQ18VX0DZeU+rDiArA@mail.gmail.com>
+Date: Wed, 20 Feb 2013 17:05:21 +0800
+Message-ID: <CAFj3OHV=CWD5KAWF5bWM63M85-rRG-W4sMfcXDViLmW-c5pdKg@mail.gmail.com>
+Subject: Re: [PATCH] sched/core: remove obsolete nr_uninterruptible()
+From: Sha Zhengju <handai.szj@gmail.com>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org,
+        Sha Zhengju <handai.szj@taobao.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 20, 2013 at 4:31 PM, Xiaotian Feng <xtfeng@gmail.com> wrote:
+> On Wed, Feb 20, 2013 at 3:37 PM, Sha Zhengju <handai.szj@gmail.com> wrote:
+>> From: Sha Zhengju <handai.szj@taobao.com>
+>>
+>> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+>> ---
+>>  kernel/sched/core.c |   17 -----------------
+>>  1 file changed, 17 deletions(-)
+>
+> You missed include/linux/sched.h :)
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Ohhhh... yeah, another lost... thank you for correcting me!  :)
 
-> On Tue, Feb 19, 2013 at 7:41 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > Please pull the latest x86-platform-for-linus git tree from:
-> 
-> Hmm.
-> 
-> My main desktop just had a reboot failure - it just got stuck 
-> at the end, not powering down, and not rebooting like it 
-> should have.
-> 
-> This is *not* necessarily the pull that caused it, but 
-> 8f55cea410db rebooted cleanly, and 1a13c0b181f2 did not. That 
-> implies that it's one of your pull requests. The pulls I did 
-> in between are:
-> 
->  - scheduler (with the dyntick and cputime accounting)
-> 
->  - smp-hotplug-for-linus: stop_machine preparatory patches from Thomas..
-> 
->  - timers-core-for-linus. Hmm..
-> 
->  - x86-apic-for-linus: certainly possibly causing problems at shutdown..
-> 
->  - x86-asm-for-linus: sounds unlikely, but who knows..
-> 
->  - x86-boot-for-linus: shouldn't affect shutdown, but..
-> 
->  - x86-build-for-linus: _really_ shouldn't affect shutdown..
-> 
->  - x86-cleanups-for-linus: unlikely
-> 
->  - x86-hyperv-for-linus: no, not a hyperv user ;)
-> 
->  - x86-platform-for-linus: rebooting is a platform thing, but none of
-> this seems relevant
-> 
->  - x86-uv-for-linus: not likely relevant.
-> 
-> I'm not going to bisect it right now, hoping that somebody 
-> goes "Hmm, maybe it's xyzzy". And maybe it was just a one-time 
-> event, but I don't recall having had that whole "reboot fails" 
-> case on this machine before. Any ideas?
+>
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index c0b07c3..792f6fc 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -1957,23 +1957,6 @@ unsigned long nr_running(void)
+>>         return sum;
+>>  }
+>>
+>> -unsigned long nr_uninterruptible(void)
+>> -{
+>> -       unsigned long i, sum = 0;
+>> -
+>> -       for_each_possible_cpu(i)
+>> -               sum += cpu_rq(i)->nr_uninterruptible;
+>> -
+>> -       /*
+>> -        * Since we read the counters lockless, it might be slightly
+>> -        * inaccurate. Do not allow it to go below zero though:
+>> -        */
+>> -       if (unlikely((long)sum < 0))
+>> -               sum = 0;
+>> -
+>> -       return sum;
+>> -}
+>> -
+>>  unsigned long long nr_context_switches(void)
+>>  {
+>>         int i;
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 
-Hm, no quick ideas. None of those trees had any similar problems 
-during development, so there's no "drat, it must be _that_ tree 
-again" memory.
 
-Timers and APIC would be my leading suspect - but scheduler and 
-hotplug changes might be the culprits as well.
 
-Yesterday, while preparing the trees I wanted to mention this 
-x86/apic commit:
-
-  336224ba5e4f x86, apic: Mask IO-APIC and PIC unconditionally on LAPIC resume
-
-... as a change that needs monitored because it changes the 
-suspend and shutdown sequence but then skipped mentioning it 
-because it seemed relatively old and proven.
-
-But there are other potentially dangerous commits as well - I 
-suspect we won't be able to avoid a bisection :-/
-
+-- 
 Thanks,
-
-	Ingo
+Sha
