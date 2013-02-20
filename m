@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab3BTXYT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 18:24:19 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:46058 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab3BTXYQ (ORCPT
+	id S1752447Ab3BTXYt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 18:24:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41698 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375Ab3BTXYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 18:24:16 -0500
-Date: Wed, 20 Feb 2013 15:24:12 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH UPDATED] posix-timer: don't call idr_find() w/ out-of-range ID
-Message-ID: <20130220232412.GL3570@htj.dyndns.org>
-References: <1361385853-29010-1-git-send-email-sasha.levin@oracle.com>
- <CAOS58YMT3NS-8zvwx1tNQoLKM1WtKtT-YXBPi=4pAeAMi=rYeA@mail.gmail.com>
- <512522CF.1020901@oracle.com>
- <20130220210116.GD3570@htj.dyndns.org>
- <20130220132300.ccffde44.akpm@linux-foundation.org>
- <20130220213701.GE3570@htj.dyndns.org>
- <20130220140551.8017e795.akpm@linux-foundation.org>
- <20130220220823.GH3570@htj.dyndns.org>
- <20130220224019.GI3570@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130220224019.GI3570@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Feb 2013 18:24:47 -0500
+Date: Wed, 20 Feb 2013 15:24:46 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH v4] lockdep: check that no locks held at freeze time
+Message-Id: <20130220152446.a65ff84f.akpm@linux-foundation.org>
+In-Reply-To: <1361402236-28644-1-git-send-email-msb@chromium.org>
+References: <20130220223013.GA15760@redhat.com>
+	<1361402236-28644-1-git-send-email-msb@chromium.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When idr_find() is fed a negative ID, it used to look up the ID
-ignoring the sign bit before recent ("idr: remove MAX_IDR_MASK and
-move left MAX_IDR_* into idr.c") patch, and triggers WARN_ON_ONCE()
-after it.
+On Wed, 20 Feb 2013 15:17:16 -0800
+Mandeep Singh Baines <msb@chromium.org> wrote:
 
-__lock_timer() feeds timer_id from userland directly to idr_find()
-without sanitizing it which can trigger the above malfunctions.  Add a
-range check on @timer_id before invoking idr_find() in __lock_timer().
+> We shouldn't try_to_freeze if locks are held.
+> 
+> ...
+>
+> @@ -43,6 +44,9 @@ extern void thaw_kernel_threads(void);
+>  
+> +	if (!(current->flags & PF_NOFREEZE))
+> +		debug_check_no_locks_held(current,
+> +
+>					  "lock held while trying to freeze");
+> ...
+>
+> +	debug_check_no_locks_held(tsk, "lock held at task exit time");
 
-While timer_t is defined as int by all archs at the moment, Andrew
-worries that it may be defined as a larger type later on.  Make the
-test cover larger integers too so that it at least is guaranteed to
-not return the wrong timer.
+There doesn't seem much point in adding the `msg' to
+debug_check_no_locks_held() - the dump_stack() in
+print_held_locks_bug() will tell us the same thing.  Maybe just change
+the print_held_locks_bug() messages so they stop assuming they were
+called from do_exit()?
 
-Note that WARN_ON_ONCE() in idr_find() on id < 0 is transitional
-precaution while moving away from ignoring MSB.  Once it's gone we can
-remove the guard as long as timer_t isn't larger than int.
+Also, I wonder if the `tsk' arg is needed.  In both callers
+tsk==current.  Is it likely that we'll ever call
+debug_check_no_locks_held() for any task other than `current'?
 
-Signed-off-by: Tejun Heo <tj@kernel.org>nnn
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: stable@vger.kernel.org
----
-Given that larger timer_t is possible, at least theoretically, it
-probably is better to keep the guard even if idr_find() is later
-updated, so not marking the guard as to be removed.
-
-Will send a separate patch to add comment on top of WARN_ON_ONCE() in
-idr_find().
-
-Thanks.
-
- kernel/posix-timers.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index b51bb08..6edbb2c 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -637,6 +637,13 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
- {
- 	struct k_itimer *timr;
- 
-+	/*
-+	 * timer_t could be any type >= int and we want to make sure any
-+	 * @timer_id outside positive int range fails lookup.
-+	 */
-+	if ((unsigned long long)timer_id > INT_MAX)
-+		return NULL;
-+
- 	rcu_read_lock();
- 	timr = idr_find(&posix_timers_id, (int)timer_id);
- 	if (timr) {
