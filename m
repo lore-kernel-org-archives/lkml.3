@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935631Ab3BTDXz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 22:23:55 -0500
-Received: from mga11.intel.com ([192.55.52.93]:20911 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933950Ab3BTDXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 22:23:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
-   d="scan'208";a="289369247"
-Date: Wed, 20 Feb 2013 11:23:52 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at kernel/mutex.c:386 __mutex_lock_common()
-Message-ID: <20130220032352.GA11437@localhost>
-References: <20130218013720.GC10963@localhost>
- <CAMuW1wfEW2ECthuCkWW_=QimXX9xUJQNfeM9U9gNRuLaJXZ_AQ@mail.gmail.com>
+	id S935643Ab3BTDbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 22:31:07 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:60938 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933993Ab3BTDbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 22:31:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuW1wfEW2ECthuCkWW_=QimXX9xUJQNfeM9U9gNRuLaJXZ_AQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130220025130.GA32589@kroah.com>
+References: <20130218181454.615592566@linuxfoundation.org>
+	<CAKocOOPShXASvWEJw7r_NxTAKYA34DH9BiaEKo0saWEobar9zQ@mail.gmail.com>
+	<20130220025130.GA32589@kroah.com>
+Date: Tue, 19 Feb 2013 20:31:02 -0700
+Message-ID: <CAKocOOP4cBit5NOZzu3gyij7-xfODVP8wZ+qEAjA3gDNEObXHw@mail.gmail.com>
+Subject: Re: [ 0/1] 3.4.33-stable review
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > [    0.000000]
-> > [    0.000000] ------------[ cut here ]------------
-> > [    0.000000] WARNING: at /c/kernel-tests/src/tip/kernel/mutex.c:386 __mutex_lock_common+0x5a9/0x870()
-> > [    0.000000] Hardware name: Bochs
-> > [    0.000000] Modules linked in:
-> > [    0.000000] Pid: 0, comm: swapper/0 Not tainted 3.8.0-rc7-00071-g11eb5a2 #180
-> > [    0.000000] Call Trace:
-> > [    0.000000]  [<ffffffff81047102>] warn_slowpath_common+0xb2/0x120
-> > [    0.000000]  [<ffffffff81047195>] warn_slowpath_null+0x25/0x30
-> > [    0.000000]  [<ffffffff814ebdd9>] __mutex_lock_common+0x5a9/0x870
-> > [    0.000000]  [<ffffffff81a66ef8>] ? rcu_cpu_notify+0xa8/0x451
-> > [    0.000000]  [<ffffffff810bcb8f>] ? trace_hardirqs_off_caller+0xaf/0x120
-> > [    0.000000]  [<ffffffff81a66ef8>] ? rcu_cpu_notify+0xa8/0x451
-> > [    0.000000]  [<ffffffff810be38c>] ? lockdep_init_map+0xfc/0x230
-> > [    0.000000]  [<ffffffff814ec621>] mutex_lock_nested+0x61/0x80
-> > [    0.000000]  [<ffffffff810bcc1d>] ? trace_hardirqs_off+0x1d/0x30
-> > [    0.000000]  [<ffffffff81a66ef8>] rcu_cpu_notify+0xa8/0x451
-> > [    0.000000]  [<ffffffff814ecc31>] ? mutex_unlock+0x11/0x20
-> > [    0.000000]  [<ffffffff81a3f952>] rcu_init+0x3b3/0x408
-> > [    0.000000]  [<ffffffff81a21e0c>] start_kernel+0x34a/0x744
-> > [    0.000000]  [<ffffffff81a216e6>] ? repair_env_string+0x81/0x81
-> > [    0.000000]  [<ffffffff81a21120>] ? early_idt_handlers+0x120/0x120
-> > [    0.000000]  [<ffffffff81a212fd>] x86_64_start_reservations+0x185/0x190
-> > [    0.000000]  [<ffffffff81a214a8>] x86_64_start_kernel+0x1a0/0x1b6
-> > [    0.000000] ---[ end trace 8e966724b1809892 ]---
-> Weird, that code path should not be hit from __mutex_lock_common from
-> mutex_lock_nested, I'll create a patch with some tests to make sure
-> that lib/locking-selftests.c will perform tests on common mutexes to
-> ensure that code path is not hit, and this bug will not happen again.
-> 
-> Can you change __mutex_lock_common from inline to __always_inline and
-> check if that gets rid of the warning?
- 
-Maarten, that trick worked! Thanks!
+On Tue, Feb 19, 2013 at 7:51 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Mon, Feb 18, 2013 at 07:50:16PM -0700, Shuah Khan wrote:
+>> On Mon, Feb 18, 2013 at 11:24 AM, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
+>> > This is the start of the stable review cycle for the 3.4.33 release.
+>> > There is 1 patch in this series, which will be posted as a response to
+>> > this one.  If anyone has any issues with it being applied, please let me
+>> > know.
+>> >
+>> > Responses should be made by Wed Feb 20 18:13:44 UTC 2013.
+>> > Anything received after that time might be too late.
+>> >
+>> > The whole patch series can be found in one patch at:
+>> >         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.33-rc1.gz
+>> > and the diffstat can be found below.
+>> >
+>> > thanks,
+>> >
+>> > greg k-h
+>> >
+>> > -------------
+>>
+>> Patches applied cleanly to 3.0.65, and 3.4.32
+>> Compiled and booted on the following systems:
+>> HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
+>> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+>>
+>> Reviewed patches
+>>
+>> Skipped Cross-compile tests
+>
+> Thanks for testing, your kernel log messages looked correct, right?
+>
+> greg k-h
 
-Fengguang
+Yes, should have mentioned that I checked dmesg and syslog both and
+compared dmesg
+with the old dmesg I saved from the previous rc-1 testing for each of
+these releases. Didn't
+see anything that jumped out at me. I usually save dmesg from rc
+cycles to look for regressions
+if any from one rc cycle to the next.
+
+-- Shuah
