@@ -1,100 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773Ab3BTVgy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 16:36:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40731 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab3BTVgw (ORCPT
+	id S1752010Ab3BTVhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 16:37:09 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:58607 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab3BTVhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 16:36:52 -0500
-Date: Wed, 20 Feb 2013 13:36:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
-        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
-        glommer@parallels.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Bug fix PATCH 0/2] Make whatever node kernel resides in
- un-hotpluggable.
-Message-Id: <20130220133650.4e0913f3.akpm@linux-foundation.org>
-In-Reply-To: <1361358056-1793-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1361358056-1793-1-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Feb 2013 16:37:05 -0500
+Date: Wed, 20 Feb 2013 13:37:01 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] posix-timer: don't call idr_find() w/ negative ID
+Message-ID: <20130220213701.GE3570@htj.dyndns.org>
+References: <1361385853-29010-1-git-send-email-sasha.levin@oracle.com>
+ <CAOS58YMT3NS-8zvwx1tNQoLKM1WtKtT-YXBPi=4pAeAMi=rYeA@mail.gmail.com>
+ <512522CF.1020901@oracle.com>
+ <20130220210116.GD3570@htj.dyndns.org>
+ <20130220132300.ccffde44.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130220132300.ccffde44.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Feb 2013 19:00:54 +0800
-Tang Chen <tangchen@cn.fujitsu.com> wrote:
+Hello, Andrew.
 
-> As mentioned by HPA before, when we are using movablemem_map=acpi, if all the
-> memory in SRAT is hotpluggable, then the kernel will have no memory to use, and
-> will fail to boot.
+On Wed, Feb 20, 2013 at 01:23:00PM -0800, Andrew Morton wrote:
+> > @@ -637,6 +637,9 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
+> >  {
+> >  	struct k_itimer *timr;
+> >  
+> > +	if ((int)timer_id < 0)
+> > +		return NULL;
+> > +
+> >  	rcu_read_lock();
+> >  	timr = idr_find(&posix_timers_id, (int)timer_id);
+> >  	if (timr) {
 > 
-> Before parsing SRAT, memblock has already reserved some memory in memblock.reserve,
-> which is used by the kernel, such as storing the kernel image. We are not able to
-> prevent the kernel from using these memory. So, these 2 patches make the node which
-> the kernel resides in un-hotpluggable.
+> This is a bit risky - if some arch defines timer_t to be a u64 then we
+> will incorrectly treat 0x0000 0001 ffff ffff as a negative number. 
+> (That's a lot of timers!)
+> 
+> A fancy way of avoiding this is
+> 
+> 	if (timer_id & ((typeof timer_id)1 << (sizeof(timer_id) - 1)))
+> 
+> (approximately ;))
+> 
+> But I think casting to (long) should be good enough?
 
-I'm planning to roll all these into a single commit:
+Sans WARN_ON_ONCE(), the code would behave the same as before, which
+in turn, from what I can tell, is the behavior the code intended to
+implement before idr_alloc() conversion.
 
-acpi-memory-hotplug-support-getting-hotplug-info-from-srat.patch
-acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix.patch
-acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix-fix.patch
-acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix-fix-fix.patch
-acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix-fix-fix-fix.patch
-acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix-fix-fix-fix-fix.patch
+If timer_id is being allocated from idr, a valid id can never go over
+INT_MAX and returning NULL for any ID above that is the correct
+behavior, I think.  If timer_t is larger than int, both (int) and
+(long) castings wouldn't be useful.  Both will miss (1LU << 33) + 1
+and idr_find() will end up looking for 1.
 
-for reasons of tree-cleanliness and to avoid bisection holes.  They're
-at http://ozlabs.org/~akpm/mmots/broken-out/.
+If we want to be strict, we would have to do, I think,
 
-Can you please check the changelog for
-acpi-memory-hotplug-support-getting-hotplug-info-from-srat.patch to see
-if it needs any updates due to all the fixup patches?  If so, please
-send me the new changelog, thanks.
+	if ((unsigned long long)timer_t > INT_MAX)
 
-Also, please review the changelogging for these:
+hopefully with some comments.  That said, if I'm grepping it right,
+all archs define timer_t as int, so maybe we're just being paranoid.
 
-page_alloc-add-movable_memmap-kernel-parameter.patch
-page_alloc-add-movable_memmap-kernel-parameter-fix.patch
-page_alloc-add-movable_memmap-kernel-parameter-fix-fix.patch
-page_alloc-add-movable_memmap-kernel-parameter-fix-fix-checkpatch-fixes.patch
-page_alloc-add-movable_memmap-kernel-parameter-fix-fix-fix.patch
-page_alloc-add-movable_memmap-kernel-parameter-rename-movablecore_map-to-movablemem_map.patch
+Thanks.
 
-memory-hotplug-remove-sys-firmware-memmap-x-sysfs.patch
-memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix.patch
-memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix.patch
-memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix-fix.patch
-memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix-fix-fix.patch
-memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix-fix-fix-fix.patch
-
-memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap.patch
-memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix.patch
-memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix-fix.patch
-memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix-fix-fix.patch
-memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix-fix-fix-fix.patch
-
-memory-hotplug-common-apis-to-support-page-tables-hot-remove.patch
-memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix.patch
-memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix.patch
-memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix.patch
-memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix.patch
-memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix-fix.patch
-memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix-fix-fix.patch
-memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix-fix-fix-fix.patch
-
-acpi-memory-hotplug-parse-srat-before-memblock-is-ready.patch
-acpi-memory-hotplug-parse-srat-before-memblock-is-ready-fix.patch
-acpi-memory-hotplug-parse-srat-before-memblock-is-ready-fix-fix.patch
-
-
-and while we're there, let's pause to admire how prescient I was in
-refusing to merge all this into 3.8-rc1 :)
+-- 
+tejun
