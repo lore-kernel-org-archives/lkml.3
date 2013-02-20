@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934982Ab3BTT6f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 14:58:35 -0500
-Received: from smtp12.ono.com ([62.42.230.20]:15445 "EHLO resmaa12.ono.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934926Ab3BTT6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 14:58:33 -0500
-Message-ID: <51252AE7.7040903@ono.com>
-Date: Wed, 20 Feb 2013 20:58:31 +0100
-From: =?UTF-8?B?SkEgTWFnYWxsw7Nu?= <jamagallon@ono.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130114 Thunderbird/17.0.2
+	id S934971Ab3BTT7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 14:59:49 -0500
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:37651 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934002Ab3BTT7r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 14:59:47 -0500
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Corrupt packets with ath5k
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130219192403.GA17767@krava.redhat.com>
+References: <1361210084-14409-1-git-send-email-eranian@google.com>
+	<1361210084-14409-3-git-send-email-eranian@google.com>
+	<20130219192403.GA17767@krava.redhat.com>
+Date: Wed, 20 Feb 2013 20:59:45 +0100
+Message-ID: <CABPqkBTYjqwKD-yG2ib=WC8JVT3sqqYaZy9yAAf0WA5Lg-wYug@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] perf: add sysfs entry to adjust multiplexing
+ interval per PMU
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all...
+On Tue, Feb 19, 2013 at 8:24 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Mon, Feb 18, 2013 at 06:54:44PM +0100, Stephane Eranian wrote:
+>
+> SNIP
+>
+>> +perf_event_mux_interval_ms_store(struct device *dev,
+>> +                              struct device_attribute *attr,
+>> +                              const char *buf, size_t count)
+>> +{
+>> +     struct pmu *pmu = dev_get_drvdata(dev);
+>> +     int timer, cpu, ret;
+>> +
+>> +     ret = kstrtoint(buf, 0, &timer);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     if (timer < 1)
+>> +             return -EINVAL;
+>> +
+>> +     pmu->hrtimer_interval_ms = timer;
+>> +
+>> +     /* update all cpuctx for this PMU */
+>> +     for_each_possible_cpu(cpu) {
+>> +             struct perf_cpu_context *cpuctx;
+>> +             cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
+>> +             cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * timer);
+>> +     }
+>
+> If we set the timer to some big value like few minutes,
+> then run the meassurements and then set the value back to 1,
+> we actually need to wait till the big timer is expired before
+> the new value takes place.
+>
+> I think we need to cancel the possible running timer in here
+> like in the atached patch, but maybe consider some locking.
+>
+I will fix that. Thanks for pointing this out.
 
-I have a strange problem with latest kernels. When I update my netbook
-I get many "Installation failed, bad rpms:" mesages. First I thougt
-that the oldie cheap ssd was failing (it is an Aspire AOA110).
-But the updates work always fine when plugged to ethernet.
-
-Now i tried to copy a couple RPMS via ssh over wifi and got:
-
-mplayer-1.1-11.r35916.1.mga3.tainted.i586.rpm  100% 2192KB   2.1MB/s   00:00
-Received disconnect from 192.168.1.51: 2: Packet corrupt
-lost connection
-
-Hardware/driver are these:
-
-03:00.0 Ethernet controller: Atheros Communications Inc. AR242x / AR542x Wireless Network Adapter (PCI-Express) (rev 01)
-	Subsystem: Foxconn International, Inc. Device e008
-	Kernel driver in use: ath5k
-
-Ist that hardware failing ? Is driver failing ? Other laptop/androids
-update fine with the router via wifi.
-Any idea ?
-
-I currently have 3.8.0, distro build.
-
-TIA
-
--- 
-J.A. Magallon <jamagallon()ono!com>        \               Winter is coming...
+> jirka
+>
+>
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 7c3f00f..ce9cd54 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -6038,6 +6038,9 @@ perf_event_mux_interval_ms_store(struct device *dev,
+>                 struct perf_cpu_context *cpuctx;
+>                 cpuctx = per_cpu_ptr(pmu->pmu_cpu_context, cpu);
+>                 cpuctx->hrtimer_interval = ns_to_ktime(NSEC_PER_MSEC * timer);
+> +
+> +               if (hrtimer_active(&cpuctx->hrtimer))
+> +                       hrtimer_cancel(&cpuctx->hrtimer);
+>         }
+>
+>         return count;
