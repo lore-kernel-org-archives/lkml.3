@@ -1,100 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759063Ab3BTVLl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 16:11:41 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:40435 "EHLO hydra.sisk.pl"
+	id S1759202Ab3BTVR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 16:17:57 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:40442 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784Ab3BTVLk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 16:11:40 -0500
+	id S1750784Ab3BTVR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 16:17:56 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Len Brown <lenb@kernel.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH 05/16] blackfin idle: delete pm_idle
-Date: Wed, 20 Feb 2013 22:18:17 +0100
-Message-ID: <1449748.lzaK5NRLYV@vostro.rjw.lan>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: "Liu, Jinsong" <jinsong.liu@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: linux-next: build failure after merge of the xen-two tree
+Date: Wed, 20 Feb 2013 22:24:33 +0100
+Message-ID: <1408464.udoD1aPUGq@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <5125303C.3080507@metafoo.de>
-References: <1360475903-30007-1-git-send-email-lenb@kernel.org> <1759773.UdmLmFNAfS@vostro.rjw.lan> <5125303C.3080507@metafoo.de>
+In-Reply-To: <20130220204941.GC4526@phenom.dumpdata.com>
+References: <20130215154551.d11e9d376d30d32b9673e6cc@canb.auug.org.au> <4696812.SKkpQQd9iW@vostro.rjw.lan> <20130220204941.GC4526@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 20, 2013 09:21:16 PM Lars-Peter Clausen wrote:
-> On 02/20/2013 08:59 PM, Rafael J. Wysocki wrote:
-> > On Wednesday, February 20, 2013 08:53:38 PM Lars-Peter Clausen wrote:
-> >> On 02/20/2013 08:52 PM, Rafael J. Wysocki wrote:
-> >>> On Monday, February 18, 2013 05:28:19 PM Lars-Peter Clausen wrote:
-> >>>> On 02/10/2013 06:58 AM, Len Brown wrote:
-> >>>>> From: Len Brown <len.brown@intel.com>
-> >>>>>
-> >>>>> pm_idle is dead code on blackfin.
-> >>>>>
-> >>>>> Signed-off-by: Len Brown <len.brown@intel.com>
-> >>>>> Cc: uclinux-dist-devel@blackfin.uclinux.org
-> >>>>> ---
-> >>>>>  arch/blackfin/kernel/process.c | 7 -------
-> >>>>>  1 file changed, 7 deletions(-)
-> >>>>>
-> >>>>> diff --git a/arch/blackfin/kernel/process.c b/arch/blackfin/kernel/process.c
-> >>>>> index 3e16ad9..8061426 100644
-> >>>>> --- a/arch/blackfin/kernel/process.c
-> >>>>> +++ b/arch/blackfin/kernel/process.c
-> >>>>> @@ -39,12 +39,6 @@ int nr_l1stack_tasks;
-> >>>>>  void *l1_stack_base;
-> >>>>>  unsigned long l1_stack_len;
-> >>>>>  
-> >>>>> -/*
-> >>>>> - * Powermanagement idle function, if any..
-> >>>>> - */
-> >>>>> -void (*pm_idle)(void) = NULL;
-> >>>>> -EXPORT_SYMBOL(pm_idle);
-> >>>>> -
-> >>>>>  void (*pm_power_off)(void) = NULL;
-> >>>>>  EXPORT_SYMBOL(pm_power_off);
-> >>>>>  
-> >>>>> @@ -81,7 +75,6 @@ void cpu_idle(void)
-> >>>>>  {
-> >>>>>  	/* endless idle loop with no priority at all */
-> >>>>>  	while (1) {
-> >>>>> -		void (*idle)(void) = pm_idle;
-> >>>>
-> >>>> Hi,
-> >>>>
-> >>>> This results in the following error:
-> >>>>
-> >>>> arch/blackfin/kernel/process.c: In function ‘cpu_idle’:
-> >>>> arch/blackfin/kernel/process.c:83: error: ‘idle’ undeclared (first use in
-> >>>> this function)
-> >>>> arch/blackfin/kernel/process.c:83: error: (Each undeclared identifier is
-> >>>> reported only once
-> >>>> arch/blackfin/kernel/process.c:83: error: for each function it appears in.)
-> >>>> arch/blackfin/kernel/process.c:88: error: implicit declaration of function
-> >>>> ‘idle’
-> >>>>
-> >>>>
-> >>>> This change on top of your patch, fixes it.
-> >>>
-> >>> Lars, I need your sign-off for the patch below.  May I add it?
-> >>>
-> >>> Rafael
-> >>
-> >> Sure, I didn't realize the patches had already been merged, otherwise I'd have
-> >> sent a proper patch.
+On Wednesday, February 20, 2013 03:49:41 PM Konrad Rzeszutek Wilk wrote:
+> > > > commit 3757b94802fb65d8f696597a74053cf21738da0b
+> > > > Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > Date:   Wed Feb 13 14:36:47 2013 +0100
+> > > > 
+> > > >     ACPI / hotplug: Fix concurrency issues and memory leaks
+> > > > 
+> > > > after which acpi_bus_scan() and acpi_bus_trim() have to be run under
+> > > > acpi_scan_lock (new in my tree as well).
+> > > 
+> > > Yes, we noticed that and only need minor updates at xen side, will send out
+> > > 2 xen patches later accordingly, for cleanup and adding lock.
 > > 
-> > Please do now, if you can.  Sorry for the trouble.
-> > 
+> > Thanks, but those new changes will only make sense after merging the Xen tree
+> > with the PM tree.  Why don't we queue them up for merging later after both
+> > the Xen and PM trees have been pulled from?
 > 
-> I can send it tomorrow morning, it's on my machine at work.
+> OK, I've created a branch (http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=shortlog;h=refs/heads/linux-next-resolved)
+> that has your branch and my branch - along with the fix from Stephan and then
+> the three updates from Jinsong. Jinsong, please check that I've got all the
+> right patches. I will rebase it once Linus has merged both of the Xen and PM trees.
 
-That will be fine.
+Thanks, this looks good.
 
-Thanks,
 Rafael
 
 
