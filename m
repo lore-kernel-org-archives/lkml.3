@@ -1,332 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934771Ab3BTTZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 14:25:42 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:17814 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934179Ab3BTTZk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 14:25:40 -0500
-From: "Roberts, Lee A." <lee.roberts@hp.com>
-To: Vlad Yasevich <vyasevich@gmail.com>
-CC: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/3] sctp: fix association hangs due to
- reassembly/ordering logic
-Thread-Topic: [PATCH 3/3] sctp: fix association hangs due to
- reassembly/ordering logic
-Thread-Index: AQHOD4EAM4/BtHowKUCUFo1BBBdc85iC5oiAgAAkXICAAAhgQA==
-Date: Wed, 20 Feb 2013 19:24:29 +0000
-Message-ID: <D64EC45690EF85409BA6C4730E0162244310CC65@G4W3231.americas.hpqcorp.net>
-References: <1361374996.3450.3.camel@laptop.lroberts>
- <D64EC45690EF85409BA6C4730E0162244310CBC1@G4W3231.americas.hpqcorp.net>
- <5125108D.3010508@gmail.com>
-In-Reply-To: <5125108D.3010508@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.14]
-Content-Type: text/plain; charset="utf-8"
+	id S934819Ab3BTT2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 14:28:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65185 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933548Ab3BTT2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 14:28:31 -0500
+Date: Wed, 20 Feb 2013 14:28:26 -0500
+From: Dave Jones <davej@redhat.com>
+To: x86@kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: odd GPF bug on resume from hibernate.
+Message-ID: <20130220192826.GA3137@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, x86@kernel.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1KJPkxk005400
 
-Vlad,
+We had two users report hitting a bug that looks like this..
 
-> -----Original Message-----
-> From: Vlad Yasevich [mailto:vyasevich@gmail.com]
-> Sent: Wednesday, February 20, 2013 11:06 AM
-> To: Roberts, Lee A.
-> Cc: linux-sctp@vger.kernel.org; netdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH 3/3] sctp: fix association hangs due to
-> reassembly/ordering logic
-> 
-> Hi Lee
-> 
-> On 02/20/2013 10:56 AM, Roberts, Lee A. wrote:
-> > From: Lee A. Roberts <lee.roberts@hp.com>
-> >
-> > Resolve SCTP association hangs observed during SCTP stress
-> > testing.  Observable symptoms include communications hangs
-> > with data being held in the association reassembly and/or lobby
-> > (ordering) queues.  Close examination of reassembly queue shows
-> > missing packets.
-> 
-> As a general note for this patch series, you could really benefit
-> from a cover letter that describes the symptoms and all the different
-> issues you found.
-> 
-> Also, please title your patches based on the context of the patch.
-> Giving them all the same title is very confusing and at quick glance
-> makes appear that the same patch was applied 3 times.
-> 
-> >
-> > In sctp_eat_data(), enter partial delivery mode only if the
-> > data on the head of the reassembly queue is at or before the
-> > cumulative TSN ACK point.
-> >
-> > In sctp_ulpq_retrieve_partial() and sctp_ulpq_retrieve_first(),
-> > correct message reassembly logic for SCTP partial delivery.
-> > Change logic to ensure that as much data as possible is sent
-> > with the initial partial delivery and that following partial
-> > deliveries contain all available data.
-> >
-> > In sctp_ulpq_renege(), adjust logic to enter partial delivery
-> > only if the incoming chunk remains on the reassembly queue
-> > after processing by sctp_ulpq_tail_data().  Remove call to
-> > sctp_tsnmap_mark(), as this is handled correctly in call to
-> > sctp_ulpq_tail_data().
-> >
-> > Patch applies to linux-3.8 kernel.
-> >
-> > Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
-> > ---
-> >   net/sctp/sm_statefuns.c |   12 ++++++++++--
-> >   net/sctp/ulpqueue.c     |   33 ++++++++++++++++++++++++++-------
-> >   2 files changed, 36 insertions(+), 9 deletions(-)
-> >
-> > diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
-> > +2/net/sctp/sm_statefuns.c linux-3.8-SCTP+3/net/sctp/sm_statefuns.c
-> > --- linux-3.8-SCTP+2/net/sctp/sm_statefuns.c	2013-02-18
-> > 16:58:34.000000000 -0700
-> > +++ linux-3.8-SCTP+3/net/sctp/sm_statefuns.c	2013-02-20
-> > 08:31:51.092132884 -0700
-> > @@ -6090,7 +6090,8 @@ static int sctp_eat_data(const struct sc
-> >   	size_t datalen;
-> >   	sctp_verb_t deliver;
-> >   	int tmp;
-> > -	__u32 tsn;
-> > +	__u32 tsn, ctsn;
-> > +	struct sk_buff *skb;
-> >   	struct sctp_tsnmap *map = (struct sctp_tsnmap *)&asoc-
-> >peer.tsn_map;
-> >   	struct sock *sk = asoc->base.sk;
-> >   	struct net *net = sock_net(sk);
-> > @@ -6160,7 +6161,14 @@ static int sctp_eat_data(const struct sc
-> >   		/* Even if we don't accept this chunk there is
-> >   		 * memory pressure.
-> >   		 */
-> > -		sctp_add_cmd_sf(commands, SCTP_CMD_PART_DELIVER,
-> SCTP_NULL());
-> > +		skb = skb_peek(&asoc->ulpq.reasm);
-> > +		if (skb != NULL) {
-> > +			ctsn = sctp_skb2event(skb)->tsn;
-> > +			if (TSN_lte(ctsn,
-> > +				sctp_tsnmap_get_ctsn(&asoc->peer.tsn_map)))
-> > +				sctp_add_cmd_sf(commands,
-> > +					SCTP_CMD_PART_DELIVER, SCTP_NULL());
-> > +		}
-> 
-> What if the tsn you are currently processing will advance the
-> CUM TSN?  You may still need to eneter PD.  This is why
-> sctp_eat_data() is not the right place to place this check.
-> 
-> The more I look at the SCTP_CMD_PART_DELIVERY the more I am thinking
-> that it has to come after the current TSN has been delivered to the
-> queue.  That way, if we are currently processing the first fragment,
-> we'll queue it, then enter PD and pull it off the queue properly.
-> If we are processing the middle or last, it will get queued first, and
-> then PD will be entered to fetch anything that we can fetch.
-> 
-> In fact, the above is what happens when we issue a RENEGE command, but
-> the order is reversed is RENEGE is skipped for some reason.  I am still
-> trying to figure out if it's possible to enter PD without RENEGE, but I
-> did notice the above aberration.
-> 
+general protection fault: 8800 [#1] SMP 
+PM: Restoring platform NVS memory
+Modules linked in: fuse ipt_MASQUERADE nf_conntrack_netbios_ns nf_conntrack_broadcast ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iTCO_wdt iTCO_vendor_support snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq coretemp kvm_intel snd_seq_device kvm arc4 microcode snd_pcm rtl8192se serio_raw rtlwifi mac80211 i2c_i801 intel_ips jme lpc_ich mfd_core cfg80211 mii jmb38x_ms snd_page_alloc memstick snd_timer rfkill snd mei soundcore uinput hid_logitech_dj i915 crc32c_intel i2c_algo_bit drm_kms_helper sdhci_pci drm sdhci mmc_core i2c_core wmi video
+CPU 2 
+Pid: 0, comm: swapper/2 Not tainted 3.7.5-201.fc18.x86_64 #1 System76, Inc.                        Lemur UltraThin                      /Lemur UltraThin                      
+RIP: 0010:[<ffffffff81038335>]  [<ffffffff81038335>] read_apic_id+0x5/0x30
+RSP: 0018:ffff880131ea3ee8  EFLAGS: 00010046
+RAX: 0000000000000020 RBX: ffff880131ea2010 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: 0000000000000003 RDI: 0000000000000001
+RBP: ffff880131ea3ef8 R08: ffff880131ea2000 R09: ffff880131ea3ed0
+R10: ffff880131ea3ed4 R11: 0000000000000000 R12: 0000000000000020
+R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+FS:  0000000000000000(0000) GS:ffff880137d00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007f2f06237750 CR3: 0000000001c0b000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process swapper/2 (pid: 0, threadinfo ffff880131ea2000, task ffff880131e9ae40)
+Stack:
+ ffff880131ea3fd8 ffffffff81cdc5d0 ffff880131ea3f28 ffffffff8101d508
+ ffff880131ea3f18 b9aafd27b651a356 0000000000000000 0000000000000000
+ ffff880131ea3f48 ffffffff816248dd 0000000000000000 e0e608b14cc4dccd
+Call Trace:
+ [<ffffffff8101d508>] cpu_idle+0x108/0x120
+ [<ffffffff816248dd>] start_secondary+0x23e/0x240
+Code: 25 40 3b 01 00 3c 03 76 07 0f 09 66 66 90 66 90 f4 eb fd 41 bc ff ff ff ff eb b1 0f 1f 00 0f 1f 84 00 00 00 00 00 48 8b 05 41 31 <ca> 00 55 bf 20 00 00 00 48 89 e5 ff 90 20 01 00 00 89 c7 48 8b 
+RIP  [<ffffffff81038335>] read_apic_id+0x5/0x30
+ RSP <ffff880131ea3ee8>
 
-The current code enters partial delivery by calling sctp_ulpq_partial_delivery()
-in two locations.  In sctp_cmd_interpreter() [located in ../net/sctp/sm_sideeffect.c],
-as a result of the code in sctp_eat_data() [located in ../net/sctp/sctp_statefuns.c]:
+That Code: line translates to..
 
-1675                 case SCTP_CMD_PART_DELIVER:
-1676                         sctp_ulpq_partial_delivery(&asoc->ulpq, GFP_ATOMIC)     ;
-1677                         break;
+   0:	ca 00 55             	lret   $0x5500
 
-and in sctp_ulpq_renege() [located in ../net/sctp/ulpqueue.c]
+At this point I don't know where to begin debugging..
 
+Is that 8800 error code a clue ?
 
-1055         /* If able to free enough room, accept this chunk. */
-1056         if (chunk && (freed >= needed)) {
-1057                 __u32 tsn;
-1058                 tsn = ntohl(chunk->subh.data_hdr->tsn);
-1059                 sctp_tsnmap_mark(&asoc->peer.tsn_map, tsn, chunk->transport     );
-1060                 sctp_ulpq_tail_data(ulpq, chunk, gfp);
-1061 
-1062                 sctp_ulpq_partial_delivery(ulpq, gfp);
-1063         }
+	Dave
 
-Neither location checks to see whether the tsn on the head of the reassembly queue
-is less than or equal to the cumulative TSN ACK point.  Perhaps a better solution
-is to put this check in the beginning of sctp_ulpq_partial_delivery() and abort the
-partial delivery attempt if this condition isn't met.  I'll try this.
-
-The code in sctp_eat_data() involving SCTP_CMD_PART_DELIVER may be better if invoked
-after the current packet is handled, but that is probably an optimization.  As is,
-the partial delivery may not start until another packet arrives.
-
-> 
-> >   	}
-> >
-> >   	/* Spill over rwnd a little bit.  Note: While allowed, this spill
-> over
-> > diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
-> > +2/net/sctp/ulpqueue.c linux-3.8-SCTP+3/net/sctp/ulpqueue.c
-> > --- linux-3.8-SCTP+2/net/sctp/ulpqueue.c	2013-02-20
-> 08:17:53.679233365
-> > -0700
-> > +++ linux-3.8-SCTP+3/net/sctp/ulpqueue.c	2013-02-20
-> 08:27:02.785042744
-> > -0700
-> > @@ -540,14 +540,19 @@ static struct sctp_ulpevent *sctp_ulpq_r
-> >   		ctsn = cevent->tsn;
-> >
-> >   		switch (cevent->msg_flags & SCTP_DATA_FRAG_MASK) {
-> > +		case SCTP_DATA_FIRST_FRAG:
-> > +			if (!first_frag)
-> > +				return NULL;
-> > +			goto done;
-> >   		case SCTP_DATA_MIDDLE_FRAG:
-> >   			if (!first_frag) {
-> >   				first_frag = pos;
-> >   				next_tsn = ctsn + 1;
-> >   				last_frag = pos;
-> > -			} else if (next_tsn == ctsn)
-> > +			} else if (next_tsn == ctsn) {
-> >   				next_tsn++;
-> > -			else
-> > +				last_frag = pos;
-> > +			} else
-> >   				goto done;
-> >   			break;
-> >   		case SCTP_DATA_LAST_FRAG:
-> 
-> This may still allow you to skip over a gap if the first middle
-> fragment
-> in the queue starts after the gap.  We need to make sure that
-> TSN of the current chunk is less then equal to
-> sctp_tsnmap_get_ctsn(map).
-> 
-
-Currently, in sctp_ulpq_reasm() [located in ../net/sctp/ulpqueue.c], we
-only continue a partial delivery if the new tsn is less than or equal to
-sctp_tsnmap_get_ctsn(map):
-
- 594         if (!ulpq->pd_mode)
- 595                 retval = sctp_ulpq_retrieve_reassembled(ulpq);
- 596         else {
- 597                 __u32 ctsn, ctsnap;
- 598 
- 599                 /* Do not even bother unless this is the next tsn to
- 600                  * be delivered.
- 601                  */
- 602                 ctsn = event->tsn;
- 603                 ctsnap = sctp_tsnmap_get_ctsn(&ulpq->asoc->peer.tsn_map);
- 604                 if (TSN_lte(ctsn, ctsnap))
- 605                         retval = sctp_ulpq_retrieve_partial(ulpq);
- 606         }
-
-This is the only place we call sctp_ulpq_retrieve_partial().
-
-> > @@ -651,6 +656,14 @@ static struct sctp_ulpevent *sctp_ulpq_r
-> >   			} else
-> >   				goto done;
-> >   			break;
-> > +
-> > +		case SCTP_DATA_LAST_FRAG:
-> > +			if (!first_frag)
-> > +				return NULL;
-> > +			else
-> > +				goto done;
-> > +			break;
-> > +
-> >   		default:
-> >   			return NULL;
-> 
-> Same thing here.  Both, FIRST and MIDDLE fragments need to be validated
-> against sctp_tsnmap_get_ctsn(), otherwise you may be stepping over a
-> gap.
-> 
-
-If we check that the head of the reassembly queue is at or below the cumulative tsn
-before entering partial delivery, we should be OK.
-
-In sctp_ulpq_retrieve_first(), we expect the first packet on the reassembly queue
-will be a FIRST.  (If not, something went wrong somewhere else.)  If we find another
-FIRST, we know that we've gone too far.  If the second packet is a MIDDLE, we check
-that it has the correct tsn.  We keep processing MIDDLE packets as long as the tsn
-values are sequential.  If the packet is a MIDDLE and the tsn isn't right, we've
-gone too far.  In sctp_ulpq_retreive_first(), we don't return a LAST, by definition,
-since that wouldn't be a partial delivery.
-
-In sctp_ulpq_retrieve_partial(), we expect that the first packet on the reassembly queue
-is not a FIRST.  We're looking for MIDDLE or LAST fragments to complete the message.
-Since we know that the head of the reassembly queue is at or before the cumulative TSN,
-we shouldn't have a gap.  We want to pick up MIDDLE packets until we see a tsn gap
-or until we find the right LAST packet.  When we find the right LAST packet, we set
-MSG_EOR and exit from partial delivery.
-
-> >   		}
-> > @@ -1054,6 +1067,7 @@ void sctp_ulpq_renege(struct sctp_ulpq *
-> >   		      gfp_t gfp)
-> >   {
-> >   	struct sctp_association *asoc;
-> > +	struct sk_buff *skb;
-> >   	__u16 needed, freed;
-> >
-> >   	asoc = ulpq->asoc;
-> > @@ -1074,12 +1088,17 @@ void sctp_ulpq_renege(struct sctp_ulpq *
-> >   	}
-> >   	/* If able to free enough room, accept this chunk. */
-> >   	if (chunk && (freed >= needed)) {
-> > -		__u32 tsn;
-> > +		__u32 tsn, ctsn;
-> >   		tsn = ntohl(chunk->subh.data_hdr->tsn);
-> > -		sctp_tsnmap_mark(&asoc->peer.tsn_map, tsn, chunk-
-> >transport);
-> > -		sctp_ulpq_tail_data(ulpq, chunk, gfp);
-> > -
-> > -		sctp_ulpq_partial_delivery(ulpq, gfp);
-> > +		if (sctp_ulpq_tail_data(ulpq, chunk, gfp) == 0) {
-> > +			skb = skb_peek(&ulpq->reasm);
-> > +			if (skb != NULL) {
-> > +				ctsn = sctp_skb2event(skb)->tsn;
-> > +				if (TSN_lte(ctsn, tsn))
-> > +					sctp_ulpq_partial_delivery(ulpq, chunk,
-> > +						gfp);
-> > +			}
-> > +		}
-> >   	}
-> 
-> I am not sure this hunk is really needed.
-> 
-> You are trying to use this code make sure that you start PD with
-> something to deliver, but the PD code already takes care of that.
-> You also get some basic cum_tsn checking for the current chunk because
-> of how renege is called, but you still don't do the checks for
-> subsequent chunks in the queue as I stated above, so you are still
-> subject to possible hangs.
-> 
-> -vlad
-> 
-
-If our incoming packet completes a message, the call to sctp_ulpq_tail_data()
-should cause it to be delivered.  If so, the whole message is gone, so we shouldn't
-need to enter partial delivery.  We don't want to enter partial delivery
-unnecessarily, since it can block delivery on other streams.
-
-
-> >
-> >   	sk_mem_reclaim(asoc->base.sk);
-> >
-> > NÔøΩÔøΩÔøΩÔøΩÔøΩrÔøΩÔøΩyÔøΩÔøΩÔøΩbÔøΩXÔøΩÔøΩ«ßvÔøΩ^ÔøΩ)ﬁ∫{.nÔøΩ+ÔøΩÔøΩÔøΩÔøΩ{ÔøΩÔøΩÔøΩiÔøΩ{ayÔøΩ á⁄ôÔøΩ,jÔøΩÔøΩfÔøΩÔøΩÔøΩhÔøΩÔøΩÔøΩzÔøΩÔøΩwÔøΩÔøΩÔøΩ
-> 
-> ÔøΩÔøΩÔøΩj:+vÔøΩÔøΩÔøΩwÔøΩjÔøΩmÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩzZ+ÔøΩÔøΩ›¢j"ÔøΩÔøΩ!tml=
-> >
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
