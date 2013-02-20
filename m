@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964829Ab3BTPnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 10:43:53 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:34702 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S935893Ab3BTPnv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 10:43:51 -0500
-Date: Wed, 20 Feb 2013 10:43:50 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Aaron Lu <aaron.lu@intel.com>
-cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        Aaron Lu <aaron.lwe@gmail.com>, Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v10 0/4] block layer runtime pm
-In-Reply-To: <1361340717-8991-1-git-send-email-aaron.lu@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1302201042400.1671-100000@iolanthe.rowland.org>
+	id S964856Ab3BTPoT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 10:44:19 -0500
+Received: from ham1.zoner.com ([217.198.112.147]:50469 "EHLO ham1.zoner.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964832Ab3BTPoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 10:44:17 -0500
+X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Feb 2013 10:44:17 EST
+Message-ID: <5124EDF4.4010309@zoner.cz>
+Date: Wed, 20 Feb 2013 16:38:28 +0100
+From: Martin Svec <martin.svec@zoner.cz>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: target-devel <target-devel@vger.kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Read I/O starvation with writeback RAID controller
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Feb 2013 15:38:25.0920 (UTC) FILETIME=[52C51000:01CE0F80]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Feb 2013, Aaron Lu wrote:
+Hello,
 
-> In August 2010, Jens and Alan discussed about "Runtime PM and the block
-> layer". http://marc.info/?t=128259108400001&r=1&w=2
-> And then Alan has given a detailed implementation guide:
-> http://marc.info/?l=linux-scsi&m=133727953625963&w=2
+I've noticed read I/O starvation problems of LIO iSCSI target when
+used on top of writeback-enabled HW RAID controller (PERC H700 with
+1GB cache). For intensive mixed read-write workload in virtualized
+environments, writes are able to consume over 95% of the IOPS
+throughput and cause starvation of reads.
 
-> v10:
-> - Add link of Alan Stern's ideas on block layer runtime PM to patch 2
->   and 3's changelog;
-> - Add back code to schdule device suspend if scsi driver return -EBUSY.
+After a number of tests it seems to me it's a general issue of block
+layer I/O scheduling when running on top of a writeback device. If
+there is a write-intensive task, all writes go to the writeback cache
+with near-zero latency. This allows writer to quickly saturate the
+device with thousands of writes while using only a minimal fraction of
+queue depth. However, non-cached reads depend on spinning drive
+latencies which are orders of magnitude higher than writeback cache
+latencies, and so readers cannot submit so many requests per second as
+writers. Consequently, I guess the controller has totally wrong view
+of the incoming workload pattern, tries to satisfy the write flood
+first and the net result is inacceptable starvation of reads, with
+latencies up to hundreds of milliseconds.
 
-This all looks okay now.  You can add
+A simple fio test with 1TiB block device where one thread does 4k
+random sync writes with iodepth=32 and one thread does 4k random reads
+with iodepth=32 shows that instead of the theoretical 50:50 IOPS
+ratio, the block device runs with 95:5 ratio in favor of writes. In
+fact, the imbalance is so high that even write iodepth=2 is enaugh to
+achieve the same numbers.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Real workloads that tend to exhibit this problem are: initial zeroing
+of a virtual machine disk, virtual machine migration, virtual machine
+cloning, intensive swapping of one virtual machine etc.
 
-to each of the patches.
+I tried to set WCE=1 on target iblock device, played with queue
+depths, tested all three I/O schedulers and their parameters,
+controller's parameters, but with no luck. To achieve reasonably good
+fairness, the only solution is to set nr_requests to 1 or disable
+controller's writeback cache at all -- at the expense of degraded
+overall performance :-(
 
-Alan Stern
+Regarding nr_requests, there's obvious relation between iodepths and
+read starvation: if (nr_requests >= workload iodepth) then starvation
+surely occurs. Lowering nr_requests below this threshold slowly starts
+improving fairness and for every rd+wr iodepths pair, there exists
+sufficiently low nr_requests value at which IOPS ratio is finally
+balanced according to rd:wr iodepth ratio. Unfortunately it means
+there is no minimal nr_requests value suitable for all workloads. For
+iodepths around 2 to 8, only nr_requests=1 provides fair load balancing.
+
+Is this a known problem? Does anybody find block layer parameters that
+elliminate this problem for iscsi-target storage in mixed random
+read-write environments like virtualization? Or should I start writing
+my own I/O scheduler? ;-)
+
+Update: I've just found https://lkml.org/lkml/2012/12/10/550 (Read
+starvation by sync writes), where Jan Kara describes identical
+symptoms. But setting nr_requests=10000 doesn't help in my case.
+CC'ing LKML too (I'm not LKML subscriber).
+
+Thanks,
+
+Martin
 
