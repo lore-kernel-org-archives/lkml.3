@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758932Ab3BTRQO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 12:16:14 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:54822 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758700Ab3BTRQJ (ORCPT
+	id S1758989Ab3BTRQw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 12:16:52 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:65309 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab3BTRQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 12:16:09 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexander Shiyan <shc_work@mail.ru>
-Subject: Re: Re[12]: [PATCH v3] mfd: syscon: Add non-DT support
-Date: Wed, 20 Feb 2013 17:16:04 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: Dong Aisheng <dong.aisheng@linaro.org>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-References: <1361198522-23789-1-git-send-email-shc_work@mail.ru> <201302201500.18803.arnd@arndb.de> <1361376371.184258129@f173.mail.ru>
-In-Reply-To: <1361376371.184258129@f173.mail.ru>
+	Wed, 20 Feb 2013 12:16:50 -0500
+Date: Wed, 20 Feb 2013 09:16:45 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        "Kirill A . Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-next@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] events: always do slow path when trying to find a pmu
+Message-ID: <20130220171645.GB3570@htj.dyndns.org>
+References: <1361380176-15081-1-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302201716.04650.arnd@arndb.de>
-X-Provags-ID: V02:K0:bY8uwFDCINduKWmP3JJwGVnFTdDlTl0MuYbPtMP9cUO
- +tYIQ1RfUBU4SudcK2n6NMEE+2B6grIiisoXKMLIiACOpt0YwS
- KYXIabInFAqLphGSN7omBCBB7bgLZN+KiQBKbkPiYOXmCzXFHO
- Vwp9pXuqp3f35fPjWUD4W7WJH22zKT/i2nek40U0EgwR0yxEFs
- tk41Vmai2PgiJirr0z8fQHF3krryRWSR7hsrH8/r8zP/vJaYIa
- B0Tnbp6y4EnyB5oYjPn4d3McUgwKnD7eDILq2Z+pGJYlAvOrHf
- PtktjltxPqqJrGj2CULhIoLH5UfBinIu+BS4e2Wk6UaxA9uBhn
- A5CEo29Z3bxlkop0NJbo=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361380176-15081-1-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 February 2013, Alexander Shiyan wrote:
-> No. Target have a three SYSCON registers and two SYSFLG. All these registers
-> can be combined into three syscon devices.
-> Only these registers will be handled via syscon device, so it is not only one.
-> Or you mean about handle all register via syscon? It is not it.
+On Wed, Feb 20, 2013 at 07:09:36PM +0200, Andy Shevchenko wrote:
+> The guilty commit is cc5b5f6 "events: convert to idr_alloc()" together with
+> f49318a "idr: implement lookup hint". In our case the idr_alloc is never called, but idr_find is. The hint field is never initialized and could not be dereferenced.
 
-Yes, I was expecting that you would list all three pages in the resource
-for the syscon device, basically making all of the core clps711x
-registers available this way.
+Ah, right, ->hint is uninitialized at the beginning.
 
-> > treat the absence of DT information as an error, and a call to
-> > syscon_regmap_lookup_by_compatible or syscon_regmap_lookup_by_phandle
-> > will always return the syscon device that was registered first, or
-> > -EPROBE_DEFER for any error.
+> The proposed fix uses the idr_slowpath call which reflects old behaviour.
 > 
-> The initial idea is search desired syscon device from drivers only by one function
-> (i.e. search syscon device by compatible string or by specific alias) and no depend
-> on DT or non-DT. I.e. define syscon device always at machine start (even if we run
-> machine from DTS), because device should be always present in system.
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Reported-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  kernel/events/core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 624e53f..20421ea 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -6076,7 +6076,7 @@ struct pmu *perf_init_event(struct perf_event *event)
+>  	idx = srcu_read_lock(&pmus_srcu);
+>  
+>  	rcu_read_lock();
+> -	pmu = idr_find(&pmu_idr, event->attr.type);
+> +	pmu = idr_find_slowpath(&pmu_idr, event->attr.type);
 
-I don't understand yet what the advantage for clps711x is over just a single
-register area that would get registered at boot time and replace all the
-clps_readl/clps_writel calls.
+But I don't think this is the right thing to do.  I'm working on
+proper fix for idr_find().  Will post soon.
 
-	Arnd
+Thanks!
+
+-- 
+tejun
