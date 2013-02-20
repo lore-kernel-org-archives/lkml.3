@@ -1,54 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934996Ab3BTTa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 14:30:27 -0500
-Received: from mail-da0-f52.google.com ([209.85.210.52]:47096 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934380Ab3BTTaV (ORCPT
+	id S934743Ab3BTTdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 14:33:21 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:64280 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934158Ab3BTTdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 14:30:21 -0500
-Message-ID: <1361388619.19353.221.camel@edumazet-glaptop>
-Subject: Re: Kernel 3.7.2 strange warning and short system hang
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: bind@enas.net, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Date: Wed, 20 Feb 2013 11:30:19 -0800
-In-Reply-To: <20130220.125715.2150428275032134361.davem@davemloft.net>
-References: <5124F57A.6080908@enas.net>
-	 <1361379176.19353.187.camel@edumazet-glaptop>
-	 <20130220.125715.2150428275032134361.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 20 Feb 2013 14:33:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <CANeU7Q=KHB=rZrTpJ+Nj+C-tAL3vMafSQsjrCHGvGEydcULGSQ@mail.gmail.com>
+References: <CANeU7QmbzX4Tx1Dtu6xOiYzr6h6_8tPQvVG32Wvkt=5wAwEEAg@mail.gmail.com>
+	<20130219100849.72d2330b@jbarnes-desktop>
+	<CANeU7QmJb+yUGu9mVgq=_pHhvpPu6ORrikm=E6PkuHpOz9OREA@mail.gmail.com>
+	<20130219125217.6b6f55ff@jbarnes-desktop>
+	<CANeU7QnQmKYXHA=aEuRGZDc7hVdY6037i=+s_n3FZNMN2njDsw@mail.gmail.com>
+	<CAKMK7uG7TgiAn0ZQ=E_-QBPNAVhTSxpORkX3Z1mY=54mgTzM-g@mail.gmail.com>
+	<CANeU7Q=KHB=rZrTpJ+Nj+C-tAL3vMafSQsjrCHGvGEydcULGSQ@mail.gmail.com>
+Date: Wed, 20 Feb 2013 11:33:19 -0800
+X-Google-Sender-Auth: 3fHfiM7fCEwbcWvRWjH1c5eei0I
+Message-ID: <CANeU7QmVNkmf29qA52W+j0MTUJGA=pL7e+oXJy-s9Qf0tn3miQ@mail.gmail.com>
+Subject: Re: i915 black screen introduced by ACPI changes
+From: Chris Li <lkml@chrisli.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+        robert.moore@intel.com, feng.tang@intel.com, len.brown@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-20 at 12:57 -0500, David Miller wrote:
+On Wed, Feb 20, 2013 at 11:29 AM, Chris Li <lkml@chrisli.org> wrote:
+>
+> Here it is the dmesg from the FC18 live CD kernel. No black screen.
 
-> I've seen this pattern on several occasions and I have to wonder...
-> 
-> Do we really require, therefore, every NAPI driver to use dev_kfree_skb_any()
-> in it's TX reclaim if it supports netpoll?
-> 
-> That seems completely bogus.
-> 
+Sorry please ignore my previous dmesg. It was boot with i915.modeset=0.
+I am doing another one without that line.
 
-
-> netpoll is supposed to provide an execution environment when it invokes
-> ->poll() that is identical to the normal NAPI execution.  If that would
-> be true, then this change above would be completely unnecessary.
-> 
-> We need to figure out what is the case here, and audit all the NAPI
-> drivers to make sure they do the right thing once we know what the
-> right thing actually is.
-
-netpoll directly calls n->poll()
-
-(poll_napi() -> poll_one_napi() -> napi->poll(napi, budget) )
-
-Presumably it should not do that if running in interrupt context.
-
-
-
+Chris
