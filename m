@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935446Ab3BTOU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 09:20:26 -0500
-Received: from mga11.intel.com ([192.55.52.93]:14040 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757742Ab3BTOUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 09:20:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,702,1355126400"; 
-   d="scan'208";a="289580374"
-Message-ID: <5124DBA3.20605@intel.com>
-Date: Wed, 20 Feb 2013 22:20:19 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S935299Ab3BTOXA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 09:23:00 -0500
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:40245 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933322Ab3BTOW6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 09:22:58 -0500
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        morten.rasmussen@arm.com
-Subject: Re: [patch v5 11/15] sched: add power/performance balance allow flag
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-12-git-send-email-alex.shi@intel.com> <20130220121256.GD16775@pd.tnic>
-In-Reply-To: <20130220121256.GD16775@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5124C6CF.1020001@gmail.com>
+References: <1359699013-7160-1-git-send-email-hannes@cmpxchg.org>
+	<5124C6CF.1020001@gmail.com>
+Date: Wed, 20 Feb 2013 22:22:58 +0800
+Message-ID: <CANN689FizixMWu7hKMV055=SY_Sg1rmYrB_KAEwOBP1tEOZw+Q@mail.gmail.com>
+Subject: Re: [patch] mm: mlock: document scary-looking stack expansion mlock chain
+From: Michel Lespinasse <walken@google.com>
+To: Ric Mason <ric.masonn@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Feb 20, 2013 at 8:51 PM, Ric Mason <ric.masonn@gmail.com> wrote:
+> On 02/01/2013 02:10 PM, Johannes Weiner wrote:
+>>
+>> The fact that mlock calls get_user_pages, and get_user_pages might
+>> call mlock when expanding a stack looks like a potential recursion.
+>
+> Why expand stack need call mlock? I can't find it in the codes, could you
+> point out to me?
 
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 2e8131d..0047856 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -4053,6 +4053,8 @@ struct lb_env {
->>  	unsigned int		loop;
->>  	unsigned int		loop_break;
->>  	unsigned int		loop_max;
->> +	int			power_lb;  /* if power balance needed */
->> +	int			perf_lb;   /* if performance balance needed */
-> 
-> Those look like they're used like simple boolean flags. Why not make
-> them such, i.e. bitfields? See struct perf_event_attr for an example.
-
-there are 11 long words in struct lb_env now. use boolean or bitfields
-can't save much space. and not use conveniently.
-> 
-> Thanks.
-> 
-
+Its hidden in find_expand_vma(). Basically if the existing stack is
+already mlocked, any additional stack expansions get mlocked as well.
 
 -- 
-Thanks
-    Alex
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
