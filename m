@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935250Ab3BTUsq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 15:48:46 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:35057 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S935163Ab3BTUso (ORCPT
+	id S935323Ab3BTUuI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 15:50:08 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38432 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935134Ab3BTUuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 15:48:44 -0500
-Date: Wed, 20 Feb 2013 15:48:43 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: Li Fei <fei.li@intel.com>, <pavel@ucw.cz>, <rjw@sisk.pl>,
-        <len.brown@intel.com>, <mingo@redhat.com>, <peterz@infradead.org>,
-        <akpm@linux-foundation.org>, <viro@zeniv.linux.org.uk>,
-        <gorcunov@openvz.org>, <rientjes@google.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <chuansheng.liu@intel.com>, <biao.wang@intel.com>
-Subject: Re: [PATCH] freezer: configure user space process frozen along with
- kernel threads
-In-Reply-To: <87obfeivc3.fsf@xmission.com>
-Message-ID: <Pine.LNX.4.44L0.1302201541000.1671-100000@iolanthe.rowland.org>
+	Wed, 20 Feb 2013 15:50:07 -0500
+Date: Wed, 20 Feb 2013 15:49:41 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Liu, Jinsong" <jinsong.liu@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: linux-next: build failure after merge of the xen-two tree
+Message-ID: <20130220204941.GC4526@phenom.dumpdata.com>
+References: <20130215154551.d11e9d376d30d32b9673e6cc@canb.auug.org.au>
+ <11850955.SHqxVBsJqI@vostro.rjw.lan>
+ <DE8DF0795D48FD4CA783C40EC82923353FCCAC@SHSMSX101.ccr.corp.intel.com>
+ <4696812.SKkpQQd9iW@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4696812.SKkpQQd9iW@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Feb 2013, Eric W. Biederman wrote:
-
-> >> Why can't the fuse filesystem freeze when there are requests pending?
-> >
-> > It _can_ freeze (that is, the fuse daemon can).  The problem is that
-> > tasks _using_ the fuse filsystem can't if the daemon doesn't respond. 
+> > > commit 3757b94802fb65d8f696597a74053cf21738da0b
+> > > Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > Date:   Wed Feb 13 14:36:47 2013 +0100
+> > > 
+> > >     ACPI / hotplug: Fix concurrency issues and memory leaks
+> > > 
+> > > after which acpi_bus_scan() and acpi_bus_trim() have to be run under
+> > > acpi_scan_lock (new in my tree as well).
+> > 
+> > Yes, we noticed that and only need minor updates at xen side, will send out
+> > 2 xen patches later accordingly, for cleanup and adding lock.
 > 
-> Which is what I meant when I said that the fuse filesystem couldn't
-> freeze.
+> Thanks, but those new changes will only make sense after merging the Xen tree
+> with the PM tree.  Why don't we queue them up for merging later after both
+> the Xen and PM trees have been pulled from?
 
-Oh, okay.  But it's no different from any other filesystem in that
-respect.  Processes generally can't be frozen while they are waiting
-for filesystem I/O to complete.  In many cases they can't receive 
-signals either (they are in an uninterruptible wait state).
-
-> > These tasks are stuck in uninterruptible wait states deep in the
-> > filesystem layer, probably holding important locks.  They can't be
-> > frozen until the outstanding requests complete.
-> 
-> Why is it that processes that can be preempted can't be frozen?
-
-There's a big difference between preemption and freezing: Preemption
-is involuntary whereas freezing is voluntary.  It's like the difference
-between preemptive and cooperative multitasking.
-
-Processes can be frozen only by making explicit checks, and they 
-mustn't be frozen while they are holding locks that would prevent other 
-processes from reaching one of those checks.
-
-> At most I would suggest that processes be frozen in reverse priority
-> order.  Which unless there is a priority inversion should solve this
-> problem without an additional proc file.
-
-Do fuse daemons (and the processes they rely upon) run with elevated 
-priority?
-
-Alan Stern
-
+OK, I've created a branch (http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=shortlog;h=refs/heads/linux-next-resolved)
+that has your branch and my branch - along with the fix from Stephan and then
+the three updates from Jinsong. Jinsong, please check that I've got all the
+right patches. I will rebase it once Linus has merged both of the Xen and PM trees.
