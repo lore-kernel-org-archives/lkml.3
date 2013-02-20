@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964793Ab3BTOJN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 09:09:13 -0500
-Received: from mga02.intel.com ([134.134.136.20]:17730 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935393Ab3BTOJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 09:09:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,702,1355126400"; 
-   d="scan'208";a="265087132"
-Message-ID: <5124D8F4.6030108@intel.com>
-Date: Wed, 20 Feb 2013 22:08:52 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S935466Ab3BTOLM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 09:11:12 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44726
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935211Ab3BTOLK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 09:11:10 -0500
+Date: Wed, 20 Feb 2013 11:10:57 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf fix for v3.9
+Message-ID: <20130220141056.GC1915@ghostprotocols.net>
+References: <20130219141642.GA12928@gmail.com>
+ <CA+55aFwR=p9YL0UKo3E_e1PRZvga8TeWLbqQGvwTzKGaazHrvA@mail.gmail.com>
+ <20130220091758.GB18213@gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 11/15] sched: add power/performance balance allow flag
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>  <1361164062-20111-12-git-send-email-alex.shi@intel.com>  <1361353681.10155.10.camel@laptop> <5124BBEA.3040806@intel.com>  <1361367469.10155.34.camel@laptop> <1361368088.10155.36.camel@laptop>
-In-Reply-To: <1361368088.10155.36.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130220091758.GB18213@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Wed, Feb 20, 2013 at 10:17:58AM +0100, Ingo Molnar escreveu:
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> > On Tue, Feb 19, 2013 at 6:16 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> > > Please pull the latest perf-urgent-for-linus git tree from:
 
->>> (power_lb == 1 && perf_lb == 1) is incorrect and impossible to have.
->>>
->>> (power_lb == 0 && perf_lb == 0) is possible and it means there is no any
->>> balance on this cpu.
->>>
->>> So, enumeration is not enough.
->>
->> Huh.. both 0 doesn't make any sense either. If there's no balancing, we
->> shouldn't be here to begin with.
-> 
-> Also, why is this in the lb_env at all, shouldn't we simply use the
-> global sched_balance_policy all over the place? Its not like we want to
-> change power/perf on a finer granularity.
+> > >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+> > >    HEAD: e97cbe3edf7d88aad4c21dd3de124d9f9d039881 perf/hwbp: Fix cleanup in case of kzalloc() failure
 
-they are in lb_env, since we need to set them according to each group
-status, mostly in update_sd_lb_power_stats().
+> > > Leftover fix from the v3.8 cycle.
 
-Even the sched_balance_policy is powersaving, the domain may also need
-performance balance since there are maybe too much tasks or much
-imbalance in domain.
+> > This was already in the other (big) perf pull, as commit
+> > 02e176af92f3
 
-when we find the domain is not suitable for power balance, we will set
-lb_perf = 1, then we don't need go through other groups for power info
-collection.
-> 
+> Oops, sorry - Arnaldo picked up the fix too and I never noticed the
+> overlap.
 
+Yeah, I need to have a perf/kcore, for kernel bits that are not tied to
+userspace ones.
 
--- 
-Thanks
-    Alex
+- Arnaldo
