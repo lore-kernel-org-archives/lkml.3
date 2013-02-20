@@ -1,128 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab3BTWBV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 17:01:21 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:44752 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab3BTWBT (ORCPT
+	id S1751751Ab3BTWFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 17:05:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40862 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab3BTWFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 17:01:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1302202155320.22263@ionos>
-References: <1361373336-11337-1-git-send-email-fweisbec@gmail.com>
-	<alpine.LFD.2.02.1302202155320.22263@ionos>
-Date: Wed, 20 Feb 2013 23:01:17 +0100
-Message-ID: <CAFTL4hx_uXfY=bH9nnEsN6AJFTcwqdAWTxcR0jc=hL1FBrwk0w@mail.gmail.com>
-Subject: Re: [PATCH] nohz: Make tick_nohz_irq_exit() irq safe
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Feb 2013 17:05:53 -0500
+Date: Wed, 20 Feb 2013 14:05:51 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] posix-timer: don't call idr_find() w/ negative ID
+Message-Id: <20130220140551.8017e795.akpm@linux-foundation.org>
+In-Reply-To: <20130220213701.GE3570@htj.dyndns.org>
+References: <1361385853-29010-1-git-send-email-sasha.levin@oracle.com>
+	<CAOS58YMT3NS-8zvwx1tNQoLKM1WtKtT-YXBPi=4pAeAMi=rYeA@mail.gmail.com>
+	<512522CF.1020901@oracle.com>
+	<20130220210116.GD3570@htj.dyndns.org>
+	<20130220132300.ccffde44.akpm@linux-foundation.org>
+	<20130220213701.GE3570@htj.dyndns.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/20 Thomas Gleixner <tglx@linutronix.de>:
-> On Wed, 20 Feb 2013, Frederic Weisbecker wrote:
->
->> As it stands, irq_exit() may or may not be called with
->> irqs disabled, depending on __ARCH_IRQ_EXIT_IRQS_DISABLED
->> that the arch can define.
->>
->> It makes tick_nohz_irq_exit() unsafe. For example two
->> interrupts can race in tick_nohz_stop_sched_tick(): the inner
->> most one computes the expiring time on top of the timer list,
->> then it's interrupted right before reprogramming the
->> clock. The new interrupt enqueues a new timer list timer,
->> it reprogram the clock to take it into account and it exits.
->> The CPUs resumes the inner most interrupt and performs the clock
->> reprogramming without considering the new timer list timer.
->>
->> This regression has been introduced by:
->>      280f06774afedf849f0b34248ed6aff57d0f6908
->>      ("nohz: Separate out irq exit and idle loop dyntick logic")
->>
->> Let's fix it right now with the appropriate protections.
->
-> That's not a fix. That's an hack.
+On Wed, 20 Feb 2013 13:37:01 -0800
+Tejun Heo <tj@kernel.org> wrote:
 
-I know it looks that way. That's because it's a pure regression fix,
-minimal for backportability.
+> Hello, Andrew.
+> 
+> On Wed, Feb 20, 2013 at 01:23:00PM -0800, Andrew Morton wrote:
+> > > @@ -637,6 +637,9 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
+> > >  {
+> > >  	struct k_itimer *timr;
+> > >  
+> > > +	if ((int)timer_id < 0)
+> > > +		return NULL;
+> > > +
+> > >  	rcu_read_lock();
+> > >  	timr = idr_find(&posix_timers_id, (int)timer_id);
+> > >  	if (timr) {
+> > 
+> > This is a bit risky - if some arch defines timer_t to be a u64 then we
+> > will incorrectly treat 0x0000 0001 ffff ffff as a negative number. 
+> > (That's a lot of timers!)
+> > 
+> > A fancy way of avoiding this is
+> > 
+> > 	if (timer_id & ((typeof timer_id)1 << (sizeof(timer_id) - 1)))
+> > 
+> > (approximately ;))
+> > 
+> > But I think casting to (long) should be good enough?
+> 
+> Sans WARN_ON_ONCE(), the code would behave the same as before, which
+> in turn, from what I can tell, is the behavior the code intended to
+> implement before idr_alloc() conversion.
+> 
+> If timer_id is being allocated from idr, a valid id can never go over
+> INT_MAX and returning NULL for any ID above that is the correct
+> behavior, I think.  If timer_t is larger than int, both (int) and
+> (long) castings wouldn't be useful.  Both will miss (1LU << 33) + 1
+> and idr_find() will end up looking for 1.
+> 
+> If we want to be strict, we would have to do, I think,
+> 
+> 	if ((unsigned long long)timer_t > INT_MAX)
+> 
+> hopefully with some comments.  That said, if I'm grepping it right,
+> all archs define timer_t as int, so maybe we're just being paranoid.
+> 
 
-I'm distinguishing two different things here: the fact that some archs
-can call irq_exit() with interrupts enabled which is a global design
-problem, and the fact that tick_nohz_irq_exit() was safe against that
-until 3.2 when I broke it with a commit of mine.
+Sure, it's unlikely to cause a problem in practice.  Maybe five years
+from now, after idr has been cleaned up and switched to 64-bit, we've
+left a little hand grenade for someone.  It would be good to
+future-safe it in some fashion.
 
-My goal was basically to restore that protection in a minimal commit
-such that we can backport the regression fix, then deal with
-__ARCH_IRQ_EXIT_IRQS_DISABLED afterward, since it requires some more
-invasive changes.
+I wonder if we should add some generic facility to handle this:
 
->> A saner long term solution will be to remove
->> __ARCH_IRQ_EXIT_IRQS_DISABLED.
->
-> We really want to enforce that interrupt disabled condition for
-> calling irq_exit(). So why make this exclusive to tick_nohz_irq_exit()?
+/*
+ * Query whether an unsigned type is `negative' when we don't know its size
+ */
+#define msb_is_set(v)	{ implementation goes here ;) }
 
-I need a fix that I can backport. Is the below fine with a stable tag?
-It looks a bit too invasive for the single regression involved.
-
-Thanks.
-
->
-> Thanks,
->
->         tglx
->
-> Index: linux-2.6/kernel/softirq.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/softirq.c
-> +++ linux-2.6/kernel/softirq.c
-> @@ -322,18 +322,10 @@ void irq_enter(void)
->
->  static inline void invoke_softirq(void)
->  {
-> -       if (!force_irqthreads) {
-> -#ifdef __ARCH_IRQ_EXIT_IRQS_DISABLED
-> +       if (!force_irqthreads)
->                 __do_softirq();
-> -#else
-> -               do_softirq();
-> -#endif
-> -       } else {
-> -               __local_bh_disable((unsigned long)__builtin_return_address(0),
-> -                               SOFTIRQ_OFFSET);
-> +       else
->                 wakeup_softirqd();
-> -               __local_bh_enable(SOFTIRQ_OFFSET);
-> -       }
->  }
->
->  /*
-> @@ -341,6 +333,14 @@ static inline void invoke_softirq(void)
->   */
->  void irq_exit(void)
->  {
-> +#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
-> +       unsigned long flags;
-> +
-> +       local_irq_save(flags);
-> +#else
-> +       BUG_ON(!irqs_disabled();
-> +#endif
-> +
->         account_irq_exit_time(current);
->         trace_hardirq_exit();
->         sub_preempt_count(IRQ_EXIT_OFFSET);
-> @@ -354,6 +354,9 @@ void irq_exit(void)
->  #endif
->         rcu_irq_exit();
->         sched_preempt_enable_no_resched();
-> +#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
-> +       local_irq_restore(flags);
-> +#endif
->  }
->
->  /*
+Maybe not justified, dunno...
