@@ -1,115 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934977Ab3BTUq3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 15:46:29 -0500
-Received: from www.linutronix.de ([62.245.132.108]:42817 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758788Ab3BTUq2 (ORCPT
+	id S935112Ab3BTUsS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 15:48:18 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:43795 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934716Ab3BTUsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 15:46:28 -0500
-Date: Wed, 20 Feb 2013 21:46:18 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Jones <davej@redhat.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, x86@kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>, Tony Luck <tony.luck@intel.com>
-Subject: Re: odd GPF bug on resume from hibernate.
-In-Reply-To: <20130220201348.GB3137@redhat.com>
-Message-ID: <alpine.LFD.2.02.1302202130080.22263@ionos>
-References: <20130220192826.GA3137@redhat.com> <11452407.3H88HXekKp@vostro.rjw.lan> <20130220201348.GB3137@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 20 Feb 2013 15:48:17 -0500
+Subject: Re: Read I/O starvation with writeback RAID controller
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Martin Svec <martin.svec@zoner.cz>
+Cc: target-devel <target-devel@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        linux-scsi <linux-scsi@vger.kernel.org>
+In-Reply-To: <5124EDF4.4010309@zoner.cz>
+References: <5124EDF4.4010309@zoner.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Feb 2013 12:48:15 -0800
+Message-ID: <1361393295.3667.21.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Feb 2013, Dave Jones wrote:
+Hi Martin,
 
-> On Wed, Feb 20, 2013 at 08:42:46PM +0100, Rafael J. Wysocki wrote:
->  > On Wednesday, February 20, 2013 02:28:26 PM Dave Jones wrote:
->  > > We had two users report hitting a bug that looks like this..
->  > > 
->  > > general protection fault: 8800 [#1] SMP 
->  > > 
->  > >    0:	ca 00 55             	lret   $0x5500
->  > > 
->  > > At this point I don't know where to begin debugging..
->  > > 
->  > > Is that 8800 error code a clue ?
->  > 
->  > Does CPU offline/online work on this machine?
+CC'ing linux-scsi here, as aacraid doesn't have an official maintainer
+atm.
+
+--nab
+
+On Wed, 2013-02-20 at 16:38 +0100, Martin Svec wrote:
+> Hello,
 > 
-> I just asked the user to give that a try at https://bugzilla.redhat.com/show_bug.cgi?id=910162
+> I've noticed read I/O starvation problems of LIO iSCSI target when
+> used on top of writeback-enabled HW RAID controller (PERC H700 with
+> 1GB cache). For intensive mixed read-write workload in virtualized
+> environments, writes are able to consume over 95% of the IOPS
+> throughput and cause starvation of reads.
 > 
-> Incidentally, I found that offlining a cpu in Linus' current tree
-> causes a mess..
+> After a number of tests it seems to me it's a general issue of block
+> layer I/O scheduling when running on top of a writeback device. If
+> there is a write-intensive task, all writes go to the writeback cache
+> with near-zero latency. This allows writer to quickly saturate the
+> device with thousands of writes while using only a minimal fraction of
+> queue depth. However, non-cached reads depend on spinning drive
+> latencies which are orders of magnitude higher than writeback cache
+> latencies, and so readers cannot submit so many requests per second as
+> writers. Consequently, I guess the controller has totally wrong view
+> of the incoming workload pattern, tries to satisfy the write flood
+> first and the net result is inacceptable starvation of reads, with
+> latencies up to hundreds of milliseconds.
 > 
+> A simple fio test with 1TiB block device where one thread does 4k
+> random sync writes with iodepth=32 and one thread does 4k random reads
+> with iodepth=32 shows that instead of the theoretical 50:50 IOPS
+> ratio, the block device runs with 95:5 ratio in favor of writes. In
+> fact, the imbalance is so high that even write iodepth=2 is enaugh to
+> achieve the same numbers.
 > 
-> numa_remove_cpu cpu 1 node 0: mask now 0,2-3
-> smpboot: CPU 1 is now offline
-> BUG: using smp_processor_id() in preemptible [00000000] code: bash/5976
-> caller is cmci_rediscover+0x6b/0xe0
-> Pid: 5976, comm: bash Not tainted 3.8.0-rc7+ #63
-> Call Trace:
->  [<ffffffff812fb901>] debug_smp_processor_id+0xe1/0x100
->  [<ffffffff8101e4bb>] cmci_rediscover+0x6b/0xe0
->  [<ffffffff8158f55f>] mce_cpu_callback+0x1af/0x1c3
->  [<ffffffff815a6893>] notifier_call_chain+0x53/0xa0
->  [<ffffffff8107338e>] __raw_notifier_call_chain+0xe/0x10
->  [<ffffffff810491e0>] __cpu_notify+0x20/0x40
->  [<ffffffff81049215>] cpu_notify+0x15/0x20
->  [<ffffffff8104939e>] cpu_notify_nofail+0xe/0x20
->  [<ffffffff81588512>] _cpu_down+0x242/0x2b0
->  [<ffffffff815885b6>] cpu_down+0x36/0x50
+> Real workloads that tend to exhibit this problem are: initial zeroing
+> of a virtual machine disk, virtual machine migration, virtual machine
+> cloning, intensive swapping of one virtual machine etc.
+> 
+> I tried to set WCE=1 on target iblock device, played with queue
+> depths, tested all three I/O schedulers and their parameters,
+> controller's parameters, but with no luck. To achieve reasonably good
+> fairness, the only solution is to set nr_requests to 1 or disable
+> controller's writeback cache at all -- at the expense of degraded
+> overall performance :-(
+> 
+> Regarding nr_requests, there's obvious relation between iodepths and
+> read starvation: if (nr_requests >= workload iodepth) then starvation
+> surely occurs. Lowering nr_requests below this threshold slowly starts
+> improving fairness and for every rd+wr iodepths pair, there exists
+> sufficiently low nr_requests value at which IOPS ratio is finally
+> balanced according to rd:wr iodepth ratio. Unfortunately it means
+> there is no minimal nr_requests value suitable for all workloads. For
+> iodepths around 2 to 8, only nr_requests=1 provides fair load balancing.
+> 
+> Is this a known problem? Does anybody find block layer parameters that
+> elliminate this problem for iscsi-target storage in mixed random
+> read-write environments like virtualization? Or should I start writing
+> my own I/O scheduler? ;-)
+> 
+> Update: I've just found https://lkml.org/lkml/2012/12/10/550 (Read
+> starvation by sync writes), where Jan Kara describes identical
+> symptoms. But setting nr_requests=10000 doesn't help in my case.
+> CC'ing LKML too (I'm not LKML subscriber).
+> 
+> Thanks,
+> 
+> Martin
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe target-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-That's caused by: commit 85b97637bb40a9f486459dd254598759af9c3d50
 
-       x86/mce: Do not change worker's running cpu in cmci_rediscover().
-
-mce_cpu_callback() does:
-
-        if (action == CPU_POST_DEAD) {
-                /* intentionally ignoring frozen here */
-                cmci_rediscover(cpu);
-        }
-
-This is called from preemptible context.
-
-Now cmci_rediscover() grew the following addon:
-
-+   		      if (cpu == smp_processor_id()) {
-+		      	      cmci_rediscover_work_func(NULL);
-					continue;
-
-Which causes the above splat. It seems testing with full debugging is
-overrated.
-
-Find the fix below, though it's debatable whether that "optimization"
-of calling the function directly is worth the trouble.
-
-Thanks,
-
-	tglx
-
-Index: linux-2.6/arch/x86/kernel/cpu/mcheck/mce_intel.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ linux-2.6/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -311,10 +311,12 @@ void cmci_rediscover(int dying)
- 		if (cpu == dying)
- 			continue;
- 
--		if (cpu == smp_processor_id()) {
-+		if (cpu == get_cpu()) {
- 			cmci_rediscover_work_func(NULL);
-+			put_cpu();
- 			continue;
- 		}
-+		put_cpu();
- 
- 		work_on_cpu(cpu, cmci_rediscover_work_func, NULL);
- 	}
