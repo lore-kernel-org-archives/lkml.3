@@ -1,50 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934757Ab3BTTtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 14:49:53 -0500
-Received: from mail.tpi.com ([70.99.223.143]:2654 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934361Ab3BTTtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 14:49:52 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH linux/linux-next] aic94xx: asd_read_flash: Fix uninitialized variable warning
-Date: Wed, 20 Feb 2013 12:49:33 -0700
-Message-Id: <1361389773-49944-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S934849Ab3BTTvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 14:51:55 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:60760 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934361Ab3BTTvv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 14:51:51 -0500
+Message-ID: <512529C2.4050909@metafoo.de>
+Date: Wed, 20 Feb 2013 20:53:38 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Len Brown <lenb@kernel.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [PATCH 05/16] blackfin idle: delete pm_idle
+References: <1360475903-30007-1-git-send-email-lenb@kernel.org> <8408629d64626937a5202751703dae7f41941f7a.1360475150.git.len.brown@intel.com> <512256A3.6050100@metafoo.de> <1656351.lki82jZfSs@vostro.rjw.lan>
+In-Reply-To: <1656351.lki82jZfSs@vostro.rjw.lan>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/scsi/aic94xx/aic94xx_sds.c: In function 'asd_read_flash':
-drivers/scsi/aic94xx/aic94xx_sds.c:597:21: warning: 'offs' may be used uninitialized in this function [-Wmaybe-uninitialized]
-drivers/scsi/aic94xx/aic94xx_sds.c:985:6: note: 'offs' was declared here
+On 02/20/2013 08:52 PM, Rafael J. Wysocki wrote:
+> On Monday, February 18, 2013 05:28:19 PM Lars-Peter Clausen wrote:
+>> On 02/10/2013 06:58 AM, Len Brown wrote:
+>>> From: Len Brown <len.brown@intel.com>
+>>>
+>>> pm_idle is dead code on blackfin.
+>>>
+>>> Signed-off-by: Len Brown <len.brown@intel.com>
+>>> Cc: uclinux-dist-devel@blackfin.uclinux.org
+>>> ---
+>>>  arch/blackfin/kernel/process.c | 7 -------
+>>>  1 file changed, 7 deletions(-)
+>>>
+>>> diff --git a/arch/blackfin/kernel/process.c b/arch/blackfin/kernel/process.c
+>>> index 3e16ad9..8061426 100644
+>>> --- a/arch/blackfin/kernel/process.c
+>>> +++ b/arch/blackfin/kernel/process.c
+>>> @@ -39,12 +39,6 @@ int nr_l1stack_tasks;
+>>>  void *l1_stack_base;
+>>>  unsigned long l1_stack_len;
+>>>  
+>>> -/*
+>>> - * Powermanagement idle function, if any..
+>>> - */
+>>> -void (*pm_idle)(void) = NULL;
+>>> -EXPORT_SYMBOL(pm_idle);
+>>> -
+>>>  void (*pm_power_off)(void) = NULL;
+>>>  EXPORT_SYMBOL(pm_power_off);
+>>>  
+>>> @@ -81,7 +75,6 @@ void cpu_idle(void)
+>>>  {
+>>>  	/* endless idle loop with no priority at all */
+>>>  	while (1) {
+>>> -		void (*idle)(void) = pm_idle;
+>>
+>> Hi,
+>>
+>> This results in the following error:
+>>
+>> arch/blackfin/kernel/process.c: In function ‘cpu_idle’:
+>> arch/blackfin/kernel/process.c:83: error: ‘idle’ undeclared (first use in
+>> this function)
+>> arch/blackfin/kernel/process.c:83: error: (Each undeclared identifier is
+>> reported only once
+>> arch/blackfin/kernel/process.c:83: error: for each function it appears in.)
+>> arch/blackfin/kernel/process.c:88: error: implicit declaration of function
+>> ‘idle’
+>>
+>>
+>> This change on top of your patch, fixes it.
+> 
+> Lars, I need your sign-off for the patch below.  May I add it?
+> 
+> Rafael
 
-If asd_find_flash_de() fails, then 'offs' could be used without having been initialized.
-Set 'offs' to zero which seems like the most reasonable value.
+Sure, I didn't realize the patches had already been merged, otherwise I'd have
+sent a proper patch.
 
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/scsi/aic94xx/aic94xx_sds.c |    1 +
- 1 file changed, 1 insertion(+)
+- Lars
 
-diff --git a/drivers/scsi/aic94xx/aic94xx_sds.c b/drivers/scsi/aic94xx/aic94xx_sds.c
-index edb43fd..d11b4d7 100644
---- a/drivers/scsi/aic94xx/aic94xx_sds.c
-+++ b/drivers/scsi/aic94xx/aic94xx_sds.c
-@@ -1003,6 +1003,7 @@ static int asd_process_ctrl_a_user(struct asd_ha_struct *asd_ha,
- 		}
- 
- 		size = sizeof(struct asd_ctrla_phy_settings);
-+		offs = 0;
- 		ps = &dflt_ps;
- 	}
- 
--- 
-1.7.9.5
 
+>> diff --git a/arch/blackfin/kernel/process.c b/arch/blackfin/kernel/process.c
+>> index 8061426..9782c03 100644
+>> --- a/arch/blackfin/kernel/process.c
+>> +++ b/arch/blackfin/kernel/process.c
+>> @@ -80,12 +80,10 @@ void cpu_idle(void)
+>>  		if (cpu_is_offline(smp_processor_id()))
+>>  			cpu_die();
+>>  #endif
+>> -		if (!idle)
+>> -			idle = default_idle;
+>>  		tick_nohz_idle_enter();
+>>  		rcu_idle_enter();
+>>  		while (!need_resched())
+>> -			idle();
+>> +			default_idle();
+>>  		rcu_idle_exit();
+>>  		tick_nohz_idle_exit();
+>>  		preempt_enable_no_resched();
+>>
+>>
