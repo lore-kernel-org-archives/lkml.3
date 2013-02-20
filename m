@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935517Ab3BTC5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 21:57:10 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:50852 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935502Ab3BTC5I (ORCPT
+	id S935522Ab3BTC5P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 21:57:15 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:40135 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935502Ab3BTC5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 21:57:08 -0500
-Date: Tue, 19 Feb 2013 21:57:03 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] (xen) stable/for-jens-3.9
-Message-ID: <20130220025703.GA26463@phenom.dumpdata.com>
+	Tue, 19 Feb 2013 21:57:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <51237DDB.2050305@gmail.com>
+References: <1359973626-3900-1-git-send-email-m.szyprowski@samsung.com>
+	<20130204233430.GA2610@blaptop>
+	<5110B05B.5070109@samsung.com>
+	<51237DDB.2050305@gmail.com>
+Date: Wed, 20 Feb 2013 11:57:12 +0900
+X-Google-Sender-Auth: SRHgqs_FIRLyd-GDgLHXVyafYRw
+Message-ID: <CAH9JG2V4+qXLMq5nbuN37nb4xrPB11L91q=2NKrVDautyyK2Bw@mail.gmail.com>
+Subject: Re: [PATCH] mm: cma: fix accounting of CMA pages placed in high memory
+From: Kyungmin Park <kmpark@infradead.org>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mgorman@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Jens,
+On Tue, Feb 19, 2013 at 10:27 PM, Simon Jeons <simon.jeons@gmail.com> wrote:
+> On 02/05/2013 03:10 PM, Marek Szyprowski wrote:
+>>
+>> Hello,
+>>
+>> On 2/5/2013 12:34 AM, Minchan Kim wrote:
+>>>
+>>> On Mon, Feb 04, 2013 at 11:27:05AM +0100, Marek Szyprowski wrote:
+>>> > The total number of low memory pages is determined as
+>>> > totalram_pages - totalhigh_pages, so without this patch all CMA
+>>> > pageblocks placed in highmem were accounted to low memory.
+>>>
+>>> So what's the end user effect? With the effect, we have to decide
+>>> routing it on stable.
+>>>
+>>> >
+>>> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>>> > ---
+>>> >  mm/page_alloc.c |    4 ++++
+>>> >  1 file changed, 4 insertions(+)
+>>> >
+>>> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>>> > index f5bab0a..6415d93 100644
+>>> > --- a/mm/page_alloc.c
+>>> > +++ b/mm/page_alloc.c
+>>> > @@ -773,6 +773,10 @@ void __init init_cma_reserved_pageblock(struct
+>>> > page *page)
+>>> >      set_pageblock_migratetype(page, MIGRATE_CMA);
+>>> >      __free_pages(page, pageblock_order);
+>>> >      totalram_pages += pageblock_nr_pages;
+>>> > +#ifdef CONFIG_HIGHMEM
+>>>
+>>> We don't need #ifdef/#endif.
+>>
+>>
+>> #ifdef is required to let this code compile when highmem is not enabled,
+>> becuase totalhigh_pages is defined as 0, see include/linux/highmem.h
+>>
+>
+> Hi Marek,
+>
+> 1) Why can support CMA regions placed in highmem?
+Some vendors use reserved memory at highmem, and it's hard to modify
+to use lowmem, so just CMA can support highmem and no need to adjust
+address used at reserved memory.
+> CMA is for dma buffer, correct? Then how can old dma device access highmem?
+What's the "old dma device"? To support it, we also modify
+arch/arm/mm/dma-mapping.c for handling highmem address.
 
-Please git pull the following branch:
+> 2) Why there is no totalhigh_pages variable define in the case of config
+> highmem?
+I don't know. it's just defined in case of highmem. that's reason to
+use #ifdef/endif. we don't know hisotrical reason.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.9
-
-which has bug-fixes that did not make it in v3.8. They all are marked as
-material for the stable tree as well. There are two bug-fixes for
-the code that has been in there for some time (that is the Jan's fix
-and one of mine). And there are two bug-fixes for the persistent grant
-feature that debuted in v3.8 for xen blk[back|front]end.
-
-Please pull!
-
- drivers/block/xen-blkback/blkback.c |  7 +++---
- drivers/block/xen-blkback/xenbus.c  | 49 ++++++++++++++++++-------------------
- drivers/block/xen-blkfront.c        | 13 +++++++---
- include/linux/llist.h               | 25 -------------------
- 4 files changed, 38 insertions(+), 56 deletions(-)
-
-Jan Beulich (1):
-      xen-blkback: do not leak mode property
-
-Konrad Rzeszutek Wilk (2):
-      xen/blkback: Don't trust the handle from the frontend.
-      xen-blkfront: drop the use of llist_for_each_entry_safe
-
-Roger Pau Monne (1):
-      xen-blkback: use balloon pages for persistent grants
+Thank you,
+Kyungmin Park
+>
+>
+>>> > +    if (PageHighMem(page))
+>>> > +        totalhigh_pages += pageblock_nr_pages;
+>>> > +#endif
+>>> >  }
+>>> >  #endif
+>>> >
+>>
+>>
+>> Best regards
+>
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
