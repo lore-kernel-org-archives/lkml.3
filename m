@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935575Ab3BTNqo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:46:44 -0500
-Received: from mx02.infracom.it ([62.196.48.10]:28766 "EHLO mx02.infracom.it"
+	id S935600Ab3BTNqz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:46:55 -0500
+Received: from mga11.intel.com ([192.55.52.93]:12607 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935309Ab3BTNqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:46:43 -0500
-X-Greylist: delayed 329 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Feb 2013 08:46:43 EST
-Message-ID: <5124D276.4020802@infracom.it>
-Date: Wed, 20 Feb 2013 14:41:10 +0100
-From: Roberto Oppedisano <roberto.oppedisano@infracom.it>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S935580Ab3BTNqv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 08:46:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,702,1355126400"; 
+   d="scan'208";a="289567081"
+From: "Li, Fei" <fei.li@intel.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: "pavel@ucw.cz" <pavel@ucw.cz>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "Brown, Len" <len.brown@intel.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "Wang, Biao" <biao.wang@intel.com>
+Subject: RE: [PATCH] freezer: configure user space process frozen along with
+ kernel threads
+Thread-Topic: [PATCH] freezer: configure user space process frozen along
+ with kernel threads
+Thread-Index: AQHODxBpX7dUZj4OyEGrpnYpQgXwf5iB7oSAgADSlDA=
+Date: Wed, 20 Feb 2013 13:46:47 +0000
+Message-ID: <BEC9F67575FA1E429CA7CF5AE9BE3634403712@SHSMSX102.ccr.corp.intel.com>
+References: <1361326525.9753.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <20130220090507.GV20312@moon>
+In-Reply-To: <20130220090507.GV20312@moon>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>
-CC: Salvatore Sisinni <s.sisinni@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>
-Subject: Re: regression in linux 3.7 - fan speed at 100% after suspend/resume
- at 100%
-References: <50BDF345.60804@gmail.com>  <1354630272.2480.4.camel@rzhang1-mobl4> <50BEF830.6020206@gmail.com>  <50D1CF9D.2090709@infracom.it>  <CADuOw61+kM6o-zK=7ZTZQSDU8-y-_NcmAaVJFnaSzNBXuqzggg@mail.gmail.com> <1361319657.2264.0.camel@rzhang1-mobl4>
-In-Reply-To: <1361319657.2264.0.camel@rzhang1-mobl4>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> -----Original Message-----
+> From: Cyrill Gorcunov [mailto:gorcunov@gmail.com] On Behalf Of Cyrill
+> Gorcunov
+> Sent: Wednesday, February 20, 2013 5:05 PM
+> To: Li, Fei
+> Cc: pavel@ucw.cz; rjw@sisk.pl; Brown, Len; mingo@redhat.com;
+> peterz@infradead.org; akpm@linux-foundation.org; viro@zeniv.linux.org.uk;
+> ebiederm@xmission.com; rientjes@google.com; linux-kernel@vger.kernel.org;
+> linux-pm@vger.kernel.org; Liu, Chuansheng; Wang, Biao
+> Subject: Re: [PATCH] freezer: configure user space process frozen along with
+> kernel threads
+> 
+> On Wed, Feb 20, 2013 at 10:15:25AM +0800, Li Fei wrote:
+> >
+> > +#ifdef CONFIG_FREEZER
+> > +
+> > +static ssize_t freeze_late_read(struct file *file, char __user *buf,
+> > +					size_t count, loff_t *ppos)
+> > +{
+> > +	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
+> > +	char buffer[PROC_NUMBUF];
+> > +	int freeze_late;
+> > +	size_t len;
+> > +	if (!task)
+> > +		return -ESRCH;
+> > +	freeze_late = (task->flags & PF_FREEZER_LATE) ? 1 : 0;
+> > +	len = snprintf(buffer, sizeof(buffer), "%d\n", freeze_late);
+> > +	return simple_read_from_buffer(buf, count, ppos, buffer, len);
+> > +}
+> 
+> Don't you need put_task_struct() once you grabbed it?
 
-Il 20/02/2013 01:20, Zhang Rui ha scritto:
-> On Tue, 2013-02-19 at 18:54 +0100, Salvatore Sisinni wrote:
->> Hello Rui,
->>
->> same problem here with kernel-3.7.8-202.fc18.x86_64
->> but fan speed after resume with kernel-3.6.10-4.fc18.x86_64  seems ok
->> acpidump and sys/class/thermal/  details are attached
->>
-> Hmmm,
-> can you please check if the problem still exists in the -next branch of
-> git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git
+Thanks for your reminder. I'll update it in later version.
 
-I had a merge conflict resolved with a:
-
-git rm drivers/thermal/exynos_thermal.c
-
-(the file is unused with my config).
-
-Anyway now I'm running on your next branch and the problem seems to be 
-gone (I tried a couple of suspend resume cycles).
-
-Kind regards
-R
-
--- 
-Roberto Oppedisano
-
+Best Regards,
+Li Fei
