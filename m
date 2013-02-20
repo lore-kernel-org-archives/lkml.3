@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935454Ab3BTNZc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:25:32 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36264 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934388Ab3BTNZb (ORCPT
+	id S964805Ab3BTNZe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:25:34 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44523
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935457Ab3BTNZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:25:31 -0500
-Date: Wed, 20 Feb 2013 08:25:25 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] (xen) stable/for-jens-3.9
-Message-ID: <20130220132525.GB28644@phenom.dumpdata.com>
-References: <20130220025703.GA26463@phenom.dumpdata.com>
- <20130220072835.GP4768@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130220072835.GP4768@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 20 Feb 2013 08:25:32 -0500
+Message-ID: <1361366720.10155.25.camel@laptop>
+Subject: Re: [RFC PATCH v3 1/3] sched: schedule balance map foundation
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Wed, 20 Feb 2013 14:25:20 +0100
+In-Reply-To: <510791B2.6090506@linux.vnet.ibm.com>
+References: <51079178.3070002@linux.vnet.ibm.com>
+	 <510791B2.6090506@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 08:28:35AM +0100, Jens Axboe wrote:
-> On Tue, Feb 19 2013, Konrad Rzeszutek Wilk wrote:
-> > Hey Jens,
-> > 
-> > Please git pull the following branch:
-> > 
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.9
-> > 
-> > which has bug-fixes that did not make it in v3.8. They all are marked as
-> > material for the stable tree as well. There are two bug-fixes for
-> > the code that has been in there for some time (that is the Jan's fix
-> > and one of mine). And there are two bug-fixes for the persistent grant
-> > feature that debuted in v3.8 for xen blk[back|front]end.
-> 
-> Konrad, the tree is against 3.8, so I'm pulling it into my for-linus
-> branch which will be pushed a bit after the initial for-3.9/drivers goes
-> out. I can't pull it into the latter without getting a whole lot of
-> extra changes too.
+On Tue, 2013-01-29 at 17:09 +0800, Michael Wang wrote:
+> +struct sched_balance_map {
+> +       struct sched_domain **sd[SBM_MAX_TYPE];
+> +       int top_level[SBM_MAX_TYPE];
+> +       struct sched_domain *affine_map[NR_CPUS];
+> +};
 
-Right. I ought to have rebased on it something much older <sigh> (say
-stable/for-jens-3.8 minus the four patches). Will do it next time.
+Argh.. affine_map is O(n^2) in nr_cpus, that's not cool.
+
