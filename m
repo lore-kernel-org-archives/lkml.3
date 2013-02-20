@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935112Ab3BTAYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 19:24:33 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:54647 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933915Ab3BTAXR (ORCPT
+	id S935016Ab3BTAXQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 19:23:16 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:49024 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934937Ab3BTAXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 19:23:17 -0500
+	Tue, 19 Feb 2013 19:23:00 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-        NeilBrown <neilb@suse.de>, Alasdair Kergon <agk@redhat.com>,
-        dm-devel@redhat.com, Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 24/27] block: Convert some code to bio_for_each_segment_all()
-Date: Tue, 19 Feb 2013 16:22:38 -0800
-Message-Id: <1361319761-23873-25-git-send-email-koverstreet@google.com>
+Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk
+Subject: [PATCH 11/27] block: Remove bi_idx references
+Date: Tue, 19 Feb 2013 16:22:25 -0800
+Message-Id: <1361319761-23873-12-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1361319761-23873-1-git-send-email-koverstreet@google.com>
 References: <1361319761-23873-1-git-send-email-koverstreet@google.com>
@@ -22,170 +20,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More prep work for immutable bvecs:
+For immutable bvecs, all bi_idx usage needs to be audited - so here
+we're removing all the unnecessary uses.
 
-A few places in the code were either open coding or using the wrong
-version - fix.
-
-After we introduce the bvec iter, it'll no longer be possible to modify
-the biovec through bio_for_each_segment_all() - it doesn't increment a
-pointer to the current bvec, you pass in a struct bio_vec (not a
-pointer) which is updated with what the current biovec would be (taking
-into account bi_bvec_done and bi_size).
-
-So because of that it's more worthwhile to be consistent about
-bio_for_each_segment()/bio_for_each_segment_all() usage.
+Most of these are places where it was being initialized on a bio that
+was just allocated, a few others are conversions to standard macros.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
-CC: NeilBrown <neilb@suse.de>
-CC: Alasdair Kergon <agk@redhat.com>
-CC: dm-devel@redhat.com
-CC: Alexander Viro <viro@zeniv.linux.org.uk>
 ---
- drivers/md/dm-crypt.c |  3 +--
- drivers/md/raid1.c    | 10 +++-------
- fs/bio.c              | 20 ++++++++++----------
- fs/direct-io.c        |  8 ++++----
- mm/bounce.c           |  2 +-
- 5 files changed, 19 insertions(+), 24 deletions(-)
+ drivers/block/aoe/aoecmd.c | 2 +-
+ drivers/block/floppy.c     | 1 -
+ drivers/md/dm-verity.c     | 2 +-
+ drivers/md/raid10.c        | 1 -
+ fs/buffer.c                | 1 -
+ fs/jfs/jfs_logmgr.c        | 2 --
+ fs/logfs/dev_bdev.c        | 5 -----
+ mm/page_io.c               | 1 -
+ 8 files changed, 2 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index f7369f9..a7923bf 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -858,8 +858,7 @@ static void crypt_free_buffer_pages(struct crypt_config *cc, struct bio *clone)
- 	unsigned int i;
- 	struct bio_vec *bv;
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+index 25ef5c0..8188ad1 100644
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -927,7 +927,7 @@ bufinit(struct buf *buf, struct request *rq, struct bio *bio)
+ 	buf->resid = bio->bi_size;
+ 	buf->sector = bio->bi_sector;
+ 	bio_pageinc(bio);
+-	buf->bv = bv = &bio->bi_io_vec[bio->bi_idx];
++	buf->bv = bio_iovec(bio);
+ 	buf->bv_resid = bv->bv_len;
+ 	WARN_ON(buf->bv_resid == 0);
+ }
+diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+index 2ddd64a..8323263 100644
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -3777,7 +3777,6 @@ static int __floppy_read_block_0(struct block_device *bdev)
+ 	bio_vec.bv_len = size;
+ 	bio_vec.bv_offset = 0;
+ 	bio.bi_vcnt = 1;
+-	bio.bi_idx = 0;
+ 	bio.bi_size = size;
+ 	bio.bi_bdev = bdev;
+ 	bio.bi_sector = 0;
+diff --git a/drivers/md/dm-verity.c b/drivers/md/dm-verity.c
+index 03d6d21..e21dfd5 100644
+--- a/drivers/md/dm-verity.c
++++ b/drivers/md/dm-verity.c
+@@ -490,7 +490,7 @@ static int verity_map(struct dm_target *ti, struct bio *bio)
  
--	for (i = 0; i < clone->bi_vcnt; i++) {
--		bv = bio_iovec_idx(clone, i);
-+	bio_for_each_segment_all(bv, clone, i) {
- 		BUG_ON(!bv->bv_page);
- 		mempool_free(bv->bv_page, cc->page_pool);
- 		bv->bv_page = NULL;
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 3716fe4..981fd4f 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -925,7 +925,7 @@ static void alloc_behind_pages(struct bio *bio, struct r1bio *r1_bio)
- 	if (unlikely(!bvecs))
- 		return;
+ 	bio->bi_end_io = verity_end_io;
+ 	bio->bi_private = io;
+-	io->io_vec_size = bio->bi_vcnt - bio->bi_idx;
++	io->io_vec_size = bio_segments(bio);
+ 	if (io->io_vec_size < DM_VERITY_IO_VEC_INLINE)
+ 		io->io_vec = io->io_vec_inline;
+ 	else
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 84cd9d7..c2e2abf 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -4333,7 +4333,6 @@ read_more:
+ 	read_bio->bi_flags &= ~(BIO_POOL_MASK - 1);
+ 	read_bio->bi_flags |= 1 << BIO_UPTODATE;
+ 	read_bio->bi_vcnt = 0;
+-	read_bio->bi_idx = 0;
+ 	read_bio->bi_size = 0;
+ 	r10_bio->master_bio = read_bio;
+ 	r10_bio->read_slot = r10_bio->devs[r10_bio->read_slot].devnum;
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 87ff335..9f509f9 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2978,7 +2978,6 @@ int submit_bh(int rw, struct buffer_head * bh)
+ 	bio->bi_io_vec[0].bv_offset = bh_offset(bh);
  
--	bio_for_each_segment(bvec, bio, i) {
-+	bio_for_each_segment_all(bvec, bio, i) {
- 		bvecs[i] = *bvec;
- 		bvecs[i].bv_page = alloc_page(GFP_NOIO);
- 		if (unlikely(!bvecs[i].bv_page))
-@@ -1282,12 +1282,8 @@ read_again:
- 			struct bio_vec *bvec;
- 			int j;
+ 	bio->bi_vcnt = 1;
+-	bio->bi_idx = 0;
+ 	bio->bi_size = bh->b_size;
  
--			/* Yes, I really want the '__' version so that
--			 * we clear any unused pointer in the io_vec, rather
--			 * than leave them unchanged.  This is important
--			 * because when we come to free the pages, we won't
--			 * know the original bi_idx, so we just free
--			 * them all
-+			/*
-+			 * We trimmed the bio, so _all is legit
- 			 */
- 			bio_for_each_segment_all(bvec, mbio, j)
- 				bvec->bv_page = r1_bio->behind_bvecs[j].bv_page;
-diff --git a/fs/bio.c b/fs/bio.c
-index 618f904..fe3aee90 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -1548,11 +1548,11 @@ EXPORT_SYMBOL(bio_copy_kern);
-  */
- void bio_set_pages_dirty(struct bio *bio)
- {
--	struct bio_vec *bvec = bio->bi_io_vec;
-+	struct bio_vec *bvec;
- 	int i;
+ 	bio->bi_end_io = end_bio_bh_io_sync;
+diff --git a/fs/jfs/jfs_logmgr.c b/fs/jfs/jfs_logmgr.c
+index 2eb952c..8ae5e35 100644
+--- a/fs/jfs/jfs_logmgr.c
++++ b/fs/jfs/jfs_logmgr.c
+@@ -2004,7 +2004,6 @@ static int lbmRead(struct jfs_log * log, int pn, struct lbuf ** bpp)
+ 	bio->bi_io_vec[0].bv_offset = bp->l_offset;
  
--	for (i = 0; i < bio->bi_vcnt; i++) {
--		struct page *page = bvec[i].bv_page;
-+	bio_for_each_segment_all(bvec, bio, i) {
-+		struct page *page = bvec->bv_page;
+ 	bio->bi_vcnt = 1;
+-	bio->bi_idx = 0;
+ 	bio->bi_size = LOGPSIZE;
  
- 		if (page && !PageCompound(page))
- 			set_page_dirty_lock(page);
-@@ -1561,11 +1561,11 @@ void bio_set_pages_dirty(struct bio *bio)
+ 	bio->bi_end_io = lbmIODone;
+@@ -2145,7 +2144,6 @@ static void lbmStartIO(struct lbuf * bp)
+ 	bio->bi_io_vec[0].bv_offset = bp->l_offset;
  
- static void bio_release_pages(struct bio *bio)
- {
--	struct bio_vec *bvec = bio->bi_io_vec;
-+	struct bio_vec *bvec;
- 	int i;
+ 	bio->bi_vcnt = 1;
+-	bio->bi_idx = 0;
+ 	bio->bi_size = LOGPSIZE;
  
--	for (i = 0; i < bio->bi_vcnt; i++) {
--		struct page *page = bvec[i].bv_page;
-+	bio_for_each_segment_all(bvec, bio, i) {
-+		struct page *page = bvec->bv_page;
- 
- 		if (page)
- 			put_page(page);
-@@ -1614,16 +1614,16 @@ static void bio_dirty_fn(struct work_struct *work)
- 
- void bio_check_pages_dirty(struct bio *bio)
- {
--	struct bio_vec *bvec = bio->bi_io_vec;
-+	struct bio_vec *bvec;
- 	int nr_clean_pages = 0;
- 	int i;
- 
--	for (i = 0; i < bio->bi_vcnt; i++) {
--		struct page *page = bvec[i].bv_page;
-+	bio_for_each_segment_all(bvec, bio, i) {
-+		struct page *page = bvec->bv_page;
- 
- 		if (PageDirty(page) || PageCompound(page)) {
- 			page_cache_release(page);
--			bvec[i].bv_page = NULL;
-+			bvec->bv_page = NULL;
- 		} else {
- 			nr_clean_pages++;
- 		}
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index cf5b44b..b51510b 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -441,8 +441,8 @@ static struct bio *dio_await_one(struct dio *dio)
- static int dio_bio_complete(struct dio *dio, struct bio *bio)
- {
- 	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
--	struct bio_vec *bvec = bio->bi_io_vec;
--	int page_no;
-+	struct bio_vec *bvec;
-+	unsigned i;
- 
- 	if (!uptodate)
- 		dio->io_error = -EIO;
-@@ -450,8 +450,8 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
- 	if (dio->is_async && dio->rw == READ) {
- 		bio_check_pages_dirty(bio);	/* transfers ownership */
- 	} else {
--		for (page_no = 0; page_no < bio->bi_vcnt; page_no++) {
--			struct page *page = bvec[page_no].bv_page;
-+		bio_for_each_segment_all(bvec, bio, i) {
-+			struct page *page = bvec->bv_page;
- 
- 			if (dio->rw == READ && !PageCompound(page))
- 				set_page_dirty_lock(page);
-diff --git a/mm/bounce.c b/mm/bounce.c
-index 89324e2..bd7079a 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -194,7 +194,7 @@ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
- bounce:
- 	bio = bio_clone_bioset(*bio_orig, GFP_NOIO, fs_bio_set);
- 
--	bio_for_each_segment(to, bio, i) {
-+	bio_for_each_segment_all(to, bio, i) {
- 		struct page *page = to->bv_page;
- 
- 		if (page_to_pfn(page) <= queue_bounce_pfn(q))
+ 	bio->bi_end_io = lbmIODone;
+diff --git a/fs/logfs/dev_bdev.c b/fs/logfs/dev_bdev.c
+index e784a21..550475c 100644
+--- a/fs/logfs/dev_bdev.c
++++ b/fs/logfs/dev_bdev.c
+@@ -32,7 +32,6 @@ static int sync_request(struct page *page, struct block_device *bdev, int rw)
+ 	bio_vec.bv_len = PAGE_SIZE;
+ 	bio_vec.bv_offset = 0;
+ 	bio.bi_vcnt = 1;
+-	bio.bi_idx = 0;
+ 	bio.bi_size = PAGE_SIZE;
+ 	bio.bi_bdev = bdev;
+ 	bio.bi_sector = page->index * (PAGE_SIZE >> 9);
+@@ -108,7 +107,6 @@ static int __bdev_writeseg(struct super_block *sb, u64 ofs, pgoff_t index,
+ 		if (i >= max_pages) {
+ 			/* Block layer cannot split bios :( */
+ 			bio->bi_vcnt = i;
+-			bio->bi_idx = 0;
+ 			bio->bi_size = i * PAGE_SIZE;
+ 			bio->bi_bdev = super->s_bdev;
+ 			bio->bi_sector = ofs >> 9;
+@@ -136,7 +134,6 @@ static int __bdev_writeseg(struct super_block *sb, u64 ofs, pgoff_t index,
+ 		unlock_page(page);
+ 	}
+ 	bio->bi_vcnt = nr_pages;
+-	bio->bi_idx = 0;
+ 	bio->bi_size = nr_pages * PAGE_SIZE;
+ 	bio->bi_bdev = super->s_bdev;
+ 	bio->bi_sector = ofs >> 9;
+@@ -202,7 +199,6 @@ static int do_erase(struct super_block *sb, u64 ofs, pgoff_t index,
+ 		if (i >= max_pages) {
+ 			/* Block layer cannot split bios :( */
+ 			bio->bi_vcnt = i;
+-			bio->bi_idx = 0;
+ 			bio->bi_size = i * PAGE_SIZE;
+ 			bio->bi_bdev = super->s_bdev;
+ 			bio->bi_sector = ofs >> 9;
+@@ -224,7 +220,6 @@ static int do_erase(struct super_block *sb, u64 ofs, pgoff_t index,
+ 		bio->bi_io_vec[i].bv_offset = 0;
+ 	}
+ 	bio->bi_vcnt = nr_pages;
+-	bio->bi_idx = 0;
+ 	bio->bi_size = nr_pages * PAGE_SIZE;
+ 	bio->bi_bdev = super->s_bdev;
+ 	bio->bi_sector = ofs >> 9;
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 78eee32..8d3c0c0 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -35,7 +35,6 @@ static struct bio *get_swap_bio(gfp_t gfp_flags,
+ 		bio->bi_io_vec[0].bv_len = PAGE_SIZE;
+ 		bio->bi_io_vec[0].bv_offset = 0;
+ 		bio->bi_vcnt = 1;
+-		bio->bi_idx = 0;
+ 		bio->bi_size = PAGE_SIZE;
+ 		bio->bi_end_io = end_io;
+ 	}
 -- 
 1.7.12
 
