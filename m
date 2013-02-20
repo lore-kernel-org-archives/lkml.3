@@ -1,184 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934353Ab3BTGMK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 01:12:10 -0500
-Received: from mga01.intel.com ([192.55.52.88]:13939 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933224Ab3BTGLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 01:11:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
-   d="scan'208";a="293424233"
-From: Aaron Lu <aaron.lu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Aaron Lu <aaron.lwe@gmail.com>, Aaron Lu <aaron.lu@intel.com>,
-        Shane Huang <shane.huang@amd.com>
-Subject: [PATCH v10 3/4] block: implement runtime pm strategy
-Date: Wed, 20 Feb 2013 14:11:56 +0800
-Message-Id: <1361340717-8991-4-git-send-email-aaron.lu@intel.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1361340717-8991-1-git-send-email-aaron.lu@intel.com>
-References: <1361340717-8991-1-git-send-email-aaron.lu@intel.com>
+	id S935913Ab3BTGMP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 01:12:15 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:17298 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933224Ab3BTGMM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 01:12:12 -0500
+X-AuditID: cbfee68f-b7f656d000000d78-d7-5124693b0424
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Samuel Ortiz'" <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
+In-reply-to: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
+Subject: [PATCH 06/11] mfd: omap-usb-host: use devm_gpio_request_one()
+Date: Wed, 20 Feb 2013 15:12:11 +0900
+Message-id: <002b01ce0f31$3873cb50$a95b61f0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4PMNZl2zNDd+kPTaydPUTuUPUSLQAAE9wg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zY13rTJVAgxntJhaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugStj2st1bAW7BSqeXbrJ3sB4nreLkZNDQsBE4sP5l4wQtpjEhXvr
+	2UBsIYFljBILL1nB1Mze28bSxcgFFJ/OKDGtaT87hDObSeLupSPMIFVsAmoSX74cZgexRQS0
+	JLqPnQeaxMHBLOAicXSaCMRQW4nva/+xgticAnYSux6dB7OFBdwkzm3eDjaGRUBV4uzFDUwg
+	Ni9Q/ZxHU5khbEGJH5PvsYDYzEDj1+88zgRhy0tsXvOWGWSVhIC6xKO/uhAXGEl8OXeAEaJE
+	RGLfi3dQPy5jl7i0vBpilYDEt8mHWCBaZSU2HWCGKJGUOLjiBssERolZSBbPQrJ4FpLFs5Bs
+	WMDIsopRNLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjJKr6dzDePWB9iDEZaP1EZinR5HxgVOaV
+	xBsaG5uYmZiamFuampuSJqwkzit/SSZQSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA+PqIx85
+	J70QfsfzO8EwJdmZ+9qdPX+uPFS7copB09kgk3fJ9fzy/9/nXy3+t6vgwPHjnw46Wmt/+fTO
+	dnH9bdVN8tJZnaIr9rYpzXK6t39v87WwfVFX5rvs9mw4Z+D+OfxirpStjs2ihiKf+8zq98we
+	TSpwnRlyyOhJV6KJ7RpWucL2S4nvry5UYinOSDTUYi4qTgQAgpbuH8ACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xoK51pkqgQfsOA4vLu+awOTB6fN4k
+	F8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQM0
+	VUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYMe3lOraC3QIVzy7dZG9g
+	PM/bxcjJISFgIjF7bxsLhC0mceHeerYuRi4OIYHpjBLTmvazQzizmSTuXjrCDFLFJqAm8eXL
+	YXYQW0RAS6L72HmgDg4OZgEXiaPTREDCQgK2Et/X/mMFsTkF7CR2PToPZgsLuEmc27wdbAyL
+	gKrE2YsbmEBsXqD6OY+mMkPYghI/Jt8DO4gZaPz6nceZIGx5ic1r3jKDrJIQUJd49FcX4gIj
+	iS/nDjBClIhI7HvxjnECo9AsJJNmIZk0C8mkWUhaFjCyrGIUTS1ILihOSs810itOzC0uzUvX
+	S87P3cQIjttn0jsYVzVYHGIU4GBU4uFtWKgcKMSaWFZcmXuIUYKDWUmEt9lJJVCINyWxsiq1
+	KD++qDQntfgQYzLQoxOZpUST84EpJa8k3tDYxMzI0sjMwsjE3Jw0YSVxXsZTTwKEBNITS1Kz
+	U1MLUotgtjBxcEo1MG6KM0usz2K/NSk8d4X9BkG9xCe3ftWvmL5vPWvzA+GH98Iep97JnfJ8
+	Lc+Dkvi9p4XThQv1RbPnf8/rOHPjgPO/G/d2Om5sebHgQcLRG38ydjhvP9oksfDvYaMe71+e
+	T860s7gVp9ucYl7Nq3pZ8MjE4g33/x6MmPfqUOtX4aZMr+9ab08n9c1XYinOSDTUYi4qTgQA
+	6vV4cB8DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lin Ming <ming.m.lin@intel.com>
+Use devm_gpio_request_one() to make cleanup paths more simple.
 
-When a request is added:
-    If device is suspended or is suspending and the request is not a
-    PM request, resume the device.
-
-When the last request finishes:
-    Call pm_runtime_mark_last_busy().
-
-When pick a request:
-    If device is resuming/suspending, then only PM request is allowed
-    to go.
-
-The idea and API is designed by Alan Stern and described here:
-http://marc.info/?l=linux-scsi&m=133727953625963&w=2
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- block/blk-core.c | 39 +++++++++++++++++++++++++++++++++++++++
- block/elevator.c | 26 ++++++++++++++++++++++++++
- 2 files changed, 65 insertions(+)
+ drivers/mfd/omap-usb-host.c |   23 ++---------------------
+ 1 files changed, 2 insertions(+), 21 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index ce7d366..81f173e 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1264,6 +1264,16 @@ void part_round_stats(int cpu, struct hd_struct *part)
- }
- EXPORT_SYMBOL_GPL(part_round_stats);
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 6b5edf6..2104d66 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -437,11 +437,11 @@ static void omap_usbhs_init(struct device *dev)
  
-+#ifdef CONFIG_PM_RUNTIME
-+static void blk_pm_put_request(struct request *rq)
-+{
-+	if (rq->q->dev && !(rq->cmd_flags & REQ_PM) && !--rq->q->nr_pending)
-+		pm_runtime_mark_last_busy(rq->q->dev);
-+}
-+#else
-+static inline void blk_pm_put_request(struct request *rq) {}
-+#endif
-+
- /*
-  * queue lock must be held
-  */
-@@ -1274,6 +1284,8 @@ void __blk_put_request(struct request_queue *q, struct request *req)
- 	if (unlikely(--req->ref_count))
- 		return;
+ 	if (pdata->phy_reset) {
+ 		if (gpio_is_valid(pdata->reset_gpio_port[0]))
+-			gpio_request_one(pdata->reset_gpio_port[0],
++			devm_gpio_request_one(dev, pdata->reset_gpio_port[0],
+ 					 GPIOF_OUT_INIT_LOW, "USB1 PHY reset");
  
-+	blk_pm_put_request(req);
-+
- 	elv_completed_request(q, req);
+ 		if (gpio_is_valid(pdata->reset_gpio_port[1]))
+-			gpio_request_one(pdata->reset_gpio_port[1],
++			devm_gpio_request_one(dev, pdata->reset_gpio_port[1],
+ 					 GPIOF_OUT_INIT_LOW, "USB2 PHY reset");
  
- 	/* this is a bio leak */
-@@ -2051,6 +2063,28 @@ static void blk_account_io_done(struct request *req)
+ 		/* Hold the PHY in RESET for enough time till DIR is high */
+@@ -492,21 +492,6 @@ static void omap_usbhs_init(struct device *dev)
  	}
  }
  
-+#ifdef CONFIG_PM_RUNTIME
-+/*
-+ * Don't process normal requests when queue is suspended
-+ * or in the process of suspending/resuming
-+ */
-+static struct request *blk_pm_peek_request(struct request_queue *q,
-+					   struct request *rq)
-+{
-+	if (q->dev && (q->rpm_status == RPM_SUSPENDED ||
-+	    (q->rpm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM))))
-+		return NULL;
-+	else
-+		return rq;
-+}
-+#else
-+static inline struct request *blk_pm_peek_request(struct request_queue *q,
-+						  struct request *rq)
-+{
-+	return rq;
-+}
-+#endif
-+
+-static void omap_usbhs_deinit(struct device *dev)
+-{
+-	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
+-	struct usbhs_omap_platform_data	*pdata = omap->pdata;
+-
+-	if (pdata->phy_reset) {
+-		if (gpio_is_valid(pdata->reset_gpio_port[0]))
+-			gpio_free(pdata->reset_gpio_port[0]);
+-
+-		if (gpio_is_valid(pdata->reset_gpio_port[1]))
+-			gpio_free(pdata->reset_gpio_port[1]);
+-	}
+-}
+-
+-
  /**
-  * blk_peek_request - peek at the top of a request queue
-  * @q: request queue to peek at
-@@ -2073,6 +2107,11 @@ struct request *blk_peek_request(struct request_queue *q)
- 	int ret;
+  * usbhs_omap_probe - initialize TI-based HCDs
+  *
+@@ -709,8 +694,6 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 	return 0;
  
- 	while ((rq = __elv_next_request(q)) != NULL) {
-+
-+		rq = blk_pm_peek_request(q, rq);
-+		if (!rq)
-+			break;
-+
- 		if (!(rq->cmd_flags & REQ_STARTED)) {
- 			/*
- 			 * This is the first time the device driver
-diff --git a/block/elevator.c b/block/elevator.c
-index 11683bb..29c5c7e 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -34,6 +34,7 @@
- #include <linux/blktrace_api.h>
- #include <linux/hash.h>
- #include <linux/uaccess.h>
-+#include <linux/pm_runtime.h>
+ err_alloc:
+-	omap_usbhs_deinit(&pdev->dev);
+-
+ 	for (i = 0; i < omap->nports; i++) {
+ 		if (!IS_ERR(omap->utmi_clk[i]))
+ 			clk_put(omap->utmi_clk[i]);
+@@ -755,8 +738,6 @@ static int usbhs_omap_remove(struct platform_device *pdev)
+ 	struct usbhs_hcd_omap *omap = platform_get_drvdata(pdev);
+ 	int i;
  
- #include <trace/events/block.h>
- 
-@@ -515,6 +516,27 @@ void elv_bio_merged(struct request_queue *q, struct request *rq,
- 		e->type->ops.elevator_bio_merged_fn(q, rq, bio);
- }
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static void blk_pm_requeue_request(struct request *rq)
-+{
-+	if (rq->q->dev && !(rq->cmd_flags & REQ_PM))
-+		rq->q->nr_pending--;
-+}
-+
-+static void blk_pm_add_request(struct request_queue *q, struct request *rq)
-+{
-+	if (q->dev && !(rq->cmd_flags & REQ_PM) && q->nr_pending++ == 0 &&
-+	    (q->rpm_status == RPM_SUSPENDED || q->rpm_status == RPM_SUSPENDING))
-+		pm_request_resume(q->dev);
-+}
-+#else
-+static inline void blk_pm_requeue_request(struct request *rq) {}
-+static inline void blk_pm_add_request(struct request_queue *q,
-+				      struct request *rq)
-+{
-+}
-+#endif
-+
- void elv_requeue_request(struct request_queue *q, struct request *rq)
- {
- 	/*
-@@ -529,6 +551,8 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
- 
- 	rq->cmd_flags &= ~REQ_STARTED;
- 
-+	blk_pm_requeue_request(rq);
-+
- 	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
- }
- 
-@@ -551,6 +575,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
- {
- 	trace_block_rq_insert(q, rq);
- 
-+	blk_pm_add_request(q, rq);
-+
- 	rq->q = q;
- 
- 	if (rq->cmd_flags & REQ_SOFTBARRIER) {
+-	omap_usbhs_deinit(&pdev->dev);
+-
+ 	for (i = 0; i < omap->nports; i++) {
+ 		if (!IS_ERR(omap->utmi_clk[i]))
+ 			clk_put(omap->utmi_clk[i]);
 -- 
-1.8.1.2
+1.7.2.5
+
 
