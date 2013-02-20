@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933863Ab3BTBGs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 20:06:48 -0500
-Received: from mga01.intel.com ([192.55.52.88]:24776 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933757Ab3BTBGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 20:06:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,698,1355126400"; 
-   d="scan'208";a="293335553"
-Date: Wed, 20 Feb 2013 09:06:43 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chuansheng Liu <chuansheng.liu@intel.com>, mingo@kernel.org,
-        peterz@infradead.org, jbeulich@suse.com, paulmck@linux.vnet.ibm.com,
-        mina86@mina86.org, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, jun.zhang@intel.com
-Subject: Re: [PATCH V2] smp: Give WARN()ing when calling
- smp_call_function_many()/single() in serving irq
-Message-ID: <20130220010643.GA7595@localhost>
-References: <1360163901.24670.13.camel@cliu38-desktop-build>
- <1361023075.11130.12.camel@cliu38-desktop-build>
- <1361023812.11130.15.camel@cliu38-desktop-build>
- <20130218013852.GA11231@localhost>
- <20130219150123.07024b5b.akpm@linux-foundation.org>
+	id S933297Ab3BTBNx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 20:13:53 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39980 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307Ab3BTBNw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 20:13:52 -0500
+Message-ID: <51242379.9030909@infradead.org>
+Date: Tue, 19 Feb 2013 17:14:33 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130219150123.07024b5b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Holler <holler@ahsoftware.de>
+CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: What is tip-bot?
+References: <512348A1.4000305@ahsoftware.de> <CAFLxGvzuL+w-yfApiLGwWWbB8Om7JUypppoovmSGS2k51Yjgmw@mail.gmail.com> <512355C2.3050009@ahsoftware.de> <512402A7.9020500@infradead.org> <51241ED2.5080105@ahsoftware.de>
+In-Reply-To: <51241ED2.5080105@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 03:01:23PM -0800, Andrew Morton wrote:
-> On Mon, 18 Feb 2013 09:38:52 +0800
-> Fengguang Wu <fengguang.wu@intel.com> wrote:
+On 02/19/13 16:54, Alexander Holler wrote:
+> Am 19.02.2013 23:54, schrieb Randy Dunlap:
+>> On 02/19/2013 02:36 AM, Alexander Holler wrote:
+>>> Am 19.02.2013 10:54, schrieb richard -rw- weinberger:
+>>>> On Tue, Feb 19, 2013 at 10:40 AM, Alexander Holler
+>>>> <holler@ahsoftware.de> wrote:
+>>>>> Hello,
+>>>>>
+>>>>> until now I could successfully suppress my curiosity about those
+>>>>> tip:foo
+>>>>> messages, but as the bot (or one of them) has now catched me too, I
+>>>>> want to
+>>>>> ask what it is.
+>>>>>
+>>>>> Searching for "tip(-)bot" or similiar doesn't reveal some useful info
+>>>>> (for
+>>>>> obvious reasons). Could someone give me an URL to source or
+>>>>> documentation
+>>>>> about that tool so that I can enlight myself about it's meaning?
+>>>>
+>>>> AFAIK tip-bot is a set of shell scripts used by _T_glx, _I_ngo and
+>>>> _P_eter. :)
+>>>>
+>>>
+>>> So messages from tip-bot are just acknowledgments (like those from Greg)
+>>> that a patch has found it's way into one of the trees, with the
+>>> difference that tip-bot sends those acknowledgments to lkml too, whereas
+>>> Greg's scripts send them only to involved parties and not the lkml?
+>>
+>> Yes, that is my understanding of it.
+>>
 > 
-> > Chuansheng,
-> > 
-> > It works fine on tip/next. Thanks for the fix!
-> > 
-> > Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+> Thanks a lot for clarification.
 > 
-> How did you test this?  What did you do?
+> In the meanwhile I've found an article at lwn about the kernel development process which lists many of the git repositories used by various maintainers. And that list includes tip. ;)
+> 
+> So the reason for my ignorance was that I didn't know that tip is actually the name of a git repository used by the x86 maintainers.
 
-I used the same kconfig to build a kernel from tip/next HEAD *plus*
-the v2 patch. The result is, no smp_call_function_single/many warnings
-are observed.
+I can understand that.
 
-> afacit the patch adds additional warnings, so you must have had some
-> buggy code and with the patch, runtime warnings are generated which
-> inform you of that bug?
+The kernel tree MAINTAINERS file says for X86:
 
-Andrew, the background is: Ingo has *reverted* the original patch that
-triggered the smp_call_function_single warning from his tip tree, so
-the test result means this patch's warning messages won't trigger in
-my test boots.
+X86 ARCHITECTURE (32-BIT AND 64-BIT)
+M:	Thomas Gleixner <tglx@linutronix.de>
+M:	Ingo Molnar <mingo@redhat.com>
+M:	"H. Peter Anvin" <hpa@zytor.com>
+M:	x86@kernel.org
+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86/core
+S:	Maintained
+F:	Documentation/x86/
+F:	arch/x86/
 
-Thanks,
-Fengguang
+
+
+-- 
+~Randy
