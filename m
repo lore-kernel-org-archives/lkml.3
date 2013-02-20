@@ -1,107 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933529Ab3BTKEH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 05:04:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26506 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751453Ab3BTKED convert rfc822-to-8bit (ORCPT
+	id S1758945Ab3BTKGt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 05:06:49 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:61163 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753645Ab3BTKGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 05:04:03 -0500
-Date: Wed, 20 Feb 2013 12:03:54 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: general protection fault in do_msgrcv  [3.8]
-Message-ID: <20130220100354.GL3600@redhat.com>
-References: <20130219180441.GA27141@redhat.com>
- <512487FA.9090102@parallels.com>
+	Wed, 20 Feb 2013 05:06:45 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexander Shiyan <shc_work@mail.ru>
+Subject: Re: Re[8]: [PATCH v3] mfd: syscon: Add non-DT support
+Date: Wed, 20 Feb 2013 10:06:41 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: Dong Aisheng <dong.aisheng@linaro.org>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+References: <1361198522-23789-1-git-send-email-shc_work@mail.ru> <1361271268.592027245@f310.mail.ru> <1361338882.986089809@f173.mail.ru>
+In-Reply-To: <1361338882.986089809@f173.mail.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <512487FA.9090102@parallels.com>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302201006.41287.arnd@arndb.de>
+X-Provags-ID: V02:K0:qyTy2g4PGWkHplLUuqrdBnf53VCxMKfgzzfiet/Tt+1
+ izRVam58L8Aiqvknfqm1wWAyiWr6kBYbi5+Mdd1zYjysNgswd4
+ lwo+Xc8FH/Ih6dDEgDo/JmHBnNNa9MUc+FTPE3X8rp2rtWAD5N
+ Npz5rv5yBlJTaPK0gt0pXsyFidg9CYjPwXkO5PNdNYNEsdRZ9/
+ 94GjRFOs411BOwdDO4K4HTPQ+fSMV2qa9UJIEW4n/s5ih/bY36
+ TGjwKOFqhNJ0GXRxeF7/0kD2nG8jQfFdLsA1EXYrr7i2Zcp1bm
+ kCNsZQjMTZTCRO8gv6yWPo3+Xl/bQ8EhM+DGRc0qiNy++Llpx4
+ 3zqi9i1PvA1bEYZJX+qI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 12:23:22PM +0400, Stanislav Kinsbursky wrote:
-> 19.02.2013 22:04, Dave Jones пишет:
-> >general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> >Modules linked in: can af_rxrpc binfmt_misc scsi_transport_iscsi ax25 ipt_ULOG decnet nfc appletalk x25 rds ipx p8023 psnap p8022 llc irda crc_ccitt atm lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables btusb bluetooth snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_pcm edac_core snd_page_alloc snd_timer microcode rfkill usb_debug serio_raw pcspkr snd soundcore vhost_net r8169 mii tun macvtap macvlan kvm_amd kvm
-> >CPU 2
-> >Pid: 887, comm: trinity-child2 Not tainted 3.8.0+ #57 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
-> >RIP: 0010:[<ffffffff812aebba>]  [<ffffffff812aebba>] do_msgrcv+0x22a/0x670
-> >RSP: 0018:ffff88011892be88  EFLAGS: 00010297
-> >RAX: 0000000000000000 RBX: 0000000000000001 RCX: 0000000000004000
-> >RDX: 000000007adea6f6 RSI: 6b6b6b6b6b6b6b6b RDI: ffff8801189ffb60
-> >RBP: ffff88011892bf68 R08: 0000000000000001 R09: 0000000000000000
-> >R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-> >R13: ffff8801189ffc10 R14: ffff8801189ffb60 R15: 6b6b6b6b6b6b6b6b
-> >FS:  00007f681e955740(0000) GS:ffff88012f200000(0000) knlGS:0000000000000000
-> >CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> >CR2: 00007f681e846064 CR3: 000000012553d000 CR4: 00000000000007e0
-> >DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> >DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> >Process trinity-child2 (pid: 887, threadinfo ffff88011892a000, task ffff88010bc82490)
-> >Stack:
-> >  ffff88011892beb8 ffff88010bc82490 ffff88010bc82490 ffff88010bc82490
-> >  ffff8801186d8000 ffffffff812ad5f0 0000000001aba000 ffffffff81c688c0
-> >  000000007adea6f6 00000000001fffff 0000400046a9467e 6b6b6b6b6b6b6b6b
-> >Call Trace:
-> >  [<ffffffff812ad5f0>] ? load_msg+0x180/0x180
-> >  [<ffffffff810b8395>] ? trace_hardirqs_on_caller+0x115/0x1a0
-> >  [<ffffffff813347be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> >  [<ffffffff812af015>] sys_msgrcv+0x15/0x20
-> >  [<ffffffff816a8482>] system_call_fastpath+0x16/0x1b
-> >Code: 84 14 01 00 00 8b 8d 74 ff ff ff 85 c9 0f 84 52 02 00 00 48 8b 95 60 ff ff ff 48 39 55 80 0f 84 4d 02 00 00 4c 89 bd 78 ff ff ff <4d> 8b 3f 48 ff 45 80 4d 39 ef 75 9a 66 90 48 81 bd 78 ff ff ff
-> >RIP  [<ffffffff812aebba>] do_msgrcv+0x22a/0x670
-> >  RSP <ffff88011892be88>
-> >---[ end trace d3cc044a84b1d828 ]---
-> >
-> >oopsing instruction is..
-> >
-> >    0:	4d 8b 3f             	mov    (%r15),%r15
-> >
-> >Looks like a use-after-free.
-> >
-> >Disassembly of ipc/msg.o shows this happens here..
-> >
-> >                 msg = ERR_PTR(-EAGAIN);
-> >                 tmp = msq->q_messages.next;
-> >     1537:       4d 8b be b0 00 00 00    mov    0xb0(%r14),%r15
-> >                 while (tmp != &msq->q_messages) {
-> >     153e:       4d 8d ae b0 00 00 00    lea    0xb0(%r14),%r13
-> >     1545:       4d 39 ef                cmp    %r13,%r15
-> >     1548:       0f 84 5f 03 00 00       je     18ad <do_msgrcv+0x50d>
-> >     154e:       48 c7 45 80 00 00 00    movq   $0x0,-0x80(%rbp)
-> >     1555:       00
-> >     1556:       48 c7 85 78 ff ff ff    movq   $0xfffffffffffffff5,-0x88(%rbp)
-> >     155d:       f5 ff ff ff
-> >     1561:       eb 0d                   jmp    1570 <do_msgrcv+0x1d0>
-> >     1563:       0f 1f 44 00 00          nopl   0x0(%rax,%rax,1)
-> >                                         }
-> >                                 } else
-> >                                         break;
-> >                                 msg_counter++;
-> >                         }
-> >                         tmp = tmp->next;
-> >     1568:       4d 8b 3f                mov    (%r15),%r15
-> >                 if (ipcperms(ns, &msq->q_perm, S_IRUGO))
-> >                         goto out_unlock;
-> >
-> >                 msg = ERR_PTR(-EAGAIN);
-> >                 tmp = msq->q_messages.next;
-> >                 while (tmp != &msq->q_messages) {
-> >
-> >Looks like Stanislav recently changed this code, so problem was likely introduced
-> >in those changes.
-> >
+On Wednesday 20 February 2013, Alexander Shiyan wrote:
+> On 20 February 2013 13:41, Alexander Shiyan <shc_work@mail.ru> wrote:
+> > 
+> > One problem is that every user needs to add their syscon compatible device
+> > support(platform_device_id) in syscon driver first before they can use it.
+> > But it looks to me just like how other driver generally does.
 > 
-> Hello.
-> Is it easy to reproduce? Do you use KVM?
-Jugging by motherboard name in the OOPs it is not KVM. And since r15 is
-6b6b6b6b6b6b6b6b you need DEBUG_PAGEALLOC to reproduce.
+> I agree, this is a more proper way, but in this case we should create a big table
+> here with records for each device...
+> 
+> > Arnd,
+> > Do you think this is an issue?
 
---
-			Gleb.
+I would first like to get an answer to the question I asked in my first mail,
+which is what the use case of non-DT support in this driver is. If this
+is used only by a new platform that has to use DT anyway, or by an existing
+platform that is easy enough to convert, we probably shouldn't do all this
+at all.
+
+	Arnd
