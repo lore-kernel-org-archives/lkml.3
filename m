@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935412Ab3BTPOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 10:14:51 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:46116 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934219Ab3BTPOt (ORCPT
+	id S935650Ab3BTPTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 10:19:38 -0500
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:48399 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935558Ab3BTPTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 10:14:49 -0500
-MIME-Version: 1.0
-X-Originating-IP: [87.194.181.195]
-In-Reply-To: <1360849767-1463135-2-git-send-email-arnd@arndb.de>
-References: <1360849767-1463135-1-git-send-email-arnd@arndb.de>
-	<1360849767-1463135-2-git-send-email-arnd@arndb.de>
-Date: Wed, 20 Feb 2013 15:14:47 +0000
-X-Google-Sender-Auth: h5q5NXqgL9LI0SQimpPduh9it1k
-Message-ID: <CAAG0J9_VqCGJJJZjSWGfFggALHU=vdWsSBeS39-DtxV=VXcJwQ@mail.gmail.com>
-Subject: Re: [PATCH 01/11] ARM: disable virt_to_bus/virt_to_bus almost everywhere
-From: James Hogan <james.hogan@imgtec.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Feb 2013 10:19:36 -0500
+From: Clark Williams <clark.williams@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Clark Williams <clark.williams@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] sched: move RR_TIMESLICE from sysctl.h to rt.h
+Date: Wed, 20 Feb 2013 09:19:09 -0600
+Message-Id: <1361373550-4011-2-git-send-email-clark.williams@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1361373550-4011-1-git-send-email-clark.williams@gmail.com>
+References: <1361373550-4011-1-git-send-email-clark.williams@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 February 2013 13:49, Arnd Bergmann <arnd@arndb.de> wrote:
-> We are getting a number of warnings about the use of the deprecated
-> bus_to_virt function in drivers using the ARM ISA DMA API:
->
-> drivers/parport/parport_pc.c: In function 'parport_pc_fifo_write_block_dma':
-> drivers/parport/parport_pc.c:622:3: warning: 'bus_to_virt' is deprecated
-> (declared at arch/arm/include/asm/memory.h:253) [-Wdeprecated-declarations]
->
-> This is only because that function gets used by the inline
-> set_dma_addr() helper. We know that any driver for the ISA DMA API
-> is correctly using the DMA addresses, so we can change this
-> to use the __bus_to_virt() function instead, which does not warn.
->
-> After this, there are no remaining drivers that are used on
-> any defconfigs on ARM using virt_to_bus or bus_to_virt, with
-> the exception of the OSS sound driver. That driver is only used
-> on RiscPC, NetWinder and Shark, so we can set ARCH_NO_VIRT_TO_BUS
-> on all other platforms and hide the deprecated functions, which
-> is far more effective than marking them as deprecated, in order
-> to avoid any new users of that code.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> ---
->  arch/arm/Kconfig                 | 4 ++++
->  arch/arm/configs/shark_defconfig | 1 -
->  arch/arm/include/asm/dma.h       | 2 +-
->  arch/arm/include/asm/memory.h    | 2 ++
->  4 files changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 67874b8..91d4aea 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1450,6 +1450,10 @@ config ISA_DMA
->         bool
->         select ISA_DMA_API
->
-> +config ARCH_NO_VIRT_TO_BUS
-> +       def_bool y
-> +       depends on !ARCH_RPC && !ARCH_NETWINDER && !ARCH_SHARK
+Signed-off-by: Clark Williams <clark.williams@gmail.com>
+---
+ include/linux/sched/rt.h     | 6 ++++++
+ include/linux/sched/sysctl.h | 6 ------
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-Hi Arnd,
+diff --git a/include/linux/sched/rt.h b/include/linux/sched/rt.h
+index 94e19ea..440434d 100644
+--- a/include/linux/sched/rt.h
++++ b/include/linux/sched/rt.h
+@@ -55,4 +55,10 @@ static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
+ extern void normalize_rt_tasks(void);
+ 
+ 
++/*
++ * default timeslice is 100 msecs (used only for SCHED_RR tasks).
++ * Timeslices get refilled after they expire.
++ */
++#define RR_TIMESLICE		(100 * HZ / 1000)
++
+ #endif /* _SCHED_RT_H */
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index d2bb0ae..bf8086b 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -91,12 +91,6 @@ extern unsigned int sysctl_sched_cfs_bandwidth_slice;
+ extern unsigned int sysctl_sched_autogroup_enabled;
+ #endif
+ 
+-/*
+- * default timeslice is 100 msecs (used only for SCHED_RR tasks).
+- * Timeslices get refilled after they expire.
+- */
+-#define RR_TIMESLICE		(100 * HZ / 1000)
+-
+ extern int sched_rr_timeslice;
+ 
+ extern int sched_rr_handler(struct ctl_table *table, int write,
+-- 
+1.8.1.2
 
-There's a patch in linux-next by Stephen Rothwell "Centralise
-CONFIG_ARCH_NO_VIRT_TO_BUS" that removes this Kconfig symbol,
-inverting/replacing it with "select HAVE_VIRT_TO_BUS" (including for
-arch/arm) which will undo the effects of this.
-
-Cheers
-James
