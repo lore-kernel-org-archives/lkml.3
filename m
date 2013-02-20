@@ -1,101 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab3BTFNH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 00:13:07 -0500
-Received: from mga03.intel.com ([143.182.124.21]:14217 "EHLO mga03.intel.com"
+	id S1753714Ab3BTFTa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 00:19:30 -0500
+Received: from rydia.net ([69.46.88.68]:60600 "EHLO mail.rydia.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758Ab3BTFNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 00:13:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
-   d="scan'208";a="259142084"
-Message-ID: <51245B77.6000509@intel.com>
-Date: Wed, 20 Feb 2013 13:13:27 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1752925Ab3BTFT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 00:19:29 -0500
+Date: Tue, 19 Feb 2013 21:19:27 -0800 (PST)
+From: dormando <dormando@rydia.net>
+X-X-Sender: dormando@dflat
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Rik van Riel <riel@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "hughd@google.com" <hughd@google.com>
+Subject: Re: [PATCH] add extra free kbytes tunable
+In-Reply-To: <20130219152936.f079c971.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1302192100100.23162@dflat>
+References: <alpine.DEB.2.02.1302111734090.13090@dflat> <A5ED84D3BB3A384992CBB9C77DEDA4D414A98EBF@USINDEM103.corp.hds.com> <511EB5CB.2060602@redhat.com> <alpine.DEB.2.02.1302171546120.10836@dflat> <20130219152936.f079c971.akpm@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
-        mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        arjan@linux.intel.com, bp@alien8.de, namhyung@kernel.org,
-        efault@gmx.de, vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v4 07/18] sched: set initial load avg of new forked task
-References: <1358996820-23036-1-git-send-email-alex.shi@intel.com> <1358996820-23036-8-git-send-email-alex.shi@intel.com> <1360664784.4485.17.camel@laptop> <511BADE3.4050009@intel.com> <CAPM31RJw7a-+QNRwwukg3h3bHCQs++cnT3DgCyHaJTZY7qDsXA@mail.gmail.com> <511CE1AB.5020503@intel.com> <CAPM31RKf6Gint-fPxfuFkXxxbpJfkk=5=5v3W0uxvTnnvOoM-A@mail.gmail.com>
-In-Reply-To: <CAPM31RKf6Gint-fPxfuFkXxxbpJfkk=5=5v3W0uxvTnnvOoM-A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This is my concern about making this a special case with the
-> introduction ENQUEUE_NEWTASK flag; enqueue jumps through enough hoops
-> as it is.
-> 
-> I still don't see why we can't resolve this at init time in
-> __sched_fork(); your patch above just moves an explicit initialization
-> of load_avg_contrib into the enqueue path.  Adding a call to
-> __update_task_entity_contrib() to the previous alternate suggestion
-> would similarly seem to resolve this?
-> 
+>
+> The problem is that adding this tunable will constrain future VM
+> implementations.  We will forever need to at least retain the
+> pseudo-file.  We will also need to make some effort to retain its
+> behaviour.
+>
+> It would of course be better to fix things so you don't need to tweak
+> VM internals to get acceptable behaviour.
 
-Without ENQUEUE_NEWTASK flag, we can use the following patch. That embeds
- the new fork with a implicate way.
+I sympathize with this. It's presently all that keeps us afloat though.
+I'll whine about it again later if nothing else pans out.
 
-but since the newtask flag just follows existing enqueue path, it also
-looks natural and is a explicit way.
+> You said:
+>
+> : We have a server workload wherein machines with 100G+ of "free" memory
+> : (used by page cache), scattered but frequent random io reads from 12+
+> : SSD's, and 5gbps+ of internet traffic, will frequently hit direct reclaim
+> : in a few different ways.
+> :
+> : 1) It'll run into small amounts of reclaim randomly (a few hundred
+> : thousand).
+> :
+> : 2) A burst of reads or traffic can cause extra pressure, which kswapd
+> : occasionally responds to by freeing up 40g+ of the pagecache all at once
+> : (!) while pausing the system (Argh).
+> :
+> : 3) A blip in an upstream provider or failover from a peer causes the
+> : kernel to allocate massive amounts of memory for retransmission
+> : queues/etc, potentially along with buffered IO reads and (some, but not
+> : often a ton) of new allocations from an application. This paired with 2)
+> : can cause the box to stall for 15+ seconds.
+>
+> Can we prioritise these?  2) looks just awful - kswapd shouldn't just
+> go off and free 40G of pagecache.  Do you know what's actually in that
+> pagecache?  Large number of small files or small number of (very) large
+> files?
 
-I am ok for alternate of solutions.
+We have a handful of huge files (6-12ish 200g+) that are mmap'ed and
+accessed via address. occasionally madvise (WILLNEED) applied to the
+address ranges before attempting to use them. There're a mix of other
+files but nothing significant. The mmap's are READONLY and writes are done
+via pwrite-ish functions.
 
-=======
->From 0f5dd6babe899e27cfb78ea49d337e4f0918591b Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Wed, 20 Feb 2013 12:51:28 +0800
-Subject: [PATCH 02/15] sched: set initial load avg of new forked task
+I could use some guidance on inspecting/tracing the problem. I've been
+trying to reproduce it in a lab, and respecting to 2)'s issue I've found:
 
-New task has no runnable sum at its first runnable time, so its
-runnable load is zero. That makes burst forking balancing just select
-few idle cpus to assign tasks if we engage runnable load in balancing.
+- The amount of memory freed back up is either a percentage of total
+memory or a percentage of free memory. (a machine with 48G of ram will
+"only" free up an extra 4-7g)
 
-Set initial load avg of new forked task as its load weight to resolve
-this issue.
+- It's most likely to happen after a fresh boot, or if "3 > drop_caches"
+is applied with the application down. As it fills it seems to get itself
+into trouble, but becomes more stable after that. Unfortunately 1) and 3)
+still apply to a stable instance.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- kernel/sched/core.c | 2 ++
- kernel/sched/fair.c | 4 ++++
- 2 files changed, 6 insertions(+)
+- Protecting the DMA32 zone with something like "1 1 32" into
+lowmem_reserve_ratio makes the mass-reclaiming less likely to happen.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 1743746..93a7590 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1648,6 +1648,8 @@ void sched_fork(struct task_struct *p)
- 		p->sched_reset_on_fork = 0;
- 	}
- 
-+	p->se.avg.load_avg_contrib = p->se.load.weight;
-+
- 	if (!rt_prio(p->prio))
- 		p->sched_class = &fair_sched_class;
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 81fa536..cae5134 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1509,6 +1509,10 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
- 	 * We track migrations using entity decay_count <= 0, on a wake-up
- 	 * migration we use a negative decay count to track the remote decays
- 	 * accumulated while sleeping.
-+	 *
-+	 * When enqueue a new forked task, the se->avg.decay_count == 0, so
-+	 * we bypass update_entity_load_avg(), use avg.load_avg_contrib initial
-+	 * value: se->load.weight.
- 	 */
- 	if (unlikely(se->avg.decay_count <= 0)) {
- 		se->avg.last_runnable_update = rq_of(cfs_rq)->clock_task;
--- 
-1.7.12
+- While watching "sar -B 1" I'll see kswapd wake up, and scan up to a few
+hundred thousand pages before finding anything it actually wants to
+reclaim (low vmeff). I've only been able to reproduce this from a clean
+start. It can take up to 3 seconds before kswapd starts actually
+reclaiming pages.
 
+- So far as I can tell we're almost exclusively using 0 order allocations.
+THP is disabled.
+
+There's not much dirty memory involved. It's not flushing out writes while
+reclaiming, it just kills off massive amount of cached memory.
+
+We're not running the machines particularily hard... Often less than 30%
+CPU usage at peak.
