@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934549Ab3BTJ37 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 04:29:59 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:20503 "EHLO
+	id S934556Ab3BTJa1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 04:30:27 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:20575 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934470Ab3BTJ3y (ORCPT
+	with ESMTP id S933163Ab3BTJaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 04:29:54 -0500
-X-AuditID: cbfee68d-b7f4f6d000004209-45-51249791aa52
+	Wed, 20 Feb 2013 04:30:22 -0500
+X-AuditID: cbfee68d-b7f4f6d000004209-8c-512497adf386
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000f01ce0f4c$7c1d01d0$74570570$%han@samsung.com>
 In-reply-to: <000f01ce0f4c$7c1d01d0$74570570$%han@samsung.com>
-Subject: [PATCH V2 5/9] mfd: aat2870: use use devm_*() functions
-Date: Wed, 20 Feb 2013 18:29:53 +0900
-Message-id: <001301ce0f4c$d6ddbbf0$849933d0$%han@samsung.com>
+Subject: [PATCH V2 6/9] mfd: twl6040: use devm_*() functions
+Date: Wed, 20 Feb 2013 18:30:21 +0900
+Message-id: <001401ce0f4c$e77aa9f0$b66ffdd0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4PTHvvVazquf7TSyaZqgztkH4/LAAAE5Ug
+Thread-index: Ac4PTHvvVazquf7TSyaZqgztkH4/LAAAFwOA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zQ92J01UCDRp+WVhc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mb9vXshV08FdMXzifsYGxm6eLkZNDQsBE4sH2LnYIW0ziwr31
-	bCC2kMAyRomze5Vgau7NfAoU5wKKT2eUOLphAZQzm0nidf9XsA42ATWJL18Og00SEdCS6D52
-	HijOwcEs4CJxdJoIxFBbiUddW5lBbE4BO4mWa/PAbGEBB4krG9pYQMpZBFQlbs3UBwnzApXP
-	6Z3GBmELSvyYfI8FxGYGmr5+53EmCFteYvOat8wgrRIC6hKP/upCHGAk8XTSV6hyEYl9L94x
-	glwsIbCIXeLXlktgV7IICEh8m3yIBaJXVmLTAWaIdyUlDq64wTKBUWIWks2zkGyehWTzLCQr
-	FjCyrGIUTS1ILihOSi8y1CtOzC0uzUvXS87P3cQIiareHYy3D1gfYkwGWj+RWUo0OR8YlXkl
-	8YbGxiZmJqYm5pam5qakCSuJ88pdkgkUEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwJjTtPXH
-	gTzm6bsPrbOyzCjZuYL9QuqPFYffHX7S/6kxp68oLv2gitfzm/eaPtx5KbEydIOvwsLvH/hl
-	lqnPvLaKfxOHRV+w4pu9cTccmOIE5Fh+zzZ0YzP587Tsbo3s1G1XYipPLXN6WrKHS2Ln2U/c
-	V2pO6U5bYuOTNmexdsG5KMnNOxav1dVWYinOSDTUYi4qTgQAcUxK7cACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xoO7E6SqBBhOWmVpc3jWHzYHR4/Mm
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zQ92101UCDV78MLS4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZsx9eYS54LVfx8+FlxgbGx5JdjJwcEgImEp9+nmWEsMUkLtxb
+	z9bFyMUhJLCMUeLqvCtsMEXn17YxQiQWMUocvfKbGSQhJDCbSeLdKQ8Qm01ATeLLl8PsILaI
+	gJZE97HzQM0cHMwCLhJHp4lAlNtKPOraCtbKKWAn0XJtHpgtLGAj8fzLMTCbRUBVYveFJUwg
+	Ni9Q/cofx1khbEGJH5PvsYDYzEDj1+88zgRhy0tsXvOWGWSVhIC6xKO/uiCmiICRxOOjhhAV
+	IhL7XrwDu15CYBG7xNKlW1ggVglIfJt8iAWiVVZi0wFmiG8lJQ6uuMEygVFiFpLFs5AsnoVk
+	8SwkKxYwsqxiFE0tSC4oTkovMtQrTswtLs1L10vOz93ECImq3h2Mtw9YH2JMBlo/kVlKNDkf
+	GJV5JfGGxsYmZiamJuaWpuampAkrifPKXZIJFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cC4
+	LFfmSgPPXZ66lNjW/smVn68/eT9zio7VxLlR3+pe3y46mWIe4vNoyyzXWJt0D2Fn35XrM/Q8
+	/5Xv9+234r7JsXOzzonZ60utHmzRUsyoPaDjk52921VGSna3yYvy6rfCi4ILY/lU8gSaeVTl
+	hA/3i7x48apiWVfDkQViU73y+Sqmc/wzjVZiKc5INNRiLipOBADDUUUMwAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgO7a6SqBBpd+6lpc3jWHzYHR4/Mm
 	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjG/b17IVdPBXTF84n7GB
-	sZuni5GTQ0LAROLezKdsELaYxIV764FsLg4hgemMEkc3LIByZjNJvO7/ClbFJqAm8eXLYXYQ
-	W0RAS6L72HmgOAcHs4CLxNFpIiBhIQFbiUddW5lBbE4BO4mWa/PAbGEBB4krG9pYQMpZBFQl
-	bs3UBwnzApXP6Z3GBmELSvyYfI8FxGYGmr5+53EmCFteYvOat8wgrRIC6hKP/upCHGAk8XTS
-	V6hyEYl9L94xTmAUmoVk0iwkk2YhmTQLScsCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmb
-	GMFR+0xqB+PKBotDjAIcjEo8vBrzlQOFWBPLiitzDzFKcDArifD+7FAJFOJNSaysSi3Kjy8q
-	zUktPsSYDPTnRGYp0eR8YELJK4k3NDYxM7I0MrMwMjE3J01YSZyX8dSTACGB9MSS1OzU1ILU
-	IpgtTBycUg2M21fM9jsxcfu1dPcHkZFvlrXmb9dmWvWf3/nBzUPXNmXYGFwpjDniY/WrXiNq
-	YQnn7z0qhW5Tbj44MPnPvuQXk4zE7XYff5rX8E1qxyMDo7V+G71WxbZJzX7ntj3/wed33I0b
-	+7ULztx1kKqWuJIpa7D877MYtrzzTI92Lgp8tnv2M9Z782yyzyqxFGckGmoxFxUnAgB6N7YP
-	HgMAAA==
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjNkPrzAXvJar+PnwMmMD
+	42PJLkZODgkBE4nza9sYIWwxiQv31rN1MXJxCAksYpQ4euU3M0hCSGA2k8S7Ux4gNpuAmsSX
+	L4fZQWwRAS2J7mPngRo4OJgFXCSOThOBKLeVeNS1FayVU8BOouXaPDBbWMBG4vmXY2A2i4Cq
+	xO4LS5hAbF6g+pU/jrNC2IISPybfYwGxmYHGr995nAnClpfYvOYtM8gqCQF1iUd/dUFMEQEj
+	icdHDSEqRCT2vXjHOIFRaBaSQbOQDJqFZNAsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl
+	5+duYgTH7DPpHYyrGiwOMQpwMCrx8DYsVA4UYk0sK67MPcQowcGsJML7s0MlUIg3JbGyKrUo
+	P76oNCe1+BBjMtCfE5mlRJPzgekkryTe0NjEzMjSyMzCyMTcnDRhJXFexlNPAoQE0hNLUrNT
+	UwtSi2C2MHFwSjUwMsas/tct9n6t3Da3BxtytIMKn6efalnc6sAUxD13UYfi/PptU4tkJJyX
+	n9upc6zK9/Oj6uwb1dpy292dw/+v0foqNuHcM6Gs28f6plyzNlj7TG+RTrfBndccwT/i7Xhi
+	s/atYXeUZVx3U3He4q9xLKwyBhuYL/RZMYdZ2JVaVB3yDa3jfL1JiaU4I9FQi7moOBEA5+oE
+	RR0DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,68 +57,111 @@ Use devm_*() functions to make cleanup paths more simple.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
-No changes since v1:
+Changes since v1:
+- Use devm_free_irq()
+- Use devm_regulator_bulk_get()
 
- drivers/mfd/aat2870-core.c |   20 ++++++--------------
- 1 files changed, 6 insertions(+), 14 deletions(-)
+ drivers/mfd/twl6040.c |   31 +++++++++++--------------------
+ 1 files changed, 11 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/mfd/aat2870-core.c b/drivers/mfd/aat2870-core.c
-index f1beb49..dfdb0a2 100644
---- a/drivers/mfd/aat2870-core.c
-+++ b/drivers/mfd/aat2870-core.c
-@@ -367,12 +367,12 @@ static int aat2870_i2c_probe(struct i2c_client *client,
- 	int i, j;
- 	int ret = 0;
+diff --git a/drivers/mfd/twl6040.c b/drivers/mfd/twl6040.c
+index f361bf3..492ee2c 100644
+--- a/drivers/mfd/twl6040.c
++++ b/drivers/mfd/twl6040.c
+@@ -554,7 +554,7 @@ static int twl6040_probe(struct i2c_client *client,
  
--	aat2870 = kzalloc(sizeof(struct aat2870_data), GFP_KERNEL);
-+	aat2870 = devm_kzalloc(&client->dev, sizeof(struct aat2870_data),
-+				GFP_KERNEL);
- 	if (!aat2870) {
- 		dev_err(&client->dev,
- 			"Failed to allocate memory for aat2870\n");
--		ret = -ENOMEM;
--		goto out;
-+		return -ENOMEM;
+ 	twl6040->supplies[0].supply = "vio";
+ 	twl6040->supplies[1].supply = "v2v1";
+-	ret = regulator_bulk_get(&client->dev, TWL6040_NUM_SUPPLIES,
++	ret = devm_regulator_bulk_get(&client->dev, TWL6040_NUM_SUPPLIES,
+ 				 twl6040->supplies);
+ 	if (ret != 0) {
+ 		dev_err(&client->dev, "Failed to get supplies: %d\n", ret);
+@@ -564,7 +564,7 @@ static int twl6040_probe(struct i2c_client *client,
+ 	ret = regulator_bulk_enable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
+ 	if (ret != 0) {
+ 		dev_err(&client->dev, "Failed to enable supplies: %d\n", ret);
+-		goto power_err;
++		goto regulator_get_err;
  	}
  
- 	aat2870->dev = &client->dev;
-@@ -400,12 +400,12 @@ static int aat2870_i2c_probe(struct i2c_client *client,
- 		aat2870->init(aat2870);
+ 	twl6040->dev = &client->dev;
+@@ -586,8 +586,8 @@ static int twl6040_probe(struct i2c_client *client,
+ 		twl6040->audpwron = -EINVAL;
  
- 	if (aat2870->en_pin >= 0) {
--		ret = gpio_request_one(aat2870->en_pin, GPIOF_OUT_INIT_HIGH,
--				       "aat2870-en");
-+		ret = devm_gpio_request_one(&client->dev, aat2870->en_pin,
-+					GPIOF_OUT_INIT_HIGH, "aat2870-en");
- 		if (ret < 0) {
- 			dev_err(&client->dev,
- 				"Failed to request GPIO %d\n", aat2870->en_pin);
--			goto out_kfree;
-+			return ret;
- 		}
+ 	if (gpio_is_valid(twl6040->audpwron)) {
+-		ret = gpio_request_one(twl6040->audpwron, GPIOF_OUT_INIT_LOW,
+-				       "audpwron");
++		ret = devm_gpio_request_one(&client->dev, twl6040->audpwron,
++					GPIOF_OUT_INIT_LOW, "audpwron");
+ 		if (ret)
+ 			goto gpio_err;
+ 	}
+@@ -596,14 +596,14 @@ static int twl6040_probe(struct i2c_client *client,
+ 			IRQF_ONESHOT, 0, &twl6040_irq_chip,
+ 			&twl6040->irq_data);
+ 	if (ret < 0)
+-		goto irq_init_err;
++		goto gpio_err;
+ 
+ 	twl6040->irq_ready = regmap_irq_get_virq(twl6040->irq_data,
+ 					       TWL6040_IRQ_READY);
+ 	twl6040->irq_th = regmap_irq_get_virq(twl6040->irq_data,
+ 					       TWL6040_IRQ_TH);
+ 
+-	ret = request_threaded_irq(twl6040->irq_ready, NULL,
++	ret = devm_request_threaded_irq(twl6040->dev, twl6040->irq_ready, NULL,
+ 				   twl6040_readyint_handler, IRQF_ONESHOT,
+ 				   "twl6040_irq_ready", twl6040);
+ 	if (ret) {
+@@ -611,7 +611,7 @@ static int twl6040_probe(struct i2c_client *client,
+ 		goto readyirq_err;
  	}
  
-@@ -436,11 +436,6 @@ static int aat2870_i2c_probe(struct i2c_client *client,
+-	ret = request_threaded_irq(twl6040->irq_th, NULL,
++	ret = devm_request_threaded_irq(twl6040->dev, twl6040->irq_th, NULL,
+ 				   twl6040_thint_handler, IRQF_ONESHOT,
+ 				   "twl6040_irq_th", twl6040);
+ 	if (ret) {
+@@ -681,18 +681,13 @@ static int twl6040_probe(struct i2c_client *client,
+ 	return 0;
  
- out_disable:
- 	aat2870_disable(aat2870);
--	if (aat2870->en_pin >= 0)
--		gpio_free(aat2870->en_pin);
--out_kfree:
--	kfree(aat2870);
--out:
- 	return ret;
- }
+ mfd_err:
+-	free_irq(twl6040->irq_th, twl6040);
++	devm_free_irq(&client->dev, twl6040->irq_th, twl6040);
+ thirq_err:
+-	free_irq(twl6040->irq_ready, twl6040);
++	devm_free_irq(&client->dev, twl6040->irq_ready, twl6040);
+ readyirq_err:
+ 	regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
+-irq_init_err:
+-	if (gpio_is_valid(twl6040->audpwron))
+-		gpio_free(twl6040->audpwron);
+ gpio_err:
+ 	regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
+-power_err:
+-	regulator_bulk_free(TWL6040_NUM_SUPPLIES, twl6040->supplies);
+ regulator_get_err:
+ 	i2c_set_clientdata(client, NULL);
+ err:
+@@ -706,18 +701,14 @@ static int twl6040_remove(struct i2c_client *client)
+ 	if (twl6040->power_count)
+ 		twl6040_power(twl6040, 0);
  
-@@ -452,11 +447,8 @@ static int aat2870_i2c_remove(struct i2c_client *client)
+-	if (gpio_is_valid(twl6040->audpwron))
+-		gpio_free(twl6040->audpwron);
+-
+-	free_irq(twl6040->irq_ready, twl6040);
+-	free_irq(twl6040->irq_th, twl6040);
++	devm_free_irq(&client->dev, twl6040->irq_ready, twl6040);
++	devm_free_irq(&client->dev, twl6040->irq_th, twl6040);
+ 	regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
  
- 	mfd_remove_devices(aat2870->dev);
- 	aat2870_disable(aat2870);
--	if (aat2870->en_pin >= 0)
--		gpio_free(aat2870->en_pin);
- 	if (aat2870->uninit)
- 		aat2870->uninit(aat2870);
--	kfree(aat2870);
+ 	mfd_remove_devices(&client->dev);
+ 	i2c_set_clientdata(client, NULL);
+ 
+ 	regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
+-	regulator_bulk_free(TWL6040_NUM_SUPPLIES, twl6040->supplies);
  
  	return 0;
  }
