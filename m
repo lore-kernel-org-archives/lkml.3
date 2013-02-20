@@ -1,99 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935531Ab3BTNkr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:40:47 -0500
-Received: from mga01.intel.com ([192.55.52.88]:33836 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935302Ab3BTNkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:40:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,702,1355126400"; 
-   d="scan'208";a="289564936"
-Message-ID: <5124D253.6090606@intel.com>
-Date: Wed, 20 Feb 2013 21:40:35 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 04/15] sched: add sched balance policies in kernel
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-5-git-send-email-alex.shi@intel.com> <20130220093751.GA2444@gmail.com>
-In-Reply-To: <20130220093751.GA2444@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S935550Ab3BTNoZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:44:25 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:48663 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935246Ab3BTNoY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 08:44:24 -0500
+From: Anil Kumar <anilk4.v@gmail.com>
+To: devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: linux@arm.linux.org.uk, b-cousson@ti.com, tony@atomide.com,
+        grant.likely@secretlab.ca, anilk4.v@gmail.com, thomas@tomweber.eu
+Subject: [PATCH V4] ARM: dts: add minimal DT support for DevKit8000
+Date: Wed, 20 Feb 2013 19:14:15 +0530
+Message-Id: <1361367855-29208-1-git-send-email-anilk4.v@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 05:37 PM, Ingo Molnar wrote:
-> 
-> * Alex Shi <alex.shi@intel.com> wrote:
-> 
->> Current scheduler behavior is just consider for larger 
->> performance of system. So it try to spread tasks on more cpu 
->> sockets and cpu cores
->>
->> To adding the consideration of power awareness, the patchset 
->> adds 2 kinds of scheduler policy: powersaving and balance. 
->> They will use runnable load util in scheduler balancing. The 
->> current scheduling is taken as performance policy.
->>
->> performance: the current scheduling behaviour, try to spread tasks
->>                 on more CPU sockets or cores. performance oriented.
->> powersaving: will pack tasks into few sched group until all LCPU in the
->>                 group is full, power oriented.
->> balance    : will pack tasks into few sched group until group_capacity
->>                 numbers CPU is full, balance between performance and
->> 		powersaving.
-> 
-> Hm, so in a previous review I suggested keeping two main 
-> policies: power-saving and performance, plus a third, default 
-> policy, which automatically switches between these two if/when 
-> the kernel has information about whether a system is on battery 
-> or on AC - and picking 'performance' when it has no information.
+DevKit8000 is a beagle board clone from Timll, sold by
+armkits.com. The DevKit8000 has RS232 serial port, LCD, DVI-D,
+S-Video, Ethernet, SD/MMC, keyboard, camera, SPI, I2C, USB and
+JTAG interface.
 
-I will try to add a default policy according to your suggestion.
-> 
-> Such an automatic policy would obviously be useful to users - 
-> and that is what makes such a feature really interesting and a 
-> step forward.
-> 
-> I think Peter expressed similar views: we don't want many knobs 
-> and states, we want two major goals plus an (optional but 
-> default enabled) automatism.
+This patch adds the basic DT support for devkit8000. At this time, Information
+of twl4030 (PMIC), MMC1, I2C1 and leds are added.
 
-I got the message. thanks for reclaim again.
+Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
+Tested-by: Thomas Weber <thomas@tomweber.eu>
+---
+ -This patch is based on top of kernel 3.8-rc5.
 
-Now there is just 2 types policy: performance and powersaving(with 2
-degrees, powersaving and balance).
+ -Tested on Devkit8000.
 
-powersaving policy will try to assign one task to each LCPU, whichever
-the LCPU is SMT thread or a core.
-The balance policy is also a kind of powersaving policy, just a bit less
-aggressive. It will try to assign tasks according group capacity, one
-task to one capacity.
-It was introduced just because SMT LCPU in intel arch. SMT thread is a
-independent LCPU in software, but its cpu power(smt_gain 1178 / 2 = 589)
-is smaller than a normal CPU(1024). So, the group capacity is just 1 for
-a 2 SMT thread core. So, on policy, just one task assign to one core
-normally.
+For V4:
+ -Tiny nitpick.
 
+For V3:
+ - Remove pin mux as done at device boot time by default.
 
-> 
-> Is your 'balance' policy implementing that suggestion?
-> If not, why not?
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+For V2:
+ - Change model name as "TimLL OMAP3 Devkit8000"
+ - Change compatible as "timll,omap3-devkit8000"
+ - Doing i2c1 pinmux default with pinctrl-single driver instead of i2c1
+   driver probe time.
 
+:100644 100644 5ebb44f... 22ebc76... M	arch/arm/boot/dts/Makefile
+:000000 100644 0000000... 2e1463a... A	arch/arm/boot/dts/omap3-devkit8000.dts
+:100644 100644 53cb380b.. ccecb76... M	arch/arm/mach-omap2/board-generic.c
+ arch/arm/boot/dts/Makefile             |    1 +
+ arch/arm/boot/dts/omap3-devkit8000.dts |  102 ++++++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/board-generic.c    |    1 +
+ 3 files changed, 104 insertions(+), 0 deletions(-)
 
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 5ebb44f..22ebc76 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -102,6 +102,7 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
+ 	imx28-tx28.dtb
+ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+ 	omap3-beagle.dtb \
++	omap3-devkit8000.dtb \
+ 	omap3-beagle-xm.dtb \
+ 	omap3-evm.dtb \
+ 	omap3-tobi.dtb \
+diff --git a/arch/arm/boot/dts/omap3-devkit8000.dts b/arch/arm/boot/dts/omap3-devkit8000.dts
+new file mode 100644
+index 0000000..2e1463a
+--- /dev/null
++++ b/arch/arm/boot/dts/omap3-devkit8000.dts
+@@ -0,0 +1,102 @@
++/*
++ * Author: Anil Kumar <anilk4.v@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++/dts-v1/;
++
++/include/ "omap3.dtsi"
++/ {
++	model = "TimLL OMAP3 Devkit8000";
++	compatible = "timll,omap3-devkit8000", "ti,omap3";
++
++	memory {
++		device_type = "memory";
++		reg = <0x80000000 0x10000000>;	/* 256 MB */
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		heartbeat {
++			label = "devkit8000::led1";
++			gpios = <&gpio6 26 0>;	/* 186 -> LED1 */
++			default-state = "on";
++			linux,default-trigger = "heartbeat";
++		};
++
++		mmc {
++			label = "devkit8000::led2";
++			gpios = <&gpio6 3 0>;	/* 163 -> LED2 */
++			default-state = "on";
++			linux,default-trigger = "none";
++		};
++
++		usr {
++			label = "devkit8000::led3";
++			gpios = <&gpio6 4 0>;	/* 164 -> LED3 */
++			default-state = "on";
++			linux,default-trigger = "usr";
++                };
++	};
++};
++
++&i2c1 {
++	clock-frequency = <2600000>;
++
++	twl: twl@48 {
++		reg = <0x48>;
++		interrupts = <7>;	/* SYS_NIRQ cascaded to intc */
++		interrupt-parent = <&intc>;
++	};
++};
++
++&i2c2 {
++	status = "disabled";
++};
++
++&i2c3 {
++	status = "disabled";
++};
++
++/include/ "twl4030.dtsi"
++
++&mmc1 {
++	vmmc-supply = <&vmmc1>;
++	vmmc_aux-supply = <&vsim>;
++	bus-width = <8>;
++};
++
++&mmc2 {
++	status = "disabled";
++};
++
++&mmc3 {
++	status = "disabled";
++};
++
++&wdt2 {
++	status = "disabled";
++};
++
++&mcbsp1 {
++	status = "disabled";
++};
++
++&mcbsp2 {
++	status = "disabled";
++};
++
++&mcbsp3 {
++	status = "disabled";
++};
++
++&mcbsp4 {
++	status = "disabled";
++};
++
++&mcbsp5 {
++	status = "disabled";
++};
+diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+index 53cb380..ccecb76 100644
+--- a/arch/arm/mach-omap2/board-generic.c
++++ b/arch/arm/mach-omap2/board-generic.c
+@@ -110,6 +110,7 @@ MACHINE_END
+ 
+ static const char *omap3_gp_boards_compat[] __initdata = {
+ 	"ti,omap3-beagle",
++	"timll,omap3-devkit8000",
+ 	NULL,
+ };
+ 
 -- 
-Thanks
-    Alex
+1.7.0.4
+
