@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935508Ab3BTNjb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:39:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7873 "EHLO mx1.redhat.com"
+	id S935531Ab3BTNkr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:40:47 -0500
+Received: from mga01.intel.com ([192.55.52.88]:33836 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935316Ab3BTNja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:39:30 -0500
-Date: Wed, 20 Feb 2013 08:39:24 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, linux-security-module@vger.kernel.org,
-        lxiang@redhat.com, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 10/15] acpi: Ignore acpi_rsdp kernel parameter in a
- secure boot environment
-Message-ID: <20130220133924.GF362@hansolo.jdub.homelinux.org>
-References: <1359391359-25783-1-git-send-email-matthew.garrett@nebula.com>
- <1359391359-25783-11-git-send-email-matthew.garrett@nebula.com>
- <CABqxG0cJGp7UEREvMW49QA0BfDXPsyEbAuMMLZwcHPdUAKT+Dw@mail.gmail.com>
+	id S935302Ab3BTNkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 08:40:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,702,1355126400"; 
+   d="scan'208";a="289564936"
+Message-ID: <5124D253.6090606@intel.com>
+Date: Wed, 20 Feb 2013 21:40:35 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABqxG0cJGp7UEREvMW49QA0BfDXPsyEbAuMMLZwcHPdUAKT+Dw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
+        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 04/15] sched: add sched balance policies in kernel
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-5-git-send-email-alex.shi@intel.com> <20130220093751.GA2444@gmail.com>
+In-Reply-To: <20130220093751.GA2444@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 17, 2013 at 05:00:23PM +0800, Dave Young wrote:
-> On Tue, Jan 29, 2013 at 12:42 AM, Matthew Garrett
-> <matthew.garrett@nebula.com> wrote:
-> > From: Josh Boyer <jwboyer@redhat.com>
-> >
-> > This option allows userspace to pass the RSDP address to the kernel.  This
-> > could potentially be used to circumvent the secure boot trust model.
-> > We ignore the setting if we don't have the CAP_COMPROMISE_KERNEL capability.
-> >
-> > Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-> > ---
-> >  drivers/acpi/osl.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> > index bd22f86..88251d2 100644
-> > --- a/drivers/acpi/osl.c
-> > +++ b/drivers/acpi/osl.c
-> > @@ -246,7 +246,7 @@ early_param("acpi_rsdp", setup_acpi_rsdp);
-> >  acpi_physical_address __init acpi_os_get_root_pointer(void)
-> >  {
-> >  #ifdef CONFIG_KEXEC
-> > -       if (acpi_rsdp)
-> > +       if (acpi_rsdp && capable(CAP_COMPROMISE_KERNEL))
+On 02/20/2013 05:37 PM, Ingo Molnar wrote:
 > 
+> * Alex Shi <alex.shi@intel.com> wrote:
 > 
-> This caused an issue in a kdump test even without secure boot enabled.
-> Looks like security subsystem init is not initialized yet at this
-> point.
+>> Current scheduler behavior is just consider for larger 
+>> performance of system. So it try to spread tasks on more cpu 
+>> sockets and cpu cores
+>>
+>> To adding the consideration of power awareness, the patchset 
+>> adds 2 kinds of scheduler policy: powersaving and balance. 
+>> They will use runnable load util in scheduler balancing. The 
+>> current scheduling is taken as performance policy.
+>>
+>> performance: the current scheduling behaviour, try to spread tasks
+>>                 on more CPU sockets or cores. performance oriented.
+>> powersaving: will pack tasks into few sched group until all LCPU in the
+>>                 group is full, power oriented.
+>> balance    : will pack tasks into few sched group until group_capacity
+>>                 numbers CPU is full, balance between performance and
+>> 		powersaving.
 > 
-> See redhat bug 906225:
-> https://bugzilla.redhat.com/show_bug.cgi?id=906225
+> Hm, so in a previous review I suggested keeping two main 
+> policies: power-saving and performance, plus a third, default 
+> policy, which automatically switches between these two if/when 
+> the kernel has information about whether a system is on battery 
+> or on AC - and picking 'performance' when it has no information.
 
-I've fixed this in a newer revision of the patch.  Basically we can't
-rely on capable() working at this point because security_init hasn't
-been called yet.  Sigh.
+I will try to add a default policy according to your suggestion.
+> 
+> Such an automatic policy would obviously be useful to users - 
+> and that is what makes such a feature really interesting and a 
+> step forward.
+> 
+> I think Peter expressed similar views: we don't want many knobs 
+> and states, we want two major goals plus an (optional but 
+> default enabled) automatism.
 
-Despite the desire to not sprinkle if (!secure_boot) checks all over,
-I'm thinking less and less that using a CAP is going to work.  Maybe
-I'll come up with some kind of secure_kernel() function that can be set
-per-arch or something and use that instead.  At least that would have
-the semantics we're looking for without breaking in various places or
-causing unintended side-effects in userspace.
+I got the message. thanks for reclaim again.
 
-josh
+Now there is just 2 types policy: performance and powersaving(with 2
+degrees, powersaving and balance).
+
+powersaving policy will try to assign one task to each LCPU, whichever
+the LCPU is SMT thread or a core.
+The balance policy is also a kind of powersaving policy, just a bit less
+aggressive. It will try to assign tasks according group capacity, one
+task to one capacity.
+It was introduced just because SMT LCPU in intel arch. SMT thread is a
+independent LCPU in software, but its cpu power(smt_gain 1178 / 2 = 589)
+is smaller than a normal CPU(1024). So, the group capacity is just 1 for
+a 2 SMT thread core. So, on policy, just one task assign to one core
+normally.
+
+
+> 
+> Is your 'balance' policy implementing that suggestion?
+> If not, why not?
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
+
+
+-- 
+Thanks
+    Alex
