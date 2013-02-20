@@ -1,53 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab3BTV7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 16:59:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58977 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751565Ab3BTV7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 16:59:30 -0500
-Message-ID: <512546EE.2030908@zytor.com>
-Date: Wed, 20 Feb 2013 13:58:06 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Alessandro Rubini <rubini@gnudd.com>
-CC: linux-kernel@vger.kernel.org, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Davide Ciminaghi <ciminaghi@gnudd.com>, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org
-Subject: Re: [PATCH V5 0/5] x86: a bridge from PCI to AMBA
-References: <cover.1361393832.git.rubini@gnudd.com>
-In-Reply-To: <cover.1361393832.git.rubini@gnudd.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
+	id S1752582Ab3BTWBC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 17:01:02 -0500
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:4414 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896Ab3BTWBA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 17:01:00 -0500
+Message-ID: <1361397012.9542.82.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 7/7] ACPI / scan: Make memory hotplug driver use struct
+ acpi_scan_handler
+From: Toshi Kani <toshi.kani@hp.com>
+To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>
+Date: Wed, 20 Feb 2013 14:50:12 -0700
+In-Reply-To: <20130220104250.GA4409@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
+	 <2200731.3okUfey51A@vostro.rjw.lan>
+	 <20130219181157.GA4366@dhcp-192-168-178-175.profitbricks.localdomain>
+	 <51244494.4000603@jp.fujitsu.com>
+	 <20130220104250.GA4409@dhcp-192-168-178-175.profitbricks.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 01:22 PM, Alessandro Rubini wrote:
-> This is a repost of patches I sent quite some time ago and are
-> available from the "tip" repository, as branch "x86/amba" based on
-> v3.7.  That branch includes 7 patches but two of them are already
-> upstream. Some of the other 5 had minor conflicts during rebase, but
-> only in the initial "#include" area.
+On Wed, 2013-02-20 at 11:42 +0100, Vasilis Liaskovitis wrote:
+> Hi Yasuaki,
 > 
-> I repost as Peter Anvin suggested. The commits in the tip
-> repository included both hpa's signed off (which I left in)
-> and the reference to the previous lkml message, which I removed
-> as it is not current by the time  this message exists.
+> On Wed, Feb 20, 2013 at 12:35:48PM +0900, Yasuaki Ishimatsu wrote:
+> > Hi Vasilis,
+> > 
+> > 2013/02/20 3:11, Vasilis Liaskovitis wrote:
+> > >Hi,
+> > >
+> > >On Sun, Feb 17, 2013 at 04:27:18PM +0100, Rafael J. Wysocki wrote:
+> > >>From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > >>
+> > >>Make the ACPI memory hotplug driver use struct acpi_scan_handler
+> > >>for representing the object used to set up ACPI memory hotplug
+> > >>functionality and to remove hotplug memory ranges and data
+> > >>structures used by the driver before unregistering ACPI device
+> > >>nodes representing memory.  Register the new struct acpi_scan_handler
+> > >>object with the help of acpi_scan_add_handler_with_hotplug() to allow
+> > >>user space to manipulate the attributes of the memory hotplug
+> > >>profile.
+> > >
+> > >Let's consider an example where we want acpi memory device ejection to be safely
+> > >handled by userspace. We do the following:
+> > >
+> > >echo 0 > /sys/firmware/acpi/hotplug/memory/autoeject
+> > >echo 1 > /sys/firmware/acpi/hotplug/memory/uevents
+> > >
+> > >We succesfully hotplug acpi device:
+> > >/sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:00
+> > >and its corresponding memblocks /sys/devices/system/memory/memoryXX are
+> > >also successfully onlined.
+> > >
+> > >On an eject request, since uevents == 1, the kernel will emit KOBJ_OFFLINE for:
+> > >/sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:00
+> > >
+> > >Can userspace know which memblocks in /sys/devices/system/memory/memoryXX/
+> > >correspond to the acpi device /sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:00 ?
+> > >This will be needed so that userspace tries to offline the memblocks (and only
+> > >if successful, issue the eject operation on the acpi device). As far as I see,
+> > >we don't create any sysfs links or files for this scenario - can userspace get
+> > >this info somehow?
+> > 
+> > >
+> > >/sys/devices/system/memory/memoryXX/phys_device needs to be properly implemented
+> > >for this to work I think, see Documentation/ABI/testing/sysfs-memory
+> > >
+> > >The following test patch works toward that direction. Let me know if it's of
+> > >interest or if there are better ideas /comments.
+> > 
+> > How about use ../PNP0C80:00/physical_node/resources file?
+> > In my system, the file shows following information.
+> > 
+> > $ cat /sys/bus/acpi/devices/PNP0C80\:00/physical_node/resources
+> > state = active
+> > mem 0x0-0x80000000
+> > mem 0x100000000-0x800000000
+> > 
+> > It means PNP0C80:00's memory ranges are "0x0-0x7fffffff" and
+> > "0x100000000-0x7ffffffff". In x86 architecture, memory section size is
+> > 128MiB. So, if these memory range is divided by 128MiB, you can
+> > calculate memory section number as follow:
+> > 
+> > 0x0-0x7fffffff => 0x0-0x10
+> > 0x100000000-0x7ffffffff => 0x20-0xff
+> > 
+> > But there is one problem. The problem is that resources file of added memory
+> > is not created. If the problem is fixed, I think you can use the way.
 > 
-> Some acked-by we received on the mailing list are not in the patch set
-> because they are missing from tip::x86/amba which is authoritative.
+> thanks for your suggestion. Is this resources file a property of the
+> physical_node or of each acpi devices? 
 > 
+> If it's a node specific file could there be a chance that adjacent memory
+> ranges get merged? We 'd like these to not get merged.
+> 
+> I will look more into this property. I don't see it currently in my system
+> (probably because initial memory is not backed by acpi devices in my
+>  seabios/virtual machine).
 
-Actually, no, they *should* be included.  The only reason they wouldn't
-be in tip:x86/amba was that they weren't received by the time they got
-put in the branch.
+I have been thinking about this issue as well.  In case of CPUs, we have
+a sysdev link that links LNXCPU:%d to its system/cpu/cpu%d file.
 
-Could you add them back in?
+/sys/bus/acpi/devices/LNXCPU:02 > ll sysdev
+lrwxrwxrwx. 1 root root 0 Feb  8 13:52 sysdev -> ../../system/cpu/cpu2
 
-	-hpa
+So, one possible approach is to create a sysdev directory under
+PNP0C080:%d, and then create links to associated system/cpu/memory%d
+files underneath.  What do you think?
 
+Thanks,
+-Toshi
 
 
