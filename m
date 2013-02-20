@@ -1,175 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935820Ab3BTP5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 10:57:54 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:32161 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935298Ab3BTP5x (ORCPT
+	id S964813Ab3BTQA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 11:00:56 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:63596 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934060Ab3BTQAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 10:57:53 -0500
-From: "Roberts, Lee A." <lee.roberts@hp.com>
-To: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] sctp: fix association hangs due to reassembly/ordering
- logic
-Thread-Topic: [PATCH 3/3] sctp: fix association hangs due to
- reassembly/ordering logic
-Thread-Index: AQHOD4EAM4/BtHowKUCUFo1BBBdc85iC5oiA
-Date: Wed, 20 Feb 2013 15:56:59 +0000
-Message-ID: <D64EC45690EF85409BA6C4730E0162244310CBC1@G4W3231.americas.hpqcorp.net>
-References: <1361374996.3450.3.camel@laptop.lroberts>
-In-Reply-To: <1361374996.3450.3.camel@laptop.lroberts>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.14]
-Content-Type: text/plain; charset="utf-8"
+	Wed, 20 Feb 2013 11:00:55 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: James Hogan <james.hogan@imgtec.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 01/11] ARM: disable virt_to_bus/virt_to_bus almost everywhere
+Date: Wed, 20 Feb 2013 16:00:47 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+References: <1360849767-1463135-1-git-send-email-arnd@arndb.de> <1360849767-1463135-2-git-send-email-arnd@arndb.de> <CAAG0J9_VqCGJJJZjSWGfFggALHU=vdWsSBeS39-DtxV=VXcJwQ@mail.gmail.com>
+In-Reply-To: <CAAG0J9_VqCGJJJZjSWGfFggALHU=vdWsSBeS39-DtxV=VXcJwQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302201600.47522.arnd@arndb.de>
+X-Provags-ID: V02:K0:e7zmS6TT/6ElWBnWoSonHbgR5U58yEIjZM+CfaEVqJj
+ MpEBnlAPvZelrX6Md83OPc7O6+usexAGJM2/rjiSU3Y9fSQiht
+ /tMAbL53PakMEIp5vuZp9OVi7rFs5T0HPWrdtdUNU8OXD1fq4J
+ fVFMcf6U01BJdWpJMa2dvzr+bEYEjnc0EeBOdP9I902uDwWXe9
+ 6nx+Aj1yb8jv09Lu00ZX3eLSbmWYnsnE9oDUuVsdJwQT+2wou7
+ alv9IYhRrkE3fV3umz+BHigb5BCjlRxP6c0Zw96wcuLy1PepxX
+ NqMuL6qWvWWeG+bPTkSV3M9Ct3J5rmgb32YOkYtGw98/6QiDBc
+ 89sCpa2LCW1Viba+nB2U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1KFvu4c004476
 
-From: Lee A. Roberts <lee.roberts@hp.com>
+On Wednesday 20 February 2013, James Hogan wrote:
+> There's a patch in linux-next by Stephen Rothwell "Centralise
+> CONFIG_ARCH_NO_VIRT_TO_BUS" that removes this Kconfig symbol,
+> inverting/replacing it with "select HAVE_VIRT_TO_BUS" (including for
+> arch/arm) which will undo the effects of this.
 
-Resolve SCTP association hangs observed during SCTP stress
-testing.  Observable symptoms include communications hangs
-with data being held in the association reassembly and/or lobby
-(ordering) queues.  Close examination of reassembly queue shows
-missing packets.
+Ah, thanks for pointing that out. At least my patch is harmless then
+although also useless. I'll leave it in for now so I don't have to
+rebase all the other bug fixes that are queued for 3.9, but I'm making
+a note that I'll have to replace this with a proper one. I also
+don't think that anything breaks if we apply both patches for a while,
+it will just make my patch useless.
 
-In sctp_eat_data(), enter partial delivery mode only if the
-data on the head of the reassembly queue is at or before the
-cumulative TSN ACK point.
+I guess you'll have to do something similar for arch/metag, and Vineet
+will do it for arch/arc.
 
-In sctp_ulpq_retrieve_partial() and sctp_ulpq_retrieve_first(),
-correct message reassembly logic for SCTP partial delivery.
-Change logic to ensure that as much data as possible is sent
-with the initial partial delivery and that following partial
-deliveries contain all available data.
+Stephen's patch is currently in Andrew's tree, and I don't see an easy
+way to coordinate this. The patch we will need once both are merged
+is below.
 
-In sctp_ulpq_renege(), adjust logic to enter partial delivery
-only if the incoming chunk remains on the reassembly queue
-after processing by sctp_ulpq_tail_data().  Remove call to
-sctp_tsnmap_mark(), as this is handled correctly in call to
-sctp_ulpq_tail_data().
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Patch applies to linux-3.8 kernel.
-
-Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
----
- net/sctp/sm_statefuns.c |   12 ++++++++++--
- net/sctp/ulpqueue.c     |   33 ++++++++++++++++++++++++++-------
- 2 files changed, 36 insertions(+), 9 deletions(-)
-
-diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
-+2/net/sctp/sm_statefuns.c linux-3.8-SCTP+3/net/sctp/sm_statefuns.c
---- linux-3.8-SCTP+2/net/sctp/sm_statefuns.c	2013-02-18
-16:58:34.000000000 -0700
-+++ linux-3.8-SCTP+3/net/sctp/sm_statefuns.c	2013-02-20
-08:31:51.092132884 -0700
-@@ -6090,7 +6090,8 @@ static int sctp_eat_data(const struct sc
- 	size_t datalen;
- 	sctp_verb_t deliver;
- 	int tmp;
--	__u32 tsn;
-+	__u32 tsn, ctsn;
-+	struct sk_buff *skb;
- 	struct sctp_tsnmap *map = (struct sctp_tsnmap *)&asoc->peer.tsn_map;
- 	struct sock *sk = asoc->base.sk;
- 	struct net *net = sock_net(sk);
-@@ -6160,7 +6161,14 @@ static int sctp_eat_data(const struct sc
- 		/* Even if we don't accept this chunk there is
- 		 * memory pressure.
- 		 */
--		sctp_add_cmd_sf(commands, SCTP_CMD_PART_DELIVER, SCTP_NULL());
-+		skb = skb_peek(&asoc->ulpq.reasm);
-+		if (skb != NULL) {
-+			ctsn = sctp_skb2event(skb)->tsn;
-+			if (TSN_lte(ctsn,
-+				sctp_tsnmap_get_ctsn(&asoc->peer.tsn_map)))
-+				sctp_add_cmd_sf(commands,
-+					SCTP_CMD_PART_DELIVER, SCTP_NULL());
-+		}
- 	}
+diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
+index 4fef29f..5829b67 100644
+--- a/arch/arc/Kconfig
++++ b/arch/arc/Kconfig
+@@ -76,9 +76,6 @@ config HAVE_LATENCYTOP_SUPPORT
+ config NO_DMA
+ 	def_bool n
  
- 	/* Spill over rwnd a little bit.  Note: While allowed, this spill over
-diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
-+2/net/sctp/ulpqueue.c linux-3.8-SCTP+3/net/sctp/ulpqueue.c
---- linux-3.8-SCTP+2/net/sctp/ulpqueue.c	2013-02-20 08:17:53.679233365
--0700
-+++ linux-3.8-SCTP+3/net/sctp/ulpqueue.c	2013-02-20 08:27:02.785042744
--0700
-@@ -540,14 +540,19 @@ static struct sctp_ulpevent *sctp_ulpq_r
- 		ctsn = cevent->tsn;
- 
- 		switch (cevent->msg_flags & SCTP_DATA_FRAG_MASK) {
-+		case SCTP_DATA_FIRST_FRAG:
-+			if (!first_frag)
-+				return NULL;
-+			goto done;
- 		case SCTP_DATA_MIDDLE_FRAG:
- 			if (!first_frag) {
- 				first_frag = pos;
- 				next_tsn = ctsn + 1;
- 				last_frag = pos;
--			} else if (next_tsn == ctsn)
-+			} else if (next_tsn == ctsn) {
- 				next_tsn++;
--			else
-+				last_frag = pos;
-+			} else
- 				goto done;
- 			break;
- 		case SCTP_DATA_LAST_FRAG:
-@@ -651,6 +656,14 @@ static struct sctp_ulpevent *sctp_ulpq_r
- 			} else
- 				goto done;
- 			break;
-+
-+		case SCTP_DATA_LAST_FRAG:
-+			if (!first_frag)
-+				return NULL;
-+			else
-+				goto done;
-+			break;
-+
- 		default:
- 			return NULL;
- 		}
-@@ -1054,6 +1067,7 @@ void sctp_ulpq_renege(struct sctp_ulpq *
- 		      gfp_t gfp)
- {
- 	struct sctp_association *asoc;
-+	struct sk_buff *skb;
- 	__u16 needed, freed;
- 
- 	asoc = ulpq->asoc;
-@@ -1074,12 +1088,17 @@ void sctp_ulpq_renege(struct sctp_ulpq *
- 	}
- 	/* If able to free enough room, accept this chunk. */
- 	if (chunk && (freed >= needed)) {
--		__u32 tsn;
-+		__u32 tsn, ctsn;
- 		tsn = ntohl(chunk->subh.data_hdr->tsn);
--		sctp_tsnmap_mark(&asoc->peer.tsn_map, tsn, chunk->transport);
--		sctp_ulpq_tail_data(ulpq, chunk, gfp);
+-config ARCH_NO_VIRT_TO_BUS
+-	def_bool y
 -
--		sctp_ulpq_partial_delivery(ulpq, gfp);
-+		if (sctp_ulpq_tail_data(ulpq, chunk, gfp) == 0) {
-+			skb = skb_peek(&ulpq->reasm);
-+			if (skb != NULL) {
-+				ctsn = sctp_skb2event(skb)->tsn;
-+				if (TSN_lte(ctsn, tsn))
-+					sctp_ulpq_partial_delivery(ulpq, chunk,
-+						gfp);
-+			}
-+		}
- 	}
+ source "init/Kconfig"
+ source "kernel/Kconfig.freezer"
  
- 	sk_mem_reclaim(asoc->base.sk);
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index dedf02b..7b35b39 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -49,7 +49,6 @@ config ARM
+ 	select HAVE_REGS_AND_STACK_ACCESS_API
+ 	select HAVE_SYSCALL_TRACEPOINTS
+ 	select HAVE_UID16
+-	select HAVE_VIRT_TO_BUS
+ 	select KTIME_SCALAR
+ 	select PERF_USE_VMALLOC
+ 	select RTC_LIB
+@@ -744,6 +743,7 @@ config ARCH_RPC
+ 	select NEED_MACH_IO_H
+ 	select NEED_MACH_MEMORY_H
+ 	select NO_IOPORT
++	select HAVE_VIRT_TO_BUS
+ 	help
+ 	  On the Acorn Risc-PC, Linux can support the internal IDE disk and
+ 	  CD-ROM interface, serial and parallel port, and the floppy drive.
+@@ -880,6 +880,7 @@ config ARCH_SHARK
+ 	select NEED_MACH_MEMORY_H
+ 	select PCI
+ 	select ZONE_DMA
++	select HAVE_VIRT_TO_BUS
+ 	help
+ 	  Support for the StrongARM based Digital DNARD machine, also known
+ 	  as "Shark" (<http://www.shark-linux.de/shark.html>).
+@@ -1462,10 +1463,6 @@ config ISA_DMA
+ 	bool
+ 	select ISA_DMA_API
+ 
+-config ARCH_NO_VIRT_TO_BUS
+-	def_bool y
+-	depends on !ARCH_RPC && !ARCH_NETWINDER && !ARCH_SHARK
+-
+ # Select ISA DMA interface
+ config ISA_DMA_API
+ 	bool
+diff --git a/arch/arm/mach-footbridge/Kconfig b/arch/arm/mach-footbridge/Kconfig
+index abda5a1..42bf587 100644
+--- a/arch/arm/mach-footbridge/Kconfig
++++ b/arch/arm/mach-footbridge/Kconfig
+@@ -67,6 +67,7 @@ config ARCH_NETWINDER
+ 	select ISA
+ 	select ISA_DMA
+ 	select PCI
++	select HAVE_VIRT_TO_BUS
+ 	help
+ 	  Say Y here if you intend to run this kernel on the Rebel.COM
+ 	  NetWinder.  Information about this machine can be found at:
+diff --git a/arch/metag/Kconfig b/arch/metag/Kconfig
+index 30adc78..03e216e 100644
+--- a/arch/metag/Kconfig
++++ b/arch/metag/Kconfig
+@@ -35,9 +35,6 @@ config METAG
+ 	select OF_EARLY_FLATTREE
+ 	select SPARSE_IRQ
+ 
+-config ARCH_NO_VIRT_TO_BUS
+-	def_bool y
+-
+ config STACKTRACE_SUPPORT
+ 	def_bool y
+ 
