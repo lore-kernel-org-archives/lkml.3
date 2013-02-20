@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934926Ab3BTGeT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 01:34:19 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:51960 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757364Ab3BTGeR (ORCPT
+	id S1751170Ab3BTGj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 01:39:56 -0500
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:36206 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab3BTGjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 01:34:17 -0500
-Date: Wed, 20 Feb 2013 17:34:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Jones <pjones@redhat.com>
-Subject: linux-next: build warning after merge of the akpm tree
-Message-Id: <20130220173414.fa4886355efd8f85d0d349f4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__20_Feb_2013_17_34_14_+1100_9gfoARGTzytJ3OHH"
+	Wed, 20 Feb 2013 01:39:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130219154128.GA15608@gmail.com>
+References: <20130219154128.GA15608@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 19 Feb 2013 22:39:33 -0800
+X-Google-Sender-Auth: lVDiSTShJV0QPVFFR_T6wMBZqIs
+Message-ID: <CA+55aFxn=xFGhF8L2pJYP8wOe3VdCpGtaibB0bbRuH8FAKkCNg@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/platform changes for v3.9
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Feb_2013_17_34_14_+1100_9gfoARGTzytJ3OHH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Feb 19, 2013 at 7:41 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> Please pull the latest x86-platform-for-linus git tree from:
 
-Hi Andrew,
+Hmm.
 
-After merging the akpm tree, today's linux-next build (powerpc
-ppc44x_defconfig) produced this warning:
+My main desktop just had a reboot failure - it just got stuck at the
+end, not powering down, and not rebooting like it should have.
 
-block/partitions/efi.c: In function 'is_gpt_valid':
-block/partitions/efi.c:324:3: warning: format '%lu' expects argument of typ=
-e 'long unsigned int', but argument 3 has type 'unsigned int' [-Wformat]
+This is *not* necessarily the pull that caused it, but 8f55cea410db
+rebooted cleanly, and 1a13c0b181f2 did not. That implies that it's one
+of your pull requests. The pulls I did in between are:
 
-Introduced by commit ef25bb0fa6e2 ("block/partitions/efi.c: ensure that
-the GPT header is at least the size of the structure").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ - scheduler (with the dyntick and cputime accounting)
 
---Signature=_Wed__20_Feb_2013_17_34_14_+1100_9gfoARGTzytJ3OHH
-Content-Type: application/pgp-signature
+ - smp-hotplug-for-linus: stop_machine preparatory patches from Thomas..
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ - timers-core-for-linus. Hmm..
 
-iQIcBAEBCAAGBQJRJG5mAAoJEECxmPOUX5FE0b8P/iDLm8eO5ut4KeNAUKkyg9wu
-9P7jRZAr2kJGCYmPhaV+0hkIUjkw8PcFK4YOZhaS5fjffOLAq52Ot+rpNhnsF2yS
-6Ct0puW/0zjgVuMoIcUNaKjjCYh2VvSTefC3fYOqlghdTyReQVzc09E/S4qeXI66
-4cGgstPuhR7Cgrwfpvi+5VJBwK0euO/PDa05o6nctdmWj/vS+j62vm4GrGlkuh7R
-7S3ab0GCO4YoQ9WNgnMF617mbwm2cQBZA8fx/p67/zSKKG3ZY4tNyyPUSSBJGjVN
-m8rEkYQabCDD2NaOsVU53i6r/ueB6aL8GA3Y+Yqu6R8iH2mX0tyuzkCde5zC8x73
-IUcf4k5RFM4MIqe6KCAE4IXfAXaQT1Snloagh3AhO5oxlslPtXo5idklepJD/i0g
-a7G5Ej3AqdN8DZM63IBM6f312NkcbKpUgeD/mOCD3uBVHzsZNQmFySzcAQ5ss44v
-UM028npaJRPihW0M58yJ2GI2GPq7/XIbUJy32i3cpd2J6l5wHPadfW3KcFIYm5Cq
-1J7p4ZmHC6bUbyNx4j+i5kyR00/BdUf2u9L30bqHdHZH7Bo1fUlWSxZrxhwWSIeX
-y6nlSsE8dwCjI7wZcUM0BIsUDBKa7DLNGFTwIi6ICLiDYT/yo0Jiu5CUUywNPWxa
-NFasxIFNO5xgndov8a2C
-=84E1
------END PGP SIGNATURE-----
+ - x86-apic-for-linus: certainly possibly causing problems at shutdown..
 
---Signature=_Wed__20_Feb_2013_17_34_14_+1100_9gfoARGTzytJ3OHH--
+ - x86-asm-for-linus: sounds unlikely, but who knows..
+
+ - x86-boot-for-linus: shouldn't affect shutdown, but..
+
+ - x86-build-for-linus: _really_ shouldn't affect shutdown..
+
+ - x86-cleanups-for-linus: unlikely
+
+ - x86-hyperv-for-linus: no, not a hyperv user ;)
+
+ - x86-platform-for-linus: rebooting is a platform thing, but none of
+this seems relevant
+
+ - x86-uv-for-linus: not likely relevant.
+
+I'm not going to bisect it right now, hoping that somebody goes "Hmm,
+maybe it's xyzzy". And maybe it was just a one-time event, but I don't
+recall having had that whole "reboot fails" case on this machine
+before. Any ideas?
+
+                              Linus
