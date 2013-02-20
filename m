@@ -1,163 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935334Ab3BTMY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 07:24:27 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:1507 "EHLO mms1.broadcom.com"
+	id S935116Ab3BTMZX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 07:25:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42655 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935006Ab3BTMYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 07:24:24 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Shankar Brahadeeswaran" <shankoo77@gmail.com>
-To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>,
+	id S934317Ab3BTMZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 07:25:21 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] KEYS: Revert one application of "Fix unreachable code" patch
+To: torvalds@linux-foundation.org
+From: David Howells <dhowells@redhat.com>
+Cc: jkosina@suse.cz, akpm@linux-foundation.org, keyrings@linux-nfs.org,
         linux-kernel@vger.kernel.org
-cc: devel@driverdev.osuosl.org, "Cruz Julian Bishop" <cruzjbishop@gmail.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Hugh Dickins" <hughd@google.com>,
-        "Konstantin Khlebnikov" <khlebnikov@openvz.org>,
-        "Shankar Brahadeeswaran" <shankoo77@gmail.com>
-Subject: [PATCH 1/1] staging: android: ashmem: get_name,set_name not to
- hold ashmem_mutex
-Date: Wed, 20 Feb 2013 17:53:59 +0530
-Message-ID: <1361363039-11984-2-git-send-email-shankoo77@gmail.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1361363039-11984-1-git-send-email-shankoo77@gmail.com>
-References: <1361363039-11984-1-git-send-email-shankoo77@gmail.com>
+Date: Wed, 20 Feb 2013 12:24:32 +0000
+Message-ID: <20130220122431.1410.12819.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-X-WSS-ID: 7D3A607E23C895433-01-01
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Problem:
-There exists a path in ashmem driver that could lead to acquistion
-of mm->mmap_sem, ashmem_mutex in reverse order. This could lead
-to deadlock in the system.
-For Example, assume that mmap is called on a ashmem region
-in the context of a thread say T1.
- sys_mmap_pgoff (1. acquires mm->mmap_sem)
-  |
-   --> mmap_region
- 	|
-         ----> ashmem_mmap (2. acquires asmem_mutex)
- Now if there is a context switch after 1 and before 2,
- and if another thread T2 (that shares the mm struct) invokes an
- ioctl say ASHMEM_GET_NAME, this can lead to the following path
+From: Alan Cox <alan@linux.intel.com>
 
-ashmem_ioctl
-  |
-  -->get_name (3. acquires ashmem_mutex)
-	|
-	---> copy_to_user (4. acquires the mm->mmap_sem)
-Note that the copy_to_user could lead to a valid fault if no
-physical page is allocated yet for the user address passed.
-Now T1 has mmap_sem and is waiting for ashmem_mutex.
-and T2 has the ashmem_mutex and is waiting for mmap_sem
-Thus leading to deadlock.
+A patch to fix some unreachable code in search_my_process_keyrings() got
+applied twice by two different routes upstream:
 
-Solution:
-Do not call copy_to_user or copy_from_user while holding the
-ahsmem_mutex. Instead copy this to a local buffer that lives
-in the stack while holding this lock. This will maintain data
-integrity as well never reverse the lock order.
+	commit e67eab39bee26f509d38d00ca1a8f24b63f46a31
+	Author: Alan Cox <alan@linux.intel.com>
+	Date:   Thu Dec 20 15:05:54 2012 -0800
+	keys: fix unreachable code
 
-Testing:
-Created a unit test case to reproduce the problem.
-Used the same to test this fix on kernel version 3.4.0
-Ported the same patch to 3.8
+and:
 
-Signed-off-by: Shankar Brahadeeswaran <shankoo77@gmail.com>
-Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+	commit b010520ab3d2c05eb444ed5e01fe6c33842f597a
+	Author: Alan Cox <alan@linux.intel.com>
+	Date:   Thu Oct 25 15:23:35 2012 +0100
+	keys: Fix unreachable code
+
+Unfortunately, the second application removed something it shouldn't have and
+this wasn't detected by GIT.  This is due to the patch not having sufficient
+lines of context to distinguish the two places of application.
+
+So revert the second application of the patch.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Jiri Kosina <jkosina@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/staging/android/ashmem.c |   44 ++++++++++++++++++++++++++++---------
- 1 files changed, 33 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
-index 634b9ae..9c30ead 100644
---- a/drivers/staging/android/ashmem.c
-+++ b/drivers/staging/android/ashmem.c
-@@ -414,8 +414,7 @@ out:
- static int set_name(struct ashmem_area *asma, void __user *name)
- {
- 	int ret = 0;
--
--	mutex_lock(&ashmem_mutex);
-+	char local_name[ASHMEM_NAME_LEN];
- 
- 	/* cannot change an existing mapping's name */
- 	if (unlikely(asma->file)) {
-@@ -423,9 +422,22 @@ static int set_name(struct ashmem_area *asma, void __user *name)
- 		goto out;
- 	}
- 
--	if (unlikely(copy_from_user(asma->name + ASHMEM_NAME_PREFIX_LEN,
--				    name, ASHMEM_NAME_LEN)))
-+	/*
-+	 * Holding the ashmem_mutex while doing a copy_from_user might cause
-+	 * an data abourt which would try to access mmap_sem. If another
-+	 * thread has invoked ashmem_mmap then it will be holding the
-+	 * semaphore and will be waiting for ashmem_mutex, there by leading to
-+	 * deadlock. We'll release the mutex  and take the name to a local
-+	 * variable that does not need protection and later copy the local
-+	 * variable to the structure member with lock held.
-+	 */
-+	if (unlikely(copy_from_user(local_name, name, ASHMEM_NAME_LEN))) {
- 		ret = -EFAULT;
-+		return ret;
-+	}
-+	mutex_lock(&ashmem_mutex);
-+	memcpy(asma->name + ASHMEM_NAME_PREFIX_LEN,
-+		local_name, ASHMEM_NAME_LEN);
- 	asma->name[ASHMEM_FULL_NAME_LEN-1] = '\0';
- 
- out:
-@@ -437,26 +449,36 @@ out:
- static int get_name(struct ashmem_area *asma, void __user *name)
- {
- 	int ret = 0;
-+	size_t len;
-+	/*
-+	 * Have a local variable to which we'll copy the content
-+	 * from asma with the lock held. Later we can copy this to the user
-+	 * space safely without holding any locks. So even if we proceed to
-+	 * wait for mmap_sem, it won't lead to deadlock.
-+	 */
-+	char local_name[ASHMEM_NAME_LEN];
- 
- 	mutex_lock(&ashmem_mutex);
- 	if (asma->name[ASHMEM_NAME_PREFIX_LEN] != '\0') {
--		size_t len;
- 
- 		/*
- 		 * Copying only `len', instead of ASHMEM_NAME_LEN, bytes
- 		 * prevents us from revealing one user's stack to another.
- 		 */
- 		len = strlen(asma->name + ASHMEM_NAME_PREFIX_LEN) + 1;
--		if (unlikely(copy_to_user(name,
--				asma->name + ASHMEM_NAME_PREFIX_LEN, len)))
--			ret = -EFAULT;
-+		memcpy(local_name, asma->name + ASHMEM_NAME_PREFIX_LEN, len);
- 	} else {
--		if (unlikely(copy_to_user(name, ASHMEM_NAME_DEF,
--					  sizeof(ASHMEM_NAME_DEF))))
--			ret = -EFAULT;
-+		len = sizeof(ASHMEM_NAME_DEF);
-+		memcpy(local_name, ASHMEM_NAME_DEF, len);
- 	}
- 	mutex_unlock(&ashmem_mutex);
- 
-+	/*
-+	 * Now we are just copying from the stack variable to userland
-+	 * No lock held
-+	 */
-+	if (unlikely(copy_to_user(name, local_name, len)))
-+		ret = -EFAULT;
- 	return ret;
- }
- 
--- 
-1.7.6
+ security/keys/process_keys.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 20e4bf5..58dfe08 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -367,6 +367,8 @@ key_ref_t search_my_process_keyrings(struct key_type *type,
+ 
+ 		switch (PTR_ERR(key_ref)) {
+ 		case -EAGAIN: /* no key */
++			if (ret)
++				break;
+ 		case -ENOKEY: /* negative key */
+ 			ret = key_ref;
+ 			break;
 
