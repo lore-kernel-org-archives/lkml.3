@@ -1,50 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934101Ab3BTQhd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 11:37:33 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:34793 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933743Ab3BTQhc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 11:37:32 -0500
-Date: Wed, 20 Feb 2013 11:37:31 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Manjunath Goudar <manjunath.goudar@linaro.org>
-cc: linux-usb@vger.kernel.org, <linux-arm-kernel@lists.infradead.org>,
-        <patches@linaro.org>, <arnd@linaro.org>, <gregkh@linuxfoundation.org>,
-        Greg KH <greg@kroah.com>, Tony Prisk <linux@prisktech.co.nz>,
-        Alexey Charkov <alchark@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [V2 5/8] USB: EHCI: make ehci-vt8500 a separate driver
-In-Reply-To: <1360923853-7875-6-git-send-email-manjunath.goudar@linaro.org>
-Message-ID: <Pine.LNX.4.44L0.1302201125410.1671-100000@iolanthe.rowland.org>
+	id S934133Ab3BTQix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 11:38:53 -0500
+Received: from ms.dension.com ([195.56.193.33]:49409 "EHLO ms.dension.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971Ab3BTQiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 11:38:52 -0500
+X-Greylist: delayed 427 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Feb 2013 11:38:52 EST
+From: Zoltan Puskas <zpuskas@dension.com>
+To: Bo Shen <voice.shen@atmel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] sound/soc/atmel: Add slave mode support to SSC in DSP Mode A
+Date: Wed, 20 Feb 2013 17:31:35 +0100
+Message-ID: <17235431.zMivtyh4gm@jupiter>
+User-Agent: KMail/4.10 (Linux/3.7.8-gentoo; KDE/4.10.0; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Feb 2013, Manjunath Goudar wrote:
+From: Zoltan Puskas <zpuskas@dension.com>
 
-> Separate the vt8500 host controller driver from ehci-hcd host code
-> into its own driver module.
-> 
-> In V2:
-> Change the GPL to GPL v2 MODULE_LICENSE 
+Add previously unsupported slave mode to the SSC peripheral when using
+DSP/PCM Mode A format on the Atmel ARM platform.
 
-Same comments as for the other patches.
 
-You know, when you submit a series of patches all doing basically the
-same sort of thing, and somebody makes a suggestion to improve one of
-them, you should always consider whether that suggestion could also
-apply to the other patches in the series.  It's silly for us to send
-you 8 separate emails, each telling you to make the same change to one 
-particular patch in the series.
+Signed-off-by: Zoltan Puskas <zpuskas@dension.com>
+---
+The code was tested using WM8804 and WM8731 digital sound chips,
+using 3.7.9 and 3.3.1 kernels on a system with AT91SAM9261 CPU
+on board.
 
-Therefore you should consider each of the problems I have described in 
-the last several emails, and think about which of your patches they 
-apply to.  Some of them do apply to more than one patch, even though I 
-didn't say so explicitly at the time.
+--- linux-3.7.9/sound/soc/atmel/atmel_ssc_dai.c.orig	2013-02-19 15:43:43.070980604 +0100
++++ linux-3.7.9/sound/soc/atmel/atmel_ssc_dai.c	2013-02-19 15:50:07.613586313 +0100
+@@ -543,6 +543,49 @@ static int atmel_ssc_hw_params(struct sn
+ 		break;
+ 
+ 	case SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBM_CFM:
++		/*
++		 * DSP/PCM Mode A format, CODEC supplies BCLK and LRC clocks.
++		 *
++		 * The SSC transmit clock is obtained from the BCLK signal on
++		 * on the TK line, and the SSC receive clock is
++		 * generated from the transmit clock.
++		 *
++		 * Data is transferred on first BCLK after LRC pulse rising
++		 * edge.If stereo, the right channel data is contiguous with
++		 * the left channel data.
++		 */
++		rcmr =	  SSC_BF(RCMR_PERIOD, 0)
++			| SSC_BF(RCMR_STTDLY, START_DELAY)
++			| SSC_BF(RCMR_START, SSC_START_RISING_RF)
++			| SSC_BF(RCMR_CKI, SSC_CKI_RISING)
++			| SSC_BF(RCMR_CKO, SSC_CKO_NONE)
++			| SSC_BF(RCMR_CKS, SSC_CKS_PIN);
++
++		rfmr =	  SSC_BF(RFMR_FSEDGE, SSC_FSEDGE_POSITIVE)
++			| SSC_BF(RFMR_FSOS, SSC_FSOS_NONE)
++			| SSC_BF(RFMR_FSLEN, 0)
++			| SSC_BF(RFMR_DATNB, (channels - 1))
++			| SSC_BIT(RFMR_MSBF)
++			| SSC_BF(RFMR_LOOP, 0)
++			| SSC_BF(RFMR_DATLEN, (bits - 1));
++
++		tcmr =	  SSC_BF(TCMR_PERIOD, 0)
++			| SSC_BF(TCMR_STTDLY, START_DELAY)
++			| SSC_BF(TCMR_START, SSC_START_RISING_RF)
++			| SSC_BF(TCMR_CKI, SSC_CKI_FALLING)
++			| SSC_BF(TCMR_CKO, SSC_CKO_NONE)
++			| SSC_BF(TCMR_CKS, SSC_CKS_PIN);
++
++		tfmr =	  SSC_BF(TFMR_FSEDGE, SSC_FSEDGE_POSITIVE)
++			| SSC_BF(TFMR_FSDEN, 0)
++			| SSC_BF(TFMR_FSOS, SSC_FSOS_NONE)
++			| SSC_BF(TFMR_FSLEN, 0)
++			| SSC_BF(TFMR_DATNB, (channels - 1))
++			| SSC_BIT(TFMR_MSBF)
++			| SSC_BF(TFMR_DATDEF, 0)
++			| SSC_BF(TFMR_DATLEN, (bits - 1));
++		break;
++
+ 	default:
+ 		printk(KERN_WARNING "atmel_ssc_dai: unsupported DAI format 0x%x\n",
+ 			ssc_p->daifmt);
 
-Alan Stern
 
