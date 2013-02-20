@@ -1,139 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964813Ab3BTQA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 11:00:56 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:63596 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934060Ab3BTQAz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 11:00:55 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: James Hogan <james.hogan@imgtec.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 01/11] ARM: disable virt_to_bus/virt_to_bus almost everywhere
-Date: Wed, 20 Feb 2013 16:00:47 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
-References: <1360849767-1463135-1-git-send-email-arnd@arndb.de> <1360849767-1463135-2-git-send-email-arnd@arndb.de> <CAAG0J9_VqCGJJJZjSWGfFggALHU=vdWsSBeS39-DtxV=VXcJwQ@mail.gmail.com>
-In-Reply-To: <CAAG0J9_VqCGJJJZjSWGfFggALHU=vdWsSBeS39-DtxV=VXcJwQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302201600.47522.arnd@arndb.de>
-X-Provags-ID: V02:K0:e7zmS6TT/6ElWBnWoSonHbgR5U58yEIjZM+CfaEVqJj
- MpEBnlAPvZelrX6Md83OPc7O6+usexAGJM2/rjiSU3Y9fSQiht
- /tMAbL53PakMEIp5vuZp9OVi7rFs5T0HPWrdtdUNU8OXD1fq4J
- fVFMcf6U01BJdWpJMa2dvzr+bEYEjnc0EeBOdP9I902uDwWXe9
- 6nx+Aj1yb8jv09Lu00ZX3eLSbmWYnsnE9oDUuVsdJwQT+2wou7
- alv9IYhRrkE3fV3umz+BHigb5BCjlRxP6c0Zw96wcuLy1PepxX
- NqMuL6qWvWWeG+bPTkSV3M9Ct3J5rmgb32YOkYtGw98/6QiDBc
- 89sCpa2LCW1Viba+nB2U=
+	id S964846Ab3BTQGQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 11:06:16 -0500
+Received: from f173.mail.ru ([94.100.178.91]:35094 "EHLO f173.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935444Ab3BTQGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 11:06:15 -0500
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>
+Cc: =?UTF-8?B?RG9uZyBBaXNoZW5n?= <dong.aisheng@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
+        =?UTF-8?B?TWFyayBCcm93bg==?= <broonie@opensource.wolfsonmicro.com>
+Subject: =?UTF-8?B?UmVbMTJdOiBbUEFUQ0ggdjNdIG1mZDogc3lzY29uOiBBZGQgbm9uLURUIHN1?=
+ =?UTF-8?B?cHBvcnQ=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [188.134.40.128]
+Date: Wed, 20 Feb 2013 20:06:11 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1361376371.184258129@f173.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Spam: Not detected
+X-Mras: Ok
+In-Reply-To: <201302201500.18803.arnd@arndb.de>
+References: <1361198522-23789-1-git-send-email-shc_work@mail.ru> <1361364471.967042408@f233.mail.ru> <201302201500.18803.arnd@arndb.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1KG6J2X004521
 
-On Wednesday 20 February 2013, James Hogan wrote:
-> There's a patch in linux-next by Stephen Rothwell "Centralise
-> CONFIG_ARCH_NO_VIRT_TO_BUS" that removes this Kconfig symbol,
-> inverting/replacing it with "select HAVE_VIRT_TO_BUS" (including for
-> arch/arm) which will undo the effects of this.
+> > OK. I can convert platform to DT, no so easy, but possible.
+> > But I will use syscon as way to using DT (and MULTIPLATFORM in the future),
+> > this mean that I should completely drop ATAG support from this platform
+> > (since I cannot use syscon device without DT support, but several platform devices
+> > need to use system-wide registers).
+> > Arnd, if its OK for you, I will use this way. (I talking about CLPS711X, you know it :) ).
+> 
+> Ah, I should have realized that this is about clps711x when the patch
+> is coming from you ;-)
+> 
+> This is an existing platform, and I would not require you to move it to
+> devicetree just for supporting syscon, although it may be a good idea
+> to make that move in the long run.
+> 
+> For clps711x, we know that there is only one syscon register set, so you
+> could do a very simple patch like below. Basically we don't need to
 
-Ah, thanks for pointing that out. At least my patch is harmless then
-although also useless. I'll leave it in for now so I don't have to
-rebase all the other bug fixes that are queued for 3.9, but I'm making
-a note that I'll have to replace this with a proper one. I also
-don't think that anything breaks if we apply both patches for a while,
-it will just make my patch useless.
+No. Target have a three SYSCON registers and two SYSFLG. All these registers
+can be combined into three syscon devices.
+Only these registers will be handled via syscon device, so it is not only one.
+Or you mean about handle all register via syscon? It is not it.
 
-I guess you'll have to do something similar for arch/metag, and Vineet
-will do it for arch/arc.
+> treat the absence of DT information as an error, and a call to
+> syscon_regmap_lookup_by_compatible or syscon_regmap_lookup_by_phandle
+> will always return the syscon device that was registered first, or
+> -EPROBE_DEFER for any error.
 
-Stephen's patch is currently in Andrew's tree, and I don't see an easy
-way to coordinate this. The patch we will need once both are merged
-is below.
+The initial idea is search desired syscon device from drivers only by one function
+(i.e. search syscon device by compatible string or by specific alias) and no depend
+on DT or non-DT. I.e. define syscon device always at machine start (even if we run
+machine from DTS), because device should be always present in system.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-
-diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-index 4fef29f..5829b67 100644
---- a/arch/arc/Kconfig
-+++ b/arch/arc/Kconfig
-@@ -76,9 +76,6 @@ config HAVE_LATENCYTOP_SUPPORT
- config NO_DMA
- 	def_bool n
- 
--config ARCH_NO_VIRT_TO_BUS
--	def_bool y
--
- source "init/Kconfig"
- source "kernel/Kconfig.freezer"
- 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index dedf02b..7b35b39 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -49,7 +49,6 @@ config ARM
- 	select HAVE_REGS_AND_STACK_ACCESS_API
- 	select HAVE_SYSCALL_TRACEPOINTS
- 	select HAVE_UID16
--	select HAVE_VIRT_TO_BUS
- 	select KTIME_SCALAR
- 	select PERF_USE_VMALLOC
- 	select RTC_LIB
-@@ -744,6 +743,7 @@ config ARCH_RPC
- 	select NEED_MACH_IO_H
- 	select NEED_MACH_MEMORY_H
- 	select NO_IOPORT
-+	select HAVE_VIRT_TO_BUS
- 	help
- 	  On the Acorn Risc-PC, Linux can support the internal IDE disk and
- 	  CD-ROM interface, serial and parallel port, and the floppy drive.
-@@ -880,6 +880,7 @@ config ARCH_SHARK
- 	select NEED_MACH_MEMORY_H
- 	select PCI
- 	select ZONE_DMA
-+	select HAVE_VIRT_TO_BUS
- 	help
- 	  Support for the StrongARM based Digital DNARD machine, also known
- 	  as "Shark" (<http://www.shark-linux.de/shark.html>).
-@@ -1462,10 +1463,6 @@ config ISA_DMA
- 	bool
- 	select ISA_DMA_API
- 
--config ARCH_NO_VIRT_TO_BUS
--	def_bool y
--	depends on !ARCH_RPC && !ARCH_NETWINDER && !ARCH_SHARK
--
- # Select ISA DMA interface
- config ISA_DMA_API
- 	bool
-diff --git a/arch/arm/mach-footbridge/Kconfig b/arch/arm/mach-footbridge/Kconfig
-index abda5a1..42bf587 100644
---- a/arch/arm/mach-footbridge/Kconfig
-+++ b/arch/arm/mach-footbridge/Kconfig
-@@ -67,6 +67,7 @@ config ARCH_NETWINDER
- 	select ISA
- 	select ISA_DMA
- 	select PCI
-+	select HAVE_VIRT_TO_BUS
- 	help
- 	  Say Y here if you intend to run this kernel on the Rebel.COM
- 	  NetWinder.  Information about this machine can be found at:
-diff --git a/arch/metag/Kconfig b/arch/metag/Kconfig
-index 30adc78..03e216e 100644
---- a/arch/metag/Kconfig
-+++ b/arch/metag/Kconfig
-@@ -35,9 +35,6 @@ config METAG
- 	select OF_EARLY_FLATTREE
- 	select SPARSE_IRQ
- 
--config ARCH_NO_VIRT_TO_BUS
--	def_bool y
--
- config STACKTRACE_SUPPORT
- 	def_bool y
- 
+---
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
