@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935473Ab3BTPLG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 10:11:06 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:51307 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933198Ab3BTPLF (ORCPT
+	id S935412Ab3BTPOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 10:14:51 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:46116 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934219Ab3BTPOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 10:11:05 -0500
+	Wed, 20 Feb 2013 10:14:49 -0500
 MIME-Version: 1.0
-Reply-To: noloader@gmail.com
-Date: Wed, 20 Feb 2013 10:11:04 -0500
-Message-ID: <CAH8yC8kQ1fqpaNXupkO+Rpaocw6gC3-kZuPpwD-DYds8hQ3SaQ@mail.gmail.com>
-Subject: Undefined Code in .../include/linux.bitops.h
-From: Jeffrey Walton <noloader@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [87.194.181.195]
+In-Reply-To: <1360849767-1463135-2-git-send-email-arnd@arndb.de>
+References: <1360849767-1463135-1-git-send-email-arnd@arndb.de>
+	<1360849767-1463135-2-git-send-email-arnd@arndb.de>
+Date: Wed, 20 Feb 2013 15:14:47 +0000
+X-Google-Sender-Auth: h5q5NXqgL9LI0SQimpPduh9it1k
+Message-ID: <CAAG0J9_VqCGJJJZjSWGfFggALHU=vdWsSBeS39-DtxV=VXcJwQ@mail.gmail.com>
+Subject: Re: [PATCH 01/11] ARM: disable virt_to_bus/virt_to_bus almost everywhere
+From: James Hogan <james.hogan@imgtec.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On 14 February 2013 13:49, Arnd Bergmann <arnd@arndb.de> wrote:
+> We are getting a number of warnings about the use of the deprecated
+> bus_to_virt function in drivers using the ARM ISA DMA API:
+>
+> drivers/parport/parport_pc.c: In function 'parport_pc_fifo_write_block_dma':
+> drivers/parport/parport_pc.c:622:3: warning: 'bus_to_virt' is deprecated
+> (declared at arch/arm/include/asm/memory.h:253) [-Wdeprecated-declarations]
+>
+> This is only because that function gets used by the inline
+> set_dma_addr() helper. We know that any driver for the ISA DMA API
+> is correctly using the DMA addresses, so we can change this
+> to use the __bus_to_virt() function instead, which does not warn.
+>
+> After this, there are no remaining drivers that are used on
+> any defconfigs on ARM using virt_to_bus or bus_to_virt, with
+> the exception of the OSS sound driver. That driver is only used
+> on RiscPC, NetWinder and Shark, so we can set ARCH_NO_VIRT_TO_BUS
+> on all other platforms and hide the deprecated functions, which
+> is far more effective than marking them as deprecated, in order
+> to avoid any new users of that code.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> ---
+>  arch/arm/Kconfig                 | 4 ++++
+>  arch/arm/configs/shark_defconfig | 1 -
+>  arch/arm/include/asm/dma.h       | 2 +-
+>  arch/arm/include/asm/memory.h    | 2 ++
+>  4 files changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 67874b8..91d4aea 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1450,6 +1450,10 @@ config ISA_DMA
+>         bool
+>         select ISA_DMA_API
+>
+> +config ARCH_NO_VIRT_TO_BUS
+> +       def_bool y
+> +       depends on !ARCH_RPC && !ARCH_NETWINDER && !ARCH_SHARK
 
-My apologies if this is the wrong list. http://www.tux.org/lkml/ is a
-tough read, and Item 4, "I think I found a bug, how do I report it?"
-does not tell me how to report this.
+Hi Arnd,
 
->From .../include/linux.bitops.h:
+There's a patch in linux-next by Stephen Rothwell "Centralise
+CONFIG_ARCH_NO_VIRT_TO_BUS" that removes this Kconfig symbol,
+inverting/replacing it with "select HAVE_VIRT_TO_BUS" (including for
+arch/arm) which will undo the effects of this.
 
-/**
- * rol64 - rotate a 64-bit value left
- * @word: value to rotate
- * @shift: bits to roll
- */
-static inline __u64 rol64(__u64 word, unsigned int shift)
-{
-    return (word << shift) | (word >> (64 - shift));
-}
-
-/**
- * ror64 - rotate a 64-bit value right
- * @word: value to rotate
- * @shift: bits to roll
- */
-static inline __u64 ror64(__u64 word, unsigned int shift)
-{
-    return (word >> shift) | (word << (64 - shift));
-}
-
-/**
- * rol32 - rotate a 32-bit value left
- * @word: value to rotate
- * @shift: bits to roll
- */
-static inline __u32 rol32(__u32 word, unsigned int shift)
-{
-    return (word << shift) | (word >> (32 - shift));
-}
-
-/**
- * ror32 - rotate a 32-bit value right
- * @word: value to rotate
- * @shift: bits to roll
- */
-static inline __u32 ror32(__u32 word, unsigned int shift)
-{
-    return (word >> shift) | (word << (32 - shift));
-}
-...
-
-According to Section 5.8, "Shift Operators" of
-http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2008/n2798.pdf:
-
-"The operands shall be of integral or enumeration type and integral
-promotions are performed. The type of the result is that of the
-promoted left operand. The behavior is undefined if the right operand
-is negative, or greater than or equal to the length in bits of the
-promoted left operand."
-
-If I ask for a shift of 0 (legal C/C++), the various ops will perform
-`32 - shift` (or `64 - shift`, etc). That means the right operand *IS*
-equal to the length in bits of the operand, so the code is undefined.
-
-The problem may affect other versions of bitops.h (and not just
-.../include/linux/bitops.h).
-
-Jeff
+Cheers
+James
