@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934368Ab3BTAaa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 19:30:30 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:50790 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933798Ab3BTAWt (ORCPT
+	id S933339Ab3BTAc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 19:32:59 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:61443 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932809Ab3BTAc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 19:22:49 -0500
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: [PATCH 03/27] block: Fix a buffer overrun in bio_integrity_split()
-Date: Tue, 19 Feb 2013 16:22:17 -0800
-Message-Id: <1361319761-23873-4-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1361319761-23873-1-git-send-email-koverstreet@google.com>
-References: <1361319761-23873-1-git-send-email-koverstreet@google.com>
+	Tue, 19 Feb 2013 19:32:58 -0500
+Date: Tue, 19 Feb 2013 16:32:53 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: [GIT PULL UPDATED] workqueue core changes for 3.9-rc1
+Message-ID: <20130220003253.GA17414@htj.dyndns.org>
+References: <20130219173937.GM17414@htj.dyndns.org>
+ <20130219181356.GP17414@htj.dyndns.org>
+ <20130220111125.8040fb7cd9c74c80baab6dde@canb.auug.org.au>
+ <20130220111413.b9444b48400f808d8921be89@canb.auug.org.au>
+ <20130220001925.GZ17414@htj.dyndns.org>
+ <20130220112709.cc28b5b07afd6475157bb6ad@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130220112709.cc28b5b07afd6475157bb6ad@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bio_integrity_split() seemed to be confusing pointers and arrays -
-bip_vec in bio_integrity_payload was an array appended to the end of the
-payload, so the bio_vecs in struct bio_pair should have come after the
-bio_integrity_payload they're for.
+On Wed, Feb 20, 2013 at 11:27:09AM +1100, Stephen Rothwell wrote:
+> >   $ git rev-list --pretty --oneline tmp ^next-20130219
+> >   bd26f12 Merge branch 'for-3.9-async' into tmp
+> >   0f985c9 Merge branch 'for-3.9-cleanups' into tmp
+> >   1438ade5 workqueue: un-GPL function delayed_work_timer_fn()
+> > 
+> > tmp is for-3.9 + for-3.9-async + for-3.9-cleanups, so yeah other than
+> > the last cherry-pick, everything seems to be in order.
+> 
+> Thanks for checking - sorry for the noise.
 
-Fix it by making bip_vec a pointer to the inline vecs - a later patch is
-going to make more use of this pointer.
+And the other direction too just in case.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: Martin K. Petersen <martin.petersen@oracle.com>
----
- fs/bio-integrity.c  | 5 +++--
- include/linux/bio.h | 4 +++-
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ $ git rev-list --pretty --oneline for-next ^for-3.9 ^for-3.9-cleanups ^for-3.9-async
+ a4791ca Merge branch 'for-3.9' into for-next
+ 3b8d914 Merge branch 'for-3.9-cleanups' into for-next
+ de16266 Merge branch 'for-3.9' into for-next
+ 3437170 Merge branch 'for-3.9' into for-next
+ 26c3d00 Merge branch 'for-3.9-cleanups' into for-next
+ 93883c9 Merge branch 'for-3.9-async' into for-next
 
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index a3f28f3..94fa1c5 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -112,6 +112,7 @@ struct bio_integrity_payload *bio_integrity_alloc(struct bio *bio,
- 
- 	bip->bip_slab = idx;
- 	bip->bip_bio = bio;
-+	bip->bip_vec = bip->bip_inline_vecs;
- 	bio->bi_integrity = bip;
- 
- 	return bip;
-@@ -697,8 +698,8 @@ void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
- 	bp->iv1 = bip->bip_vec[0];
- 	bp->iv2 = bip->bip_vec[0];
- 
--	bp->bip1.bip_vec[0] = bp->iv1;
--	bp->bip2.bip_vec[0] = bp->iv2;
-+	bp->bip1.bip_vec = &bp->iv1;
-+	bp->bip2.bip_vec = &bp->iv2;
- 
- 	bp->iv1.bv_len = sectors * bi->tuple_size;
- 	bp->iv2.bv_offset += sectors * bi->tuple_size;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index b31036f..81004fd 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -182,7 +182,9 @@ struct bio_integrity_payload {
- 	unsigned short		bip_idx;	/* current bip_vec index */
- 
- 	struct work_struct	bip_work;	/* I/O completion */
--	struct bio_vec		bip_vec[0];	/* embedded bvec array */
-+
-+	struct bio_vec		*bip_vec;
-+	struct bio_vec		bip_inline_vecs[0];/* embedded bvec array */
- };
- #endif /* CONFIG_BLK_DEV_INTEGRITY */
- 
+So, yeah, they all match up.
+
+Thanks for keeping an eye on it. :)
+
 -- 
-1.7.12
-
+tejun
