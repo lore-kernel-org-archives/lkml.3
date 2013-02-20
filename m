@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935277Ab3BTLOX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 06:14:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58469 "EHLO mx1.redhat.com"
+	id S935283Ab3BTLOl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 06:14:41 -0500
+Received: from 8bytes.org ([85.214.48.195]:55307 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935216Ab3BTLM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 06:12:59 -0500
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC 2/6] ghes_edac: add a MAINTAINERS entry and copyrights
-Date: Wed, 20 Feb 2013 08:12:48 -0300
-Message-Id: <c5ba86f0ff78110f0fe37450a2a82c3c43383e24.1361358127.git.mchehab@redhat.com>
-In-Reply-To: <cover.1361358127.git.mchehab@redhat.com>
-References: <cover.1361358127.git.mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S935012Ab3BTLM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 06:12:58 -0500
+Date: Wed, 20 Feb 2013 12:12:55 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/platform changes for v3.9
+Message-ID: <20130220111255.GB26252@8bytes.org>
+References: <20130219154128.GA15608@gmail.com>
+ <CA+55aFxn=xFGhF8L2pJYP8wOe3VdCpGtaibB0bbRuH8FAKkCNg@mail.gmail.com>
+ <20130220090238.GA18213@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130220090238.GA18213@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Feb 20 12:12:56 2013
+X-DSPAM-Confidence: 0.9993
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5124afb822971438219857
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the driver inside MAINTAINERS file and fill the driver's
-Copyright information.
+On Wed, Feb 20, 2013 at 10:02:38AM +0100, Ingo Molnar wrote:
+> Timers and APIC would be my leading suspect - but scheduler and 
+> hotplug changes might be the culprits as well.
+> 
+> Yesterday, while preparing the trees I wanted to mention this 
+> x86/apic commit:
+> 
+>   336224ba5e4f x86, apic: Mask IO-APIC and PIC unconditionally on LAPIC resume
+> 
+> ... as a change that needs monitored because it changes the 
+> suspend and shutdown sequence but then skipped mentioning it 
+> because it seemed relatively old and proven.
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- MAINTAINERS              |  7 +++++++
- drivers/edac/ghes_edac.c | 11 +++++++++++
- 2 files changed, 18 insertions(+)
+Hmm, this commit only touches the resume-path. I would wonder if this
+has something to do with reboot, can't rule it out, though.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 35a56bc..889644d 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2803,6 +2803,13 @@ W:	bluesmoke.sourceforge.net
- S:	Maintained
- F:	drivers/edac/e7xxx_edac.c
- 
-+EDAC-GHES
-+M:	Mauro Carvalho Chehab <mchehab@redhat.com>
-+L:	linux-edac@vger.kernel.org
-+W:	bluesmoke.sourceforge.net
-+S:	Maintained
-+F:	drivers/edac/ghes-edac.c
-+
- EDAC-I82443BXGX
- M:	Tim Small <tim@buttersideup.com>
- L:	linux-edac@vger.kernel.org
-diff --git a/drivers/edac/ghes_edac.c b/drivers/edac/ghes_edac.c
-index 565c516..ef54829 100644
---- a/drivers/edac/ghes_edac.c
-+++ b/drivers/edac/ghes_edac.c
-@@ -1,3 +1,14 @@
-+/*
-+ * GHES/EDAC Linux driver
-+ *
-+ * This file may be distributed under the terms of the GNU General Public
-+ * License version 2.
-+ *
-+ * Copyright (c) 2013 by Mauro Carvalho Chehab <mchehab@redhat.com>
-+ *
-+ * Red Hat Inc. http://www.redhat.com
-+ */
-+
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <acpi/ghes.h>
--- 
-1.8.1.2
+> But there are other potentially dangerous commits as well - I 
+> suspect we won't be able to avoid a bisection :-/
+
+Yes, I think a bisection would be best if the problem is reproducible.
+
+
+	Joerg
+
 
