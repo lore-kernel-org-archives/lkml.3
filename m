@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935620Ab3BTN5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:57:16 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53662 "EHLO
+	id S935628Ab3BTN73 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:59:29 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53686 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935299Ab3BTN5O (ORCPT
+	with ESMTP id S935299Ab3BTN72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:57:14 -0500
-Date: Wed, 20 Feb 2013 05:55:54 -0800
-From: tip-bot for Steven Rostedt <tipbot@zytor.com>
-Message-ID: <tip-f431b634f24d099872e78acc356c7fd35913b36b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <1360703939.21867.99.camel@gandalf.local.home>
-References: <1360703939.21867.99.camel@gandalf.local.home>
+	Wed, 20 Feb 2013 08:59:28 -0500
+Date: Wed, 20 Feb 2013 05:58:12 -0800
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-69943182bb9e19e4b60ea5033f683ec1af1703a9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <1361355312-3323-1-git-send-email-eranian@google.com>
+References: <1361355312-3323-1-git-send-email-eranian@google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tracing/syscalls:
-  Allow archs to ignore tracing compat syscalls
-Git-Commit-ID: f431b634f24d099872e78acc356c7fd35913b36b
+Subject: [tip:perf/urgent] perf/x86:
+  Add Intel IvyBridge event scheduling constraints
+Git-Commit-ID: 69943182bb9e19e4b60ea5033f683ec1af1703a9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,247 +28,77 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 20 Feb 2013 05:56:00 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 20 Feb 2013 05:58:18 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f431b634f24d099872e78acc356c7fd35913b36b
-Gitweb:     http://git.kernel.org/tip/f431b634f24d099872e78acc356c7fd35913b36b
-Author:     Steven Rostedt <rostedt@goodmis.org>
-AuthorDate: Tue, 12 Feb 2013 16:18:59 -0500
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 12 Feb 2013 17:46:28 -0500
+Commit-ID:  69943182bb9e19e4b60ea5033f683ec1af1703a9
+Gitweb:     http://git.kernel.org/tip/69943182bb9e19e4b60ea5033f683ec1af1703a9
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Wed, 20 Feb 2013 11:15:12 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 20 Feb 2013 11:22:46 +0100
 
-tracing/syscalls: Allow archs to ignore tracing compat syscalls
+perf/x86: Add Intel IvyBridge event scheduling constraints
 
-The tracing of ia32 compat system calls has been a bit of a pain as they
-use different system call numbers than the 64bit equivalents.
+Intel IvyBridge processor has different constraints compared
+to SandyBridge. Therefore it needs its own contraint table.
+This patch adds the constraint table.
 
-I wrote a simple 'lls' program that lists files. I compiled it as a i686
-ELF binary and ran it under a x86_64 box. This is the result:
+Without this patch, the events listed in the patch may not be
+scheduled correctly and bogus counts may be collected.
 
-echo 0 > /debug/tracing/tracing_on
-echo 1 > /debug/tracing/events/syscalls/enable
-echo 1 > /debug/tracing/tracing_on ; ./lls ; echo 0 > /debug/tracing/tracing_on
-
-grep lls /debug/tracing/trace
-
-[.. skipping calls before TS_COMPAT is set ...]
-
-             lls-1127  [005] d...   936.409188: sys_recvfrom(fd: 0, ubuf: 4d560fc4, size: 0, flags: 8048034, addr: 8, addr_len: f7700420)
-             lls-1127  [005] d...   936.409190: sys_recvfrom -> 0x8a77000
-             lls-1127  [005] d...   936.409211: sys_lgetxattr(pathname: 0, name: 1000, value: 3, size: 22)
-             lls-1127  [005] d...   936.409215: sys_lgetxattr -> 0xf76ff000
-             lls-1127  [005] d...   936.409223: sys_dup2(oldfd: 4d55ae9b, newfd: 4)
-             lls-1127  [005] d...   936.409228: sys_dup2 -> 0xfffffffffffffffe
-             lls-1127  [005] d...   936.409236: sys_newfstat(fd: 4d55b085, statbuf: 80000)
-             lls-1127  [005] d...   936.409242: sys_newfstat -> 0x3
-             lls-1127  [005] d...   936.409243: sys_removexattr(pathname: 3, name: ffcd0060)
-             lls-1127  [005] d...   936.409244: sys_removexattr -> 0x0
-             lls-1127  [005] d...   936.409245: sys_lgetxattr(pathname: 0, name: 19614, value: 1, size: 2)
-             lls-1127  [005] d...   936.409248: sys_lgetxattr -> 0xf76e5000
-             lls-1127  [005] d...   936.409248: sys_newlstat(filename: 3, statbuf: 19614)
-             lls-1127  [005] d...   936.409249: sys_newlstat -> 0x0
-             lls-1127  [005] d...   936.409262: sys_newfstat(fd: f76fb588, statbuf: 80000)
-             lls-1127  [005] d...   936.409279: sys_newfstat -> 0x3
-             lls-1127  [005] d...   936.409279: sys_close(fd: 3)
-             lls-1127  [005] d...   936.421550: sys_close -> 0x200
-             lls-1127  [005] d...   936.421558: sys_removexattr(pathname: 3, name: ffcd00d0)
-             lls-1127  [005] d...   936.421560: sys_removexattr -> 0x0
-             lls-1127  [005] d...   936.421569: sys_lgetxattr(pathname: 4d564000, name: 1b1abc, value: 5, size: 802)
-             lls-1127  [005] d...   936.421574: sys_lgetxattr -> 0x4d564000
-             lls-1127  [005] d...   936.421575: sys_capget(header: 4d70f000, dataptr: 1000)
-             lls-1127  [005] d...   936.421580: sys_capget -> 0x0
-             lls-1127  [005] d...   936.421580: sys_lgetxattr(pathname: 4d710000, name: 3000, value: 3, size: 812)
-             lls-1127  [005] d...   936.421589: sys_lgetxattr -> 0x4d710000
-             lls-1127  [005] d...   936.426130: sys_lgetxattr(pathname: 4d713000, name: 2abc, value: 3, size: 32)
-             lls-1127  [005] d...   936.426141: sys_lgetxattr -> 0x4d713000
-             lls-1127  [005] d...   936.426145: sys_newlstat(filename: 3, statbuf: f76ff3f0)
-             lls-1127  [005] d...   936.426146: sys_newlstat -> 0x0
-             lls-1127  [005] d...   936.431748: sys_lgetxattr(pathname: 0, name: 1000, value: 3, size: 22)
-
-Obviously I'm not calling newfstat with a fd of 4d55b085. The calls are
-obviously incorrect, and confusing.
-
-Other efforts have been made to fix this:
-
-https://lkml.org/lkml/2012/3/26/367
-
-But the real solution is to rewrite the syscall internals and come up
-with a fixed solution. One that doesn't require all the kluge that the
-current solution has.
-
-Thus for now, instead of outputting incorrect data, simply ignore them.
-With this patch the changes now have:
-
- #> grep lls /debug/tracing/trace
- #>
-
-Compat system calls simply are not traced. If users need compat
-syscalls, then they should just use the raw syscall tracepoints.
-
-For an architecture to make their compat syscalls ignored, it must
-define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS (done in asm/ftrace.h) and also
-define an arch_trace_is_compat_syscall() function that will return true
-if the current task should ignore tracing the syscall.
-
-I want to stress that this change does not affect actual syscalls in any
-way, shape or form. It is only used within the tracing system and
-doesn't interfere with the syscall logic at all. The changes are
-consolidated nicely into trace_syscalls.c and asm/ftrace.h.
-
-I had to make one small modification to asm/thread_info.h and that was
-to remove the include of asm/ftrace.h. As asm/ftrace.h required the
-current_thread_info() it was causing include hell. That include was
-added back in 2008 when the function graph tracer was added:
-
- commit caf4b323 "tracing, x86: add low level support for ftrace return tracing"
-
-It does not need to be included there.
-
-Link: http://lkml.kernel.org/r/1360703939.21867.99.camel@gandalf.local.home
-
-Acked-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: ak@linux.intel.com
+Cc: acme@redhat.com
+Cc: jolsa@redhat.com
+Cc: namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1361355312-3323-1-git-send-email-eranian@google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/ftrace.h      | 24 +++++++++++++++++++++
- arch/x86/include/asm/thread_info.h |  1 -
- kernel/trace/trace_syscalls.c      | 43 +++++++++++++++++++++++++++++++++-----
- 3 files changed, 62 insertions(+), 6 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-index 86cb51e..0525a8b 100644
---- a/arch/x86/include/asm/ftrace.h
-+++ b/arch/x86/include/asm/ftrace.h
-@@ -72,4 +72,28 @@ int ftrace_int3_handler(struct pt_regs *regs);
- #endif /* __ASSEMBLY__ */
- #endif /* CONFIG_FUNCTION_TRACER */
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 4914e94..529c893 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -107,6 +107,27 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
+ 	EVENT_CONSTRAINT_END
+ };
  
-+
-+#if !defined(__ASSEMBLY__) && !defined(COMPILE_OFFSETS)
-+
-+#if defined(CONFIG_FTRACE_SYSCALLS) && defined(CONFIG_IA32_EMULATION)
-+#include <asm/compat.h>
-+
-+/*
-+ * Because ia32 syscalls do not map to x86_64 syscall numbers
-+ * this screws up the trace output when tracing a ia32 task.
-+ * Instead of reporting bogus syscalls, just do not trace them.
-+ *
-+ * If the user realy wants these, then they should use the
-+ * raw syscall tracepoints with filtering.
-+ */
-+#define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS 1
-+static inline bool arch_trace_is_compat_syscall(struct pt_regs *regs)
++static struct event_constraint intel_ivb_event_constraints[] __read_mostly =
 +{
-+	if (is_compat_task())
-+		return true;
-+	return false;
-+}
-+#endif /* CONFIG_FTRACE_SYSCALLS && CONFIG_IA32_EMULATION */
-+#endif /* !__ASSEMBLY__  && !COMPILE_OFFSETS */
++	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
++	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
++	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
++	INTEL_UEVENT_CONSTRAINT(0x0148, 0x4), /* L1D_PEND_MISS.PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x0279, 0xf), /* IDQ.EMTPY */
++	INTEL_UEVENT_CONSTRAINT(0x019c, 0xf), /* IDQ_UOPS_NOT_DELIVERED.CORE */
++	INTEL_UEVENT_CONSTRAINT(0x04a3, 0xf), /* CYCLE_ACTIVITY.CYCLES_NO_EXECUTE */
++	INTEL_UEVENT_CONSTRAINT(0x05a3, 0xf), /* CYCLE_ACTIVITY.STALLS_L2_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x06a3, 0xf), /* CYCLE_ACTIVITY.STALLS_LDM_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x08a3, 0x4), /* CYCLE_ACTIVITY.CYCLES_L1D_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x0ca3, 0x4), /* CYCLE_ACTIVITY.STALLS_L1D_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
++	INTEL_EVENT_CONSTRAINT(0xd0, 0xf), /* MEM_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd1, 0xf), /* MEM_LOAD_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd3, 0xf), /*  MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
++	EVENT_CONSTRAINT_END
++};
 +
- #endif /* _ASM_X86_FTRACE_H */
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index 2d946e6..2cd056e 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -20,7 +20,6 @@
- struct task_struct;
- struct exec_domain;
- #include <asm/processor.h>
--#include <asm/ftrace.h>
- #include <linux/atomic.h>
- 
- struct thread_info {
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 5329e13e..7a809e3 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -1,5 +1,6 @@
- #include <trace/syscall.h>
- #include <trace/events/syscalls.h>
-+#include <linux/syscalls.h>
- #include <linux/slab.h>
- #include <linux/kernel.h>
- #include <linux/module.h>	/* for MODULE_NAME_LEN via KSYM_SYMBOL_LEN */
-@@ -47,6 +48,38 @@ static inline bool arch_syscall_match_sym_name(const char *sym, const char *name
- }
- #endif
- 
-+#ifdef ARCH_TRACE_IGNORE_COMPAT_SYSCALLS
-+/*
-+ * Some architectures that allow for 32bit applications
-+ * to run on a 64bit kernel, do not map the syscalls for
-+ * the 32bit tasks the same as they do for 64bit tasks.
-+ *
-+ *     *cough*x86*cough*
-+ *
-+ * In such a case, instead of reporting the wrong syscalls,
-+ * simply ignore them.
-+ *
-+ * For an arch to ignore the compat syscalls it needs to
-+ * define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS as well as
-+ * define the function arch_trace_is_compat_syscall() to let
-+ * the tracing system know that it should ignore it.
-+ */
-+static int
-+trace_get_syscall_nr(struct task_struct *task, struct pt_regs *regs)
-+{
-+	if (unlikely(arch_trace_is_compat_syscall(regs)))
-+		return -1;
-+
-+	return syscall_get_nr(task, regs);
-+}
-+#else
-+static inline int
-+trace_get_syscall_nr(struct task_struct *task, struct pt_regs *regs)
-+{
-+	return syscall_get_nr(task, regs);
-+}
-+#endif /* ARCH_TRACE_IGNORE_COMPAT_SYSCALLS */
-+
- static __init struct syscall_metadata *
- find_syscall_meta(unsigned long syscall)
+ static struct extra_reg intel_westmere_extra_regs[] __read_mostly =
  {
-@@ -276,10 +309,10 @@ static void ftrace_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 	struct syscall_metadata *sys_data;
- 	struct ring_buffer_event *event;
- 	struct ring_buffer *buffer;
--	int size;
- 	int syscall_nr;
-+	int size;
+ 	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
+@@ -2095,7 +2116,7 @@ __init int intel_pmu_init(void)
  
--	syscall_nr = syscall_get_nr(current, regs);
-+	syscall_nr = trace_get_syscall_nr(current, regs);
- 	if (syscall_nr < 0)
- 		return;
- 	if (!test_bit(syscall_nr, enabled_enter_syscalls))
-@@ -313,7 +346,7 @@ static void ftrace_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 	struct ring_buffer *buffer;
- 	int syscall_nr;
+ 		intel_pmu_lbr_init_snb();
  
--	syscall_nr = syscall_get_nr(current, regs);
-+	syscall_nr = trace_get_syscall_nr(current, regs);
- 	if (syscall_nr < 0)
- 		return;
- 	if (!test_bit(syscall_nr, enabled_exit_syscalls))
-@@ -502,7 +535,7 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
- 	int rctx;
- 	int size;
- 
--	syscall_nr = syscall_get_nr(current, regs);
-+	syscall_nr = trace_get_syscall_nr(current, regs);
- 	if (syscall_nr < 0)
- 		return;
- 	if (!test_bit(syscall_nr, enabled_perf_enter_syscalls))
-@@ -578,7 +611,7 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
- 	int rctx;
- 	int size;
- 
--	syscall_nr = syscall_get_nr(current, regs);
-+	syscall_nr = trace_get_syscall_nr(current, regs);
- 	if (syscall_nr < 0)
- 		return;
- 	if (!test_bit(syscall_nr, enabled_perf_exit_syscalls))
+-		x86_pmu.event_constraints = intel_snb_event_constraints;
++		x86_pmu.event_constraints = intel_ivb_event_constraints;
+ 		x86_pmu.pebs_constraints = intel_ivb_pebs_event_constraints;
+ 		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+ 		x86_pmu.extra_regs = intel_snb_extra_regs;
