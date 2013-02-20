@@ -1,59 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936000Ab3BTUTH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 15:19:07 -0500
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:50280 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935336Ab3BTUTC (ORCPT
+	id S964884Ab3BTUP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 15:15:58 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:54854 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936000Ab3BTUPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 15:19:02 -0500
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <CANeU7QnMzYuG6iiU3nLh4k0dGFMEDOyfUDQgxQSKj20_y-oL+Q@mail.gmail.com>
-References: <CANeU7QmbzX4Tx1Dtu6xOiYzr6h6_8tPQvVG32Wvkt=5wAwEEAg@mail.gmail.com>
-	<20130219100849.72d2330b@jbarnes-desktop>
-	<CANeU7QmJb+yUGu9mVgq=_pHhvpPu6ORrikm=E6PkuHpOz9OREA@mail.gmail.com>
-	<20130219125217.6b6f55ff@jbarnes-desktop>
-	<CANeU7QnQmKYXHA=aEuRGZDc7hVdY6037i=+s_n3FZNMN2njDsw@mail.gmail.com>
-	<CAKMK7uG7TgiAn0ZQ=E_-QBPNAVhTSxpORkX3Z1mY=54mgTzM-g@mail.gmail.com>
-	<CANeU7QnMzYuG6iiU3nLh4k0dGFMEDOyfUDQgxQSKj20_y-oL+Q@mail.gmail.com>
-Date: Wed, 20 Feb 2013 21:19:01 +0100
-Message-ID: <CAKMK7uGDpSKga9=2SrGQDxBGzY5B1cGJAchZvfKfQy1ivRONMg@mail.gmail.com>
-Subject: Re: i915 black screen introduced by ACPI changes
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Chris Li <lkml@chrisli.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-        robert.moore@intel.com, feng.tang@intel.com, len.brown@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Feb 2013 15:15:55 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v4 31/32] tty: Fix tty_ldisc_lock name collision
+Date: Wed, 20 Feb 2013 15:03:18 -0500
+Message-Id: <1361390599-15195-32-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+References: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 8:45 PM, Chris Li <lkml@chrisli.org> wrote:
-> On Wed, Feb 20, 2013 at 2:57 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
->
->> Starts to smell like a bog-standard i915 black screen bug (albeit with
->> a strange cause for the regression). Can you please boot the broken
->> kernels again with drm.debug=0xe and grab the complete dmesg?
->> Depending upon how long it takes for your wifi to get up, you might
->> need to extend the log buffer, it dumps a lot.
->
-> Here is the dmesg with "drm.debug=0xe". It is from the tip of git
-> kernel. The computer has the black screen.
-> Let me know what else do you need.
 
-The debug option did not stick for some reason. Also you're hitting a
-bunch of WARNs in our driver self-checks. Iirc those should be fixed
-in the latest code. Can you please test with the latest
-drm-intel-nightly branch from
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_ldisc.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-http://cgit.freedesktop.org/~danvet/drm-intel
-
-Also can you please attach a dmesg from a working kernel without the
-i915.modeset=0 option?
-
-Thanks, Daniel
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index 9725c94..ba49c0e 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -44,7 +44,7 @@ enum {
+  *	callers who will do ldisc lookups and cannot sleep.
+  */
+ 
+-static DEFINE_RAW_SPINLOCK(tty_ldisc_lock);
++static DEFINE_RAW_SPINLOCK(tty_ldiscs_lock);
+ /* Line disc dispatch table */
+ static struct tty_ldisc_ops *tty_ldiscs[NR_LDISCS];
+ 
+@@ -58,7 +58,7 @@ static struct tty_ldisc_ops *tty_ldiscs[NR_LDISCS];
+  *	from this point onwards.
+  *
+  *	Locking:
+- *		takes tty_ldisc_lock to guard against ldisc races
++ *		takes tty_ldiscs_lock to guard against ldisc races
+  */
+ 
+ int tty_register_ldisc(int disc, struct tty_ldisc_ops *new_ldisc)
+@@ -69,11 +69,11 @@ int tty_register_ldisc(int disc, struct tty_ldisc_ops *new_ldisc)
+ 	if (disc < N_TTY || disc >= NR_LDISCS)
+ 		return -EINVAL;
+ 
+-	raw_spin_lock_irqsave(&tty_ldisc_lock, flags);
++	raw_spin_lock_irqsave(&tty_ldiscs_lock, flags);
+ 	tty_ldiscs[disc] = new_ldisc;
+ 	new_ldisc->num = disc;
+ 	new_ldisc->refcount = 0;
+-	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
++	raw_spin_unlock_irqrestore(&tty_ldiscs_lock, flags);
+ 
+ 	return ret;
+ }
+@@ -88,7 +88,7 @@ EXPORT_SYMBOL(tty_register_ldisc);
+  *	currently in use.
+  *
+  *	Locking:
+- *		takes tty_ldisc_lock to guard against ldisc races
++ *		takes tty_ldiscs_lock to guard against ldisc races
+  */
+ 
+ int tty_unregister_ldisc(int disc)
+@@ -99,12 +99,12 @@ int tty_unregister_ldisc(int disc)
+ 	if (disc < N_TTY || disc >= NR_LDISCS)
+ 		return -EINVAL;
+ 
+-	raw_spin_lock_irqsave(&tty_ldisc_lock, flags);
++	raw_spin_lock_irqsave(&tty_ldiscs_lock, flags);
+ 	if (tty_ldiscs[disc]->refcount)
+ 		ret = -EBUSY;
+ 	else
+ 		tty_ldiscs[disc] = NULL;
+-	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
++	raw_spin_unlock_irqrestore(&tty_ldiscs_lock, flags);
+ 
+ 	return ret;
+ }
+@@ -115,7 +115,7 @@ static struct tty_ldisc_ops *get_ldops(int disc)
+ 	unsigned long flags;
+ 	struct tty_ldisc_ops *ldops, *ret;
+ 
+-	raw_spin_lock_irqsave(&tty_ldisc_lock, flags);
++	raw_spin_lock_irqsave(&tty_ldiscs_lock, flags);
+ 	ret = ERR_PTR(-EINVAL);
+ 	ldops = tty_ldiscs[disc];
+ 	if (ldops) {
+@@ -125,7 +125,7 @@ static struct tty_ldisc_ops *get_ldops(int disc)
+ 			ret = ldops;
+ 		}
+ 	}
+-	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
++	raw_spin_unlock_irqrestore(&tty_ldiscs_lock, flags);
+ 	return ret;
+ }
+ 
+@@ -133,10 +133,10 @@ static void put_ldops(struct tty_ldisc_ops *ldops)
+ {
+ 	unsigned long flags;
+ 
+-	raw_spin_lock_irqsave(&tty_ldisc_lock, flags);
++	raw_spin_lock_irqsave(&tty_ldiscs_lock, flags);
+ 	ldops->refcount--;
+ 	module_put(ldops->owner);
+-	raw_spin_unlock_irqrestore(&tty_ldisc_lock, flags);
++	raw_spin_unlock_irqrestore(&tty_ldiscs_lock, flags);
+ }
+ 
+ /**
+@@ -149,7 +149,7 @@ static void put_ldops(struct tty_ldisc_ops *ldops)
+  *	available
+  *
+  *	Locking:
+- *		takes tty_ldisc_lock to guard against ldisc races
++ *		takes tty_ldiscs_lock to guard against ldisc races
+  */
+ 
+ static struct tty_ldisc *tty_ldisc_get(struct tty_struct *tty, int disc)
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.8.1.2
+
