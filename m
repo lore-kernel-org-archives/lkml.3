@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933891Ab3BTJ2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 04:28:19 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:56706 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758703Ab3BTJ2R (ORCPT
+	id S934334Ab3BTJ2x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 04:28:53 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:20325 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934129Ab3BTJ2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 04:28:17 -0500
-X-AuditID: cbfee691-b7f556d000001a24-c0-5124972f7993
+	Wed, 20 Feb 2013 04:28:51 -0500
+X-AuditID: cbfee68e-b7fc26d000001938-bc-5124975127d0
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000f01ce0f4c$7c1d01d0$74570570$%han@samsung.com>
 In-reply-to: <000f01ce0f4c$7c1d01d0$74570570$%han@samsung.com>
-Subject: [PATCH V2 2/9] mfd: lm3533: use devm_gpio_request_one()
-Date: Wed, 20 Feb 2013 18:28:15 +0900
-Message-id: <001001ce0f4c$9c41c450$d4c54cf0$%han@samsung.com>
+Subject: [PATCH V2 3/9] mfd: intel_msic: use devm_gpio_request_one()
+Date: Wed, 20 Feb 2013 18:28:49 +0900
+Message-id: <001101ce0f4c$b078f010$116ad030$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4PTHvvVazquf7TSyaZqgztkH4/LAAAAlbg
+Thread-index: Ac4PTHvvVazquf7TSyaZqgztkH4/LAAACJEA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zY1396SqBBvt6VCwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGsQXvmQqec1Us/tjF3sD4j6OLkYNDQsBE4tOs0C5GTiBTTOLC
-	vfVsXYxcHEICyxglnr7dzAaRMJFo/PWRGSIxnVHi/639jBDObCaJjzMegFWxCahJfPlymB3E
-	FhHQkug+dp4NZAOzgIvE0WkiIGEhAVuJR11bmUFsTgE7iZZr88BsYQEHiRWb+8BaWQRUJfZO
-	+g42kheofsnNlywQtqDEj8n3wGxmoPHrdx5ngrDlJTavecsM8Yy6xKO/uhAXGEn0ztvICFEi
-	IrHvxTuwkyUE5rFLPL1znhFil4DEt8mHWCB6ZSU2HWCG+FdS4uCKGywTGCVmIdk8C8nmWUg2
-	z0KyYgEjyypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MkLiauIPx/gHrQ4zJQOsnMkuJJucD
-	4zKvJN7Q2NjEzMTUxNzS1NyUNGElcV75SzKBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhjl
-	Zsp6NMw85VR5dE1oovRTX/mDb5L3RAT37V/N0qZUf3/38kdPP6z7JfFVsLZNblJmwq0znziK
-	ts3hLvMQffDkQV3B9mvz1tyZuOyP1NTDnMyvN3jOPnGr8pNnX8WK+yfKe9hiQt5I58ZuvfVr
-	JsfptS1vDvLuPbiDQ7k6L5m1YHUxQyL3lfsVSizFGYmGWsxFxYkAe3VtYsECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xoK7+dJVAg/O7FCwu75rD5sDo8XmT
-	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
-	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxrEF75kKnnNVLP7Yxd7A
-	+I+ji5GTQ0LARKLx10dmCFtM4sK99WxdjFwcQgLTGSX+39rPCOHMZpL4OOMBG0gVm4CaxJcv
-	h9lBbBEBLYnuY+eB4hwczAIuEkeniYCEhQRsJR51bQUbyilgJ9FybR6YLSzgILFicx9YK4uA
-	qsTeSd/BRvIC1S+5+ZIFwhaU+DH5HpjNDDR+/c7jTBC2vMTmNW+ZQVZJCKhLPPqrC3GBkUTv
-	vI2MECUiEvtevGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLz
-	czcxguP2mfQOxlUNFocYBTgYlXh4GxYqBwqxJpYVV+YeYpTgYFYS4f3ZoRIoxJuSWFmVWpQf
-	X1Sak1p8iDEZ6NGJzFKiyfnAlJJXEm9obGJmZGlkZmFkYm5OmrCSOC/jqScBQgLpiSWp2amp
-	BalFMFuYODilGhgbF3UY9nBvWis4eYLxn5v+KgeYEpyUT7mwW62uWaakEKuiE8oWfFmVQ3ex
-	5a98JffjvzpMLOY4dTS/V5svqTNLfjfXyZnnvqzbrFF1IHyrr9ri5e9YNE87sU4wcS/L1ykO
-	uvaB0TL96rZnM3s/l9Zs85XbeOzwr8K80oCSdIuMvDIO0Yp3SUosxRmJhlrMRcWJAFEVAcgf	AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zI93A6SqBBq1H5S0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGk3kTmAv281RsuV3ewDiJq4uRg0NCwETi3/XaLkZOIFNM4sK9
+	9WxdjFwcQgLLGCVW/JjIBpEwkTjy5S8rRGI6o8SHA6vZIZzZTBJLnrYxglSxCahJfPlymB3E
+	FhHQkug+dp4NZAOzgIvE0WkiIGEhAVuJR11bmUFsTgE7iZZr88BsYaCSFccXsYLYLAKqEus+
+	TgCL8wLVv3z1jgnCFpT4MfkeC4jNDDR+/c7jTBC2vMTmNW+ZIZ5Rl3j0VxfiAiOJxd1HGSFK
+	RCT2vXjHCHKyhMAidokz3feZIXYJSHybfIgFoldWYtMBZoh/JSUOrrjBMoFRYhaSzbOQbJ6F
+	ZPMsJCsWMLKsYhRNLUguKE5KLzLSK07MLS7NS9dLzs/dxAiJqr4djDcPWB9iTAZaP5FZSjQ5
+	HxiVeSXxhsbGJmYmpibmlqbmpqQJK4nzyl+SCRQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA
+	GF6TvPeWwW9htzNR89/XvQ6a5xvl1ffyRf/+rAxu6ed1dr84nj8S0Ho3z3Ff0YGfE2wCrzpM
+	yT2iV/X1oVbJ3wMf4/5fLXVhC7BimyA0Syt239PXiw7zVDn0PNHJdmP7uX/N1/gq9+lpD+9K
+	RDFX2C42suNdr3XFf9rmb6v2tV+t4bpVH3NxihJLcUaioRZzUXEiALhgxZzAAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xoG7gdJVAg3n90haXd81hc2D0+LxJ
+	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
+	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x48m8CcwF+3kqttwub2Cc
+	xNXFyMkhIWAiceTLX1YIW0ziwr31bF2MXBxCAtMZJT4cWM0O4cxmkljytI0RpIpNQE3iy5fD
+	7CC2iICWRPex80AdHBzMAi4SR6eJgISFBGwlHnVtZQaxOQXsJFquzQOzhYFKVhxfBLaMRUBV
+	Yt3HCWBxXqD6l6/eMUHYghI/Jt9jAbGZgcav33mcCcKWl9i85i0zyCoJAXWJR391IS4wkljc
+	fZQRokREYt+Ld4wTGIVmIZk0C8mkWUgmzULSsoCRZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+
+	7iZGcNQ+k97BuKrB4hCjAAejEg9vw0LlQCHWxLLiytxDjBIczEoivD87VAKFeFMSK6tSi/Lj
+	i0pzUosPMSYDPTqRWUo0OR+YUPJK4g2NTcyMLI3MLIxMzM1JE1YS52U89SRASCA9sSQ1OzW1
+	ILUIZgsTB6dUA+NKsZtKLKd7bvPl7r/QHcGVP+ebQJRd1JvP+18zHJiY4X391QlddqvJTzye
+	mW8+Pi1B4mCYddjsX/+a0jNT8mY4+vsFbnnW17Es5OY9w13bC+OlGb989jskJ+EV9zN8W6P6
+	jcPmVxS49u5WZuHeMjmp+G+gS3/TnLNfb6/O3hFW73uab9rZJe+UWIozEg21mIuKEwFz75eD
+	HgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,42 +59,53 @@ Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
 No changes since v1:
 
- drivers/mfd/lm3533-core.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/mfd/intel_msic.c |   10 ++--------
+ 1 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
-index ceebf2c..4b7e6da 100644
---- a/drivers/mfd/lm3533-core.c
-+++ b/drivers/mfd/lm3533-core.c
-@@ -496,8 +496,8 @@ static int lm3533_device_init(struct lm3533 *lm3533)
- 	dev_set_drvdata(lm3533->dev, lm3533);
+diff --git a/drivers/mfd/intel_msic.c b/drivers/mfd/intel_msic.c
+index 1804331..5be3b5e 100644
+--- a/drivers/mfd/intel_msic.c
++++ b/drivers/mfd/intel_msic.c
+@@ -323,7 +323,8 @@ static int intel_msic_init_devices(struct intel_msic *msic)
+ 	if (pdata->ocd) {
+ 		unsigned gpio = pdata->ocd->gpio;
  
- 	if (gpio_is_valid(lm3533->gpio_hwen)) {
--		ret = gpio_request_one(lm3533->gpio_hwen, GPIOF_OUT_INIT_LOW,
--								"lm3533-hwen");
-+		ret = devm_gpio_request_one(lm3533->dev, lm3533->gpio_hwen,
-+					GPIOF_OUT_INIT_LOW, "lm3533-hwen");
+-		ret = gpio_request_one(gpio, GPIOF_IN, "ocd_gpio");
++		ret = devm_gpio_request_one(&pdev->dev, gpio,
++					GPIOF_IN, "ocd_gpio");
+ 		if (ret) {
+ 			dev_err(&pdev->dev, "failed to register OCD GPIO\n");
+ 			return ret;
+@@ -332,7 +333,6 @@ static int intel_msic_init_devices(struct intel_msic *msic)
+ 		ret = gpio_to_irq(gpio);
  		if (ret < 0) {
- 			dev_err(lm3533->dev,
- 				"failed to request HWEN GPIO %d\n",
-@@ -528,8 +528,6 @@ err_unregister:
- 	mfd_remove_devices(lm3533->dev);
- err_disable:
- 	lm3533_disable(lm3533);
--	if (gpio_is_valid(lm3533->gpio_hwen))
--		gpio_free(lm3533->gpio_hwen);
+ 			dev_err(&pdev->dev, "no IRQ number for OCD GPIO\n");
+-			gpio_free(gpio);
+ 			return ret;
+ 		}
+ 
+@@ -359,8 +359,6 @@ static int intel_msic_init_devices(struct intel_msic *msic)
+ 
+ fail:
+ 	mfd_remove_devices(&pdev->dev);
+-	if (pdata->ocd)
+-		gpio_free(pdata->ocd->gpio);
  
  	return ret;
  }
-@@ -542,8 +540,6 @@ static void lm3533_device_exit(struct lm3533 *lm3533)
+@@ -368,12 +366,8 @@ fail:
+ static void intel_msic_remove_devices(struct intel_msic *msic)
+ {
+ 	struct platform_device *pdev = msic->pdev;
+-	struct intel_msic_platform_data *pdata = pdev->dev.platform_data;
  
- 	mfd_remove_devices(lm3533->dev);
- 	lm3533_disable(lm3533);
--	if (gpio_is_valid(lm3533->gpio_hwen))
--		gpio_free(lm3533->gpio_hwen);
+ 	mfd_remove_devices(&pdev->dev);
+-
+-	if (pdata->ocd)
+-		gpio_free(pdata->ocd->gpio);
  }
  
- static bool lm3533_readable_register(struct device *dev, unsigned int reg)
+ static int intel_msic_probe(struct platform_device *pdev)
 -- 
 1.7.2.5
 
