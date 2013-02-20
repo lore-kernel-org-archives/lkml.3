@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934027Ab3BTJFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 04:05:37 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:57990 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933945Ab3BTJFX (ORCPT
+	id S933900Ab3BTJFS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 04:05:18 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:55541 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753278Ab3BTJFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 04:05:23 -0500
+	Wed, 20 Feb 2013 04:05:11 -0500
+Date: Wed, 20 Feb 2013 13:05:07 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Li Fei <fei.li@intel.com>
+Cc: pavel@ucw.cz, rjw@sisk.pl, len.brown@intel.com, mingo@redhat.com,
+        peterz@infradead.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, ebiederm@xmission.com, rientjes@google.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        chuansheng.liu@intel.com, biao.wang@intel.com
+Subject: Re: [PATCH] freezer: configure user space process frozen along with
+ kernel threads
+Message-ID: <20130220090507.GV20312@moon>
+References: <1361326525.9753.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
 MIME-Version: 1.0
-In-Reply-To: <CAJn8CcEN3ky89qJMigD91+d6-bsTXZ9HeQ18VX0DZeU+rDiArA@mail.gmail.com>
-References: <1361345873-6440-1-git-send-email-handai.szj@taobao.com>
-	<CAJn8CcEN3ky89qJMigD91+d6-bsTXZ9HeQ18VX0DZeU+rDiArA@mail.gmail.com>
-Date: Wed, 20 Feb 2013 17:05:21 +0800
-Message-ID: <CAFj3OHV=CWD5KAWF5bWM63M85-rRG-W4sMfcXDViLmW-c5pdKg@mail.gmail.com>
-Subject: Re: [PATCH] sched/core: remove obsolete nr_uninterruptible()
-From: Sha Zhengju <handai.szj@gmail.com>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org,
-        Sha Zhengju <handai.szj@taobao.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361326525.9753.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 4:31 PM, Xiaotian Feng <xtfeng@gmail.com> wrote:
-> On Wed, Feb 20, 2013 at 3:37 PM, Sha Zhengju <handai.szj@gmail.com> wrote:
->> From: Sha Zhengju <handai.szj@taobao.com>
->>
->> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
->> ---
->>  kernel/sched/core.c |   17 -----------------
->>  1 file changed, 17 deletions(-)
->
-> You missed include/linux/sched.h :)
+On Wed, Feb 20, 2013 at 10:15:25AM +0800, Li Fei wrote:
+>  
+> +#ifdef CONFIG_FREEZER
+> +
+> +static ssize_t freeze_late_read(struct file *file, char __user *buf,
+> +					size_t count, loff_t *ppos)
+> +{
+> +	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
+> +	char buffer[PROC_NUMBUF];
+> +	int freeze_late;
+> +	size_t len;
+> +	if (!task)
+> +		return -ESRCH;
+> +	freeze_late = (task->flags & PF_FREEZER_LATE) ? 1 : 0;
+> +	len = snprintf(buffer, sizeof(buffer), "%d\n", freeze_late);
+> +	return simple_read_from_buffer(buf, count, ppos, buffer, len);
+> +}
 
-Ohhhh... yeah, another lost... thank you for correcting me!  :)
-
->
->>
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index c0b07c3..792f6fc 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -1957,23 +1957,6 @@ unsigned long nr_running(void)
->>         return sum;
->>  }
->>
->> -unsigned long nr_uninterruptible(void)
->> -{
->> -       unsigned long i, sum = 0;
->> -
->> -       for_each_possible_cpu(i)
->> -               sum += cpu_rq(i)->nr_uninterruptible;
->> -
->> -       /*
->> -        * Since we read the counters lockless, it might be slightly
->> -        * inaccurate. Do not allow it to go below zero though:
->> -        */
->> -       if (unlikely((long)sum < 0))
->> -               sum = 0;
->> -
->> -       return sum;
->> -}
->> -
->>  unsigned long long nr_context_switches(void)
->>  {
->>         int i;
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Thanks,
-Sha
+Don't you need put_task_struct() once you grabbed it?
