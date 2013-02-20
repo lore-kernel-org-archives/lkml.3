@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935163Ab3BTU1J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 15:27:09 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:58861 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934837Ab3BTU1H (ORCPT
+	id S935828Ab3BTU2m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 15:28:42 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:42329 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934793Ab3BTU2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 15:27:07 -0500
-Date: Wed, 20 Feb 2013 12:26:26 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Greg Thelen <gthelen@google.com>
-cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] tmpfs: fix mempolicy object leaks
-In-Reply-To: <1361344302-26565-2-git-send-email-gthelen@google.com>
-Message-ID: <alpine.LNX.2.00.1302201221270.1152@eggly.anvils>
-References: <1361344302-26565-1-git-send-email-gthelen@google.com> <1361344302-26565-2-git-send-email-gthelen@google.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 20 Feb 2013 15:28:41 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Li Fei <fei.li@intel.com>, <pavel@ucw.cz>, <rjw@sisk.pl>,
+        <len.brown@intel.com>, <mingo@redhat.com>, <peterz@infradead.org>,
+        <akpm@linux-foundation.org>, <viro@zeniv.linux.org.uk>,
+        <gorcunov@openvz.org>, <rientjes@google.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <chuansheng.liu@intel.com>, <biao.wang@intel.com>
+References: <Pine.LNX.4.44L0.1302201021210.1671-100000@iolanthe.rowland.org>
+Date: Wed, 20 Feb 2013 12:28:12 -0800
+In-Reply-To: <Pine.LNX.4.44L0.1302201021210.1671-100000@iolanthe.rowland.org>
+	(Alan Stern's message of "Wed, 20 Feb 2013 10:24:12 -0500 (EST)")
+Message-ID: <87obfeivc3.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/MqmBapiZK+3gGkhkvYZXJdvqhkenDyUo=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_14 obfuscated drug references
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Alan Stern <stern@rowland.harvard.edu>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] freezer: configure user space process frozen along with kernel threads
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Feb 2013, Greg Thelen wrote:
+Alan Stern <stern@rowland.harvard.edu> writes:
 
-> This patch fixes several mempolicy leaks in the tmpfs mount logic.
-> These leaks are slow - on the order of one object leaked per mount
-> attempt.
-> 
-> Leak 1 (umount doesn't free mpol allocated in mount):
->     while true; do
->         mount -t tmpfs -o mpol=interleave,size=100M nodev /mnt
->         umount /mnt
->     done
-> 
-> Leak 2 (errors parsing remount options will leak mpol):
->     mount -t tmpfs -o size=100M nodev /mnt
->     while true; do
->         mount -o remount,mpol=interleave,size=x /mnt 2> /dev/null
->     done
->     umount /mnt
-> 
-> Leak 3 (multiple mpol per mount leak mpol):
->     while true; do
->         mount -t tmpfs -o mpol=interleave,mpol=interleave,size=100M nodev /mnt
->         umount /mnt
->     done
-> 
-> This patch fixes all of the above.  I could have broken the patch into
-> three pieces but is seemed easier to review as one.
+> On Wed, 20 Feb 2013, Eric W. Biederman wrote:
+>
+>> Why can't the fuse filesystem freeze when there are requests pending?
+>
+> It _can_ freeze (that is, the fuse daemon can).  The problem is that
+> tasks _using_ the fuse filsystem can't if the daemon doesn't respond. 
 
-Yes, I agree, and nicely fixed - but one doubt below.  If you resolve
-that, please add my Acked-by: Hugh Dickins <hughd@google.com>
+Which is what I meant when I said that the fuse filesystem couldn't
+freeze.
+ 
+> These tasks are stuck in uninterruptible wait states deep in the
+> filesystem layer, probably holding important locks.  They can't be
+> frozen until the outstanding requests complete.
 
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> ---
->  mm/shmem.c | 12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index efd0b3a..ed2cb26 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -2386,6 +2386,7 @@ static int shmem_parse_options(char *options, struct shmem_sb_info *sbinfo,
->  			       bool remount)
->  {
->  	char *this_char, *value, *rest;
-> +	struct mempolicy *mpol = NULL;
->  	uid_t uid;
->  	gid_t gid;
->  
-> @@ -2414,7 +2415,7 @@ static int shmem_parse_options(char *options, struct shmem_sb_info *sbinfo,
->  			printk(KERN_ERR
->  			    "tmpfs: No value for mount option '%s'\n",
->  			    this_char);
-> -			return 1;
-> +			goto error;
->  		}
->  
->  		if (!strcmp(this_char,"size")) {
-> @@ -2463,19 +2464,23 @@ static int shmem_parse_options(char *options, struct shmem_sb_info *sbinfo,
->  			if (!gid_valid(sbinfo->gid))
->  				goto bad_val;
->  		} else if (!strcmp(this_char,"mpol")) {
-> -			if (mpol_parse_str(value, &sbinfo->mpol))
-> +			mpol_put(mpol);
+Why is it that processes that can be preempted can't be frozen?
 
-I haven't tested to check, but don't we need
-			mpol = NULL;
-here, in case the new option turns out to be bad?
+At most I would suggest that processes be frozen in reverse priority
+order.  Which unless there is a priority inversion should solve this
+problem without an additional proc file.
 
-> +			if (mpol_parse_str(value, &mpol))
->  				goto bad_val;
->  		} else {
->  			printk(KERN_ERR "tmpfs: Bad mount option %s\n",
->  			       this_char);
-> -			return 1;
-> +			goto error;
->  		}
->  	}
-> +	sbinfo->mpol = mpol;
->  	return 0;
->  
->  bad_val:
->  	printk(KERN_ERR "tmpfs: Bad value '%s' for mount option '%s'\n",
->  	       value, this_char);
-> +error:
-> +	mpol_put(mpol);
->  	return 1;
->  
->  }
-> @@ -2551,6 +2556,7 @@ static void shmem_put_super(struct super_block *sb)
->  	struct shmem_sb_info *sbinfo = SHMEM_SB(sb);
->  
->  	percpu_counter_destroy(&sbinfo->used_blocks);
-> +	mpol_put(sbinfo->mpol);
->  	kfree(sbinfo);
->  	sb->s_fs_info = NULL;
->  }
-> -- 
-> 1.8.1.3
+Adding a userspace interface that doesn't come close to doing the right
+thing automatically and that is brittle and will likely fail in ways
+even stranger and harder to track ways than fuse is failing today seems
+like totally the wrong direction to go.  Not adding any permission
+checks to the proc files just compounds the problem.
+
+Eric
