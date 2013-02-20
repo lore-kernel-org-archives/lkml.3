@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934852Ab3BTEeC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 23:34:02 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47505 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934191Ab3BTEd7 (ORCPT
+	id S934120Ab3BTEjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 23:39:51 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58263 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933599Ab3BTEju convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 23:33:59 -0500
-X-Sasl-enc: I+AxqhjyZujxiq5JWqy6cgjCkBNPO+C3ppGdfHoJA77y 1361334837
-Date: Tue, 19 Feb 2013 20:34:24 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: linux-next: manual merge of the driver-core tree with the virtio
- tree
-Message-ID: <20130220043424.GA2513@kroah.com>
-References: <20130220152507.4d7405fcb3561213b4ccd7ab@canb.auug.org.au>
+	Tue, 19 Feb 2013 23:39:50 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] backlight: lp855x_bl: support new LP8557 device
+Thread-Topic: [PATCH 0/3] backlight: lp855x_bl: support new LP8557 device
+Thread-Index: Ac4PJEhiGIP3WDRuTzicSAtSf+gu6g==
+Date: Wed, 20 Feb 2013 04:39:35 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F792735B6@DQHE02.ent.ti.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.185.62]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130220152507.4d7405fcb3561213b4ccd7ab@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 03:25:07PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the driver-core tree got conflicts in
-> drivers/vhost/Kconfig and drivers/vhost/Kconfig.tcm between commit
-> 4d8dc8b44748 ("vringh: host-side implementation of virtio rings") from
-> the virtio tree and commit 43893cbefc1b ("drivers/vhost: remove depends
-> on CONFIG_EXPERIMENTAL") from the driver-core tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+To support new device LP8557, LP855x device initialization process should be
+changed.
+This patch-set enables re-designing LP855x driver architecture and
+supporting LP8557 device.
 
-Looks good to me, thanks.
+Milo(Woogyom) Kim (3):
+  backlight: lp855x_bl: introduce device configuration flow
+  backlight: lp855x_bl: support new LP8557 device
+  backlight: lp855x_bl: simplify bl_get_brightness()
 
-greg k-h
+ Documentation/backlight/lp855x-driver.txt |    4 +-
+ drivers/video/backlight/Kconfig           |    2 +-
+ drivers/video/backlight/lp855x_bl.c       |  169 ++++++++++++++++++++++-------
+ include/linux/platform_data/lp855x.h      |   19 ++++
+ 4 files changed, 152 insertions(+), 42 deletions(-)
+
+-- 
+1.7.9.5
+
+
+Best Regards,
+Milo
+
+
