@@ -1,280 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935688Ab3BTDgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 22:36:49 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39672 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933965Ab3BTDgq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 22:36:46 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <51244494.4000603@jp.fujitsu.com>
-Date: Wed, 20 Feb 2013 12:35:48 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH 7/7] ACPI / scan: Make memory hotplug driver use struct
- acpi_scan_handler
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <2200731.3okUfey51A@vostro.rjw.lan> <20130219181157.GA4366@dhcp-192-168-178-175.profitbricks.localdomain>
-In-Reply-To: <20130219181157.GA4366@dhcp-192-168-178-175.profitbricks.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S935710Ab3BTDsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 22:48:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39559 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935692Ab3BTDsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 22:48:08 -0500
+Message-ID: <1361332078.2801.275.camel@bling.home>
+Subject: Re: [PATCH] iommu: making IOMMU sysfs nodes API public
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: David Gibson <david@gibson.dropbear.id.au>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 19 Feb 2013 20:47:58 -0700
+In-Reply-To: <51243567.5080602@ozlabs.ru>
+References: <1360628713.3248.8.camel@bling.home>
+	  <1360642004-7419-1-git-send-email-aik@ozlabs.ru>
+	  <1360645643.3248.91.camel@bling.home> <511A54DC.9030908@ozlabs.ru>
+	  <1360689304.3248.154.camel@bling.home> <5121C709.80007@ozlabs.ru>
+	  <1361251440.2801.142.camel@bling.home>
+	  <20130219073853.GS21067@truffula.fritz.box>
+	 <1361304711.2801.232.camel@bling.home> <51243567.5080602@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vasilis,
+On Wed, 2013-02-20 at 13:31 +1100, Alexey Kardashevskiy wrote:
+> On 20/02/13 07:11, Alex Williamson wrote:
+> > On Tue, 2013-02-19 at 18:38 +1100, David Gibson wrote:
+> >> On Mon, Feb 18, 2013 at 10:24:00PM -0700, Alex Williamson wrote:
+> >>> On Mon, 2013-02-18 at 17:15 +1100, Alexey Kardashevskiy wrote:
+> >>>> On 13/02/13 04:15, Alex Williamson wrote:
+> >>>>> On Wed, 2013-02-13 at 01:42 +1100, Alexey Kardashevskiy wrote:
+> >>>>>> On 12/02/13 16:07, Alex Williamson wrote:
+> >>>>>>> On Tue, 2013-02-12 at 15:06 +1100, Alexey Kardashevskiy wrote:
+> >>>>>>>> Having this patch in a tree, adding new nodes in sysfs
+> >>>>>>>> for IOMMU groups is going to be easier.
+> >>>>>>>>
+> >>>>>>>> The first candidate for this change is a "dma-window-size"
+> >>>>>>>> property which tells a size of a DMA window of the specific
+> >>>>>>>> IOMMU group which can be used later for locked pages accounting.
+> >>>>>>>
+> >>>>>>> I'm still churning on this one; I'm nervous this would basically creat
+> >>>>>>> a /proc free-for-all under /sys/kernel/iommu_group/$GROUP/ where any
+> >>>>>>> iommu driver can add random attributes.  That can get ugly for
+> >>>>>>> userspace.
+> >>>>>>
+> >>>>>> Is not it exactly what sysfs is for (unlike /proc)? :)
+> >>>>>
+> >>>>> Um, I hope it's a little more thought out than /proc.
+> >>>>>
+> >>>>>>> On the other hand, for the application of userspace knowing how much
+> >>>>>>> memory to lock for vfio use of a group, it's an appealing location to
+> >>>>>>> get that information.  Something like libvirt would already be poking
+> >>>>>>> around here to figure out which devices to bind.  Page limits need to be
+> >>>>>>> setup prior to use through vfio, so sysfs is more convenient than
+> >>>>>>> through vfio ioctls.
+> >>>>>>
+> >>>>>> True. DMA window properties do not change since boot so sysfs is the right
+> >>>>>> place to expose them.
+> >>>>>>
+> >>>>>>> But then is dma-window-size just a vfio requirement leaking over into
+> >>>>>>> iommu groups?  Can we allow iommu driver based attributes without giving
+> >>>>>>> up control of the namespace?  Thanks,
+> >>>>>>
+> >>>>>> Who are you asking these questions? :)
+> >>>>>
+> >>>>> Anyone, including you.  Rather than dropping misc files in sysfs to
+> >>>>> describe things about the group, I think the better solution in your
+> >>>>> case might be a link from the group to an existing sysfs directory
+> >>>>> describing the PE.  I believe your PE is rooted in a PCI bridge, so that
+> >>>>> presumably already has a representation in sysfs.  Can the aperture size
+> >>>>> be determined from something in sysfs for that bridge already?  I'm just
+> >>>>> not ready to create a grab bag of sysfs entries for a group yet.
+> >>>>> Thanks,
+> >>>>
+> >>>>
+> >>>> At the moment there is no information neither in sysfs nor
+> >>>> /proc/device-tree about the dma-window. And adding a sysfs entry per PE
+> >>>> (powerpc partitionable end-point which is often a PHB but not always) just
+> >>>> for VFIO is quite heavy.
+> >>>
+> >>> How do you learn the window size and PE extents in the host kernel?
+> >>>
+> >>>> We could add a ppc64 subfolder under /sys/kernel/iommu/xxx/ and put the
+> >>>> "dma-window" property there. And replace it with a symlink when and if we
+> >>>> add something for PE later. Would work?
+> >>
+> >> Fwiw, I'd suggest a subfolder named for the type of IOMMU, rather than
+> >> "ppc64".
+> >>
+> >>> To be clear, you're suggesting /sys/kernel/iommu_groups/$GROUP/xxx/,
+> >>> right?  A subfolder really only limits the scope of the mess, so it's
+> >>> not much improvement.  What does the interface look like to make those
+> >>> subfolders?
+> >>>
+> >>> The problem we're trying to solve is this call flow:
+> >>>
+> >>> containerfd = open("/dev/vfio/vfio");
+> >>> ioctl(containerfd, VFIO_GET_API_VERSION);
+> >>> ioctl(containerfd, VFIO_CHECK_EXTENSION, ...);
+> >>> groupfd = open("/dev/vfio/$GROUP");
+> >>> ioctl(groupfd, VFIO_GROUP_GET_STATUS);
+> >>> ioctl(groupfd, VFIO_GROUP_SET_CONTAINER, &containerfd);
+> >>>
+> >>> You wanted to lock all the memory for the DMA window here, before we can
+> >>> call VFIO_IOMMU_GET_INFO, but does it need to happen there?  We still
+> >>> have a MAP_DMA hook.  We could do it all on the first mapping.
+> >>
+> >> MAP_DMA isn't quite enough, since the guest can also directly cause
+> >> mappings using hypercalls directly implemented in KVM.  I think it
+> >> would be feasible to lock on the first mapping (either via MAP_DMA, or
+> >> H_PUT_TCE) though it would be a bit ugly and require that the first
+> >> H_PUT_TCE always bounce out to virtual mode (Alexey, correct me if I'm
+> >> wrong here).  IIRC there is also a call to bind the vfio container to
+> >> a (qemu assigned) LIOBN, before the guest can use H_PUT_TCE directly,
+> >> so that might be another place we could do the lock.
+> >
+> > Somehow hypercall mappings have to be gated by the userspace setup,
+> > right?
+> 
+> 
+> There is a KVM ioctl (and a KVM capability) which hooks LIOBN (PCI bus ID) 
+> with IOMMU ID. It basically creates an entry in the list of all LIOBNs and 
+> when TCE call occurs, the host finds correct IOMMU group to pass this call to.
+> 
+> It happens from spapr_register_vfio_container() in QEMU, i.e. after getting 
+> DMA window properties but only if the host supports real mode TCE handling.
+> 
+> 
+> >>>   It also
+> >>> has a flags field that could augment the behavior to trigger page
+> >>> locking.
+> >>
+> >> I don't see how the flags help us - we can't have userspace choose to
+> >> skip the locked memory accounting.  Or are you suggesting a flag to
+> >> open the container in some sort of dummy mode where only GET_INFO is
+> >> possible, then re-open with the full locking?
+> >
+> > Sort of, I don't think it needs to be re-opened, but we had previously
+> > talked about some kind of enable and disable ioctl.  "enable" would be
+> > the logical place to lock pages, but then we probably got stuck in
+> > questions around what it means to enable an iommu generically.
+> 
+> The other question is if a container is ready to work if I add just one 
+> group? What happens when I add another one (not supported on ppc64 but 
+> still)?
 
-2013/02/20 3:11, Vasilis Liaskovitis wrote:
-> Hi,
->
-> On Sun, Feb 17, 2013 at 04:27:18PM +0100, Rafael J. Wysocki wrote:
->> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>
->> Make the ACPI memory hotplug driver use struct acpi_scan_handler
->> for representing the object used to set up ACPI memory hotplug
->> functionality and to remove hotplug memory ranges and data
->> structures used by the driver before unregistering ACPI device
->> nodes representing memory.  Register the new struct acpi_scan_handler
->> object with the help of acpi_scan_add_handler_with_hotplug() to allow
->> user space to manipulate the attributes of the memory hotplug
->> profile.
->
-> Let's consider an example where we want acpi memory device ejection to be safely
-> handled by userspace. We do the following:
->
-> echo 0 > /sys/firmware/acpi/hotplug/memory/autoeject
-> echo 1 > /sys/firmware/acpi/hotplug/memory/uevents
->
-> We succesfully hotplug acpi device:
-> /sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:00
-> and its corresponding memblocks /sys/devices/system/memory/memoryXX are
-> also successfully onlined.
->
-> On an eject request, since uevents == 1, the kernel will emit KOBJ_OFFLINE for:
-> /sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:00
->
-> Can userspace know which memblocks in /sys/devices/system/memory/memoryXX/
-> correspond to the acpi device /sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:00 ?
-> This will be needed so that userspace tries to offline the memblocks (and only
-> if successful, issue the eject operation on the acpi device). As far as I see,
-> we don't create any sysfs links or files for this scenario - can userspace get
-> this info somehow?
+This is also the problem with exposing a dma window under the group in
+sysfs.  Do I require the ability to lock the sum of the window, the
+largest window, what?  If we rely on the ioctls, userspace can figure
+out that they can't be combined and know it's the sum.  I'm not sure
+what your plans are around hotplug of a PHB though.
 
->
-> /sys/devices/system/memory/memoryXX/phys_device needs to be properly implemented
-> for this to work I think, see Documentation/ABI/testing/sysfs-memory
->
-> The following test patch works toward that direction. Let me know if it's of
-> interest or if there are better ideas /comments.
+> Having "enable" method and disabling new attachments when it is 
+> "enabled" would keep my brain calm :)
 
-How about use ../PNP0C80:00/physical_node/resources file?
-In my system, the file shows following information.
+Now I'm not sure whether you're for or against it ;)
 
-$ cat /sys/bus/acpi/devices/PNP0C80\:00/physical_node/resources
-state = active
-mem 0x0-0x80000000
-mem 0x100000000-0x800000000
+> > So what
+> > if instead of a separate enable ioctl we had a flag on DMA_MAP that was
+> > defined as SET_WINDOW where iova and size are passed and specify the
+> > portion of the DMA window that userspace intends to use and which is
+> > therefore locked.  If you don't support subwindows, fine, just fail it.
+> > You could have a matching PUT_WINDOW on DMA_UNMAP if you wanted.
+> 
+> DMA_MAP which does not do "map" but does "lock" or "set window"? 
+> enable()/disable() look better.
 
-It means PNP0C80:00's memory ranges are "0x0-0x7fffffff" and
-"0x100000000-0x7ffffffff". In x86 architecture, memory section size is
-128MiB. So, if these memory range is divided by 128MiB, you can
-calculate memory section number as follow:
+Sure, this is why we have a modular iommu interface, spapr can create an
+enable ioctl if necessary.  I think there are ways to use the
+DMA_MAP/UNMAP ioctl in ways that aren't a complete kludge though.
 
-0x0-0x7fffffff => 0x0-0x10
-0x100000000-0x7ffffffff => 0x20-0xff
+> >>>   Adding the window size to sysfs seems more readily convenient,
+> >>> but is it so hard for userspace to open the files and call a couple
+> >>> ioctls to get far enough to call IOMMU_GET_INFO?  I'm unconvinced the
+> >>> clutter in sysfs more than just a quick fix.  Thanks,
+> >>
+> >> And finally, as Alexey points out, isn't the point here so we know how
+> >> much rlimit to give qemu?  Using ioctls we'd need a special tool just
+> >> to check the dma window sizes, which seems a bit hideous.
+> >
+> > Is it more hideous that using iommu groups to report a vfio imposed
+> > restriction?  Are a couple open files and a handful of ioctls worse than
+> > code to parse directory entries and the future maintenance of an
+> > unrestricted grab bag of sysfs entries?
+> 
+> At the moment DMA32 window properties are static. So I can easily get rid 
+> of VFIO_IOMMU_SPAPR_TCE_GET_INFO and be happy.
 
-But there is one problem. The problem is that resources file of added memory
-is not created. If the problem is fixed, I think you can use the way.
+Like, for instance, every PE always gets 512MB DMA window, fixed base
+address, not configurable, end of story?
 
->
-> From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-> Date: Tue, 19 Feb 2013 18:36:25 +0100
-> Subject: [RFC PATCH] acpi / memory-hotplug: implement phys_device
->
-> In order for userspace to know which memblocks in:
-> /sys/devices/system/memory/memoryXX correspond to which acpi memory devices in:
-> /sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:YY,
-> /sys/devices/system/memory/memoryXX/phys_device should return a name (or index
-> YY) of the memory device each memblock XX belongs to.
->
-> WIth this patch, the acpi mem_hotplug driver keeps a global list of acpi memory
-> devices (inserted in hotplug_order). The base memory driver checks against this
-> list in arch_get_memory_phys_device to determine the zero-based index of the
-> physical memory device each new memblock belongs to.
->
-> For initial memory or for non-acpi/hotplug enabled systems, phys_device is
-> always -1.
->
-> Signed-off-by: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-> ---
->   Documentation/ABI/testing/sysfs-devices-memory |    8 ++++++-
->   drivers/acpi/acpi_memhotplug.c                 |   27 ++++++++++++++++++++++++
->   drivers/base/memory.c                          |    7 +++++-
->   include/linux/acpi.h                           |    2 +
->   4 files changed, 42 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/ABI/testing/sysfs-devices-memory b/Documentation/ABI/testing/sysfs-devices-memory
-> index 7405de2..290c62a 100644
-> --- a/Documentation/ABI/testing/sysfs-devices-memory
-> +++ b/Documentation/ABI/testing/sysfs-devices-memory
-> @@ -27,7 +27,13 @@ Contact:	Badari Pulavarty <pbadari@us.ibm.com>
->   Description:
->   		The file /sys/devices/system/memory/memoryX/phys_device
->   		is read-only and is designed to show the name of physical
-> -		memory device.  Implementation is currently incomplete.
-> +		memory device.  Implementation is currently incomplete. In a
-> +		system with CONFIG_ACPI_HOTPLUG_MEMORY=n, phys_device is always
-> +	     	-1. In a system with CONFIG_ACPI_HOTPLUG_MEMORY=y, phys_device
-> +		is -1 for all initial / non-hot-removable memory. For
-> +	       	memory that has been hot-plugged, phys_device will return the
-> +	       	zero-based index of the physical device that this memory block
-> +	       	belongs to. Indices are determined by hotplug order.
->
->   What:		/sys/devices/system/memory/memoryX/phys_index
->   Date:		September 2008
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index 3be9501..4154dc5 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -48,6 +48,7 @@ ACPI_MODULE_NAME("acpi_memhotplug");
->   #define MEMORY_POWER_ON_STATE	1
->   #define MEMORY_POWER_OFF_STATE	2
->
-> +static LIST_HEAD(acpi_mem_device_list);
->   static int acpi_memory_device_add(struct acpi_device *device,
->   				  const struct acpi_device_id *not_used);
->   static void acpi_memory_device_remove(struct acpi_device *device);
-> @@ -81,6 +82,7 @@ struct acpi_memory_device {
->   	struct acpi_device * device;
->   	unsigned int state;	/* State of the memory device */
->   	struct list_head res_list;
-> +	struct list_head mem_device_list;
->   };
->
->   static acpi_status
-> @@ -287,6 +289,7 @@ static int acpi_memory_device_add(struct acpi_device *device,
->   		return -ENOMEM;
->
->   	INIT_LIST_HEAD(&mem_device->res_list);
-> +	INIT_LIST_HEAD(&mem_device->mem_device_list);
->   	mem_device->device = device;
->   	sprintf(acpi_device_name(device), "%s", ACPI_MEMORY_DEVICE_NAME);
->   	sprintf(acpi_device_class(device), "%s", ACPI_MEMORY_DEVICE_CLASS);
-> @@ -308,9 +311,11 @@ static int acpi_memory_device_add(struct acpi_device *device,
->   		return 0;
->   	}
->
-> +	list_add_tail(&mem_device->mem_device_list, &acpi_mem_device_list);
->   	result = acpi_memory_enable_device(mem_device);
->   	if (result) {
->   		dev_err(&device->dev, "acpi_memory_enable_device() error\n");
-> +		list_del(&mem_device->mem_device_list);
->   		acpi_memory_device_free(mem_device);
->   		return -ENODEV;
->   	}
-> @@ -328,9 +333,31 @@ static void acpi_memory_device_remove(struct acpi_device *device)
->
->   	mem_device = acpi_driver_data(device);
->   	acpi_memory_remove_memory(mem_device);
-> +	list_del(&mem_device->mem_device_list);
->   	acpi_memory_device_free(mem_device);
->   }
->
+> Ah, anyway, how do you see these ioctls to work on a user machine?
+> A separate tool which takes an iommu id, returns DMA window size and 
+> adjusts rlimit?
 
-> +int acpi_memory_phys_device(unsigned long start_pfn)
-> +{
-> +	struct acpi_memory_device *mem_dev;
-> +	struct acpi_memory_info *info;
-> +	unsigned long start_addr = start_pfn << PAGE_SHIFT;
-> +	int id = 0;
-> +
-> +	list_for_each_entry(mem_dev, &acpi_mem_device_list, mem_device_list) {
-> +		list_for_each_entry(info, &mem_dev->res_list, list) {
-> +			if ((info->start_addr <= start_addr) &&
-> +				(info->start_addr + info->length > start_addr))
-> +				return id;
-> +		}
-> +		id++;
-> +	}
+Sure, we need something that provides the function of libvirt and
+unbinds devices from host drivers, re-binds them to vfio-pci.  That tool
+needs to have permissions to manipulate groups, so we're just talking
+about whether it's stepping over the line for it to open the group and a
+container, associate them, and probe the iommu info vs reading a sysfs
+file.  Thanks,
 
-I don't think this solve your problem.
-
-When hot adding memory device in my system, consecutive index number is
-applied to PNP0C80 as follows:
-
-$ ls /sys/bus/acpi/devices/ |grep PNP0C80
-PNP0C80:00
-PNP0C80:01  => hot added memory device
-PNP0C80:02  => hot added memory device
-
-In this case, we can know PNP0C80:YY by memoryXX/phys_device file.
-But if hot removing and adding the same device, index number is changed
-as follows:
-
-$ ls /sys/bus/acpi/devices/
-PNP0C80:00
-PNP0C80:03  => hot added memory device
-PNP0C80:04  => hot added memory device
-
-In this case, we cannot know PNP0C80:YY by memoryXX/phys_device file.
-
-Thanks,
-Yasuaki Ishimatsu
-
-> +
-> +	/* Memory not associated with a hot-pluggable device gets -1. For
-> +	 * example, initial memory. */
-> +	return -1;
-> +}
-> +
->   void __init acpi_memory_hotplug_init(void)
->   {
->   	acpi_scan_add_handler_with_hotplug(&memory_device_handler, "memory");
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index 8300a18..2cc98df 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -22,6 +22,7 @@
->   #include <linux/mutex.h>
->   #include <linux/stat.h>
->   #include <linux/slab.h>
-> +#include <linux/acpi.h>
->
->   #include <linux/atomic.h>
->   #include <asm/uaccess.h>
-> @@ -522,7 +523,11 @@ static inline int memory_fail_init(void)
->    */
->   int __weak arch_get_memory_phys_device(unsigned long start_pfn)
->   {
-> -	return 0;
-> +#ifdef CONFIG_ACPI_HOTPLUG_MEMORY
-> +	return acpi_memory_phys_device(start_pfn);
-> +#else
-> +	return -1;
-> +#endif
->   }
->
->   /*
-> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> index f46cfd7..00302fc 100644
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -562,6 +562,8 @@ static inline __printf(3, 4) void
->   acpi_handle_printk(const char *level, void *handle, const char *fmt, ...) {}
->   #endif	/* !CONFIG_ACPI */
->
-> +int acpi_memory_phys_device(unsigned long start_pfn);
-> +
->   /*
->    * acpi_handle_<level>: Print message with ACPI prefix and object path
->    *
->
+Alex
 
 
