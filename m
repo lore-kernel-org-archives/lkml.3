@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935299Ab3BTOXA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 09:23:00 -0500
-Received: from mail-ia0-f182.google.com ([209.85.210.182]:40245 "EHLO
-	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933322Ab3BTOW6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 09:22:58 -0500
+	id S933641Ab3BTOX4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 09:23:56 -0500
+Received: from mga01.intel.com ([192.55.52.88]:41107 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933052Ab3BTOXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 09:23:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,702,1355126400"; 
+   d="scan'208";a="289581663"
+Message-ID: <5124DC76.2010801@intel.com>
+Date: Wed, 20 Feb 2013 22:23:50 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <5124C6CF.1020001@gmail.com>
-References: <1359699013-7160-1-git-send-email-hannes@cmpxchg.org>
-	<5124C6CF.1020001@gmail.com>
-Date: Wed, 20 Feb 2013 22:22:58 +0800
-Message-ID: <CANN689FizixMWu7hKMV055=SY_Sg1rmYrB_KAEwOBP1tEOZw+Q@mail.gmail.com>
-Subject: Re: [patch] mm: mlock: document scary-looking stack expansion mlock chain
-From: Michel Lespinasse <walken@google.com>
-To: Ric Mason <ric.masonn@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Zijlstra <peterz@infradead.org>
+CC: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 09/15] sched: add power aware scheduling in fork/exec/wake
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>   <1361164062-20111-10-git-send-email-alex.shi@intel.com>  <1361353360.10155.9.camel@laptop> <5124BCEB.8030606@intel.com> <1361367371.10155.32.camel@laptop>
+In-Reply-To: <1361367371.10155.32.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 8:51 PM, Ric Mason <ric.masonn@gmail.com> wrote:
-> On 02/01/2013 02:10 PM, Johannes Weiner wrote:
+On 02/20/2013 09:36 PM, Peter Zijlstra wrote:
+> On Wed, 2013-02-20 at 20:09 +0800, Alex Shi wrote:
+>> On 02/20/2013 05:42 PM, Peter Zijlstra wrote:
+>>> On Mon, 2013-02-18 at 13:07 +0800, Alex Shi wrote:
+>>>> +/*
+>>>> + * Try to collect the task running number and capacity of the group.
+>>>> + */
+>>>> +static void get_sg_power_stats(struct sched_group *group,
+>>>> +       struct sched_domain *sd, struct sg_lb_stats *sgs)
+>>>> +{
+>>>> +       int i;
+>>>> +
+>>>> +       for_each_cpu(i, sched_group_cpus(group)) {
+>>>> +               struct rq *rq = cpu_rq(i);
+>>>> +
+>>>> +               sgs->group_utils += rq->nr_running;
+>>>> +       }
+>>>> +
+>>>> +       sgs->group_capacity = DIV_ROUND_CLOSEST(group->sgp->power,
+>>>> +                                               SCHED_POWER_SCALE);
+>>>> +       if (!sgs->group_capacity)
+>>>> +               sgs->group_capacity = fix_small_capacity(sd, group);
+>>>> +       sgs->group_weight = group->group_weight;
+>>>> +}
+>>>
+>>> So you're trying to compute the group utilization, but what does that
+>>> have to do with nr_running? In an earlier patch you introduced the
+>>> per-cpu utilization, so why not avg that to compute the group
+>>> utilization?
 >>
->> The fact that mlock calls get_user_pages, and get_user_pages might
->> call mlock when expanding a stack looks like a potential recursion.
->
-> Why expand stack need call mlock? I can't find it in the codes, could you
-> point out to me?
+>> I had tried to use rq utilisation in this balancing, but since the
+>> utilisation need much time to accumulate itself(345ms). It's bad for
+>> any burst balancing. So I use instant utilisation -- nr_running.
+> 
+> But but but,... nr_running is completely unrelated to utilization.
+> 
 
-Its hidden in find_expand_vma(). Basically if the existing stack is
-already mlocked, any additional stack expansions get mlocked as well.
+Actually, I also hesitated on the name, how about using nr_running to
+replace group_util directly?
+
+
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Thanks
+    Alex
