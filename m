@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935081Ab3BTLYl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 06:24:41 -0500
-Received: from sabertooth02.qualcomm.com ([65.197.215.38]:64387 "EHLO
-	sabertooth02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934662Ab3BTLYi (ORCPT
+	id S935009Ab3BTL0p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 06:26:45 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53587 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934252Ab3BTL0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 06:24:38 -0500
-X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
-   d="scan'208";a="24275521"
-From: "Bu, Yitian" <ybu@qti.qualcomm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>
-Subject: RE: [PATCH] Fix rq->lock vs logbuf_lock unlock race
-Thread-Topic: [PATCH] Fix rq->lock vs logbuf_lock unlock race
-Thread-Index: AQHOD0aoTqiQYklW0USvuaYJaBrXc5iCd8nwgACXPYD//4TjYA==
-Date: Wed, 20 Feb 2013 11:24:36 +0000
-Message-ID: <E807E903FE6CBE4D95E420FBFCC273B827526E@nasanexd01h.na.qualcomm.com>
-References: <E807E903FE6CBE4D95E420FBFCC273B827413C@nasanexd01h.na.qualcomm.com>
-	 <1361349910.10155.0.camel@laptop>
-	 <E807E903FE6CBE4D95E420FBFCC273B827522A@nasanexd01h.na.qualcomm.com>
- <1361355555.10155.14.camel@laptop>
-In-Reply-To: <1361355555.10155.14.camel@laptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [199.106.115.132]
-Content-Type: text/plain; charset="utf-8"
+	Wed, 20 Feb 2013 06:26:43 -0500
+Date: Wed, 20 Feb 2013 11:26:40 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: J Keerthy <j-keerthy@ti.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net, gg@slimlogic.co.uk,
+        sameo@linux.intel.com, liam.r.girdwood@intel.com
+Subject: Re: [PATCH 1/4] documentation: add palmas dts definition
+Message-ID: <20130220112639.GA2726@opensource.wolfsonmicro.com>
+References: <1361332815-2348-1-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
+Content-Disposition: inline
+In-Reply-To: <1361332815-2348-1-git-send-email-j-keerthy@ti.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1KBOihH003262
 
-> Unfortunately that's not quite possible, rq->lock is really out of bounds. At
-> one point I tried 'fixing' this but there's a whole bunch of nasty that's not
-> going to go away.
-> 
-> I've since forgotten most of the details, but aside from logbuf problems
-> there's a whole host of issues with the console drivers themselves as well.
-> 
-> If you really want to do this, use early_printk.
 
-Hi Peter:
+--sdtB3X0nJg68CQEu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The patch  0b5e1c5255e("printk: Release console_sem after logbuf_lock" )
-is as below:
+On Wed, Feb 20, 2013 at 09:30:15AM +0530, J Keerthy wrote:
+> From: Graeme Gregory <gg@slimlogic.co.uk>
+>=20
+> Add the DTS definition for the palmas device including the MFD children.
+>=20
+> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> [j-keerthy@ti.com: changed the DT node property names to follow the
+> convention]
+> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/palmas.txt |   67 ++++++++++++++++=
+++++++
+>  1 files changed, 67 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
+>=20
+> diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documenta=
+tion/devicetree/bindings/mfd/palmas.txt
+> new file mode 100644
+> index 0000000..5fa922e
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/palmas.txt
+> @@ -0,0 +1,67 @@
+> +Texas Instruments Palmas family
+> +
+> +The Palmas familly are Integrated Power Management Chips.
+> +These chips are connected to an i2c bus.
 
-			console_locked = 0;
--			up(&console_sem);
-+			wake = 1;
- 			retval = 0;
- 		}
- 	}
- 	printk_cpu = UINT_MAX;
- 	spin_unlock(&logbuf_lock);
-+	if (wake)
-+		up(&console_sem);
- 	return retval;
+I would expect this to enumerate the regulators that the user can select
+but it doesn't appear to do that.
 
-the patch 07354eb1a74d1("locking, printk: Annotate logbuf_lock as raw ")
-is as below:
+--sdtB3X0nJg68CQEu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	printk_cpu = UINT_MAX;
--	spin_unlock(&logbuf_lock);
- 	if (wake)
- 		up(&console_sem);
-+	raw_spin_unlock(&logbuf_lock);
- 	return retval;
- }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Note that the purpose of patch 07354eb1a74d1 is to use raw_spin_unlock
-instead of spin_unlock, it is not supposed to change any lock sequences.
+iQIcBAEBAgAGBQJRJLLcAAoJELSic+t+oim9As8P/35bAdML0+0ZnfYXryHiKfxX
+slMl0SUFTNh+8/j9d5GH7bHOl9USf/7gwG9wl1L4Zq6/YzguatdKrH0fvslEDAEu
+T89vDE3kuWeL/e5D2u3qV332StdqZ2IhNaYCQNXWCsCcCV/N3qMOvqgElGvhFNoC
+R4uYifcwQ7gx+gNsXD9rdHdmmgQcaP0CCEIqRAjpp06pTaMA0BTFiPNU+3SyAGyI
+VuMAt14CCULdkOT7O/ptZlvUQ243nb+8Wfx+ZTCLVYObi0SPSBQNOoxQGVorIXq9
+e9b5SXlghozy6afu5q3olYTgkzj1EbNBMkoHiM6ZXUKz3JXZYVSXkGLYi4BPHc7R
+ssjFnhOdsQa85ZUQDw3AhFzvGTG2Z10fnDoFUBQWaHFgIV7O4KNJhdQlxUq6eRYW
+Velsq548FFrjiaJUzteLjpZ3u7DDhB6Pe+2hYgKMt9UBJ2MspEU0VTcGmZ/yPo1U
+gm5jqYZ3ZOp7lipcl/ZQlPn0bHaT3CzwRcZSUWAHH6JsAfb0UGmrgkHHrwl/TC5Z
+lK4Rzpjp+vAwwo5Q0sD08QZ5d9VDPMU2CGidvEla+r3kjeNVmwlJIXH5G7t+QrdH
+ctbF/B++nBid4ia18ekZ5PUm3ZkLLjrFNPrMBHQvAGlSYLNaQsVPGioDmbyHmLDh
+xXotrWk5VVCXDgD5fCGj
+=hMUI
+-----END PGP SIGNATURE-----
 
-What I do is to revert this change to 0b5e1c5255e, and it is nothing to do with
-how people use printk. It is just to recover a merge mistake.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--sdtB3X0nJg68CQEu--
