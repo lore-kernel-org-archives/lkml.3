@@ -1,114 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934506Ab3BTSMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 13:12:24 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:64746 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932966Ab3BTSMT (ORCPT
+	id S934598Ab3BTSMf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 13:12:35 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:50171 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934530Ab3BTSMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 13:12:19 -0500
+	Wed, 20 Feb 2013 13:12:31 -0500
+Date: Wed, 20 Feb 2013 10:12:58 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Andy Ross <andy.ross@windriver.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Jiri Slaby <jslaby@suse.cz>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2] vt: add init_hide parameter to suppress boot output
+Message-ID: <20130220181258.GC6679@kroah.com>
+References: <1361289224-10678-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130220014512.GC31018@kroah.com>
+ <51244B35.8090006@windriver.com>
+ <20130220044506.GA2728@kroah.com>
+ <5124FFD7.8070708@windriver.com>
 MIME-Version: 1.0
-Date: Wed, 20 Feb 2013 10:12:18 -0800
-Message-ID: <CAMe9rOrE4okBffqCE0mAK_ogc76Ty12OvBJGy69kLebGGXmM=Q@mail.gmail.com>
-Subject: [PATCH] DMI: Always call dmi_present with DMI structure
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Content-Type: multipart/mixed; boundary=e89a8ff1c56a186c6b04d62be6ba
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5124FFD7.8070708@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8ff1c56a186c6b04d62be6ba
-Content-Type: text/plain; charset=ISO-8859-1
+On Wed, Feb 20, 2013 at 08:54:47AM -0800, Andy Ross wrote:
+> On 02/19/2013 08:45 PM, Greg Kroah-Hartman wrote:
+> > On Tue, Feb 19, 2013 at 08:04:05PM -0800, Andy Ross wrote:
+> > > There's a (sort of) similar commonly-used option, vga=current, which
+> > > prevents a mode switch for the special case of VGA/vesa.  But that
+> > > doesn't work with the framebuffer console.
+> >
+> > Why not?  Can't you fix that?
+> 
+> I'd argue that's what this is.  If you were going to design a "shut up
+> the console" feature from scratch, would you choose to do it in one
+> particular display driver or would you do it in the device-independent
+> console code by forcing the already-existing "visible" flag to false?
 
-Hi,
+I don't know.  All I do know is that by adding yet-another-userspace
+option, we will have to support it for 20+ years.  And I'm _really_
+hesitant to do so, especially for a subsystem that, if all goes well, we
+will be able to just entirely disable soon.
 
-This patch:
+> > > But the specific application here (Android's surfaceflinger) isn't set
+> > > up for that, and it's a non-trivial API (and even doing it "right"
+> > > involves racing against other users at startup).
+> >
+> > How could there be any other users at startup, you "own" the system
+> > here, there should not be anyone to race with.
+> 
+> Tell that to the display hardware. :)
 
-commit 9f9c9cbb60576a1518d0bf93fb8e499cffccf377
-Author: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Date:   Thu Dec 20 15:05:14 2012 -0800
+On Android you own that as well, so there this isn't an excuse :)
 
-    drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it exists
+> Seriously, every Linux box with a display (to first approximation,
+> obviously I didn't test them all while writing this message) spits
+> something to the screen between the moment where the bootloader hands
+> off control and the display driver is initialized.  Most of them
+> glitch a little at suspend time because of the console switch there.
+> I just reproduced both of these effects with a Fedora 18 live image.
 
-    The right dmi version is in SMBIOS if it's zero in DMI region
+That's Fedora's issue, not Android's.
 
-    This issue was originally found from an oracle bug.
-    One customer noticed system UUID doesn't match between dmidecode & uek2.
+And it's really a DRM issue, and as mentioned above, one that people are
+already working on resolving by just getting rid of this whole layer
+entirely.  So adding new options to it are something that I really don't
+want to do, especially as we already have working prototypes that don't
+have this problem.
 
-     - HP ProLiant BL460c G6 :
-       # cat /sys/devices/virtual/dmi/id/product_uuid
-       00000000-0000-4C48-3031-4D5030333531
-       # dmidecode | grep -i uuid    drivers/firmware/dmi_scan.c:
-fetch dmi version from SMBIOS if it exists
+> This fixes almost all of that (vga=current is still required because
+> some early logging somewhere seems to write to the screen by banging
+> registers directly and not using the console), and it does it in a way
+> that works without having to modify existing userspace or (try to)
+> remove the framebuffer console entirely.
 
-    The right dmi version is in SMBIOS if it's zero in DMI region
+Then fix that early logging code, don't paper over it by doing something
+like this please.  Or just remove the framebuffer entirely, it's not
+needed, no one will miss it...
 
-    This issue was originally found from an oracle bug.
-    One customer noticed system UUID doesn't match between dmidecode & uek2.
+thanks,
 
-     - HP ProLiant BL460c G6 :
-       # cat /sys/devices/virtual/dmi/id/product_uuid
-       00000000-0000-4C48-3031-4D5030333531
-       # dmidecode | grep -i uuid
-       UUID: 00000000-0000-484C-3031-4D5030333531
-
-    From SMBIOS 2.6 on, spec use little-endian encoding for UUID other than
-    network byte order.
-
-    So we need to get dmi version to distinguish.  If version is 0.0, the
-    real version is taken from the SMBIOS version.  This is part of original
-    kernel comment in code.
-
-       UUID: 00000000-0000-484C-3031-4D5030333531
-
-    From SMBIOS 2.6 on, spec use little-endian encoding for UUID other than
-    network byte order.
-
-    So we need to get dmi version to distinguish.  If version is 0.0, the
-    real version is taken from the SMBIOS version.  This is part of original
-    kernel comment in code.
-
-causes a regression in 3.7, 3.8 and 3.9 kernels.   Before the change,
-we only scan DMI structure.  Now smbios_present scans SMBIOS
-entry point.  I have a machine which has invalid checksum in
-SMBIOS entry point.  We wind up calling dmi_present with SMBIOS
-entry point instead of DMI structure.  This patch changes smbios_present
-to always call dmi_present with DMI structure.
-
-
--- 
-H.J.
-
---e89a8ff1c56a186c6b04d62be6ba
-Content-Type: application/octet-stream; 
-	name="0001-DMI-Always-call-dmi_present-with-DMI-structure.patch"
-Content-Disposition: attachment; 
-	filename="0001-DMI-Always-call-dmi_present-with-DMI-structure.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hdesm1o70
-
-RnJvbSA5ZGUzNzY5NTQzYmQzNWI3NWQ4YTRjNTQ5YTIzYWE2MWFiYzM3MDVjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiAiSC5KLiBMdSIgPGhqbC50b29sc0BnbWFpbC5jb20+CkRhdGU6
-IFdlZCwgMjAgRmViIDIwMTMgMTA6MDA6MDYgLTA4MDAKU3ViamVjdDogW1BBVENIXSBETUk6IEFs
-d2F5cyBjYWxsIGRtaV9wcmVzZW50IHdpdGggRE1JIHN0cnVjdHVyZQoKSWYgU01CSU9TIGVudHJ5
-IHBvaW50IGhhcyBpbnZhbGlkIGNoZWNrc3VtLCBzbWJpb3NfcHJlc2VudCB3aWxsIGNhbGwKZG1p
-X3ByZXNlbnQgd2l0aCB3cm9uZyBvZmZzZXQgb2YgRE1JIHN0cnVjdHVyZTogMCwgaW5zdGVhZCBv
-ZiAxNi4gIFdlCnNob3VsZCBhbHdheXMgY2FsbCBkbWlfcHJlc2VudCB3aXRoIERNSSBzdHJ1Y3R1
-cmUuCi0tLQogZHJpdmVycy9maXJtd2FyZS9kbWlfc2Nhbi5jIHwgNSArKy0tLQogMSBmaWxlIGNo
-YW5nZWQsIDIgaW5zZXJ0aW9ucygrKSwgMyBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2
-ZXJzL2Zpcm13YXJlL2RtaV9zY2FuLmMgYi9kcml2ZXJzL2Zpcm13YXJlL2RtaV9zY2FuLmMKaW5k
-ZXggOTgyZjFmNS4uMTcwNzNhOCAxMDA2NDQKLS0tIGEvZHJpdmVycy9maXJtd2FyZS9kbWlfc2Nh
-bi5jCisrKyBiL2RyaXZlcnMvZmlybXdhcmUvZG1pX3NjYW4uYwpAQCAtNDQyLDcgKzQ0Miw2IEBA
-IHN0YXRpYyBpbnQgX19pbml0IGRtaV9wcmVzZW50KGNvbnN0IGNoYXIgX19pb21lbSAqcCkKIHN0
-YXRpYyBpbnQgX19pbml0IHNtYmlvc19wcmVzZW50KGNvbnN0IGNoYXIgX19pb21lbSAqcCkKIHsK
-IAl1OCBidWZbMzJdOwotCWludCBvZmZzZXQgPSAwOwogCiAJbWVtY3B5X2Zyb21pbyhidWYsIHAs
-IDMyKTsKIAlpZiAoKGJ1Zls1XSA8IDMyKSAmJiBkbWlfY2hlY2tzdW0oYnVmLCBidWZbNV0pKSB7
-CkBAIC00NjEsOSArNDYwLDkgQEAgc3RhdGljIGludCBfX2luaXQgc21iaW9zX3ByZXNlbnQoY29u
-c3QgY2hhciBfX2lvbWVtICpwKQogCQkJZG1pX3ZlciA9IDB4MDIwNjsKIAkJCWJyZWFrOwogCQl9
-Ci0JCW9mZnNldCA9IDE2OwogCX0KLQlyZXR1cm4gZG1pX3ByZXNlbnQoYnVmICsgb2Zmc2V0KTsK
-KwkvKiAxNiBpcyB0aGUgb2Zmc2V0IG9mIF9ETUlfIHN0cmluZy4gICovCisJcmV0dXJuIGRtaV9w
-cmVzZW50KGJ1ZiArIDE2KTsKIH0KIAogdm9pZCBfX2luaXQgZG1pX3NjYW5fbWFjaGluZSh2b2lk
-KQotLSAKMS43LjExLjcKCg==
---e89a8ff1c56a186c6b04d62be6ba--
+greg k-h
