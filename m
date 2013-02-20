@@ -1,112 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934133Ab3BTKOG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 05:14:06 -0500
-Received: from relay.parallels.com ([195.214.232.42]:50690 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932912Ab3BTKOA (ORCPT
+	id S934363Ab3BTKPs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 05:15:48 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:40964 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933445Ab3BTKPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 05:14:00 -0500
-Message-ID: <5124A1C0.7050105@parallels.com>
-Date: Wed, 20 Feb 2013 14:13:20 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: general protection fault in do_msgrcv  [3.8]
-References: <20130219180441.GA27141@redhat.com> <512487FA.9090102@parallels.com> <20130220100354.GL3600@redhat.com>
-In-Reply-To: <20130220100354.GL3600@redhat.com>
-Content-Type: text/plain; charset="KOI8-R"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.29.37]
+	Wed, 20 Feb 2013 05:15:46 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH] perf, x86: add Intel IvyBridge event scheduling constraints
+Date: Wed, 20 Feb 2013 11:15:12 +0100
+Message-Id: <1361355312-3323-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.02.2013 14:03, Gleb Natapov пишет:
-> On Wed, Feb 20, 2013 at 12:23:22PM +0400, Stanislav Kinsbursky wrote:
->> 19.02.2013 22:04, Dave Jones пишет:
->>> general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->>> Modules linked in: can af_rxrpc binfmt_misc scsi_transport_iscsi ax25 ipt_ULOG decnet nfc appletalk x25 rds ipx p8023 psnap p8022 llc irda crc_ccitt atm lockd sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables btusb bluetooth snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_pcm edac_core snd_page_alloc snd_timer microcode rfkill usb_debug serio_raw pcspkr snd soundcore vhost_net r8169 mii tun macvtap macvlan kvm_amd kvm
->>> CPU 2
->>> Pid: 887, comm: trinity-child2 Not tainted 3.8.0+ #57 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
->>> RIP: 0010:[<ffffffff812aebba>]  [<ffffffff812aebba>] do_msgrcv+0x22a/0x670
->>> RSP: 0018:ffff88011892be88  EFLAGS: 00010297
->>> RAX: 0000000000000000 RBX: 0000000000000001 RCX: 0000000000004000
->>> RDX: 000000007adea6f6 RSI: 6b6b6b6b6b6b6b6b RDI: ffff8801189ffb60
->>> RBP: ffff88011892bf68 R08: 0000000000000001 R09: 0000000000000000
->>> R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
->>> R13: ffff8801189ffc10 R14: ffff8801189ffb60 R15: 6b6b6b6b6b6b6b6b
->>> FS:  00007f681e955740(0000) GS:ffff88012f200000(0000) knlGS:0000000000000000
->>> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->>> CR2: 00007f681e846064 CR3: 000000012553d000 CR4: 00000000000007e0
->>> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->>> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->>> Process trinity-child2 (pid: 887, threadinfo ffff88011892a000, task ffff88010bc82490)
->>> Stack:
->>>   ffff88011892beb8 ffff88010bc82490 ffff88010bc82490 ffff88010bc82490
->>>   ffff8801186d8000 ffffffff812ad5f0 0000000001aba000 ffffffff81c688c0
->>>   000000007adea6f6 00000000001fffff 0000400046a9467e 6b6b6b6b6b6b6b6b
->>> Call Trace:
->>>   [<ffffffff812ad5f0>] ? load_msg+0x180/0x180
->>>   [<ffffffff810b8395>] ? trace_hardirqs_on_caller+0x115/0x1a0
->>>   [<ffffffff813347be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->>>   [<ffffffff812af015>] sys_msgrcv+0x15/0x20
->>>   [<ffffffff816a8482>] system_call_fastpath+0x16/0x1b
->>> Code: 84 14 01 00 00 8b 8d 74 ff ff ff 85 c9 0f 84 52 02 00 00 48 8b 95 60 ff ff ff 48 39 55 80 0f 84 4d 02 00 00 4c 89 bd 78 ff ff ff <4d> 8b 3f 48 ff 45 80 4d 39 ef 75 9a 66 90 48 81 bd 78 ff ff ff
->>> RIP  [<ffffffff812aebba>] do_msgrcv+0x22a/0x670
->>>   RSP <ffff88011892be88>
->>> ---[ end trace d3cc044a84b1d828 ]---
->>>
->>> oopsing instruction is..
->>>
->>>     0:	4d 8b 3f             	mov    (%r15),%r15
->>>
->>> Looks like a use-after-free.
->>>
->>> Disassembly of ipc/msg.o shows this happens here..
->>>
->>>                  msg = ERR_PTR(-EAGAIN);
->>>                  tmp = msq->q_messages.next;
->>>      1537:       4d 8b be b0 00 00 00    mov    0xb0(%r14),%r15
->>>                  while (tmp != &msq->q_messages) {
->>>      153e:       4d 8d ae b0 00 00 00    lea    0xb0(%r14),%r13
->>>      1545:       4d 39 ef                cmp    %r13,%r15
->>>      1548:       0f 84 5f 03 00 00       je     18ad <do_msgrcv+0x50d>
->>>      154e:       48 c7 45 80 00 00 00    movq   $0x0,-0x80(%rbp)
->>>      1555:       00
->>>      1556:       48 c7 85 78 ff ff ff    movq   $0xfffffffffffffff5,-0x88(%rbp)
->>>      155d:       f5 ff ff ff
->>>      1561:       eb 0d                   jmp    1570 <do_msgrcv+0x1d0>
->>>      1563:       0f 1f 44 00 00          nopl   0x0(%rax,%rax,1)
->>>                                          }
->>>                                  } else
->>>                                          break;
->>>                                  msg_counter++;
->>>                          }
->>>                          tmp = tmp->next;
->>>      1568:       4d 8b 3f                mov    (%r15),%r15
->>>                  if (ipcperms(ns, &msq->q_perm, S_IRUGO))
->>>                          goto out_unlock;
->>>
->>>                  msg = ERR_PTR(-EAGAIN);
->>>                  tmp = msq->q_messages.next;
->>>                  while (tmp != &msq->q_messages) {
->>>
->>> Looks like Stanislav recently changed this code, so problem was likely introduced
->>> in those changes.
->>>
->>
->> Hello.
->> Is it easy to reproduce? Do you use KVM?
-> Jugging by motherboard name in the OOPs it is not KVM. And since r15 is
-> 6b6b6b6b6b6b6b6b you need DEBUG_PAGEALLOC to reproduce.
->
+Intel IvyBridge processor has different constraints compared
+to SandyBridge. Therefore it needs its own contraint table.
+This patch adds the constraint table. Without this patch,
+the events listed in the patch may not be scheduled correctly
+and bogus counts may be collected.
 
-Ok, thanks!
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |   23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 4914e94..529c893 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -107,6 +107,27 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
+ 	EVENT_CONSTRAINT_END
+ };
+ 
++static struct event_constraint intel_ivb_event_constraints[] __read_mostly =
++{
++	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
++	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
++	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
++	INTEL_UEVENT_CONSTRAINT(0x0148, 0x4), /* L1D_PEND_MISS.PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x0279, 0xf), /* IDQ.EMTPY */
++	INTEL_UEVENT_CONSTRAINT(0x019c, 0xf), /* IDQ_UOPS_NOT_DELIVERED.CORE */
++	INTEL_UEVENT_CONSTRAINT(0x04a3, 0xf), /* CYCLE_ACTIVITY.CYCLES_NO_EXECUTE */
++	INTEL_UEVENT_CONSTRAINT(0x05a3, 0xf), /* CYCLE_ACTIVITY.STALLS_L2_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x06a3, 0xf), /* CYCLE_ACTIVITY.STALLS_LDM_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x08a3, 0x4), /* CYCLE_ACTIVITY.CYCLES_L1D_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x0ca3, 0x4), /* CYCLE_ACTIVITY.STALLS_L1D_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
++	INTEL_EVENT_CONSTRAINT(0xd0, 0xf), /* MEM_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd1, 0xf), /* MEM_LOAD_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd3, 0xf), /*  MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
++	EVENT_CONSTRAINT_END
++};
++
+ static struct extra_reg intel_westmere_extra_regs[] __read_mostly =
+ {
+ 	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
+@@ -2095,7 +2116,7 @@ __init int intel_pmu_init(void)
+ 
+ 		intel_pmu_lbr_init_snb();
+ 
+-		x86_pmu.event_constraints = intel_snb_event_constraints;
++		x86_pmu.event_constraints = intel_ivb_event_constraints;
+ 		x86_pmu.pebs_constraints = intel_ivb_pebs_event_constraints;
+ 		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+ 		x86_pmu.extra_regs = intel_snb_extra_regs;
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.9.5
+
