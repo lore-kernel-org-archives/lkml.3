@@ -1,68 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751170Ab3BTGj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 01:39:56 -0500
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:36206 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab3BTGjy (ORCPT
+	id S1752345Ab3BTGln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 01:41:43 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:41672 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab3BTGlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 01:39:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130219154128.GA15608@gmail.com>
-References: <20130219154128.GA15608@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 19 Feb 2013 22:39:33 -0800
-X-Google-Sender-Auth: lVDiSTShJV0QPVFFR_T6wMBZqIs
-Message-ID: <CA+55aFxn=xFGhF8L2pJYP8wOe3VdCpGtaibB0bbRuH8FAKkCNg@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/platform changes for v3.9
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 20 Feb 2013 01:41:40 -0500
+Date: Wed, 20 Feb 2013 01:41:37 -0500 (EST)
+Message-Id: <20130220.014137.1184382041985855584.davem@davemloft.net>
+To: rientjes@google.com
+Cc: mroos@ut.ee, linux-mm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sparclinux@vger.kernel.org
+Subject: Re: THP bug and crash on sparc64 3.8
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130219.144608.1425049879680985441.davem@davemloft.net>
+References: <20130219.143320.1413047009797673492.davem@davemloft.net>
+	<alpine.DEB.2.02.1302191134570.790@chino.kir.corp.google.com>
+	<20130219.144608.1425049879680985441.davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 19 Feb 2013 22:41:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 7:41 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> Please pull the latest x86-platform-for-linus git tree from:
 
-Hmm.
+Ok I've written an alternative version of the fix that I've been busy
+testing all evening.
 
-My main desktop just had a reboot failure - it just got stuck at the
-end, not powering down, and not rebooting like it should have.
+I think it's much better and it's about to be posted as a series of 3
+patches.
 
-This is *not* necessarily the pull that caused it, but 8f55cea410db
-rebooted cleanly, and 1a13c0b181f2 did not. That implies that it's one
-of your pull requests. The pulls I did in between are:
-
- - scheduler (with the dyntick and cputime accounting)
-
- - smp-hotplug-for-linus: stop_machine preparatory patches from Thomas..
-
- - timers-core-for-linus. Hmm..
-
- - x86-apic-for-linus: certainly possibly causing problems at shutdown..
-
- - x86-asm-for-linus: sounds unlikely, but who knows..
-
- - x86-boot-for-linus: shouldn't affect shutdown, but..
-
- - x86-build-for-linus: _really_ shouldn't affect shutdown..
-
- - x86-cleanups-for-linus: unlikely
-
- - x86-hyperv-for-linus: no, not a hyperv user ;)
-
- - x86-platform-for-linus: rebooting is a platform thing, but none of
-this seems relevant
-
- - x86-uv-for-linus: not likely relevant.
-
-I'm not going to bisect it right now, hoping that somebody goes "Hmm,
-maybe it's xyzzy". And maybe it was just a one-time event, but I don't
-recall having had that whole "reboot fails" case on this machine
-before. Any ideas?
-
-                              Linus
+Thanks.
