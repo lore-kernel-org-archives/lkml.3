@@ -1,109 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964785Ab3BTNU4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:20:56 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:40265 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934923Ab3BTNUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:20:54 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH 2/7] ACPI / scan: Introduce common code for ACPI-based device hotplug
-Date: Wed, 20 Feb 2013 14:27:30 +0100
-Message-ID: <1502998.UgYRH5gaN4@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51232557.2050302@jp.fujitsu.com>
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <51231EFC.5080006@jp.fujitsu.com> <51232557.2050302@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S964797Ab3BTNVR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:21:17 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44489
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934923Ab3BTNVP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 08:21:15 -0500
+Message-ID: <1361366462.10155.24.camel@laptop>
+Subject: Re: [RFC PATCH v3 1/3] sched: schedule balance map foundation
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Wed, 20 Feb 2013 14:21:02 +0100
+In-Reply-To: <510791B2.6090506@linux.vnet.ibm.com>
+References: <51079178.3070002@linux.vnet.ibm.com>
+	 <510791B2.6090506@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 19, 2013 04:10:15 PM Yasuaki Ishimatsu wrote:
-> 2013/02/19 15:43, Yasuaki Ishimatsu wrote:
-> > Hi Rafael,
-> >
-> > I have comments. Please see below.
-> >
-> > 2013/02/18 0:21, Rafael J. Wysocki wrote:
-> >> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >>
-> >> Multiple drivers handling hotplug-capable ACPI device nodes install
-> >> notify handlers covering the same types of events in a very similar
-> >> way.  Moreover, those handlers are installed in separate namespace
-> >> walks, although that really should be done during namespace scans
-> >> carried out by acpi_bus_scan().  This leads to substantial code
-> >> duplication, unnecessary overhead and behavior that is hard to
-> >> follow.
-> >>
-> >> For this reason, introduce common code in drivers/acpi/scan.c for
-> >> handling hotplug-related notification and carrying out device
-> >> insertion and eject operations in a generic fashion, such that it
-> >> may be used by all of the relevant drivers in the future.  To cover
-> >> the existing differences between those drivers introduce struct
-> >> acpi_hotplug_profile for representing collections of hotplug
-> >> settings associated with different ACPI scan handlers that can be
-> >> used by the drivers to make the common code reflect their current
-> >> behavior.
-> >>
-> >> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> ---
-> >>   drivers/acpi/scan.c     |  271 +++++++++++++++++++++++++++++++++++++-----------
-> >>   include/acpi/acpi_bus.h |    7 +
-> >>   2 files changed, 220 insertions(+), 58 deletions(-)
-> >>
-[...]
-> 
-> >> +static void acpi_scan_bus_device_check(acpi_handle handle, u32 ost_source)
-> >> +{
-> >> +    struct acpi_device *device = NULL;
-> >> +    u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
-> >> +    int error;
-> >> +
-> >> +    mutex_lock(&acpi_scan_lock);
-> >> +
-> >> +    acpi_bus_get_device(handle, &device);
-> >> +    if (device) {
-> >> +        dev_warn(&device->dev, "Attempt to re-insert\n");
-> >> +        goto out;
-> >> +    }
-> >> +    acpi_evaluate_hotplug_ost(handle, ost_source,
-> >> +                  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
-> >> +    ost_source = ACPI_OST_EC_OSPM_INSERTION;
-> >> +    error = acpi_bus_scan(handle);
-> >> +    if (error) {
-> >> +        acpi_handle_warn(handle, "Namespace scan failure\n");
-> >> +        goto out;
-> >> +    }
-> >> +    error = acpi_bus_get_device(handle, &device);
-> >> +    if (error) {
-> >> +        acpi_handle_warn(handle, "Missing device node object\n");
-> >> +        goto out;
-> >> +    }
-> >> +    ost_code = ACPI_OST_SC_SUCCESS;
-> >> +    if (device->handler && device->handler->hotplug.uevents)
-> >> +        kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
-> >>
-> >>    out:
-> >> +    acpi_evaluate_hotplug_ost(handle, ost_source, ost_code, NULL);
-> >> +    mutex_unlock(&acpi_scan_lock);
-> >> +}
-> 
-> Why don't you check _STA method in acpi_scan_bus_device_check()?
-> When hot adding new device, we must check _STA method of the device.
+On Tue, 2013-01-29 at 17:09 +0800, Michael Wang wrote:
+> +       for_each_possible_cpu(cpu) {
+> +               sbm = &per_cpu(sbm_array, cpu);
+> +               node = cpu_to_node(cpu);
+> +               size = sizeof(struct sched_domain *) * sbm_max_level;
+> +
+> +               for (type = 0; type < SBM_MAX_TYPE; type++) {
+> +                       sbm->sd[type] = kmalloc_node(size, GFP_KERNEL,
+> node);
+> +                       WARN_ON(!sbm->sd[type]);
+> +                       if (!sbm->sd[type])
+> +                               goto failed;
+> +               }
+> +       }
 
-Yes, which is going to happen in acpi_bus_scan().
+You can't readily use kmalloc_node() here, cpu_to_node() might return an
+invalid node for offline cpus here.
 
-Thanks,
-Rafael
+Also see: 2ea45800d8e1c3c51c45a233d6bd6289a297a386
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
