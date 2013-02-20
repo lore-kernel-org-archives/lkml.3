@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759213Ab3BTKkt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 05:40:49 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:33662 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759197Ab3BTKkr (ORCPT
+	id S934477Ab3BTKnU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 05:43:20 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:47011 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759232Ab3BTKnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 05:40:47 -0500
-Date: Wed, 20 Feb 2013 11:40:43 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        anton@samba.org, hpa@zytor.com, arjan@linux.intel.com,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        yuanhan.liu@linux.intel.com, dhowells@redhat.com,
-        akpm@linux-foundation.org, tglx@linutronix.de
-Subject: Re: [PATCH 0/4] rwsem: Implement writer lock-stealing
-Message-ID: <20130220104043.GB7691@gmail.com>
-References: <1360377937-16297-1-git-send-email-walken@google.com>
- <511B9B4F.3060404@intel.com>
- <20130213144932.GA14260@gmail.com>
- <CANN689FJcUZq1wcVZXO+jLOHOeCPnOf5kfYgYVykG6-YLSjj7g@mail.gmail.com>
- <51248E59.2010907@intel.com>
+	Wed, 20 Feb 2013 05:43:16 -0500
+Date: Wed, 20 Feb 2013 10:43:10 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Marcus Cooper <codekipper@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Marcus Cooper <marcus.xm.cooper@stericsson.com>,
+        linus.walleij@stericsson.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, sameo@linux.intel.com
+Subject: Re: [PATCH 06/35] mfd: ab8500-core: Sysfs chip id modification
+Message-ID: <20130220104310.GA4417@gmail.com>
+References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
+ <1360933026-30325-7-git-send-email-lee.jones@linaro.org>
+ <201302192204.45153.arnd@arndb.de>
+ <20130220081311.GB3368@gmail.com>
+ <CAEKpxBk=bgTx18A2J6mVT5RBBq3ZJAqswz-6NvNpTRP=u9pgwQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51248E59.2010907@intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAEKpxBk=bgTx18A2J6mVT5RBBq3ZJAqswz-6NvNpTRP=u9pgwQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 20 Feb 2013, Marcus Cooper wrote:
 
-* Alex Shi <alex.shi@intel.com> wrote:
+> On 20 February 2013 09:13, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Tue, 19 Feb 2013, Arnd Bergmann wrote:
+> >
+> >> On Friday 15 February 2013, Lee Jones wrote:
+> >> >         struct ab8500 *ab8500;
+> >> > +       int chip_id = -EINVAL;
+> >> >
+> >> >         ab8500 = dev_get_drvdata(dev);
+> >> > -       return sprintf(buf, "%#x\n", ab8500 ? ab8500->chip_id : -EINVAL);
+> >> > +       if(ab8500) {
+> >> > +               chip_id = ab8500->chip_id;
+> >> > +               if((is_ab8505(ab8500) || is_ab9540(ab8500)) && ab8500->version != 0xFF)
+> >> > +                       chip_id = (ab8500->version << 8) | chip_id;
+> >> > +       }
+> >> > +       return sprintf(buf, "%#x\n", chip_id);
+> >> >  }
+> >>
+> >> What's the use of printing "ffffffea" for unknown versions here?
+> >
+> > You mean instead of -EINVAL? No idea, Marcus?
+> >
+> Looks like I'm guilty of just making the minimal changes. Arnd is
+> right though, getting ffffffea(-EINVAL) back is pretty useless.
+> I'll have to check user land to see what is using this.
 
-> > Alex, could you go through my patch and see if there is 
-> > anything you find objectionable ? (if not about the details, 
-> > at least about the general approach of enabling writer lock 
-> > stealing on the fast path)
-> 
-> I did a quick review on the patchset and tested the patches 
-> 1~3, and 1~3 plus 4th, my patch plus 4th.
-> 
-> The patch looks much complicated, and also goes writing slow 
-> path to steal locking. My patch looks quite straight and 
-> simple.
-> 
-> This 1~3 patch has very very similar performance effect with 
-> mine.
-> 
-> The highlight patch is the 4th, seems it can provide about ~2% 
-> aim7 performance gain(base on both of mine or patches 1~3) on 
-> my 4S NHM EX machine.
+Yes, it would be useful to know how it's parsed.
 
-That speedup would be nice to have.
+Thanks Marcus.
 
-Thanks,
+> Maybe not
+> printing and returning 0 should be the correct behaviour
+> when an unknown version is found.
 
-	Ingo
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
