@@ -1,133 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964849Ab3BTUWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 15:22:53 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:54691 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935915Ab3BTUPQ (ORCPT
+	id S935878Ab3BTUXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 15:23:50 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:47541 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935790Ab3BTUXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 15:15:16 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v4 12/32] n_tty: Fully initialize ldisc before restarting buffer work
-Date: Wed, 20 Feb 2013 15:02:59 -0500
-Message-Id: <1361390599-15195-13-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
-References: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
-In-Reply-To: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
-References: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Wed, 20 Feb 2013 15:23:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKMK7uGDpSKga9=2SrGQDxBGzY5B1cGJAchZvfKfQy1ivRONMg@mail.gmail.com>
+References: <CANeU7QmbzX4Tx1Dtu6xOiYzr6h6_8tPQvVG32Wvkt=5wAwEEAg@mail.gmail.com>
+	<20130219100849.72d2330b@jbarnes-desktop>
+	<CANeU7QmJb+yUGu9mVgq=_pHhvpPu6ORrikm=E6PkuHpOz9OREA@mail.gmail.com>
+	<20130219125217.6b6f55ff@jbarnes-desktop>
+	<CANeU7QnQmKYXHA=aEuRGZDc7hVdY6037i=+s_n3FZNMN2njDsw@mail.gmail.com>
+	<CAKMK7uG7TgiAn0ZQ=E_-QBPNAVhTSxpORkX3Z1mY=54mgTzM-g@mail.gmail.com>
+	<CANeU7QnMzYuG6iiU3nLh4k0dGFMEDOyfUDQgxQSKj20_y-oL+Q@mail.gmail.com>
+	<CAKMK7uGDpSKga9=2SrGQDxBGzY5B1cGJAchZvfKfQy1ivRONMg@mail.gmail.com>
+Date: Wed, 20 Feb 2013 12:23:41 -0800
+X-Google-Sender-Auth: zD5WpxjsBh-qSku31pzMnBFMfPw
+Message-ID: <CANeU7Qko6o9nJ-Rm3+hdQQC2iYDXKZq019H+B8ekxFULHwpB=Q@mail.gmail.com>
+Subject: Re: i915 black screen introduced by ACPI changes
+From: Chris Li <lkml@chrisli.org>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+        robert.moore@intel.com, feng.tang@intel.com, len.brown@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Buffer work may already be pending when the n_tty ldisc is re-opened,
-eg., when setting the ldisc (via TIOCSETD ioctl) and when hanging up
-the tty. Since n_tty_set_room() may restart buffer work, first ensure
-the ldisc is completely initialized.
+On Wed, Feb 20, 2013 at 12:19 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> The debug option did not stick for some reason. Also you're hitting a
+> bunch of WARNs in our driver self-checks. Iirc those should be fixed
+> in the latest code. Can you please test with the latest
+> drm-intel-nightly branch from
+>
+> http://cgit.freedesktop.org/~danvet/drm-intel
 
-Factor n_tty_set_room() out of reset_buffer_flags() (only 2 callers)
-and reorganize n_tty_open() to set termios last; buffer work will
-be restarted there if necessary, after the char_map is properly
-initialized.
+Sure, working on that.
 
-Fixes this WARNING:
 
-[  549.561769] ------------[ cut here ]------------
-[  549.598755] WARNING: at drivers/tty/n_tty.c:160 n_tty_set_room+0xff/0x130()
-[  549.604058] scheduling buffer work for halted ldisc
-[  549.607741] Pid: 9417, comm: trinity-child28 Tainted: G      D W 3.7.0-next-20121217-sasha-00023-g8689ef9 #219
-[  549.652580] Call Trace:
-[  549.662754]  [<ffffffff81c432cf>] ? n_tty_set_room+0xff/0x130
-[  549.665458]  [<ffffffff8110cae7>] warn_slowpath_common+0x87/0xb0
-[  549.668257]  [<ffffffff8110cb71>] warn_slowpath_fmt+0x41/0x50
-[  549.671007]  [<ffffffff81c432cf>] n_tty_set_room+0xff/0x130
-[  549.673268]  [<ffffffff81c44597>] reset_buffer_flags+0x137/0x150
-[  549.675607]  [<ffffffff81c45b71>] n_tty_open+0x131/0x1c0
-[  549.677699]  [<ffffffff81c47824>] tty_ldisc_open.isra.5+0x54/0x70
-[  549.680147]  [<ffffffff81c482bf>] tty_ldisc_hangup+0x11f/0x1e0
-[  549.682409]  [<ffffffff81c3fa17>] __tty_hangup+0x137/0x440
-[  549.684634]  [<ffffffff81c3fd49>] tty_vhangup+0x9/0x10
-[  549.686443]  [<ffffffff81c4a42c>] pty_close+0x14c/0x160
-[  549.688446]  [<ffffffff81c41225>] tty_release+0xd5/0x490
-[  549.690460]  [<ffffffff8127d8a2>] __fput+0x122/0x250
-[  549.692577]  [<ffffffff8127d9d9>] ____fput+0x9/0x10
-[  549.694534]  [<ffffffff811348c2>] task_work_run+0xb2/0xf0
-[  549.696349]  [<ffffffff81113c6d>] do_exit+0x36d/0x580
-[  549.698286]  [<ffffffff8107d964>] ? syscall_trace_enter+0x24/0x2e0
-[  549.702729]  [<ffffffff81113f4a>] do_group_exit+0x8a/0xc0
-[  549.706775]  [<ffffffff81113f92>] sys_exit_group+0x12/0x20
-[  549.711088]  [<ffffffff83cfab18>] tracesys+0xe1/0xe6
-[  549.728001] ---[ end trace 73eb41728f11f87e ]---
+>
+> Also can you please attach a dmesg from a working kernel without the
+> i915.modeset=0 option?
 
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+I did in one of my previous email, the attach file is "dmesg.3.6.10".
+I just double check it without the "i915.modeset=0".
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index a786f4e..66ce178 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -219,9 +219,8 @@ static void check_unthrottle(struct tty_struct *tty)
-  *	Locking: tty_read_lock for read fields.
-  */
- 
--static void reset_buffer_flags(struct tty_struct *tty)
-+static void reset_buffer_flags(struct n_tty_data *ldata)
- {
--	struct n_tty_data *ldata = tty->disc_data;
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&ldata->read_lock, flags);
-@@ -234,7 +233,6 @@ static void reset_buffer_flags(struct tty_struct *tty)
- 
- 	ldata->canon_head = ldata->canon_data = ldata->erasing = 0;
- 	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
--	n_tty_set_room(tty);
- }
- 
- static void n_tty_packet_mode_flush(struct tty_struct *tty)
-@@ -262,7 +260,8 @@ static void n_tty_packet_mode_flush(struct tty_struct *tty)
- 
- static void n_tty_flush_buffer(struct tty_struct *tty)
- {
--	reset_buffer_flags(tty);
-+	reset_buffer_flags(tty->disc_data);
-+	n_tty_set_room(tty);
- 
- 	if (tty->link)
- 		n_tty_packet_mode_flush(tty);
-@@ -1654,14 +1653,14 @@ static int n_tty_open(struct tty_struct *tty)
- 		goto err_free_bufs;
- 
- 	tty->disc_data = ldata;
--	/* indicate buffer work may resume */
--	clear_bit(TTY_LDISC_HALTED, &tty->flags);
--	reset_buffer_flags(tty);
--	tty_unthrottle(tty);
-+	reset_buffer_flags(tty->disc_data);
- 	ldata->column = 0;
--	n_tty_set_termios(tty, NULL);
- 	tty->minimum_to_wake = 1;
- 	tty->closing = 0;
-+	/* indicate buffer work may resume */
-+	clear_bit(TTY_LDISC_HALTED, &tty->flags);
-+	n_tty_set_termios(tty, NULL);
-+	tty_unthrottle(tty);
- 
- 	return 0;
- err_free_bufs:
--- 
-1.8.1.2
-
+Chris
