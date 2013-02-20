@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934424Ab3BTQkO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 11:40:14 -0500
-Received: from mout.perfora.net ([74.208.4.194]:61945 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933811Ab3BTQkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 11:40:12 -0500
-Message-ID: <5124FB41.5000106@nctritech.com>
-Date: Wed, 20 Feb 2013 11:35:13 -0500
-From: Jody - Tritech Computer Solutions <jody@nctritech.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S934348Ab3BTQkj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 11:40:39 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:62427 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933477Ab3BTQki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 11:40:38 -0500
+Message-ID: <5124FC82.5040305@suse.cz>
+Date: Wed, 20 Feb 2013 17:40:34 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, andrew.wood@ivarch.com
-Subject: CIFS 'cache=strict' breaks 'pv' utility
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Karel Zak <kzak@redhat.com>
+CC: gregkh@linuxfoundation.org, alan@linux.intel.com, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Bryan Mason <bmason@redhat.com>
+Subject: Re: [PATCH] TTY: do not reset master's packet mode
+References: <1358288782-2946-1-git-send-email-jslaby@suse.cz> <20130220131903.GA8501@x2.net.home>
+In-Reply-To: <20130220131903.GA8501@x2.net.home>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:MMuAuO4bMhBLmLz6rmgfGYdTUaeVyfvg3fwctWmbtIf
- GRguN10GAtFnhbrvDwsUtIVnXJvKcHb+Qck3n40qWFMsWiwti/
- Imo0+X/BFNsN8DOndVk4dhYbj8q5BddgR+U+WWxBPTSIdaUIlk
- Z5ntScqFtfPL15UJmG++Dy4h1vuXyrqdeiswehAkIZgMzjvcDZ
- Fai3gcw9LwCNDgRgrvkxwaaFK/vvh7j0hg8ey88x9jxC0njeqU
- WMQkn+rl8gHLwKX8g+zgrtHcPbVkWmy707CduhvwAvIbcsna5x
- KeSD4IBfzAQ3B1GqIslxdMreReC7RLEXN7n6YfVUmQBpahdP9J
- Q/cI6ENsXmavca2eo1WXcolub21n2aqHUFZNeCxAK
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+On 02/20/2013 02:19 PM, Karel Zak wrote:
+> On Tue, Jan 15, 2013 at 11:26:22PM +0100, Jiri Slaby wrote:
+>> Now that login from util-linux is forced to drop all references to a
+>> TTY which it wants to hangup (to reach reference count 1) we are
+>> seeing issues with telnet. When login closes its last reference to the
+>> slave PTY, it also resets packet mode on the *master* side. And we
+>> have a race here.
+> 
+> [...]
+> 
+>> By this I am resurrecting an old bug, see References. We are hitting
+>> it regularly now, i.e. with updated util-linux, ergo login.
+>>
+>> Here, I am changing a behavior introduced back in 2.1 times. It would
+>> better have a long time testing before goes upstream.
+> 
+>  It would be nice to found a quick way how to resolve this problem,
+>  because telnet+login is broken now... and for end users it seems like
+>  a regression.
 
-After the switch from 'cache=loose' to 'cache=strict' as the default 
-CIFS cache mount option, I am unable to use the 'pv' utility in place of 
-'cat' to read files beyond a certain size over CIFS. Mounting with 
-'cache=loose' works around the problem, but does not change the 
-breakage. If I mount with 'cache=strict' on 3.6.11 (the last stable 
-kernel that works out-of-the-box) the breakage occurs again.
+Oh, the patch is in the TTY tree and I suppose it will go to 3.9-rc1
+(and to stable as we will get to same later -rc -- to have some testing).
 
-I hit this problem on 32-bit and 64-bit kernels, pv-1.2.0 and the latest 
-pv-1.4.6, and the failure is tied to 'cache=strict' on all kernels from 
-3.6.11 through 3.8.
+>  Maybe the requirement (patch) to close all references to TTY before
+>  hangup should reverted or we can make an exception in login(1) code to
+>  keep TTY open when login(1) is executed with -h (as used by telned).
 
-My testing with a command such as 'pv /mnt/cifs/file.tar.xz | wc -c' 
-indicates that 'pv' outputs the data up to a certain power-of-two point 
-and then fails with "pv: (stdin): read failed: Input/output error". I 
-have seen data stop transferring at 524288, 1048576, and 2097152 bytes 
-when I tried feeding it various file sizes.
+If we reverted the patch in login, we would have to revert also a patch
+in the TTY which closes a window allowing you to crash a kernel at will
+(in fact that patch disallows multiple opens when hanging up a terminal.
+IOW only the one to hang the terminal is allowed to have it opened.)
 
-I am able to use 'pv' with files on CIFS mounted as 'cache=strict' if I 
-reduce the buffer size on the command line (the -B xxx option) to 131072 
-or lower, while setting a buffer of 262144 or higher always fails.
-
-I am sending this to the LKML as well as the 'pv' maintainer, since I do 
-not know the scope of the issue. If this exposes an unknown bug in the 
-kernel CIFS driver, I don't want it to fly under the radar. I am 
-available for testing and reporting as needed.
-
-I don't subscribe to LKML, so please CC me on any responses.
-
---
-
-Jody Lee Bruchon
-Tritech Computer Solutions
+-- 
+js
+suse labs
