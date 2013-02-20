@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759112Ab3BTJ1f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 04:27:35 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:20083 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759091Ab3BTJ1c (ORCPT
+	id S933891Ab3BTJ2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 04:28:19 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:56706 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758703Ab3BTJ2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 04:27:32 -0500
-X-AuditID: cbfee68f-b7f656d000000d78-cf-512496f9fc48
+	Wed, 20 Feb 2013 04:28:17 -0500
+X-AuditID: cbfee691-b7f556d000001a24-c0-5124972f7993
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH V2 1/9] mfd: 88pm860x: drop devm_kfree of devm_kzalloc'd data
-Date: Wed, 20 Feb 2013 18:27:21 +0900
-Message-id: <000f01ce0f4c$7c1d01d0$74570570$%han@samsung.com>
+References: <000f01ce0f4c$7c1d01d0$74570570$%han@samsung.com>
+In-reply-to: <000f01ce0f4c$7c1d01d0$74570570$%han@samsung.com>
+Subject: [PATCH V2 2/9] mfd: lm3533: use devm_gpio_request_one()
+Date: Wed, 20 Feb 2013 18:28:15 +0900
+Message-id: <001001ce0f4c$9c41c450$d4c54cf0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4PTHvvVazquf7TSyaZqgztkH4/LA==
+Thread-index: Ac4PTHvvVazquf7TSyaZqgztkH4/LAAAAlbg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t8zQ92f01QCDX6t1La4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZL2bdYCo4z1XxbvMptgbGwxxdjJwcEgImEvc+X2SFsMUkLtxb
-	z9bFyMUhJLCMUWL1/ZXMXYwcYEVrDpVCxKczStyfcRuqaDaTxONzE8G62QTUJL58OcwOYosI
-	aEl0HzvPBtLMLOAicXSaCEhYWMBX4mXvcbASFgFViTMNi8FaeQVsJaZM2skGYQtK/Jh8jwXE
-	ZgYas37ncSYIW15i85q3UPeoSzz6qwuxSU/i5c/3UOUiEvtevGMEOU1CoJldYteyB2wQuwQk
-	vk0+xALRKyux6QAzxL+SEgdX3GCZwCg2C8nmWUg2z0KyeRaSFQsYWVYxiqYWJBcUJ6UXGesV
-	J+YWl+al6yXn525ihMRJ/w7GuwesDzEmA62fyCwlmpwPjLO8knhDY2MTMxNTE3NLU3NT0oSV
-	xHnlL8kECgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBMsp37neXgDwHFr74V344HT97Mdeld
-	8ZGG918jNVccfJj6aprAudBSVY/bTY+tWCwstov0TdOo/F5qXHa00U9NpjdmudOdKyKB788t
-	T6u8qzrZM67W/fnpO5PsVj/YYy3ZnPPmTJZdV8TOmveW9neSo9bplH/KTXvVfSrPKUvW/TXX
-	3X6OpiYlluKMREMt5qLiRAAl3YSpqQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jQd2f01QCDeZ+U7W4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGS9m3WAqOM9V8W7zKbYG
-	xsMcXYwcHBICJhJrDpV2MXICmWISF+6tZ+ti5OIQEpjOKHF/xm0oZzaTxONzE1lBqtgE1CS+
-	fDnMDmKLCGhJdB87zwYyiFnAReLoNBGQsLCAr8TL3uNgJSwCqhJnGhaDtfIK2EpMmbSTDcIW
-	lPgx+R4LiM0MNGb9zuNMELa8xOY1b5khblOXePRXF2KTnsTLn++hykUk9r14xziBUWAWkkmz
-	kEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIER+Ez6R2MqxosDjEKcDAq
-	8fA2LFQOFGJNLCuuzD3EKMHBrCTC+7NDJVCINyWxsiq1KD++qDQntfgQYzLQoxOZpUST84EJ
-	Iq8k3tDYxMzI0sjMwsjE3Jw0YSVxXsZTTwKEBNITS1KzU1MLUotgtjBxcEo1MAo+rmhJv9+z
-	O3ydlDlnj1PpVPlSgU5mvx9B6Ynscma3jkVsT3quVLOMdVvE5pb8A0/nr8k/Lta2RUD9wlfL
-	/cz5dbkl69sWqm7OZ4sy1Hs9RV7/0Lznsy6+X278oMJbVNDSviVt2eEH4nLTIufpXHTNbPxy
-	5mr6h203XRN5lp8tPM0uOdmuU4mlOCPRUIu5qDgRAHsNdPYGAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zY1396SqBBvt6VCwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGsQXvmQqec1Us/tjF3sD4j6OLkYNDQsBE4tOs0C5GTiBTTOLC
+	vfVsXYxcHEICyxglnr7dzAaRMJFo/PWRGSIxnVHi/639jBDObCaJjzMegFWxCahJfPlymB3E
+	FhHQkug+dp4NZAOzgIvE0WkiIGEhAVuJR11bmUFsTgE7iZZr88BsYQEHiRWb+8BaWQRUJfZO
+	+g42kheofsnNlywQtqDEj8n3wGxmoPHrdx5ngrDlJTavecsM8Yy6xKO/uhAXGEn0ztvICFEi
+	IrHvxTuwkyUE5rFLPL1znhFil4DEt8mHWCB6ZSU2HWCG+FdS4uCKGywTGCVmIdk8C8nmWUg2
+	z0KyYgEjyypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MkLiauIPx/gHrQ4zJQOsnMkuJJucD
+	4zKvJN7Q2NjEzMTUxNzS1NyUNGElcV75SzKBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhjl
+	Zsp6NMw85VR5dE1oovRTX/mDb5L3RAT37V/N0qZUf3/38kdPP6z7JfFVsLZNblJmwq0znziK
+	ts3hLvMQffDkQV3B9mvz1tyZuOyP1NTDnMyvN3jOPnGr8pNnX8WK+yfKe9hiQt5I58ZuvfVr
+	JsfptS1vDvLuPbiDQ7k6L5m1YHUxQyL3lfsVSizFGYmGWsxFxYkAe3VtYsECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+xoK7+dJVAg/O7FCwu75rD5sDo8XmT
+	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
+	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxrEF75kKnnNVLP7Yxd7A
+	+I+ji5GTQ0LARKLx10dmCFtM4sK99WxdjFwcQgLTGSX+39rPCOHMZpL4OOMBG0gVm4CaxJcv
+	h9lBbBEBLYnuY+eB4hwczAIuEkeniYCEhQRsJR51bQUbyilgJ9FybR6YLSzgILFicx9YK4uA
+	qsTeSd/BRvIC1S+5+ZIFwhaU+DH5HpjNDDR+/c7jTBC2vMTmNW+ZQVZJCKhLPPqrC3GBkUTv
+	vI2MECUiEvtevGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLz
+	czcxguP2mfQOxlUNFocYBTgYlXh4GxYqBwqxJpYVV+YeYpTgYFYS4f3ZoRIoxJuSWFmVWpQf
+	X1Sak1p8iDEZ6NGJzFKiyfnAlJJXEm9obGJmZGlkZmFkYm5OmrCSOC/jqScBQgLpiSWp2amp
+	BalFMFuYODilGhgbF3UY9nBvWis4eYLxn5v+KgeYEpyUT7mwW62uWaakEKuiE8oWfFmVQ3ex
+	5a98JffjvzpMLOY4dTS/V5svqTNLfjfXyZnnvqzbrFF1IHyrr9ri5e9YNE87sU4wcS/L1ykO
+	uvaB0TL96rZnM3s/l9Zs85XbeOzwr8K80oCSdIuMvDIO0Yp3SUosxRmJhlrMRcWJAFEVAcgf	AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,53 +52,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_kfree() allocates memory that is released when a driver detaches.
-Thus, there is no reason to explicitly call devm_kfree() in probe or remove
-functions.
+Use devm_gpio_request_one() to make cleanup paths more simple.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
 No changes since v1:
 
- drivers/mfd/88pm860x-core.c |   12 +++---------
- 1 files changed, 3 insertions(+), 9 deletions(-)
+ drivers/mfd/lm3533-core.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index 893fc1b..31ca555 100644
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -1144,17 +1144,15 @@ static int pm860x_probe(struct i2c_client *client,
- 			return -ENOMEM;
- 		ret = pm860x_dt_init(node, &client->dev, pdata);
- 		if (ret)
--			goto err;
-+			return ret;
- 	} else if (!pdata) {
- 		pr_info("No platform data in %s!\n", __func__);
- 		return -EINVAL;
- 	}
+diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
+index ceebf2c..4b7e6da 100644
+--- a/drivers/mfd/lm3533-core.c
++++ b/drivers/mfd/lm3533-core.c
+@@ -496,8 +496,8 @@ static int lm3533_device_init(struct lm3533 *lm3533)
+ 	dev_set_drvdata(lm3533->dev, lm3533);
  
- 	chip = kzalloc(sizeof(struct pm860x_chip), GFP_KERNEL);
--	if (chip == NULL) {
--		ret = -ENOMEM;
--		goto err;
--	}
-+	if (chip == NULL)
-+		return -ENOMEM;
+ 	if (gpio_is_valid(lm3533->gpio_hwen)) {
+-		ret = gpio_request_one(lm3533->gpio_hwen, GPIOF_OUT_INIT_LOW,
+-								"lm3533-hwen");
++		ret = devm_gpio_request_one(lm3533->dev, lm3533->gpio_hwen,
++					GPIOF_OUT_INIT_LOW, "lm3533-hwen");
+ 		if (ret < 0) {
+ 			dev_err(lm3533->dev,
+ 				"failed to request HWEN GPIO %d\n",
+@@ -528,8 +528,6 @@ err_unregister:
+ 	mfd_remove_devices(lm3533->dev);
+ err_disable:
+ 	lm3533_disable(lm3533);
+-	if (gpio_is_valid(lm3533->gpio_hwen))
+-		gpio_free(lm3533->gpio_hwen);
  
- 	chip->id = verify_addr(client);
- 	chip->regmap = regmap_init_i2c(client, &pm860x_regmap_config);
-@@ -1194,10 +1192,6 @@ static int pm860x_probe(struct i2c_client *client,
+ 	return ret;
+ }
+@@ -542,8 +540,6 @@ static void lm3533_device_exit(struct lm3533 *lm3533)
  
- 	pm860x_device_init(chip, pdata);
- 	return 0;
--err:
--	if (node)
--		devm_kfree(&client->dev, pdata);
--	return ret;
+ 	mfd_remove_devices(lm3533->dev);
+ 	lm3533_disable(lm3533);
+-	if (gpio_is_valid(lm3533->gpio_hwen))
+-		gpio_free(lm3533->gpio_hwen);
  }
  
- static int pm860x_remove(struct i2c_client *client)
+ static bool lm3533_readable_register(struct device *dev, unsigned int reg)
 -- 
 1.7.2.5
 
