@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758956Ab3BTSYo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 13:24:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28071 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756216Ab3BTSYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 13:24:43 -0500
-Date: Wed, 20 Feb 2013 13:24:32 -0500
-From: Dave Jones <davej@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: general protection fault in do_msgrcv  [3.8]
-Message-ID: <20130220182432.GA32377@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Stanislav Kinsbursky <skinsbursky@parallels.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <20130219180441.GA27141@redhat.com>
- <512487FA.9090102@parallels.com>
+	id S1759097Ab3BTS2c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 13:28:32 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:64207 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758932Ab3BTS2a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 13:28:30 -0500
+From: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
+To: <devicetree-discuss@lists.ozlabs.org>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] of/i2c: don't register disabled devices
+Date: Wed, 20 Feb 2013 22:28:24 +0400
+Message-ID: <1361384904-13853-1-git-send-email-dmitry_eremin@mentor.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <512487FA.9090102@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginalArrivalTime: 20 Feb 2013 18:28:26.0800 (UTC) FILETIME=[12F7D300:01CE0F98]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 12:23:22PM +0400, Stanislav Kinsbursky wrote:
+Don't register i2c slave device tree nodes which have
+status = "disabled" property.
 
- > > Pid: 887, comm: trinity-child2 Not tainted 3.8.0+ #57 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
- > > RIP: 0010:[<ffffffff812aebba>]  [<ffffffff812aebba>] do_msgrcv+0x22a/0x670
- > > ...
- > > Looks like Stanislav recently changed this code, so problem was likely introduced
- > > in those changes.
- > >
- > 
- > Is it easy to reproduce? Do you use KVM?
+Signed-off-by: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
+---
+ drivers/of/of_i2c.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Only hit it once so far, no KVM
-
- > There is a NULL selinux handler bug fix by Stephen Smalley here:
- > https://lkml.org/lkml/2013/2/6/663
- > 
- > But anyway, this bug fix affects only the case, when MSG_COPY flag is set.
- > 
- > And this is not your case, I suppose?
-
->From my reading of the traces, I'd say not. It looks like I'm oopsing before
-we even get to the SELinux hooks.
-
-	Dave
+diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
+index 1e173f3..63f3236 100644
+--- a/drivers/of/of_i2c.c
++++ b/drivers/of/of_i2c.c
+@@ -35,6 +35,9 @@ void of_i2c_register_devices(struct i2c_adapter *adap)
+ 		const __be32 *addr;
+ 		int len;
+ 
++		if (!of_device_is_available(node))
++			continue;
++
+ 		dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
+ 
+ 		if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
+-- 
+1.7.10.4
 
