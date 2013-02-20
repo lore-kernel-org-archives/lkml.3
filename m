@@ -1,86 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933238Ab3BTInz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 03:43:55 -0500
-Received: from mout.gmx.net ([212.227.15.18]:58611 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab3BTIny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 03:43:54 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/malwiR5HmmlZyYGw8torPE8GeLYkLOsHsF9qgIV
-	M6kFb/gNr0v9Ei
-Message-ID: <1361349823.5919.78.camel@marge.simpson.net>
-Subject: Re: [patch v5 10/15] sched: packing transitory tasks in wake/exec
- power balancing
-From: Mike Galbraith <efault@gmx.de>
-To: Alex Shi <alex.shi@intel.com>
-Cc: peterz@infradead.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        morten.rasmussen@arm.com
-Date: Wed, 20 Feb 2013 09:43:43 +0100
-In-Reply-To: <51248541.3030004@intel.com>
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
-	 <1361164062-20111-11-git-send-email-alex.shi@intel.com>
-	 <20130218084439.GB10009@lge.com> <5121ECD9.3020300@intel.com>
-	 <5124654E.8040001@intel.com> <1361346030.5919.63.camel@marge.simpson.net>
-	 <51248541.3030004@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1758785Ab3BTIoj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 03:44:39 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:56283 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab3BTIoh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 03:44:37 -0500
+Date: Wed, 20 Feb 2013 00:44:34 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] hp-wmi: fix handling of platform device
+Message-ID: <20130220084433.GA9957@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-20 at 16:11 +0800, Alex Shi wrote: 
-> On 02/20/2013 03:40 PM, Mike Galbraith wrote:
-> > On Wed, 2013-02-20 at 13:55 +0800, Alex Shi wrote:
-> > 
-> >> Joonsoo Kim suggests not packing exec task, since the old task utils is
-> >> possibly unuseable.
-> > 
-> > (I'm stumbling around in rtmutex PI land, all dazed and confused, so
-> > forgive me if my peripheral following of this thread is off target;)
-> > 
-> > Hm, possibly.  Future behavior is always undefined, trying to predict
-> > always a gamble... so it looks to me like not packing on exec places a
-> > bet against the user, who chose to wager that powersaving will happen
-> > and it won't cost him too much, if you don't always try to pack despite
-> > any risks.  The user placed a bet on powersaving, not burst performance.
-> > 
-> > Same for the fork, if you spread to accommodate a potential burst, you
-> > bin the power wager, so maybe it's not in his best interest.. fork/exec
-> > is common, if it's happening frequently, you'll bin the potential power
-> > win frequently, reducing effectiveness, and silently trading power for
-> > performance when the user asked to trade performance for a lower
-> > electric bill.
-> > 
-> > Dunno, just a thought, but I'd say for powersaving policy, you have to
-> > go just for broke and hope it works out.  You can't know it won't, but
-> > you'll toss potential winnings every time you don't roll the dice.
-> 
-> 
-> Sounds reasonable too.
-> 
-> I have no idea of the of the decision now.
-> And guess many guys dislike to use a knob to let user do the choice.
+The driver will not quite work if someone unbinds the platform device
+from the platform driver via sysfs (moreover it will bomb is the driver
+built into the kernel as hp_wmi_bios_remove is marked as __exit and will
+not be present in the kernel).
 
-Nobody likes seeing yet more knobs much, automagical is preferred.
-Trouble with automagical heuristics usage is that any heuristic will
-inevitably get it wrong sometimes, so giving the user control over usage
-is IMHO a good thing.. and once we give the user the choice, we must
-honor it, else what was the point?
+To fix it let's use platform_driver_probe() instead of
+platform_driver_register(), which disables binding/unbinding via sysfs.
+This also allows us to mark hp_wmi_bios_setup as __init and discard it
+once module is initialized.
 
-Anyway, fwiw, I liked what I saw test driving the patch set..
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
 
-> What's your opinions, Peter?
+Compiled only, no hardware to run.
 
-..but maintainer opinions carry more weight than mine, even to me ;-)
+ drivers/platform/x86/hp-wmi.c | 69 +++++++++++++++++++------------------------
+ 1 file changed, 30 insertions(+), 39 deletions(-)
 
--Mike
+diff --git a/drivers/platform/x86/hp-wmi.c b/drivers/platform/x86/hp-wmi.c
+index 1dde7ac..de78024 100644
+--- a/drivers/platform/x86/hp-wmi.c
++++ b/drivers/platform/x86/hp-wmi.c
+@@ -72,10 +72,6 @@ enum hp_wmi_event_ids {
+ 	HPWMI_LOCK_SWITCH = 7,
+ };
+ 
+-static int hp_wmi_bios_setup(struct platform_device *device);
+-static int __exit hp_wmi_bios_remove(struct platform_device *device);
+-static int hp_wmi_resume_handler(struct device *device);
+-
+ struct bios_args {
+ 	u32 signature;
+ 	u32 command;
+@@ -157,21 +153,6 @@ struct rfkill2_device {
+ static int rfkill2_count;
+ static struct rfkill2_device rfkill2[HPWMI_MAX_RFKILL2_DEVICES];
+ 
+-static const struct dev_pm_ops hp_wmi_pm_ops = {
+-	.resume  = hp_wmi_resume_handler,
+-	.restore  = hp_wmi_resume_handler,
+-};
+-
+-static struct platform_driver hp_wmi_driver = {
+-	.driver = {
+-		.name = "hp-wmi",
+-		.owner = THIS_MODULE,
+-		.pm = &hp_wmi_pm_ops,
+-	},
+-	.probe = hp_wmi_bios_setup,
+-	.remove = hp_wmi_bios_remove,
+-};
+-
+ /*
+  * hp_wmi_perform_query
+  *
+@@ -778,7 +759,7 @@ fail:
+ 	return err;
+ }
+ 
+-static int hp_wmi_bios_setup(struct platform_device *device)
++static int __init hp_wmi_bios_setup(struct platform_device *device)
+ {
+ 	int err;
+ 
+@@ -874,12 +855,29 @@ static int hp_wmi_resume_handler(struct device *device)
+ 	return 0;
+ }
+ 
++static const struct dev_pm_ops hp_wmi_pm_ops = {
++	.resume  = hp_wmi_resume_handler,
++	.restore  = hp_wmi_resume_handler,
++};
++
++static struct platform_driver hp_wmi_driver = {
++	.driver = {
++		.name = "hp-wmi",
++		.owner = THIS_MODULE,
++		.pm = &hp_wmi_pm_ops,
++	},
++	.remove = __exit_p(hp_wmi_bios_remove),
++};
++
+ static int __init hp_wmi_init(void)
+ {
+ 	int err;
+ 	int event_capable = wmi_has_guid(HPWMI_EVENT_GUID);
+ 	int bios_capable = wmi_has_guid(HPWMI_BIOS_GUID);
+ 
++	if (!bios_capable && !event_capable)
++		return -ENODEV;
++
+ 	if (event_capable) {
+ 		err = hp_wmi_input_setup();
+ 		if (err)
+@@ -887,34 +885,29 @@ static int __init hp_wmi_init(void)
+ 	}
+ 
+ 	if (bios_capable) {
+-		err = platform_driver_register(&hp_wmi_driver);
+-		if (err)
+-			goto err_driver_reg;
+-		hp_wmi_platform_dev = platform_device_alloc("hp-wmi", -1);
+-		if (!hp_wmi_platform_dev) {
+-			err = -ENOMEM;
+-			goto err_device_alloc;
++		hp_wmi_platform_dev =
++			platform_device_register_simple("hp-wmi", -1, NULL, 0);
++		if (IS_ERR(hp_wmi_platform_dev)) {
++			err = PTR_ERR(hp_wmi_platform_dev);
++			goto err_destroy_input;
+ 		}
+-		err = platform_device_add(hp_wmi_platform_dev);
++
++		err = platform_driver_probe(&hp_wmi_driver, hp_wmi_bios_setup);
+ 		if (err)
+-			goto err_device_add;
++			goto err_unregister_device;
+ 	}
+ 
+-	if (!bios_capable && !event_capable)
+-		return -ENODEV;
+-
+ 	return 0;
+ 
+-err_device_add:
+-	platform_device_put(hp_wmi_platform_dev);
+-err_device_alloc:
+-	platform_driver_unregister(&hp_wmi_driver);
+-err_driver_reg:
++err_unregister_device:
++	platform_device_unregister(hp_wmi_platform_dev);
++err_destroy_input:
+ 	if (event_capable)
+ 		hp_wmi_input_destroy();
+ 
+ 	return err;
+ }
++module_init(hp_wmi_init);
+ 
+ static void __exit hp_wmi_exit(void)
+ {
+@@ -926,6 +919,4 @@ static void __exit hp_wmi_exit(void)
+ 		platform_driver_unregister(&hp_wmi_driver);
+ 	}
+ }
+-
+-module_init(hp_wmi_init);
+ module_exit(hp_wmi_exit);
+-- 
+1.7.11.7
 
+-- 
+Dmitry
