@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935009Ab3BTL0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 06:26:45 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53587 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934252Ab3BTL0n (ORCPT
+	id S1759202Ab3BTL2n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 06:28:43 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:50585 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab3BTL2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 06:26:43 -0500
-Date: Wed, 20 Feb 2013 11:26:40 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: J Keerthy <j-keerthy@ti.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, rob@landley.net, gg@slimlogic.co.uk,
-        sameo@linux.intel.com, liam.r.girdwood@intel.com
-Subject: Re: [PATCH 1/4] documentation: add palmas dts definition
-Message-ID: <20130220112639.GA2726@opensource.wolfsonmicro.com>
-References: <1361332815-2348-1-git-send-email-j-keerthy@ti.com>
+	Wed, 20 Feb 2013 06:28:42 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
-Content-Disposition: inline
-In-Reply-To: <1361332815-2348-1-git-send-email-j-keerthy@ti.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201302201114.49304.arnd@arndb.de>
+References: <1361198522-23789-1-git-send-email-shc_work@mail.ru>
+	<201302201006.41287.arnd@arndb.de>
+	<CAP1dx+xj3+PVu98pRBAOhLxvOzhwE7VNShMLmqk-jy_CgXh8GA@mail.gmail.com>
+	<201302201114.49304.arnd@arndb.de>
+Date: Wed, 20 Feb 2013 19:28:40 +0800
+Message-ID: <CAP1dx+x_+jXTdWM2oH7JTBSQfy97hHkJVTmu8=3X_6iEiuAb4A@mail.gmail.com>
+Subject: Re: Re[8]: [PATCH v3] mfd: syscon: Add non-DT support
+From: Dong Aisheng <dong.aisheng@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Alexander Shiyan <shc_work@mail.ru>, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 20 February 2013 19:14, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 20 February 2013, Dong Aisheng wrote:
+>> On 20 February 2013 18:06, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > I would first like to get an answer to the question I asked in my first mail,
+>> > which is what the use case of non-DT support in this driver is. If this
+>> > is used only by a new platform that has to use DT anyway, or by an existing
+>> > platform that is easy enough to convert, we probably shouldn't do all this
+>> > at all.
+>> >
+>>
+>> If the platform can convert to dt, then we do not have such issue.
+>> The question is do we allow the existing non-dt platforms to use it
+>> before converting?
+>
+> I think the answer to that is "it depends". It's basically a question of
+> how much work it would be to convert the platforms that need it over to
+> DT, and how much of the interface it actually needs. E.g. if there is
+> only one in-tree platform that needs to use syscon but can't easily be
+> moved over to DT, but that platform can only have a single syscon device,
+> then we don't need any of the matching support but could simply return
+> the first regmap area we have in the list.
+>
+> Of course, if the platform in question is out of tree, I would argue
+> that the whatever patches are needed by that platform should also
+> remain out of tree.
+>
 
---sdtB3X0nJg68CQEu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Basically i agree with your point.
+Alexander seems to be the first non-dt user of syscon driver.
+He may answer whether they could choose to convert to dt first.
+But one question i wonder is that it may be hard to know how many poteintial
+non-dt platforms may use syscon.
 
-On Wed, Feb 20, 2013 at 09:30:15AM +0530, J Keerthy wrote:
-> From: Graeme Gregory <gg@slimlogic.co.uk>
->=20
-> Add the DTS definition for the palmas device including the MFD children.
->=20
-> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> [j-keerthy@ti.com: changed the DT node property names to follow the
-> convention]
-> Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> ---
->  Documentation/devicetree/bindings/mfd/palmas.txt |   67 ++++++++++++++++=
-++++++
->  1 files changed, 67 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
->=20
-> diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documenta=
-tion/devicetree/bindings/mfd/palmas.txt
-> new file mode 100644
-> index 0000000..5fa922e
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/palmas.txt
-> @@ -0,0 +1,67 @@
-> +Texas Instruments Palmas family
-> +
-> +The Palmas familly are Integrated Power Management Chips.
-> +These chips are connected to an i2c bus.
-
-I would expect this to enumerate the regulators that the user can select
-but it doesn't appear to do that.
-
---sdtB3X0nJg68CQEu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRJLLcAAoJELSic+t+oim9As8P/35bAdML0+0ZnfYXryHiKfxX
-slMl0SUFTNh+8/j9d5GH7bHOl9USf/7gwG9wl1L4Zq6/YzguatdKrH0fvslEDAEu
-T89vDE3kuWeL/e5D2u3qV332StdqZ2IhNaYCQNXWCsCcCV/N3qMOvqgElGvhFNoC
-R4uYifcwQ7gx+gNsXD9rdHdmmgQcaP0CCEIqRAjpp06pTaMA0BTFiPNU+3SyAGyI
-VuMAt14CCULdkOT7O/ptZlvUQ243nb+8Wfx+ZTCLVYObi0SPSBQNOoxQGVorIXq9
-e9b5SXlghozy6afu5q3olYTgkzj1EbNBMkoHiM6ZXUKz3JXZYVSXkGLYi4BPHc7R
-ssjFnhOdsQa85ZUQDw3AhFzvGTG2Z10fnDoFUBQWaHFgIV7O4KNJhdQlxUq6eRYW
-Velsq548FFrjiaJUzteLjpZ3u7DDhB6Pe+2hYgKMt9UBJ2MspEU0VTcGmZ/yPo1U
-gm5jqYZ3ZOp7lipcl/ZQlPn0bHaT3CzwRcZSUWAHH6JsAfb0UGmrgkHHrwl/TC5Z
-lK4Rzpjp+vAwwo5Q0sD08QZ5d9VDPMU2CGidvEla+r3kjeNVmwlJIXH5G7t+QrdH
-ctbF/B++nBid4ia18ekZ5PUm3ZkLLjrFNPrMBHQvAGlSYLNaQsVPGioDmbyHmLDh
-xXotrWk5VVCXDgD5fCGj
-=hMUI
------END PGP SIGNATURE-----
-
---sdtB3X0nJg68CQEu--
+Regards
+Dong Aisheng
