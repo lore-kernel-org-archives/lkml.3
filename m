@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935116Ab3BTMZX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 07:25:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42655 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934317Ab3BTMZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 07:25:21 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH] KEYS: Revert one application of "Fix unreachable code" patch
-To: torvalds@linux-foundation.org
-From: David Howells <dhowells@redhat.com>
-Cc: jkosina@suse.cz, akpm@linux-foundation.org, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 20 Feb 2013 12:24:32 +0000
-Message-ID: <20130220122431.1410.12819.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.16
+	id S935230Ab3BTM0v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 07:26:51 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:54146 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756355Ab3BTM0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 07:26:49 -0500
+X-IronPort-AV: E=Sophos;i="4.84,701,1355068800"; 
+   d="scan'208";a="6736858"
+Message-ID: <5124B991.1020302@cn.fujitsu.com>
+Date: Wed, 20 Feb 2013 19:54:57 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Simon Jeons <simon.jeons@gmail.com>
+CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        bcrl@kvack.org, viro@zeniv.linux.org.uk, khlebnikov@openvz.org,
+        walken@google.com, kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org,
+        riel@redhat.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, jiang.liu@huawei.com,
+        mhocko@suse.cz, linux-mm@kvack.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mm: hotplug: implement non-movable version of get_user_pages()
+ called get_user_pages_non_movable()
+References: <1359972248-8722-1-git-send-email-linfeng@cn.fujitsu.com> <1359972248-8722-2-git-send-email-linfeng@cn.fujitsu.com> <20130204160624.5c20a8a0.akpm@linux-foundation.org> <20130205115722.GF21389@suse.de> <20130205133244.GH21389@suse.de> <51249E3E.9070909@gmail.com> <5124A42B.1020905@cn.fujitsu.com> <5124B42A.1020908@gmail.com>
+In-Reply-To: <5124B42A.1020908@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/20 19:55:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/20 19:55:59,
+	Serialize complete at 2013/02/20 19:55:59
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
 
-A patch to fix some unreachable code in search_my_process_keyrings() got
-applied twice by two different routes upstream:
 
-	commit e67eab39bee26f509d38d00ca1a8f24b63f46a31
-	Author: Alan Cox <alan@linux.intel.com>
-	Date:   Thu Dec 20 15:05:54 2012 -0800
-	keys: fix unreachable code
+On 02/20/2013 07:31 PM, Simon Jeons wrote:
+> On 02/20/2013 06:23 PM, Lin Feng wrote:
+>> Hi Simon,
+>>
+>> On 02/20/2013 05:58 PM, Simon Jeons wrote:
+>>>> The other is that this almost certainly broken for transhuge page
+>>>> handling. gup returns the head and tail pages and ordinarily this is ok
+>>> When need gup thp? in kvm case?
+>> gup just pins the wanted pages(for x86 is 4k size) of user address space in memory.
+>> We can't expect the pages have been allocated for user address space are thp or
+>> normal page. So we need to deal with them and I think it have nothing to do with kvm.
+> 
+> Ok, I'm curious about userspace process call which funtion(will call gup) to pin pages except make_pages_present?
+No, userspace process doesn't pin any pages directly but through some syscalls like io_setup() indirectly
+for other purpose because kernel can't pagefault and it have to keep the page alive.
+Kernel wants to communicate with the userspace such as to notify some events so it need some sort of buffer
+that both Kernel and User space can both access, which leads to so called pin pages by gup.  
 
-and:
-
-	commit b010520ab3d2c05eb444ed5e01fe6c33842f597a
-	Author: Alan Cox <alan@linux.intel.com>
-	Date:   Thu Oct 25 15:23:35 2012 +0100
-	keys: Fix unreachable code
-
-Unfortunately, the second application removed something it shouldn't have and
-this wasn't detected by GIT.  This is due to the patch not having sufficient
-lines of context to distinguish the two places of application.
-
-So revert the second application of the patch.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Jiri Kosina <jkosina@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>
----
-
- security/keys/process_keys.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 20e4bf5..58dfe08 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -367,6 +367,8 @@ key_ref_t search_my_process_keyrings(struct key_type *type,
- 
- 		switch (PTR_ERR(key_ref)) {
- 		case -EAGAIN: /* no key */
-+			if (ret)
-+				break;
- 		case -ENOKEY: /* negative key */
- 			ret = key_ref;
- 			break;
-
+thanks,
+linfeng
