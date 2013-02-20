@@ -1,151 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933477Ab3BTQce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 11:32:34 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:4155 "EHLO multi.imgtec.com"
+	id S933813Ab3BTQdF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 11:33:05 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:42574 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932757Ab3BTQcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 11:32:33 -0500
-Message-ID: <5124FA93.5090504@imgtec.com>
-Date: Wed, 20 Feb 2013 16:32:19 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1750884Ab3BTQdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 11:33:02 -0500
+Date: Wed, 20 Feb 2013 17:32:58 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 07/33] nohz: Basic full dynticks interface
+Message-ID: <20130220163258.GB16780@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Alessio Igor Bogani <abogani@kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Chris Metcalf <cmetcalf@tilera.com>,
+	Christoph Lameter <cl@linux.com>,
+	Geoff Levand <geoff@infradead.org>,
+	Gilad Ben Yossef <gilad@benyossef.com>,
+	Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+	Li Zhong <zhong@linux.vnet.ibm.com>,
+	Namhyung Kim <namhyung.kim@lge.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Paul Gortmaker <paul.gortmaker@windriver.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
+ <1357610913-1080-8-git-send-email-fweisbec@gmail.com>
+ <20130211143529.GB2749@pd.tnic>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, <arm@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: Re: [PATCH 01/11] ARM: disable virt_to_bus/virt_to_bus almost everywhere
-References: <1360849767-1463135-1-git-send-email-arnd@arndb.de> <1360849767-1463135-2-git-send-email-arnd@arndb.de> <CAAG0J9_VqCGJJJZjSWGfFggALHU=vdWsSBeS39-DtxV=VXcJwQ@mail.gmail.com> <201302201600.47522.arnd@arndb.de>
-In-Reply-To: <201302201600.47522.arnd@arndb.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_02_20_16_32_21
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130211143529.GB2749@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/02/13 16:00, Arnd Bergmann wrote:
-> On Wednesday 20 February 2013, James Hogan wrote:
->> There's a patch in linux-next by Stephen Rothwell "Centralise
->> CONFIG_ARCH_NO_VIRT_TO_BUS" that removes this Kconfig symbol,
->> inverting/replacing it with "select HAVE_VIRT_TO_BUS" (including for
->> arch/arm) which will undo the effects of this.
+On Mon, Feb 11, 2013 at 03:35:29PM +0100, Borislav Petkov wrote:
+> > +/* Parse the boot-time nohz CPU list from the kernel parameters. */
+> > +static int __init tick_nohz_full_setup(char *str)
+> > +{
+> > +	alloc_bootmem_cpumask_var(&full_nohz_mask);
+> > +	have_full_nohz_mask = true;
+> > +	cpulist_parse(str, full_nohz_mask);
 > 
-> Ah, thanks for pointing that out. At least my patch is harmless then
-> although also useless. I'll leave it in for now so I don't have to
-> rebase all the other bug fixes that are queued for 3.9, but I'm making
-> a note that I'll have to replace this with a proper one. I also
-> don't think that anything breaks if we apply both patches for a while,
-> it will just make my patch useless.
-
-Agreed.
-
-> I guess you'll have to do something similar for arch/metag, and Vineet
-> will do it for arch/arc.
-
-Yes, I have a little series of patches to fix this sort of harmless
-thing in arch/metag, removing GENERIC_SIGALTSTACK, HAVE_IRQ_WORK,
-ARCH_NO_VIRT_TO_BUS, and CONFIG_EXPERIMENTAL from defconfigs. I wasn't
-sure how it's normally handled though, so I was just going to wait until
-the other things go in before requesting a second pull.
-
+> Don't you want to check retval of cpulist_parse first here before
+> assigning have_full_nohz_mask and allocating cpumask var?
 > 
-> Stephen's patch is currently in Andrew's tree, and I don't see an easy
-> way to coordinate this. The patch we will need once both are merged
-> is below.
+> We don't trust userspace, you know.
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > +	return 1;
+> > +}
+> > +__setup("full_nohz=", tick_nohz_full_setup);
 
-FWIW:
-Acked-by: James Hogan <james.hogan@imgtec.com> (for arch/metag)
+One more thing. AFAICT, full_nohz requires rcu_nocbs to pass in the same
+mask, right?
 
-Cheers
-James
+Maybe tick_nohz_full_setup() could be made to call rcu_nocb_setup()
+without the need to pass "rcu_nocbs=" option on the cmd line; in the
+sense that if user supplies a full_nohz mask, she wants the same mask
+for rcu_nocbs...
 
-> 
-> diff --git a/arch/arc/Kconfig b/arch/arc/Kconfig
-> index 4fef29f..5829b67 100644
-> --- a/arch/arc/Kconfig
-> +++ b/arch/arc/Kconfig
-> @@ -76,9 +76,6 @@ config HAVE_LATENCYTOP_SUPPORT
->  config NO_DMA
->  	def_bool n
->  
-> -config ARCH_NO_VIRT_TO_BUS
-> -	def_bool y
-> -
->  source "init/Kconfig"
->  source "kernel/Kconfig.freezer"
->  
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index dedf02b..7b35b39 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -49,7 +49,6 @@ config ARM
->  	select HAVE_REGS_AND_STACK_ACCESS_API
->  	select HAVE_SYSCALL_TRACEPOINTS
->  	select HAVE_UID16
-> -	select HAVE_VIRT_TO_BUS
->  	select KTIME_SCALAR
->  	select PERF_USE_VMALLOC
->  	select RTC_LIB
-> @@ -744,6 +743,7 @@ config ARCH_RPC
->  	select NEED_MACH_IO_H
->  	select NEED_MACH_MEMORY_H
->  	select NO_IOPORT
-> +	select HAVE_VIRT_TO_BUS
->  	help
->  	  On the Acorn Risc-PC, Linux can support the internal IDE disk and
->  	  CD-ROM interface, serial and parallel port, and the floppy drive.
-> @@ -880,6 +880,7 @@ config ARCH_SHARK
->  	select NEED_MACH_MEMORY_H
->  	select PCI
->  	select ZONE_DMA
-> +	select HAVE_VIRT_TO_BUS
->  	help
->  	  Support for the StrongARM based Digital DNARD machine, also known
->  	  as "Shark" (<http://www.shark-linux.de/shark.html>).
-> @@ -1462,10 +1463,6 @@ config ISA_DMA
->  	bool
->  	select ISA_DMA_API
->  
-> -config ARCH_NO_VIRT_TO_BUS
-> -	def_bool y
-> -	depends on !ARCH_RPC && !ARCH_NETWINDER && !ARCH_SHARK
-> -
->  # Select ISA DMA interface
->  config ISA_DMA_API
->  	bool
-> diff --git a/arch/arm/mach-footbridge/Kconfig b/arch/arm/mach-footbridge/Kconfig
-> index abda5a1..42bf587 100644
-> --- a/arch/arm/mach-footbridge/Kconfig
-> +++ b/arch/arm/mach-footbridge/Kconfig
-> @@ -67,6 +67,7 @@ config ARCH_NETWINDER
->  	select ISA
->  	select ISA_DMA
->  	select PCI
-> +	select HAVE_VIRT_TO_BUS
->  	help
->  	  Say Y here if you intend to run this kernel on the Rebel.COM
->  	  NetWinder.  Information about this machine can be found at:
-> diff --git a/arch/metag/Kconfig b/arch/metag/Kconfig
-> index 30adc78..03e216e 100644
-> --- a/arch/metag/Kconfig
-> +++ b/arch/metag/Kconfig
-> @@ -35,9 +35,6 @@ config METAG
->  	select OF_EARLY_FLATTREE
->  	select SPARSE_IRQ
->  
-> -config ARCH_NO_VIRT_TO_BUS
-> -	def_bool y
-> -
->  config STACKTRACE_SUPPORT
->  	def_bool y
->  
-> 
+Thanks.
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
