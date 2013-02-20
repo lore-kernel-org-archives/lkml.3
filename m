@@ -1,114 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935738Ab3BTEB2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 23:01:28 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57030 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934010Ab3BTEB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 23:01:27 -0500
-From: J Keerthy <j-keerthy@ti.com>
-To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <j-keerthy@ti.com>, <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <rob@landley.net>, <gg@slimlogic.co.uk>,
-        <broonie@opensource.wolfsonmicro.com>, <sameo@linux.intel.com>,
-        <liam.r.girdwood@intel.com>
-Subject: [PATCH 1/4] documentation: add palmas dts definition
-Date: Wed, 20 Feb 2013 09:30:15 +0530
-Message-ID: <1361332815-2348-1-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S935788Ab3BTEJc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 23:09:32 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11270 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934951Ab3BTEJ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 23:09:28 -0500
+X-Authority-Analysis: v=2.0 cv=adbjbGUt c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=S8Df2DjCdSsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=asl1r4hDyFwA:10 a=ubFgiO5nTAOVMy0qMVEA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=7a3aQjawoir7MAdM-6kA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130220040926.725614699@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 19 Feb 2013 23:07:29 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 1/7] ktest: Do not require CONSOLE for build or install bisects
+References: <20130220040728.921685169@goodmis.org>
+Content-Disposition: inline; filename=0001-ktest-Do-not-require-CONSOLE-for-build-or-install-bi.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Graeme Gregory <gg@slimlogic.co.uk>
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Add the DTS definition for the palmas device including the MFD children.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-[j-keerthy@ti.com: changed the DT node property names to follow the
-convention]
-Signed-off-by: J Keerthy <j-keerthy@ti.com>
+If the user is doing a build or install bisect, there's no reason to
+have them define CONSOLE, as the console does not need to be read. The
+console only needs to be read for boot tests.
+
+CONSOLE is not required for normal build or install tests, let's not
+require it for bisect tests with BISECT_TYPE of build or install.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- Documentation/devicetree/bindings/mfd/palmas.txt |   67 ++++++++++++++++++++++
- 1 files changed, 67 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/palmas.txt
+ tools/testing/ktest/ktest.pl |   27 ++++++++++++++++++++++-----
+ 1 file changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
-new file mode 100644
-index 0000000..5fa922e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/palmas.txt
-@@ -0,0 +1,67 @@
-+Texas Instruments Palmas family
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index 35fc584..d6690df 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -619,6 +619,18 @@ sub set_value {
+ 	# Note if a test is something other than build, then we
+ 	# will need other manditory options.
+ 	if ($prvalue ne "install") {
++	    # for bisect, we need to check BISECT_TYPE
++	    if ($prvalue ne "bisect") {
++		$buildonly =3D 0;
++	    }
++	} else {
++	    # install still limits some manditory options.
++	    $buildonly =3D 2;
++	}
++    }
 +
-+The Palmas familly are Integrated Power Management Chips.
-+These chips are connected to an i2c bus.
++    if ($buildonly && $lvalue =3D~ /^BISECT_TYPE(\[.*\])?$/ && $prvalue ne=
+ "build") {
++	if ($prvalue ne "install") {
+ 	    $buildonly =3D 0;
+ 	} else {
+ 	    # install still limits some manditory options.
+@@ -1279,6 +1291,7 @@ sub start_monitor {
+ }
+=20
+ sub end_monitor {
++    return if (!defined $console);
+     if (--$monitor_cnt) {
+ 	return;
+     }
+@@ -1585,7 +1598,7 @@ sub wait_for_input
+=20
+     $rin =3D '';
+     vec($rin, fileno($fp), 1) =3D 1;
+-    $ready =3D select($rin, undef, undef, $time);
++    ($ready, $time) =3D select($rin, undef, undef, $time);
+=20
+     $line =3D "";
+=20
+@@ -1891,15 +1904,19 @@ sub get_version {
+=20
+ sub start_monitor_and_boot {
+     # Make sure the stable kernel has finished booting
+-    start_monitor;
+-    wait_for_monitor 5;
+-    end_monitor;
 +
-+
-+Required properties:
-+- compatible : Must be "ti,palmas";
-+  For Integrated power-management in the palmas series, twl6035, twl6037,
-+  tps65913
-+- interrupts : This i2c device has an IRQ line connected to the main SoC
-+- interrupt-controller : Since the palmas support several interrupts internally,
-+  it is considered as an interrupt controller cascaded to the SoC one.
-+- #interrupt-cells = <1>;
-+- interrupt-parent : The parent interrupt controller.
-+
-+Optional node:
-+- Child nodes contain in the palmas. The palmas family is made of several
-+  variants that support a different number of features.
-+  The child nodes will thus depend of the capability of the variant.
-+- mux-pad1 if a value is given it will be used for the pad1 mux
-+- mux-pad2 if a value us given it will be used for the pad2 mux
-+- power-ctrl if a value is given it will be written to the POWER_CTRL register
-+
-+Example:
-+/*
-+ * Integrated Power Management Chip Palmas
-+ */
-+palmas@48 {
-+    compatible = "ti,palmas";
-+    reg = <0x48>;
-+    interrupts = <39>; /* IRQ_SYS_1N cascaded to gic */
-+    interrupt-controller;
-+    #interrupt-cells = <1>;
-+    interrupt-parent = <&gic>;
-+    #address-cells = <1>;
-+    #size-cells = <0>;
-+
-+	ti,mux-pad1 = <0x00>;
-+	ti,mux-pad2 = <0x00>;
-+	ti,power-ctrl = <0x03>;
-+
-+	palmas_pmic {
-+		compatible = "ti,palmas_pmic";
-+		regulators {
-+			smps12_reg: smps12 {
-+				regulator-min-microvolt = < 600000>;
-+                regulator-max-microvolt = <1500000>;
-+				regulator-always-on;
-+				regulator-boot-on;
-+                ti,warm-sleep = <0>;
-+                ti,roof-floor = <0>;
-+                ti,mode-sleep = <0>;
-+                ti,warm-reset = <0>;
-+                ti,tstep = <0>;
-+                ti,vsel = <0>;
-+			};
-+		};
-+		ti,ldo6-vibrator = <0>;
-+	};
-+
-+    palmas_rtc {
-+        compatible = "ti,palmas_rtc";
-+        interrupts = <8 9>;
-+        reg = <0>;
-+    };
-+};
--- 
-1.7.5.4
++    # Install bisects, don't need console
++    if (defined $console) {
++	start_monitor;
++	wait_for_monitor 5;
++	end_monitor;
++    }
+=20
+     get_grub_index;
+     get_version;
+     install;
+=20
+-    start_monitor;
++    start_monitor if (defined $console);
+     return monitor;
+ }
+=20
+--=20
+1.7.10.4
 
+
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAABAgAGBQJRJEx2AAoJEOdOSU1xswtM34kIAMgQZ7kyDt1fsZ5bmlWLt9OM
+Uc1Flo7rWU1oJ22T2nFPWkxQnmZ207UFbncrRrHZfC0swPGUgxz7SoR6xyz4R2A7
+HApAyZqgwdqrgkJGq1s7yUnhhWeGl2eUIyZ7lv18Zq84XdFEwEcqKXYN7FcnJRKj
+DjLDw9gl0k3oMk5xhzk6/DYnkOkplKW6oMvABPZTxl/Nhq+4JsFmRUaMB2NiUQPo
+ZsLMF13kqK9v29zGBaN8LH9B9qDN0tKv9vJCKnknBmoYyE+wiR1pa2wKxRYVvj8C
+bjYIsiaaCYucuIDIE+MiN+2t7ko9BvHkW6cWDiSAD8kKiM+Jn1prfk/hTMDXtxQ=
+=Pgoh
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
