@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934607Ab3BTSRt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 13:17:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7052 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933919Ab3BTSRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 13:17:47 -0500
-Date: Wed, 20 Feb 2013 13:17:32 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/platform changes for v3.9
-Message-ID: <20130220181732.GA20870@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ingo Molnar <mingo@kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <20130219154128.GA15608@gmail.com>
- <CA+55aFxn=xFGhF8L2pJYP8wOe3VdCpGtaibB0bbRuH8FAKkCNg@mail.gmail.com>
- <CA+55aFzE_BtpN8LWbZbScF7=1P9oh0mvqRjESHLWmQHrKEvJsA@mail.gmail.com>
+	id S934674Ab3BTSRz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 13:17:55 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:47323 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933919Ab3BTSRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 13:17:52 -0500
+Date: Wed, 20 Feb 2013 10:17:47 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Simon Glass <sjg@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Che-Liang Chiou <clchiou@chromium.org>,
+        Jonathan Kliegman <kliegs@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        Olof Johansson <olofj@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v5 2/6] mfd: Add ChromeOS EC implementation
+Message-ID: <20130220181746.GA15152@core.coreip.homeip.net>
+References: <1361381079-26747-1-git-send-email-sjg@chromium.org>
+ <1361381079-26747-3-git-send-email-sjg@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzE_BtpN8LWbZbScF7=1P9oh0mvqRjESHLWmQHrKEvJsA@mail.gmail.com>
+In-Reply-To: <1361381079-26747-3-git-send-email-sjg@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 09:15:31AM -0800, Linus Torvalds wrote:
- > On Tue, Feb 19, 2013 at 10:39 PM, Linus Torvalds
- > <torvalds@linux-foundation.org> wrote:
- > >
- > > My main desktop just had a reboot failure - it just got stuck at the
- > > end, not powering down, and not rebooting like it should have.
- > 
- > Ok, it doesn't seem to be repeatable, so I'm going to ignore it until
- > it happens again.
+On Wed, Feb 20, 2013 at 09:24:35AM -0800, Simon Glass wrote:
+> This is the base EC implementation, which provides a high level
+> interface to the EC for use by the rest of the kernel. The actual
+> communcations is dealt with by a separate protocol driver which
+> registers itself with this interface.
+> 
+> Interrupts are passed on through a notifier.
+> 
+> A simple message structure is used to pass messages to the
+> protocol driver.
+> Signed-off-by: Simon Glass <sjg@chromium.org>
+> Signed-off-by: Che-Liang Chiou <clchiou@chromium.org>
+> Signed-off-by: Jonathan Kliegman <kliegs@chromium.org>
+> Signed-off-by: Luigi Semenzato <semenzato@chromium.org>
+> Signed-off-by: Olof Johansson <olofj@chromium.org>
+> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
 
-FWIW, I just saw this happen too on an AMD box running your tree as of
-ece8e0b2f9c980e5511fe8db2d68c6f1859b9d83
+...
 
-Not going to have time to bisect it though, due to travel.
+>  
+> +config MFD_CROS_EC
+> +	bool "Support ChromeOS Embedded Controller"
+> +	help
+> +	  If you say Y here you get support for the ChromeOS Embedded
+> +	  Controller (EC) providing keyboard, battery and power services.
+> +	  You also ned to enable the driver for the bus you are using. The
+> +	  protocol for talking to the EC is defined by the bus driver.
 
-	Dave
+Why can't it be a module?
 
+> +
+> +#ifndef __LINUX_MFD_CROS_EC_H
+> +#define __LINUX_MFD_CROS_EC_H
+> +
+> +struct i2c_msg;
+
+I do not believe this is needed here.
+
+Thanks.
+
+-- 
+Dmitry
