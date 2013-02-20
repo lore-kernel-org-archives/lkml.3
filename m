@@ -1,47 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750929Ab3BTWMj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 17:12:39 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:46674 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab3BTWMi (ORCPT
+	id S1751197Ab3BTWNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 17:13:10 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:44893 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab3BTWNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 17:12:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <512549BE.70304@oracle.com>
-References: <1361385853-29010-1-git-send-email-sasha.levin@oracle.com>
-	<CAOS58YMT3NS-8zvwx1tNQoLKM1WtKtT-YXBPi=4pAeAMi=rYeA@mail.gmail.com>
-	<512522CF.1020901@oracle.com>
-	<20130220210116.GD3570@htj.dyndns.org>
-	<20130220132300.ccffde44.akpm@linux-foundation.org>
-	<20130220213701.GE3570@htj.dyndns.org>
-	<20130220140551.8017e795.akpm@linux-foundation.org>
-	<512549BE.70304@oracle.com>
-Date: Wed, 20 Feb 2013 14:12:37 -0800
-X-Google-Sender-Auth: 6iRk2yLGEe28Ts8iKJ766FJjpRM
-Message-ID: <CAOS58YM77VdO9EoH-5LKZ0NBR0d41GE900goqktU29Oi5=Ov8g@mail.gmail.com>
-Subject: Re: [PATCH] posix-timer: don't call idr_find() w/ negative ID
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Feb 2013 17:13:08 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCHv6 3/8] debugfs: add get/set for atomic types
+Date: Wed, 20 Feb 2013 16:04:43 -0600
+Message-Id: <1361397888-14863-4-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022022-7606-0000-0000-000008A01B0E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 2:10 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> I do think that if you have to resort to using something like that there's
-> something terribly wrong with the code somewhere else, and that other thing
-> should be fixed first.
->
-> Maybe digging into the timers code and seeing why this is needed there will
-> prove me wrong...
+debugfs currently lack the ability to create attributes
+that set/get atomic_t values.
 
-The problem is that userland can feed us any timer_t which makes it
-necessary to properly sanitize the value before using it.
+This patch adds support for this through a new
+debugfs_create_atomic_t() function.
 
-Thanks.
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ fs/debugfs/file.c       | 42 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/debugfs.h |  2 ++
+ 2 files changed, 44 insertions(+)
 
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index c5ca6ae..fa26d5b 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -21,6 +21,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/atomic.h>
+ 
+ static ssize_t default_read_file(struct file *file, char __user *buf,
+ 				 size_t count, loff_t *ppos)
+@@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ }
+ EXPORT_SYMBOL_GPL(debugfs_create_size_t);
+ 
++static int debugfs_atomic_t_set(void *data, u64 val)
++{
++	atomic_set((atomic_t *)data, val);
++	return 0;
++}
++static int debugfs_atomic_t_get(void *data, u64 *val)
++{
++	*val = atomic_read((atomic_t *)data);
++	return 0;
++}
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
++			debugfs_atomic_t_set, "%llu\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%llu\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%llu\n");
++
++/**
++ * debugfs_create_atomic_t - create a debugfs file that is used to read and
++ * write an atomic_t value
++ * @name: a pointer to a string containing the name of the file to create.
++ * @mode: the permission that the file should have
++ * @parent: a pointer to the parent dentry for this file.  This should be a
++ *          directory dentry if set.  If this parameter is %NULL, then the
++ *          file will be created in the root of the debugfs filesystem.
++ * @value: a pointer to the variable that the file should read to and write
++ *         from.
++ */
++struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
++				 struct dentry *parent, atomic_t *value)
++{
++	/* if there are no write bits set, make read only */
++	if (!(mode & S_IWUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_t_ro);
++	/* if there are no read bits set, make write only */
++	if (!(mode & S_IRUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_t_wo);
++
++	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
++}
++EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
+ 
+ static ssize_t read_file_bool(struct file *file, char __user *user_buf,
+ 			      size_t count, loff_t *ppos)
+diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+index 66c434f..51fea70 100644
+--- a/include/linux/debugfs.h
++++ b/include/linux/debugfs.h
+@@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
+ 				  struct dentry *parent, u64 *value);
+ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ 				     struct dentry *parent, size_t *value);
++struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
++				     struct dentry *parent, atomic_t *value);
+ struct dentry *debugfs_create_bool(const char *name, umode_t mode,
+ 				  struct dentry *parent, u32 *value);
+ 
 -- 
-tejun
+1.8.1.1
+
