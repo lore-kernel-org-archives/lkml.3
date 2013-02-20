@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934476Ab3BTCII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 21:08:08 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:64017 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933498Ab3BTCIF (ORCPT
+	id S934489Ab3BTCMy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 21:12:54 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59941 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933498Ab3BTCMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 21:08:05 -0500
-Date: Tue, 19 Feb 2013 18:08:02 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: li guang <lig.fnst@cn.fujitsu.com>
-cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [PATCH v4 1/4] acpi: move x86/mm/srat.c to
- x86/kernel/acpi/srat.c
-In-Reply-To: <1361325113.7859.37.camel@liguang.fnst.cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.02.1302191802490.14999@chino.kir.corp.google.com>
-References: <1360894992-14818-1-git-send-email-lig.fnst@cn.fujitsu.com> <1360894992-14818-2-git-send-email-lig.fnst@cn.fujitsu.com> <alpine.DEB.2.02.1302191320410.6322@chino.kir.corp.google.com> <1361324355.7859.35.camel@liguang.fnst.cn.fujitsu.com>
- <1361325113.7859.37.camel@liguang.fnst.cn.fujitsu.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 19 Feb 2013 21:12:53 -0500
+Message-ID: <51243120.1030101@wwwdotorg.org>
+Date: Tue, 19 Feb 2013 19:12:48 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Axel Lin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: tps6586x: Having slew rate settings for other
+ than SM0/1 is not fatal
+References: <1361015443.11226.1.camel@phoenix> <5123ACA1.9000408@wwwdotorg.org> <CAFRkauAAdArpG5x8MeyZJXUYqi00e669Hr6gPHGO8fxTJnE5YQ@mail.gmail.com>
+In-Reply-To: <CAFRkauAAdArpG5x8MeyZJXUYqi00e669Hr6gPHGO8fxTJnE5YQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Feb 2013, li guang wrote:
-
-> > > This doesn't apply to Linus' tree nor does it apply to linux-next.  Which 
-> > > tree are you basing this on?
-> > 
-> > I did based on linux-next, 
-> > but it seems without commit 479a99a8e510c8839e0d3d3de8391f8bc61b9760
-> > which you may want to see.
-> > let me see why it missed.
+On 02/19/2013 05:53 PM, Axel Lin wrote:
+> 2013/2/20 Stephen Warren <swarren@wwwdotorg.org>:
+>> On 02/16/2013 04:50 AM, Axel Lin wrote:
+>>> Ignore the setting and show "Only SM0/SM1 can set slew rate" warning is enough,
+>>> then we can return 0 instead of -EINVAL in tps6586x_regulator_set_slew_rate().
+>>>
+>>> Otherwise, probe() fails.
+>>
+>> Why does probe() fail; what is trying to set a slew rate on a regulator
+>> that doesn't support it? At least a few days ago in linux-next, this
+>> patch wasn't needed AFAIK. Is the problem something new?
+>>
 > 
-> I pulled latest for linux-next
-> and can apply my patches smoothly.
+> Oh, sorry for my poor Engilish.
+> I mean probe fails because of having slew rate settings for other than SM0/1
+> seems not necessary.
 > 
+> In tps6586x_regulator_set_slew_rate() it uses dev_warn rather than dev_err
+> for the default case.
+> We can either using "dev_warn with return 0" or use "dev_err with
+> return -EINVAL"
+> in tps6586x_regulator_set_slew_rate().
 
-No, it doesn't.  From next-20130219, you're missing at least two patches:
+Oh right, I understand. s/dev_warn/dev_err/ seems more appropriate to
+me, I think.
 
-3795e4893203 ("acpi, memory-hotplug: extend movablemem_map ranges to the end of node")
-9a561f4dfd70 ("acpi, memory-hotplug: support getting hotplug info from SRAT")
-
-I'm trying to be patient in reviewing your patches, but please double 
-check your work.
