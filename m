@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933878Ab3BTGLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 01:11:20 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:17808 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933529Ab3BTGLP (ORCPT
+	id S934228Ab3BTGLn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 01:11:43 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:17152 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933529Ab3BTGLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 01:11:15 -0500
-X-AuditID: cbfee68e-b7fc26d000001938-8d-5124690258c6
+	Wed, 20 Feb 2013 01:11:41 -0500
+X-AuditID: cbfee690-b7f066d00000169f-e7-5124691ad7ff
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
 In-reply-to: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
-Subject: [PATCH 04/11] mfd: intel_msic: use devm_gpio_request_one()
-Date: Wed, 20 Feb 2013 15:11:14 +0900
-Message-id: <002901ce0f31$16413770$42c3a650$%han@samsung.com>
+Subject: [PATCH 05/11] mfd: twl6040: use devm_gpio_request_one() and
+ devm_request_threaded_irq()
+Date: Wed, 20 Feb 2013 15:11:38 +0900
+Message-id: <002a01ce0f31$24e5fef0$6eb1fcd0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4PMNZl2zNDd+kPTaydPUTuUPUSLQAACwww
+Thread-index: Ac4PMNZl2zNDd+kPTaydPUTuUPUSLQAAEG4A
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zY12mTJVAg47j4haXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSvj7eXfbAXLeSo6z95iamBs5Opi5OSQEDCR6N16hg3CFpO4cG89
-	mC0ksIxRYvm/jC5GDrCa48t4uhi5gMLTGSWWLJ7LBuHMZpJY/2I+M0gDm4CaxJcvh9lBbBEB
-	LYnuY+fZQJqZBVwkjk4TgZhpK/F97T9WEJtTwE5i16PzYLawgLPEmVkrmUBsFgFVid2HVoLF
-	eYHqfz/ewQJhC0r8mHwPzGYGGr9+53EmCFteYvOat8wQd6pLPPqrC3GBkcSH59OhSkQk9r14
-	xwhysoTAPHaJaZNeskPsEpD4NvkQC0SvrMSmA8yQYJCUOLjiBssERolZSDbPQrJ5FpLNs5Cs
-	WMDIsopRNLUguaA4Kb3ISK84Mbe4NC9dLzk/dxMjJKr6djDePGB9iDEZaP1EZinR5HxgVOaV
-	xBsaG5uYmZiamFuampuSJqwkzit/SSZQSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA2NVa6qu
-	iqvRh5ldLEHcP8ynCerdqJ7/9Pj3O5sdvF9phvMmF0tUKy1I2eH25FbT+/4DchbL7i+Jmp+6
-	/OP/KzM/r0l2PRS7xSZTik/uZjT/4/O/mddMaLvzylPcMzgrfF+M4uJF/zbN2/Z/SziH26UH
-	nE8ZF4WqXL09z+L9z2BvzYrT017JXl+uxFKckWioxVxUnAgATzpd2MACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xoC5TpkqgwYzbwhaXd81hc2D0+LxJ
-	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
-	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4+3l32wFy3kqOs/eYmpg
-	bOTqYuTgkBAwkTi+jKeLkRPIFJO4cG89WxcjF4eQwHRGiSWL50I5s5kk1r+YzwxSxSagJvHl
-	y2F2EFtEQEui+9h5NpBBzAIuEkeniYCEhQRsJb6v/ccKYnMK2EnsenQezBYWcJY4M2slE4jN
-	IqAqsfvQSrA4L1D978c7WCBsQYkfk++B2cxA49fvPM4EYctLbF7zlhniZnWJR391IS4wkvjw
-	fDpUiYjEvhfvGCcwCs1CMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95Pzc
-	TYzgqH0mvYNxVYPFIUYBDkYlHt6GhcqBQqyJZcWVuYcYJTiYlUR4m51UAoV4UxIrq1KL8uOL
-	SnNSiw8xJgM9OpFZSjQ5H5hQ8kriDY1NzIwsjcwsjEzMzUkTVhLnZTz1JEBIID2xJDU7NbUg
-	tQhmCxMHp1QDY3SakHqNltiuDafebzlhJPir7hzXOYErUlMnvj3wbu+KR6Wt/eUdHCWSz7c2
-	z1J+nss/93Dd3yfrL8XNjSx16M4+ye3fdybX6YaJsshzgT15Oi+5O5bF/TWoF5RVTD6+7uBz
-	5R5bvuyFLnOEPbfUN61Y1X9qZrLg/YZ6vfBa3bVBcop+ZR2+SizFGYmGWsxFxYkA5d7u6B4D	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zI12pTJVAg+XrrS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGqjXrmQs6xCsuPX7J3MD4VaiLkZNDQsBEYv/aHmYIW0ziwr31
+	bF2MXBxCAssYJdpX7GOBKdrwbhkrRGIRo8SaW0uYIJzZTBJb7v5iAqliE1CT+PLlMDuILSKg
+	JdF97DzQKA4OZgEXiaPTREDCQgK2Et/X/mMFsTkF7CR2PTrPClIiLJAk8a9HHyTMIqAqcejJ
+	KXaQMC9QeduzOpAwr4CgxI/J98DOYQYavn7ncSYIW15i85q3zCDlEgLqEo/+6kLsN5L4ff8q
+	VImIxL4X7xhBDpYQWMQu8fdoDxPEKgGJb5MPsUD0ykpsOgANBkmJgytusExglJiFZPMsJJtn
+	Idk8C8mKBYwsqxhFUwuSC4qT0otM9IoTc4tL89L1kvNzNzFComrCDsZ7B6wPMSYDrZ/ILCWa
+	nA+MyrySeENjYxMzE1MTc0tTc1PShJXEeeUvyQQKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRq
+	YHQI2qd0xPuH4JdKr4uquXdPJKqzlgXx8hy23VezaPl91xjxMrs9EQI6z+uP/9VYdTzW+FBa
+	kUGrx0Lr+27Otptjf7/OnbZCa/+0k8eEZ00L09vWbzebv0NixfeUO21Cr+9q+1+end7cuF1L
+	+uSLIu6zEwsKbq3ekb/y365DEr9/623PWqRaclCJpTgj0VCLuag4EQDtaDRVwAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgK5UpkqgwfFOM4vLu+awOTB6fN4k
+	F8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQM0
+	VUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYsWrNeuaCDvGKS49fMjcw
+	fhXqYuTkkBAwkdjwbhkrhC0mceHeerYuRi4OIYFFjBJrbi1hgnBmM0lsufuLCaSKTUBN4suX
+	w+wgtoiAlkT3sfNAHRwczAIuEkeniYCEhQRsJb6v/Qc2lFPATmLXo/OsICXCAkkS/3r0QcIs
+	AqoSh56cYgcJ8wKVtz2rAwnzCghK/Jh8jwXEZgYavn7ncSYIW15i85q3zCDlEgLqEo/+6kLs
+	N5L4ff8qVImIxL4X7xgnMArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0
+	veT83E2M4Jh9JrWDcWWDxSFGAQ5GJR5ejfnKgUKsiWXFlbmHGCU4mJVEeJudVAKFeFMSK6tS
+	i/Lji0pzUosPMSYD/TmRWUo0OR+YTvJK4g2NTcyMLI3MLIxMzM1JE1YS52U89SRASCA9sSQ1
+	OzW1ILUIZgsTB6dUA6PsDyGTuI5gz0eqpWc/LmWTbE9nOCbFH7vry87HIluty+rP8O+t1n7H
+	rGyzPq/095z5RXtELv2wDVVrdt2THcu9SPT/gw2FaQVWZ8QclbUD9RNO8+WtzRLXrNc1CNRS
+	+/cwp76dzb8nl+Otsq1YRVHCnLB3q158KL+p55PieGV10Ca2JS4qSizFGYmGWsxFxYkA0pDW
+	sB0DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,57 +54,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_gpio_request_one() to make cleanup paths more simple.
+Use devm_gpio_request_one() and devm_request_threaded_irq() to make
+cleanup paths and  more simple.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/intel_msic.c |   10 ++--------
- 1 files changed, 2 insertions(+), 8 deletions(-)
+ drivers/mfd/twl6040.c |   26 +++++++-------------------
+ 1 files changed, 7 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/mfd/intel_msic.c b/drivers/mfd/intel_msic.c
-index 1804331..5be3b5e 100644
---- a/drivers/mfd/intel_msic.c
-+++ b/drivers/mfd/intel_msic.c
-@@ -323,7 +323,8 @@ static int intel_msic_init_devices(struct intel_msic *msic)
- 	if (pdata->ocd) {
- 		unsigned gpio = pdata->ocd->gpio;
+diff --git a/drivers/mfd/twl6040.c b/drivers/mfd/twl6040.c
+index f361bf3..2d38512 100644
+--- a/drivers/mfd/twl6040.c
++++ b/drivers/mfd/twl6040.c
+@@ -586,8 +586,8 @@ static int twl6040_probe(struct i2c_client *client,
+ 		twl6040->audpwron = -EINVAL;
  
--		ret = gpio_request_one(gpio, GPIOF_IN, "ocd_gpio");
-+		ret = devm_gpio_request_one(&pdev->dev, gpio,
-+					GPIOF_IN, "ocd_gpio");
- 		if (ret) {
- 			dev_err(&pdev->dev, "failed to register OCD GPIO\n");
- 			return ret;
-@@ -332,7 +333,6 @@ static int intel_msic_init_devices(struct intel_msic *msic)
- 		ret = gpio_to_irq(gpio);
- 		if (ret < 0) {
- 			dev_err(&pdev->dev, "no IRQ number for OCD GPIO\n");
--			gpio_free(gpio);
- 			return ret;
- 		}
+ 	if (gpio_is_valid(twl6040->audpwron)) {
+-		ret = gpio_request_one(twl6040->audpwron, GPIOF_OUT_INIT_LOW,
+-				       "audpwron");
++		ret = devm_gpio_request_one(twl6040->dev, twl6040->audpwron,
++					GPIOF_OUT_INIT_LOW, "audpwron");
+ 		if (ret)
+ 			goto gpio_err;
+ 	}
+@@ -596,14 +596,14 @@ static int twl6040_probe(struct i2c_client *client,
+ 			IRQF_ONESHOT, 0, &twl6040_irq_chip,
+ 			&twl6040->irq_data);
+ 	if (ret < 0)
+-		goto irq_init_err;
++		goto gpio_err;
  
-@@ -359,8 +359,6 @@ static int intel_msic_init_devices(struct intel_msic *msic)
+ 	twl6040->irq_ready = regmap_irq_get_virq(twl6040->irq_data,
+ 					       TWL6040_IRQ_READY);
+ 	twl6040->irq_th = regmap_irq_get_virq(twl6040->irq_data,
+ 					       TWL6040_IRQ_TH);
  
- fail:
- 	mfd_remove_devices(&pdev->dev);
--	if (pdata->ocd)
--		gpio_free(pdata->ocd->gpio);
+-	ret = request_threaded_irq(twl6040->irq_ready, NULL,
++	ret = devm_request_threaded_irq(twl6040->dev, twl6040->irq_ready, NULL,
+ 				   twl6040_readyint_handler, IRQF_ONESHOT,
+ 				   "twl6040_irq_ready", twl6040);
+ 	if (ret) {
+@@ -611,12 +611,12 @@ static int twl6040_probe(struct i2c_client *client,
+ 		goto readyirq_err;
+ 	}
  
- 	return ret;
- }
-@@ -368,12 +366,8 @@ fail:
- static void intel_msic_remove_devices(struct intel_msic *msic)
- {
- 	struct platform_device *pdev = msic->pdev;
--	struct intel_msic_platform_data *pdata = pdev->dev.platform_data;
+-	ret = request_threaded_irq(twl6040->irq_th, NULL,
++	ret = devm_request_threaded_irq(twl6040->dev, twl6040->irq_th, NULL,
+ 				   twl6040_thint_handler, IRQF_ONESHOT,
+ 				   "twl6040_irq_th", twl6040);
+ 	if (ret) {
+ 		dev_err(twl6040->dev, "Thermal IRQ request failed: %d\n", ret);
+-		goto thirq_err;
++		goto readyirq_err;
+ 	}
  
- 	mfd_remove_devices(&pdev->dev);
+ 	/* dual-access registers controlled by I2C only */
+@@ -676,19 +676,12 @@ static int twl6040_probe(struct i2c_client *client,
+ 	ret = mfd_add_devices(&client->dev, -1, twl6040->cells, children,
+ 			      NULL, 0, NULL);
+ 	if (ret)
+-		goto mfd_err;
++		goto readyirq_err;
+ 
+ 	return 0;
+ 
+-mfd_err:
+-	free_irq(twl6040->irq_th, twl6040);
+-thirq_err:
+-	free_irq(twl6040->irq_ready, twl6040);
+ readyirq_err:
+ 	regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
+-irq_init_err:
+-	if (gpio_is_valid(twl6040->audpwron))
+-		gpio_free(twl6040->audpwron);
+ gpio_err:
+ 	regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
+ power_err:
+@@ -706,11 +699,6 @@ static int twl6040_remove(struct i2c_client *client)
+ 	if (twl6040->power_count)
+ 		twl6040_power(twl6040, 0);
+ 
+-	if (gpio_is_valid(twl6040->audpwron))
+-		gpio_free(twl6040->audpwron);
 -
--	if (pdata->ocd)
--		gpio_free(pdata->ocd->gpio);
- }
+-	free_irq(twl6040->irq_ready, twl6040);
+-	free_irq(twl6040->irq_th, twl6040);
+ 	regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
  
- static int intel_msic_probe(struct platform_device *pdev)
+ 	mfd_remove_devices(&client->dev);
 -- 
 1.7.2.5
 
