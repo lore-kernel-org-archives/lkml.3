@@ -1,234 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934690Ab3BTHyE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 02:54:04 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:4562 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933825Ab3BTHyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 02:54:01 -0500
-X-IronPort-AV: E=Sophos;i="4.84,700,1355068800"; 
-   d="scan'208";a="6734988"
-Date: Wed, 20 Feb 2013 15:54:05 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>
-Subject: Re: [PATCH v12 rebased 1/8] preserve cpu runstate
-Message-ID: <20130220075405.GB23246@localhost.localdomain>
-References: <cover.1358920534.git.hutao@cn.fujitsu.com>
- <40805800eed9ed08f44b088e8a50f71c69e6cac4.1358920534.git.hutao@cn.fujitsu.com>
- <20130208014533.GB3364@amt.cnet>
+	id S934725Ab3BTH6K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 02:58:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35445 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934651Ab3BTH6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 02:58:08 -0500
+Message-ID: <5124820D.2080900@suse.de>
+Date: Wed, 20 Feb 2013 08:58:05 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130208014533.GB3364@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/20 15:53:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/20 15:53:17,
-	Serialize complete at 2013/02/20 15:53:17
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        Frederik Himpe <fhimpe@vub.ac.be>, Oliver Neukum <oneukum@suse.de>,
+        David Haerdeman <david@hardeman.nu>, linux-usb@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] pci: do not try to assign irq 255
+References: <1361182193-31894-1-git-send-email-hare@suse.de> <CAE9FiQWP1F5mLUoHoTHXy-wQoGxVK66QuuHYydaq3YfysS5Etg@mail.gmail.com>
+In-Reply-To: <CAE9FiQWP1F5mLUoHoTHXy-wQoGxVK66QuuHYydaq3YfysS5Etg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 07, 2013 at 11:45:34PM -0200, Marcelo Tosatti wrote:
-> On Wed, Jan 23, 2013 at 03:19:22PM +0800, Hu Tao wrote:
-> > This patch enables preservation of cpu runstate during save/load vm.
-> > So when a vm is restored from snapshot, the cpu runstate is restored,
-> > too.
-> > 
-> > See following example:
-> > 
-> > # save two vms: one is running, the other is paused
-> > (qemu) info status
-> > VM status: running
-> > (qemu) savevm running
-> > (qemu) stop
-> > (qemu) info status
-> > VM status: paused
-> > (qemu) savevm paused
-> > 
-> > # restore the one running
-> > (qemu) info status
-> > VM status: paused
-> > (qemu) loadvm running
-> > (qemu) info status
-> > VM status: running
-> > 
-> > # restore the one paused
-> > (qemu) loadvm paused
-> > (qemu) info status
-> > VM status: paused
-> > (qemu) cont
-> > (qemu)info status
-> > VM status: running
-> > 
-> > 
-> > Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
-> 
-> Lack of pause state on guest images is annoying. 
-> 
-> Fail to see why the panic feature depends on preservation of cpu
-> runstate.
+On 02/19/2013 08:40 PM, Yinghai Lu wrote:
+> On Mon, Feb 18, 2013 at 2:09 AM, Hannes Reinecke <hare@suse.de> wrote:
+>> The PCI config space reseves a byte for the interrupt line,
+>> so irq 255 actually refers to 'not set'.
+>> However, the 'irq' field for struct pci_dev is an integer,
+>> so the original meaning is lost, causing the system to
+>> assign an interrupt '255', which fails.
+>>
+>> So we should _not_ assign an interrupt value here, and
+>> allow upper layers to fixup things.
+>>
+>> This patch make PCI devices with MSI interrupts only
+>> (like the xhci device on certain HP laptops) work properly.
+>
+> looks like the bios does not provide _PRT for device in ACPI.
+>
+Correct.
 
-To preserve the panic state if guest panic happens in the midway of
-migration.
+> also according to PCI spec, BIOS *must* set interrupt line.
+>
+Apparently this device is meant to use MSI _only_ so the BIOS 
+developer didn't feel the need to assign an INTx here.
 
-> 
-> >  include/sysemu/sysemu.h |  2 ++
-> >  migration.c             |  6 +-----
-> >  monitor.c               |  5 ++---
-> >  savevm.c                |  1 +
-> >  vl.c                    | 34 ++++++++++++++++++++++++++++++++++
-> >  5 files changed, 40 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/include/sysemu/sysemu.h b/include/sysemu/sysemu.h
-> > index 337ce7d..7a69fde 100644
-> > --- a/include/sysemu/sysemu.h
-> > +++ b/include/sysemu/sysemu.h
-> > @@ -19,6 +19,8 @@ extern uint8_t qemu_uuid[];
-> >  int qemu_uuid_parse(const char *str, uint8_t *uuid);
-> >  #define UUID_FMT "%02hhx%02hhx%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx-%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx"
-> >  
-> > +void save_run_state(void);
-> > +void load_run_state(void);
-> >  bool runstate_check(RunState state);
-> >  void runstate_set(RunState new_state);
-> >  int runstate_is_running(void);
-> > diff --git a/migration.c b/migration.c
-> > index 77c1971..f96cfd6 100644
-> > --- a/migration.c
-> > +++ b/migration.c
-> > @@ -108,11 +108,7 @@ static void process_incoming_migration_co(void *opaque)
-> >      /* Make sure all file formats flush their mutable metadata */
-> >      bdrv_invalidate_cache_all();
-> >  
-> > -    if (autostart) {
-> > -        vm_start();
-> > -    } else {
-> > -        runstate_set(RUN_STATE_PAUSED);
-> > -    }
-> > +    load_run_state();
-> >  }
-> >  
-> >  static void enter_migration_coroutine(void *opaque)
-> > diff --git a/monitor.c b/monitor.c
-> > index 20bd19b..9381ed0 100644
-> > --- a/monitor.c
-> > +++ b/monitor.c
-> > @@ -2059,13 +2059,12 @@ void qmp_closefd(const char *fdname, Error **errp)
-> >  
-> >  static void do_loadvm(Monitor *mon, const QDict *qdict)
-> >  {
-> > -    int saved_vm_running  = runstate_is_running();
-> >      const char *name = qdict_get_str(qdict, "name");
-> >  
-> >      vm_stop(RUN_STATE_RESTORE_VM);
-> >  
-> > -    if (load_vmstate(name) == 0 && saved_vm_running) {
-> > -        vm_start();
-> > +    if (load_vmstate(name) == 0) {
-> > +        load_run_state();
-> >      }
-> >  }
-> >  
-> > diff --git a/savevm.c b/savevm.c
-> > index 304d1ef..10f1d56 100644
-> > --- a/savevm.c
-> > +++ b/savevm.c
-> > @@ -2112,6 +2112,7 @@ void do_savevm(Monitor *mon, const QDict *qdict)
-> >      }
-> >  
-> >      saved_vm_running = runstate_is_running();
-> > +    save_run_state();
-> >      vm_stop(RUN_STATE_SAVE_VM);
-> >  
-> >      memset(sn, 0, sizeof(*sn));
-> > diff --git a/vl.c b/vl.c
-> > index 4ee1302..b0bcf1e 100644
-> > --- a/vl.c
-> > +++ b/vl.c
-> > @@ -520,6 +520,7 @@ static int default_driver_check(QemuOpts *opts, void *opaque)
-> >  /* QEMU state */
-> >  
-> >  static RunState current_run_state = RUN_STATE_PRELAUNCH;
-> > +static RunState saved_run_state = RUN_STATE_PRELAUNCH;
-> >  
-> >  typedef struct {
-> >      RunState from;
-> > @@ -543,6 +544,7 @@ static const RunStateTransition runstate_transitions_def[] = {
-> >      { RUN_STATE_PAUSED, RUN_STATE_FINISH_MIGRATE },
-> >  
-> >      { RUN_STATE_POSTMIGRATE, RUN_STATE_RUNNING },
-> > +    { RUN_STATE_POSTMIGRATE, RUN_STATE_PAUSED },
-> >      { RUN_STATE_POSTMIGRATE, RUN_STATE_FINISH_MIGRATE },
-> >  
-> >      { RUN_STATE_PRELAUNCH, RUN_STATE_RUNNING },
-> > @@ -553,6 +555,7 @@ static const RunStateTransition runstate_transitions_def[] = {
-> >      { RUN_STATE_FINISH_MIGRATE, RUN_STATE_POSTMIGRATE },
-> >  
-> >      { RUN_STATE_RESTORE_VM, RUN_STATE_RUNNING },
-> > +    { RUN_STATE_RESTORE_VM, RUN_STATE_PAUSED },
-> >  
-> >      { RUN_STATE_RUNNING, RUN_STATE_DEBUG },
-> >      { RUN_STATE_RUNNING, RUN_STATE_INTERNAL_ERROR },
-> > @@ -582,11 +585,39 @@ static const RunStateTransition runstate_transitions_def[] = {
-> >  
-> >  static bool runstate_valid_transitions[RUN_STATE_MAX][RUN_STATE_MAX];
-> >  
-> > +void save_run_state(void)
-> > +{
-> > +    saved_run_state = current_run_state;
-> > +}
-> > +
-> > +void load_run_state(void)
-> > +{
-> > +    if (saved_run_state == RUN_STATE_RUNNING) {
-> > +        vm_start();
-> > +    } else if (!runstate_check(saved_run_state)) {
-> > +        runstate_set(saved_run_state);
-> > +    } else {
-> > +        ; /* leave unchanged */
-> > +    }
-> > +}
-> > +
-> >  bool runstate_check(RunState state)
-> >  {
-> >      return current_run_state == state;
-> >  }
-> >  
-> > +static void runstate_save(QEMUFile *f, void *opaque)
-> > +{
-> > +    qemu_put_byte(f, saved_run_state);
-> > +}
-> > +
-> > +static int runstate_load(QEMUFile *f, void *opaque, int version_id)
-> > +{
-> > +    saved_run_state = qemu_get_byte(f);
-> > +
-> > +    return 0;
-> > +}
-> 
-> This breaks loading images without support for runstate information. 
-> Is it possible to overcome this limitation?
+According to PCI-3.0, section 6.8 (Message Signalled Interrupts):
+ > It is recommended that devices implement interrupt pins to
+ > provide compatibility in systems that do not support MSI
+ > (devices default to interrupt pins). However, it is expected
+ > that the need for interrupt pins will diminish over time.
+ > Devices that do not support interrupt pins due to pin
+ > constraints (rely on polling for device service) may implement
+ > messages to increase performance without adding additional pins. 
+ > Therefore, system configuration software must not assume that a
+ > message capable device has an interrupt pin.
 
-It's successful to load images without support for runstate information,
-but trying to set run state to RUN_STATE_PRELAUNCH(the default value of
-saved_run_state), which is invalid. The problem can be solved by setting
-the default value of saved_run_state to RUN_STATE_RUNNING.
+Which sounds to me as if the implementation is valid...
+And in either case, I've added the relevant details plus patch
+to bnc#52591.
+Including ACPI dump, so you can check for yourself.
 
-> 
-> Would be happier if this patch could be debated on QEMU list.
+And correct me if I'm wrong, of course :-)
 
+Cheers,
 
+Hannes
 -- 
-Regards,
-Hu Tao
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
