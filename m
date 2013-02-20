@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934920Ab3BTAWv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 19:22:51 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:38526 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934893Ab3BTAWs (ORCPT
+	id S934938Ab3BTAWy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 19:22:54 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:41174 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934918Ab3BTAWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 19:22:48 -0500
+	Tue, 19 Feb 2013 19:22:51 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk
-Subject: [PATCH 02/27] block: Avoid deadlocks with bio allocation by stacking drivers
-Date: Tue, 19 Feb 2013 16:22:16 -0800
-Message-Id: <1361319761-23873-3-git-send-email-koverstreet@google.com>
+Cc: Kent Overstreet <koverstreet@google.com>, axboe@kernel.dk,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: [PATCH 04/27] block: Convert integrity to bvec_alloc_bs()
+Date: Tue, 19 Feb 2013 16:22:18 -0800
+Message-Id: <1361319761-23873-5-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1361319761-23873-1-git-send-email-koverstreet@google.com>
 References: <1361319761-23873-1-git-send-email-koverstreet@google.com>
@@ -20,249 +21,380 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, if we ever try to allocate more than once from the same bio
-set while running under generic_make_request() (i.e. a stacking block
-driver), we risk deadlock.
+This adds a pointer to the bvec array to struct bio_integrity_payload,
+instead of the bvecs always being inline; then the bvecs are allocated
+with bvec_alloc_bs().
 
-This is because of the code in generic_make_request() that converts
-recursion to iteration; any bios we submit won't actually be submitted
-(so they can complete and eventually be freed) until after we return -
-this means if we allocate a second bio, we're blocking the first one
-from ever being freed.
+Changed bvec_alloc_bs() and bvec_free_bs() to take a pointer to a
+mempool instead of the bioset, so that bio integrity can use a different
+mempool for its bvecs, and thus avoid a potential deadlock.
 
-Thus if enough threads call into a stacking block driver at the same
-time with bios that need multiple splits, and the bio_set's reserve gets
-used up, we deadlock.
+This is eventually for immutable bio vecs - immutable bvecs aren't
+useful if we still have to copy them, hence the need for the pointer.
+Less code is always nice too, though.
 
-This can be worked around in the driver code - we could check if we're
-running under generic_make_request(), then mask out __GFP_WAIT when we
-go to allocate a bio, and if the allocation fails punt to workqueue and
-retry the allocation.
-
-But this is tricky and not a generic solution. This patch solves it for
-all users by inverting the previously described technique. We allocate a
-rescuer workqueue for each bio_set, and then in the allocation code if
-there are bios on current->bio_list we would be blocking, we punt them
-to the rescuer workqueue to be submitted.
-
-This guarantees forward progress for bio allocations under
-generic_make_request() provided each bio is submitted before allocating
-the next, and provided the bios are freed after they complete.
-
-Note that this doesn't do anything for allocation from other mempools.
-Instead of allocating per bio data structures from a mempool, code
-should use bio_set's front_pad.
-
-Tested it by forcing the rescue codepath to be taken (by disabling the
-first GFP_NOWAIT) attempt, and then ran it with bcache (which does a lot
-of arbitrary bio splitting) and verified that the rescuer was being
-invoked.
+Also, bio_integrity_alloc() was using fs_bio_set if no bio_set was
+specified. This was wrong - using the bio_set doesn't protect us from
+memory allocation failures, because we just used kmalloc for the
+bio_integrity_payload. But it does introduce the possibility of
+deadlock, if for some reason we weren't supposed to be using fs_bio_set.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 CC: Jens Axboe <axboe@kernel.dk>
-Acked-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Muthukumar Ratty <muthur@gmail.com>
+CC: Martin K. Petersen <martin.petersen@oracle.com>
 ---
- fs/bio.c            | 116 +++++++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/bio.h |   9 ++++
- 2 files changed, 123 insertions(+), 2 deletions(-)
+ fs/bio-integrity.c  | 132 +++++++++++++++++++---------------------------------
+ fs/bio.c            |  36 ++++++--------
+ include/linux/bio.h |   8 ++--
+ 3 files changed, 68 insertions(+), 108 deletions(-)
 
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index 94fa1c5..8c4c604 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -27,48 +27,11 @@
+ #include <linux/workqueue.h>
+ #include <linux/slab.h>
+ 
+-struct integrity_slab {
+-	struct kmem_cache *slab;
+-	unsigned short nr_vecs;
+-	char name[8];
+-};
+-
+-#define IS(x) { .nr_vecs = x, .name = "bip-"__stringify(x) }
+-struct integrity_slab bip_slab[BIOVEC_NR_POOLS] __read_mostly = {
+-	IS(1), IS(4), IS(16), IS(64), IS(128), IS(BIO_MAX_PAGES),
+-};
+-#undef IS
++#define BIP_INLINE_VECS	4
+ 
++static struct kmem_cache *bip_slab;
+ static struct workqueue_struct *kintegrityd_wq;
+ 
+-static inline unsigned int vecs_to_idx(unsigned int nr)
+-{
+-	switch (nr) {
+-	case 1:
+-		return 0;
+-	case 2 ... 4:
+-		return 1;
+-	case 5 ... 16:
+-		return 2;
+-	case 17 ... 64:
+-		return 3;
+-	case 65 ... 128:
+-		return 4;
+-	case 129 ... BIO_MAX_PAGES:
+-		return 5;
+-	default:
+-		BUG();
+-	}
+-}
+-
+-static inline int use_bip_pool(unsigned int idx)
+-{
+-	if (idx == BIOVEC_MAX_IDX)
+-		return 1;
+-
+-	return 0;
+-}
+-
+ /**
+  * bio_integrity_alloc - Allocate integrity payload and attach it to bio
+  * @bio:	bio to attach integrity metadata to
+@@ -84,38 +47,41 @@ struct bio_integrity_payload *bio_integrity_alloc(struct bio *bio,
+ 						  unsigned int nr_vecs)
+ {
+ 	struct bio_integrity_payload *bip;
+-	unsigned int idx = vecs_to_idx(nr_vecs);
+ 	struct bio_set *bs = bio->bi_pool;
+-
+-	if (!bs)
+-		bs = fs_bio_set;
+-
+-	BUG_ON(bio == NULL);
+-	bip = NULL;
+-
+-	/* Lower order allocations come straight from slab */
+-	if (!use_bip_pool(idx))
+-		bip = kmem_cache_alloc(bip_slab[idx].slab, gfp_mask);
+-
+-	/* Use mempool if lower order alloc failed or max vecs were requested */
+-	if (bip == NULL) {
+-		idx = BIOVEC_MAX_IDX;  /* so we free the payload properly later */
++	unsigned long idx = BIO_POOL_NONE;
++	unsigned inline_vecs;
++
++	if (!bs) {
++		bip = kmalloc(sizeof(struct bio_integrity_payload) +
++			      sizeof(struct bio_vec) * nr_vecs, gfp_mask);
++		inline_vecs = nr_vecs;
++	} else {
+ 		bip = mempool_alloc(bs->bio_integrity_pool, gfp_mask);
+-
+-		if (unlikely(bip == NULL)) {
+-			printk(KERN_ERR "%s: could not alloc bip\n", __func__);
+-			return NULL;
+-		}
++		inline_vecs = BIP_INLINE_VECS;
+ 	}
+ 
++	if (unlikely(!bip))
++		return NULL;
++
+ 	memset(bip, 0, sizeof(*bip));
+ 
++	if (nr_vecs > inline_vecs) {
++		bip->bip_vec = bvec_alloc(gfp_mask, nr_vecs, &idx,
++					  bs->bvec_integrity_pool);
++		if (!bip->bip_vec)
++			goto err;
++	} else {
++		bip->bip_vec = bip->bip_inline_vecs;
++	}
++
+ 	bip->bip_slab = idx;
+ 	bip->bip_bio = bio;
+-	bip->bip_vec = bip->bip_inline_vecs;
+ 	bio->bi_integrity = bip;
+ 
+ 	return bip;
++err:
++	mempool_free(bip, bs->bio_integrity_pool);
++	return NULL;
+ }
+ EXPORT_SYMBOL(bio_integrity_alloc);
+ 
+@@ -131,20 +97,20 @@ void bio_integrity_free(struct bio *bio)
+ 	struct bio_integrity_payload *bip = bio->bi_integrity;
+ 	struct bio_set *bs = bio->bi_pool;
+ 
+-	if (!bs)
+-		bs = fs_bio_set;
+-
+-	BUG_ON(bip == NULL);
+-
+ 	/* A cloned bio doesn't own the integrity metadata */
+ 	if (!bio_flagged(bio, BIO_CLONED) && !bio_flagged(bio, BIO_FS_INTEGRITY)
+ 	    && bip->bip_buf != NULL)
+ 		kfree(bip->bip_buf);
+ 
+-	if (use_bip_pool(bip->bip_slab))
++	if (bs) {
++		if (bip->bip_slab != BIO_POOL_NONE)
++			bvec_free(bs->bvec_integrity_pool, bip->bip_vec,
++				  bip->bip_slab);
++
+ 		mempool_free(bip, bs->bio_integrity_pool);
+-	else
+-		kmem_cache_free(bip_slab[bip->bip_slab].slab, bip);
++	} else {
++		kfree(bip);
++	}
+ 
+ 	bio->bi_integrity = NULL;
+ }
+@@ -747,13 +713,14 @@ EXPORT_SYMBOL(bio_integrity_clone);
+ 
+ int bioset_integrity_create(struct bio_set *bs, int pool_size)
+ {
+-	unsigned int max_slab = vecs_to_idx(BIO_MAX_PAGES);
+-
+ 	if (bs->bio_integrity_pool)
+ 		return 0;
+ 
+-	bs->bio_integrity_pool =
+-		mempool_create_slab_pool(pool_size, bip_slab[max_slab].slab);
++	bs->bio_integrity_pool = mempool_create_slab_pool(pool_size, bip_slab);
++
++	bs->bvec_integrity_pool = biovec_create_pool(bs, pool_size);
++	if (!bs->bvec_integrity_pool)
++		return -1;
+ 
+ 	if (!bs->bio_integrity_pool)
+ 		return -1;
+@@ -766,13 +733,14 @@ void bioset_integrity_free(struct bio_set *bs)
+ {
+ 	if (bs->bio_integrity_pool)
+ 		mempool_destroy(bs->bio_integrity_pool);
++
++	if (bs->bvec_integrity_pool)
++		mempool_destroy(bs->bio_integrity_pool);
+ }
+ EXPORT_SYMBOL(bioset_integrity_free);
+ 
+ void __init bio_integrity_init(void)
+ {
+-	unsigned int i;
+-
+ 	/*
+ 	 * kintegrityd won't block much but may burn a lot of CPU cycles.
+ 	 * Make it highpri CPU intensive wq with max concurrency of 1.
+@@ -782,14 +750,10 @@ void __init bio_integrity_init(void)
+ 	if (!kintegrityd_wq)
+ 		panic("Failed to create kintegrityd\n");
+ 
+-	for (i = 0 ; i < BIOVEC_NR_POOLS ; i++) {
+-		unsigned int size;
+-
+-		size = sizeof(struct bio_integrity_payload)
+-			+ bip_slab[i].nr_vecs * sizeof(struct bio_vec);
+-
+-		bip_slab[i].slab =
+-			kmem_cache_create(bip_slab[i].name, size, 0,
+-					  SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
+-	}
++	bip_slab = kmem_cache_create("bio_integrity_payload",
++				     sizeof(struct bio_integrity_payload) +
++				     sizeof(struct bio_vec) * BIP_INLINE_VECS,
++				     0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
++	if (!bip_slab)
++		panic("Failed to create slab\n");
+ }
 diff --git a/fs/bio.c b/fs/bio.c
-index bb5768f..73b5447 100644
+index 73b5447..40aa96e 100644
 --- a/fs/bio.c
 +++ b/fs/bio.c
-@@ -297,6 +297,54 @@ void bio_reset(struct bio *bio)
+@@ -160,12 +160,12 @@ unsigned int bvec_nr_vecs(unsigned short idx)
+ 	return bvec_slabs[idx].nr_vecs;
  }
- EXPORT_SYMBOL(bio_reset);
  
-+static void bio_alloc_rescue(struct work_struct *work)
-+{
-+	struct bio_set *bs = container_of(work, struct bio_set, rescue_work);
-+	struct bio *bio;
-+
-+	while (1) {
-+		spin_lock(&bs->rescue_lock);
-+		bio = bio_list_pop(&bs->rescue_list);
-+		spin_unlock(&bs->rescue_lock);
-+
-+		if (!bio)
-+			break;
-+
-+		generic_make_request(bio);
-+	}
-+}
-+
-+static void punt_bios_to_rescuer(struct bio_set *bs)
-+{
-+	struct bio_list punt, nopunt;
-+	struct bio *bio;
-+
-+	/*
-+	 * In order to guarantee forward progress we must punt only bios that
-+	 * were allocated from this bio_set; otherwise, if there was a bio on
-+	 * there for a stacking driver higher up in the stack, processing it
-+	 * could require allocating bios from this bio_set, and doing that from
-+	 * our own rescuer would be bad.
-+	 *
-+	 * Since bio lists are singly linked, pop them all instead of trying to
-+	 * remove from the middle of the list:
-+	 */
-+
-+	bio_list_init(&punt);
-+	bio_list_init(&nopunt);
-+
-+	while ((bio = bio_list_pop(current->bio_list)))
-+		bio_list_add(bio->bi_pool == bs ? &punt : &nopunt, bio);
-+
-+	*current->bio_list = nopunt;
-+
-+	spin_lock(&bs->rescue_lock);
-+	bio_list_merge(&bs->rescue_list, &punt);
-+	spin_unlock(&bs->rescue_lock);
-+
-+	queue_work(bs->rescue_workqueue, &bs->rescue_work);
-+}
-+
- /**
-  * bio_alloc_bioset - allocate a bio for I/O
-  * @gfp_mask:   the GFP_ mask given to the slab allocator
-@@ -314,11 +362,27 @@ EXPORT_SYMBOL(bio_reset);
-  *   previously allocated bio for IO before attempting to allocate a new one.
-  *   Failure to do so can cause deadlocks under memory pressure.
-  *
-+ *   Note that when running under generic_make_request() (i.e. any block
-+ *   driver), bios are not submitted until after you return - see the code in
-+ *   generic_make_request() that converts recursion into iteration, to prevent
-+ *   stack overflows.
-+ *
-+ *   This would normally mean allocating multiple bios under
-+ *   generic_make_request() would be susceptible to deadlocks, but we have
-+ *   deadlock avoidance code that resubmits any blocked bios from a rescuer
-+ *   thread.
-+ *
-+ *   However, we do not guarantee forward progress for allocations from other
-+ *   mempools. Doing multiple allocations from the same mempool under
-+ *   generic_make_request() should be avoided - instead, use bio_set's front_pad
-+ *   for per bio allocations.
-+ *
-  *   RETURNS:
-  *   Pointer to new bio on success, NULL on failure.
-  */
- struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
+-void bvec_free_bs(struct bio_set *bs, struct bio_vec *bv, unsigned int idx)
++void bvec_free(mempool_t *pool, struct bio_vec *bv, unsigned int idx)
  {
-+	gfp_t saved_gfp = gfp_mask;
- 	unsigned front_pad;
- 	unsigned inline_vecs;
- 	unsigned long idx = BIO_POOL_NONE;
-@@ -336,7 +400,37 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- 		front_pad = 0;
- 		inline_vecs = nr_iovecs;
- 	} else {
-+		/*
-+		 * generic_make_request() converts recursion to iteration; this
-+		 * means if we're running beneath it, any bios we allocate and
-+		 * submit will not be submitted (and thus freed) until after we
-+		 * return.
-+		 *
-+		 * This exposes us to a potential deadlock if we allocate
-+		 * multiple bios from the same bio_set() while running
-+		 * underneath generic_make_request(). If we were to allocate
-+		 * multiple bios (say a stacking block driver that was splitting
-+		 * bios), we would deadlock if we exhausted the mempool's
-+		 * reserve.
-+		 *
-+		 * We solve this, and guarantee forward progress, with a rescuer
-+		 * workqueue per bio_set. If we go to allocate and there are
-+		 * bios on current->bio_list, we first try the allocation
-+		 * without __GFP_WAIT; if that fails, we punt those bios we
-+		 * would be blocking to the rescuer workqueue before we retry
-+		 * with the original gfp_flags.
-+		 */
-+
-+		if (current->bio_list && !bio_list_empty(current->bio_list))
-+			gfp_mask &= ~__GFP_WAIT;
-+
- 		p = mempool_alloc(bs->bio_pool, gfp_mask);
-+		if (!p && gfp_mask != saved_gfp) {
-+			punt_bios_to_rescuer(bs);
-+			gfp_mask = saved_gfp;
-+			p = mempool_alloc(bs->bio_pool, gfp_mask);
-+		}
-+
- 		front_pad = bs->front_pad;
- 		inline_vecs = BIO_INLINE_VECS;
+ 	BIO_BUG_ON(idx >= BIOVEC_NR_POOLS);
+ 
+ 	if (idx == BIOVEC_MAX_IDX)
+-		mempool_free(bv, bs->bvec_pool);
++		mempool_free(bv, pool);
+ 	else {
+ 		struct biovec_slab *bvs = bvec_slabs + idx;
+ 
+@@ -173,8 +173,8 @@ void bvec_free_bs(struct bio_set *bs, struct bio_vec *bv, unsigned int idx)
  	}
-@@ -349,6 +443,12 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
+ }
+ 
+-struct bio_vec *bvec_alloc_bs(gfp_t gfp_mask, int nr, unsigned long *idx,
+-			      struct bio_set *bs)
++struct bio_vec *bvec_alloc(gfp_t gfp_mask, int nr, unsigned long *idx,
++			   mempool_t *pool)
+ {
+ 	struct bio_vec *bvl;
+ 
+@@ -210,7 +210,7 @@ struct bio_vec *bvec_alloc_bs(gfp_t gfp_mask, int nr, unsigned long *idx,
+ 	 */
+ 	if (*idx == BIOVEC_MAX_IDX) {
+ fallback:
+-		bvl = mempool_alloc(bs->bvec_pool, gfp_mask);
++		bvl = mempool_alloc(pool, gfp_mask);
+ 	} else {
+ 		struct biovec_slab *bvs = bvec_slabs + *idx;
+ 		gfp_t __gfp_mask = gfp_mask & ~(__GFP_WAIT | __GFP_IO);
+@@ -253,7 +253,7 @@ static void bio_free(struct bio *bio)
+ 
+ 	if (bs) {
+ 		if (bio_has_allocated_vec(bio))
+-			bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
++			bvec_free(bs->bvec_pool, bio->bi_io_vec, BIO_POOL_IDX(bio));
+ 
+ 		/*
+ 		 * If we have front padding, adjust the bio pointer before freeing
+@@ -442,11 +442,11 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
+ 	bio_init(bio);
  
  	if (nr_iovecs > inline_vecs) {
- 		bvl = bvec_alloc_bs(gfp_mask, nr_iovecs, &idx, bs);
-+		if (!bvl && gfp_mask != saved_gfp) {
-+			punt_bios_to_rescuer(bs);
-+			gfp_mask = saved_gfp;
-+			bvl = bvec_alloc_bs(gfp_mask, nr_iovecs, &idx, bs);
-+		}
-+
+-		bvl = bvec_alloc_bs(gfp_mask, nr_iovecs, &idx, bs);
++		bvl = bvec_alloc(gfp_mask, nr_iovecs, &idx, bs->bvec_pool);
+ 		if (!bvl && gfp_mask != saved_gfp) {
+ 			punt_bios_to_rescuer(bs);
+ 			gfp_mask = saved_gfp;
+-			bvl = bvec_alloc_bs(gfp_mask, nr_iovecs, &idx, bs);
++			bvl = bvec_alloc(gfp_mask, nr_iovecs, &idx, bs->bvec_pool);
+ 		}
+ 
  		if (unlikely(!bvl))
- 			goto err_free;
- 	} else if (nr_iovecs) {
-@@ -1579,6 +1679,9 @@ static void biovec_free_pools(struct bio_set *bs)
+@@ -1661,20 +1661,11 @@ EXPORT_SYMBOL(bio_sector_offset);
+  * create memory pools for biovec's in a bio_set.
+  * use the global biovec slabs created for general use.
+  */
+-static int biovec_create_pools(struct bio_set *bs, int pool_entries)
++mempool_t *biovec_create_pool(struct bio_set *bs, int pool_entries)
+ {
+ 	struct biovec_slab *bp = bvec_slabs + BIOVEC_MAX_IDX;
+ 
+-	bs->bvec_pool = mempool_create_slab_pool(pool_entries, bp->slab);
+-	if (!bs->bvec_pool)
+-		return -ENOMEM;
+-
+-	return 0;
+-}
+-
+-static void biovec_free_pools(struct bio_set *bs)
+-{
+-	mempool_destroy(bs->bvec_pool);
++	return mempool_create_slab_pool(pool_entries, bp->slab);
+ }
  
  void bioset_free(struct bio_set *bs)
- {
-+	if (bs->rescue_workqueue)
-+		destroy_workqueue(bs->rescue_workqueue);
-+
+@@ -1685,8 +1676,10 @@ void bioset_free(struct bio_set *bs)
  	if (bs->bio_pool)
  		mempool_destroy(bs->bio_pool);
  
-@@ -1614,6 +1717,10 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
- 
- 	bs->front_pad = front_pad;
- 
-+	spin_lock_init(&bs->rescue_lock);
-+	bio_list_init(&bs->rescue_list);
-+	INIT_WORK(&bs->rescue_work, bio_alloc_rescue);
++	if (bs->bvec_pool)
++		mempool_destroy(bs->bvec_pool);
 +
- 	bs->bio_slab = bio_find_or_create_slab(front_pad + back_pad);
- 	if (!bs->bio_slab) {
- 		kfree(bs);
-@@ -1624,9 +1731,14 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
+ 	bioset_integrity_free(bs);
+-	biovec_free_pools(bs);
+ 	bio_put_slab(bs);
+ 
+ 	kfree(bs);
+@@ -1731,7 +1724,8 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
  	if (!bs->bio_pool)
  		goto bad;
  
--	if (!biovec_create_pools(bs, pool_size))
--		return bs;
-+	if (biovec_create_pools(bs, pool_size))
-+		goto bad;
-+
-+	bs->rescue_workqueue = alloc_workqueue("bioset", WQ_MEM_RECLAIM, 0);
-+	if (!bs->rescue_workqueue)
-+		goto bad;
+-	if (biovec_create_pools(bs, pool_size))
++	bs->bvec_pool = biovec_create_pool(bs, pool_size);
++	if (!bs->bvec_pool)
+ 		goto bad;
  
-+	return bs;
- bad:
- 	bioset_free(bs);
- 	return NULL;
+ 	bs->rescue_workqueue = alloc_workqueue("bioset", WQ_MEM_RECLAIM, 0);
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 93d3d17..b31036f 100644
+index 81004fd..669b1cb 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -513,6 +513,15 @@ struct bio_set {
- 	mempool_t *bio_integrity_pool;
- #endif
- 	mempool_t *bvec_pool;
-+
-+	/*
-+	 * Deadlock avoidance for stacking block drivers: see comments in
-+	 * bio_alloc_bioset() for details
-+	 */
-+	spinlock_t		rescue_lock;
-+	struct bio_list		rescue_list;
-+	struct work_struct	rescue_work;
-+	struct workqueue_struct	*rescue_workqueue;
- };
+@@ -213,6 +213,7 @@ extern void bio_pair_release(struct bio_pair *dbio);
  
- struct biovec_slab {
+ extern struct bio_set *bioset_create(unsigned int, unsigned int);
+ extern void bioset_free(struct bio_set *);
++extern mempool_t *biovec_create_pool(struct bio_set *bs, int pool_entries);
+ 
+ extern struct bio *bio_alloc_bioset(gfp_t, int, struct bio_set *);
+ extern void bio_put(struct bio *);
+@@ -288,8 +289,8 @@ extern struct bio *bio_copy_user_iov(struct request_queue *,
+ 				     int, int, gfp_t);
+ extern int bio_uncopy_user(struct bio *);
+ void zero_fill_bio(struct bio *bio);
+-extern struct bio_vec *bvec_alloc_bs(gfp_t, int, unsigned long *, struct bio_set *);
+-extern void bvec_free_bs(struct bio_set *, struct bio_vec *, unsigned int);
++extern struct bio_vec *bvec_alloc(gfp_t, int, unsigned long *, mempool_t *);
++extern void bvec_free(mempool_t *, struct bio_vec *, unsigned int);
+ extern unsigned int bvec_nr_vecs(unsigned short idx);
+ 
+ #ifdef CONFIG_BLK_CGROUP
+@@ -511,10 +512,11 @@ struct bio_set {
+ 	unsigned int front_pad;
+ 
+ 	mempool_t *bio_pool;
++	mempool_t *bvec_pool;
+ #if defined(CONFIG_BLK_DEV_INTEGRITY)
+ 	mempool_t *bio_integrity_pool;
++	mempool_t *bvec_integrity_pool;
+ #endif
+-	mempool_t *bvec_pool;
+ 
+ 	/*
+ 	 * Deadlock avoidance for stacking block drivers: see comments in
 -- 
 1.7.12
 
