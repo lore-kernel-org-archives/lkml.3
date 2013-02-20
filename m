@@ -1,272 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935923Ab3BTGNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 01:13:05 -0500
-Received: from mga01.intel.com ([192.55.52.88]:13939 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932814Ab3BTGLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 01:11:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
-   d="scan'208";a="293424212"
-From: Aaron Lu <aaron.lu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Aaron Lu <aaron.lwe@gmail.com>, Aaron Lu <aaron.lu@intel.com>,
-        Shane Huang <shane.huang@amd.com>
-Subject: [PATCH v10 2/4] block: add runtime pm helpers
-Date: Wed, 20 Feb 2013 14:11:55 +0800
-Message-Id: <1361340717-8991-3-git-send-email-aaron.lu@intel.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1361340717-8991-1-git-send-email-aaron.lu@intel.com>
-References: <1361340717-8991-1-git-send-email-aaron.lu@intel.com>
+	id S935933Ab3BTGNM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 01:13:12 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:17512 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932814Ab3BTGNI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 01:13:08 -0500
+X-AuditID: cbfee68e-b7fc26d000001938-dd-51246972ee20
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Samuel Ortiz'" <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
+In-reply-to: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
+Subject: [PATCH 08/11] mfd: ezx-pcap: use devm_request_irq() and devm_kzalloc()
+Date: Wed, 20 Feb 2013 15:13:06 +0900
+Message-id: <002d01ce0f31$5940b4b0$0bc21e10$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4PMNZl2zNDd+kPTaydPUTuUPUSLQAAHM6g
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zQ92iTJVAg2dXDC0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGva8n2Qr2CVdM//qJpYHxDn8XIyeHhICJxI/T29khbDGJC/fW
+	s3UxcnEICSxjlDjdsIYFpmjSgk5miMQiRonDj0+zQjizmSQe7VjGBFLFJqAm8eXLYbBRIgJa
+	Et3HzgON4uBgFnCRODpNBCQsJGAr8X3tP1YQm1PATmLXo/NgtrCAv8Sxw7dYQMpZBFQljr2M
+	AwnzApXfOzSFBcIWlPgx+R6YzQw0ff3O40wQtrzE5jVvmUFaJQTUJR791YU4wEjiyZfnUOUi
+	EvtevGMEuVhCYBG7xNnVm8F6WQQEJL5NPsQC0SsrsekAM8S7khIHV9xgmcAoMQvJ5llINs9C
+	snkWkhULGFlWMYqmFiQXFCelFxnpFSfmFpfmpesl5+duYoTEVd8OxpsHrA8xJgOtn8gsJZqc
+	D4zLvJJ4Q2NjEzMTUxNzS1NzU9KElcR55S/JBAoJpCeWpGanphakFsUXleakFh9iZOLglGpg
+	nKKg/8fnyaXVb+zlmsIPrN82W1lb/vP0/HXJ1oFz1uV/0fTVME046rh07ffsEzlmM9ltfHOO
+	vW12S19f9+dR7IEw77muMeo8S021vgv2T87Yu+/P/MLrkQcZ1Dfu6Ih6tCBWe82tO2vXyvlN
+	1Dh4a6qWUebDS4o/23nYQrVbT9zVeWe1wkQkRImlOCPRUIu5qDgRAGcIlzPBAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgG5RpkqgwbKVOhaXd81hc2D0+LxJ
+	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
+	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x497Xk2wF+4Qrpn/9xNLA
+	eIe/i5GTQ0LARGLSgk5mCFtM4sK99WxdjFwcQgKLGCUOPz7NCuHMZpJ4tGMZE0gVm4CaxJcv
+	h9lBbBEBLYnuY+eBOjg4mAVcJI5OEwEJCwnYSnxf+48VxOYUsJPY9eg8mC0s4C9x7PAtFpBy
+	FgFViWMv40DCvEDl9w5NYYGwBSV+TL4HZjMDTV+/8zgThC0vsXnNW2aQVgkBdYlHf3UhDjCS
+	ePLlOVS5iMS+F+8YJzAKzUIyaRaSSbOQTJqFpGUBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k
+	/NxNjOCofSa1g3Flg8UhRgEORiUeXo35yoFCrIllxZW5hxglOJiVRHibnVQChXhTEiurUovy
+	44tKc1KLDzEmA/05kVlKNDkfmFDySuINjU3MjCyNzCyMTMzNSRNWEudlPPUkQEggPbEkNTs1
+	tSC1CGYLEwenVANjc8kELqP1zVk7k9p7nkleyHVcvaPgRldlm6XirPev9u26IcBy0C3b+9QH
+	D87H76eueGH1fMZROY0Qlc2mfyYENiSl3BfsLz68cm2AQYeEvJKsbP3ni5NW+16ZnPr4loX/
+	tgffo3uDTwisEX/+/Mj6H9fnZ87zX3mRQdLA4cy3moiwOKfVzjdfKrEUZyQaajEXFScCACFm
+	37IeAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lin Ming <ming.m.lin@intel.com>
+Use devm_request_irq() and devm_kzalloc() to make cleanup paths
+more simple.
 
-Add runtime pm helper functions:
-
-void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
-  - Initialization function for drivers to call.
-
-int blk_pre_runtime_suspend(struct request_queue *q)
-  - If any requests are in the queue, mark last busy and return -EBUSY.
-    Otherwise set q->rpm_status to RPM_SUSPENDING and return 0.
-
-void blk_post_runtime_suspend(struct request_queue *q, int err)
-  - If the suspend succeeded then set q->rpm_status to RPM_SUSPENDED.
-    Otherwise set it to RPM_ACTIVE and mark last busy.
-
-void blk_pre_runtime_resume(struct request_queue *q)
-  - Set q->rpm_status to RPM_RESUMING.
-
-void blk_post_runtime_resume(struct request_queue *q, int err)
-  - If the resume succeeded then set q->rpm_status to RPM_ACTIVE
-    and call __blk_run_queue, then mark last busy and autosuspend.
-    Otherwise set q->rpm_status to RPM_SUSPENDED.
-
-The idea and API is designed by Alan Stern and described here:
-http://marc.info/?l=linux-scsi&m=133727953625963&w=2
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- block/blk-core.c       | 144 +++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/blkdev.h |  27 ++++++++++
- 2 files changed, 171 insertions(+)
+ drivers/mfd/ezx-pcap.c |   16 +++++-----------
+ 1 files changed, 5 insertions(+), 11 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 66d3168..ce7d366 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -30,6 +30,7 @@
- #include <linux/list_sort.h>
- #include <linux/delay.h>
- #include <linux/ratelimit.h>
-+#include <linux/pm_runtime.h>
+diff --git a/drivers/mfd/ezx-pcap.c b/drivers/mfd/ezx-pcap.c
+index b7a61f0..8dea3a9 100644
+--- a/drivers/mfd/ezx-pcap.c
++++ b/drivers/mfd/ezx-pcap.c
+@@ -403,7 +403,6 @@ static int ezx_pcap_remove(struct spi_device *spi)
+ 	/* cleanup ADC */
+ 	adc_irq = pcap_to_irq(pcap, (pdata->config & PCAP_SECOND_PORT) ?
+ 				PCAP_IRQ_ADCDONE2 : PCAP_IRQ_ADCDONE);
+-	free_irq(adc_irq, pcap);
+ 	mutex_lock(&pcap->adc_mutex);
+ 	for (i = 0; i < PCAP_ADC_MAXQ; i++)
+ 		kfree(pcap->adc_queue[i]);
+@@ -415,8 +414,6 @@ static int ezx_pcap_remove(struct spi_device *spi)
  
- #define CREATE_TRACE_POINTS
- #include <trace/events/block.h>
-@@ -3043,6 +3044,149 @@ void blk_finish_plug(struct blk_plug *plug)
+ 	destroy_workqueue(pcap->workqueue);
+ 
+-	kfree(pcap);
+-
+ 	return 0;
  }
- EXPORT_SYMBOL(blk_finish_plug);
  
-+#ifdef CONFIG_PM_RUNTIME
-+/**
-+ * blk_pm_runtime_init - Block layer runtime PM initialization routine
-+ * @q: the queue of the device
-+ * @dev: the device the queue belongs to
-+ *
-+ * Description:
-+ *    Initialize runtime-PM-related fields for @q and start auto suspend for
-+ *    @dev. Drivers that want to take advantage of request-based runtime PM
-+ *    should call this function after @dev has been initialized, and its
-+ *    request queue @q has been allocated, and runtime PM for it can not happen
-+ *    yet(either due to disabled/forbidden or its usage_count > 0). In most
-+ *    cases, driver should call this function before any I/O has taken place.
-+ *
-+ *    This function takes care of setting up using auto suspend for the device,
-+ *    the autosuspend delay is set to -1 to make runtime suspend impossible
-+ *    until an updated value is either set by user or by driver. Drivers do
-+ *    not need to touch other autosuspend settings.
-+ *
-+ *    The block layer runtime PM is request based, so only works for drivers
-+ *    that use request as their IO unit instead of those directly use bio's.
-+ */
-+void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
-+{
-+	q->dev = dev;
-+	q->rpm_status = RPM_ACTIVE;
-+	pm_runtime_set_autosuspend_delay(q->dev, -1);
-+	pm_runtime_use_autosuspend(q->dev);
-+}
-+EXPORT_SYMBOL(blk_pm_runtime_init);
-+
-+/**
-+ * blk_pre_runtime_suspend - Pre runtime suspend check
-+ * @q: the queue of the device
-+ *
-+ * Description:
-+ *    This function will check if runtime suspend is allowed for the device
-+ *    by examining if there are any requests pending in the queue. If there
-+ *    are requests pending, the device can not be runtime suspended; otherwise,
-+ *    the queue's status will be updated to SUSPENDING and the driver can
-+ *    proceed to suspend the device.
-+ *
-+ *    For the not allowed case, we mark last busy for the device so that
-+ *    runtime PM core will try to autosuspend it some time later.
-+ *
-+ *    This function should be called near the start of the device's
-+ *    runtime_suspend callback.
-+ *
-+ * Return:
-+ *    0		- OK to runtime suspend the device
-+ *    -EBUSY	- Device should not be runtime suspended
-+ */
-+int blk_pre_runtime_suspend(struct request_queue *q)
-+{
-+	int ret = 0;
-+
-+	spin_lock_irq(q->queue_lock);
-+	if (q->nr_pending) {
-+		ret = -EBUSY;
-+		pm_runtime_mark_last_busy(q->dev);
-+	} else {
-+		q->rpm_status = RPM_SUSPENDING;
-+	}
-+	spin_unlock_irq(q->queue_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL(blk_pre_runtime_suspend);
-+
-+/**
-+ * blk_post_runtime_suspend - Post runtime suspend processing
-+ * @q: the queue of the device
-+ * @err: return value of the device's runtime_suspend function
-+ *
-+ * Description:
-+ *    Update the queue's runtime status according to the return value of the
-+ *    device's runtime suspend function and mark last busy for the device so
-+ *    that PM core will try to auto suspend the device at a later time.
-+ *
-+ *    This function should be called near the end of the device's
-+ *    runtime_suspend callback.
-+ */
-+void blk_post_runtime_suspend(struct request_queue *q, int err)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	if (!err) {
-+		q->rpm_status = RPM_SUSPENDED;
-+	} else {
-+		q->rpm_status = RPM_ACTIVE;
-+		pm_runtime_mark_last_busy(q->dev);
-+	}
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_post_runtime_suspend);
-+
-+/**
-+ * blk_pre_runtime_resume - Pre runtime resume processing
-+ * @q: the queue of the device
-+ *
-+ * Description:
-+ *    Update the queue's runtime status to RESUMING in preparation for the
-+ *    runtime resume of the device.
-+ *
-+ *    This function should be called near the start of the device's
-+ *    runtime_resume callback.
-+ */
-+void blk_pre_runtime_resume(struct request_queue *q)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	q->rpm_status = RPM_RESUMING;
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_pre_runtime_resume);
-+
-+/**
-+ * blk_post_runtime_resume - Post runtime resume processing
-+ * @q: the queue of the device
-+ * @err: return value of the device's runtime_resume function
-+ *
-+ * Description:
-+ *    Update the queue's runtime status according to the return value of the
-+ *    device's runtime_resume function. If it is successfully resumed, process
-+ *    the requests that are queued into the device's queue when it is resuming
-+ *    and then mark last busy and initiate autosuspend for it.
-+ *
-+ *    This function should be called near the end of the device's
-+ *    runtime_resume callback.
-+ */
-+void blk_post_runtime_resume(struct request_queue *q, int err)
-+{
-+	spin_lock_irq(q->queue_lock);
-+	if (!err) {
-+		q->rpm_status = RPM_ACTIVE;
-+		__blk_run_queue(q);
-+		pm_runtime_mark_last_busy(q->dev);
-+		pm_runtime_autosuspend(q->dev);
-+	} else {
-+		q->rpm_status = RPM_SUSPENDED;
-+	}
-+	spin_unlock_irq(q->queue_lock);
-+}
-+EXPORT_SYMBOL(blk_post_runtime_resume);
-+#endif
-+
- int __init blk_dev_init(void)
- {
- 	BUILD_BUG_ON(__REQ_NR_BITS > 8 *
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 78feda9..89d89c7 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -361,6 +361,12 @@ struct request_queue {
- 	 */
- 	struct kobject kobj;
+@@ -431,7 +428,7 @@ static int ezx_pcap_probe(struct spi_device *spi)
+ 	if (!pdata)
+ 		goto ret;
  
-+#ifdef CONFIG_PM_RUNTIME
-+	struct device		*dev;
-+	int			rpm_status;
-+	unsigned int		nr_pending;
-+#endif
-+
- 	/*
- 	 * queue settings
- 	 */
-@@ -961,6 +967,27 @@ struct request_queue *blk_alloc_queue_node(gfp_t, int);
- extern void blk_put_queue(struct request_queue *);
+-	pcap = kzalloc(sizeof(*pcap), GFP_KERNEL);
++	pcap = devm_kzalloc(&spi->dev, sizeof(*pcap), GFP_KERNEL);
+ 	if (!pcap) {
+ 		ret = -ENOMEM;
+ 		goto ret;
+@@ -448,7 +445,7 @@ static int ezx_pcap_probe(struct spi_device *spi)
+ 	spi->mode = SPI_MODE_0 | (pdata->config & PCAP_CS_AH ? SPI_CS_HIGH : 0);
+ 	ret = spi_setup(spi);
+ 	if (ret)
+-		goto free_pcap;
++		goto ret;
  
- /*
-+ * block layer runtime pm functions
-+ */
-+#ifdef CONFIG_PM_RUNTIME
-+extern void blk_pm_runtime_init(struct request_queue *q, struct device *dev);
-+extern int blk_pre_runtime_suspend(struct request_queue *q);
-+extern void blk_post_runtime_suspend(struct request_queue *q, int err);
-+extern void blk_pre_runtime_resume(struct request_queue *q);
-+extern void blk_post_runtime_resume(struct request_queue *q, int err);
-+#else
-+static inline void blk_pm_runtime_init(struct request_queue *q,
-+	struct device *dev) {}
-+static inline int blk_pre_runtime_suspend(struct request_queue *q)
-+{
-+	return -ENOSYS;
-+}
-+static inline void blk_post_runtime_suspend(struct request_queue *q, int err) {}
-+static inline void blk_pre_runtime_resume(struct request_queue *q) {}
-+static inline void blk_post_runtime_resume(struct request_queue *q, int err) {}
-+#endif
-+
-+/*
-  * blk_plug permits building a queue of related requests by holding the I/O
-  * fragments for a short period. This allows merging of sequential requests
-  * into single larger request. As the requests are moved from a per-task list to
+ 	pcap->spi = spi;
+ 
+@@ -458,7 +455,7 @@ static int ezx_pcap_probe(struct spi_device *spi)
+ 	if (!pcap->workqueue) {
+ 		ret = -ENOMEM;
+ 		dev_err(&spi->dev, "can't create pcap thread\n");
+-		goto free_pcap;
++		goto ret;
+ 	}
+ 
+ 	/* redirect interrupts to AP, except adcdone2 */
+@@ -491,7 +488,8 @@ static int ezx_pcap_probe(struct spi_device *spi)
+ 	adc_irq = pcap_to_irq(pcap, (pdata->config & PCAP_SECOND_PORT) ?
+ 					PCAP_IRQ_ADCDONE2 : PCAP_IRQ_ADCDONE);
+ 
+-	ret = request_irq(adc_irq, pcap_adc_irq, 0, "ADC", pcap);
++	ret = devm_request_irq(&spi->dev, adc_irq, pcap_adc_irq, 0,
++				"ADC", pcap);
+ 	if (ret)
+ 		goto free_irqchip;
+ 
+@@ -510,15 +508,11 @@ static int ezx_pcap_probe(struct spi_device *spi)
+ 
+ remove_subdevs:
+ 	device_for_each_child(&spi->dev, NULL, pcap_remove_subdev);
+-/* free_adc: */
+-	free_irq(adc_irq, pcap);
+ free_irqchip:
+ 	for (i = pcap->irq_base; i < (pcap->irq_base + PCAP_NIRQS); i++)
+ 		irq_set_chip_and_handler(i, NULL, NULL);
+ /* destroy_workqueue: */
+ 	destroy_workqueue(pcap->workqueue);
+-free_pcap:
+-	kfree(pcap);
+ ret:
+ 	return ret;
+ }
 -- 
-1.8.1.2
+1.7.2.5
+
 
