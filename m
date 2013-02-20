@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935830Ab3BTELY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 23:11:24 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5998 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934952Ab3BTEJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 23:09:29 -0500
-X-Authority-Analysis: v=2.0 cv=It2cgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=3585qKBZacsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=lrvjw4vzsvMA:10 a=wjwkSS7DOEIEClS_Et8A:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=5BBMoYA6pYBqD9PFwrsA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130220040927.810076131@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 19 Feb 2013 23:07:34 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 6/7] ktest: Ignore warnings during reboot
-References: <20130220040728.921685169@goodmis.org>
-Content-Disposition: inline; filename=0006-ktest-Ignore-warnings-during-reboot.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	id S964820Ab3BTEMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 23:12:00 -0500
+Received: from li44-10.members.linode.com ([72.14.181.10]:38287 "EHLO
+	plausible.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934191Ab3BTEL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Feb 2013 23:11:58 -0500
+X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Feb 2013 23:11:58 EST
+Message-ID: <51244B35.8090006@windriver.com>
+Date: Tue, 19 Feb 2013 20:04:05 -0800
+From: Andy Ross <andy.ross@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Jiri Slaby <jslaby@suse.cz>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2] vt: add init_hide parameter to suppress boot output
+References: <1361289224-10678-1-git-send-email-kirill.shutemov@linux.intel.com> <20130220014512.GC31018@kroah.com>
+In-Reply-To: <20130220014512.GC31018@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 02/19/2013 05:45 PM, Greg Kroah-Hartman wrote:
+>> When vt.init_hide is set, suppress output on newly created consoles
+>> until an affirmative switched to that console.  This prevents boot
+>> output from displaying (and clobbering splash screens, etc...)
+>> without disabling the console entirely.
+>
+> What's wrong with the 'quiet' option we have?  And you forgot to
+> document this.
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+You're right about docs, obviously.  I'll write something up and send
+it tomorrow morning.
 
-The reboot just wants to get to the next kernel. But if a warning (Call
-Trace) appears, the monitor will report an error, and the reboot will
-think something went wrong and power cycle the box, even though we
-successfully made it to the next kernel.
+But setting "quiet" controls logging.  It won't prevent the console
+from doing a buffer clear or mode switch, nor will it prevent
+userspace from writing to it, nor will the buffer rewrites due to the
+console switches that happen on suspend and resume (which I didn't
+know existed) be suppressed.
 
-Ignore warnings during the reboot until we get to the next kernel. It
-will still timeout if we never get to the next kernel and then a power
-cycle will happen. That's what we want it to do.
+There's a (sort of) similar commonly-used option, vga=current, which
+prevents a mode switch for the special case of VGA/vesa.  But that
+doesn't work with the framebuffer console.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- tools/testing/ktest/ktest.pl |    8 ++++++++
- 1 file changed, 8 insertions(+)
+The idea here (and I'm clearly no domain expert) was to leave the
+console enabled and active, but invisible by default.  So nothing
+displays, the splash screen stays put, and nothing fights with other
+users of the framebuffer.  And it stays that way until something
+affirmatively switches to a different VT using chvt or Alt-Fn or
+whatever.
 
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 839989d..f3bb5da 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -1212,6 +1212,12 @@ sub reboot {
-     }
-=20
-     if (defined($time)) {
-+
-+	# We only want to get to the new kernel, don't fail
-+	# if we stumble over a call trace.
-+	my $save_ignore_errors =3D $ignore_errors;
-+	$ignore_errors =3D 1;
-+
- 	# Look for the good kernel to boot
- 	if (wait_for_monitor($time, "Linux version")) {
- 	    # reboot got stuck?
-@@ -1219,6 +1225,8 @@ sub reboot {
- 	    run_command "$power_cycle";
- 	}
-=20
-+	$ignore_errors =3D $save_ignore_errors;
-+
- 	# Still need to wait for the reboot to finish
- 	wait_for_monitor($time, $reboot_success_line);
-=20
---=20
-1.7.10.4
+To be fair, a lot of this could be managed in userspace with the VT_*
+ioctl interface.  But the specific application here (Android's
+surfaceflinger) isn't set up for that, and it's a non-trivial API (and
+even doing it "right" involves racing against other users at startup).
+This seemed like a much simpler metaphor that still meets the
+requirements.
+
+Andy
 
 
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJRJEx3AAoJEOdOSU1xswtMWSsH/0xvio2VIUOIT8YBvq4jwy/v
-Hk2jYctBIoxStxdjQiKHR1yNc3w0JTVOzjNGh4wMcIPlondGMId1JVntZCaNKx1O
-QcssLFWoMdTpAmOnB3tHmzs6CRCbWg3W7Mjm1ZzuECjoK3sMIZfOz7hHRk+ouqfY
-KLiRzE5FZMv0bYmFXmgIkYRoxTRfD1N2nBFCHnUr3N1lhARHWK4y5EocnjKyKI+z
-ovknICTosZErJfGDWgJGNY/cl/QdiE11FdN3SoDLG8IROD1bjh0t3R2KAV7SKb4E
-RhkNsiKibMF0zaf4Ulfe6pzQCQnK12Ha+Sdg/IGyK1IKlPIBog3HDqxf3QxfSlg=
-=2755
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
