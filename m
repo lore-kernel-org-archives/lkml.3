@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934248Ab3BTDgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 22:36:06 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:47745 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933289Ab3BTDgE (ORCPT
+	id S935685Ab3BTDg0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 22:36:26 -0500
+Received: from smtp-out-04.shaw.ca ([64.59.134.12]:34066 "EHLO
+	smtp-out-04.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933993Ab3BTDew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 22:36:04 -0500
-Message-ID: <5124449D.3060808@numascale-asia.com>
-Date: Wed, 20 Feb 2013 11:35:57 +0800
-From: Daniel J Blueman <daniel@numascale-asia.com>
-Organization: Numascale Asia
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Steffen Persvold <sp@numascale.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: False-positive RCU stall warnings on large systems...
-References: <5123A984.4000704@numascale-asia.com> <20130219181624.GG3093@linux.vnet.ibm.com>
-In-Reply-To: <20130219181624.GG3093@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Feb 2013 22:34:52 -0500
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Feb 2013 22:34:51 EST
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=YO+FcVZrxpdWV6Mo6AkY2Rtp7tuV51ZJEd1ZQZEmJbs= c=1 sm=1
+ a=6HVSF7SH3h4A:10 a=3762yOXauukA:10 a=BLceEmwcHowA:10
+ a=oaxjXb+On79cRBAvziGSJw==:17 a=47LbCVvxAAAA:8 a=B8Q6Ko0-HK4vb56p6AsA:9
+ a=QhNQsjeWOoAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+From: Simon Wood <simon@mungewell.org>
+To: linux-input@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        simon@mungewell.org
+Subject: [PATCH 5/5] HID: Correct Logitech order in hid-ids.h
+Date: Tue, 19 Feb 2013 20:25:14 -0700
+Message-Id: <1361330714-5217-5-git-send-email-simon@mungewell.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1361330714-5217-1-git-send-email-simon@mungewell.org>
+References: <1361330714-5217-1-git-send-email-simon@mungewell.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/02/2013 02:16, Paul E. McKenney wrote:
-> On Wed, Feb 20, 2013 at 12:34:12AM +0800, Daniel J Blueman wrote:
->> Hi Paul,
->>
->> On some of our larger servers with many hundreds of cores and when
->> under high duress, we can see scheduler RCU stall warnings [1], so
->> find we have to increase the hardcoded RCU_STALL_RAT_DELAY up from 2
->> and RCU_JIFFIES_TILL_FORCE_QS up from 3.
->>
->> Is there a more sustainable way to account for this to avoid it
->> being hard-coded, such as making it and dependent timeouts a
->> fraction of CONFIG_RCU_CPU_STALL_TIMEOUT?
->>
->> On the other hand, perhaps this is just caused by clock jitter (eg
->> due to distance from a contended clock source)? So increasing these
->> a bit may just be adequate in general...
->
-> Hmmm...  What version of the kernel are you running?
+Reorders a couple of device IDs (Logitech controllers) to ensure
+that they are in hexidecimal order.
 
-The example below occurs with v3.8, but we see the same with previous 
-kernels eg v3.5.
+Signed-off-by: Simon Wood <simon@mungewell.org>
+---
+ drivers/hid/hid-ids.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Of course, when using the local TSC, you'd see no jitter relative to 
-coherent transactions (eg memory writes), but when the HPET is used 
-across a large system, coherent transactions to distant cores are just 
-so much faster, as there's massive congestion to the shared HPET behind 
-various HT and PCIe bridges. This could be where the jitter arises from, 
-if I'm guessing jitter is the problem here.
-
-Thanks,
-   Daniel
-
->> --- [1]
->>
->> [ 3939.010085] INFO: rcu_sched detected stalls on CPUs/tasks: {}
->> (detected by 1, t=29662 jiffies, g=3053, c=3052, q=598)
->> [ 3939.020008] INFO: Stall ended before state dump start
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 34e2547..865492c 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -525,8 +525,8 @@
+ #define USB_DEVICE_ID_LOGITECH_WINGMAN_F3D	0xc283
+ #define USB_DEVICE_ID_LOGITECH_FORCE3D_PRO	0xc286
+ #define USB_DEVICE_ID_LOGITECH_FLIGHT_SYSTEM_G940	0xc287
+-#define USB_DEVICE_ID_LOGITECH_WHEEL	0xc294
+ #define USB_DEVICE_ID_LOGITECH_WINGMAN_FFG	0xc293
++#define USB_DEVICE_ID_LOGITECH_WHEEL	0xc294
+ #define USB_DEVICE_ID_LOGITECH_MOMO_WHEEL	0xc295
+ #define USB_DEVICE_ID_LOGITECH_DFP_WHEEL	0xc298
+ #define USB_DEVICE_ID_LOGITECH_G25_WHEEL	0xc299
 -- 
-Daniel J Blueman
-Principal Software Engineer, Numascale Asia
+1.7.10.4
+
