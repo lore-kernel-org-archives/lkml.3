@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758971Ab3BTTEO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 14:04:14 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:49506 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756216Ab3BTTEN (ORCPT
+	id S1759178Ab3BTTJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 14:09:09 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:35365 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759128Ab3BTTJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 14:04:13 -0500
-Date: Wed, 20 Feb 2013 19:57:32 +0100
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: stable <stable@vger.kernel.org>, bskeggs@redhat.com,
-        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [stable request] fix for nouveau mem corruption [was: WARNING:
- at drivers/gpu/drm/nouveau/core/core/mm.c:242]
-Message-ID: <20130220185732.GA3071@joi.lan>
-References: <5122021F.1060207@suse.cz>
- <20130218232335.GA9730@joi.lan>
- <5122BC8A.6040503@suse.cz>
- <20130219070744.GA3032@joi.lan>
- <5124E1E9.5060607@suse.cz>
+	Wed, 20 Feb 2013 14:09:08 -0500
+Message-ID: <51251F51.2010003@gmail.com>
+Date: Wed, 20 Feb 2013 13:09:05 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5124E1E9.5060607@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
+CC: devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] of/i2c: don't register disabled devices
+References: <1361384904-13853-1-git-send-email-dmitry_eremin@mentor.com>
+In-Reply-To: <1361384904-13853-1-git-send-email-dmitry_eremin@mentor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 03:47:05PM +0100, Jiri Slaby wrote:
-> On 02/19/2013 08:07 AM, Marcin Slusarz wrote:
-> >>> Crash/warning should be fixed by commit cfd376b6bfccf33782a0748a9c70f7f752f8b869
-> >>> "drm/nouveau/vm: fix memory corruption when pgt allocation fails".
-> >>
-> >> Oh, thanks for the pointer. Could that bug cause real "memory
-> >> corruption"? As we're hunting one there...
-> > 
-> > Yes.
-> > 
-> >> Isn't this a stable-3.7 candidate?
-> > 
-> > Should have been :/.
+On 02/20/2013 12:28 PM, Dmitry Eremin-Solenikov wrote:
+> Don't register i2c slave device tree nodes which have
+> status = "disabled" property.
 > 
-> Ok, if you have no objections: stable fellows, please consider the
-> commit above for stable inclusion. As far as I can tell this is only
-> applicable for 3.7 -- Marcin?
 
-Correct. Please apply it for 3.7.x.
+This is already in 3.8.
 
-Marcin
+Rob
+
+> Signed-off-by: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
+> ---
+>  drivers/of/of_i2c.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
+> index 1e173f3..63f3236 100644
+> --- a/drivers/of/of_i2c.c
+> +++ b/drivers/of/of_i2c.c
+> @@ -35,6 +35,9 @@ void of_i2c_register_devices(struct i2c_adapter *adap)
+>  		const __be32 *addr;
+>  		int len;
+>  
+> +		if (!of_device_is_available(node))
+> +			continue;
+> +
+>  		dev_dbg(&adap->dev, "of_i2c: register %s\n", node->full_name);
+>  
+>  		if (of_modalias_node(node, info.type, sizeof(info.type)) < 0) {
+> 
+
