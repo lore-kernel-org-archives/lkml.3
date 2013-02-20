@@ -1,98 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935638Ab3BTNtb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 08:49:31 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:53384 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935340Ab3BTNt3 convert rfc822-to-8bit (ORCPT
+	id S935644Ab3BTNwP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 08:52:15 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:60325 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757742Ab3BTNwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 08:49:29 -0500
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "liam.r.girdwood@intel.com" <liam.r.girdwood@intel.com>
-Subject: RE: [PATCH 1/4] documentation: add palmas dts definition
-Thread-Topic: [PATCH 1/4] documentation: add palmas dts definition
-Thread-Index: AQHODx7rXccjEGg3CE6BVl49YkJwT5iCP9wAgACBM1A=
-Date: Wed, 20 Feb 2013 13:49:09 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229BBE34@DBDE01.ent.ti.com>
-References: <1361332815-2348-1-git-send-email-j-keerthy@ti.com>
- <20130220112639.GA2726@opensource.wolfsonmicro.com>
-In-Reply-To: <20130220112639.GA2726@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 20 Feb 2013 08:52:12 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Li Fei <fei.li@intel.com>
+Cc: pavel@ucw.cz, rjw@sisk.pl, len.brown@intel.com, mingo@redhat.com,
+        peterz@infradead.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, gorcunov@openvz.org, rientjes@google.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        chuansheng.liu@intel.com, biao.wang@intel.com
+References: <1361326525.9753.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+Date: Wed, 20 Feb 2013 05:51:49 -0800
+In-Reply-To: <1361326525.9753.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC> (Li
+	Fei's message of "Wed, 20 Feb 2013 10:15:25 +0800")
+Message-ID: <878v6jjdoq.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19HgqpfKf/pq+EkBs9Z6N3UUc17c0gvFSw=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0001]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Li Fei <fei.li@intel.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] freezer: configure user space process frozen along with kernel threads
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Li Fei <fei.li@intel.com> writes:
 
+> There is well known issue that freezing will fail in case that fuse
+> daemon is frozen firstly with some requests not handled, as the fuse
+> usage task is waiting for the response from fuse daemon and can't be
+> frozen. To solve the issue as above, make fuse daemon frozen after
+> all user space processes frozen and during the kernel threads frozen
+> phase.
+>
+> After discussion, at present it's generally agreed that:
+> 1) It's only the fuse daemon itself know definitely that it needs
+> and can be frozen together with kernel threads;
+> 2) It's helpful to expose interface that user space processes can
+> use to configure user space processes to be frozen together with
+> kernel threads.
+> More information can be found on https://lkml.org/lkml/2013/2/18/174.
+>
+> To support the requirement above, attribute /proc/<PID>/freeze_late
+> is added, writing 1 to it will make the process to be frozen together
+> with kernel threads, and writing 0 to it will make the process to be
+> frozen together with user space processes.
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> Sent: Wednesday, February 20, 2013 4:57 PM
-> To: J, KEERTHY
-> Cc: devicetree-discuss@lists.ozlabs.org; linux-doc@vger.kernel.org;
-> linux-kernel@vger.kernel.org; grant.likely@secretlab.ca;
-> rob.herring@calxeda.com; rob@landley.net; gg@slimlogic.co.uk;
-> sameo@linux.intel.com; liam.r.girdwood@intel.com
-> Subject: Re: [PATCH 1/4] documentation: add palmas dts definition
-> 
-> On Wed, Feb 20, 2013 at 09:30:15AM +0530, J Keerthy wrote:
-> > From: Graeme Gregory <gg@slimlogic.co.uk>
-> >
-> > Add the DTS definition for the palmas device including the MFD
-> children.
-> >
-> > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-> > [j-keerthy@ti.com: changed the DT node property names to follow the
-> > convention]
-> > Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> > ---
-> >  Documentation/devicetree/bindings/mfd/palmas.txt |   67
-> ++++++++++++++++++++++
-> >  1 files changed, 67 insertions(+), 0 deletions(-)  create mode
-> 100644
-> > Documentation/devicetree/bindings/mfd/palmas.txt
-> >
-> > diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt
-> > b/Documentation/devicetree/bindings/mfd/palmas.txt
-> > new file mode 100644
-> > index 0000000..5fa922e
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/mfd/palmas.txt
-> > @@ -0,0 +1,67 @@
-> > +Texas Instruments Palmas family
-> > +
-> > +The Palmas familly are Integrated Power Management Chips.
-> > +These chips are connected to an i2c bus.
-> 
-> I would expect this to enumerate the regulators that the user can
-> select but it doesn't appear to do that.
+There are no permission checks on this interface at all which
+potentially could make freeze late loose all meaning.  Certainly
+operating without permission checks needs some justification.
 
+Then I have the question how does this scale.  Which processes are ok to
+have the freeze late bit set?
 
-Mark,
+But even more than that fuse is setup to allow unprivileged mounts and
+mostly untrusted processes to act as filesystems, whith a nice kernel
+wrapper.  Now we are going to trust those filesystems with the ability
+to stop the kernel from freezing?
 
-Thanks for reviewing the patch.
+That seems inherently wrong.
 
-I went through the DT Documentation files in the regulator/ folder.
-So shall I add a list of regulators which are in the Palmas device
-Under a separate file under Documentation/devicetree/bindings/regulator ?
-Is that what you are looking for?
+Why can't the fuse filesystem freeze when there are requests pending?
 
-Regards,
-Keerthy
+How do we maintain this?  What happens if there is a process that the
+fuse process does ipc with and that it depends on?  Are two levels of
+freezing enough?
 
+I really can't see how this solution as presented is maintainable or
+justified.
+
+Eric
+
+> Signed-off-by: Liu Chuansheng <chuansheng.liu@intel.com>
+> Signed-off-by: Wang Biao <biao.wang@intel.com>
+> Signed-off-by: Li Fei <fei.li@intel.com>
+> ---
+>  fs/proc/base.c          |   70 +++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/freezer.h |    6 ++++
+>  include/linux/sched.h   |    2 +
+>  kernel/freezer.c        |   29 +++++++++++++++++++-
+>  kernel/power/process.c  |    2 +-
+>  5 files changed, 107 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index 9b43ff77..8d54c79 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -89,6 +89,9 @@
+>  #include <asm/hardwall.h>
+>  #endif
+>  #include <trace/events/oom.h>
+> +#ifdef CONFIG_FREEZER
+> +#include <linux/freezer.h>
+> +#endif
+>  #include "internal.h"
+>  #include "fd.h"
+>  
+> @@ -2486,6 +2489,70 @@ static int proc_pid_personality(struct seq_file *m, struct pid_namespace *ns,
+>  	return err;
+>  }
+>  
+> +#ifdef CONFIG_FREEZER
+> +
+> +static ssize_t freeze_late_read(struct file *file, char __user *buf,
+> +					size_t count, loff_t *ppos)
+> +{
+> +	struct task_struct *task = get_proc_task(file->f_path.dentry->d_inode);
+> +	char buffer[PROC_NUMBUF];
+> +	int freeze_late;
+> +	size_t len;
+> +	if (!task)
+> +		return -ESRCH;
+> +	freeze_late = (task->flags & PF_FREEZER_LATE) ? 1 : 0;
+> +	len = snprintf(buffer, sizeof(buffer), "%d\n", freeze_late);
+> +	return simple_read_from_buffer(buf, count, ppos, buffer, len);
+> +}
+> +
+> +static ssize_t freeze_late_write(struct file *file, const char __user *buf,
+> +					size_t count, loff_t *ppos)
+> +{
+> +	struct task_struct *task;
+> +	char buffer[PROC_NUMBUF];
+> +	int freeze_late;
+> +	int err;
+> +
+> +	memset(buffer, 0, sizeof(buffer));
+> +	if (count > sizeof(buffer) - 1)
+> +		count = sizeof(buffer) - 1;
+> +	if (copy_from_user(buffer, buf, count)) {
+> +		err = -EFAULT;
+> +		goto out;
+> +	}
+> +
+> +	err = kstrtoint(strstrip(buffer), 0, &freeze_late);
+> +	if (err)
+> +		goto out;
+> +	if (freeze_late < FREEZE_LATE_MIN ||
+> +			freeze_late > FREEZE_LATE_MAX) {
+> +		err = -EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	task = get_proc_task(file->f_path.dentry->d_inode);
+> +	if (!task) {
+> +		err = -ESRCH;
+> +		goto out;
+> +	}
+> +
+> +	if (freeze_late)
+> +		set_freeze_late_flag(task);
+> +	else
+> +		clear_freeze_late_flag(task);
+> +
+> +out:
+> +	return err < 0 ? err : count;
+> +}
+> +
+> +static const struct file_operations proc_freeze_late_operations = {
+> +	.read		= freeze_late_read,
+> +	.write		= freeze_late_write,
+> +	.llseek		= generic_file_llseek,
+> +};
+> +
+> +#endif
+> +
+>  /*
+>   * Thread groups
+>   */
+> @@ -2582,6 +2649,9 @@ static const struct pid_entry tgid_base_stuff[] = {
+>  	REG("gid_map",    S_IRUGO|S_IWUSR, proc_gid_map_operations),
+>  	REG("projid_map", S_IRUGO|S_IWUSR, proc_projid_map_operations),
+>  #endif
+> +#ifdef CONFIG_FREEZER
+> +	REG("freeze_late", S_IRUGO|S_IWUSR, proc_freeze_late_operations),
+> +#endif
+>  };
+>  
+>  static int proc_tgid_base_readdir(struct file * filp,
+> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> index e4238ce..10b24f8 100644
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -51,6 +51,10 @@ static inline bool try_to_freeze(void)
+>  
+>  extern bool freeze_task(struct task_struct *p);
+>  extern bool set_freezable(void);
+> +#define FREEZE_LATE_MIN 0
+> +#define FREEZE_LATE_MAX 1
+> +extern void set_freeze_late_flag(struct task_struct *p);
+> +extern void clear_freeze_late_flag(struct task_struct *p);
+>  
+>  #ifdef CONFIG_CGROUP_FREEZER
+>  extern bool cgroup_freezing(struct task_struct *task);
+> @@ -217,6 +221,8 @@ static inline void freezer_do_not_count(void) {}
+>  static inline void freezer_count(void) {}
+>  static inline int freezer_should_skip(struct task_struct *p) { return 0; }
+>  static inline void set_freezable(void) {}
+> +static inline void set_freeze_late_flag(void) {}
+> +static inline void clear_freeze_late_flag(void) {}
+>  
+>  #define freezable_schedule()  schedule()
+>  
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index d211247..4b2a7ef 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1826,6 +1826,8 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
+>  #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
+>  #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
+>  #define PF_FREEZER_SKIP	0x40000000	/* Freezer should not count it as freezable */
+> +/* Threads to be frozen along with kernel threads */
+> +#define PF_FREEZER_LATE 0x80000000
+>  
+>  /*
+>   * Only the _current_ task can read/write to tsk->flags, but other
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index c38893b..1469474 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -39,7 +39,8 @@ bool freezing_slow_path(struct task_struct *p)
+>  	if (pm_nosig_freezing || cgroup_freezing(p))
+>  		return true;
+>  
+> -	if (pm_freezing && !(p->flags & PF_KTHREAD))
+> +	if (pm_freezing && !(p->flags & PF_KTHREAD) &&
+> +				!(p->flags & PF_FREEZE_LATE))
+>  		return true;
+>  
+>  	return false;
+> @@ -162,3 +163,29 @@ bool set_freezable(void)
+>  	return try_to_freeze();
+>  }
+>  EXPORT_SYMBOL(set_freezable);
+> +
+> +/**
+> + * set_freeze_late_flag - make %p to be frozen late
+> + *
+> + * Make %p to be frozen by freezer along with kernel threads
+> + */
+> +void set_freeze_late_flag(struct task_struct *p)
+> +{
+> +	spin_lock_irq(&freezer_lock);
+> +	p->flags |= PF_FREEZE_LATE;
+> +	spin_unlock_irq(&freezer_lock);
+> +}
+> +EXPORT_SYMBOL(set_freeze_late_flag);
+> +
+> +/**
+> + * clear_freeze_late_flag - make %p to be frozen early
+> + *
+> + * Make %p to be frozen by freezer along with user space processes
+> + */
+> +void clear_freeze_late_flag(struct task_struct *p)
+> +{
+> +	spin_lock_irq(&freezer_lock);
+> +	p->flags &= ~PF_FREEZE_LATE;
+> +	spin_unlock_irq(&freezer_lock);
+> +}
+> +EXPORT_SYMBOL(clear_freeze_late_flag);
+> diff --git a/kernel/power/process.c b/kernel/power/process.c
+> index d5a258b..1472308 100644
+> --- a/kernel/power/process.c
+> +++ b/kernel/power/process.c
+> @@ -199,7 +199,7 @@ void thaw_kernel_threads(void)
+>  
+>  	read_lock(&tasklist_lock);
+>  	do_each_thread(g, p) {
+> -		if (p->flags & (PF_KTHREAD | PF_WQ_WORKER))
+> +		if (p->flags & (PF_KTHREAD | PF_WQ_WORKER | PF_FREEZE_LATE))
+>  			__thaw_task(p);
+>  	} while_each_thread(g, p);
+>  	read_unlock(&tasklist_lock);
