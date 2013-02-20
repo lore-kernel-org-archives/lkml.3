@@ -1,165 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934361Ab3BTSMP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 13:12:15 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:2034 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933889Ab3BTSMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 13:12:12 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Shankar Brahadeeswaran" <shankoo77@gmail.com>
-To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>,
-        linux-kernel@vger.kernel.org
-cc: devel@driverdev.osuosl.org, "Cruz Julian Bishop" <cruzjbishop@gmail.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Hugh Dickins" <hughd@google.com>,
-        "Konstantin Khlebnikov" <khlebnikov@openvz.org>,
-        "Shankar Brahadeeswaran" <shankoo77@gmail.com>
-Subject: [PATCH V3 1/1] staging: android: ashmem: get_name,set_name not
- to hold ashmem_mutex
-Date: Wed, 20 Feb 2013 23:41:26 +0530
-Message-ID: <1361383886-14805-2-git-send-email-shankoo77@gmail.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1361383886-14805-1-git-send-email-shankoo77@gmail.com>
-References: <1361363039-11984-2-git-send-email-shankoo77@gmail.com>
- <1361383886-14805-1-git-send-email-shankoo77@gmail.com>
+	id S934506Ab3BTSMY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 13:12:24 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:64746 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932966Ab3BTSMT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 13:12:19 -0500
 MIME-Version: 1.0
-X-WSS-ID: 7D3BCEF123C1096397-01-01
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Date: Wed, 20 Feb 2013 10:12:18 -0800
+Message-ID: <CAMe9rOrE4okBffqCE0mAK_ogc76Ty12OvBJGy69kLebGGXmM=Q@mail.gmail.com>
+Subject: [PATCH] DMI: Always call dmi_present with DMI structure
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Content-Type: multipart/mixed; boundary=e89a8ff1c56a186c6b04d62be6ba
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Problem:
-There exists a path in ashmem driver that could lead to acquistion
-of mm->mmap_sem, ashmem_mutex in reverse order. This could lead
-to deadlock in the system.
-For Example, assume that mmap is called on a ashmem region
-in the context of a thread say T1.
- sys_mmap_pgoff (1. acquires mm->mmap_sem)
-  |
-   --> mmap_region
- 	|
-         ----> ashmem_mmap (2. acquires asmem_mutex)
- Now if there is a context switch after 1 and before 2,
- and if another thread T2 (that shares the mm struct) invokes an
- ioctl say ASHMEM_GET_NAME, this can lead to the following path
+--e89a8ff1c56a186c6b04d62be6ba
+Content-Type: text/plain; charset=ISO-8859-1
 
-ashmem_ioctl
-  |
-  -->get_name (3. acquires ashmem_mutex)
-	|
-	---> copy_to_user (4. acquires the mm->mmap_sem)
-Note that the copy_to_user could lead to a valid fault if no
-physical page is allocated yet for the user address passed.
-Now T1 has mmap_sem and is waiting for ashmem_mutex.
-and T2 has the ashmem_mutex and is waiting for mmap_sem
-Thus leading to deadlock.
+Hi,
 
-Solution:
-Do not call copy_to_user or copy_from_user while holding the
-ahsmem_mutex. Instead copy this to a local buffer that lives
-in the stack while holding this lock. This will maintain data
-integrity as well never reverse the lock order.
+This patch:
 
-Testing:
-Created a unit test case to reproduce the problem.
-Used the same to test this fix on kernel version 3.4.0
-Ported the same patch to 3.8
+commit 9f9c9cbb60576a1518d0bf93fb8e499cffccf377
+Author: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Date:   Thu Dec 20 15:05:14 2012 -0800
 
-Signed-off-by: Shankar Brahadeeswaran <shankoo77@gmail.com>
-Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
----
- drivers/staging/android/ashmem.c |   45 +++++++++++++++++++++++++++-----------
- 1 files changed, 32 insertions(+), 13 deletions(-)
+    drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it exists
 
-diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
-index 634b9ae..38a9135 100644
---- a/drivers/staging/android/ashmem.c
-+++ b/drivers/staging/android/ashmem.c
-@@ -414,20 +414,29 @@ out:
- static int set_name(struct ashmem_area *asma, void __user *name)
- {
- 	int ret = 0;
-+	char local_name[ASHMEM_NAME_LEN];
- 
--	mutex_lock(&ashmem_mutex);
-+	/*
-+	 * Holding the ashmem_mutex while doing a copy_from_user might cause
-+	 * an data abort which would try to access mmap_sem. If another
-+	 * thread has invoked ashmem_mmap then it will be holding the
-+	 * semaphore and will be waiting for ashmem_mutex, there by leading to
-+	 * deadlock. We'll release the mutex  and take the name to a local
-+	 * variable that does not need protection and later copy the local
-+	 * variable to the structure member with lock held.
-+	 */
-+	if (copy_from_user(local_name, name, ASHMEM_NAME_LEN))
-+		return -EFAULT;
- 
-+	mutex_lock(&ashmem_mutex);
- 	/* cannot change an existing mapping's name */
- 	if (unlikely(asma->file)) {
- 		ret = -EINVAL;
- 		goto out;
- 	}
--
--	if (unlikely(copy_from_user(asma->name + ASHMEM_NAME_PREFIX_LEN,
--				    name, ASHMEM_NAME_LEN)))
--		ret = -EFAULT;
-+	memcpy(asma->name + ASHMEM_NAME_PREFIX_LEN,
-+		local_name, ASHMEM_NAME_LEN);
- 	asma->name[ASHMEM_FULL_NAME_LEN-1] = '\0';
--
- out:
- 	mutex_unlock(&ashmem_mutex);
- 
-@@ -437,26 +446,36 @@ out:
- static int get_name(struct ashmem_area *asma, void __user *name)
- {
- 	int ret = 0;
-+	size_t len;
-+	/*
-+	 * Have a local variable to which we'll copy the content
-+	 * from asma with the lock held. Later we can copy this to the user
-+	 * space safely without holding any locks. So even if we proceed to
-+	 * wait for mmap_sem, it won't lead to deadlock.
-+	 */
-+	char local_name[ASHMEM_NAME_LEN];
- 
- 	mutex_lock(&ashmem_mutex);
- 	if (asma->name[ASHMEM_NAME_PREFIX_LEN] != '\0') {
--		size_t len;
- 
- 		/*
- 		 * Copying only `len', instead of ASHMEM_NAME_LEN, bytes
- 		 * prevents us from revealing one user's stack to another.
- 		 */
- 		len = strlen(asma->name + ASHMEM_NAME_PREFIX_LEN) + 1;
--		if (unlikely(copy_to_user(name,
--				asma->name + ASHMEM_NAME_PREFIX_LEN, len)))
--			ret = -EFAULT;
-+		memcpy(local_name, asma->name + ASHMEM_NAME_PREFIX_LEN, len);
- 	} else {
--		if (unlikely(copy_to_user(name, ASHMEM_NAME_DEF,
--					  sizeof(ASHMEM_NAME_DEF))))
--			ret = -EFAULT;
-+		len = sizeof(ASHMEM_NAME_DEF);
-+		memcpy(local_name, ASHMEM_NAME_DEF, len);
- 	}
- 	mutex_unlock(&ashmem_mutex);
- 
-+	/*
-+	 * Now we are just copying from the stack variable to userland
-+	 * No lock held
-+	 */
-+	if (unlikely(copy_to_user(name, local_name, len)))
-+		ret = -EFAULT;
- 	return ret;
- }
- 
+    The right dmi version is in SMBIOS if it's zero in DMI region
+
+    This issue was originally found from an oracle bug.
+    One customer noticed system UUID doesn't match between dmidecode & uek2.
+
+     - HP ProLiant BL460c G6 :
+       # cat /sys/devices/virtual/dmi/id/product_uuid
+       00000000-0000-4C48-3031-4D5030333531
+       # dmidecode | grep -i uuid    drivers/firmware/dmi_scan.c:
+fetch dmi version from SMBIOS if it exists
+
+    The right dmi version is in SMBIOS if it's zero in DMI region
+
+    This issue was originally found from an oracle bug.
+    One customer noticed system UUID doesn't match between dmidecode & uek2.
+
+     - HP ProLiant BL460c G6 :
+       # cat /sys/devices/virtual/dmi/id/product_uuid
+       00000000-0000-4C48-3031-4D5030333531
+       # dmidecode | grep -i uuid
+       UUID: 00000000-0000-484C-3031-4D5030333531
+
+    From SMBIOS 2.6 on, spec use little-endian encoding for UUID other than
+    network byte order.
+
+    So we need to get dmi version to distinguish.  If version is 0.0, the
+    real version is taken from the SMBIOS version.  This is part of original
+    kernel comment in code.
+
+       UUID: 00000000-0000-484C-3031-4D5030333531
+
+    From SMBIOS 2.6 on, spec use little-endian encoding for UUID other than
+    network byte order.
+
+    So we need to get dmi version to distinguish.  If version is 0.0, the
+    real version is taken from the SMBIOS version.  This is part of original
+    kernel comment in code.
+
+causes a regression in 3.7, 3.8 and 3.9 kernels.   Before the change,
+we only scan DMI structure.  Now smbios_present scans SMBIOS
+entry point.  I have a machine which has invalid checksum in
+SMBIOS entry point.  We wind up calling dmi_present with SMBIOS
+entry point instead of DMI structure.  This patch changes smbios_present
+to always call dmi_present with DMI structure.
+
+
 -- 
-1.7.6
+H.J.
 
+--e89a8ff1c56a186c6b04d62be6ba
+Content-Type: application/octet-stream; 
+	name="0001-DMI-Always-call-dmi_present-with-DMI-structure.patch"
+Content-Disposition: attachment; 
+	filename="0001-DMI-Always-call-dmi_present-with-DMI-structure.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hdesm1o70
 
+RnJvbSA5ZGUzNzY5NTQzYmQzNWI3NWQ4YTRjNTQ5YTIzYWE2MWFiYzM3MDVjIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiAiSC5KLiBMdSIgPGhqbC50b29sc0BnbWFpbC5jb20+CkRhdGU6
+IFdlZCwgMjAgRmViIDIwMTMgMTA6MDA6MDYgLTA4MDAKU3ViamVjdDogW1BBVENIXSBETUk6IEFs
+d2F5cyBjYWxsIGRtaV9wcmVzZW50IHdpdGggRE1JIHN0cnVjdHVyZQoKSWYgU01CSU9TIGVudHJ5
+IHBvaW50IGhhcyBpbnZhbGlkIGNoZWNrc3VtLCBzbWJpb3NfcHJlc2VudCB3aWxsIGNhbGwKZG1p
+X3ByZXNlbnQgd2l0aCB3cm9uZyBvZmZzZXQgb2YgRE1JIHN0cnVjdHVyZTogMCwgaW5zdGVhZCBv
+ZiAxNi4gIFdlCnNob3VsZCBhbHdheXMgY2FsbCBkbWlfcHJlc2VudCB3aXRoIERNSSBzdHJ1Y3R1
+cmUuCi0tLQogZHJpdmVycy9maXJtd2FyZS9kbWlfc2Nhbi5jIHwgNSArKy0tLQogMSBmaWxlIGNo
+YW5nZWQsIDIgaW5zZXJ0aW9ucygrKSwgMyBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2
+ZXJzL2Zpcm13YXJlL2RtaV9zY2FuLmMgYi9kcml2ZXJzL2Zpcm13YXJlL2RtaV9zY2FuLmMKaW5k
+ZXggOTgyZjFmNS4uMTcwNzNhOCAxMDA2NDQKLS0tIGEvZHJpdmVycy9maXJtd2FyZS9kbWlfc2Nh
+bi5jCisrKyBiL2RyaXZlcnMvZmlybXdhcmUvZG1pX3NjYW4uYwpAQCAtNDQyLDcgKzQ0Miw2IEBA
+IHN0YXRpYyBpbnQgX19pbml0IGRtaV9wcmVzZW50KGNvbnN0IGNoYXIgX19pb21lbSAqcCkKIHN0
+YXRpYyBpbnQgX19pbml0IHNtYmlvc19wcmVzZW50KGNvbnN0IGNoYXIgX19pb21lbSAqcCkKIHsK
+IAl1OCBidWZbMzJdOwotCWludCBvZmZzZXQgPSAwOwogCiAJbWVtY3B5X2Zyb21pbyhidWYsIHAs
+IDMyKTsKIAlpZiAoKGJ1Zls1XSA8IDMyKSAmJiBkbWlfY2hlY2tzdW0oYnVmLCBidWZbNV0pKSB7
+CkBAIC00NjEsOSArNDYwLDkgQEAgc3RhdGljIGludCBfX2luaXQgc21iaW9zX3ByZXNlbnQoY29u
+c3QgY2hhciBfX2lvbWVtICpwKQogCQkJZG1pX3ZlciA9IDB4MDIwNjsKIAkJCWJyZWFrOwogCQl9
+Ci0JCW9mZnNldCA9IDE2OwogCX0KLQlyZXR1cm4gZG1pX3ByZXNlbnQoYnVmICsgb2Zmc2V0KTsK
+KwkvKiAxNiBpcyB0aGUgb2Zmc2V0IG9mIF9ETUlfIHN0cmluZy4gICovCisJcmV0dXJuIGRtaV9w
+cmVzZW50KGJ1ZiArIDE2KTsKIH0KIAogdm9pZCBfX2luaXQgZG1pX3NjYW5fbWFjaGluZSh2b2lk
+KQotLSAKMS43LjExLjcKCg==
+--e89a8ff1c56a186c6b04d62be6ba--
