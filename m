@@ -1,115 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934305Ab3BTQjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 11:39:08 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:56192 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab3BTQjD (ORCPT
+	id S934371Ab3BTQj3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 11:39:29 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:64851 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933961Ab3BTQjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 11:39:03 -0500
-Message-ID: <5124FC22.2090706@gmail.com>
-Date: Wed, 20 Feb 2013 11:38:58 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 20 Feb 2013 11:39:06 -0500
+Date: Wed, 20 Feb 2013 16:38:56 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, arnd@arndb.de, linus.walleij@stericsson.com,
+        Jonas Aaberg <jonas.aberg@stericsson.com>
+Subject: Re: [PATCH 02/35] mfd: ab8500-gpadc: Allow tvout regulator to be
+ missing
+Message-ID: <20130220163856.GC4417@gmail.com>
+References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
+ <1360933026-30325-3-git-send-email-lee.jones@linaro.org>
+ <20130220132321.GC13049@sirena.org.uk>
 MIME-Version: 1.0
-To: "Roberts, Lee A." <lee.roberts@hp.com>
-CC: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] sctp: fix association hangs due to reassembly/ordering
- logic
-References: <1361374925.3450.2.camel@laptop.lroberts> <D64EC45690EF85409BA6C4730E0162244310CBB5@G4W3231.americas.hpqcorp.net>
-In-Reply-To: <D64EC45690EF85409BA6C4730E0162244310CBB5@G4W3231.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130220132321.GC13049@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 10:55 AM, Roberts, Lee A. wrote:
-> From: Lee A. Roberts <lee.roberts@hp.com>
->
-> Resolve SCTP association hangs observed during SCTP stress
-> testing.  Observable symptoms include communications hangs
-> with data being held in the association reassembly and/or lobby
-> (ordering) queues.  Close examination of reassembly queue shows
-> missing packets.
->
-> In sctp_ulpq_renege_list(), do not renege packets below the
-> cumulative TSN ACK point.  Events being reneged from the
-> ordering queue may correspond to multiple TSNs; identify
-> and renege all affected packets from the tsnmap.
->
-> Patch applies to linux-3.8 kernel.
->
-> Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
-> ---
->   net/sctp/ulpqueue.c |   30 +++++++++++++++++++++++++-----
->   1 file changed, 25 insertions(+), 5 deletions(-)
->
-> diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
-> +1/net/sctp/ulpqueue.c linux-3.8-SCTP+2/net/sctp/ulpqueue.c
-> --- linux-3.8-SCTP+1/net/sctp/ulpqueue.c	2013-02-18 16:58:34.000000000
-> -0700
-> +++ linux-3.8-SCTP+2/net/sctp/ulpqueue.c	2013-02-20 08:17:53.679233365
-> -0700
-> @@ -962,20 +962,40 @@ static __u16 sctp_ulpq_renege_list(struc
->   		struct sk_buff_head *list, __u16 needed)
->   {
->   	__u16 freed = 0;
-> -	__u32 tsn;
-> -	struct sk_buff *skb;
-> +	__u32 tsn, last_tsn;
-> +	struct sk_buff *skb, *flist, *last;
->   	struct sctp_ulpevent *event;
->   	struct sctp_tsnmap *tsnmap;
->
->   	tsnmap = &ulpq->asoc->peer.tsn_map;
->
-> -	while ((skb = __skb_dequeue_tail(list)) != NULL) {
-> -		freed += skb_headlen(skb);
-> +	while ((skb = skb_peek_tail(list)) != NULL) {
->   		event = sctp_skb2event(skb);
->   		tsn = event->tsn;
->
-> +		/* Don't renege below the Cumulative TSN ACK Point. */
-> +		if (TSN_lte(tsn, sctp_tsnmap_get_ctsn(tsnmap)))
-> +			break;
-> +
-> +		/* Events in ordering queue may have multiple fragments
-> +		 * corresponding to additional TSNs.  Find the last one.
-> +		 */
-> +		flist = skb_shinfo(skb)->frag_list;
-> +		for (last = flist; flist; flist = flist->next)
-> +			last = flist;
-> +		if (last)
-> +			last_tsn = sctp_skb2event(last)->tsn;
-> +		else
-> +			last_tsn = tsn;
-> +
-> +		/* Unlink the event, then renege all applicable TSNs. */
-> +		__skb_unlink(skb, list);
-> +		freed += skb_headlen(skb);
+On Wed, 20 Feb 2013, Mark Brown wrote:
 
+> On Fri, Feb 15, 2013 at 12:56:33PM +0000, Lee Jones wrote:
+> 
+> > +	if (gpadc->regu)
+> > +		regulator_disable(gpadc->regu);
+> 
+> No explanation for this in the changelog and missing error handling like
+> this is pretty much always terrible style.  Why are we doing this?
 
-This is no longer correct.  You are actually freeing more space if you 
-are reneging a reassembled event from the the ordered queue.
+No idea, and Jonas is on parental leave.
 
-Please separate the 2 patches since they fix 2 distinct bugs.
+Perhaps one of the other guys have an explanation?
 
-Thanks
--vlad
-
->   		sctp_ulpevent_free(event);
-> -		sctp_tsnmap_renege(tsnmap, tsn);
-> +		while (TSN_lte(tsn, last_tsn)) {
-> +			sctp_tsnmap_renege(tsnmap, tsn);
-> +			tsn++;
-> +		}
->   		if (freed >= needed)
->   			return freed;
->   	}
->
-> N�����r��y���b�X��ǧv�^�)޺{.n�+����{���i�{ay�ʇڙ�,j��f���h���z��w������j:+v���w�j�m��������zZ+��ݢj"��!tml=
->
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
