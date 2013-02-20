@@ -1,148 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934228Ab3BTGLn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 01:11:43 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:17152 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933529Ab3BTGLl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 01:11:41 -0500
-X-AuditID: cbfee690-b7f066d00000169f-e7-5124691ad7ff
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Samuel Ortiz'" <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
-In-reply-to: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
-Subject: [PATCH 05/11] mfd: twl6040: use devm_gpio_request_one() and
- devm_request_threaded_irq()
-Date: Wed, 20 Feb 2013 15:11:38 +0900
-Message-id: <002a01ce0f31$24e5fef0$6eb1fcd0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4PMNZl2zNDd+kPTaydPUTuUPUSLQAAEG4A
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zI12pTJVAg+XrrS0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGqjXrmQs6xCsuPX7J3MD4VaiLkZNDQsBEYv/aHmYIW0ziwr31
-	bF2MXBxCAssYJdpX7GOBKdrwbhkrRGIRo8SaW0uYIJzZTBJb7v5iAqliE1CT+PLlMDuILSKg
-	JdF97DzQKA4OZgEXiaPTREDCQgK2Et/X/mMFsTkF7CR2PTrPClIiLJAk8a9HHyTMIqAqcejJ
-	KXaQMC9QeduzOpAwr4CgxI/J98DOYQYavn7ncSYIW15i85q3zCDlEgLqEo/+6kLsN5L4ff8q
-	VImIxL4X7xhBDpYQWMQu8fdoDxPEKgGJb5MPsUD0ykpsOgANBkmJgytusExglJiFZPMsJJtn
-	Idk8C8mKBYwsqxhFUwuSC4qT0otM9IoTc4tL89L1kvNzNzFComrCDsZ7B6wPMSYDrZ/ILCWa
-	nA+MyrySeENjYxMzE1MTc0tTc1PShJXEeeUvyQQKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRq
-	YHQI2qd0xPuH4JdKr4uquXdPJKqzlgXx8hy23VezaPl91xjxMrs9EQI6z+uP/9VYdTzW+FBa
-	kUGrx0Lr+27Otptjf7/OnbZCa/+0k8eEZ00L09vWbzebv0NixfeUO21Cr+9q+1+end7cuF1L
-	+uSLIu6zEwsKbq3ekb/y365DEr9/623PWqRaclCJpTgj0VCLuag4EQDtaDRVwAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgK5UpkqgwfFOM4vLu+awOTB6fN4k
-	F8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQM0
-	VUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYsWrNeuaCDvGKS49fMjcw
-	fhXqYuTkkBAwkdjwbhkrhC0mceHeerYuRi4OIYFFjBJrbi1hgnBmM0lsufuLCaSKTUBN4suX
-	w+wgtoiAlkT3sfNAHRwczAIuEkeniYCEhQRsJb6v/Qc2lFPATmLXo/OsICXCAkkS/3r0QcIs
-	AqoSh56cYgcJ8wKVtz2rAwnzCghK/Jh8jwXEZgYavn7ncSYIW15i85q3zCDlEgLqEo/+6kLs
-	N5L4ff8qVImIxL4X7xgnMArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0
-	veT83E2M4Jh9JrWDcWWDxSFGAQ5GJR5ejfnKgUKsiWXFlbmHGCU4mJVEeJudVAKFeFMSK6tS
-	i/Lji0pzUosPMSYD/TmRWUo0OR+YTvJK4g2NTcyMLI3MLIxMzM1JE1YS52U89SRASCA9sSQ1
-	OzW1ILUIZgsTB6dUA6PsDyGTuI5gz0eqpWc/LmWTbE9nOCbFH7vry87HIluty+rP8O+t1n7H
-	rGyzPq/095z5RXtELv2wDVVrdt2THcu9SPT/gw2FaQVWZ8QclbUD9RNO8+WtzRLXrNc1CNRS
-	+/cwp76dzb8nl+Otsq1YRVHCnLB3q158KL+p55PieGV10Ca2JS4qSizFGYmGWsxFxYkA0pDW
-	sB0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S933477Ab3BTGLF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 01:11:05 -0500
+Received: from mga01.intel.com ([192.55.52.88]:13939 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759094Ab3BTGLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 01:11:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
+   d="scan'208";a="293424196"
+From: Aaron Lu <aaron.lu@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Aaron Lu <aaron.lwe@gmail.com>, Aaron Lu <aaron.lu@intel.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: [PATCH v10 1/4] block: add a flag to identify PM request
+Date: Wed, 20 Feb 2013 14:11:54 +0800
+Message-Id: <1361340717-8991-2-git-send-email-aaron.lu@intel.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1361340717-8991-1-git-send-email-aaron.lu@intel.com>
+References: <1361340717-8991-1-git-send-email-aaron.lu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_gpio_request_one() and devm_request_threaded_irq() to make
-cleanup paths and  more simple.
+From: Lin Ming <ming.m.lin@intel.com>
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Add a flag REQ_PM to identify the request is PM related, such requests
+will not change the device request queue's runtime status. It is
+intended to be used in driver's runtime PM callback, so that driver can
+perform some IO to the device there with the queue's runtime status
+unaffected. e.g. in SCSI disk's runtime suspend callback, the disk will
+be put into stopped power state, and this require sending a command to
+the device. Such command processing should not change the disk's runtime
+status.
+
+As an example, modify scsi code to use this flag.
+
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 ---
- drivers/mfd/twl6040.c |   26 +++++++-------------------
- 1 files changed, 7 insertions(+), 19 deletions(-)
+ drivers/scsi/scsi_lib.c    |  9 ++++-----
+ drivers/scsi/sd.c          |  9 +++++----
+ include/linux/blk_types.h  |  2 ++
+ include/scsi/scsi_device.h | 16 ++++++++++++----
+ 4 files changed, 23 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/mfd/twl6040.c b/drivers/mfd/twl6040.c
-index f361bf3..2d38512 100644
---- a/drivers/mfd/twl6040.c
-+++ b/drivers/mfd/twl6040.c
-@@ -586,8 +586,8 @@ static int twl6040_probe(struct i2c_client *client,
- 		twl6040->audpwron = -EINVAL;
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 765398c..23f795f 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -271,11 +271,10 @@ int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
+ }
+ EXPORT_SYMBOL(scsi_execute);
  
- 	if (gpio_is_valid(twl6040->audpwron)) {
--		ret = gpio_request_one(twl6040->audpwron, GPIOF_OUT_INIT_LOW,
--				       "audpwron");
-+		ret = devm_gpio_request_one(twl6040->dev, twl6040->audpwron,
-+					GPIOF_OUT_INIT_LOW, "audpwron");
- 		if (ret)
- 			goto gpio_err;
- 	}
-@@ -596,14 +596,14 @@ static int twl6040_probe(struct i2c_client *client,
- 			IRQF_ONESHOT, 0, &twl6040_irq_chip,
- 			&twl6040->irq_data);
- 	if (ret < 0)
--		goto irq_init_err;
-+		goto gpio_err;
- 
- 	twl6040->irq_ready = regmap_irq_get_virq(twl6040->irq_data,
- 					       TWL6040_IRQ_READY);
- 	twl6040->irq_th = regmap_irq_get_virq(twl6040->irq_data,
- 					       TWL6040_IRQ_TH);
- 
--	ret = request_threaded_irq(twl6040->irq_ready, NULL,
-+	ret = devm_request_threaded_irq(twl6040->dev, twl6040->irq_ready, NULL,
- 				   twl6040_readyint_handler, IRQF_ONESHOT,
- 				   "twl6040_irq_ready", twl6040);
- 	if (ret) {
-@@ -611,12 +611,12 @@ static int twl6040_probe(struct i2c_client *client,
- 		goto readyirq_err;
- 	}
- 
--	ret = request_threaded_irq(twl6040->irq_th, NULL,
-+	ret = devm_request_threaded_irq(twl6040->dev, twl6040->irq_th, NULL,
- 				   twl6040_thint_handler, IRQF_ONESHOT,
- 				   "twl6040_irq_th", twl6040);
- 	if (ret) {
- 		dev_err(twl6040->dev, "Thermal IRQ request failed: %d\n", ret);
--		goto thirq_err;
-+		goto readyirq_err;
- 	}
- 
- 	/* dual-access registers controlled by I2C only */
-@@ -676,19 +676,12 @@ static int twl6040_probe(struct i2c_client *client,
- 	ret = mfd_add_devices(&client->dev, -1, twl6040->cells, children,
- 			      NULL, 0, NULL);
- 	if (ret)
--		goto mfd_err;
-+		goto readyirq_err;
- 
- 	return 0;
- 
--mfd_err:
--	free_irq(twl6040->irq_th, twl6040);
--thirq_err:
--	free_irq(twl6040->irq_ready, twl6040);
- readyirq_err:
- 	regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
--irq_init_err:
--	if (gpio_is_valid(twl6040->audpwron))
--		gpio_free(twl6040->audpwron);
- gpio_err:
- 	regulator_bulk_disable(TWL6040_NUM_SUPPLIES, twl6040->supplies);
- power_err:
-@@ -706,11 +699,6 @@ static int twl6040_remove(struct i2c_client *client)
- 	if (twl6040->power_count)
- 		twl6040_power(twl6040, 0);
- 
--	if (gpio_is_valid(twl6040->audpwron))
--		gpio_free(twl6040->audpwron);
 -
--	free_irq(twl6040->irq_ready, twl6040);
--	free_irq(twl6040->irq_th, twl6040);
- 	regmap_del_irq_chip(twl6040->irq, twl6040->irq_data);
+-int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
++int scsi_execute_req_flags(struct scsi_device *sdev, const unsigned char *cmd,
+ 		     int data_direction, void *buffer, unsigned bufflen,
+ 		     struct scsi_sense_hdr *sshdr, int timeout, int retries,
+-		     int *resid)
++		     int *resid, int flags)
+ {
+ 	char *sense = NULL;
+ 	int result;
+@@ -286,14 +285,14 @@ int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+ 			return DRIVER_ERROR << 24;
+ 	}
+ 	result = scsi_execute(sdev, cmd, data_direction, buffer, bufflen,
+-			      sense, timeout, retries, 0, resid);
++			      sense, timeout, retries, flags, resid);
+ 	if (sshdr)
+ 		scsi_normalize_sense(sense, SCSI_SENSE_BUFFERSIZE, sshdr);
  
- 	mfd_remove_devices(&client->dev);
+ 	kfree(sense);
+ 	return result;
+ }
+-EXPORT_SYMBOL(scsi_execute_req);
++EXPORT_SYMBOL(scsi_execute_req_flags);
+ 
+ /*
+  * Function:    scsi_init_cmd_errh()
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 7992635..c6e2b34 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1424,8 +1424,9 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
+ 		 * Leave the rest of the command zero to indicate
+ 		 * flush everything.
+ 		 */
+-		res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+-				       SD_FLUSH_TIMEOUT, SD_MAX_RETRIES, NULL);
++		res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0,
++					     &sshdr, SD_FLUSH_TIMEOUT,
++					     SD_MAX_RETRIES, NULL, REQ_PM);
+ 		if (res == 0)
+ 			break;
+ 	}
+@@ -3021,8 +3022,8 @@ static int sd_start_stop_device(struct scsi_disk *sdkp, int start)
+ 	if (!scsi_device_online(sdp))
+ 		return -ENODEV;
+ 
+-	res = scsi_execute_req(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
+-			       SD_TIMEOUT, SD_MAX_RETRIES, NULL);
++	res = scsi_execute_req_flags(sdp, cmd, DMA_NONE, NULL, 0, &sshdr,
++			       SD_TIMEOUT, SD_MAX_RETRIES, NULL, REQ_PM);
+ 	if (res) {
+ 		sd_printk(KERN_WARNING, sdkp, "START_STOP FAILED\n");
+ 		sd_print_result(sdkp, res);
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index cdf1119..fcc1ce2 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -175,6 +175,7 @@ enum rq_flag_bits {
+ 	__REQ_IO_STAT,		/* account I/O stat */
+ 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
+ 	__REQ_KERNEL, 		/* direct IO to kernel pages */
++	__REQ_PM,		/* runtime pm request */
+ 	__REQ_NR_BITS,		/* stops here */
+ };
+ 
+@@ -223,5 +224,6 @@ enum rq_flag_bits {
+ #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
+ #define REQ_SECURE		(1 << __REQ_SECURE)
+ #define REQ_KERNEL		(1 << __REQ_KERNEL)
++#define REQ_PM			(1 << __REQ_PM)
+ 
+ #endif /* __LINUX_BLK_TYPES_H */
+diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+index a7f9cba..cc64587 100644
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -394,10 +394,18 @@ extern int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
+ 			int data_direction, void *buffer, unsigned bufflen,
+ 			unsigned char *sense, int timeout, int retries,
+ 			int flag, int *resid);
+-extern int scsi_execute_req(struct scsi_device *sdev, const unsigned char *cmd,
+-			    int data_direction, void *buffer, unsigned bufflen,
+-			    struct scsi_sense_hdr *, int timeout, int retries,
+-			    int *resid);
++extern int scsi_execute_req_flags(struct scsi_device *sdev,
++	const unsigned char *cmd, int data_direction, void *buffer,
++	unsigned bufflen, struct scsi_sense_hdr *sshdr, int timeout,
++	int retries, int *resid, int flags);
++static inline int scsi_execute_req(struct scsi_device *sdev,
++	const unsigned char *cmd, int data_direction, void *buffer,
++	unsigned bufflen, struct scsi_sense_hdr *sshdr, int timeout,
++	int retries, int *resid)
++{
++	return scsi_execute_req_flags(sdev, cmd, data_direction, buffer,
++		bufflen, sshdr, timeout, retries, resid, 0);
++}
+ extern void sdev_disable_disk_events(struct scsi_device *sdev);
+ extern void sdev_enable_disk_events(struct scsi_device *sdev);
+ 
 -- 
-1.7.2.5
-
+1.8.1.2
 
