@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758832Ab3BTSJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 13:09:17 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:42368 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818Ab3BTSJP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 13:09:15 -0500
+	id S1759020Ab3BTSJh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 13:09:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55651 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750698Ab3BTSJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 13:09:36 -0500
+Message-ID: <51251101.5070008@zytor.com>
+Date: Wed, 20 Feb 2013 10:08:01 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130216171228.GF4910@redhat.com>
-References: <1361008406-2307-1-git-send-email-msb@chromium.org>
-	<1361008406-2307-4-git-send-email-msb@chromium.org>
-	<20130216170644.GD4910@redhat.com>
-	<20130216171228.GF4910@redhat.com>
-Date: Wed, 20 Feb 2013 10:09:14 -0800
-X-Google-Sender-Auth: 5pA9PhRRyf0r7Uii6dI2_kSDsnc
-Message-ID: <CACBanvoArjZ=7rjXjt5fN6MrhLohPY7NAjQwhWepnMLZbqpHdQ@mail.gmail.com>
-Subject: Re: [PATCH 4/5] freezer: clear fake signal on exit from __refrigerator
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>,
-        adurbin@chromium.org
+To: Alessandro Rubini <rubini@gnudd.com>
+CC: x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, Davide Ciminaghi <ciminaghi@gnudd.com>
+Subject: Re: tip/x86/amba
+References: <20130220073554.GA10939@mail.gnudd.com>
+In-Reply-To: <20130220073554.GA10939@mail.gnudd.com>
+X-Enigmail-Version: 1.5
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 16, 2013 at 9:12 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Forgot to mention...
->
-> On 02/16, Oleg Nesterov wrote:
->> On 02/16, Mandeep Singh Baines wrote:
->> >
->> > --- a/kernel/freezer.c
->> > +++ b/kernel/freezer.c
->> > @@ -81,6 +81,9 @@ bool __refrigerator(bool check_kthr_stop)
->> >      */
->> >     set_current_state(save);
->> >
->> > +   /* Clear fake signal from freeze_task(). */
->> > +   recalc_sigpending();
->>
->> NACK. We can't do this lockless.
->>
->> And I am not sure we should reinstantiate it here.
->
-> And note that with the fix I propose in reply to 5/5 this change is
-> not needed.
->
+On 02/19/2013 11:35 PM, Alessandro Rubini wrote:
+> Hello Peter and maintainers.
+> 
+> I wonder what are the plans for the branch x86/amba, part of the tip
+> repository.  Of the 7 patches in that branch, 2 are already upstream
+> and the other 5 rebase perfectly (only conflicts are in the header
+> stanzas). This is the reverse log from next to my current working tree:
+> 
+>   0e7e31f DMA: PL330: use prefix in reg names to build under x86
+>   1e8486a watchdog: sp805_wdt depends on ARM
+>   6417077 mmc: Use the new <linux/sizes.h>
+>   52b9f4e drivers/amba: add support for a PCI bridge
+>   d8d2313 x86: add CONFIG_ARM_AMBA, selected by STA2X11
+> 
+> They all have the proper acked and signed-off, as well as references
+> to the original mailing list message by my mate Davide who submitted
+> them.
+> 
+> Shall I just wait for you to merge or shall I repost to the mailing
+> lists? In the latte case, with or without the various ack/signoff?
+> 
 
-I think we need something like this in order to be able to fix
-wait_event_freezable and friends. Here is one idea:
+We have been waiting for you to sort out the breakages and let us know
+that the problems has been resolved.  Sorry, the number of email threads
+have been absolutely crazy and so I have not tracked them all.
 
-#define __wait_event_freezable(wq, condition, ret)                  \
-do {                                                                    \
-        DEFINE_WAIT(__wait);                                            \
-                                                                        \
-        for (;;) {                                                      \
-                prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);      \
-                if (condition)                                          \
-                        break;                                          \
-                if (!signal_pending(current)) {                         \
-                        freezable_schedule();
-           \
-                        continue;                                       \
-                }                                                       \
-                ret = -ERESTARTSYS;                                     \
-                break;                                                  \
-        }                                                               \
-        finish_wait(&wq, &__wait);                                      \
-} while (0)
+We have not been testing this branch.
 
+What are the upstream commits?
 
-#define wait_event_freezable(wq, condition)                         \
-({                                                                      \
-        int __ret = 0;                                                  \
-        if (!(condition))                                               \
-                __wait_event_freezable(wq, condition, __ret);       \
-        __ret;                                                          \
-})
+	-hpa
 
-
-If you cleaned up the fake signal in __refrigerator() then this
-implementation of wait_event_freezable should address all the fake
-signal bugs.
-By the time you get to signal_pending() the fake signal is cleared and
-the bug it avoided.
-
-Regards,
-Mandeep
-
-> Oleg.
->
