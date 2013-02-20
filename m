@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab3BTXYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 18:24:09 -0500
-Received: from hosting.visp.net.lb ([194.146.153.11]:35960 "EHLO
-	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab3BTXYH (ORCPT
+	id S1752337Ab3BTXYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 18:24:19 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:46058 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab3BTXYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 18:24:07 -0500
+	Wed, 20 Feb 2013 18:24:16 -0500
+Date: Wed, 20 Feb 2013 15:24:12 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH UPDATED] posix-timer: don't call idr_find() w/ out-of-range ID
+Message-ID: <20130220232412.GL3570@htj.dyndns.org>
+References: <1361385853-29010-1-git-send-email-sasha.levin@oracle.com>
+ <CAOS58YMT3NS-8zvwx1tNQoLKM1WtKtT-YXBPi=4pAeAMi=rYeA@mail.gmail.com>
+ <512522CF.1020901@oracle.com>
+ <20130220210116.GD3570@htj.dyndns.org>
+ <20130220132300.ccffde44.akpm@linux-foundation.org>
+ <20130220213701.GE3570@htj.dyndns.org>
+ <20130220140551.8017e795.akpm@linux-foundation.org>
+ <20130220220823.GH3570@htj.dyndns.org>
+ <20130220224019.GI3570@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Thu, 21 Feb 2013 01:24:02 +0200
-From: Denys Fedoryshchenko <denys@visp.net.lb>
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: <netdev@vger.kernel.org>, <pablo@netfilter.org>, <jhs@mojatatu.com>,
-        <davem@davemloft.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: netlink, =?UTF-8?Q?RTM=5FNEWTCLASS=2C=20nested=20attributes?=
-In-Reply-To: <20130220152130.72df1258@samsung-9>
-References: <3a8fd12d117d2281ac90cce96c0d68f3@visp.net.lb>
- <20130220152130.72df1258@samsung-9>
-Message-ID: <3598cf904e2e235bc9060aa712dcce53@visp.net.lb>
-User-Agent: VISP Webmail/0.8.1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130220224019.GI3570@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-02-21 01:21, Stephen Hemminger wrote:
-> On Tue, 19 Feb 2013 23:45:25 +0200
-> Denys Fedoryshchenko <denys@visp.net.lb> wrote:
->
->> Hi
->>
->> I tried recently to write my own tool based on amazing libmnl (which
->> makes understanding of netlink - easy), written
->> by Pablo Neira Ayuso, to manage QoS in Linux and faced problem, 
->> which i
->> think probably
->> a bug in handling netlink messages in kernel.
->>
->> For example if i send message, RTM_NEWTCLASS, after attribute
->> TCA_OPTIONS i have nested attributes,
->> for example in HTB: TCA_HTB_PARMS, TCA_HTB_RTAB, TCA_HTB_CTAB.
->> libmnl, if i use nested attribute, adding a bit to it, by OR -
->> NLA_F_NESTED(1 << 15).
->> If i remove this flag - everything works fine. And here is the case,
->> iproute2 tools
->> just update length of TCA_OPTIONS, without setting flag, and it 
->> works
->> because of that fine too.
->>
->> So there is basically 3 solutions:
->> 1)New function in libmnl to do nested attributes without setting by 
->> OR
->> flag
->> 2)AND-ing attribute type in kernel to ignore nested flag
->> 3)Keeping as is, who cares?
->>
->
-> Several legacy netlink interfaces don't use NESTED flag. These are by
-> now enshrined in ABI and can't change. In code, that uses libmnl, I 
-> just
-> manually clear the flag as needed and document why. This could
-> be added to libmnl.
+When idr_find() is fed a negative ID, it used to look up the ID
+ignoring the sign bit before recent ("idr: remove MAX_IDR_MASK and
+move left MAX_IDR_* into idr.c") patch, and triggers WARN_ON_ONCE()
+after it.
 
-Thank you for clarification!
+__lock_timer() feeds timer_id from userland directly to idr_find()
+without sanitizing it which can trigger the above malfunctions.  Add a
+range check on @timer_id before invoking idr_find() in __lock_timer().
 
+While timer_t is defined as int by all archs at the moment, Andrew
+worries that it may be defined as a larger type later on.  Make the
+test cover larger integers too so that it at least is guaranteed to
+not return the wrong timer.
+
+Note that WARN_ON_ONCE() in idr_find() on id < 0 is transitional
+precaution while moving away from ignoring MSB.  Once it's gone we can
+remove the guard as long as timer_t isn't larger than int.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>nnn
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: stable@vger.kernel.org
 ---
-Denys Fedoryshchenko, Network Engineer, Virtual ISP S.A.L.
+Given that larger timer_t is possible, at least theoretically, it
+probably is better to keep the guard even if idr_find() is later
+updated, so not marking the guard as to be removed.
+
+Will send a separate patch to add comment on top of WARN_ON_ONCE() in
+idr_find().
+
+Thanks.
+
+ kernel/posix-timers.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index b51bb08..6edbb2c 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -637,6 +637,13 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
+ {
+ 	struct k_itimer *timr;
+ 
++	/*
++	 * timer_t could be any type >= int and we want to make sure any
++	 * @timer_id outside positive int range fails lookup.
++	 */
++	if ((unsigned long long)timer_id > INT_MAX)
++		return NULL;
++
+ 	rcu_read_lock();
+ 	timr = idr_find(&posix_timers_id, (int)timer_id);
+ 	if (timr) {
