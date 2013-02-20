@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934769Ab3BTJiy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 04:38:54 -0500
-Received: from sabertooth01.qualcomm.com ([65.197.215.72]:58016 "EHLO
-	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934575Ab3BTJiv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 04:38:51 -0500
-X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
-   d="scan'208";a="24255950"
-X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
-   d="scan'208";a="435321326"
-From: "Bu, Yitian" <ybu@qti.qualcomm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+	id S934705Ab3BTJlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 04:41:13 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:28725
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934273Ab3BTJlK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 04:41:10 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(z551bizbb2dI98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5hbe9i1155h)
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: Craciun Diana Madalina-STFD002 <STFD002@freescale.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>
-Subject: RE: [PATCH] Fix rq->lock vs logbuf_lock unlock race
-Thread-Topic: [PATCH] Fix rq->lock vs logbuf_lock unlock race
-Thread-Index: AQHOD0aoTqiQYklW0USvuaYJaBrXc5iCd8nw
-Date: Wed, 20 Feb 2013 09:38:28 +0000
-Message-ID: <E807E903FE6CBE4D95E420FBFCC273B827522A@nasanexd01h.na.qualcomm.com>
-References: <E807E903FE6CBE4D95E420FBFCC273B827413C@nasanexd01h.na.qualcomm.com>
- <1361349910.10155.0.camel@laptop>
-In-Reply-To: <1361349910.10155.0.camel@laptop>
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Yoder Stuart-B08248 <B08248@freescale.com>
+Subject: RE: [PATCH 6/6 v8] iommu/fsl: Freescale PAMU driver and IOMMU API
+ implementation.
+Thread-Topic: [PATCH 6/6 v8] iommu/fsl: Freescale PAMU driver and IOMMU API
+ implementation.
+Thread-Index: AQHODdfbgGU1NqcYVkONwLkDSaaXgpiBWIyAgAEoeEA=
+Date: Wed, 20 Feb 2013 09:41:05 +0000
+Message-ID: <C5ECD7A89D1DC44195F34B25E172658D3AC29D@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com>
+ <1361191939-21260-7-git-send-email-Varun.Sethi@freescale.com>
+ <5123A169.9060100@freescale.com>
+In-Reply-To: <5123A169.9060100@freescale.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.48.1]
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [10.232.132.143]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1K9ct2h002807
 
 
 
 > -----Original Message-----
-> From: Peter Zijlstra [mailto:a.p.zijlstra@chello.nl]
-> Sent: Wednesday, February 20, 2013 4:45 PM
-> To: Bu, Yitian
-> Cc: tglx@linutronix.de; linux-kernel@vger.kernel.org; mingo@kernel.org
-> Subject: Re: [PATCH] Fix rq->lock vs logbuf_lock unlock race
+> From: Craciun Diana Madalina-STFD002
+> Sent: Tuesday, February 19, 2013 9:30 PM
+> To: Sethi Varun-B16395
+> Cc: iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
+> linux-kernel@vger.kernel.org; Wood Scott-B07421; joro@8bytes.org; Yoder
+> Stuart-B08248
+> Subject: Re: [PATCH 6/6 v8] iommu/fsl: Freescale PAMU driver and IOMMU
+> API implementation.
 > 
-> On Mon, 2013-02-18 at 12:53 +0000, Bu, Yitian wrote:
-> > This patch is for kernel V3.7.9
-> >
-> > From 8796f4a2175a323aaa49ea8dd0fe68678dd5dccd Mon Sep 17 00:00:00
-> 2001
-> > From: ybu <ybu@qti.qualcomm.com>
-> > Date: Mon, 18 Feb 2013 19:52:01 +0800
-> > Subject: [PATCH] Fix rq->lock vs logbuf_lock unlock race
-> >
-> > fix up the fallout from commit 07354eb1a74d1 ("locking printk:
-> > Annotate logbuf_lock as raw")
-> > Release console_sem after unlocking the logbuf_lock avoids some lock
-> > inversion troubles between logbuf_lock and rq->lock.
+> On 02/18/2013 02:52 PM, Varun Sethi wrote:
+> > +/**
+> > + * pamu_get_ppaace() - Return the primary PACCE
+> > + * @liodn: liodn PAACT index for desired PAACE
+> > + *
+> > + * Returns the ppace pointer upon success else return
+> > + * null.
+> > + */
+> > +static struct paace *pamu_get_ppaace(int liodn) {
+> > +	if (!ppaact || liodn > PAACE_NUMBER_ENTRIES) {
 > 
-> Please clarify how and where.. you're not actually supposed to use
-> printk() while holding rq->lock.
-> 
+> Shouldn't be "liodn >= PAACE_NUMBER_ENTRIES" ?
+Yes, will fix this.
 
-1. the patch 0b5e1c5255e, which is written by you,  release console_sem
-after logbuf_lock. But the patch 07354eb1a revert one of your change, it 
-reintroduced a lock inversion problem which was fixed in 0b5e1c5255.
-The purpose of my patch is the same as your patch 0b5e1c5255e.
+-Varun
 
-2. from printk comment: "This is printk(). It can be called from any context. 
-We want it to work. ". I suppose to use printk in any context.
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
