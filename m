@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935307Ab3BTMUk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 07:20:40 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:35083 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934840Ab3BTMUj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 07:20:39 -0500
-Message-ID: <5124BF47.7070500@linux.vnet.ibm.com>
-Date: Wed, 20 Feb 2013 17:49:19 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S935319Ab3BTMYT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 07:24:19 -0500
+Received: from mms3.broadcom.com ([216.31.210.19]:1238 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935006Ab3BTMYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 07:24:18 -0500
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+From: "Shankar Brahadeeswaran" <shankoo77@gmail.com>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>,
+        linux-kernel@vger.kernel.org
+cc: devel@driverdev.osuosl.org, "Cruz Julian Bishop" <cruzjbishop@gmail.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Hugh Dickins" <hughd@google.com>,
+        "Konstantin Khlebnikov" <khlebnikov@openvz.org>,
+        "Shankar Brahadeeswaran" <shankoo77@gmail.com>
+Subject: [PATCH 1/1] staging: android: ashmem: get_name,set_name not to
+ hold ashmem_mutex
+Date: Wed, 20 Feb 2013 17:53:58 +0530
+Message-ID: <1361363039-11984-1-git-send-email-shankoo77@gmail.com>
+X-Mailer: git-send-email 1.7.6
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        morten.rasmussen@arm.com
-Subject: Re: [patch v5 06/15] sched: log the cpu utilization at rq
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-7-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1361164062-20111-7-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+X-WSS-ID: 7D3A60983P4275333-01-01
+Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022012-8256-0000-0000-0000064A2AC0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Hi Greg,
+This patch is to fix a dead lock scenario that is created in ashmem driver.
+The inital patch for review was posted and I got some comments from Dan
+Carpeneter.I have incorporated the changes and re-tested the
+same. Submitting the final patch for your pursual.
 
-On 02/18/2013 10:37 AM, Alex Shi wrote:
-> The cpu's utilization is to measure how busy is the cpu.
->         util = cpu_rq(cpu)->avg.runnable_avg_sum
->                 / cpu_rq(cpu)->avg.runnable_avg_period;
+Warm Regards,
+Shankar
 
-Why not cfs_rq->runnable_load_avg? I am concerned with what is the right
-metric to use here.
-Refer to this discussion:https://lkml.org/lkml/2012/10/29/448
+Shankar Brahadeeswaran (1):
+  staging: android: ashmem: get_name,set_name not to hold      
+    ashmem_mutex
 
-Regards
-Preeti U Murthy
+ drivers/staging/android/ashmem.c |   44 ++++++++++++++++++++++++++++---------
+ 1 files changed, 33 insertions(+), 11 deletions(-)
+
+-- 
+1.7.6
+
 
