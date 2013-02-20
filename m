@@ -1,100 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933670Ab3BTRSM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 12:18:12 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50673 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753818Ab3BTRSK (ORCPT
+	id S1759077Ab3BTRUd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 12:20:33 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:37749 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757525Ab3BTRUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 12:18:10 -0500
-Date: Wed, 20 Feb 2013 17:17:58 +0000
-From: Catalin Marinas <Catalin.Marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arm64 patches for 3.9
-Message-ID: <20130220171758.GA20787@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-user-agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 20 Feb 2013 12:20:31 -0500
+Message-ID: <1361380820.15716.3.camel@thor.lan>
+Subject: Re: [Bisected][-next-20130204+] [x86/kvm] udevd:[97]: segfault at
+ ffffffffff5fd020 ip 00007fff069e277f sp 00007fff068c9ef8 error d
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Date: Wed, 20 Feb 2013 12:20:20 -0500
+In-Reply-To: <20130219082656.GE3600@redhat.com>
+References: <1360715210.31472.20.camel@thor.lan>
+	 <511AE0A7.2000101@linux.intel.com> <20130213105129.GB9817@redhat.com>
+	 <1360756629.4803.5.camel@thor.lan> <20130218225955.GA6166@amt.cnet>
+	 <1361236341.3263.11.camel@thor.lan> <20130219082656.GE3600@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-0pjh1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 2013-02-19 at 10:26 +0200, Gleb Natapov wrote:
+> On Mon, Feb 18, 2013 at 08:12:21PM -0500, Peter Hurley wrote:
+> > On Mon, 2013-02-18 at 19:59 -0300, Marcelo Tosatti wrote:
+> > > On Wed, Feb 13, 2013 at 06:57:09AM -0500, Peter Hurley wrote:
+> > > > On Wed, 2013-02-13 at 12:51 +0200, Gleb Natapov wrote:
+> > > > > On Tue, Feb 12, 2013 at 04:39:03PM -0800, H. Peter Anvin wrote:
+> > > > > > On 02/12/2013 04:26 PM, Peter Hurley wrote:
+> > > > > > > With -next-20130204+ in ubuntu 12.10 VM (so the 80x25 VGA
+> > > > > > > device/console):
+> > > > > > > 
+> > > > > > > [    0.666410] udevd[97]: starting version 175
+> > > > > > > [    0.674043] udevd[97]: udevd:[97]: segfault at ffffffffff5fd020 ip 00007fff069e277f sp 00007fff068c9ef8 error d
+> > > > > > > 
+> > > > > > > and boots to an initramfs prompt.
+> > > > > > > 
+> > > > > > > git bisect (log attached) blames:
+> > > > > > > 
+> > > > > > > commit 7b5c4a65cc27f017c170b025f8d6d75dabb11c6f
+> > > > > > > Merge: 3596f5b 949db15
+> > > > > > > Author: H. Peter Anvin <hpa@linux.intel.com>
+> > > > > > > Date:   Fri Jan 25 16:31:21 2013 -0800
+> > > > > > > 
+> > > > > > >     Merge tag 'v3.8-rc5' into x86/mm
+> > > > > > >     
+> > > > > > >     The __pa() fixup series that follows touches KVM code that is not
+> > > > > > >     present in the existing branch based on v3.7-rc5, so merge in the
+> > > > > > >     current upstream from Linus.
+> > > > > > >     
+> > > > > > >     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > > > > > > 
+> > > > > > > 
+> > > > > > > This only happens with the VGA device/console but that is the default
+> > > > > > > configuration for Ubuntu/KVM because it blacklists pretty much every fb
+> > > > > > > driver.
+> > > > > > > 
+> > > > > > 
+> > > > > > I am guessing this is another bad use of __pa()... need to look into that.
+> > > 
+> > > Can't find this commit on kvm.git or linux-2.6.git. Is it reproducible
+> > > there?
+> > 
+> > This is in the linux-next repo (any git tag after 'next-20130204' will
+> > reproduce this). It's a pretty large merge commit.
+> > 
+> > This doesn't happen on 3.8-rc7.
+> > 
+> > I'll try to repro this on kvm.git sometime this week. Otherwise, we can
+> > wait for it to show up in 3.9.
+> > 
+> Can you also drop 5dfd486c4750c9278c63fa96e6e85bdd2fb58e9d from linux-next and reproduce?
 
-Please pull the arm64 patches below. Thanks.
+Still reproduced on next-20130204 after reverting 5dfd486c.
+Haven't tested kvm.git and newest next.
 
-The following changes since commit f1b99392caf120d7533da260318fae0eb5053737:
 
-  arm64: makefile: fix uname munging when setting ARCH on native machine (2013-01-22 17:51:00 +0000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-for-linus
-
-for you to fetch changes up to ec45d1cfd3cb65121fc52f39efc17d832f4f7b91:
-
-  arm64: mm: update CONTEXTIDR register to contain PID of current process (2013-02-11 18:24:18 +0000)
-
-----------------------------------------------------------------
-- SMP support for the PSCI booting protocol (power state coordination
-interface).
-- Simple earlyprintk support.
-- Platform devices populated by default from the DT (SoC-agnostic).
-- CONTEXTIDR support (used by external trace tools).
-
-----------------------------------------------------------------
-Catalin Marinas (4):
-      arm64: Populate the platform devices
-      arm64: Add simple earlyprintk support
-      arm64: Add kvm_para.h and xor.h generic headers
-      arm64: Select ARCH_WANT_FRAME_POINTERS
-
-Marc Zyngier (4):
-      arm64: add COMPAT_PSR_*_BIT flags
-      arm64: perf: add guest vs host discrimination
-      arm64: SMP: rework the SMP code to be enabling method agnostic
-      arm64: SMP: enable PSCI boot method
-
-Will Deacon (4):
-      arm64: psci: add support for PSCI invocations from the kernel
-      arm64: compat: use compat_uptr_t type for compat_ucontext.uc_link
-      arm64: atomics: fix grossly inconsistent asm constraints for exclusives
-      arm64: mm: update CONTEXTIDR register to contain PID of current process
-
- Documentation/arm64/memory.txt       |   2 +
- arch/arm64/Kconfig                   |   1 +
- arch/arm64/Kconfig.debug             |  17 +++
- arch/arm64/include/asm/Kbuild        |   2 +
- arch/arm64/include/asm/atomic.h      | 132 +++++++++++-----------
- arch/arm64/include/asm/cmpxchg.h     |  74 ++++++------
- arch/arm64/include/asm/futex.h       |   2 +-
- arch/arm64/include/asm/io.h          |   3 +
- arch/arm64/include/asm/memory.h      |   1 +
- arch/arm64/include/asm/mmu.h         |   1 +
- arch/arm64/include/asm/mmu_context.h |  15 +++
- arch/arm64/include/asm/perf_event.h  |   7 +-
- arch/arm64/include/asm/psci.h        |  38 +++++++
- arch/arm64/include/asm/ptrace.h      |  10 ++
- arch/arm64/include/asm/smp.h         |  11 ++
- arch/arm64/include/asm/spinlock.h    |  78 ++++++-------
- arch/arm64/include/uapi/asm/Kbuild   |   3 +
- arch/arm64/kernel/Makefile           |   5 +-
- arch/arm64/kernel/early_printk.c     | 118 ++++++++++++++++++++
- arch/arm64/kernel/head.S             |  12 +-
- arch/arm64/kernel/perf_event.c       |  37 ++++++
- arch/arm64/kernel/process.c          |   4 +-
- arch/arm64/kernel/psci.c             | 211 +++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/setup.c            |  11 ++
- arch/arm64/kernel/signal32.c         |   4 +-
- arch/arm64/kernel/smp.c              |  69 ++++++++----
- arch/arm64/kernel/smp_psci.c         |  52 +++++++++
- arch/arm64/kernel/smp_spin_table.c   |  66 +++++++++++
- arch/arm64/mm/mmu.c                  |  42 +++++++
- 29 files changed, 855 insertions(+), 173 deletions(-)
- create mode 100644 arch/arm64/include/asm/psci.h
- create mode 100644 arch/arm64/kernel/early_printk.c
- create mode 100644 arch/arm64/kernel/psci.c
- create mode 100644 arch/arm64/kernel/smp_psci.c
- create mode 100644 arch/arm64/kernel/smp_spin_table.c
