@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab3BTWpx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 17:45:53 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:33987 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071Ab3BTWpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 17:45:52 -0500
-Date: Wed, 20 Feb 2013 23:45:28 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: hpa@zytor.com
-Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        giancarlo.asnaghi@st.com, ciminaghi@gnudd.com, alan@linux.intel.com,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org
-Subject: Re: [PATCH V5 4/5] drivers/amba: add support for a PCI bridge
-Message-ID: <20130220224528.GA24819@mail.gnudd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <51254F57.7060603@zytor.com>
-References: <51254F57.7060603@zytor.com>
-  <cover.1361393832.git.rubini@gnudd.com>
- <52b9f4e1cc04b7c656e10ee16020090601f6f537.1361393832.git.rubini@gnudd.com>
- <20130220222419.GX17833@n2100.arm.linux.org.uk>
+	id S1751412Ab3BTWtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 17:49:12 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:34962 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab3BTWtK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 17:49:10 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Wonky PS2-USB converter issues...
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1361400518_1911P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 20 Feb 2013 17:48:38 -0500
+Message-ID: <21767.1361400518@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020201.512552C6.0153,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[meanwhile I posted V6 with the acked-by of linusw and others, that
-were missing in V5]
+--==_Exmh_1361400518_1911P
+Content-Type: text/plain; charset=us-ascii
 
-rmk:
->> I'm happy to take it through my tree if everyone is now happy with this.
+Quite some time ago, I posted about a problematic PS2-USB converter
+that I used to connect an old PS2-connector keyboard to my laptop
+dock, where the keyboard wouldn't be recognized at boot unless
+I unplugged and reconnected it.
 
-hpa: 
-> I am okay with that, although I would like to make sure we do a bunch of
-> x86 randconfigs on it before pushing it to Linus.
+Well, I've recently figured out (partly by obtaining a converter
+from a different vendor) that the converters both work correctly
+when plugged into a USB port that's physically on my Dell Latitude
+laptop - but they have issues and require a reconnect cycle when
+plugged into the docking station for the laptop. (It took a long time
+to figure this out, because *of course* you plug this sort of stuff
+into the docking station specifically so you don't have to plug it
+in every morning).
 
-I did like this:
-  - disable STA2X11 (and thus AMBA) and build
-  - enable STA2X11, answer y to all new questions and build
+So obviously, it isn't the converter that is the problem, but the docking
+station is doing "something stupid".  Anybody have suggestions on figuring out
+what it's doing wrong?
 
-So there's nothing left (you'll have two unrelated warnings, that I'm
-working on and I'll post a fix tomorrow).  Sure, Peter, first time I
-didn't do that test and missed some of the drivers.
 
-Thanks
-/alessandro
+--==_Exmh_1361400518_1911P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUSVSxQdmEQWDXROgAQJ6TQ//ft0djWqMTAuMpYylSTYMNeh2OXyOsqib
+YXlEKA7/mYrwryXYja1TLyJx+ZcbE5FEKgcW6LBlmvOBEEUGIw9bLp/IKMRu2igU
+YCg0eKm+BrCBzpZFV8AZwJkM27QF1EbWI+F1urXuKoIyPvw8AX2s50Z1zAodhg6J
+vkM3AG2zzWtpM2o1nchTnVGaAIvcBtY6G1b4X1gMtHW9VZ8VNs5oLoXWHLr7VhPt
+gH9nrHoAuTLI5btSpk3lV0QCCrFahUYleNv3xMZmcQ2ya/CX7BP+UDDX+kcv/i8p
+j6lbrq1uKW/XoHvcnoLoc2Jv5bLuEgSGM3M9rNjotqpjP7SDG4DcT9YB3M8sAQFJ
+ke0/fCbG7tWqYeOnPAh0Zk8eiCY6iErXVUWFsG6iBRb9xu0Sdc2dJ6v/ur8lyDN/
+xBCkCMbNpNYEudtjdClDwr0u/U621J6LQX2iYBMEoX6qKlPyo1g4oUlcrsxWl/OU
+VZBQcOjbPiOefY1mK/1bgvGN5lcpw2i7RjJOGEZQCSI7VIoR89MY19+qJs31YKEL
+crvz9WHteH5VnV6BaYnWPDyXtsuz0uSovZ41OXvWl1p5I62FoE7uMLiIkSzVSfEz
+cuicst7TZ08AjttXq1qoLlHOjdjaOtc53MMz0djidUzojo2jyJAhc9smg02sJ9uA
+8055ws36VPU=
+=/2hU
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1361400518_1911P--
+
