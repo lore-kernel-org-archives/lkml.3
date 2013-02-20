@@ -1,144 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934654Ab3BTJbD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 04:31:03 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:22536 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933163Ab3BTJa5 (ORCPT
+	id S934585Ab3BTJa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 04:30:59 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53212 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934307Ab3BTJa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Feb 2013 04:30:57 -0500
-X-AuditID: cbfee68f-b7f656d000000d78-db-512497d0e653
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Samuel Ortiz'" <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000f01ce0f4c$7c1d01d0$74570570$%han@samsung.com>
-In-reply-to: <000f01ce0f4c$7c1d01d0$74570570$%han@samsung.com>
-Subject: [PATCH V2 7/9] mfd: ezx-pcap: use devm_*() functions
-Date: Wed, 20 Feb 2013 18:30:55 +0900
-Message-id: <001501ce0f4c$fbf93ef0$f3ebbcd0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4PTHvvVazquf7TSyaZqgztkH4/LAAAGy0w
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zY90L01UCDU6v4LG4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZ8+6dYixYI1JxceJF9gbGXQJdjJwcEgImEmeXPmCBsMUkLtxb
-	z9bFyMUhJLCMUWLFy0OsMEVdW58wQiSmM0q8vj6JHcKZzSSxa/spRpAqNgE1iS9fDrOD2CIC
-	WhLdx84DjeLgYBZwkTg6TQQkLCRgK/GoaysziM0pYCfRcm0emC0MFG/rmcYMUs4ioCqxcoEp
-	SJgXKPz2/hV2CFtQ4sfke2CHMgNNX7/zOBOELS+xec1bsFYJAXWJR391IQ4wkrg25R0zRImI
-	xL4X78DOlxBYxC6x/9pxsJksAgIS3yYfYoHolZXYdIAZ4l1JiYMrbrBMYJSYhWTzLCSbZyHZ
-	PAvJigWMLKsYRVMLkguKk9KLjPWKE3OLS/PS9ZLzczcxQuKqfwfj3QPWhxiTgdZPZJYSTc4H
-	xmVeSbyhsbGJmYmpibmlqbkpacJK4rzyl2QChQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTDO
-	Nqt2P77+hDCfTdJc++i51gcVlD6lzO/wD7/W8cP942zPjxE7c4853357kPWzYPL/pMlnvZkX
-	trzOkGvw/nukfUHcNoPXu78ze7yaGcrXpvRcpDTuc6M1e07uzEubJ6737DcU8n3DO4f/Ufnf
-	au5LOcnnJ+9ZIcGattOOJTqj9VleoL3+zG1KLMUZiYZazEXFiQC9knqZwQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xoO6F6SqBBs//sFlc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjHn3TjEWrBGpuDjxInsD
-	4y6BLkZODgkBE4murU8YIWwxiQv31rN1MXJxCAlMZ5R4fX0SO4Qzm0li1/ZTYFVsAmoSX74c
-	ZgexRQS0JLqPnQfq4OBgFnCRODpNBCQsJGAr8ahrKzOIzSlgJ9FybR6YLQwUb+uZxgxSziKg
-	KrFygSlImBco/Pb+FXYIW1Dix+R7LCA2M9D09TuPM0HY8hKb17wFa5UQUJd49FcX4gAjiWtT
-	3jFDlIhI7HvxjnECo9AsJJNmIZk0C8mkWUhaFjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P
-	3cQIjtpnUjsYVzZYHGIU4GBU4uHVmK8cKMSaWFZcmXuIUYKDWUmE92eHSqAQb0piZVVqUX58
-	UWlOavEhxmSgPycyS4km5wMTSl5JvKGxiZmRpZGZhZGJuTlpwkrivIynngQICaQnlqRmp6YW
-	pBbBbGHi4JRqYBS5YCx/89eL5RPf/rm2Sfjo7++Mf2NUdsa3yfzT+1Wkl3JwqtimN8amJeGX
-	JrD/+T47Le7TAxnPNb8CY6S2zX09PyRfZ3nJj6CmlWH/J2zLqTz/9VqCldxuide5Oya/8AzW
-	jvE18fz/2tzttA1HXLq95rRZc0t3PFte479a9bfe0oJ8VaOO3YZKLMUZiYZazEXFiQATg8Xi
-	HgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+Message-ID: <1361352643.10155.4.camel@laptop>
+Subject: Re: [patch v5 06/15] sched: log the cpu utilization at rq
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Date: Wed, 20 Feb 2013 10:30:43 +0100
+In-Reply-To: <1361164062-20111-7-git-send-email-alex.shi@intel.com>
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
+	 <1361164062-20111-7-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_*() functions to make cleanup paths more simple.
+On Mon, 2013-02-18 at 13:07 +0800, Alex Shi wrote:
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
-Changes since v1:
-- Use devm_free_irq()
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index fcdb21f..b9a34ab 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1495,8 +1495,12 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+>  
+>  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+>  {
+> +	u32 period;
+>  	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
+>  	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
+> +
+> +	period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
+> +	rq->util = rq->avg.runnable_avg_sum * 100 / period;
+>  }
+>  
+>  /* Add the load generated by se into cfs_rq's child load-average */
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 7a19792..ac1e107 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -350,6 +350,9 @@ extern struct root_domain def_root_domain;
+>  
+>  #endif /* CONFIG_SMP */
+>  
+> +/* the percentage full cpu utilization */
+> +#define FULL_UTIL	100
 
- drivers/mfd/ezx-pcap.c |   17 +++++++----------
- 1 files changed, 7 insertions(+), 10 deletions(-)
+There's generally a better value than 100 when using computers.. seeing
+how 100 is 64+32+4.
 
-diff --git a/drivers/mfd/ezx-pcap.c b/drivers/mfd/ezx-pcap.c
-index b7a61f0..f83cc3d 100644
---- a/drivers/mfd/ezx-pcap.c
-+++ b/drivers/mfd/ezx-pcap.c
-@@ -403,7 +403,7 @@ static int ezx_pcap_remove(struct spi_device *spi)
- 	/* cleanup ADC */
- 	adc_irq = pcap_to_irq(pcap, (pdata->config & PCAP_SECOND_PORT) ?
- 				PCAP_IRQ_ADCDONE2 : PCAP_IRQ_ADCDONE);
--	free_irq(adc_irq, pcap);
-+	devm_free_irq(&spi->dev, adc_irq, pcap);
- 	mutex_lock(&pcap->adc_mutex);
- 	for (i = 0; i < PCAP_ADC_MAXQ; i++)
- 		kfree(pcap->adc_queue[i]);
-@@ -415,8 +415,6 @@ static int ezx_pcap_remove(struct spi_device *spi)
- 
- 	destroy_workqueue(pcap->workqueue);
- 
--	kfree(pcap);
--
- 	return 0;
- }
- 
-@@ -431,7 +429,7 @@ static int ezx_pcap_probe(struct spi_device *spi)
- 	if (!pdata)
- 		goto ret;
- 
--	pcap = kzalloc(sizeof(*pcap), GFP_KERNEL);
-+	pcap = devm_kzalloc(&spi->dev, sizeof(*pcap), GFP_KERNEL);
- 	if (!pcap) {
- 		ret = -ENOMEM;
- 		goto ret;
-@@ -448,7 +446,7 @@ static int ezx_pcap_probe(struct spi_device *spi)
- 	spi->mode = SPI_MODE_0 | (pdata->config & PCAP_CS_AH ? SPI_CS_HIGH : 0);
- 	ret = spi_setup(spi);
- 	if (ret)
--		goto free_pcap;
-+		goto ret;
- 
- 	pcap->spi = spi;
- 
-@@ -458,7 +456,7 @@ static int ezx_pcap_probe(struct spi_device *spi)
- 	if (!pcap->workqueue) {
- 		ret = -ENOMEM;
- 		dev_err(&spi->dev, "can't create pcap thread\n");
--		goto free_pcap;
-+		goto ret;
- 	}
- 
- 	/* redirect interrupts to AP, except adcdone2 */
-@@ -491,7 +489,8 @@ static int ezx_pcap_probe(struct spi_device *spi)
- 	adc_irq = pcap_to_irq(pcap, (pdata->config & PCAP_SECOND_PORT) ?
- 					PCAP_IRQ_ADCDONE2 : PCAP_IRQ_ADCDONE);
- 
--	ret = request_irq(adc_irq, pcap_adc_irq, 0, "ADC", pcap);
-+	ret = devm_request_irq(&spi->dev, adc_irq, pcap_adc_irq, 0, "ADC",
-+				pcap);
- 	if (ret)
- 		goto free_irqchip;
- 
-@@ -511,14 +510,12 @@ static int ezx_pcap_probe(struct spi_device *spi)
- remove_subdevs:
- 	device_for_each_child(&spi->dev, NULL, pcap_remove_subdev);
- /* free_adc: */
--	free_irq(adc_irq, pcap);
-+	devm_free_irq(&spi->dev, adc_irq, pcap);
- free_irqchip:
- 	for (i = pcap->irq_base; i < (pcap->irq_base + PCAP_NIRQS); i++)
- 		irq_set_chip_and_handler(i, NULL, NULL);
- /* destroy_workqueue: */
- 	destroy_workqueue(pcap->workqueue);
--free_pcap:
--	kfree(pcap);
- ret:
- 	return ret;
- }
--- 
-1.7.2.5
+> +
+>  /*
+>   * This is the main, per-CPU runqueue data structure.
+>   *
+> @@ -481,6 +484,7 @@ struct rq {
+>  #endif
+>  
+>  	struct sched_avg avg;
+> +	unsigned int util;
+>  };
+>  
+>  static inline int cpu_of(struct rq *rq)
 
+You don't actually compute the rq utilization, you only compute the
+utilization as per the fair class, so if there's significant RT activity
+it'll think the cpu is under-utilized, whihc I think will result in the
+wrong thing.
 
