@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758883Ab3BTGCj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 01:02:39 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:38907 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757897Ab3BTGCi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 01:02:38 -0500
-Date: Wed, 20 Feb 2013 17:02:23 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the akpm tree with the net-next tree
-Message-Id: <20130220170223.806c3c5e9f240d8bacc7c940@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__20_Feb_2013_17_02_23_+1100_lbYgBziUiX8aPR9e"
+	id S1758932Ab3BTGFG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 01:05:06 -0500
+Received: from mga11.intel.com ([192.55.52.93]:33843 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757068Ab3BTGFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 01:05:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
+   d="scan'208";a="289406623"
+Date: Wed, 20 Feb 2013 11:34:17 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
+Cc: Viresh Kumar <viresh.linux@gmail.com>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>,
+        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Svahn, Kai" <kai.svahn@intel.com>
+Subject: Re: [PATCH] dw_dmac: adjust slave_id accordingly to request line
+ base
+Message-ID: <20130220060417.GB23302@intel.com>
+References: <1359371060-9044-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1361264544.28241.52.camel@smile>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361264544.28241.52.camel@smile>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__20_Feb_2013_17_02_23_+1100_lbYgBziUiX8aPR9e
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Feb 19, 2013 at 11:02:24AM +0200, Andy Shevchenko wrote:
+> On Mon, 2013-01-28 at 13:04 +0200, Andy Shevchenko wrote: 
+> > On some hardware configurations we have got the request line with the offset.
+> > The patch introduces convert_slave_id() helper for that cases. The request line
+> > base is got from the platform device resources provided by the IORESOURCE_DMA
+> > type.
+> 
+> Hi, Vinod.
+> 
+> v3.8 is just out, and we have not got any proposal from anyone how to
+> make our approach better. So, I'm just wondering about current state.
+I was trying to go thru ACPI 5 and see a solution, i think we 
+- use IORESOURCE_IO, but they have a specfic meaning
+- accpet this patch with IORESOURCE_DMA, but again this has specfic dma meaning
+  too. Just becoz you are in slave-dma driver, doesn't justify use of
+  IORESOURCE_DMA as well
+- use platform_data (somehow get this from CSRT into device parsing logic of
+  ACPI where you create your platform device and add this in platform data
 
-Hi Andrew,
+> Rafael, could you share your opinion about our case with CSRT and
+> request line base (perhaps you need to go through the entire thread)?
+Sure, do we have anything better than above?
 
-Today's linux-next merge of the akpm tree got a conflict in
-net/core/dev.c between commit 900ff8c63214 ("net: move procfs code to
-net/core/net-procfs.c") from the net-next tree and commit "hlist: drop
-the node parameter from iterators" from the akpm tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --git a/net/core/net-procfs.c b/net/core/net-procfs.c
-index 0f6bb6f..3174f19 100644
---- a/net/core/net-procfs.c
-+++ b/net/core/net-procfs.c
-@@ -16,12 +16,11 @@ static inline struct net_device *dev_from_same_bucket(s=
-truct seq_file *seq, loff
- {
- 	struct net *net =3D seq_file_net(seq);
- 	struct net_device *dev;
--	struct hlist_node *p;
- 	struct hlist_head *h;
- 	unsigned int count =3D 0, offset =3D get_offset(*pos);
-=20
- 	h =3D &net->dev_name_head[get_bucket(*pos)];
--	hlist_for_each_entry_rcu(dev, p, h, name_hlist) {
-+	hlist_for_each_entry_rcu(dev, h, name_hlist) {
- 		if (++count =3D=3D offset)
- 			return dev;
- 	}
-
---Signature=_Wed__20_Feb_2013_17_02_23_+1100_lbYgBziUiX8aPR9e
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRJGbvAAoJEECxmPOUX5FErycP+QFd4ST4vTLwJb9dWubVtIIp
-ZtX8oaoCHFy+KW6c1PfJJPnRywP7qLgRKK4MIZSIx5qSbOyRq6fwLx8eVCQljwDG
-yH7n/Xuy06MzotdsHUULZXEw9lZA6A2HWJ6q8RC3142QQS4VspZ+gdj54fpmmlbQ
-SOSgzty1v8d296f8EG7I9KHIdHqmgGC6CCjyQcArSUSJnS8KB18ylwMHIcu4ENnW
-nLjCrtQrME0uDCN8A++/A4EOO1fVFCAsuC40oj6lE4KH6pe3UaHWtHuqS1gah9Fa
-/YOx0iuHf234j0GhMXP2wGcr6PSf9ibTm7PJg5hO8uST4qs9j9oUvduc8UVaMhx+
-JsLW1DXMaFQ2FJwmrdCq9vUKJAhMvXG6M4MOXrLGxaYv8wCFYd0I2TWK9uIUEKZP
-cFaxxJZXxKL+OyNOJOpiinLzhxV39Cm/dg1GrKu5n4QodRpkuIa5bqBqol98HStt
-vznuR36TWf13Nh2MUR1lNMMZEoR54vSOUX37Tq2T5z3/mFz/fwT+eoucH+ZUTyI0
-7KG6YNVEH06HEZ37g0uy0oXr3eEAnow++/CvS7pNZmwVYGhJd7kmufo10aNwgGeU
-8pidjyD4YWLIZb59PEj8nxIiVE7Bd6bywry6vr4ZoBluajtyMwD+epjH+92Rq3+u
-pwPws8LwMJnHRUgczMeh
-=pdR/
------END PGP SIGNATURE-----
-
---Signature=_Wed__20_Feb_2013_17_02_23_+1100_lbYgBziUiX8aPR9e--
+--
+~Vinod
