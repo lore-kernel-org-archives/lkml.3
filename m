@@ -1,191 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759095Ab3BTLQc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 06:16:32 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:49669 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759047Ab3BTLQb (ORCPT
+	id S1759084Ab3BTLR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 06:17:57 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:23595 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758902Ab3BTLRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 06:16:31 -0500
+	Wed, 20 Feb 2013 06:17:55 -0500
+X-IronPort-AV: E=Sophos;i="4.84,699,1355097600"; 
+   d="scan'208";a="1647848"
+Message-ID: <1361359073.23294.6.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH] xen: introduce xen_remap, use it instead of ioremap
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 20 Feb 2013 11:17:53 +0000
+In-Reply-To: <alpine.DEB.2.02.1302191332340.4654@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1302191332340.4654@kaball.uk.xensource.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Date: Wed, 20 Feb 2013 19:16:29 +0800
-Message-ID: <CAB4PhKevqf0e4nzYraE9ZTAFbPCFfNpguAnPoVpJh-FFe2TAZA@mail.gmail.com>
-Subject: too many timer retries happen when do local timer swtich with
- broadcast timer
-From: Jason Liu <liu.h.jason@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
-        tglx@linutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2013-02-19 at 13:59 +0000, Stefano Stabellini wrote:
+> ioremap can't be used to map ring pages on ARM because it uses device
+> memory caching attributes (MT_DEVICE*).
+> 
+> Introduce a Xen specific abstraction to map ring pages, called
+> xen_remap, that is defined as ioremap on x86 (no behavioral changes).
+> On ARM it explicitly calls __arm_ioremap with the right caching
+> attributes: MT_MEMORY.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-sorry for so long email, please be patient... thanks,
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
 
-I have seen too many timer retries happen when do local timer switch
-with broadcast
-timeron ARM Cortex A9 SMP(4 cores), see the following log such as:
-retries: 36383
+If you were respinning for any reason I might suggest
+s/xen_remap/xen_map_shared/ or something of that nature.
 
-root@~$ cat /proc/timer_list
-Timer List Version: v0.6
-HRTIMER_MAX_CLOCK_BASES: 3
-now at 3297691988044 nsecs
+Ian.
 
-cpu: 0
- clock 0:
-  .base:       8c0084b8
-  .index:      0
-  .resolution: 1 nsecs
-  .get_time:   ktime_get
-  .offset:     0 nsecs
-[...]
-
-Tick Device: mode:     1
-Broadcast device
-Clock Event Device: mxc_timer1
- max_delta_ns:   1431655863333
- min_delta_ns:   85000
- mult:           12884901
- shift:          32
- mode:           3
- next_event:     3297700000000 nsecs
- set_next_event: v2_set_next_event
- set_mode:       mxc_set_mode
- event_handler:  tick_handle_oneshot_broadcast
- retries:        92
-tick_broadcast_mask: 00000000
-tick_broadcast_oneshot_mask: 0000000a
-
-
-Tick Device: mode:     1
-Per CPU device: 0
-Clock Event Device: local_timer
- max_delta_ns:   8624432320
- min_delta_ns:   1000
- mult:           2138893713
- shift:          32
- mode:           3
- next_event:     3297700000000 nsecs
- set_next_event: twd_set_next_event
- set_mode:       twd_set_mode
- event_handler:  hrtimer_interrupt
- retries:        36383
-
-Tick Device: mode:     1
-Per CPU device: 1
-Clock Event Device: local_timer
- max_delta_ns:   8624432320
- min_delta_ns:   1000
- mult:           2138893713
- shift:          32
- mode:           1
- next_event:     3297720000000 nsecs
- set_next_event: twd_set_next_event
- set_mode:       twd_set_mode
- event_handler:  hrtimer_interrupt
- retries:        6510
-
-Tick Device: mode:     1
-Per CPU device: 2
-Clock Event Device: local_timer
- max_delta_ns:   8624432320
- min_delta_ns:   1000
- mult:           2138893713
- shift:          32
- mode:           3
- next_event:     3297700000000 nsecs
- set_next_event: twd_set_next_event
- set_mode:       twd_set_mode
- event_handler:  hrtimer_interrupt
- retries:        790
-
-Tick Device: mode:     1
-Per CPU device: 3
-Clock Event Device: local_timer
- max_delta_ns:   8624432320
- min_delta_ns:   1000
- mult:           2138893713
- shift:          32
- mode:           1
- next_event:     3298000000000 nsecs
- set_next_event: twd_set_next_event
- set_mode:       twd_set_mode
- event_handler:  hrtimer_interrupt
- retries:        6873
-
-
-Since on our platform, the local timer will stop when enter C3 state,
-we need switch the local timer
-to bc timer when enter the state and switch back when exit from the
-that state. the code is like this:
-
-void arch_idle(void)
-{
-....
-clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
-
-enter_the_wait_mode();
-
-clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
-}
-
-when the broadcast timer interrupt arrives(this interrupt just wakeup
-the ARM, and ARM has no chance
-to handle it since local irq is disabled. In fact it's disabled in
-cpu_idle() of arch/arm/kernel/process.c)
-
-the broadcast timer interrupt will wake up the CPU and run:
-
-clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);    ->
-tick_broadcast_oneshot_control(...);
-->
-tick_program_event(dev->next_event, 1);
-->
-tick_dev_program_event(dev, expires, force);
-->
-for (i = 0;;) {
-                int ret = clockevents_program_event(dev, expires, now);
-                if (!ret || !force)
-                        return ret;
-
-                dev->retries++;
-                ....
-                now = ktime_get();
-                expires = ktime_add_ns(now, dev->min_delta_ns);
-}
-clockevents_program_event(dev, expires, now);
-
-        delta = ktime_to_ns(ktime_sub(expires, now));
-
-        if (delta <= 0)
-                return -ETIME;
-
-when the bc timer interrupt arrives,  which means the last local timer
-expires too. so,
-clockevents_program_event will return -ETIME, which will cause the
-dev->retries++
-when retry to program the expired timer.
-
-Even under the worst case, after the re-program the expired timer,
-then CPU enter idle
-quickly before the re-progam timer expired, it will make system
-ping-pang forever,
-
-switch to bc timer->wait->bc timer expires->wakeup->switch to loc timer->  |
- ^
-                                                         |
- |-------------------<-enter idle <- reprogram the expired loc timer
-------------------<
-
-I have run into the worst case on my project. I think this is the
-common issue on ARM platform.
-
-What do you think how we can fix this problem?
-
-Thanks you.
-
-Best Regards,
-Jason Liu
