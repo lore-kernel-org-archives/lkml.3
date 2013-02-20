@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab3BTVyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 16:54:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751603Ab3BTVyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 16:54:05 -0500
-Date: Wed, 20 Feb 2013 22:18:19 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+	id S1752104Ab3BTVzn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 16:55:43 -0500
+Received: from two.firstfloor.org ([193.170.194.197]:60985 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab3BTVzm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 16:55:42 -0500
+X-Greylist: delayed 445 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Feb 2013 16:55:42 EST
+Date: Wed, 20 Feb 2013 22:48:16 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+        David Ahern <dsahern@gmail.com>
 Subject: Re: [PATCH] perf x86: Change SandyBridge and IvyBrige instructions
  event to be precise
-Message-ID: <20130220211819.GA14253@krava.redhat.com>
+Message-ID: <20130220214816.GC2928@two.firstfloor.org>
 References: <1361392794-16552-1-git-send-email-jolsa@redhat.com>
  <m2ppzuyaao.fsf@firstfloor.org>
+ <CABPqkBTCJF9eF_3Nj9nV=PNqVnrcZhkZ90oJfQ6tpHzFDFgptg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m2ppzuyaao.fsf@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBTCJF9eF_3Nj9nV=PNqVnrcZhkZ90oJfQ6tpHzFDFgptg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 12:55:59PM -0800, Andi Kleen wrote:
-> Jiri Olsa <jolsa@redhat.com> writes:
-> 
-> > Changing the default 'instructions' HW event for SandyBridge and
-> > IvyBrige to use the available precise 'instructions' event.
-> >
-> > The precise event is defined in Intel SDM as:
-> >
-> > INST_RETIRED.ALL - Precise instruction retired event with HW to
-> > reduce effect of PEBS shadow in IP distribution
-> >
-> > for both SandyBridge and IvyBrige micro-archs. It allows to use
-> > precise modifier on 'instructions' event on SandyBridge and
-> > IvyBrige micro-archs which is not possible now.
-> 
-> Actually it's possible, you just have to use it explicitely.
-> 
-> This will break a lot of profiling setups that assume instructions
-> count on the fixed counter and use the 4/8 other counters. 
-> Also it will give very bad results with perf stat, which
-> you don't want to run with pebs.
+> I don't think it buys you much. People read too much into what
+> PEBS gives you. I can show you examples where PEBS
+> is worse than no PEBS.
 
-right, I haven't realized that..
+Nothing is perfect in sampling, but the precise instructions event
+is definitely better in a range of situations. It avoids
+a lot of shadow effects.
 
-> 
-> Even worse with your change the fixed instruction counter is not
-> accessible anymore. So pretty much all the standard setups
+I think it's a good choice for a lot of situations, although
+on Ivy Bridge without EventingRip the BB walking is still
+fairly expensive.
 
-still could be used explicitly via cpu/event=0xc0/
+It would be a good default for the "user only asks for instructions
+for sampling and nothing else" situation, especially on Haswell
+which has EventingRip. But that's not straight forward to detect.
 
-> that collect it in addition to other events and fill all 
-> the counters would break.
-> 
-> I don't think it should be done by default, but yes explicitely
-> it's quite useful.
-> 
-> My Haswell patchkit (in the "extended version") exposes
-> the precise event as "instructions-p" through sysfs.
+-Andi
 
-will check
-
-thanks,
-jirka
+-- 
+ak@linux.intel.com -- Speaking for myself only.
