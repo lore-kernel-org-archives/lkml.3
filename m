@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934538Ab3BTCVs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Feb 2013 21:21:48 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:10356 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933999Ab3BTCVq convert rfc822-to-8bit (ORCPT
+	id S934563Ab3BTCX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Feb 2013 21:23:57 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:65202 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933711Ab3BTCX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Feb 2013 21:21:46 -0500
-X-IronPort-AV: E=Sophos;i="4.84,699,1355068800"; 
-   d="scan'208";a="6732205"
-Subject: Re: [PATCH v4 1/4] acpi: move x86/mm/srat.c to
- x86/kernel/acpi/srat.c
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, x86@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com
-In-Reply-To: <alpine.DEB.2.02.1302191802490.14999@chino.kir.corp.google.com>
-References: <1360894992-14818-1-git-send-email-lig.fnst@cn.fujitsu.com>
-	 <1360894992-14818-2-git-send-email-lig.fnst@cn.fujitsu.com>
-	 <alpine.DEB.2.02.1302191320410.6322@chino.kir.corp.google.com>
-	 <1361324355.7859.35.camel@liguang.fnst.cn.fujitsu.com>
-	 <1361325113.7859.37.camel@liguang.fnst.cn.fujitsu.com>
-	 <alpine.DEB.2.02.1302191802490.14999@chino.kir.corp.google.com>
-Date: Wed, 20 Feb 2013 10:21:53 +0800
-Message-ID: <1361326913.7859.41.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/20 10:21:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/20 10:21:04,
-	Serialize complete at 2013/02/20 10:21:04
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Feb 2013 21:23:56 -0500
+Message-ID: <1361327026.9733.1.camel@phoenix>
+Subject: [PATCH] regulator: tps6586x: Use dev_err rather than dev_warn for
+ error message
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Wed, 20 Feb 2013 10:23:46 +0800
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2013-02-19二的 18:08 -0800，David Rientjes写道：
-> On Wed, 20 Feb 2013, li guang wrote:
-> 
-> > > > This doesn't apply to Linus' tree nor does it apply to linux-next.  Which 
-> > > > tree are you basing this on?
-> > > 
-> > > I did based on linux-next, 
-> > > but it seems without commit 479a99a8e510c8839e0d3d3de8391f8bc61b9760
-> > > which you may want to see.
-> > > let me see why it missed.
-> > 
-> > I pulled latest for linux-next
-> > and can apply my patches smoothly.
-> > 
-> 
-> No, it doesn't.  From next-20130219, you're missing at least two patches:
-> 
-> 3795e4893203 ("acpi, memory-hotplug: extend movablemem_map ranges to the end of node")
-> 9a561f4dfd70 ("acpi, memory-hotplug: support getting hotplug info from SRAT")
-> 
-> I'm trying to be patient in reviewing your patches, but please double 
-> check your work.
+tps6586x_regulator_set_slew_rate() returns -EINVAL when having slew rate
+settings for other than SM0/1, thus use dev_err rather than dev_warn.
 
-I have to say my latest pull has these commit, and can apply
-successfully.
-really don't know why you can't apply.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/tps6586x-regulator.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
+index e68382d..94a681e 100644
+--- a/drivers/regulator/tps6586x-regulator.c
++++ b/drivers/regulator/tps6586x-regulator.c
+@@ -245,7 +245,7 @@ static int tps6586x_regulator_set_slew_rate(struct platform_device *pdev,
+ 		reg = TPS6586X_SM1SL;
+ 		break;
+ 	default:
+-		dev_warn(&pdev->dev, "Only SM0/SM1 can set slew rate\n");
++		dev_err(&pdev->dev, "Only SM0/SM1 can set slew rate\n");
+ 		return -EINVAL;
+ 	}
+ 
+-- 
+1.7.9.5
+
 
 
