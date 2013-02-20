@@ -1,81 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab3BTWjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 17:39:13 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57120 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab3BTWjM (ORCPT
+	id S1752139Ab3BTWkW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 17:40:22 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:57278 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab3BTWkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 17:39:12 -0500
-Date: Wed, 20 Feb 2013 23:39:01 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Li Fei <fei.li@intel.com>, rjw@sisk.pl, len.brown@intel.com,
-        mingo@redhat.com, peterz@infradead.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, gorcunov@openvz.org, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        chuansheng.liu@intel.com, biao.wang@intel.com
-Subject: Re: [PATCH] freezer: configure user space process frozen along with
- kernel threads
-Message-ID: <20130220223901.GD23856@xo-6d-61-c0.localdomain>
-References: <1361326525.9753.1.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
- <878v6jjdoq.fsf@xmission.com>
+	Wed, 20 Feb 2013 17:40:20 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCHv6 8/8] zswap: add documentation
+Date: Wed, 20 Feb 2013 16:04:48 -0600
+Message-Id: <1361397888-14863-9-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878v6jjdoq.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022022-7606-0000-0000-000008A0772C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2013-02-20 05:51:49, Eric W. Biederman wrote:
-> Li Fei <fei.li@intel.com> writes:
-> 
-> > There is well known issue that freezing will fail in case that fuse
-> > daemon is frozen firstly with some requests not handled, as the fuse
-> > usage task is waiting for the response from fuse daemon and can't be
-> > frozen. To solve the issue as above, make fuse daemon frozen after
-> > all user space processes frozen and during the kernel threads frozen
-> > phase.
-> >
-> > After discussion, at present it's generally agreed that:
-> > 1) It's only the fuse daemon itself know definitely that it needs
-> > and can be frozen together with kernel threads;
-> > 2) It's helpful to expose interface that user space processes can
-> > use to configure user space processes to be frozen together with
-> > kernel threads.
-> > More information can be found on https://lkml.org/lkml/2013/2/18/174.
-> >
-> > To support the requirement above, attribute /proc/<PID>/freeze_late
-> > is added, writing 1 to it will make the process to be frozen together
-> > with kernel threads, and writing 0 to it will make the process to be
-> > frozen together with user space processes.
-> 
-> There are no permission checks on this interface at all which
-> potentially could make freeze late loose all meaning.  Certainly
-> operating without permission checks needs some justification.
-> 
-> Then I have the question how does this scale.  Which processes are ok to
-> have the freeze late bit set?
-> 
-> But even more than that fuse is setup to allow unprivileged mounts and
-> mostly untrusted processes to act as filesystems, whith a nice kernel
-> wrapper.  Now we are going to trust those filesystems with the ability
-> to stop the kernel from freezing?
-> 
-> That seems inherently wrong.
+This patch adds the documentation file for the zswap functionality
 
-Well, agreed...
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ Documentation/vm/zswap.txt | 82 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 82 insertions(+)
+ create mode 100644 Documentation/vm/zswap.txt
 
-It would be cool to treat fuse as a kind of IPC, and have rule that all
-processes waiting for fuse need to be in S state (or at least freezeable/killable).
-
-Unfortunately fuse does support mmap, and the way VFS is done, putting
-tasks waiting for fuse in S state is not easy.
-
-We could use help in that area...
-									Pavel
+diff --git a/Documentation/vm/zswap.txt b/Documentation/vm/zswap.txt
+new file mode 100644
+index 0000000..f29b82f
+--- /dev/null
++++ b/Documentation/vm/zswap.txt
+@@ -0,0 +1,82 @@
++Overview:
++
++Zswap is a lightweight compressed cache for swap pages. It takes
++pages that are in the process of being swapped out and attempts to
++compress them into a dynamically allocated RAM-based memory pool.
++If this process is successful, the writeback to the swap device is
++deferred and, in many cases, avoided completely.  This results in
++a significant I/O reduction and performance gains for systems that
++are swapping.
++
++Zswap provides compressed swap caching that basically trades CPU cycles
++for reduced swap I/O.  This trade-off can result in a significant
++performance improvement as reads to/writes from to the compressed
++cache almost always faster that reading from a swap device
++which incurs the latency of an asynchronous block I/O read.
++
++Some potential benefits:
++* Desktop/laptop users with limited RAM capacities can mitigate the
++    performance impact of swapping.
++* Overcommitted guests that share a common I/O resource can
++    dramatically reduce their swap I/O pressure, avoiding heavy
++    handed I/O throttling by the hypervisor.  This allows more work
++    to get done with less impact to the guest workload and guests
++    sharing the I/O subsystem
++* Users with SSDs as swap devices can extend the life of the device by
++    drastically reducing life-shortening writes.
++
++Zswap evicts pages from compressed cache on an LRU basis to the backing
++swap device when the compress pool reaches it size limit or the pool is
++unable to obtain additional pages from the buddy allocator.  This
++requirement had been identified in prior community discussions.
++
++To enabled zswap, the "enabled" attribute must be set to 1 at boot time.
++e.g. zswap.enabled=1
++
++Design:
++
++Zswap receives pages for compression through the Frontswap API and
++is able to evict pages from its own compressed pool on an LRU basis
++and write them back to the backing swap device in the case that the
++compressed pool is full or unable to secure additional pages from
++the buddy allocator.
++
++Zswap makes use of zsmalloc for the managing the compressed memory
++pool.  This is because zsmalloc is specifically designed to minimize
++fragmentation on large (> PAGE_SIZE/2) allocation sizes.  Each
++allocation in zsmalloc is not directly accessible by address.
++Rather, a handle is return by the allocation routine and that handle
++must be mapped before being accessed.  The compressed memory pool grows
++on demand and shrinks as compressed pages are freed.  The pool is
++not preallocated.
++
++When a swap page is passed from frontswap to zswap, zswap maintains
++a mapping of the swap entry, a combination of the swap type and swap
++offset, to the zsmalloc handle that references that compressed swap
++page.  This mapping is achieved with a red-black tree per swap type.
++The swap offset is the search key for the tree nodes.
++
++During a page fault on a PTE that is a swap entry, frontswap calls
++the zswap load function to decompress the page into the page
++allocated by the page fault handler.
++
++Once there are no PTEs referencing a swap page stored in zswap
++(i.e. the count in the swap_map goes to 0) the swap code calls
++the zswap invalidate function, via frontswap, to free the compressed
++entry.
++
++Zswap seeks to be simple in its policies.  Sysfs attributes allow for
++two user controlled policies:
++* max_compression_ratio - Maximum compression ratio, as as percentage,
++    for an acceptable compressed page. Any page that does not compress
++    by at least this ratio will be rejected.
++* max_pool_percent - The maximum percentage of memory that the compressed
++    pool can occupy.
++
++Zswap allows the compressor to be selected at kernel boot time by
++setting the “compressor” attribute.  The default compressor is lzo.
++e.g. zswap.compressor=deflate
++
++A debugfs interface is provided for various statistic about pool size,
++number of pages stored, and various counters for the reasons pages
++are rejected.
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.1.1
+
