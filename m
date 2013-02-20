@@ -1,127 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab3BTWBC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 17:01:02 -0500
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:4414 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab3BTWBA (ORCPT
+	id S1752653Ab3BTWBV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 17:01:21 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:44752 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907Ab3BTWBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 17:01:00 -0500
-Message-ID: <1361397012.9542.82.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 7/7] ACPI / scan: Make memory hotplug driver use struct
- acpi_scan_handler
-From: Toshi Kani <toshi.kani@hp.com>
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Date: Wed, 20 Feb 2013 14:50:12 -0700
-In-Reply-To: <20130220104250.GA4409@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
-	 <2200731.3okUfey51A@vostro.rjw.lan>
-	 <20130219181157.GA4366@dhcp-192-168-178-175.profitbricks.localdomain>
-	 <51244494.4000603@jp.fujitsu.com>
-	 <20130220104250.GA4409@dhcp-192-168-178-175.profitbricks.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Feb 2013 17:01:19 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1302202155320.22263@ionos>
+References: <1361373336-11337-1-git-send-email-fweisbec@gmail.com>
+	<alpine.LFD.2.02.1302202155320.22263@ionos>
+Date: Wed, 20 Feb 2013 23:01:17 +0100
+Message-ID: <CAFTL4hx_uXfY=bH9nnEsN6AJFTcwqdAWTxcR0jc=hL1FBrwk0w@mail.gmail.com>
+Subject: Re: [PATCH] nohz: Make tick_nohz_irq_exit() irq safe
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-20 at 11:42 +0100, Vasilis Liaskovitis wrote:
-> Hi Yasuaki,
-> 
-> On Wed, Feb 20, 2013 at 12:35:48PM +0900, Yasuaki Ishimatsu wrote:
-> > Hi Vasilis,
-> > 
-> > 2013/02/20 3:11, Vasilis Liaskovitis wrote:
-> > >Hi,
-> > >
-> > >On Sun, Feb 17, 2013 at 04:27:18PM +0100, Rafael J. Wysocki wrote:
-> > >>From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > >>
-> > >>Make the ACPI memory hotplug driver use struct acpi_scan_handler
-> > >>for representing the object used to set up ACPI memory hotplug
-> > >>functionality and to remove hotplug memory ranges and data
-> > >>structures used by the driver before unregistering ACPI device
-> > >>nodes representing memory.  Register the new struct acpi_scan_handler
-> > >>object with the help of acpi_scan_add_handler_with_hotplug() to allow
-> > >>user space to manipulate the attributes of the memory hotplug
-> > >>profile.
-> > >
-> > >Let's consider an example where we want acpi memory device ejection to be safely
-> > >handled by userspace. We do the following:
-> > >
-> > >echo 0 > /sys/firmware/acpi/hotplug/memory/autoeject
-> > >echo 1 > /sys/firmware/acpi/hotplug/memory/uevents
-> > >
-> > >We succesfully hotplug acpi device:
-> > >/sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:00
-> > >and its corresponding memblocks /sys/devices/system/memory/memoryXX are
-> > >also successfully onlined.
-> > >
-> > >On an eject request, since uevents == 1, the kernel will emit KOBJ_OFFLINE for:
-> > >/sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:00
-> > >
-> > >Can userspace know which memblocks in /sys/devices/system/memory/memoryXX/
-> > >correspond to the acpi device /sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:00 ?
-> > >This will be needed so that userspace tries to offline the memblocks (and only
-> > >if successful, issue the eject operation on the acpi device). As far as I see,
-> > >we don't create any sysfs links or files for this scenario - can userspace get
-> > >this info somehow?
-> > 
-> > >
-> > >/sys/devices/system/memory/memoryXX/phys_device needs to be properly implemented
-> > >for this to work I think, see Documentation/ABI/testing/sysfs-memory
-> > >
-> > >The following test patch works toward that direction. Let me know if it's of
-> > >interest or if there are better ideas /comments.
-> > 
-> > How about use ../PNP0C80:00/physical_node/resources file?
-> > In my system, the file shows following information.
-> > 
-> > $ cat /sys/bus/acpi/devices/PNP0C80\:00/physical_node/resources
-> > state = active
-> > mem 0x0-0x80000000
-> > mem 0x100000000-0x800000000
-> > 
-> > It means PNP0C80:00's memory ranges are "0x0-0x7fffffff" and
-> > "0x100000000-0x7ffffffff". In x86 architecture, memory section size is
-> > 128MiB. So, if these memory range is divided by 128MiB, you can
-> > calculate memory section number as follow:
-> > 
-> > 0x0-0x7fffffff => 0x0-0x10
-> > 0x100000000-0x7ffffffff => 0x20-0xff
-> > 
-> > But there is one problem. The problem is that resources file of added memory
-> > is not created. If the problem is fixed, I think you can use the way.
-> 
-> thanks for your suggestion. Is this resources file a property of the
-> physical_node or of each acpi devices? 
-> 
-> If it's a node specific file could there be a chance that adjacent memory
-> ranges get merged? We 'd like these to not get merged.
-> 
-> I will look more into this property. I don't see it currently in my system
-> (probably because initial memory is not backed by acpi devices in my
->  seabios/virtual machine).
+2013/2/20 Thomas Gleixner <tglx@linutronix.de>:
+> On Wed, 20 Feb 2013, Frederic Weisbecker wrote:
+>
+>> As it stands, irq_exit() may or may not be called with
+>> irqs disabled, depending on __ARCH_IRQ_EXIT_IRQS_DISABLED
+>> that the arch can define.
+>>
+>> It makes tick_nohz_irq_exit() unsafe. For example two
+>> interrupts can race in tick_nohz_stop_sched_tick(): the inner
+>> most one computes the expiring time on top of the timer list,
+>> then it's interrupted right before reprogramming the
+>> clock. The new interrupt enqueues a new timer list timer,
+>> it reprogram the clock to take it into account and it exits.
+>> The CPUs resumes the inner most interrupt and performs the clock
+>> reprogramming without considering the new timer list timer.
+>>
+>> This regression has been introduced by:
+>>      280f06774afedf849f0b34248ed6aff57d0f6908
+>>      ("nohz: Separate out irq exit and idle loop dyntick logic")
+>>
+>> Let's fix it right now with the appropriate protections.
+>
+> That's not a fix. That's an hack.
 
-I have been thinking about this issue as well.  In case of CPUs, we have
-a sysdev link that links LNXCPU:%d to its system/cpu/cpu%d file.
+I know it looks that way. That's because it's a pure regression fix,
+minimal for backportability.
 
-/sys/bus/acpi/devices/LNXCPU:02 > ll sysdev
-lrwxrwxrwx. 1 root root 0 Feb  8 13:52 sysdev -> ../../system/cpu/cpu2
+I'm distinguishing two different things here: the fact that some archs
+can call irq_exit() with interrupts enabled which is a global design
+problem, and the fact that tick_nohz_irq_exit() was safe against that
+until 3.2 when I broke it with a commit of mine.
 
-So, one possible approach is to create a sysdev directory under
-PNP0C080:%d, and then create links to associated system/cpu/memory%d
-files underneath.  What do you think?
+My goal was basically to restore that protection in a minimal commit
+such that we can backport the regression fix, then deal with
+__ARCH_IRQ_EXIT_IRQS_DISABLED afterward, since it requires some more
+invasive changes.
 
-Thanks,
--Toshi
+>> A saner long term solution will be to remove
+>> __ARCH_IRQ_EXIT_IRQS_DISABLED.
+>
+> We really want to enforce that interrupt disabled condition for
+> calling irq_exit(). So why make this exclusive to tick_nohz_irq_exit()?
 
+I need a fix that I can backport. Is the below fine with a stable tag?
+It looks a bit too invasive for the single regression involved.
 
+Thanks.
+
+>
+> Thanks,
+>
+>         tglx
+>
+> Index: linux-2.6/kernel/softirq.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/softirq.c
+> +++ linux-2.6/kernel/softirq.c
+> @@ -322,18 +322,10 @@ void irq_enter(void)
+>
+>  static inline void invoke_softirq(void)
+>  {
+> -       if (!force_irqthreads) {
+> -#ifdef __ARCH_IRQ_EXIT_IRQS_DISABLED
+> +       if (!force_irqthreads)
+>                 __do_softirq();
+> -#else
+> -               do_softirq();
+> -#endif
+> -       } else {
+> -               __local_bh_disable((unsigned long)__builtin_return_address(0),
+> -                               SOFTIRQ_OFFSET);
+> +       else
+>                 wakeup_softirqd();
+> -               __local_bh_enable(SOFTIRQ_OFFSET);
+> -       }
+>  }
+>
+>  /*
+> @@ -341,6 +333,14 @@ static inline void invoke_softirq(void)
+>   */
+>  void irq_exit(void)
+>  {
+> +#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
+> +       unsigned long flags;
+> +
+> +       local_irq_save(flags);
+> +#else
+> +       BUG_ON(!irqs_disabled();
+> +#endif
+> +
+>         account_irq_exit_time(current);
+>         trace_hardirq_exit();
+>         sub_preempt_count(IRQ_EXIT_OFFSET);
+> @@ -354,6 +354,9 @@ void irq_exit(void)
+>  #endif
+>         rcu_irq_exit();
+>         sched_preempt_enable_no_resched();
+> +#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
+> +       local_irq_restore(flags);
+> +#endif
+>  }
+>
+>  /*
