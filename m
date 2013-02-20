@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab3BTVgp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 16:36:45 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:52148 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab3BTVgn (ORCPT
+	id S1751773Ab3BTVgy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 16:36:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40731 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab3BTVgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 16:36:43 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Li Fei <fei.li@intel.com>, <pavel@ucw.cz>, <rjw@sisk.pl>,
-        <len.brown@intel.com>, <mingo@redhat.com>, <peterz@infradead.org>,
-        <akpm@linux-foundation.org>, <viro@zeniv.linux.org.uk>,
-        <gorcunov@openvz.org>, <rientjes@google.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <chuansheng.liu@intel.com>, <biao.wang@intel.com>
-References: <Pine.LNX.4.44L0.1302201541000.1671-100000@iolanthe.rowland.org>
-Date: Wed, 20 Feb 2013 13:36:19 -0800
-In-Reply-To: <Pine.LNX.4.44L0.1302201541000.1671-100000@iolanthe.rowland.org>
-	(Alan Stern's message of "Wed, 20 Feb 2013 15:48:43 -0500 (EST)")
-Message-ID: <87zjyyekh8.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19KB1V0cIRXFAcBe3Xf56xHfBWuCKK29Po=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0083]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_14 obfuscated drug references
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Alan Stern <stern@rowland.harvard.edu>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] freezer: configure user space process frozen along with kernel threads
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Wed, 20 Feb 2013 16:36:52 -0500
+Date: Wed, 20 Feb 2013 13:36:50 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [Bug fix PATCH 0/2] Make whatever node kernel resides in
+ un-hotpluggable.
+Message-Id: <20130220133650.4e0913f3.akpm@linux-foundation.org>
+In-Reply-To: <1361358056-1793-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1361358056-1793-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Stern <stern@rowland.harvard.edu> writes:
+On Wed, 20 Feb 2013 19:00:54 +0800
+Tang Chen <tangchen@cn.fujitsu.com> wrote:
 
-> On Wed, 20 Feb 2013, Eric W. Biederman wrote:
->
->> >> Why can't the fuse filesystem freeze when there are requests pending?
->> >
->> > It _can_ freeze (that is, the fuse daemon can).  The problem is that
->> > tasks _using_ the fuse filsystem can't if the daemon doesn't respond. 
->> 
->> Which is what I meant when I said that the fuse filesystem couldn't
->> freeze.
->
-> Oh, okay.  But it's no different from any other filesystem in that
-> respect.  Processes generally can't be frozen while they are waiting
-> for filesystem I/O to complete.  In many cases they can't receive 
-> signals either (they are in an uninterruptible wait state).
+> As mentioned by HPA before, when we are using movablemem_map=acpi, if all the
+> memory in SRAT is hotpluggable, then the kernel will have no memory to use, and
+> will fail to boot.
+> 
+> Before parsing SRAT, memblock has already reserved some memory in memblock.reserve,
+> which is used by the kernel, such as storing the kernel image. We are not able to
+> prevent the kernel from using these memory. So, these 2 patches make the node which
+> the kernel resides in un-hotpluggable.
 
-Ick.  So the process freezer and all network filesystems has problems?
-Especially nfs?
+I'm planning to roll all these into a single commit:
 
->> > These tasks are stuck in uninterruptible wait states deep in the
->> > filesystem layer, probably holding important locks.  They can't be
->> > frozen until the outstanding requests complete.
->> 
->> Why is it that processes that can be preempted can't be frozen?
->
-> There's a big difference between preemption and freezing: Preemption
-> is involuntary whereas freezing is voluntary.  It's like the difference
-> between preemptive and cooperative multitasking.
+acpi-memory-hotplug-support-getting-hotplug-info-from-srat.patch
+acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix.patch
+acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix-fix.patch
+acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix-fix-fix.patch
+acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix-fix-fix-fix.patch
+acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix-fix-fix-fix-fix.patch
 
-I hadn't realized freezing was voluntary.  That certainly seems like a
-pain.
+for reasons of tree-cleanliness and to avoid bisection holes.  They're
+at http://ozlabs.org/~akpm/mmots/broken-out/.
 
-> Processes can be frozen only by making explicit checks, and they 
-> mustn't be frozen while they are holding locks that would prevent other 
-> processes from reaching one of those checks.
->
->> At most I would suggest that processes be frozen in reverse priority
->> order.  Which unless there is a priority inversion should solve this
->> problem without an additional proc file.
->
-> Do fuse daemons (and the processes they rely upon) run with elevated 
-> priority?
+Can you please check the changelog for
+acpi-memory-hotplug-support-getting-hotplug-info-from-srat.patch to see
+if it needs any updates due to all the fixup patches?  If so, please
+send me the new changelog, thanks.
 
-I don't know if the daemons are of an elevated scheduling priority today
-but if they aren't it is as easy to require an elevated scheduling
-priority as it is to require a magic freezer priority.  Furthermore if
-they don't run at an elevated priority there is the possibility of
-priority inversion.
+Also, please review the changelogging for these:
 
-With a little care you might even be able to drop the kernel thread
-special case if you freeze processes by prirority.
+page_alloc-add-movable_memmap-kernel-parameter.patch
+page_alloc-add-movable_memmap-kernel-parameter-fix.patch
+page_alloc-add-movable_memmap-kernel-parameter-fix-fix.patch
+page_alloc-add-movable_memmap-kernel-parameter-fix-fix-checkpatch-fixes.patch
+page_alloc-add-movable_memmap-kernel-parameter-fix-fix-fix.patch
+page_alloc-add-movable_memmap-kernel-parameter-rename-movablecore_map-to-movablemem_map.patch
 
-Eric
+memory-hotplug-remove-sys-firmware-memmap-x-sysfs.patch
+memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix.patch
+memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix.patch
+memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix-fix.patch
+memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix-fix-fix.patch
+memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix-fix-fix-fix.patch
+
+memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap.patch
+memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix.patch
+memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix-fix.patch
+memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix-fix-fix.patch
+memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix-fix-fix-fix.patch
+
+memory-hotplug-common-apis-to-support-page-tables-hot-remove.patch
+memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix.patch
+memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix.patch
+memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix.patch
+memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix.patch
+memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix-fix.patch
+memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix-fix-fix.patch
+memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix-fix-fix-fix.patch
+
+acpi-memory-hotplug-parse-srat-before-memblock-is-ready.patch
+acpi-memory-hotplug-parse-srat-before-memblock-is-ready-fix.patch
+acpi-memory-hotplug-parse-srat-before-memblock-is-ready-fix-fix.patch
+
+
+and while we're there, let's pause to admire how prescient I was in
+refusing to merge all this into 3.8-rc1 :)
