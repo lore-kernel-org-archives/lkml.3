@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934838Ab3BTKoy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 05:44:54 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:49202 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932714Ab3BTKox (ORCPT
+	id S934860Ab3BTKpU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 05:45:20 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:41423 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932714Ab3BTKpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 05:44:53 -0500
-Date: Wed, 20 Feb 2013 12:44:46 +0200
+	Wed, 20 Feb 2013 05:45:18 -0500
+Date: Wed, 20 Feb 2013 12:45:10 +0200
 From: Ido Yariv <ido@wizery.com>
 To: sjur.brandeland@stericsson.com
 Cc: Ohad Ben-Cohen <ohad@wizery.com>, linux-kernel@vger.kernel.org,
         Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
         Linus Walleij <linus.walleij@linaro.org>,
         Erwan Yvin <erwan.yvin@stericsson.com>, sjur@brendeland.net
-Subject: Re: [PATCH 3/9] remoteproc: Parse ELF file to find resource table
- address
-Message-ID: <20130220104446.GC16388@WorkStation.localnet>
+Subject: Re: [PATCH 6/9] remoteproc: Support virtio config space.
+Message-ID: <20130220104510.GD16388@WorkStation.localnet>
 References: <1360496352-29482-1-git-send-email-sjur.brandeland@stericsson.com>
- <1360496352-29482-4-git-send-email-sjur.brandeland@stericsson.com>
+ <1360496352-29482-7-git-send-email-sjur.brandeland@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1360496352-29482-4-git-send-email-sjur.brandeland@stericsson.com>
+In-Reply-To: <1360496352-29482-7-git-send-email-sjur.brandeland@stericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,91 +30,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Sjur,
 
-On Sun, Feb 10, 2013 at 12:39:06PM +0100, sjur.brandeland@stericsson.com wrote:
+On Sun, Feb 10, 2013 at 12:39:09PM +0100, sjur.brandeland@stericsson.com wrote:
 > From: Sjur Brændeland <sjur.brandeland@stericsson.com>
 > 
-> Add function find_rsc_table_va to firmware ops. This function
-> returns the location of the resource table in shared memory
-> after loading.
+> Support virtio configuration space and device status and
+> feature negotiation with remote device. This virtio device
+> can now access the resource table in shared memory.
 > 
 > Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 > ---
->  drivers/remoteproc/remoteproc_elf_loader.c |   17 ++++++++++++++++-
->  drivers/remoteproc/remoteproc_internal.h   |   13 +++++++++++++
->  2 files changed, 29 insertions(+), 1 deletions(-)
+>  drivers/remoteproc/remoteproc_core.c   |    3 --
+>  drivers/remoteproc/remoteproc_virtio.c |   38 +++++++++++++++++++++++++++++--
+>  include/linux/remoteproc.h             |    2 -
+>  3 files changed, 35 insertions(+), 8 deletions(-)
 > 
-> diff --git a/drivers/remoteproc/remoteproc_elf_loader.c b/drivers/remoteproc/remoteproc_elf_loader.c
-> index a958950..3137fba 100644
-> --- a/drivers/remoteproc/remoteproc_elf_loader.c
-> +++ b/drivers/remoteproc/remoteproc_elf_loader.c
-> @@ -312,9 +312,24 @@ rproc_elf_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
->  	return table;
->  }
+> diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+> index c12a385..1bf410d 100644
+> --- a/drivers/remoteproc/remoteproc_core.c
+> +++ b/drivers/remoteproc/remoteproc_core.c
+> @@ -368,9 +368,6 @@ static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
+>  			goto free_rvdev;
+>  	}
 >  
-> +struct resource_table *rproc_elf_get_rsctab_addr(struct rproc *rproc,
-> +						 const struct firmware *fw)
-> +{
-> +	struct elf32_shdr *shdr;
-> +
-> +	shdr = find_rsc_shdr(&rproc->dev, (struct elf32_hdr *)fw->data,
-> +				fw->size);
-> +	if (!shdr)
-> +		return NULL;
-> +
-> +	/* Find resource table in loaded segments */
-> +	return rproc_da_to_va(rproc, shdr->sh_addr, shdr->sh_size);
-> +}
-> +
->  const struct rproc_fw_ops rproc_elf_fw_ops = {
->  	.load = rproc_elf_load_segments,
->  	.find_rsc_table = rproc_elf_find_rsc_table,
->  	.sanity_check = rproc_elf_sanity_check,
-> -	.get_boot_addr = rproc_elf_get_boot_addr
-> +	.get_boot_addr = rproc_elf_get_boot_addr,
-> +	.get_rsctab_addr = rproc_elf_get_rsctab_addr
-
-Since this new op returns a VA (unlike get_boot_addr), it would probably be
-better to use an indicative name like get_rsctab_va.
-
->  };
-> diff --git a/drivers/remoteproc/remoteproc_internal.h b/drivers/remoteproc/remoteproc_internal.h
-> index 7bb6648..3a5cb7d 100644
-> --- a/drivers/remoteproc/remoteproc_internal.h
-> +++ b/drivers/remoteproc/remoteproc_internal.h
-> @@ -32,6 +32,7 @@ struct rproc;
->   *			expects to find it
->   * @sanity_check:	sanity check the fw image
->   * @get_boot_addr:	get boot address to entry point specified in firmware
-> + * @get_rsctab_addr:	get resouce table address as specified in firmware
+> -	/* remember the device features */
+> -	rvdev->dfeatures = rsc->dfeatures;
+> -
+>  	/* remember the resource entry */
+>  	rvdev->rsc = rsc;
+>  
+> diff --git a/drivers/remoteproc/remoteproc_virtio.c b/drivers/remoteproc/remoteproc_virtio.c
+> index 9e198e5..d98cdd8 100644
+> --- a/drivers/remoteproc/remoteproc_virtio.c
+> +++ b/drivers/remoteproc/remoteproc_virtio.c
+> @@ -182,16 +182,21 @@ error:
 >   */
->  struct rproc_fw_ops {
->  	struct resource_table *(*find_rsc_table) (struct rproc *rproc,
-> @@ -40,6 +41,8 @@ struct rproc_fw_ops {
->  	int (*load)(struct rproc *rproc, const struct firmware *fw);
->  	int (*sanity_check)(struct rproc *rproc, const struct firmware *fw);
->  	u32 (*get_boot_addr)(struct rproc *rproc, const struct firmware *fw);
-> +	struct resource_table *(*get_rsctab_addr)(struct rproc *rproc,
-> +						const struct firmware *fw);
->  };
->  
->  /* from remoteproc_core.c */
-> @@ -102,6 +105,16 @@ struct resource_table *rproc_find_rsc_table(struct rproc *rproc,
->  	return NULL;
+>  static u8 rproc_virtio_get_status(struct virtio_device *vdev)
+>  {
+> -	return 0;
+> +	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
+> +	return rvdev->rsc->status;
 >  }
 >  
-> +static inline
-> +struct resource_table *rproc_get_rsctab_addr(struct rproc *rproc,
-> +				const struct firmware *fw)
-> +{
-> +	if (rproc->fw_ops->get_rsctab_addr)
-> +		return rproc->fw_ops->get_rsctab_addr(rproc, fw);
-> +
-> +	return NULL;
+>  static void rproc_virtio_set_status(struct virtio_device *vdev, u8 status)
+>  {
+> +	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
+> +	rvdev->rsc->status = status;
+>  	dev_dbg(&vdev->dev, "status: %d\n", status);
+>  }
+>  
+>  static void rproc_virtio_reset(struct virtio_device *vdev)
+>  {
+> +	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
+> +	rvdev->rsc->status = 0;
+>  	dev_dbg(&vdev->dev, "reset !\n");
+>  }
+>  
+> @@ -200,7 +205,7 @@ static u32 rproc_virtio_get_features(struct virtio_device *vdev)
+>  {
+>  	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
+>  
+> -	return rvdev->dfeatures;
+> +	return rvdev->rsc->dfeatures;
+>  }
+>  
+>  static void rproc_virtio_finalize_features(struct virtio_device *vdev)
+> @@ -219,7 +224,31 @@ static void rproc_virtio_finalize_features(struct virtio_device *vdev)
+>  	 * fixed as part of a small resource table overhaul and then an
+>  	 * extension of the virtio resource entries.
+>  	 */
+> -	rvdev->gfeatures = vdev->features[0];
+> +	rvdev->rsc->gfeatures = vdev->features[0];
 > +}
 > +
->  extern const struct rproc_fw_ops rproc_elf_fw_ops;
+> +void rproc_virtio_get(struct virtio_device *vdev, unsigned offset,
+> +							void *buf, unsigned len)
+> +{
+> +	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
+> +	void *cfg = &rvdev->rsc->vring[rvdev->rsc->num_of_vrings];
+> +	if (offset + len > rvdev->rsc->config_len)
+
+Perhaps check for integer overflow here?
+
+> +		dev_err(&vdev->dev,
+> +			"rproc_virtio_get: access out of bounds\n");
+> +	else
+> +		memcpy(buf, cfg + offset, len);
+> +}
+> +
+> +void rproc_virtio_set(struct virtio_device *vdev, unsigned offset,
+> +		      const void *buf, unsigned len)
+> +{
+> +	struct rproc_vdev *rvdev = vdev_to_rvdev(vdev);
+> +	void *cfg = &rvdev->rsc->vring[rvdev->rsc->num_of_vrings];
+> +	if (offset + len > rvdev->rsc->config_len)
+
+Here as well.
+
+> +		dev_err(&vdev->dev,
+> +			"rproc_virtio_set: access out of bounds\n");
+> +	else
+> +		memcpy(cfg + offset, buf, len);
+>  }
 >  
->  #endif /* REMOTEPROC_INTERNAL_H */
+>  static struct virtio_config_ops rproc_virtio_config_ops = {
+> @@ -230,6 +259,9 @@ static struct virtio_config_ops rproc_virtio_config_ops = {
+>  	.reset		= rproc_virtio_reset,
+>  	.set_status	= rproc_virtio_set_status,
+>  	.get_status	= rproc_virtio_get_status,
+> +	.get		= rproc_virtio_get,
+> +	.set		= rproc_virtio_set,
+> +
+>  };
+>  
+>  /*
+> diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+> index cdacd66..c0c363c 100644
+> --- a/include/linux/remoteproc.h
+> +++ b/include/linux/remoteproc.h
+> @@ -471,8 +471,6 @@ struct rproc_vdev {
+>  	struct rproc *rproc;
+>  	struct virtio_device vdev;
+>  	struct rproc_vring vring[RVDEV_NUM_VRINGS];
+> -	unsigned long dfeatures;
+> -	unsigned long gfeatures;
+>  	struct fw_rsc_vdev *rsc;
+>  };
+>  
 > -- 
 > 1.7.5.4
 > 
