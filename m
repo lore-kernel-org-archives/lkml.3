@@ -1,112 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933605Ab3BTHL7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 02:11:59 -0500
-Received: from mail-gh0-f202.google.com ([209.85.160.202]:48139 "EHLO
-	mail-gh0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933074Ab3BTHLx (ORCPT
+	id S933669Ab3BTHNG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 02:13:06 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59728 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933074Ab3BTHNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 02:11:53 -0500
-From: Greg Thelen <gthelen@google.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
-Subject: [PATCH 2/2] tmpfs: fix mempolicy object leaks
-Date: Tue, 19 Feb 2013 23:11:42 -0800
-Message-Id: <1361344302-26565-2-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1361344302-26565-1-git-send-email-gthelen@google.com>
-References: <1361344302-26565-1-git-send-email-gthelen@google.com>
+	Wed, 20 Feb 2013 02:13:05 -0500
+Message-ID: <5124777F.9050309@wwwdotorg.org>
+Date: Wed, 20 Feb 2013 00:13:03 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: tps6586x: Use dev_err rather than dev_warn
+ for error message
+References: <1361327026.9733.1.camel@phoenix>
+In-Reply-To: <1361327026.9733.1.camel@phoenix>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes several mempolicy leaks in the tmpfs mount logic.
-These leaks are slow - on the order of one object leaked per mount
-attempt.
+On 02/19/2013 07:23 PM, Axel Lin wrote:
+> tps6586x_regulator_set_slew_rate() returns -EINVAL when having slew rate
+> settings for other than SM0/1, thus use dev_err rather than dev_warn.
 
-Leak 1 (umount doesn't free mpol allocated in mount):
-    while true; do
-        mount -t tmpfs -o mpol=interleave,size=100M nodev /mnt
-        umount /mnt
-    done
-
-Leak 2 (errors parsing remount options will leak mpol):
-    mount -t tmpfs -o size=100M nodev /mnt
-    while true; do
-        mount -o remount,mpol=interleave,size=x /mnt 2> /dev/null
-    done
-    umount /mnt
-
-Leak 3 (multiple mpol per mount leak mpol):
-    while true; do
-        mount -t tmpfs -o mpol=interleave,mpol=interleave,size=100M nodev /mnt
-        umount /mnt
-    done
-
-This patch fixes all of the above.  I could have broken the patch into
-three pieces but is seemed easier to review as one.
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
- mm/shmem.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/mm/shmem.c b/mm/shmem.c
-index efd0b3a..ed2cb26 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2386,6 +2386,7 @@ static int shmem_parse_options(char *options, struct shmem_sb_info *sbinfo,
- 			       bool remount)
- {
- 	char *this_char, *value, *rest;
-+	struct mempolicy *mpol = NULL;
- 	uid_t uid;
- 	gid_t gid;
- 
-@@ -2414,7 +2415,7 @@ static int shmem_parse_options(char *options, struct shmem_sb_info *sbinfo,
- 			printk(KERN_ERR
- 			    "tmpfs: No value for mount option '%s'\n",
- 			    this_char);
--			return 1;
-+			goto error;
- 		}
- 
- 		if (!strcmp(this_char,"size")) {
-@@ -2463,19 +2464,23 @@ static int shmem_parse_options(char *options, struct shmem_sb_info *sbinfo,
- 			if (!gid_valid(sbinfo->gid))
- 				goto bad_val;
- 		} else if (!strcmp(this_char,"mpol")) {
--			if (mpol_parse_str(value, &sbinfo->mpol))
-+			mpol_put(mpol);
-+			if (mpol_parse_str(value, &mpol))
- 				goto bad_val;
- 		} else {
- 			printk(KERN_ERR "tmpfs: Bad mount option %s\n",
- 			       this_char);
--			return 1;
-+			goto error;
- 		}
- 	}
-+	sbinfo->mpol = mpol;
- 	return 0;
- 
- bad_val:
- 	printk(KERN_ERR "tmpfs: Bad value '%s' for mount option '%s'\n",
- 	       value, this_char);
-+error:
-+	mpol_put(mpol);
- 	return 1;
- 
- }
-@@ -2551,6 +2556,7 @@ static void shmem_put_super(struct super_block *sb)
- 	struct shmem_sb_info *sbinfo = SHMEM_SB(sb);
- 
- 	percpu_counter_destroy(&sbinfo->used_blocks);
-+	mpol_put(sbinfo->mpol);
- 	kfree(sbinfo);
- 	sb->s_fs_info = NULL;
- }
--- 
-1.8.1.3
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
 
