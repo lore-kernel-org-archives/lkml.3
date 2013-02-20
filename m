@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934480Ab3BTOYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 09:24:08 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:41835 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933800Ab3BTOYE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 09:24:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <1359699013-7160-1-git-send-email-hannes@cmpxchg.org>
-References: <1359699013-7160-1-git-send-email-hannes@cmpxchg.org>
-Date: Wed, 20 Feb 2013 22:24:02 +0800
-Message-ID: <CANN689Hwp-fm-SUzAXAqLKGkGHxjw2X+pkQRr01=Fjq=BaSoDQ@mail.gmail.com>
-Subject: Re: [patch] mm: mlock: document scary-looking stack expansion mlock chain
-From: Michel Lespinasse <walken@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+	id S935350Ab3BTO1h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 09:27:37 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:3445 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758539Ab3BTO1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 09:27:36 -0500
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+From: "Shankar Brahadeeswaran" <shankoo77@gmail.com>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+cc: devel@driverdev.osuosl.org, "Cruz Julian Bishop" <cruzjbishop@gmail.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Hugh Dickins" <hughd@google.com>,
+        "Konstantin Khlebnikov" <khlebnikov@openvz.org>,
+        "Shankar Brahadeeswaran" <shankoo77@gmail.com>
+Subject: [PATCH V2 1/1] staging: android: ashmem: get_name,set_name not
+ to hold ashmem_mutex
+Date: Wed, 20 Feb 2013 19:57:07 +0530
+Message-ID: <1361370428-30632-1-git-send-email-shankoo77@gmail.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1361363039-11984-2-git-send-email-shankoo77@gmail.com>
+References: <1361363039-11984-2-git-send-email-shankoo77@gmail.com>
+MIME-Version: 1.0
+X-WSS-ID: 7D3A035F23C965838-01-01
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 1, 2013 at 2:10 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> The fact that mlock calls get_user_pages, and get_user_pages might
-> call mlock when expanding a stack looks like a potential recursion.
->
-> However, mlock makes sure the requested range is already contained
-> within a vma, so no stack expansion will actually happen from mlock.
->
-> Should this ever change: the stack expansion mlocks only the newly
-> expanded range and so will not result in recursive expansion.
->
-> Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Hi Dan,
+Fixed the review comments and re-tested again.
+Hope the patch is clean atleast this time.
 
-Acked-by: Michel Lespinasse <walken@google.com>
+Warm regards,
+Shankar
+
+Shankar Brahadeeswaran (1):
+  staging: android: ashmem: get_name,set_name not to hold     
+    ashmem_mutex
+
+ drivers/staging/android/ashmem.c |   56 ++++++++++++++++++++++++-------------
+ 1 files changed, 36 insertions(+), 20 deletions(-)
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.7.6
+
+
