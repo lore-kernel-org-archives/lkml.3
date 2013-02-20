@@ -1,127 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759072Ab3BTGKo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 01:10:44 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:16928 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759035Ab3BTGKl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 01:10:41 -0500
-X-AuditID: cbfee690-b7f066d00000169f-6d-512468dff41c
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Samuel Ortiz'" <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
-In-reply-to: <002601ce0f30$d6b81c40$842854c0$%han@samsung.com>
-Subject: [PATCH 03/11] mfd: aat2870: use devm_gpio_request_one() and
- devm_kzalloc()
-Date: Wed, 20 Feb 2013 15:10:39 +0900
-Message-id: <002801ce0f31$01a72b30$04f58190$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4PMNZl2zNDd+kPTaydPUTuUPUSLQAABz+Q
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zY937GSqBBi+3GVlc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MVV9/sRV08ldca9zA3sA4kaeLkZNDQsBE4uX5IywQtpjEhXvr
-	2boYuTiEBJYxSmz7eosVpqjxxDwwW0hgOqPEu5kGEEWzmSTuvl3KCJJgE1CT+PLlMDuILSKg
-	JdF97DzQJA4OZgEXiaPTRCB6bSW+r/0HNodTwE5i16PzYLawQKhE54eJYGNYBFQlHnyYzQRi
-	8wLV77oxjQXCFpT4MfkemM0MNH79zuNMELa8xOY1b5lBVkkIqEs8+qsLcYGRxLVrTxghSkQk
-	9r14xwhysoTAPHaJ65872SB2CUh8m3yIBaJXVmLTAWaIdyUlDq64wTKBUWIWks2zkGyehWTz
-	LCQrFjCyrGIUTS1ILihOSi8y0StOzC0uzUvXS87P3cQIiasJOxjvHbA+xJgMtH4is5Rocj4w
-	LvNK4g2NjU3MTExNzC1NzU1JE1YS55W/JBMoJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgVGC
-	1+fP6a3n7PP9OCbPSN1lkH5T2ba14OWuuQEvlzTq/5ZS1NkmoZLvvu5XTvnfmj22+UKT/k+q
-	fWCpVH2tdbHh28MuZfxGHg02lp8bVZXP7wmPaq2xudjUVBDe8e2ZcsW3KfdLPn5jbenx0ucV
-	ZzfNi6ivK/TJvPaqKMY6umSt6JxKwYtLlFiKMxINtZiLihMB9Glt78ECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xoO79DJVAg7s39Cwu75rD5sDo8XmT
-	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
-	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxqqvv9gKOvkrrjVuYG9g
-	nMjTxcjJISFgItF4Yh4rhC0mceHeejYQW0hgOqPEu5kGXYxcQPZsJom7b5cygiTYBNQkvnw5
-	zA5iiwhoSXQfOw/UwMHBLOAicXSaCESvrcT3tf/AZnIK2EnsenQezBYWCJXo/DARbAyLgKrE
-	gw+zmUBsXqD6XTemsUDYghI/Jt8Ds5mBxq/feZwJwpaX2LzmLTPIKgkBdYlHf3UhLjCSuHbt
-	CSNEiYjEvhfvGCcwCs1CMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95Pzc
-	TYzgqH0mvYNxVYPFIUYBDkYlHt6GhcqBQqyJZcWVuYcYJTiYlUR4m51UAoV4UxIrq1KL8uOL
-	SnNSiw8xJgM9OpFZSjQ5H5hQ8kriDY1NzIwsjcwsjEzMzUkTVhLnZTz1JEBIID2xJDU7NbUg
-	tQhmCxMHp1QD43TFm9I3Iq2WZGxQOr87Sfvck9jlhSZbXrdsifRQceR5UzklLfJZ66uNQW5X
-	G59zdHQ8UhIR48qbWvHNTW2mZ4m2eYiDSaJCpuj9X1vLOt4phbxbl/B78izp2KBTCpODzNdq
-	i5Qo3eJed/rl1cTjzaulxBjiJ9RMEJWcWV+y+Y2zWlCARvdnJZbijERDLeai4kQAt5kxAB4D	AAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S933697Ab3BTGLJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 01:11:09 -0500
+Received: from mga01.intel.com ([192.55.52.88]:13939 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933529Ab3BTGLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 01:11:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
+   d="scan'208";a="293424254"
+From: Aaron Lu <aaron.lu@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Aaron Lu <aaron.lwe@gmail.com>, Aaron Lu <aaron.lu@intel.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: [PATCH v10 4/4] sd: change to auto suspend mode
+Date: Wed, 20 Feb 2013 14:11:57 +0800
+Message-Id: <1361340717-8991-5-git-send-email-aaron.lu@intel.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1361340717-8991-1-git-send-email-aaron.lu@intel.com>
+References: <1361340717-8991-1-git-send-email-aaron.lu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_gpio_request_one() and devm_kzalloc() to make cleanup paths
-more simple.
+From: Lin Ming <ming.m.lin@intel.com>
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Uses block layer runtime pm helper functions in
+scsi_runtime_suspend/resume for devices that take advantage of it.
+
+Remove scsi_autopm_* from sd open/release path and check_events path.
+
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 ---
- drivers/mfd/aat2870-core.c |   20 ++++++--------------
- 1 files changed, 6 insertions(+), 14 deletions(-)
+ drivers/scsi/scsi_pm.c | 84 ++++++++++++++++++++++++++++++++++++++++++--------
+ drivers/scsi/sd.c      | 13 +-------
+ 2 files changed, 72 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/mfd/aat2870-core.c b/drivers/mfd/aat2870-core.c
-index f1beb49..dfdb0a2 100644
---- a/drivers/mfd/aat2870-core.c
-+++ b/drivers/mfd/aat2870-core.c
-@@ -367,12 +367,12 @@ static int aat2870_i2c_probe(struct i2c_client *client,
- 	int i, j;
- 	int ret = 0;
+diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+index 8f6b12c..90b12d9 100644
+--- a/drivers/scsi/scsi_pm.c
++++ b/drivers/scsi/scsi_pm.c
+@@ -144,33 +144,83 @@ static int scsi_bus_restore(struct device *dev)
  
--	aat2870 = kzalloc(sizeof(struct aat2870_data), GFP_KERNEL);
-+	aat2870 = devm_kzalloc(&client->dev, sizeof(struct aat2870_data),
-+				GFP_KERNEL);
- 	if (!aat2870) {
- 		dev_err(&client->dev,
- 			"Failed to allocate memory for aat2870\n");
--		ret = -ENOMEM;
--		goto out;
-+		return -ENOMEM;
- 	}
+ #ifdef CONFIG_PM_RUNTIME
  
- 	aat2870->dev = &client->dev;
-@@ -400,12 +400,12 @@ static int aat2870_i2c_probe(struct i2c_client *client,
- 		aat2870->init(aat2870);
++static int sdev_blk_runtime_suspend(struct scsi_device *sdev,
++					int (*cb)(struct device *))
++{
++	int err;
++
++	err = blk_pre_runtime_suspend(sdev->request_queue);
++	if (err)
++		return err;
++	if (cb)
++		err = cb(&sdev->sdev_gendev);
++	blk_post_runtime_suspend(sdev->request_queue, err);
++
++	return err;
++}
++
++static int sdev_runtime_suspend(struct device *dev)
++{
++	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
++	int (*cb)(struct device *) = pm ? pm->runtime_suspend : NULL;
++	struct scsi_device *sdev = to_scsi_device(dev);
++	int ret;
++
++	if (sdev->request_queue->dev)
++		return sdev_blk_runtime_suspend(sdev, cb);
++
++	ret = scsi_dev_type_suspend(dev, cb);
++	if (err == -EAGAIN)
++		pm_schedule_suspend(dev, jiffies_to_msecs(
++					round_jiffies_up_relative(HZ/10)));
++	return ret;
++}
++
+ static int scsi_runtime_suspend(struct device *dev)
+ {
+ 	int err = 0;
+-	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
  
- 	if (aat2870->en_pin >= 0) {
--		ret = gpio_request_one(aat2870->en_pin, GPIOF_OUT_INIT_HIGH,
--				       "aat2870-en");
-+		ret = devm_gpio_request_one(&client->dev, aat2870->en_pin,
-+					GPIOF_OUT_INIT_HIGH, "aat2870-en");
- 		if (ret < 0) {
- 			dev_err(&client->dev,
- 				"Failed to request GPIO %d\n", aat2870->en_pin);
--			goto out_kfree;
-+			return ret;
- 		}
- 	}
+ 	dev_dbg(dev, "scsi_runtime_suspend\n");
+-	if (scsi_is_sdev_device(dev)) {
+-		err = scsi_dev_type_suspend(dev,
+-				pm ? pm->runtime_suspend : NULL);
+-		if (err == -EAGAIN)
+-			pm_schedule_suspend(dev, jiffies_to_msecs(
+-				round_jiffies_up_relative(HZ/10)));
+-	}
++	if (scsi_is_sdev_device(dev))
++		err = sdev_runtime_suspend(dev);
  
-@@ -436,11 +436,6 @@ static int aat2870_i2c_probe(struct i2c_client *client,
+ 	/* Insert hooks here for targets, hosts, and transport classes */
  
- out_disable:
- 	aat2870_disable(aat2870);
--	if (aat2870->en_pin >= 0)
--		gpio_free(aat2870->en_pin);
--out_kfree:
--	kfree(aat2870);
--out:
- 	return ret;
+ 	return err;
  }
  
-@@ -452,11 +447,8 @@ static int aat2870_i2c_remove(struct i2c_client *client)
+-static int scsi_runtime_resume(struct device *dev)
++static int sdev_blk_runtime_resume(struct scsi_device *sdev,
++					int (*cb)(struct device *))
+ {
+ 	int err = 0;
++
++	blk_pre_runtime_resume(sdev->request_queue);
++	if (cb)
++		err = cb(&sdev->sdev_gendev);
++	blk_post_runtime_resume(sdev->request_queue, err);
++
++	return err;
++}
++
++static int sdev_runtime_resume(struct device *dev)
++{
++	struct scsi_device *sdev = to_scsi_device(dev);
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
++	int (*cb)(struct device *) = pm ? pm->runtime_resume : NULL;
++
++	if (sdev->request_queue->dev)
++		return sdev_blk_runtime_resume(sdev, cb);
++	else
++		return scsi_dev_type_resume(dev, cb);
++}
++
++static int scsi_runtime_resume(struct device *dev)
++{
++	int err = 0;
  
- 	mfd_remove_devices(aat2870->dev);
- 	aat2870_disable(aat2870);
--	if (aat2870->en_pin >= 0)
--		gpio_free(aat2870->en_pin);
- 	if (aat2870->uninit)
- 		aat2870->uninit(aat2870);
--	kfree(aat2870);
+ 	dev_dbg(dev, "scsi_runtime_resume\n");
+ 	if (scsi_is_sdev_device(dev))
+-		err = scsi_dev_type_resume(dev, pm ? pm->runtime_resume : NULL);
++		err = sdev_runtime_resume(dev);
  
+ 	/* Insert hooks here for targets, hosts, and transport classes */
+ 
+@@ -185,10 +235,18 @@ static int scsi_runtime_idle(struct device *dev)
+ 
+ 	/* Insert hooks here for targets, hosts, and transport classes */
+ 
+-	if (scsi_is_sdev_device(dev))
+-		err = pm_schedule_suspend(dev, 100);
+-	else
++	if (scsi_is_sdev_device(dev)) {
++		struct scsi_device *sdev = to_scsi_device(dev);
++
++		if (sdev->request_queue->dev) {
++			pm_runtime_mark_last_busy(dev);
++			err = pm_runtime_autosuspend(dev);
++		} else {
++			err = pm_runtime_suspend(dev);
++		}
++	} else {
+ 		err = pm_runtime_suspend(dev);
++	}
+ 	return err;
+ }
+ 
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index c6e2b34..5000bec 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1121,10 +1121,6 @@ static int sd_open(struct block_device *bdev, fmode_t mode)
+ 
+ 	sdev = sdkp->device;
+ 
+-	retval = scsi_autopm_get_device(sdev);
+-	if (retval)
+-		goto error_autopm;
+-
+ 	/*
+ 	 * If the device is in error recovery, wait until it is done.
+ 	 * If the device is offline, then disallow any access to it.
+@@ -1169,8 +1165,6 @@ static int sd_open(struct block_device *bdev, fmode_t mode)
+ 	return 0;
+ 
+ error_out:
+-	scsi_autopm_put_device(sdev);
+-error_autopm:
+ 	scsi_disk_put(sdkp);
+ 	return retval;	
+ }
+@@ -1205,7 +1199,6 @@ static int sd_release(struct gendisk *disk, fmode_t mode)
+ 	 * XXX is followed by a "rmmod sd_mod"?
+ 	 */
+ 
+-	scsi_autopm_put_device(sdev);
+ 	scsi_disk_put(sdkp);
  	return 0;
  }
+@@ -1367,14 +1360,9 @@ static unsigned int sd_check_events(struct gendisk *disk, unsigned int clearing)
+ 	retval = -ENODEV;
+ 
+ 	if (scsi_block_when_processing_errors(sdp)) {
+-		retval = scsi_autopm_get_device(sdp);
+-		if (retval)
+-			goto out;
+-
+ 		sshdr  = kzalloc(sizeof(*sshdr), GFP_KERNEL);
+ 		retval = scsi_test_unit_ready(sdp, SD_TIMEOUT, SD_MAX_RETRIES,
+ 					      sshdr);
+-		scsi_autopm_put_device(sdp);
+ 	}
+ 
+ 	/* failed to execute TUR, assume media not present */
+@@ -2839,6 +2827,7 @@ static void sd_probe_async(void *data, async_cookie_t cookie)
+ 
+ 	sd_printk(KERN_NOTICE, sdkp, "Attached SCSI %sdisk\n",
+ 		  sdp->removable ? "removable " : "");
++	blk_pm_runtime_init(sdp->request_queue, dev);
+ 	scsi_autopm_put_device(sdp);
+ 	put_device(&sdkp->dev);
+ }
 -- 
-1.7.2.5
-
+1.8.1.2
 
