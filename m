@@ -1,221 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934466Ab3BTSGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 13:06:11 -0500
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:56191 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab3BTSGJ (ORCPT
+	id S1758832Ab3BTSJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 13:09:17 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:42368 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab3BTSJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 13:06:09 -0500
-Message-ID: <5125108D.3010508@gmail.com>
-Date: Wed, 20 Feb 2013 13:06:05 -0500
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 20 Feb 2013 13:09:15 -0500
 MIME-Version: 1.0
-To: "Roberts, Lee A." <lee.roberts@hp.com>
-CC: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] sctp: fix association hangs due to reassembly/ordering
- logic
-References: <1361374996.3450.3.camel@laptop.lroberts> <D64EC45690EF85409BA6C4730E0162244310CBC1@G4W3231.americas.hpqcorp.net>
-In-Reply-To: <D64EC45690EF85409BA6C4730E0162244310CBC1@G4W3231.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130216171228.GF4910@redhat.com>
+References: <1361008406-2307-1-git-send-email-msb@chromium.org>
+	<1361008406-2307-4-git-send-email-msb@chromium.org>
+	<20130216170644.GD4910@redhat.com>
+	<20130216171228.GF4910@redhat.com>
+Date: Wed, 20 Feb 2013 10:09:14 -0800
+X-Google-Sender-Auth: 5pA9PhRRyf0r7Uii6dI2_kSDsnc
+Message-ID: <CACBanvoArjZ=7rjXjt5fN6MrhLohPY7NAjQwhWepnMLZbqpHdQ@mail.gmail.com>
+Subject: Re: [PATCH 4/5] freezer: clear fake signal on exit from __refrigerator
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>,
+        adurbin@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee
-
-On 02/20/2013 10:56 AM, Roberts, Lee A. wrote:
-> From: Lee A. Roberts <lee.roberts@hp.com>
+On Sat, Feb 16, 2013 at 9:12 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Forgot to mention...
 >
-> Resolve SCTP association hangs observed during SCTP stress
-> testing.  Observable symptoms include communications hangs
-> with data being held in the association reassembly and/or lobby
-> (ordering) queues.  Close examination of reassembly queue shows
-> missing packets.
-
-As a general note for this patch series, you could really benefit
-from a cover letter that describes the symptoms and all the different
-issues you found.
-
-Also, please title your patches based on the context of the patch.
-Giving them all the same title is very confusing and at quick glance
-makes appear that the same patch was applied 3 times.
-
+> On 02/16, Oleg Nesterov wrote:
+>> On 02/16, Mandeep Singh Baines wrote:
+>> >
+>> > --- a/kernel/freezer.c
+>> > +++ b/kernel/freezer.c
+>> > @@ -81,6 +81,9 @@ bool __refrigerator(bool check_kthr_stop)
+>> >      */
+>> >     set_current_state(save);
+>> >
+>> > +   /* Clear fake signal from freeze_task(). */
+>> > +   recalc_sigpending();
+>>
+>> NACK. We can't do this lockless.
+>>
+>> And I am not sure we should reinstantiate it here.
 >
-> In sctp_eat_data(), enter partial delivery mode only if the
-> data on the head of the reassembly queue is at or before the
-> cumulative TSN ACK point.
->
-> In sctp_ulpq_retrieve_partial() and sctp_ulpq_retrieve_first(),
-> correct message reassembly logic for SCTP partial delivery.
-> Change logic to ensure that as much data as possible is sent
-> with the initial partial delivery and that following partial
-> deliveries contain all available data.
->
-> In sctp_ulpq_renege(), adjust logic to enter partial delivery
-> only if the incoming chunk remains on the reassembly queue
-> after processing by sctp_ulpq_tail_data().  Remove call to
-> sctp_tsnmap_mark(), as this is handled correctly in call to
-> sctp_ulpq_tail_data().
->
-> Patch applies to linux-3.8 kernel.
->
-> Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
-> ---
->   net/sctp/sm_statefuns.c |   12 ++++++++++--
->   net/sctp/ulpqueue.c     |   33 ++++++++++++++++++++++++++-------
->   2 files changed, 36 insertions(+), 9 deletions(-)
->
-> diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
-> +2/net/sctp/sm_statefuns.c linux-3.8-SCTP+3/net/sctp/sm_statefuns.c
-> --- linux-3.8-SCTP+2/net/sctp/sm_statefuns.c	2013-02-18
-> 16:58:34.000000000 -0700
-> +++ linux-3.8-SCTP+3/net/sctp/sm_statefuns.c	2013-02-20
-> 08:31:51.092132884 -0700
-> @@ -6090,7 +6090,8 @@ static int sctp_eat_data(const struct sc
->   	size_t datalen;
->   	sctp_verb_t deliver;
->   	int tmp;
-> -	__u32 tsn;
-> +	__u32 tsn, ctsn;
-> +	struct sk_buff *skb;
->   	struct sctp_tsnmap *map = (struct sctp_tsnmap *)&asoc->peer.tsn_map;
->   	struct sock *sk = asoc->base.sk;
->   	struct net *net = sock_net(sk);
-> @@ -6160,7 +6161,14 @@ static int sctp_eat_data(const struct sc
->   		/* Even if we don't accept this chunk there is
->   		 * memory pressure.
->   		 */
-> -		sctp_add_cmd_sf(commands, SCTP_CMD_PART_DELIVER, SCTP_NULL());
-> +		skb = skb_peek(&asoc->ulpq.reasm);
-> +		if (skb != NULL) {
-> +			ctsn = sctp_skb2event(skb)->tsn;
-> +			if (TSN_lte(ctsn,
-> +				sctp_tsnmap_get_ctsn(&asoc->peer.tsn_map)))
-> +				sctp_add_cmd_sf(commands,
-> +					SCTP_CMD_PART_DELIVER, SCTP_NULL());
-> +		}
-
-What if the tsn you are currently processing will advance the
-CUM TSN?  You may still need to eneter PD.  This is why
-sctp_eat_data() is not the right place to place this check.
-
-The more I look at the SCTP_CMD_PART_DELIVERY the more I am thinking 
-that it has to come after the current TSN has been delivered to the 
-queue.  That way, if we are currently processing the first fragment, 
-we'll queue it, then enter PD and pull it off the queue properly.
-If we are processing the middle or last, it will get queued first, and
-then PD will be entered to fetch anything that we can fetch.
-
-In fact, the above is what happens when we issue a RENEGE command, but 
-the order is reversed is RENEGE is skipped for some reason.  I am still
-trying to figure out if it's possible to enter PD without RENEGE, but I 
-did notice the above aberration.
-
-
->   	}
->
->   	/* Spill over rwnd a little bit.  Note: While allowed, this spill over
-> diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
-> +2/net/sctp/ulpqueue.c linux-3.8-SCTP+3/net/sctp/ulpqueue.c
-> --- linux-3.8-SCTP+2/net/sctp/ulpqueue.c	2013-02-20 08:17:53.679233365
-> -0700
-> +++ linux-3.8-SCTP+3/net/sctp/ulpqueue.c	2013-02-20 08:27:02.785042744
-> -0700
-> @@ -540,14 +540,19 @@ static struct sctp_ulpevent *sctp_ulpq_r
->   		ctsn = cevent->tsn;
->
->   		switch (cevent->msg_flags & SCTP_DATA_FRAG_MASK) {
-> +		case SCTP_DATA_FIRST_FRAG:
-> +			if (!first_frag)
-> +				return NULL;
-> +			goto done;
->   		case SCTP_DATA_MIDDLE_FRAG:
->   			if (!first_frag) {
->   				first_frag = pos;
->   				next_tsn = ctsn + 1;
->   				last_frag = pos;
-> -			} else if (next_tsn == ctsn)
-> +			} else if (next_tsn == ctsn) {
->   				next_tsn++;
-> -			else
-> +				last_frag = pos;
-> +			} else
->   				goto done;
->   			break;
->   		case SCTP_DATA_LAST_FRAG:
-
-This may still allow you to skip over a gap if the first middle fragment 
-in the queue starts after the gap.  We need to make sure that
-TSN of the current chunk is less then equal to sctp_tsnmap_get_ctsn(map).
-
-> @@ -651,6 +656,14 @@ static struct sctp_ulpevent *sctp_ulpq_r
->   			} else
->   				goto done;
->   			break;
-> +
-> +		case SCTP_DATA_LAST_FRAG:
-> +			if (!first_frag)
-> +				return NULL;
-> +			else
-> +				goto done;
-> +			break;
-> +
->   		default:
->   			return NULL;
-
-Same thing here.  Both, FIRST and MIDDLE fragments need to be validated
-against sctp_tsnmap_get_ctsn(), otherwise you may be stepping over a gap.
-
->   		}
-> @@ -1054,6 +1067,7 @@ void sctp_ulpq_renege(struct sctp_ulpq *
->   		      gfp_t gfp)
->   {
->   	struct sctp_association *asoc;
-> +	struct sk_buff *skb;
->   	__u16 needed, freed;
->
->   	asoc = ulpq->asoc;
-> @@ -1074,12 +1088,17 @@ void sctp_ulpq_renege(struct sctp_ulpq *
->   	}
->   	/* If able to free enough room, accept this chunk. */
->   	if (chunk && (freed >= needed)) {
-> -		__u32 tsn;
-> +		__u32 tsn, ctsn;
->   		tsn = ntohl(chunk->subh.data_hdr->tsn);
-> -		sctp_tsnmap_mark(&asoc->peer.tsn_map, tsn, chunk->transport);
-> -		sctp_ulpq_tail_data(ulpq, chunk, gfp);
-> -
-> -		sctp_ulpq_partial_delivery(ulpq, gfp);
-> +		if (sctp_ulpq_tail_data(ulpq, chunk, gfp) == 0) {
-> +			skb = skb_peek(&ulpq->reasm);
-> +			if (skb != NULL) {
-> +				ctsn = sctp_skb2event(skb)->tsn;
-> +				if (TSN_lte(ctsn, tsn))
-> +					sctp_ulpq_partial_delivery(ulpq, chunk,
-> +						gfp);
-> +			}
-> +		}
->   	}
-
-I am not sure this hunk is really needed.
-
-You are trying to use this code make sure that you start PD with 
-something to deliver, but the PD code already takes care of that.
-You also get some basic cum_tsn checking for the current chunk because
-of how renege is called, but you still don't do the checks for 
-subsequent chunks in the queue as I stated above, so you are still
-subject to possible hangs.
-
--vlad
-
->
->   	sk_mem_reclaim(asoc->base.sk);
->
-> N�����r��y���b�X��ǧv�^�)޺{.n�+����{���i�{ay�ʇڙ�,j��f���h���z��w������j:+v���w�j�m��������zZ+��ݢj"��!tml=
+> And note that with the fix I propose in reply to 5/5 this change is
+> not needed.
 >
 
+I think we need something like this in order to be able to fix
+wait_event_freezable and friends. Here is one idea:
+
+#define __wait_event_freezable(wq, condition, ret)                  \
+do {                                                                    \
+        DEFINE_WAIT(__wait);                                            \
+                                                                        \
+        for (;;) {                                                      \
+                prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);      \
+                if (condition)                                          \
+                        break;                                          \
+                if (!signal_pending(current)) {                         \
+                        freezable_schedule();
+           \
+                        continue;                                       \
+                }                                                       \
+                ret = -ERESTARTSYS;                                     \
+                break;                                                  \
+        }                                                               \
+        finish_wait(&wq, &__wait);                                      \
+} while (0)
+
+
+#define wait_event_freezable(wq, condition)                         \
+({                                                                      \
+        int __ret = 0;                                                  \
+        if (!(condition))                                               \
+                __wait_event_freezable(wq, condition, __ret);       \
+        __ret;                                                          \
+})
+
+
+If you cleaned up the fake signal in __refrigerator() then this
+implementation of wait_event_freezable should address all the fake
+signal bugs.
+By the time you get to signal_pending() the fake signal is cleared and
+the bug it avoided.
+
+Regards,
+Mandeep
+
+> Oleg.
+>
