@@ -1,82 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934993Ab3BTKwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 05:52:51 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:11678 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933773Ab3BTKwu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 05:52:50 -0500
-X-AuditID: cbfee690-b7f066d00000169f-a6-5124ab007a9c
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Samuel Ortiz'" <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000101ce0e3d$9a9e42a0$cfdac7e0$%han@samsung.com>
-In-reply-to: <000101ce0e3d$9a9e42a0$cfdac7e0$%han@samsung.com>
-Subject: [PATCH v2] mfd: twl4030-madc: remove erroneous __exit_p() in
- twl4030_madc_driver
-Date: Wed, 20 Feb 2013 19:52:48 +0900
-Message-id: <000101ce0f58$6c0f3e00$442dba00$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4OPZqJHNio5XJvR8u8Q36MxoUVqwBGfMUw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zY12G1SqBBucu6llc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MxnciBZfZKrZcn8TYwHiUtYuRk0NCwETi6LIFTBC2mMSFe+vZ
-	uhi5OIQEljFKvNw6mxGm6NiCbSwQiemMEl1LD0FVzWaSWHPiHdgoNgE1iS9fDrOD2CICWhLd
-	x84DFXFwMAu4SBydJgISFhKwlZg06wILiM0pYCfx58Y1MFtYIFpi77UbYGNYBFQlTm9sBrN5
-	gepPv9nKDmELSvyYfA+snhlo/Pqdx5kgbHmJzWveMoOskhBQl3j0VxfiAiOJ1dsusUKUiEjs
-	e/GOEeRkCYF57BKPJh9lh9glIPFt8iEWiF5ZiU0HmCH+lZQ4uOIGywRGiVlINs9CsnkWks2z
-	kKxYwMiyilE0tSC5oDgpvchErzgxt7g0L10vOT93EyMkribsYLx3wPoQYzLQ+onMUqLJ+cC4
-	zCuJNzQ2NjEzMTUxtzQ1NyVNWEmcV/6STKCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRl67
-	O4Gm99+tmVLUPfeChf0C+WU53zuf/cub6f/xU7lrBs+biuj3N7ImfaourS6sPMmdWZ+7tfLD
-	0zJno1pZgegnq68n717w5FDwwct/ilOSlwp9ETPWeBpUoiJS9GFf77qm1mtV937G3polID4t
-	xHSp4krD2Ts+y5708Fewqbzp67yPyb7FR4mlOCPRUIu5qDgRAOZCvczBAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xoC7DapVAgzuztS0u75rD5sDo8XmT
-	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
-	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jRuM7kYLLbBVbrk9ibGA8
-	ytrFyMkhIWAicWzBNhYIW0ziwr31bF2MXBxCAtMZJbqWHoJyZjNJrDnxDqyDTUBN4suXw+wg
-	toiAlkT3sfNARRwczAIuEkeniYCEhQRsJSbNugA2lFPATuLPjWtgtrBAtMTeazfAxrAIqEqc
-	3tgMZvMC1Z9+s5UdwhaU+DH5Hlg9M9D49TuPM0HY8hKb17xlBlklIaAu8eivLsQFRhKrt11i
-	hSgRkdj34h3jBEahWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJ
-	ERy1z6R2MK5ssDjEKMDBqMTDqzFfOVCINbGsuDL3EKMEB7OSCO/PDpVAId6UxMqq1KL8+KLS
-	nNTiQ4zJQI9OZJYSTc4HJpS8knhDYxMzI0sjMwsjE3Nz0oSVxHkZTz0JEBJITyxJzU5NLUgt
-	gtnCxMEp1cCoWvJHaZHQtIiqHuOiFzJd2/YKzQ6JPvxV4ytTxcZtTu5Zj/6kfYyc6lH591qe
-	za83s0TOLD7NbKG4OWMF46kLZzl0p5dd3efw3vJk8J+FspWFkl9FE4LWP1Ru/+f56qC2TvW/
-	aUzL+v+s3Kjw72XX+1uaFlJxHOunPGCvCDO/kS/+V82jSOeWEktxRqKhFnNRcSIAFIfVTh4D	AAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S935000Ab3BTKyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 05:54:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49161 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758034Ab3BTKyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 05:54:19 -0500
+Message-ID: <5124AB50.8050702@redhat.com>
+Date: Wed, 20 Feb 2013 11:54:08 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+CC: rusty@rustcorp.com.au, asias@redhat.com, mst@redhat.com,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 17/16 V2] virtio-scsi: use virtqueue_add_sgs for command
+ buffers
+References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au> <1361353639-10623-1-git-send-email-gaowanlong@cn.fujitsu.com>
+In-Reply-To: <1361353639-10623-1-git-send-email-gaowanlong@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This __exit_p() causes an build warning as below. Thus, it should
-be removed.
+Il 20/02/2013 10:47, Wanlong Gao ha scritto:
+> Using the new virtqueue_add_sgs function lets us simplify the queueing
+> path.  In particular, all data protected by the tgt_lock is just gone
+> (multiqueue will find a new use for the lock).
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 
-drivers/mfd/twl4030-madc.c:788:12: warning: 'twl4030_madc_remove' defined but not used [-Wunused-function]
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/mfd/twl4030-madc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Rusty, please put this after patch 7 in your series.
 
-diff --git a/drivers/mfd/twl4030-madc.c b/drivers/mfd/twl4030-madc.c
-index 88ff9dc..942b666 100644
---- a/drivers/mfd/twl4030-madc.c
-+++ b/drivers/mfd/twl4030-madc.c
-@@ -800,7 +800,7 @@ static int twl4030_madc_remove(struct platform_device *pdev)
- 
- static struct platform_driver twl4030_madc_driver = {
- 	.probe = twl4030_madc_probe,
--	.remove = __exit_p(twl4030_madc_remove),
-+	.remove = twl4030_madc_remove,
- 	.driver = {
- 		   .name = "twl4030_madc",
- 		   .owner = THIS_MODULE,
--- 
-1.7.2.5
+Thanks Wanlong!
 
+Paolo
+
+> ---
+> V1->V2:
+> 	add the lost comments (Asias)
+> 
+>  drivers/scsi/virtio_scsi.c | 91 +++++++++++++++++-----------------------------
+>  1 file changed, 34 insertions(+), 57 deletions(-)
+> 
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> index 3449a1f..bae0c95 100644
+> --- a/drivers/scsi/virtio_scsi.c
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -59,11 +59,8 @@ struct virtio_scsi_vq {
+>  
+>  /* Per-target queue state */
+>  struct virtio_scsi_target_state {
+> -	/* Protects sg.  Lock hierarchy is tgt_lock -> vq_lock.  */
+> +	/* Never held at the same time as vq_lock.  */
+>  	spinlock_t tgt_lock;
+> -
+> -	/* For sglist construction when adding commands to the virtqueue.  */
+> -	struct scatterlist sg[];
+>  };
+>  
+>  /* Driver instance state */
+> @@ -351,75 +348,61 @@ static void virtscsi_event_done(struct virtqueue *vq)
+>  	spin_unlock_irqrestore(&vscsi->event_vq.vq_lock, flags);
+>  };
+>  
+> -static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+> -			     struct scsi_data_buffer *sdb)
+> -{
+> -	struct sg_table *table = &sdb->table;
+> -	struct scatterlist *sg_elem;
+> -	unsigned int idx = *p_idx;
+> -	int i;
+> -
+> -	for_each_sg(table->sgl, sg_elem, table->nents, i)
+> -		sg[idx++] = *sg_elem;
+> -
+> -	*p_idx = idx;
+> -}
+> -
+>  /**
+> - * virtscsi_map_cmd - map a scsi_cmd to a virtqueue scatterlist
+> - * @vscsi	: virtio_scsi state
+> + * virtscsi_add_cmd - add a virtio_scsi_cmd to a virtqueue
+> + * @vq		: the struct virtqueue we're talking about
+>   * @cmd		: command structure
+> - * @out_num	: number of read-only elements
+> - * @in_num	: number of write-only elements
+>   * @req_size	: size of the request buffer
+>   * @resp_size	: size of the response buffer
+> - *
+> - * Called with tgt_lock held.
+> + * @gfp	: flags to use for memory allocations
+>   */
+> -static void virtscsi_map_cmd(struct virtio_scsi_target_state *tgt,
+> -			     struct virtio_scsi_cmd *cmd,
+> -			     unsigned *out_num, unsigned *in_num,
+> -			     size_t req_size, size_t resp_size)
+> +static int virtscsi_add_cmd(struct virtqueue *vq,
+> +			    struct virtio_scsi_cmd *cmd,
+> +			    size_t req_size, size_t resp_size, gfp_t gfp)
+>  {
+>  	struct scsi_cmnd *sc = cmd->sc;
+> -	struct scatterlist *sg = tgt->sg;
+> -	unsigned int idx = 0;
+> +	struct scatterlist *sgs[4], req, resp;
+> +	struct sg_table *out, *in;
+> +	unsigned out_num = 0, in_num = 0;
+> +
+> +	out = in = NULL;
+> +
+> +	if (sc && sc->sc_data_direction != DMA_NONE) {
+> +		if (sc->sc_data_direction != DMA_FROM_DEVICE)
+> +			out = &scsi_out(sc)->table;
+> +		if (sc->sc_data_direction != DMA_TO_DEVICE)
+> +			in = &scsi_in(sc)->table;
+> +	}
+>  
+>  	/* Request header.  */
+> -	sg_set_buf(&sg[idx++], &cmd->req, req_size);
+> +	sg_init_one(&req, &cmd->req, req_size);
+> +	sgs[out_num++] = &req;
+>  
+>  	/* Data-out buffer.  */
+> -	if (sc && sc->sc_data_direction != DMA_FROM_DEVICE)
+> -		virtscsi_map_sgl(sg, &idx, scsi_out(sc));
+> -
+> -	*out_num = idx;
+> +	if (out)
+> +		sgs[out_num++] = out->sgl;
+>  
+>  	/* Response header.  */
+> -	sg_set_buf(&sg[idx++], &cmd->resp, resp_size);
+> +	sg_init_one(&resp, &cmd->resp, resp_size);
+> +	sgs[out_num + in_num++] = &resp;
+>  
+>  	/* Data-in buffer */
+> -	if (sc && sc->sc_data_direction != DMA_TO_DEVICE)
+> -		virtscsi_map_sgl(sg, &idx, scsi_in(sc));
+> +	if (in)
+> +		sgs[out_num + in_num++] = in->sgl;
+>  
+> -	*in_num = idx - *out_num;
+> +	return virtqueue_add_sgs(vq, sgs, out_num, in_num, cmd, gfp);
+>  }
+>  
+> -static int virtscsi_kick_cmd(struct virtio_scsi_target_state *tgt,
+> -			     struct virtio_scsi_vq *vq,
+> +static int virtscsi_kick_cmd(struct virtio_scsi_vq *vq,
+>  			     struct virtio_scsi_cmd *cmd,
+>  			     size_t req_size, size_t resp_size, gfp_t gfp)
+>  {
+> -	unsigned int out_num, in_num;
+>  	unsigned long flags;
+>  	int err;
+>  	bool needs_kick = false;
+>  
+> -	spin_lock_irqsave(&tgt->tgt_lock, flags);
+> -	virtscsi_map_cmd(tgt, cmd, &out_num, &in_num, req_size, resp_size);
+> -
+> -	spin_lock(&vq->vq_lock);
+> -	err = virtqueue_add_buf(vq->vq, tgt->sg, out_num, in_num, cmd, gfp);
+> -	spin_unlock(&tgt->tgt_lock);
+> +	spin_lock_irqsave(&vq->vq_lock, flags);
+> +	err = virtscsi_add_cmd(vq->vq, cmd, req_size, resp_size, gfp);
+>  	if (!err)
+>  		needs_kick = virtqueue_kick_prepare(vq->vq);
+>  
+> @@ -433,7 +416,6 @@ static int virtscsi_kick_cmd(struct virtio_scsi_target_state *tgt,
+>  static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+>  {
+>  	struct virtio_scsi *vscsi = shost_priv(sh);
+> -	struct virtio_scsi_target_state *tgt = vscsi->tgt[sc->device->id];
+>  	struct virtio_scsi_cmd *cmd;
+>  	int ret;
+>  
+> @@ -467,7 +449,7 @@ static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+>  	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
+>  	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+>  
+> -	if (virtscsi_kick_cmd(tgt, &vscsi->req_vq, cmd,
+> +	if (virtscsi_kick_cmd(&vscsi->req_vq, cmd,
+>  			      sizeof cmd->req.cmd, sizeof cmd->resp.cmd,
+>  			      GFP_ATOMIC) == 0)
+>  		ret = 0;
+> @@ -481,11 +463,10 @@ out:
+>  static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
+>  {
+>  	DECLARE_COMPLETION_ONSTACK(comp);
+> -	struct virtio_scsi_target_state *tgt = vscsi->tgt[cmd->sc->device->id];
+>  	int ret = FAILED;
+>  
+>  	cmd->comp = &comp;
+> -	if (virtscsi_kick_cmd(tgt, &vscsi->ctrl_vq, cmd,
+> +	if (virtscsi_kick_cmd(&vscsi->ctrl_vq, cmd,
+>  			      sizeof cmd->req.tmf, sizeof cmd->resp.tmf,
+>  			      GFP_NOIO) < 0)
+>  		goto out;
+> @@ -591,15 +572,11 @@ static struct virtio_scsi_target_state *virtscsi_alloc_tgt(
+>  	struct virtio_scsi_target_state *tgt;
+>  	gfp_t gfp_mask = GFP_KERNEL;
+>  
+> -	/* We need extra sg elements at head and tail.  */
+> -	tgt = kmalloc(sizeof(*tgt) + sizeof(tgt->sg[0]) * (sg_elems + 2),
+> -		      gfp_mask);
+> -
+> +	tgt = kmalloc(sizeof(*tgt), gfp_mask);
+>  	if (!tgt)
+>  		return NULL;
+>  
+>  	spin_lock_init(&tgt->tgt_lock);
+> -	sg_init_table(tgt->sg, sg_elems + 2);
+>  	return tgt;
+>  }
+>  
+> 
 
