@@ -1,150 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758974Ab3BTJYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 04:24:38 -0500
-Received: from hibox-130.abo.fi ([130.232.216.130]:42497 "EHLO centre.hibox.fi"
+	id S1759065Ab3BTJ07 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 04:26:59 -0500
+Received: from mga03.intel.com ([143.182.124.21]:9292 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758804Ab3BTJYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 04:24:35 -0500
-X-Greylist: delayed 2542 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Feb 2013 04:24:35 EST
-Message-ID: <51248C5F.4040606@hibox.fi>
-Date: Wed, 20 Feb 2013 10:42:07 +0200
-From: Marcus Sundman <marcus@hibox.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1757754Ab3BTJ05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 04:26:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,699,1355126400"; 
+   d="scan'208";a="204356261"
+Date: Wed, 20 Feb 2013 11:30:59 +0200
+From: "Mika Westerberg (mika.westerberg@linux.intel.com)" 
+	<mika.westerberg@linux.intel.com>
+To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Rui" <rui.zhang@intel.com>, "Brown, Len" <len.brown@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: Linux ACPI DSDT table editing tools
+Message-ID: <20130220093059.GP2439@intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD24663596@BGSMSX102.gar.corp.intel.com>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Debugging system freezes on filesystem writes
-References: <508DB432.2030208@hibox.fi> <20121101190119.GA27294@quack.suse.cz> <50932DAC.7040702@hibox.fi> <20121107161730.GB23654@quack.suse.cz> <509C4339.2090506@hibox.fi> <509D014B.2080709@hibox.fi> <20121113135159.GA18651@quack.suse.cz> <50A592BA.8050709@hibox.fi> <20121121233021.GA8730@quack.suse.cz> <50B4E6F2.6010000@hibox.fi> <20121205153216.GF5706@quack.suse.cz>
-In-Reply-To: <20121205153216.GF5706@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Spam_score: -2.7
-X-Spam_bar: --
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD24663596@BGSMSX102.gar.corp.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.12.2012 17:32, Jan Kara wrote:
-> On Tue 27-11-12 18:14:42, Marcus Sundman wrote:
->> On 22.11.2012 01:30, Jan Kara wrote:
->>> On Fri 16-11-12 03:11:22, Marcus Sundman wrote:
->>>> On 13.11.2012 15:51, Jan Kara wrote:
->>>>> On Fri 09-11-12 15:12:43, Marcus Sundman wrote:
->>>>>> On 09.11.2012 01:41, Marcus Sundman wrote:
->>>>>>> On 07.11.2012 18:17, Jan Kara wrote:
->>>>>>>> On Fri 02-11-12 04:19:24, Marcus Sundman wrote:
->>>>>>>>> Also, and this might be important, according to iotop there is
->>>>>>>>> almost no disk writing going on during the freeze. (Occasionally
->>>>>>>>> there are a few MB/s, but mostly it's 0-200 kB/s.) Well, at least
->>>>>>>>> when an iotop running on nice -20 hasn't frozen completely, which it
->>>>>>>>> does during the more severe freezes.
->>>>>>>>    OK, it seems as if your machine has some problems with memory
->>>>>>>> allocations. Can you capture /proc/vmstat before the freeze and
->>>>>>>> after the
->>>>>>>> freeze and send them for comparison. Maybe it will show us what is the
->>>>>>>> system doing.
->>>>>>> t=01:06 http://sundman.iki.fi/vmstat.pre-freeze.txt
->>>>>>> t=01:08 http://sundman.iki.fi/vmstat.during-freeze.txt
->>>>>>> t=01:12 http://sundman.iki.fi/vmstat.post-freeze.txt
->>>>>> Here are some more vmstats:
->>>>>> http://sundman.iki.fi/vmstats.tar.gz
->>>>>>
->>>>>> They are from running this:
->>>>>> while true; do cat /proc/vmstat > "vmstat.$(date +%FT%X).txt"; sleep
->>>>>> 10; done
->>>>>>
->>>>>> There were lots and lots of freezes for almost 20 mins from 14:37:45
->>>>>> onwards, pretty much constantly, but at 14:56:50 the freezes
->>>>>> suddenly stopped and everything went back to how it should be.
->>>>>    I was looking into the data but they didn't show anything problematic.
->>>>> The machine seems to be writing a lot but there's always some free memory,
->>>>> even direct reclaim isn't ever entered. Hum, actually you wrote iotop isn't
->>>>> showing much IO going on but vmstats show there is about 1 GB written
->>>>> during the freeze. It is not a huge amount given the time span but it
->>>>> certainly gives a few MB/s of write load.
->>>> I didn't watch iotop during this particular freeze. I'll try to keep
->>>> an eye on iotop in the future. Is there some particular options I
->>>> should run iotop with, or is a "nice -n -20 iotop -od3" fine?
->>>    I'm not really familiar with iotop :). Usually I use iostat...
->> OK, which options for iostat should I use then? :)
->    I'm back from vacation. Sorry for the delay. You can use
-> iostat -x 1
+On Wed, Feb 20, 2013 at 07:36:32AM +0000, Pallala, Ramakrishna wrote:
+> I am looking for tools(Linux or w*****s) for editing ACPI tables.
+> Can you advise me some good tools. Also I would like to know how BIOS
+> engineers populate the ACPI tables? Which tools they use?
 
-Just when you got back I started my pre-vacation work stress and am now 
-ending my post-vacation work-stress.. :)
+Dunno about the BIOS engineers but I use tools from acpica (acpica.org).
+There is ASL (dis)assembler and other useful tools in that.
 
-That iostat -x 1 shows %util as 100 and w_await at 2,000 - 70,000.. like so:
-
-avg-cpu:  %user   %nice %system %iowait  %steal   %idle
-            9.05    0.00    1.51   66.33    0.00   23.12
-Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s 
-avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
-sda               0.00     0.00    0.00    1.00     0.00   184.00 
-368.00   137.08 62199.00    0.00 62199.00 1000.00 100.00
-
-
->>>>> There's surprisingly high number of allocations going on but that may be
->>>>> due to the IO activity. So let's try something else: Can you switch to
->>>>> console and when the hang happens press Alt-Sysrq-w (or you can just do
->>>>> "echo w >/proc/sysrq-trigger" if the machine is live enough to do that).
->>>>> Then send me the output from dmesg.  Thanks!
->>>> Sure! Here are two:
->>>> http://sundman.iki.fi/dmesg-1.txt
->>>> http://sundman.iki.fi/dmesg-2.txt
->>>    Thanks for those and sorry for the delay (I was busy with other stuff).
->>> I had a look into those traces and I have to say I'm not much wiser. In the
->>> first dump there is just kswapd waiting for IO. In the second dump there
->>> are more processes waiting for IO (mostly for reads - nautilus,
->>> thunderbird, opera, ...) but nothing really surprising. So I'm lost what
->>> could cause the hangs you observe.
->> Yes, mostly it's difficult to trigger the sysrq thingy, because by
->> the time I manage to switch to the console or running that echo to
->> proc in a terminal the worst is already over.
->    I see. Maybe you could have something like
-> while true; do echo w >/proc/sysrq-trigger; sleep 10; done
->    running in the background?
-
-Sure, but I suspect it'll take until the worst is over before it manages 
-to load and execute that "echo w".
-
->>> Recalling you wrote even simple programs
->>> like top hang, maybe it is some CPU scheduling issue? Can you boot with
->>> noautogroup kernel option?
->> Sure. I've been running with noautogroup for almost a week now, but
->> no big change one way or the other. (E.g., it's still impossible to
->> listen to music, because the songs will start skipping/looping
->> several times during each song even if there isn't any big "hang"
->> happening. And uncompressing a 100 MB archive (with nice '19' and
->> ionice 'idle') is still, after a while, followed by a couple of
->> minutes of superhigh I/O wait causing everything to become really
->> slow.)
->    Hum, I'm starting to wander what's so special about your system that you
-> see these hangs while noone else seems to be hitting them. Your kernel is a
-> standard one from Ubuntu so tons of people run it. Your HW doesn't seem to
-> be too special either.
->
-> BTW the fact that you ionice 'tar' doesn't change anything because all the
-> writes are done in the context of kernel flusher thread (tar just writes
-> data into cache). But still it shouldn't lock the machine up. What might be
-> interesting test though is running:
->    dd if=/dev/zero of=file bs=1M count=200 oflags=direct
->
-> Does this trigger any hangs?
-
-Yes, sure. If I run nothing else then it's not so severe, but the system 
-is still quite unusable during the time it runs that dd.
-
-Also, the speeds are closer to an Amiga500-era floppy drive than to an 
-SSD from 2012 which this is:
-
-$ dd if=/dev/zero of=iotest-file bs=1M count=200 oflag=direct
-200+0 records in
-200+0 records out
-209715200 bytes (210 MB) copied, 171.701 s, 1.2 MB/s
-$
-
-
-Regards,
-Marcus
-
+In addition there is tools/power/acpi/acpidump.c in the kernel source tree
+which is extremely useful.
