@@ -1,131 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935925Ab3BTP5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 10:57:13 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:43029 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935736Ab3BTP5K (ORCPT
+	id S935820Ab3BTP5y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 10:57:54 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:32161 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935298Ab3BTP5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 10:57:10 -0500
+	Wed, 20 Feb 2013 10:57:53 -0500
+From: "Roberts, Lee A." <lee.roberts@hp.com>
+To: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3] sctp: fix association hangs due to reassembly/ordering
+ logic
+Thread-Topic: [PATCH 3/3] sctp: fix association hangs due to
+ reassembly/ordering logic
+Thread-Index: AQHOD4EAM4/BtHowKUCUFo1BBBdc85iC5oiA
+Date: Wed, 20 Feb 2013 15:56:59 +0000
+Message-ID: <D64EC45690EF85409BA6C4730E0162244310CBC1@G4W3231.americas.hpqcorp.net>
+References: <1361374996.3450.3.camel@laptop.lroberts>
+In-Reply-To: <1361374996.3450.3.camel@laptop.lroberts>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.14]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20130215115706.GA14398@pd.tnic>
-References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
-	<1357610913-1080-9-git-send-email-fweisbec@gmail.com>
-	<20130215115706.GA14398@pd.tnic>
-Date: Wed, 20 Feb 2013 16:57:07 +0100
-Message-ID: <CAFTL4hxSLcraLRJssp-JAskL+Y4Wk6o=9PQbxcgumSywo9130w@mail.gmail.com>
-Subject: Re: [PATCH 08/33] nohz: Assign timekeeping duty to a non-full-nohz CPU
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1KFvu4c004476
 
-2013/2/15 Borislav Petkov <bp@alien8.de>:
-> On Tue, Jan 08, 2013 at 03:08:08AM +0100, Frederic Weisbecker wrote:
->> This way the full nohz CPUs can safely run with the tick
->> stopped with a guarantee that somebody else is taking
->> care of the jiffies and gtod progression.
->>
->> NOTE: this doesn't handle CPU hotplug. Also we could use something
->> more elaborated wrt. powersaving if we have more than one non full-nohz
->> CPU running. But let's use this KISS solution for now.
->>
->> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Alessio Igor Bogani <abogani@kernel.org>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Chris Metcalf <cmetcalf@tilera.com>
->> Cc: Christoph Lameter <cl@linux.com>
->> Cc: Geoff Levand <geoff@infradead.org>
->> Cc: Gilad Ben Yossef <gilad@benyossef.com>
->> Cc: Hakan Akkan <hakanakkan@gmail.com>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
->> Cc: Namhyung Kim <namhyung.kim@lge.com>
->> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
->> Cc: Peter Zijlstra <peterz@infradead.org>
->> Cc: Steven Rostedt <rostedt@goodmis.org>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> [fix have_nohz_full_mask offcase]
->> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->> ---
->>  kernel/time/tick-broadcast.c |    3 ++-
->>  kernel/time/tick-common.c    |    5 ++++-
->>  kernel/time/tick-sched.c     |    9 ++++++++-
->>  3 files changed, 14 insertions(+), 3 deletions(-)
->>
->> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
->> index f113755..596c547 100644
->> --- a/kernel/time/tick-broadcast.c
->> +++ b/kernel/time/tick-broadcast.c
->> @@ -537,7 +537,8 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
->>               bc->event_handler = tick_handle_oneshot_broadcast;
->>
->>               /* Take the do_timer update */
->> -             tick_do_timer_cpu = cpu;
->> +             if (!tick_nohz_full_cpu(cpu))
->> +                     tick_do_timer_cpu = cpu;
->>
->>               /*
->>                * We must be careful here. There might be other CPUs
->> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
->> index b1600a6..83f2bd9 100644
->> --- a/kernel/time/tick-common.c
->> +++ b/kernel/time/tick-common.c
->> @@ -163,7 +163,10 @@ static void tick_setup_device(struct tick_device *td,
->>                * this cpu:
->>                */
->>               if (tick_do_timer_cpu == TICK_DO_TIMER_BOOT) {
->> -                     tick_do_timer_cpu = cpu;
->> +                     if (!tick_nohz_full_cpu(cpu))
->> +                             tick_do_timer_cpu = cpu;
->> +                     else
->> +                             tick_do_timer_cpu = TICK_DO_TIMER_NONE;
->>                       tick_next_period = ktime_get();
->>                       tick_period = ktime_set(0, NSEC_PER_SEC / HZ);
->>               }
->> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
->> index 494a2aa..b75e302 100644
->> --- a/kernel/time/tick-sched.c
->> +++ b/kernel/time/tick-sched.c
->> @@ -112,7 +112,8 @@ static void tick_sched_do_timer(ktime_t now)
->>        * this duty, then the jiffies update is still serialized by
->>        * jiffies_lock.
->>        */
->> -     if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE))
->> +     if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE)
->> +         && !tick_nohz_full_cpu(cpu))
->>               tick_do_timer_cpu = cpu;
->>  #endif
->>
->> @@ -163,6 +164,8 @@ static int __init tick_nohz_full_setup(char *str)
->>       return 1;
->>  }
->>  __setup("full_nohz=", tick_nohz_full_setup);
->> +#else
->> +#define have_full_nohz_mask (0)
->>  #endif
->
-> Looks like this hunk should be part of the previous patch, no?
+From: Lee A. Roberts <lee.roberts@hp.com>
 
-Ah probably yeah :)
+Resolve SCTP association hangs observed during SCTP stress
+testing.  Observable symptoms include communications hangs
+with data being held in the association reassembly and/or lobby
+(ordering) queues.  Close examination of reassembly queue shows
+missing packets.
 
-> Oui, oui monsieur! :-)
+In sctp_eat_data(), enter partial delivery mode only if the
+data on the head of the reassembly queue is at or before the
+cumulative TSN ACK point.
 
-:)
+In sctp_ulpq_retrieve_partial() and sctp_ulpq_retrieve_first(),
+correct message reassembly logic for SCTP partial delivery.
+Change logic to ensure that as much data as possible is sent
+with the initial partial delivery and that following partial
+deliveries contain all available data.
+
+In sctp_ulpq_renege(), adjust logic to enter partial delivery
+only if the incoming chunk remains on the reassembly queue
+after processing by sctp_ulpq_tail_data().  Remove call to
+sctp_tsnmap_mark(), as this is handled correctly in call to
+sctp_ulpq_tail_data().
+
+Patch applies to linux-3.8 kernel.
+
+Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
+---
+ net/sctp/sm_statefuns.c |   12 ++++++++++--
+ net/sctp/ulpqueue.c     |   33 ++++++++++++++++++++++++++-------
+ 2 files changed, 36 insertions(+), 9 deletions(-)
+
+diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
++2/net/sctp/sm_statefuns.c linux-3.8-SCTP+3/net/sctp/sm_statefuns.c
+--- linux-3.8-SCTP+2/net/sctp/sm_statefuns.c	2013-02-18
+16:58:34.000000000 -0700
++++ linux-3.8-SCTP+3/net/sctp/sm_statefuns.c	2013-02-20
+08:31:51.092132884 -0700
+@@ -6090,7 +6090,8 @@ static int sctp_eat_data(const struct sc
+ 	size_t datalen;
+ 	sctp_verb_t deliver;
+ 	int tmp;
+-	__u32 tsn;
++	__u32 tsn, ctsn;
++	struct sk_buff *skb;
+ 	struct sctp_tsnmap *map = (struct sctp_tsnmap *)&asoc->peer.tsn_map;
+ 	struct sock *sk = asoc->base.sk;
+ 	struct net *net = sock_net(sk);
+@@ -6160,7 +6161,14 @@ static int sctp_eat_data(const struct sc
+ 		/* Even if we don't accept this chunk there is
+ 		 * memory pressure.
+ 		 */
+-		sctp_add_cmd_sf(commands, SCTP_CMD_PART_DELIVER, SCTP_NULL());
++		skb = skb_peek(&asoc->ulpq.reasm);
++		if (skb != NULL) {
++			ctsn = sctp_skb2event(skb)->tsn;
++			if (TSN_lte(ctsn,
++				sctp_tsnmap_get_ctsn(&asoc->peer.tsn_map)))
++				sctp_add_cmd_sf(commands,
++					SCTP_CMD_PART_DELIVER, SCTP_NULL());
++		}
+ 	}
+ 
+ 	/* Spill over rwnd a little bit.  Note: While allowed, this spill over
+diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP
++2/net/sctp/ulpqueue.c linux-3.8-SCTP+3/net/sctp/ulpqueue.c
+--- linux-3.8-SCTP+2/net/sctp/ulpqueue.c	2013-02-20 08:17:53.679233365
+-0700
++++ linux-3.8-SCTP+3/net/sctp/ulpqueue.c	2013-02-20 08:27:02.785042744
+-0700
+@@ -540,14 +540,19 @@ static struct sctp_ulpevent *sctp_ulpq_r
+ 		ctsn = cevent->tsn;
+ 
+ 		switch (cevent->msg_flags & SCTP_DATA_FRAG_MASK) {
++		case SCTP_DATA_FIRST_FRAG:
++			if (!first_frag)
++				return NULL;
++			goto done;
+ 		case SCTP_DATA_MIDDLE_FRAG:
+ 			if (!first_frag) {
+ 				first_frag = pos;
+ 				next_tsn = ctsn + 1;
+ 				last_frag = pos;
+-			} else if (next_tsn == ctsn)
++			} else if (next_tsn == ctsn) {
+ 				next_tsn++;
+-			else
++				last_frag = pos;
++			} else
+ 				goto done;
+ 			break;
+ 		case SCTP_DATA_LAST_FRAG:
+@@ -651,6 +656,14 @@ static struct sctp_ulpevent *sctp_ulpq_r
+ 			} else
+ 				goto done;
+ 			break;
++
++		case SCTP_DATA_LAST_FRAG:
++			if (!first_frag)
++				return NULL;
++			else
++				goto done;
++			break;
++
+ 		default:
+ 			return NULL;
+ 		}
+@@ -1054,6 +1067,7 @@ void sctp_ulpq_renege(struct sctp_ulpq *
+ 		      gfp_t gfp)
+ {
+ 	struct sctp_association *asoc;
++	struct sk_buff *skb;
+ 	__u16 needed, freed;
+ 
+ 	asoc = ulpq->asoc;
+@@ -1074,12 +1088,17 @@ void sctp_ulpq_renege(struct sctp_ulpq *
+ 	}
+ 	/* If able to free enough room, accept this chunk. */
+ 	if (chunk && (freed >= needed)) {
+-		__u32 tsn;
++		__u32 tsn, ctsn;
+ 		tsn = ntohl(chunk->subh.data_hdr->tsn);
+-		sctp_tsnmap_mark(&asoc->peer.tsn_map, tsn, chunk->transport);
+-		sctp_ulpq_tail_data(ulpq, chunk, gfp);
+-
+-		sctp_ulpq_partial_delivery(ulpq, gfp);
++		if (sctp_ulpq_tail_data(ulpq, chunk, gfp) == 0) {
++			skb = skb_peek(&ulpq->reasm);
++			if (skb != NULL) {
++				ctsn = sctp_skb2event(skb)->tsn;
++				if (TSN_lte(ctsn, tsn))
++					sctp_ulpq_partial_delivery(ulpq, chunk,
++						gfp);
++			}
++		}
+ 	}
+ 
+ 	sk_mem_reclaim(asoc->base.sk);
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
