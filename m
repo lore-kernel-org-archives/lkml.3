@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab3BTI3n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 03:29:43 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:54647 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab3BTI3l (ORCPT
+	id S1758069Ab3BTIbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 03:31:48 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59851 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab3BTIbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 03:29:41 -0500
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH] ARM: ux500: read the correct soc_id number
-Date: Wed, 20 Feb 2013 09:29:16 +0100
-Message-Id: <1361348956-4387-1-git-send-email-fabio.baltieri@linaro.org>
-X-Mailer: git-send-email 1.7.12.1
+	Wed, 20 Feb 2013 03:31:47 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH] base: core: WARN() about bogus permissions on device attributes
+Date: Wed, 20 Feb 2013 10:31:42 +0200
+Message-ID: <1361349102-15061-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130220050122.GD2869@kroah.com>
+References: <20130220050122.GD2869@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix db8500_read_soc_id() to read all five soc_id number locations
-instead of repeating the second one two times.
+Whenever a struct device_attribute is registered
+with mismatched permissions - read permission without
+a show routine or write permission without store
+routine - we will issue a big warning so we catch
+those early enough.
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- arch/arm/mach-ux500/cpu-db8500.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/core.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index 5b286e0..4b5602b 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -199,7 +199,7 @@ static const char *db8500_read_soc_id(void)
- 	/* Throw these device-specific numbers into the entropy pool */
- 	add_device_randomness(uid, 0x14);
- 	return kasprintf(GFP_KERNEL, "%08x%08x%08x%08x%08x",
--			 readl((u32 *)uid+1),
-+			 readl((u32 *)uid+0),
- 			 readl((u32 *)uid+1), readl((u32 *)uid+2),
- 			 readl((u32 *)uid+3), readl((u32 *)uid+4));
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index a235085..14e6a92 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -563,8 +563,15 @@ int device_create_file(struct device *dev,
+ 		       const struct device_attribute *attr)
+ {
+ 	int error = 0;
+-	if (dev)
++
++	if (dev) {
++		WARN(((attr->attr.mode & S_IWUGO) && !attr->store),
++				"Write permission without 'store'\n");
++		WARN(((attr->attr.mode & S_IRUGO) && !attr->show),
++				"Read permission without 'show'\n");
+ 		error = sysfs_create_file(&dev->kobj, &attr->attr);
++	}
++
+ 	return error;
  }
+ 
 -- 
-1.7.12.1
+1.8.1.rc1.5.g7e0651a
 
