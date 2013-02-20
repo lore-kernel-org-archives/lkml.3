@@ -1,181 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933946Ab3BTGdC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 01:33:02 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:35883 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933835Ab3BTGc6 (ORCPT
+	id S934926Ab3BTGeT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 01:34:19 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:51960 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757364Ab3BTGeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 01:32:58 -0500
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: dri-devel@lists.freedesktop.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
-        randy.dunlap@oracle.com, trenn@suse.de, Valdis.Kletnieks@vt.edu,
-        Dennis.Jansen@web.de, airlied@redhat.com, eric@anholt.net,
-        alexdeucher@gmail.com, bskeggs@redhat.com, chris@chris-wilson.co.uk,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [RESEND][PATCH] gpu: remove gma500 stub driver
-Date: Wed, 20 Feb 2013 14:32:01 +0800
-Message-Id: <1361341921-11435-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	Wed, 20 Feb 2013 01:34:17 -0500
+Date: Wed, 20 Feb 2013 17:34:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Jones <pjones@redhat.com>
+Subject: linux-next: build warning after merge of the akpm tree
+Message-Id: <20130220173414.fa4886355efd8f85d0d349f4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__20_Feb_2013_17_34_14_+1100_9gfoARGTzytJ3OHH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In v3.3, the gma500 drm driver moved from staging to drm group by
-Alan Cox's 3abcf41fb patch. the gma500 drm driver should control
-brightness well and don't need gma500 stub driver anymore.
+--Signature=_Wed__20_Feb_2013_17_34_14_+1100_9gfoARGTzytJ3OHH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reference:
-http://lists.freedesktop.org/archives/dri-devel/2012-May/023426.html
-http://lists.freedesktop.org/archives/dri-devel/2012-May/023467.html
+Hi Andrew,
 
-Cc: randy.dunlap@oracle.com
-Cc: trenn@suse.de
-Cc: Valdis.Kletnieks@vt.edu
-Cc: Dennis.Jansen@web.de
-Cc: airlied@redhat.com
-Cc: eric@anholt.net
-Cc: alexdeucher@gmail.com
-Cc: bskeggs@redhat.com
-Cc: chris@chris-wilson.co.uk
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Acked-by: Matthew Garrett <mjg59@srcf.ucam.org>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- drivers/gpu/Makefile       |    2 +-
- drivers/gpu/stub/Kconfig   |   18 ------------
- drivers/gpu/stub/Makefile  |    1 -
- drivers/gpu/stub/poulsbo.c |   64 --------------------------------------------
- drivers/video/Kconfig      |    2 -
- 5 files changed, 1 insertions(+), 86 deletions(-)
- delete mode 100644 drivers/gpu/stub/Kconfig
- delete mode 100644 drivers/gpu/stub/Makefile
- delete mode 100644 drivers/gpu/stub/poulsbo.c
+After merging the akpm tree, today's linux-next build (powerpc
+ppc44x_defconfig) produced this warning:
 
-diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
-index cc92778..30879df 100644
---- a/drivers/gpu/Makefile
-+++ b/drivers/gpu/Makefile
-@@ -1 +1 @@
--obj-y			+= drm/ vga/ stub/
-+obj-y			+= drm/ vga/
-diff --git a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig
-deleted file mode 100644
-index 4199179..0000000
---- a/drivers/gpu/stub/Kconfig
-+++ /dev/null
-@@ -1,18 +0,0 @@
--config STUB_POULSBO
--	tristate "Intel GMA500 Stub Driver"
--	depends on PCI
--	depends on NET # for THERMAL
--	# Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
--	# but for select to work, need to select ACPI_VIDEO's dependencies, ick
--	select BACKLIGHT_CLASS_DEVICE if ACPI
--	select VIDEO_OUTPUT_CONTROL if ACPI
--	select INPUT if ACPI
--	select ACPI_VIDEO if ACPI
--	select THERMAL if ACPI
--	help
--	  Choose this option if you have a system that has Intel GMA500
--	  (Poulsbo) integrated graphics. If M is selected, the module will
--	  be called Poulsbo. This driver is a stub driver for Poulsbo that
--	  will call poulsbo.ko to enable the acpi backlight control sysfs
--	  entry file because there have no poulsbo native driver can support
--	  intel opregion.
-diff --git a/drivers/gpu/stub/Makefile b/drivers/gpu/stub/Makefile
-deleted file mode 100644
-index cd940cc..0000000
---- a/drivers/gpu/stub/Makefile
-+++ /dev/null
-@@ -1 +0,0 @@
--obj-$(CONFIG_STUB_POULSBO) += poulsbo.o
-diff --git a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c
-deleted file mode 100644
-index 7edfd27..0000000
---- a/drivers/gpu/stub/poulsbo.c
-+++ /dev/null
-@@ -1,64 +0,0 @@
--/*
-- * Intel Poulsbo Stub driver
-- *
-- * Copyright (C) 2010 Novell <jlee@novell.com>
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of the GNU General Public License version 2 as published by
-- * the Free Software Foundation.
-- *
-- */
--
--#include <linux/module.h>
--#include <linux/pci.h>
--#include <linux/acpi.h>
--#include <acpi/video.h>
--
--#define DRIVER_NAME "poulsbo"
--
--enum {
--	CHIP_PSB_8108 = 0,
--	CHIP_PSB_8109 = 1,
--};
--
--static DEFINE_PCI_DEVICE_TABLE(pciidlist) = {
--	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8108}, \
--	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8109}, \
--	{0, 0, 0}
--};
--
--static int poulsbo_probe(struct pci_dev *pdev, const struct pci_device_id *id)
--{
--	return acpi_video_register();
--}
--
--static void poulsbo_remove(struct pci_dev *pdev)
--{
--	acpi_video_unregister();
--}
--
--static struct pci_driver poulsbo_driver = {
--	.name = DRIVER_NAME,
--	.id_table = pciidlist,
--	.probe = poulsbo_probe,
--	.remove = poulsbo_remove,
--};
--
--static int __init poulsbo_init(void)
--{
--	return pci_register_driver(&poulsbo_driver);
--}
--
--static void __exit poulsbo_exit(void)
--{
--	pci_unregister_driver(&poulsbo_driver);
--}
--
--module_init(poulsbo_init);
--module_exit(poulsbo_exit);
--
--MODULE_AUTHOR("Lee, Chun-Yi <jlee@novell.com>");
--MODULE_DESCRIPTION("Poulsbo Stub Driver");
--MODULE_LICENSE("GPL");
--
--MODULE_DEVICE_TABLE(pci, pciidlist);
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index d08d799..cc99f41 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -21,8 +21,6 @@ source "drivers/gpu/vga/Kconfig"
- 
- source "drivers/gpu/drm/Kconfig"
- 
--source "drivers/gpu/stub/Kconfig"
--
- config VGASTATE
-        tristate
-        default n
--- 
-1.6.0.2
+block/partitions/efi.c: In function 'is_gpt_valid':
+block/partitions/efi.c:324:3: warning: format '%lu' expects argument of typ=
+e 'long unsigned int', but argument 3 has type 'unsigned int' [-Wformat]
 
+Introduced by commit ef25bb0fa6e2 ("block/partitions/efi.c: ensure that
+the GPT header is at least the size of the structure").
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__20_Feb_2013_17_34_14_+1100_9gfoARGTzytJ3OHH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRJG5mAAoJEECxmPOUX5FE0b8P/iDLm8eO5ut4KeNAUKkyg9wu
+9P7jRZAr2kJGCYmPhaV+0hkIUjkw8PcFK4YOZhaS5fjffOLAq52Ot+rpNhnsF2yS
+6Ct0puW/0zjgVuMoIcUNaKjjCYh2VvSTefC3fYOqlghdTyReQVzc09E/S4qeXI66
+4cGgstPuhR7Cgrwfpvi+5VJBwK0euO/PDa05o6nctdmWj/vS+j62vm4GrGlkuh7R
+7S3ab0GCO4YoQ9WNgnMF617mbwm2cQBZA8fx/p67/zSKKG3ZY4tNyyPUSSBJGjVN
+m8rEkYQabCDD2NaOsVU53i6r/ueB6aL8GA3Y+Yqu6R8iH2mX0tyuzkCde5zC8x73
+IUcf4k5RFM4MIqe6KCAE4IXfAXaQT1Snloagh3AhO5oxlslPtXo5idklepJD/i0g
+a7G5Ej3AqdN8DZM63IBM6f312NkcbKpUgeD/mOCD3uBVHzsZNQmFySzcAQ5ss44v
+UM028npaJRPihW0M58yJ2GI2GPq7/XIbUJy32i3cpd2J6l5wHPadfW3KcFIYm5Cq
+1J7p4ZmHC6bUbyNx4j+i5kyR00/BdUf2u9L30bqHdHZH7Bo1fUlWSxZrxhwWSIeX
+y6nlSsE8dwCjI7wZcUM0BIsUDBKa7DLNGFTwIi6ICLiDYT/yo0Jiu5CUUywNPWxa
+NFasxIFNO5xgndov8a2C
+=84E1
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__20_Feb_2013_17_34_14_+1100_9gfoARGTzytJ3OHH--
