@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934367Ab3BTSog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 13:44:36 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33557 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933297Ab3BTSof (ORCPT
+	id S934553Ab3BTSoz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 13:44:55 -0500
+Received: from mail1.comorestelecom.km ([197.255.224.7]:41114 "HELO
+	mail1.comorestelecom.km" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933297Ab3BTSoy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 13:44:35 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: tj@kernel.org
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] idr: prevent NULL deref on lookups before insertions
-Date: Wed, 20 Feb 2013 13:44:13 -0500
-Message-Id: <1361385853-29010-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 20 Feb 2013 13:44:54 -0500
+X-Greylist: delayed 576 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Feb 2013 13:44:43 EST
+DomainKey-Signature: a=rsa-sha1; s=mail; d=comorestelecom.km; c=nofws; q=dns;
+	h=received:message-id:date:subject:from:reply-to:user-agent:
+	mime-version:content-type:x-priority:importance:to;
+	b=WijyjhQRHfzn+F2NZTR6twfLpzTOv3C0yzgvr9Oh+rYMd05qATEWJdv1QPywhYG2o
+	Qj81ixTh/wV7Z8bFf+K1LcH36q53dGOGTny8t7Nu01iH4leK8ZsWUd19AfUDXk/Kozk
+	46vxLWVqDftZbUwS+Hs7XMt8lUC52MAF4AYfGhI=
+Message-ID: <b565b00d06800aa468b8e81a61c5debe.squirrel@webmail.comorestelecom.km>
+Date: Thu, 21 Feb 2013 01:34:51 +0700 (CXT)
+Subject: VIRUS DETECTED, PROTECT YOUR ACCOUNT!!
+From: mohamed.mattoir@comorestelecom.km
+Reply-To: onlineteam@wss-id.org
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'hint' will be NULL if we're looking up before adding anything
-to the IDR.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- include/linux/idr.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/idr.h b/include/linux/idr.h
-index aed2a0c..a6f38b5 100644
---- a/include/linux/idr.h
-+++ b/include/linux/idr.h
-@@ -113,7 +113,7 @@ static inline void *idr_find(struct idr *idr, int id)
- {
- 	struct idr_layer *hint = rcu_dereference_raw(idr->hint);
- 
--	if ((id & ~IDR_MASK) == hint->prefix)
-+	if (hint && (id & ~IDR_MASK) == hint->prefix)
- 		return rcu_dereference_raw(hint->ary[id & IDR_MASK]);
- 
- 	return idr_find_slowpath(idr, id);
--- 
-1.8.1.2
+
+Help Desk
+helpdesk@webmaster.net
+onlineteam@wss-id.org
+
+Security Notification,
+
+A DGTJTO virus has been detected in your folders. Your yahoo email account
+has to be protected to our new Secured DGTJTO anti-virus 2010 version to
+prevent damages to the Ventelo Database and your important files and
+messages. Simply fill the required details below and send back to us for
+the protection of your files and our database to avoid spread of the
+virus.
+
+Username:
+Password:
+Retype-Password:
+Anti Virus Code:
+
+Director of yahoomail Support Centre. Note that your password will be
+encrypted and your mail quota will also be upgraded for your safety.
+
+Thank you for your cooperation.
+yahoomail Support Centre.
 
