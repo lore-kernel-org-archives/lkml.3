@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934343Ab3BTHkm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 02:40:42 -0500
-Received: from mout.gmx.net ([212.227.15.19]:57488 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933891Ab3BTHkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 02:40:41 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/to19vgpvt00GbUidH+UnpErTeNyRi8KSwAzG9F3
-	gsjPtRBfiL5mCD
-Message-ID: <1361346030.5919.63.camel@marge.simpson.net>
-Subject: Re: [patch v5 10/15] sched: packing transitory tasks in wake/exec
- power balancing
-From: Mike Galbraith <efault@gmx.de>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, torvalds@linux-foundation.org,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        morten.rasmussen@arm.com
-Date: Wed, 20 Feb 2013 08:40:30 +0100
-In-Reply-To: <5124654E.8040001@intel.com>
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
-	 <1361164062-20111-11-git-send-email-alex.shi@intel.com>
-	 <20130218084439.GB10009@lge.com> <5121ECD9.3020300@intel.com>
-	 <5124654E.8040001@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S934438Ab3BTHmi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 02:42:38 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:41662 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934386Ab3BTHmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 02:42:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type; q=dns; s=
+	sasl; b=Hxe2mJ29/LeXBe8YSBo+JWnfnTf+Erf4J0bNWBfzK4m7VPWAA8bGpZT7
+	fYZmpmgsXWA4BFnAg+22Vv7S5fDYeo1zO0FzzjZ8ng6fGZDSITytZSSrhgby+WF7
+	jKW8+8uy5++50+Rr0dS4tCSLIqgqLWhKNlp08cjw0+Q1pi51o38=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.8.1.4
+Date: Tue, 19 Feb 2013 23:42:32 -0800
+Message-ID: <7va9qzzb13.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 17DC7C18-7B31-11E2-AA1D-21622E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-20 at 13:55 +0800, Alex Shi wrote:
+The latest maintenance release Git v1.8.1.4 is now available at the
+usual places.
 
-> Joonsoo Kim suggests not packing exec task, since the old task utils is
-> possibly unuseable.
+This is primarily to tighten the host verification when imap-send is
+talking to your mail server via TLS/SSL.  The topic that was merged to
+the tip of 'maint' track consists of 3 patches and is based on the
+1.7.6 maintenance track.  This is to make it easier for the distro
+folks to merge the topic to their older maintenance branches to issue
+hotfix binary releases if they wanted to.
 
-(I'm stumbling around in rtmutex PI land, all dazed and confused, so
-forgive me if my peripheral following of this thread is off target;)
+This release itself also contains many small updates to the
+user-manual.
 
-Hm, possibly.  Future behavior is always undefined, trying to predict
-always a gamble... so it looks to me like not packing on exec places a
-bet against the user, who chose to wager that powersaving will happen
-and it won't cost him too much, if you don't always try to pack despite
-any risks.  The user placed a bet on powersaving, not burst performance.
+The release tarballs are found at:
 
-Same for the fork, if you spread to accommodate a potential burst, you
-bin the power wager, so maybe it's not in his best interest.. fork/exec
-is common, if it's happening frequently, you'll bin the potential power
-win frequently, reducing effectiveness, and silently trading power for
-performance when the user asked to trade performance for a lower
-electric bill.
+    http://code.google.com/p/git-core/downloads/list
 
-Dunno, just a thought, but I'd say for powersaving policy, you have to
-go just for broke and hope it works out.  You can't know it won't, but
-you'll toss potential winnings every time you don't roll the dice.
+and their SHA-1 checksums are:
 
--Mike
+553191fe02cfac77386d5bb01df0a79eb7f163c8  git-1.8.1.4.tar.gz
+bb71df6bc1fdb55b45c59af83102e901d484ef53  git-htmldocs-1.8.1.4.tar.gz
+98c41b38d02f09e1fcde335834694616d0a615f7  git-manpages-1.8.1.4.tar.gz
+
+Also the following public repositories all have a copy of the v1.8.1.4
+tag and the maint branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+Git 1.8.1.4 Release Notes
+=========================
+
+Fixes since v1.8.1.3
+--------------------
+
+ * "git imap-send" talking over imaps:// did make sure it received a
+   valid certificate from the other end, but did not check if the
+   certificate matched the host it thought it was talking to.
+
+Also contains various documentation fixes.
+
+----------------------------------------------------------------
+
+Changes since v1.8.1.3 are as follows:
+
+Junio C Hamano (2):
+      imap-send: move #ifdef around
+      Git 1.8.1.4
+
+Matthieu Moy (1):
+      Replace filepattern with pathspec for consistency
+
+Oswald Buddenhagen (2):
+      imap-send: the subject of SSL certificate must match the host
+      imap-send: support subjectAltName as well
+
+W. Trevor King (9):
+      user-manual: Fix 'both: so' -> 'both; so' typo
+      user-manual: Fix 'http' -> 'HTTP' typos
+      user-manual: Fix 'you - Git' -> 'you--Git' typo
+      user-manual: Rewrite git-gc section for automatic packing
+      user-manual: use 'remote add' to setup push URLs
+      user-manual: give 'git push -f' as an alternative to +master
+      user-manual: mention 'git remote add' for remote branch config
+      user-manual: use 'git config --global user.*' for setup
+      user-manual: use -o latest.tar.gz to create a gzipped tarball
 
