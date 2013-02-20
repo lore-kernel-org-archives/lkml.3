@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935171Ab3BTMj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 07:39:28 -0500
-Received: from mga09.intel.com ([134.134.136.24]:20096 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933751Ab3BTMj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 07:39:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,701,1355126400"; 
-   d="scan'208";a="288197078"
-Message-ID: <5124C3F8.70901@intel.com>
-Date: Wed, 20 Feb 2013 20:39:20 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S935285Ab3BTMkl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 07:40:41 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:60747 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932945Ab3BTMkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 07:40:40 -0500
+X-IronPort-AV: E=Sophos;i="4.84,702,1355068800"; 
+   d="scan'208";a="6736913"
+Message-ID: <5124C3E6.1060108@cn.fujitsu.com>
+Date: Wed, 20 Feb 2013 20:39:02 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-CC: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        bp@alien8.de, pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        morten.rasmussen@arm.com
-Subject: Re: [patch v5 06/15] sched: log the cpu utilization at rq
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-7-git-send-email-alex.shi@intel.com> <5124BF47.7070500@linux.vnet.ibm.com>
-In-Reply-To: <5124BF47.7070500@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org, mgorman@suse.de, bcrl@kvack.org,
+        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org, riel@redhat.com,
+        rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, jiang.liu@huawei.com,
+        zab@redhat.com, jmoyer@redhat.com, linux-mm@kvack.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of
+ get_user_pages() called get_user_pages_non_movable()
+References: <1360056113-14294-1-git-send-email-linfeng@cn.fujitsu.com> <1360056113-14294-2-git-send-email-linfeng@cn.fujitsu.com> <20130220113757.GA10124@hacker.(null)>
+In-Reply-To: <20130220113757.GA10124@hacker.(null)>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/20 20:39:56,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/20 20:39:57,
+	Serialize complete at 2013/02/20 20:39:57
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 08:19 PM, Preeti U Murthy wrote:
-> Hi everyone,
-> 
-> On 02/18/2013 10:37 AM, Alex Shi wrote:
->> The cpu's utilization is to measure how busy is the cpu.
->>         util = cpu_rq(cpu)->avg.runnable_avg_sum
->>                 / cpu_rq(cpu)->avg.runnable_avg_period;
-> 
-> Why not cfs_rq->runnable_load_avg? I am concerned with what is the right
-> metric to use here.
+Hi  Wanpeng,
 
-Here we care the utilization of the cpu not the load avg. load avg maybe
-quit bigger on a heavy task(with a big load weight), but maybe it just
-used 20% of cpu time, while a light task with 100% cpu usage maybe still
-has smaller load avg.
-
-For power consideration, above light task with 100% usage need to take a
-cpu, while another heavy task can packing into one cpu with other tasks.
-
-
-> Refer to this discussion:https://lkml.org/lkml/2012/10/29/448
-> 
-> Regards
-> Preeti U Murthy
+On 02/20/2013 07:37 PM, Wanpeng Li wrote:
+>> + * This function first calls get_user_pages() to get the candidate pages, and
+>> >+ * then check to ensure all pages are from non movable zone. Otherwise migrate
+> How about "Otherwise migrate candidate pages which have already been 
+> isolated to non movable zone."?
 > 
 
+Which is just what the code does, I'm feeling that it's too detailed to be proper :(
+Do we have to comment it like that detailedly?
 
--- 
-Thanks
-    Alex
+thanks,
+linfeng
