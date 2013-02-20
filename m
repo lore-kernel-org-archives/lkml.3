@@ -1,138 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758788Ab3BTUjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 15:39:20 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:35826 "EHLO e9.ny.us.ibm.com"
+	id S1759106Ab3BTUka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 15:40:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27589 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934521Ab3BTUjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 15:39:17 -0500
-Message-ID: <1361389581.29360.14.camel@falcor1>
-Subject: Re: [PATCH -next] security/integrity/ima: make part_pack_uuid()
- always visible
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>,
-        axboe@kernel.dk
-Date: Wed, 20 Feb 2013 14:46:21 -0500
-In-Reply-To: <51252454.1050609@infradead.org>
-References: <20130219170309.efb90173fcd879bf32a7e89b@canb.auug.org.au>
-	 <512418A5.9010006@infradead.org> <1361379050.29360.12.camel@falcor1>
-	 <51252454.1050609@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022020-7182-0000-0000-00000564DC06
+	id S1751318Ab3BTUk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 15:40:28 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH] perf x86: Change SandyBridge and IvyBrige instructions event to be precise
+Date: Wed, 20 Feb 2013 21:39:54 +0100
+Message-Id: <1361392794-16552-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-20 at 11:30 -0800, Randy Dunlap wrote:
-> On 02/20/13 08:50, Mimi Zohar wrote:
-> > On Tue, 2013-02-19 at 16:28 -0800, Randy Dunlap wrote:
-> >> On 02/18/13 22:03, Stephen Rothwell wrote:
-> >>> Hi all,
-> >>>
-> >>> Changes since 20130218:
-> >>>
-> >>
-> >> on x86_64:
-> >>
-> >>   CC      security/integrity/ima/ima_policy.o
-> >> security/integrity/ima/ima_policy.c: In function 'ima_parse_rule':
-> >> security/integrity/ima/ima_policy.c:538:4: error: implicit declaration of function 'part_pack_uuid' [-Werror=implicit-function-declaration]
-> >> cc1: some warnings being treated as errors
-> >> make[4]: *** [security/integrity/ima/ima_policy.o] Error 1
-> >>
-> >>
-> >> Full randconfig file is attached.
-> > 
-> > part_pack_uuid() is only defined for CONFIG_BLOCK in
-> > include/linux/genhd.h.  One solution would be to add a stub function
-> > definition in include/linux/genhd.h, the other option would be to ifndef
-> > CONFIG_BLOCK in C code.
-> 
-> ITYM #ifdef CONFIG_BLOCK to call part_pack_uuid().
-> Yes, either of those would work.
-> How about a third option -- just make part_pack_uuid() always visible
-> and not just a stub?  Patch is below.
+Changing the default 'instructions' HW event for SandyBridge and
+IvyBrige to use the available precise 'instructions' event.
 
-That works too.
+The precise event is defined in Intel SDM as:
 
-Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+INST_RETIRED.ALL - Precise instruction retired event with HW to
+reduce effect of PEBS shadow in IP distribution
 
-thanks,
+for both SandyBridge and IvyBrige micro-archs. It allows to use
+precise modifier on 'instructions' event on SandyBridge and
+IvyBrige micro-archs which is not possible now.
 
-Mimi
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-> ---
-> From: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Fix build error when CONFIG_BLOCK is not enabled
-> by making the static inline function part_pack_uuid()
-> visible independent of CONFIG_BLOCK's setting.
-> 
-> security/integrity/ima/ima_policy.c:538:4: error: implicit declaration of function 'part_pack_uuid' [-Werror=implicit-function-declaration]
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Mimi Zohar <zohar@us.ibm.com>
-> ---
->  include/linux/genhd.h |   36 ++++++++++++++++++------------------
->  1 file changed, 18 insertions(+), 18 deletions(-)
-> 
-> --- linux-next-20130220.orig/include/linux/genhd.h
-> +++ linux-next-20130220/include/linux/genhd.h
-> @@ -213,24 +213,6 @@ static inline struct gendisk *part_to_di
->  	return NULL;
->  }
-> 
-> -static inline void part_pack_uuid(const u8 *uuid_str, u8 *to)
-> -{
-> -	int i;
-> -	for (i = 0; i < 16; ++i) {
-> -		*to++ = (hex_to_bin(*uuid_str) << 4) |
-> -			(hex_to_bin(*(uuid_str + 1)));
-> -		uuid_str += 2;
-> -		switch (i) {
-> -		case 3:
-> -		case 5:
-> -		case 7:
-> -		case 9:
-> -			uuid_str++;
-> -			continue;
-> -		}
-> -	}
-> -}
-> -
->  static inline int disk_max_parts(struct gendisk *disk)
->  {
->  	if (disk->flags & GENHD_FL_EXT_DEVT)
-> @@ -720,4 +702,22 @@ static inline dev_t blk_lookup_devt(cons
-> 
->  #endif /* CONFIG_BLOCK */
-> 
-> +static inline void part_pack_uuid(const u8 *uuid_str, u8 *to)
-> +{
-> +	int i;
-> +	for (i = 0; i < 16; ++i) {
-> +		*to++ = (hex_to_bin(*uuid_str) << 4) |
-> +			(hex_to_bin(*(uuid_str + 1)));
-> +		uuid_str += 2;
-> +		switch (i) {
-> +		case 3:
-> +		case 5:
-> +		case 7:
-> +		case 9:
-> +			uuid_str++;
-> +			continue;
-> +		}
-> +	}
-> +}
-> +
->  #endif /* _LINUX_GENHD_H */
-> 
-
-
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 529c893..3bc3592 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2104,6 +2104,9 @@ __init int intel_pmu_init(void)
+ 		/* UOPS_DISPATCHED.THREAD,c=1,i=1 to count stall cycles*/
+ 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =
+ 			X86_CONFIG(.event=0xb1, .umask=0x01, .inv=1, .cmask=1);
++		/* INST_RETIRED.ALL to count precise instructions */
++		intel_perfmon_event_map[PERF_COUNT_HW_INSTRUCTIONS] =
++			X86_CONFIG(.event=0xc0, .umask=0x01);
+ 
+ 		pr_cont("SandyBridge events, ");
+ 		break;
+@@ -2127,6 +2130,9 @@ __init int intel_pmu_init(void)
+ 		/* UOPS_ISSUED.ANY,c=1,i=1 to count stall cycles */
+ 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =
+ 			X86_CONFIG(.event=0x0e, .umask=0x01, .inv=1, .cmask=1);
++		/* INST_RETIRED.ALL to count precise instructions */
++		intel_perfmon_event_map[PERF_COUNT_HW_INSTRUCTIONS] =
++			X86_CONFIG(.event=0xc0, .umask=0x01);
+ 
+ 		pr_cont("IvyBridge events, ");
+ 		break;
+-- 
+1.7.11.7
 
