@@ -1,60 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab3BUCer (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 21:34:47 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:64957 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab3BUCeq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 21:34:46 -0500
-Message-ID: <51258796.7020704@huawei.com>
-Date: Thu, 21 Feb 2013 10:33:58 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1753205Ab3BUCf2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 21:35:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50680 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752394Ab3BUCf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 21:35:27 -0500
+Date: Wed, 20 Feb 2013 21:35:23 -0500
+From: David Teigland <teigland@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] dlm updates for 3.9
+Message-ID: <20130221023523.GA13371@redhat.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] tracing/syscalls: Annotate field-defining functions with
- __init
-References: <51258723.2040301@huawei.com>
-In-Reply-To: <51258723.2040301@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These two functions are called during kernel boot only.
+Hi Linus,
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Please pull dlm updates from tag:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/teigland/linux-dlm.git dlm-3.9
+
+This includes a single patch to avoid excessive and
+unnecessary scanning of rsbs to free.  Patch copied below.
+
+Thanks,
+Dave
+
+
+dlm: avoid scanning unchanged toss lists
+
+Keep track of whether a toss list contains any
+shrinkable rsbs.  If not, dlm_scand can avoid
+scanning the list for rsbs to shrink.  Unnecessary
+scanning can otherwise waste a lot of time because
+the toss lists can contain a large number of rsbs
+that are non-shrinkable (directory records).
+
+Signed-off-by: David Teigland <teigland@redhat.com>
 ---
- kernel/trace/trace_syscalls.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/dlm/dlm_internal.h |  3 +++
+ fs/dlm/lock.c         | 15 +++++++++++++++
+ 2 files changed, 18 insertions(+)
 
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 5329e13..a70fa19 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -232,7 +232,7 @@ static void free_syscall_print_fmt(struct ftrace_event_call *call)
- 		kfree(call->print_fmt);
+diff --git a/fs/dlm/dlm_internal.h b/fs/dlm/dlm_internal.h
+index 77c0f70..e7665c3 100644
+--- a/fs/dlm/dlm_internal.h
++++ b/fs/dlm/dlm_internal.h
+@@ -96,10 +96,13 @@ do { \
  }
  
--static int syscall_enter_define_fields(struct ftrace_event_call *call)
-+static int __init syscall_enter_define_fields(struct ftrace_event_call *call)
- {
- 	struct syscall_trace_enter trace;
- 	struct syscall_metadata *meta = call->data;
-@@ -255,7 +255,7 @@ static int syscall_enter_define_fields(struct ftrace_event_call *call)
- 	return ret;
- }
  
--static int syscall_exit_define_fields(struct ftrace_event_call *call)
-+static int __init syscall_exit_define_fields(struct ftrace_event_call *call)
- {
- 	struct syscall_trace_exit trace;
- 	int ret;
++#define DLM_RTF_SHRINK		0x00000001
++
+ struct dlm_rsbtable {
+ 	struct rb_root		keep;
+ 	struct rb_root		toss;
+ 	spinlock_t		lock;
++	uint32_t		flags;
+ };
+ 
+ 
+diff --git a/fs/dlm/lock.c b/fs/dlm/lock.c
+index a579f30..f750165 100644
+--- a/fs/dlm/lock.c
++++ b/fs/dlm/lock.c
+@@ -1132,6 +1132,7 @@ static void toss_rsb(struct kref *kref)
+ 	rb_erase(&r->res_hashnode, &ls->ls_rsbtbl[r->res_bucket].keep);
+ 	rsb_insert(r, &ls->ls_rsbtbl[r->res_bucket].toss);
+ 	r->res_toss_time = jiffies;
++	ls->ls_rsbtbl[r->res_bucket].flags |= DLM_RTF_SHRINK;
+ 	if (r->res_lvbptr) {
+ 		dlm_free_lvb(r->res_lvbptr);
+ 		r->res_lvbptr = NULL;
+@@ -1659,11 +1660,18 @@ static void shrink_bucket(struct dlm_ls *ls, int b)
+ 	char *name;
+ 	int our_nodeid = dlm_our_nodeid();
+ 	int remote_count = 0;
++	int need_shrink = 0;
+ 	int i, len, rv;
+ 
+ 	memset(&ls->ls_remove_lens, 0, sizeof(int) * DLM_REMOVE_NAMES_MAX);
+ 
+ 	spin_lock(&ls->ls_rsbtbl[b].lock);
++
++	if (!(ls->ls_rsbtbl[b].flags & DLM_RTF_SHRINK)) {
++		spin_unlock(&ls->ls_rsbtbl[b].lock);
++		return;
++	}
++
+ 	for (n = rb_first(&ls->ls_rsbtbl[b].toss); n; n = next) {
+ 		next = rb_next(n);
+ 		r = rb_entry(n, struct dlm_rsb, res_hashnode);
+@@ -1679,6 +1687,8 @@ static void shrink_bucket(struct dlm_ls *ls, int b)
+ 			continue;
+ 		}
+ 
++		need_shrink = 1;
++
+ 		if (!time_after_eq(jiffies, r->res_toss_time +
+ 				   dlm_config.ci_toss_secs * HZ)) {
+ 			continue;
+@@ -1710,6 +1720,11 @@ static void shrink_bucket(struct dlm_ls *ls, int b)
+ 		rb_erase(&r->res_hashnode, &ls->ls_rsbtbl[b].toss);
+ 		dlm_free_rsb(r);
+ 	}
++
++	if (need_shrink)
++		ls->ls_rsbtbl[b].flags |= DLM_RTF_SHRINK;
++	else
++		ls->ls_rsbtbl[b].flags &= ~DLM_RTF_SHRINK;
+ 	spin_unlock(&ls->ls_rsbtbl[b].lock);
+ 
+ 	/*
 -- 
-1.8.0.2
+1.8.1.rc1.5.g7e0651a
+
