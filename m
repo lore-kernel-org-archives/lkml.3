@@ -1,247 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab3BUVND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 16:13:03 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:55564 "EHLO
+	id S1755928Ab3BUVNH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 16:13:07 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:62370 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755309Ab3BUVM6 (ORCPT
+	with ESMTP id S1755309Ab3BUVNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 16:12:58 -0500
+	Thu, 21 Feb 2013 16:13:04 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [GIT PULL 08/09] arm-soc: device tree conversions
-Date: Thu, 21 Feb 2013 21:12:28 +0000
-Message-Id: <1361481149-27559-9-git-send-email-arnd@arndb.de>
+Subject: [GIT PULL 09/09] arm-soc: virtualization changes
+Date: Thu, 21 Feb 2013 21:12:29 +0000
+Message-Id: <1361481149-27559-10-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1361481149-27559-1-git-send-email-arnd@arndb.de>
 References: <1361481149-27559-1-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V02:K0:i0XDag5ZGM5pB4bgQGBCmmpL6W+ubTnrVqzr3g+L24r
- EOoXRljKYHHt79YpqGUit/uplObaCiIJN46NWqeBcikmuFS5WR
- y5RozsphA2ZHr24ASV/XuAmeFw1rMR6u+ovWfhk8VJuCSb1/Fi
- /zM9I9RUbQkupZlj31iynSzEYNfDDEWPMzJiq98wcRn+xOAFxZ
- Nf4LGdSEff3iksSoaucneWRSkiZU9SWOSW0Uw2lZFUPkZXS5N8
- dTSWJ+anbW6v6RAxUMaPceHqUoEZh6+4FC6Fo9tTWQNIY5EYAs
- K0zHVFsHFkJIoa2HvYGO4apcFvdLst9jDXNwggdikIuKHTpt9L
- GNBiPv4pHpWNVjeKiXYv51IXJeL5dg0NrMwjboJJB
+X-Provags-ID: V02:K0:0ni9YyCjvMsShXgcZzj5etVEW2t1lS3mQNCzng7BMV/
+ hMsPOhox8v0IevsUmoMoA6NVMYl/L1LVx8MiLT/qumKZzRUDV7
+ FoF4o0RXfQwHrlLFPrp/Ko2Gcds1v22EdsvliHxwgPUyP6MpPV
+ aH3+XzZnRbihY6dgHTsqzw/CKzT+5pf3aEM1B7HrOqZAAq4aJ9
+ sqtGKrG1DoIgYqjOAZ/W7h5fMjWPfGggDawRlwHuIlGcr4//Zg
+ ZiMBTqoN0UUnleotKiBFOPtFiScPRuAAeCOq0KC3OQ5f6ygnzj
+ JLxcjMHoJ3rQ1vyIIaUcpzyc71hSQWdNLLzD1QVaADBSEbRrC5
+ a8882E+u5Aoxf1BM4Erbv0rdRw8k3/pGBScR6/iP5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit f7c66dc0bf0f4ecd349c79315c87841c67e27aef:
+The following changes since commit 836dc9e3fbbab0c30aa6e664417225f5c1fb1c39:
 
-  ARM: tegra: remove empty tegra_smp_init_cpus() (2013-02-05 13:13:08 -0800)
+  Linux 3.8-rc7 (2013-02-09 08:20:39 +1100)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/dt
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/virt
 
-for you to fetch changes up to 89dfe564b5926297ee29b973fe75e25c83c5e615:
+for you to fetch changes up to fe7dc7202d7d24fe211e0eecf531d8b79b655b3c:
 
-  Merge tag 'tegra-for-3.9-soc-ccf-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra into next/dt (2013-02-19 22:38:51 +0100)
-
-----------------------------------------------------------------
-
-arm-soc: device tree conversions
-
-These are device tree conversions for a number of platforms,
-with the intention of turning code from board files into
-device tree descriptions. Notable changes are:
-
-* davinci bindings for pinctrl, MTD, RTC, watchdog and i2c
-* nomadik bindings for all devices, removing the board files
-* bcm2835 bindings for mmc and i2c
-* tegra bindings for hdmi, keyboard, audio, as well as some updates
-* at91 bindings for hardware ecc and for devices on RM9200
-* mxs bindings for cfa100xx
-* sunxi support for Miniand Hackberry board
+  ARM: arch_timer: include linux/errno.h (2013-02-15 19:32:03 +0100)
 
 ----------------------------------------------------------------
-Arnd Bergmann (4):
-      Revert "sunxi: a13-olinuxino: Add user LED to the device tree"
-      Revert "sunxi: a10-cubieboard: Add user LEDs to the device tree"
-      Merge tag 'tegra-for-3.9-soc-ccf-fixes' of git://git.kernel.org/.../swarren/linux-tegra into next/dt
+arm-soc: virtualization changes
 
-Bryan Wu (3):
-      ARM: DT: tegra: Unify the description of Tegra20 boards
-      ARM: DT: tegra: Add board level compatible properties
-      ARM: DT: tegra: Add Tegra30 Beaver board support
+This contains parts of the ARM KVM support that have dependencies on
+other patches merged through the arm-soc tree. In combination with
+patches coming through Russell's tree, this will finally add full
+support for the kernel based virtual machine on ARM,  which has
+been awaited for some time now.
 
-Emilio López (1):
-      sunxi: a10-cubieboard: Add user LEDs to the device tree
+Further, we now have a separate platform for virtual machines
+and qemu booting that is used by both Xen and KVM, separating
+these from the Versatile Express reference implementation.
+Obviously, this new platform is multiplatform capable so it
+can be combined with existing machines in the same kernel.
 
-Hiroshi Doyu (2):
-      ARM: dt: tegra20: Rename "gart" to "iommu"
-      ARM: dt: tegra30: Rename "smmu" to "iommu"
+----------------------------------------------------------------
+Arnd Bergmann (2):
+      ARM: arch_timer: include linux/errno.h
 
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      ARM: at91: Animeo IP: enable watchdog support
+Christoffer Dall (16):
+      ARM: Add page table and page defines needed by KVM
+      ARM: Section based HYP idmap
+      KVM: ARM: Initial skeleton to compile KVM support
+      KVM: ARM: Hypervisor initialization
+      KVM: ARM: Memory virtualization setup
+      KVM: ARM: Inject IRQs and FIQs from userspace
+      KVM: ARM: World-switch implementation
+      KVM: ARM: Emulation framework and CP15 emulation
+      KVM: ARM: User space API for getting/setting co-proc registers
+      KVM: ARM: Demux CCSIDR in the userspace API
+      KVM: ARM: Handle guest faults in KVM
+      KVM: ARM: Handle I/O aborts
+      KVM: ARM: Add maintainer entry for KVM/ARM
+      ARM: gic: add missing distributor defintions
+      KVM: ARM: Introduce KVM_ARM_SET_DEVICE_ADDR ioctl
+      ARM: KVM: VGIC accept vcpu and dist base addresses from user space
 
-Joachim Eastwood (3):
-      ARM: at91: add MMC bindings to RM9200 DT
-      ARM: at91: add SSC bindings to RM9200 DT
-      ARM: at91: add EMAC bindings to RM9200 DT
+Marc Zyngier (19):
+      KVM: ARM: Power State Coordination Interface implementation
+      Merge remote-tracking branch 'arm-soc/irqchip/gic-vic-move' into kvm-arm/vgic
+      ARM: arch_timers: switch to physical timers if HYP mode is available
+      ARM: Dummy Virtual Machine platform support
+      ARM: gic: define GICH offsets for VGIC support
+      ARM: gic: add __ASSEMBLY__ guard to C definitions
+      ARM: KVM: Keep track of currently running vcpus
+      ARM: KVM: Initial VGIC infrastructure code
+      ARM: KVM: VGIC distributor handling
+      ARM: KVM: VGIC virtual CPU interface management
+      ARM: KVM: vgic: retire queued, disabled interrupts
+      ARM: KVM: VGIC interrupt injection
+      ARM: KVM: VGIC control interface world switch
+      ARM: KVM: VGIC initialisation code
+      ARM: KVM: Add VGIC configuration option
+      Merge branch 'for-arm-soc/arch-timers' of git://git.kernel.org/.../will/linux into kvm-arm/timer
+      ARM: KVM: arch_timers: Add guest timer core support
+      ARM: KVM: arch_timers: Add timer world switch
+      ARM: KVM: arch_timers: Wire the init code and config option
 
-Joseph Lo (1):
-      clk: tegra: fix wrong clock index between se to sata_cold
+Mark Rutland (17):
+      arm: arch_timer: balance device_node refcounting
+      arm: arch_timer: remove redundant available check
+      arm: arch_timer: use u64/u32 for register data
+      arm: arch_timer: standardise counter reading
+      arm: arch_timer: split cntfrq accessor
+      arm: arch_timer: factor out register accessors
+      arm: arch_timer: add isbs to register accessors
+      arm: arch_timer: divorce from local_timer api
+      arm: arch_timer: add arch_counter_set_user_access
+      arm: arch_timer: move core to drivers/clocksource
+      arm64: arm_generic: prevent reading stale time
+      arm64: move from arm_generic to arm_arch_timer
+      Documentation: Add ARMv8 to arch_timer devicetree
+      clockevents: Add generic timer broadcast receiver
+      clockevents: Add generic timer broadcast function
+      arm: Use generic timer broadcast receiver
+      arm: Add generic timer broadcast support
 
-Josh Wu (2):
-      ARM: at91: at91sam9x5: add DT parameters to enable PMECC
-      ARM: at91: at91sam9n12: add DT parameters to enable PMECC
+Olof Johansson (10):
+      Merge branch 'for-rmk/perf' of git://git.kernel.org/.../will/linux into next/virt
+      Merge branch 'for-rmk/virt/kvm/core' of git://git.kernel.org/.../will/linux into next/virt
+      Merge branch 'for-rmk/broadcast' of git://git.kernel.org/.../will/linux into next/virt
+      Merge branch 'for-arm-soc/arch-timers' of git://git.kernel.org/.../will/linux into next/virt
+      Merge branch 'irqchip/gic-vic-move' into next/virt
+      Merge branch 'depends/rmk-psci' into next/virt
+      Merge branch 'depends/cleanup' into next/virt
+      Merge branch 'for-arm-soc/virt/mach' of git://git.kernel.org/.../will/linux into next/virt
+      arm: arch_timer: add missing inline in stub function
+      Merge branch 'kvm-arm/timer' of git://git.kernel.org/.../maz/arm-platforms into next/virt
 
-Kumar, Anil (5):
-      ARM: davinci: da850: add pinctrl driver DT entries
-      ARM: davinci: da850: add NAND driver DT entries
-      ARM: davinci: da8xx defconfig: enable pinctrl config option
-      ARM: davinci: da850: add wdt DT node
-      ARM: davinci: da850 DT: add support for machine reboot
+Rusty Russell (1):
+      KVM: ARM: VFP userspace interface
 
-Lad, Prabhakar (1):
-      ARM: davinci: da850: move interrupt-parent property to soc node
+Will Deacon (9):
+      Merge branch 'for-rmk/perf' into for-rmk/virt/kvm/core
+      Merge branch 'for-will/kvm/core' of git://github.com/virtualopensystems/linux-kvm-arm into for-rmk/virt/kvm/core
+      Merge branch 'timers/for-arm' of git://git.kernel.org/.../tip/tip into for-rmk/broadcast
+      Merge branch 'clocks/broadcast-arm' of git://linux-arm.org/linux-mr into for-rmk/broadcast
+      Merge branch 'for-will/arch-timer-unification' of git://linux-arm.org/linux-mr into for-arm-soc/arch-timers
+      Merge branch 'for-rmk/virt/psci' into for-arm-soc/virt/mach
+      Merge branch 'irqchip/gic-vic-move' of git://git.kernel.org/.../arm/arm-soc into for-arm-soc/virt/mach
+      ARM: mach-virt: add SMP support using PSCI
+      ARM: mach-virt: fixup machine descriptor after removal of sys_timer
 
-Laxman Dewangan (8):
-      ARM: tegra30: tegra30 gpio is not compatible with tegra20 gpio
-      ARM: tegra: dts: add aliases and DMA requestor for serial controller
-      ARM: tegra: add DT entry for KBC controller
-      ARM: tegra: seaboard: enable keyboard in DT
-      ARM: tegra: cardhu: register UARTC
-      ARM: tegra: whistler: enable keyboard in DT
-      ARM: tegra: harmony: enable keyboard in DT
-      clk: tegra: initialise parent of uart clocks
-
-Linus Walleij (12):
-      ARM: nomadik: move last custom calls to pinctrl
-      ARM: nomadik: initial devicetree support
-      ARM: nomadik: move pin maps to cpu file
-      ARM: nomadik: move remaining PrimeCells to device tree
-      ARM: nomadik: add FSMC NAND
-      ARM: nomadik: move GPIO and pinctrl to device tree
-      ARM: nomadik: convert SMSC91x ethernet to device tree
-      ARM: nomadik: migrate MMC/SD card support to device tree
-      ARM: nomadik: add I2C devices to the device tree
-      ARM: nomadik: delete old board files
-      ARM: nomadik: get rid of <mach/hardware.h>
-      ARM: nomadik: fix OF compilation regression
-
-Lucas Stach (4):
-      ASoC: tegra: add ac97 host controller to device tree
-      ARM: tegra: move serial clock-frequency attr into the Tegra20 dtsi
-      ARM: tegra: Add Colibri T20 512MB COM device tree
-      ARM: tegra: Add Toradex Iris carrier board DT with T20 512MB COM
-
-Marek Vasut (1):
-      ARM: mxs: Enable touchscreen on m28evk
-
-Maxime Ripard (9):
-      ARM: dts: cfa10049: Add PCA9555 GPIO expander to the device tree
-      ARM: sunxi: Add device tree for Miniand Hackberry
-      ARM: mxs: dt: Add Crystalfontz CFA-10037 device tree support
-      ARM: dts: cfa10049: Change the SPI3 bus to spi-gpio
-      ARM: dts: mxs: Add muxing options for the third PWM
-      ARM: dts: mxs: Add the LCD to the 10049 board
-      ARM: mxs: dts: Add gpio-keys for the rotary to the CFA-10049
-      ARM: mxs: dts: Add rotary encoder to the CFA-10049
-      sunxi: a13-olinuxino: Add user LED to the device tree
-
-Mrugesh Katepallewar (1):
-      ARM: davinci: da850: add RTC DT entries
-
-Olof Johansson (12):
-      Merge tag 'davinci-for-v3.9/dt' of git://gitorious.org/linux-davinci/linux-davinci into next/dt
-      Merge branch 'depends/cleanup' into next/dt
-      Merge tag 'nmk-dt-on-cleanups' of git://git.kernel.org/.../linusw/linux-nomadik into next/dt
-      Merge tag 'bcm2835-for-3.9-dt' of git://git.kernel.org/.../swarren/linux-rpi into next/dt
-      Merge tag 'v3.8-rc6' into next/dt
-      Merge branch 'next/soc' into next/dt
-      Merge tag 'tegra-for-3.9-dt' of git://git.kernel.org/.../swarren/linux-tegra into next/dt
-      Merge tag 'at91-dt' of git://github.com/at91linux/linux-at91 into next/dt
-      Merge tag 'davinci-for-v3.9/dt-2' of git://gitorious.org/linux-davinci/linux-davinci into next/dt
-      Merge tag 'mxs-dt-3.9' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/dt
-      Merge tag 'sunxi-dt-for-3.9' of https://github.com/mripard/linux into next/dt
-      Merge tag 'at91-dt-late' of git://github.com/at91linux/linux-at91 into next/dt
-
-Peter De Schrijver (3):
-      clk: tegra: Implement locking for super clock
-      clk: tegra: Add missing spinlock for hclk and pclk
-      clk: tegra: local arrays should be static
-
-Stephen Warren (12):
-      ARM: bcm2835 rpi: remove hard-coded memreserve from DT
-      ARM: bcm2835: add SDHCI node to DT
-      ARM: bcm2835: add I2C controllers to DT
-      ARM: bcm2835: fix clock node aliasing in device tree
-      ARM: tegra: trimslice: add gpio-poweroff node to DT
-      ARM: tegra: seaboard: enable HDMI port
-      ARM: tegra: ventana: enable HDMI port
-      ARM: tegra: paz00: enable HDMI port
-      ARM: tegra: swap cache-/interrupt-ctrlr nodes in DT
-      ARM: tegra: move serial clock-frequency attr into the Tegra30 dtsi
-      clk: tegra: fix driver to match DT binding
-      ARM: tegra: remove clock-frequency properties from serial nodes
-
-Vishwanathrao Badarkhe, Manish (1):
-      ARM: davinci: da850: add DT node for I2C0
-
- .../devicetree/bindings/arm/ste-nomadik.txt        |  27 ++
- Documentation/devicetree/bindings/arm/tegra.txt    |  32 +-
- .../devicetree/bindings/mtd/fsmc-nand.txt          |   2 +-
- arch/arm/Kconfig                                   |   2 +
- arch/arm/arm-soc-for-next-contents.txt             |  48 +-
- arch/arm/boot/dts/Makefile                         |   5 +
- arch/arm/boot/dts/animeo_ip.dts                    |   4 +
- arch/arm/boot/dts/at91rm9200.dtsi                  | 158 +++++++
- arch/arm/boot/dts/at91rm9200ek.dts                 |   5 +
- arch/arm/boot/dts/at91sam9n12.dtsi                 |   3 +-
- arch/arm/boot/dts/at91sam9n12ek.dts                |   5 +-
- arch/arm/boot/dts/at91sam9x5.dtsi                  |   4 +
- arch/arm/boot/dts/at91sam9x5cm.dtsi                |   5 +-
- arch/arm/boot/dts/bcm2835-rpi-b.dts                |  16 +-
- arch/arm/boot/dts/bcm2835.dtsi                     |  44 ++
- arch/arm/boot/dts/da850-evm.dts                    |  20 +
- arch/arm/boot/dts/da850.dtsi                       |  70 ++-
- arch/arm/boot/dts/imx28-cfa10037.dts               |  77 ++++
- arch/arm/boot/dts/imx28-cfa10049.dts               | 214 +++++++--
- arch/arm/boot/dts/imx28-m28evk.dts                 |   1 +
- arch/arm/boot/dts/imx28.dtsi                       |  10 +
- arch/arm/boot/dts/ste-nomadik-s8815.dts            |  30 ++
- arch/arm/boot/dts/ste-nomadik-stn8815.dtsi         | 256 +++++++++++
- arch/arm/boot/dts/sun4i-a10-hackberry.dts          |  30 ++
- arch/arm/boot/dts/tegra20-colibri-512.dtsi         | 491 +++++++++++++++++++++
- arch/arm/boot/dts/tegra20-harmony.dts              | 120 ++++-
- arch/arm/boot/dts/tegra20-iris-512.dts             |  89 ++++
- arch/arm/boot/dts/tegra20-paz00.dts                |  22 +-
- arch/arm/boot/dts/tegra20-seaboard.dts             | 158 ++++++-
- arch/arm/boot/dts/tegra20-tamonten.dtsi            |   1 -
- arch/arm/boot/dts/tegra20-trimslice.dts            |  11 +-
- arch/arm/boot/dts/tegra20-ventana.dts              |  23 +-
- arch/arm/boot/dts/tegra20-whistler.dts             |  15 +-
- arch/arm/boot/dts/tegra20.dtsi                     |  67 ++-
- arch/arm/boot/dts/tegra30-beaver.dts               | 373 ++++++++++++++++
- arch/arm/boot/dts/tegra30-cardhu.dtsi              |  15 +-
- arch/arm/boot/dts/tegra30.dtsi                     |  61 ++-
- arch/arm/configs/da8xx_omapl_defconfig             |   1 +
- arch/arm/mach-at91/at91rm9200.c                    |   2 +
- arch/arm/mach-davinci/Kconfig                      |   1 +
- arch/arm/mach-davinci/da8xx-dt.c                   |   9 +-
- arch/arm/mach-davinci/devices-da8xx.c              |  12 +-
- arch/arm/mach-davinci/include/mach/da8xx.h         |   1 -
- arch/arm/mach-mxs/mach-mxs.c                       |  30 ++
- arch/arm/mach-nomadik/Kconfig                      |  10 +-
- arch/arm/mach-nomadik/Makefile                     |   6 -
- arch/arm/mach-nomadik/board-nhk8815.c              | 353 ---------------
- arch/arm/mach-nomadik/cpu-8815.c                   | 358 +++++++++++----
- arch/arm/mach-nomadik/cpu-8815.h                   |   4 -
- arch/arm/mach-nomadik/i2c-8815nhk.c                |  88 ----
- arch/arm/mach-nomadik/include/mach/hardware.h      |  90 ----
- arch/arm/mach-nomadik/include/mach/irqs.h          |   2 -
- arch/arm/mach-nomadik/include/mach/uncompress.h    |   1 -
- drivers/clk/tegra/clk-super.c                      |  18 +-
- drivers/clk/tegra/clk-tegra20.c                    |  22 +-
- drivers/clk/tegra/clk-tegra30.c                    |  47 +-
- drivers/mtd/nand/fsmc_nand.c                       |   1 +
- drivers/pinctrl/pinctrl-nomadik.c                  |   4 +
- 58 files changed, 2787 insertions(+), 787 deletions(-)
+ .../devicetree/bindings/arm/arch_timer.txt         |    7 +-
+ Documentation/virtual/kvm/api.txt                  |  137 +-
+ MAINTAINERS                                        |    9 +
+ arch/arm/Kconfig                                   |    8 +-
+ arch/arm/Makefile                                  |    2 +
+ arch/arm/include/asm/arch_timer.h                  |  109 +-
+ arch/arm/include/asm/idmap.h                       |    1 +
+ arch/arm/include/asm/kvm_arch_timer.h              |   85 ++
+ arch/arm/include/asm/kvm_arm.h                     |  214 +++
+ arch/arm/include/asm/kvm_asm.h                     |   83 ++
+ arch/arm/include/asm/kvm_coproc.h                  |   47 +
+ arch/arm/include/asm/kvm_emulate.h                 |   72 +
+ arch/arm/include/asm/kvm_host.h                    |  184 +++
+ arch/arm/include/asm/kvm_mmio.h                    |   56 +
+ arch/arm/include/asm/kvm_mmu.h                     |   50 +
+ .../arm/include/asm/kvm_psci.h                     |   12 +-
+ arch/arm/include/asm/kvm_vgic.h                    |  221 +++
+ arch/arm/include/asm/pgtable-3level-hwdef.h        |    5 +
+ arch/arm/include/asm/pgtable-3level.h              |   18 +
+ arch/arm/include/asm/pgtable.h                     |    7 +
+ arch/arm/include/uapi/asm/kvm.h                    |  180 +++
+ arch/arm/kernel/arch_timer.c                       |  505 +------
+ arch/arm/kernel/asm-offsets.c                      |   43 +
+ arch/arm/kernel/smp.c                              |   13 +-
+ arch/arm/kernel/vmlinux.lds.S                      |    6 +-
+ arch/arm/kvm/Kconfig                               |   72 +
+ arch/arm/kvm/Makefile                              |   23 +
+ arch/arm/kvm/arch_timer.c                          |  271 ++++
+ arch/arm/kvm/arm.c                                 | 1169 +++++++++++++++
+ arch/arm/kvm/coproc.c                              | 1050 ++++++++++++++
+ arch/arm/kvm/coproc.h                              |  153 ++
+ arch/arm/kvm/coproc_a15.c                          |  162 +++
+ arch/arm/kvm/emulate.c                             |  373 +++++
+ arch/arm/kvm/guest.c                               |  222 +++
+ arch/arm/kvm/init.S                                |  114 ++
+ arch/arm/kvm/interrupts.S                          |  484 +++++++
+ arch/arm/kvm/interrupts_head.S                     |  605 ++++++++
+ arch/arm/kvm/mmio.c                                |  156 ++
+ arch/arm/kvm/mmu.c                                 |  787 ++++++++++
+ arch/arm/kvm/psci.c                                |  108 ++
+ arch/arm/kvm/reset.c                               |   74 +
+ arch/arm/kvm/trace.h                               |  235 +++
+ arch/arm/kvm/vgic.c                                | 1506 ++++++++++++++++++++
+ arch/arm/mach-omap2/Kconfig                        |    2 +-
+ arch/arm/mach-virt/Kconfig                         |   10 +
+ arch/arm/mach-virt/Makefile                        |    6 +
+ arch/arm/mach-virt/platsmp.c                       |   58 +
+ arch/arm/mach-virt/virt.c                          |   54 +
+ arch/arm/mm/idmap.c                                |   55 +-
+ arch/arm/mm/mmu.c                                  |   22 +
+ arch/arm64/Kconfig                                 |    1 +
+ arch/arm64/include/asm/arch_timer.h                |  133 ++
+ arch/arm64/include/asm/arm_generic.h               |  100 --
+ arch/arm64/kernel/time.c                           |   29 +-
+ drivers/clocksource/Kconfig                        |    6 +-
+ drivers/clocksource/Makefile                       |    2 +-
+ drivers/clocksource/arm_arch_timer.c               |  391 +++++
+ drivers/clocksource/arm_generic.c                  |  232 ---
+ include/clocksource/arm_arch_timer.h               |   63 +
+ include/linux/clockchips.h                         |    9 +
+ include/linux/irqchip/arm-gic.h                    |   33 +-
+ include/uapi/linux/kvm.h                           |   17 +
+ kernel/time/Kconfig                                |    4 +
+ kernel/time/tick-broadcast.c                       |   30 +
+ 64 files changed, 10026 insertions(+), 869 deletions(-)
