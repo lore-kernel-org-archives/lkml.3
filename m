@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab3BUIcS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 03:32:18 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:44638 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487Ab3BUIcR (ORCPT
+	id S1753241Ab3BUId3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 03:33:29 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:13522 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333Ab3BUId2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 03:32:17 -0500
-X-AuditID: cbfee68d-b7f4f6d000004209-b4-5125db90dd99
+	Thu, 21 Feb 2013 03:33:28 -0500
+X-AuditID: cbfee691-b7f556d000001a24-f3-5125dbd66b1e
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 01/12] rtc: rtc-imxdi: use devm_clk_get()
-Date: Thu, 21 Feb 2013 17:32:15 +0900
-Message-id: <00cc01ce100d$f42fddc0$dc8f9940$%han@samsung.com>
+References: <00cc01ce100d$f42fddc0$dc8f9940$%han@samsung.com>
+In-reply-to: <00cc01ce100d$f42fddc0$dc8f9940$%han@samsung.com>
+Subject: [PATCH 02/12] rtc: rtc-tps6586x: use devm_request_threaded_irq()
+Date: Thu, 21 Feb 2013 17:33:26 +0900
+Message-id: <00cd01ce100e$1e4b21f0$5ae165d0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4QDe9M0/OnFjrjTvSUwIYm7R1WAg==
+Thread-index: Ac4QDe9M0/OnFjrjTvSUwIYm7R1WAgAAA83Q
 Content-language: ko
-x-cr-hashedpuzzle: Dz9/ Eu7h MPyr NCia UUW+ VF+w VyQg ckJo gPM3 hBkO qBSU vm6K
- wOX2 yGcx ytBb
- 0U19;5;YQAuAHoAdQBtAG0AbwBAAHQAbwB3AGUAcgB0AGUAYwBoAC4AaQB0ADsAYQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcgB0AGMALQBsAGkAbgB1AHgAQABnAG8AbwBnAGwAZQBnAHIAbwB1AHAAcwAuAGMAbwBtAA==;Sosha1_v1;7;{006CFCDE-A64A-4A50-9E6C-0006012496DB};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
- 21 Feb 2013 08:32:07
- GMT;WwBQAEEAVABDAEgAIAAwADEALwAxADIAXQAgAHIAdABjADoAIAByAHQAYwAtAGkAbQB4AGQAaQA6ACAAdQBzAGUAIABkAGUAdgBtAF8AYwBsAGsAXwBnAGUAdAAoACkA
-x-cr-puzzleid: {006CFCDE-A64A-4A50-9E6C-0006012496DB}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zY90Jt1UDDVb85be4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZV45cYytYxFGx/ep2xgbGD2xdjJwcEgImEteWnGGEsMUkLtxb
-	DxTn4hASWMYo0fVuISNM0bafl5kgEtMZJW7uvc8I4cxmkuhouMcOUsUmoCbx5cthIJuDQ0RA
-	X6KtRQOkhlmgl1HiTO9usBphAUuJfdteg9WwCKhKNEwMBgnzCthKnDm7hBnCFpT4MfkeC4jN
-	LKAlsX7ncSYIW15i85q3zCCtEgLqEo/+6oKERQT0JB6tXcgMUSIise/FO7DTJAT2sEo8Pr6N
-	CeIBU4nXzV3MEIll7BLLp50Hu4dFQEDi2+RDLBBDZSU2HWCGqJeUOLjiBssERolZSE6aheSk
-	WUhOmoVk9wJGllWMoqkFyQXFSelFhnrFibnFpXnpesn5uZsYIbHVu4Px9gHrQ4zJQOsnMkuJ
-	JucDYzOvJN7Q2NjEzMTUxNzS1NyUNGElcV65SzKBQgLpiSWp2ampBalF8UWlOanFhxiZODil
-	Ghi11Vq7nF97dfnffsj2NGXRNtPP/57lS8+Njv8259rC/MCI9bM6JG3NCxMjV3Ku9VTp2Jrx
-	VX+mucbzbA0m0wPnmXjOM86L6vt4rsZwn8uPj1q7l6xuztOpe9Xj+WAtX7jEbAPW5POf9ytt
-	8NO4m2hwYEmM35H+QzbxFj75eyUP2deZcF9OYFFiKc5INNRiLipOBAAd1yFrwwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xoO6E26qBBud38lhc3jWHzYHR4/Mm
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zI93rt1UDDbbpW1zeNYfNgdHj8ya5
+	AMYoLpuU1JzMstQifbsEroyJT1exF7RxVCw7Mp+5gfEaWxcjB4eEgInEhuXRXYycQKaYxIV7
+	64HCXBxCAssYJXb8msYMkTCRWP3uMjNEYjqjxJkLj6Cc2UwSh7e9BatiE1CT+PLlMDvIVBEB
+	fYm2Fg2QGmaBXqCG3t3sIDVCArYScz5cA6vnFLCTuLztCyuILSzgKfHq5CqwGhYBVYnfvb+Y
+	QGxeoPqlzTfYIGxBiR+T77GA2MwCWhLrdx5ngrDlJTavAbkB5Bt1iUd/dUHCIgJGEpvmzmSE
+	KBGR2PfiHSPIPRICy9glHt+5xwixS0Di2+RDLBC9shKbDkA9LClxcMUNlgmMErOQbJ6FZPMs
+	JJtnIVmxgJFlFaNoakFyQXFSepGpXnFibnFpXrpecn7uJkZIXE3cwXj/gPUhxmSg9ROZpUST
+	84FxmVcSb2hsbGJmYmpibmlqbkqasJI4r/wlmUAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFIN
+	jDq6/lc6HvLs/MqabLHx08WDzx9YKbrOtTApMFKKt7+3W/nivvjl1esW8Dxfaz61xfHR5FsX
+	U794J3wz/fZl16vJ63PaTWvf9s5bVj/3rpzbzvu1/IXayXlKcdO/qYTcUfg1eWPmxJ42gU3p
+	iYYus+6Ubdg6i32tlVvv2l0XRNaUqJXdtpx0aIsSS3FGoqEWc1FxIgB7yDNfwQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xoO6126qBBjduWFpc3jWHzYHR4/Mm
 	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjCtHrrEVLOKo2H51O2MD
-	4we2LkZODgkBE4ltPy8zQdhiEhfurQeKc3EICUxnlLi59z4jhDObSaKj4R47SBWbgJrEly+H
-	gWwODhEBfYm2Fg2QGmaBXkaJM727wWqEBSwl9m17DVbDIqAq0TAxGCTMK2ArcebsEmYIW1Di
-	x+R7LCA2s4CWxPqdx5kgbHmJzWveMoO0SgioSzz6qwsSFhHQk3i0diEzRImIxL4X78BOkxDY
-	wyrx+Pg2qAdMJV43dzFPYBSahWTFLCQrZiFZMQvJrAWMLKsYRVMLkguKk9JzDfWKE3OLS/PS
-	9ZLzczcxgiP3mdQOxpUNFocYBTgYlXh4F7xUCRRiTSwrrsw9xCjBwawkwmt6RDVQiDclsbIq
-	tSg/vqg0J7X4EGMyMAAmMkuJJucDk0peSbyhsYmZkaWRmYWRibk5acJK4ryMp54ECAmkJ5ak
-	ZqemFqQWwWxh4uCUamDs2Fmh2G32a+OLzElbHhffeMzokZ8h+32TkgnrVI955SsFPXMve+SZ
-	XdidY2bIWS5brLzo89Zvnr7Rs54f//Pr10/eh+yScc6i743SwzsMs5jkDnBqnY4zT1O9VnVh
-	65aiJNUm/ad5M7NV7roKMgQdCDrddbDxyI1iz/JD3894flXYnDt17mclluKMREMt5qLiRADK
-	/pGxIAMAAA==
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjIlPV7EXtHFULDsyn7mB
+	8RpbFyMnh4SAicTqd5eZIWwxiQv31gPFuTiEBKYzSpy58IgZwpnNJHF421uwKjYBNYkvXw6z
+	dzFycIgI6Eu0tWiA1DAL9AI19O5mB6kRErCVmPPhGlg9p4CdxOVtX1hBbGEBT4lXJ1eB1bAI
+	qEr87v3FBGLzAtUvbb7BBmELSvyYfI8FxGYW0JJYv/M4E4QtL7F5DcgNHECXqks8+qsLEhYR
+	MJLYNHcmI0SJiMS+F+8YJzAKzUIyaRaSSbOQTJqFpGUBI8sqRtHUguSC4qT0XCO94sTc4tK8
+	dL3k/NxNjODIfSa9g3FVg8UhRgEORiUe3gUvVQKFWBPLiitzDzFKcDArifAqAuNeiDclsbIq
+	tSg/vqg0J7X4EGMy0KMTmaVEk/OBSSWvJN7Q2MTMyNLIzMLIxNycNGElcV7GU08ChATSE0tS
+	s1NTC1KLYLYwcXBKNTD25oblRrk/M/xy773qUy0eYbP/HqlK+3K/sWgeyV9rc8rl+cYvAk+5
+	fj9X2Vt6UCNc2OucH++NjtX276dO3Rwx/VP8sTkrDxffDf/R+/xF5j2rNfmP4neGPXpn+I8t
+	IDua67/NkS/7yl7OEEx87Ca/d+bM7A0xjv+PnF9/tOzWm/AY24tVVzf4K7EUZyQaajEXFScC
+	AAw7TucgAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,42 +54,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_clk_get() to make cleanup paths more simple.
+Use devm_request_threaded_irq() to make cleanup paths more simple.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-imxdi.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/rtc/rtc-tps6586x.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/rtc/rtc-imxdi.c b/drivers/rtc/rtc-imxdi.c
-index 75d307a..82aad69 100644
---- a/drivers/rtc/rtc-imxdi.c
-+++ b/drivers/rtc/rtc-imxdi.c
-@@ -406,7 +406,7 @@ static int dryice_rtc_probe(struct platform_device *pdev)
+diff --git a/drivers/rtc/rtc-tps6586x.c b/drivers/rtc/rtc-tps6586x.c
+index 70f61b8..aab4e8c 100644
+--- a/drivers/rtc/rtc-tps6586x.c
++++ b/drivers/rtc/rtc-tps6586x.c
+@@ -282,7 +282,8 @@ static int tps6586x_rtc_probe(struct platform_device *pdev)
+ 		goto fail_rtc_register;
+ 	}
  
- 	mutex_init(&imxdi->write_mutex);
- 
--	imxdi->clk = clk_get(&pdev->dev, NULL);
-+	imxdi->clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(imxdi->clk))
- 		return PTR_ERR(imxdi->clk);
- 	clk_prepare_enable(imxdi->clk);
-@@ -475,7 +475,6 @@ static int dryice_rtc_probe(struct platform_device *pdev)
- 
- err:
- 	clk_disable_unprepare(imxdi->clk);
--	clk_put(imxdi->clk);
- 
- 	return rc;
- }
-@@ -492,7 +491,6 @@ static int dryice_rtc_remove(struct platform_device *pdev)
- 	rtc_device_unregister(imxdi->rtc);
- 
- 	clk_disable_unprepare(imxdi->clk);
--	clk_put(imxdi->clk);
- 
+-	ret = request_threaded_irq(rtc->irq, NULL, tps6586x_rtc_irq,
++	ret = devm_request_threaded_irq(&pdev->dev, rtc->irq, NULL,
++				tps6586x_rtc_irq,
+ 				IRQF_ONESHOT | IRQF_EARLY_RESUME,
+ 				dev_name(&pdev->dev), rtc);
+ 	if (ret < 0) {
+@@ -311,7 +312,6 @@ static int tps6586x_rtc_remove(struct platform_device *pdev)
+ 	tps6586x_update(tps_dev, RTC_CTRL, 0,
+ 		RTC_ENABLE | OSC_SRC_SEL | PRE_BYPASS | CL_SEL_MASK);
+ 	rtc_device_unregister(rtc->rtc);
+-	free_irq(rtc->irq, rtc);
  	return 0;
  }
+ 
 -- 
 1.7.2.5
 
