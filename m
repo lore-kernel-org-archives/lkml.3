@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab3BUQpy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 11:45:54 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:25325 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723Ab3BUQpw convert rfc822-to-8bit (ORCPT
+	id S1755562Ab3BUQq1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 11:46:27 -0500
+Received: from www.linutronix.de ([62.245.132.108]:50282 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753876Ab3BUQqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 11:45:52 -0500
-From: "Roberts, Lee A." <lee.roberts@hp.com>
-To: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/4] sctp: fix association hangs due to off-by-one errors in
- sctp_tsnmap_grow()
-Thread-Topic: [PATCH 1/4] sctp: fix association hangs due to off-by-one
- errors in sctp_tsnmap_grow()
-Thread-Index: Ac4QURb9XcgtMeU1SEmmm13mzuMFGA==
-Date: Thu, 21 Feb 2013 16:44:14 +0000
-Message-ID: <D64EC45690EF85409BA6C4730E0162244310DEE7@G4W3231.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.14]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 21 Feb 2013 11:46:24 -0500
+Date: Thu, 21 Feb 2013 17:46:16 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org
+Subject: Re: [PATCH] nohz: Make tick_nohz_irq_exit() irq safe
+In-Reply-To: <CAFTL4hz7xmi910Gv0uXAM2AReC4iZzAo3gfMtPk1Yh6wRi1OOg@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1302211743350.22263@ionos>
+References: <1361373336-11337-1-git-send-email-fweisbec@gmail.com> <alpine.LFD.2.02.1302202155320.22263@ionos> <CAFTL4hx_uXfY=bH9nnEsN6AJFTcwqdAWTxcR0jc=hL1FBrwk0w@mail.gmail.com> <alpine.LFD.2.02.1302210013070.22263@ionos>
+ <CAFTL4hz7xmi910Gv0uXAM2AReC4iZzAo3gfMtPk1Yh6wRi1OOg@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee A. Roberts <lee.roberts@hp.com>
+On Thu, 21 Feb 2013, Frederic Weisbecker wrote:
+> 2013/2/21 Thomas Gleixner <tglx@linutronix.de>:
+> > On Wed, 20 Feb 2013, Frederic Weisbecker wrote:
+> >> 2013/2/20 Thomas Gleixner <tglx@linutronix.de>:
+> >> > That's not a fix. That's an hack.
+> >>
+> >> I know it looks that way. That's because it's a pure regression fix,
+> >> minimal for backportability.
+> >>
+> >> I'm distinguishing two different things here: the fact that some archs
+> >> can call irq_exit() with interrupts enabled which is a global design
+> >> problem, and the fact that tick_nohz_irq_exit() was safe against that
+> >> until 3.2 when I broke it with a commit of mine.
+> >>
+> >> My goal was basically to restore that protection in a minimal commit
+> >> such that we can backport the regression fix, then deal with
+> >> __ARCH_IRQ_EXIT_IRQS_DISABLED afterward, since it requires some more
+> >> invasive changes.
+> >>
+> >> >> A saner long term solution will be to remove
+> >> >> __ARCH_IRQ_EXIT_IRQS_DISABLED.
+> >> >
+> >> > We really want to enforce that interrupt disabled condition for
+> >> > calling irq_exit(). So why make this exclusive to tick_nohz_irq_exit()?
+> >>
+> >> I need a fix that I can backport. Is the below fine with a stable tag?
+> >> It looks a bit too invasive for the single regression involved.
+> >
+> > I think that's fine as it's obviously correct and not diluting the
+> > real underlying issue of the __ARCH_IRQ_EXIT_IRQS_DISABLED insanity.
+> 
+> Ok fine. Do you plan to commit your proposed change then?
 
-Resolve SCTP association hangs observed during SCTP stress
-testing.  Observable symptoms include communications hangs
-with data being held in the association lobby (ordering)
-queue.  Close examination of reassembly/ordering queues shows
-duplicated packets.
+Second thoughts. I probably go for your minimal fix for stable and
+then push my version on top of it to Linus only.
 
-In sctp_tsnmap_grow(), correct off-by-one errors when copying
-and resizing the tsnmap.  If max_tsn_seen is in the LSB of the
-word, this bit can be lost, causing the corresponding packet
-to be transmitted again and to be entered as a duplicate into
-the SCTP reassembly/ordering queues.
+Thanks,
 
-Patch applies to linux-3.8 kernel.
-
-Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
----
- net/sctp/tsnmap.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-vanilla/net/sctp/tsnmap.c linux-3.8-SCTP+1/net/sctp/tsnmap.c
---- linux-3.8-vanilla/net/sctp/tsnmap.c	2013-02-18 16:58:34.000000000 -0700
-+++ linux-3.8-SCTP+1/net/sctp/tsnmap.c	2013-02-20 08:01:02.555223259 -0700
-@@ -369,14 +369,15 @@ static int sctp_tsnmap_grow(struct sctp_
- 	if (gap >= SCTP_TSN_MAP_SIZE)
- 		return 0;
- 
--	inc = ALIGN((gap - map->len),BITS_PER_LONG) + SCTP_TSN_MAP_INCREMENT;
-+	inc = ALIGN((gap - map->len + 1), BITS_PER_LONG)
-+		+ SCTP_TSN_MAP_INCREMENT;
- 	len = min_t(u16, map->len + inc, SCTP_TSN_MAP_SIZE);
- 
- 	new = kzalloc(len>>3, GFP_ATOMIC);
- 	if (!new)
- 		return 0;
- 
--	bitmap_copy(new, map->tsn_map, map->max_tsn_seen - map->base_tsn);
-+	bitmap_copy(new, map->tsn_map, map->max_tsn_seen - map->base_tsn + 1);
- 	kfree(map->tsn_map);
- 	map->tsn_map = new;
- 	map->len = len;
+	tglx
