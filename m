@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab3BULh4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 06:37:56 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58868 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab3BULhz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 06:37:55 -0500
-Message-ID: <1361446661.26780.15.camel@laptop>
-Subject: Re: [RFC PATCH v3 1/3] sched: schedule balance map foundation
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 21 Feb 2013 12:37:41 +0100
-In-Reply-To: <5125A966.6040601@linux.vnet.ibm.com>
-References: <51079178.3070002@linux.vnet.ibm.com>
-	 <510791B2.6090506@linux.vnet.ibm.com> <1361366720.10155.25.camel@laptop>
-	 <5125A966.6040601@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1753814Ab3BULiK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 06:38:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22249 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753717Ab3BULiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 06:38:04 -0500
+Message-ID: <512606DF.5050706@redhat.com>
+Date: Thu, 21 Feb 2013 12:37:03 +0100
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
+        Hannes Reinecke <hare@suse.de>
+Subject: New copyfile system call - discuss before LSF?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-21 at 12:58 +0800, Michael Wang wrote:
-> 
-> You are right, it cost space in order to accelerate the system, I've
-> calculated the cost once before (I'm really not good at this, please
-> let
-> me know if I make any silly calculation...), 
 
-The exact size isn't that important, but its trivial to see its quadric.
-You have a NR_CPUS array per-cpu, thus O(n^2).
+We have debated the need to have a system call to allow for offloading copy 
+operations, for example to an NFS server (part to the new NFS 4.2 
+specification), SCSI target device (two different SCSI commands do this), local 
+file systems (reflink, etc) and I suspect many other possible parts of the stack 
+could implement this.
 
-( side note; invest in getting good at complexity analysis -- or at
-least competent, its the single most important aspect of programming. )
+The earliest discussion of such a system call I saw happened back in 2001, I 
+know we had another more recent flurry (2-3 years back?) as well that got 
+tangled up and died away.
 
-...
+Given the new popularity of this in storage devices and the use case for virt 
+guests, any chance to get a proposal floated this year that might be able to 
+land upstream in our life times :) ?
 
-> And the final cost is 3000 int and 1030000 pointer, and some padding,
-> but won't bigger than 10M, not a big deal for a system with 1000 cpu
-> too.
-
-Maybe, but quadric stuff should be frowned upon at all times, these
-things tend to explode when you least expect it.
-
-For instance, IIRC the biggest single image system SGI booted had 16k
-cpus in there, that ends up at something like 14+14+3=31 aka as 2G of
-storage just for your lookup -- that seems somewhat preposterous.
-
-The domain levels are roughly O(log n) related to the total cpus, so
-what you're doing is replacing an O(log n) lookup with an O(1) lookup,
-but at the cost of O(n^2) storage. 
+Ric
 
 
 
