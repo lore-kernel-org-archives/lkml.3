@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3BUM6k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 07:58:40 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17821 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332Ab3BUM6i (ORCPT
+	id S1753634Ab3BUNQv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 08:16:51 -0500
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:46038 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448Ab3BUNQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 07:58:38 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 21 Feb 2013 04:53:46 -0800
-Message-ID: <512619EB.4030103@nvidia.com>
-Date: Thu, 21 Feb 2013 18:28:19 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 21 Feb 2013 08:16:49 -0500
+Message-ID: <51261E30.9040907@gmail.com>
+Date: Thu, 21 Feb 2013 08:16:32 -0500
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
-        Joseph Lo <josephl@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 00/12] Tegra114 clockframework
-References: <1360931849-7090-1-git-send-email-pdeschrijver@nvidia.com> <5123C6E7.9070407@wwwdotorg.org>
-In-Reply-To: <5123C6E7.9070407@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH v4 00/32] ldisc patchset
+References: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com> <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 February 2013 12:09 AM, Stephen Warren wrote:
-> On 02/15/2013 05:36 AM, Peter De Schrijver wrote:
->> This is the seventh version of the Tegra114 clockframework. It is based on the
->> for-next branch of
->> git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git and
->> http://www.spinics.net/lists/arm-kernel/msg220452.html.
-> Mike,
->
-> I think it'd be prudent to take this series through the Tegra tree again
-> for 3.10; patch 11 needs to go in as part of the series due to internal
-> dependencies, and I'm slightly worried that other Tegra DT changes might
-> conflict with that patch (if only for context). Taking this series (and
-> any other Tegra clk driver changes for 3.10) through the Tegra tree
-> could resolve that easily. Do you have a problem with that?
->
-> If that's OK, can you stage the dependency Peter mentioned:
-> http://www.spinics.net/lists/arm-kernel/msg220452.html
-> into a stable branch for me to merge, obviously after 3.9-rc1 is out.
->
-> Thanks.
->
-> Prashant, could you provide a review/ack for this series too.
+On 02/20/2013 03:02 PM, Peter Hurley wrote:
+> Sasha and Dave, my trinity testbeds die in other areas right now;
+> I would really appreciate if you would please re-test this series.
 
-For the series
+Hi Peter,
 
-Reviewed-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+I saw this twice in overnight fuzzing:
+
+[ 1473.912280] =================================
+[ 1473.913180] [ BUG: bad contention detected! ]
+[ 1473.914071] 3.8.0-next-20130220-sasha-00038-g1ad55df-dirty #8 Tainted: G        W
+[ 1473.915684] ---------------------------------
+[ 1473.916549] kworker/1:1/361 is trying to contend lock (&tty->ldisc_sem) at:
+[ 1473.918031] [<ffffffff81c493df>] tty_ldisc_ref+0x1f/0x60
+[ 1473.919060] but there are no locks held!
+[ 1473.919813]
+[ 1473.919813] other info that might help us debug this:
+[ 1473.920044] 2 locks held by kworker/1:1/361:
+[ 1473.920044]  #0:  (events){.+.+.+}, at: [<ffffffff811328a8>] process_one_work+0x228/0x6a0
+[ 1473.920044]  #1:  ((&buf->work)){+.+...}, at: [<ffffffff811328a8>] process_one_work+0x228/0x6a0
+[ 1473.920044]
+[ 1473.920044] stack backtrace:
+[ 1473.920044] Pid: 361, comm: kworker/1:1 Tainted: G        W    3.8.0-next-20130220-sasha-00038-g1ad55df-dirty #8
+[ 1473.920044] Call Trace:
+[ 1473.920044]  [<ffffffff81c493df>] ? tty_ldisc_ref+0x1f/0x60
+[ 1473.920044]  [<ffffffff81182026>] print_lock_contention_bug+0xf6/0x110
+[ 1473.920044]  [<ffffffff81184973>] lock_contended+0x213/0x4e0
+[ 1473.920044]  [<ffffffff81c4bb41>] ldsem_down_read_trylock+0xb1/0xc0
+[ 1473.920044]  [<ffffffff81c493df>] tty_ldisc_ref+0x1f/0x60
+[ 1473.920044]  [<ffffffff81c4a687>] flush_to_ldisc+0x37/0x1a0
+[ 1473.920044]  [<ffffffff811329e6>] process_one_work+0x366/0x6a0
+[ 1473.920044]  [<ffffffff811328a8>] ? process_one_work+0x228/0x6a0
+[ 1473.920044]  [<ffffffff811332a8>] worker_thread+0x238/0x370
+[ 1473.920044]  [<ffffffff81133070>] ? rescuer_thread+0x310/0x310
+[ 1473.920044]  [<ffffffff8113d873>] kthread+0xe3/0xf0
+[ 1473.920044]  [<ffffffff8113d790>] ? flush_kthread_work+0x1f0/0x1f0
+[ 1473.920044]  [<ffffffff83dab4fc>] ret_from_fork+0x7c/0xb0
+[ 1473.920044]  [<ffffffff8113d790>] ? flush_kthread_work+0x1f0/0x1f0
 
 
+Thanks,
+Sasha
