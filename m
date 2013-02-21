@@ -1,44 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab3BUUGt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 15:06:49 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:57470 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab3BUUGs (ORCPT
+	id S1753808Ab3BUUHS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 15:07:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44494 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327Ab3BUUHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 15:06:48 -0500
+	Thu, 21 Feb 2013 15:07:15 -0500
+Date: Thu, 21 Feb 2013 12:05:56 -0800
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-74eed0163d0def3fce27228d9ccf3d36e207b286@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linuxfoundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, tglx@linutronix.de
+Reply-To: paulmck@linux.vnet.ibm.com, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        torvalds@linuxfoundation.org, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <alpine.LFD.2.02.1302202155320.22263@ionos>
+References: <alpine.LFD.2.02.1302202155320.22263@ionos>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] irq: Ensure irq_exit()
+  code runs with interrupts disabled
+Git-Commit-ID: 74eed0163d0def3fce27228d9ccf3d36e207b286
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1361471962-25164-3-git-send-email-vgupta@synopsys.com>
-References: <1361471962-25164-1-git-send-email-vgupta@synopsys.com>
-	<1361471962-25164-3-git-send-email-vgupta@synopsys.com>
-Date: Thu, 21 Feb 2013 23:06:47 +0300
-Message-ID: <CAMo8Bf+Rc3gazyN6zPxV-P5A67ERQPKovZSRO9WNdfN2o1jzNw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] xtensa: Flat DeviceTree copy not future-safe
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Chris Zankel <chris@zankel.net>,
-        Marc Gauthier <marc@tensilica.com>, linux-xtensa@linux-xtensa.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Feb 2013 12:06:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 10:39 PM, Vineet Gupta
-<Vineet.Gupta1@synopsys.com> wrote:
-> flat DT copy code calls bootmem allocator with @align = 0.
-> This is probably OK with legacy allocator which xtensa uses right now,
-> but this will panic right away with memblock allocator
->
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Chris Zankel <chris@zankel.net>
-> Cc: Max Filippov <jcmvbkbc@gmail.com>
-> Cc: Marc Gauthier <marc@tensilica.com>
-> Cc: linux-xtensa@linux-xtensa.org
-> Cc: linux-kernel@vger.kernel.org
+Commit-ID:  74eed0163d0def3fce27228d9ccf3d36e207b286
+Gitweb:     http://git.kernel.org/tip/74eed0163d0def3fce27228d9ccf3d36e207b286
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Wed, 20 Feb 2013 22:00:48 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 21 Feb 2013 20:52:24 +0100
 
-Acked-by: Max Filippov <jcmvbkbc@gmail.com>
+irq: Ensure irq_exit() code runs with interrupts disabled
 
--- 
-Thanks.
--- Max
+We had already a few problems with code called from irq_exit() when
+interrupted from a nesting interrupt. This can happen on architectures
+which do not define __ARCH_IRQ_EXIT_IRQS_DISABLED.
+
+__ARCH_IRQ_EXIT_IRQS_DISABLED should go away and we want to make it
+mandatory to call irq_exit() with interrupts disabled.
+
+As a temporary protection disable interrupts for those architectures
+which do not define __ARCH_IRQ_EXIT_IRQS_DISABLED and add a WARN_ONCE
+when an architecture which defines __ARCH_IRQ_EXIT_IRQS_DISABLED calls
+irq_exit() with interrupts enabled.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linuxfoundation.org>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1302202155320.22263@ionos
+
+---
+ kernel/softirq.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index f5cc25f..f2a9346 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -341,6 +341,14 @@ static inline void invoke_softirq(void)
+  */
+ void irq_exit(void)
+ {
++#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
++	unsigned long flags;
++
++	local_irq_save(flags);
++#else
++	WARN_ON_ONCE(!irqs_disabled());
++#endif
++
+ 	account_irq_exit_time(current);
+ 	trace_hardirq_exit();
+ 	sub_preempt_count(IRQ_EXIT_OFFSET);
+@@ -354,6 +362,9 @@ void irq_exit(void)
+ #endif
+ 	rcu_irq_exit();
+ 	sched_preempt_enable_no_resched();
++#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
++	local_irq_restore(flags);
++#endif
+ }
+ 
+ /*
