@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792Ab3BUUP1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 15:15:27 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:45113 "EHLO
+	id S1754363Ab3BUUQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 15:16:29 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:49445 "EHLO
 	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753575Ab3BUUPT (ORCPT
+	with ESMTP id S1753625Ab3BUUPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 15:15:19 -0500
+	Thu, 21 Feb 2013 15:15:17 -0500
 From: Benson Leung <bleung@chromium.org>
 To: matthew.garrett@nebula.com, platform-driver-x86@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: olofj@chromium.org, miletus@chromium.org,
         Benson Leung <bleung@chromium.org>
-Subject: [PATCH 4/6] Platform: x86: chromeos_laptop - Add support for probing devices
-Date: Thu, 21 Feb 2013 12:14:58 -0800
-Message-Id: <1361477700-26342-5-git-send-email-bleung@chromium.org>
+Subject: [PATCH 3/6] Platform: x86: chromeos_laptop - Add isl light sensor for Pixel
+Date: Thu, 21 Feb 2013 12:14:57 -0800
+Message-Id: <1361477700-26342-4-git-send-email-bleung@chromium.org>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1361477700-26342-1-git-send-email-bleung@chromium.org>
 References: <1361477700-26342-1-git-send-email-bleung@chromium.org>
@@ -22,47 +22,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will allow support for devices that may appear at more than
-one i2c address at boot time. The specific example is the atmel_mxt touch
-devices, which may appear at a different address if it comes up
-in bootloader mode.
+The Chromebook Pixel uses an isl29023 ambient light sensor on the PANEL
+GMBus.
 
 Signed-off-by: Benson Leung <bleung@chromium.org>
 ---
- drivers/platform/x86/chromeos_laptop.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/platform/x86/chromeos_laptop.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
 diff --git a/drivers/platform/x86/chromeos_laptop.c b/drivers/platform/x86/chromeos_laptop.c
-index 3e405d7..f3a292b 100644
+index d585548..3e405d7 100644
 --- a/drivers/platform/x86/chromeos_laptop.c
 +++ b/drivers/platform/x86/chromeos_laptop.c
-@@ -144,6 +144,26 @@ static int __init find_i2c_adapter_num(enum i2c_adapter_type type)
+@@ -180,6 +180,14 @@ static int __init setup_isl29018_als(const struct dmi_system_id *id)
+ 	return 0;
  }
  
- /*
-+ * Takes a list of addresses in addrs as such :
-+ * { addr1, ... , addrn, I2C_CLIENT_END };
-+ * add_probed_i2c_device will use i2c_new_probed_device
-+ * and probe for devices at all of the addresses listed.
-+ * Returns NULL if no devices found.
-+ * See Documentation/i2c/instantiating-devices for more information.
-+ */
-+static __init struct i2c_client *add_probed_i2c_device(
-+		const char *name,
-+		enum i2c_adapter_type type,
-+		struct i2c_board_info *info,
-+		const unsigned short *addrs)
++static int __init setup_isl29023_als(const struct dmi_system_id *id)
 +{
-+	return __add_probed_i2c_device(name,
-+				       find_i2c_adapter_num(type),
-+				       info,
-+				       addrs);
++	/* add isl29023 light sensor on Panel GMBus */
++	als = add_i2c_device("lightsensor", I2C_ADAPTER_PANEL,
++			     &isl_als_device);
++	return 0;
 +}
 +
-+/*
-  * Probes for a device at a single address, the one provided by
-  * info->addr.
-  * Returns NULL if no device found.
+ static int __init setup_tsl2583_als(const struct dmi_system_id *id)
+ {
+ 	/* add tsl2583 light sensor on smbus */
+@@ -212,6 +220,14 @@ static struct dmi_system_id __initdata chromeos_laptop_dmi_table[] = {
+ 		.callback = setup_isl29018_als,
+ 	},
+ 	{
++		.ident = "Chromebook Pixel - Light Sensor",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "GOOGLE"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Link"),
++		},
++		.callback = setup_isl29023_als,
++	},
++	{
+ 		.ident = "Acer C7 Chromebook - Touchpad",
+ 		.matches = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Parrot"),
 -- 
 1.8.1.3
 
