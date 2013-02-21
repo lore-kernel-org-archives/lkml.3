@@ -1,40 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757028Ab3BUS2I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 13:28:08 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:35406 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756557Ab3BUS2G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 13:28:06 -0500
+	id S1757069Ab3BUS2O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 13:28:14 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:48263 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757034Ab3BUS2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 13:28:10 -0500
+Message-ID: <512666B2.1020609@linux.vnet.ibm.com>
+Date: Thu, 21 Feb 2013 12:25:54 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1302211920440.22263@ionos>
-References: <1361373336-11337-1-git-send-email-fweisbec@gmail.com>
-	<alpine.LFD.2.02.1302202155320.22263@ionos>
-	<CA+55aFwTFOsRTX3pHeZ+664rAms-Liwco3scEPJum6=C3BCoEQ@mail.gmail.com>
-	<alpine.LFD.2.02.1302211920440.22263@ionos>
-Date: Thu, 21 Feb 2013 10:28:04 -0800
-X-Google-Sender-Auth: XjUN1eBP-oMhOxUkMwqJexP-Gk0
-Message-ID: <CA+55aFwj0bVS0H1YBMq9EHbkYrU7-so8S6onCKs2M1Q+g4AmNA@mail.gmail.com>
-Subject: Re: [PATCH] nohz: Make tick_nohz_irq_exit() irq safe
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, stable <stable@vger.kernel.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv6 0/8] zswap: compressed swap caching
+References: <1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com> <9e251fb2-be82-41d2-b6cd-e46525b263cb@default>
+In-Reply-To: <9e251fb2-be82-41d2-b6cd-e46525b263cb@default>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022118-5806-0000-0000-0000200058C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 10:21 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
-> This was a draft patch. I made it a WARN_ON_ONCE() already.
+On 02/21/2013 09:50 AM, Dan Magenheimer wrote:
+>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>> Subject: [PATCHv6 0/8] zswap: compressed swap caching
+>>
+>> Changelog:
+>>
+>> v6:
+>> * fix improper freeing of rbtree (Cody)
+> 
+> Cody's bug fix reminded me of a rather fundamental question:
+> 
+> Why does zswap use a rbtree instead of a radix tree?
+> 
+> Intuitively, I'd expect that pgoff_t values would
+> have a relatively high level of locality AND at any one time
+> the set of stored pgoff_t values would be relatively non-sparse.
+> This would argue that a radix tree would result in fewer nodes
+> touched on average for lookup/insert/remove.
 
-Ok, good.
+I considered using a radix tree, but I don't think there is a compelling
+reason to choose a radix tree over a red-black tree in this case
+(explanation below).
 
-I really wish we could just get rid of BUG_ON(). It was a bad idea,
-and it makes it easy for people to do the wrong thing. Sadly, we have
-tons of them.
+>From a runtime standpoint, a radix tree might be faster.  The swap
+offsets will be largely in linearly bunched groups over the indexed
+range.  However, there are also memory constraints to consider in this
+particular situation.
 
-                        Linus
+Using a radix tree could result in intermediate radix_tree_node
+allocations in the store (insert) path in addition to the zswap_entry
+allocation.  Since we are under memory pressure, using the red-black
+tree, whose metadata is included in the struct zswap_entry, reduces the
+number of opportunities to fail.
+
+On my system, the radix_tree_node structure is 568 bytes.  The
+radix_tree_node cache requires 4 pages per slab, an order-2 page
+allocation.  Growing that cache will be difficult under the pressure.
+
+In my mind, cost of even a single node allocation failure resulting in
+an additional page swapped to disk will more that wipe out any possible
+performance advantage using a radix tree might have.
+
+Thanks,
+Seth
+
