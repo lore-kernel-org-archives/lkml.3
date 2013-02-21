@@ -1,50 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3BURgm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 12:36:42 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:45863 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493Ab3BURgk (ORCPT
+	id S1755210Ab3BURjY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 12:39:24 -0500
+Received: from sema.semaphore.gr ([78.46.194.137]:50666 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754377Ab3BURjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 12:36:40 -0500
+	Thu, 21 Feb 2013 12:39:22 -0500
+Message-ID: <51265BC6.8030601@semaphore.gr>
+Date: Thu, 21 Feb 2013 19:39:18 +0200
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130221033309.CFBB0660BDB@gitolite.kernel.org>
-References: <20130221033309.CFBB0660BDB@gitolite.kernel.org>
-Date: Thu, 21 Feb 2013 10:36:38 -0700
-Message-ID: <CAKocOONU=S7w2bDc1Hf+PqP=pjJ14sdKOVC4UZH7ymx6h+vcyA@mail.gmail.com>
-Subject: Re: ixgbe: fix possible data corruption in read_i2c_byte
-From: Shuah Khan <shuahkhan@gmail.com>
-To: jeffrey.t.kirsher@intel.com, emil.s.tantilov@intel.com,
-        phillip.j.schmitt@intel.com
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        stable <stable@vger.kernel.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 linux-next] cpufreq: ondemand: Calculate gradient of
+ CPU load to early increase frequency
+References: <51253715.7080600@semaphore.gr> <CAOh2x=mD4DbEH245xsceS1wyhmrRPpB2LeJ9Mh+WGHUA+bZprA@mail.gmail.com> <512605A1.8090106@semaphore.gr> <CAOh2x=m82jKMf+xgg+fjnCUHLpCQ_NgYqw4auyAidokt_z=uOw@mail.gmail.com>
+In-Reply-To: <CAOh2x=m82jKMf+xgg+fjnCUHLpCQ_NgYqw4auyAidokt_z=uOw@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 8:33 PM, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
-> Gitweb:     http://git.kernel.org/linus/;a=commit;h=d0310dc415a670ae2b2e27076b4685d988830479
-> Commit:     d0310dc415a670ae2b2e27076b4685d988830479
-> Parent:     4c696ca9fbabc5f94a3c6db7f009e73f0ef21831
-> Author:     Emil Tantilov <emil.s.tantilov@intel.com>
-> AuthorDate: Fri Jan 18 02:16:41 2013 +0000
-> Committer:  Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> CommitDate: Fri Feb 15 23:16:09 2013 -0800
->
->     ixgbe: fix possible data corruption in read_i2c_byte
->
->     This patch makes sure that the SW lock is released after all i2c
->     operations complete in the retry code path.
->
->     Signed-off-by: Emil Tantilov <emil.s.tantilov@intel.com>
->     Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
->     Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Hi,
 
-Jeff,
+On 02/21/2013 05:33 PM, Viresh Kumar wrote:
+> Hi Again,
+> 
+> int boost_freq = 0;
+> 
+>         if (od_tuners->early_demand) {
+>                 if (load_freq > dbs_info->prev_load_freq && (load_freq
+> - dbs_info->prev_load_freq >
+>                     od_tuners->grad_up_threshold * policy->cur)) {
+>                     boost_freq = 1;
+>                 }
+> 
+>                 dbs_info->prev_load_freq = load_freq;
+>         }
+> 
+>          /* Check for frequency increase */
+>          if (boost_freq || (load_freq > od_tuners->up_threshold * policy->cur)) {
+>                   increase-freq;
+> 
+> 
+> This would get rid of duplicate calls to increase_freq() and also
+> avoid changing its
+> prototype.
+> 
 
-Should this patch be considered for stable? This patch applied cleanly
-to 3.7 and 3.4. I haven't done any testing yet.
+Thanks again. Following V3 with your suggestion.
 
--- Shuah
+Regards,
+Stratos
+
+-----------------------8<--------------------------------------------
+Instead of checking only the absolute value of CPU load_freq to increase
+frequency, we detect forthcoming CPU load rise and increase frequency
+earlier.
+
+Every sampling rate, we calculate the gradient of load_freq. If it is
+too steep we assume that the load most probably will go over
+up_threshold in next iteration(s) and we increase frequency immediately.
+
+New tuners are introduced:
+- early_demand: to enable this functionality (disabled by default).
+- grad_up_threshold: over this gradient of load we will increase
+frequency immediately.
+
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+---
+ drivers/cpufreq/cpufreq_governor.c |  1 +
+ drivers/cpufreq/cpufreq_governor.h |  3 ++
+ drivers/cpufreq/cpufreq_ondemand.c | 59 +++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 62 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index 7722505..e737aa9 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -322,6 +322,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 		} else {
+ 			od_dbs_info->rate_mult = 1;
+ 			od_dbs_info->sample_type = OD_NORMAL_SAMPLE;
++			od_dbs_info->prev_load_freq = 0;
+ 			od_ops->powersave_bias_init_cpu(cpu);
+ 		}
+ 
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index 6301790..3a703b9 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -96,6 +96,7 @@ struct od_cpu_dbs_info_s {
+ 	unsigned int freq_hi_jiffies;
+ 	unsigned int rate_mult;
+ 	unsigned int sample_type:1;
++	unsigned int prev_load_freq;
+ };
+ 
+ struct cs_cpu_dbs_info_s {
+@@ -114,6 +115,8 @@ struct od_dbs_tuners {
+ 	unsigned int adj_up_threshold;
+ 	unsigned int powersave_bias;
+ 	unsigned int io_is_busy;
++	unsigned int grad_up_threshold;
++	unsigned int early_demand;
+ };
+ 
+ struct cs_dbs_tuners {
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index c5fd794..fa4b21e 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -31,6 +31,7 @@
+ #define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
+ #define DEF_FREQUENCY_UP_THRESHOLD		(80)
+ #define DEF_SAMPLING_DOWN_FACTOR		(1)
++#define DEF_GRAD_UP_THRESHOLD			(50)
+ #define MAX_SAMPLING_DOWN_FACTOR		(100000)
+ #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
+ #define MICRO_FREQUENCY_UP_THRESHOLD		(95)
+@@ -168,11 +169,26 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
+ 	struct cpufreq_policy *policy = dbs_info->cdbs.cur_policy;
+ 	struct dbs_data *dbs_data = policy->governor_data;
+ 	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
++	int boost_freq = 0;
+ 
+ 	dbs_info->freq_lo = 0;
+ 
++	/*
++	 * Calculate the gradient of load_freq. If it is too steep we assume
++	 * that the load will go over up_threshold in next iteration(s) and
++	 * we increase the frequency immediately
++	 */
++	if (od_tuners->early_demand) {
++		if (load_freq > dbs_info->prev_load_freq &&
++		   (load_freq - dbs_info->prev_load_freq >
++		    od_tuners->grad_up_threshold * policy->cur))
++			boost_freq = 1;
++
++		dbs_info->prev_load_freq = load_freq;
++	}
++
+ 	/* Check for frequency increase */
+-	if (load_freq > od_tuners->up_threshold * policy->cur) {
++	if (boost_freq || (load_freq > od_tuners->up_threshold * policy->cur)) {
+ 		/* If switching to max speed, apply sampling_down_factor */
+ 		if (policy->cur < policy->max)
+ 			dbs_info->rate_mult =
+@@ -445,12 +461,47 @@ static ssize_t store_powersave_bias(struct cpufreq_policy *policy,
+ 	return count;
+ }
+ 
++static ssize_t store_grad_up_threshold(struct cpufreq_policy *policy,
++		const char *buf, size_t count)
++{
++	struct dbs_data *dbs_data = policy->governor_data;
++	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
++	unsigned int input;
++	int ret;
++	ret = sscanf(buf, "%u", &input);
++
++	if (ret != 1 || input > MAX_FREQUENCY_UP_THRESHOLD ||
++			input < MIN_FREQUENCY_UP_THRESHOLD) {
++		return -EINVAL;
++	}
++
++	od_tuners->grad_up_threshold = input;
++	return count;
++}
++
++static ssize_t store_early_demand(struct cpufreq_policy *policy,
++		const char *buf, size_t count)
++{
++	struct dbs_data *dbs_data = policy->governor_data;
++	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
++	unsigned int input;
++	int ret;
++
++	ret = sscanf(buf, "%u", &input);
++	if (ret != 1)
++		return -EINVAL;
++	od_tuners->early_demand = !!input;
++	return count;
++}
++
+ show_one(od, sampling_rate, sampling_rate);
+ show_one(od, io_is_busy, io_is_busy);
+ show_one(od, up_threshold, up_threshold);
+ show_one(od, sampling_down_factor, sampling_down_factor);
+ show_one(od, ignore_nice, ignore_nice);
+ show_one(od, powersave_bias, powersave_bias);
++show_one(od, grad_up_threshold, grad_up_threshold);
++show_one(od, early_demand, early_demand);
+ declare_show_sampling_rate_min();
+ 
+ cpufreq_freq_attr_rw(sampling_rate);
+@@ -459,6 +510,8 @@ cpufreq_freq_attr_rw(up_threshold);
+ cpufreq_freq_attr_rw(sampling_down_factor);
+ cpufreq_freq_attr_rw(ignore_nice);
+ cpufreq_freq_attr_rw(powersave_bias);
++cpufreq_freq_attr_rw(grad_up_threshold);
++cpufreq_freq_attr_rw(early_demand);
+ cpufreq_freq_attr_ro(sampling_rate_min);
+ 
+ static struct attribute *dbs_attributes[] = {
+@@ -469,6 +522,8 @@ static struct attribute *dbs_attributes[] = {
+ 	&ignore_nice.attr,
+ 	&powersave_bias.attr,
+ 	&io_is_busy.attr,
++	&grad_up_threshold.attr,
++	&early_demand.attr,
+ 	NULL
+ };
+ 
+@@ -516,9 +571,11 @@ static int od_init(struct dbs_data *dbs_data)
+ 	}
+ 
+ 	tuners->sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR;
++	tuners->grad_up_threshold = DEF_GRAD_UP_THRESHOLD;
+ 	tuners->ignore_nice = 0;
+ 	tuners->powersave_bias = 0;
+ 	tuners->io_is_busy = should_io_be_busy();
++	tuners->early_demand = 0;
+ 
+ 	dbs_data->tuners = tuners;
+ 	mutex_init(&dbs_data->mutex);
+-- 
+1.8.1.2
+
+
