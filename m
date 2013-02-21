@@ -1,82 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab3BUTnI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 14:43:08 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36620 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755536Ab3BUTnF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 14:43:05 -0500
-Date: Thu, 21 Feb 2013 19:43:02 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Shawn Joo <sjoo@nvidia.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: core: use regulator name for sysfs
-Message-ID: <20130221194302.GA16870@opensource.wolfsonmicro.com>
-References: <1361433237-3217-1-git-send-email-sjoo@nvidia.com>
- <51267454.5040607@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="liOOAslEiF7prFVr"
-Content-Disposition: inline
-In-Reply-To: <51267454.5040607@wwwdotorg.org>
-X-Cookie: Caution: Keep out of reach of children.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754852Ab3BUTnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 14:43:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755257Ab3BUTms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 14:42:48 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 7/9] mbind: enable mbind() to migrate hugepage
+Date: Thu, 21 Feb 2013 14:41:46 -0500
+Message-Id: <1361475708-25991-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch enables mbind(2) to migrate hugepages.
+Page collecting function check_range() are already aware of hugepage
+by the previous patch in this series.
 
---liOOAslEiF7prFVr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ include/linux/hugetlb.h |  3 +++
+ mm/hugetlb.c            |  2 +-
+ mm/mempolicy.c          | 15 ++++++---------
+ mm/migrate.c            |  7 ++++++-
+ 4 files changed, 16 insertions(+), 11 deletions(-)
 
-On Thu, Feb 21, 2013 at 12:24:04PM -0700, Stephen Warren wrote:
-> On 02/21/2013 12:53 AM, Shawn Joo wrote:
+diff --git v3.8.orig/include/linux/hugetlb.h v3.8/include/linux/hugetlb.h
+index eb33df5..86a4d78 100644
+--- v3.8.orig/include/linux/hugetlb.h
++++ v3.8/include/linux/hugetlb.h
+@@ -263,6 +263,8 @@ struct huge_bootmem_page {
+ #endif
+ };
+ 
++struct page *alloc_huge_page(struct vm_area_struct *vma,
++				unsigned long addr, int avoid_reserve);
+ struct page *alloc_huge_page_node(struct hstate *h, int nid);
+ 
+ /* arch callback */
+@@ -358,6 +360,7 @@ static inline int hstate_index(struct hstate *h)
+ 
+ #else
+ struct hstate {};
++#define alloc_huge_page(v, a, r) NULL
+ #define alloc_huge_page_node(h, nid) NULL
+ #define alloc_bootmem_huge_page(h) NULL
+ #define hstate_file(f) NULL
+diff --git v3.8.orig/mm/hugetlb.c v3.8/mm/hugetlb.c
+index 86ffcb7..ccf9995 100644
+--- v3.8.orig/mm/hugetlb.c
++++ v3.8/mm/hugetlb.c
+@@ -1116,7 +1116,7 @@ static void vma_commit_reservation(struct hstate *h,
+ 	}
+ }
+ 
+-static struct page *alloc_huge_page(struct vm_area_struct *vma,
++struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 				    unsigned long addr, int avoid_reserve)
+ {
+ 	struct hugepage_subpool *spool = subpool_vma(vma);
+diff --git v3.8.orig/mm/mempolicy.c v3.8/mm/mempolicy.c
+index 8627135..9f56c40 100644
+--- v3.8.orig/mm/mempolicy.c
++++ v3.8/mm/mempolicy.c
+@@ -1187,6 +1187,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
+ 		vma = vma->vm_next;
+ 	}
+ 
++	if (PageHuge(page))
++		return alloc_huge_page(vma, address, 1);
+ 	/*
+ 	 * if !vma, alloc_page_vma() will use task or system default policy
+ 	 */
+@@ -1291,15 +1293,10 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 	if (!err) {
+ 		int nr_failed = 0;
+ 
+-		if (!list_empty(&pagelist)) {
+-			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
+-			nr_failed = migrate_pages(&pagelist, new_vma_page,
+-						(unsigned long)vma,
+-						false, MIGRATE_SYNC,
+-						MR_MEMPOLICY_MBIND);
+-			if (nr_failed)
+-				putback_lru_pages(&pagelist);
+-		}
++		WARN_ON_ONCE(flags & MPOL_MF_LAZY);
++		nr_failed = migrate_movable_pages(&pagelist, new_vma_page,
++					(unsigned long)vma, false,
++					MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
+ 
+ 		if (nr_failed && (flags & MPOL_MF_STRICT))
+ 			err = -EIO;
+diff --git v3.8.orig/mm/migrate.c v3.8/mm/migrate.c
+index 36959d6..8c457e7 100644
+--- v3.8.orig/mm/migrate.c
++++ v3.8/mm/migrate.c
+@@ -974,7 +974,12 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ 	struct page *new_hpage = get_new_page(hpage, private, &result);
+ 	struct anon_vma *anon_vma = NULL;
+ 
+-	if (!new_hpage)
++	/*
++	 * Getting a new hugepage with alloc_huge_page() (which can happen
++	 * when migration is caused by mbind()) can return ERR_PTR value,
++	 * so we need take care of the case here.
++	 */
++	if (!new_hpage || IS_ERR_VALUE(new_hpage))
+ 		return -ENOMEM;
+ 
+ 	rc = -EAGAIN;
+-- 
+1.7.11.7
 
-> > regulator is named by numbering on sysfs, e.g. regulator.0, regulator.1
-> > it confuses to find desired regulator before counting the order.
-> > add option for regulator name by use_name_onsysfs.
-> > if it is true and name is not NULL, desc's name will be the name.
-> > e.g. if name in desc is "LDO0", then regulator.LDO0 on sysfs.
-> > otherwise it follows origin.
-
-> Does it make sense to make this change always, rather than based on some
-> new flag in regulator_desc?
-
-It's certainly insane to change this based on the driver and given that
-sysfs is supposed to be an ABI it's questionable if we should do it at
-all.  We certainly can't use the descriptor name as that's very likely
-to clash if you have more than one PMIC.  Taking a glance through sysfs
-on my system what we're doing at the minute is pretty idiomatic, sysfs
-isn't really intended for humans but rather for machines to prettify.
-
-> Another place a similar change might be useful is debugfs.
-
-debugfs already uses more human readable names, it uses the supply name
-(which is what we should be using if we were going to do anything as
-it really ought to be unique already).
-
---liOOAslEiF7prFVr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRJni/AAoJELSic+t+oim9VfoP/271YcwJcCm1lxCVBfT7IajF
-tXzZsxzAy1zrrhzlVwuHkAUh1fuLOP4zaXkyXIbsKFaAvIhrD+PYHuoQXgbpKbZW
-jn8BfVOrbVVwqqonRuhsPhyYHt9v34JUa/Vke7af3MXbudaFxny6AZ+vt3gYqDk6
-QnnqM+u/veXf+h6/50MAzmH6npo56GppnIC4N03z+Jsdo7G4AOkrWndeuNfZKFCW
-qAO0as5JvHmiyHAt1rQJfimYtXwOEKrlNzJx2Uzzf/rdP8jAN7PvU1eTXVLOY9Un
-NjhUJbmepQtfx4oIUQNSrhDX9CMz6s6QC6PB5AxV/93OsyDqV5btDrh8tb+tiYQ2
-9dcyrPFb+/ME7Yk9ojHMPas4y4pnHnAUxkv3QP27HL673O5F0rUnL8PWLmPZ36fJ
-GlpU5x6lzKt6rVmWRK/TU3+pY4Grbgb2v9WgXsJRJFtKSa1zr/4ORhaWCgMP3kQD
-hpT/w320o/XXK5jHYNbw88cM0b9Po2gYoHpjijhuhL+6LupU1HrdFnc844pvAvlI
-czstskTgtOZz86skVkmM4V0tzpHBwiQi9Fcm8OGNC+ishvB7jJKPLYaUn4x/KmL0
-kEedtoNLenUdBGT1EazWftvlAMTUsilqeCz1D9Xk7CwvPnowmYHwd2jpoBsKKK6u
-1H0sqZQYv7idTa1md7Fs
-=oSzL
------END PGP SIGNATURE-----
-
---liOOAslEiF7prFVr--
