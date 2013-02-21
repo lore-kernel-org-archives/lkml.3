@@ -1,107 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab3BUJIZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 04:08:25 -0500
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:59166 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab3BUJIV (ORCPT
+	id S1753051Ab3BUJIy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 04:08:54 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:42053 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab3BUJIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 04:08:21 -0500
-Message-ID: <5125E3F2.7070402@synopsys.com>
-Date: Thu, 21 Feb 2013 14:38:02 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+	Thu, 21 Feb 2013 04:08:48 -0500
+Message-ID: <5125E40D.6050006@linux.vnet.ibm.com>
+Date: Thu, 21 Feb 2013 17:08:29 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: <linux-kernel@vger.kernel.org>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 1/2] metag: copy devicetree to non-init memory
-References: <1361371929-28148-1-git-send-email-james.hogan@imgtec.com> <1361371929-28148-2-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1361371929-28148-2-git-send-email-james.hogan@imgtec.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Mike Galbraith <efault@gmx.de>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
+References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com> <1361427108.5861.41.camel@marge.simpson.net> <5125C607.8090909@linux.vnet.ibm.com> <1361434231.5861.61.camel@marge.simpson.net>
+In-Reply-To: <1361434231.5861.61.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.217]
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022109-2674-0000-0000-000007E84C4A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On 02/21/2013 04:10 PM, Mike Galbraith wrote:
+> On Thu, 2013-02-21 at 15:00 +0800, Michael Wang wrote: 
+>> On 02/21/2013 02:11 PM, Mike Galbraith wrote:
+>>> On Thu, 2013-02-21 at 12:51 +0800, Michael Wang wrote: 
+>>>> On 02/20/2013 06:49 PM, Ingo Molnar wrote:
+>>>> [snip]
+>> [snip]
+>>>>
+>>>> 	if wake_affine()
+>>>> 		new_cpu = select_idle_sibling(curr_cpu)
+>>>> 	else
+>>>> 		new_cpu = select_idle_sibling(prev_cpu)
+>>>>
+>>>> 	return new_cpu
+>>>>
+>>>> Actually that doesn't make sense.
+>>>>
+>>>> I think wake_affine() is trying to check whether move a task from
+>>>> prev_cpu to curr_cpu will break the balance in affine_sd or not, but why
+>>>> won't break balance means curr_cpu is better than prev_cpu for searching
+>>>> the idle cpu?
+>>>
+>>> You could argue that it's impossible to break balance by moving any task
+>>> to any idle cpu, but that would mean bouncing tasks cross node on every
+>>> wakeup is fine, which it isn't.
+>>
+>> I don't get it... could you please give me more detail on how
+>> wake_affine() related with bouncing?
+> 
+> If we didn't ever ask if it's ok, we'd always pull, and stack load up on
+> one package if there's the tiniest of holes to stuff a task into,
+> periodic balance forcibly rips buddies back apart, repeat.  At least
+> with wake_affine() in the loop, there's somewhat of a damper. 
 
-On Wednesday 20 February 2013 08:22 PM, James Hogan wrote:
-> Make a copy of the device tree blob in non-init memory. It is required
-> when using built-in device tree files that the platform code copies the
-> blob to non-init memory prior to calling unflatten_device_tree(),
-> otherwise the strings that the device tree refer to will get poisoned
-> and potentially reused, breaking later reading of the device tree
-> post-init (such as compatible matching in modules, debugfs, and the
-> procfs interface).
+I think I got your point, a question about the possibility to locate an
+idle cpu which belong to different package from prev_cpu, and how
+wake_affine() help on it.
 
-While the patch conceptually looks correct, I'm not sure why any user of DT -
-post-init would refer to DT bindings using of_fdt_* API which use the flat tree,
-instead of the binary tree (more efficient in space/usage). Is this to support
-some in-transition drivers and other code.
+Old logical require prev_cpu and curr_cpu to be affine, which means they
+share caches on some level, usually means they are in the same package,
+and the select_idle_sibling() start search from the top cache share
+level, usually means search all the smp in one package, so, usually,
+both of the cases will only locate idle cpu in their package.
 
-And if this is a general problem, then it is probably better done in DT core.
+I could not figure out what's the case that the wake_affine() could
+benefit a lot, but it do harm a lot according to the testing results.
 
-I'm sure I'm missing something here.
+> 
+>>>> So the new logical in this patch set is:
+>>>>
+>>>> 	new_cpu = select_idle_sibling(prev_cpu)
+>>>> 	if idle_cpu(new_cpu)
+>>>> 		return new_cpu
+>>>
+>>> So you tilted the scales in favor of leaving tasks in their current
+>>> package, which should benefit large footprint tasks, but should also
+>>> penalize light communicating tasks.
+>>
+>> Yes, I'd prefer to wakeup the task on a cpu which:
+>> 1. idle
+>> 2. close to prev_cpu
+>>
+>> So if both curr_cpu and prev_cpu have idle cpu in their topology, which
+>> one is better? that depends on how task benefit from cache and the
+>> balance situation, whatever, I don't think the benefit worth the high
+>> cost of wake_affine() in most cases...
+> 
+> We've always used wake_affine() before, yet been able to schedule at
+> high frequency, so I don't see that it can be _that_ expensive.  I
+> haven't actually measured lately (loooong time) though.
+> 
+> WRT cost/benefit of migration, yeah, it depends entirely on the tasks,
+> some will gain, some will lose.  On a modern single processor box, it
+> just doesn't matter, there's only one llc (two s_i_s() calls = oopsie),
+> but on my beloved old Q6600 or a big box, it'll matter a lot to
+> something.  NUMA balance will deal with big boxen, my trusty old Q6600
+> will likely get all upset with some localhost stuff.
 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> ---
->  arch/metag/include/asm/prom.h |  1 +
->  arch/metag/kernel/devtree.c   | 17 +++++++++++++++++
->  arch/metag/kernel/setup.c     |  2 ++
->  3 files changed, 20 insertions(+)
->
-> diff --git a/arch/metag/include/asm/prom.h b/arch/metag/include/asm/prom.h
-> index d881396..ccac97e 100644
-> --- a/arch/metag/include/asm/prom.h
-> +++ b/arch/metag/include/asm/prom.h
-> @@ -18,6 +18,7 @@
->  #define HAVE_ARCH_DEVTREE_FIXUPS
->  
->  extern struct machine_desc *setup_machine_fdt(void *dt);
-> +extern void copy_fdt(void);
->  extern void metag_dt_memblock_reserve(void);
->  
->  #endif /* __ASM_METAG_PROM_H */
-> diff --git a/arch/metag/kernel/devtree.c b/arch/metag/kernel/devtree.c
-> index 5b6b1d85..7cd0252 100644
-> --- a/arch/metag/kernel/devtree.c
-> +++ b/arch/metag/kernel/devtree.c
-> @@ -95,3 +95,20 @@ struct machine_desc * __init setup_machine_fdt(void *dt)
->  
->  	return mdesc_best;
->  }
-> +
-> +/**
-> + * copy_fdt - Copy device tree into non-init memory.
-> + *
-> + * We must copy the flattened device tree blob into non-init memory because the
-> + * unflattened device tree will reference the strings in it directly.
-> + */
-> +void __init copy_fdt(void)
-> +{
-> +	void *alloc = early_init_dt_alloc_memory_arch(
-> +			be32_to_cpu(initial_boot_params->totalsize), 0x40);
-> +	if (alloc) {
-> +		memcpy(alloc, initial_boot_params,
-> +		       be32_to_cpu(initial_boot_params->totalsize));
-> +		initial_boot_params = alloc;
-> +	}
-> +}
-> diff --git a/arch/metag/kernel/setup.c b/arch/metag/kernel/setup.c
-> index dd6c5ad..8792461 100644
-> --- a/arch/metag/kernel/setup.c
-> +++ b/arch/metag/kernel/setup.c
-> @@ -406,6 +406,8 @@ void __init setup_arch(char **cmdline_p)
->  	cpu_2_hwthread_id[smp_processor_id()] = hard_processor_id();
->  	hwthread_id_2_cpu[hard_processor_id()] = smp_processor_id();
->  
-> +	/* Copy device tree blob into non-init memory before unflattening */
-> +	copy_fdt();
->  	unflatten_device_tree();
->  
->  #ifdef CONFIG_SMP
+But is this patch set really cause regression on your Q6600? It may
+sacrificed some thing, but I still think it will benefit far more,
+especially on huge systems.
+
+Regards,
+Michael Wang
+
+
+> 
+> -Mike
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
