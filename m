@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab3BUJmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 04:42:22 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55228 "EHLO mail.skyhub.de"
+	id S1752479Ab3BUJnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 04:43:25 -0500
+Received: from mout.gmx.net ([212.227.17.21]:60211 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab3BUJmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 04:42:18 -0500
-Date: Thu, 21 Feb 2013 10:42:13 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alex Shi <alex.shi@intel.com>
-Cc: torvalds@linux-foundation.org, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Subject: Re: [patch v5 11/15] sched: add power/performance balance allow flag
-Message-ID: <20130221094213.GA4694@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Alex Shi <alex.shi@intel.com>, torvalds@linux-foundation.org,
-	mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-	akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-	namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
-	gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-	viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-	morten.rasmussen@arm.com
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
- <1361164062-20111-12-git-send-email-alex.shi@intel.com>
- <20130220121256.GD16775@pd.tnic>
- <5124DBA3.20605@intel.com>
- <20130220152234.GE16775@pd.tnic>
- <51257946.1010505@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <51257946.1010505@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752249Ab3BUJnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 04:43:23 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+lz+9md0ulN6W4JslrUtwPJo3o7lMawD0WpDRxCn
+	GfD9wmE0B6oJcQ
+Message-ID: <1361439789.5861.70.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Thu, 21 Feb 2013 10:43:09 +0100
+In-Reply-To: <5125E40D.6050006@linux.vnet.ibm.com>
+References: <51079178.3070002@linux.vnet.ibm.com>
+	 <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com>
+	 <1361427108.5861.41.camel@marge.simpson.net>
+	 <5125C607.8090909@linux.vnet.ibm.com>
+	 <1361434231.5861.61.camel@marge.simpson.net>
+	 <5125E40D.6050006@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 09:32:54AM +0800, Alex Shi wrote:
-> Yes, use flags can save 2 int variable, I will change that.
->
-> Just curious, consider the lb_env size and just used in stack, plus
-> the big cacheline size of modern cpu, and the alignment of gcc flag on
-> kernel, seems no arch needs more cache lines. Are there any platforms
-> performance is impacted by this 2 int variables?
+On Thu, 2013-02-21 at 17:08 +0800, Michael Wang wrote:
 
-Not that I know of. But that's not the point: if we don't pay attention
-and are not as economical as possible in the kernel, and especially in
-heavily walked code as the scheduler, we'll become fat and bloated (if
-we're not halfway there already, that is).
+> But is this patch set really cause regression on your Q6600? It may
+> sacrificed some thing, but I still think it will benefit far more,
+> especially on huge systems.
 
-It might not impact processor bandwidth now because internal paths are
-obviously adequate but you're not the only one adding features. What
-happens if the next guy comes and adds another two integers just because
-it is convenient in the code?
+We spread on FORK/EXEC, and will no longer will pull communicating tasks
+back to a shared cache with the new logic preferring to leave wakee
+remote, so while no, I haven't tested (will try to find round tuit) it
+seems  it _must_ hurt.  Dragging data from one llc to the other on Q6600
+hurts a LOT.  Every time a client and server are cross llc, it's a huge
+hit.  The previous logic pulled communicating tasks together right when
+it matters the most, intermittent load... or interactive use.
 
-Btw, sizeof(lb_env) is currently something around 80 bytes AFAICT. Now
-that doesn't fit in one cacheline anyway. So if you add your two ints,
-they'll be trailing in the second cacheline which needs to go up to L1.
+-Mike
 
-Now flags will still be at the beginning of the second cacheline but
-it is still better to add two new bits there because this is exactly
-what this variable is for.
-
-And, just for the fun of it, if you push the flags variable higher in
-the struct itself, it will land in the first cacheline and there's your
-design with *absolutely* no overhead in that respect. I betcha if you
-do this, you won't see any overhead in L1 utilization even with perf
-counters because you get it practically for free.
-
-:-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
