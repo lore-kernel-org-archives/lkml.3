@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab3BUKTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 05:19:35 -0500
-Received: from smtp-out-108.synserver.de ([212.40.185.108]:1114 "EHLO
-	smtp-out-108.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011Ab3BUKTd (ORCPT
+	id S1753277Ab3BUKVM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 05:21:12 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:37152 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001Ab3BUKVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 05:19:33 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 15832
-Message-ID: <5125F3D3.6040309@metafoo.de>
-Date: Thu, 21 Feb 2013 11:15:47 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>
-CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, linux-ia64@vger.kernel.org
-Subject: Re: [PATCH 09/16] ia64 idle: delete pm_idle
-References: <1360475903-30007-1-git-send-email-lenb@kernel.org> <7dc2a692a27e9c3da86acf150c4a89024e48bd05.1360475150.git.len.brown@intel.com>
-In-Reply-To: <7dc2a692a27e9c3da86acf150c4a89024e48bd05.1360475150.git.len.brown@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 21 Feb 2013 05:21:10 -0500
+Message-ID: <1361442055.26780.3.camel@laptop>
+Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Thu, 21 Feb 2013 11:20:55 +0100
+In-Reply-To: <5125A7C8.8020308@linux.vnet.ibm.com>
+References: <51079178.3070002@linux.vnet.ibm.com>
+	 <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/2013 06:58 AM, Len Brown wrote:
-> From: Len Brown <len.brown@intel.com>
+On Thu, 2013-02-21 at 12:51 +0800, Michael Wang wrote:
+> The old logical when locate affine_sd is:
 > 
-> pm_idle() on ia64 was a synonym for default_idle().
-> So simply invoke default_idle() directly.
+>         if prev_cpu != curr_cpu
+>                 if wake_affine()
+>                         prev_cpu = curr_cpu
+>         new_cpu = select_idle_sibling(prev_cpu)
+>         return new_cpu
 > 
-> Signed-off-by: Len Brown <len.brown@intel.com>
-> Cc: linux-ia64@vger.kernel.org
-> ---
->  arch/ia64/kernel/process.c | 3 ---
->  arch/ia64/kernel/setup.c   | 1 -
->  2 files changed, 4 deletions(-)
+> The new logical is same to the old one if prev_cpu == curr_cpu, so
+> let's
+> simplify the old logical like:
 > 
-> diff --git a/arch/ia64/kernel/process.c b/arch/ia64/kernel/process.c
-> index 31360cb..e34f565 100644
-> --- a/arch/ia64/kernel/process.c
-> +++ b/arch/ia64/kernel/process.c
-> @@ -57,8 +57,6 @@ void (*ia64_mark_idle)(int);
->  
->  unsigned long boot_option_idle_override = IDLE_NO_OVERRIDE;
->  EXPORT_SYMBOL(boot_option_idle_override);
-> -void (*pm_idle) (void);
-> -EXPORT_SYMBOL(pm_idle);
->  void (*pm_power_off) (void);
->  EXPORT_SYMBOL(pm_power_off);
->  
-> @@ -301,7 +299,6 @@ cpu_idle (void)
->  			if (mark_idle)
->  				(*mark_idle)(1);
->  
-> -			idle = pm_idle;
->  			if (!idle)
+>         if wake_affine()
+>                 new_cpu = select_idle_sibling(curr_cpu)
+>         else
+>                 new_cpu = select_idle_sibling(prev_cpu)
+> 
+>         return new_cpu
+> 
+> Actually that doesn't make sense.
 
-Hm, if I'm not mistaken idle will uninitialized at this point, so this could
-quite likely lead to a crash.
+It does :-)
 
->  				idle = default_idle;
->  			(*idle)();
-> diff --git a/arch/ia64/kernel/setup.c b/arch/ia64/kernel/setup.c
-> index aaefd9b..2029cc0 100644
-> --- a/arch/ia64/kernel/setup.c
-> +++ b/arch/ia64/kernel/setup.c
-> @@ -1051,7 +1051,6 @@ cpu_init (void)
->  		max_num_phys_stacked = num_phys_stacked;
->  	}
->  	platform_cpu_init();
-> -	pm_idle = default_idle;
->  }
->  
->  void __init
+> I think wake_affine() is trying to check whether move a task from
+> prev_cpu to curr_cpu will break the balance in affine_sd or not, but
+> why
+> won't break balance means curr_cpu is better than prev_cpu for
+> searching
+> the idle cpu?
+
+It doesn't, the whole affine wakeup stuff is meant to pull waking tasks
+towards the cpu that does the wakeup, we limit this by putting bounds on
+the imbalance this is may create.
+
+The reason we want to run tasks on the cpu that does the wakeup is
+because that cpu 'obviously' is running something related and it seems
+like a good idea to run related tasks close together.
+
+So look at affine wakeups as a force that groups related tasks.
+
+> So the new logical in this patch set is:
+> 
+>         new_cpu = select_idle_sibling(prev_cpu)
+>         if idle_cpu(new_cpu)
+>                 return new_cpu
+> 
+>         new_cpu = select_idle_sibling(curr_cpu)
+>         if idle_cpu(new_cpu) {
+>                 if wake_affine()
+>                         return new_cpu
+>         }
+> 
+>         return prev_cpu
+> 
+> And now, unless we are really going to move load from prev_cpu to
+> curr_cpu, we won't use wake_affine() any more.
+
+That's completely breaks stuff, not cool.
 
