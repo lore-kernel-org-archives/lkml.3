@@ -1,109 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab3BUMKv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 07:10:51 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:58399 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753640Ab3BUMKu (ORCPT
+	id S1752720Ab3BUM0J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 07:26:09 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15986 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316Ab3BUM0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 07:10:50 -0500
-Message-ID: <51260EA8.20402@gmail.com>
-Date: Thu, 21 Feb 2013 13:10:16 +0100
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Thu, 21 Feb 2013 07:26:07 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 21 Feb 2013 04:25:00 -0800
+Date: Thu, 21 Feb 2013 14:25:36 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [v2 1/4] ARM: tegra20: create a DT header defining CLK IDs
+Message-ID: <20130221122536.GJ23234@tbergstrom-lnx.Nvidia.com>
+References: <1360868369-20093-1-git-send-email-hdoyu@nvidia.com>
+ <1360868369-20093-2-git-send-email-hdoyu@nvidia.com>
+ <511D45E0.1080105@wwwdotorg.org>
+ <20130215092407.GO3073@tbergstrom-lnx.Nvidia.com>
+ <511E6639.1090909@wwwdotorg.org>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Pawel Moll <mail@pawelmoll.com>, Jaroslav Kysela <perex@perex.cz>,
-        Daniel Mack <daniel@caiaq.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ALSA: usb: Fix Processing Unit Descriptor parsers
-References: <1361411750-30056-1-git-send-email-mail@pawelmoll.com> <s5hip5mhwd5.wl%tiwai@suse.de>
-In-Reply-To: <s5hip5mhwd5.wl%tiwai@suse.de>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <511E6639.1090909@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.02.2013 10:03, Takashi Iwai wrote:
-> At Thu, 21 Feb 2013 01:55:50 +0000,
-> Pawel Moll wrote:
->>
->> Commit 99fc86450c439039d2ef88d06b222fd51a779176 "ALSA: usb-mixer:
->> parse descriptors with structs" introduced a set of useful parsers
->> for descriptors. Unfortunately the parses for the Processing Unit
->> Descriptor came with a very subtle bug...
->>
->> Functions uac_processing_unit_iProcessing() and
->> uac_processing_unit_specific() were indexing the baSourceID array
->> forgetting the fields before the iProcessing and process-specific
->> descriptors.
->>
->> The problem was observed with Sound Blaster Extigy mixer,
->> where nNrModes in Up/Down-mix Processing Unit Descriptor
->> was accessed at offset 10 of the descriptor (value 0)
->> instead of offset 15 (value 7). In result the resulting
->> control had interesting limit values:
->>
->> Simple mixer control 'Channel Routing Mode Select',0
->>   Capabilities: volume volume-joined penum
->>   Playback channels: Mono
->>   Capture channels: Mono
->>   Limits: 0 - -1
->>   Mono: -1 [100%]
->>
->> Fixed by starting from the bmControls, which was calculated
->> correctly, instead of baSourceID.
->>
->> Now the mentioned control is fine:
->>
->> Simple mixer control 'Channel Routing Mode Select',0
->>   Capabilities: volume volume-joined penum
->>   Playback channels: Mono
->>   Capture channels: Mono
->>   Limits: 0 - 6
->>   Mono: 0 [0%]
->>
->> Signed-off-by: Pawel Moll <mail@pawelmoll.com>
->> ---
->>  include/uapi/linux/usb/audio.h |    6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/uapi/linux/usb/audio.h b/include/uapi/linux/usb/audio.h
->> index ac90037..d2314be 100644
->> --- a/include/uapi/linux/usb/audio.h
->> +++ b/include/uapi/linux/usb/audio.h
->> @@ -384,14 +384,16 @@ static inline __u8 uac_processing_unit_iProcessing(struct uac_processing_unit_de
->>  						   int protocol)
->>  {
->>  	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
->> -	return desc->baSourceID[desc->bNrInPins + control_size];
->> +	return *(uac_processing_unit_bmControls(desc, protocol)
->> +			+ control_size);
->>  }
->>  
->>  static inline __u8 *uac_processing_unit_specific(struct uac_processing_unit_descriptor *desc,
->>  						 int protocol)
->>  {
->>  	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
->> -	return &desc->baSourceID[desc->bNrInPins + control_size + 1];
->> +	return uac_processing_unit_bmControls(desc, protocol)
->> +			+ control_size + 1;
->>  }
+On Fri, Feb 15, 2013 at 05:45:45PM +0100, Stephen Warren wrote:
+
+...
+
+> > I would suggest removing this clock. It's not actually implemented in the CCF
+> > and rather useless. If you would gate the CPU clock from the CPU by writing to
+> > this register, how would you ungate it? :) Note that this would gate the clock
+> > to all CPUs.
 > 
-> Looks good to me.
+> (Note that my comment was re: all clocks, not just that one clock)
 > 
-> An alternative would be to change uac_processing_unit_bControlSize()
-> to correct the header size, but I don't think it's good, as
-> bControlSize fields in other units show the value including the header
-> size.
-> 
-> Daniel, what do you think?
+> Can't the PMC or flow-controller ungate the clock based on some event?
 
-Looks good to me too. and this should be marked for stable of course.
+I don't think the flow-controller controls this gate. The usual way of
+clockgating a core is to execute a WFI instruction. That will trigger
+clockgating the core, unless the flow-controller has been programmed to do
+something else. The flow-controller will ungate the clock when there is an
+interrupt.
 
-Thanks for fixing this, Pawell!
+> Either way, that clock definition exists in HW, right? So I don't think
+> there's actually any harm in including the definition in the binding
+> even if we never implement/use it.
 
+The clock definition seems to exist in HW yes, the corresponding resetbit
+however is marked as 'reserved' in the Tegra114 documentation.
 
-Daniel
+Cheers,
+
+Peter.
