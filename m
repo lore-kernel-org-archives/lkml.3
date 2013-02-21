@@ -1,75 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab3BUMdR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 07:33:17 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:49086 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337Ab3BUMdP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 07:33:15 -0500
-Date: Thu, 21 Feb 2013 07:33:06 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Samu Kallio <samu.kallio@aberdeencloud.com>, mingo@redhat.com,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: x86: mm: Fix vmalloc_fault oops during lazy MMU updates.
-Message-ID: <20130221123306.GA6781@phenom.dumpdata.com>
-References: <1361068552-21529-1-git-send-email-samu.kallio@aberdeencloud.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361068552-21529-1-git-send-email-samu.kallio@aberdeencloud.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1752966Ab3BUMuq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 07:50:46 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:43172 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752448Ab3BUMup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 07:50:45 -0500
+Date: Thu, 21 Feb 2013 13:49:50 +0100
+Message-Id: <201302211249.r1LCno6O024776@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Michal Marek <mmarek@suse.cz>
+CC: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: [PATCH] Unset LANG in setlocalversion script
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 17, 2013 at 02:35:52AM -0000, Samu Kallio wrote:
-> In paravirtualized x86_64 kernels, vmalloc_fault may cause an oops
-> when lazy MMU updates are enabled, because set_pgd effects are being
-> deferred.
-> 
-> One instance of this problem is during process mm cleanup with memory
-> cgroups enabled. The chain of events is as follows:
-> 
-> - zap_pte_range enables lazy MMU updates
-> - zap_pte_range eventually calls mem_cgroup_charge_statistics,
->   which accesses the vmalloc'd mem_cgroup per-cpu stat area
-> - vmalloc_fault is triggered which tries to sync the corresponding
->   PGD entry with set_pgd, but the update is deferred
-> - vmalloc_fault oopses due to a mismatch in the PUD entries
-> 
-> Calling arch_flush_lazy_mmu_mode immediately after set_pgd makes the
-> changes visible to the consistency checks.
+This patch allows the use of setlocalversion script regardless of the LANG
+parameter. Otherwise, the `svn info 2>/dev/null | grep '^Last Changed Rev'`
+returns nothing because for instance, in French the text 'Last Changed Rev'
+is replaced by 'Révision de la dernière modification'
 
-How do you reproduce this? Is there a BUG() or WARN() trace that
-is triggered when this happens?
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-Also pls next time also CC me.
-> 
-> Signed-off-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-> 
-> ---
-> arch/x86/mm/fault.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-> index 8e13ecb..0a45298 100644
-> --- a/arch/x86/mm/fault.c
-> +++ b/arch/x86/mm/fault.c
-> @@ -378,10 +378,12 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
->  	if (pgd_none(*pgd_ref))
->  		return -1;
->  
-> -	if (pgd_none(*pgd))
-> +	if (pgd_none(*pgd)) {
->  		set_pgd(pgd, *pgd_ref);
-> -	else
-> +		arch_flush_lazy_mmu_mode();
-> +	} else {
->  		BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
-> +	}
->  
->  	/*
->  	 * Below here mismatches are bugs because these lower tables
+diff -ur linux-3.7.9/scripts/setlocalversion linux/scripts/setlocalversion
+--- linux-3.7.9/scripts/setlocalversion	2013-02-17 19:53:32.000000000 +0100
++++ linux/scripts/setlocalversion	2012-11-03 03:15:32.000000000 +0100
+@@ -9,6 +9,8 @@
+ #
+ #
+ 
++unset LANG
++
+ usage() {
+ 	echo "Usage: $0 [--save-scmversion] [srctree]" >&2
+ 	exit 1
