@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757948Ab3BUWPx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 17:15:53 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:59028 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754566Ab3BUWPw (ORCPT
+	id S1758893Ab3BUWSo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 17:18:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51863 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756528Ab3BUWSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 17:15:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130221215850.GC17833@n2100.arm.linux.org.uk>
-References: <1361389302-11968-1-git-send-email-khilman@linaro.org>
-	<1361389302-11968-3-git-send-email-khilman@linaro.org>
-	<87y5ehmp8d.fsf@linaro.org>
-	<CAFTL4hw1=mKtUadL0WDrydtspOehKuW7jhhzr65vXR2P2zdTWw@mail.gmail.com>
-	<20130221215850.GC17833@n2100.arm.linux.org.uk>
-Date: Thu, 21 Feb 2013 23:15:50 +0100
-Message-ID: <CAFTL4hzJ8YXfCaHBaHZ5X8jRJA+zaC0FEaP-=-+5b=SrpXPLiw@mail.gmail.com>
-Subject: Re: [RFC/PATCH 2/5] kernel_cpustat: convert to atomic 64-bit accessors
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Kevin Hilman <khilman@linaro.org>,
-        Mats Liljegren <mats.liljegren@enea.com>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 21 Feb 2013 17:18:43 -0500
+Date: Thu, 21 Feb 2013 14:18:41 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Amnon Shiloh <u3557@miso.sublimeip.com>,
+        Steven Rostedt <rostedt@goodmis.org>, u3557@dialix.com.au,
+        Oleg Nesterov <oleg@redhat.com>, Pedro Alves <palves@redhat.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Subject: Re: prctl(PR_SET_MM)
+Message-Id: <20130221141841.c760b02f.akpm@linux-foundation.org>
+In-Reply-To: <20130221080028.GE1740@moon>
+References: <20130220105109.GW20312@moon>
+	<20130221074639.4880D592064@miso.sublimeip.com>
+	<20130221080028.GE1740@moon>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/21 Russell King - ARM Linux <linux@arm.linux.org.uk>:
-> On Thu, Feb 21, 2013 at 10:53:07PM +0100, Frederic Weisbecker wrote:
->> That too should be kcpustat_this_cpu_set(), or kcpustat_this_cpu_add()
->> FWIW. But we probably don't need the overhead of atomic_add() that
->> does a LOCK.
->> atomic_set(var, atomic_read(var) + delta) would be better. All we need
->
-> You mean atomic64_set() and atomic64_read().
+On Thu, 21 Feb 2013 12:00:28 +0400
+Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 
-Right.
+> From: Amnon Shiloh <u3557@miso.sublimeip.com>
+> Subject: prctl: Make PR_SET_MM being depend on own CONFIG_MM_FIELDS_SETTING
+> 
+> ...
+> 
+> Signed-off-by: Amnon Shiloh <u3557@miso.sublimeip.com>
 
-> Looking at the generic
-> version in lib/atomic64.c, atomic64_add() is cheaper for 32-bit arches
-> because it doesn't involve taking the lock twice.
+The "..." makes me sad.
 
-Yeah but that's the generic version. I guess the archs that have
-overriden don't take any locks there.
+If/when this patch gets sent for real, please explain the reasons? 
+AFAICT it permits the enabling of prctl(PR_SET_MM) in
+CONFIG_CHECKPOINT_RESTORE=n kernels.  If that was indeed the intent,
+why?
+
