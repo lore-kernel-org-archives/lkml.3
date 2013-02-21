@@ -1,157 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636Ab3BUR7F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 12:59:05 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:45217 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab3BUR7C (ORCPT
+	id S1755941Ab3BUR70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 12:59:26 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:9848 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040Ab3BUR7Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 12:59:02 -0500
-Date: Thu, 21 Feb 2013 09:58:57 -0800
-From: Namhyung Kim <namhyung@kernel.org>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Mats Liljegren <mats.liljegren@enea.com>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC/PATCH 4/5] cputime: use do_div() for nsec resolution
- conversion helpers
-Message-ID: <20130221175857.GB14256@danjae.linux.parc55>
-References: <1361389302-11968-1-git-send-email-khilman@linaro.org>
- <1361389302-11968-5-git-send-email-khilman@linaro.org>
+	Thu, 21 Feb 2013 12:59:24 -0500
+From: "Roberts, Lee A." <lee.roberts@hp.com>
+To: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/4 v2] sctp: fix association hangs due to off-by-one errors
+ in sctp_tsnmap_grow()
+Thread-Topic: [PATCH 1/4 v2] sctp: fix association hangs due to off-by-one
+ errors in sctp_tsnmap_grow()
+Thread-Index: Ac4QXLYhOv65zbCVS/6ZBQX9/E14Qg==
+Date: Thu, 21 Feb 2013 17:57:46 +0000
+Message-ID: <D64EC45690EF85409BA6C4730E0162244310DF62@G4W3231.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.14]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1361389302-11968-5-git-send-email-khilman@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+From: Lee A. Roberts <lee.roberts@hp.com>
 
-On Wed, Feb 20, 2013 at 11:41:41AM -0800, Kevin Hilman wrote:
-> For the nsec resolution conversions to be useful on non 64-bit
-> architectures, do_div() needs to be used for the 64-bit divisions.
-> 
-> Signed-off-by: Kevin Hilman <khilman@linaro.org>
-> ---
->  include/asm-generic/cputime_nsecs.h | 51 +++++++++++++++++++++++++++----------
->  1 file changed, 37 insertions(+), 14 deletions(-)
-> 
-> diff --git a/include/asm-generic/cputime_nsecs.h b/include/asm-generic/cputime_nsecs.h
-> index b6485ca..daa6075 100644
-> --- a/include/asm-generic/cputime_nsecs.h
-> +++ b/include/asm-generic/cputime_nsecs.h
-> @@ -24,13 +24,17 @@ typedef u64 __nocast cputime64_t;
->  /*
->   * Convert cputime <-> jiffies (HZ)
->   */
-> -#define cputime_to_jiffies(__ct)	\
-> -	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
-> +static inline u64 cputime_to_jiffies(const cputime_t ct)
-> +{
-> +	cputime_t __ct = ct;
+Resolve SCTP association hangs observed during SCTP stress
+testing.  Observable symptoms include communications hangs
+with data being held in the association lobby (ordering)
+queue.  Close examination of reassembly/ordering queues shows
+duplicated packets.
 
-Why it removed the "(__force u64)" conversion part?  Shouldn't it be:
+In sctp_tsnmap_mark(), correct off-by-one error when calculating
+gap value for tsnmap.
 
-	u64 __ct = (__force u64) ct;
+In sctp_tsnmap_grow(), correct off-by-one error when copying
+and resizing the tsnmap.  If max_tsn_seen is in the LSB of the
+word, this bit can be lost, causing the corresponding packet
+to be transmitted again and to be entered as a duplicate into
+the SCTP reassembly/ordering queues.
 
-?  (and ditto for below changes)
+Patch applies to linux-3.8 kernel.
 
-Thanks,
-Namhyung
+Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
+---
+ net/sctp/tsnmap.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
+diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-vanilla/net/sctp/tsnmap.c linux-3.8-SCTP+1/net/sctp/tsnmap.c
+--- linux-3.8-vanilla/net/sctp/tsnmap.c	2013-02-18 16:58:34.000000000 -0700
++++ linux-3.8-SCTP+1/net/sctp/tsnmap.c	2013-02-21 10:44:15.985075048 -0700
+@@ -122,7 +122,7 @@ int sctp_tsnmap_mark(struct sctp_tsnmap
+ 	if (TSN_lt(tsn, map->base_tsn))
+ 		return 0;
+ 
+-	gap = tsn - map->base_tsn;
++	gap = tsn - map->cumulative_tsn_ack_point;
+ 
+ 	if (gap >= map->len && !sctp_tsnmap_grow(map, gap))
+ 		return -ENOMEM;
+@@ -369,14 +369,15 @@ static int sctp_tsnmap_grow(struct sctp_
+ 	if (gap >= SCTP_TSN_MAP_SIZE)
+ 		return 0;
+ 
+-	inc = ALIGN((gap - map->len),BITS_PER_LONG) + SCTP_TSN_MAP_INCREMENT;
++	inc = ALIGN((gap - map->len), BITS_PER_LONG) + SCTP_TSN_MAP_INCREMENT;
+ 	len = min_t(u16, map->len + inc, SCTP_TSN_MAP_SIZE);
+ 
+ 	new = kzalloc(len>>3, GFP_ATOMIC);
+ 	if (!new)
+ 		return 0;
+ 
+-	bitmap_copy(new, map->tsn_map, map->max_tsn_seen - map->base_tsn);
++	bitmap_copy(new, map->tsn_map,
++		map->max_tsn_seen - map->cumulative_tsn_ack_point);
+ 	kfree(map->tsn_map);
+ 	map->tsn_map = new;
+ 	map->len = len;
 
-> +
-> +	do_div(__ct, NSEC_PER_SEC / HZ);
-> +	return __ct;
-> +}
->  #define cputime_to_scaled(__ct)		(__ct)
->  #define jiffies_to_cputime(__jif)	\
->  	(__force cputime_t)((__jif) * (NSEC_PER_SEC / HZ))
-> -#define cputime64_to_jiffies64(__ct)	\
-> -	((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
-> +#define cputime64_to_jiffies64(__ct) cputime_to_jiffies(__ct)
->  #define jiffies64_to_cputime64(__jif)	\
->  	(__force cputime64_t)((__jif) * (NSEC_PER_SEC / HZ))
->  
-> @@ -44,8 +48,13 @@ typedef u64 __nocast cputime64_t;
->  /*
->   * Convert cputime <-> microseconds
->   */
-> -#define cputime_to_usecs(__ct)		\
-> -	((__force u64)(__ct) / NSEC_PER_USEC)
-> +static inline u64 cputime_to_usecs(const cputime_t ct)
-> +{
-> +	cputime_t __ct = ct;
-> +
-> +	do_div(__ct, NSEC_PER_USEC);
-> +	return __ct;
-> +}
->  #define usecs_to_cputime(__usecs)	\
->  	(__force cputime_t)((__usecs) * NSEC_PER_USEC)
->  #define usecs_to_cputime64(__usecs)	\
-> @@ -54,8 +63,13 @@ typedef u64 __nocast cputime64_t;
->  /*
->   * Convert cputime <-> seconds
->   */
-> -#define cputime_to_secs(__ct)		\
-> -	((__force u64)(__ct) / NSEC_PER_SEC)
-> +static inline u64 cputime_to_secs(const cputime_t ct)
-> +{
-> +	cputime_t __ct = ct;
-> +
-> +	do_div(__ct, NSEC_PER_SEC);
-> +	return __ct;
-> +}
->  #define secs_to_cputime(__secs)		\
->  	(__force cputime_t)((__secs) * NSEC_PER_SEC)
->  
-> @@ -69,8 +83,10 @@ static inline cputime_t timespec_to_cputime(const struct timespec *val)
->  }
->  static inline void cputime_to_timespec(const cputime_t ct, struct timespec *val)
->  {
-> -	val->tv_sec  = (__force u64) ct / NSEC_PER_SEC;
-> -	val->tv_nsec = (__force u64) ct % NSEC_PER_SEC;
-> +	cputime_t __ct = ct;
-> +
-> +	val->tv_nsec = do_div(__ct, NSEC_PER_SEC);
-> +	val->tv_sec = __ct;
->  }
->  
->  /*
-> @@ -83,15 +99,22 @@ static inline cputime_t timeval_to_cputime(struct timeval *val)
->  }
->  static inline void cputime_to_timeval(const cputime_t ct, struct timeval *val)
->  {
-> -	val->tv_sec = (__force u64) ct / NSEC_PER_SEC;
-> -	val->tv_usec = ((__force u64) ct % NSEC_PER_SEC) / NSEC_PER_USEC;
-> +	cputime_t __ct = ct;
-> +
-> +	val->tv_usec = do_div(__ct, NSEC_PER_SEC) / NSEC_PER_USEC;
-> +	val->tv_sec = __ct;
->  }
->  
->  /*
->   * Convert cputime <-> clock (USER_HZ)
->   */
-> -#define cputime_to_clock_t(__ct)	\
-> -	((__force u64)(__ct) / (NSEC_PER_SEC / USER_HZ))
-> +static inline u64 cputime_to_clock_t(const cputime_t ct)
-> +{
-> +	cputime_t __ct = ct;
-> +
-> +	do_div(__ct, (NSEC_PER_SEC / USER_HZ));
-> +	return __ct;
-> +}
->  #define clock_t_to_cputime(__x)		\
->  	(__force cputime_t)((__x) * (NSEC_PER_SEC / USER_HZ))
->  
-> -- 
-> 1.8.1.2
-> 
-> 
-> _______________________________________________
-> linaro-dev mailing list
-> linaro-dev@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-dev
