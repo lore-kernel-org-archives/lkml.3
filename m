@@ -1,188 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab3BUTof (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 14:44:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16299 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754745Ab3BUTmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 14:42:46 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/9] migrate: enable migrate_pages() to migrate hugepage
-Date: Thu, 21 Feb 2013 14:41:44 -0500
-Message-Id: <1361475708-25991-6-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1754237Ab3BUTos (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 14:44:48 -0500
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:47459 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab3BUToq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 14:44:46 -0500
+Message-ID: <512678F9.8020603@synopsys.com>
+Date: Fri, 22 Feb 2013 01:13:53 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        Chris Zankel <chris@zankel.net>, "Max Filippov" <jcmvbkbc@gmail.com>,
+        Marc Gauthier <marc@tensilica.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] memblock: add assertion for zero allocation size
+References: <1361471962-25164-1-git-send-email-vgupta@synopsys.com> <1361471962-25164-2-git-send-email-vgupta@synopsys.com> <CAE9FiQXSPHjRsCWcHpz7s1gQjNGuj5_X_YE2Ln=EA7_-Ka_cNg@mail.gmail.com> <51267695.8090800@synopsys.com> <20130221193639.GN3570@htj.dyndns.org>
+In-Reply-To: <20130221193639.GN3570@htj.dyndns.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends check_range() to handle vma with VM_HUGETLB set.
-With this changes, we can migrate hugepage with migrate_pages(2).
-Note that for larger hugepages (covered by pud entries, 1GB for
-x86_64 for example), we simply skip it now.
+On Friday 22 February 2013 01:06 AM, Tejun Heo wrote:
+> On Fri, Feb 22, 2013 at 01:03:41AM +0530, Vineet Gupta wrote:
+>> Where - you mean if user passes 0, just make it 1. Nah - it's better to complain
+>> and get the call site fixed !
+>>
+>>> or BUG_ON(!align) instead?
+>> That could be done too but you would also need BUG_ON(!size) - to catch another
+>> API abuse.
+>> BUG_ON(!size) however catches both the cases.
+> How about "if (WARN_ON(!align)) align = __alignof__(long long);"?
+> Early BUG_ON()s can be painful to debug depending on setup.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- include/linux/hugetlb.h |  6 ++++--
- mm/hugetlb.c            | 10 ++++++++++
- mm/mempolicy.c          | 46 ++++++++++++++++++++++++++++++++++------------
- 3 files changed, 48 insertions(+), 14 deletions(-)
+Totally agree - been there - seen that :-)
+Also for caller passing zero, the panic will force the caller to fix it.
+I'll respin the patch.
 
-diff --git v3.8.orig/include/linux/hugetlb.h v3.8/include/linux/hugetlb.h
-index 8f87115..eb33df5 100644
---- v3.8.orig/include/linux/hugetlb.h
-+++ v3.8/include/linux/hugetlb.h
-@@ -69,6 +69,7 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
- int dequeue_hwpoisoned_huge_page(struct page *page);
- void putback_active_hugepage(struct page *page);
- void putback_active_hugepages(struct list_head *l);
-+void migrate_hugepage_add(struct page *page, struct list_head *list);
- void copy_huge_page(struct page *dst, struct page *src);
- 
- extern unsigned long hugepages_treat_as_movable;
-@@ -88,8 +89,8 @@ struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 				pmd_t *pmd, int write);
- struct page *follow_huge_pud(struct mm_struct *mm, unsigned long address,
- 				pud_t *pud, int write);
--int pmd_huge(pmd_t pmd);
--int pud_huge(pud_t pmd);
-+extern int pmd_huge(pmd_t pmd);
-+extern int pud_huge(pud_t pmd);
- unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
- 		unsigned long address, unsigned long end, pgprot_t newprot);
- 
-@@ -134,6 +135,7 @@ static inline int dequeue_hwpoisoned_huge_page(struct page *page)
- 
- #define putback_active_hugepage(p) 0
- #define putback_active_hugepages(l) 0
-+#define migrate_hugepage_add(p, l) 0
- static inline void copy_huge_page(struct page *dst, struct page *src)
- {
- }
-diff --git v3.8.orig/mm/hugetlb.c v3.8/mm/hugetlb.c
-index cb9d43b8..86ffcb7 100644
---- v3.8.orig/mm/hugetlb.c
-+++ v3.8/mm/hugetlb.c
-@@ -3202,3 +3202,13 @@ void putback_active_hugepages(struct list_head *l)
- 	list_for_each_entry_safe(page, page2, l, lru)
- 		putback_active_hugepage(page);
- }
-+
-+void migrate_hugepage_add(struct page *page, struct list_head *list)
-+{
-+	VM_BUG_ON(!PageHuge(page));
-+	get_page(page);
-+	spin_lock(&hugetlb_lock);
-+	list_move_tail(&page->lru, list);
-+	spin_unlock(&hugetlb_lock);
-+	return;
-+}
-diff --git v3.8.orig/mm/mempolicy.c v3.8/mm/mempolicy.c
-index e2df1c1..8627135 100644
---- v3.8.orig/mm/mempolicy.c
-+++ v3.8/mm/mempolicy.c
-@@ -525,6 +525,27 @@ static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 	return addr != end;
- }
- 
-+static void check_hugetlb_pmd_range(struct vm_area_struct *vma, pmd_t *pmd,
-+		const nodemask_t *nodes, unsigned long flags,
-+				    void *private)
-+{
-+#ifdef CONFIG_HUGETLB_PAGE
-+	int nid;
-+	struct page *page;
-+
-+	spin_lock(&vma->vm_mm->page_table_lock);
-+	page = pte_page(huge_ptep_get((pte_t *)pmd));
-+	spin_unlock(&vma->vm_mm->page_table_lock);
-+	nid = page_to_nid(page);
-+	if (node_isset(nid, *nodes) != !!(flags & MPOL_MF_INVERT)
-+	    && ((flags & MPOL_MF_MOVE && page_mapcount(page) == 1)
-+		|| flags & MPOL_MF_MOVE_ALL))
-+		migrate_hugepage_add(page, private);
-+#else
-+	BUG();
-+#endif
-+}
-+
- static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
- 		unsigned long addr, unsigned long end,
- 		const nodemask_t *nodes, unsigned long flags,
-@@ -536,6 +557,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
- 	pmd = pmd_offset(pud, addr);
- 	do {
- 		next = pmd_addr_end(addr, end);
-+		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
-+			check_hugetlb_pmd_range(vma, pmd, nodes,
-+						flags, private);
-+			continue;
-+		}
- 		split_huge_page_pmd(vma, addr, pmd);
- 		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
- 			continue;
-@@ -557,6 +583,8 @@ static inline int check_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
- 	pud = pud_offset(pgd, addr);
- 	do {
- 		next = pud_addr_end(addr, end);
-+		if (pud_huge(*pud) && is_vm_hugetlb_page(vma))
-+			continue;
- 		if (pud_none_or_clear_bad(pud))
- 			continue;
- 		if (check_pmd_range(vma, pud, addr, next, nodes,
-@@ -648,9 +676,6 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 				return ERR_PTR(-EFAULT);
- 		}
- 
--		if (is_vm_hugetlb_page(vma))
--			goto next;
--
- 		if (flags & MPOL_MF_LAZY) {
- 			change_prot_numa(vma, start, endvma);
- 			goto next;
-@@ -999,7 +1024,11 @@ static void migrate_page_add(struct page *page, struct list_head *pagelist,
- 
- static struct page *new_node_page(struct page *page, unsigned long node, int **x)
- {
--	return alloc_pages_exact_node(node, GFP_HIGHUSER_MOVABLE, 0);
-+	if (PageHuge(page))
-+		return alloc_huge_page_node(page_hstate(compound_head(page)),
-+					node);
-+	else
-+		return alloc_pages_exact_node(node, GFP_HIGHUSER_MOVABLE, 0);
- }
- 
- /*
-@@ -1011,7 +1040,6 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
- {
- 	nodemask_t nmask;
- 	LIST_HEAD(pagelist);
--	int err = 0;
- 
- 	nodes_clear(nmask);
- 	node_set(source, nmask);
-@@ -1025,15 +1053,9 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
- 	check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
- 			flags | MPOL_MF_DISCONTIG_OK, &pagelist);
- 
--	if (!list_empty(&pagelist)) {
--		err = migrate_pages(&pagelist, new_node_page, dest,
-+	return migrate_movable_pages(&pagelist, new_node_page, dest,
- 							false, MIGRATE_SYNC,
- 							MR_SYSCALL);
--		if (err)
--			putback_lru_pages(&pagelist);
--	}
--
--	return err;
- }
- 
- /*
--- 
-1.7.11.7
+Thx,
+-Vineet
 
