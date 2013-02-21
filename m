@@ -1,115 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab3BUSSO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 13:18:14 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:55511 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755015Ab3BUSSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 13:18:12 -0500
-Date: Thu, 21 Feb 2013 12:18:11 -0600
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Nathan Zimmer <nzimmer@sgi.com>
-Subject: Re: mmotm 2013-02-19-17-20 uploaded
-Message-ID: <20130221181811.GA27097@gulag1.americas.sgi.com>
-References: <20130220012122.870BB31C11E@corp2gmr1-1.hot.corp.google.com> <5125E809.4060407@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5125E809.4060407@codeaurora.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1756798Ab3BUSSf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 13:18:35 -0500
+Received: from prdiron-2.llnl.gov ([128.15.143.172]:27028 "EHLO
+	prdiron-2.llnl.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756342Ab3BUSSd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 13:18:33 -0500
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Feb 2013 13:18:33 EST
+X-Attachments: 
+Date: Thu, 21 Feb 2013 10:09:00 -0800
+From: Ira Weiny <weiny2@llnl.gov>
+To: "Husam Kahalah" <HKahalah@asaltech.com>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] infiniband-diags/saquery.c: switchinfo support added
+Message-Id: <20130221100900.87b509d834fc0adc21b6f68b@llnl.gov>
+In-Reply-To: <WC20130221094946.530170@asaltech.com>
+References: <WC20130221094946.530170@asaltech.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 01:25:29AM -0800, Stephen Boyd wrote:
-> On 2/19/2013 5:21 PM, akpm@linux-foundation.org wrote:
-> > * timer_list-split-timer_list_show_tickdevices.patch
-> > * timer_list-convert-timer-list-to-be-a-proper-seq_file.patch
-> > * timer_list-convert-timer-list-to-be-a-proper-seq_file-fix.patch
-> > * timer_list-convert-timer-list-to-be-a-proper-seq_file-v2.patch
-> > * timer_list-convert-timer-list-to-be-a-proper-seq_file-v2-fix.patch
-> > * timer_list-convert-timer-list-to-be-a-proper-seq_file-fix-fix.patch
-> 
-> These commits seem to break the timer list on devices with maxcpus !=
-> nr_cpu_ids, which is possible if you specify maxcpus on the kernel
-> command line. I no longer see the percpu devices that I normally have
-> after the broadcast device.
-Interesting.
-However I can't seem to boot at the moment with maxcpus set to less then the actual
-number of cpus so I am not having much luck investigating right now. 
+First Thanks!  Some comments below.
+
+On Thu, 21 Feb 2013 11:49:46 +0200
+"Husam Kahalah" <HKahalah@asaltech.com> wrote:
 
 > 
-> I also notice what looks like an extra newline inserted in the output
-> between the percpu devices and the broadcast device, which may not be
-> intentional. There are also some more spelling mistakes in the comments.
-> Can we fold in this fix on top of the others (hopefully not white-space
-> damaged)?
-> 
-The extra newline was not intentional.
+> From a77cadd4d81ac0e23db836d9382fd642d7e37897 Mon Sep 17 00:00:00 2001
+> From: Husam kahalah < hkahalah@asaltech.com>
+> Date: Sun, 3 Feb 2013 14:27:21 +0200
+> Subject: [PATCH] infiniband-diags/saquery.c: switchinfo support added
+>  
+>  Added support in querying SwitchInfoRecords filtered by switch LID
+>  
+> Signed-off-by: Husam kahalah < hkahalah@asaltech.com>
+> ---
+>  src/saquery.c |   61 
+> +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 61 insertions(+), 0 deletions(-)
+>  
+> diff --git a/src/saquery.c b/src/saquery.c
+> index d31d77d..753c7ac 100644
+> --- a/src/saquery.c
+> +++ b/src/saquery.c
+> @@ -74,6 +74,7 @@ struct query_params {
+>    uint8_t scope;
+>    uint8_t join_state;
+>   int proxy_join;
+> + ib_net16_t swir_lid;
 
-> diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
-> index 9904e48..e3cb935 100644
-> --- a/kernel/time/timer_list.c
-> +++ b/kernel/time/timer_list.c
-> @@ -244,7 +244,6 @@ static void timer_list_show_tickdevices_header(struct seq_file *m)
->  #endif
->  	SEQ_printf(m, "\n");
->  #endif
-> -	SEQ_printf(m, "\n");
->  }
->  #endif
+We don't need this field or lid option.  Other records simply have an optional parameter to specify the lid.
+
+The usage should be:
+
+SwitchRecord [lid]
+
+>  };
 >  
-> @@ -275,7 +274,7 @@ static int timer_list_show(struct seq_file *m, void *v)
+>  struct query_cmd {
+> @@ -481,6 +482,41 @@ static void dump_service_record(void *data)
+>          cl_ntoh64(p_sr->service_data64[1]));
 >  }
 >  
->  /*
-> - * This itererator really needs some explnation since it is offset and has
-> + * This iterator really needs some explanation since it is offset and has
->   * two passes, one of which is controlled by a config option.
->   * In a hotplugged system some cpus, including cpu 0, may be missing so we have
->   * to use cpumask_* to iterate over the cpus.
-> @@ -283,7 +282,7 @@ static int timer_list_show(struct seq_file *m, void *v)
->   * It returns 1 for the header position.
->   * For cpu 0 it returns 2 and the final possible cpu would be nr_cpu_ids + 1.
->   * On the second pass:
-> - * It returnes nr_cpu_ids + 1 for the second header position.
-> + * It returns nr_cpu_ids + 1 for the second header position.
->   * For cpu 0 it returns nr_cpu_ids + 2
->   * The final possible cpu would be nr_cpu_ids + nr_cpu_ids + 2.
->   */
-> @@ -300,8 +299,12 @@ static void *timer_list_start(struct seq_file *file, loff_t *offset)
->  			n = cpumask_next(n - 1, cpu_online_mask);
->  		else
->  			n = cpumask_first(cpu_online_mask);
-> -		*offset = n + 1;
-> -		return (void *)(unsigned long)(n + 2);
-> +		if (n < nr_cpu_ids) {
-> +			*offset = n + 1;
-> +			return (void *)(unsigned long)(n + 2);
-> +		} else {
-> +			*offset = n = nr_cpu_ids + 1;
-> +		}
->  	}
+> +static void dump_switch_info_record(void *data)
+> +{
+> +  ib_switch_info_record_t *p_sir = data;
+> +
+> +  printf("SwitchInfoRecord dump:\n"
+> +        "\t\tRID\n"
+> +        "\t\tlid.....................%u\n"
+> +        "\t\tSwitchInfo dump:\n"
+> +        "\t\tlin_cap.................0x%X\n"
+> +        "\t\trand_cap................0x%X\n"
+> +        "\t\tmcast_cap...............0x%X\n"
+> +        "\t\tlin_top.................0x%X\n"
+> +        "\t\tdef_port................%u\n"
+> +        "\t\tdef_mcast_pri_port......%u\n"
+> +        "\t\tdef_mcast_not_port......%u\n"
+> +        "\t\tlife_state..............%u\n"
+> +        "\t\tlids_per_port...........0x%X\n"
+> +        "\t\tenforce_cap.............0x%X\n"
+> +        "\t\tflags...................%u\n"
+> +        "\t\tmcast_top...............0x%X\n",
+> +        cl_ntoh16(p_sir->lid),
+> +        cl_ntoh16(p_sir->switch_info.lin_cap),
+> +        cl_ntoh16(p_sir->switch_info.rand_cap),
+> +        cl_ntoh16(p_sir->switch_info.mcast_cap),
+> +        cl_ntoh16(p_sir->switch_info.lin_top),
+> +        p_sir->switch_info.def_port,
+> +        p_sir->switch_info.def_mcast_pri_port,
+> +        p_sir->switch_info.def_mcast_not_port,
+> +        p_sir->switch_info.life_state,
+> +        cl_ntoh16(p_sir->switch_info.lids_per_port),
+> +        cl_ntoh16(p_sir->switch_info.enforce_cap),
+> +        p_sir->switch_info.flags,
+> +        cl_ntoh16(p_sir->switch_info.mcast_top));
+> +}
+> +
+>  static void dump_inform_info_record(void *data)
+>  {
+>   char gid_str[INET6_ADDRSTRLEN];
+> @@ -1090,6 +1126,19 @@ static int query_node_records(const struct query_cmd 
+> *q, struct sa_handle * h,
+>    &nr, sizeof(nr), dump_node_record);
+>  }
 >  
->  #ifdef CONFIG_GENERIC_CLOCKEVENTS
-> @@ -314,8 +317,10 @@ static void *timer_list_start(struct seq_file *file, loff_t *offset)
->  			n = cpumask_next(n - 1, cpu_online_mask);
->  		else
->  			n = cpumask_first(cpu_online_mask);
-> -		*offset = n + 2 + nr_cpu_ids;
-> -		return (void *)(unsigned long)(n + 3 + nr_cpu_ids);
-> +		if (n < nr_cpu_ids) {
-> +			*offset = n + 2 + nr_cpu_ids;
-> +			return (void *)(unsigned long)(n + 3 + nr_cpu_ids);
-> +		}
->  	}
->  #endif
+> +static int query_switchinfo_records(const struct query_cmd *q,
+> + struct sa_handle * h, struct query_params *p,
+> + int argc, char *argv[])
+> +{
+> +  ib_switch_info_record_t swir;
+> + ib_net64_t comp_mask = 0;
+> +
+> +  memset(&swir, 0, sizeof(swir));
+> +  CHECK_AND_SET_VAL(p->swir_lid, 16, 0, swir.lid, SWIR, LID);
+> + return get_and_dump_any_records(h, IB_SA_ATTR_SWITCHINFORECORD, 0, 
+> comp_mask,
+> + &swir, 0, dump_switch_info_record);
+> +}
+> +
+>  static int query_portinfo_records(const struct query_cmd *q,
+>     struct sa_handle * h, struct query_params *p,
+>     int argc, char *argv[])
+> @@ -1342,6 +1391,8 @@ static const struct query_cmd query_cmds[] = {
+>    "[[mlid]/[position]/[block]]", query_mft_records},
+>    {"GUIDInfoRecord", "GIR", IB_SA_ATTR_GUIDINFORECORD,
+>    "[[lid]/[block]]", query_guidinfo_records},
+> +  {"SWITCHInfoRecord", "SWIR", IB_SA_ATTR_SWITCHINFORECORD,
+
+I would change this to "SwitchInfoRecord"  Why did you use all caps?
+
+> +  NULL, query_switchinfo_records},
+>    {0}
+>  };
 >  
-> 
+> @@ -1435,6 +1486,9 @@ static int process_opt(void *context, int ch, char 
+> *optarg)
+>   case 'S':
+>    query_type = IB_SA_ATTR_SERVICERECORD;
+>    break;
+> + case 'W':
+> + query_type = IB_SA_ATTR_SWITCHINFORECORD;
+> + break;
+
+I would rather not use this option here.  Just support the SwitchInfoRecord/SWIR query names.
+
+>   case 'I':
+>    query_type = IB_SA_ATTR_INFORMINFORECORD;
+>    break;
+> @@ -1551,6 +1605,9 @@ static int process_opt(void *context, int ch, char 
+> *optarg)
+>   case 'X':
+>    p->proxy_join = strtoul(optarg, NULL, 0);
+>    break;
+> + case 22 :
+> +  p->swir_lid = (ib_net16_t) strtoul(optarg, NULL, 0);
+> + break;
+
+As above no need for the additional option.
+
+>    default:
+>   return -1;
+>   }
+> @@ -1584,6 +1641,7 @@ int main(int argc, char **argv)
+>    {"x", 'x', 0, NULL, "get LinkRecord info"},
+>    {"c", 'c', 0, NULL, "get the SA's class port info"},
+>    {"S", 'S', 0, NULL, "get ServiceRecord info"},
+> +  {"W", 'W', 0, NULL, "get SwitchInfoRecord"},
+>    {"I", 'I', 0, NULL, "get InformInfoRecord (subscription) info"},
+>    {"list", 'D', 0, NULL, "the node desc of the CA's"},
+>    {"src-to-dst", 1, 1, "<src:dst>", "get a PathRecord for"
+> @@ -1633,6 +1691,9 @@ int main(int argc, char **argv)
+>    {"scope", 21, 1, NULL, "Scope (MCMemberRecord)"},
+>    {"join_state", 'J', 1, NULL, "Join state (MCMemberRecord)"},
+>    {"proxy_join", 'X', 1, NULL, "Proxy join (MCMemberRecord)"},
+> +  {"swir_lid", 22, 1, NULL,
+> +  "switchInfo_lid (SwitchInfoRecord)"
+> + " LID of switch port 0"},
+
+As above no need for the additional option.
+
+Thanks,
+Ira
+
+>    {0}
+>    };
+>  
 > -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
+> 1.7.1
+>  
+
+
+-- 
+Ira Weiny
+Member of Technical Staff
+Lawrence Livermore National Lab
+925-423-8008
+weiny2@llnl.gov
