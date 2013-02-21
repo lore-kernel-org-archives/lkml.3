@@ -1,62 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab3BUI47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 03:56:59 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:48634 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab3BUI46 (ORCPT
+	id S1752797Ab3BUJBR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 04:01:17 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:46761 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462Ab3BUJBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 03:56:58 -0500
-Date: Thu, 21 Feb 2013 09:56:54 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Shuah Khan <shuahkhan@gmail.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: dan.carpenter@oracle.com, peterz@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org
-Subject: Re: sched: Fix signedness bug in yield_to()
-Message-ID: <20130221085654.GB23223@gmail.com>
-References: <20130220022712.0E8586607A4@gitolite.kernel.org>
- <CAKocOOMo-5Hiv_dBCpZNYMP_wXWiWugBYq4qsRcMBwm=TPM=dA@mail.gmail.com>
+	Thu, 21 Feb 2013 04:01:16 -0500
+Message-ID: <5125E256.7060208@linaro.org>
+Date: Thu, 21 Feb 2013 10:01:10 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKocOOMo-5Hiv_dBCpZNYMP_wXWiWugBYq4qsRcMBwm=TPM=dA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linaro-dev >> Lists Linaro-dev" <linaro-dev@lists.linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [resend] Timer broadcast question
+References: <5123BE35.8070902@linaro.org> <alpine.LFD.2.02.1302191904560.22263@ionos> <5123C299.3080005@linaro.org> <5125BC7C.7080007@ti.com>
+In-Reply-To: <5125BC7C.7080007@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/21/2013 07:19 AM, Santosh Shilimkar wrote:
+> On Tuesday 19 February 2013 11:51 PM, Daniel Lezcano wrote:
+>> On 02/19/2013 07:10 PM, Thomas Gleixner wrote:
+>>> On Tue, 19 Feb 2013, Daniel Lezcano wrote:
+>>>> I am working on identifying the different wakeup sources from the
+>>>> interrupts and I have a question regarding the timer broadcast.
+>>>>
+>>>> The broadcast timer is setup to the next event and that will wake up
+>>>> any
+>>>> idle cpu belonging to the "broadcast cpumask", right ?
+>>>>
+>>>> The cpu which has been woken up will look for each cpu the next-event
+>>>> and send an IPI to wake it up.
+>>>>
+>>>> Although, it is possible the sender of this IPI may not be concerned by
+>>>> the timer expiration and has been woken up just for sending the IPI,
+>>>> right ?
+>>>
+>>> Correct.
+>>>
+>>>> If this is correct, is it possible to setup the timer irq affinity to a
+>>>> cpu which will be concerned by the timer expiration ? so we prevent an
+>>>> unnecessary wake up for a cpu.
+>>>
+>>> It is possible, but we never implemented it.
+>>>
+>>> If we go there, we want to make that conditional on a property flag,
+>>> because some interrupt controllers especially on x86 only allow to
+>>> move the affinity from interrupt context, which is pointless.
+>>
+>> Thanks Thomas for your quick answer. I will write a RFC patchset.
+>>
+> Last year I implemented the affinity hook for broad-cast code and
+> experimented with it. Since the system I was using was dual core,
+> it wasn't much beneficial and hence gave up later. I did remember
+> discussing the approach with few folks in the conference.
 
-* Shuah Khan <shuahkhan@gmail.com> wrote:
+I did a brief test with a similar patch on a ARM u8500 board. The timer
+is tied with CPU0 by default, setting the dynamic irq affinity reduce
+considerably the number of IPI. The difference with your patch is the
+affinity is set to one CPU, the first one which is supposed to be wake
+up by the timer expiration.
 
-> On Tue, Feb 19, 2013 at 7:27 PM, Linux Kernel Mailing List
-> <linux-kernel@vger.kernel.org> wrote:
-> > Gitweb:     http://git.kernel.org/linus/;a=commit;h=c3c186403c6abd32e719f005f0af950155a9e54d
-> > Commit:     c3c186403c6abd32e719f005f0af950155a9e54d
-> > Parent:     e0a79f529d5ba2507486d498b25da40911d95cf6
-> > Author:     Dan Carpenter <dan.carpenter@oracle.com>
-> > AuthorDate: Tue Feb 5 14:37:51 2013 +0300
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Tue Feb 5 12:59:29 2013 +0100
-> >
-> >     sched: Fix signedness bug in yield_to()
-> >
-> >     In 7b270f6099 "sched: Bail out of yield_to when source and
-> >     target runqueue has one task" we changed this to store -ESRCH so
-> >     it needs to be signed.
+This is easy to spot with a small program doing usleep wired on CPU1.
+
+We see CPU0 waking up to send an IPI to CPU1 and going to idle again.
+
+I don't know how that behaves with OMAP4 with this patch (which I guess
+it is the board you used), but the coupled idle state traces could be
+ambiguous if you relied on it to check the benefit of this patch.
+
+IMO, it is worth to implement such solution and perhaps we can extend it
+to optimize the package idle time with the generic power domain tied
+with the irq. Anyway, it is a random thought let's see that later :)
+
+> Patch in the end of the email (also attached) for generic broadcast
+> code. I didn't look at all corner case though. In arch code then
+> you need to setup "broadcast_affinity" hook which should be able
+> to get handle of the arch irqchip and call the respective affinity
+> handler. Just 3 lines function should do the trick.
 > 
-> Dan, Ingo,
+> As Thomas said, effectiveness of such optimization solely depends
+> on how well the affinity (in low powers) supported by your IRQ chip.
 > 
-> I can't find the 7b270f6099 "sched: Bail out of yield_to when 
-> source and target runqueue has one task" in the latest Linus's 
-> git. Am I missing something.
+> Hope this is helpful for you.
+
+Thanks a lot for your patch and your feedbacks.
+
+  -- Daniel
+
+
 > 
-> The current kenel/sched/core.c doesn't have the code from the
-> associated patch https://patchwork.kernel.org/patch/2016651/
+> From d70f2d48ec08a3f1d73187c49b16e4e60f81a50c Mon Sep 17 00:00:00 2001
+> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Date: Wed, 25 Jul 2012 03:42:33 +0530
+> Subject: [PATCH] tick-broadcast: Add tick road-cast affinity suport
+> 
+> Current tick broad-cast code has affinity set to the boot CPU and hence
+> the boot CPU will always wakeup from low power states when broad cast timer
+> is armed even if the next expiry event doesn't belong to it.
+> 
+> Patch adds broadcast affinity functionality to avoid above and let the
+> tick framework set the affinity of the event for the CPU it belongs.
+> 
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+>  include/linux/clockchips.h   |    2 ++
+>  kernel/time/tick-broadcast.c |   13 ++++++++++++-
+>  2 files changed, 14 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+> index 8a7096f..5488cdc 100644
+> --- a/include/linux/clockchips.h
+> +++ b/include/linux/clockchips.h
+> @@ -95,6 +95,8 @@ struct clock_event_device {
+>      unsigned long        retries;
+> 
+>      void            (*broadcast)(const struct cpumask *mask);
+> +    void            (*broadcast_affinity)
+> +                    (const struct cpumask *mask, int irq);
+>      void            (*set_mode)(enum clock_event_mode mode,
+>                          struct clock_event_device *);
+>      void            (*suspend)(struct clock_event_device *);
+> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+> index f113755..2ec2425 100644
+> --- a/kernel/time/tick-broadcast.c
+> +++ b/kernel/time/tick-broadcast.c
+> @@ -39,6 +39,8 @@ static void tick_broadcast_clear_oneshot(int cpu);
+>  static inline void tick_broadcast_clear_oneshot(int cpu) { }
+>  #endif
+> 
+> +static inline void dummy_broadcast_affinity(const struct cpumask *mask,
+> +                            int irq) { }
+>  /*
+>   * Debugging: see timer_list.c
+>   */
+> @@ -485,14 +487,19 @@ void tick_broadcast_oneshot_control(unsigned long
+> reason)
+>          if (!cpumask_test_cpu(cpu, tick_get_broadcast_oneshot_mask())) {
+>              cpumask_set_cpu(cpu, tick_get_broadcast_oneshot_mask());
+>              clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
+> -            if (dev->next_event.tv64 < bc->next_event.tv64)
+> +            if (dev->next_event.tv64 < bc->next_event.tv64) {
+>                  tick_broadcast_set_event(dev->next_event, 1);
+> +                bc->broadcast_affinity(
+> +                tick_get_broadcast_oneshot_mask(), bc->irq);
+> +            }
+>          }
+>      } else {
+>          if (cpumask_test_cpu(cpu, tick_get_broadcast_oneshot_mask())) {
+>              cpumask_clear_cpu(cpu,
+>                        tick_get_broadcast_oneshot_mask());
+>              clockevents_set_mode(dev, CLOCK_EVT_MODE_ONESHOT);
+> +            bc->broadcast_affinity(
+> +                tick_get_broadcast_oneshot_mask(), bc->irq);
+>              if (dev->next_event.tv64 != KTIME_MAX)
+>                  tick_program_event(dev->next_event, 1);
+>          }
+> @@ -536,6 +543,10 @@ void tick_broadcast_setup_oneshot(struct
+> clock_event_device *bc)
+> 
+>          bc->event_handler = tick_handle_oneshot_broadcast;
+> 
+> +        /* setup dummy broadcast affinity handler if not provided */
+> +        if (bc->broadcast_affinity)
+> +            bc->broadcast_affinity = dummy_broadcast_affinity;
+> +
+>          /* Take the do_timer update */
+>          tick_do_timer_cpu = cpu;
+> 
 
-As per the lkml discussion that one was supposed to go upstream 
-via the KVM tree. Marcelo?
 
-Thanks,
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-	Ingo
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
+  * English - detected
+  * English
+  * French
+
+  * English
+  * French
+
+ <javascript:void(0);> <#>
