@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759134Ab3BUW2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 17:28:00 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:52967 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758743Ab3BUW15 (ORCPT
+	id S1758941Ab3BUWcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 17:32:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51904 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757148Ab3BUWcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 17:27:57 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH] [RFC] usb: gadget: composite: Allow idVendor and other module_params to be writable
-Date: Thu, 21 Feb 2013 14:27:27 -0800
-Message-Id: <1361485647-9439-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 21 Feb 2013 17:32:45 -0500
+Date: Thu, 21 Feb 2013 14:32:43 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
+        martin.petersen@oracle.com, Artem Bityutskiy <dedekind1@gmail.com>,
+        neilb@suse.de, Adrian Hunter <adrian.hunter@intel.com>,
+        david@fromorbit.com, gnehzuil.liu@gmail.com,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
+        bharrosh@panasas.com, jlayton@samba.org, linux-mtd@lists.infradead.org,
+        linux-ext4@vger.kernel.org, hirofumi@mail.parknet.co.jp
+Subject: Re: [PATCH 6/6] ubifs: Wait for page writeback to provide stable
+ pages
+Message-Id: <20130221143243.099bef3c.akpm@linux-foundation.org>
+In-Reply-To: <20130221034834.GA4055@blackbox.djwong.org>
+References: <20130119011231.20902.55954.stgit@blackbox.djwong.org>
+	<20130119011316.20902.56721.stgit@blackbox.djwong.org>
+	<20130123134312.b69c53cd.akpm@linux-foundation.org>
+	<20130221034834.GA4055@blackbox.djwong.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In many cases, documentation around composite drivers suggest
-setting the idVendor and other module params as follows:
+On Wed, 20 Feb 2013 19:48:34 -0800
+"Darrick J. Wong" <darrick.wong@oracle.com> wrote:
 
-$ insmod g_ffs.ko idVendor=<ID> iSerialNumber=<string>
+> > I grabbed the patches.  They should appear in linux-next tomorrow if I
+> > can get the current pooppile to build.
+> 
+> Well... these patches have been banging around in -next for a month or so now.
+> As far as I know there haven't been any complaints.  Can we push these for 3.9?
 
-However, this won't work if the driver is not compiled in as a
-module, as the module_param permissions are S_IRUGO.
+yup.  You can normally assume that this is the case, unless the patches have
 
-Thus this patch changes the composite module_param permissions
-to S_IRUGO|S_IWUSR to allow the module_params to be set at
-runtime via /sys/modules/<driver>/parameters/
+a) been causing bugs or
 
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/usb/composite.h |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+b) been getting rude review comments or
 
-diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
-index b09c37e..22b1b02 100644
---- a/include/linux/usb/composite.h
-+++ b/include/linux/usb/composite.h
-@@ -399,24 +399,28 @@ struct usb_composite_overwrite {
- #define USB_GADGET_COMPOSITE_OPTIONS()					\
- 	static struct usb_composite_overwrite coverwrite;		\
- 									\
--	module_param_named(idVendor, coverwrite.idVendor, ushort, S_IRUGO); \
-+	module_param_named(idVendor, coverwrite.idVendor, ushort,	\
-+			S_IRUGO|S_IWUSR);				\
- 	MODULE_PARM_DESC(idVendor, "USB Vendor ID");			\
- 									\
--	module_param_named(idProduct, coverwrite.idProduct, ushort, S_IRUGO); \
-+	module_param_named(idProduct, coverwrite.idProduct, ushort,	\
-+			S_IRUGO|S_IWUSR);				\
- 	MODULE_PARM_DESC(idProduct, "USB Product ID");			\
- 									\
--	module_param_named(bcdDevice, coverwrite.bcdDevice, ushort, S_IRUGO); \
-+	module_param_named(bcdDevice, coverwrite.bcdDevice, ushort,	\
-+			S_IRUGO|S_IWUSR);				\
- 	MODULE_PARM_DESC(bcdDevice, "USB Device version (BCD)");	\
- 									\
- 	module_param_named(iSerialNumber, coverwrite.serial_number, charp, \
--			S_IRUGO); \
-+			S_IRUGO|S_IWUSR);				\
- 	MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");		\
- 									\
- 	module_param_named(iManufacturer, coverwrite.manufacturer, charp, \
--			S_IRUGO); \
-+			S_IRUGO|S_IWUSR);				\
- 	MODULE_PARM_DESC(iManufacturer, "USB Manufacturer string");	\
- 									\
--	module_param_named(iProduct, coverwrite.product, charp, S_IRUGO); \
-+	module_param_named(iProduct, coverwrite.product, charp,		\
-+			S_IRUGO|S_IWUSR);				\
- 	MODULE_PARM_DESC(iProduct, "USB Product string")
- 
- void usb_composite_overwrite_options(struct usb_composite_dev *cdev,
--- 
-1.7.10.4
+c) been getting a great string of fix-fix-fix-fix patches in -mm or
 
+d) acquired rude akpm comments or unresolved questions against them
+   in http://ozlabs.org/~akpm/mmots/series
