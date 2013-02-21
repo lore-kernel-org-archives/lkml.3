@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029Ab3BUSKT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 13:10:19 -0500
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:49402 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947Ab3BUSKQ (ORCPT
+	id S1756220Ab3BUSKc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 13:10:32 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:63690 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756133Ab3BUSK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 13:10:16 -0500
-From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-To: netdev@vger.kernel.org
-Cc: Trond.Myklebust@netapp.com, bfields@fieldses.org, davem@davemloft.net,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] sunrpc/auth_gss: fix sparse warnings for gss_mech_switch
-Date: Thu, 21 Feb 2013 20:10:06 +0200
-Message-Id: <1361470206-24116-1-git-send-email-silviupopescu1990@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 21 Feb 2013 13:10:28 -0500
+Date: Thu, 21 Feb 2013 10:10:47 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Linux 3.0.66
+Message-ID: <20130221181047.GB7510@kroah.com>
+References: <20130221181038.GA7510@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130221181038.GA7510@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following sparse warnings:
-	* net/sunrpc/auth_gss/gss_mech_switch.c:143:21: warning: symbol
-'_gss_mech_get_by_name' was not declared. Should it be static?
-	* net/sunrpc/auth_gss/gss_mech_switch.c:208:21: warning: symbol
-'_gss_mech_get_by_pseudoflavor' was not declared. Should it be static?
 
-Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
----
- net/sunrpc/auth_gss/gss_mech_switch.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/sunrpc/auth_gss/gss_mech_switch.c b/net/sunrpc/auth_gss/gss_mech_switch.c
-index b174fcd..f0f4eee 100644
---- a/net/sunrpc/auth_gss/gss_mech_switch.c
-+++ b/net/sunrpc/auth_gss/gss_mech_switch.c
-@@ -140,7 +140,7 @@ gss_mech_get(struct gss_api_mech *gm)
+diff --git a/Makefile b/Makefile
+index cdba5c1..da3ff21 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 0
+-SUBLEVEL = 65
++SUBLEVEL = 66
+ EXTRAVERSION =
+ NAME = Sneaky Weasel
  
- EXPORT_SYMBOL_GPL(gss_mech_get);
+diff --git a/include/linux/syslog.h b/include/linux/syslog.h
+index 3891139..ce4c665 100644
+--- a/include/linux/syslog.h
++++ b/include/linux/syslog.h
+@@ -47,6 +47,12 @@
+ #define SYSLOG_FROM_CALL 0
+ #define SYSLOG_FROM_FILE 1
  
--struct gss_api_mech *
-+static struct gss_api_mech *
- _gss_mech_get_by_name(const char *name)
- {
- 	struct gss_api_mech	*pos, *gm = NULL;
-@@ -205,7 +205,7 @@ mech_supports_pseudoflavor(struct gss_api_mech *gm, u32 pseudoflavor)
- 	return 0;
- }
++/*
++ * Syslog priority (PRI) maximum length in char : '<[0-9]{1,3}>'
++ * See RFC5424 for details
++*/
++#define SYSLOG_PRI_MAX_LENGTH 5
++
+ int do_syslog(int type, char __user *buf, int count, bool from_file);
  
--struct gss_api_mech *_gss_mech_get_by_pseudoflavor(u32 pseudoflavor)
-+static struct gss_api_mech *_gss_mech_get_by_pseudoflavor(u32 pseudoflavor)
- {
- 	struct gss_api_mech *gm = NULL, *pos;
- 
--- 
-1.7.9.5
-
+ #endif /* _LINUX_SYSLOG_H */
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 3fc4708..6edc4e89 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -633,8 +633,19 @@ static void call_console_drivers(unsigned start, unsigned end)
+ 	start_print = start;
+ 	while (cur_index != end) {
+ 		if (msg_level < 0 && ((end - cur_index) > 2)) {
++			/*
++			 * prepare buf_prefix, as a contiguous array,
++			 * to be processed by log_prefix function
++			 */
++			char buf_prefix[SYSLOG_PRI_MAX_LENGTH+1];
++			unsigned i;
++			for (i = 0; i < ((end - cur_index)) && (i < SYSLOG_PRI_MAX_LENGTH); i++) {
++				buf_prefix[i] = LOG_BUF(cur_index + i);
++			}
++			buf_prefix[i] = '\0'; /* force '\0' as last string character */
++
+ 			/* strip log prefix */
+-			cur_index += log_prefix(&LOG_BUF(cur_index), &msg_level, NULL);
++			cur_index += log_prefix((const char *)&buf_prefix, &msg_level, NULL);
+ 			start_print = cur_index;
+ 		}
+ 		while (cur_index != end) {
