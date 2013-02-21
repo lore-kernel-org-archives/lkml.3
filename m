@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569Ab3BUKfV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 05:35:21 -0500
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:45477 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab3BUKfS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 05:35:18 -0500
+	id S1753608Ab3BUKgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 05:36:24 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:36438 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751767Ab3BUKgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 05:36:22 -0500
+Message-ID: <5125F87B.7020205@parallels.com>
+Date: Thu, 21 Feb 2013 14:35:39 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <20130220220802.GE23293@tassilo.jf.intel.com>
-References: <1361355312-3323-1-git-send-email-eranian@google.com>
-	<20130220154344.GD23293@tassilo.jf.intel.com>
-	<CABPqkBS58oMw8Gs7AVN0OMvLuFYH4iXXRHBx3Ep1Mbru=gLVtg@mail.gmail.com>
-	<20130220220802.GE23293@tassilo.jf.intel.com>
-Date: Thu, 21 Feb 2013 11:35:17 +0100
-Message-ID: <CABPqkBSDma_=MGWAcG_6d04r_7XOxxjRg3ju69Oz8OFzKcDXxA@mail.gmail.com>
-Subject: Re: [PATCH] perf, x86: add Intel IvyBridge event scheduling constraints
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+To: Matthew Helsley <matt.helsley@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-api@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] posix timers: Extend kernel API to report more info
+ about timers
+References: <511D0E50.7090505@parallels.com> <CA+RrjuURQTCP8yMa4nWxNQg=qxxsu6vrko2UVK4f8pFYbK6SYQ@mail.gmail.com>
+In-Reply-To: <CA+RrjuURQTCP8yMa4nWxNQg=qxxsu6vrko2UVK4f8pFYbK6SYQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 11:08 PM, Andi Kleen <ak@linux.intel.com> wrote:
->> > Except for LDM_PENDING the CYCLE_ACTIVITY events have been also added to Sandy Bridge.
->> > So it should be also added there.
->> >
->> As far as I know and I double-checked the documentation I have, there
->> is no CYCLE_ACTIVITY
->> event on SNB or SNB-EP.
->
-> page 19-28 in the Jan 2013 SDM. It was only recently added.
-> It's only a subset of what you have on Ivy Bridge.
->
-I have confirmed that this is a typo in the SDM. This event is not
-available on SandyBridge.
-
+On 02/21/2013 05:21 AM, Matthew Helsley wrote:
+> On Thu, Feb 14, 2013 at 8:18 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
+>> Hi.
 >>
->> > In fact I think you can still share the table because it would just add some
->> > non existent events to Sandy Bridge, which is a noop.
->> >
->> I don't see the point of this, except saving a few bytes. Isn't it
->> better to keep each PMU separate?
->
-> Ok, as long as you update the SNB table too.
->
-> -Andi
+>> I'm working on the checkpoint-restore project (http://criu.org), briefly
+>> it's aim is to collect information about process' state and saving it so
+>> that later it is possible to recreate the processes in the very same state
+>> as they were, using the collected information.
+>>
+>> One part of the task's state is the posix timers that this task has created.
+>> Currently kernel doesn't provide any API for getting information about
+>> what timers are currently created by process and in which state they are.
+>> I'd like to extend the posix timers API to provide more information about
+>> timers.
+>>
+>> Another problem with timers is the timer ID. Currently IDs are generated
+>> from global IDR and this makes it impossible to restore a timer from
+>> the saved state in general, as the required ID may be already busy at the
+>> time of restore.
+>>
+>> That said, I propose to
+>>
+>> 1. Change the way timer IDs are generated. This was done some time ago, so
+>>    I'm just re-sending this patch;
+> 
+> Seems fine in principle. Aside: I noticed there were some
+> important-looking patches to the idr usage in timer id allocation
+> today...
+
+Hm, OK, will try to find one.
+
+>> 2. Add a system call that will list timer IDs created by the calling process;
+> 
+> If timers were listed in /proc like fds then you wouldn't need this
+> syscall. If we keep adding new syscalls like this CRIU will be
+> needlessly x86-specific when it could have been written more portably.
+> 
+>> 3. Add a system call that will allow to get the sigevent information about
+>>    particular timer in the sigaction-like manner.
+> 
+> You mentioned "extending the POSIX timer API". Isn't that something
+> best left to standards bodies lest your changes conflict with theirs?
+> Again, if this were a /proc interface you wouldn't have that issue
+> (you'll have others ;)).
+> 
+>>
+>> This is actually an RFC to start discussion about how the described problems
+>> can be addressed. Thus, if the approach with new system calls is not acceptable,
+>> I'm OK to implement this in any other form.
+> 
+> My preference is for "other form" for the reasons above.
+
+No problem, proc is OK for me as well. I will look at what can be done here.
+
+Thanks for the feedback!
+
+> Cheers,
+>     -Matt Helsley
+> .
+> 
+
+
