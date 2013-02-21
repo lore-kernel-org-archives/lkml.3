@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab3BUFUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 00:20:06 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:65247 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab3BUFUD (ORCPT
+	id S1751797Ab3BUFVw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 00:21:52 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:34189 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122Ab3BUFVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 00:20:03 -0500
-X-AuditID: cbfee690-b7f066d00000169f-19-5125ae82df83
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
-Cc: "'linux-fbdev'" <linux-fbdev@vger.kernel.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: 
-In-reply-to: 
-Subject: [GIT PULL] exynos-dp updates for v3.9
-Date: Thu, 21 Feb 2013 14:20:01 +0900
-Message-id: <00b901ce0ff3$1967b6a0$4c3723e0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4OTNvxAwY0KcJpR26zj4Kosnv2NQBpfQSQ
-Content-language: ko
-x-cr-hashedpuzzle: xNo= Esa6 KkHh Lylr Sw5L aI+m fUd5 ff4K lYH0 0Qsn 2yOV 2122
- 3kPC 4xKs 8Kqp
- 8Tpz;6;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGYAbABvAHIAaQBhAG4AcwBjAGgAYQBuAGQAaQBuAGEAdABAAGcAbQB4AC4AZABlADsAagBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGYAYgBkAGUAdgBAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHQAbwByAHYAYQBsAGQAcwBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA=;Sosha1_v1;7;{805C7E47-CED6-4A09-BAF6-275EFA41DFE6};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
- 21 Feb 2013 05:19:52
- GMT;WwBHAEkAVAAgAFAAVQBMAEwAXQAgAGUAeAB5AG4AbwBzAC0AZABwACAAdQBwAGQAYQB0AGUAcwAgAGYAbwByACAAdgAzAC4AOQA=
-x-cr-puzzleid: {805C7E47-CED6-4A09-BAF6-275EFA41DFE6}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zfd2mdaqBBjOXslmc6PvAanF51xw2
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJWTl7FWLCMo+LozNwGxk9sXYycHBICJhJLpi9nhbDF
-	JC7cWw8WFxJYxiix7ZAnTM2nOzcYuxi5gOLTGSWe7nnCAuH8YpT49XMhO0gVm4CaxJcvh8Fs
-	EaCOBx8XgnUwC7xllPj4aC+QwwHUwS2xujkIpIZTgEdi3Z9OZhBbWEBPYuO5JiYQm0VAVWLB
-	18dgcV4BW4nHL+ewQNiCEj8m3wOzmQW0JNbvPM4EYctLbF7zlhlkvISAusSjv7oQJxhJnD/5
-	jBWiRERi34t3YOdICPxhlXgxtQ/qY1OJzUf3skDYh9glbu8vg7hBQOLb5EMsEDNlJTYdYIYo
-	kZQ4uOIGywRGqVlILpqF5KJZSC6ahWT1AkaWVYyiqQXJBcVJ6UUmesWJucWleel6yfm5mxgh
-	ETlhB+O9A9aHGJOB1k9klhJNzgdGdF5JvKGxsYmZiamJuaWpuSlpwkrivPKXZAKFBNITS1Kz
-	U1MLUovii0pzUosPMTJxcEo1MOr/UFpZ7By2bW3poyfmE08fmPlu84F/W2+prJlxPWPd4n65
-	Cbs9513y/H6Ae860x5Nf5WT7z7vDsMN/VrD+R+mzuWqqZw4oLw/t/c39aw+3WsOTgioVizOb
-	S+8fynnJxaO6dtkH15+vP63k/ehZLOK2uYR5nWHIBQ3BPo2ob6UHfpUxz5C6vGyhEktxRqKh
-	FnNRcSIAXGXWTN4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jQd2mdaqBBhe+MVqc6PvAanF51xw2
-	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
-	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzVk5exViwjKPi
-	6MzcBsZPbF2MnBwSAiYSn+7cYISwxSQu3FsPFOfiEBKYzijxdM8TFgjnF6PEr58L2UGq2ATU
-	JL58OQxmiwB1P/i4kBGkiFngLaPEx0d7gRwOoA5uidXNQSA1nAI8Euv+dDKD2MICehIbzzUx
-	gdgsAqoSC74+BovzCthKPH45hwXCFpT4MfkemM0soCWxfudxJghbXmLzmrfMIOMlBNQlHv3V
-	hTjBSOL8yWesECUiEvtevAM7R0LgD6vEi6l9rBCfmUpsPrqXZQKjyCwkK2YhWTELyYpZSGYt
-	YGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREc88+kdjCubLA4xCjAwajEw7vgpUqgEGti
-	WXFl7iFGCQ5mJRHenx1AId6UxMqq1KL8+KLSnNTiQ4zJwBCYyCwlmpwPTEd5JfGGxiZmRpZG
-	ZhZGJubmpAkrifMynnoSICSQnliSmp2aWpBaBLOFiYNTqoGxxLxt+6c9d/gXiLhuyqxZ8MvJ
-	6vsSX6vgbxl/eTnPX1mq6yXcY//vQrr8to3pRh/aT5fv8TZJ1pj+3DdEe6KFRbVKuofe7F2r
-	QzJZuVbp8dUVWurvnHKSTWG7zXavvae3MWmVH9L86jaTf12+Yc8ZHdsu9rqVUe6X3Lw0Gmau
-	f7Ml6I9VRrsSS3FGoqEWc1FxIgA/vXgRPQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 21 Feb 2013 00:21:51 -0500
+Message-ID: <5125AEE6.5030706@linux.vnet.ibm.com>
+Date: Thu, 21 Feb 2013 13:21:42 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Mike Galbraith <efault@gmx.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
+References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <1361367148.10155.30.camel@laptop> <1361369119.5919.86.camel@marge.simpson.net>
+In-Reply-To: <1361369119.5919.86.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022105-5816-0000-0000-000006C472D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 02/20/2013 10:05 PM, Mike Galbraith wrote:
+> On Wed, 2013-02-20 at 14:32 +0100, Peter Zijlstra wrote: 
+>> On Wed, 2013-02-20 at 11:49 +0100, Ingo Molnar wrote:
+>>
+>>> The changes look clean and reasoable, 
+>>
+>> I don't necessarily agree, note that O(n^2) storage requirement that
+>> Michael failed to highlight ;-)
+> 
+> (yeah, I mentioned that needs to shrink.. a lot)
 
-Florian, the fbdev maintainer, has been very busy lately, so I send the pull request
-for exynos-dp for this merge window.
+Exactly, and I'm going to apply the suggestion now :)
 
-The following changes since commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200:
+> 
+>>> any ideas exactly *why* it speeds up?
+>>
+>> That is indeed the most interesting part.. There's two parts to
+>> select_task_rq_fair(), the 'regular' affine wakeup path, and the
+>> fork/exec find_idlest_goo() path. At the very least we need to quantify
+>> which of these two parts contributes most to the speedup.
+>>
+>> In the power balancing discussion we already noted that the
+>> find_idlest_goo() is in need of attention.
+> 
+> Yup, even little stuff like break off the search when load is zero..
 
- Linux 3.8 (Mon Feb 18 15:58:34 2013 -0800)
+Agree, searching in a bunch of idle cpus and their subsets doesn't make
+sense...
 
-are available in the git repository at:
-  git://github.com/jingoo/linux.git tags/exynos-dp-3.9
+Regards,
+Michael Wang
 
-for you to fetch changes up to bb80934325dab97b479815aed237ebec33ed1c57:
-
- video: exynos_dp: move disable_irq() to exynos_dp_suspend() (Tue Jan 29 18:26:05 2013 +0900)
-
-----------------------------------------------------------------
-exynos-dp updates for the v3.9:
-
-- The missing function calls are fixed.
-----------------------------------------------------------------
-
-Ajay Kumar (1):
-      video: exynos_dp: move disable_irq() to exynos_dp_suspend()
-
-Jingoo Han (1):
-      video: exynos_dp: add missing of_node_put()
-
-drivers/video/exynos/exynos_dp_core.c |   24 +++++++++++++++---------
- 1 files changed, 15 insertions(+), 9 deletions(-)
-
---
-Best regards,
-Jingoo Han
+> unless someone is planning on implementing anti-idle 'course ;-)
+> 
+> -Mike
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
