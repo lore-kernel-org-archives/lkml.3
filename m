@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab3BUM0J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 07:26:09 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15986 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316Ab3BUM0H (ORCPT
+	id S1752702Ab3BUMdR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 07:33:17 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:49086 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337Ab3BUMdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 07:26:07 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 21 Feb 2013 04:25:00 -0800
-Date: Thu, 21 Feb 2013 14:25:36 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [v2 1/4] ARM: tegra20: create a DT header defining CLK IDs
-Message-ID: <20130221122536.GJ23234@tbergstrom-lnx.Nvidia.com>
-References: <1360868369-20093-1-git-send-email-hdoyu@nvidia.com>
- <1360868369-20093-2-git-send-email-hdoyu@nvidia.com>
- <511D45E0.1080105@wwwdotorg.org>
- <20130215092407.GO3073@tbergstrom-lnx.Nvidia.com>
- <511E6639.1090909@wwwdotorg.org>
+	Thu, 21 Feb 2013 07:33:15 -0500
+Date: Thu, 21 Feb 2013 07:33:06 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Samu Kallio <samu.kallio@aberdeencloud.com>, mingo@redhat.com,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: x86: mm: Fix vmalloc_fault oops during lazy MMU updates.
+Message-ID: <20130221123306.GA6781@phenom.dumpdata.com>
+References: <1361068552-21529-1-git-send-email-samu.kallio@aberdeencloud.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <511E6639.1090909@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1361068552-21529-1-git-send-email-samu.kallio@aberdeencloud.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 15, 2013 at 05:45:45PM +0100, Stephen Warren wrote:
-
-...
-
-> > I would suggest removing this clock. It's not actually implemented in the CCF
-> > and rather useless. If you would gate the CPU clock from the CPU by writing to
-> > this register, how would you ungate it? :) Note that this would gate the clock
-> > to all CPUs.
+On Sun, Feb 17, 2013 at 02:35:52AM -0000, Samu Kallio wrote:
+> In paravirtualized x86_64 kernels, vmalloc_fault may cause an oops
+> when lazy MMU updates are enabled, because set_pgd effects are being
+> deferred.
 > 
-> (Note that my comment was re: all clocks, not just that one clock)
+> One instance of this problem is during process mm cleanup with memory
+> cgroups enabled. The chain of events is as follows:
 > 
-> Can't the PMC or flow-controller ungate the clock based on some event?
+> - zap_pte_range enables lazy MMU updates
+> - zap_pte_range eventually calls mem_cgroup_charge_statistics,
+>   which accesses the vmalloc'd mem_cgroup per-cpu stat area
+> - vmalloc_fault is triggered which tries to sync the corresponding
+>   PGD entry with set_pgd, but the update is deferred
+> - vmalloc_fault oopses due to a mismatch in the PUD entries
+> 
+> Calling arch_flush_lazy_mmu_mode immediately after set_pgd makes the
+> changes visible to the consistency checks.
 
-I don't think the flow-controller controls this gate. The usual way of
-clockgating a core is to execute a WFI instruction. That will trigger
-clockgating the core, unless the flow-controller has been programmed to do
-something else. The flow-controller will ungate the clock when there is an
-interrupt.
+How do you reproduce this? Is there a BUG() or WARN() trace that
+is triggered when this happens?
 
-> Either way, that clock definition exists in HW, right? So I don't think
-> there's actually any harm in including the definition in the binding
-> even if we never implement/use it.
-
-The clock definition seems to exist in HW yes, the corresponding resetbit
-however is marked as 'reserved' in the Tegra114 documentation.
-
-Cheers,
-
-Peter.
+Also pls next time also CC me.
+> 
+> Signed-off-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+> 
+> ---
+> arch/x86/mm/fault.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 8e13ecb..0a45298 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -378,10 +378,12 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
+>  	if (pgd_none(*pgd_ref))
+>  		return -1;
+>  
+> -	if (pgd_none(*pgd))
+> +	if (pgd_none(*pgd)) {
+>  		set_pgd(pgd, *pgd_ref);
+> -	else
+> +		arch_flush_lazy_mmu_mode();
+> +	} else {
+>  		BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
+> +	}
+>  
+>  	/*
+>  	 * Below here mismatches are bugs because these lower tables
