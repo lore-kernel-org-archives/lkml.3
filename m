@@ -1,52 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755735Ab3BURCI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 12:02:08 -0500
-Received: from mga14.intel.com ([143.182.124.37]:61942 "EHLO mga14.intel.com"
+	id S1754709Ab3BURJH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 12:09:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32078 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753531Ab3BURCF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 12:02:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,710,1355126400"; 
-   d="scan'208";a="204961411"
-Message-ID: <51265309.6040605@linux.intel.com>
-Date: Thu, 21 Feb 2013 09:02:01 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754326Ab3BURJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 12:09:06 -0500
+Date: Thu, 21 Feb 2013 19:09:03 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Asias He <asias@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 08/16] virtio_ring: virtqueue_add_outbuf /
+ virtqueue_add_inbuf.
+Message-ID: <20130221170902.GA27097@redhat.com>
+References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au>
+ <1361260594-601-9-git-send-email-rusty@rustcorp.com.au>
 MIME-Version: 1.0
-To: Matt Fleming <matt.fleming@intel.com>
-CC: Yinghai Lu <yinghai@kernel.org>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        takeuchi_satoru@jp.fujitsu.com, tglx@linutronix.de, walt0924@gmail.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, efi: Make "noefi" really disable EFI runtime
- serivces
-References: <1361392572-25657-1-git-send-email-matt@console-pimps.org>  <tip-fb834c7acc5e140cf4f9e86da93a66de8c0514da@git.kernel.org>  <CAE9FiQWnaGzDEko=sCzvT8LS7heZ7miwiVU+T4eJk-JgSr_Z4w@mail.gmail.com> <1361442806.2842.2.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1361442806.2842.2.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361260594-601-9-git-send-email-rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 02:33 AM, Matt Fleming wrote:
-> On Wed, 2013-02-20 at 16:16 -0800, Yinghai Lu wrote:
->>> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
->>> index 928bf83..e2cd38f 100644
->>> --- a/arch/x86/platform/efi/efi.c
->>> +++ b/arch/x86/platform/efi/efi.c
->>> @@ -85,9 +85,10 @@ int efi_enabled(int facility)
->>>  }
->>>  EXPORT_SYMBOL(efi_enabled);
->>>
->>> +static bool disable_runtime = false;
->>
->> __initdata please.
+On Tue, Feb 19, 2013 at 06:26:26PM +1030, Rusty Russell wrote:
+> These are specialized versions of virtqueue_add_buf(), which cover
+> over 50% of cases and are far clearer.
 > 
-> Sure. Peter, please drop this. I'll submit a v2.
+> In particular, the scatterlists passed to these functions don't have
+> to be clean (ie. we ignore end markers).
 > 
+> FIXME: I'm not sure about the unclean sglist bit.  I had a more
+> ambitious one which conditionally ignored end markers in the iterator,
+> but it was ugly and I suspect this is just as fast.  Maybe we should
+> just fix all the drivers?
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Just do an incremental, please.
+Looking at code, it seems that most users really have a single sg, in
+low memory. So how about simply passing void * instead of sg? Whoever
+has multiple sgs can use the rich interface.
 
-	-hpa
+Long term we might optimize this unrolling some loops, I think
+I saw this giving a small performance gain for -net.
 
+> ---
+>  drivers/virtio/virtio_ring.c |   58 ++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/virtio.h       |   10 ++++++++
+>  2 files changed, 68 insertions(+)
+> 
+> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> index c537385..fb282b5 100644
+> --- a/drivers/virtio/virtio_ring.c
+> +++ b/drivers/virtio/virtio_ring.c
+> @@ -345,6 +345,64 @@ int virtqueue_add_sgs(struct virtqueue *_vq,
+>  EXPORT_SYMBOL_GPL(virtqueue_add_sgs);
+>  
+>  /**
+> + * virtqueue_add_outbuf - expose output buffers to other end
+> + * @vq: the struct virtqueue we're talking about.
+> + * @sgs: array of scatterlists (need not be terminated!)
+> + * @num: the number of scatterlists readable by other side
+> + * @data: the token identifying the buffer.
+> + * @gfp: how to do memory allocations (if necessary).
+> + *
+> + * Caller must ensure we don't call this with other virtqueue operations
+> + * at the same time (except where noted).
+> + *
+> + * Returns zero or a negative error (ie. ENOSPC, ENOMEM).
+> + */
+> +int virtqueue_add_outbuf(struct virtqueue *vq,
+> +			 struct scatterlist sg[], unsigned int num,
+> +			 void *data,
+> +			 gfp_t gfp)
+> +{
+> +	unsigned int i;
+> +
+> +	/* We're about to iterate, so this is pretty cheap. */
+> +	for (i = 0; i < num - 1; i++)
+> +		sg_unmark_end(sg + i);
+> +	sg_mark_end(sg + i);
+> +
+> +	return virtqueue_add(vq, &sg, num, 1, 0, data, gfp);
+> +}
+> +EXPORT_SYMBOL_GPL(virtqueue_add_outbuf);
+> +
+> +/**
+> + * virtqueue_add_inbuf - expose input buffers to other end
+> + * @vq: the struct virtqueue we're talking about.
+> + * @sgs: array of scatterlists (need not be terminated!)
+> + * @num: the number of scatterlists writable by other side
+> + * @data: the token identifying the buffer.
+> + * @gfp: how to do memory allocations (if necessary).
+> + *
+> + * Caller must ensure we don't call this with other virtqueue operations
+> + * at the same time (except where noted).
+> + *
+> + * Returns zero or a negative error (ie. ENOSPC, ENOMEM).
+> + */
+> +int virtqueue_add_inbuf(struct virtqueue *vq,
+> +			struct scatterlist sg[], unsigned int num,
+> +			void *data,
+> +			gfp_t gfp)
+> +{
+> +	unsigned int i;
+> +
+> +	/* We're about to iterate, so this is pretty cheap. */
+> +	for (i = 0; i < num - 1; i++)
+> +		sg_unmark_end(sg + i);
+> +	sg_mark_end(sg + i);
+> +
+> +	return virtqueue_add(vq, &sg, num, 0, 1, data, gfp);
+> +}
+> +EXPORT_SYMBOL_GPL(virtqueue_add_inbuf);
+> +
+> +/**
+>   * virtqueue_kick_prepare - first half of split virtqueue_kick call.
+>   * @vq: the struct virtqueue
+>   *
+> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> index 6eff15b..b442500 100644
+> --- a/include/linux/virtio.h
+> +++ b/include/linux/virtio.h
+> @@ -40,6 +40,16 @@ int virtqueue_add_buf(struct virtqueue *vq,
+>  		      void *data,
+>  		      gfp_t gfp);
+>  
+> +int virtqueue_add_outbuf(struct virtqueue *vq,
+> +			 struct scatterlist sg[], unsigned int num,
+> +			 void *data,
+> +			 gfp_t gfp);
+> +
+> +int virtqueue_add_inbuf(struct virtqueue *vq,
+> +			struct scatterlist sg[], unsigned int num,
+> +			void *data,
+> +			gfp_t gfp);
+> +
+>  int virtqueue_add_sgs(struct virtqueue *vq,
+>  		      struct scatterlist *sgs[],
+>  		      unsigned int out_sgs,
+> -- 
+> 1.7.10.4
