@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab3BUUId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 15:08:33 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:49327 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753367Ab3BUUIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 15:08:30 -0500
-Date: Thu, 21 Feb 2013 15:08:22 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: David Howells <dhowells@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Message-ID: <20130221200822.GD17322@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	David Howells <dhowells@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Matthew Garrett <mjg59@srcf.ucam.org>,
-	Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
-	Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
-	keyrings@linux-nfs.org,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CA+55aFy4k07GPmszkBdYvCE-KphKLVowkZoW7hoAvcR+0U=stg@mail.gmail.com>
- <30665.1361461678@warthog.procyon.org.uk>
- <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
- <20130221164244.GA19625@srcf.ucam.org>
- <567.1361470653@warthog.procyon.org.uk>
+	id S1753256Ab3BUUKs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 15:10:48 -0500
+Received: from us01smtp2.synopsys.com ([198.182.44.80]:65033 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab3BUUKr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 15:10:47 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Ingo Molnar <mingo@kernel.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 1/2] memblock: add assertion for zero allocation alignment
+Date: Fri, 22 Feb 2013 01:40:21 +0530
+Message-ID: <1361477421-3964-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <20130221193639.GN3570@htj.dyndns.org>
+References: <20130221193639.GN3570@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <567.1361470653@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 06:17:33PM +0000, David Howells wrote:
-> 
-> There's a problem with your idea.
-> 
->  (1) Microsoft's revocation certificates would be based on the hash of the PE
->      binary, not the key.
-> 
->  (2) Re-signing would make the keys then dependent on our master key rather
->      than directly on Microsoft's.  Microsoft's revocation certificates[*]
->      would then be useless.
-> 
->  (3) The only way Microsoft could then revoke the extra keys would be to
->      revoke our *master* key.
+This came to light when calling memblock allocator from arc port (for
+copying flattended DT). If a "0" alignment is passed, the allocator
+round_up() call incorrectly rounds up the size to 0.
 
-Well, this hypothetical service could also simply scan the Microsoft
-revocation certificates (aka CRL's), and if the service detects a PE
-hash that it relied upon to resign the module, it could then issue its
-own CRL revoking the signature on the module.
+round_up(num, alignto) => ((num - 1) | (alignto -1)) + 1
 
-If it is run this way, programmatically, I'll note that anyone can run
-this service.  It doesn't have to be Red Hat.  It could be Linux
-Foundation, if the LF wanted to support this whole code signing
-insanity.  (Which I really think is completely overblown, and I'm
-going to be amused when this blows to hell all of Red Hat's
-investments in Systemtap, but whatever.)  Given that I think this
-whole thing is insane, I completely agree with Linus's attempt to keep
-this insanity as far away from the upstream kernel as we can.  :-/
+While the obvious allocation failure causes kernel to panic, it is
+better to warn the caller to fix the code.
 
-     	      	     	       	   - Ted
+Tejun suggested that instead of BUG_ON(!align) - which might be
+ineffective due to pending console init and such, it is better to
+WARN_ON, and continue the boot with a reasonable default align.
+
+Caller passing @size need not be handled similarly as the subsequent
+panic will indicate that anyhow.
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+---
+ mm/memblock.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 1bcd9b9..f3804bd 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -824,6 +824,9 @@ static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
+ 	/* align @size to avoid excessive fragmentation on reserved array */
+ 	size = round_up(size, align);
+ 
++	if (WARN_ON(!align))
++		align = __alignof__(long long);
++
+ 	found = memblock_find_in_range_node(0, max_addr, size, align, nid);
+ 	if (found && !memblock_reserve(found, size))
+ 		return found;
+-- 
+1.7.4.1
+
