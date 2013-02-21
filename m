@@ -1,74 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab3BUUKs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 15:10:48 -0500
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:65033 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab3BUUKr (ORCPT
+	id S1753504Ab3BUUPO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 15:15:14 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:40649 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab3BUUPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 15:10:47 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Tejun Heo <tj@kernel.org>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/2] memblock: add assertion for zero allocation alignment
-Date: Fri, 22 Feb 2013 01:40:21 +0530
-Message-ID: <1361477421-3964-1-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <20130221193639.GN3570@htj.dyndns.org>
-References: <20130221193639.GN3570@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.217]
+	Thu, 21 Feb 2013 15:15:11 -0500
+From: Benson Leung <bleung@chromium.org>
+To: matthew.garrett@nebula.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: olofj@chromium.org, miletus@chromium.org
+Subject: [PATCH 0/6] Platform: x86: chromeos_laptop - Add support for Chromebook Pixel
+Date: Thu, 21 Feb 2013 12:14:54 -0800
+Message-Id: <1361477700-26342-1-git-send-email-bleung@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This came to light when calling memblock allocator from arc port (for
-copying flattended DT). If a "0" alignment is passed, the allocator
-round_up() call incorrectly rounds up the size to 0.
+The following patch series will add support for the isl light sensor,
+atmel mxt touchpad, and atmel mxt touchscreen on the Chromebook Pixel.
 
-round_up(num, alignto) => ((num - 1) | (alignto -1)) + 1
+[PATCH 1/6] Platform: x86: chromeos_laptop - add i915 gmbuses to
+[PATCH 2/6] Platform: x86: chromeos_laptop - Add a more general
+[PATCH 3/6] Platform: x86: chromeos_laptop - Add isl light sensor for
+[PATCH 4/6] Platform: x86: chromeos_laptop - Add support for probing
+[PATCH 5/6] Platform: x86: chromeos_laptop - Add Pixel Trackpad
+[PATCH 6/6] Platform: x86: chromeos_laptop - Add Pixel Touchscreen
 
-While the obvious allocation failure causes kernel to panic, it is
-better to warn the caller to fix the code.
-
-Tejun suggested that instead of BUG_ON(!align) - which might be
-ineffective due to pending console init and such, it is better to
-WARN_ON, and continue the boot with a reasonable default align.
-
-Caller passing @size need not be handled similarly as the subsequent
-panic will indicate that anyhow.
-
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
----
- mm/memblock.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 1bcd9b9..f3804bd 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -824,6 +824,9 @@ static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
- 	/* align @size to avoid excessive fragmentation on reserved array */
- 	size = round_up(size, align);
- 
-+	if (WARN_ON(!align))
-+		align = __alignof__(long long);
-+
- 	found = memblock_find_in_range_node(0, max_addr, size, align, nid);
- 	if (found && !memblock_reserve(found, size))
- 		return found;
--- 
-1.7.4.1
+This should be merged after the patch adding the HP Pavilion 14.
+Platform: x86: chromeos_laptop - Add HP Pavilion 14
 
