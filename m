@@ -1,33 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364Ab3BUVOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 16:14:06 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:59579 "EHLO
+	id S1756298Ab3BUVOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 16:14:04 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:58133 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755327Ab3BUVNA (ORCPT
+	with ESMTP id S1755354Ab3BUVNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 21 Feb 2013 16:13:00 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [GIT PULL 05/09] arm-soc: multiplatform support
-Date: Thu, 21 Feb 2013 21:12:25 +0000
-Message-Id: <1361481149-27559-6-git-send-email-arnd@arndb.de>
+Subject: [GIT PULL 03/09] arm-soc: pin muxing for sh-mobile
+Date: Thu, 21 Feb 2013 21:12:23 +0000
+Message-Id: <1361481149-27559-4-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1361481149-27559-1-git-send-email-arnd@arndb.de>
 References: <1361481149-27559-1-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V02:K0:FQTWbCW3nWWig+5Wd+eRQX/tReW5JC80pYmbTzysvQd
- rtD73016QEMBgojUh/bcnRDbeuCq3OFuglGPLUieBuWeCLzlgC
- dq2oNnL0KQnhRfk0rkdZ3oEcHg4KPjUIxXtCrPQwg7sRjtwXh1
- 0BIQ7vOwiwMYiuIw84c1852mUTUBzzK3DKkof4UL0ij+h4O+8h
- yPyKGZzOkN1JIVRIoj4yLBUnG34sIEONZ4xJLkEb/6/IF+cGWx
- M/kpGONoRZ7pU1tvTf8XD3j3mSKXDbfjnUHxx7czSfIXBTyKJM
- xCkWLLOiTuVi3X/OYmXYpDsHTBpNkfuZkXHQPerKaYBEdq1FdO
- 6rQjq442IVj6UNQUwGQP1IO92c+uvWqEEtyy2qLrZ
+X-Provags-ID: V02:K0:NEe7hb1uKAdwhRf5iu/2QG3QuwCY3KRziynFCnelrnL
+ 0PxD8hpxFmNiuFwM0csn4v0FyOJV+rGwPmKFZ6q6hHwNJlGlKc
+ ysfLSwyxBYCuNiRxIPSTPNXqCXzJBLNtrDLMVhbzeAARofLFz1
+ /OFrwDH0u9zQmLRk8lZZYLEYyUou6SEBGYGpkl/aqKk1x2sKm5
+ cuyVvctwBWvc0qrHd/hjnx94n9Y43NvyluR8Ci8cOAyruMNhhP
+ KgkFqzD9+gCCjOrz+l6qiIzIln+tw/HKvzMB6gDqdgxLitUWXd
+ xepF+KOVCfW1hmoJ+Z5IkoXZEe9edyv20TSGALL3Z3V7Wgl921
+ WxgM+K0l1lqU3isTCOZKACNQ06bSJNu4Fj6k/P9RH
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -38,123 +35,179 @@ The following changes since commit 949db153b6466c6f7cad5a427ecea94985927311:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/multiplatform
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/sh-pinmux
 
-for you to fetch changes up to acb7452369e4f8749dd32d48dbda98936035a87c:
+for you to fetch changes up to 62508a5d25e355cc19c3ade3c3b7dddc6d326cc5:
 
-  Merge branch 'omap/multiplatform-fixes', tag 'v3.8-rc5' into next/multiplatform (2013-02-15 13:31:52 +0100)
+  Merge tag 'renesas-pinmux2-for-v3.9' of git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas into next/sh-pinmux (2013-02-16 11:27:19 +0100)
+
+----------------------------------------------------------------
+
+arm-soc: pin muxing for sh-mobile
+
+This is another cleanup series, containing the move of the Renesas
+SH-Mobile pin controller code from arch/arm/mach-shmobile over to the
+generic pinctrl subsystem, changing it over to the common interfaces in
+the process.
+
+Based on agreement between Olof, Paul Mundt, Linus Walleij and Simon,
+we're merging this large branch of pinctrl conversion through arm-soc,
+even though it contains the corresponding conversions for arch/sh. Main
+reason for this is tight dependencies (that will now mostly be broken)
+between the arch/sh and mach-shmobile implementations.
+
+There will be more of this in 3.10 to do device-tree bindings, but this
+is the initial conversion.
 
 ----------------------------------------------------------------
 
-arm-soc: multiplatform support
+Arnd Bergmann (2):
+      Merge tag 'renesas-pinmux2-for-v3.9' of git://git.kernel.org/.../horms/renesas into next/sh-pinmux
+      Merge branch 'next/sh-pinmux' into for-next
 
-Converting more ARM platforms to multiplatform support. This time, OMAP
-gets converted, which is a major step since this is by far the largest
-platform in terms of code size. The same thing happens to the vt8500
-platform.
+Laurent Pinchart (80):
+      sh: sh7264: Rename CRX0CRX1 mark to match GPIO names
+      sh: sh7269: Rename CRX0CRX1(CRX2) marks to match GPIO names
+      sh: sh7723: Rename GPIO_FN_SIUOSPD to GPIO_FN_SIUAOSPD
+      sh: sh7757: Fix GPIO_FN_ET0_MDIO and GPIO_FN_ET1_MDIO GPIO entries
+      sh: sh7786: Fix port E, G and J GPIOs
+      sh: sh7786: Fix last GPIO index
+      sh: shx3: Fix last GPIO index
+      sh-pfc: Split platform data from the sh_pfc structure
+      sh-pfc: Move private definitions and declarations to private header
+      sh-pfc: Merge PFC core and pinctrl
+      sh-pfc: Merge PFC core and gpio
+      sh-pfc: Move platform device and driver to the core
+      sh-pfc: Use devm_kzalloc()
+      sh-pfc: Use devm_ioremap_nocache()
+      sh-pfc: Let the compiler decide whether to inline functions
+      sh-pfc: Remove check for impossible error condition
+      sh-pfc: Sort headers alphabetically
+      sh-pfc: Use sh_pfc_ namespace prefix through the whole driver
+      sh-pfc: Split platform device and platform driver registration
+      sh-pfc: Support passing resources through platform device
+      ARM: shmobile: Select PINCTRL
+      ARM: shmobile: r8a7740: Register PFC platform device
+      ARM: shmobile: r8a7779: Register PFC platform device
+      ARM: shmobile: sh7372: Register PFC platform device
+      ARM: shmobile: sh73a0: Register PFC platform device
+      ARM: shmobile: r8a7740: Add pin control resources
+      ARM: shmobile: sh7372: Add pin control resources
+      ARM: shmobile: sh73a0: Add pin control resources
+      sh: Add PFC platform device registration helper function
+      sh: sh7203: Register PFC platform device
+      sh: sh7264: Register PFC platform device
+      sh: sh7269: Register PFC platform device
+      sh: sh7720: Register PFC platform device
+      sh: sh7722: Register PFC platform device
+      sh: sh7723: Register PFC platform device
+      sh: sh7724: Register PFC platform device
+      sh: sh7734: Register PFC platform device
+      sh: sh7757: Register PFC platform device
+      sh: sh7785: Register PFC platform device
+      sh: sh7786: Register PFC platform device
+      sh: shx3: Register PFC platform device
+      sh-pfc: Remove platform device registration
+      sh-pfc: Remove unused resource and num_resources platform data fields
+      sh-pfc: Move driver from drivers/sh/ to drivers/pinctrl/
+      sh-pfc: Support pinmux info in driver data instead of platform data
+      sh-pfc: Add r8a7740 pinmux support
+      sh-pfc: Add r8a7779 pinmux support
+      sh-pfc: Add sh7372 pinmux support
+      sh-pfc: Add sh73a0 pinmux support
+      sh-pfc: Add sh7203 pinmux support
+      sh-pfc: Add sh7264 pinmux support
+      sh-pfc: Add sh7269 pinmux support
+      sh-pfc: Add sh7720 pinmux support
+      sh-pfc: Add sh7722 pinmux support
+      sh-pfc: Add sh7723 pinmux support
+      sh-pfc: Add sh7724 pinmux support
+      sh-pfc: Add sh7734 pinmux support
+      sh-pfc: Add sh7757 pinmux support
+      sh-pfc: Add sh7785 pinmux support
+      sh-pfc: Add sh7786 pinmux support
+      sh-pfc: Add shx3 pinmux support
+      ARM: shmobile: r8a7740: Use driver-provided pinmux info
+      ARM: shmobile: r8a7779: Use driver-provided pinmux info
+      ARM: shmobile: sh7372: Use driver-provided pinmux info
+      ARM: shmobile: sh73a0: Use driver-provided pinmux info
+      sh: sh7203: pinmux: Use driver-provided pinmux info
+      sh: sh7264: pinmux: Use driver-provided pinmux info
+      sh: sh7269: pinmux: Use driver-provided pinmux info
+      sh: sh7720: pinmux: Use driver-provided pinmux info
+      sh: sh7722: pinmux: Use driver-provided pinmux info
+      sh: sh7723: pinmux: Use driver-provided pinmux info
+      sh: sh7724: pinmux: Use driver-provided pinmux info
+      sh: sh7734: pinmux: Use driver-provided pinmux info
+      sh: sh7757: pinmux: Use driver-provided pinmux info
+      sh: sh7785: pinmux: Use driver-provided pinmux info
+      sh: sh7786: pinmux: Use driver-provided pinmux info
+      sh: shx3: pinmux: Use driver-provided pinmux info
+      sh: Remove unused sh_pfc_register_info() function
+      sh-pfc: Remove pinmux_info definition
+      sh-pfc: Move sh_pfc.h from include/linux/ to driver directory
 
-Conflicts include:
-* Two mach/uncompress.h files are removed, the changes made to them
-  elsewhere can be discarded now.
-* Moving the OMAP4 irq_match array has context clashes with turning
-  omap4_sar_ram_init into an omap_early_initcall()
+Magnus Damm (1):
+      sh-pfc: sh_pfc_probe() sizeof() fix
 
-----------------------------------------------------------------
-André Hentschel (1):
-      ARM: OMAP2+: Include soc.h to drm.c to fix compiling
+Olof Johansson (1):
+      Merge branch 'pfc' of git://git.kernel.org/.../horms/renesas into next/sh-pinmux
 
-Arnd Bergmann (5):
-      [media] davinci: do not include mach/hardware.h
-      remoteproc: omap: depend on OMAP_MBOX_FWK
-      net: cwdavinci_cpdma: export symbols for cpsw
-      Merge branch 'omap/multiplatform-fixes', tag 'v3.8-rc5' into next/multiplatform
-
-Josh Cartwright (2):
-      ARM: multi_v7_defconfig: remove unnecessary CONFIG_GPIOLIB
-      ARM: multi_v7_defconfig: add ARCH_ZYNQ
-
-Olof Johansson (2):
-      Merge tag 'omap-for-v3.9/multiplatform-enable-signed-v2' of git://git.kernel.org/.../tmlind/linux-omap into next/multiplatform
-      Merge tag 'vt8500-multiplatform-3.9' of git://server.prisktech.co.nz/git/linuxwmt into next/multiplatform
-
-Tony Lindgren (11):
-      ARM: OMAP2+: Limit omap initcalls to omap only on multiplatform kernels
-      ARM: OMAP2+: Use omap initcalls
-      ARM: OMAP: Fix i2c cmdline initcall for multiplatform
-      ARM: OMAP: Fix dmaengine init for multiplatform
-      ARM: OMAP2+: Add multiplatform debug_ll support
-      ARM: OMAP2+: Disable code that currently does not work with multiplaform
-      ARM: OMAP2+: Enable ARCH_MULTIPLATFORM support
-      ARM: OMAP2+: Add minimal support for booting vexpress
-      ARM: OMAP2+: Remove now obsolete uncompress.h and debug-macro.S
-      ARM: OMAP2+: Fix warning for hwspinlock omap_postcore_initcall
-      ARM: OMAP2+: Make sure files with omap initcalls include soc.h
-
-Tony Prisk (3):
-      arm: vt8500: Remove single platform Kconfig options
-      arm: vt8500: Convert debug-macro.S to be multiplatform friendly
-      arm: vt8500: Remove remaining mach includes
-
- arch/arm/Kconfig                                |  28 ++--
- arch/arm/Kconfig.debug                          |  64 ++++++++
- arch/arm/arm-soc-for-next-contents.txt          |  13 ++
- arch/arm/configs/multi_v7_defconfig             |   2 +-
- arch/arm/configs/omap2plus_defconfig            |   6 +-
- arch/arm/include/debug/omap2plus.S              | 190 ++++++++++++++++++++++++
- arch/arm/include/debug/vt8500.S                 |  37 +++++
- arch/arm/mach-omap1/dma.c                       |  18 ++-
- arch/arm/mach-omap1/i2c.c                       |   6 +
- arch/arm/mach-omap2/Kconfig                     |  25 +++-
- arch/arm/mach-omap2/Makefile                    |   3 +
- arch/arm/mach-omap2/board-omap3beagle.c         |   2 +-
- arch/arm/mach-omap2/board-rx51-video.c          |   3 +-
- arch/arm/mach-omap2/clock2xxx.c                 |   2 +-
- arch/arm/mach-omap2/clock3xxx.c                 |   2 +-
- arch/arm/mach-omap2/devices.c                   |   6 +-
- arch/arm/mach-omap2/dma.c                       |  23 ++-
- arch/arm/mach-omap2/drm.c                       |   2 +-
- arch/arm/mach-omap2/emu.c                       |   2 +-
- arch/arm/mach-omap2/fb.c                        |   4 +-
- arch/arm/mach-omap2/gpio.c                      |   5 +-
- arch/arm/mach-omap2/gpmc.c                      |   4 +-
- arch/arm/mach-omap2/hdq1w.c                     |   3 +-
- arch/arm/mach-omap2/hwspinlock.c                |   3 +-
- arch/arm/mach-omap2/i2c.c                       |   5 +
- arch/arm/mach-omap2/include/mach/debug-macro.S  | 165 --------------------
- arch/arm/mach-omap2/include/mach/serial.h       |  37 -----
- arch/arm/mach-omap2/include/mach/uncompress.h   | 171 ---------------------
- arch/arm/mach-omap2/mcbsp.c                     |   3 +-
- arch/arm/mach-omap2/omap-iommu.c                |   3 +-
- arch/arm/mach-omap2/omap2-restart.c             |   3 +-
- arch/arm/mach-omap2/omap4-common.c              |   4 +-
- arch/arm/mach-omap2/omap_device.c               |   5 +-
- arch/arm/mach-omap2/omap_hwmod.c                |   2 +-
- arch/arm/mach-omap2/omap_phy_internal.c         |   2 +-
- arch/arm/mach-omap2/opp3xxx_data.c              |   2 +-
- arch/arm/mach-omap2/opp4xxx_data.c              |   2 +-
- arch/arm/mach-omap2/pm-debug.c                  |   2 +-
- arch/arm/mach-omap2/pm.c                        |   2 +-
- arch/arm/mach-omap2/pmu.c                       |   2 +-
- arch/arm/mach-omap2/prm3xxx.c                   |   2 +-
- arch/arm/mach-omap2/prm44xx.c                   |   2 +-
- arch/arm/mach-omap2/serial.c                    |   2 +-
- arch/arm/mach-omap2/smartreflex-class3.c        |   3 +-
- arch/arm/mach-omap2/soc.h                       |  29 ++++
- arch/arm/mach-omap2/timer.c                     |   2 +-
- arch/arm/mach-omap2/wd_timer.c                  |   2 +-
- arch/arm/mach-vt8500/Kconfig                    |  11 +-
- arch/arm/mach-vt8500/include/mach/debug-macro.S |  31 ----
- arch/arm/mach-vt8500/include/mach/timex.h       |  26 ----
- arch/arm/mach-vt8500/include/mach/uncompress.h  |  36 -----
- arch/arm/plat-omap/Kconfig                      |  32 +---
- arch/arm/plat-omap/Makefile                     |   2 +
- arch/arm/plat-omap/i2c.c                        |   3 +-
- arch/arm/plat-omap/include/plat/i2c.h           |   6 +
- drivers/crypto/omap-sham.c                      |   3 +
- drivers/dma/omap-dma.c                          |  20 +--
- drivers/media/platform/davinci/vpss.c           |   1 -
- drivers/media/rc/Kconfig                        |   2 +-
- drivers/net/ethernet/ti/davinci_cpdma.c         |   3 +
- drivers/remoteproc/Kconfig                      |   2 +-
- drivers/staging/tidspbridge/Kconfig             |   2 +-
- 62 files changed, 497 insertions(+), 588 deletions(-)
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/arm-soc-for-next-contents.txt             |   20 +-
+ arch/arm/mach-shmobile/Makefile                    |    8 -
+ arch/arm/mach-shmobile/setup-r8a7740.c             |   26 +
+ arch/arm/mach-shmobile/setup-r8a7779.c             |   25 +
+ arch/arm/mach-shmobile/setup-sh7372.c              |   26 +
+ arch/arm/mach-shmobile/setup-sh73a0.c              |   25 +
+ arch/sh/Kconfig                                    |   12 +
+ arch/sh/include/asm/gpio.h                         |    2 +-
+ arch/sh/include/cpu-common/cpu/pfc.h               |   26 +
+ arch/sh/include/cpu-sh4/cpu/sh7723.h               |    2 +-
+ arch/sh/include/cpu-sh4/cpu/sh7786.h               |    8 +-
+ arch/sh/kernel/cpu/Makefile                        |    2 +-
+ arch/sh/kernel/cpu/pfc.c                           |   33 +
+ arch/sh/kernel/cpu/sh2a/pinmux-sh7203.c            | 1582 +----------
+ arch/sh/kernel/cpu/sh2a/pinmux-sh7264.c            | 2121 +--------------
+ arch/sh/kernel/cpu/sh2a/pinmux-sh7269.c            | 2823 +------------------
+ arch/sh/kernel/cpu/sh3/pinmux-sh7720.c             | 1226 +--------
+ arch/sh/kernel/cpu/sh4a/pinmux-sh7722.c            | 1778 +-----------
+ arch/sh/kernel/cpu/sh4a/pinmux-sh7723.c            | 1893 +------------
+ arch/sh/kernel/cpu/sh4a/pinmux-sh7724.c            | 2210 +--------------
+ arch/sh/kernel/cpu/sh4a/pinmux-sh7734.c            | 2470 +----------------
+ arch/sh/kernel/cpu/sh4a/pinmux-sh7757.c            | 2267 +---------------
+ arch/sh/kernel/cpu/sh4a/pinmux-sh7785.c            | 1294 +--------
+ arch/sh/kernel/cpu/sh4a/pinmux-sh7786.c            |  822 +-----
+ arch/sh/kernel/cpu/sh4a/pinmux-shx3.c              |  573 +---
+ drivers/pinctrl/Kconfig                            |    2 +-
+ drivers/pinctrl/Makefile                           |    2 +
+ drivers/pinctrl/sh-pfc/Kconfig                     |  116 +
+ drivers/pinctrl/sh-pfc/Makefile                    |   21 +
+ drivers/pinctrl/sh-pfc/core.c                      |  635 +++++
+ drivers/pinctrl/sh-pfc/core.h                      |   72 +
+ drivers/pinctrl/sh-pfc/gpio.c                      |  178 ++
+ .../pinctrl/sh-pfc}/pfc-r8a7740.c                  |   11 +-
+ .../pinctrl/sh-pfc}/pfc-r8a7779.c                  |   29 +-
+ drivers/pinctrl/sh-pfc/pfc-sh7203.c                | 1592 +++++++++++
+ drivers/pinctrl/sh-pfc/pfc-sh7264.c                | 2131 +++++++++++++++
+ drivers/pinctrl/sh-pfc/pfc-sh7269.c                | 2834 ++++++++++++++++++++
+ .../pinctrl/sh-pfc}/pfc-sh7372.c                   |   11 +-
+ .../pinctrl/sh-pfc}/pfc-sh73a0.c                   |   11 +-
+ drivers/pinctrl/sh-pfc/pfc-sh7720.c                | 1236 +++++++++
+ drivers/pinctrl/sh-pfc/pfc-sh7722.c                | 1779 ++++++++++++
+ drivers/pinctrl/sh-pfc/pfc-sh7723.c                | 1903 +++++++++++++
+ drivers/pinctrl/sh-pfc/pfc-sh7724.c                | 2225 +++++++++++++++
+ drivers/pinctrl/sh-pfc/pfc-sh7734.c                | 2475 +++++++++++++++++
+ drivers/pinctrl/sh-pfc/pfc-sh7757.c                | 2282 ++++++++++++++++
+ drivers/pinctrl/sh-pfc/pfc-sh7785.c                | 1304 +++++++++
+ drivers/pinctrl/sh-pfc/pfc-sh7786.c                |  837 ++++++
+ drivers/pinctrl/sh-pfc/pfc-shx3.c                  |  582 ++++
+ drivers/{sh/pfc => pinctrl/sh-pfc}/pinctrl.c       |  164 +-
+ {include/linux => drivers/pinctrl/sh-pfc}/sh_pfc.h |   43 +-
+ drivers/sh/Kconfig                                 |    1 -
+ drivers/sh/Makefile                                |    1 -
+ drivers/sh/pfc/Kconfig                             |   26 -
+ drivers/sh/pfc/Makefile                            |    3 -
+ drivers/sh/pfc/core.c                              |  572 ----
+ drivers/sh/pfc/gpio.c                              |  240 --
+ 57 files changed, 22494 insertions(+), 22099 deletions(-)
