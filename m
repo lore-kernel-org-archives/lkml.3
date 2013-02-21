@@ -1,124 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab3BUQLk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 11:11:40 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:51731 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab3BUQLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 11:11:39 -0500
-Date: Thu, 21 Feb 2013 21:36:13 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>,
-        Michael Wang <wangyun@linux.vnet.ibm.com>
-Subject: Re: [PATCH] sched: Skip looking at skip if next or last is set
-Message-ID: <20130221160613.GA18617@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20130218130146.GA7472@linux.vnet.ibm.com>
- <1361349985.10155.1.camel@laptop>
+	id S1753123Ab3BUQNW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 11:13:22 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:43148 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab3BUQNU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 11:13:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1361349985.10155.1.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022116-7182-0000-0000-0000056D3635
+In-Reply-To: <alpine.LFD.2.02.1302210013070.22263@ionos>
+References: <1361373336-11337-1-git-send-email-fweisbec@gmail.com>
+	<alpine.LFD.2.02.1302202155320.22263@ionos>
+	<CAFTL4hx_uXfY=bH9nnEsN6AJFTcwqdAWTxcR0jc=hL1FBrwk0w@mail.gmail.com>
+	<alpine.LFD.2.02.1302210013070.22263@ionos>
+Date: Thu, 21 Feb 2013 17:13:18 +0100
+Message-ID: <CAFTL4hz7xmi910Gv0uXAM2AReC4iZzAo3gfMtPk1Yh6wRi1OOg@mail.gmail.com>
+Subject: Re: [PATCH] nohz: Make tick_nohz_irq_exit() irq safe
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2013-02-20 09:46:25]:
+2013/2/21 Thomas Gleixner <tglx@linutronix.de>:
+> On Wed, 20 Feb 2013, Frederic Weisbecker wrote:
+>> 2013/2/20 Thomas Gleixner <tglx@linutronix.de>:
+>> > That's not a fix. That's an hack.
+>>
+>> I know it looks that way. That's because it's a pure regression fix,
+>> minimal for backportability.
+>>
+>> I'm distinguishing two different things here: the fact that some archs
+>> can call irq_exit() with interrupts enabled which is a global design
+>> problem, and the fact that tick_nohz_irq_exit() was safe against that
+>> until 3.2 when I broke it with a commit of mine.
+>>
+>> My goal was basically to restore that protection in a minimal commit
+>> such that we can backport the regression fix, then deal with
+>> __ARCH_IRQ_EXIT_IRQS_DISABLED afterward, since it requires some more
+>> invasive changes.
+>>
+>> >> A saner long term solution will be to remove
+>> >> __ARCH_IRQ_EXIT_IRQS_DISABLED.
+>> >
+>> > We really want to enforce that interrupt disabled condition for
+>> > calling irq_exit(). So why make this exclusive to tick_nohz_irq_exit()?
+>>
+>> I need a fix that I can backport. Is the below fine with a stable tag?
+>> It looks a bit too invasive for the single regression involved.
+>
+> I think that's fine as it's obviously correct and not diluting the
+> real underlying issue of the __ARCH_IRQ_EXIT_IRQS_DISABLED insanity.
 
-> On Mon, 2013-02-18 at 18:31 +0530, Srikar Dronamraju wrote:
-> > pick_next_entity() prefers next, then last. However code checks if the
-> > left entity can be skipped even if next / last is set.
-> > 
-> > Check if left entity should be skipped only if next/last is not set.
-> 
-> You fail to explain why its a problem and continue to make a horrid mess
-> of the code..
-> 
-
-If we look at the comments above pick_next_entity(),  it states:
-/*
- * Pick the next process, keeping these things in mind, in this order:
- * 1) keep things fair between processes/task groups
- * 2) pick the "next" process, since someone really wants that to run
- * 3) pick the "last" process, for cache locality
- * 4) do not run the "skip" process, if something else is available
- */ 
-
-Currently the code checks in the reverse order, though the preference is
-correctly maintained as listed in comments.  But in some cases, we might be
-doing redundant checks.  Lets assume next is set, then we should avoid 
-checking for skip, last and their fairness with left.
-
-So what I intended to do was change the order, i.e check for last only if next
-is not set (or was picking next was unfair wrt left) and check for "something
-else (second from left)" if last is not set (or picking last was unfair wrt
-left).
-
-However after sending the patch, I stumbled across these links.
-https://lkml.org/lkml/2012/1/16/500 and https://lkml.org/lkml/2012/1/25/195
-
-> > Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> > ---
-> >  kernel/sched/fair.c |   31 +++++++++++++++----------------
-> >  1 files changed, 15 insertions(+), 16 deletions(-)
-> > 
-> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > index fdee793..cc97b12 100644
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -1900,27 +1900,26 @@ static struct sched_entity *pick_next_entity(struct cfs_rq *cfs_rq)
-> >  	struct sched_entity *left = se;
-> >  
-> >  	/*
-> > -	 * Avoid running the skip buddy, if running something else can
-> > -	 * be done without getting too unfair.
-> > +	 * Someone really wants next to run. If it's not unfair, run it.
-> >  	 */
-> > -	if (cfs_rq->skip == se) {
-> > -		struct sched_entity *second = __pick_next_entity(se);
-> > +	if (cfs_rq->next && wakeup_preempt_entity(cfs_rq->next, left) < 1) {
-> > +		se = cfs_rq->next;
-> > +	} else if (cfs_rq->last && wakeup_preempt_entity(cfs_rq->last, left) < 1) {
-> > +		/*
-> > +		 * Prefer last buddy, try to return the CPU to a preempted
-> > +		 * task.
-> > +		 */
-> > +		se = cfs_rq->last;
-> > +	} else if (cfs_rq->skip == left) {
-> > +		/*
-> > +		 * Avoid running the skip buddy, if running something else
-> > +		 * can be done without getting too unfair.
-> > +		 */
-> > +		struct sched_entity *second = __pick_next_entity(left);
-> >  		if (second && wakeup_preempt_entity(second, left) < 1)
-> >  			se = second;
-> >  	}
-> >  
-> > -	/*
-> > -	 * Prefer last buddy, try to return the CPU to a preempted task.
-> > -	 */
-> > -	if (cfs_rq->last && wakeup_preempt_entity(cfs_rq->last, left) < 1)
-> > -		se = cfs_rq->last;
-> > -
-> > -	/*
-> > -	 * Someone really wants this to run. If it's not unfair, run it.
-> > -	 */
-> > -	if (cfs_rq->next && wakeup_preempt_entity(cfs_rq->next, left) < 1)
-> > -		se = cfs_rq->next;
-> > -
-> >  	clear_buddies(cfs_rq, se);
-> >  
-> >  	return se;
-> > 
-> 
-> 
-
--- 
-Thanks and Regards
-Srikar Dronamraju
-
+Ok fine. Do you plan to commit your proposed change then?
