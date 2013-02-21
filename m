@@ -1,65 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab3BUTEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 14:04:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:21173 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753074Ab3BUTEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 14:04:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,711,1355126400"; 
-   d="scan'208";a="288928224"
-Subject: [PATCH] Update the links to the white papers on CRC32C
- calculations with PCLMULQDQ instructions.
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        David Cote <david.m.cote@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto <linux-crypto@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Feb 2013 11:04:22 -0800
-Message-ID: <1361473462.17632.202.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753138Ab3BUTGX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 14:06:23 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:64913 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313Ab3BUTGV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 14:06:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <51258D5D.2070404@oracle.com>
+References: <CAMe9rOrE4okBffqCE0mAK_ogc76Ty12OvBJGy69kLebGGXmM=Q@mail.gmail.com>
+	<51258D5D.2070404@oracle.com>
+Date: Thu, 21 Feb 2013 11:06:21 -0800
+Message-ID: <CAMe9rOpfd+xtyfvr21C771smTE7AXefxVJu73B7Xotf4EvYy+A@mail.gmail.com>
+Subject: Re: [PATCH] DMI: Always call dmi_present with DMI structure
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: zhenzhong.duan@oracle.com
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Herbert,
+On Wed, Feb 20, 2013 at 6:58 PM, Zhenzhong Duan
+<zhenzhong.duan@oracle.com> wrote:
+> Hi
+> Ben had sent a patch fixing this issue. Would you like to test his patch?
+> https://lkml.org/lkml/2013/2/16/102
+> zduan
 
-The following patch update the stale link to the CRC32C white paper 
-that was referenced.
+The patch has a typo:
 
-Tim
+-		offset = 16;
++		return memcmp(q + 16, "_DMI_", 5) || dmi_present(p + 16);
+ 	}
+
+'q' isn't defined here.  Change it to `p" also fixes the problem for me.
 
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+H.J.
 ---
- arch/x86/crypto/crc32c-pcl-intel-asm_64.S |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/crypto/crc32c-pcl-intel-asm_64.S b/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
-index 93c6d39..f3f1e42 100644
---- a/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
-+++ b/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
-@@ -1,9 +1,10 @@
- /*
-  * Implement fast CRC32C with PCLMULQDQ instructions. (x86_64)
-  *
-- * The white paper on CRC32C calculations with PCLMULQDQ instruction can be
-+ * The white papers on CRC32C calculations with PCLMULQDQ instruction can be
-  * downloaded from:
-- * http://download.intel.com/design/intarch/papers/323405.pdf
-+ * http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/crc-iscsi-polynomial-crc32-instruction-paper.pdf
-+ * http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/fast-crc-computation-paper.pdf
-  *
-  * Copyright (C) 2012 Intel Corporation.
-  *
--- 
-1.7.6.5
-
-
+> On 2013-02-21 02:12, H.J. Lu wrote:
+>>
+>> Hi,
+>>
+>> This patch:
+>>
+>> commit 9f9c9cbb60576a1518d0bf93fb8e499cffccf377
+>> Author: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+>> Date:   Thu Dec 20 15:05:14 2012 -0800
+>>
+>>      drivers/firmware/dmi_scan.c: fetch dmi version from SMBIOS if it
+>> exists
+>>
+>>      The right dmi version is in SMBIOS if it's zero in DMI region
+>>
+>>      This issue was originally found from an oracle bug.
+>>      One customer noticed system UUID doesn't match between dmidecode &
+>> uek2.
+>>
+>>       - HP ProLiant BL460c G6 :
+>>         # cat /sys/devices/virtual/dmi/id/product_uuid
+>>         00000000-0000-4C48-3031-4D5030333531
+>>         # dmidecode | grep -i uuid    drivers/firmware/dmi_scan.c:
+>> fetch dmi version from SMBIOS if it exists
+>>
+>>      The right dmi version is in SMBIOS if it's zero in DMI region
+>>
+>>      This issue was originally found from an oracle bug.
+>>      One customer noticed system UUID doesn't match between dmidecode &
+>> uek2.
+>>
+>>       - HP ProLiant BL460c G6 :
+>>         # cat /sys/devices/virtual/dmi/id/product_uuid
+>>         00000000-0000-4C48-3031-4D5030333531
+>>         # dmidecode | grep -i uuid
+>>         UUID: 00000000-0000-484C-3031-4D5030333531
+>>
+>>      From SMBIOS 2.6 on, spec use little-endian encoding for UUID other
+>> than
+>>      network byte order.
+>>
+>>      So we need to get dmi version to distinguish.  If version is 0.0, the
+>>      real version is taken from the SMBIOS version.  This is part of
+>> original
+>>      kernel comment in code.
+>>
+>>         UUID: 00000000-0000-484C-3031-4D5030333531
+>>
+>>      From SMBIOS 2.6 on, spec use little-endian encoding for UUID other
+>> than
+>>      network byte order.
+>>
+>>      So we need to get dmi version to distinguish.  If version is 0.0, the
+>>      real version is taken from the SMBIOS version.  This is part of
+>> original
+>>      kernel comment in code.
+>>
+>> causes a regression in 3.7, 3.8 and 3.9 kernels.   Before the change,
+>> we only scan DMI structure.  Now smbios_present scans SMBIOS
+>> entry point.  I have a machine which has invalid checksum in
+>> SMBIOS entry point.  We wind up calling dmi_present with SMBIOS
+>> entry point instead of DMI structure.  This patch changes smbios_present
+>> to always call dmi_present with DMI structure.
+>>
+>>
+>
