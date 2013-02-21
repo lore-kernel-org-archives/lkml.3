@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570Ab3BUDTL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 22:19:11 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:44047 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab3BUDTJ (ORCPT
+	id S1751739Ab3BUD0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 22:26:00 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50329 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab3BUDZ6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 22:19:09 -0500
+	Wed, 20 Feb 2013 22:25:58 -0500
+From: "Vishwanathrao Badarkhe, Manish" <manishv.b@ti.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>
+Subject: RE: [PATCH V3] i2c: davinci: update to devm_* API
+Thread-Topic: [PATCH V3] i2c: davinci: update to devm_* API
+Thread-Index: AQHOBTG5bfG08VYfCUa21M7+Bi8x+Zh6+W6AgAjAIhA=
+Date: Thu, 21 Feb 2013 03:25:34 +0000
+Message-ID: <A4887BF146CD57468F700B415D2F4701583A28@DBDE01.ent.ti.com>
+References: <1360241520-11476-1-git-send-email-manishv.b@ti.com>
+ <20130215190943.GB4351@the-dreams.de>
+In-Reply-To: <20130215190943.GB4351@the-dreams.de>
+Accept-Language: en-IN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20130220164257.0905dc45.akpm@linux-foundation.org>
-References: <20130220223013.GA15760@redhat.com>
-	<1361402236-28644-1-git-send-email-msb@chromium.org>
-	<20130220152446.a65ff84f.akpm@linux-foundation.org>
-	<CACBanvr+1VEM6UqfNVx+KiuehZejwqpGp6djPN5kTgYD-umP2g@mail.gmail.com>
-	<20130220162015.545ebb6b.akpm@linux-foundation.org>
-	<CACBanvrdvTW+C2d2-+bC++mJOb8+3qNs2GgY3gf_9EfY+kNPvA@mail.gmail.com>
-	<20130220164257.0905dc45.akpm@linux-foundation.org>
-Date: Wed, 20 Feb 2013 19:19:08 -0800
-X-Google-Sender-Auth: j_djMRUGsuB8IqcCDxju68GAS_s
-Message-ID: <CACBanvpa9tg9pTAaTqSkN35-=6EQ53HGumNFM9S9fmcmPGcMjw@mail.gmail.com>
-Subject: Re: [PATCH v4] lockdep: check that no locks held at freeze time
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 4:42 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 20 Feb 2013 16:28:07 -0800
-> Mandeep Singh Baines <msb@chromium.org> wrote:
->
->> > Backtraces aren't *that* bad.  We'll easily be able to tell which of
->> > the two callsites triggered the trace.
->> >
->>
->> Let's say there was a try_to_freeze() that got inlined indirectly
->> (multiple levels of inline) into do_exit. Wouldn't the backtraces for
->> the regular exit check and the try_to_freeze check be identical except
->> for the offset (do_exit+0x45 versus do_exit+0x88)? So unless you had
->> an object file you wouldn't know which check you hit.
->
-> Mutter.  Spose so.  Vaguely possible.  Yes, if we want to avoid a
-> wont-happen, use __FILE__ and __LINE__.  Or, probably more sanely,
-> __func__.
->
+Hi Wolfram
 
-Fair enough. I'll avoid using a macro unless/until its actually needed.
+On Sat, Feb 16, 2013 at 00:39:43, Wolfram Sang wrote:
+> On Thu, Feb 07, 2013 at 06:22:00PM +0530, Vishwanathrao Badarkhe, Manish wrote:
+> > Update the code to use devm_* API so that driver core will manage 
+> > resources.
+> > Also, if "devm_request_and_ioremap" fails return -EADDRNOTAVAIL 
+> > instead of -EBUSY.
+> > 
+> > Signed-off-by: Vishwanathrao Badarkhe, Manish <manishv.b@ti.com>
+> 
+> Basically OK, please resend when devm_ioremap_resource hits mainline in 3.9.
 
-Regards,
-Mandeep
+Thanks for pointing this out. Sure, I will resend this patch once 
+devm_ioremap_resource hits mainline in 3.9.
 
-> Or uninline try_to_freeze().  If anything's calling that at high
-> frequency, we have a problem.  And given the number of callsites,
-> getting it into icache might result in a faster kernel...
->
-> (Someone needs to teach __might_sleep() about __ratelimit())
+Regards, 
+Manish
