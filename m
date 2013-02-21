@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab3BUA3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 19:29:54 -0500
-Received: from smtp13.ono.com ([62.42.230.16]:22253 "EHLO resmaa13.ono.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751644Ab3BUA3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 19:29:53 -0500
-Message-ID: <51256A7F.7010207@ono.com>
-Date: Thu, 21 Feb 2013 01:29:51 +0100
-From: =?UTF-8?B?SkEgTWFnYWxsw7Nu?= <jamagallon@ono.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130114 Thunderbird/17.0.2
+	id S1752066Ab3BUAbY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 19:31:24 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:42503 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab3BUAbW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 19:31:22 -0500
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Corrupt packets with ath5k
-References: <51252AE7.7040903@ono.com>
-In-Reply-To: <51252AE7.7040903@ono.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130220022712.0E8586607A4@gitolite.kernel.org>
+References: <20130220022712.0E8586607A4@gitolite.kernel.org>
+Date: Wed, 20 Feb 2013 17:31:21 -0700
+Message-ID: <CAKocOOMo-5Hiv_dBCpZNYMP_wXWiWugBYq4qsRcMBwm=TPM=dA@mail.gmail.com>
+Subject: Re: sched: Fix signedness bug in yield_to()
+From: Shuah Khan <shuahkhan@gmail.com>
+To: dan.carpenter@oracle.com, peterz@infradead.org, mingo@kernel.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org, Shuah Khan <shuahkhan@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 08:58 PM, JA Magallón wrote:
-> Hi all...
+On Tue, Feb 19, 2013 at 7:27 PM, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=c3c186403c6abd32e719f005f0af950155a9e54d
+> Commit:     c3c186403c6abd32e719f005f0af950155a9e54d
+> Parent:     e0a79f529d5ba2507486d498b25da40911d95cf6
+> Author:     Dan Carpenter <dan.carpenter@oracle.com>
+> AuthorDate: Tue Feb 5 14:37:51 2013 +0300
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Tue Feb 5 12:59:29 2013 +0100
 >
-> I have a strange problem with latest kernels. When I update my netbook
-> I get many "Installation failed, bad rpms:" mesages. First I thougt
-> that the oldie cheap ssd was failing (it is an Aspire AOA110).
-> But the updates work always fine when plugged to ethernet.
+>     sched: Fix signedness bug in yield_to()
 >
-> Now i tried to copy a couple RPMS via ssh over wifi and got:
->
-> mplayer-1.1-11.r35916.1.mga3.tainted.i586.rpm  100% 2192KB   2.1MB/s   00:00
-> Received disconnect from 192.168.1.51: 2: Packet corrupt
-> lost connection
->
-> Hardware/driver are these:
->
-> 03:00.0 Ethernet controller: Atheros Communications Inc. AR242x / AR542x Wireless Network Adapter (PCI-Express) (rev 01)
->      Subsystem: Foxconn International, Inc. Device e008
->      Kernel driver in use: ath5k
->
-> Ist that hardware failing ? Is driver failing ? Other laptop/androids
-> update fine with the router via wifi.
-> Any idea ?
->
-> I currently have 3.8.0, distro build.
->
+>     In 7b270f6099 "sched: Bail out of yield_to when source and
+>     target runqueue has one task" we changed this to store -ESRCH so
+>     it needs to be signed.
 
-I tried with 3.7.1 and everything works fine.
-Possible clues:
-- 3.7.1: works fine
-- warm boot in 3.8.0: transfer stalls and scp looks hanged, speed
-   drops to zero, but no error message
-- cold boot in 3.8.0: transfer stops with Packet corrupt error or sometimes
-   stalls..
+Dan, Ingo,
 
-> TIA
+I can't find the 7b270f6099 "sched: Bail out of yield_to when source
+and  target runqueue has one task" in the latest Linus's git. Am I
+missing something.
+
+The current kenel/sched/core.c doesn't have the code from the
+associated patch https://patchwork.kernel.org/patch/2016651/
+
+>  bool __sched yield_to(struct task_struct *p, bool preempt)
+>  {
+> @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
 >
+>  again:
+>  	p_rq = task_rq(p);
+> +	/*
+> +	 * If we're the only runnable task on the rq and target rq also
+> +	 * has only one task, there's absolutely no point in yielding.
+> +	 */
+> +	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
+> +		yielded = -ESRCH;
+> +		goto out_irq;
+> +	}
 
+Without the 7b270f6099 "sched: Bail out of yield_to when source and
+target runqueue has one task", do you need this change?
 
--- 
-J.A. Magallon <jamagallon()ono!com>        \               Winter is coming...
+Am I missing something?
+
+-- Shuah
