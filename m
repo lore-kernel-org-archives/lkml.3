@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab3BUPjj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 10:39:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4752 "EHLO mx1.redhat.com"
+	id S1754952Ab3BUPjn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 10:39:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47405 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754310Ab3BUPjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 10:39:37 -0500
+	id S1754910Ab3BUPjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 10:39:41 -0500
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDACv2 10/12] edac: put all arguments for the raw error handling call into a struct
-Date: Thu, 21 Feb 2013 12:39:08 -0300
-Message-Id: <3897b2ad16a0126568eb335ec2c6ca5a25ed3254.1361459782.git.mchehab@redhat.com>
+Subject: [PATCH EDACv2 12/12] ghes_edac: Fix RAS tracing
+Date: Thu, 21 Feb 2013 12:39:10 -0300
+Message-Id: <ca154bf4bb0ee52ef1d43baa576c640620e12492.1361459782.git.mchehab@redhat.com>
 In-Reply-To: <cover.1361459782.git.mchehab@redhat.com>
 References: <cover.1361459782.git.mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -20,419 +20,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The number of arguments for edac_raw_mc_handle_error() is too big;
-put them into a structure and allocate space for it inside
-edac_mc_alloc().
+With the current version of CPER, there's no way to associate an
+error with the memory error. So, the error location in EDAC
+layers is unused.
 
-That reduces a lot the stack usage and simplifies the raw API call.
+As CPER has its own idea about memory architectural layers, just
+output whatever is there inside the driver's detail at the RAS
+tracepoint.
 
-Tested with sb_edac driver and MCE error injection. Worked as expected:
+The EDAC location keeps untouched, in the case that, in some future,
+we could actually map the error into the dimm labels.
 
-[  143.066100] EDAC MC0: 1 CE memory read error on CPU_SrcID#0_Channel#0_DIMM#0 (channel:0 slot:0 page:0x320 offset:0x0 grain:32 syndrome:0x0 -  area:DRAM err_code:0001:0090 socket:0 channel_mask:1 rank:0)
-[  143.086424] EDAC MC0: 1 CE memory read error on CPU_SrcID#0_Channel#0_DIMM#0 (channel:0 slot:0 page:0x320 offset:0x0 grain:32 syndrome:0x0 -  area:DRAM err_code:0001:0090 socket:0 channel_mask:1 rank:0)
-[  143.106570] EDAC MC0: 1 CE memory read error on CPU_SrcID#0_Channel#0_DIMM#0 (channel:0 slot:0 page:0x320 offset:0x0 grain:32 syndrome:0x0 -  area:DRAM err_code:0001:0090 socket:0 channel_mask:1 rank:0)
-[  143.126712] EDAC MC0: 1 CE memory read error on CPU_SrcID#0_Channel#0_DIMM#0 (channel:0 slot:0 page:0x320 offset:0x0 grain:32 syndrome:0x0 -  area:DRAM err_code:0001:0090 socket:0 channel_mask:1 rank:0)
+Now, the error message:
+
+[   72.396625] {1}[Hardware Error]: Hardware error from APEI Generic Hardware Error Source: 0
+[   72.396627] {1}[Hardware Error]: APEI generic hardware error status
+[   72.396628] {1}[Hardware Error]: severity: 2, corrected
+[   72.396630] {1}[Hardware Error]: section: 0, severity: 2, corrected
+[   72.396632] {1}[Hardware Error]: flags: 0x01
+[   72.396634] {1}[Hardware Error]: primary
+[   72.396635] {1}[Hardware Error]: section_type: memory error
+[   72.396637] {1}[Hardware Error]: error_status: 0x0000000000000400
+[   72.396638] {1}[Hardware Error]: node: 3
+[   72.396639] {1}[Hardware Error]: card: 0
+[   72.396640] {1}[Hardware Error]: module: 0
+[   72.396641] {1}[Hardware Error]: device: 0
+[   72.396643] {1}[Hardware Error]: error_type: 18, unknown
+[   72.396666] EDAC MC0: 1 CE reserved error (18) on unknown label (node:3 card:0 module:0 page:0x0 offset:0x0 grain:0 syndrome:0x0 - status(0x0000000000000400): Storage error in DRAM memory)
+
+Is properly represented on the trace event:
+
+     kworker/0:2-584   [000] ....    72.396657: mc_event: 1 Corrected error: reserved error (18) on unknown label (mc:0 location:-1:-1:-1 address:0x00000000 grain:1 syndrome:0x00000000 APEI location: node:3 card:0 module:0 status(0x0000000000000400): Storage error in DRAM memory)
+
+Tested on a 4 sockets E5-4650 Sandy Bridge machine.
 
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/edac_core.h |  16 +------
- drivers/edac/edac_mc.c   | 120 +++++++++++++++++++----------------------------
- drivers/edac/ghes_edac.c |  27 ++++++-----
- include/linux/edac.h     |  56 ++++++++++++++++++++++
- 4 files changed, 123 insertions(+), 96 deletions(-)
+ drivers/edac/edac_mc.c   | 16 ++++++++--------
+ drivers/edac/ghes_edac.c | 13 +++++++++++++
+ 2 files changed, 21 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-index 9c5da11..3c2625e 100644
---- a/drivers/edac/edac_core.h
-+++ b/drivers/edac/edac_core.h
-@@ -455,20 +455,8 @@ extern int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci,
- 				      unsigned long page);
- 
- void edac_raw_mc_handle_error(const enum hw_event_mc_err_type type,
--			  struct mem_ctl_info *mci,
--			  long grain,
--			  const u16 error_count,
--			  const int top_layer,
--			  const int mid_layer,
--			  const int low_layer,
--			  const unsigned long page_frame_number,
--			  const unsigned long offset_in_page,
--			  const unsigned long syndrome,
--			  const char *msg,
--			  const char *location,
--			  const char *label,
--			  const char *other_detail,
--			  const bool enable_per_layer_report);
-+			      struct mem_ctl_info *mci,
-+			      struct edac_raw_error_desc *e);
- 
- void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			  struct mem_ctl_info *mci,
 diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 94a5f26..501061d 100644
+index 501061d..cdb81aa 100644
 --- a/drivers/edac/edac_mc.c
 +++ b/drivers/edac/edac_mc.c
-@@ -1065,78 +1065,49 @@ static void edac_ue_error(struct mem_ctl_info *mci,
- 	edac_inc_ue_error(mci, enable_per_layer_report, pos, error_count);
- }
- 
--#define OTHER_LABEL " or "
--
- /**
-  * edac_raw_mc_handle_error - reports a memory event to userspace without doing
-  *			      anything to discover the error location
-  *
-  * @type:		severity of the error (CE/UE/Fatal)
-  * @mci:		a struct mem_ctl_info pointer
-- * @grain:		error granularity
-- * @error_count:	Number of errors of the same type
-- * @top_layer:		Memory layer[0] position
-- * @mid_layer:		Memory layer[1] position
-- * @low_layer:		Memory layer[2] position
-- * @page_frame_number:	mem page where the error occurred
-- * @offset_in_page:	offset of the error inside the page
-- * @syndrome:		ECC syndrome
-- * @msg:		Message meaningful to the end users that
-- *			explains the event\
-- * @location:		location of the error, like "csrow:0 channel:1"
-- * @label:		DIMM labels for the affected memory(ies)
-- * @other_detail:	Technical details about the event that
-- *			may help hardware manufacturers and
-- *			EDAC developers to analyse the event
-- * @enable_per_layer_report: should it increment per-layer error counts?
-+ * @e:			error description
-  *
-  * This raw function is used internally by edac_mc_handle_error(). It should
-  * only be called directly when the hardware error come directly from BIOS,
-  * like in the case of APEI GHES driver.
-  */
- void edac_raw_mc_handle_error(const enum hw_event_mc_err_type type,
--			  struct mem_ctl_info *mci,
--			  long grain,
--			  const u16 error_count,
--			  const int top_layer,
--			  const int mid_layer,
--			  const int low_layer,
--			  const unsigned long page_frame_number,
--			  const unsigned long offset_in_page,
--			  const unsigned long syndrome,
--			  const char *msg,
--			  const char *location,
--			  const char *label,
--			  const char *other_detail,
--			  const bool enable_per_layer_report)
-+			      struct mem_ctl_info *mci,
-+			      struct edac_raw_error_desc *e)
+@@ -1082,16 +1082,8 @@ void edac_raw_mc_handle_error(const enum hw_event_mc_err_type type,
+ 			      struct edac_raw_error_desc *e)
  {
  	char detail[80];
- 	u8 grain_bits;
--	int pos[EDAC_MAX_LAYERS] = { top_layer, mid_layer, low_layer };
-+	int pos[EDAC_MAX_LAYERS] = { e->top_layer, e->mid_layer, e->low_layer };
+-	u8 grain_bits;
+ 	int pos[EDAC_MAX_LAYERS] = { e->top_layer, e->mid_layer, e->low_layer };
  
- 	/* Report the error via the trace interface */
--	grain_bits = fls_long(grain) + 1;
--	trace_mc_event(type, msg, label, error_count,
--		       mci->mc_idx, top_layer, mid_layer, low_layer,
--		       PAGES_TO_MiB(page_frame_number) | offset_in_page,
--		       grain_bits, syndrome, other_detail);
+-	/* Report the error via the trace interface */
+-	grain_bits = fls_long(e->grain) + 1;
+-	trace_mc_event(type, e->msg, e->label, e->error_count,
+-		       mci->mc_idx, e->top_layer, e->mid_layer, e->low_layer,
+-		       PAGES_TO_MiB(e->page_frame_number) | e->offset_in_page,
+-		       grain_bits, e->syndrome, e->other_detail);
+-
+ 	/* Memory type dependent details about the error */
+ 	if (type == HW_EVENT_ERR_CORRECTED) {
+ 		snprintf(detail, sizeof(detail),
+@@ -1148,6 +1140,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 	int row = -1, chan = -1;
+ 	int pos[EDAC_MAX_LAYERS] = { top_layer, mid_layer, low_layer };
+ 	int i, n_labels = 0;
++	u8 grain_bits;
+ 	struct edac_raw_error_desc *e = &mci->error_desc;
+ 
+ 	edac_dbg(3, "MC%d\n", mci->mc_idx);
+@@ -1287,6 +1280,13 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
+ 	if (p > e->location)
+ 		*(p - 1) = '\0';
+ 
++	/* Report the error via the trace interface */
 +	grain_bits = fls_long(e->grain) + 1;
 +	trace_mc_event(type, e->msg, e->label, e->error_count,
 +		       mci->mc_idx, e->top_layer, e->mid_layer, e->low_layer,
 +		       PAGES_TO_MiB(e->page_frame_number) | e->offset_in_page,
 +		       grain_bits, e->syndrome, e->other_detail);
- 
- 	/* Memory type dependent details about the error */
- 	if (type == HW_EVENT_ERR_CORRECTED) {
- 		snprintf(detail, sizeof(detail),
- 			"page:0x%lx offset:0x%lx grain:%ld syndrome:0x%lx",
--			page_frame_number, offset_in_page,
--			grain, syndrome);
--		edac_ce_error(mci, error_count, pos, msg, location, label,
--			      detail, other_detail, enable_per_layer_report,
--			      page_frame_number, offset_in_page, grain);
-+			e->page_frame_number, e->offset_in_page,
-+			e->grain, e->syndrome);
-+		edac_ce_error(mci, e->error_count, pos, e->msg, e->location, e->label,
-+			      detail, e->other_detail, e->enable_per_layer_report,
-+			      e->page_frame_number, e->offset_in_page, e->grain);
- 	} else {
- 		snprintf(detail, sizeof(detail),
- 			"page:0x%lx offset:0x%lx grain:%ld",
--			page_frame_number, offset_in_page, grain);
-+			e->page_frame_number, e->offset_in_page, e->grain);
- 
--		edac_ue_error(mci, error_count, pos, msg, location, label,
--			      detail, other_detail, enable_per_layer_report);
-+		edac_ue_error(mci, e->error_count, pos, e->msg, e->location, e->label,
-+			      detail, e->other_detail, e->enable_per_layer_report);
- 	}
- 
- 
-@@ -1173,18 +1144,26 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			  const char *msg,
- 			  const char *other_detail)
- {
--	/* FIXME: too much for stack: move it to some pre-alocated area */
--	char location[80];
--	char label[(EDAC_MC_LABEL_LEN + 1 + sizeof(OTHER_LABEL)) * mci->tot_dimms];
- 	char *p;
- 	int row = -1, chan = -1;
- 	int pos[EDAC_MAX_LAYERS] = { top_layer, mid_layer, low_layer };
--	int i;
--	long grain;
--	bool enable_per_layer_report = false;
-+	int i, n_labels = 0;
-+	struct edac_raw_error_desc *e = &mci->error_desc;
- 
- 	edac_dbg(3, "MC%d\n", mci->mc_idx);
- 
-+	/* Fills the error report buffer */
-+	memset(e, 0, sizeof (*e));
-+	e->error_count = error_count;
-+	e->top_layer = top_layer;
-+	e->mid_layer = mid_layer;
-+	e->low_layer = low_layer;
-+	e->page_frame_number = page_frame_number;
-+	e->offset_in_page = offset_in_page;
-+	e->syndrome = syndrome;
-+	e->msg = msg;
-+	e->other_detail = other_detail;
 +
- 	/*
- 	 * Check if the event report is consistent and if the memory
- 	 * location is known. If it is known, enable_per_layer_report will be
-@@ -1207,7 +1186,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			pos[i] = -1;
- 		}
- 		if (pos[i] >= 0)
--			enable_per_layer_report = true;
-+			e->enable_per_layer_report = true;
- 	}
- 
- 	/*
-@@ -1221,8 +1200,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 	 * where each memory belongs to a separate channel within the same
- 	 * branch.
- 	 */
--	grain = 0;
--	p = label;
-+	p = e->label;
- 	*p = '\0';
- 
- 	for (i = 0; i < mci->tot_dimms; i++) {
-@@ -1236,8 +1214,8 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			continue;
- 
- 		/* get the max grain, over the error match range */
--		if (dimm->grain > grain)
--			grain = dimm->grain;
-+		if (dimm->grain > e->grain)
-+			e->grain = dimm->grain;
- 
- 		/*
- 		 * If the error is memory-controller wide, there's no need to
-@@ -1245,8 +1223,13 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 		 * channel/memory controller/...  may be affected.
- 		 * Also, don't show errors for empty DIMM slots.
- 		 */
--		if (enable_per_layer_report && dimm->nr_pages) {
--			if (p != label) {
-+		if (e->enable_per_layer_report && dimm->nr_pages) {
-+			if (n_labels >= EDAC_MAX_LABELS) {
-+				e->enable_per_layer_report = false;
-+				break;
-+			}
-+			n_labels++;
-+			if (p != e->label) {
- 				strcpy(p, OTHER_LABEL);
- 				p += strlen(OTHER_LABEL);
- 			}
-@@ -1273,12 +1256,12 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 		}
- 	}
- 
--	if (!enable_per_layer_report) {
--		strcpy(label, "any memory");
-+	if (!e->enable_per_layer_report) {
-+		strcpy(e->label, "any memory");
- 	} else {
- 		edac_dbg(4, "csrow/channel to increment: (%d,%d)\n", row, chan);
--		if (p == label)
--			strcpy(label, "unknown memory");
-+		if (p == e->label)
-+			strcpy(e->label, "unknown memory");
- 		if (type == HW_EVENT_ERR_CORRECTED) {
- 			if (row >= 0) {
- 				mci->csrows[row]->ce_count += error_count;
-@@ -1291,7 +1274,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 	}
- 
- 	/* Fill the RAM location data */
--	p = location;
-+	p = e->location;
- 
- 	for (i = 0; i < mci->n_layers; i++) {
- 		if (pos[i] < 0)
-@@ -1301,14 +1284,9 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			     edac_layer_name[mci->layers[i].type],
- 			     pos[i]);
- 	}
--	if (p > location)
-+	if (p > e->location)
- 		*(p - 1) = '\0';
- 
--	edac_raw_mc_handle_error(type, mci, grain, error_count,
--				 top_layer, mid_layer, low_layer,
--				 page_frame_number, offset_in_page,
--				 syndrome,
--				 msg, location, label, other_detail,
--				 enable_per_layer_report);
-+	edac_raw_mc_handle_error(type, mci, e);
+ 	edac_raw_mc_handle_error(type, mci, e);
  }
  EXPORT_SYMBOL_GPL(edac_mc_handle_error);
 diff --git a/drivers/edac/ghes_edac.c b/drivers/edac/ghes_edac.c
-index 802d52a..b4acc4f 100644
+index 1bde451..636dcf1 100644
 --- a/drivers/edac/ghes_edac.c
 +++ b/drivers/edac/ghes_edac.c
-@@ -183,11 +183,9 @@ void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
- 				struct cper_sec_mem_err *mem_err)
- {
- 	enum hw_event_mc_err_type type;
-+	struct edac_raw_error_desc *e;
+@@ -15,6 +15,7 @@
+ #include <linux/edac.h>
+ #include <linux/dmi.h>
+ #include "edac_core.h"
++#include <ras/ras_event.h>
+ 
+ #define GHES_EDAC_REVISION " Ver: 1.0.0"
+ 
+@@ -24,6 +25,7 @@ struct ghes_edac_pvt {
+ 	struct mem_ctl_info *mci;
+ 
+ 	/* Buffers for the error handling routine */
++	char detail_location[240];
+ 	char other_detail[160];
+ 	char msg[80];
+ };
+@@ -191,6 +193,7 @@ void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
  	struct mem_ctl_info *mci;
  	struct ghes_edac_pvt *pvt = NULL;
--	unsigned long page = 0, offset = 0, grain = 0;
--	char location[80];
--	char *label = "unknown";
+ 	char *p;
++	u8 grain_bits;
  
  	list_for_each_entry(pvt, &ghes_reglist, list) {
  		if (ghes == pvt->ghes)
-@@ -198,11 +196,19 @@ void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
- 		return;
- 	}
- 	mci = pvt->mci;
-+	e = &mci->error_desc;
+@@ -398,6 +401,16 @@ void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
+ 	if (p > pvt->other_detail)
+ 		*(p - 1) = '\0';
+ 
++	/* Generate the trace event */
++	grain_bits = fls_long(e->grain);
++	sprintf(pvt->detail_location, "APEI location: %s %s",
++		e->location, e->other_detail);
++	trace_mc_event(type, e->msg, e->label, e->error_count,
++		       mci->mc_idx, e->top_layer, e->mid_layer, e->low_layer,
++		       PAGES_TO_MiB(e->page_frame_number) | e->offset_in_page,
++		       grain_bits, e->syndrome, pvt->detail_location);
 +
-+	/* Cleans the error report buffer */
-+	memset(e, 0, sizeof (*e));
-+	e->error_count = 1;
-+	e->msg = "APEI";
-+	strcpy(e->label, "unknown");
-+	e->other_detail = "";
- 
- 	if (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
--		page = mem_err->physical_addr >> PAGE_SHIFT;
--		offset = mem_err->physical_addr & ~PAGE_MASK;
--		grain = ~(mem_err->physical_addr_mask & ~PAGE_MASK);
-+		e->page_frame_number = mem_err->physical_addr >> PAGE_SHIFT;
-+		e->offset_in_page = mem_err->physical_addr & ~PAGE_MASK;
-+		e->grain = ~(mem_err->physical_addr_mask & ~PAGE_MASK);
- 	}
- 
- 	switch (sev) {
-@@ -220,15 +226,14 @@ void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
- 		type = HW_EVENT_ERR_INFO;
- 	}
- 
--	sprintf(location, "node:%d card:%d module:%d bank:%d device:%d row: %d column:%d bit_pos:%d",
-+	sprintf(e->location,
-+		"node:%d card:%d module:%d bank:%d device:%d row: %d column:%d bit_pos:%d",
- 		mem_err->node, mem_err->card, mem_err->module,
- 		mem_err->bank, mem_err->device, mem_err->row, mem_err->column,
- 		mem_err->bit_pos);
--	edac_dbg(3, "error at location %s\n", location);
-+	edac_dbg(3, "error at location %s\n", e->location);
- 
--	edac_raw_mc_handle_error(type, mci, grain, 1, 0, 0, 0,
--				 page, offset, 0,
--				 "APEI", location, label, "", 0);
-+	edac_raw_mc_handle_error(type, mci, e);
++	/* Report the error via EDAC API */
+ 	edac_raw_mc_handle_error(type, mci, e);
  }
  EXPORT_SYMBOL_GPL(ghes_edac_report_mem_error);
- 
-diff --git a/include/linux/edac.h b/include/linux/edac.h
-index 2049b96..4fd4999 100644
---- a/include/linux/edac.h
-+++ b/include/linux/edac.h
-@@ -47,8 +47,18 @@ static inline void opstate_init(void)
- 	return;
- }
- 
-+/* Max length of a DIMM label*/
- #define EDAC_MC_LABEL_LEN	31
- 
-+/* Maximum size of the location string */
-+#define LOCATION_SIZE 80
-+
-+/* Defines the maximum number of labels that can be reported */
-+#define EDAC_MAX_LABELS		8
-+
-+/* String used to join two or more labels */
-+#define OTHER_LABEL " or "
-+
- /**
-  * enum dev_type - describe the type of memory DRAM chips used at the stick
-  * @DEV_UNKNOWN:	Can't be determined, or MC doesn't support detect it
-@@ -569,6 +579,46 @@ struct errcount_attribute_data {
- 	int layer0, layer1, layer2;
- };
- 
-+/**
-+ * edac_raw_error_desc - Raw error report structure
-+ * @grain:			minimum granularity for an error report, in bytes
-+ * @error_count:		number of errors of the same type
-+ * @top_layer:			top layer of the error (layer[0])
-+ * @mid_layer:			middle layer of the error (layer[1])
-+ * @low_layer:			low layer of the error (layer[2])
-+ * @page_frame_number:		page where the error happened
-+ * @offset_in_page:		page offset
-+ * @syndrome:			syndrome of the error (or 0 if unknown or if
-+ * 				the syndrome is not applicable)
-+ * @msg:			error message
-+ * @location:			location of the error
-+ * @label:			label of the affected DIMM(s)
-+ * @other_detail:		other driver-specific detail about the error
-+ * @enable_per_layer_report:	if false, the error affects all layers
-+ *				(typically, a memory controller error)
-+ */
-+struct edac_raw_error_desc {
-+	/*
-+	 * NOTE: everything before grain won't be cleaned by
-+	 * edac_raw_error_desc_clean()
-+	 */
-+	char location[LOCATION_SIZE];
-+	char label[(EDAC_MC_LABEL_LEN + 1 + sizeof(OTHER_LABEL)) * EDAC_MAX_LABELS];
-+	long grain;
-+
-+	/* the vars below and grain will be cleaned on every new error report */
-+	u16 error_count;
-+	int top_layer;
-+	int mid_layer;
-+	int low_layer;
-+	unsigned long page_frame_number;
-+	unsigned long offset_in_page;
-+	unsigned long syndrome;
-+	const char *msg;
-+	const char *other_detail;
-+	bool enable_per_layer_report;
-+};
-+
- /* MEMORY controller information structure
-  */
- struct mem_ctl_info {
-@@ -676,6 +726,12 @@ struct mem_ctl_info {
- 	/* work struct for this MC */
- 	struct delayed_work work;
- 
-+	/*
-+	 * Used to report an error - by being at the global struct
-+	 * makes the memory allocated by the EDAC core
-+	 */
-+	struct edac_raw_error_desc error_desc;
-+
- 	/* the internal state of this controller instance */
- 	int op_state;
- 
 -- 
 1.8.1.2
 
