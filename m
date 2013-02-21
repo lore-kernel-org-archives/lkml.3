@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab3BURcv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 12:32:51 -0500
-Received: from mga01.intel.com ([192.55.52.88]:41272 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754302Ab3BURcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 12:32:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,710,1355126400"; 
-   d="scan'208";a="294246486"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] pstore patches for 3.9 merge window
-Date: Thu, 21 Feb 2013 09:32:50 -0800
-Message-Id: <51265a42210853da3f@agluck-desk.sc.intel.com>
+	id S1755026Ab3BURgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 12:36:42 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:45863 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493Ab3BURgk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 12:36:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130221033309.CFBB0660BDB@gitolite.kernel.org>
+References: <20130221033309.CFBB0660BDB@gitolite.kernel.org>
+Date: Thu, 21 Feb 2013 10:36:38 -0700
+Message-ID: <CAKocOONU=S7w2bDc1Hf+PqP=pjJ14sdKOVC4UZH7ymx6h+vcyA@mail.gmail.com>
+Subject: Re: ixgbe: fix possible data corruption in read_i2c_byte
+From: Shuah Khan <shuahkhan@gmail.com>
+To: jeffrey.t.kirsher@intel.com, emil.s.tantilov@intel.com,
+        phillip.j.schmitt@intel.com
+Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
+On Wed, Feb 20, 2013 at 8:33 PM, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=d0310dc415a670ae2b2e27076b4685d988830479
+> Commit:     d0310dc415a670ae2b2e27076b4685d988830479
+> Parent:     4c696ca9fbabc5f94a3c6db7f009e73f0ef21831
+> Author:     Emil Tantilov <emil.s.tantilov@intel.com>
+> AuthorDate: Fri Jan 18 02:16:41 2013 +0000
+> Committer:  Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> CommitDate: Fri Feb 15 23:16:09 2013 -0800
+>
+>     ixgbe: fix possible data corruption in read_i2c_byte
+>
+>     This patch makes sure that the SW lock is released after all i2c
+>     operations complete in the retry code path.
+>
+>     Signed-off-by: Emil Tantilov <emil.s.tantilov@intel.com>
+>     Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+>     Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 
-  Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
+Jeff,
 
-are available in the git repository at:
+Should this patch be considered for stable? This patch applied cleanly
+to 3.7 and 3.4. I haven't done any testing yet.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux.git tags/please-pull-pstore
-
-for you to fetch changes up to fb0af3f2b1b613e5ea75426d454c7e5b1d1eef49:
-
-  pstore: Create a convenient mount point for pstore (2013-02-12 13:07:22 -0800)
-
-----------------------------------------------------------------
-A few fixes to reduce places where pstore might hang
-a system in the crash path. Plus a new mountpoint
-(/sys/fs/pstore ... makes more sense then /dev/pstore).
-
-----------------------------------------------------------------
-Josh Boyer (1):
-      pstore: Create a convenient mount point for pstore
-
-Seiji Aguchi (4):
-      pstore: Avoid deadlock in panic and emergency-restart path
-      efi_pstore: Avoid deadlock in non-blocking paths
-      efivars: Disable external interrupt while holding efivars->lock
-      efi_pstore: Introducing workqueue updating sysfs
-
- Documentation/ABI/testing/pstore |  10 +--
- drivers/firmware/efivars.c       | 180 +++++++++++++++++++++++++++++----------
- fs/pstore/inode.c                |  18 +++-
- fs/pstore/platform.c             |  35 ++++++--
- include/linux/efi.h              |   3 +-
- include/linux/pstore.h           |   6 ++
- 6 files changed, 192 insertions(+), 60 deletions(-)
+-- Shuah
