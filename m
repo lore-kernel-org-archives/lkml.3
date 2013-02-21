@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143Ab3BUWoe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 17:44:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52016 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754578Ab3BUWod (ORCPT
+	id S1757642Ab3BUWpL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 17:45:11 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:56264 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756277Ab3BUWpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 17:44:33 -0500
-Date: Thu, 21 Feb 2013 14:44:30 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv6 1/8] zsmalloc: add to mm/
-Message-Id: <20130221144430.2d3d77fc.akpm@linux-foundation.org>
-In-Reply-To: <51269DF1.9050107@linux.vnet.ibm.com>
-References: <1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	<1361397888-14863-2-git-send-email-sjenning@linux.vnet.ibm.com>
-	<20130221203650.GB3778@negative>
-	<51269DF1.9050107@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Feb 2013 17:45:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130220131912.GB13049@sirena.org.uk>
+References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
+	<1360933026-30325-2-git-send-email-lee.jones@linaro.org>
+	<20130220131912.GB13049@sirena.org.uk>
+Date: Thu, 21 Feb 2013 23:45:08 +0100
+Message-ID: <CAPDyKFo0MpP-d7v8v1zwB42sboR3MWT6nUmG=-L0_nayYRY7FQ@mail.gmail.com>
+Subject: Re: [PATCH 01/35] mfd: ab8500-gpadc: Implemented suspend/resume
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com, arnd@arndb.de,
+        linus.walleij@stericsson.com,
+        Daniel WILLERUD <daniel.willerud@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Feb 2013 16:21:37 -0600
-Seth Jennings <sjenning@linux.vnet.ibm.com> wrote:
+On 20 February 2013 14:19, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Fri, Feb 15, 2013 at 12:56:32PM +0000, Lee Jones wrote:
+>
+>> +static int ab8500_gpadc_suspend(struct device *dev)
+>> +{
+>> +     struct ab8500_gpadc *gpadc = dev_get_drvdata(dev);
+>> +
+>> +     mutex_lock(&gpadc->ab8500_gpadc_lock);
+>> +
+>> +     pm_runtime_get_sync(dev);
+>> +
+>> +     regulator_disable(gpadc->regu);
+>> +     return 0;
+>> +}
+>
+> This doesn't look especially sane...  You're doing a runtime get, taking
+> the lock without releasing it and disabling the regulator.  This is
+> *very* odd, both the changelog and the code need to explain what's going
+> on and why it's safe in a lot more detail here.
 
-> On 02/21/2013 02:36 PM, Cody P Schafer wrote:
-> > On Wed, Feb 20, 2013 at 04:04:41PM -0600, Seth Jennings wrote:
-> >> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> >> +#define MAX(a, b) ((a) >= (b) ? (a) : (b))
-> >> +/* ZS_MIN_ALLOC_SIZE must be multiple of ZS_ALIGN */
-> >> +#define ZS_MIN_ALLOC_SIZE \
-> >> +	MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OBJ_INDEX_BITS))
-> > 
-> > Could you use the max(a,b) defined in include/linux/kernel.h?
-> > 
-> 
-> Andrew Morton made the same point.  We can't use max() or max_t()
-> because the value of ZS_MIN_ALLOC_SIZE is used to derive the value of
-> ZS_SIZE_CLASSES which is used to size an array in struct zs_pool.
-> 
-> So the expression must be completely evaluated to a number by the
-> precompiler.
+You need to do pm_runtime_get_sync to be able to make sure resources
+(which seems to be only the regulator) are safe to switch off. To my
+understanding this is a generic way to use for being able to switch
+off resources at a device suspend when runtime pm is used in
+conjunction.
 
-Well yes, but the kernel doesn't need eight(!) separate
-implementations of
+Regarding the mutex, I can't tell the reason behind it. It seems
+strange but not sure.
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+Kind regards
+Ulf Hansson
