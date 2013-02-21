@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab3BUUs7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 15:48:59 -0500
-Received: from alvesta.synopsys.com ([198.182.60.77]:49763 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab3BUUs5 (ORCPT
+	id S1754020Ab3BUUud (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 15:50:33 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:13170 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753513Ab3BUUua convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 15:48:57 -0500
-Message-ID: <512687F9.8090000@synopsys.com>
-Date: Fri, 22 Feb 2013 02:17:53 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 21 Feb 2013 15:50:30 -0500
+X-IronPort-AV: E=Sophos;i="4.84,711,1355126400"; 
+   d="scan'208";a="24985303"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Ric Wheeler <rwheeler@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
+        Hannes Reinecke <hare@suse.de>, "Joel Becker" <jlbec@evilplan.org>
+Subject: Re: New copyfile system call - discuss before LSF?
+Thread-Topic: New copyfile system call - discuss before LSF?
+Thread-Index: AQHOECfzherspfmEjEqBTzfvhb3EUJiE2wAAgAASTQCAAFTBgIAADekA
+Date: Thu, 21 Feb 2013 20:50:27 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com>
+References: <512606DF.5050706@redhat.com>
+	 <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com>
+	 <512635D2.4090207@redhat.com> <51267CEB.8070805@redhat.com>
+In-Reply-To: <51267CEB.8070805@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <C8902FA0A4371E46A2000C756EFAF789@tahoe.netapp.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] memblock: add assertion for zero allocation alignment
-References: <20130221193639.GN3570@htj.dyndns.org> <1361477421-3964-1-git-send-email-vgupta@synopsys.com> <CAE9FiQV20uj_kOViCOd4gdPFuAf28fEbjhGCrzNogQWx5T3+zg@mail.gmail.com>
-In-Reply-To: <CAE9FiQV20uj_kOViCOd4gdPFuAf28fEbjhGCrzNogQWx5T3+zg@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 22 February 2013 02:01 AM, Yinghai Lu wrote:
-> On Thu, Feb 21, 2013 at 12:10 PM, Vineet Gupta
-> <Vineet.Gupta1@synopsys.com> wrote:
->> This came to light when calling memblock allocator from arc port (for
->> copying flattended DT). If a "0" alignment is passed, the allocator
->> round_up() call incorrectly rounds up the size to 0.
->>
->> round_up(num, alignto) => ((num - 1) | (alignto -1)) + 1
->>
->> While the obvious allocation failure causes kernel to panic, it is
->> better to warn the caller to fix the code.
->>
->> Tejun suggested that instead of BUG_ON(!align) - which might be
->> ineffective due to pending console init and such, it is better to
->> WARN_ON, and continue the boot with a reasonable default align.
->>
->> Caller passing @size need not be handled similarly as the subsequent
->> panic will indicate that anyhow.
->>
->> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Tejun Heo <tj@kernel.org>
->> Cc: Yinghai Lu <yinghai@kernel.org>
->> Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Cc: linux-mm@kvack.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>  mm/memblock.c |    3 +++
->>  1 files changed, 3 insertions(+), 0 deletions(-)
->>
->> diff --git a/mm/memblock.c b/mm/memblock.c
->> index 1bcd9b9..f3804bd 100644
->> --- a/mm/memblock.c
->> +++ b/mm/memblock.c
->> @@ -824,6 +824,9 @@ static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
->>         /* align @size to avoid excessive fragmentation on reserved array */
->>         size = round_up(size, align);
->>
->> +       if (WARN_ON(!align))
->> +               align = __alignof__(long long);
->> +
-> the checking should be put before round_up?
+On Thu, 2013-02-21 at 21:00 +0100, Paolo Bonzini wrote:
+> Il 21/02/2013 15:57, Ric Wheeler ha scritto:
+> >>>
+> >> sendfile64() pretty much already has the right arguments for a
+> >> "copyfile", however it would be nice to add a 'flags' parameter: the
+> >> NFSv4.2 version would use that to specify whether or not to copy file
+> >> metadata.
+> > 
+> > That would seem to be enough to me and has the advantage that it is an
+> > relatively obvious extension to something that is at least not totally
+> > unknown to developers.
+> > 
+> > Do we need more than that for non-NFS paths I wonder? What does reflink
+> > need or the SCSI mechanism?
+> 
+> For virt we would like to be able to specify arbitrary block ranges.
+> Copying an entire file helps some copy operations like storage
+> migration.  However, it is not enough to convert the guest's offloaded
+> copies to host-side offloaded copies.
 
-Oops my bad.
+So how would a system call based on sendfile64() plus my flag parameter
+prevent an underlying implementation from meeting your criterion?
 
-Interestingly however, I did test this exact patch on ARC before sending out -
-passing @align = 0 to make it hit the WARN. It prints the warning, and uses
-@size=0, @align=8 for memblock_find_in_range_node() and successfully allocates
-memory as opposed to failure for @size=0, @align=0 scenario. This is kind of weird.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Anyhow I'll send the updated patch to fix the gotcha !
-
-Thx,
--Vineet
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
