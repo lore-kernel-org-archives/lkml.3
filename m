@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab3BUA2K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 19:28:10 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:53209 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab3BUA2I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 19:28:08 -0500
+	id S1752917Ab3BUA3y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 19:29:54 -0500
+Received: from smtp13.ono.com ([62.42.230.16]:22253 "EHLO resmaa13.ono.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751644Ab3BUA3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 19:29:53 -0500
+Message-ID: <51256A7F.7010207@ono.com>
+Date: Thu, 21 Feb 2013 01:29:51 +0100
+From: =?UTF-8?B?SkEgTWFnYWxsw7Nu?= <jamagallon@ono.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130114 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130220162015.545ebb6b.akpm@linux-foundation.org>
-References: <20130220223013.GA15760@redhat.com>
-	<1361402236-28644-1-git-send-email-msb@chromium.org>
-	<20130220152446.a65ff84f.akpm@linux-foundation.org>
-	<CACBanvr+1VEM6UqfNVx+KiuehZejwqpGp6djPN5kTgYD-umP2g@mail.gmail.com>
-	<20130220162015.545ebb6b.akpm@linux-foundation.org>
-Date: Wed, 20 Feb 2013 16:28:07 -0800
-X-Google-Sender-Auth: ml6Ig6VkDpfG9bdcfKe3WS532Nw
-Message-ID: <CACBanvrdvTW+C2d2-+bC++mJOb8+3qNs2GgY3gf_9EfY+kNPvA@mail.gmail.com>
-Subject: Re: [PATCH v4] lockdep: check that no locks held at freeze time
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Corrupt packets with ath5k
+References: <51252AE7.7040903@ono.com>
+In-Reply-To: <51252AE7.7040903@ono.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 4:20 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 20 Feb 2013 16:17:39 -0800
-> Mandeep Singh Baines <msb@chromium.org> wrote:
+On 02/20/2013 08:58 PM, JA Magallón wrote:
+> Hi all...
 >
->> On Wed, Feb 20, 2013 at 3:24 PM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->> > On Wed, 20 Feb 2013 15:17:16 -0800
->> > Mandeep Singh Baines <msb@chromium.org> wrote:
->> >
->> >> We shouldn't try_to_freeze if locks are held.
->> >>
->> >> ...
->> >>
->> >> @@ -43,6 +44,9 @@ extern void thaw_kernel_threads(void);
->> >>
->> >> +     if (!(current->flags & PF_NOFREEZE))
->> >> +             debug_check_no_locks_held(current,
->> >> +
->> >>                                         "lock held while trying to freeze");
->> >> ...
->> >>
->> >> +     debug_check_no_locks_held(tsk, "lock held at task exit time");
->> >
->> > There doesn't seem much point in adding the `msg' to
->> > debug_check_no_locks_held() - the dump_stack() in
->> > print_held_locks_bug() will tell us the same thing.  Maybe just change
->>
->> dump_stack() can be confusing when there is inlining. On occasion I've
->> looked at the wrong mutex_lock, for example, when there was another
->> mutex_lock that was inlined. Of course, you can start objdump and
->> verify the offsets. But that requires that you have the object file.
->> You could have a try_to_freeze added to do_exit. I was thinking of
->> adding another locks_held in the return from syscall path.
+> I have a strange problem with latest kernels. When I update my netbook
+> I get many "Installation failed, bad rpms:" mesages. First I thougt
+> that the oldie cheap ssd was failing (it is an Aspire AOA110).
+> But the updates work always fine when plugged to ethernet.
 >
-> Backtraces aren't *that* bad.  We'll easily be able to tell which of
-> the two callsites triggered the trace.
+> Now i tried to copy a couple RPMS via ssh over wifi and got:
+>
+> mplayer-1.1-11.r35916.1.mga3.tainted.i586.rpm  100% 2192KB   2.1MB/s   00:00
+> Received disconnect from 192.168.1.51: 2: Packet corrupt
+> lost connection
+>
+> Hardware/driver are these:
+>
+> 03:00.0 Ethernet controller: Atheros Communications Inc. AR242x / AR542x Wireless Network Adapter (PCI-Express) (rev 01)
+>      Subsystem: Foxconn International, Inc. Device e008
+>      Kernel driver in use: ath5k
+>
+> Ist that hardware failing ? Is driver failing ? Other laptop/androids
+> update fine with the router via wifi.
+> Any idea ?
+>
+> I currently have 3.8.0, distro build.
 >
 
-Let's say there was a try_to_freeze() that got inlined indirectly
-(multiple levels of inline) into do_exit. Wouldn't the backtraces for
-the regular exit check and the try_to_freeze check be identical except
-for the offset (do_exit+0x45 versus do_exit+0x88)? So unless you had
-an object file you wouldn't know which check you hit.
+I tried with 3.7.1 and everything works fine.
+Possible clues:
+- 3.7.1: works fine
+- warm boot in 3.8.0: transfer stalls and scp looks hanged, speed
+   drops to zero, but no error message
+- cold boot in 3.8.0: transfer stops with Packet corrupt error or sometimes
+   stalls..
 
-Regards,
-Mandeep
+> TIA
+>
+
+
+-- 
+J.A. Magallon <jamagallon()ono!com>        \               Winter is coming...
