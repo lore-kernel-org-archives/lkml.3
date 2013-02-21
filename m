@@ -1,175 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab3BUTnF (ORCPT <rfc822;w@1wt.eu>);
+	id S1755725Ab3BUTnI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 14:43:08 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36620 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755536Ab3BUTnF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 21 Feb 2013 14:43:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37902 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752523Ab3BUTmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 14:42:52 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 9/9] remove /proc/sys/vm/hugepages_treat_as_movable
-Date: Thu, 21 Feb 2013 14:41:48 -0500
-Message-Id: <1361475708-25991-10-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Date: Thu, 21 Feb 2013 19:43:02 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Shawn Joo <sjoo@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: core: use regulator name for sysfs
+Message-ID: <20130221194302.GA16870@opensource.wolfsonmicro.com>
+References: <1361433237-3217-1-git-send-email-sjoo@nvidia.com>
+ <51267454.5040607@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="liOOAslEiF7prFVr"
+Content-Disposition: inline
+In-Reply-To: <51267454.5040607@wwwdotorg.org>
+X-Cookie: Caution: Keep out of reach of children.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now hugepages are definitely movable. So allocating hugepages from
-ZONE_MOVABLE is natural and we have no reason to keep this parameter.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- Documentation/sysctl/vm.txt | 16 ----------------
- include/linux/hugetlb.h     |  2 --
- kernel/sysctl.c             |  7 -------
- mm/hugetlb.c                | 23 +++++------------------
- 4 files changed, 5 insertions(+), 43 deletions(-)
+--liOOAslEiF7prFVr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git v3.8.orig/Documentation/sysctl/vm.txt v3.8/Documentation/sysctl/vm.txt
-index 078701f..997350a 100644
---- v3.8.orig/Documentation/sysctl/vm.txt
-+++ v3.8/Documentation/sysctl/vm.txt
-@@ -167,22 +167,6 @@ fragmentation index is <= extfrag_threshold. The default value is 500.
- 
- ==============================================================
- 
--hugepages_treat_as_movable
--
--This parameter is only useful when kernelcore= is specified at boot time to
--create ZONE_MOVABLE for pages that may be reclaimed or migrated. Huge pages
--are not movable so are not normally allocated from ZONE_MOVABLE. A non-zero
--value written to hugepages_treat_as_movable allows huge pages to be allocated
--from ZONE_MOVABLE.
--
--Once enabled, the ZONE_MOVABLE is treated as an area of memory the huge
--pages pool can easily grow or shrink within. Assuming that applications are
--not running that mlock() a lot of memory, it is likely the huge pages pool
--can grow to the size of ZONE_MOVABLE by repeatedly entering the desired value
--into nr_hugepages and triggering page reclaim.
--
--==============================================================
--
- hugetlb_shm_group
- 
- hugetlb_shm_group contains group id that is allowed to create SysV
-diff --git v3.8.orig/include/linux/hugetlb.h v3.8/include/linux/hugetlb.h
-index e33f07f..c97e5c5 100644
---- v3.8.orig/include/linux/hugetlb.h
-+++ v3.8/include/linux/hugetlb.h
-@@ -35,7 +35,6 @@ int PageHuge(struct page *page);
- void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
- int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
- int hugetlb_overcommit_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
--int hugetlb_treat_movable_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
- 
- #ifdef CONFIG_NUMA
- int hugetlb_mempolicy_sysctl_handler(struct ctl_table *, int,
-@@ -73,7 +72,6 @@ void migrate_hugepage_add(struct page *page, struct list_head *list);
- int is_hugepage_movable(struct page *page);
- void copy_huge_page(struct page *dst, struct page *src);
- 
--extern unsigned long hugepages_treat_as_movable;
- extern const unsigned long hugetlb_zero, hugetlb_infinity;
- extern int sysctl_hugetlb_shm_group;
- extern struct list_head huge_boot_pages;
-diff --git v3.8.orig/kernel/sysctl.c v3.8/kernel/sysctl.c
-index c88878d..a98bcf2 100644
---- v3.8.orig/kernel/sysctl.c
-+++ v3.8/kernel/sysctl.c
-@@ -1189,13 +1189,6 @@ static struct ctl_table vm_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	 },
--	 {
--		.procname	= "hugepages_treat_as_movable",
--		.data		= &hugepages_treat_as_movable,
--		.maxlen		= sizeof(int),
--		.mode		= 0644,
--		.proc_handler	= hugetlb_treat_movable_handler,
--	},
- 	{
- 		.procname	= "nr_overcommit_hugepages",
- 		.data		= NULL,
-diff --git v3.8.orig/mm/hugetlb.c v3.8/mm/hugetlb.c
-index c28e6c9..c60d203 100644
---- v3.8.orig/mm/hugetlb.c
-+++ v3.8/mm/hugetlb.c
-@@ -33,7 +33,6 @@
- #include "internal.h"
- 
- const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
--static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
- unsigned long hugepages_treat_as_movable;
- 
- int hugetlb_max_hstate __read_mostly;
-@@ -542,7 +541,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
- retry_cpuset:
- 	cpuset_mems_cookie = get_mems_allowed();
- 	zonelist = huge_zonelist(vma, address,
--					htlb_alloc_mask, &mpol, &nodemask);
-+					GFP_HIGHUSER_MOVABLE, &mpol, &nodemask);
- 	/*
- 	 * A child process with MAP_PRIVATE mappings created by their parent
- 	 * have no page reserves. This check ensures that reservations are
-@@ -558,7 +557,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
- 
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 						MAX_NR_ZONES - 1, nodemask) {
--		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
-+		if (cpuset_zone_allowed_softwall(zone, GFP_HIGHUSER_MOVABLE)) {
- 			page = dequeue_huge_page_node(h, zone_to_nid(zone));
- 			if (page) {
- 				if (!avoid_reserve)
-@@ -698,7 +697,7 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
- 		return NULL;
- 
- 	page = alloc_pages_exact_node(nid,
--		htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
-+		GFP_HIGHUSER_MOVABLE|__GFP_COMP|__GFP_THISNODE|
- 						__GFP_REPEAT|__GFP_NOWARN,
- 		huge_page_order(h));
- 	if (page) {
-@@ -909,12 +908,12 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
- 	spin_unlock(&hugetlb_lock);
- 
- 	if (nid == NUMA_NO_NODE)
--		page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
-+		page = alloc_pages(GFP_HIGHUSER_MOVABLE|__GFP_COMP|
- 				   __GFP_REPEAT|__GFP_NOWARN,
- 				   huge_page_order(h));
- 	else
- 		page = alloc_pages_exact_node(nid,
--			htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
-+			GFP_HIGHUSER_MOVABLE|__GFP_COMP|__GFP_THISNODE|
- 			__GFP_REPEAT|__GFP_NOWARN, huge_page_order(h));
- 
- 	if (page && arch_prepare_hugepage(page)) {
-@@ -2078,18 +2077,6 @@ int hugetlb_mempolicy_sysctl_handler(struct ctl_table *table, int write,
- }
- #endif /* CONFIG_NUMA */
- 
--int hugetlb_treat_movable_handler(struct ctl_table *table, int write,
--			void __user *buffer,
--			size_t *length, loff_t *ppos)
--{
--	proc_dointvec(table, write, buffer, length, ppos);
--	if (hugepages_treat_as_movable)
--		htlb_alloc_mask = GFP_HIGHUSER_MOVABLE;
--	else
--		htlb_alloc_mask = GFP_HIGHUSER;
--	return 0;
--}
--
- int hugetlb_overcommit_handler(struct ctl_table *table, int write,
- 			void __user *buffer,
- 			size_t *length, loff_t *ppos)
--- 
-1.7.11.7
+On Thu, Feb 21, 2013 at 12:24:04PM -0700, Stephen Warren wrote:
+> On 02/21/2013 12:53 AM, Shawn Joo wrote:
 
+> > regulator is named by numbering on sysfs, e.g. regulator.0, regulator.1
+> > it confuses to find desired regulator before counting the order.
+> > add option for regulator name by use_name_onsysfs.
+> > if it is true and name is not NULL, desc's name will be the name.
+> > e.g. if name in desc is "LDO0", then regulator.LDO0 on sysfs.
+> > otherwise it follows origin.
+
+> Does it make sense to make this change always, rather than based on some
+> new flag in regulator_desc?
+
+It's certainly insane to change this based on the driver and given that
+sysfs is supposed to be an ABI it's questionable if we should do it at
+all.  We certainly can't use the descriptor name as that's very likely
+to clash if you have more than one PMIC.  Taking a glance through sysfs
+on my system what we're doing at the minute is pretty idiomatic, sysfs
+isn't really intended for humans but rather for machines to prettify.
+
+> Another place a similar change might be useful is debugfs.
+
+debugfs already uses more human readable names, it uses the supply name
+(which is what we should be using if we were going to do anything as
+it really ought to be unique already).
+
+--liOOAslEiF7prFVr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRJni/AAoJELSic+t+oim9VfoP/271YcwJcCm1lxCVBfT7IajF
+tXzZsxzAy1zrrhzlVwuHkAUh1fuLOP4zaXkyXIbsKFaAvIhrD+PYHuoQXgbpKbZW
+jn8BfVOrbVVwqqonRuhsPhyYHt9v34JUa/Vke7af3MXbudaFxny6AZ+vt3gYqDk6
+QnnqM+u/veXf+h6/50MAzmH6npo56GppnIC4N03z+Jsdo7G4AOkrWndeuNfZKFCW
+qAO0as5JvHmiyHAt1rQJfimYtXwOEKrlNzJx2Uzzf/rdP8jAN7PvU1eTXVLOY9Un
+NjhUJbmepQtfx4oIUQNSrhDX9CMz6s6QC6PB5AxV/93OsyDqV5btDrh8tb+tiYQ2
+9dcyrPFb+/ME7Yk9ojHMPas4y4pnHnAUxkv3QP27HL673O5F0rUnL8PWLmPZ36fJ
+GlpU5x6lzKt6rVmWRK/TU3+pY4Grbgb2v9WgXsJRJFtKSa1zr/4ORhaWCgMP3kQD
+hpT/w320o/XXK5jHYNbw88cM0b9Po2gYoHpjijhuhL+6LupU1HrdFnc844pvAvlI
+czstskTgtOZz86skVkmM4V0tzpHBwiQi9Fcm8OGNC+ishvB7jJKPLYaUn4x/KmL0
+kEedtoNLenUdBGT1EazWftvlAMTUsilqeCz1D9Xk7CwvPnowmYHwd2jpoBsKKK6u
+1H0sqZQYv7idTa1md7Fs
+=oSzL
+-----END PGP SIGNATURE-----
+
+--liOOAslEiF7prFVr--
