@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab3BUFRm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 00:17:42 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:8949 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab3BUFRk (ORCPT
+	id S1751721Ab3BUFUG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 00:20:06 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:65247 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122Ab3BUFUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 00:17:40 -0500
-X-AuditID: cbfee68f-b7f656d000000d78-97-5125adf2603e
+	Thu, 21 Feb 2013 00:20:03 -0500
+X-AuditID: cbfee690-b7f066d00000169f-19-5125ae82df83
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
 Cc: "'linux-fbdev'" <linux-fbdev@vger.kernel.org>,
@@ -17,39 +17,46 @@ Cc: "'linux-fbdev'" <linux-fbdev@vger.kernel.org>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: 
 In-reply-to: 
-Subject: [GIT PULL] samsung-fb updates for v3.9
-Date: Thu, 21 Feb 2013 14:17:38 +0900
-Message-id: <00b801ce0ff2$c3dfa800$4b9ef800$%han@samsung.com>
+Subject: [GIT PULL] exynos-dp updates for v3.9
+Date: Thu, 21 Feb 2013 14:20:01 +0900
+Message-id: <00b901ce0ff3$1967b6a0$4c3723e0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4OS/1fL9hv0snASVq56iN5hSEFSABphXNQ
+Thread-index: Ac4OTNvxAwY0KcJpR26zj4Kosnv2NQBpfQSQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zY91Pa1UDDZZ06lmc6PvAanF51xw2
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDLuvd3KUnCCq2LWIoUGxjMcXYycHBICJhKfbzSwQNhi
-	EhfurWfrYuTiEBJYxijRvPo7E0zR9ta1jBCJRYwSh3qus0A4vxglLs3fxgpSxSagJvHly2F2
-	EFsEqOPBx4VgHcwCbxklPj7aC+RwAHVwS6xuDgKp4RTgkVj3p5MZxBYW0Je4vHs92DYWAVWJ
-	fbMfg53EK2Arse7ZbFYIW1Dix+R7YHFmAS2J9TuPM0HY8hKb17xlBhkvIaAu8eivLsQJRhKn
-	z61lhygRkdj34h0jxDOr2CVa17JArBKQ+Db5EAtEq6zEpgPMECWSEgdX3GCZwCgxC8niWUgW
-	z0KyeBaSDQsYWVYxiqYWJBcUJ6UXGesVJ+YWl+al6yXn525ihERY/w7GuwesDzEmA62fyCwl
-	mpwPjNC8knhDY2MTMxNTE3NLU3NT0oSVxHnlL8kECgmkJ5akZqemFqQWxReV5qQWH2Jk4uCU
-	amAsWrC9KObOLzEBndPr/A2+/Ctp/HxV7ib7vmcprHcXmUZPmnM1Z6mEiNkpuXVeC/kN3p5I
-	F6zLeufvfGp6xRdh1Y1Z59+/f35hiXHIv9bXIUu+bHq8U3G//s3fOib8oZoJRvdjdp39v+za
-	80/1p58/1veXPqGjV53eo6vmNknRWMn1v9pEnjN7lViKMxINtZiLihMBT7+qnMYCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd1Pa1UDDa7f1bA40feB1eLyrjls
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm3Hu7laXgBFfF
-	rEUKDYxnOLoYOTkkBEwktreuZYSwxSQu3FvP1sXIxSEksIhR4lDPdRYI5xejxKX521hBqtgE
-	1CS+fDnMDmKLAHU/+LiQEaSIWeAto8THR3uBHA6gDm6J1c1BIDWcAjwS6/50MoPYwgL6Epd3
-	r2cCsVkEVCX2zX7MAmLzCthKrHs2mxXCFpT4MfkeWJxZQEti/c7jTBC2vMTmNW+ZQcZLCKhL
-	PPqrC3GCkcTpc2vZIUpEJPa9eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGuoV
-	J+YWl+al6yXn525iBEfwM6kdjCsbLA4xCnAwKvHwLnipEijEmlhWXJl7iFGCg1lJhPdnB1CI
-	NyWxsiq1KD++qDQntfgQYzLQoxOZpUST84HJJa8k3tDYxMzI0sjMwsjE3Jw0YSVxXsZTTwKE
-	BNITS1KzU1MLUotgtjBxcEo1MPYZrl1xuGDri+0BL139fiRJBf7+87JAx3LNicoL/5n250eX
-	LSmJym7w/XL5658zJrlBO6KL1E9omU2q/RJ++svkV0Umm9ZGVTbUhyb3Nj+N4f+17lrG9Ne8
-	xj6uaZGLpBRKTBkmLU1LWzJBdJflP7cgzlup94z9+Z+lF5xnl3U3+xvAudropBJLcUaioRZz
-	UXEiAODuQgYkAwAA
+x-cr-hashedpuzzle: xNo= Esa6 KkHh Lylr Sw5L aI+m fUd5 ff4K lYH0 0Qsn 2yOV 2122
+ 3kPC 4xKs 8Kqp
+ 8Tpz;6;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGYAbABvAHIAaQBhAG4AcwBjAGgAYQBuAGQAaQBuAGEAdABAAGcAbQB4AC4AZABlADsAagBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGYAYgBkAGUAdgBAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AHQAbwByAHYAYQBsAGQAcwBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA=;Sosha1_v1;7;{805C7E47-CED6-4A09-BAF6-275EFA41DFE6};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
+ 21 Feb 2013 05:19:52
+ GMT;WwBHAEkAVAAgAFAAVQBMAEwAXQAgAGUAeAB5AG4AbwBzAC0AZABwACAAdQBwAGQAYQB0AGUAcwAgAGYAbwByACAAdgAzAC4AOQA=
+x-cr-puzzleid: {805C7E47-CED6-4A09-BAF6-275EFA41DFE6}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zfd2mdaqBBjOXslmc6PvAanF51xw2
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJWTl7FWLCMo+LozNwGxk9sXYycHBICJhJLpi9nhbDF
+	JC7cWw8WFxJYxiix7ZAnTM2nOzcYuxi5gOLTGSWe7nnCAuH8YpT49XMhO0gVm4CaxJcvh8Fs
+	EaCOBx8XgnUwC7xllPj4aC+QwwHUwS2xujkIpIZTgEdi3Z9OZhBbWEBPYuO5JiYQm0VAVWLB
+	18dgcV4BW4nHL+ewQNiCEj8m3wOzmQW0JNbvPM4EYctLbF7zlhlkvISAusSjv7oQJxhJnD/5
+	jBWiRERi34t3YOdICPxhlXgxtQ/qY1OJzUf3skDYh9glbu8vg7hBQOLb5EMsEDNlJTYdYIYo
+	kZQ4uOIGywRGqVlILpqF5KJZSC6ahWT1AkaWVYyiqQXJBcVJ6UUmesWJucWleel6yfm5mxgh
+	ETlhB+O9A9aHGJOB1k9klhJNzgdGdF5JvKGxsYmZiamJuaWpuSlpwkrivPKXZAKFBNITS1Kz
+	U1MLUovii0pzUosPMTJxcEo1MOr/UFpZ7By2bW3poyfmE08fmPlu84F/W2+prJlxPWPd4n65
+	Cbs9513y/H6Ae860x5Nf5WT7z7vDsMN/VrD+R+mzuWqqZw4oLw/t/c39aw+3WsOTgioVizOb
+	S+8fynnJxaO6dtkH15+vP63k/ehZLOK2uYR5nWHIBQ3BPo2ob6UHfpUxz5C6vGyhEktxRqKh
+	FnNRcSIAXGXWTN4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jQd2mdaqBBhe+MVqc6PvAanF51xw2
+	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
+	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzVk5exViwjKPi
+	6MzcBsZPbF2MnBwSAiYSn+7cYISwxSQu3FsPFOfiEBKYzijxdM8TFgjnF6PEr58L2UGq2ATU
+	JL58OQxmiwB1P/i4kBGkiFngLaPEx0d7gRwOoA5uidXNQSA1nAI8Euv+dDKD2MICehIbzzUx
+	gdgsAqoSC74+BovzCthKPH45hwXCFpT4MfkemM0soCWxfudxJghbXmLzmrfMIOMlBNQlHv3V
+	hTjBSOL8yWesECUiEvtevAM7R0LgD6vEi6l9rBCfmUpsPrqXZQKjyCwkK2YhWTELyYpZSGYt
+	YGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREc88+kdjCubLA4xCjAwajEw7vgpUqgEGti
+	WXFl7iFGCQ5mJRHenx1AId6UxMqq1KL8+KLSnNTiQ4zJwBCYyCwlmpwPTEd5JfGGxiZmRpZG
+	ZhZGJubmpAkrifMynnoSICSQnliSmp2aWpBaBLOFiYNTqoGxxLxt+6c9d/gXiLhuyqxZ8MvJ
+	6vsSX6vgbxl/eTnPX1mq6yXcY//vQrr8to3pRh/aT5fv8TZJ1pj+3DdEe6KFRbVKuofe7F2r
+	QzJZuVbp8dUVWurvnHKSTWG7zXavvae3MWmVH9L86jaTf12+Yc8ZHdsu9rqVUe6X3Lw0Gmau
+	f7Ml6I9VRrsSS3FGoqEWc1FxIgA/vXgRPQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,38 +67,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hi Linus,
 
 Florian, the fbdev maintainer, has been very busy lately, so I send the pull request
-for samsung-fb for this merge window.
+for exynos-dp for this merge window.
 
 The following changes since commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200:
 
  Linux 3.8 (Mon Feb 18 15:58:34 2013 -0800)
 
 are available in the git repository at:
-  git://github.com/jingoo/linux.git tags/samsung-fb-3.9
+  git://github.com/jingoo/linux.git tags/exynos-dp-3.9
 
-for you to fetch changes up to 5a415ae252d5922de9eadefabe8510115395fbc6:
+for you to fetch changes up to bb80934325dab97b479815aed237ebec33ed1c57:
 
- video: s3c-fb: Fix typo in definition of VIDCON1_VSTATUS_FRONTPORCH value (Sat Nov 17 21:31:00 2012 +0000)
+ video: exynos_dp: move disable_irq() to exynos_dp_suspend() (Tue Jan 29 18:26:05 2013 +0900)
 
 ----------------------------------------------------------------
-samsung-fb updates for the v3.9:
+exynos-dp updates for the v3.9:
 
-- The bit definitions of header file are updated.
-- The dependancy is fixed.
+- The missing function calls are fixed.
 ----------------------------------------------------------------
 
-Jingoo Han (4):
-      video: s3c-fb: use ARCH_ dependancy
-      video: s3c-fb: remove duplicated S3C_FB_MAX_WIN
-      video: s3c-fb: remove unnecessary brackets
-      video: s3c-fb: add the bit definitions for CSC EQ709 and EQ601
+Ajay Kumar (1):
+      video: exynos_dp: move disable_irq() to exynos_dp_suspend()
 
-Tomasz Figa (1):
-      video: s3c-fb: Fix typo in definition of VIDCON1_VSTATUS_FRONTPORCH value
+Jingoo Han (1):
+      video: exynos_dp: add missing of_node_put()
 
- drivers/video/Kconfig        |    3 +-
- include/video/samsung_fimd.h |  205 ++++++++++++++++++++---------------------
- 2 files changed, 102 insertions(+), 106 deletions(-)
+drivers/video/exynos/exynos_dp_core.c |   24 +++++++++++++++---------
+ 1 files changed, 15 insertions(+), 9 deletions(-)
 
 --
 Best regards,
