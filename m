@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab3BUTg6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 14:36:58 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:65174 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162Ab3BUTgp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 14:36:45 -0500
-Date: Thu, 21 Feb 2013 11:36:39 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-        Marc Gauthier <marc@tensilica.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] memblock: add assertion for zero allocation size
-Message-ID: <20130221193639.GN3570@htj.dyndns.org>
-References: <1361471962-25164-1-git-send-email-vgupta@synopsys.com>
- <1361471962-25164-2-git-send-email-vgupta@synopsys.com>
- <CAE9FiQXSPHjRsCWcHpz7s1gQjNGuj5_X_YE2Ln=EA7_-Ka_cNg@mail.gmail.com>
- <51267695.8090800@synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51267695.8090800@synopsys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753872Ab3BUTgU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 14:36:20 -0500
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:50644
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752977Ab3BUTgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 14:36:17 -0500
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: Olaf Hering <olaf@aepfle.de>, KY Srinivasan <kys@microsoft.com>
+Subject: [PATCH RESEND 2/4] scsi: storvsc: avoid usage of WRITE_SAME
+Date: Thu, 21 Feb 2013 12:04:51 -0800
+Message-Id: <1361477093-17549-2-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1361477093-17549-1-git-send-email-kys@microsoft.com>
+References: <1361477060-17505-1-git-send-email-kys@microsoft.com>
+ <1361477093-17549-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 01:03:41AM +0530, Vineet Gupta wrote:
-> Where - you mean if user passes 0, just make it 1. Nah - it's better to complain
-> and get the call site fixed !
-> 
-> > or BUG_ON(!align) instead?
-> 
-> That could be done too but you would also need BUG_ON(!size) - to catch another
-> API abuse.
-> BUG_ON(!size) however catches both the cases.
+From: Olaf Hering <olaf@aepfle.de>
 
-How about "if (WARN_ON(!align)) align = __alignof__(long long);"?
-Early BUG_ON()s can be painful to debug depending on setup.
+Set scsi_device->no_write_same because the host does not support it.
+Also blacklist WRITE_SAME to avoid (and log) accident usage.
 
-Thanks.
+If the guest uses the ext4 filesystem, storvsc hangs while it prints
+these messages in an endless loop:
+...
+[  161.459523] hv_storvsc vmbus_0_1: cmd 0x41 scsi status 0x2 srb status 0x6
+[  161.462157] sd 2:0:0:0: [sda]
+[  161.463135] Sense Key : No Sense [current]
+[  161.464983] sd 2:0:0:0: [sda]
+[  161.465899] Add. Sense: No additional sense information
+[  161.468211] hv_storvsc vmbus_0_1: cmd 0x41 scsi status 0x2 srb status 0x6
+[  161.475766] sd 2:0:0:0: [sda]
+[  161.476728] Sense Key : No Sense [current]
+[  161.478284] sd 2:0:0:0: [sda]
+[  161.479441] Add. Sense: No additional sense information
+...
 
+This happens with a guest running on Windows Server 2012, but happens to
+work while running on Windows Server 2008. WRITE_SAME isnt really
+supported by both versions, so disable the command usage globally.
+
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Cc: KY Srinivasan <kys@microsoft.com>
+Cc: <linux-scsi@vger.kernel.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/scsi/storvsc_drv.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+index 5ada1d0..2060509 100644
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -1156,6 +1156,8 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
+ 
+ 	blk_queue_bounce_limit(sdevice->request_queue, BLK_BOUNCE_ANY);
+ 
++	sdevice->no_write_same = 1;
++
+ 	return 0;
+ }
+ 
+@@ -1238,6 +1240,8 @@ static bool storvsc_scsi_cmd_ok(struct scsi_cmnd *scmnd)
+ 	u8 scsi_op = scmnd->cmnd[0];
+ 
+ 	switch (scsi_op) {
++	/* the host does not handle WRITE_SAME, log accident usage */
++	case WRITE_SAME:
+ 	/*
+ 	 * smartd sends this command and the host does not handle
+ 	 * this. So, don't send it.
 -- 
-tejun
+1.7.4.1
+
