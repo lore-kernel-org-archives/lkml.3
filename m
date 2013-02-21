@@ -1,110 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab3BURtJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 12:49:09 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:39573 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754598Ab3BURtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 12:49:06 -0500
-Message-ID: <51265E0F.6090209@sgi.com>
-Date: Thu, 21 Feb 2013 11:49:03 -0600
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1756793Ab3BURuB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 12:50:01 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:43528 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab3BURuA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 12:50:00 -0500
+Date: Thu, 21 Feb 2013 17:49:55 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        Peter Jones <pjones@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Message-ID: <20130221174955.GA20886@srcf.ucam.org>
+References: <30665.1361461678@warthog.procyon.org.uk>
+ <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
+ <20130221164244.GA19625@srcf.ucam.org>
+ <CA+55aFy4k07GPmszkBdYvCE-KphKLVowkZoW7hoAvcR+0U=stg@mail.gmail.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: <rjw@sisk.pl>, <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/2] cpufreq: Convert the cpufreq_driver_lock to use
- the rcu
-References: <1360116290-23849-1-git-send-email-nzimmer@sgi.com> <1361404583-5557-1-git-send-email-nzimmer@sgi.com> <1361404583-5557-3-git-send-email-nzimmer@sgi.com> <CAKohponMWRPspZF=tPN6MXoxkcjw7CK_sLnSdsKe+EDoiADvGA@mail.gmail.com>
-In-Reply-To: <CAKohponMWRPspZF=tPN6MXoxkcjw7CK_sLnSdsKe+EDoiADvGA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.180]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy4k07GPmszkBdYvCE-KphKLVowkZoW7hoAvcR+0U=stg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 11:50 PM, Viresh Kumar wrote:
-> On 21 February 2013 05:26, Nathan Zimmer <nzimmer@sgi.com> wrote:
->> In general rwlocks are discourged so we are moving it to use the rcu instead.
->> This does require a bit of care since the cpufreq_driver_lock protects both
->> the cpufreq_driver and the cpufreq_cpu_data array.
->> Also since many of the function pointers on cpufreq_driver may sleep when
->> called we have to grab them under the rcu_read_lock but call them after
->> rcu_read_unlock();
-> Even i have started reading rcu documentation now :)
->
->> Cc: Viresh Kumar <viresh.kumar@linaro.org>
->> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
->> Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
->> ---
->>   drivers/cpufreq/cpufreq.c | 312 +++++++++++++++++++++++++++++++++-------------
->>   1 file changed, 224 insertions(+), 88 deletions(-)
->>
->> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->> @@ -255,20 +258,21 @@ static inline void adjust_jiffies(unsigned long val, struct cpufreq_freqs *ci)
->>   void cpufreq_notify_transition(struct cpufreq_freqs *freqs, unsigned int state)
->>   {
->>          struct cpufreq_policy *policy;
->> -       unsigned long flags;
->> +       u8 flags;
-> I think you can get rid of flags.
->
->>          BUG_ON(irqs_disabled());
->>
->>          if (cpufreq_disabled())
->>                  return;
->>
->> -       freqs->flags = cpufreq_driver->flags;
->>          pr_debug("notification %u of frequency transition to %u kHz\n",
->>                  state, freqs->new);
->>
->> -       read_lock_irqsave(&cpufreq_driver_lock, flags);
->> +       rcu_read_lock();
->> +       flags = rcu_dereference(cpufreq_driver)->flags;
-> use freq->flags here ...
->
->>          policy = per_cpu(cpufreq_cpu_data, freqs->cpu);
->> -       read_unlock_irqrestore(&cpufreq_driver_lock, flags);
->> +       rcu_read_unlock();
->> +       freqs->flags = flags;
->>
->>          switch (state) {
->>
->> @@ -277,7 +281,7 @@ void cpufreq_notify_transition(struct cpufreq_freqs *freqs, unsigned int state)
->>                   * which is not equal to what the cpufreq core thinks is
->>                   * "old frequency".
->>                   */
->> -               if (!(cpufreq_driver->flags & CPUFREQ_CONST_LOOPS)) {
->> +               if (!(flags & CPUFREQ_CONST_LOOPS)) {
-> and here.
-Of course.
->>                          if ((policy) && (policy->cpu == freqs->cpu) &&
->>                              (policy->cur) && (policy->cur != freqs->old)) {
->>                                  pr_debug("Warning: CPU frequency is"
->
->> @@ -742,35 +773,39 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
->> -       write_lock_irqsave(&cpufreq_driver_lock, flags);
->> +       spin_lock_irqsave(&cpufreq_driver_lock, flags);
->>          for_each_cpu(j, policy->cpus) {
->>                  per_cpu(cpufreq_cpu_data, j) = policy;
->>                  per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
->>          }
->> -       write_unlock_irqrestore(&cpufreq_driver_lock, flags);
->> +       spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
->> +       synchronize_rcu();
-> I don't think (but i can be wrong too :) ), that we need a synchronize_rcu()
-> here. We need it only at places where we have updated the cpufreq_driver
-> pointer.
->
-> As we aren't doing any rcu specific read/update for cpufreq_cpu_data.
-Good point.
-I placed a similar sycnronize_rcu in cpufreq_add_policy_cpu and 
-cpufreq_add_dev.
-I will remove them also.
+On Thu, Feb 21, 2013 at 08:58:45AM -0800, Linus Torvalds wrote:
 
+> If Red Hat wants to deep-throat Microsoft, that's *your* issue.  That
+> has nothing what-so-ever to do with the kernel I maintain. It's
+> trivial for you guys to have a signing machine that parses the PE
+> binary, verifies the signatures, and signs the resulting keys with
+> your own key. You already wrote the code, for chissake, it's in that
+> f*cking pull request.
 
-Thanks, I will respin.
-Nate
+There's one significant practical awkwardness, which is that it makes 
+key revocation a multi-step process - the blacklisted hash is going to 
+be for the PE and not the key itself. I guess the original hash could be 
+stuffed in some metadata in the key, but urgh.
 
+Vendors want to ship keys that have been signed by a trusted party. 
+Right now the only one that fits the bill is Microsoft, because 
+apparently the only thing vendors love more than shitty firmware is 
+following Microsoft specs. The equivalent isn't just Red Hat (or anyone 
+else) programmatically re-signing those keys, it's re-signing those keys 
+with a key that's trusted by the upstream kernel. Would you be willing 
+to carry a default trusted key if some sucker/upstanding and 
+trustworthy member of society hosted a re-signing service? Or should we 
+just assume that anyone who wants to ship external modules is a fucking 
+idiot and deserves to be miserable?
+
+(I mean, *I'm* fine with the idea that they're fucking idiots and 
+deserve to be miserable, but apparently there's people who think this is 
+a vital part of a business model)
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
