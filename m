@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab3BUSXZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 13:23:25 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:47268 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756966Ab3BUSXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 13:23:22 -0500
-Message-ID: <51266602.7000402@parallels.com>
-Date: Thu, 21 Feb 2013 22:22:58 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1756353Ab3BUSYt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 13:24:49 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:34618 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755673Ab3BUSYr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 13:24:47 -0500
+From: "Roberts, Lee A." <lee.roberts@hp.com>
+To: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/4 v3] sctp: fix association hangs due to off-by-one errors
+ in sctp_tsnmap_grow()
+Thread-Topic: [PATCH 1/4 v3] sctp: fix association hangs due to off-by-one
+ errors in sctp_tsnmap_grow()
+Thread-Index: Ac4QYAeYkEHptuMlS3y5ull3NQsnqw==
+Date: Thu, 21 Feb 2013 18:23:13 +0000
+Message-ID: <D64EC45690EF85409BA6C4730E0162244310DF8E@G4W3231.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.14]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Matthew Helsley <matt.helsley@gmail.com>, linux-api@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] posix-timers: Show sigevent info in proc file
-References: <512665BA.9040802@parallels.com>
-In-Reply-To: <512665BA.9040802@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the "ID:" line there go
+From: Lee A. Roberts <lee.roberts@hp.com>
 
-1. "signal:" line, that shows signal number and sigval bits;
-2. "notify:" line, that shows the timer notification method.
+Resolve SCTP association hangs observed during SCTP stress
+testing.  Observable symptoms include communications hangs
+with data being held in the association lobby (ordering)
+queue.  Close examination of reassembly/ordering queues shows
+duplicated packets.
 
-The timer entry would looke like this:
+In sctp_tsnmap_mark(), correct off-by-one error when calculating
+gap value for tsnmap.
 
-ID: 123
-signal: 14/0000000000b005d0
-notify: signal/pid.732
+In sctp_tsnmap_grow(), correct off-by-one error when copying
+and resizing the tsnmap.  If max_tsn_seen is in the LSB of the
+word, this bit can be lost, causing the corresponding packet
+to be transmitted again and to be entered as a duplicate into
+the SCTP reassembly/ordering queues.
 
-This information is enough to understand ho the timer_create()
-was called for each particular timer.
+Patch applies to linux-3.8 kernel.
 
-Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
 ---
- fs/proc/base.c |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+ net/sctp/tsnmap.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index fc73d19..7f01e19 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2017,6 +2017,7 @@ struct timers_private {
- 	struct pid *pid;
- 	struct task_struct *task;
- 	struct sighand_struct *sighand;
-+	struct pid_namespace *ns;
- 	unsigned long flags;
- };
+diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-vanilla/net/sctp/tsnmap.c linux-3.8-SCTP+1/net/sctp/tsnmap.c
+--- linux-3.8-vanilla/net/sctp/tsnmap.c	2013-02-18 16:58:34.000000000 -0700
++++ linux-3.8-SCTP+1/net/sctp/tsnmap.c	2013-02-21 11:16:01.843233297 -0700
+@@ -124,7 +124,7 @@ int sctp_tsnmap_mark(struct sctp_tsnmap
  
-@@ -2059,9 +2060,24 @@ static void timers_stop(struct seq_file *m, void *v)
- static int show_timer(struct seq_file *m, void *v)
- {
- 	struct k_itimer *timer;
-+	struct timers_private *tp = m->private;
-+	int notify;
-+	static char *nstr[] = {
-+		[SIGEV_SIGNAL] = "signal",
-+		[SIGEV_NONE] = "none",
-+		[SIGEV_THREAD] = "thread",
-+	};
+ 	gap = tsn - map->base_tsn;
  
- 	timer = list_entry((struct list_head *)v, struct k_itimer, list);
-+	notify = timer->it_sigev_notify;
-+
- 	seq_printf(m, "ID: %d\n", timer->it_id);
-+	seq_printf(m, "signal: %d/%p\n", timer->sigq->info.si_signo,
-+			timer->sigq->info.si_value.sival_ptr);
-+	seq_printf(m, "notify: %s/%s.%d\n",
-+		nstr[notify & ~SIGEV_THREAD_ID],
-+		(notify & SIGEV_THREAD_ID) ? "tid" : "pid",
-+		pid_nr_ns(timer->it_pid, tp->ns));
- 
- 	return 0;
- }
-@@ -2083,6 +2099,7 @@ static int proc_timers_open(struct inode *inode, struct file *file)
+-	if (gap >= map->len && !sctp_tsnmap_grow(map, gap))
++	if (gap >= map->len && !sctp_tsnmap_grow(map, gap + 1))
  		return -ENOMEM;
  
- 	tp->pid = proc_pid(inode);
-+	tp->ns = inode->i_sb->s_fs_info;
- 	return 0;
- }
+ 	if (!sctp_tsnmap_has_gap(map) && gap == 0) {
+@@ -369,14 +369,15 @@ static int sctp_tsnmap_grow(struct sctp_
+ 	if (gap >= SCTP_TSN_MAP_SIZE)
+ 		return 0;
  
--- 
-1.7.6.5
+-	inc = ALIGN((gap - map->len),BITS_PER_LONG) + SCTP_TSN_MAP_INCREMENT;
++	inc = ALIGN((gap - map->len), BITS_PER_LONG) + SCTP_TSN_MAP_INCREMENT;
+ 	len = min_t(u16, map->len + inc, SCTP_TSN_MAP_SIZE);
+ 
+ 	new = kzalloc(len>>3, GFP_ATOMIC);
+ 	if (!new)
+ 		return 0;
+ 
+-	bitmap_copy(new, map->tsn_map, map->max_tsn_seen - map->base_tsn);
++	bitmap_copy(new, map->tsn_map,
++		map->max_tsn_seen - map->cumulative_tsn_ack_point);
+ 	kfree(map->tsn_map);
+ 	map->tsn_map = new;
+ 	map->len = len;
