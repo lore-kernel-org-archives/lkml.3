@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758893Ab3BUWSo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 17:18:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51863 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756528Ab3BUWSn (ORCPT
+	id S1758955Ab3BUWTV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 17:19:21 -0500
+Received: from www.linutronix.de ([62.245.132.108]:53175 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755040Ab3BUWTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 17:18:43 -0500
-Date: Thu, 21 Feb 2013 14:18:41 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Amnon Shiloh <u3557@miso.sublimeip.com>,
-        Steven Rostedt <rostedt@goodmis.org>, u3557@dialix.com.au,
-        Oleg Nesterov <oleg@redhat.com>, Pedro Alves <palves@redhat.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: Re: prctl(PR_SET_MM)
-Message-Id: <20130221141841.c760b02f.akpm@linux-foundation.org>
-In-Reply-To: <20130221080028.GE1740@moon>
-References: <20130220105109.GW20312@moon>
-	<20130221074639.4880D592064@miso.sublimeip.com>
-	<20130221080028.GE1740@moon>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Feb 2013 17:19:20 -0500
+Date: Thu, 21 Feb 2013 23:19:18 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+cc: Jason Liu <liu.h.jason@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: too many timer retries happen when do local timer swtich with
+ broadcast timer
+In-Reply-To: <51263975.20906@ti.com>
+Message-ID: <alpine.LFD.2.02.1302212214020.22263@ionos>
+References: <CAB4PhKevqf0e4nzYraE9ZTAFbPCFfNpguAnPoVpJh-FFe2TAZA@mail.gmail.com> <alpine.LFD.2.02.1302201400400.22263@ionos> <CAB4PhKfxPcyQfpM2Ra1OxsyYhS5fnkjtPy=uYgxFHim1rOdoug@mail.gmail.com> <alpine.LFD.2.02.1302211015270.22263@ionos>
+ <CAB4PhKf+Z-TK4KGDZm1kYOWibg=e2Ehnhjxt_oTbFq9eqouAjA@mail.gmail.com> <alpine.LFD.2.02.1302211436300.22263@ionos> <51263975.20906@ti.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Feb 2013 12:00:28 +0400
-Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+On Thu, 21 Feb 2013, Santosh Shilimkar wrote:
+> On Thursday 21 February 2013 07:18 PM, Thomas Gleixner wrote:
+> > find below a completely untested patch, which should address that issue.
+> > 
+> After looking at the thread, I tried to see the issue on OMAP and could
+> see the same issue as Jason.
 
-> From: Amnon Shiloh <u3557@miso.sublimeip.com>
-> Subject: prctl: Make PR_SET_MM being depend on own CONFIG_MM_FIELDS_SETTING
+That's interesting. We have the same issue on x86 since 2007 and
+nobody noticed ever. It's basically the same problem there, but it
+seems that on x86 getting out of those low power states is way slower
+than the minimal reprogramming delta which is used to enforce the
+local timer to fire after the wakeup. 
+
+I'm still amazed that as Jason stated a 1us reprogramming delta is
+sufficient to get this ping-pong going. I somehow doubt that, but
+maybe ARM is really that fast :)
+
+> Your patch fixes the retries on both CPUs on my dual core machine. So
+> you use my tested by if you need one.
+
+They are always welcome.
+
+> Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 > 
-> ...
-> 
-> Signed-off-by: Amnon Shiloh <u3557@miso.sublimeip.com>
+> Thanks for the patch.
+> And thanks to Jason for spotting the issue.
 
-The "..." makes me sad.
+And for coping with my initial inability to parse his report!
 
-If/when this patch gets sent for real, please explain the reasons? 
-AFAICT it permits the enabling of prctl(PR_SET_MM) in
-CONFIG_CHECKPOINT_RESTORE=n kernels.  If that was indeed the intent,
-why?
+Thanks,
 
+	tglx
