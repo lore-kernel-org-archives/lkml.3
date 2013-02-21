@@ -1,52 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab3BUQ6v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 11:58:51 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:35251 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531Ab3BUQ6u (ORCPT
+	id S1755569Ab3BURAp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 12:00:45 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:59961 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab3BURAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 11:58:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130221164244.GA19625@srcf.ucam.org>
-References: <30665.1361461678@warthog.procyon.org.uk>
-	<CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
-	<20130221164244.GA19625@srcf.ucam.org>
-Date: Thu, 21 Feb 2013 08:58:45 -0800
-X-Google-Sender-Auth: l3csW-kMs-vsAMpht_taxJhJAfA
-Message-ID: <CA+55aFy4k07GPmszkBdYvCE-KphKLVowkZoW7hoAvcR+0U=stg@mail.gmail.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 21 Feb 2013 12:00:44 -0500
+Date: Thu, 21 Feb 2013 09:00:20 -0800
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE] iproute2 3.8.0
+Message-ID: <20130221090020.52330a78@nehalam.linuxnetplumber.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 8:42 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->
-> There's only one signing authority, and they only sign PE binaries.
+Update to iproute2 utilities to support features in 3.8.0 release
+and lots of small spelling and documentation fixes.
 
-Guys, this is not a dick-sucking contest.
+iproute2 package is available at:
+  http://kernel.org/pub/linux/utils/net/iproute2/iproute2-3.8.0.tar.gz
 
-If you want to parse PE binaries, go right ahead.
+You can download the source from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
 
-If Red Hat wants to deep-throat Microsoft, that's *your* issue.  That
-has nothing what-so-ever to do with the kernel I maintain. It's
-trivial for you guys to have a signing machine that parses the PE
-binary, verifies the signatures, and signs the resulting keys with
-your own key. You already wrote the code, for chissake, it's in that
-f*cking pull request.
+Please submit your changes now for features that are going into 3.9 kernel.
 
-Why should *I* care? Why should the kernel care about some idiotic "we
-only sign PE binaries" stupidity? We support X.509, which is the
-standard for signing.
+Andreas Henriksson (1):
+      iproute2: fix tc ematch manpage section
 
-Do this in user land on a trusted machine. There is zero excuse for
-doing it in the kernel.
+Benjamin Poirier (1):
+      Use pkg-config to obtain xtables.h path
 
-               Linus
+Cong Wang (7):
+      iproute2: add mdb sub-command to bridge
+      iproute2: implement add/del mdb entry
+      iproute2: add support to monitor mdb entries too
+      iproute2: update usage info of bridge monitor
+      bridge: distinguish permanent and temporary mdb entries
+      bridge: make `bridge mdb` output consistent with input
+      bridge: update help
+
+David L Stevens (1):
+      add DOVE extensions for iproute2
+
+David Ward (1):
+      ip/iptunnel: Extend TOS syntax
+
+Eric W. Biederman (6):
+      iproute2: Don't propogate mounts out of ip
+      iproute2: Normalize return codes in "ip netns"
+      iproute2: Improve "ip netns add" failure error message
+      iproute2: Make "ip netns delete" more likely to succeed
+      iproute2: Fill in the ip-netns.8 manpage
+      iproute2: Add "ip netns pids" and "ip netns identify"
+
+Jamal Hadi Salim (1):
+      iproute2: act_ipt fix xtables breakage
+
+Jan Engelhardt (1):
+      build: unbreak linakge of m_xt.so
+
+Johannes Naab (1):
+      iproute2: tc netem rate: allow negative packet/cell overhead
+
+Kees van Reeuwijk (6):
+      iproute2: clarification of various man8 pages
+      iproute2: clarifications in the tc-hfsc.7 man page
+      iproute2: add a missing return statement
+      iproute2: clarifications in the libnetlink.3 man page
+      iproute2: improved error messages
+      iproute2: clearer error messages for fifo and tbf qdiscs
+
+Lutz Jaenicke (1):
+      rtnl_wilddump_request: fix alignment issue for embedded platforms
+
+Mike Frysinger (6):
+      configure: move toolchain init to a function
+      lib: include the Config file too
+      configure: pull AR from the env too
+      add man7 to subdirs list
+      do not ignore errors in man subdirs
+      ipxfrm: use alloca to allocate stack space
+
+Nicolas Dichtel (15):
+      ip/ip6tunnel: fix help for TCLASS
+      ip/ip6tunnel: reset encap limit flag on change
+      ip/ip6tunnel: fix update of tclass and flowlabel
+      ip: add support of netconf messages
+      ip: add support of 'ip link type ip6tnl'
+      ip: add support of 'ip link type [ipip|sit]'
+      ip/link_iptnl: fix indentation Logged in as shemminger
+      ip: update mand pages and usage() for 'ip mroute'
+      ip: update man pages for 'ip link'
+      ip: term OPTIONS was used twice in 'ip route' man pages
+      ip: use rtnelink to manage mroute
+      ip: add man pages for netconf
+      ip: update man pages and usage() for 'ip monitor'
+      ipaddr: fix a typo in error msg about SIOCGIFTXQLEN
+      iplink: display the value of IFLA_PROMISCUITY
+
+Stephen Hemminger (14):
+      Update kernel headers to 3.8-pre
+      bridge: add if_bridge.h header
+      build: indent shell functions in configure
+      configure: restore old behaviour
+      bridge: update kernel headers
+      README: update mail address and download location
+      Makefile: make warnings into errors
+      libnetlink: add caveat
+      ip: change format of promiscuity display
+      ip: make local functions static
+      lib: make string arguments const
+      Makefile: turn on warnings about missing prototypes
+      ip: handle flush with table > 2^31
+      v3.8.0
+
+Strake (1):
+      include needed files
+
+Zhi Yong Wu (1):
+      ip: add the type 'vxlan' in the output of "ip link help"
+
