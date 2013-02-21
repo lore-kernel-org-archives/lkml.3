@@ -1,117 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304Ab3BUJUy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 04:20:54 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:55498 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753238Ab3BUJUv (ORCPT
+	id S1753462Ab3BUJZg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 04:25:36 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:48212 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab3BUJZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 04:20:51 -0500
-Message-ID: <5125E6E9.1000809@linux.vnet.ibm.com>
-Date: Thu, 21 Feb 2013 17:20:41 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 21 Feb 2013 04:25:33 -0500
+X-IronPort-AV: E=Sophos;i="4.84,706,1355126400"; 
+   d="scan'208";a="26282408"
+Message-ID: <5125E809.4060407@codeaurora.org>
+Date: Thu, 21 Feb 2013 01:25:29 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
-References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com> <1361427108.5861.41.camel@marge.simpson.net> <5125C607.8090909@linux.vnet.ibm.com> <1361434231.5861.61.camel@marge.simpson.net>
-In-Reply-To: <1361434231.5861.61.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
+To: akpm@linux-foundation.org
+CC: mm-commits@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Nathan Zimmer <nzimmer@sgi.com>
+Subject: Re: mmotm 2013-02-19-17-20 uploaded
+References: <20130220012122.870BB31C11E@corp2gmr1-1.hot.corp.google.com>
+In-Reply-To: <20130220012122.870BB31C11E@corp2gmr1-1.hot.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022109-1618-0000-0000-00000360F879
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 04:10 PM, Mike Galbraith wrote:
-> On Thu, 2013-02-21 at 15:00 +0800, Michael Wang wrote: 
->> On 02/21/2013 02:11 PM, Mike Galbraith wrote:
->>> On Thu, 2013-02-21 at 12:51 +0800, Michael Wang wrote: 
->>>> On 02/20/2013 06:49 PM, Ingo Molnar wrote:
->>>> [snip]
->> [snip]
->>>>
->>>> 	if wake_affine()
->>>> 		new_cpu = select_idle_sibling(curr_cpu)
->>>> 	else
->>>> 		new_cpu = select_idle_sibling(prev_cpu)
->>>>
->>>> 	return new_cpu
->>>>
->>>> Actually that doesn't make sense.
->>>>
->>>> I think wake_affine() is trying to check whether move a task from
->>>> prev_cpu to curr_cpu will break the balance in affine_sd or not, but why
->>>> won't break balance means curr_cpu is better than prev_cpu for searching
->>>> the idle cpu?
->>>
->>> You could argue that it's impossible to break balance by moving any task
->>> to any idle cpu, but that would mean bouncing tasks cross node on every
->>> wakeup is fine, which it isn't.
->>
->> I don't get it... could you please give me more detail on how
->> wake_affine() related with bouncing?
-> 
-> If we didn't ever ask if it's ok, we'd always pull, and stack load up on
-> one package if there's the tiniest of holes to stuff a task into,
-> periodic balance forcibly rips buddies back apart, repeat.  At least
-> with wake_affine() in the loop, there's somewhat of a damper. 
+On 2/19/2013 5:21 PM, akpm@linux-foundation.org wrote:
+> * timer_list-split-timer_list_show_tickdevices.patch
+> * timer_list-convert-timer-list-to-be-a-proper-seq_file.patch
+> * timer_list-convert-timer-list-to-be-a-proper-seq_file-fix.patch
+> * timer_list-convert-timer-list-to-be-a-proper-seq_file-v2.patch
+> * timer_list-convert-timer-list-to-be-a-proper-seq_file-v2-fix.patch
+> * timer_list-convert-timer-list-to-be-a-proper-seq_file-fix-fix.patch
 
-Oh, I think I got the reason why old logical check the affine_sd
-firstly, so when prev_cpu and curr_cpu belong to different package,
-there will be a chance to enter balance path, that seems like a solution
-for this problem, amazing ;-)
+These commits seem to break the timer list on devices with maxcpus !=
+nr_cpu_ids, which is possible if you specify maxcpus on the kernel
+command line. I no longer see the percpu devices that I normally have
+after the broadcast device.
 
-You are right, with out this logical, chances to balance load between
-packages will missed, I will apply it in next version.
+I also notice what looks like an extra newline inserted in the output
+between the percpu devices and the broadcast device, which may not be
+intentional. There are also some more spelling mistakes in the comments.
+Can we fold in this fix on top of the others (hopefully not white-space
+damaged)?
 
-Regards,
-Michael Wang
+diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
+index 9904e48..e3cb935 100644
+--- a/kernel/time/timer_list.c
++++ b/kernel/time/timer_list.c
+@@ -244,7 +244,6 @@ static void timer_list_show_tickdevices_header(struct seq_file *m)
+ #endif
+ 	SEQ_printf(m, "\n");
+ #endif
+-	SEQ_printf(m, "\n");
+ }
+ #endif
+ 
+@@ -275,7 +274,7 @@ static int timer_list_show(struct seq_file *m, void *v)
+ }
+ 
+ /*
+- * This itererator really needs some explnation since it is offset and has
++ * This iterator really needs some explanation since it is offset and has
+  * two passes, one of which is controlled by a config option.
+  * In a hotplugged system some cpus, including cpu 0, may be missing so we have
+  * to use cpumask_* to iterate over the cpus.
+@@ -283,7 +282,7 @@ static int timer_list_show(struct seq_file *m, void *v)
+  * It returns 1 for the header position.
+  * For cpu 0 it returns 2 and the final possible cpu would be nr_cpu_ids + 1.
+  * On the second pass:
+- * It returnes nr_cpu_ids + 1 for the second header position.
++ * It returns nr_cpu_ids + 1 for the second header position.
+  * For cpu 0 it returns nr_cpu_ids + 2
+  * The final possible cpu would be nr_cpu_ids + nr_cpu_ids + 2.
+  */
+@@ -300,8 +299,12 @@ static void *timer_list_start(struct seq_file *file, loff_t *offset)
+ 			n = cpumask_next(n - 1, cpu_online_mask);
+ 		else
+ 			n = cpumask_first(cpu_online_mask);
+-		*offset = n + 1;
+-		return (void *)(unsigned long)(n + 2);
++		if (n < nr_cpu_ids) {
++			*offset = n + 1;
++			return (void *)(unsigned long)(n + 2);
++		} else {
++			*offset = n = nr_cpu_ids + 1;
++		}
+ 	}
+ 
+ #ifdef CONFIG_GENERIC_CLOCKEVENTS
+@@ -314,8 +317,10 @@ static void *timer_list_start(struct seq_file *file, loff_t *offset)
+ 			n = cpumask_next(n - 1, cpu_online_mask);
+ 		else
+ 			n = cpumask_first(cpu_online_mask);
+-		*offset = n + 2 + nr_cpu_ids;
+-		return (void *)(unsigned long)(n + 3 + nr_cpu_ids);
++		if (n < nr_cpu_ids) {
++			*offset = n + 2 + nr_cpu_ids;
++			return (void *)(unsigned long)(n + 3 + nr_cpu_ids);
++		}
+ 	}
+ #endif
+ 
 
-> 
->>>> So the new logical in this patch set is:
->>>>
->>>> 	new_cpu = select_idle_sibling(prev_cpu)
->>>> 	if idle_cpu(new_cpu)
->>>> 		return new_cpu
->>>
->>> So you tilted the scales in favor of leaving tasks in their current
->>> package, which should benefit large footprint tasks, but should also
->>> penalize light communicating tasks.
->>
->> Yes, I'd prefer to wakeup the task on a cpu which:
->> 1. idle
->> 2. close to prev_cpu
->>
->> So if both curr_cpu and prev_cpu have idle cpu in their topology, which
->> one is better? that depends on how task benefit from cache and the
->> balance situation, whatever, I don't think the benefit worth the high
->> cost of wake_affine() in most cases...
-> 
-> We've always used wake_affine() before, yet been able to schedule at
-> high frequency, so I don't see that it can be _that_ expensive.  I
-> haven't actually measured lately (loooong time) though.
-> 
-> WRT cost/benefit of migration, yeah, it depends entirely on the tasks,
-> some will gain, some will lose.  On a modern single processor box, it
-> just doesn't matter, there's only one llc (two s_i_s() calls = oopsie),
-> but on my beloved old Q6600 or a big box, it'll matter a lot to
-> something.  NUMA balance will deal with big boxen, my trusty old Q6600
-> will likely get all upset with some localhost stuff.
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
