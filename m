@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab3BURx4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 12:53:56 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:63071 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab3BURxy (ORCPT
+	id S1755245Ab3BURzi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 12:55:38 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:61491 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754549Ab3BURzf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 12:53:54 -0500
+	Thu, 21 Feb 2013 12:55:35 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1302202155320.22263@ionos>
-References: <1361373336-11337-1-git-send-email-fweisbec@gmail.com>
-	<alpine.LFD.2.02.1302202155320.22263@ionos>
-Date: Thu, 21 Feb 2013 09:53:48 -0800
-X-Google-Sender-Auth: 8eLozlU383Qbirs59xexqC7IblQ
-Message-ID: <CA+55aFwTFOsRTX3pHeZ+664rAms-Liwco3scEPJum6=C3BCoEQ@mail.gmail.com>
-Subject: Re: [PATCH] nohz: Make tick_nohz_irq_exit() irq safe
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [109.186.70.35]
+In-Reply-To: <CAJK669YHwR=nf2zSQR6buaA-x1JSowJfU16hkz1+N_WLL0qA+A@mail.gmail.com>
+References: <1360669793-6921-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1360669793-6921-2-git-send-email-sjur.brandeland@stericsson.com>
+ <CAK=Wgbb0EeiCh504jsoX+izzi+ZogfEDttz2cHRd4pVXvQunQw@mail.gmail.com>
+ <CAJK669bDu3SphxmEtA+h+v=btsN91t0S9Mn6ik-OKr=8gtducw@mail.gmail.com>
+ <CAK=Wgba5XkK3c7qh1tYHMGEe7-Qima96uYO4E+uAPcaB8K6bmQ@mail.gmail.com> <CAJK669YHwR=nf2zSQR6buaA-x1JSowJfU16hkz1+N_WLL0qA+A@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 21 Feb 2013 19:55:13 +0200
+Message-ID: <CAK=Wgbam=Y5GJQxg2DSt2yR6CdcDxjZ5k_Av_0H8+6m+scN+Yw@mail.gmail.com>
+Subject: Re: [PATCHv2 vringh 1/3] remoteproc: Add support for vringh (Host vrings)
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Cc: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>, netdev@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Erwan Yvin <erwan.yvin@stericsson.com>,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Ido Yariv <ido@wizery.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 1:00 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->   */
->  void irq_exit(void)
->  {
-> +#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
-> +       unsigned long flags;
-> +
-> +       local_irq_save(flags);
-> +#else
-> +       BUG_ON(!irqs_disabled();
-> +#endif
+Hi Sjur,
 
-Guys, STOP DOING THIS!
+On Thu, Feb 21, 2013 at 7:28 PM, Sjur Brændeland <sjurbren@gmail.com> wrote:
+> The motivation for using vringh was to avoid copying buffers
+> when sending data from the modem to the host.
 
-Adding BUG_ON()'s just makes things much much much worse. There is
-*never* a reason to add a BUG_ON(). And doing it in an interrupt path
-is totally unacceptable. BUG_ON() makes it almost impossible to debug
-something, because you just killed the machine. So using BUG_ON() for
-"please notice this" is stupid as hell, because the most common end
-result is: "Oh, the machine just hung with no messages".
+I may be missing something here, but why do you need vringh for that?
 
-Make it WARN_ON_ONCE() if you absolutely have to let people know, but
-for something like this, why would you do even that?
+With rpmsg (which uses two regular vrings) both ends send huge amount
+of data without copying it - we just send the pointers across.
 
-                          Linus
+Thanks,
+Ohad.
