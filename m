@@ -1,108 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab3BURr3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 12:47:29 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:53518 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754400Ab3BURrZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 12:47:25 -0500
-From: Kumar Amit Mehta <gmate.amit@gmail.com>
-To: abbotti@mev.co.uk
-Cc: fmhess@users.sourceforge.net, gregkh@linuxfoundation.org,
-        hsweeten@visionengravers.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH] staging: comedi: drivers: usbduxsigma.c: fix DMA buffers on stack
-Date: Thu, 21 Feb 2013 09:47:06 -0800
-Message-Id: <1361468826-12053-1-git-send-email-gmate.amit@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756677Ab3BURsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 12:48:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756604Ab3BURsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 12:48:15 -0500
+Date: Thu, 21 Feb 2013 14:47:59 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH EDACv2 01/12] edac: add support for raw error reports
+Message-ID: <20130221144759.6f960a39@redhat.com>
+In-Reply-To: <20130221160821.GH4694@pd.tnic>
+References: <cover.1361459782.git.mchehab@redhat.com>
+	<30b4b936bf5eb2a47613cd3d5a256e4e9c56e911.1361459782.git.mchehab@redhat.com>
+	<20130221155337.GG4694@pd.tnic>
+	<20130221130125.7f649d4c@redhat.com>
+	<20130221160821.GH4694@pd.tnic>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes an instance of DMA buffer on stack(being passed to
-usb_control_msg)for the USB-DUXsigma Board driver. Found using smatch.
+Em Thu, 21 Feb 2013 17:08:21 +0100
+Borislav Petkov <bp@alien8.de> escreveu:
 
-Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
----
- drivers/staging/comedi/drivers/usbduxsigma.c |   37 +++++++++++++++++---------
- 1 file changed, 24 insertions(+), 13 deletions(-)
+> On Thu, Feb 21, 2013 at 01:01:25PM -0300, Mauro Carvalho Chehab wrote:
+> > I did this way to to follow the "one patch per logical change rule".
+> > The rationale for this patch is to allow doing raw error reports,
+> > as needed by changeset 06/12.
+> 
+> Right, but you're adding a new function so why not add the right version
+> from the get-go? Otherwise the rule above would apply but not for new
+> code, right?
 
-diff --git a/drivers/staging/comedi/drivers/usbduxsigma.c b/drivers/staging/comedi/drivers/usbduxsigma.c
-index dc6b017..46137e8 100644
---- a/drivers/staging/comedi/drivers/usbduxsigma.c
-+++ b/drivers/staging/comedi/drivers/usbduxsigma.c
-@@ -681,10 +681,14 @@ static void usbduxsub_ao_IsocIrq(struct urb *urb)
- static int usbduxsub_start(struct usbduxsub *usbduxsub)
- {
- 	int errcode = 0;
--	uint8_t local_transfer_buffer[16];
--
-+	uint8_t *local_transfer_buffer;
-+	local_transfer_buffer = kmalloc(16, GFP_KERNEL);
-+	if (!local_transfer_buffer) {
-+		errcode = -ENOMEM;
-+		goto exit;
-+	}
- 	/* 7f92 to zero */
--	local_transfer_buffer[0] = 0;
-+	*local_transfer_buffer = 0;
- 	errcode = usb_control_msg(usbduxsub->usbdev,
- 				  /* create a pipe for a control transfer */
- 				  usb_sndctrlpipe(usbduxsub->usbdev, 0),
-@@ -702,22 +706,28 @@ static int usbduxsub_start(struct usbduxsub *usbduxsub)
- 				  1,
- 				  /* Timeout */
- 				  BULK_TIMEOUT);
--	if (errcode < 0) {
-+	if (errcode < 0)
- 		dev_err(&usbduxsub->interface->dev,
- 			"comedi_: control msg failed (start)\n");
--		return errcode;
--	}
--	return 0;
-+
-+	kfree(local_transfer_buffer);
-+exit:
-+	return errcode;
- }
- 
- static int usbduxsub_stop(struct usbduxsub *usbduxsub)
- {
- 	int errcode = 0;
- 
--	uint8_t local_transfer_buffer[16];
-+	uint8_t *local_transfer_buffer;
-+	local_transfer_buffer = kmalloc(16, GFP_KERNEL);
-+	if (!local_transfer_buffer) {
-+		errcode = -ENOMEM;
-+		goto exit;
-+	}
- 
- 	/* 7f92 to one */
--	local_transfer_buffer[0] = 1;
-+	*local_transfer_buffer = 1;
- 	errcode = usb_control_msg(usbduxsub->usbdev,
- 				  usb_sndctrlpipe(usbduxsub->usbdev, 0),
- 				  /* bRequest, "Firmware" */
-@@ -732,12 +742,13 @@ static int usbduxsub_stop(struct usbduxsub *usbduxsub)
- 				  1,
- 				  /* Timeout */
- 				  BULK_TIMEOUT);
--	if (errcode < 0) {
-+	if (errcode < 0)
- 		dev_err(&usbduxsub->interface->dev,
- 			"comedi_: control msg failed (stop)\n");
--		return errcode;
--	}
--	return 0;
-+
-+	kfree(local_transfer_buffer);
-+exit:
-+	return errcode;
- }
- 
- static int usbduxsub_upload(struct usbduxsub *usbduxsub,
--- 
-1.7.9.5
+The rule also applies for both patches.
 
+Except for making everybody's looking on this code to re-read all patches 
+and for me to rebase it again, I can't see any difference between what I
+posted and your proposal to move patch 10 to the beginning of the changeset.
+
+Anyway, I did it at this separate branch, in order to preserve the previous
+ghes_v2 (also at the same repository):
+	http://git.infradead.org/users/mchehab/edac.git/shortlog/refs/heads/ghes_v3
+
+Patch 10/12 is now the first patch, and became this one:
+	http://git.infradead.org/users/mchehab/edac.git/commit/c7ef7645544131b0750478d1cf94cdfa945c809d
+
+Patch 01/12 is now the second one:
+	http://git.infradead.org/users/mchehab/edac.git/commit/e7e248304c8ccf02b89e04c3b3b66006b993b5a7
+
+Obviously, the ghes_edac part of 10/12 got fold into this patch:
+	http://git.infradead.org/users/mchehab/edac.git/commit/bf45061af29e585506e8d3bfcda2f2b1e557281c
+
+And a couple other patches got side-affected by this change with trivial
+conflicts (patches 9/12 and 11/12). Except for this change, v2 and v3 are 
+identical, so I won't re-post it.
+
+Mauro
