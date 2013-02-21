@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab3BUPuz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 10:50:55 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:55948 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755458Ab3BUPux (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 10:50:53 -0500
-Date: Thu, 21 Feb 2013 10:50:52 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Valdis.Kletnieks@vt.edu
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: Wonky PS2-USB converter issues...
-In-Reply-To: <26591.1361405698@turing-police.cc.vt.edu>
-Message-ID: <Pine.LNX.4.44L0.1302211048390.1529-100000@iolanthe.rowland.org>
+	id S1755022Ab3BUPxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 10:53:43 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:34589 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754604Ab3BUPxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 10:53:42 -0500
+Date: Thu, 21 Feb 2013 16:53:37 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH EDACv2 01/12] edac: add support for raw error reports
+Message-ID: <20130221155337.GG4694@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Mauro Carvalho Chehab <mchehab@redhat.com>,
+	Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <cover.1361459782.git.mchehab@redhat.com>
+ <30b4b936bf5eb2a47613cd3d5a256e4e9c56e911.1361459782.git.mchehab@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <30b4b936bf5eb2a47613cd3d5a256e4e9c56e911.1361459782.git.mchehab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Feb 2013 Valdis.Kletnieks@vt.edu wrote:
+On Thu, Feb 21, 2013 at 12:38:59PM -0300, Mauro Carvalho Chehab wrote:
+> That allows APEI GHES driver to report errors directly, using
+> the EDAC error report API.
+> 
+> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> ---
+>  drivers/edac/edac_core.h |  17 ++++++++
+>  drivers/edac/edac_mc.c   | 109 ++++++++++++++++++++++++++++++++++++-----------
+>  2 files changed, 100 insertions(+), 26 deletions(-)
+> 
+> diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
+> index 23bb99f..9c5da11 100644
+> --- a/drivers/edac/edac_core.h
+> +++ b/drivers/edac/edac_core.h
+> @@ -453,6 +453,23 @@ extern struct mem_ctl_info *find_mci_by_dev(struct device *dev);
+>  extern struct mem_ctl_info *edac_mc_del_mc(struct device *dev);
+>  extern int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci,
+>  				      unsigned long page);
+> +
+> +void edac_raw_mc_handle_error(const enum hw_event_mc_err_type type,
+> +			  struct mem_ctl_info *mci,
+> +			  long grain,
+> +			  const u16 error_count,
+> +			  const int top_layer,
+> +			  const int mid_layer,
+> +			  const int low_layer,
+> +			  const unsigned long page_frame_number,
+> +			  const unsigned long offset_in_page,
+> +			  const unsigned long syndrome,
+> +			  const char *msg,
+> +			  const char *location,
+> +			  const char *label,
+> +			  const char *other_detail,
+> +			  const bool enable_per_layer_report);
 
-> On Wed, 20 Feb 2013 16:07:49 -0800, Greg Kroah-Hartman said:
-> 
-> > PS-2 connectors can not normally handle hotplugging, the protocol
-> > doesn't allow it, and for some unlucky devices, it could actually fry
-> > the motherboard or the PS-2 device.
-> >
-> > So that's probably the issue here, the device just doesn't support it,
-> > sorry.
-> 
-> You mis-understood the problem.
-> 
-> This works:
-> 
-> PS/2 keyboard plugged into this device:
-> Bus 006 Device 002: ID 0e8f:0020 GreenAsia Inc. USB to PS/2 Adapter
-> USB side of device plugged into USB port on the Latitude laptop.
-> Power up, boot - the keyboard works.
-> 
-> If you plug the USB side of the GreenAsia adapter into a USB slot on
-> the dock, the keyboard is dead and not recognized by the system.  However,
-> replugging the USB, or unplug/plug the PS/2 side, and it becomes recognized
-> and starts working.
-> 
-> This tells me that the dock is doing something busted with USB that the laptop
-> does correctly, and not enumerating devices until something happens to whack it
-> upside the head. I was hoping to identify it and maybe quirk it.
+Why not merge this patch with 10/12?
 
-What happens if you prevent ehci-hcd from being loaded during boot and 
-then load it manually afterward?  Does the keyboard/adapter/dock 
-combination work then?
+You're adding edac_raw_mc_handle_error here and rewriting it in 10/12.
+This looks like unnecessary churn to me.
 
-If it doesn't, try recording a usbmon trace.
+-- 
+Regards/Gruss,
+    Boris.
 
-Alan Stern
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
