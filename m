@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369Ab3BUNl5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 08:41:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41733 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751305Ab3BUNl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 08:41:56 -0500
-Date: Thu, 21 Feb 2013 14:41:53 +0100
-From: David Sterba <dsterba@suse.cz>
-To: Kyungsik Lee <kyungsik.lee@lge.com>
-Cc: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hyojun.im@lge.com, chan.jeong@lge.com,
-        raphael.andy.lee@gmail.com, David Sterba <dsterba@suse.cz>
-Subject: Re: [PATCH v2] btrfs: use kmalloc for lzo de/compress buffer
-Message-ID: <20130221134153.GD27541@twin.jikos.cz>
-Reply-To: dsterba@suse.cz
-Mail-Followup-To: dsterba@suse.cz,
-	Kyungsik Lee <kyungsik.lee@lge.com>,
-	Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org,
-	linux-kernel@vger.kernel.org, hyojun.im@lge.com, chan.jeong@lge.com,
-	raphael.andy.lee@gmail.com
-References: <1361174164-7182-1-git-send-email-kyungsik.lee@lge.com>
+	id S1752993Ab3BUNpf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 08:45:35 -0500
+Received: from outbound-mail04.westnet.com.au ([203.10.1.245]:24137 "EHLO
+	outbound-mail04.westnet.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751305Ab3BUNpe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 08:45:34 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAO4jJlGVhxBY/2dsb2JhbAANN8B0gRyDEgEBAQMBOEABBQsLGAkWDwkDAgECAUUGDQEFAgEBiAisFJMejTuBUweDQAOqKYFX
+X-IronPort-AV: E=Sophos;i="4.84,709,1355068800"; 
+   d="scan'208";a="72756725"
+Message-ID: <512624F2.2030004@uclinux.org>
+Date: Thu, 21 Feb 2013 23:45:22 +1000
+From: Greg Ungerer <gerg@uclinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361174164-7182-1-git-send-email-kyungsik.lee@lge.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+CC: geert@linux-m68k.org, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] m68k/nommu: fix build when CPU is not coldfire
+References: <1361064814-9727-1-git-send-email-cascardo@holoscopio.com>
+In-Reply-To: <1361064814-9727-1-git-send-email-cascardo@holoscopio.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 18, 2013 at 04:56:04PM +0900, Kyungsik Lee wrote:
-> @@ -55,8 +55,9 @@ static struct list_head *lzo_alloc_workspace(void)
->  		return ERR_PTR(-ENOMEM);
->  
->  	workspace->mem = vmalloc(LZO1X_MEM_COMPRESS);
-> -	workspace->buf = vmalloc(PAGE_CACHE_SIZE);
-> -	workspace->cbuf = vmalloc(lzo1x_worst_compress(PAGE_CACHE_SIZE));
-> +	workspace->buf = kmalloc(PAGE_CACHE_SIZE, GFP_NOFS);
-> +	workspace->cbuf = kmalloc(lzo1x_worst_compress(PAGE_CACHE_SIZE),
+Hi Thadeu,
 
-This is still larger than usual page size and allocator may issue a
-warning, so if we want to use kmalloc (it's ~4.4k in size and likely to
-be available, but not always due to possible page fragmentation), the
-__GFP_NOWARN should be supplied and if the allocation fails fall back to
-vmalloc.
+On 17/02/13 11:33, Thadeu Lima de Souza Cascardo wrote:
+> Commit dd1cb3a7c43508c29e17836628090c0735bd3137 unified mm/init.c for both MMU
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Its good practice to include the text title of the patch along with the
+commit id.
 
-david
+
+> and non-MMU m68k platforms. However, it broke when we build a non-MMU M68K
+> Classic CPU kernel.
+>
+> This fix builds a section that came from the MMU version only when we are
+> building a MMU kernel.
+
+Looks good thanks. I will push this into the m68knommu git tree.
+
+Regards
+Greg
+
+
+
+> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+> ---
+>   arch/m68k/mm/init.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/m68k/mm/init.c b/arch/m68k/mm/init.c
+> index afd8106f..519aad8 100644
+> --- a/arch/m68k/mm/init.c
+> +++ b/arch/m68k/mm/init.c
+> @@ -188,7 +188,7 @@ void __init mem_init(void)
+>   		}
+>   	}
+>
+> -#if !defined(CONFIG_SUN3) && !defined(CONFIG_COLDFIRE)
+> +#if defined(CONFIG_MMU) && !defined(CONFIG_SUN3) && !defined(CONFIG_COLDFIRE)
+>   	/* insert pointer tables allocated so far into the tablelist */
+>   	init_pointer_table((unsigned long)kernel_pg_dir);
+>   	for (i = 0; i < PTRS_PER_PGD; i++) {
+>
+
