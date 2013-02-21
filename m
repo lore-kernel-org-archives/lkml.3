@@ -1,74 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab3BUIsh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 03:48:37 -0500
-Received: from softlayer.compulab.co.il ([50.23.254.55]:60714 "EHLO
-	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752610Ab3BUIsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 03:48:36 -0500
-Message-ID: <5125DF5C.7070700@compulab.co.il>
-Date: Thu, 21 Feb 2013 10:48:28 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130123 Thunderbird/17.0.2
+	id S1752773Ab3BUIt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 03:49:57 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:48969 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144Ab3BUIt4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 03:49:56 -0500
+Message-ID: <5125DFAA.4050706@gmail.com>
+Date: Thu, 21 Feb 2013 16:49:46 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com
-Subject: Re: [PATCH] rtc: rtc-v3020: use gpio_request_one()
-References: <00cb01ce100d$dc282200$94786600$%han@samsung.com>
-In-Reply-To: <00cb01ce100d$dc282200$94786600$%han@samsung.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv5 2/8] zsmalloc: add documentation
+References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com> <1360780731-11708-3-git-send-email-sjenning@linux.vnet.ibm.com> <511F254D.2010909@gmail.com> <51227DF4.9020900@linux.vnet.ibm.com>
+In-Reply-To: <51227DF4.9020900@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: grinberg@compulab.co.il|compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/13 10:31, Jingoo Han wrote:
-> Using gpio_request_one() can make the code simpler because it can
-> set the direction and initial value in one shot.
+On 02/19/2013 03:16 AM, Seth Jennings wrote:
+> On 02/16/2013 12:21 AM, Ric Mason wrote:
+>> On 02/14/2013 02:38 AM, Seth Jennings wrote:
+>>> This patch adds a documentation file for zsmalloc at
+>>> Documentation/vm/zsmalloc.txt
+>>>
+>>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+>>> ---
+>>>    Documentation/vm/zsmalloc.txt |   68
+>>> +++++++++++++++++++++++++++++++++++++++++
+>>>    1 file changed, 68 insertions(+)
+>>>    create mode 100644 Documentation/vm/zsmalloc.txt
+>>>
+>>> diff --git a/Documentation/vm/zsmalloc.txt
+>>> b/Documentation/vm/zsmalloc.txt
+>>> new file mode 100644
+>>> index 0000000..85aa617
+>>> --- /dev/null
+>>> +++ b/Documentation/vm/zsmalloc.txt
+>>> @@ -0,0 +1,68 @@
+>>> +zsmalloc Memory Allocator
+>>> +
+>>> +Overview
+>>> +
+>>> +zmalloc a new slab-based memory allocator,
+>>> +zsmalloc, for storing compressed pages.  It is designed for
+>>> +low fragmentation and high allocation success rate on
+>>> +large object, but <= PAGE_SIZE allocations.
+>>> +
+>>> +zsmalloc differs from the kernel slab allocator in two primary
+>>> +ways to achieve these design goals.
+>>> +
+>>> +zsmalloc never requires high order page allocations to back
+>>> +slabs, or "size classes" in zsmalloc terms. Instead it allows
+>>> +multiple single-order pages to be stitched together into a
+>>> +"zspage" which backs the slab.  This allows for higher allocation
+>>> +success rate under memory pressure.
+>>> +
+>>> +Also, zsmalloc allows objects to span page boundaries within the
+>>> +zspage.  This allows for lower fragmentation than could be had
+>>> +with the kernel slab allocator for objects between PAGE_SIZE/2
+>>> +and PAGE_SIZE.  With the kernel slab allocator, if a page compresses
+>>> +to 60% of it original size, the memory savings gained through
+>>> +compression is lost in fragmentation because another object of
+>>> +the same size can't be stored in the leftover space.
+>>> +
+>>> +This ability to span pages results in zsmalloc allocations not being
+>>> +directly addressable by the user.  The user is given an
+>>> +non-dereferencable handle in response to an allocation request.
+>>> +That handle must be mapped, using zs_map_object(), which returns
+>>> +a pointer to the mapped region that can be used.  The mapping is
+>>> +necessary since the object data may reside in two different
+>>> +noncontigious pages.
+>> Do you mean the reason of  to use a zsmalloc object must map after
+>> malloc is object data maybe reside in two different nocontiguous pages?
+> Yes, that is one reason for the mapping.  The other reason (more of an
+> added bonus) is below.
+>
+>>> +
+>>> +For 32-bit systems, zsmalloc has the added benefit of being
+>>> +able to back slabs with HIGHMEM pages, something not possible
+>> What's the meaning of "back slabs with HIGHMEM pages"?
+> By HIGHMEM, I'm referring to the HIGHMEM memory zone on 32-bit systems
+> with larger that 1GB (actually a little less) of RAM.  The upper 3GB
+> of the 4GB address space, depending on kernel build options, is not
+> directly addressable by the kernel, but can be mapped into the kernel
+> address space with functions like kmap() or kmap_atomic().
+>
+> These pages can't be used by slab/slub because they are not
+> continuously mapped into the kernel address space.  However, since
+> zsmalloc requires a mapping anyway to handle objects that span
+> non-contiguous page boundaries, we do the kernel mapping as part of
+> the process.
+>
+> So zspages, the conceptual slab in zsmalloc backed by single-order
+> pages can include pages from the HIGHMEM zone as well.
 
-If you are on this, then I think converting to gpio_request_array()
-would be even better.
+Thanks for your clarify,
+  http://lwn.net/Articles/537422/, your article about zswap in lwn.
+  "Additionally, the kernel slab allocator does not allow objects that 
+are less
+than a page in size to span a page boundary. This means that if an object is
+PAGE_SIZE/2 + 1 bytes in size, it effectively use an entire page, 
+resulting in
+~50% waste. Hense there are *no kmalloc() cache size* between 
+PAGE_SIZE/2 and
+PAGE_SIZE."
+Are your sure? It seems that kmalloc cache support big size, your can 
+check in
+include/linux/kmalloc_sizes.h
 
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/rtc/rtc-v3020.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/rtc/rtc-v3020.c b/drivers/rtc/rtc-v3020.c
-> index bca5d67..d59cd24 100644
-> --- a/drivers/rtc/rtc-v3020.c
-> +++ b/drivers/rtc/rtc-v3020.c
-> @@ -125,11 +125,10 @@ static int v3020_gpio_map(struct v3020 *chip, struct platform_device *pdev,
->  	v3020_gpio[V3020_IO].gpio = pdata->gpio_io;
->  
->  	for (i = 0; i < ARRAY_SIZE(v3020_gpio); i++) {
-> -		err = gpio_request(v3020_gpio[i].gpio, v3020_gpio[i].name);
-> +		err = gpio_request_one(v3020_gpio[i].gpio, GPIOF_OUT_INIT_HIGH,
-> +					v3020_gpio[i].name);
->  		if (err)
->  			goto err_request;
-> -
-> -		gpio_direction_output(v3020_gpio[i].gpio, 1);
->  	}
+>
+> Seth
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-If you convert to gpio_request_array(), you can also drop the for loop.
-
->  
->  	chip->gpio = v3020_gpio;
-> 
-
--- 
-Regards,
-Igor.
