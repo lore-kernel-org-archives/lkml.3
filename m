@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab3BURsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 12:48:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36052 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756604Ab3BURsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 12:48:15 -0500
-Date: Thu, 21 Feb 2013 14:47:59 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH EDACv2 01/12] edac: add support for raw error reports
-Message-ID: <20130221144759.6f960a39@redhat.com>
-In-Reply-To: <20130221160821.GH4694@pd.tnic>
-References: <cover.1361459782.git.mchehab@redhat.com>
-	<30b4b936bf5eb2a47613cd3d5a256e4e9c56e911.1361459782.git.mchehab@redhat.com>
-	<20130221155337.GG4694@pd.tnic>
-	<20130221130125.7f649d4c@redhat.com>
-	<20130221160821.GH4694@pd.tnic>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756739Ab3BURsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 12:48:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42958 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756687Ab3BURsV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 12:48:21 -0500
+Date: Thu, 21 Feb 2013 09:46:13 -0800
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-1ba476a0c9bd0907fa31a74d47e9f4f84b404690@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linuxfoundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, tglx@linutronix.de
+Reply-To: paulmck@linux.vnet.ibm.com, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        torvalds@linuxfoundation.org, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <alpine.LFD.2.02.1302202155320.22263@ionos>
+References: <alpine.LFD.2.02.1302202155320.22263@ionos>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] irq: Sanitize invoke_softirq
+Git-Commit-ID: 1ba476a0c9bd0907fa31a74d47e9f4f84b404690
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Feb 2013 09:46:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 21 Feb 2013 17:08:21 +0100
-Borislav Petkov <bp@alien8.de> escreveu:
+Commit-ID:  1ba476a0c9bd0907fa31a74d47e9f4f84b404690
+Gitweb:     http://git.kernel.org/tip/1ba476a0c9bd0907fa31a74d47e9f4f84b404690
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Thu, 21 Feb 2013 18:17:42 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 21 Feb 2013 18:32:45 +0100
 
-> On Thu, Feb 21, 2013 at 01:01:25PM -0300, Mauro Carvalho Chehab wrote:
-> > I did this way to to follow the "one patch per logical change rule".
-> > The rationale for this patch is to allow doing raw error reports,
-> > as needed by changeset 06/12.
-> 
-> Right, but you're adding a new function so why not add the right version
-> from the get-go? Otherwise the rule above would apply but not for new
-> code, right?
+irq: Sanitize invoke_softirq
 
-The rule also applies for both patches.
+With the irq protection in irq_exit, we can remove the #ifdeffery and
+the bh_disable/enable dance in invoke_softirq()
 
-Except for making everybody's looking on this code to re-read all patches 
-and for me to rebase it again, I can't see any difference between what I
-posted and your proposal to move patch 10 to the beginning of the changeset.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linuxfoundation.org>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1302202155320.22263@ionos
 
-Anyway, I did it at this separate branch, in order to preserve the previous
-ghes_v2 (also at the same repository):
-	http://git.infradead.org/users/mchehab/edac.git/shortlog/refs/heads/ghes_v3
+---
+ kernel/softirq.c | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
-Patch 10/12 is now the first patch, and became this one:
-	http://git.infradead.org/users/mchehab/edac.git/commit/c7ef7645544131b0750478d1cf94cdfa945c809d
-
-Patch 01/12 is now the second one:
-	http://git.infradead.org/users/mchehab/edac.git/commit/e7e248304c8ccf02b89e04c3b3b66006b993b5a7
-
-Obviously, the ghes_edac part of 10/12 got fold into this patch:
-	http://git.infradead.org/users/mchehab/edac.git/commit/bf45061af29e585506e8d3bfcda2f2b1e557281c
-
-And a couple other patches got side-affected by this change with trivial
-conflicts (patches 9/12 and 11/12). Except for this change, v2 and v3 are 
-identical, so I won't re-post it.
-
-Mauro
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index d1f7943..aebc590 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -322,18 +322,10 @@ void irq_enter(void)
+ 
+ static inline void invoke_softirq(void)
+ {
+-	if (!force_irqthreads) {
+-#ifdef __ARCH_IRQ_EXIT_IRQS_DISABLED
++	if (!force_irqthreads)
+ 		__do_softirq();
+-#else
+-		do_softirq();
+-#endif
+-	} else {
+-		__local_bh_disable((unsigned long)__builtin_return_address(0),
+-				SOFTIRQ_OFFSET);
++	else
+ 		wakeup_softirqd();
+-		__local_bh_enable(SOFTIRQ_OFFSET);
+-	}
+ }
+ 
+ /*
