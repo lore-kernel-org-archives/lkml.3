@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab3BUPja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 10:39:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2855 "EHLO mx1.redhat.com"
+	id S1754858Ab3BUPjf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 10:39:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38964 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753508Ab3BUPjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 10:39:25 -0500
+	id S1753508Ab3BUPjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 10:39:32 -0500
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Huang Ying <ying.huang@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH EDACv2 03/12] ghes: move structures/enum to a header file
-Date: Thu, 21 Feb 2013 12:39:01 -0300
-Message-Id: <b964dd4bd866d83b22a6d0f52b626bd948944152.1361459782.git.mchehab@redhat.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH EDACv2 07/12] ghes_edac: do a better job of filling EDAC DIMM info
+Date: Thu, 21 Feb 2013 12:39:05 -0300
+Message-Id: <a6ec095f90fe2795a72d427ad9c63ce0cee5174a.1361459782.git.mchehab@redhat.com>
 In-Reply-To: <cover.1361459782.git.mchehab@redhat.com>
 References: <cover.1361459782.git.mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
@@ -22,140 +20,251 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As a ghes_edac driver will need to access ghes structures, in order
-to properly handle the errors, move those structures to a separate
-header file. No functional changes.
+Instead of just faking a random value for the DIMM data, get
+the information that it is available via DMI table.
 
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/acpi/apei/ghes.c | 47 ++---------------------------------------------
- include/acpi/ghes.h      | 45 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 47 insertions(+), 45 deletions(-)
- create mode 100644 include/acpi/ghes.h
+ drivers/edac/ghes_edac.c | 192 ++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 180 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-index 7ae2750..6d0e146 100644
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -48,8 +48,8 @@
- #include <linux/genalloc.h>
- #include <linux/pci.h>
- #include <linux/aer.h>
--#include <acpi/apei.h>
--#include <acpi/hed.h>
+diff --git a/drivers/edac/ghes_edac.c b/drivers/edac/ghes_edac.c
+index e6f1426..b2826ab 100644
+--- a/drivers/edac/ghes_edac.c
++++ b/drivers/edac/ghes_edac.c
+@@ -11,6 +11,7 @@
+ 
+ #include <acpi/ghes.h>
+ #include <linux/edac.h>
++#include <linux/dmi.h>
+ #include "edac_core.h"
+ 
+ #define GHES_PFX   "ghes_edac: "
+@@ -26,6 +27,155 @@ static LIST_HEAD(ghes_reglist);
+ static DEFINE_MUTEX(ghes_edac_lock);
+ static int ghes_edac_mc_num;
+ 
++/* Memory Device - Type 17 of SMBIOS spec */
++struct memdev_dmi_entry {
++	u8 type;
++	u8 length;
++	u16 handle;
++	u16 phys_mem_array_handle;
++	u16 mem_err_info_handle;
++	u16 total_width;
++	u16 data_width;
++	u16 size;
++	u8 form_factor;
++	u8 device_set;
++	u8 device_locator;
++	u8 bank_locator;
++	u8 memory_type;
++	u16 type_detail;
++	u16 speed;
++	u8 manufacturer;
++	u8 serial_number;
++	u8 asset_tag;
++	u8 part_number;
++	u8 attributes;
++	u32 extended_size;
++	u16 conf_mem_clk_speed;
++} __attribute__((__packed__));
 +
-+#include <acpi/ghes.h>
- #include <asm/mce.h>
- #include <asm/tlbflush.h>
- #include <asm/nmi.h>
-@@ -84,42 +84,6 @@
- 	((struct acpi_hest_generic_status *)				\
- 	 ((struct ghes_estatus_node *)(estatus_node) + 1))
- 
--/*
-- * One struct ghes is created for each generic hardware error source.
-- * It provides the context for APEI hardware error timer/IRQ/SCI/NMI
-- * handler.
-- *
-- * estatus: memory buffer for error status block, allocated during
-- * HEST parsing.
-- */
--#define GHES_TO_CLEAR		0x0001
--#define GHES_EXITING		0x0002
--
--struct ghes {
--	struct acpi_hest_generic *generic;
--	struct acpi_hest_generic_status *estatus;
--	u64 buffer_paddr;
--	unsigned long flags;
--	union {
--		struct list_head list;
--		struct timer_list timer;
--		unsigned int irq;
--	};
--};
--
--struct ghes_estatus_node {
--	struct llist_node llnode;
--	struct acpi_hest_generic *generic;
--};
--
--struct ghes_estatus_cache {
--	u32 estatus_len;
--	atomic_t count;
--	struct acpi_hest_generic *generic;
--	unsigned long long time_in;
--	struct rcu_head rcu;
--};
--
- bool ghes_disable;
- module_param_named(disable, ghes_disable, bool, 0);
- 
-@@ -333,13 +297,6 @@ static void ghes_fini(struct ghes *ghes)
- 	apei_unmap_generic_address(&ghes->generic->error_status_address);
- }
- 
--enum {
--	GHES_SEV_NO = 0x0,
--	GHES_SEV_CORRECTED = 0x1,
--	GHES_SEV_RECOVERABLE = 0x2,
--	GHES_SEV_PANIC = 0x3,
--};
--
- static inline int ghes_severity(int severity)
++struct ghes_edac_dimm_fill {
++	struct mem_ctl_info *mci;
++	unsigned count;
++};
++
++char *memory_type[] = {
++	[MEM_EMPTY] = "EMPTY",
++	[MEM_RESERVED] = "RESERVED",
++	[MEM_UNKNOWN] = "UNKNOWN",
++	[MEM_FPM] = "FPM",
++	[MEM_EDO] = "EDO",
++	[MEM_BEDO] = "BEDO",
++	[MEM_SDR] = "SDR",
++	[MEM_RDR] = "RDR",
++	[MEM_DDR] = "DDR",
++	[MEM_RDDR] = "RDDR",
++	[MEM_RMBS] = "RMBS",
++	[MEM_DDR2] = "DDR2",
++	[MEM_FB_DDR2] = "FB_DDR2",
++	[MEM_RDDR2] = "RDDR2",
++	[MEM_XDR] = "XDR",
++	[MEM_DDR3] = "DDR3",
++	[MEM_RDDR3] = "RDDR3",
++};
++
++static void ghes_edac_count_dimms(const struct dmi_header *dh, void *arg)
++{
++	int *num_dimm = arg;
++
++	if (dh->type == DMI_ENTRY_MEM_DEVICE)
++		(*num_dimm)++;
++}
++
++static void ghes_edac_dmidecode(const struct dmi_header *dh, void *arg)
++{
++	struct ghes_edac_dimm_fill *dimm_fill = arg;
++	struct mem_ctl_info *mci = dimm_fill->mci;
++
++	if (dh->type == DMI_ENTRY_MEM_DEVICE) {
++		struct memdev_dmi_entry *entry = (struct memdev_dmi_entry *)dh;
++		struct dimm_info *dimm = EDAC_DIMM_PTR(mci->layers, mci->dimms,
++						       mci->n_layers,
++						       dimm_fill->count, 0, 0);
++
++		if (entry->size == 0xffff) {
++			pr_info(GHES_PFX "Can't get dimm size\n");
++			dimm->nr_pages = MiB_TO_PAGES(32);/* Unknown */
++		} else if (entry->size == 0x7fff) {
++			dimm->nr_pages = MiB_TO_PAGES(entry->extended_size);
++		} else {
++			if (entry->size & 1 << 15)
++				dimm->nr_pages = MiB_TO_PAGES((entry->size &
++							       0x7fff) << 10);
++			else
++				dimm->nr_pages = MiB_TO_PAGES(entry->size);
++		}
++
++		switch (entry->memory_type) {
++		case 0x12:
++			if (entry->type_detail & 1 << 13)
++				dimm->mtype = MEM_RDDR;
++			else
++				dimm->mtype = MEM_DDR;
++			break;
++		case 0x13:
++			if (entry->type_detail & 1 << 13)
++				dimm->mtype = MEM_RDDR2;
++			else
++				dimm->mtype = MEM_DDR2;
++			break;
++		case 0x14:
++			dimm->mtype = MEM_FB_DDR2;
++			break;
++		case 0x18:
++			if (entry->type_detail & 1 << 13)
++				dimm->mtype = MEM_RDDR3;
++			else
++				dimm->mtype = MEM_DDR3;
++			break;
++		default:
++			if (entry->type_detail & 1 << 6)
++				dimm->mtype = MEM_RMBS;
++			else if ((entry->type_detail & ((1 << 7) | (1 << 13)))
++				 == ((1 << 7) | (1 << 13)))
++				dimm->mtype = MEM_RDR;
++			else if (entry->type_detail & 1 << 7)
++				dimm->mtype = MEM_SDR;
++			else if (entry->type_detail & 1 << 9)
++				dimm->mtype = MEM_EDO;
++			else
++				dimm->mtype = MEM_UNKNOWN;
++		}
++
++		/*
++		 * Actually, we can only detect if the memory has bits for
++		 * checksum or not
++		 */
++		if (entry->total_width == entry->data_width)
++			dimm->edac_mode = EDAC_NONE;
++		else
++			dimm->edac_mode = EDAC_SECDED;
++
++		dimm->dtype = DEV_UNKNOWN;
++		dimm->grain = 128;		/* Likely, worse case */
++
++		/*
++		 * FIXME: It shouldn't be hard to also fill the DIMM labels
++		 */
++
++		if (dimm->nr_pages) {
++			pr_info(GHES_PFX "DIMM%i: %s size = %d MB%s\n",
++				dimm_fill->count, memory_type[dimm->mtype],
++				PAGES_TO_MiB(dimm->nr_pages),
++				(dimm->edac_mode != EDAC_NONE) ? "(ECC)" : "");
++			pr_info(GHES_PFX "\ttype %d, detail 0x%02x, width %d(total %d)\n",
++				entry->memory_type, entry->type_detail,
++				entry->total_width, entry->data_width);
++		}
++
++		dimm_fill->count++;
++	}
++}
++
+ void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
+ 				struct cper_sec_mem_err *mem_err)
  {
- 	switch (severity) {
-diff --git a/include/acpi/ghes.h b/include/acpi/ghes.h
-new file mode 100644
-index 0000000..3eb8dc4
---- /dev/null
-+++ b/include/acpi/ghes.h
-@@ -0,0 +1,45 @@
-+#include <acpi/apei.h>
-+#include <acpi/hed.h>
+@@ -80,15 +230,24 @@ EXPORT_SYMBOL_GPL(ghes_edac_report_mem_error);
+ 
+ int ghes_edac_register(struct ghes *ghes, struct device *dev)
+ {
+-	int rc;
++	bool fake = false;
++	int rc, num_dimm = 0;
+ 	struct mem_ctl_info *mci;
+ 	struct edac_mc_layer layers[1];
+-	struct csrow_info *csrow;
+-	struct dimm_info *dimm;
+ 	struct ghes_edac_pvt *pvt;
++	struct ghes_edac_dimm_fill dimm_fill;
 +
-+/*
-+ * One struct ghes is created for each generic hardware error source.
-+ * It provides the context for APEI hardware error timer/IRQ/SCI/NMI
-+ * handler.
-+ *
-+ * estatus: memory buffer for error status block, allocated during
-+ * HEST parsing.
-+ */
-+#define GHES_TO_CLEAR		0x0001
-+#define GHES_EXITING		0x0002
++	/* Get the number of DIMMs */
++	dmi_walk(ghes_edac_count_dimms, &num_dimm);
 +
-+struct ghes {
-+	struct acpi_hest_generic *generic;
-+	struct acpi_hest_generic_status *estatus;
-+	u64 buffer_paddr;
-+	unsigned long flags;
-+	union {
-+		struct list_head list;
-+		struct timer_list timer;
-+		unsigned int irq;
-+	};
-+};
-+
-+struct ghes_estatus_node {
-+	struct llist_node llnode;
-+	struct acpi_hest_generic *generic;
-+};
-+
-+struct ghes_estatus_cache {
-+	u32 estatus_len;
-+	atomic_t count;
-+	struct acpi_hest_generic *generic;
-+	unsigned long long time_in;
-+	struct rcu_head rcu;
-+};
-+
-+enum {
-+	GHES_SEV_NO = 0x0,
-+	GHES_SEV_CORRECTED = 0x1,
-+	GHES_SEV_RECOVERABLE = 0x2,
-+	GHES_SEV_PANIC = 0x3,
-+};
++	/* Check if we've got a bogus BIOS */
++	if (num_dimm == 0) {
++		fake = true;
++		num_dimm = 1;
++	}
+ 
+ 	layers[0].type = EDAC_MC_LAYER_ALL_MEM;
+-	layers[0].size = 1;
++	layers[0].size = num_dimm;
+ 	layers[0].is_virt_csrow = true;
+ 
+ 	/*
+@@ -96,6 +255,8 @@ int ghes_edac_register(struct ghes *ghes, struct device *dev)
+ 	 * to avoid duplicated memory controller numbers
+ 	 */
+ 	mutex_lock(&ghes_edac_lock);
++	pr_info("ghes_edac#%d: allocating space for %d dimms\n",
++		ghes_edac_mc_num, num_dimm);
+ 	mci = edac_mc_alloc(ghes_edac_mc_num, ARRAY_SIZE(layers), layers,
+ 			    sizeof(*pvt));
+ 	if (!mci) {
+@@ -119,15 +280,22 @@ int ghes_edac_register(struct ghes *ghes, struct device *dev)
+ 	mci->ctl_name = "ghes_edac";
+ 	mci->dev_name = "ghes";
+ 
+-	csrow = mci->csrows[0];
+-	dimm = csrow->channels[0]->dimm;
++	if (!fake) {
++		/* Fill DIMM info from DMI */
++		dimm_fill.count = 0;
++		dimm_fill.mci = mci;
++		dmi_walk(ghes_edac_dmidecode, &dimm_fill);
++	} else {
++		struct dimm_info *dimm = EDAC_DIMM_PTR(mci->layers, mci->dimms,
++						       mci->n_layers, 0, 0, 0);
+ 
+-	/* FIXME: FAKE DATA */
+-	dimm->nr_pages = 1000;
+-	dimm->grain = 128;
+-	dimm->mtype = MEM_UNKNOWN;
+-	dimm->dtype = DEV_UNKNOWN;
+-	dimm->edac_mode = EDAC_SECDED;
++		pr_info(GHES_PFX "Crappy BIOS detected. Faking DIMM EDAC data\n");
++		dimm->nr_pages = 1000;
++		dimm->grain = 128;
++		dimm->mtype = MEM_UNKNOWN;
++		dimm->dtype = DEV_UNKNOWN;
++		dimm->edac_mode = EDAC_SECDED;
++	}
+ 
+ 	rc = edac_mc_add_mc(mci);
+ 	if (rc < 0) {
 -- 
 1.8.1.2
 
