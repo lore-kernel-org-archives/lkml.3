@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145Ab3BUSez (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 13:34:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10361 "EHLO mx1.redhat.com"
+	id S1757202Ab3BUSfk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 13:35:40 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:53529 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756133Ab3BUSey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 13:34:54 -0500
-Date: Thu, 21 Feb 2013 13:34:45 -0500
-From: Peter Jones <pjones@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Message-ID: <20130221183445.GB20629@fenchurch.internal.datastacks.com>
-References: <30665.1361461678@warthog.procyon.org.uk>
- <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
- <20130221164244.GA19625@srcf.ucam.org>
- <CA+55aFy4k07GPmszkBdYvCE-KphKLVowkZoW7hoAvcR+0U=stg@mail.gmail.com>
- <567.1361470653@warthog.procyon.org.uk>
- <CA+55aFyJFrU2ea+y8BS2tOawYY1DeDzEr4dYO4j8enewd+KHNQ@mail.gmail.com>
+	id S1755975Ab3BUSfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 13:35:39 -0500
+Message-ID: <512668FA.5040505@sgi.com>
+Date: Thu, 21 Feb 2013 12:35:38 -0600
+From: Nathan Zimmer <nzimmer@sgi.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyJFrU2ea+y8BS2tOawYY1DeDzEr4dYO4j8enewd+KHNQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: <akpm@linux-foundation.org>, <mm-commits@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: mmotm 2013-02-19-17-20 uploaded
+References: <20130220012122.870BB31C11E@corp2gmr1-1.hot.corp.google.com> <5125E809.4060407@codeaurora.org> <20130221181811.GA27097@gulag1.americas.sgi.com> <51266721.5060006@codeaurora.org>
+In-Reply-To: <51266721.5060006@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.162.233.180]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 10:25:47AM -0800, Linus Torvalds wrote:
->  - why do you bother with the MS keysigning of Linux kernel modules to
-> begin with?
+On 02/21/2013 12:27 PM, Stephen Boyd wrote:
+> On 2/21/2013 10:18 AM, Nathan Zimmer wrote:
+>> On Thu, Feb 21, 2013 at 01:25:29AM -0800, Stephen Boyd wrote:
+>>> On 2/19/2013 5:21 PM, akpm@linux-foundation.org wrote:
+>>>> * timer_list-split-timer_list_show_tickdevices.patch
+>>>> * timer_list-convert-timer-list-to-be-a-proper-seq_file.patch
+>>>> * timer_list-convert-timer-list-to-be-a-proper-seq_file-fix.patch
+>>>> * timer_list-convert-timer-list-to-be-a-proper-seq_file-v2.patch
+>>>> * timer_list-convert-timer-list-to-be-a-proper-seq_file-v2-fix.patch
+>>>> * timer_list-convert-timer-list-to-be-a-proper-seq_file-fix-fix.patch
+>>> These commits seem to break the timer list on devices with maxcpus !=
+>>> nr_cpu_ids, which is possible if you specify maxcpus on the kernel
+>>> command line. I no longer see the percpu devices that I normally have
+>>> after the broadcast device.
+>> Interesting.
+>> However I can't seem to boot at the moment with maxcpus set to less then the actual
+>> number of cpus so I am not having much luck investigating right now.
+> It works well on ARM processors. I believe it still works on x86 devices
+> as well. I suppose you can simulate it by offlining a CPU and then
+> reading the file.
+Thanks I am seeing the failure now.
+> This comment is useful around the cpumask functions.
+>
+>      Returns >= nr_cpu_ids if no further cpus set.
+>
+I had assumed it would be = nr_cpu_ids.
+I will need to rethink the iterator.
 
-This is not actually what the patchset implements.  All it's done here
-is using PE files as envelopes for keys.  The usage this enables is to
-allow for whoever makes a module (binary only or merely out of tree for
-whatever reason) to sign it and vouch for it themselves.  That could
-include, for example, a systemtap module.
 
--- 
-        Peter
+Also I retested my other patches in the series, the ones for schedstat 
+and sched_debug, and those worked fine.
