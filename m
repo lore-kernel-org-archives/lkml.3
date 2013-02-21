@@ -1,149 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab3BUIiH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 03:38:07 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:18132 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab3BUIiD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 03:38:03 -0500
-X-AuditID: cbfee691-b7f556d000001a24-31-5125dcea6c85
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <00cc01ce100d$f42fddc0$dc8f9940$%han@samsung.com>
-In-reply-to: <00cc01ce100d$f42fddc0$dc8f9940$%han@samsung.com>
-Subject: [PATCH 12/12] rtc: rtc-davinci: use devm_*() functions
-Date: Thu, 21 Feb 2013 17:38:02 +0900
-Message-id: <00d701ce100e$c2a4a640$47edf2c0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4QDe9M0/OnFjrjTvSUwIYm7R1WAgAAMbZg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zQ91Xd1QDDSZe17O4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZ09ZPZCloEau4tuMeUwPjIqEuRk4OCQETic45S1khbDGJC/fW
-	s3UxcnEICSxjlGi5vIIVpujuxYVMEInpjBLHDj5lhnBmM0msPPSODaSKTUBN4suXw+xdjBwc
-	IgL6Em0tGiA1zAK9jBJnenezg9QICdhKzPlwjRnE5hSwk7i87QvYBmEBe4n78y8zgdgsAqoS
-	TRf+gMV5geoPnZzNCGELSvyYfI8FxGYW0JJYv/M4E4QtL7F5zVtmkL0SAuoSj/7qgoRFBIwk
-	vm2CKReR2PfiHSPIPRICy9glds7tZofYJSDxbfIhFoheWYlNB5ghHpaUOLjiBssERolZSDbP
-	QrJ5FpLNs5CsWMDIsopRNLUguaA4Kb3IVK84Mbe4NC9dLzk/dxMjJLYm7mC8f8D6EGMy0PqJ
-	zFKiyfnA2MwriTc0NjYxMzE1Mbc0NTclTVhJnFf+kkygkEB6YklqdmpqQWpRfFFpTmrxIUYm
-	Dk6pBsbiL+1fnhq3L/t79ofSH8n7AqIrxDNrqpc+ilipevLhmv4NL0IYQ/6uam+fxBK8lpul
-	ZeqpT6w5vw4UzLiQmbdaLsHSx4Zhx6u4bOMNH6tYNFe2/k91rv3MdEqnznNh7mpZx9Y/09wd
-	nTr7Fy9jt0vPEdbR1ndc/rgnyERlRVWt39YZU7jf/FZiKc5INNRiLipOBAD/XCTLwwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xoO6rO6qBBvfvaFlc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjGnrJ7IUtIhVXNtxj6mB
-	cZFQFyMnh4SAicTdiwuZIGwxiQv31rN1MXJxCAlMZ5Q4dvApM4Qzm0li5aF3bCBVbAJqEl++
-	HGbvYuTgEBHQl2hr0QCpYRboZZQ407ubHaRGSMBWYs6Ha8wgNqeAncTlbV9YQWxhAXuJ+/Mv
-	g21jEVCVaLrwByzOC1R/6ORsRghbUOLH5HssIDazgJbE+p3HmSBseYnNa94yg+yVEFCXePRX
-	FyQsImAk8W0TTLmIxL4X7xgnMArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi
-	0rx0veT83E2M4Mh9JrWDcWWDxSFGAQ5GJR7eBS9VAoVYE8uKK3MPMUpwMCuJ8CreVg0U4k1J
-	rKxKLcqPLyrNSS0+xJgM9OhEZinR5HxgUskriTc0NjEzsjQyszAyMTcnTVhJnJfx1JMAIYH0
-	xJLU7NTUgtQimC1MHJxSwETGcPV87o4oAbXYO5/z62xYWs7FbLre7ROfvGXxuRUPlog08U16
-	fsL+UEi06yzOGiWJqinLPGvmnHzc90PrcATz4qONa6r8fIInu+5YbuLKrXSgRtz4U/Zaw/2e
-	eZvfaDAE2oUquatbrZz6TLClPEU50Y5/4g6mPP2TU+4q/1j8vvg3q2L7ZiWW4oxEQy3mouJE
-	AO1ZVwcgAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753154Ab3BUIm1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 03:42:27 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:17128 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752246Ab3BUIm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 03:42:26 -0500
+X-IronPort-AV: E=Sophos;i="4.84,708,1355068800"; 
+   d="scan'208";a="6742420"
+Message-ID: <5125DB1C.5080309@cn.fujitsu.com>
+Date: Thu, 21 Feb 2013 16:30:20 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Paolo Bonzini <pbonzini@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>
+Subject: Re: [PATCH 10/16] virtio_net: use virtqueue_add_sgs[] for command
+ buffers.
+References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au> <1361260594-601-11-git-send-email-rusty@rustcorp.com.au>
+In-Reply-To: <1361260594-601-11-git-send-email-rusty@rustcorp.com.au>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/21 16:30:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/21 16:41:41,
+	Serialize complete at 2013/02/21 16:41:41
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_*() functions to make cleanup paths more simple.
+On 02/19/2013 03:56 PM, Rusty Russell wrote:
+> It's a bit cleaner to hand multiple sgs, rather than one big one.
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> ---
+>  drivers/net/virtio_net.c |   50 ++++++++++++++++++++++------------------------
+>  1 file changed, 24 insertions(+), 26 deletions(-)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 8ca69c0..63ac5c1 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -39,7 +39,6 @@ module_param(gso, bool, 0444);
+>  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
+>  #define GOOD_COPY_LEN	128
+>  
+> -#define VIRTNET_SEND_COMMAND_SG_MAX    2
+>  #define VIRTNET_DRIVER_VERSION "1.0.0"
+>  
+>  struct virtnet_stats {
+> @@ -831,32 +830,32 @@ static void virtnet_netpoll(struct net_device *dev)
+>   * never fail unless improperly formated.
+>   */
+>  static bool virtnet_send_command(struct virtnet_info *vi, u8 class, u8 cmd,
+> -				 struct scatterlist *data, int out, int in)
+> +				 struct scatterlist *out,
+> +				 struct scatterlist *in)
+>  {
+> -	struct scatterlist *s, sg[VIRTNET_SEND_COMMAND_SG_MAX + 2];
+> +	struct scatterlist *sgs[4], hdr, stat;
+>  	struct virtio_net_ctrl_hdr ctrl;
+>  	virtio_net_ctrl_ack status = ~0;
+> -	unsigned int tmp;
+> -	int i;
+> +	unsigned out_num = 0, in_num = 0, tmp;
+>  
+>  	/* Caller should know better */
+> -	BUG_ON(!virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ) ||
+> -		(out + in > VIRTNET_SEND_COMMAND_SG_MAX));
+> -
+> -	out++; /* Add header */
+> -	in++; /* Add return status */
+> +	BUG_ON(!virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ));
+>  
+> -	ctrl.class = class;
+> -	ctrl.cmd = cmd;
+> +	/* Add header */
+> +	sg_init_one(&hdr, &ctrl, sizeof(ctrl));
+> +	sgs[out_num++] = &hdr;
+>  
+> -	sg_init_table(sg, out + in);
+> +	if (out)
+> +		sgs[out_num++] = out;
+> +	if (in)
+> +		sgs[out_num + in_num++] = in;
+>  
+> -	sg_set_buf(&sg[0], &ctrl, sizeof(ctrl));
+> -	for_each_sg(data, s, out + in - 2, i)
+> -		sg_set_buf(&sg[i + 1], sg_virt(s), s->length);
+> -	sg_set_buf(&sg[out + in - 1], &status, sizeof(status));
+> +	/* Add return status. */
+> +	sg_init_one(&stat, &status, sizeof(status));
+> +	sgs[out_num + in_num++] = &hdr;
+>  
+> -	BUG_ON(virtqueue_add_buf(vi->cvq, sg, out, in, vi, GFP_ATOMIC) < 0);
+> +	BUG_ON(virtqueue_add_sgs(vi->cvq, sgs, out_num, in_num, vi, GFP_ATOMIC)
+> +	       < 0);
+>  
+>  	virtqueue_kick(vi->cvq);
+>  
+> @@ -874,8 +873,7 @@ static void virtnet_ack_link_announce(struct virtnet_info *vi)
+>  {
+>  	rtnl_lock();
+>  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_ANNOUNCE,
+> -				  VIRTIO_NET_CTRL_ANNOUNCE_ACK, NULL,
+> -				  0, 0))
+> +				  VIRTIO_NET_CTRL_ANNOUNCE_ACK, NULL, NULL))
+>  		dev_warn(&vi->dev->dev, "Failed to ack link announce.\n");
+>  	rtnl_unlock();
+>  }
+> @@ -893,7 +891,7 @@ static int virtnet_set_queues(struct virtnet_info *vi, u16 queue_pairs)
+>  	sg_init_one(&sg, &s, sizeof(s));
+>  
+>  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_MQ,
+> -				  VIRTIO_NET_CTRL_MQ_VQ_PAIRS_SET, &sg, 1, 0)){
+> +				  VIRTIO_NET_CTRL_MQ_VQ_PAIRS_SET, &sg, NULL)) {
+>  		dev_warn(&dev->dev, "Fail to set num of queue pairs to %d\n",
+>  			 queue_pairs);
+>  		return -EINVAL;
+> @@ -940,7 +938,7 @@ static void virtnet_set_rx_mode(struct net_device *dev)
+>  
+>  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_RX,
+>  				  VIRTIO_NET_CTRL_RX_PROMISC,
+> -				  sg, 1, 0))
+> +				  sg, NULL))
+>  		dev_warn(&dev->dev, "Failed to %sable promisc mode.\n",
+>  			 promisc ? "en" : "dis");
+>  
+> @@ -948,7 +946,7 @@ static void virtnet_set_rx_mode(struct net_device *dev)
+>  
+>  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_RX,
+>  				  VIRTIO_NET_CTRL_RX_ALLMULTI,
+> -				  sg, 1, 0))
+> +				  sg, NULL))
+>  		dev_warn(&dev->dev, "Failed to %sable allmulti mode.\n",
+>  			 allmulti ? "en" : "dis");
+>  
+> @@ -987,7 +985,7 @@ static void virtnet_set_rx_mode(struct net_device *dev)
+>  
+>  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_MAC,
+>  				  VIRTIO_NET_CTRL_MAC_TABLE_SET,
+> -				  sg, 2, 0))
+> +				  sg, NULL))
+>  		dev_warn(&dev->dev, "Failed to set MAC fitler table.\n");
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/rtc/rtc-davinci.c |   28 ++++++++++------------------
- 1 files changed, 10 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
-index 5f7982f..56b7308 100644
---- a/drivers/rtc/rtc-davinci.c
-+++ b/drivers/rtc/rtc-davinci.c
-@@ -506,19 +506,19 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 	davinci_rtc->pbase = res->start;
- 	davinci_rtc->base_size = resource_size(res);
- 
--	mem = request_mem_region(davinci_rtc->pbase, davinci_rtc->base_size,
--				 pdev->name);
-+	mem = devm_request_mem_region(dev, davinci_rtc->pbase,
-+				davinci_rtc->base_size, pdev->name);
- 	if (!mem) {
- 		dev_err(dev, "RTC registers at %08x are not free\n",
- 			davinci_rtc->pbase);
- 		return -EBUSY;
- 	}
- 
--	davinci_rtc->base = ioremap(davinci_rtc->pbase, davinci_rtc->base_size);
-+	davinci_rtc->base = devm_ioremap(dev, davinci_rtc->pbase,
-+					davinci_rtc->base_size);
- 	if (!davinci_rtc->base) {
- 		dev_err(dev, "unable to ioremap MEM resource\n");
--		ret = -ENOMEM;
--		goto fail2;
-+		return -ENOMEM;
- 	}
- 
- 	platform_set_drvdata(pdev, davinci_rtc);
-@@ -529,7 +529,7 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 		ret = PTR_ERR(davinci_rtc->rtc);
- 		dev_err(dev, "unable to register RTC device, err %d\n",
- 				ret);
--		goto fail3;
-+		goto fail1;
- 	}
- 
- 	rtcif_write(davinci_rtc, PRTCIF_INTFLG_RTCSS, PRTCIF_INTFLG);
-@@ -539,11 +539,11 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 	rtcss_write(davinci_rtc, 0, PRTCSS_RTC_CTRL);
- 	rtcss_write(davinci_rtc, 0, PRTCSS_RTC_CCTRL);
- 
--	ret = request_irq(davinci_rtc->irq, davinci_rtc_interrupt,
-+	ret = devm_request_irq(dev, davinci_rtc->irq, davinci_rtc_interrupt,
- 			  0, "davinci_rtc", davinci_rtc);
- 	if (ret < 0) {
- 		dev_err(dev, "unable to register davinci RTC interrupt\n");
--		goto fail4;
-+		goto fail2;
- 	}
- 
- 	/* Enable interrupts */
-@@ -557,13 +557,10 @@ static int __init davinci_rtc_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
--fail4:
-+fail2:
- 	rtc_device_unregister(davinci_rtc->rtc);
--fail3:
-+fail1:
- 	platform_set_drvdata(pdev, NULL);
--	iounmap(davinci_rtc->base);
--fail2:
--	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
- 	return ret;
- }
- 
-@@ -575,13 +572,8 @@ static int davinci_rtc_remove(struct platform_device *pdev)
- 
- 	rtcif_write(davinci_rtc, 0, PRTCIF_INTEN);
- 
--	free_irq(davinci_rtc->irq, davinci_rtc);
--
- 	rtc_device_unregister(davinci_rtc->rtc);
- 
--	iounmap(davinci_rtc->base);
--	release_mem_region(davinci_rtc->pbase, davinci_rtc->base_size);
--
- 	platform_set_drvdata(pdev, NULL);
- 
- 	return 0;
--- 
-1.7.2.5
+After applied this patch, I got the warning messages:
 
+[    7.545454] net eth0: Failed to disable promisc mode.
+[    7.546243] net eth0: Failed to disable allmulti mode.
+[    7.546990] net eth0: Failed to set MAC fitler table.
+[    7.547940] net eth0: Failed to disable promisc mode.
+[    7.548840] net eth0: Failed to disable allmulti mode.
+[    7.549744] net eth0: Failed to set MAC fitler table.
+[    7.550705] net eth0: Failed to disable promisc mode.
+[    7.551603] net eth0: Failed to disable allmulti mode.
+[    7.552504] net eth0: Failed to set MAC fitler table.
+[    7.553423] net eth0: Failed to disable promisc mode.
+[    7.554308] net eth0: Failed to disable allmulti mode.
+[    7.555201] net eth0: Failed to set MAC fitler table.
+[    9.571103] net eth0: Failed to disable promisc mode.
+[    9.572948] net eth0: Failed to disable allmulti mode.
+[    9.574598] net eth0: Failed to set MAC fitler table.
+network[476]: Bringing up interface eth0:  [  OK  ]
+[    9.905455] net eth0: Failed to disable promisc mode.
+[    9.906465] net eth0: Failed to disable allmulti mode.
+[    9.907234] net eth0: Failed to set MAC fitler table.
+
+
+Any thoughts?
+
+
+Thanks,
+Wanlong Gao
+
+>  
+>  	kfree(buf);
+> @@ -1001,7 +999,7 @@ static int virtnet_vlan_rx_add_vid(struct net_device *dev, u16 vid)
+>  	sg_init_one(&sg, &vid, sizeof(vid));
+>  
+>  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_VLAN,
+> -				  VIRTIO_NET_CTRL_VLAN_ADD, &sg, 1, 0))
+> +				  VIRTIO_NET_CTRL_VLAN_ADD, &sg, NULL))
+>  		dev_warn(&dev->dev, "Failed to add VLAN ID %d.\n", vid);
+>  	return 0;
+>  }
+> @@ -1014,7 +1012,7 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
+>  	sg_init_one(&sg, &vid, sizeof(vid));
+>  
+>  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_VLAN,
+> -				  VIRTIO_NET_CTRL_VLAN_DEL, &sg, 1, 0))
+> +				  VIRTIO_NET_CTRL_VLAN_DEL, &sg, NULL))
+>  		dev_warn(&dev->dev, "Failed to kill VLAN ID %d.\n", vid);
+>  	return 0;
+>  }
+> 
 
