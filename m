@@ -1,132 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab3BUS0S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 13:26:18 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:35159 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756818Ab3BUS0R convert rfc822-to-8bit (ORCPT
+	id S1756984Ab3BUS1r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 13:27:47 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:4152 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756299Ab3BUS1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 13:26:17 -0500
-From: "Roberts, Lee A." <lee.roberts@hp.com>
-To: Vlad Yasevich <vyasevich@gmail.com>
-CC: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/4] sctp: fix association hangs due to off-by-one
- errors in sctp_tsnmap_grow()
-Thread-Topic: [PATCH 1/4] sctp: fix association hangs due to off-by-one
- errors in sctp_tsnmap_grow()
-Thread-Index: Ac4QURb9XcgtMeU1SEmmm13mzuMFGAABmGCAAAFkzOAAAN8E0A==
-Date: Thu, 21 Feb 2013 18:25:05 +0000
-Message-ID: <D64EC45690EF85409BA6C4730E0162244310DF9B@G4W3231.americas.hpqcorp.net>
-References: <D64EC45690EF85409BA6C4730E0162244310DEE7@G4W3231.americas.hpqcorp.net>
- <512656E7.3060908@gmail.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.14]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 21 Feb 2013 13:27:46 -0500
+X-IronPort-AV: E=Sophos;i="4.84,710,1355126400"; 
+   d="scan'208";a="26137390"
+Message-ID: <51266721.5060006@codeaurora.org>
+Date: Thu, 21 Feb 2013 10:27:45 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
+To: Nathan Zimmer <nzimmer@sgi.com>
+CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: mmotm 2013-02-19-17-20 uploaded
+References: <20130220012122.870BB31C11E@corp2gmr1-1.hot.corp.google.com> <5125E809.4060407@codeaurora.org> <20130221181811.GA27097@gulag1.americas.sgi.com>
+In-Reply-To: <20130221181811.GA27097@gulag1.americas.sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vlad,
+On 2/21/2013 10:18 AM, Nathan Zimmer wrote:
+> On Thu, Feb 21, 2013 at 01:25:29AM -0800, Stephen Boyd wrote:
+>> On 2/19/2013 5:21 PM, akpm@linux-foundation.org wrote:
+>>> * timer_list-split-timer_list_show_tickdevices.patch
+>>> * timer_list-convert-timer-list-to-be-a-proper-seq_file.patch
+>>> * timer_list-convert-timer-list-to-be-a-proper-seq_file-fix.patch
+>>> * timer_list-convert-timer-list-to-be-a-proper-seq_file-v2.patch
+>>> * timer_list-convert-timer-list-to-be-a-proper-seq_file-v2-fix.patch
+>>> * timer_list-convert-timer-list-to-be-a-proper-seq_file-fix-fix.patch
+>> These commits seem to break the timer list on devices with maxcpus !=
+>> nr_cpu_ids, which is possible if you specify maxcpus on the kernel
+>> command line. I no longer see the percpu devices that I normally have
+>> after the broadcast device.
+> Interesting.
+> However I can't seem to boot at the moment with maxcpus set to less then the actual
+> number of cpus so I am not having much luck investigating right now. 
 
-> -----Original Message-----
-> From: Roberts, Lee A.
-> Sent: Thursday, February 21, 2013 11:00 AM
-> To: 'Vlad Yasevich'
-> Cc: linux-sctp@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH 1/4] sctp: fix association hangs due to off-by-one errors in sctp_tsnmap_grow()
-> 
-> Vlad,
-> 
-> > -----Original Message-----
-> > From: Vlad Yasevich [mailto:vyasevich@gmail.com]
-> > Sent: Thursday, February 21, 2013 10:19 AM
-> > To: Roberts, Lee A.
-> > Cc: linux-sctp@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH 1/4] sctp: fix association hangs due to off-by-one errors in sctp_tsnmap_grow()
-> >
-> > On 02/21/2013 11:44 AM, Roberts, Lee A. wrote:
-> > > From: Lee A. Roberts <lee.roberts@hp.com>
-> > >
-> > > Resolve SCTP association hangs observed during SCTP stress
-> > > testing.  Observable symptoms include communications hangs
-> > > with data being held in the association lobby (ordering)
-> > > queue.  Close examination of reassembly/ordering queues shows
-> > > duplicated packets.
-> > >
-> > > In sctp_tsnmap_grow(), correct off-by-one errors when copying
-> > > and resizing the tsnmap.  If max_tsn_seen is in the LSB of the
-> > > word, this bit can be lost, causing the corresponding packet
-> > > to be transmitted again and to be entered as a duplicate into
-> > > the SCTP reassembly/ordering queues.
-> > >
-> > > Patch applies to linux-3.8 kernel.
-> > >
-> > > Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
-> > > ---
-> > >   net/sctp/tsnmap.c |    5 +++--
-> > >   1 file changed, 3 insertions(+), 2 deletions(-)
-> > >
-> > > diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-vanilla/net/sctp/tsnmap.c linux-
-> > 3.8-SCTP+1/net/sctp/tsnmap.c
-> > > --- linux-3.8-vanilla/net/sctp/tsnmap.c	2013-02-18 16:58:34.000000000 -0700
-> > > +++ linux-3.8-SCTP+1/net/sctp/tsnmap.c	2013-02-20 08:01:02.555223259 -0700
-> > > @@ -369,14 +369,15 @@ static int sctp_tsnmap_grow(struct sctp_
-> > >   	if (gap >= SCTP_TSN_MAP_SIZE)
-> >
-> > No that I think about this a bit more, this should be gap + 1.  If you
-> > do that, you might as well call sctp_tsnmap_grow() with gap+1 as
-> > argument and then can just use the 'gap' everywhere inside.
-> 
-> I think the calculation of "gap" in sctp_tsnmap_mark() should change:
-> 
-> -	gap = tsn - map->base_tsn;
-> +	gap = tsn - map->cumulative_tsn_ack_point;
-> 
+It works well on ARM processors. I believe it still works on x86 devices
+as well. I suppose you can simulate it by offlining a CPU and then
+reading the file.
 
-Oops, this breaks the logic that follows.  Using "gap + 1" in the call should work.
-I sent an updated patch (v3).
+This comment is useful around the cpumask functions.
 
-                                    - Lee
+    Returns >= nr_cpu_ids if no further cpus set.
 
-> >
-> > >   		return 0;
-> > >
-> > > -	inc = ALIGN((gap - map->len),BITS_PER_LONG) + SCTP_TSN_MAP_INCREMENT;
-> > > +	inc = ALIGN((gap - map->len + 1), BITS_PER_LONG)
-> > > +		+ SCTP_TSN_MAP_INCREMENT;
-> > >   	len = min_t(u16, map->len + inc, SCTP_TSN_MAP_SIZE);
-> > >
-> > >   	new = kzalloc(len>>3, GFP_ATOMIC);
-> > >   	if (!new)
-> > >   		return 0;
-> > >
-> > > -	bitmap_copy(new, map->tsn_map, map->max_tsn_seen - map->base_tsn);
-> > > +	bitmap_copy(new, map->tsn_map, map->max_tsn_seen - map->base_tsn + 1);
-> >
-> > Can simplify that this by using map->cumulative_tsn_ack_point instead of
-> > base_tsn.
-> >
-> > -vlad
-> >
-> 
-> I changed the code to use "cumulative_tsn_ack_point" in an updated version
-> of the patch.
-> 
->                                          -- Lee
-> 
-> > >   	kfree(map->tsn_map);
-> > >   	map->tsn_map = new;
-> > >   	map->len = len;
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > >
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
