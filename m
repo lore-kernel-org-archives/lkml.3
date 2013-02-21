@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab3BUKgY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 05:36:24 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:36438 "EHLO relay.sw.ru"
+	id S1753625Ab3BUKh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 05:37:56 -0500
+Received: from smtp2.macqel.be ([194.78.208.39]:6351 "EHLO smtp2.macqel.be"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751767Ab3BUKgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 05:36:22 -0500
-Message-ID: <5125F87B.7020205@parallels.com>
-Date: Thu, 21 Feb 2013 14:35:39 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1751767Ab3BUKhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 05:37:54 -0500
+Date: Thu, 21 Feb 2013 11:37:50 +0100
+From: Philippe De Muyter <phdm@macqel.be>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, Greg Ungerer <gerg@snapgear.com>,
+        Stany MARCEL <smarcel@pactenovation.fr>, Dan Williams <djbw@fb.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH resent] dma: add the freescale-provided MultiChannel
+	DMA driver
+Message-ID: <20130221103750.GA18289@frolo.macqel>
+References: <1359999503-29215-1-git-send-email-phdm@macqel.be> <20130220063147.GD23302@intel.com> <20130221082947.GA8799@frolo.macqel> <20130221095233.GA8451@intel.com>
 MIME-Version: 1.0
-To: Matthew Helsley <matt.helsley@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-api@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] posix timers: Extend kernel API to report more info
- about timers
-References: <511D0E50.7090505@parallels.com> <CA+RrjuURQTCP8yMa4nWxNQg=qxxsu6vrko2UVK4f8pFYbK6SYQ@mail.gmail.com>
-In-Reply-To: <CA+RrjuURQTCP8yMa4nWxNQg=qxxsu6vrko2UVK4f8pFYbK6SYQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130221095233.GA8451@intel.com>
+User-Agent: Mutt/1.5.16 (2007-06-09)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 05:21 AM, Matthew Helsley wrote:
-> On Thu, Feb 14, 2013 at 8:18 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
->> Hi.
->>
->> I'm working on the checkpoint-restore project (http://criu.org), briefly
->> it's aim is to collect information about process' state and saving it so
->> that later it is possible to recreate the processes in the very same state
->> as they were, using the collected information.
->>
->> One part of the task's state is the posix timers that this task has created.
->> Currently kernel doesn't provide any API for getting information about
->> what timers are currently created by process and in which state they are.
->> I'd like to extend the posix timers API to provide more information about
->> timers.
->>
->> Another problem with timers is the timer ID. Currently IDs are generated
->> from global IDR and this makes it impossible to restore a timer from
->> the saved state in general, as the required ID may be already busy at the
->> time of restore.
->>
->> That said, I propose to
->>
->> 1. Change the way timer IDs are generated. This was done some time ago, so
->>    I'm just re-sending this patch;
-> 
-> Seems fine in principle. Aside: I noticed there were some
-> important-looking patches to the idr usage in timer id allocation
-> today...
+Hi Vinod,
 
-Hm, OK, will try to find one.
-
->> 2. Add a system call that will list timer IDs created by the calling process;
+On Thu, Feb 21, 2013 at 03:22:33PM +0530, Vinod Koul wrote:
+> On Thu, Feb 21, 2013 at 09:29:47AM +0100, Philippe De Muyter wrote:
+> > > 2. If you are not using dmaengine APIs then drivers/dma/ is not a place for you.
+> > 
+> > What would be the place then for a multi-architecture dma driver.  Freescale often
+> > reuses the same blocks for its m68k (coldfire), powerpc and arm (iMX) product
+> > lines.  A dma driver with many similarities is already under the arch/powerpc
+> > subtree.  I would like to avoid that, because it clearly hurts reusability.
+> So the question is will there be any more users of the driver other than the
+> ethernet one? If No then it should live with ethernet driver.
 > 
-> If timers were listed in /proc like fds then you wouldn't need this
-> syscall. If we keep adding new syscalls like this CRIU will be
-> needlessly x86-specific when it could have been written more portably.
-> 
->> 3. Add a system call that will allow to get the sigevent information about
->>    particular timer in the sigaction-like manner.
-> 
-> You mentioned "extending the POSIX timer API". Isn't that something
-> best left to standards bodies lest your changes conflict with theirs?
-> Again, if this were a /proc interface you wouldn't have that issue
-> (you'll have others ;)).
-> 
->>
->> This is actually an RFC to start discussion about how the described problems
->> can be addressed. Thus, if the approach with new system calls is not acceptable,
->> I'm OK to implement this in any other form.
-> 
-> My preference is for "other form" for the reasons above.
+> DMAengine framework should be used where you have a system dma controller used
+> by different subsystems.
 
-No problem, proc is OK for me as well. I will look at what can be done here.
+I am not aware of any other user now, and my unique motivation is to get
+the ethernet driver into the kernel, for which this is a first step.
 
-Thanks for the feedback!
+As it is clearly a dma driver, it seemed to me fit to place it under
+drivers/dma, but I can understand that you disagree.
 
-> Cheers,
->     -Matt Helsley
-> .
-> 
+I only wanted, by placing this driver under drivers/dma, to make it more
+visible, eventually getting some help to make it DMAengine enabled, and
+to avoid the need to move the files when the DMAengine interface would
+be added.  So it is a chicken and egg question here :).
 
+Again, thanks for your answers.  Stany and I are trying since Aug 2012
+to get those drivers (MCD dma and MCD_FEC ethernet) in the kernel.
 
+Philippe
+
+-- 
+Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
