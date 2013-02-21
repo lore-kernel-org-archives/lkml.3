@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120Ab3BUS47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 13:56:59 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:65219 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab3BUS4p (ORCPT
+	id S1755723Ab3BUTBx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 14:01:53 -0500
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:47592 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725Ab3BUTBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 13:56:45 -0500
+	Thu, 21 Feb 2013 14:01:51 -0500
+Date: Thu, 21 Feb 2013 14:01:50 -0500 (EST)
+From: Rado Vrbovsky <rvrbovsk@redhat.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff <jgarzik@redhat.com>
+Message-ID: <774443881.7195405.1361473310424.JavaMail.root@redhat.com>
+In-Reply-To: <51266C7F.8040904@cogentembedded.com>
+Subject: Re: [PATCH] ata_piix: Add MODULE_PARM_DESC to prefer_ms_hyperv
 MIME-Version: 1.0
-In-Reply-To: <20130221183445.GB20629@fenchurch.internal.datastacks.com>
-References: <30665.1361461678@warthog.procyon.org.uk>
-	<CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
-	<20130221164244.GA19625@srcf.ucam.org>
-	<CA+55aFy4k07GPmszkBdYvCE-KphKLVowkZoW7hoAvcR+0U=stg@mail.gmail.com>
-	<567.1361470653@warthog.procyon.org.uk>
-	<CA+55aFyJFrU2ea+y8BS2tOawYY1DeDzEr4dYO4j8enewd+KHNQ@mail.gmail.com>
-	<20130221183445.GB20629@fenchurch.internal.datastacks.com>
-Date: Thu, 21 Feb 2013 10:56:44 -0800
-X-Google-Sender-Auth: ypOOyF88zDP57t84P3LajlZ0Wr8
-Message-ID: <CA+55aFwX5AmMgEAZ8uSdH=8g00xVD3NfnvgBbgSytMGdcifKMg@mail.gmail.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Jones <pjones@redhat.com>
-Cc: David Howells <dhowells@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.34.1.244]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 10:34 AM, Peter Jones <pjones@redhat.com> wrote:
-> On Thu, Feb 21, 2013 at 10:25:47AM -0800, Linus Torvalds wrote:
->>  - why do you bother with the MS keysigning of Linux kernel modules to
->> begin with?
->
-> This is not actually what the patchset implements.  All it's done here
-> is using PE files as envelopes for keys.  The usage this enables is to
-> allow for whoever makes a module (binary only or merely out of tree for
-> whatever reason) to sign it and vouch for it themselves.  That could
-> include, for example, a systemtap module.
+From: Andrew Brownfield <abrownfi@redhat.com>
 
-Umm. And which part of "We already support that, using standard X.509
-certificates" did we suddenly miss?
+In reference to the commit cd006086fa5d91414d8ff9ff2b78fbb593878e3c 
+"ata_piix: defer disks to the Hyper-V drivers by default",
+this trivial patch adds a description to prefer_ms_hyperv.
 
-So no. The PE file thing makes no sense what-so-ever. What you mention
-we can already do, and we already do it *better*.
+[rvrbovsk@redhat.com: MODULE_PARM_DESC() string formatting modified]
 
-                Linus
+Signed-off-by: Andrew Brownfield <abrownfi@redhat.com>
+Signed-off-by: Radomir Vrbovsky <rvrbovsk@redhat.com>
+
+---
+ drivers/ata/ata_piix.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
+index 174eca6..b9bf99a 100644
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -1530,6 +1530,10 @@ static bool piix_broken_system_poweroff(struct pci_dev *pdev)
+ 
+ static int prefer_ms_hyperv = 1;
+ module_param(prefer_ms_hyperv, int, 0); 
++MODULE_PARM_DESC(prefer_ms_hyperv,
++       "Prefer Hyper-V paravirtualization drivers instead of ATA, "
++       "0 - Use ATA drivers, "
++       "1 (Default) - Use the paravirtualization drivers.");
+ 
+ static void piix_ignore_devices_quirk(struct ata_host *host)
+ {
+-- 
+1.7.11.7
