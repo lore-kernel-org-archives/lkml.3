@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963Ab3BUXKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 18:10:53 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:9643 "EHLO
+	id S1757863Ab3BUXLL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 18:11:11 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9647 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756263Ab3BUXKw (ORCPT
+	with ESMTP id S1756954Ab3BUXKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 18:10:52 -0500
+	Thu, 21 Feb 2013 18:10:54 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 21 Feb 2013 15:09:53 -0800
+	by hqnvupgp06.nvidia.com on Thu, 21 Feb 2013 15:09:12 -0800
 From: Rhyland Klein <rklein@nvidia.com>
 To: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>
 CC: <linux-tegra@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-kernel@vger.kernel.org>, Rhyland Klein <rklein@nvidia.com>
-Subject: [RFC v2 1/3] power_supply: Define Binding for supplied-nodes
-Date: Thu, 21 Feb 2013 18:11:10 -0500
-Message-ID: <1361488272-21010-2-git-send-email-rklein@nvidia.com>
+Subject: [RFC v2 3/3] power: power_supply: add support for getting supplied-nodes from dt
+Date: Thu, 21 Feb 2013 18:11:12 -0500
+Message-ID: <1361488272-21010-4-git-send-email-rklein@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361488272-21010-1-git-send-email-rklein@nvidia.com>
 References: <1361488272-21010-1-git-send-email-rklein@nvidia.com>
@@ -28,50 +28,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This property is meant to be used in device nodes which represent
-power_supply devices that wish to provide a list of supplies to
-which they provide power. A common case is a AC Charger with
-the batteries it powers.
+With the addition of the device_nodes to use to link suppliers and
+supplicants, its useful to add logic to handle the creation of
+the list in a common place so as to be common for all drivers.
+
+As of now, as long as the supply's device_node is supplied, the core
+will attempt to parse the list of supplies and store it in the
+power_supply structure. In this way, it shouldn't break existing
+drivers, but allow for transition cleanly.
 
 Signed-off-by: Rhyland Klein <rklein@nvidia.com>
 ---
 v2:
-  - Changed property to "power-supply" which should be contained in the
-    battery rather than the charger. Also updated example to match.
+  - Simplified and renamed the logic to parse dt for the charger list.
+  - Tied the dt parsing directly to power_supply_register to make fewer
+    changes required for converting existing chargers/supplies.
 
- .../bindings/power_supply/power_supply.txt         |   23 ++++++++++++++++++++
- 1 file changed, 23 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power_supply/power_supply.txt
+ drivers/power/power_supply_core.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/power_supply/power_supply.txt b/Documentation/devicetree/bindings/power_supply/power_supply.txt
-new file mode 100644
-index 0000000..7d8951c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power_supply/power_supply.txt
-@@ -0,0 +1,23 @@
-+Power Supply Core Support
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index a87c5b8..05e2031 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -86,6 +86,39 @@ void power_supply_changed(struct power_supply *psy)
+ }
+ EXPORT_SYMBOL_GPL(power_supply_changed);
+ 
++#ifdef CONFIG_OF
++#include <linux/of.h>
 +
-+Optional Properties:
-+ - power-supply : This property is added to a supply in order to list the
-+   devices which supply it power, referenced by their phandles.
++int power_supply_register_supplicant(struct power_supply *psy)
++{
++	struct device_node *np;
++	int i = 0;
 +
-+Example:
++	if (!psy->supplies.node)
++		return -EINVAL;
 +
-+	usb-charger: power@e {
-+		compatible = "some,usb-charger";
-+		...
-+	};
++	do {
++		struct power_supply_supplies *lst;
 +
-+	ac-charger: power@e {
-+		compatible = "some,ac-charger";
-+		...
-+	};
++		np = of_parse_phandle(psy->supplies.node, "power-supply", i++);
++		if (!np)
++			continue;
 +
-+	battery@b {
-+		compatible = "some,battery";
-+		...
-+		power-supply = <&usb-charger>, <&ac-charger>;
-+	};
++		lst = devm_kzalloc(psy->dev->parent, sizeof(*lst), GFP_KERNEL);
++		if (!lst) {
++			dev_warn(psy->dev->parent,
++				 "Failed to alloc mem for supplies list\n");
++			return -ENOMEM;
++		}
++
++		lst->node = np;
++		list_add(&(lst->list), &(psy->supplies.list));
++	} while (np);
++
++	return 0;
++}
++#endif
++
+ static int __power_supply_am_i_supplied(struct device *dev, void *data)
+ {
+ 	union power_supply_propval ret = {0,};
+@@ -355,6 +388,8 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
+ 
+ #ifdef CONFIG_OF
+ 	INIT_LIST_HEAD(&psy->supplies.list);
++
++	power_supply_register_supplicant(psy);
+ #endif
+ 	INIT_WORK(&psy->changed_work, power_supply_changed_work);
+ 
 -- 
 1.7.9.5
 
