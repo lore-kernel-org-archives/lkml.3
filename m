@@ -1,37 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab3BUV7O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 16:59:14 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47969 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448Ab3BUV7N (ORCPT
+	id S1756216Ab3BUWB2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 17:01:28 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:40540 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab3BUWB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 16:59:13 -0500
-Date: Thu, 21 Feb 2013 21:58:50 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Kevin Hilman <khilman@linaro.org>,
-        Mats Liljegren <mats.liljegren@enea.com>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC/PATCH 2/5] kernel_cpustat: convert to atomic 64-bit
-	accessors
-Message-ID: <20130221215850.GC17833@n2100.arm.linux.org.uk>
-References: <1361389302-11968-1-git-send-email-khilman@linaro.org> <1361389302-11968-3-git-send-email-khilman@linaro.org> <87y5ehmp8d.fsf@linaro.org> <CAFTL4hw1=mKtUadL0WDrydtspOehKuW7jhhzr65vXR2P2zdTWw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hw1=mKtUadL0WDrydtspOehKuW7jhhzr65vXR2P2zdTWw@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 21 Feb 2013 17:01:27 -0500
+Subject: Re: Read I/O starvation with writeback RAID controller
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Martin Svec <martin.svec@zoner.cz>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Jan Engelhardt <jengelh@inai.de>
+In-Reply-To: <51260869.20105@zoner.cz>
+References: <5124EDF4.4010309@zoner.cz>
+	 <1361393295.3667.21.camel@haakon2.linux-iscsi.org>
+	 <51260869.20105@zoner.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Feb 2013 14:01:24 -0800
+Message-ID: <1361484084.3667.73.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 10:53:07PM +0100, Frederic Weisbecker wrote:
-> That too should be kcpustat_this_cpu_set(), or kcpustat_this_cpu_add()
-> FWIW. But we probably don't need the overhead of atomic_add() that
-> does a LOCK.
-> atomic_set(var, atomic_read(var) + delta) would be better. All we need
+Hi Martin,
 
-You mean atomic64_set() and atomic64_read().  Looking at the generic
-version in lib/atomic64.c, atomic64_add() is cheaper for 32-bit arches
-because it doesn't involve taking the lock twice.
+On Thu, 2013-02-21 at 12:43 +0100, Martin Svec wrote:
+> I'm sorry, I forgot to mention hardware details. It isn't aacraid, it
+> is megaraid-based Dell PERC H700 w/ 1GB NVRAM and 12x 450GB 15k SAS
+> drives in RAID-10. All in Dell R510 server.
+> 
+
+Jan Engelhardt (CC'ed) mentioned the currently out-of-tree ROW scheduler
+worked for him:
+
+https://lkml.org/lkml/2012/12/11/534
+
+Perhaps this would be worth a shot..?
+
+--nab
+
+> Thanks,
+> 
+> Martin
+> 
+> Dne 20.2.2013 21:48, Nicholas A. Bellinger napsal(a):
+> > Hi Martin,
+> >
+> > CC'ing linux-scsi here, as aacraid doesn't have an official maintainer
+> > atm.
+> >
+> > --nab
+> >
+> > On Wed, 2013-02-20 at 16:38 +0100, Martin Svec wrote:
+> >> Hello,
+> >>
+> >> I've noticed read I/O starvation problems of LIO iSCSI target when
+> >> used on top of writeback-enabled HW RAID controller (PERC H700 with
+> >> 1GB cache). For intensive mixed read-write workload in virtualized
+> >> environments, writes are able to consume over 95% of the IOPS
+> >> throughput and cause starvation of reads.
+> >>
+> >> After a number of tests it seems to me it's a general issue of block
+> >> layer I/O scheduling when running on top of a writeback device. If
+> >> there is a write-intensive task, all writes go to the writeback cache
+> >> with near-zero latency. This allows writer to quickly saturate the
+> >> device with thousands of writes while using only a minimal fraction of
+> >> queue depth. However, non-cached reads depend on spinning drive
+> >> latencies which are orders of magnitude higher than writeback cache
+> >> latencies, and so readers cannot submit so many requests per second as
+> >> writers. Consequently, I guess the controller has totally wrong view
+> >> of the incoming workload pattern, tries to satisfy the write flood
+> >> first and the net result is inacceptable starvation of reads, with
+> >> latencies up to hundreds of milliseconds.
+> >>
+> >> A simple fio test with 1TiB block device where one thread does 4k
+> >> random sync writes with iodepth=32 and one thread does 4k random reads
+> >> with iodepth=32 shows that instead of the theoretical 50:50 IOPS
+> >> ratio, the block device runs with 95:5 ratio in favor of writes. In
+> >> fact, the imbalance is so high that even write iodepth=2 is enaugh to
+> >> achieve the same numbers.
+> >>
+> >> Real workloads that tend to exhibit this problem are: initial zeroing
+> >> of a virtual machine disk, virtual machine migration, virtual machine
+> >> cloning, intensive swapping of one virtual machine etc.
+> >>
+> >> I tried to set WCE=1 on target iblock device, played with queue
+> >> depths, tested all three I/O schedulers and their parameters,
+> >> controller's parameters, but with no luck. To achieve reasonably good
+> >> fairness, the only solution is to set nr_requests to 1 or disable
+> >> controller's writeback cache at all -- at the expense of degraded
+> >> overall performance :-(
+> >>
+> >> Regarding nr_requests, there's obvious relation between iodepths and
+> >> read starvation: if (nr_requests >= workload iodepth) then starvation
+> >> surely occurs. Lowering nr_requests below this threshold slowly starts
+> >> improving fairness and for every rd+wr iodepths pair, there exists
+> >> sufficiently low nr_requests value at which IOPS ratio is finally
+> >> balanced according to rd:wr iodepth ratio. Unfortunately it means
+> >> there is no minimal nr_requests value suitable for all workloads. For
+> >> iodepths around 2 to 8, only nr_requests=1 provides fair load balancing.
+> >>
+> >> Is this a known problem? Does anybody find block layer parameters that
+> >> elliminate this problem for iscsi-target storage in mixed random
+> >> read-write environments like virtualization? Or should I start writing
+> >> my own I/O scheduler? ;-)
+> >>
+> >> Update: I've just found https://lkml.org/lkml/2012/12/10/550 (Read
+> >> starvation by sync writes), where Jan Kara describes identical
+> >> symptoms. But setting nr_requests=10000 doesn't help in my case.
+> >> CC'ing LKML too (I'm not LKML subscriber).
+> >>
+> >> Thanks,
+> >>
+> >> Martin
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe target-devel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe target-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
