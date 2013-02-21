@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069Ab3BUS2O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 13:28:14 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:48263 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757034Ab3BUS2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 13:28:10 -0500
-Message-ID: <512666B2.1020609@linux.vnet.ibm.com>
-Date: Thu, 21 Feb 2013 12:25:54 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv6 0/8] zswap: compressed swap caching
-References: <1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com> <9e251fb2-be82-41d2-b6cd-e46525b263cb@default>
-In-Reply-To: <9e251fb2-be82-41d2-b6cd-e46525b263cb@default>
-Content-Type: text/plain; charset=UTF-8
+	id S1756882Ab3BUSdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 13:33:46 -0500
+Received: from prdiron-1.llnl.gov ([128.15.143.171]:64209 "EHLO
+	prdiron-1.llnl.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755071Ab3BUSdp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 13:33:45 -0500
+X-Attachments: 
+Date: Thu, 21 Feb 2013 10:33:44 -0800
+From: Ira Weiny <weiny2@llnl.gov>
+To: Ira Weiny <weiny2@llnl.gov>
+Cc: "Husam Kahalah" <HKahalah@asaltech.com>, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] infiniband-diags/saquery.c: switchinfo support added
+Message-Id: <20130221103344.57aeda4abc1ac4915a6a0a06@llnl.gov>
+In-Reply-To: <20130221100900.87b509d834fc0adc21b6f68b@llnl.gov>
+References: <WC20130221094946.530170@asaltech.com>
+	<20130221100900.87b509d834fc0adc21b6f68b@llnl.gov>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022118-5806-0000-0000-0000200058C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 09:50 AM, Dan Magenheimer wrote:
->> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
->> Subject: [PATCHv6 0/8] zswap: compressed swap caching
->>
->> Changelog:
->>
->> v6:
->> * fix improper freeing of rbtree (Cody)
+On Thu, 21 Feb 2013 10:09:00 -0800
+Ira Weiny <weiny2@llnl.gov> wrote:
+
+[snip]
+
+> > + ib_net16_t swir_lid;
 > 
-> Cody's bug fix reminded me of a rather fundamental question:
+> We don't need this field or lid option.  Other records simply have an optional parameter to specify the lid.
 > 
-> Why does zswap use a rbtree instead of a radix tree?
+> The usage should be:
 > 
-> Intuitively, I'd expect that pgoff_t values would
-> have a relatively high level of locality AND at any one time
-> the set of stored pgoff_t values would be relatively non-sparse.
-> This would argue that a radix tree would result in fewer nodes
-> touched on average for lookup/insert/remove.
+> SwitchRecord [lid]
+> 
 
-I considered using a radix tree, but I don't think there is a compelling
-reason to choose a radix tree over a red-black tree in this case
-(explanation below).
+Sorry I meant "SwitchInfoRecord" or SWIR.
 
->From a runtime standpoint, a radix tree might be faster.  The swap
-offsets will be largely in linearly bunched groups over the indexed
-range.  However, there are also memory constraints to consider in this
-particular situation.
+Ira
 
-Using a radix tree could result in intermediate radix_tree_node
-allocations in the store (insert) path in addition to the zswap_entry
-allocation.  Since we are under memory pressure, using the red-black
-tree, whose metadata is included in the struct zswap_entry, reduces the
-number of opportunities to fail.
-
-On my system, the radix_tree_node structure is 568 bytes.  The
-radix_tree_node cache requires 4 pages per slab, an order-2 page
-allocation.  Growing that cache will be difficult under the pressure.
-
-In my mind, cost of even a single node allocation failure resulting in
-an additional page swapped to disk will more that wipe out any possible
-performance advantage using a radix tree might have.
-
-Thanks,
-Seth
-
+[snip]
