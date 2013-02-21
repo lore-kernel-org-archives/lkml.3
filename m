@@ -1,128 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab3BUJIy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 04:08:54 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:42053 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab3BUJIs (ORCPT
+	id S1753100Ab3BUJLC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 04:11:02 -0500
+Received: from www.linutronix.de ([62.245.132.108]:46860 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752702Ab3BUJK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 04:08:48 -0500
-Message-ID: <5125E40D.6050006@linux.vnet.ibm.com>
-Date: Thu, 21 Feb 2013 17:08:29 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 21 Feb 2013 04:10:59 -0500
+Date: Thu, 21 Feb 2013 10:10:48 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tejun Heo <tj@kernel.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] idr: explain WARN_ON_ONCE() on negative IDs out-of-range
+ ID
+In-Reply-To: <20130220233557.GM3570@htj.dyndns.org>
+Message-ID: <alpine.LFD.2.02.1302211010350.22263@ionos>
+References: <1361385853-29010-1-git-send-email-sasha.levin@oracle.com> <CAOS58YMT3NS-8zvwx1tNQoLKM1WtKtT-YXBPi=4pAeAMi=rYeA@mail.gmail.com> <512522CF.1020901@oracle.com> <20130220210116.GD3570@htj.dyndns.org> <20130220132300.ccffde44.akpm@linux-foundation.org>
+ <20130220213701.GE3570@htj.dyndns.org> <20130220140551.8017e795.akpm@linux-foundation.org> <20130220220823.GH3570@htj.dyndns.org> <20130220224019.GI3570@htj.dyndns.org> <20130220232412.GL3570@htj.dyndns.org> <20130220233557.GM3570@htj.dyndns.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
-References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com> <1361427108.5861.41.camel@marge.simpson.net> <5125C607.8090909@linux.vnet.ibm.com> <1361434231.5861.61.camel@marge.simpson.net>
-In-Reply-To: <1361434231.5861.61.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022109-2674-0000-0000-000007E84C4A
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 04:10 PM, Mike Galbraith wrote:
-> On Thu, 2013-02-21 at 15:00 +0800, Michael Wang wrote: 
->> On 02/21/2013 02:11 PM, Mike Galbraith wrote:
->>> On Thu, 2013-02-21 at 12:51 +0800, Michael Wang wrote: 
->>>> On 02/20/2013 06:49 PM, Ingo Molnar wrote:
->>>> [snip]
->> [snip]
->>>>
->>>> 	if wake_affine()
->>>> 		new_cpu = select_idle_sibling(curr_cpu)
->>>> 	else
->>>> 		new_cpu = select_idle_sibling(prev_cpu)
->>>>
->>>> 	return new_cpu
->>>>
->>>> Actually that doesn't make sense.
->>>>
->>>> I think wake_affine() is trying to check whether move a task from
->>>> prev_cpu to curr_cpu will break the balance in affine_sd or not, but why
->>>> won't break balance means curr_cpu is better than prev_cpu for searching
->>>> the idle cpu?
->>>
->>> You could argue that it's impossible to break balance by moving any task
->>> to any idle cpu, but that would mean bouncing tasks cross node on every
->>> wakeup is fine, which it isn't.
->>
->> I don't get it... could you please give me more detail on how
->> wake_affine() related with bouncing?
+On Wed, 20 Feb 2013, Tejun Heo wrote:
+
+> Until recently, when an negative ID is specified, idr functions used
+> to ignore the sign bit and proceeded with the operation with the rest
+> of bits, which is bizarre and error-prone.  The behavior recently got
+> changed so that negative IDs are treated as invalid but we're
+> triggering WARN_ON_ONCE() on negative IDs just in case somebody was
+> depending on the sign bit being ignored, so that those can be detected
+> and fixed easily.
 > 
-> If we didn't ever ask if it's ok, we'd always pull, and stack load up on
-> one package if there's the tiniest of holes to stuff a task into,
-> periodic balance forcibly rips buddies back apart, repeat.  At least
-> with wake_affine() in the loop, there's somewhat of a damper. 
-
-I think I got your point, a question about the possibility to locate an
-idle cpu which belong to different package from prev_cpu, and how
-wake_affine() help on it.
-
-Old logical require prev_cpu and curr_cpu to be affine, which means they
-share caches on some level, usually means they are in the same package,
-and the select_idle_sibling() start search from the top cache share
-level, usually means search all the smp in one package, so, usually,
-both of the cases will only locate idle cpu in their package.
-
-I could not figure out what's the case that the wake_affine() could
-benefit a lot, but it do harm a lot according to the testing results.
-
+> We only need this for a while.  Explain why WARN_ON_ONCE()s are there
+> and that they can be removed later.
 > 
->>>> So the new logical in this patch set is:
->>>>
->>>> 	new_cpu = select_idle_sibling(prev_cpu)
->>>> 	if idle_cpu(new_cpu)
->>>> 		return new_cpu
->>>
->>> So you tilted the scales in favor of leaving tasks in their current
->>> package, which should benefit large footprint tasks, but should also
->>> penalize light communicating tasks.
->>
->> Yes, I'd prefer to wakeup the task on a cpu which:
->> 1. idle
->> 2. close to prev_cpu
->>
->> So if both curr_cpu and prev_cpu have idle cpu in their topology, which
->> one is better? that depends on how task benefit from cache and the
->> balance situation, whatever, I don't think the benefit worth the high
->> cost of wake_affine() in most cases...
-> 
-> We've always used wake_affine() before, yet been able to schedule at
-> high frequency, so I don't see that it can be _that_ expensive.  I
-> haven't actually measured lately (loooong time) though.
-> 
-> WRT cost/benefit of migration, yeah, it depends entirely on the tasks,
-> some will gain, some will lose.  On a modern single processor box, it
-> just doesn't matter, there's only one llc (two s_i_s() calls = oopsie),
-> but on my beloved old Q6600 or a big box, it'll matter a lot to
-> something.  NUMA balance will deal with big boxen, my trusty old Q6600
-> will likely get all upset with some localhost stuff.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-But is this patch set really cause regression on your Q6600? It may
-sacrificed some thing, but I still think it will benefit far more,
-especially on huge systems.
-
-Regards,
-Michael Wang
-
-
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Acked-by : Thomas Gleixner <tglx@linutronix.de>
