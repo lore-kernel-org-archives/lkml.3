@@ -1,204 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab3BUIm1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 03:42:27 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:17128 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246Ab3BUIm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 03:42:26 -0500
-X-IronPort-AV: E=Sophos;i="4.84,708,1355068800"; 
-   d="scan'208";a="6742420"
-Message-ID: <5125DB1C.5080309@cn.fujitsu.com>
-Date: Thu, 21 Feb 2013 16:30:20 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Paolo Bonzini <pbonzini@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>
-Subject: Re: [PATCH 10/16] virtio_net: use virtqueue_add_sgs[] for command
- buffers.
-References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au> <1361260594-601-11-git-send-email-rusty@rustcorp.com.au>
-In-Reply-To: <1361260594-601-11-git-send-email-rusty@rustcorp.com.au>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/21 16:30:44,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/21 16:41:41,
-	Serialize complete at 2013/02/21 16:41:41
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753217Ab3BUIm4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 03:42:56 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:58498 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab3BUImy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 03:42:54 -0500
+Date: Thu, 21 Feb 2013 16:42:45 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: "Jens Axboe" <jaxboe@fusionio.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: elevator: Fix a race about elevator switching.
+X-Priority: 3
+X-GUID: C88CF224-CB23-4F0B-B546-E0D5FC631DEB
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.90[en]
+Mime-Version: 1.0
+Message-ID: <201302211642417278851@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1L8gwKf008612
 
-On 02/19/2013 03:56 PM, Rusty Russell wrote:
-> It's a bit cleaner to hand multiple sgs, rather than one big one.
-> 
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> ---
->  drivers/net/virtio_net.c |   50 ++++++++++++++++++++++------------------------
->  1 file changed, 24 insertions(+), 26 deletions(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 8ca69c0..63ac5c1 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -39,7 +39,6 @@ module_param(gso, bool, 0444);
->  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
->  #define GOOD_COPY_LEN	128
->  
-> -#define VIRTNET_SEND_COMMAND_SG_MAX    2
->  #define VIRTNET_DRIVER_VERSION "1.0.0"
->  
->  struct virtnet_stats {
-> @@ -831,32 +830,32 @@ static void virtnet_netpoll(struct net_device *dev)
->   * never fail unless improperly formated.
->   */
->  static bool virtnet_send_command(struct virtnet_info *vi, u8 class, u8 cmd,
-> -				 struct scatterlist *data, int out, int in)
-> +				 struct scatterlist *out,
-> +				 struct scatterlist *in)
->  {
-> -	struct scatterlist *s, sg[VIRTNET_SEND_COMMAND_SG_MAX + 2];
-> +	struct scatterlist *sgs[4], hdr, stat;
->  	struct virtio_net_ctrl_hdr ctrl;
->  	virtio_net_ctrl_ack status = ~0;
-> -	unsigned int tmp;
-> -	int i;
-> +	unsigned out_num = 0, in_num = 0, tmp;
->  
->  	/* Caller should know better */
-> -	BUG_ON(!virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ) ||
-> -		(out + in > VIRTNET_SEND_COMMAND_SG_MAX));
-> -
-> -	out++; /* Add header */
-> -	in++; /* Add return status */
-> +	BUG_ON(!virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ));
->  
-> -	ctrl.class = class;
-> -	ctrl.cmd = cmd;
-> +	/* Add header */
-> +	sg_init_one(&hdr, &ctrl, sizeof(ctrl));
-> +	sgs[out_num++] = &hdr;
->  
-> -	sg_init_table(sg, out + in);
-> +	if (out)
-> +		sgs[out_num++] = out;
-> +	if (in)
-> +		sgs[out_num + in_num++] = in;
->  
-> -	sg_set_buf(&sg[0], &ctrl, sizeof(ctrl));
-> -	for_each_sg(data, s, out + in - 2, i)
-> -		sg_set_buf(&sg[i + 1], sg_virt(s), s->length);
-> -	sg_set_buf(&sg[out + in - 1], &status, sizeof(status));
-> +	/* Add return status. */
-> +	sg_init_one(&stat, &status, sizeof(status));
-> +	sgs[out_num + in_num++] = &hdr;
->  
-> -	BUG_ON(virtqueue_add_buf(vi->cvq, sg, out, in, vi, GFP_ATOMIC) < 0);
-> +	BUG_ON(virtqueue_add_sgs(vi->cvq, sgs, out_num, in_num, vi, GFP_ATOMIC)
-> +	       < 0);
->  
->  	virtqueue_kick(vi->cvq);
->  
-> @@ -874,8 +873,7 @@ static void virtnet_ack_link_announce(struct virtnet_info *vi)
->  {
->  	rtnl_lock();
->  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_ANNOUNCE,
-> -				  VIRTIO_NET_CTRL_ANNOUNCE_ACK, NULL,
-> -				  0, 0))
-> +				  VIRTIO_NET_CTRL_ANNOUNCE_ACK, NULL, NULL))
->  		dev_warn(&vi->dev->dev, "Failed to ack link announce.\n");
->  	rtnl_unlock();
->  }
-> @@ -893,7 +891,7 @@ static int virtnet_set_queues(struct virtnet_info *vi, u16 queue_pairs)
->  	sg_init_one(&sg, &s, sizeof(s));
->  
->  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_MQ,
-> -				  VIRTIO_NET_CTRL_MQ_VQ_PAIRS_SET, &sg, 1, 0)){
-> +				  VIRTIO_NET_CTRL_MQ_VQ_PAIRS_SET, &sg, NULL)) {
->  		dev_warn(&dev->dev, "Fail to set num of queue pairs to %d\n",
->  			 queue_pairs);
->  		return -EINVAL;
-> @@ -940,7 +938,7 @@ static void virtnet_set_rx_mode(struct net_device *dev)
->  
->  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_RX,
->  				  VIRTIO_NET_CTRL_RX_PROMISC,
-> -				  sg, 1, 0))
-> +				  sg, NULL))
->  		dev_warn(&dev->dev, "Failed to %sable promisc mode.\n",
->  			 promisc ? "en" : "dis");
->  
-> @@ -948,7 +946,7 @@ static void virtnet_set_rx_mode(struct net_device *dev)
->  
->  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_RX,
->  				  VIRTIO_NET_CTRL_RX_ALLMULTI,
-> -				  sg, 1, 0))
-> +				  sg, NULL))
->  		dev_warn(&dev->dev, "Failed to %sable allmulti mode.\n",
->  			 allmulti ? "en" : "dis");
->  
-> @@ -987,7 +985,7 @@ static void virtnet_set_rx_mode(struct net_device *dev)
->  
->  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_MAC,
->  				  VIRTIO_NET_CTRL_MAC_TABLE_SET,
-> -				  sg, 2, 0))
-> +				  sg, NULL))
->  		dev_warn(&dev->dev, "Failed to set MAC fitler table.\n");
+Thare's a race between elevator switching and normal io operation.
+    Because the allocation of struct elevator_queue and struct elevator_data
+    don't in a atomic operation.So there are have chance to use NULL
+    ->elevator_data.
+    For example:
+        Thread A:                               		Thread B
+       blk_flush_plug_list                            elevator_switch
+      __elv_add_request)           					
+      blk_peek_request                              elevator_alloc
+      noop_dispatch
+															  elevator_init_fn
+    Because call elevator_alloc, it can't hold queue_lock and the 
+    ->elevator_data is NULL after allocating.So at the same time, threadA call elv_merge and
+    nedd some info of elevator_data.So the crash happened.
+    [  196.125709] BUG: unable to handle kernel 
+[  196.126046] Modules linked in: netconsole configfs nfsd lockd auth_rpcgss sunrpc exportfs raid1 btrfs zlib_deflate libcrc32c
+[  196.126046] CPU 2 
+[  196.126046] Pid: 6747, comm: dd Not tainted 3.8.0+ #107 To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M.
+[  196.126046] RIP: 0010:[<ffffffff812a8c63>]  [<ffffffff812a8c63>] noop_dispatch+0x13/0x40
+[  196.126046] RSP: 0018:ffff8800a6fef838  EFLAGS: 00010046
+[  196.126046] RAX: 0000000000000000 RBX: ffff8800b53abf20 RCX: 0000000000000000
+[  196.126046] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff8800b53abf20
+[  196.126046] RBP: ffff8800a6fef838 R08: 0000000000000000 R09: 0000000000000000
+[  196.126046] R10: 0000000000000001 R11: 0000000000000001 R12: ffff8800b53abf20
+[  196.126046] R13: ffff8800a6feffd8 R14: ffff8800a6feffd8 R15: ffff8800b3c68090
+[  196.126046] FS:  00007f6ef48d6700(0000) GS:ffff8800ba000000(0000) knlGS:0000000000000000
+[  196.126046] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  196.126046] CR2: 0000000000000000 CR3: 00000000a83a1000 CR4: 00000000000407e0
+[  196.126046] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  196.126046] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  196.126046] Process dd (pid: 6747, threadinfo ffff8800a6fee000, task ffff88009e2a2840)
+[  196.126046] Stack:
+[  196.126046]  ffff8800a6fef888 ffffffff81297a54 ffff8800b50de7b0 ffff8800b3c68090
+[  196.126046]  ffff8800a6fef888 ffff8800b3c68000 ffff8800b53abf20 0000000000000000
+[  196.126046]  ffff8800b50de7b0 ffff8800b3c68090 ffff8800a6fef8f8 ffffffff8140fe5a
+[  196.126046] Call Trace:
+[  196.126046]  [<ffffffff81297a54>] blk_peek_request+0x194/0x250
+[  196.126046]  [<ffffffff8140fe5a>] scsi_request_fn+0x4a/0x4f0
+[  196.126046]  [<ffffffff810995ef>] ? __lock_is_held+0x5f/0x80
+[  196.126046]  [<ffffffff81290d37>] __blk_run_queue+0x37/0x50
+[  196.126046]  [<ffffffff812904cd>] __elv_add_request+0xad/0x2d0
+[  196.126046]  [<ffffffff81297ecc>] blk_flush_plug_list+0x1bc/0x260
+[  196.126046]  [<ffffffff81297f88>] blk_finish_plug+0x18/0x50
+[  196.126046]  [<ffffffff81195f1e>] do_blockdev_direct_IO+0x18be/0x20e0
+[  196.126046]  [<ffffffff81077cd8>] ? sched_clock_cpu+0xa8/0x120
+[  196.126046]  [<ffffffff811913d0>] ? I_BDEV+0x10/0x10
+[  196.126046]  [<ffffffff810d0868>] ? rcu_irq_exit+0x68/0xb0
+[  196.126046]  [<ffffffff81196795>] __blockdev_direct_IO+0x55/0x60
+[  196.126046]  [<ffffffff811913d0>] ? I_BDEV+0x10/0x10
+[  196.126046]  [<ffffffff81191c67>] blkdev_direct_IO+0x57/0x60
+[  196.126046]  [<ffffffff811913d0>] ? I_BDEV+0x10/0x10
+[  196.126046]  [<ffffffff81106633>] generic_file_aio_read+0x703/0x770
+[  196.126046]  [<ffffffff811915c1>] blkdev_aio_read+0x51/0x80
+[  196.126046]  [<ffffffff81095d45>] ? lock_release_holdtime.part.23+0x15/0x1a0
+[  196.126046]  [<ffffffff81157bb3>] do_sync_read+0xa3/0xe0
+[  196.126046]  [<ffffffff81158343>] vfs_read+0xb3/0x180
+[  196.126046]  [<ffffffff81158465>] sys_read+0x55/0xa0
+[  196.126046]  [<ffffffff816f4242>] system_call_fastpath+0x16/0x1b
+[  196.126046] Code: 48 83 c4 08 5b 5d c3 90 b8 10 00 00 00 eb e0 b8 f4 ff ff ff eb ea 66 90 66 66 66 66 90 48 8b 47 18 55 48 89 e5 48 8b 50 08 31 c0 <48> 8b 32 48 39 f2 74 1f 48 8b 46 08 48 8b 16 48 89 42 08 48 89 
+[  196.126046] RIP  [<ffffffff812a8c63>] noop_dispatch+0x13/0x40
+[  196.126046]  RSP <ffff8800a6fef838>
+[  196.126046] CR2: 0000000000000000
 
+    Move the elevator_alloc into func elevator_init_fn, it make the
+    operations in a atomic operation.
+    
+    Using the follow method can easy reproduce this bug
+    1:dd if=/dev/sdb of=/dev/null
+    2:while true;do echo noop > scheduler;echo deadline > scheduler;done
+    
+    The test method also use this method.
 
-After applied this patch, I got the warning messages:
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ block/cfq-iosched.c      |   17 ++++++++++++++---
+ block/deadline-iosched.c |   16 +++++++++++++---
+ block/elevator.c         |   25 +++++--------------------
+ block/noop-iosched.c     |   17 ++++++++++++++---
+ include/linux/elevator.h |    6 +++++-
+ 5 files changed, 51 insertions(+), 30 deletions(-)
 
-[    7.545454] net eth0: Failed to disable promisc mode.
-[    7.546243] net eth0: Failed to disable allmulti mode.
-[    7.546990] net eth0: Failed to set MAC fitler table.
-[    7.547940] net eth0: Failed to disable promisc mode.
-[    7.548840] net eth0: Failed to disable allmulti mode.
-[    7.549744] net eth0: Failed to set MAC fitler table.
-[    7.550705] net eth0: Failed to disable promisc mode.
-[    7.551603] net eth0: Failed to disable allmulti mode.
-[    7.552504] net eth0: Failed to set MAC fitler table.
-[    7.553423] net eth0: Failed to disable promisc mode.
-[    7.554308] net eth0: Failed to disable allmulti mode.
-[    7.555201] net eth0: Failed to set MAC fitler table.
-[    9.571103] net eth0: Failed to disable promisc mode.
-[    9.572948] net eth0: Failed to disable allmulti mode.
-[    9.574598] net eth0: Failed to set MAC fitler table.
-network[476]: Bringing up interface eth0:  [  OK  ]
-[    9.905455] net eth0: Failed to disable promisc mode.
-[    9.906465] net eth0: Failed to disable allmulti mode.
-[    9.907234] net eth0: Failed to set MAC fitler table.
-
-
-Any thoughts?
-
-
-Thanks,
-Wanlong Gao
-
->  
->  	kfree(buf);
-> @@ -1001,7 +999,7 @@ static int virtnet_vlan_rx_add_vid(struct net_device *dev, u16 vid)
->  	sg_init_one(&sg, &vid, sizeof(vid));
->  
->  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_VLAN,
-> -				  VIRTIO_NET_CTRL_VLAN_ADD, &sg, 1, 0))
-> +				  VIRTIO_NET_CTRL_VLAN_ADD, &sg, NULL))
->  		dev_warn(&dev->dev, "Failed to add VLAN ID %d.\n", vid);
->  	return 0;
->  }
-> @@ -1014,7 +1012,7 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
->  	sg_init_one(&sg, &vid, sizeof(vid));
->  
->  	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_VLAN,
-> -				  VIRTIO_NET_CTRL_VLAN_DEL, &sg, 1, 0))
-> +				  VIRTIO_NET_CTRL_VLAN_DEL, &sg, NULL))
->  		dev_warn(&dev->dev, "Failed to kill VLAN ID %d.\n", vid);
->  	return 0;
->  }
-> 
-
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index e62e920..c7cfa34 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -3960,18 +3960,28 @@ static void cfq_exit_queue(struct elevator_queue *e)
+ 	kfree(cfqd);
+ }
+ 
+-static int cfq_init_queue(struct request_queue *q)
++static int cfq_init_queue(struct request_queue *q, struct elevator_type *e)
+ {
+ 	struct cfq_data *cfqd;
+ 	struct blkcg_gq *blkg __maybe_unused;
+ 	int i, ret;
++	struct elevator_queue *eq;
++
++	eq = elevator_alloc(q, e);
++	if (!eq)
++		return -ENOMEM;
+ 
+ 	cfqd = kmalloc_node(sizeof(*cfqd), GFP_KERNEL | __GFP_ZERO, q->node);
+-	if (!cfqd)
++	if (!cfqd) {
++		kobject_put(&eq->kobj);
+ 		return -ENOMEM;
++	}
++	eq->elevator_data = cfqd;
+ 
+ 	cfqd->queue = q;
+-	q->elevator->elevator_data = cfqd;
++	spin_lock_irq(q->queue_lock);
++	q->elevator = eq;
++	spin_unlock_irq(q->queue_lock);
+ 
+ 	/* Init root service tree */
+ 	cfqd->grp_service_tree = CFQ_RB_ROOT;
+@@ -4045,6 +4055,7 @@ static int cfq_init_queue(struct request_queue *q)
+ 
+ out_free:
+ 	kfree(cfqd);
++	kobject_put(&eq->kobj);
+ 	return ret;
+ }
+ 
+diff --git a/block/deadline-iosched.c b/block/deadline-iosched.c
+index 90037b5..1cfef5d 100644
+--- a/block/deadline-iosched.c
++++ b/block/deadline-iosched.c
+@@ -337,13 +337,21 @@ static void deadline_exit_queue(struct elevator_queue *e)
+ /*
+  * initialize elevator private data (deadline_data).
+  */
+-static int deadline_init_queue(struct request_queue *q)
++static int deadline_init_queue(struct request_queue *q, struct elevator_type *e)
+ {
+ 	struct deadline_data *dd;
++	struct elevator_queue *eq;
++
++	eq = elevator_alloc(q, e);
++	if (!eq)
++		return -ENOMEM;
+ 
+ 	dd = kmalloc_node(sizeof(*dd), GFP_KERNEL | __GFP_ZERO, q->node);
+-	if (!dd)
++	if (!dd) {
++		kobject_put(&eq->kobj);
+ 		return -ENOMEM;
++	}
++	eq->elevator_data = dd;
+ 
+ 	INIT_LIST_HEAD(&dd->fifo_list[READ]);
+ 	INIT_LIST_HEAD(&dd->fifo_list[WRITE]);
+@@ -355,7 +363,9 @@ static int deadline_init_queue(struct request_queue *q)
+ 	dd->front_merges = 1;
+ 	dd->fifo_batch = fifo_batch;
+ 
+-	q->elevator->elevator_data = dd;
++	spin_lock_irq(q->queue_lock);
++	q->elevator = eq;
++	spin_unlock_irq(q->queue_lock);
+ 	return 0;
+ }
+ 
+diff --git a/block/elevator.c b/block/elevator.c
+index 603b2c1..3e22301 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -154,7 +154,7 @@ void __init load_default_elevator_module(void)
+ 
+ static struct kobj_type elv_ktype;
+ 
+-static struct elevator_queue *elevator_alloc(struct request_queue *q,
++struct elevator_queue *elevator_alloc(struct request_queue *q,
+ 				  struct elevator_type *e)
+ {
+ 	struct elevator_queue *eq;
+@@ -182,6 +182,7 @@ err:
+ 	elevator_put(e);
+ 	return NULL;
+ }
++EXPORT_SYMBOL(elevator_alloc);
+ 
+ static void elevator_release(struct kobject *kobj)
+ {
+@@ -234,16 +235,7 @@ int elevator_init(struct request_queue *q, char *name)
+ 		}
+ 	}
+ 
+-	q->elevator = elevator_alloc(q, e);
+-	if (!q->elevator)
+-		return -ENOMEM;
+-
+-	err = e->ops.elevator_init_fn(q);
+-	if (err) {
+-		kobject_put(&q->elevator->kobj);
+-		return err;
+-	}
+-
++	err = e->ops.elevator_init_fn(q, e);
+ 	return 0;
+ }
+ EXPORT_SYMBOL(elevator_init);
+@@ -924,16 +916,9 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
+ 	spin_unlock_irq(q->queue_lock);
+ 
+ 	/* allocate, init and register new elevator */
+-	err = -ENOMEM;
+-	q->elevator = elevator_alloc(q, new_e);
+-	if (!q->elevator)
+-		goto fail_init;
+-
+-	err = new_e->ops.elevator_init_fn(q);
+-	if (err) {
+-		kobject_put(&q->elevator->kobj);
++	err = new_e->ops.elevator_init_fn(q, new_e);
++	if (err)
+ 		goto fail_init;
+-	}
+ 
+ 	if (registered) {
+ 		err = elv_register_queue(q);
+diff --git a/block/noop-iosched.c b/block/noop-iosched.c
+index 5d1bf70..3de89d4 100644
+--- a/block/noop-iosched.c
++++ b/block/noop-iosched.c
+@@ -59,16 +59,27 @@ noop_latter_request(struct request_queue *q, struct request *rq)
+ 	return list_entry(rq->queuelist.next, struct request, queuelist);
+ }
+ 
+-static int noop_init_queue(struct request_queue *q)
++static int noop_init_queue(struct request_queue *q, struct elevator_type *e)
+ {
+ 	struct noop_data *nd;
++	struct elevator_queue *eq;
++
++	eq = elevator_alloc(q, e);
++	if (!eq)
++		return -ENOMEM;
+ 
+ 	nd = kmalloc_node(sizeof(*nd), GFP_KERNEL, q->node);
+-	if (!nd)
++	if (!nd) {
++		kobject_put(&eq->kobj);
+ 		return -ENOMEM;
++	}
++	eq->elevator_data = nd;
+ 
+ 	INIT_LIST_HEAD(&nd->queue);
+-	q->elevator->elevator_data = nd;
++
++	spin_lock_irq(q->queue_lock);
++	q->elevator = eq;
++	spin_unlock_irq(q->queue_lock);
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/elevator.h b/include/linux/elevator.h
+index 1866206..c288a2f 100644
+--- a/include/linux/elevator.h
++++ b/include/linux/elevator.h
+@@ -6,6 +6,7 @@
+ #ifdef CONFIG_BLOCK
+ 
+ struct io_cq;
++struct elevator_type;
+ 
+ typedef int (elevator_merge_fn) (struct request_queue *, struct request **,
+ 				 struct bio *);
+@@ -34,7 +35,8 @@ typedef void (elevator_put_req_fn) (struct request *);
+ typedef void (elevator_activate_req_fn) (struct request_queue *, struct request *);
+ typedef void (elevator_deactivate_req_fn) (struct request_queue *, struct request *);
+ 
+-typedef int (elevator_init_fn) (struct request_queue *);
++typedef int (elevator_init_fn) (struct request_queue *,
++				struct elevator_type *e);
+ typedef void (elevator_exit_fn) (struct elevator_queue *);
+ 
+ struct elevator_ops
+@@ -152,6 +154,8 @@ extern int elevator_init(struct request_queue *, char *);
+ extern void elevator_exit(struct elevator_queue *);
+ extern int elevator_change(struct request_queue *, const char *);
+ extern bool elv_rq_merge_ok(struct request *, struct bio *);
++extern struct elevator_queue *elevator_alloc(struct request_queue *,
++					struct elevator_type *);
+ 
+ /*
+  * Helper functions.
+-- 
+1.7.9.5
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
