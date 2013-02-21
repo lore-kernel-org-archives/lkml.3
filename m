@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab3BUIYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 03:24:12 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:58799 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447Ab3BUIYL (ORCPT
+	id S1752395Ab3BUI0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 03:26:22 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46415 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab3BUI0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 03:24:11 -0500
-Date: Thu, 21 Feb 2013 00:23:29 -0800 (PST)
+	Thu, 21 Feb 2013 03:26:21 -0500
+Date: Thu, 21 Feb 2013 00:25:40 -0800 (PST)
 From: Hugh Dickins <hughd@google.com>
 X-X-Sender: hugh@eggly.anvils
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Mel Gorman <mgorman@suse.de>, Petr Holasek <pholasek@redhat.com>,
+cc: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Petr Holasek <pholasek@redhat.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
         Izik Eidus <izik.eidus@ravellosystems.com>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 4/7] mm,ksm: FOLL_MIGRATION do migration_entry_wait
+Subject: [PATCH 5/7] mm,ksm: swapoff might need to copy
 In-Reply-To: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils>
-Message-ID: <alpine.LNX.2.00.1302210022110.17843@eggly.anvils>
+Message-ID: <alpine.LNX.2.00.1302210023350.17843@eggly.anvils>
 References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
@@ -26,79 +27,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In "ksm: remove old stable nodes more thoroughly" I said that I'd never
-seen its WARN_ON_ONCE(page_mapped(page)).  True at the time of writing,
-but it soon appeared once I tried fuller tests on the whole series.
+Before establishing that KSM page migration was the cause of my
+WARN_ON_ONCE(page_mapped(page))s, I suspected that they came from the
+lack of a ksm_might_need_to_copy() in swapoff's unuse_pte() - which
+in many respects is equivalent to faulting in a page.
 
-It turned out to be due to the KSM page migration itself: unmerge_and_
-remove_all_rmap_items() failed to locate and replace all the KSM pages,
-because of that hiatus in page migration when old pte has been replaced
-by migration entry, but not yet by new pte.  follow_page() finds no page
-at that instant, but a KSM page reappears shortly after, without a fault.
+In fact I've never caught that as the cause: but in theory it does
+at least need the KSM_RUN_UNMERGE check in ksm_might_need_to_copy(),
+to avoid bringing a KSM page back in when it's not supposed to be.
 
-Add FOLL_MIGRATION flag, so follow_page() can do migration_entry_wait()
-for KSM's break_cow().  I'd have preferred to avoid another flag, and do
-it every time, in case someone else makes the same easy mistake; but did
-not find another transgressor (the common get_user_pages() is of course
-safe), and cannot be sure that every follow_page() caller is prepared to
-sleep - ia64's xencomm_vtop()?  Now, THP's wait_split_huge_page() can
-already sleep there, since anon_vma locking was changed to mutex, but
-maybe that's somehow excluded.
+I intended to copy how it's done in do_swap_page(), but have a strong
+aversion to how "swapcache" ends up being used there: rework it with
+"page != swapcache".
 
 Signed-off-by: Hugh Dickins <hughd@google.com>
 ---
- include/linux/mm.h |    1 +
- mm/ksm.c           |    2 +-
- mm/memory.c        |   20 ++++++++++++++++++--
- 3 files changed, 20 insertions(+), 3 deletions(-)
+ mm/swapfile.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- mmotm.orig/include/linux/mm.h	2013-02-19 18:51:24.572031860 -0800
-+++ mmotm/include/linux/mm.h	2013-02-20 22:42:54.728022096 -0800
-@@ -1652,6 +1652,7 @@ static inline struct page *follow_page(s
- #define FOLL_SPLIT	0x80	/* don't return transhuge pages, split them */
- #define FOLL_HWPOISON	0x100	/* check page is hwpoisoned */
- #define FOLL_NUMA	0x200	/* force NUMA hinting page fault */
-+#define FOLL_MIGRATION	0x400	/* wait for page to replace migration entry */
+--- mmotm.orig/mm/swapfile.c	2013-02-20 22:28:09.076001048 -0800
++++ mmotm/mm/swapfile.c	2013-02-20 23:20:50.872076192 -0800
+@@ -874,11 +874,17 @@ unsigned int count_swap_pages(int type,
+ static int unuse_pte(struct vm_area_struct *vma, pmd_t *pmd,
+ 		unsigned long addr, swp_entry_t entry, struct page *page)
+ {
++	struct page *swapcache;
+ 	struct mem_cgroup *memcg;
+ 	spinlock_t *ptl;
+ 	pte_t *pte;
+ 	int ret = 1;
  
- typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
- 			void *data);
---- mmotm.orig/mm/ksm.c	2013-02-20 22:28:29.688001537 -0800
-+++ mmotm/mm/ksm.c	2013-02-20 22:50:10.540032454 -0800
-@@ -363,7 +363,7 @@ static int break_ksm(struct vm_area_stru
- 
- 	do {
- 		cond_resched();
--		page = follow_page(vma, addr, FOLL_GET);
-+		page = follow_page(vma, addr, FOLL_GET | FOLL_MIGRATION);
- 		if (IS_ERR_OR_NULL(page))
- 			break;
- 		if (PageKsm(page))
---- mmotm.orig/mm/memory.c	2013-02-20 22:28:09.168001050 -0800
-+++ mmotm/mm/memory.c	2013-02-20 22:43:47.228023344 -0800
-@@ -1548,8 +1548,24 @@ split_fallthrough:
- 	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
- 
- 	pte = *ptep;
--	if (!pte_present(pte))
--		goto no_page;
-+	if (!pte_present(pte)) {
-+		swp_entry_t entry;
-+		/*
-+		 * KSM's break_ksm() relies upon recognizing a ksm page
-+		 * even while it is being migrated, so for that case we
-+		 * need migration_entry_wait().
-+		 */
-+		if (likely(!(flags & FOLL_MIGRATION)))
-+			goto no_page;
-+		if (pte_none(pte) || pte_file(pte))
-+			goto no_page;
-+		entry = pte_to_swp_entry(pte);
-+		if (!is_migration_entry(entry))
-+			goto no_page;
-+		pte_unmap_unlock(ptep, ptl);
-+		migration_entry_wait(mm, pmd, address);
-+		goto split_fallthrough;
++	swapcache = page;
++	page = ksm_might_need_to_copy(page, vma, addr);
++	if (unlikely(!page))
++		return -ENOMEM;
++
+ 	if (mem_cgroup_try_charge_swapin(vma->vm_mm, page,
+ 					 GFP_KERNEL, &memcg)) {
+ 		ret = -ENOMEM;
+@@ -897,7 +903,10 @@ static int unuse_pte(struct vm_area_stru
+ 	get_page(page);
+ 	set_pte_at(vma->vm_mm, addr, pte,
+ 		   pte_mkold(mk_pte(page, vma->vm_page_prot)));
+-	page_add_anon_rmap(page, vma, addr);
++	if (page == swapcache)
++		page_add_anon_rmap(page, vma, addr);
++	else /* ksm created a completely new copy */
++		page_add_new_anon_rmap(page, vma, addr);
+ 	mem_cgroup_commit_charge_swapin(page, memcg);
+ 	swap_free(entry);
+ 	/*
+@@ -908,6 +917,10 @@ static int unuse_pte(struct vm_area_stru
+ out:
+ 	pte_unmap_unlock(pte, ptl);
+ out_nolock:
++	if (page != swapcache) {
++		unlock_page(page);
++		put_page(page);
 +	}
- 	if ((flags & FOLL_NUMA) && pte_numa(pte))
- 		goto no_page;
- 	if ((flags & FOLL_WRITE) && !pte_write(pte))
+ 	return ret;
+ }
+ 
