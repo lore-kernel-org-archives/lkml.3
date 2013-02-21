@@ -1,98 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299Ab3BUGoz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 01:44:55 -0500
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:46238 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab3BUGox (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 01:44:53 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: "Maxin B. John" <maxin.john@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Cc: matt.fleming@intel.com, matthias.fend@wolfvision.net, balbi@ti.com,
-        linux-usb@vger.kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, "Maxin B. John" <maxin.john@enea.com>
-Subject: Re: [PATCH] tools: usb: ffs-test: Fix build failure
-In-Reply-To: <CAMhs6YxGWaLgt58HeumVzstU=373WRYMTsf8uFKnQ9nEFboj7w@mail.gmail.com>
-Organization: http://mina86.com/
-References: <1361404671-11713-1-git-send-email-maxin.john@gmail.com> <20130221000649.GB14395@kroah.com> <CAMhs6YxGWaLgt58HeumVzstU=373WRYMTsf8uFKnQ9nEFboj7w@mail.gmail.com>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.3.50.5 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Thu, 21 Feb 2013 07:44:42 +0100
-Message-ID: <xa1tfw0qdv39.fsf@mina86.com>
+	id S1752395Ab3BUGxW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 01:53:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52940 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752117Ab3BUGxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 01:53:20 -0500
+Message-ID: <5125C45A.5020208@suse.de>
+Date: Thu, 21 Feb 2013 07:53:14 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        Frederik Himpe <fhimpe@vub.ac.be>, Oliver Neukum <oneukum@suse.de>,
+        David Haerdeman <david@hardeman.nu>, linux-usb@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] pci: do not try to assign irq 255
+References: <1361182193-31894-1-git-send-email-hare@suse.de> <CAE9FiQWP1F5mLUoHoTHXy-wQoGxVK66QuuHYydaq3YfysS5Etg@mail.gmail.com> <5124820D.2080900@suse.de> <CAE9FiQXHteymDNzu0GqWtVSVhu3g2hCT+K9e5tB1mR-OBX1ffA@mail.gmail.com>
+In-Reply-To: <CAE9FiQXHteymDNzu0GqWtVSVhu3g2hCT+K9e5tB1mR-OBX1ffA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Feb 21 2013, Maxin B. John wrote:
-> Hi,
->
-> On Thu, Feb 21, 2013 at 2:06 AM, Greg KH <gregkh@linuxfoundation.org> wro=
-te:
->> On Thu, Feb 21, 2013 at 01:57:51AM +0200, maxin.john@gmail.com wrote:
->>> From: "Maxin B. John" <maxin.john@enea.com>
+On 02/20/2013 05:57 PM, Yinghai Lu wrote:
+> On Tue, Feb 19, 2013 at 11:58 PM, Hannes Reinecke <hare@suse.de> wrote:
 >>>
->>> Fixes this build failure:
->>> gcc -Wall -Wextra -g -lpthread -I../include -o testusb testusb.c
->>> gcc -Wall -Wextra -g -lpthread -I../include -o ffs-test ffs-test.c
->>> In file included from ffs-test.c:41:0:
->>> ../../include/linux/usb/functionfs.h:4:39: fatal error:
->>> uapi/linux/usb/functionfs.h: No such file or directory
->>> compilation terminated.
->>> make: *** [ffs-test] Error 1
+>> Apparently this device is meant to use MSI _only_ so the BIOS developer
+>> didn't feel the need to assign an INTx here.
 >>
->> This is a build failure where, 3.8, or linux-next, or somewhere else?
+>> According to PCI-3.0, section 6.8 (Message Signalled Interrupts):
+>>> It is recommended that devices implement interrupt pins to
+>>> provide compatibility in systems that do not support MSI
+>>> (devices default to interrupt pins). However, it is expected
+>>> that the need for interrupt pins will diminish over time.
+>>> Devices that do not support interrupt pins due to pin
+>>> constraints (rely on polling for device service) may implement
+>>> messages to increase performance without adding additional pins. >
+>>> Therefore, system configuration software must not assume that a
+>>> message capable device has an interrupt pin.
+>>
+>> Which sounds to me as if the implementation is valid...
 >
-> It is in 3.8
+> it seems you mess pin with interrupt line.
+>
+> current code:
+>          unsigned char irq;
+>
+>          pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &irq);
+>          dev->pin = irq;
+>          if (irq)
+>                  pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &irq);
+>          dev->irq = irq;
+>
+> so if the device does not have interrupt pin implemented, pin should be zero.
+> and  pin and irq in dev should
+> be all 0.
+>
+But the device _has_ an interrupt pin implemented.
+The whole point here is that the interrupt line is _NOT_ zero.
 
-This also happens in 3.7.  [commit
-5e1ddb481776a487b15b40579a000b279ce527c9: UAPI: (Scripted) Disintegrate
-include/linux/usb] is the culprit.
+00:14.0 USB controller [0c03]: Intel Corporation 7 Series/C210 
+Series Chipset Family USB xHCI Host Controller [8086:1e31] (rev 04) 
+(prog-if 30 [XHCI])
+	Subsystem: Hewlett-Packard Company Device [103c:179b]
+	Control: I/O- Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- 
+Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+	Interrupt: pin A routed to IRQ 255
+	Region 0: Memory at d4720000 (64-bit, non-prefetchable) [size=64K]
+	Capabilities: [70] Power Management version 2
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=375mA 
+PME(D0-,D1-,D2-,D3hot+,D3cold+)
+		Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [80] MSI: Enable- Count=1/8 Maskable- 64bit+
+		Address: 0000000000000000  Data: 0000
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+So at one point we have to decide that ->irq is not valid, despite 
+it being not set to zero.
+An alternative fix would be this:
 
---==-=-=
-Content-Type: text/plain
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index 68a921d..4a480cb 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -469,6 +469,7 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+                 } else {
+                         dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
+                                  pin_name(pin));
++                       dev->irq = 0;
+                 }
+                 return 0;
+         }
 
+Which probably is a better solution, as here ->irq is _definitely_
+not valid, so we should reset it to '0' to avoid confusion on upper
+layers.
 
---==-=-=
-Content-Type: application/pgp-signature
+Cheers,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRJcJbAAoJECBgQBJQdR/0l/cP/0y0J53fNlWImm608L4eNiKa
-e2ZaEm62ZR6h9qFlW86UP+08sv+FUcKnibU/WQZOPfhDNvgYjrsD41fQwpEYYc7g
-CPB/+9bWPgmiYfr3o6VfdHk4qTnmB+0vO7zXfmf2jqGetDLPrqBcDqscJoCcdofm
-OTmU4VhyTvR5v7T15u+KlI/en+F4gK6L3EVbHUyhPioZmPZDfGJNmTp+86L53bx8
-tBlcOBkNP8Tz2XvaAunbDHUkLRejOz5YUpbWvMYrfQjvIpA+Kq5uNa3/Irs6c0cZ
-ST+tbneZDk3MJx7QD9U5T6KPHTJz5JrBf8BuL+j72JF4tGT96JVSsFDzeu9rbNM/
-9GKiyt9CM2rpse+/HLst5FXQ5G3gy1zNP9toe93SRutR2ikdYIKqzLg2+QCTcK6E
-w7LLq6sghfOwvn3kkU0cqbLFM+Uf3WM76lbbmH886NApv+NxL0ysZSbNywyPFndm
-bcHOJe/43awp7wRxi8noi1X8uwULR3eXl3u1e+yIXHYyCzEEpJNjYADUQKzIQ3wc
-MDOPKzR4SbVTP9o0FxJclaWdiuolLMdNd9qfyLx23QvW+3QEgEKWeOZZN8FMcBAa
-o0xS4/DUEE7DhT41qX6J7QbBxktCeOGOaoD6lEdKj0IKEBiSRzMK1Xn386jQjEA9
-sGKzPpISe1CMptk5VKsj
-=qO6r
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
