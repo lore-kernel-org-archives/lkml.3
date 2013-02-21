@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab3BUNpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 08:45:35 -0500
-Received: from outbound-mail04.westnet.com.au ([203.10.1.245]:24137 "EHLO
-	outbound-mail04.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751305Ab3BUNpe (ORCPT
+	id S1753074Ab3BUNrf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 08:47:35 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:39678 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab3BUNre convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 08:45:34 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAO4jJlGVhxBY/2dsb2JhbAANN8B0gRyDEgEBAQMBOEABBQsLGAkWDwkDAgECAUUGDQEFAgEBiAisFJMejTuBUweDQAOqKYFX
-X-IronPort-AV: E=Sophos;i="4.84,709,1355068800"; 
-   d="scan'208";a="72756725"
-Message-ID: <512624F2.2030004@uclinux.org>
-Date: Thu, 21 Feb 2013 23:45:22 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 21 Feb 2013 08:47:34 -0500
 MIME-Version: 1.0
-To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-CC: geert@linux-m68k.org, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] m68k/nommu: fix build when CPU is not coldfire
-References: <1361064814-9727-1-git-send-email-cascardo@holoscopio.com>
-In-Reply-To: <1361064814-9727-1-git-send-email-cascardo@holoscopio.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [93.172.67.63]
+In-Reply-To: <CAJK669bDu3SphxmEtA+h+v=btsN91t0S9Mn6ik-OKr=8gtducw@mail.gmail.com>
+References: <1360669793-6921-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1360669793-6921-2-git-send-email-sjur.brandeland@stericsson.com>
+ <CAK=Wgbb0EeiCh504jsoX+izzi+ZogfEDttz2cHRd4pVXvQunQw@mail.gmail.com> <CAJK669bDu3SphxmEtA+h+v=btsN91t0S9Mn6ik-OKr=8gtducw@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 21 Feb 2013 15:47:10 +0200
+Message-ID: <CAK=Wgba5XkK3c7qh1tYHMGEe7-Qima96uYO4E+uAPcaB8K6bmQ@mail.gmail.com>
+Subject: Re: [PATCHv2 vringh 1/3] remoteproc: Add support for vringh (Host vrings)
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
+Cc: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Ido Yariv <ido@wizery.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Erwan Yvin <erwan.yvin@stericsson.com>,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thadeu,
-
-On 17/02/13 11:33, Thadeu Lima de Souza Cascardo wrote:
-> Commit dd1cb3a7c43508c29e17836628090c0735bd3137 unified mm/init.c for both MMU
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Its good practice to include the text title of the patch along with the
-commit id.
-
-
-> and non-MMU m68k platforms. However, it broke when we build a non-MMU M68K
-> Classic CPU kernel.
+On Thu, Feb 21, 2013 at 1:01 AM, Sjur Brændeland
+<sjur.brandeland@stericsson.com> wrote:
+> [Sjur:]
+>>> How do you see the in-kernel API for this? I would like to see
+>>> something similar to my previous patches, where we extend
+>>> the virtqueue API. E.g. something like this:
+>>> struct virtqueue *vring_new_virtqueueh(...)...
 >
-> This fix builds a section that came from the MMU version only when we are
-> building a MMU kernel.
+> [Rusty:]
+>>I was just going to create _kernel variants of all the _user helpers,
+>>and let you drive it directly like that.
+>>
+>>If we get a second in-kernel user, we create wrappers (I'd prefer not to
+>>overload struct virtqueue though).
 
-Looks good thanks. I will push this into the m68knommu git tree.
+The wrappers suggestion sounds good.
 
-Regards
-Greg
+One of the things we truly enjoyed about virtio is how easy it was to
+reuse its drivers for communication with a remote processor.
 
+It'd be great if we can stick to this design and keep vringh virtio
+drivers decoupled from the low level implementation they are developed
+with (specifically caif and remoteproc in this case).
 
-
-> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-> ---
->   arch/m68k/mm/init.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
+> Yes, if you insert a "malicious device" like that you can make it crash,
+> but wouldn't most drivers do if you try to register a malicious device...?
 >
-> diff --git a/arch/m68k/mm/init.c b/arch/m68k/mm/init.c
-> index afd8106f..519aad8 100644
-> --- a/arch/m68k/mm/init.c
-> +++ b/arch/m68k/mm/init.c
-> @@ -188,7 +188,7 @@ void __init mem_init(void)
->   		}
->   	}
->
-> -#if !defined(CONFIG_SUN3) && !defined(CONFIG_COLDFIRE)
-> +#if defined(CONFIG_MMU) && !defined(CONFIG_SUN3) && !defined(CONFIG_COLDFIRE)
->   	/* insert pointer tables allocated so far into the tablelist */
->   	init_pointer_table((unsigned long)kernel_pg_dir);
->   	for (i = 0; i < PTRS_PER_PGD; i++) {
->
+> If we really want to protect from this, we could perhaps validate the vdev
+> pointer in function rproc_virtio_new_vringh() by looking through the vdevs
+> of the registered rprocs.
 
+It sounds like we can instead just avoid this altogether if we follow
+Rusty's wrappers suggestion.
+
+The result would probably look better, and I suspect it might be very
+minimal code.
+
+> If some other driver is showing up using the vringh kernel API where
+> the current API don't fit, I guess it's time to create some abstractions
+> and wrappers... But I hope the current approach will do for now?
+
+Unless I'm missing something here, adding wrappers should be straight
+forward and quick. Coupling a virtio driver with remoteproc doesn't
+look great to me, probably because I appreciate so much the elegance
+of virtio and how easy we could have reused its vanilla drivers with a
+use case it wasn't originally designed to support.
+
+>> I have some other questions as well but maybe it's better to discuss
+>> first the bigger picture.
+>
+> OK, but please don't hesitate to address this. I'm still aiming for this
+> to go into 3.9.
+
+I was wondering - can you please explain your motivation for using
+vringh in caif ?
+
+We have internally discussed supporting multiple remote processors
+talking to each other using rpmsg, and in that scenario using vringh
+can considerably simplifies the solution (no need to decide in advance
+which side is the "guest" and which is the "host"). Was this the
+general incentive in using vringh in caif too or something else?
+
+Thanks,
+Ohad.
