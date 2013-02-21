@@ -1,138 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab3BUP57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 10:57:59 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53393 "EHLO e9.ny.us.ibm.com"
+	id S1755508Ab3BUQBo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 11:01:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4439 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754417Ab3BUP56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 10:57:58 -0500
-Message-ID: <5126423F.7040705@linux.vnet.ibm.com>
-Date: Thu, 21 Feb 2013 09:50:23 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Ric Mason <ric.masonn@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCHv5 2/8] zsmalloc: add documentation
-References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com> <1360780731-11708-3-git-send-email-sjenning@linux.vnet.ibm.com> <511F254D.2010909@gmail.com> <51227DF4.9020900@linux.vnet.ibm.com> <5125DFAA.4050706@gmail.com>
-In-Reply-To: <5125DFAA.4050706@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755074Ab3BUQBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 11:01:42 -0500
+Date: Thu, 21 Feb 2013 13:01:25 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH EDACv2 01/12] edac: add support for raw error reports
+Message-ID: <20130221130125.7f649d4c@redhat.com>
+In-Reply-To: <20130221155337.GG4694@pd.tnic>
+References: <cover.1361459782.git.mchehab@redhat.com>
+	<30b4b936bf5eb2a47613cd3d5a256e4e9c56e911.1361459782.git.mchehab@redhat.com>
+	<20130221155337.GG4694@pd.tnic>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022115-7182-0000-0000-0000056D021A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 02:49 AM, Ric Mason wrote:
-> On 02/19/2013 03:16 AM, Seth Jennings wrote:
->> On 02/16/2013 12:21 AM, Ric Mason wrote:
->>> On 02/14/2013 02:38 AM, Seth Jennings wrote:
->>>> This patch adds a documentation file for zsmalloc at
->>>> Documentation/vm/zsmalloc.txt
->>>>
->>>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
->>>> ---
->>>>    Documentation/vm/zsmalloc.txt |   68
->>>> +++++++++++++++++++++++++++++++++++++++++
->>>>    1 file changed, 68 insertions(+)
->>>>    create mode 100644 Documentation/vm/zsmalloc.txt
->>>>
->>>> diff --git a/Documentation/vm/zsmalloc.txt
->>>> b/Documentation/vm/zsmalloc.txt
->>>> new file mode 100644
->>>> index 0000000..85aa617
->>>> --- /dev/null
->>>> +++ b/Documentation/vm/zsmalloc.txt
->>>> @@ -0,0 +1,68 @@
->>>> +zsmalloc Memory Allocator
->>>> +
->>>> +Overview
->>>> +
->>>> +zmalloc a new slab-based memory allocator,
->>>> +zsmalloc, for storing compressed pages.  It is designed for
->>>> +low fragmentation and high allocation success rate on
->>>> +large object, but <= PAGE_SIZE allocations.
->>>> +
->>>> +zsmalloc differs from the kernel slab allocator in two primary
->>>> +ways to achieve these design goals.
->>>> +
->>>> +zsmalloc never requires high order page allocations to back
->>>> +slabs, or "size classes" in zsmalloc terms. Instead it allows
->>>> +multiple single-order pages to be stitched together into a
->>>> +"zspage" which backs the slab.  This allows for higher allocation
->>>> +success rate under memory pressure.
->>>> +
->>>> +Also, zsmalloc allows objects to span page boundaries within the
->>>> +zspage.  This allows for lower fragmentation than could be had
->>>> +with the kernel slab allocator for objects between PAGE_SIZE/2
->>>> +and PAGE_SIZE.  With the kernel slab allocator, if a page compresses
->>>> +to 60% of it original size, the memory savings gained through
->>>> +compression is lost in fragmentation because another object of
->>>> +the same size can't be stored in the leftover space.
->>>> +
->>>> +This ability to span pages results in zsmalloc allocations not being
->>>> +directly addressable by the user.  The user is given an
->>>> +non-dereferencable handle in response to an allocation request.
->>>> +That handle must be mapped, using zs_map_object(), which returns
->>>> +a pointer to the mapped region that can be used.  The mapping is
->>>> +necessary since the object data may reside in two different
->>>> +noncontigious pages.
->>> Do you mean the reason of  to use a zsmalloc object must map after
->>> malloc is object data maybe reside in two different nocontiguous pages?
->> Yes, that is one reason for the mapping.  The other reason (more of an
->> added bonus) is below.
->>
->>>> +
->>>> +For 32-bit systems, zsmalloc has the added benefit of being
->>>> +able to back slabs with HIGHMEM pages, something not possible
->>> What's the meaning of "back slabs with HIGHMEM pages"?
->> By HIGHMEM, I'm referring to the HIGHMEM memory zone on 32-bit systems
->> with larger that 1GB (actually a little less) of RAM.  The upper 3GB
->> of the 4GB address space, depending on kernel build options, is not
->> directly addressable by the kernel, but can be mapped into the kernel
->> address space with functions like kmap() or kmap_atomic().
->>
->> These pages can't be used by slab/slub because they are not
->> continuously mapped into the kernel address space.  However, since
->> zsmalloc requires a mapping anyway to handle objects that span
->> non-contiguous page boundaries, we do the kernel mapping as part of
->> the process.
->>
->> So zspages, the conceptual slab in zsmalloc backed by single-order
->> pages can include pages from the HIGHMEM zone as well.
+Em Thu, 21 Feb 2013 16:53:37 +0100
+Borislav Petkov <bp@alien8.de> escreveu:
+
+> On Thu, Feb 21, 2013 at 12:38:59PM -0300, Mauro Carvalho Chehab wrote:
+> > That allows APEI GHES driver to report errors directly, using
+> > the EDAC error report API.
+> > 
+> > Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> > ---
+> >  drivers/edac/edac_core.h |  17 ++++++++
+> >  drivers/edac/edac_mc.c   | 109 ++++++++++++++++++++++++++++++++++++-----------
+> >  2 files changed, 100 insertions(+), 26 deletions(-)
+> > 
+> > diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
+> > index 23bb99f..9c5da11 100644
+> > --- a/drivers/edac/edac_core.h
+> > +++ b/drivers/edac/edac_core.h
+> > @@ -453,6 +453,23 @@ extern struct mem_ctl_info *find_mci_by_dev(struct device *dev);
+> >  extern struct mem_ctl_info *edac_mc_del_mc(struct device *dev);
+> >  extern int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci,
+> >  				      unsigned long page);
+> > +
+> > +void edac_raw_mc_handle_error(const enum hw_event_mc_err_type type,
+> > +			  struct mem_ctl_info *mci,
+> > +			  long grain,
+> > +			  const u16 error_count,
+> > +			  const int top_layer,
+> > +			  const int mid_layer,
+> > +			  const int low_layer,
+> > +			  const unsigned long page_frame_number,
+> > +			  const unsigned long offset_in_page,
+> > +			  const unsigned long syndrome,
+> > +			  const char *msg,
+> > +			  const char *location,
+> > +			  const char *label,
+> > +			  const char *other_detail,
+> > +			  const bool enable_per_layer_report);
 > 
-> Thanks for your clarify,
->  http://lwn.net/Articles/537422/, your article about zswap in lwn.
->  "Additionally, the kernel slab allocator does not allow objects that
-> are less
-> than a page in size to span a page boundary. This means that if an
-> object is
-> PAGE_SIZE/2 + 1 bytes in size, it effectively use an entire page,
-> resulting in
-> ~50% waste. Hense there are *no kmalloc() cache size* between
-> PAGE_SIZE/2 and
-> PAGE_SIZE."
-> Are your sure? It seems that kmalloc cache support big size, your can
-> check in
-> include/linux/kmalloc_sizes.h
+> Why not merge this patch with 10/12?
+> 
+> You're adding edac_raw_mc_handle_error here and rewriting it in 10/12.
+> This looks like unnecessary churn to me.
 
-Yes, kmalloc can allocate large objects > PAGE_SIZE, but there are no
-cache sizes _between_ PAGE_SIZE/2 and PAGE_SIZE.  For example, on a
-system with 4k pages, there are no caches between kmalloc-2048 and
-kmalloc-4096.
+I did this way to to follow the "one patch per logical change rule".
+The rationale for this patch is to allow doing raw error reports,
+as needed by changeset 06/12.
 
-Seth
+The rationale for 10/12 was to reduce the stack pressure. While
+10/12 touches on the above routine, it's main focus is to fix a
+previous fixup of using a large space inside the stack during the
+memory report preparation.
 
+Regards,
+Mauro
