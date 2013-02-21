@@ -1,106 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab3BUVyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 16:54:14 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:58122 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753750Ab3BUVyK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 16:54:10 -0500
-Date: Thu, 21 Feb 2013 13:54:08 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Subject: Re: [PATCH 2/2] ima: add policy support for file system uuid
-In-Reply-To: <1360070895-29895-2-git-send-email-zohar@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.02.1302211352270.28115@chino.kir.corp.google.com>
-References: <1360070895-29895-1-git-send-email-zohar@linux.vnet.ibm.com> <1360070895-29895-2-git-send-email-zohar@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756143Ab3BUVxi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 16:53:38 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:46210 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753896Ab3BUVxf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 16:53:35 -0500
+Subject: Re: [PATCH 0/6] Introducing Device Tree Overlays
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <CANk1AXQ7ajnwTaHwwbyrri2YkX_60uC9xrQYWuR8u4eT2EQsew@mail.gmail.com>
+Date: Thu, 21 Feb 2013 13:53:04 -0800
+Cc: linux-doc@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
+        Russ Dill <Russ.Dill@ti.com>, Matt Porter <mporter@ti.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>, linux-omap@vger.kernel.org,
+        Matt Ranostay <mranostay@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>,
+        Joel A Fernandes <agnel.joel@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3A37C4DA-4D4D-4370-8305-15625B923E67@antoniou-consulting.com>
+References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com> <CANk1AXQ7ajnwTaHwwbyrri2YkX_60uC9xrQYWuR8u4eT2EQsew@mail.gmail.com>
+To: delicious quinoa <delicious.quinoa@gmail.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Feb 2013, Mimi Zohar wrote:
+Hi Alan,
 
-> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-> index 4adcd0f..23f49e3 100644
-> --- a/security/integrity/ima/ima_policy.c
-> +++ b/security/integrity/ima/ima_policy.c
-> @@ -16,6 +16,7 @@
->  #include <linux/magic.h>
->  #include <linux/parser.h>
->  #include <linux/slab.h>
-> +#include <linux/genhd.h>
->  
->  #include "ima.h"
->  
-> @@ -25,6 +26,7 @@
->  #define IMA_FSMAGIC	0x0004
->  #define IMA_UID		0x0008
->  #define IMA_FOWNER	0x0010
-> +#define IMA_FSUUID	0x0020
->  
->  #define UNKNOWN		0
->  #define MEASURE		0x0001	/* same as IMA_MEASURE */
-> @@ -45,6 +47,7 @@ struct ima_rule_entry {
->  	enum ima_hooks func;
->  	int mask;
->  	unsigned long fsmagic;
-> +	u8 fsuuid[16];
->  	kuid_t uid;
->  	kuid_t fowner;
->  	struct {
-> @@ -172,6 +175,9 @@ static bool ima_match_rules(struct ima_rule_entry *rule,
->  	if ((rule->flags & IMA_FSMAGIC)
->  	    && rule->fsmagic != inode->i_sb->s_magic)
->  		return false;
-> +	if ((rule->flags & IMA_FSUUID) &&
-> +		memcmp(rule->fsuuid, inode->i_sb->s_uuid, sizeof(rule->fsuuid)))
-> +		return false;
->  	if ((rule->flags & IMA_UID) && !uid_eq(rule->uid, cred->uid))
->  		return false;
->  	if ((rule->flags & IMA_FOWNER) && !uid_eq(rule->fowner, inode->i_uid))
-> @@ -346,7 +352,7 @@ enum {
->  	Opt_obj_user, Opt_obj_role, Opt_obj_type,
->  	Opt_subj_user, Opt_subj_role, Opt_subj_type,
->  	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid, Opt_fowner,
-> -	Opt_appraise_type
-> +	Opt_appraise_type, Opt_fsuuid
->  };
->  
->  static match_table_t policy_tokens = {
-> @@ -364,6 +370,7 @@ static match_table_t policy_tokens = {
->  	{Opt_func, "func=%s"},
->  	{Opt_mask, "mask=%s"},
->  	{Opt_fsmagic, "fsmagic=%s"},
-> +	{Opt_fsuuid, "fsuuid=%s"},
->  	{Opt_uid, "uid=%s"},
->  	{Opt_fowner, "fowner=%s"},
->  	{Opt_appraise_type, "appraise_type=%s"},
-> @@ -519,6 +526,19 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
->  			if (!result)
->  				entry->flags |= IMA_FSMAGIC;
->  			break;
-> +		case Opt_fsuuid:
-> +			ima_log_string(ab, "fsuuid", args[0].from);
-> +
-> +			if (memchr_inv(entry->fsuuid, 0x00,
-> +			    sizeof(entry->fsuuid))) {
-> +				result = -EINVAL;
-> +				break;
-> +			}
-> +
-> +			part_pack_uuid(args[0].from, entry->fsuuid);
-> +			entry->flags |= IMA_FSUUID;
-> +			result = 0;
-> +			break;
->  		case Opt_uid:
->  			ima_log_string(ab, "uid", args[0].from);
->  
+On Feb 21, 2013, at 1:25 PM, delicious quinoa wrote:
 
-We don't have part_pack_uuid() without CONFIG_BLOCK, so should this return 
--ENOTSUPP if that option is not enabled?
+> I like where this is heading.  I'm interested in a use case where IP
+> can be loaded into a FPGA, then add a blob to the device tree and load
+> some drivers.
+> 
+> I see your github tree.  If I wanted to cherry-pick your code and play
+> around with it, which branch should I use?  not-capebus-21?
+> 
+
+not-capebus-v21 is the latest one and indeed that has it in.
+
+Please note that I had some other FPGA people interested with it.
+Perhaps we can go through use cases to come up with your requirements
+
+
+> Thanks,
+> Alan Tull
+> Altera Corp
+> 
+
+Regards
+
+-- Pantelis
+
+> On Fri, Jan 4, 2013 at 1:31 PM, Pantelis Antoniou
+> <panto@antoniou-consulting.com> wrote:
+>> The following patchset introduces Device Tree overlays, a method
+>> of dynamically altering the kernel's live Device Tree.
+>> 
+>> This patchset is against mainline as of Friday Jan 4 2013.
+>> (4956964 Merge tag 'driver-core-3.8-rc2' of \
+>>        git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core)
+>> 
+>> Note that a separate patch for the DTC compiler has been posted and
+>> is required to compile the DTS files according to the documentation.
+>> The patch is "dtc: Dynamic symbols & fixup support"
+>> 
+>> An implementation patchset for a beaglebone cape loader will follow,
+>> but if you want to check out a working kernel for the beaglebone please
+>> pull from:
+>> 
+>> git://github.com/pantoniou/linux-bbxm.git branch not-capebus-v8
+>> 
+>> Pantelis Antoniou (6):
+>>  OF: Introduce device tree node flag helpers.
+>>  OF: export of_property_notify
+>>  OF: Export all DT proc update functions
+>>  OF: Introduce utility helper functions
+>>  OF: Introduce Device Tree resolve support.
+>>  OF: Introduce DT overlay support.
+>> 
+>> .../devicetree/dynamic-resolution-notes.txt        |  25 +
+>> Documentation/devicetree/overlay-notes.txt         | 179 +++++
+>> drivers/of/Kconfig                                 |  19 +
+>> drivers/of/Makefile                                |   4 +-
+>> drivers/of/base.c                                  | 114 +--
+>> drivers/of/overlay.c                               | 831 +++++++++++++++++++++
+>> drivers/of/resolver.c                              | 394 ++++++++++
+>> drivers/of/util.c                                  | 253 +++++++
+>> include/linux/of.h                                 | 243 ++++++
+>> 9 files changed, 2005 insertions(+), 57 deletions(-)
+>> create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
+>> create mode 100644 Documentation/devicetree/overlay-notes.txt
+>> create mode 100644 drivers/of/overlay.c
+>> create mode 100644 drivers/of/resolver.c
+>> create mode 100644 drivers/of/util.c
+>> 
+>> --
+>> 1.7.12
+>> 
+>> _______________________________________________
+>> devicetree-discuss mailing list
+>> devicetree-discuss@lists.ozlabs.org
+>> https://lists.ozlabs.org/listinfo/devicetree-discuss
+
