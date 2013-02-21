@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab3BUSzS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 13:55:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38143 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab3BUSzQ (ORCPT
+	id S1754486Ab3BUS4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 13:56:46 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58413 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121Ab3BUS4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 13:55:16 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>
-Cc: Dudley Du <dudl@cypress.com>, Kamal Mostafa <kamal@canonical.com>,
-        Kyle Fazzari <git@status.e4ward.com>
-Subject: [PATCH] Input: fix Cypress PS/2 Trackpad in Dell XPS12
-Date: Thu, 21 Feb 2013 10:55:55 -0800
-Message-Id: <1361472955-16759-1-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 21 Feb 2013 13:56:44 -0500
+Message-ID: <51266DE9.1020404@wwwdotorg.org>
+Date: Thu, 21 Feb 2013 11:56:41 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Hiroshi Doyu <hdoyu@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] memory: tegra_ahb_enable_smmu() depends on TEGRA_IOMMU_SMMU
+References: <1360175666-8377-1-git-send-email-hdoyu@nvidia.com> <5112A642.1020800@wwwdotorg.org> <20130206.211635.744922728615926717.hdoyu@nvidia.com> <20130211.193034.1346903263789032239.hdoyu@nvidia.com> <51250DDE.7010408@wwwdotorg.org> <20130221132851.GB17833@n2100.arm.linux.org.uk>
+In-Reply-To: <20130221132851.GB17833@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid firmware glitch in Cypress PS/2 Trackpad firmware version 11
-(as observed in Dell XPS12) which prevents driver from recognizing
-the trackpad.
+On 02/21/2013 06:28 AM, Russell King - ARM Linux wrote:
+> On Wed, Feb 20, 2013 at 10:54:38AM -0700, Stephen Warren wrote:
+>> On 02/11/2013 10:30 AM, Hiroshi Doyu wrote:
+>>> Hiroshi Doyu <hdoyu@nvidia.com> wrote @ Wed, 06 Feb 2013 21:16:35 +0200 (EET):
+>>>
+>>>> Hi Russell,
+>>>>
+>>>> Stephen Warren <swarren@wwwdotorg.org> wrote @ Wed, 6 Feb 2013 19:51:46 +0100:
+>>>>
+>>>>> On 02/06/2013 11:34 AM, Hiroshi Doyu wrote:
+>>>>>> New SoC, Tegra114 also uses SMMU. Change tegra_ahb_enable_smmu()'s
+>>>>>> dependency from ARCH_TEGRA_3x_SOC to TEGRA_IOMMU_SMMU. No need to edit
+>>>>>> whenever a new Tegra SoC comes.
+>>>>>>
+>>>>>> The following combination caused build error, which this patch fixes.
+>>>>>>
+>>>>>> CONFIG_ARCH_TEGRA_2x_SOC=y
+>>>>>> \# CONFIG_ARCH_TEGRA_3x_SOC is not set
+>>>>>> CONFIG_ARCH_TEGRA_114_SOC=y
+>>>>>>
+>>>>>> drivers/iommu/tegra-smmu.c:485: undefined reference to 'tegra_ahb_enable_smmu'
+>>>>>
+>>>>> Tested-by: Stephen Warren <swarren@nvidia.com>
+>>>>>
+>>>>> Russell, I assume Hiroshi should upload this to your patch tracker? It's
+>>>>> needed for 3.9.
+>>>>
+>>>> FYI: Submitted as:
+>>>> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7640/1
+>>>
+>>> Russell,
+>>>
+>>> Is the above ok for you?
+>>> Please let me know if still I need to do something.
+>>
+>> Russell, will this patch make it into your tree for 3.9? Do you think it
+>> should go through some other tree? Thanks.
+> 
+> I'll merge it, and I think it's a minor fix.  Should it be copied to
+> stable?  If so, which ones are affected?
 
-BugLink: http://launchpad.net/bugs/1103594
+It's only relevant for 3.9. It will apply without issue to some older
+kernels, but there's no need for it there.
 
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-Cc: Dudley Du <dudl@cypress.com>
----
- drivers/input/mouse/cypress_ps2.c |   19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
-index 1673dc6..f51765f 100644
---- a/drivers/input/mouse/cypress_ps2.c
-+++ b/drivers/input/mouse/cypress_ps2.c
-@@ -236,6 +236,13 @@ static int cypress_read_fw_version(struct psmouse *psmouse)
- 	cytp->fw_version = param[2] & FW_VERSION_MASX;
- 	cytp->tp_metrics_supported = (param[2] & TP_METRICS_MASK) ? 1 : 0;
- 
-+	/*
-+	 * Trackpad fw_version 11 (in Dell XPS12) yields a bogus response to
-+	 * CYTP_CMD_READ_TP_METRICS so do not try to use it. LP: #1103594.
-+	 */
-+	if (cytp->fw_version >= 11)
-+		cytp->tp_metrics_supported = 0;
-+
- 	psmouse_dbg(psmouse, "cytp->fw_version = %d\n", cytp->fw_version);
- 	psmouse_dbg(psmouse, "cytp->tp_metrics_supported = %d\n",
- 		 cytp->tp_metrics_supported);
-@@ -258,6 +265,9 @@ static int cypress_read_tp_metrics(struct psmouse *psmouse)
- 	cytp->tp_res_x = cytp->tp_max_abs_x / cytp->tp_width;
- 	cytp->tp_res_y = cytp->tp_max_abs_y / cytp->tp_high;
- 
-+	if (!cytp->tp_metrics_supported)
-+		return 0;
-+
- 	memset(param, 0, sizeof(param));
- 	if (cypress_send_ext_cmd(psmouse, CYTP_CMD_READ_TP_METRICS, param) == 0) {
- 		/* Update trackpad parameters. */
-@@ -315,18 +325,15 @@ static int cypress_read_tp_metrics(struct psmouse *psmouse)
- 
- static int cypress_query_hardware(struct psmouse *psmouse)
- {
--	struct cytp_data *cytp = psmouse->private;
- 	int ret;
- 
- 	ret = cypress_read_fw_version(psmouse);
- 	if (ret)
- 		return ret;
- 
--	if (cytp->tp_metrics_supported) {
--		ret = cypress_read_tp_metrics(psmouse);
--		if (ret)
--			return ret;
--	}
-+	ret = cypress_read_tp_metrics(psmouse);
-+	if (ret)
-+		return ret;
- 
- 	return 0;
- }
--- 
-1.7.10.4
-
+Thanks.
