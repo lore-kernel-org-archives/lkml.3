@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab3BUPyF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 10:54:05 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:34565 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755228Ab3BUPyD (ORCPT
+	id S1754910Ab3BUPyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 10:54:12 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36529 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755346Ab3BUPyJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 10:54:03 -0500
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5r/UwZ5vFU8=
-X-RZG-CLASS-ID: mo00
-Date: Thu, 21 Feb 2013 16:53:59 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
- Driver
-Message-ID: <20130221155359.GA28637@aepfle.de>
-References: <1360955396-14183-1-git-send-email-haiyangz@microsoft.com>
- <20130219165118.GA17715@aepfle.de>
- <1ca36b5d55c64ac6b8854c4f216ef8e5@DFM-TK5MBX15-06.exchange.corp.microsoft.com>
- <20130219184009.GA21783@aepfle.de>
- <7267f77544c24531b8fcccc2192b9f48@DFM-TK5MBX15-06.exchange.corp.microsoft.com>
+	Thu, 21 Feb 2013 10:54:09 -0500
 MIME-Version: 1.0
+Message-ID: <9e251fb2-be82-41d2-b6cd-e46525b263cb@default>
+Date: Thu, 21 Feb 2013 07:50:06 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: RE: [PATCHv6 0/8] zswap: compressed swap caching
+References: <1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <7267f77544c24531b8fcccc2192b9f48@DFM-TK5MBX15-06.exchange.corp.microsoft.com>
-User-Agent: Mutt/1.5.21.rev5638 (2013-02-08)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, Haiyang Zhang wrote:
-
-> > I havent read the vesafb code, but I think it can kind of give up the
-> > hardware, something ata_piix can not do.
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: [PATCHv6 0/8] zswap: compressed swap caching
 > 
-> In my test, the vesafb doesn't automatically give up the emulated video device,
-> unless I add the DMI based mechanism to let it exit on Hyper-V.
+> Changelog:
+> 
+> v6:
+> * fix improper freeing of rbtree (Cody)
 
->From reading the code, it seems to do that via
-do_remove_conflicting_framebuffers(). hypervfb does not set apertures
-etc, so that function is a noop.
+Cody's bug fix reminded me of a rather fundamental question:
 
+Why does zswap use a rbtree instead of a radix tree?
 
-My point is that with this new driver distro kernel will have no console
-output until hypervfb is loaded. On native hardware there is at least
-vesafb which can display something until initrd is running. So if the
-hypervisor allows that hypervfb can shutdown the emulated vesa hardware
-then it should do that.
+Intuitively, I'd expect that pgoff_t values would
+have a relatively high level of locality AND at any one time
+the set of stored pgoff_t values would be relatively non-sparse.
+This would argue that a radix tree would result in fewer nodes
+touched on average for lookup/insert/remove.
 
+Do you have evidence that rbtree is better here?
+(Preferably over a set of workloads larger than
+kernbench and SPECjbb ;-)  Or are there other
+important design issues that disqualify a radix tree?
 
-Olaf
+In the end, I guess either one (rbtree or radix tree)
+will work, but it would be nice to get this kind of
+fundamental design issue properly solved before merging
+is to be considered.
+
+Dan
