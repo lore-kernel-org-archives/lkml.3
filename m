@@ -1,167 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479Ab3BUDE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 22:04:28 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:28402 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751034Ab3BUDE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 22:04:27 -0500
-X-IronPort-AV: E=Sophos;i="4.84,706,1355068800"; 
-   d="scan'208";a="6739018"
-Message-ID: <51258E92.8040504@cn.fujitsu.com>
-Date: Thu, 21 Feb 2013 11:03:46 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751786Ab3BUDFq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 22:05:46 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:39900 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab3BUDFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Feb 2013 22:05:45 -0500
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
-        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
-        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
-        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
-        glommer@parallels.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [Bug fix PATCH 0/2] Make whatever node kernel resides in un-hotpluggable.
-References: <1361358056-1793-1-git-send-email-tangchen@cn.fujitsu.com> <20130220133650.4e0913f3.akpm@linux-foundation.org>
-In-Reply-To: <20130220133650.4e0913f3.akpm@linux-foundation.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/21 11:03:39,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/21 11:03:43,
-	Serialize complete at 2013/02/21 11:03:43
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+In-Reply-To: <20130220.170901.343210063003534302.davem@davemloft.net>
+References: <20130220.170901.343210063003534302.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 20 Feb 2013 19:05:24 -0800
+X-Google-Sender-Auth: 6WHQ7O2SNiwym__EChYI6OUWc0A
+Message-ID: <CA+55aFz=tzf9a-SY1CqCAxsqRDz=ebE69YoZ30at6kHeKKhsaA@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: David Miller <davem@davemloft.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 05:36 AM, Andrew Morton wrote:
-> On Wed, 20 Feb 2013 19:00:54 +0800
-> Tang Chen<tangchen@cn.fujitsu.com>  wrote:
+On Wed, Feb 20, 2013 at 2:09 PM, David Miller <davem@davemloft.net> wrote:
 >
->> As mentioned by HPA before, when we are using movablemem_map=acpi, if all the
->> memory in SRAT is hotpluggable, then the kernel will have no memory to use, and
->> will fail to boot.
->>
->> Before parsing SRAT, memblock has already reserved some memory in memblock.reserve,
->> which is used by the kernel, such as storing the kernel image. We are not able to
->> prevent the kernel from using these memory. So, these 2 patches make the node which
->> the kernel resides in un-hotpluggable.
->
-> I'm planning to roll all these into a single commit:
->
-> acpi-memory-hotplug-support-getting-hotplug-info-from-srat.patch
-> acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix.patch
-> acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix-fix.patch
-> acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix-fix-fix.patch
-> acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix-fix-fix-fix.patch
-> acpi-memory-hotplug-support-getting-hotplug-info-from-srat-fix-fix-fix-fix-fix.patch
->
-> for reasons of tree-cleanliness and to avoid bisection holes.  They're
-> at http://ozlabs.org/~akpm/mmots/broken-out/.
->
-> Can you please check the changelog for
-> acpi-memory-hotplug-support-getting-hotplug-info-from-srat.patch to see
-> if it needs any updates due to all the fixup patches?  If so, please
-> send me the new changelog, thanks.
+> 15) Orphan and delete a bunch of pre-historic networking drivers from
+>     Paul Gortmaker.
 
-Hi Andrew,
+Nooo.... You killed the 3c501 and 3c503 drivers! Snif.
 
-Please use the following changelog for
-acpi-memory-hotplug-support-getting-hotplug-info-from-srat.patch
+I wonder if they still worked..
 
-**********
-
-We now provide an option for users who don't want to specify physical 
-memory address
-in kernel commandline.
-
-         /*
-          * For movablemem_map=acpi:
-          *
-          * SRAT:                |_____| |_____| |_________| |_________| 
-......
-          * node id:                0       1         1           2
-          * hotpluggable:           n       y         y           n
-          * movablemem_map:              |_____| |_________|
-          *
-          * Using movablemem_map, we can prevent memblock from 
-allocating memory
-          * on ZONE_MOVABLE at boot time.
-          */
-
-So user just specify movablemem_map=acpi, and the kernel will use 
-hotpluggable info
-in SRAT to determine which memory ranges should be set as ZONE_MOVABLE.
-
-If all the memory ranges in SRAT is hotpluggable, then no memory can be 
-used by kernel.
-But before parsing SRAT, memblock has already reserve some memory ranges 
-for other
-purposes, such as for kernel image, and so on. We cannot prevent kernel 
-from using
-these memory. So we need to exclude these ranges even if these memory is 
-hotpluggable.
-
-Furthermore, there could be several memory ranges in the single node 
-which the kernel
-resides in. We may skip one range that have memory reserved by memblock, 
-but if the
-rest of memory is too small, then the kernel will fail to boot. So, make 
-the whole node
-which the kernel resides in un-hotpluggable. Then the kernel has enough 
-memory to use.
-
-NOTE: Using this way will cause NUMA performance down because the whole node
-       will be set as ZONE_MOVABLE, and kernel cannot use memory on it.
-       If users don't want to lose NUMA performance, just don't use it.
-
-**********
-
->
-> Also, please review the changelogging for these:
-
-The following xxx-fix-... patches will also be rolled, right ?
-I'll post the changelogs later.
-
-Thanks. :)
-
->
-> page_alloc-add-movable_memmap-kernel-parameter.patch
-> page_alloc-add-movable_memmap-kernel-parameter-fix.patch
-> page_alloc-add-movable_memmap-kernel-parameter-fix-fix.patch
-> page_alloc-add-movable_memmap-kernel-parameter-fix-fix-checkpatch-fixes.patch
-> page_alloc-add-movable_memmap-kernel-parameter-fix-fix-fix.patch
-> page_alloc-add-movable_memmap-kernel-parameter-rename-movablecore_map-to-movablemem_map.patch
->
-> memory-hotplug-remove-sys-firmware-memmap-x-sysfs.patch
-> memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix.patch
-> memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix.patch
-> memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix-fix.patch
-> memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix-fix-fix.patch
-> memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix-fix-fix-fix.patch
->
-> memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap.patch
-> memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix.patch
-> memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix-fix.patch
-> memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix-fix-fix.patch
-> memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix-fix-fix-fix.patch
->
-> memory-hotplug-common-apis-to-support-page-tables-hot-remove.patch
-> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix.patch
-> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix.patch
-> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix.patch
-> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix.patch
-> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix-fix.patch
-> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix-fix-fix.patch
-> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix-fix-fix-fix.patch
->
-> acpi-memory-hotplug-parse-srat-before-memblock-is-ready.patch
-> acpi-memory-hotplug-parse-srat-before-memblock-is-ready-fix.patch
-> acpi-memory-hotplug-parse-srat-before-memblock-is-ready-fix-fix.patch
->
->
-> and while we're there, let's pause to admire how prescient I was in
-> refusing to merge all this into 3.8-rc1 :)
->
+             Linus
