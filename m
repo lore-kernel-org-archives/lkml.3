@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab3BUTgU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 14:36:20 -0500
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:50644
+	id S1753760Ab3BUTgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 14:36:19 -0500
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:48824
 	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752977Ab3BUTgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752747Ab3BUTgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 21 Feb 2013 14:36:17 -0500
 x-originating-ip: 72.167.245.219
 From: "K. Y. Srinivasan" <kys@microsoft.com>
@@ -13,10 +13,10 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, ohering@suse.com,
         jbottomley@parallels.com, hch@infradead.org,
         linux-scsi@vger.kernel.org
-Cc: Olaf Hering <olaf@aepfle.de>, KY Srinivasan <kys@microsoft.com>
-Subject: [PATCH RESEND 2/4] scsi: storvsc: avoid usage of WRITE_SAME
-Date: Thu, 21 Feb 2013 12:04:51 -0800
-Message-Id: <1361477093-17549-2-git-send-email-kys@microsoft.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 3/4] Drivers: scsi: storvsc: Restructure error handling code on command completion
+Date: Thu, 21 Feb 2013 12:04:52 -0800
+Message-Id: <1361477093-17549-3-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1361477093-17549-1-git-send-email-kys@microsoft.com>
 References: <1361477060-17505-1-git-send-email-kys@microsoft.com>
@@ -25,60 +25,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olaf Hering <olaf@aepfle.de>
+In preparation for handling additional sense codes, restructure and cleanup
+the error handling code in the command completion code path.
 
-Set scsi_device->no_write_same because the host does not support it.
-Also blacklist WRITE_SAME to avoid (and log) accident usage.
-
-If the guest uses the ext4 filesystem, storvsc hangs while it prints
-these messages in an endless loop:
-...
-[  161.459523] hv_storvsc vmbus_0_1: cmd 0x41 scsi status 0x2 srb status 0x6
-[  161.462157] sd 2:0:0:0: [sda]
-[  161.463135] Sense Key : No Sense [current]
-[  161.464983] sd 2:0:0:0: [sda]
-[  161.465899] Add. Sense: No additional sense information
-[  161.468211] hv_storvsc vmbus_0_1: cmd 0x41 scsi status 0x2 srb status 0x6
-[  161.475766] sd 2:0:0:0: [sda]
-[  161.476728] Sense Key : No Sense [current]
-[  161.478284] sd 2:0:0:0: [sda]
-[  161.479441] Add. Sense: No additional sense information
-...
-
-This happens with a guest running on Windows Server 2012, but happens to
-work while running on Windows Server 2008. WRITE_SAME isnt really
-supported by both versions, so disable the command usage globally.
-
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Cc: KY Srinivasan <kys@microsoft.com>
-Cc: <linux-scsi@vger.kernel.org>
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/scsi/storvsc_drv.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/scsi/storvsc_drv.c |  101 +++++++++++++++++++++++++------------------
+ 1 files changed, 59 insertions(+), 42 deletions(-)
 
 diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 5ada1d0..2060509 100644
+index 2060509..16d5aac 100644
 --- a/drivers/scsi/storvsc_drv.c
 +++ b/drivers/scsi/storvsc_drv.c
-@@ -1156,6 +1156,8 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
- 
- 	blk_queue_bounce_limit(sdevice->request_queue, BLK_BOUNCE_ANY);
- 
-+	sdevice->no_write_same = 1;
-+
- 	return 0;
+@@ -761,6 +761,55 @@ cleanup:
+ 	return ret;
  }
  
-@@ -1238,6 +1240,8 @@ static bool storvsc_scsi_cmd_ok(struct scsi_cmnd *scmnd)
- 	u8 scsi_op = scmnd->cmnd[0];
++static void storvsc_handle_error(struct vmscsi_request *vm_srb,
++				struct scsi_cmnd *scmnd,
++				struct Scsi_Host *host,
++				u8 asc, u8 ascq)
++{
++	struct storvsc_scan_work *wrk;
++	void (*process_err_fn)(struct work_struct *work);
++	bool do_work = false;
++
++	switch (vm_srb->srb_status) {
++	case SRB_STATUS_ERROR:
++		/*
++		 * If there is an error; offline the device since all
++		 * error recovery strategies would have already been
++		 * deployed on the host side. However, if the command
++		 * were a pass-through command deal with it appropriately.
++		 */
++		switch (scmnd->cmnd[0]) {
++		case ATA_16:
++		case ATA_12:
++			set_host_byte(scmnd, DID_PASSTHROUGH);
++			break;
++		default:
++			set_host_byte(scmnd, DID_TARGET_FAILURE);
++		}
++		break;
++	case SRB_STATUS_INVALID_LUN:
++		do_work = true;
++		process_err_fn = storvsc_remove_lun;
++		break;
++	}
++	if (!do_work)
++		return;
++
++	/*
++	 * We need to schedule work to process this error; schedule it.
++	 */
++	wrk = kmalloc(sizeof(struct storvsc_scan_work), GFP_ATOMIC);
++	if (!wrk) {
++		set_host_byte(scmnd, DID_TARGET_FAILURE);
++		return;
++	}
++
++	wrk->host = host;
++	wrk->lun = vm_srb->lun;
++	INIT_WORK(&wrk->work, process_err_fn);
++	schedule_work(&wrk->work);
++}
++
  
- 	switch (scsi_op) {
-+	/* the host does not handle WRITE_SAME, log accident usage */
-+	case WRITE_SAME:
- 	/*
- 	 * smartd sends this command and the host does not handle
- 	 * this. So, don't send it.
+ static void storvsc_command_completion(struct storvsc_cmd_request *cmd_request)
+ {
+@@ -769,8 +818,13 @@ static void storvsc_command_completion(struct storvsc_cmd_request *cmd_request)
+ 	void (*scsi_done_fn)(struct scsi_cmnd *);
+ 	struct scsi_sense_hdr sense_hdr;
+ 	struct vmscsi_request *vm_srb;
+-	struct storvsc_scan_work *wrk;
+ 	struct stor_mem_pools *memp = scmnd->device->hostdata;
++	struct Scsi_Host *host;
++	struct storvsc_device *stor_dev;
++	struct hv_device *dev = host_dev->dev;
++
++	stor_dev = get_in_stor_device(dev);
++	host = stor_dev->host;
+ 
+ 	vm_srb = &cmd_request->vstor_packet.vm_srb;
+ 	if (cmd_request->bounce_sgl_count) {
+@@ -783,55 +837,18 @@ static void storvsc_command_completion(struct storvsc_cmd_request *cmd_request)
+ 					cmd_request->bounce_sgl_count);
+ 	}
+ 
+-	/*
+-	 * If there is an error; offline the device since all
+-	 * error recovery strategies would have already been
+-	 * deployed on the host side. However, if the command
+-	 * were a pass-through command deal with it appropriately.
+-	 */
+ 	scmnd->result = vm_srb->scsi_status;
+ 
+-	if (vm_srb->srb_status == SRB_STATUS_ERROR) {
+-		switch (scmnd->cmnd[0]) {
+-		case ATA_16:
+-		case ATA_12:
+-			set_host_byte(scmnd, DID_PASSTHROUGH);
+-			break;
+-		default:
+-			set_host_byte(scmnd, DID_TARGET_FAILURE);
+-		}
+-	}
+-
+-
+-	/*
+-	 * If the LUN is invalid; remove the device.
+-	 */
+-	if (vm_srb->srb_status == SRB_STATUS_INVALID_LUN) {
+-		struct storvsc_device *stor_dev;
+-		struct hv_device *dev = host_dev->dev;
+-		struct Scsi_Host *host;
+-
+-		stor_dev = get_in_stor_device(dev);
+-		host = stor_dev->host;
+-
+-		wrk = kmalloc(sizeof(struct storvsc_scan_work),
+-				GFP_ATOMIC);
+-		if (!wrk) {
+-			scmnd->result = DID_TARGET_FAILURE << 16;
+-		} else {
+-			wrk->host = host;
+-			wrk->lun = vm_srb->lun;
+-			INIT_WORK(&wrk->work, storvsc_remove_lun);
+-			schedule_work(&wrk->work);
+-		}
+-	}
+-
+ 	if (scmnd->result) {
+ 		if (scsi_normalize_sense(scmnd->sense_buffer,
+ 				SCSI_SENSE_BUFFERSIZE, &sense_hdr))
+ 			scsi_print_sense_hdr("storvsc", &sense_hdr);
+ 	}
+ 
++	if (vm_srb->srb_status != SRB_STATUS_SUCCESS)
++		storvsc_handle_error(vm_srb, scmnd, host, sense_hdr.asc,
++					 sense_hdr.ascq);
++
+ 	scsi_set_resid(scmnd,
+ 		cmd_request->data_buffer.len -
+ 		vm_srb->data_transfer_length);
 -- 
 1.7.4.1
 
