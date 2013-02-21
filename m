@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab3BUCBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 21:01:53 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:47838 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab3BUCBu (ORCPT
+	id S1752231Ab3BUCCR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 21:02:17 -0500
+Received: from service.web3.rootnode.net ([46.105.38.32]:54599 "EHLO
+	mail1.rootnode.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab3BUCCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 21:01:50 -0500
-Date: Thu, 21 Feb 2013 13:01:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hauke Mehrtens <hauke@hauke-m.de>, John Crispin <blogic@openwrt.org>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: linux-next: manual merge of the net-next tree with the mips tree
-Message-Id: <20130221130136.39e7e0fa939e749457ba1f52@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__21_Feb_2013_13_01_36_+1100_mW/_qQYgPDmuYDO4"
+	Wed, 20 Feb 2013 21:02:15 -0500
+X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Feb 2013 21:02:15 EST
+From: Pawel Moll <mail@pawelmoll.com>
+To: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>
+Cc: Daniel Mack <daniel@caiaq.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Pawel Moll <mail@pawelmoll.com>
+Subject: [PATCH] ALSA: usb: Fix Processing Unit Descriptor parsers
+Date: Thu, 21 Feb 2013 01:55:50 +0000
+Message-Id: <1361411750-30056-1-git-send-email-mail@pawelmoll.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__21_Feb_2013_13_01_36_+1100_mW/_qQYgPDmuYDO4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit 99fc86450c439039d2ef88d06b222fd51a779176 "ALSA: usb-mixer:
+parse descriptors with structs" introduced a set of useful parsers
+for descriptors. Unfortunately the parses for the Processing Unit
+Descriptor came with a very subtle bug...
 
-Hi all,
+Functions uac_processing_unit_iProcessing() and
+uac_processing_unit_specific() were indexing the baSourceID array
+forgetting the fields before the iProcessing and process-specific
+descriptors.
 
-Today's linux-next merge of the net-next tree got a conflict in
-include/linux/ssb/ssb_driver_gige.h between commit 111bd981e221 ("MIPS:
-BCM47XX: add bcm47xx prefix in front of nvram function names") from the
-mips tree and commit 180996c30517 ("ssb: get mac address from sprom
-struct for gige driver") from the net-next tree.
+The problem was observed with Sound Blaster Extigy mixer,
+where nNrModes in Up/Down-mix Processing Unit Descriptor
+was accessed at offset 10 of the descriptor (value 0)
+instead of offset 15 (value 7). In result the resulting
+control had interesting limit values:
 
-I fixed it up (the latter seems to supercede the former, so I used that)
-and can carry the fix as necessary (no action is required).
+Simple mixer control 'Channel Routing Mode Select',0
+  Capabilities: volume volume-joined penum
+  Playback channels: Mono
+  Capture channels: Mono
+  Limits: 0 - -1
+  Mono: -1 [100%]
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Fixed by starting from the bmControls, which was calculated
+correctly, instead of baSourceID.
 
---Signature=_Thu__21_Feb_2013_13_01_36_+1100_mW/_qQYgPDmuYDO4
-Content-Type: application/pgp-signature
+Now the mentioned control is fine:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Simple mixer control 'Channel Routing Mode Select',0
+  Capabilities: volume volume-joined penum
+  Playback channels: Mono
+  Capture channels: Mono
+  Limits: 0 - 6
+  Mono: 0 [0%]
 
-iQIcBAEBCAAGBQJRJYAAAAoJEECxmPOUX5FEt7QP/0avKyr2j4BUA22cL7/i2Tyi
-2iDUOaxa2BvApBfxuSi5AMiQUNvQn/NPtPnhimpmfZxccwRelwubtT78GzsHFATO
-pqno3nPBAVKvhtvSeMNm9vhOOJFeKdWGGXypW4/noZyw0OKuYXwvegFx3HU0iBdi
-C/W3AOqTpFeDRWkXkTJnmcWRn2TkyRq0lOYOSFt1PC+J7HLvE8YSOqOwHI6664Ua
-BKvaT2V7vPIYjq18X318d9qHPYJ3UY7cLH/5jw+F29C8l90kkLlCWwS5QtQ6TE55
-xaNL/3ZNDrYKTcsZEzdgflpgtaLZIW2uqKctrxQFS2L+eDb5wNBQoLubfDihnl1H
-qBRQTiYJOGG/aD8/07BhHaqIyOoruWQMxZKpDfzuOZ+00G2rOMD7DtNwsR81t6Fo
-jHUNF54fZp/mYXG4EGLShhzWRCryqjTAhytCPbjizf1ON+WVp+8vCRS1vdTFHGgN
-TpCuItFOPKS3B9P7XPqKIB9st8zYwkHtmYU2LtS4IPcbK5x/kvULJU3q9pPBMjGO
-Z0AIsa3JE4PjGj5s7+HY1y3Vd6gFaeHKyHzxgxM1FJN/XymbCIj2Fjvw+CRFuLl4
-jGzPkiQpPdQ050cQxTI5YC64ZTvaefuV2bCEBh8WkBU4NZVampaaW2lnzMj2guSh
-H8MrWoLPZ4zFu4nY9KGC
-=iaeS
------END PGP SIGNATURE-----
+Signed-off-by: Pawel Moll <mail@pawelmoll.com>
+---
+ include/uapi/linux/usb/audio.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---Signature=_Thu__21_Feb_2013_13_01_36_+1100_mW/_qQYgPDmuYDO4--
+diff --git a/include/uapi/linux/usb/audio.h b/include/uapi/linux/usb/audio.h
+index ac90037..d2314be 100644
+--- a/include/uapi/linux/usb/audio.h
++++ b/include/uapi/linux/usb/audio.h
+@@ -384,14 +384,16 @@ static inline __u8 uac_processing_unit_iProcessing(struct uac_processing_unit_de
+ 						   int protocol)
+ {
+ 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
+-	return desc->baSourceID[desc->bNrInPins + control_size];
++	return *(uac_processing_unit_bmControls(desc, protocol)
++			+ control_size);
+ }
+ 
+ static inline __u8 *uac_processing_unit_specific(struct uac_processing_unit_descriptor *desc,
+ 						 int protocol)
+ {
+ 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
+-	return &desc->baSourceID[desc->bNrInPins + control_size + 1];
++	return uac_processing_unit_bmControls(desc, protocol)
++			+ control_size + 1;
+ }
+ 
+ /* 4.5.2 Class-Specific AS Interface Descriptor */
+-- 
+1.7.10.4
+
