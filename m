@@ -1,77 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970Ab3BUI3w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 03:29:52 -0500
-Received: from smtp2.macqel.be ([194.78.208.39]:8550 "EHLO smtp2.macqel.be"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752734Ab3BUI3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 03:29:51 -0500
-Date: Thu, 21 Feb 2013 09:29:47 +0100
-From: Philippe De Muyter <phdm@macqel.be>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-kernel@vger.kernel.org, Greg Ungerer <gerg@snapgear.com>,
-        Stany MARCEL <smarcel@pactenovation.fr>, Dan Williams <djbw@fb.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH resent] dma: add the freescale-provided MultiChannel
-	DMA driver
-Message-ID: <20130221082947.GA8799@frolo.macqel>
-References: <1359999503-29215-1-git-send-email-phdm@macqel.be> <20130220063147.GD23302@intel.com>
+	id S1753036Ab3BUIaA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 03:30:00 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:44679 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab3BUI35 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 03:29:57 -0500
+Date: Thu, 21 Feb 2013 00:29:15 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 7/7] ksm: allocate roots when needed
+In-Reply-To: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils>
+Message-ID: <alpine.LNX.2.00.1302210027450.17843@eggly.anvils>
+References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130220063147.GD23302@intel.com>
-User-Agent: Mutt/1.5.16 (2007-06-09)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
+It is a pity to have MAX_NUMNODES+MAX_NUMNODES tree roots statically
+allocated, particularly when very few users will ever actually tune
+merge_across_nodes 0 to use more than 1+1 of those trees.  Not a big
+deal (only 16kB wasted on each machine with CONFIG_MAXSMP), but a pity.
 
-On Wed, Feb 20, 2013 at 12:01:47PM +0530, Vinod Koul wrote:
-> On Mon, Feb 04, 2013 at 06:38:23PM +0100, Philippe De Muyter wrote:
-> > This patch adds the (cleaned-up) Freescale-provided MultiChannel DMA
-> > driver for ColdFire M54xx and MPC8220 processors.
-> > 
-> > This driver is needed for the ethernet FEC driver of the ColdFire
-> > M547x and M548x processors.
-> > 
-> > It is not dmaengine-enabled, but that's not needed for the above FEC driver.
-> > I have however installed it in the driver/dma tree as this IP block is not
-> > m68k-specific, but freescale-specific, and shared at least between powerpc
-> > and coldfire parts (possibly arm-parts as well).
-> > 
-> > The installation in drivers/dma implies a small rule change in
-> > drivers/Makefile to enter drivers/dma on CONFIG_DMADEVICES instead
-> > of CONFIG_DMAENGINE.
-> BIG NAK
+Start off with 1+1 statically allocated, then if merge_across_nodes is
+ever tuned, allocate for nr_node_ids+nr_node_ids.  Do not attempt to
+free up the extra if it's tuned back, that would be a waste of effort.
 
-Thanks for your answer.
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+ mm/ksm.c |   72 ++++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 49 insertions(+), 23 deletions(-)
 
-> 1. Please run Checkpath and reread Documentation/CodingStyle, specfically CH4.
-> Avoid the CamelCase
-
-I had run checkpatch when I made the patch, but CamelCase was not yet searched
-for at that time.  I will look at that.
-
-> 2. If you are not using dmaengine APIs then drivers/dma/ is not a place for you.
-
-What would be the place then for a multi-architecture dma driver.  Freescale often
-reuses the same blocks for its m68k (coldfire), powerpc and arm (iMX) product
-lines.  A dma driver with many similarities is already under the arch/powerpc
-subtree.  I would like to avoid that, because it clearly hurts reusability.
-
-> 3. While glancing at the code, I dont see why you cant use dmaengine APIs?
-
-lack of need (the sole current user of this dma driver is a FEC ethernet driver
-which uses the current interface), time and expertise.  but any help is welcome.
-
-> 4. lastly, am blown off by your own implementation of memcpy, WHY? Kernel is
-> smarter than you!
-
-I agree, but don't shoot the messenger.  I am not the original author, this is
-freescale code.  I only ensured that it compiles and works with current kernels,
-and suppressed many checkpatch warnings.
-
-Best regards
-
-Philippe
+--- mmotm.orig/mm/ksm.c	2013-02-20 22:50:10.540032454 -0800
++++ mmotm/mm/ksm.c	2013-02-20 23:21:28.908077096 -0800
+@@ -183,8 +183,10 @@ struct rmap_item {
+ #define STABLE_FLAG	0x200	/* is listed from the stable tree */
+ 
+ /* The stable and unstable tree heads */
+-static struct rb_root root_unstable_tree[MAX_NUMNODES];
+-static struct rb_root root_stable_tree[MAX_NUMNODES];
++static struct rb_root one_stable_tree[1] = { RB_ROOT };
++static struct rb_root one_unstable_tree[1] = { RB_ROOT };
++static struct rb_root *root_stable_tree = one_stable_tree;
++static struct rb_root *root_unstable_tree = one_unstable_tree;
+ 
+ /* Recently migrated nodes of stable tree, pending proper placement */
+ static LIST_HEAD(migrate_nodes);
+@@ -224,8 +226,10 @@ static unsigned int ksm_thread_sleep_mil
+ #ifdef CONFIG_NUMA
+ /* Zeroed when merging across nodes is not allowed */
+ static unsigned int ksm_merge_across_nodes = 1;
++static int ksm_nr_node_ids = 1;
+ #else
+ #define ksm_merge_across_nodes	1U
++#define ksm_nr_node_ids		1
+ #endif
+ 
+ #define KSM_RUN_STOP	0
+@@ -506,7 +510,7 @@ static void remove_node_from_stable_tree
+ 		list_del(&stable_node->list);
+ 	else
+ 		rb_erase(&stable_node->node,
+-			 &root_stable_tree[NUMA(stable_node->nid)]);
++			 root_stable_tree + NUMA(stable_node->nid));
+ 	free_stable_node(stable_node);
+ }
+ 
+@@ -642,7 +646,7 @@ static void remove_rmap_item_from_tree(s
+ 		BUG_ON(age > 1);
+ 		if (!age)
+ 			rb_erase(&rmap_item->node,
+-				 &root_unstable_tree[NUMA(rmap_item->nid)]);
++				 root_unstable_tree + NUMA(rmap_item->nid));
+ 		ksm_pages_unshared--;
+ 		rmap_item->address &= PAGE_MASK;
+ 	}
+@@ -740,7 +744,7 @@ static int remove_all_stable_nodes(void)
+ 	int nid;
+ 	int err = 0;
+ 
+-	for (nid = 0; nid < nr_node_ids; nid++) {
++	for (nid = 0; nid < ksm_nr_node_ids; nid++) {
+ 		while (root_stable_tree[nid].rb_node) {
+ 			stable_node = rb_entry(root_stable_tree[nid].rb_node,
+ 						struct stable_node, node);
+@@ -1148,6 +1152,7 @@ static struct page *try_to_merge_two_pag
+ static struct page *stable_tree_search(struct page *page)
+ {
+ 	int nid;
++	struct rb_root *root;
+ 	struct rb_node **new;
+ 	struct rb_node *parent;
+ 	struct stable_node *stable_node;
+@@ -1161,8 +1166,9 @@ static struct page *stable_tree_search(s
+ 	}
+ 
+ 	nid = get_kpfn_nid(page_to_pfn(page));
++	root = root_stable_tree + nid;
+ again:
+-	new = &root_stable_tree[nid].rb_node;
++	new = &root->rb_node;
+ 	parent = NULL;
+ 
+ 	while (*new) {
+@@ -1217,7 +1223,7 @@ again:
+ 	list_del(&page_node->list);
+ 	DO_NUMA(page_node->nid = nid);
+ 	rb_link_node(&page_node->node, parent, new);
+-	rb_insert_color(&page_node->node, &root_stable_tree[nid]);
++	rb_insert_color(&page_node->node, root);
+ 	get_page(page);
+ 	return page;
+ 
+@@ -1225,11 +1231,10 @@ replace:
+ 	if (page_node) {
+ 		list_del(&page_node->list);
+ 		DO_NUMA(page_node->nid = nid);
+-		rb_replace_node(&stable_node->node,
+-				&page_node->node, &root_stable_tree[nid]);
++		rb_replace_node(&stable_node->node, &page_node->node, root);
+ 		get_page(page);
+ 	} else {
+-		rb_erase(&stable_node->node, &root_stable_tree[nid]);
++		rb_erase(&stable_node->node, root);
+ 		page = NULL;
+ 	}
+ 	stable_node->head = &migrate_nodes;
+@@ -1248,13 +1253,15 @@ static struct stable_node *stable_tree_i
+ {
+ 	int nid;
+ 	unsigned long kpfn;
++	struct rb_root *root;
+ 	struct rb_node **new;
+ 	struct rb_node *parent = NULL;
+ 	struct stable_node *stable_node;
+ 
+ 	kpfn = page_to_pfn(kpage);
+ 	nid = get_kpfn_nid(kpfn);
+-	new = &root_stable_tree[nid].rb_node;
++	root = root_stable_tree + nid;
++	new = &root->rb_node;
+ 
+ 	while (*new) {
+ 		struct page *tree_page;
+@@ -1293,7 +1300,7 @@ static struct stable_node *stable_tree_i
+ 	set_page_stable_node(kpage, stable_node);
+ 	DO_NUMA(stable_node->nid = nid);
+ 	rb_link_node(&stable_node->node, parent, new);
+-	rb_insert_color(&stable_node->node, &root_stable_tree[nid]);
++	rb_insert_color(&stable_node->node, root);
+ 
+ 	return stable_node;
+ }
+@@ -1323,7 +1330,7 @@ struct rmap_item *unstable_tree_search_i
+ 	int nid;
+ 
+ 	nid = get_kpfn_nid(page_to_pfn(page));
+-	root = &root_unstable_tree[nid];
++	root = root_unstable_tree + nid;
+ 	new = &root->rb_node;
+ 
+ 	while (*new) {
+@@ -1420,7 +1427,7 @@ static void cmp_and_merge_page(struct pa
+ 		if (stable_node->head != &migrate_nodes &&
+ 		    get_kpfn_nid(stable_node->kpfn) != NUMA(stable_node->nid)) {
+ 			rb_erase(&stable_node->node,
+-				 &root_stable_tree[NUMA(stable_node->nid)]);
++				 root_stable_tree + NUMA(stable_node->nid));
+ 			stable_node->head = &migrate_nodes;
+ 			list_add(&stable_node->list, stable_node->head);
+ 		}
+@@ -1572,7 +1579,7 @@ static struct rmap_item *scan_get_next_r
+ 			}
+ 		}
+ 
+-		for (nid = 0; nid < nr_node_ids; nid++)
++		for (nid = 0; nid < ksm_nr_node_ids; nid++)
+ 			root_unstable_tree[nid] = RB_ROOT;
+ 
+ 		spin_lock(&ksm_mmlist_lock);
+@@ -2089,8 +2096,8 @@ static void ksm_check_stable_tree(unsign
+ 	struct rb_node *node;
+ 	int nid;
+ 
+-	for (nid = 0; nid < nr_node_ids; nid++) {
+-		node = rb_first(&root_stable_tree[nid]);
++	for (nid = 0; nid < ksm_nr_node_ids; nid++) {
++		node = rb_first(root_stable_tree + nid);
+ 		while (node) {
+ 			stable_node = rb_entry(node, struct stable_node, node);
+ 			if (stable_node->kpfn >= start_pfn &&
+@@ -2100,7 +2107,7 @@ static void ksm_check_stable_tree(unsign
+ 				 * which is why we keep kpfn instead of page*
+ 				 */
+ 				remove_node_from_stable_tree(stable_node);
+-				node = rb_first(&root_stable_tree[nid]);
++				node = rb_first(root_stable_tree + nid);
+ 			} else
+ 				node = rb_next(node);
+ 			cond_resched();
+@@ -2293,8 +2300,31 @@ static ssize_t merge_across_nodes_store(
+ 	if (ksm_merge_across_nodes != knob) {
+ 		if (ksm_pages_shared || remove_all_stable_nodes())
+ 			err = -EBUSY;
+-		else
++		else if (root_stable_tree == one_stable_tree) {
++			struct rb_root *buf;
++			/*
++			 * This is the first time that we switch away from the
++			 * default of merging across nodes: must now allocate
++			 * a buffer to hold as many roots as may be needed.
++			 * Allocate stable and unstable together:
++			 * MAXSMP NODES_SHIFT 10 will use 16kB.
++			 */
++			buf = kcalloc(nr_node_ids + nr_node_ids,
++				sizeof(*buf), GFP_KERNEL | __GFP_ZERO);
++			/* Let us assume that RB_ROOT is NULL is zero */
++			if (!buf)
++				err = -ENOMEM;
++			else {
++				root_stable_tree = buf;
++				root_unstable_tree = buf + nr_node_ids;
++				/* Stable tree is empty but not the unstable */
++				root_unstable_tree[0] = one_unstable_tree[0];
++			}
++		}
++		if (!err) {
+ 			ksm_merge_across_nodes = knob;
++			ksm_nr_node_ids = knob ? 1 : nr_node_ids;
++		}
+ 	}
+ 	mutex_unlock(&ksm_thread_mutex);
+ 
+@@ -2373,15 +2403,11 @@ static int __init ksm_init(void)
+ {
+ 	struct task_struct *ksm_thread;
+ 	int err;
+-	int nid;
+ 
+ 	err = ksm_slab_init();
+ 	if (err)
+ 		goto out;
+ 
+-	for (nid = 0; nid < nr_node_ids; nid++)
+-		root_stable_tree[nid] = RB_ROOT;
+-
+ 	ksm_thread = kthread_run(ksm_scan_thread, NULL, "ksmd");
+ 	if (IS_ERR(ksm_thread)) {
+ 		printk(KERN_ERR "ksm: creating kthread failed\n");
