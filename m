@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab3BUSKc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 13:10:32 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:63690 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756133Ab3BUSK2 (ORCPT
+	id S1755438Ab3BUSKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 13:10:16 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:61612 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754077Ab3BUSKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 13:10:28 -0500
-Date: Thu, 21 Feb 2013 10:10:47 -0800
+	Thu, 21 Feb 2013 13:10:13 -0500
+Date: Thu, 21 Feb 2013 10:10:38 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.0.66
-Message-ID: <20130221181047.GB7510@kroah.com>
-References: <20130221181038.GA7510@kroah.com>
+Subject: Linux 3.0.66
+Message-ID: <20130221181038.GA7510@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
 Content-Disposition: inline
-In-Reply-To: <20130221181038.GA7510@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Makefile b/Makefile
-index cdba5c1..da3ff21 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 65
-+SUBLEVEL = 66
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/include/linux/syslog.h b/include/linux/syslog.h
-index 3891139..ce4c665 100644
---- a/include/linux/syslog.h
-+++ b/include/linux/syslog.h
-@@ -47,6 +47,12 @@
- #define SYSLOG_FROM_CALL 0
- #define SYSLOG_FROM_FILE 1
- 
-+/*
-+ * Syslog priority (PRI) maximum length in char : '<[0-9]{1,3}>'
-+ * See RFC5424 for details
-+*/
-+#define SYSLOG_PRI_MAX_LENGTH 5
-+
- int do_syslog(int type, char __user *buf, int count, bool from_file);
- 
- #endif /* _LINUX_SYSLOG_H */
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 3fc4708..6edc4e89 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -633,8 +633,19 @@ static void call_console_drivers(unsigned start, unsigned end)
- 	start_print = start;
- 	while (cur_index != end) {
- 		if (msg_level < 0 && ((end - cur_index) > 2)) {
-+			/*
-+			 * prepare buf_prefix, as a contiguous array,
-+			 * to be processed by log_prefix function
-+			 */
-+			char buf_prefix[SYSLOG_PRI_MAX_LENGTH+1];
-+			unsigned i;
-+			for (i = 0; i < ((end - cur_index)) && (i < SYSLOG_PRI_MAX_LENGTH); i++) {
-+				buf_prefix[i] = LOG_BUF(cur_index + i);
-+			}
-+			buf_prefix[i] = '\0'; /* force '\0' as last string character */
-+
- 			/* strip log prefix */
--			cur_index += log_prefix(&LOG_BUF(cur_index), &msg_level, NULL);
-+			cur_index += log_prefix((const char *)&buf_prefix, &msg_level, NULL);
- 			start_print = cur_index;
- 		}
- 		while (cur_index != end) {
+--FCuugMFkClbJLl1L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+I'm announcing the release of the 3.0.66 kernel.
+
+All users of the 3.0 kernel series must upgrade.
+
+The updated 3.0.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile               |    2 +-
+ include/linux/syslog.h |    6 ++++++
+ kernel/printk.c        |   13 ++++++++++++-
+ 3 files changed, 19 insertions(+), 2 deletions(-)
+
+Alexandre SIMON (1):
+      printk: fix buffer overflow when calling log_prefix function from call_console_drivers
+
+Greg Kroah-Hartman (1):
+      3.0.66
+
+
+--FCuugMFkClbJLl1L
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRJmMeAAoJEDjbvchgkmk+Y7MP/iQCixrVj9cMLZ7dl5OJpdFw
+jZafkDWyFEi+jFRvERQtYYTUvZ5CYidW8Ja26gugp/h1hj/amLOb14ijW5/AnAQk
+X01JeUo1mxW/TlOnFq7w8YAL/mgN+EdpSwAHwD3TN/V4/Fn2mMwOtYMRGEDmg1aG
+kNl9BxxqpzjONEELsq33gICx0QfTaArjPaVKtZg8qRm03qjsX/4LfMu/dgXC8sJZ
+pxchnU7RRfwB/WDET8MCZ60Ucs/RXrB/7Hk6zEyRc+5tKrkrVbXw5zHW70v/Lt6O
+vl2gDyMsK05AeodSeqq4o3LscmEPNfDGvQ6/JZ1WTDcJT3SKSYwnM1hGAigXbFXl
+QzzmsvOZjuS6R+kLUiIw/p+u+jYuhmsKTeeNzPgz5CODtC++39p8IevDYPSYTmWm
+oH8PTeOmYwsjf2IozQUTzjCIJNJVpqnL977oKKScuelOBI5azQRMjeVL49ajpp6k
+UYBYLGfmPHp03xjZ4KGElwTg9EEJCMrFd7z8pHZYfBwEO8Qe8pSdFex444cs/Jl4
+FJ0zyrI8jzKUjGympNH4kUoHn44RKZykZUttW29bHIqW7kveXgN6L6xKlfEoeABB
+YVeFfjupVyJQjgvqksKXJ1BvYYx77nbZkZG0pKuX1RlG5oe45On98X7/8niwU8V9
+MvTqhFkzxQOxOnCDxe85
+=5zh0
+-----END PGP SIGNATURE-----
+
+--FCuugMFkClbJLl1L--
