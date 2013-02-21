@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab3BUIbi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 03:31:38 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:44532 "EHLO
+	id S1753226Ab3BUIcS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 03:32:18 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:44638 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752393Ab3BUIbh (ORCPT
+	with ESMTP id S1752487Ab3BUIcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 03:31:37 -0500
-X-AuditID: cbfee691-b7f556d000001a24-cc-5125db674a4f
+	Thu, 21 Feb 2013 03:32:17 -0500
+X-AuditID: cbfee68d-b7f4f6d000004209-b4-5125db90dd99
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] rtc: rtc-v3020: use gpio_request_one()
-Date: Thu, 21 Feb 2013 17:31:35 +0900
-Message-id: <00cb01ce100d$dc282200$94786600$%han@samsung.com>
+Subject: [PATCH 01/12] rtc: rtc-imxdi: use devm_clk_get()
+Date: Thu, 21 Feb 2013 17:32:15 +0900
+Message-id: <00cc01ce100d$f42fddc0$dc8f9940$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4QDdwKC6fcYlQATrOgz+ir+bOZGw==
+Thread-index: Ac4QDe9M0/OnFjrjTvSUwIYm7R1WAg==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t8zI93026qBBvsvWllc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mm5dyCuawV7z7t4elgfEXaxcjJ4eEgIlEw+x9jBC2mMSFe+vZ
-	uhi5OIQEljFKNPS0McMUnZtziwkiMZ1RYvbRa4wQzmwmif+bjrOAVLEJqEl8+XKYvYuRg0NE
-	QF+irUUDpIZZoJdR4kzvbnaQGmEBc4lbH9eD1bMIqEpMOXaDGaSeV8BWon8SJ0iYV0BQ4sfk
-	e2AlzAJaEut3HmeCsOUlNq95C1YuIaAu8eivLkhYREBPYtbjZVDlIhL7XrwDO01CoJtdYvbP
-	C1CrBCS+TT7EAtErK7HpANRfkhIHV9xgmcAoNgvJ5llINs9CsnkWkhULGFlWMYqmFiQXFCel
-	F5nqFSfmFpfmpesl5+duYoTEycQdjPcPWB9iTAZaP5FZSjQ5HxhneSXxhsbGJmYmpibmlqbm
-	pqQJK4nzyl+SCRQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAaL74s71619G6ecx2VU9Oix41
-	YjBrW39oyimF+4q39Se88VhxYLPz5sb+LJN9JbXqXo6TZapuf0rk36Yz567Tpv3fuHfP7T9U
-	+rcwb1lk8fV1Wv3rJm3xtvUwsIha8fAj9zz2BvZJDBbTD5/ozeGwnqOrZXLUpmmG5ao0u4mu
-	b1YtiGN+e9bZVYmlOCPRUIu5qDgRANUT79ypAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jQd3026qBBo/Omlhc3jWHzYHR4/Mm
+x-cr-hashedpuzzle: Dz9/ Eu7h MPyr NCia UUW+ VF+w VyQg ckJo gPM3 hBkO qBSU vm6K
+ wOX2 yGcx ytBb
+ 0U19;5;YQAuAHoAdQBtAG0AbwBAAHQAbwB3AGUAcgB0AGUAYwBoAC4AaQB0ADsAYQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcgB0AGMALQBsAGkAbgB1AHgAQABnAG8AbwBnAGwAZQBnAHIAbwB1AHAAcwAuAGMAbwBtAA==;Sosha1_v1;7;{006CFCDE-A64A-4A50-9E6C-0006012496DB};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
+ 21 Feb 2013 08:32:07
+ GMT;WwBQAEEAVABDAEgAIAAwADEALwAxADIAXQAgAHIAdABjADoAIAByAHQAYwAtAGkAbQB4AGQAaQA6ACAAdQBzAGUAIABkAGUAdgBtAF8AYwBsAGsAXwBnAGUAdAAoACkA
+x-cr-puzzleid: {006CFCDE-A64A-4A50-9E6C-0006012496DB}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zY90Jt1UDDVb85be4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZV45cYytYxFGx/ep2xgbGD2xdjJwcEgImEteWnGGEsMUkLtxb
+	DxTn4hASWMYo0fVuISNM0bafl5kgEtMZJW7uvc8I4cxmkuhouMcOUsUmoCbx5cthIJuDQ0RA
+	X6KtRQOkhlmgl1HiTO9usBphAUuJfdteg9WwCKhKNEwMBgnzCthKnDm7hBnCFpT4MfkeC4jN
+	LKAlsX7ncSYIW15i85q3zCCtEgLqEo/+6oKERQT0JB6tXcgMUSIise/FO7DTJAT2sEo8Pr6N
+	CeIBU4nXzV3MEIll7BLLp50Hu4dFQEDi2+RDLBBDZSU2HWCGqJeUOLjiBssERolZSE6aheSk
+	WUhOmoVk9wJGllWMoqkFyQXFSelFhnrFibnFpXnpesn5uZsYIbHVu4Px9gHrQ4zJQOsnMkuJ
+	JucDYzOvJN7Q2NjEzMTUxNzS1NyUNGElcV65SzKBQgLpiSWp2ampBalF8UWlOanFhxiZODil
+	Ghi11Vq7nF97dfnffsj2NGXRNtPP/57lS8+Njv8259rC/MCI9bM6JG3NCxMjV3Ku9VTp2Jrx
+	VX+mucbzbA0m0wPnmXjOM86L6vt4rsZwn8uPj1q7l6xuztOpe9Xj+WAtX7jEbAPW5POf9ytt
+	8NO4m2hwYEmM35H+QzbxFj75eyUP2deZcF9OYFFiKc5INNRiLipOBAAd1yFrwwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xoO6E26qBBud38lhc3jWHzYHR4/Mm
 	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjJuXcgrmsFe8+7eHpYHx
-	F2sXIyeHhICJxLk5t5ggbDGJC/fWs3UxcnEICUxnlJh99BojhDObSeL/puMsIFVsAmoSX74c
-	Zu9i5OAQEdCXaGvRAKlhFuhllDjTu5sdpEZYwFzi1sf1YPUsAqoSU47dYAap5xWwleifxAkS
-	5hUQlPgx+R5YCbOAlsT6nceZIGx5ic1r3oKVSwioSzz6qwsSFhHQk5j1eBlUuYjEvhfvGCcw
-	CsxCMmkWkkmzkEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgKHwmvYNxVYPF
-	IUYBDkYlHt4FL1UChVgTy4orcw8xSnAwK4nwmh5RDRTiTUmsrEotyo8vKs1JLT7EmAz050Rm
-	KdHkfGCCyCuJNzQ2MTOyNDKzMDIxNydNWEmcl/HUkwAhgfTEktTs1NSC1CKYLUwcnFINjO0W
-	X1V1t7xZJGm1db/cw4Clez39DOw1tvb0My55Fp7RVSJWor+SS9Ls4A6RX5wt3ys6doumsfy0
-	2N3LecbYbt0Dh8P5oXyKCvfL04wddqWES9iELHf7U8u/doKeuNwD+1OvDyQn/H3wVcTnh0V7
-	u+ex46dqqxY8OVc8KfS5/WHW/zd29rIcUGIpzkg01GIuKk4EAM0wgYYGAwAA
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjCtHrrEVLOKo2H51O2MD
+	4we2LkZODgkBE4ltPy8zQdhiEhfurQeKc3EICUxnlLi59z4jhDObSaKj4R47SBWbgJrEly+H
+	gWwODhEBfYm2Fg2QGmaBXkaJM727wWqEBSwl9m17DVbDIqAq0TAxGCTMK2ArcebsEmYIW1Di
+	x+R7LCA2s4CWxPqdx5kgbHmJzWveMoO0SgioSzz6qwsSFhHQk3i0diEzRImIxL4X78BOkxDY
+	wyrx+Pg2qAdMJV43dzFPYBSahWTFLCQrZiFZMQvJrAWMLKsYRVMLkguKk9JzDfWKE3OLS/PS
+	9ZLzczcxgiP3mdQOxpUNFocYBTgYlXh4F7xUCRRiTSwrrsw9xCjBwawkwmt6RDVQiDclsbIq
+	tSg/vqg0J7X4EGMyMAAmMkuJJucDk0peSbyhsYmZkaWRmYWRibk5acJK4ryMp54ECAmkJ5ak
+	ZqemFqQWwWxh4uCUamDs2Fmh2G32a+OLzElbHhffeMzokZ8h+32TkgnrVI955SsFPXMve+SZ
+	XdidY2bIWS5brLzo89Zvnr7Rs54f//Pr10/eh+yScc6i743SwzsMs5jkDnBqnY4zT1O9VnVh
+	65aiJNUm/ad5M7NV7roKMgQdCDrddbDxyI1iz/JD3894flXYnDt17mclluKMREMt5qLiRADK
+	/pGxIAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -51,32 +58,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using gpio_request_one() can make the code simpler because it can
-set the direction and initial value in one shot.
+Use devm_clk_get() to make cleanup paths more simple.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-v3020.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/rtc/rtc-imxdi.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/rtc/rtc-v3020.c b/drivers/rtc/rtc-v3020.c
-index bca5d67..d59cd24 100644
---- a/drivers/rtc/rtc-v3020.c
-+++ b/drivers/rtc/rtc-v3020.c
-@@ -125,11 +125,10 @@ static int v3020_gpio_map(struct v3020 *chip, struct platform_device *pdev,
- 	v3020_gpio[V3020_IO].gpio = pdata->gpio_io;
+diff --git a/drivers/rtc/rtc-imxdi.c b/drivers/rtc/rtc-imxdi.c
+index 75d307a..82aad69 100644
+--- a/drivers/rtc/rtc-imxdi.c
++++ b/drivers/rtc/rtc-imxdi.c
+@@ -406,7 +406,7 @@ static int dryice_rtc_probe(struct platform_device *pdev)
  
- 	for (i = 0; i < ARRAY_SIZE(v3020_gpio); i++) {
--		err = gpio_request(v3020_gpio[i].gpio, v3020_gpio[i].name);
-+		err = gpio_request_one(v3020_gpio[i].gpio, GPIOF_OUT_INIT_HIGH,
-+					v3020_gpio[i].name);
- 		if (err)
- 			goto err_request;
--
--		gpio_direction_output(v3020_gpio[i].gpio, 1);
- 	}
+ 	mutex_init(&imxdi->write_mutex);
  
- 	chip->gpio = v3020_gpio;
+-	imxdi->clk = clk_get(&pdev->dev, NULL);
++	imxdi->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(imxdi->clk))
+ 		return PTR_ERR(imxdi->clk);
+ 	clk_prepare_enable(imxdi->clk);
+@@ -475,7 +475,6 @@ static int dryice_rtc_probe(struct platform_device *pdev)
+ 
+ err:
+ 	clk_disable_unprepare(imxdi->clk);
+-	clk_put(imxdi->clk);
+ 
+ 	return rc;
+ }
+@@ -492,7 +491,6 @@ static int dryice_rtc_remove(struct platform_device *pdev)
+ 	rtc_device_unregister(imxdi->rtc);
+ 
+ 	clk_disable_unprepare(imxdi->clk);
+-	clk_put(imxdi->clk);
+ 
+ 	return 0;
+ }
 -- 
 1.7.2.5
 
