@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab3BULWz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 06:22:55 -0500
-Received: from mx0.parallels.com ([199.115.104.20]:50796 "EHLO
-	mx0.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974Ab3BULWy (ORCPT
+	id S1753544Ab3BULYq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 06:24:46 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:46631 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab3BULYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 06:22:54 -0500
-Message-ID: <51260390.8010203@parallels.com>
-Date: Thu, 21 Feb 2013 15:22:56 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Steffen Michalke <StMichalke@web.de>, <linux-kernel@vger.kernel.org>,
-        "Li Zefan" <lizefan@huawei.com>,
-        <containers@lists.linux-foundation.org>,
-        "Johannes Weiner" <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: PROBLEM: Crash cgdeleting empty memory cgroups with memory.kmem.limit_in_bytes
- set
-References: <1361375371.7786.5.camel@michalke-online.eu> <20130220230019.GJ3570@htj.dyndns.org>
-In-Reply-To: <20130220230019.GJ3570@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Feb 2013 06:24:44 -0500
+From: Chun-Yi Lee <joeyli.kernel@gmail.com>
+To: rusty@rustcorp.com.au, dhowells@redhat.com
+Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
+        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Michal Marek <mmarek@suse.com>
+Subject: [PATCH] MODSIGN: Fix including certificate twice when the signing_key.x509 already exists
+Date: Thu, 21 Feb 2013 19:23:49 +0800
+Message-Id: <1361445829-23594-1-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 03:00 AM, Tejun Heo wrote:
-> (cc'ing cgroup / memcg people and quoting whole body)
-> 
-> Looks like something is going wrong with memcg cache destruction.
-> Glauber, any ideas?  Also, can we please not use names as generic as
-> kmem_cache_destroy_work_func for something specific to memcg?  How
-> about something like memcg_destroy_cache_workfn?
-> 
-> Thanks.
+This issue was found in devel-pekey branch on linux-modsign.git tree. The
+x509_certificate_list includes certificate twice when the signing_key.x509
+already exists.
+We can reproduce this issue by making kernel twice, the build log of
+second time looks like this:
 
-Steffen,
+...
+  CHK     kernel/config_data.h
+  CERTS   kernel/x509_certificate_list
+  - Including cert /ramdisk/working/joey/linux-modsign/signing_key.x509
+  - Including cert signing_key.x509
+...
 
-Is there any chance you could test that using SLAB instead of SLUB?
-I haven't manage to reproduce it yet, but I am working on some theories
-about why this is happening. If I could at least know if this is likely
-a cache problem vs a inner-memcg problem, that would help. The calltrace
-is not incredibly helpful, but it does indicate that the problem happens
-when freeing cache objects.
+Actually the build path was the same with the srctree path when building
+kernel. It causes the size of bzImage increased by packaging certificates
+twice.
 
+Cc: David Howells <dhowells@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Michal Marek <mmarek@suse.com>
+Signed-off-by: Chun-Yi Lee <jlee@suse.com>
+---
+ kernel/Makefile |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 0ca8c0a..ecbe73f 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -142,7 +142,10 @@ $(obj)/timeconst.h: $(src)/timeconst.pl FORCE
+ #
+ ###############################################################################
+ ifeq ($(CONFIG_SYSTEM_TRUSTED_KEYRING),y)
+-X509_CERTIFICATES-y := $(wildcard *.x509) $(wildcard $(srctree)/*.x509)
++X509_CERTIFICATES-y := $(wildcard *.x509)
++ifneq ($(shell pwd), $(srctree))
++X509_CERTIFICATES-y += $(wildcard $(srctree)/*.x509)
++endif
+ X509_CERTIFICATES-$(CONFIG_MODULE_SIG) += signing_key.x509
+ X509_CERTIFICATES := $(sort $(X509_CERTIFICATES-y))
+ 
+-- 
+1.6.4.2
 
