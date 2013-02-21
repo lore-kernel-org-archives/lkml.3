@@ -1,434 +1,622 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab3BUPqV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 10:46:21 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:40852 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754285Ab3BUPqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 10:46:19 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [Update 2][PATCH 2/7] ACPI / scan: Introduce common code for ACPI-based device hotplug
-Date: Thu, 21 Feb 2013 16:52:57 +0100
-Message-ID: <2482081.rPvizM7IsG@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1765527.DdJ8fCt5cH@vostro.rjw.lan>
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <2540040.4NPGdn6Df0@vostro.rjw.lan> <1765527.DdJ8fCt5cH@vostro.rjw.lan>
+	id S1755281Ab3BUPrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 10:47:17 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:47914 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab3BUPrP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 10:47:15 -0500
+Date: Thu, 21 Feb 2013 15:47:09 +0000
+From: Andrew Murray <Andrew.Murray@arm.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-pci@vger.kernel.org
+Subject: [RFC PATCH v2] of/pci: Provide support for parsing PCI DT ranges
+ property
+Message-ID: <20130221154709.GA26660@arm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 21 Feb 2013 15:47:10.0656 (UTC) FILETIME=[B5F32C00:01CE104A]
+X-MC-Unique: 113022115471300101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+DT bindings for PCI host bridges often use the ranges property to describe
+memory and IO ranges - this binding tends to be the same across architectures
+yet several parsing implementations exist, e.g. arch/mips/pci/pci.c,
+arch/powerpc/kernel/pci-common.c, arch/sparc/kernel/pci.c and
+arch/microblaze/pci/pci-common.c (clone of PPC). Some of these duplicate
+functionality provided by drivers/of/address.c.
 
-Multiple drivers handling hotplug-capable ACPI device nodes install
-notify handlers covering the same types of events in a very similar
-way.  Moreover, those handlers are installed in separate namespace
-walks, although that really should be done during namespace scans
-carried out by acpi_bus_scan().  This leads to substantial code
-duplication, unnecessary overhead and behavior that is hard to
-follow.
+This patch factors out common implementations patterns to reduce overall kernel
+code and provide a means for host bridge drivers to directly obtain struct
+resources from the DT's ranges property without relying on architecture specific
+DT handling. This will make it easier to write archiecture independent host bridge
+drivers and mitigate against further duplication of DT parsing code.
 
-For this reason, introduce common code in drivers/acpi/scan.c for
-handling hotplug-related notification and carrying out device
-insertion and eject operations in a generic fashion, such that it
-may be used by all of the relevant drivers in the future.  To cover
-the existing differences between those drivers introduce struct
-acpi_hotplug_profile for representing collections of hotplug
-settings associated with different ACPI scan handlers that can be
-used by the drivers to make the common code reflect their current
-behavior.
+This patch can be used in the following way:
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+	struct of_pci_range_iter iter;
+	for_each_of_pci_range(&iter, np) {
+
+		//directly access properties of the address range, e.g.:
+		//iter.pci_space, iter.pci_addr, iter.cpu_addr, iter.size or
+		//iter.flags
+
+		//alternatively obtain a struct resource, e.g.:
+		//struct resource res;
+		//range_iter_fill_resource(iter, np, res);
+	}
+
+Additionally the implementation takes care of adjacent ranges and merges them
+into a single range (as was the case with powerpc and microblaze).
+
+The modifications to microblaze, mips and powerpc have not been tested.
+
+v2:
+  - This follows on from suggestions made by Grant Likely
+    (marc.info/?l=linux-kernel&m=136079602806328)
+
+Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 ---
+ arch/microblaze/pci/pci-common.c |  100 +++++++++++--------------------------
+ arch/mips/pci/pci.c              |   44 ++++-------------
+ arch/powerpc/kernel/pci-common.c |   93 ++++++++++-------------------------
+ drivers/of/address.c             |   54 ++++++++++++++++++++
+ include/linux/of_address.h       |   30 +++++++++++
+ 5 files changed, 151 insertions(+), 170 deletions(-)
 
-This update fixes an issue pointed out by Toshi Kani (_OST shouldn't be
-evaluated after successful _EJ0).
-
-Thanks,
-Rafael
-
----
- drivers/acpi/scan.c     |  272 ++++++++++++++++++++++++++++++++++++++----------
- include/acpi/acpi_bus.h |    7 +
- 2 files changed, 226 insertions(+), 53 deletions(-)
-
-Index: test/include/acpi/acpi_bus.h
-===================================================================
---- test.orig/include/acpi/acpi_bus.h
-+++ test/include/acpi/acpi_bus.h
-@@ -88,11 +88,18 @@ struct acpi_device;
-  * -----------------
-  */
+diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
+index 4dbb505..ccc0d63 100644
+--- a/arch/microblaze/pci/pci-common.c
++++ b/arch/microblaze/pci/pci-common.c
+@@ -659,67 +659,37 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 					    struct device_node *dev,
+ 					    int primary)
+ {
+-	const u32 *ranges;
+-	int rlen;
+-	int pna = of_n_addr_cells(dev);
+-	int np = pna + 5;
+ 	int memno = 0, isa_hole = -1;
+-	u32 pci_space;
+-	unsigned long long pci_addr, cpu_addr, pci_next, cpu_next, size;
+ 	unsigned long long isa_mb = 0;
+ 	struct resource *res;
++	struct of_pci_range_iter iter;
  
-+struct acpi_hotplug_profile {
-+	bool enabled:1;
-+	bool uevents:1;
-+	bool autoeject:1;
-+};
+ 	printk(KERN_INFO "PCI host bridge %s %s ranges:\n",
+ 	       dev->full_name, primary ? "(primary)" : "");
+ 
+-	/* Get ranges property */
+-	ranges = of_get_property(dev, "ranges", &rlen);
+-	if (ranges == NULL)
+-		return;
+-
+-	/* Parse it */
+ 	pr_debug("Parsing ranges property...\n");
+-	while ((rlen -= np * 4) >= 0) {
++	for_each_of_pci_range(&iter, dev) {
+ 		/* Read next ranges element */
+-		pci_space = ranges[0];
+-		pci_addr = of_read_number(ranges + 1, 2);
+-		cpu_addr = of_translate_address(dev, ranges + 3);
+-		size = of_read_number(ranges + pna + 3, 2);
+-
+ 		pr_debug("pci_space: 0x%08x pci_addr:0x%016llx "
+ 				"cpu_addr:0x%016llx size:0x%016llx\n",
+-					pci_space, pci_addr, cpu_addr, size);
+-
+-		ranges += np;
++				iter.pci_space, iter.pci_addr, iter.cpu_addr,
++				iter.size);
+ 
+ 		/* If we failed translation or got a zero-sized region
+ 		 * (some FW try to feed us with non sensical zero sized regions
+ 		 * such as power3 which look like some kind of attempt
+ 		 * at exposing the VGA memory hole)
+ 		 */
+-		if (cpu_addr == OF_BAD_ADDR || size == 0)
++		if (iter.cpu_addr == OF_BAD_ADDR || iter.size == 0)
+ 			continue;
+ 
+-		/* Now consume following elements while they are contiguous */
+-		for (; rlen >= np * sizeof(u32);
+-		     ranges += np, rlen -= np * 4) {
+-			if (ranges[0] != pci_space)
+-				break;
+-			pci_next = of_read_number(ranges + 1, 2);
+-			cpu_next = of_translate_address(dev, ranges + 3);
+-			if (pci_next != pci_addr + size ||
+-			    cpu_next != cpu_addr + size)
+-				break;
+-			size += of_read_number(ranges + pna + 3, 2);
+-		}
+-
+ 		/* Act based on address space type */
+ 		res = NULL;
+-		switch ((pci_space >> 24) & 0x3) {
+-		case 1:		/* PCI IO space */
++		if (iter.flags & IORESOURCE_IO) {
+ 			printk(KERN_INFO
+ 			       "  IO 0x%016llx..0x%016llx -> 0x%016llx\n",
+-			       cpu_addr, cpu_addr + size - 1, pci_addr);
++			       iter.cpu_addr, iter.cpu_addr + iter.size - 1,
++			       iter.pci_addr);
+ 
+ 			/* We support only one IO range */
+ 			if (hose->pci_io_size) {
+@@ -728,11 +698,11 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 				continue;
+ 			}
+ 			/* On 32 bits, limit I/O space to 16MB */
+-			if (size > 0x01000000)
+-				size = 0x01000000;
++			if (iter.size > 0x01000000)
++				iter.size = 0x01000000;
+ 
+ 			/* 32 bits needs to map IOs here */
+-			hose->io_base_virt = ioremap(cpu_addr, size);
++			hose->io_base_virt = ioremap(iter.cpu_addr, iter.size);
+ 
+ 			/* Expect trouble if pci_addr is not 0 */
+ 			if (primary)
+@@ -741,20 +711,18 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			/* pci_io_size and io_base_phys always represent IO
+ 			 * space starting at 0 so we factor in pci_addr
+ 			 */
+-			hose->pci_io_size = pci_addr + size;
+-			hose->io_base_phys = cpu_addr - pci_addr;
++			hose->pci_io_size = iter.pci_addr + iter.size;
++			hose->io_base_phys = iter.cpu_addr - iter.pci_addr;
+ 
+ 			/* Build resource */
+ 			res = &hose->io_resource;
+-			res->flags = IORESOURCE_IO;
+-			res->start = pci_addr;
+-			break;
+-		case 2:		/* PCI Memory space */
+-		case 3:		/* PCI 64 bits Memory space */
++			iter.cpu_addr = iter.pci_addr;
++		} else if (iter.flags & IORESOURCE_MEM) {
+ 			printk(KERN_INFO
+ 			       " MEM 0x%016llx..0x%016llx -> 0x%016llx %s\n",
+-			       cpu_addr, cpu_addr + size - 1, pci_addr,
+-			       (pci_space & 0x40000000) ? "Prefetch" : "");
++			       iter.cpu_addr, iter.cpu_addr + iter.size - 1,
++			       iter.pci_addr,
++			       (iter.pci_space & 0x40000000) ? "Prefetch" : "");
+ 
+ 			/* We support only 3 memory ranges */
+ 			if (memno >= 3) {
+@@ -763,13 +731,13 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 				continue;
+ 			}
+ 			/* Handles ISA memory hole space here */
+-			if (pci_addr == 0) {
++			if (iter.pci_addr == 0) {
+ 				isa_mb = cpu_addr;
+ 				isa_hole = memno;
+ 				if (primary || isa_mem_base == 0)
+-					isa_mem_base = cpu_addr;
+-				hose->isa_mem_phys = cpu_addr;
+-				hose->isa_mem_size = size;
++					isa_mem_base = iter.cpu_addr;
++				hose->isa_mem_phys = iter.cpu_addr;
++				hose->isa_mem_size = iter.size;
+ 			}
+ 
+ 			/* We get the PCI/Mem offset from the first range or
+@@ -777,11 +745,13 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			 * hole. If they don't match, bugger.
+ 			 */
+ 			if (memno == 0 ||
+-			    (isa_hole >= 0 && pci_addr != 0 &&
++			    (isa_hole >= 0 && iter.pci_addr != 0 &&
+ 			     hose->pci_mem_offset == isa_mb))
+-				hose->pci_mem_offset = cpu_addr - pci_addr;
+-			else if (pci_addr != 0 &&
+-				 hose->pci_mem_offset != cpu_addr - pci_addr) {
++				hose->pci_mem_offset = iter.cpu_addr
++							- iter.pci_addr;
++			else if (iter.pci_addr != 0 &&
++				 hose->pci_mem_offset != iter.cpu_addr
++							- iter.pci_addr) {
+ 				printk(KERN_INFO
+ 				       " \\--> Skipped (offset mismatch) !\n");
+ 				continue;
+@@ -789,19 +759,9 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 
+ 			/* Build resource */
+ 			res = &hose->mem_resources[memno++];
+-			res->flags = IORESOURCE_MEM;
+-			if (pci_space & 0x40000000)
+-				res->flags |= IORESOURCE_PREFETCH;
+-			res->start = cpu_addr;
+-			break;
+-		}
+-		if (res != NULL) {
+-			res->name = dev->full_name;
+-			res->end = res->start + size - 1;
+-			res->parent = NULL;
+-			res->sibling = NULL;
+-			res->child = NULL;
+ 		}
++		if (res != NULL)
++			range_iter_fill_resource(iter, dev, res);
+ 	}
+ 
+ 	/* If there's an ISA hole and the pci_mem_offset is -not- matching
+diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
+index 6903568..07d3769 100644
+--- a/arch/mips/pci/pci.c
++++ b/arch/mips/pci/pci.c
+@@ -123,51 +123,27 @@ static void __devinit pcibios_scanbus(struct pci_controller *hose)
+ void __devinit pci_load_of_ranges(struct pci_controller *hose,
+ 				struct device_node *node)
+ {
+-	const __be32 *ranges;
+-	int rlen;
+-	int pna = of_n_addr_cells(node);
+-	int np = pna + 5;
++	struct of_pci_range_iter iter;
+ 
+ 	pr_info("PCI host bridge %s ranges:\n", node->full_name);
+-	ranges = of_get_property(node, "ranges", &rlen);
+-	if (ranges == NULL)
+-		return;
+ 	hose->of_node = node;
+ 
+-	while ((rlen -= np * 4) >= 0) {
+-		u32 pci_space;
++	for_each_of_pci_range(&iter, node) {
+ 		struct resource *res = NULL;
+-		u64 addr, size;
+-
+-		pci_space = be32_to_cpup(&ranges[0]);
+-		addr = of_translate_address(node, ranges + 3);
+-		size = of_read_number(ranges + pna + 3, 2);
+-		ranges += np;
+-		switch ((pci_space >> 24) & 0x3) {
+-		case 1:		/* PCI IO space */
 +
- struct acpi_scan_handler {
- 	const struct acpi_device_id *ids;
- 	struct list_head list_node;
- 	int (*attach)(struct acpi_device *dev, const struct acpi_device_id *id);
- 	void (*detach)(struct acpi_device *dev);
-+	struct acpi_hotplug_profile hotplug;
- };
++		if (iter.flags & IORESOURCE_IO) {
+ 			pr_info("  IO 0x%016llx..0x%016llx\n",
+-					addr, addr + size - 1);
++					iter.addr, iter.addr + iter.size - 1);
+ 			hose->io_map_base =
+-				(unsigned long)ioremap(addr, size);
++				(unsigned long)ioremap(iter.addr, iter.size);
+ 			res = hose->io_resource;
+-			res->flags = IORESOURCE_IO;
+-			break;
+-		case 2:		/* PCI Memory space */
+-		case 3:		/* PCI 64 bits Memory space */
++		} else if (iter.flags & IORESOURCE_MEM) {
+ 			pr_info(" MEM 0x%016llx..0x%016llx\n",
+-					addr, addr + size - 1);
++					iter.addr, iter.addr + iter.size - 1);
+ 			res = hose->mem_resource;
+-			res->flags = IORESOURCE_MEM;
+-			break;
+-		}
+-		if (res != NULL) {
+-			res->start = addr;
+-			res->name = node->full_name;
+-			res->end = res->start + size - 1;
+-			res->parent = NULL;
+-			res->sibling = NULL;
+-			res->child = NULL;
+ 		}
++		if (res != NULL)
++			range_iter_fill_resource(iter, node, res);
+ 	}
+ }
+ #endif
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index 2aa04f2..c6cd4e0 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -657,61 +657,31 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 					    struct device_node *dev,
+ 					    int primary)
+ {
+-	const u32 *ranges;
+-	int rlen;
+-	int pna = of_n_addr_cells(dev);
+-	int np = pna + 5;
+ 	int memno = 0, isa_hole = -1;
+-	u32 pci_space;
+-	unsigned long long pci_addr, cpu_addr, pci_next, cpu_next, size;
+ 	unsigned long long isa_mb = 0;
+ 	struct resource *res;
++	struct of_pci_range_iter iter;
+ 
+ 	printk(KERN_INFO "PCI host bridge %s %s ranges:\n",
+ 	       dev->full_name, primary ? "(primary)" : "");
+ 
+-	/* Get ranges property */
+-	ranges = of_get_property(dev, "ranges", &rlen);
+-	if (ranges == NULL)
+-		return;
+-
+ 	/* Parse it */
+-	while ((rlen -= np * 4) >= 0) {
+-		/* Read next ranges element */
+-		pci_space = ranges[0];
+-		pci_addr = of_read_number(ranges + 1, 2);
+-		cpu_addr = of_translate_address(dev, ranges + 3);
+-		size = of_read_number(ranges + pna + 3, 2);
+-		ranges += np;
+-
++	for_each_of_pci_range(&iter, dev) {
+ 		/* If we failed translation or got a zero-sized region
+ 		 * (some FW try to feed us with non sensical zero sized regions
+ 		 * such as power3 which look like some kind of attempt at exposing
+ 		 * the VGA memory hole)
+ 		 */
+-		if (cpu_addr == OF_BAD_ADDR || size == 0)
++		if (iter.cpu_addr == OF_BAD_ADDR || iter.size == 0)
+ 			continue;
+ 
+-		/* Now consume following elements while they are contiguous */
+-		for (; rlen >= np * sizeof(u32);
+-		     ranges += np, rlen -= np * 4) {
+-			if (ranges[0] != pci_space)
+-				break;
+-			pci_next = of_read_number(ranges + 1, 2);
+-			cpu_next = of_translate_address(dev, ranges + 3);
+-			if (pci_next != pci_addr + size ||
+-			    cpu_next != cpu_addr + size)
+-				break;
+-			size += of_read_number(ranges + pna + 3, 2);
+-		}
+-
+ 		/* Act based on address space type */
+ 		res = NULL;
+-		switch ((pci_space >> 24) & 0x3) {
+-		case 1:		/* PCI IO space */
++		if (iter.flags & IORESOURCE_IO) {
+ 			printk(KERN_INFO
+ 			       "  IO 0x%016llx..0x%016llx -> 0x%016llx\n",
+-			       cpu_addr, cpu_addr + size - 1, pci_addr);
++			       iter.cpu_addr, iter.cpu_addr + iter.size - 1,
++			       iter.pci_addr);
+ 
+ 			/* We support only one IO range */
+ 			if (hose->pci_io_size) {
+@@ -721,11 +691,11 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			}
+ #ifdef CONFIG_PPC32
+ 			/* On 32 bits, limit I/O space to 16MB */
+-			if (size > 0x01000000)
+-				size = 0x01000000;
++			if (iter.size > 0x01000000)
++				iter.size = 0x01000000;
+ 
+ 			/* 32 bits needs to map IOs here */
+-			hose->io_base_virt = ioremap(cpu_addr, size);
++			hose->io_base_virt = ioremap(iter.cpu_addr, iter.size);
+ 
+ 			/* Expect trouble if pci_addr is not 0 */
+ 			if (primary)
+@@ -735,20 +705,18 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			/* pci_io_size and io_base_phys always represent IO
+ 			 * space starting at 0 so we factor in pci_addr
+ 			 */
+-			hose->pci_io_size = pci_addr + size;
+-			hose->io_base_phys = cpu_addr - pci_addr;
++			hose->pci_io_size = iter.pci_addr + iter.size;
++			hose->io_base_phys = iter.cpu_addr - iter.pci_addr;
+ 
+ 			/* Build resource */
+ 			res = &hose->io_resource;
+-			res->flags = IORESOURCE_IO;
+-			res->start = pci_addr;
+-			break;
+-		case 2:		/* PCI Memory space */
+-		case 3:		/* PCI 64 bits Memory space */
++			iter.cpu_addr = iter.pci_addr;
++		} else if (flags & IORESOURCE_MEM) {
+ 			printk(KERN_INFO
+ 			       " MEM 0x%016llx..0x%016llx -> 0x%016llx %s\n",
+-			       cpu_addr, cpu_addr + size - 1, pci_addr,
+-			       (pci_space & 0x40000000) ? "Prefetch" : "");
++			       iter.cpu_addr, iter.cpu_addr + iter.size - 1,
++			       iter.pci_addr,
++			       (iter.pci_space & 0x40000000) ? "Prefetch" : "");
+ 
+ 			/* We support only 3 memory ranges */
+ 			if (memno >= 3) {
+@@ -757,13 +725,13 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 				continue;
+ 			}
+ 			/* Handles ISA memory hole space here */
+-			if (pci_addr == 0) {
++			if (iter.pci_addr == 0) {
+ 				isa_mb = cpu_addr;
+ 				isa_hole = memno;
+ 				if (primary || isa_mem_base == 0)
+-					isa_mem_base = cpu_addr;
+-				hose->isa_mem_phys = cpu_addr;
+-				hose->isa_mem_size = size;
++					isa_mem_base = iter.cpu_addr;
++				hose->isa_mem_phys = iter.cpu_addr;
++				hose->isa_mem_size = iter.size;
+ 			}
+ 
+ 			/* We get the PCI/Mem offset from the first range or
+@@ -771,11 +739,13 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			 * hole. If they don't match, bugger.
+ 			 */
+ 			if (memno == 0 ||
+-			    (isa_hole >= 0 && pci_addr != 0 &&
++			    (isa_hole >= 0 && iter.pci_addr != 0 &&
+ 			     hose->pci_mem_offset == isa_mb))
+-				hose->pci_mem_offset = cpu_addr - pci_addr;
++				hose->pci_mem_offset = iter.cpu_addr -
++							iter.pci_addr;
+ 			else if (pci_addr != 0 &&
+-				 hose->pci_mem_offset != cpu_addr - pci_addr) {
++				 hose->pci_mem_offset != iter.cpu_addr -
++							iter.pci_addr) {
+ 				printk(KERN_INFO
+ 				       " \\--> Skipped (offset mismatch) !\n");
+ 				continue;
+@@ -783,19 +753,10 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 
+ 			/* Build resource */
+ 			res = &hose->mem_resources[memno++];
+-			res->flags = IORESOURCE_MEM;
+-			if (pci_space & 0x40000000)
+-				res->flags |= IORESOURCE_PREFETCH;
+-			res->start = cpu_addr;
+ 			break;
+ 		}
+-		if (res != NULL) {
+-			res->name = dev->full_name;
+-			res->end = res->start + size - 1;
+-			res->parent = NULL;
+-			res->sibling = NULL;
+-			res->child = NULL;
+-		}
++		if (res != NULL)
++			range_iter_fill_resource(iter, dev, res);
+ 	}
+ 
+ 	/* If there's an ISA hole and the pci_mem_offset is -not- matching
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index 7e262a6..726899b 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -219,6 +219,60 @@ int of_pci_address_to_resource(struct device_node *dev, int bar,
+ 	return __of_address_to_resource(dev, addrp, size, flags, NULL, r);
+ }
+ EXPORT_SYMBOL_GPL(of_pci_address_to_resource);
++
++struct of_pci_range_iter *of_pci_process_ranges(struct of_pci_range_iter *iter,
++						struct device_node *node)
++{
++	const int na = 3, ns = 2;
++	int rlen;
++
++	if (!iter->range) {
++		iter->pna = of_n_addr_cells(node);
++		iter->np = iter->pna + na + ns;
++
++		iter->range = of_get_property(node, "ranges", &rlen);
++		if (iter->range == NULL)
++			return NULL;
++
++		iter->end = iter->range + rlen / sizeof(__be32);
++	}
++
++	if (iter->range + iter->np > iter->end)
++		return NULL;
++
++	iter->pci_space = be32_to_cpup(iter->range);
++	iter->flags = of_bus_pci_get_flags(iter->range);
++	iter->pci_addr = of_read_number(iter->range + 1, ns);
++	iter->cpu_addr = of_translate_address(node, iter->range + na);
++	iter->size = of_read_number(iter->range + iter->pna + na, ns);
++
++	iter->range += iter->np;
++
++	/* Now consume following elements while they are contiguous */
++	while (iter->range + iter->np <= iter->end) {
++		u32 flags, pci_space;
++		u64 pci_addr, cpu_addr, size;
++
++		pci_space = be32_to_cpup(iter->range);
++		flags = of_bus_pci_get_flags(iter->range);
++		pci_addr = of_read_number(iter->range + 1, ns);
++		cpu_addr = of_translate_address(node, iter->range + na);
++		size = of_read_number(iter->range + iter->pna + na, ns);
++
++		if (flags != iter->flags)
++			break;
++		if (pci_addr != iter->pci_addr + iter->size ||
++		    cpu_addr != iter->cpu_addr + iter->size)
++			break;
++
++		iter->size += size;
++		iter->range += iter->np;
++	}
++
++	return iter;
++}
++EXPORT_SYMBOL_GPL(of_pci_process_ranges);
++
+ #endif /* CONFIG_PCI */
  
  /*
-Index: test/drivers/acpi/scan.c
-===================================================================
---- test.orig/drivers/acpi/scan.c
-+++ test/drivers/acpi/scan.c
-@@ -107,32 +107,19 @@ acpi_device_modalias_show(struct device
- }
- static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index 01b925a..15f91a1 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -4,6 +4,29 @@
+ #include <linux/errno.h>
+ #include <linux/of.h>
  
--/**
-- * acpi_bus_hot_remove_device: hot-remove a device and its children
-- * @context: struct acpi_eject_event pointer (freed in this func)
-- *
-- * Hot-remove a device and its children. This function frees up the
-- * memory space passed by arg context, so that the caller may call
-- * this function asynchronously through acpi_os_hotplug_execute().
-- */
--void acpi_bus_hot_remove_device(void *context)
-+static int acpi_scan_hot_remove(struct acpi_device *device)
++struct of_pci_range_iter {
++	const __be32 *range, *end;
++	int np, pna;
++
++	u32 pci_space;
++	u64 pci_addr;
++	u64 cpu_addr;
++	u64 size;
++	u32 flags;
++};
++
++#define for_each_of_pci_range(iter, np) \
++	for (; of_pci_process_ranges(iter, np);)
++
++#define range_iter_fill_resource(iter, np, res) \
++	do { \
++		res->flags = iter.flags; \
++		res->start = iter.cpu_addr; \
++		res->end = iter.cpu_addr + iter.size - 1; \
++		res->parent = res->child = res->sibling = NULL; \
++		res->name = np->full_name; \
++	} while (0)
++
+ #ifdef CONFIG_OF_ADDRESS
+ extern u64 of_translate_address(struct device_node *np, const __be32 *addr);
+ extern int of_address_to_resource(struct device_node *dev, int index,
+@@ -26,6 +49,8 @@ static inline unsigned long pci_address_to_pio(phys_addr_t addr) { return -1; }
+ #define pci_address_to_pio pci_address_to_pio
+ #endif
+ 
++struct of_pci_range_iter *of_pci_process_ranges(struct of_pci_range_iter *iter,
++						struct device_node *node);
+ #else /* CONFIG_OF_ADDRESS */
+ static inline int of_address_to_resource(struct device_node *dev, int index,
+ 					 struct resource *r)
+@@ -48,6 +73,11 @@ static inline const u32 *of_get_address(struct device_node *dev, int index,
  {
--	struct acpi_eject_event *ej_event = context;
--	struct acpi_device *device = ej_event->device;
- 	acpi_handle handle = device->handle;
--	acpi_handle temp;
-+	acpi_handle not_used;
- 	struct acpi_object_list arg_list;
- 	union acpi_object arg;
--	acpi_status status = AE_OK;
--	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
--
--	mutex_lock(&acpi_scan_lock);
-+	acpi_status status;
- 
- 	/* If there is no handle, the device node has been unregistered. */
--	if (!device->handle) {
-+	if (!handle) {
- 		dev_dbg(&device->dev, "ACPI handle missing\n");
- 		put_device(&device->dev);
--		goto out;
-+		return -EINVAL;
- 	}
- 
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-@@ -143,7 +130,7 @@ void acpi_bus_hot_remove_device(void *co
- 	put_device(&device->dev);
- 	device = NULL;
- 
--	if (ACPI_SUCCESS(acpi_get_handle(handle, "_LCK", &temp))) {
-+	if (ACPI_SUCCESS(acpi_get_handle(handle, "_LCK", &not_used))) {
- 		arg_list.count = 1;
- 		arg_list.pointer = &arg;
- 		arg.type = ACPI_TYPE_INTEGER;
-@@ -161,18 +148,161 @@ void acpi_bus_hot_remove_device(void *co
- 	 */
- 	status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
- 	if (ACPI_FAILURE(status)) {
--		if (status != AE_NOT_FOUND)
-+		if (status == AE_NOT_FOUND) {
-+			return -ENODEV;
-+		} else {
- 			acpi_handle_warn(handle, "Eject failed\n");
-+			return -EIO;
-+		}
-+	}
-+	return 0;
-+}
- 
--		/* Tell the firmware the hot-remove operation has failed. */
--		acpi_evaluate_hotplug_ost(handle, ej_event->event,
--					  ost_code, NULL);
-+static void acpi_bus_device_eject(void *context)
-+{
-+	acpi_handle handle = context;
-+	struct acpi_device *device = NULL;
-+	struct acpi_scan_handler *handler;
-+	u32 ost_source = ACPI_NOTIFY_EJECT_REQUEST;
-+	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
-+
-+	mutex_lock(&acpi_scan_lock);
-+
-+	acpi_bus_get_device(handle, &device);
-+	if (!device)
-+		goto err_out;
-+
-+	handler = device->handler;
-+	if (!handler || !handler->hotplug.enabled) {
-+		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-+		goto err_out;
-+	}
-+	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
-+				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-+	if (handler->hotplug.autoeject) {
-+		int error;
-+
-+		ost_source = ACPI_OST_EC_OSPM_EJECT;
-+		get_device(&device->dev);
-+		error = acpi_scan_hot_remove(device);
-+		if (error)
-+			goto err_out;
-+	} else {
-+		device->flags.eject_pending = true;
- 	}
-+	if (handler->hotplug.uevents)
-+		kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
- 
-  out:
- 	mutex_unlock(&acpi_scan_lock);
--	kfree(context);
- 	return;
-+
-+ err_out:
-+	acpi_evaluate_hotplug_ost(handle, ost_source, ost_code, NULL);
-+	goto out;
-+}
-+
-+static void acpi_scan_bus_device_check(acpi_handle handle, u32 ost_source)
-+{
-+	struct acpi_device *device = NULL;
-+	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
-+	int error;
-+
-+	mutex_lock(&acpi_scan_lock);
-+
-+	acpi_bus_get_device(handle, &device);
-+	if (device) {
-+		dev_warn(&device->dev, "Attempt to re-insert\n");
-+		goto out;
-+	}
-+	acpi_evaluate_hotplug_ost(handle, ost_source,
-+				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
-+	ost_source = ACPI_OST_EC_OSPM_INSERTION;
-+	error = acpi_bus_scan(handle);
-+	if (error) {
-+		acpi_handle_warn(handle, "Namespace scan failure\n");
-+		goto out;
-+	}
-+	error = acpi_bus_get_device(handle, &device);
-+	if (error) {
-+		acpi_handle_warn(handle, "Missing device node object\n");
-+		goto out;
-+	}
-+	ost_code = ACPI_OST_SC_SUCCESS;
-+	if (device->handler && device->handler->hotplug.uevents)
-+		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
-+
-+ out:
-+	acpi_evaluate_hotplug_ost(handle, ost_source, ost_code, NULL);
-+	mutex_unlock(&acpi_scan_lock);
-+}
-+
-+static void acpi_scan_bus_check(void *context)
-+{
-+	acpi_scan_bus_device_check((acpi_handle)context,
-+				   ACPI_NOTIFY_BUS_CHECK);
-+}
-+
-+static void acpi_scan_device_check(void *context)
-+{
-+	acpi_scan_bus_device_check((acpi_handle)context,
-+				   ACPI_NOTIFY_DEVICE_CHECK);
-+}
-+
-+static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *not_used)
-+{
-+	acpi_osd_exec_callback callback;
-+	acpi_status status;
-+
-+	switch (type) {
-+	case ACPI_NOTIFY_BUS_CHECK:
-+		acpi_handle_debug(handle, "ACPI_NOTIFY_BUS_CHECK event\n");
-+		callback = acpi_scan_bus_check;
-+		break;
-+	case ACPI_NOTIFY_DEVICE_CHECK:
-+		acpi_handle_debug(handle, "ACPI_NOTIFY_DEVICE_CHECK event\n");
-+		callback = acpi_scan_device_check;
-+		break;
-+	case ACPI_NOTIFY_EJECT_REQUEST:
-+		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
-+		callback = acpi_bus_device_eject;
-+		break;
-+	default:
-+		/* non-hotplug event; possibly handled by other handler */
-+		return;
-+	}
-+	status = acpi_os_hotplug_execute(callback, handle);
-+	if (ACPI_FAILURE(status))
-+		acpi_evaluate_hotplug_ost(handle, type,
-+					  ACPI_OST_SC_NON_SPECIFIC_FAILURE,
-+					  NULL);
-+}
-+
-+/**
-+ * acpi_bus_hot_remove_device: hot-remove a device and its children
-+ * @context: struct acpi_eject_event pointer (freed in this func)
-+ *
-+ * Hot-remove a device and its children. This function frees up the
-+ * memory space passed by arg context, so that the caller may call
-+ * this function asynchronously through acpi_os_hotplug_execute().
-+ */
-+void acpi_bus_hot_remove_device(void *context)
-+{
-+	struct acpi_eject_event *ej_event = context;
-+	struct acpi_device *device = ej_event->device;
-+	acpi_handle handle = device->handle;
-+	int error;
-+
-+	mutex_lock(&acpi_scan_lock);
-+
-+	error = acpi_scan_hot_remove(device);
-+	if (error && handle)
-+		acpi_evaluate_hotplug_ost(handle, ej_event->event,
-+					  ACPI_OST_SC_NON_SPECIFIC_FAILURE,
-+					  NULL);
-+
-+	mutex_unlock(&acpi_scan_lock);
-+	kfree(context);
- }
- EXPORT_SYMBOL(acpi_bus_hot_remove_device);
- 
-@@ -206,51 +336,61 @@ static ssize_t
- acpi_eject_store(struct device *d, struct device_attribute *attr,
- 		const char *buf, size_t count)
- {
--	int ret = count;
--	acpi_status status;
--	acpi_object_type type = 0;
- 	struct acpi_device *acpi_device = to_acpi_device(d);
- 	struct acpi_eject_event *ej_event;
-+	acpi_object_type not_used;
-+	acpi_status status;
-+	u32 ost_source;
-+	int ret;
- 
--	if ((!count) || (buf[0] != '1')) {
-+	if (!count || buf[0] != '1')
- 		return -EINVAL;
--	}
--	if (!acpi_device->driver && !acpi_device->handler) {
--		ret = -ENODEV;
--		goto err;
--	}
--	status = acpi_get_type(acpi_device->handle, &type);
--	if (ACPI_FAILURE(status) || (!acpi_device->flags.ejectable)) {
--		ret = -ENODEV;
--		goto err;
--	}
- 
--	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
--	if (!ej_event) {
--		ret = -ENOMEM;
--		goto err;
--	}
-+	if ((!acpi_device->handler || !acpi_device->handler->hotplug.enabled)
-+	    && !acpi_device->driver)
-+		return -ENODEV;
-+
-+	status = acpi_get_type(acpi_device->handle, &not_used);
-+	if (ACPI_FAILURE(status) || !acpi_device->flags.ejectable)
-+		return -ENODEV;
-+
-+	mutex_lock(&acpi_scan_lock);
- 
--	get_device(&acpi_device->dev);
--	ej_event->device = acpi_device;
- 	if (acpi_device->flags.eject_pending) {
--		/* event originated from ACPI eject notification */
--		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
-+		/* ACPI eject notification event. */
-+		ost_source = ACPI_NOTIFY_EJECT_REQUEST;
- 		acpi_device->flags.eject_pending = 0;
- 	} else {
--		/* event originated from user */
--		ej_event->event = ACPI_OST_EC_OSPM_EJECT;
--		(void) acpi_evaluate_hotplug_ost(acpi_device->handle,
--			ej_event->event, ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-+		/* Eject initiated by user space. */
-+		ost_source = ACPI_OST_EC_OSPM_EJECT;
- 	}
--
-+	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
-+	if (!ej_event) {
-+		ret = -ENOMEM;
-+		goto err_out;
-+	}
-+	acpi_evaluate_hotplug_ost(acpi_device->handle, ost_source,
-+				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-+	ej_event->device = acpi_device;
-+	ej_event->event = ost_source;
-+	get_device(&acpi_device->dev);
- 	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
- 	if (ACPI_FAILURE(status)) {
- 		put_device(&acpi_device->dev);
- 		kfree(ej_event);
-+		ret = status == AE_NO_MEMORY ? -ENOMEM : -EAGAIN;
-+		goto err_out;
- 	}
--err:
-+	ret = count;
-+
-+ out:
-+	mutex_unlock(&acpi_scan_lock);
- 	return ret;
-+
-+ err_out:
-+	acpi_evaluate_hotplug_ost(acpi_device->handle, ost_source,
-+				  ACPI_OST_SC_NON_SPECIFIC_FAILURE, NULL);
-+	goto out;
- }
- 
- static DEVICE_ATTR(eject, 0200, NULL, acpi_eject_store);
-@@ -1548,6 +1688,30 @@ static struct acpi_scan_handler *acpi_sc
  	return NULL;
  }
- 
-+static void acpi_scan_init_hotplug(acpi_handle handle)
++struct of_pci_range_iter *of_pci_process_ranges(struct of_pci_range_iter *iter,
++						struct device_node *node)
 +{
-+	struct acpi_device_info *info;
-+	struct acpi_scan_handler *handler;
-+
-+	if (ACPI_FAILURE(acpi_get_object_info(handle, &info)))
-+		return;
-+
-+	if (!(info->valid & ACPI_VALID_HID)) {
-+		kfree(info);
-+		return;
-+	}
-+
-+	/*
-+	 * This relies on the fact that acpi_install_notify_handler() will not
-+	 * install the same notify handler routine twice for the same handle.
-+	 */
-+	handler = acpi_scan_match_handler(info->hardware_id.string, NULL);
-+	kfree(info);
-+	if (handler && handler->hotplug.enabled)
-+		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-+					    acpi_hotplug_notify_cb, NULL);
++	return NULL;
 +}
-+
- static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
- 				      void *not_used, void **return_value)
- {
-@@ -1570,6 +1734,8 @@ static acpi_status acpi_bus_check_add(ac
- 		return AE_OK;
- 	}
+ #endif /* CONFIG_OF_ADDRESS */
  
-+	acpi_scan_init_hotplug(handle);
-+
- 	if (!(sta & ACPI_STA_DEVICE_PRESENT) &&
- 	    !(sta & ACPI_STA_DEVICE_FUNCTIONING)) {
- 		struct acpi_device_wakeup wakeup;
+ 
+-- 
+1.7.0.4
+
 
