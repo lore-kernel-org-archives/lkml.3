@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab3BUKOy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 05:14:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32900 "EHLO mx2.suse.de"
+	id S1753212Ab3BUKPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 05:15:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32902 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317Ab3BUKOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 05:14:48 -0500
-Date: Thu, 21 Feb 2013 11:14:45 +0100 (CET)
+	id S1752551Ab3BUKOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 05:14:51 -0500
+Date: Thu, 21 Feb 2013 11:14:49 +0100 (CET)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] trivial
-Message-ID: <alpine.LNX.2.00.1302211105410.17024@pobox.suse.cz>
+Subject: [GIT] HID
+Message-ID: <alpine.LNX.2.00.1302211054150.17024@pobox.suse.cz>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -23,124 +24,171 @@ Linus,
 
 please pull from
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
 
-to receive assorted tiny fixes queued in trivial tree.
+to receive HID subsystem and drivers update. Highlights:
 
+- new support of a group of Win7/Win8 multitouch devices, from Benjamin 
+  Tissoires
+- fix for compat interface brokenness in uhid, from Dmitry Torokhov
+- conversion of drivers to use hid_driver helper, by H Hartley Sweeten
+- HID over I2C transport received ACPI enumeration support, written by
+  Mika Westerberg
+- there is an ongoing effort to make HID sensor hubs independent of USB 
+  transport. The first self-contained part of this work is provided here, 
+  done by Mika Westerberg
+- a few smaller fixes here and there, support for a couple new devices 
+  added
 
-Andrew Murray (1):
-      of: fix spelling mistake in comment
+Benjamin Tissoires (11):
+      HID: core: add "report" hook, called once the report has been parsed
+      HID: multitouch: use the callback "report" instead of sequential events
+      HID: multitouch: add support for Nexio 42" panel
+      HID: multitouch: fix Win8 protocol for Sharp like devices
+      HID: multitouch: ensure that serial devices make no use of contact count
+      HID: multitouch: fix protocol for Sitronix 1403:5001
+      HID: multitouch: fix protocol for Cando 2087:0a02
+      HID: multitouch: fix protocol for Elo panels
+      HID: multitouch: make MT_CLS_ALWAYS_TRUE the new default class
+      HID: multitouch: do not use pointers towards hid-core
+      HID: ntrig: use input_configured() callback to set the name
 
-Javi Merino (1):
-      of: add missing documentation for of_platform_populate()
+David Herrmann (2):
+      HID: uhid: use __packed__ for uhid_feature_answer_req
+      HID: wiimote: fix nunchuck button parser
 
-Jesper Dangaard Brouer (1):
-      percpu_counter.h: comment code for better readability
+Dmitry Torokhov (1):
+      HID: uhid: make creating devices work on 64/32 systems
 
-Jesper Juhl (3):
-      pcmcia: avoid static analysis complaint about use-after-free
-      net: mvneta: remove unneeded version.h include
-      IB: cxgb3: delay freeing mem untill entirely done with it
+Fernando Luis Vázquez Cao (2):
+      HID: add support for Sony RF receiver with USB product id 0x0374
+      HID: clean up quirk for Sony RF receivers
 
-Jiri Kosina (1):
-      time: x86: report_lost_ticks doesn't exist any more
+H Hartley Sweeten (3):
+      HID: introduce helper for hid_driver boilerplate
+      HID: hid.h: remove unused hid_generic_{init,exit} prototypes
+      HID: Use module_hid_driver macro
 
-Johan Hovold (1):
-      ARM: at91/ide: remove unsused at91-ide Kconfig entry
+Heiko Carstens (1):
+      HID: add missing GENERIC_HARDIRQ dependency
 
-Jorrit Schippers (1):
-      treewide: Replace incomming with incoming in all comments and strings
+Ian Abbott (1):
+      HID: blacklist Velleman data acquisition boards
 
-Kusanagi Kouichi (1):
-      Revert "Documentation: ABI: /sys/devices/system/cpu/cpu#/node"
+Jiri Kosina (3):
+      HID: steelseries: rename driver to be compliant with other drivers
+      HID: steelseries: fix out of bound array access
+      HID: hidraw: print message when succesfully initialized
 
-Liu Bo (1):
-      btrfs: fix comment typos
+Mauro Carvalho Chehab (1):
+      HID: hid-sony: fix troubles with Sony remote clones
 
-Masanari Iida (4):
-      xtensa: Fix home page URL in Kconfig
-      h8300: Fix home page URL in h8300/README
-      treewide: Fix typo in various drivers
-      sound: soc: Fix typo in sound/codecs
+Michael Karcher (1):
+      HID: Support Jess/Saitek Color Rumble Pad
 
-Olaf Hering (1):
-      x86, efi: fix comment typo in head_32.S
+Mika Westerberg (4):
+      HID: i2c-hid: add ACPI support
+      HID: extend autodetect to handle I2C sensors as well
+      HID: sensor-hub: get rid of unused sensor_hub_grabbed_usages[] table
+      HID: sensor-hub: don't limit the driver only to USB bus
 
-Paul Gortmaker (2):
-      Documentation: update top level 00-INDEX file with new additions
-      DocBook: update EXPORT_SYMBOL entry to point at export.h
+Paul Sbarra (2):
+      HID: logitech: add report descriptor for Driving Force wheel
+      HID: logitech: split accel, brake for Driving Force wheel
 
-Philippe De Muyter (1):
-      fs/jfs: Fix typo in comment : 'how may' -> 'how many'
+Simon Que (1):
+      HID: Fix uninitialized variable "size" in hid-wiimote-debug
 
-Tim Blechmann (1):
-      powerpc: fix typo (utilties -> utilities)
+Simon Wood (9):
+      USB: HID: SRW-S1 Gaming Wheel Driver
+      USB: HID: Steelseries SRW-S1 Add support for dials
+      USB: HID: Steelseries SRW-S1 Add support for LEDs
+      USB: HID: Steelseries SRW-S1 Add support controlling all LEDs simultaneously
+      HID: LG: Add support for Logitech Momo Force (Red) Wheel
+      HID: LG: Fix detection of Logitech Speed Force Wireless (WiiWheel)
+      HID: LG: Prevent the Logitech Gaming Wheels deadzone
+      HID: LG4FF: Remove unnecessary deadzone code
+      HID: Correct Logitech order in hid-ids.h
 
-Wade Cline (1):
-      Update ibmvscsi module name in Kconfig.
+Vivien Didelot (1):
+      HID: add ThingM blink(1) USB RGB LED support
 
-Wang Sheng-Hui (1):
-      btrfs: remove unnecessary cur_trans set before goto loop in join_transaction
-
- Documentation/00-INDEX                             |  149 ++++++++++++++++++--
- Documentation/ABI/testing/sysfs-devices-system-cpu |   14 --
- Documentation/DocBook/kernel-hacking.tmpl          |    4 +-
- Documentation/x86/x86_64/boot-options.txt          |    4 -
- arch/h8300/README                                  |    2 +-
- .../cavium-octeon/executive/cvmx-helper-util.c     |    4 +-
- arch/mips/include/asm/octeon/cvmx-helper-util.h    |    4 +-
- arch/powerpc/platforms/85xx/p1022_ds.c             |    8 +-
- arch/powerpc/platforms/86xx/mpc8610_hpcd.c         |    4 +-
- arch/x86/kernel/cpu/perf_event_amd_ibs.c           |    2 +-
- arch/xtensa/Kconfig                                |    2 +-
- drivers/bluetooth/ath3k.c                          |    2 +-
- drivers/devfreq/exynos4_bus.c                      |    2 +-
- drivers/firewire/ohci.c                            |    2 +-
- drivers/gpu/drm/i915/i915_debugfs.c                |    2 +-
- drivers/hid/Kconfig                                |    2 +-
- drivers/ide/Kconfig                                |    5 -
- drivers/infiniband/hw/cxgb3/iwch_provider.c        |    2 +-
- drivers/isdn/hardware/eicon/divacapi.h             |    6 +-
- drivers/isdn/hardware/eicon/pc.h                   |    4 +-
- drivers/isdn/mISDN/l1oip_core.c                    |    2 +-
- drivers/media/platform/soc_camera/mx2_camera.c     |    2 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c   |    2 +-
- drivers/net/ethernet/marvell/mvneta.c              |    1 -
- drivers/net/ethernet/mellanox/mlx4/en_main.c       |    2 +-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c   |    2 +-
- drivers/net/irda/ali-ircc.c                        |    2 +-
- drivers/of/address.c                               |    2 +-
- drivers/of/platform.c                              |    1 +
- drivers/pcmcia/rsrc_nonstatic.c                    |    6 +-
- drivers/rpmsg/virtio_rpmsg_bus.c                   |    2 +-
- drivers/scsi/Kconfig                               |    2 +-
- drivers/staging/android/binder.h                   |    2 +-
- drivers/staging/octeon/ethernet.c                  |    2 +-
- drivers/target/sbp/sbp_target.c                    |    2 +-
- drivers/tty/ipwireless/hardware.c                  |    4 +-
- fs/btrfs/extent-tree.c                             |    6 +-
- fs/btrfs/relocation.c                              |    4 +-
- fs/btrfs/transaction.c                             |    1 -
- fs/cifs/link.c                                     |    2 +-
- fs/hpfs/inode.c                                    |    2 +-
- fs/jfs/super.c                                     |    2 +-
- fs/ocfs2/cluster/tcp.c                             |    2 +-
- fs/qnx6/inode.c                                    |    2 +-
- include/linux/dma-buf.h                            |    2 +-
- include/linux/percpu_counter.h                     |    2 +-
- include/net/irda/irlmp.h                           |    2 +-
- include/net/irda/irttp.h                           |    2 +-
- net/bluetooth/hci_core.c                           |    2 +-
- net/caif/cfcnfg.c                                  |    2 +-
- net/irda/timer.c                                   |    2 +-
- net/sctp/sm_make_chunk.c                           |    2 +-
- scripts/basic/fixdep.c                             |    2 +-
- sound/soc/codecs/ab8500-codec.c                    |    2 +-
- sound/soc/codecs/wm8974.c                          |    6 +-
- sound/soc/codecs/wm8978.c                          |    6 +-
- sound/soc/codecs/wm8983.c                          |    6 +-
- sound/soc/codecs/wm8985.c                          |    6 +-
- 58 files changed, 215 insertions(+), 110 deletions(-)
+ Documentation/ABI/testing/sysfs-driver-hid-srws1  |   21 ++
+ Documentation/ABI/testing/sysfs-driver-hid-thingm |   23 ++
+ MAINTAINERS                                       |    5 +
+ drivers/hid/Kconfig                               |   18 +-
+ drivers/hid/Makefile                              |    2 +
+ drivers/hid/hid-a4tech.c                          |   13 +-
+ drivers/hid/hid-apple.c                           |   19 +-
+ drivers/hid/hid-aureal.c                          |   13 +-
+ drivers/hid/hid-axff.c                            |   14 +-
+ drivers/hid/hid-belkin.c                          |   13 +-
+ drivers/hid/hid-cherry.c                          |   13 +-
+ drivers/hid/hid-chicony.c                         |   13 +-
+ drivers/hid/hid-core.c                            |   17 +-
+ drivers/hid/hid-cypress.c                         |   13 +-
+ drivers/hid/hid-dr.c                              |   13 +-
+ drivers/hid/hid-elecom.c                          |   13 +-
+ drivers/hid/hid-emsff.c                           |   13 +-
+ drivers/hid/hid-ezkey.c                           |   13 +-
+ drivers/hid/hid-gaff.c                            |   13 +-
+ drivers/hid/hid-generic.c                         |   14 +-
+ drivers/hid/hid-gyration.c                        |   13 +-
+ drivers/hid/hid-holtek-kbd.c                      |   13 +-
+ drivers/hid/hid-holtekff.c                        |   15 +-
+ drivers/hid/hid-icade.c                           |   19 +-
+ drivers/hid/hid-ids.h                             |   21 +-
+ drivers/hid/hid-kensington.c                      |   13 +-
+ drivers/hid/hid-keytouch.c                        |   13 +-
+ drivers/hid/hid-kye.c                             |   13 +-
+ drivers/hid/hid-lcpower.c                         |   13 +-
+ drivers/hid/hid-lenovo-tpkbd.c                    |   14 +-
+ drivers/hid/hid-lg.c                              |  212 ++++++++++--
+ drivers/hid/hid-lg4ff.c                           |   17 -
+ drivers/hid/hid-magicmouse.c                      |   19 +-
+ drivers/hid/hid-microsoft.c                       |   13 +-
+ drivers/hid/hid-monterey.c                        |   13 +-
+ drivers/hid/hid-multitouch.c                      |  163 ++++++---
+ drivers/hid/hid-ntrig.c                           |   81 ++---
+ drivers/hid/hid-ortek.c                           |   13 +-
+ drivers/hid/hid-petalynx.c                        |   13 +-
+ drivers/hid/hid-picolcd_core.c                    |   13 +-
+ drivers/hid/hid-pl.c                              |   26 +-
+ drivers/hid/hid-primax.c                          |   13 +-
+ drivers/hid/hid-prodikeys.c                       |   19 +-
+ drivers/hid/hid-ps3remote.c                       |   13 +-
+ drivers/hid/hid-roccat-lua.c                      |   14 +-
+ drivers/hid/hid-saitek.c                          |   13 +-
+ drivers/hid/hid-samsung.c                         |   13 +-
+ drivers/hid/hid-sensor-hub.c                      |   22 +-
+ drivers/hid/hid-sjoy.c                            |   13 +-
+ drivers/hid/hid-sony.c                            |   59 +++-
+ drivers/hid/hid-speedlink.c                       |   13 +-
+ drivers/hid/hid-steelseries.c                     |  393 +++++++++++++++++++++
+ drivers/hid/hid-sunplus.c                         |   13 +-
+ drivers/hid/hid-thingm.c                          |  272 ++++++++++++++
+ drivers/hid/hid-tivo.c                            |   13 +-
+ drivers/hid/hid-tmff.c                            |   13 +-
+ drivers/hid/hid-topseed.c                         |   13 +-
+ drivers/hid/hid-twinhan.c                         |   13 +-
+ drivers/hid/hid-uclogic.c                         |   13 +-
+ drivers/hid/hid-wacom.c                           |   18 +-
+ drivers/hid/hid-waltop.c                          |   13 +-
+ drivers/hid/hid-wiimote-core.c                    |   19 +-
+ drivers/hid/hid-wiimote-debug.c                   |    2 +-
+ drivers/hid/hid-wiimote-ext.c                     |    8 +-
+ drivers/hid/hid-zpff.c                            |   13 +-
+ drivers/hid/hid-zydacron.c                        |   13 +-
+ drivers/hid/hidraw.c                              |    1 +
+ drivers/hid/i2c-hid/i2c-hid.c                     |   87 +++++-
+ drivers/hid/uhid.c                                |   95 +++++-
+ include/linux/hid.h                               |   17 +-
+ include/uapi/linux/uhid.h                         |    2 +-
+ 71 files changed, 1405 insertions(+), 824 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-srws1
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-thingm
+ create mode 100644 drivers/hid/hid-steelseries.c
+ create mode 100644 drivers/hid/hid-thingm.c
 
 -- 
 Jiri Kosina
