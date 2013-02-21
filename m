@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab3BUVms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 16:42:48 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:33021 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654Ab3BUVmr convert rfc822-to-8bit (ORCPT
+	id S1755239Ab3BUVnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 16:43:41 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:51356
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753022Ab3BUVnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 16:42:47 -0500
+	Thu, 21 Feb 2013 16:43:39 -0500
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT005.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: PS-2(zz98dI936eIzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2fh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Benson Leung <bleung@chromium.org>
+CC: "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "olofj@chromium.org" <olofj@chromium.org>,
+        "miletus@chromium.org" <miletus@chromium.org>
+Subject: Re: [PATCH 1/6] Platform: x86: chromeos_laptop - add i915 gmbuses
+ to adapter names
+Thread-Topic: [PATCH 1/6] Platform: x86: chromeos_laptop - add i915 gmbuses
+ to adapter names
+Thread-Index: AQHOEHArF5u30YXwvUqVKUfplRv0q5iE2BqA
+Date: Thu, 21 Feb 2013 21:43:32 +0000
+Message-ID: <1361483011.2813.1.camel@x230>
+References: <1361477700-26342-1-git-send-email-bleung@chromium.org>
+	 <1361477700-26342-2-git-send-email-bleung@chromium.org>
+In-Reply-To: <1361477700-26342-2-git-send-email-bleung@chromium.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <AE8BCBB5CE37D040B344E0C7449E0920@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Message-ID: <7793705b-a076-4c5a-be4d-9572d7560860@default>
-Date: Thu, 21 Feb 2013 13:42:21 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Ric Mason <ric.masonn@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: RE: Questin about swap_slot free and invalidate page
-References: <20130131051140.GB23548@blaptop>
- <alpine.LNX.2.00.1302031732520.4050@eggly.anvils>
- <20130204024950.GD2688@blaptop>
- <d6fc41b7-8448-40be-84c3-c24d0833bd85@default> <51236C11.1010208@gmail.com>
- <1f089254-3abe-4c63-a72a-c9e564ae7d0d@default> <51242F0D.4040201@gmail.com>
-In-Reply-To: <51242F0D.4040201@gmail.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1LLhglU012354
 
-> From: Ric Mason [mailto:ric.masonn@gmail.com]
-> Subject: Re: Questin about swap_slot free and invalidate page
-> 
-> On 02/19/2013 11:27 PM, Dan Magenheimer wrote:
-> >> From: Ric Mason [mailto:ric.masonn@gmail.com]
-> >>> Hugh is right that handling the possibility of duplicates is
-> >>> part of the tmem ABI.  If there is any possibility of duplicates,
-> >>> the ABI defines how a backend must handle them to avoid data
-> >>> coherency issues.
-> >>>
-> >>> The kernel implements an in-kernel API which implements the tmem
-> >>> ABI.  If the frontend and backend can always agree that duplicate
-> >> Which ABI in zcache implement that?
-> > https://oss.oracle.com/projects/tmem/dist/documentation/api/tmemspec-v001.pdf
-> >
-> > The in-kernel APIs are frontswap and cleancache.  For more information about
-> > tmem, see http://lwn.net/Articles/454795/
-> 
-> But you mentioned that you have in-kernel API which can handle
-> duplicate.  Do you mean zcache_cleancache/frontswap_put_page? I think
-> they just overwrite instead of optional flush the page on the
-> second(duplicate) put as mentioned in your tmemspec.
+On Thu, 2013-02-21 at 12:14 -0800, Benson Leung wrote:
+> Add the two other i2c buses (vga and panel) from i915.
+> Chromebook Pixel has input and light sensor devices on these busses.
 
-Maybe I am misunderstanding your question...  The spec allows
-overwrite (and return success) OR flush the page (and return
-failure).  Zcache does the latter (flush).  The code that implements
-it is in tmem_put.
+This is after you put the HDMI encoder on the system i2c bus on the
+CR-48? Whatever they're putting in the food there must be good. I'll
+queue these.
 
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
