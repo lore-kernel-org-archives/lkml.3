@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab3BUVrH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 16:47:07 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:39581 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab3BUVrF (ORCPT
+	id S1755841Ab3BUVtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 16:49:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51723 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab3BUVtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 16:47:05 -0500
-Date: Thu, 21 Feb 2013 13:47:01 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-cc: George Zhang <georgezhang@vmware.com>, Andy King <acking@vmware.com>,
-        Dmitry Torokhov <dtor@vmware.com>, linux-kernel@vger.kernel.org
-Subject: [patch] drivers, vmci: vmware vmci driver depends on CONFIG_NET
-Message-ID: <alpine.DEB.2.02.1302211344180.28115@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 21 Feb 2013 16:49:06 -0500
+Date: Thu, 21 Feb 2013 13:49:04 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: =?UTF-8?Q?Luk=C3=A1=C5=A1?= Czerner <lczerner@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v2 10/18] mm: teach truncate_inode_pages_range() to
+ handle non page aligned ranges
+Message-Id: <20130221134905.9a1e2c9e.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1302210929590.19354@localhost>
+References: <1360055531-26309-1-git-send-email-lczerner@redhat.com>
+	<1360055531-26309-11-git-send-email-lczerner@redhat.com>
+	<20130207154042.92430aed.akpm@linux-foundation.org>
+	<alpine.LFD.2.00.1302080948110.3225@localhost>
+	<alpine.LFD.2.00.1302210929590.19354@localhost>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_VMWARE_VMCI requires CONFIG_NET, otherwise there is a link error:
+On Thu, 21 Feb 2013 09:33:56 +0100 (CET)
+Luk____ Czerner <lczerner@redhat.com> wrote:
 
-drivers/built-in.o: In function `__qp_memcpy_from_queue.isra.11':
-vmci_queue_pair.c:(.text+0x2d4509): undefined reference to `memcpy_toiovec'
-drivers/built-in.o: In function `__qp_memcpy_to_queue.isra.12':
-vmci_queue_pair.c:(.text+0x2d4709): undefined reference to `memcpy_fromiovec'
+> what's the status of the patch set ?
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- drivers/misc/vmw_vmci/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Forgotten about :(
 
-diff --git a/drivers/misc/vmw_vmci/Kconfig b/drivers/misc/vmw_vmci/Kconfig
---- a/drivers/misc/vmw_vmci/Kconfig
-+++ b/drivers/misc/vmw_vmci/Kconfig
-@@ -4,7 +4,7 @@
- 
- config VMWARE_VMCI
- 	tristate "VMware VMCI Driver"
--	depends on X86 && PCI
-+	depends on X86 && PCI && NET
- 	help
- 	  This is VMware's Virtual Machine Communication Interface.  It enables
- 	  high-speed communication between host and guest in a virtual
+> Can we get this in in this merge window ?
+
+Please do a full resend after 3.9-rc1 and let's take it up again.
