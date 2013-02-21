@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab3BUVSM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 16:18:12 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:45307 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753022Ab3BUVSK (ORCPT
+	id S1753611Ab3BUVZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 16:25:57 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:62388 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab3BUVZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 16:18:10 -0500
-Date: Thu, 21 Feb 2013 13:18:07 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Lin Feng <linfeng@cn.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, mhocko@suse.cz,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [patch -mm] memory-hotplug: implement register_page_bootmem_info_section
- of sparse-vmemmap fix fix fix fix fix
-In-Reply-To: <1358495676-4488-1-git-send-email-linfeng@cn.fujitsu.com>
-Message-ID: <alpine.DEB.2.02.1302211314100.25402@chino.kir.corp.google.com>
-References: <1358495676-4488-1-git-send-email-linfeng@cn.fujitsu.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 21 Feb 2013 16:25:55 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
+References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
+Date: Thu, 21 Feb 2013 15:25:53 -0600
+Message-ID: <CANk1AXQ7ajnwTaHwwbyrri2YkX_60uC9xrQYWuR8u4eT2EQsew@mail.gmail.com>
+Subject: Re: [PATCH 0/6] Introducing Device Tree Overlays
+From: delicious quinoa <delicious.quinoa@gmail.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: linux-doc@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>,
+        Russ Dill <Russ.Dill@ti.com>, Matt Porter <mporter@ti.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>, linux-omap@vger.kernel.org,
+        Matt Ranostay <mranostay@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>,
+        Joel A Fernandes <agnel.joel@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes
+I like where this is heading.  I'm interested in a use case where IP
+can be loaded into a FPGA, then add a blob to the device tree and load
+some drivers.
 
-mm/memory_hotplug.c:133:13: warning: 'register_page_bootmem_info_section' defined but not used [-Wunused-function]
+I see your github tree.  If I wanted to cherry-pick your code and play
+around with it, which branch should I use?  not-capebus-21?
 
-by defining the function only in configurations where it is used.
+Thanks,
+Alan Tull
+Altera Corp
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/memory_hotplug.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -129,6 +129,7 @@ void __ref put_page_bootmem(struct page *page)
- 
- }
- 
-+#ifdef CONFIG_HAVE_BOOTMEM_INFO_NODE
- #ifndef CONFIG_SPARSEMEM_VMEMMAP
- static void register_page_bootmem_info_section(unsigned long start_pfn)
- {
-@@ -163,7 +164,7 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
- 		get_page_bootmem(section_nr, page, MIX_SECTION_INFO);
- 
- }
--#else
-+#else /* CONFIG_SPARSEMEM_VMEMMAP */
- static void register_page_bootmem_info_section(unsigned long start_pfn)
- {
- 	unsigned long *usemap, mapsize, section_nr, i;
-@@ -188,9 +189,8 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
- 	for (i = 0; i < mapsize; i++, page++)
- 		get_page_bootmem(section_nr, page, MIX_SECTION_INFO);
- }
--#endif
-+#endif /* !CONFIG_SPARSEMEM_VMEMMAP */
- 
--#ifdef CONFIG_HAVE_BOOTMEM_INFO_NODE
- void register_page_bootmem_info_node(struct pglist_data *pgdat)
- {
- 	unsigned long i, pfn, end_pfn, nr_pages;
-@@ -232,7 +232,7 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
- 			register_page_bootmem_info_section(pfn);
- 	}
- }
--#endif
-+#endif /* CONFIG_HAVE_BOOTMEM_INFO_NODE */
- 
- static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
- 			   unsigned long end_pfn)
+On Fri, Jan 4, 2013 at 1:31 PM, Pantelis Antoniou
+<panto@antoniou-consulting.com> wrote:
+> The following patchset introduces Device Tree overlays, a method
+> of dynamically altering the kernel's live Device Tree.
+>
+> This patchset is against mainline as of Friday Jan 4 2013.
+> (4956964 Merge tag 'driver-core-3.8-rc2' of \
+>         git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core)
+>
+> Note that a separate patch for the DTC compiler has been posted and
+> is required to compile the DTS files according to the documentation.
+> The patch is "dtc: Dynamic symbols & fixup support"
+>
+> An implementation patchset for a beaglebone cape loader will follow,
+> but if you want to check out a working kernel for the beaglebone please
+> pull from:
+>
+> git://github.com/pantoniou/linux-bbxm.git branch not-capebus-v8
+>
+> Pantelis Antoniou (6):
+>   OF: Introduce device tree node flag helpers.
+>   OF: export of_property_notify
+>   OF: Export all DT proc update functions
+>   OF: Introduce utility helper functions
+>   OF: Introduce Device Tree resolve support.
+>   OF: Introduce DT overlay support.
+>
+>  .../devicetree/dynamic-resolution-notes.txt        |  25 +
+>  Documentation/devicetree/overlay-notes.txt         | 179 +++++
+>  drivers/of/Kconfig                                 |  19 +
+>  drivers/of/Makefile                                |   4 +-
+>  drivers/of/base.c                                  | 114 +--
+>  drivers/of/overlay.c                               | 831 +++++++++++++++++++++
+>  drivers/of/resolver.c                              | 394 ++++++++++
+>  drivers/of/util.c                                  | 253 +++++++
+>  include/linux/of.h                                 | 243 ++++++
+>  9 files changed, 2005 insertions(+), 57 deletions(-)
+>  create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
+>  create mode 100644 Documentation/devicetree/overlay-notes.txt
+>  create mode 100644 drivers/of/overlay.c
+>  create mode 100644 drivers/of/resolver.c
+>  create mode 100644 drivers/of/util.c
+>
+> --
+> 1.7.12
+>
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
