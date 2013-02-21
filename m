@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202Ab3BUX3c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 18:29:32 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:54753 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978Ab3BUX33 (ORCPT
+	id S1755043Ab3BUXib (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 18:38:31 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:21498 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754741Ab3BUXi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 18:29:29 -0500
-Message-ID: <5126ADD6.6040006@linaro.org>
-Date: Thu, 21 Feb 2013 15:29:26 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 21 Feb 2013 18:38:29 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnIJAG6vJlF5LJe7/2dsb2JhbABFhWW2HIURgQUXc4IfAQEFOhwjEAgDGAklDwUlAyETiBG/LhWOGiI9B4NAA5Y1kF+DGw
+Date: Fri, 22 Feb 2013 10:38:18 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] dcache: make Oracle more scalable on large systems
+Message-ID: <20130221233818.GM26694@dastard>
+References: <1361299859-27056-1-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>
-CC: linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] [RFC] usb: gadget: composite: Allow idVendor and other
- module_params to be writable
-References: <1361485647-9439-1-git-send-email-john.stultz@linaro.org> <xa1tvc9lnutf.fsf@mina86.com>
-In-Reply-To: <xa1tvc9lnutf.fsf@mina86.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361299859-27056-1-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 02:52 PM, Michal Nazarewicz wrote:
-> On Thu, Feb 21 2013, John Stultz wrote:
->> In many cases, documentation around composite drivers suggest
->> setting the idVendor and other module params as follows:
->>
->> $ insmod g_ffs.ko idVendor=<ID> iSerialNumber=<string>
->>
->> However, this won't work if the driver is not compiled in as a
->> module, as the module_param permissions are S_IRUGO.
->>
->> Thus this patch changes the composite module_param permissions
->> to S_IRUGO|S_IWUSR to allow the module_params to be set at
->> runtime via /sys/modules/<driver>/parameters/
-> If the driver is not compiled as a module, setting those variables won't
-> work anyway.  Or am I missing something?
+On Tue, Feb 19, 2013 at 01:50:55PM -0500, Waiman Long wrote:
+> It was found that the Oracle database software issues a lot of call
+> to the seq_path() kernel function which translates a (dentry, mnt)
+> pair to an absolute path. The seq_path() function will eventually
+> take the following two locks:
 
-Huh. It worked in my testing. But maybe that's only the first time its 
-set? I'll play around with it some more, but yea, on further thought, 
-without unloading the module those values probably shouldn't change. 
-Sorry for the confusion on my part here.
+Nobody should be doing reverse dentry-to-name lookups in a quantity
+sufficient for it to become a performance limiting factor. What is
+the Oracle DB actually using this path for?
 
-> You can, however, pass them on Linux command line (with some prefix
-> which I can never remember).
-That's right. Yea. g_ffs.idVendor and g_ffs.idProduct works for me. 
-Thanks for the reminder!
+Cheers,
 
-> If you want to configure things at run-time without having to compile
-> stuff as modules, you need to wait for the configfs based gadgets.
-
-Heh. I thought I was just sorting things out between the out-of-tree 
-android composite, ccg in staging, and functionfs. And now there's 
-*another*?
-
-Any details on configfs based gadget? Is there a git tree somewhere?
-
-thanks
--john
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
