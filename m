@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab3BUFt1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 00:49:27 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10291 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912Ab3BUFt0 (ORCPT
+	id S1752128Ab3BUFu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 00:50:29 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:59259 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab3BUFu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 00:49:26 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 20 Feb 2013 21:44:44 -0800
-Message-ID: <5125B534.1080606@nvidia.com>
-Date: Thu, 21 Feb 2013 11:18:36 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Thu, 21 Feb 2013 00:50:27 -0500
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH] spi: tegra114: add spi driver
-References: <1361281115-20436-1-git-send-email-ldewangan@nvidia.com> <5123C18A.9010604@wwwdotorg.org> <5124C18F.6070108@nvidia.com> <20130220131112.GE2726@opensource.wolfsonmicro.com> <5124CEF5.3060605@nvidia.com> <512506F9.2030508@wwwdotorg.org> <20130220173109.GU2726@opensource.wolfsonmicro.com> <512509A9.6020208@wwwdotorg.org> <20130220175721.GW2726@opensource.wolfsonmicro.com> <51250F22.8050401@wwwdotorg.org>
-In-Reply-To: <51250F22.8050401@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1361404583-5557-3-git-send-email-nzimmer@sgi.com>
+References: <1360116290-23849-1-git-send-email-nzimmer@sgi.com>
+	<1361404583-5557-1-git-send-email-nzimmer@sgi.com>
+	<1361404583-5557-3-git-send-email-nzimmer@sgi.com>
+Date: Thu, 21 Feb 2013 11:20:26 +0530
+Message-ID: <CAKohponMWRPspZF=tPN6MXoxkcjw7CK_sLnSdsKe+EDoiADvGA@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] cpufreq: Convert the cpufreq_driver_lock to use
+ the rcu
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 February 2013 11:30 PM, Stephen Warren wrote:
-> On 02/20/2013 10:57 AM, Mark Brown wrote:
->> On Wed, Feb 20, 2013 at 10:36:41AM -0700, Stephen Warren wrote:
->>> On 02/20/2013 10:31 AM, Mark Brown wrote:
->>>> Since we can extend the list of clocks it doesn't seem like
->>>> there's much issue here, especially if some of them are
->>>> optional?
->>> Yes, there's certainly a way to extend the binding in a
->>> backwards-compatible way.
->>> However, I have seen in Rob and/or Grant push back on not fully
->>> defining bindings in the past - i.e. actively planning to
->>> initially create a minimal binding and extend it in the future,
->>> rather than completely defining it up-front.
->> That sounds like the current stuff with a minimal definition is
->> OK?
-> I'm personally OK with defining a minimal binding first and extending
-> it later. But, I'm worried if when we actually try to extend the
-> binding later, we'll get push-back.
+On 21 February 2013 05:26, Nathan Zimmer <nzimmer@sgi.com> wrote:
+> In general rwlocks are discourged so we are moving it to use the rcu instead.
+> This does require a bit of care since the cpufreq_driver_lock protects both
+> the cpufreq_driver and the cpufreq_cpu_data array.
+> Also since many of the function pointers on cpufreq_driver may sleep when
+> called we have to grab them under the rcu_read_lock but call them after
+> rcu_read_unlock();
 
-Yes, for a given controller there is lots of input sources which can be 
-mux but we can not use all option as some of source is changeable based 
-on DVFS policy or other constraints. Like one of controller has the 
-input clock source as PLLC which is again used by CPU and it varies for 
-requested CPU frequency. In this context, we would like to not choose 
-PLLC as clock source for given controller.
+Even i have started reading rcu documentation now :)
 
-So we may need to provide the list of valid clock source/option from DT 
-file and clock muxing should be done from that source list only in place 
-of super set supported by SoCs.
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+> ---
+>  drivers/cpufreq/cpufreq.c | 312 +++++++++++++++++++++++++++++++++-------------
+>  1 file changed, 224 insertions(+), 88 deletions(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
 
+> @@ -255,20 +258,21 @@ static inline void adjust_jiffies(unsigned long val, struct cpufreq_freqs *ci)
+>  void cpufreq_notify_transition(struct cpufreq_freqs *freqs, unsigned int state)
+>  {
+>         struct cpufreq_policy *policy;
+> -       unsigned long flags;
+> +       u8 flags;
+
+I think you can get rid of flags.
+
+>         BUG_ON(irqs_disabled());
+>
+>         if (cpufreq_disabled())
+>                 return;
+>
+> -       freqs->flags = cpufreq_driver->flags;
+>         pr_debug("notification %u of frequency transition to %u kHz\n",
+>                 state, freqs->new);
+>
+> -       read_lock_irqsave(&cpufreq_driver_lock, flags);
+> +       rcu_read_lock();
+> +       flags = rcu_dereference(cpufreq_driver)->flags;
+
+use freq->flags here ...
+
+>         policy = per_cpu(cpufreq_cpu_data, freqs->cpu);
+> -       read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +       rcu_read_unlock();
+> +       freqs->flags = flags;
+>
+>         switch (state) {
+>
+> @@ -277,7 +281,7 @@ void cpufreq_notify_transition(struct cpufreq_freqs *freqs, unsigned int state)
+>                  * which is not equal to what the cpufreq core thinks is
+>                  * "old frequency".
+>                  */
+> -               if (!(cpufreq_driver->flags & CPUFREQ_CONST_LOOPS)) {
+> +               if (!(flags & CPUFREQ_CONST_LOOPS)) {
+
+and here.
+
+>                         if ((policy) && (policy->cpu == freqs->cpu) &&
+>                             (policy->cur) && (policy->cur != freqs->old)) {
+>                                 pr_debug("Warning: CPU frequency is"
+
+
+> @@ -742,35 +773,39 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
+
+> -       write_lock_irqsave(&cpufreq_driver_lock, flags);
+> +       spin_lock_irqsave(&cpufreq_driver_lock, flags);
+>         for_each_cpu(j, policy->cpus) {
+>                 per_cpu(cpufreq_cpu_data, j) = policy;
+>                 per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
+>         }
+> -       write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +       spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +       synchronize_rcu();
+
+I don't think (but i can be wrong too :) ), that we need a synchronize_rcu()
+here. We need it only at places where we have updated the cpufreq_driver
+pointer.
+
+As we aren't doing any rcu specific read/update for cpufreq_cpu_data.
