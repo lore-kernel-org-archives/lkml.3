@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab3BUQpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 11:45:08 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:43484 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611Ab3BUQpG convert rfc822-to-8bit (ORCPT
+	id S1754736Ab3BUQpy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 11:45:54 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:25325 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753723Ab3BUQpw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 11:45:06 -0500
+	Thu, 21 Feb 2013 11:45:52 -0500
 From: "Roberts, Lee A." <lee.roberts@hp.com>
-To: David Miller <davem@davemloft.net>
-CC: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] sctp: fix association hangs due to
- reassembly/ordering logic
-Thread-Topic: [PATCH 1/3] sctp: fix association hangs due to
- reassembly/ordering logic
-Thread-Index: AQHOD4Cv0TMB3JXjPEux7Xoyv2ti4ZiC5ItwgAAis4CAAX00IA==
-Date: Thu, 21 Feb 2013 16:43:52 +0000
-Message-ID: <D64EC45690EF85409BA6C4730E0162244310DEE0@G4W3231.americas.hpqcorp.net>
-References: <1361374860.3450.1.camel@laptop.lroberts>
-	<D64EC45690EF85409BA6C4730E0162244310ABA1@G4W3231.americas.hpqcorp.net>
- <20130220.125301.1295321158433252629.davem@davemloft.net>
-In-Reply-To: <20130220.125301.1295321158433252629.davem@davemloft.net>
+To: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/4] sctp: fix association hangs due to off-by-one errors in
+ sctp_tsnmap_grow()
+Thread-Topic: [PATCH 1/4] sctp: fix association hangs due to off-by-one
+ errors in sctp_tsnmap_grow()
+Thread-Index: Ac4QURb9XcgtMeU1SEmmm13mzuMFGA==
+Date: Thu, 21 Feb 2013 16:44:14 +0000
+Message-ID: <D64EC45690EF85409BA6C4730E0162244310DEE7@G4W3231.americas.hpqcorp.net>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -35,31 +30,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
+From: Lee A. Roberts <lee.roberts@hp.com>
 
-> -----Original Message-----
-> From: David Miller [mailto:davem@davemloft.net]
-> Sent: Wednesday, February 20, 2013 10:53 AM
-> To: Roberts, Lee A.
-> Cc: linux-sctp@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/3] sctp: fix association hangs due to reassembly/ordering logic
-> 
-> 
-> Your email client has corrupted every one of your patches, splitting up
-> new lines as well as making other alterations, making them useless for
-> us.
-> 
-> Please read Documentation/email-clients.txt to learn how to fix this
-> problem, and only resubmit your patches when you can successfully
-> email a patch to yourself and cleanly apply the patch you receive
-> in that email as-is.
-> 
-> Thanks.
+Resolve SCTP association hangs observed during SCTP stress
+testing.  Observable symptoms include communications hangs
+with data being held in the association lobby (ordering)
+queue.  Close examination of reassembly/ordering queues shows
+duplicated packets.
 
-I have addressed the e-mail client issue and have successfully mailed the
-patches to myself and applied them.  I will be sending updated version shortly.
+In sctp_tsnmap_grow(), correct off-by-one errors when copying
+and resizing the tsnmap.  If max_tsn_seen is in the LSB of the
+word, this bit can be lost, causing the corresponding packet
+to be transmitted again and to be entered as a duplicate into
+the SCTP reassembly/ordering queues.
 
-I have incorporated changes and recommendations from Vlad Yasevich into
-the updated patches.
+Patch applies to linux-3.8 kernel.
 
-                                 - Lee Roberts
+Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
+---
+ net/sctp/tsnmap.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-vanilla/net/sctp/tsnmap.c linux-3.8-SCTP+1/net/sctp/tsnmap.c
+--- linux-3.8-vanilla/net/sctp/tsnmap.c	2013-02-18 16:58:34.000000000 -0700
++++ linux-3.8-SCTP+1/net/sctp/tsnmap.c	2013-02-20 08:01:02.555223259 -0700
+@@ -369,14 +369,15 @@ static int sctp_tsnmap_grow(struct sctp_
+ 	if (gap >= SCTP_TSN_MAP_SIZE)
+ 		return 0;
+ 
+-	inc = ALIGN((gap - map->len),BITS_PER_LONG) + SCTP_TSN_MAP_INCREMENT;
++	inc = ALIGN((gap - map->len + 1), BITS_PER_LONG)
++		+ SCTP_TSN_MAP_INCREMENT;
+ 	len = min_t(u16, map->len + inc, SCTP_TSN_MAP_SIZE);
+ 
+ 	new = kzalloc(len>>3, GFP_ATOMIC);
+ 	if (!new)
+ 		return 0;
+ 
+-	bitmap_copy(new, map->tsn_map, map->max_tsn_seen - map->base_tsn);
++	bitmap_copy(new, map->tsn_map, map->max_tsn_seen - map->base_tsn + 1);
+ 	kfree(map->tsn_map);
+ 	map->tsn_map = new;
+ 	map->len = len;
