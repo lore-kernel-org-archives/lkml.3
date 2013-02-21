@@ -1,116 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab3BUVxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 16:53:10 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:50546 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894Ab3BUVxJ (ORCPT
+	id S1756444Ab3BUVyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 16:54:14 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:58122 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753750Ab3BUVyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 16:53:09 -0500
+	Thu, 21 Feb 2013 16:54:10 -0500
+Date: Thu, 21 Feb 2013 13:54:08 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Subject: Re: [PATCH 2/2] ima: add policy support for file system uuid
+In-Reply-To: <1360070895-29895-2-git-send-email-zohar@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.02.1302211352270.28115@chino.kir.corp.google.com>
+References: <1360070895-29895-1-git-send-email-zohar@linux.vnet.ibm.com> <1360070895-29895-2-git-send-email-zohar@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <87y5ehmp8d.fsf@linaro.org>
-References: <1361389302-11968-1-git-send-email-khilman@linaro.org>
-	<1361389302-11968-3-git-send-email-khilman@linaro.org>
-	<87y5ehmp8d.fsf@linaro.org>
-Date: Thu, 21 Feb 2013 22:53:07 +0100
-Message-ID: <CAFTL4hw1=mKtUadL0WDrydtspOehKuW7jhhzr65vXR2P2zdTWw@mail.gmail.com>
-Subject: Re: [RFC/PATCH 2/5] kernel_cpustat: convert to atomic 64-bit accessors
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Mats Liljegren <mats.liljegren@enea.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/21 Kevin Hilman <khilman@linaro.org>:
-> Subject: [PATCH 2/5] kernel_cpustat: convert to atomic 64-bit accessors
->
-> Use the atomic64_* accessors for all the kernel_cpustat fields to
-> ensure atomic access on non-64 bit platforms.
->
-> Thanks to Mats Liljegren for CGROUP_CPUACCT related fixes.
->
-> Cc: Mats Liljegren <mats.liljegren@enea.com>
-> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+On Tue, 5 Feb 2013, Mimi Zohar wrote:
 
-Funny stuff, I thought struct kernel_cpustat was made of cputime_t
-field. Actually it's u64. So the issue is independant from the new
-full dynticks cputime accounting. It was already broken before.
+> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+> index 4adcd0f..23f49e3 100644
+> --- a/security/integrity/ima/ima_policy.c
+> +++ b/security/integrity/ima/ima_policy.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/magic.h>
+>  #include <linux/parser.h>
+>  #include <linux/slab.h>
+> +#include <linux/genhd.h>
+>  
+>  #include "ima.h"
+>  
+> @@ -25,6 +26,7 @@
+>  #define IMA_FSMAGIC	0x0004
+>  #define IMA_UID		0x0008
+>  #define IMA_FOWNER	0x0010
+> +#define IMA_FSUUID	0x0020
+>  
+>  #define UNKNOWN		0
+>  #define MEASURE		0x0001	/* same as IMA_MEASURE */
+> @@ -45,6 +47,7 @@ struct ima_rule_entry {
+>  	enum ima_hooks func;
+>  	int mask;
+>  	unsigned long fsmagic;
+> +	u8 fsuuid[16];
+>  	kuid_t uid;
+>  	kuid_t fowner;
+>  	struct {
+> @@ -172,6 +175,9 @@ static bool ima_match_rules(struct ima_rule_entry *rule,
+>  	if ((rule->flags & IMA_FSMAGIC)
+>  	    && rule->fsmagic != inode->i_sb->s_magic)
+>  		return false;
+> +	if ((rule->flags & IMA_FSUUID) &&
+> +		memcmp(rule->fsuuid, inode->i_sb->s_uuid, sizeof(rule->fsuuid)))
+> +		return false;
+>  	if ((rule->flags & IMA_UID) && !uid_eq(rule->uid, cred->uid))
+>  		return false;
+>  	if ((rule->flags & IMA_FOWNER) && !uid_eq(rule->fowner, inode->i_uid))
+> @@ -346,7 +352,7 @@ enum {
+>  	Opt_obj_user, Opt_obj_role, Opt_obj_type,
+>  	Opt_subj_user, Opt_subj_role, Opt_subj_type,
+>  	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid, Opt_fowner,
+> -	Opt_appraise_type
+> +	Opt_appraise_type, Opt_fsuuid
+>  };
+>  
+>  static match_table_t policy_tokens = {
+> @@ -364,6 +370,7 @@ static match_table_t policy_tokens = {
+>  	{Opt_func, "func=%s"},
+>  	{Opt_mask, "mask=%s"},
+>  	{Opt_fsmagic, "fsmagic=%s"},
+> +	{Opt_fsuuid, "fsuuid=%s"},
+>  	{Opt_uid, "uid=%s"},
+>  	{Opt_fowner, "fowner=%s"},
+>  	{Opt_appraise_type, "appraise_type=%s"},
+> @@ -519,6 +526,19 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+>  			if (!result)
+>  				entry->flags |= IMA_FSMAGIC;
+>  			break;
+> +		case Opt_fsuuid:
+> +			ima_log_string(ab, "fsuuid", args[0].from);
+> +
+> +			if (memchr_inv(entry->fsuuid, 0x00,
+> +			    sizeof(entry->fsuuid))) {
+> +				result = -EINVAL;
+> +				break;
+> +			}
+> +
+> +			part_pack_uuid(args[0].from, entry->fsuuid);
+> +			entry->flags |= IMA_FSUUID;
+> +			result = 0;
+> +			break;
+>  		case Opt_uid:
+>  			ima_log_string(ab, "uid", args[0].from);
+>  
 
-But yeah that's not the point, we still want to fix this anyway. But
-let's just treat this patch as independant.
-
-> ---
->  arch/s390/appldata/appldata_os.c   | 41 +++++++++++++++++++++++---------------
->  drivers/cpufreq/cpufreq_governor.c | 18 ++++++++---------
->  drivers/cpufreq/cpufreq_ondemand.c |  2 +-
->  drivers/macintosh/rack-meter.c     |  6 +++---
->  fs/proc/stat.c                     | 40 ++++++++++++++++++-------------------
->  fs/proc/uptime.c                   |  2 +-
->  include/linux/kernel_stat.h        |  2 +-
->  kernel/sched/core.c                | 10 +++++-----
->  kernel/sched/cputime.c             | 38 +++++++++++++++++------------------
->  9 files changed, 84 insertions(+), 75 deletions(-)
->
-> diff --git a/arch/s390/appldata/appldata_os.c b/arch/s390/appldata/appldata_os.c
-> index 87521ba..008b180 100644
-> --- a/arch/s390/appldata/appldata_os.c
-> +++ b/arch/s390/appldata/appldata_os.c
-> @@ -99,6 +99,7 @@ static void appldata_get_os_data(void *data)
->         int i, j, rc;
->         struct appldata_os_data *os_data;
->         unsigned int new_size;
-> +       u64 val;
->
->         os_data = data;
->         os_data->sync_count_1++;
-> @@ -112,22 +113,30 @@ static void appldata_get_os_data(void *data)
->
->         j = 0;
->         for_each_online_cpu(i) {
-> -               os_data->os_cpu[j].per_cpu_user =
-> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_USER]);
-> -               os_data->os_cpu[j].per_cpu_nice =
-> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_NICE]);
-> -               os_data->os_cpu[j].per_cpu_system =
-> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM]);
-> -               os_data->os_cpu[j].per_cpu_idle =
-> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_IDLE]);
-> -               os_data->os_cpu[j].per_cpu_irq =
-> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_IRQ]);
-> -               os_data->os_cpu[j].per_cpu_softirq =
-> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_SOFTIRQ]);
-> -               os_data->os_cpu[j].per_cpu_iowait =
-> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_IOWAIT]);
-> -               os_data->os_cpu[j].per_cpu_steal =
-> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_STEAL]);
-> +               val = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_USER]);
-
-So I see this repeated pattern everywhere. How about converting that to:
-           kcpustat_cpu_get(i, CPUTIME_USER)
-
-and use that accessor in all other places. That's much more readable
-and then we can later modify the accessing code in one go.
-
-We should perhaps even use atomic_64 in 32 bits and u64 in 64 bits.
-
-[...]
-> @@ -186,11 +186,11 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
->
->         /* Add guest time to cpustat. */
->         if (TASK_NICE(p) > 0) {
-> -               cpustat[CPUTIME_NICE] += (__force u64) cputime;
-> -               cpustat[CPUTIME_GUEST_NICE] += (__force u64) cputime;
-> +               atomic64_add((__force u64) cputime, &cpustat[CPUTIME_NICE]);
-> +               atomic64_add((__force u64) cputime, &cpustat[CPUTIME_GUEST_NICE]);
-
-That too should be kcpustat_this_cpu_set(), or kcpustat_this_cpu_add()
-FWIW. But we probably don't need the overhead of atomic_add() that
-does a LOCK.
-atomic_set(var, atomic_read(var) + delta) would be better. All we need
-is that low/high parts of the 64 bits values are stored and read
-without messing up altogether.
-
-Thanks.
+We don't have part_pack_uuid() without CONFIG_BLOCK, so should this return 
+-ENOTSUPP if that option is not enabled?
