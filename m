@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478Ab3BUFLb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 00:11:31 -0500
-Received: from 216-139-250-139.aus.us.siteprotect.com ([216.139.250.139]:45589
-	"EHLO joe.nabble.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab3BUFLa (ORCPT
+	id S1751647Ab3BUFLs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 00:11:48 -0500
+Received: from relay.parallels.com ([195.214.232.42]:56107 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab3BUFLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 00:11:30 -0500
-Date: Wed, 20 Feb 2013 21:11:29 -0800 (PST)
-From: liuhuan123 <liuhuan123123123@yahoo.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <1361423489522-604598.post@n7.nabble.com>
-In-Reply-To: <1354602789308-564771.post@n7.nabble.com>
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <1354028674-23685-1-git-send-email-mark.langsdorf@calxeda.com> <1354028674-23685-5-git-send-email-mark.langsdorf@calxeda.com> <20121127171250.3984e990@skate> <1354602789308-564771.post@n7.nabble.com>
-Subject: Re: [PATCH 4/6 v5] arm highbank: add support for pl320 IPC
+	Thu, 21 Feb 2013 00:11:46 -0500
+Message-ID: <5125AC65.7020006@parallels.com>
+Date: Thu, 21 Feb 2013 09:11:01 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: general protection fault in do_msgrcv  [3.8]
+References: <20130219180441.GA27141@redhat.com> <512487FA.9090102@parallels.com> <20130220182432.GA32377@redhat.com>
+In-Reply-To: <20130220182432.GA32377@redhat.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.29.37]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are a fashionable choice and they are reusable also. Plastic bags are
-getting unexpected popularity in the daily life. These have been
-transformed, changed and diversified with several types to fulfill the
-different expectations of the customers. More frequently poly  Check out
-this
-<http://stylebagshotshop.com/goods-2633-Chanel-Shopping-Bags-69019-Black-Leather-With-Chain.html>  
-are used and several improvements are made to the designs and materials.
-With the material polyethylene, bags have become to carry any object from
-light to heavy weight. These bags give extra storage space for bulky items
-and you can get then in different patterns.<br /><br />Winter is about
-wearing thick clothing and on the best choice of jackets can be found at the 
-Find Out More
-<http://warmjackets.net/goods-3-Moncler-Long-Down-Black-Coat-Men.html>  
-outlet. They have fashionable jackets available that come in different
-sizes, styles and designs. Wearing one can surely give warmth especially
-during the coldest weather in the year. If you want to buy a Moncler coat,
-you do not need to find an outlet or boutique their store can be found
-online through this website<br /><br />The UGG boots for women are
-accessible inside a wide quantity of colours for instance purple and pink.
-The men's boots even so are offered in neutral colours.   ash jalouse suede
-boots <http://ishoesmall.net/goods-17-ASH-skull-biker-boot.html>   Some
-boots have chunky laces and heels while some are slip on type footwear with
-flat heels. The boots from UGG have a casual and trendy seem and compliment
-different sorts of clothing. These boots are very good to wear during the
-winter season as they are exceptionally warm. For women and girls, the boots
-from UGG will seem beneficial with tight legged jeans which must be tucked
-into them.
+20.02.2013 22:24, Dave Jones пишет:
+> On Wed, Feb 20, 2013 at 12:23:22PM +0400, Stanislav Kinsbursky wrote:
+>
+>   > > Pid: 887, comm: trinity-child2 Not tainted 3.8.0+ #57 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
+>   > > RIP: 0010:[<ffffffff812aebba>]  [<ffffffff812aebba>] do_msgrcv+0x22a/0x670
+>   > > ...
+>   > > Looks like Stanislav recently changed this code, so problem was likely introduced
+>   > > in those changes.
+>   > >
+>   >
+>   > Is it easy to reproduce? Do you use KVM?
+>
+> Only hit it once so far, no KVM
+>
+>   > There is a NULL selinux handler bug fix by Stephen Smalley here:
+>   > https://lkml.org/lkml/2013/2/6/663
+>   >
+>   > But anyway, this bug fix affects only the case, when MSG_COPY flag is set.
+>   >
+>   > And this is not your case, I suppose?
+>
+>  From my reading of the traces, I'd say not. It looks like I'm oopsing before
+> we even get to the SELinux hooks.
+>
+
+Thanks, Dave. I've seen a couple of issues when running trinity in KVM somewhere in the same place.
+Look like message queue itself has been destroyed somewhere in the past.
+Have no idea how this can happen yet but still searching and will inform you in case of any fixes.
+
+> 	Dave
+>
 
 
-
---
-View this message in context: http://linux-kernel.2935.n7.nabble.com/PATCH-0-6-cpufreq-add-support-for-Calxeda-ECX-1000-highbank-tp380026p604598.html
-Sent from the Linux Kernel mailing list archive at Nabble.com.
+-- 
+Best regards,
+Stanislav Kinsbursky
