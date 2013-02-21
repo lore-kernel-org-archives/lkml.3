@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755097Ab3BUQmt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 11:42:49 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:60648 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076Ab3BUQms (ORCPT
+	id S1755451Ab3BUQpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 11:45:08 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:43484 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753611Ab3BUQpG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 11:42:48 -0500
-Date: Thu, 21 Feb 2013 16:42:44 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Message-ID: <20130221164244.GA19625@srcf.ucam.org>
-References: <30665.1361461678@warthog.procyon.org.uk>
- <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
+	Thu, 21 Feb 2013 11:45:06 -0500
+From: "Roberts, Lee A." <lee.roberts@hp.com>
+To: David Miller <davem@davemloft.net>
+CC: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/3] sctp: fix association hangs due to
+ reassembly/ordering logic
+Thread-Topic: [PATCH 1/3] sctp: fix association hangs due to
+ reassembly/ordering logic
+Thread-Index: AQHOD4Cv0TMB3JXjPEux7Xoyv2ti4ZiC5ItwgAAis4CAAX00IA==
+Date: Thu, 21 Feb 2013 16:43:52 +0000
+Message-ID: <D64EC45690EF85409BA6C4730E0162244310DEE0@G4W3231.americas.hpqcorp.net>
+References: <1361374860.3450.1.camel@laptop.lroberts>
+	<D64EC45690EF85409BA6C4730E0162244310ABA1@G4W3231.americas.hpqcorp.net>
+ <20130220.125301.1295321158433252629.davem@davemloft.net>
+In-Reply-To: <20130220.125301.1295321158433252629.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.14]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 08:39:55AM -0800, Linus Torvalds wrote:
-> On Thu, Feb 21, 2013 at 7:47 AM, David Howells <dhowells@redhat.com> wrote:
-> >
-> > Can you pull this patchset please?
-> 
-> Not without a lot more discussion first.
-> 
-> Quite frankly, this is f*cking moronic. The whole thing seems to be
-> designed around stupid interfaces, for completely moronic reasons. Why
-> should we do this?
+David,
 
-There's only one signing authority, and they only sign PE binaries.
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Wednesday, February 20, 2013 10:53 AM
+> To: Roberts, Lee A.
+> Cc: linux-sctp@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 1/3] sctp: fix association hangs due to reassembly/ordering logic
+> 
+> 
+> Your email client has corrupted every one of your patches, splitting up
+> new lines as well as making other alterations, making them useless for
+> us.
+> 
+> Please read Documentation/email-clients.txt to learn how to fix this
+> problem, and only resubmit your patches when you can successfully
+> email a patch to yourself and cleanly apply the patch you receive
+> in that email as-is.
+> 
+> Thanks.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I have addressed the e-mail client issue and have successfully mailed the
+patches to myself and applied them.  I will be sending updated version shortly.
+
+I have incorporated changes and recommendations from Vlad Yasevich into
+the updated patches.
+
+                                 - Lee Roberts
