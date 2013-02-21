@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759020Ab3BUUbp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 15:31:45 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:57536 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758919Ab3BUUbf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 15:31:35 -0500
+	id S1759662Ab3BUUko (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 15:40:44 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:49335 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757196Ab3BUUaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 15:30:22 -0500
+Date: Thu, 21 Feb 2013 15:30:16 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Sandy Harris <sandyinchina@gmail.com>
+Cc: Stephan Mueller <smueller@chronox.de>, Phil Carmody <pc+lkml@asdf.org>,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] Entropy generator with 100 kB/s throughput
+Message-ID: <20130221203016.GE17322@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Sandy Harris <sandyinchina@gmail.com>,
+	Stephan Mueller <smueller@chronox.de>,
+	Phil Carmody <pc+lkml@asdf.org>, linux-crypto@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20130221140712.GA11550@fatphil.org>
+ <51262C62.4040707@chronox.de>
+ <CACXcFmnBNHab57dzx+QdqS=BTbUPCJo4zkztCw7W2Yfab+m5ow@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1361477421-3964-1-git-send-email-vgupta@synopsys.com>
-References: <20130221193639.GN3570@htj.dyndns.org>
-	<1361477421-3964-1-git-send-email-vgupta@synopsys.com>
-Date: Thu, 21 Feb 2013 12:31:34 -0800
-X-Google-Sender-Auth: 7ySUd6O5TO3sddPVDxGspE2Y_kI
-Message-ID: <CAE9FiQV20uj_kOViCOd4gdPFuAf28fEbjhGCrzNogQWx5T3+zg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] memblock: add assertion for zero allocation alignment
-From: Yinghai Lu <yinghai@kernel.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACXcFmnBNHab57dzx+QdqS=BTbUPCJo4zkztCw7W2Yfab+m5ow@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 12:10 PM, Vineet Gupta
-<Vineet.Gupta1@synopsys.com> wrote:
-> This came to light when calling memblock allocator from arc port (for
-> copying flattended DT). If a "0" alignment is passed, the allocator
-> round_up() call incorrectly rounds up the size to 0.
->
-> round_up(num, alignto) => ((num - 1) | (alignto -1)) + 1
->
-> While the obvious allocation failure causes kernel to panic, it is
-> better to warn the caller to fix the code.
->
-> Tejun suggested that instead of BUG_ON(!align) - which might be
-> ineffective due to pending console init and such, it is better to
-> WARN_ON, and continue the boot with a reasonable default align.
->
-> Caller passing @size need not be handled similarly as the subsequent
-> panic will indicate that anyhow.
->
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: linux-mm@kvack.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  mm/memblock.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
->
-> diff --git a/mm/memblock.c b/mm/memblock.c
-> index 1bcd9b9..f3804bd 100644
-> --- a/mm/memblock.c
-> +++ b/mm/memblock.c
-> @@ -824,6 +824,9 @@ static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
->         /* align @size to avoid excessive fragmentation on reserved array */
->         size = round_up(size, align);
->
-> +       if (WARN_ON(!align))
-> +               align = __alignof__(long long);
-> +
+On Thu, Feb 21, 2013 at 12:46:45PM -0500, Sandy Harris wrote:
+> 
+> Also, in some designs it is possible to get very close to calculating
+> entropy. The Turbid generator, for example, uses physical measurements
+> of sound card properties plus arguments from standard circuit physics to
+> prove a lower bound on the Johnson noise that must exist in the circuit.
+> From that plus some quite moderate assumptions about properties of
+> the hash, you get a provable lower bound on output entropy.
 
-the checking should be put before round_up?
+That's assuming you're talking to a real physical sound card, however.
+Suppose you have a set up where the user is running one or more VM's
+on their desktop, and the VM (possibly with some assist from
+PulseAudio) is multiplexing the host sound card and doing upmixing
+and/or downmixing as part of its multiplexing magic?
 
->         found = memblock_find_in_range_node(0, max_addr, size, align, nid);
->         if (found && !memblock_reserve(found, size))
->                 return found;
-> --
-> 1.7.4.1
->
+Would the Turbid generator be able to detect this situation, and would
+its entropy estimates be correct?  Even if they are correct, the fact
+that another VM might be getting the same stream of inputs,
+unbeknownst to the Turbid generator, might mean that an adversary
+might have access to the "entropy" being generated by the PulseAudio
+stream....
+
+(And yes, there is the same potential issue with the current
+/dev/random sampling what it thinks is hardware noise generation from
+network and hdd interrupts; the point is that entropy collection in
+the VM is *hard* and extremely error-prone.  In the end you're
+probably better off using paravirtualization for /dev/random and trust
+the Host OS to give you good randomness.  After all, if you don't
+trust the Host OS, you're fundamentally screwed anyway....)
+
+							- Ted
