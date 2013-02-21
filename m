@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756984Ab3BUS1r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 13:27:47 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:4152 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756299Ab3BUS1q (ORCPT
+	id S1757028Ab3BUS2I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 13:28:08 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:35406 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756557Ab3BUS2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 13:27:46 -0500
-X-IronPort-AV: E=Sophos;i="4.84,710,1355126400"; 
-   d="scan'208";a="26137390"
-Message-ID: <51266721.5060006@codeaurora.org>
-Date: Thu, 21 Feb 2013 10:27:45 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Thu, 21 Feb 2013 13:28:06 -0500
 MIME-Version: 1.0
-To: Nathan Zimmer <nzimmer@sgi.com>
-CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: mmotm 2013-02-19-17-20 uploaded
-References: <20130220012122.870BB31C11E@corp2gmr1-1.hot.corp.google.com> <5125E809.4060407@codeaurora.org> <20130221181811.GA27097@gulag1.americas.sgi.com>
-In-Reply-To: <20130221181811.GA27097@gulag1.americas.sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LFD.2.02.1302211920440.22263@ionos>
+References: <1361373336-11337-1-git-send-email-fweisbec@gmail.com>
+	<alpine.LFD.2.02.1302202155320.22263@ionos>
+	<CA+55aFwTFOsRTX3pHeZ+664rAms-Liwco3scEPJum6=C3BCoEQ@mail.gmail.com>
+	<alpine.LFD.2.02.1302211920440.22263@ionos>
+Date: Thu, 21 Feb 2013 10:28:04 -0800
+X-Google-Sender-Auth: XjUN1eBP-oMhOxUkMwqJexP-Gk0
+Message-ID: <CA+55aFwj0bVS0H1YBMq9EHbkYrU7-so8S6onCKs2M1Q+g4AmNA@mail.gmail.com>
+Subject: Re: [PATCH] nohz: Make tick_nohz_irq_exit() irq safe
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/21/2013 10:18 AM, Nathan Zimmer wrote:
-> On Thu, Feb 21, 2013 at 01:25:29AM -0800, Stephen Boyd wrote:
->> On 2/19/2013 5:21 PM, akpm@linux-foundation.org wrote:
->>> * timer_list-split-timer_list_show_tickdevices.patch
->>> * timer_list-convert-timer-list-to-be-a-proper-seq_file.patch
->>> * timer_list-convert-timer-list-to-be-a-proper-seq_file-fix.patch
->>> * timer_list-convert-timer-list-to-be-a-proper-seq_file-v2.patch
->>> * timer_list-convert-timer-list-to-be-a-proper-seq_file-v2-fix.patch
->>> * timer_list-convert-timer-list-to-be-a-proper-seq_file-fix-fix.patch
->> These commits seem to break the timer list on devices with maxcpus !=
->> nr_cpu_ids, which is possible if you specify maxcpus on the kernel
->> command line. I no longer see the percpu devices that I normally have
->> after the broadcast device.
-> Interesting.
-> However I can't seem to boot at the moment with maxcpus set to less then the actual
-> number of cpus so I am not having much luck investigating right now. 
+On Thu, Feb 21, 2013 at 10:21 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> This was a draft patch. I made it a WARN_ON_ONCE() already.
 
-It works well on ARM processors. I believe it still works on x86 devices
-as well. I suppose you can simulate it by offlining a CPU and then
-reading the file.
+Ok, good.
 
-This comment is useful around the cpumask functions.
+I really wish we could just get rid of BUG_ON(). It was a bad idea,
+and it makes it easy for people to do the wrong thing. Sadly, we have
+tons of them.
 
-    Returns >= nr_cpu_ids if no further cpus set.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+                        Linus
