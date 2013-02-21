@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab3BUPdL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 10:33:11 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16352 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264Ab3BUPdI (ORCPT
+	id S1754430Ab3BUPdr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 10:33:47 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:47591 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754287Ab3BUPdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 10:33:08 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 21 Feb 2013 07:32:02 -0800
-Date: Thu, 21 Feb 2013 17:32:40 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [v2 1/4] ARM: tegra20: create a DT header defining CLK IDs
-Message-ID: <20130221153240.GN23234@tbergstrom-lnx.Nvidia.com>
-References: <1360868369-20093-1-git-send-email-hdoyu@nvidia.com>
- <1360868369-20093-2-git-send-email-hdoyu@nvidia.com>
- <511D45E0.1080105@wwwdotorg.org>
- <20130215092407.GO3073@tbergstrom-lnx.Nvidia.com>
- <511E6639.1090909@wwwdotorg.org>
- <20130221122536.GJ23234@tbergstrom-lnx.Nvidia.com>
+	Thu, 21 Feb 2013 10:33:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130221122536.GJ23234@tbergstrom-lnx.Nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <512605A1.8090106@semaphore.gr>
+References: <51253715.7080600@semaphore.gr>
+	<CAOh2x=mD4DbEH245xsceS1wyhmrRPpB2LeJ9Mh+WGHUA+bZprA@mail.gmail.com>
+	<512605A1.8090106@semaphore.gr>
+Date: Thu, 21 Feb 2013 21:03:44 +0530
+X-Google-Sender-Auth: uyM8XjRGNFla7NtTDqcIljm6b68
+Message-ID: <CAOh2x=m82jKMf+xgg+fjnCUHLpCQ_NgYqw4auyAidokt_z=uOw@mail.gmail.com>
+Subject: Re: [PATCH v2 linux-next] cpufreq: ondemand: Calculate gradient of
+ CPU load to early increase frequency
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 01:25:36PM +0100, Peter De Schrijver wrote:
-> On Fri, Feb 15, 2013 at 05:45:45PM +0100, Stephen Warren wrote:
-> 
-> ...
-> 
-> > > I would suggest removing this clock. It's not actually implemented in the CCF
-> > > and rather useless. If you would gate the CPU clock from the CPU by writing to
-> > > this register, how would you ungate it? :) Note that this would gate the clock
-> > > to all CPUs.
-> > 
-> > (Note that my comment was re: all clocks, not just that one clock)
-> > 
-> > Can't the PMC or flow-controller ungate the clock based on some event?
-> 
-> I don't think the flow-controller controls this gate. The usual way of
-> clockgating a core is to execute a WFI instruction. That will trigger
-> clockgating the core, unless the flow-controller has been programmed to do
-> something else. The flow-controller will ungate the clock when there is an
-> interrupt.
-> 
-> > Either way, that clock definition exists in HW, right? So I don't think
-> > there's actually any harm in including the definition in the binding
-> > even if we never implement/use it.
-> 
-> The clock definition seems to exist in HW yes, the corresponding resetbit
-> however is marked as 'reserved' in the Tegra114 documentation.
+Hi Again,
 
-Apparently from Tegra114 onwards, this bit no longer exists. In previous
-chips, it is just turned by the bootloader running on the AVP and stays on
-from there on. So at least for Tegra114 I think we remove this clock from
-the DT binding.
+On Thu, Feb 21, 2013 at 5:01 PM, Stratos Karafotis
+<stratosk@semaphore.gr> wrote:
 
-Cheers,
+> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+> @@ -168,16 +174,29 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
+>         struct cpufreq_policy *policy = dbs_info->cdbs.cur_policy;
+>         struct dbs_data *dbs_data = policy->governor_data;
+>         struct od_dbs_tuners *od_tuners = dbs_data->tuners;
+> +       unsigned int prev_load_freq;
+>
+>         dbs_info->freq_lo = 0;
+>
+> +       /*
+> +        * Calculate the gradient of load_freq. If it is too steep we assume
+> +        * that the load will go over up_threshold in next iteration(s) and
+> +        * we increase the frequency immediately
+> +        */
+> +       if (od_tuners->early_demand) {
+> +               prev_load_freq = dbs_info->prev_load_freq;
+> +               dbs_info->prev_load_freq = load_freq;
+> +
+> +               if (load_freq > prev_load_freq && (load_freq - prev_load_freq >
+> +                   od_tuners->grad_up_threshold * policy->cur)) {
+> +                       dbs_freq_increase(dbs_info, policy, policy->max);
+> +                       return;
+> +               }
+> +       }
+> +
+>         /* Check for frequency increase */
+>         if (load_freq > od_tuners->up_threshold * policy->cur) {
+> -               /* If switching to max speed, apply sampling_down_factor */
+> -               if (policy->cur < policy->max)
+> -                       dbs_info->rate_mult =
+> -                               od_tuners->sampling_down_factor;
+> -               dbs_freq_increase(policy, policy->max);
+> +               dbs_freq_increase(dbs_info, policy, policy->max);
+>                 return;
+>         }
 
-Peter.
+Not really against your implementation, but this is what i thought of how
+it should look like (initially when i reviewed your V1)
+
+int boost_freq = 0;
+
+       if (od_tuners->early_demand) {
+               if (load_freq > dbs_info->prev_load_freq && (load_freq
+- dbs_info->prev_load_freq >
+                   od_tuners->grad_up_threshold * policy->cur)) {
+                   boost_freq = 1;
+               }
+
+               dbs_info->prev_load_freq = load_freq;
+       }
+
+        /* Check for frequency increase */
+        if (boost_freq || (load_freq > od_tuners->up_threshold * policy->cur)) {
+                 increase-freq;
+
+
+This would get rid of duplicate calls to increase_freq() and also
+avoid changing its
+prototype.
