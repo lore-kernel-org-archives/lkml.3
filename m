@@ -1,173 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab3BUHBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 02:01:04 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53633 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab3BUHA7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 02:00:59 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5125C579.1040704@jp.fujitsu.com>
-Date: Thu, 21 Feb 2013 15:58:01 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1752639Ab3BUHEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 02:04:39 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:29279 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752368Ab3BUHEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 02:04:37 -0500
+X-IronPort-AV: E=Sophos;i="4.84,707,1355068800"; 
+   d="scan'208";a="6741731"
+Message-ID: <5125C6DE.3010906@cn.fujitsu.com>
+Date: Thu, 21 Feb 2013 15:03:58 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH 7/7] ACPI / scan: Make memory hotplug driver use struct
- acpi_scan_handler
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <2200731.3okUfey51A@vostro.rjw.lan> <20130219181157.GA4366@dhcp-192-168-178-175.profitbricks.localdomain> <51244494.4000603@jp.fujitsu.com> <20130220104250.GA4409@dhcp-192-168-178-175.profitbricks.localdomain>
-In-Reply-To: <20130220104250.GA4409@dhcp-192-168-178-175.profitbricks.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: jiang.liu@huawei.com, wujianguo@huawei.com, hpa@zytor.com,
+        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, rob@landley.net,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, guz.fnst@cn.fujitsu.com, rusty@rustcorp.com.au,
+        lliubbo@gmail.com, jaegeuk.hanse@gmail.com, tony.luck@intel.com,
+        glommer@parallels.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [Bug fix PATCH 0/2] Make whatever node kernel resides in un-hotpluggable.
+References: <1361358056-1793-1-git-send-email-tangchen@cn.fujitsu.com> <20130220133650.4e0913f3.akpm@linux-foundation.org>
+In-Reply-To: <20130220133650.4e0913f3.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/21 15:03:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/21 15:03:52,
+	Serialize complete at 2013/02/21 15:03:52
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vasilis,
+Hi Andrew,
 
-2013/02/20 19:42, Vasilis Liaskovitis wrote:
-> Hi Yasuaki,
->
-> On Wed, Feb 20, 2013 at 12:35:48PM +0900, Yasuaki Ishimatsu wrote:
->> Hi Vasilis,
->>
->> 2013/02/20 3:11, Vasilis Liaskovitis wrote:
->>> Hi,
->>>
->>> On Sun, Feb 17, 2013 at 04:27:18PM +0100, Rafael J. Wysocki wrote:
->>>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>>
->>>> Make the ACPI memory hotplug driver use struct acpi_scan_handler
->>>> for representing the object used to set up ACPI memory hotplug
->>>> functionality and to remove hotplug memory ranges and data
->>>> structures used by the driver before unregistering ACPI device
->>>> nodes representing memory.  Register the new struct acpi_scan_handler
->>>> object with the help of acpi_scan_add_handler_with_hotplug() to allow
->>>> user space to manipulate the attributes of the memory hotplug
->>>> profile.
->>>
->>> Let's consider an example where we want acpi memory device ejection to be safely
->>> handled by userspace. We do the following:
->>>
->>> echo 0 > /sys/firmware/acpi/hotplug/memory/autoeject
->>> echo 1 > /sys/firmware/acpi/hotplug/memory/uevents
->>>
->>> We succesfully hotplug acpi device:
->>> /sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:00
->>> and its corresponding memblocks /sys/devices/system/memory/memoryXX are
->>> also successfully onlined.
->>>
->>> On an eject request, since uevents == 1, the kernel will emit KOBJ_OFFLINE for:
->>> /sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:00
->>>
->>> Can userspace know which memblocks in /sys/devices/system/memory/memoryXX/
->>> correspond to the acpi device /sys/devices/LNXSYSTM:00/LNXSYSBUS:00/PNP0C80:00 ?
->>> This will be needed so that userspace tries to offline the memblocks (and only
->>> if successful, issue the eject operation on the acpi device). As far as I see,
->>> we don't create any sysfs links or files for this scenario - can userspace get
->>> this info somehow?
->>
->>>
->>> /sys/devices/system/memory/memoryXX/phys_device needs to be properly implemented
->>> for this to work I think, see Documentation/ABI/testing/sysfs-memory
->>>
->>> The following test patch works toward that direction. Let me know if it's of
->>> interest or if there are better ideas /comments.
->>
->> How about use ../PNP0C80:00/physical_node/resources file?
->> In my system, the file shows following information.
->>
->> $ cat /sys/bus/acpi/devices/PNP0C80\:00/physical_node/resources
->> state = active
->> mem 0x0-0x80000000
->> mem 0x100000000-0x800000000
->>
->> It means PNP0C80:00's memory ranges are "0x0-0x7fffffff" and
->> "0x100000000-0x7ffffffff". In x86 architecture, memory section size is
->> 128MiB. So, if these memory range is divided by 128MiB, you can
->> calculate memory section number as follow:
->>
->> 0x0-0x7fffffff => 0x0-0x10
->> 0x100000000-0x7ffffffff => 0x20-0xff
->>
->> But there is one problem. The problem is that resources file of added memory
->> is not created. If the problem is fixed, I think you can use the way.
->
+Please see below. :)
 
-> thanks for your suggestion. Is this resources file a property of the
-> physical_node or of each acpi devices?
+On 02/21/2013 05:36 AM, Andrew Morton wrote:
 >
-> If it's a node specific file could there be a chance that adjacent memory
-> ranges get merged? We 'd like these to not get merged.
+> Also, please review the changelogging for these:
+>
+> page_alloc-add-movable_memmap-kernel-parameter.patch
+> page_alloc-add-movable_memmap-kernel-parameter-fix.patch
+> page_alloc-add-movable_memmap-kernel-parameter-fix-fix.patch
+> page_alloc-add-movable_memmap-kernel-parameter-fix-fix-checkpatch-fixes.patch
+> page_alloc-add-movable_memmap-kernel-parameter-fix-fix-fix.patch
+> page_alloc-add-movable_memmap-kernel-parameter-rename-movablecore_map-to-movablemem_map.patch
 
-This information is created by pnppacpi_init().
-It seems that:
-   - resources file is created to each acpi_devices.
-   - the memory range does not get merged.
+**********
+Add functions to parse movablemem_map boot option.  Since the option
+could be specified more then once, all the maps will be stored in the
+global variable movablemem_map.map array.
 
-Thanks,
-Yasuaki Ishimatsu
->
-> I will look more into this property. I don't see it currently in my system
-> (probably because initial memory is not backed by acpi devices in my
->   seabios/virtual machine).
->
->>
-> [...]
->>> +int acpi_memory_phys_device(unsigned long start_pfn)
->>> +{
->>> +	struct acpi_memory_device *mem_dev;
->>> +	struct acpi_memory_info *info;
->>> +	unsigned long start_addr = start_pfn << PAGE_SHIFT;
->>> +	int id = 0;
->>> +
->>> +	list_for_each_entry(mem_dev, &acpi_mem_device_list, mem_device_list) {
->>> +		list_for_each_entry(info, &mem_dev->res_list, list) {
->>> +			if ((info->start_addr <= start_addr) &&
->>> +				(info->start_addr + info->length > start_addr))
->>> +				return id;
->>> +		}
->>> +		id++;
->>> +	}
->>
->> I don't think this solve your problem.
->>
->> When hot adding memory device in my system, consecutive index number is
->> applied to PNP0C80 as follows:
->>
->> $ ls /sys/bus/acpi/devices/ |grep PNP0C80
->> PNP0C80:00
->> PNP0C80:01  => hot added memory device
->> PNP0C80:02  => hot added memory device
->>
->> In this case, we can know PNP0C80:YY by memoryXX/phys_device file.
->> But if hot removing and adding the same device, index number is changed
->> as follows:
->>
->> $ ls /sys/bus/acpi/devices/
->> PNP0C80:00
->> PNP0C80:03  => hot added memory device
->> PNP0C80:04  => hot added memory device
->>
->> In this case, we cannot know PNP0C80:YY by memoryXX/phys_device file.
->>
->
-> thanks, yes you are right. I forgot each new hotplug event will create a new
-> PNP0C80:XX device where XX always increases. So the hot-add/hot-remove/hot-add
-> scenario would have a problem.
-> Then it would be enough to be able to return this monotonically increasing
-> counter from phys_device instead of the current list iterator. Is this counter
-> available somehwere in drivers/acpi/scan.c or bus.c? I 'll take a look.
->
-> thanks,
->
-> - Vasilis
->
+And also, we keep the array in monotonic increasing order by start_pfn.
+And merge all overlapped ranges.
+**********
 
+>
+> memory-hotplug-remove-sys-firmware-memmap-x-sysfs.patch
+> memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix.patch
+> memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix.patch
+> memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix-fix.patch
+> memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix-fix-fix.patch
+> memory-hotplug-remove-sys-firmware-memmap-x-sysfs-fix-fix-fix-fix-fix.patch
+
+**********
+When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start,
+type} sysfs files are created.  But there is no code to remove these
+files.  This patch implements the function to remove them.
+
+We cannot free firmware_map_entry which is allocated by bootmem because
+there is no way to do so when the system is up. But we can at least remember
+the address of that memory and reuse the storage when the memory is added
+next time.
+
+This patch also introduces a new list map_entries_bootmem to link the map
+entries allocated by bootmem when they are removed, and a lock to 
+protect it.
+And these entries will be reused when the memory is hot-added again.
+
+The idea is suggestted by Andrew Morton <akpm@linux-foundation.org>
+
+NOTE: It is unsafe to return an entry pointer and release the 
+map_entries_lock.
+       So we should not hold the map_entries_lock separately in
+       firmware_map_find_entry() and firmware_map_remove_entry(). Hold the
+       map_entries_lock across find and remove /sys/firmware/memmap/X 
+operation.
+
+       And also, users of these two functions need to be careful to hold 
+the lock
+       when using these two functions.
+**********
+
+>
+> memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap.patch
+> memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix.patch
+> memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix-fix.patch
+> memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix-fix-fix.patch
+> memory-hotplug-implement-register_page_bootmem_info_section-of-sparse-vmemmap-fix-fix-fix-fix.patch
+
+**********
+For removing memmap region of sparse-vmemmap which is allocated bootmem,
+memmap region of sparse-vmemmap needs to be registered by
+get_page_bootmem(). So the patch searches pages of virtual mapping and
+registers the pages by get_page_bootmem().
+
+NOTE: register_page_bootmem_memmap() is not implemented for ia64, ppc, s390,
+       and sparc. So introduce CONFIG_HAVE_BOOTMEM_INFO_NODE and revert
+       register_page_bootmem_info_node() when platform doesn't support it.
+
+       It's implemented by adding a new Kconfig option named
+       CONFIG_HAVE_BOOTMEM_INFO_NODE, which will be automatically 
+selected by
+       memory-hotplug feature fully supported archs(currently only on 
+x86_64).
+
+       Since we have 2 config options called MEMORY_HOTPLUG and 
+MEMORY_HOTREMOVE
+       used for memory hot-add and hot-remove separately, and codes in 
+function
+       register_page_bootmem_info_node() are only used for collecting 
+infomation
+       for hot-remove, so reside it under MEMORY_HOTREMOVE.
+
+       Besides page_isolation.c selected by MEMORY_ISOLATION under 
+MEMORY_HOTPLUG
+       is also such case, move it too.
+**********
+
+>
+> memory-hotplug-common-apis-to-support-page-tables-hot-remove.patch
+> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix.patch
+> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix.patch
+> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix.patch
+> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix.patch
+> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix-fix.patch
+> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix-fix-fix.patch
+> memory-hotplug-common-apis-to-support-page-tables-hot-remove-fix-fix-fix-fix-fix-fix-fix.patch
+
+**********
+When memory is removed, the corresponding pagetables should alse be removed.
+This patch introduces some common APIs to support vmemmap pagetable and 
+x86_64
+architecture direct mapping pagetable removing.
+
+All pages of virtual mapping in removed memory cannot be freed if some 
+pages
+used as PGD/PUD include not only removed memory but also other memory. 
+So this
+patch uses the following way to check whether a page can be freed or not.
+
+1) When removing memory, the page structs of the removed memory are filled
+    with 0FD.
+2) All page structs are filled with 0xFD on PT/PMD, PT/PMD can be cleared.
+    In this case, the page used as PT/PMD can be freed.
+
+For direct mapping pages, update direct_pages_count[level] when we freed
+their pagetables. And do not free the pages again because they were freed
+when offlining.
+
+For vmemmap pages, free the pages and their pagetables.
+
+For larger pages, do not split them into smaller ones because there is 
+no way
+to know if the larger page has been split. As a result, there is no way to
+decide when to split. We deal the larger pages in the following way:
+
+1) For direct mapped pages, all the pages were freed when they were 
+offlined.
+    And since menmory offline is done section by section, all the memory 
+ranges
+    being removed are aligned to PAGE_SIZE. So only need to deal with 
+unaligned
+    pages when freeing vmemmap pages.
+
+2) For vmemmap pages being used to store page_struct, if part of the larger
+    page is still in use, just fill the unused part with 0xFD. And when the
+    whole page is fulfilled with 0xFD, then free the larger page.
+**********
+
+>
+> acpi-memory-hotplug-parse-srat-before-memblock-is-ready.patch
+> acpi-memory-hotplug-parse-srat-before-memblock-is-ready-fix.patch
+> acpi-memory-hotplug-parse-srat-before-memblock-is-ready-fix-fix.patch
+
+**********
+On linux, the pages used by kernel could not be migrated.  As a result, if
+a memory range is used by kernel, it cannot be hot-removed.  So if we want
+to hot-remove memory, we should prevent kernel from using it.
+
+The way now used to prevent this is specify a memory range by
+movablemem_map boot option and set it as ZONE_MOVABLE.
+
+But when the system is booting, memblock will allocate memory, and reserve
+the memory for kernel.  And before we parse SRAT, and know the node memory
+ranges, memblock is working.  And it may allocate memory in ranges to be
+set as ZONE_MOVABLE.  This memory can be used by kernel, and never be
+freed.
+
+So, let's parse SRAT before memblock is called first. And it is early 
+enough.
+
+The first call of memblock_find_in_range_node() is in:
+setup_arch()
+  |-->setup_real_mode()
+
+so, this patch add a function early_parse_srat() to parse SRAT, and call
+it before setup_real_mode() is called.
+
+NOTE:
+
+1) early_parse_srat() is called before numa_init(), and has initialized
+    numa_meminfo. So DO NOT clear numa_nodes_parsed in numa_init() and
+    DO NOT zero numa_meminfo in numa_init(), otherwise we will lose memory
+    numa info.
+
+2) I don't know why using count of memory affinities parsed from SRAT
+    as a return value in original acpi_numa_init().  So I add a static
+    variable srat_mem_cnt to remember this count and use it as the return
+    value of the new acpi_numa_init()
+**********
 
