@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987Ab3BUBBt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Feb 2013 20:01:49 -0500
-Received: from mail-da0-f47.google.com ([209.85.210.47]:51799 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab3BUBBr convert rfc822-to-8bit (ORCPT
+	id S1753031Ab3BUBO1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Feb 2013 20:14:27 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:48819 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab3BUBOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Feb 2013 20:01:47 -0500
-Date: Tue, 19 Feb 2013 11:44:10 -0600
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] Documentation: update top level 00-INDEX file with new
- additions
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <51224F70.9050806@infradead.org> (from rdunlap@infradead.org on
-	Mon Feb 18 09:57:36 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1361295850.29465.8@driftwood>
+	Wed, 20 Feb 2013 20:14:25 -0500
+Date: Wed, 20 Feb 2013 17:12:42 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Andy Ross <andy.ross@windriver.com>
+Cc: Pavel Machek <pavel@ucw.cz>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Jiri Slaby <jslaby@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2] vt: add init_hide parameter to suppress boot output
+Message-ID: <20130221011242.GB4961@kroah.com>
+References: <1361289224-10678-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130220014512.GC31018@kroah.com>
+ <51244B35.8090006@windriver.com>
+ <20130220044506.GA2728@kroah.com>
+ <5124FFD7.8070708@windriver.com>
+ <20130220205737.GB6597@xo-6d-61-c0.localdomain>
+ <51254959.1020309@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <51254959.1020309@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2013 09:57:36 AM, Randy Dunlap wrote:
-> On 02/18/13 01:39, Jiri Kosina wrote:
-> > On Thu, 14 Feb 2013, Paul Gortmaker wrote:
-> >
-> >> It seems there are about 80 new, but undocumented addtions at
-> >> the top level Documentation directory.  This fixes up the top
-> >> level 00-INDEX by adding new entries and deleting a couple orphans.
-> >> Some subdirs could probably still use a check/cleanup too though.
+On Wed, Feb 20, 2013 at 02:08:25PM -0800, Andy Ross wrote:
+> On 02/20/2013 12:57 PM, Pavel Machek wrote:
+> >I'm sure something creative can be done with fake init that shuts
+> >the console up then execs previous init. No need to add more kernel
+> >knobs, I'd say.
 > 
-> After this patch, I would prefer to see a requirement that each  
-> Documentation/
-> file contain a "topic" line and then generate INDEX files from those  
-> automatically...
+> Fair enough, but some last words:
 > 
-> comments?
+> That's argument is the "it's about logging" hypothesis again.  Even if
+> it were possible to completely shut up console output (something
+> that's awfully hard in the general case when running on PC hardware,
+> and IMHO from a developer's perspective not even a good thing), that's
+> not the whole problem.  The framebuffer console initialization does a
+> buffer clear and mode set, and that clobbers anything the bootloader
+> might have left on the screen prematurely, before userspace is ready
+> to throw up its own splash.  Splash screens may be a silly
+> requirement, but they're still a requirement.
 
-I actually have a script that can audit the 00-INDEX files, as part of  
-my kernel.org/doc build stuff:
+Yes, they are a requirement in some situations, and if you look most
+distros have already solved this issue for you, by not using a
+framebuffer at all.  Why not just do the same thing in your Android
+system as you do have full control over the hardware and the boot
+process.
 
-   http://landley.net/hg/kdocs/file/tip/make
+> And the suspend console problem is likewise at work: ideally you'd
+> like to know, for example, that the panel backlight is off before
+> suspending.  But what happens in practice is that the kernel does a VT
+> switch to/from console 63 and the backlight wakes up (I'm not going to
+> pretend I have this bit completely figured out, but the problem is/was
+> real and this patch fixed it by suppressing the console visibility).
 
-Manually auditing these isn't hard for me, it's just that since  
-kernel.org went all-in on locking the barn door after the horses  
-escaped, I haven't had access to my old kernel.org account (I need to  
-meed kernel developers in person to get keys signed, which doesn't  
-happen much).
+My systems don't drop down to the framebuffer when suspending, I think
+you need to look at using a better distro :)
 
-And even if I did get a new ssh key, you don't get shell access anymore  
-you get "kup" which is a git wrapper you can't rsync through. So fixing  
-problem 1 opens up problem 2 and I still can't do anything useful.  
-(Navigating the new bureaucracy is on my todo list, but not really  
-something I sit down and go "oh boy, I should work on THIS" on any  
-given evening.)
+> Now, the point that an in-kernel console is "going away" and thus not
+> worth augmenting with new APIs is valid.  And this is a small patch
+> that's unlikely to be difficult to maintain in a custom tree.  And as
+> we all agree there are other mechanisms that can be used here (even if
+> AFAICT they don't completely solve the problem), and indeed I'd love
+> to get surfaceflinger working with VT_ACTIVATE et. al. if I get a
+> chance.  So I'm not going to cry if this isn't worth mainline.
 
-So I haven't been able to update kernel.org/doc since the breakin, and  
-my tools for auditing the 00-INDEX files and htmldocs and menuconfig  
-and so on are all tied up with that.
+I don't see why this is even needed for surfaceflinger systems, as
+again, you have full control over the hardware and system so you don't
+even need a framebuffer console at all.
 
-Rob
+thanks,
+
+greg k-h
