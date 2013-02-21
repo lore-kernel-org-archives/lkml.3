@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab3BUQq1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 11:46:27 -0500
-Received: from www.linutronix.de ([62.245.132.108]:50282 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753876Ab3BUQqY (ORCPT
+	id S1755519Ab3BUQq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 11:46:26 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:25707 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754947Ab3BUQqY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 21 Feb 2013 11:46:24 -0500
-Date: Thu, 21 Feb 2013 17:46:16 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org
-Subject: Re: [PATCH] nohz: Make tick_nohz_irq_exit() irq safe
-In-Reply-To: <CAFTL4hz7xmi910Gv0uXAM2AReC4iZzAo3gfMtPk1Yh6wRi1OOg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1302211743350.22263@ionos>
-References: <1361373336-11337-1-git-send-email-fweisbec@gmail.com> <alpine.LFD.2.02.1302202155320.22263@ionos> <CAFTL4hx_uXfY=bH9nnEsN6AJFTcwqdAWTxcR0jc=hL1FBrwk0w@mail.gmail.com> <alpine.LFD.2.02.1302210013070.22263@ionos>
- <CAFTL4hz7xmi910Gv0uXAM2AReC4iZzAo3gfMtPk1Yh6wRi1OOg@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+From: "Roberts, Lee A." <lee.roberts@hp.com>
+To: "linux-sctp@vger.kernel.org" <linux-sctp@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/4] sctp: fix association hangs due to reneging packets
+ below the cumulative TSN ACK point
+Thread-Topic: [PATCH 2/4] sctp: fix association hangs due to reneging
+ packets below the cumulative TSN ACK point
+Thread-Index: Ac4QUTct8EpRDm5iSFSvp3FLS0Pz4Q==
+Date: Thu, 21 Feb 2013 16:44:31 +0000
+Message-ID: <D64EC45690EF85409BA6C4730E0162244310DEFE@G4W3231.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.14]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Feb 2013, Frederic Weisbecker wrote:
-> 2013/2/21 Thomas Gleixner <tglx@linutronix.de>:
-> > On Wed, 20 Feb 2013, Frederic Weisbecker wrote:
-> >> 2013/2/20 Thomas Gleixner <tglx@linutronix.de>:
-> >> > That's not a fix. That's an hack.
-> >>
-> >> I know it looks that way. That's because it's a pure regression fix,
-> >> minimal for backportability.
-> >>
-> >> I'm distinguishing two different things here: the fact that some archs
-> >> can call irq_exit() with interrupts enabled which is a global design
-> >> problem, and the fact that tick_nohz_irq_exit() was safe against that
-> >> until 3.2 when I broke it with a commit of mine.
-> >>
-> >> My goal was basically to restore that protection in a minimal commit
-> >> such that we can backport the regression fix, then deal with
-> >> __ARCH_IRQ_EXIT_IRQS_DISABLED afterward, since it requires some more
-> >> invasive changes.
-> >>
-> >> >> A saner long term solution will be to remove
-> >> >> __ARCH_IRQ_EXIT_IRQS_DISABLED.
-> >> >
-> >> > We really want to enforce that interrupt disabled condition for
-> >> > calling irq_exit(). So why make this exclusive to tick_nohz_irq_exit()?
-> >>
-> >> I need a fix that I can backport. Is the below fine with a stable tag?
-> >> It looks a bit too invasive for the single regression involved.
-> >
-> > I think that's fine as it's obviously correct and not diluting the
-> > real underlying issue of the __ARCH_IRQ_EXIT_IRQS_DISABLED insanity.
-> 
-> Ok fine. Do you plan to commit your proposed change then?
+From: Lee A. Roberts <lee.roberts@hp.com>
 
-Second thoughts. I probably go for your minimal fix for stable and
-then push my version on top of it to Linus only.
+Resolve SCTP association hangs observed during SCTP stress
+testing.  Observable symptoms include communications hangs
+with data being held in the association reassembly and/or lobby
+(ordering) queues.  Close examination of reassembly queue shows
+missing packets.
 
-Thanks,
+In sctp_ulpq_renege_list(), do not renege packets below the
+cumulative TSN ACK point.
 
-	tglx
+Patch applies to linux-3.8 kernel.
+
+Signed-off-by: Lee A. Roberts <lee.roberts@hp.com>
+---
+ net/sctp/ulpqueue.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff -uprN -X linux-3.8-vanilla/Documentation/dontdiff linux-3.8-SCTP+1/net/sctp/ulpqueue.c linux-3.8-SCTP+2/net/sctp/ulpqueue.c
+--- linux-3.8-SCTP+1/net/sctp/ulpqueue.c	2013-02-18 16:58:34.000000000 -0700
++++ linux-3.8-SCTP+2/net/sctp/ulpqueue.c	2013-02-21 07:39:40.888281496 -0700
+@@ -969,11 +969,16 @@ static __u16 sctp_ulpq_renege_list(struc
+ 
+ 	tsnmap = &ulpq->asoc->peer.tsn_map;
+ 
+-	while ((skb = __skb_dequeue_tail(list)) != NULL) {
+-		freed += skb_headlen(skb);
++	while ((skb = skb_peek_tail(list)) != NULL) {
+ 		event = sctp_skb2event(skb);
+ 		tsn = event->tsn;
+ 
++		/* Don't renege below the Cumulative TSN ACK Point. */
++		if (TSN_lte(tsn, sctp_tsnmap_get_ctsn(tsnmap)))
++			break;
++
++		__skb_unlink(skb, list);
++		freed += skb_headlen(skb);
+ 		sctp_ulpevent_free(event);
+ 		sctp_tsnmap_renege(tsnmap, tsn);
+ 		if (freed >= needed)
