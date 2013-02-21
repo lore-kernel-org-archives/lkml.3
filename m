@@ -1,131 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338Ab3BUJgz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 04:36:55 -0500
-Received: from www.linutronix.de ([62.245.132.108]:46982 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab3BUJgx (ORCPT
+	id S1751668Ab3BUJjY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 04:39:24 -0500
+Received: from natasha.panasas.com ([67.152.220.90]:45712 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab3BUJjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 04:36:53 -0500
-Date: Thu, 21 Feb 2013 10:36:51 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jason Liu <liu.h.jason@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org
-Subject: Re: too many timer retries happen when do local timer swtich with
- broadcast timer
-In-Reply-To: <CAB4PhKfxPcyQfpM2Ra1OxsyYhS5fnkjtPy=uYgxFHim1rOdoug@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1302211015270.22263@ionos>
-References: <CAB4PhKevqf0e4nzYraE9ZTAFbPCFfNpguAnPoVpJh-FFe2TAZA@mail.gmail.com> <alpine.LFD.2.02.1302201400400.22263@ionos> <CAB4PhKfxPcyQfpM2Ra1OxsyYhS5fnkjtPy=uYgxFHim1rOdoug@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 21 Feb 2013 04:39:21 -0500
+Message-ID: <5125EAB1.9070002@panasas.com>
+Date: Thu, 21 Feb 2013 11:36:49 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <axboe@kernel.dk>,
+        <lucho@ionkov.net>, <jack@suse.cz>, <ericvh@gmail.com>,
+        <viro@zeniv.linux.org.uk>, <rminnich@sandia.gov>, <tytso@mit.edu>,
+        <martin.petersen@oracle.com>, Artem Bityutskiy <dedekind1@gmail.com>,
+        <neilb@suse.de>, Adrian Hunter <adrian.hunter@intel.com>,
+        <david@fromorbit.com>, <gnehzuil.liu@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <hch@infradead.org>,
+        <linux-fsdevel@vger.kernel.org>, <adilger.kernel@dilger.ca>,
+        <jlayton@samba.org>, <linux-mtd@lists.infradead.org>,
+        <linux-ext4@vger.kernel.org>, <hirofumi@mail.parknet.co.jp>
+Subject: Re: [PATCH 6/6] ubifs: Wait for page writeback to provide stable
+ pages
+References: <20130119011231.20902.55954.stgit@blackbox.djwong.org> <20130119011316.20902.56721.stgit@blackbox.djwong.org> <20130123134312.b69c53cd.akpm@linux-foundation.org> <20130221034834.GA4055@blackbox.djwong.org>
+In-Reply-To: <20130221034834.GA4055@blackbox.djwong.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Feb 2013, Jason Liu wrote:
-> 2013/2/20 Thomas Gleixner <tglx@linutronix.de>:
-> > On Wed, 20 Feb 2013, Jason Liu wrote:
-> >> void arch_idle(void)
-> >> {
-> >> ....
-> >> clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
-> >>
-> >> enter_the_wait_mode();
-> >>
-> >> clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
-> >> }
-> >>
-> >> when the broadcast timer interrupt arrives(this interrupt just wakeup
-> >> the ARM, and ARM has no chance
-> >> to handle it since local irq is disabled. In fact it's disabled in
-> >> cpu_idle() of arch/arm/kernel/process.c)
-> >>
-> >> the broadcast timer interrupt will wake up the CPU and run:
-> >>
-> >> clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);    ->
-> >> tick_broadcast_oneshot_control(...);
-> >> ->
-> >> tick_program_event(dev->next_event, 1);
-> >> ->
-> >> tick_dev_program_event(dev, expires, force);
-> >> ->
-> >> for (i = 0;;) {
-> >>                 int ret = clockevents_program_event(dev, expires, now);
-> >>                 if (!ret || !force)
-> >>                         return ret;
-> >>
-> >>                 dev->retries++;
-> >>                 ....
-> >>                 now = ktime_get();
-> >>                 expires = ktime_add_ns(now, dev->min_delta_ns);
-> >> }
-> >> clockevents_program_event(dev, expires, now);
-> >>
-> >>         delta = ktime_to_ns(ktime_sub(expires, now));
-> >>
-> >>         if (delta <= 0)
-> >>                 return -ETIME;
-> >>
-> >> when the bc timer interrupt arrives,  which means the last local timer
-> >> expires too. so,
-> >> clockevents_program_event will return -ETIME, which will cause the
-> >> dev->retries++
-> >> when retry to program the expired timer.
-> >>
-> >> Even under the worst case, after the re-program the expired timer,
-> >> then CPU enter idle
-> >> quickly before the re-progam timer expired, it will make system
-> >> ping-pang forever,
-> >
-> > That's nonsense.
+On 02/21/2013 05:48 AM, Darrick J. Wong wrote:
+> On Wed, Jan 23, 2013 at 01:43:12PM -0800, Andrew Morton wrote:
+>> On Fri, 18 Jan 2013 17:13:16 -0800
+>> "Darrick J. Wong" <darrick.wong@oracle.com> wrote:
+>>
+>>> When stable pages are required, we have to wait if the page is just
+>>> going to disk and we want to modify it. Add proper callback to
+>>> ubifs_vm_page_mkwrite().
+>>>
+>>> CC: Artem Bityutskiy <dedekind1@gmail.com>
+>>> CC: Adrian Hunter <adrian.hunter@intel.com>
+>>> CC: linux-mtd@lists.infradead.org
+>>> From: Jan Kara <jack@suse.cz>
+>>> Signed-off-by: Jan Kara <jack@suse.cz>
+>>> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+>>
+>> A couple of these patches had this From:Jan strangely embedded in the
+>> signoff area.  I have assumed that they were indeed authored by Jan.
+>>
+>> Please note that authorship is indicated by putting the From: line
+>> right at the start of the chagnelog.
+>>
+>>
+>> I grabbed the patches.  They should appear in linux-next tomorrow if I
+>> can get the current pooppile to build.
 > 
-> I don't think so.
+> Well... these patches have been banging around in -next for a month or so now.
+> As far as I know there haven't been any complaints.  Can we push these for 3.9?
 > 
-> >
-> > The timer IPI brings the core out of the deep idle state.
-> >
-> > So after returning from enter_wait_mode() and after calling
-> > clockevents_notify() it returns from arch_idle() to cpu_idle().
-> >
-> > In cpu_idle() interrupts are reenabled, so the timer IPI handler is
-> > invoked. That calls the event_handler of the per cpu local clockevent
-> > device (the one which stops in C3). That ends up in the generic timer
-> > code which expires timers and reprograms the local clock event device
-> > with the next pending timer.
-> >
-> > So you cannot go idle again, before the expired timers of this event
-> > are handled and their callbacks invoked.
-> 
-> That's true for the CPUs which not response to the global timer interrupt.
-> Take our platform as example: we have 4CPUs(CPU0, CPU1,CPU2,CPU3)
-> The global timer device will keep running even in the deep idle mode, so, it
-> can be used as the broadcast timer device, and the interrupt of this device
-> just raised to CPU0 when the timer expired, then, CPU0 will broadcast the
-> IPI timer to other CPUs which is in deep idle mode.
-> 
-> So for CPU1, CPU2, CPU3, you are right, the IPI timer will bring it out of idle
-> state, after running clockevents_notify() it returns from arch_idle()
-> to cpu_idle(),
-> then local_irq_enable(), the IPI handler will be invoked and handle
-> the expires times
-> and re-program the next pending timer.
-> 
-> But, that's not true for the CPU0. The flow for CPU0 is:
-> the global timer interrupt wakes up CPU0 and then call:
-> clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
-> 
-> which will cpumask_clear_cpu(cpu, tick_get_broadcast_oneshot_mask());
-> in the function tick_broadcast_oneshot_control(),
 
-Now your explanation makes sense. 
+Yes, please I'm waiting for these patches as well. Lets push them this merge
+window. I was sure they would get in at 3.8, but they didn't. What's the delay?
 
-I have no fast solution for this, but I think that I have an idea how
-to fix it. Stay tuned.
+[Using this I can fix a theoretical raid corruption in exofs local access, which
+ no one really cared because exofs is always accessed via pnfs, which does not
+ have that bug]
 
-Thanks,
+Thanks
+Boaz
 
-	tglx
+> --D
+> 
+
