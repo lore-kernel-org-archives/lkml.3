@@ -1,91 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab3BUKVM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 05:21:12 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37152 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001Ab3BUKVK (ORCPT
+	id S1753262Ab3BUK1v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 05:27:51 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:45174 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab3BUK1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 05:21:10 -0500
-Message-ID: <1361442055.26780.3.camel@laptop>
-Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 21 Feb 2013 11:20:55 +0100
-In-Reply-To: <5125A7C8.8020308@linux.vnet.ibm.com>
-References: <51079178.3070002@linux.vnet.ibm.com>
-	 <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Feb 2013 05:27:50 -0500
+Date: Thu, 21 Feb 2013 11:27:48 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [perf patch] perf doesn't delete /tmp/perf-vdso.so.* file on exit
+Message-ID: <20130221102748.GB2919@x4>
+References: <20130221094544.GA2919@x4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130221094544.GA2919@x4>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-21 at 12:51 +0800, Michael Wang wrote:
-> The old logical when locate affine_sd is:
-> 
->         if prev_cpu != curr_cpu
->                 if wake_affine()
->                         prev_cpu = curr_cpu
->         new_cpu = select_idle_sibling(prev_cpu)
->         return new_cpu
-> 
-> The new logical is same to the old one if prev_cpu == curr_cpu, so
-> let's
-> simplify the old logical like:
-> 
->         if wake_affine()
->                 new_cpu = select_idle_sibling(curr_cpu)
->         else
->                 new_cpu = select_idle_sibling(prev_cpu)
-> 
->         return new_cpu
-> 
-> Actually that doesn't make sense.
+perf top doesn't unlink /tmp/perf-vdso.so.* on exit.
+Fix this by calling vdso__exit() before exit(0).
 
-It does :-)
+Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
 
-> I think wake_affine() is trying to check whether move a task from
-> prev_cpu to curr_cpu will break the balance in affine_sd or not, but
-> why
-> won't break balance means curr_cpu is better than prev_cpu for
-> searching
-> the idle cpu?
-
-It doesn't, the whole affine wakeup stuff is meant to pull waking tasks
-towards the cpu that does the wakeup, we limit this by putting bounds on
-the imbalance this is may create.
-
-The reason we want to run tasks on the cpu that does the wakeup is
-because that cpu 'obviously' is running something related and it seems
-like a good idea to run related tasks close together.
-
-So look at affine wakeups as a force that groups related tasks.
-
-> So the new logical in this patch set is:
-> 
->         new_cpu = select_idle_sibling(prev_cpu)
->         if idle_cpu(new_cpu)
->                 return new_cpu
-> 
->         new_cpu = select_idle_sibling(curr_cpu)
->         if idle_cpu(new_cpu) {
->                 if wake_affine()
->                         return new_cpu
->         }
-> 
->         return prev_cpu
-> 
-> And now, unless we are really going to move load from prev_cpu to
-> curr_cpu, we won't use wake_affine() any more.
-
-That's completely breaks stuff, not cool.
-
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index c9ff395..e910d91 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -20,6 +20,7 @@
+ #include "builtin.h"
+ 
+ #include "perf.h"
++#include "vdso.h"
+ 
+ #include "util/annotate.h"
+ #include "util/cache.h"
+@@ -602,6 +603,7 @@ static void *display_thread_tui(void *arg)
+ 				      &top->session->header.env);
+ 
+ 	exit_browser(0);
++	vdso__exit();
+ 	exit(0);
+ 	return NULL;
+ }
+-- 
+Markus
