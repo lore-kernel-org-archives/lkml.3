@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab3BURue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 12:50:34 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:44186 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683Ab3BURua (ORCPT
+	id S1755771Ab3BURx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 12:53:56 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:63071 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614Ab3BURxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 12:50:30 -0500
-Message-ID: <1361468380.12845.14.camel@misato.fc.hp.com>
-Subject: Re: [Update 2][PATCH 2/7] ACPI / scan: Introduce common code for
- ACPI-based device hotplug
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jiang Liu <liuj97@gmail.com>
-Date: Thu, 21 Feb 2013 10:39:40 -0700
-In-Reply-To: <2482081.rPvizM7IsG@vostro.rjw.lan>
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
-	 <2540040.4NPGdn6Df0@vostro.rjw.lan> <1765527.DdJ8fCt5cH@vostro.rjw.lan>
-	 <2482081.rPvizM7IsG@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Feb 2013 12:53:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1302202155320.22263@ionos>
+References: <1361373336-11337-1-git-send-email-fweisbec@gmail.com>
+	<alpine.LFD.2.02.1302202155320.22263@ionos>
+Date: Thu, 21 Feb 2013 09:53:48 -0800
+X-Google-Sender-Auth: 8eLozlU383Qbirs59xexqC7IblQ
+Message-ID: <CA+55aFwTFOsRTX3pHeZ+664rAms-Liwco3scEPJum6=C3BCoEQ@mail.gmail.com>
+Subject: Re: [PATCH] nohz: Make tick_nohz_irq_exit() irq safe
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-21 at 16:52 +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
- :
-> 
-> This update fixes an issue pointed out by Toshi Kani (_OST shouldn't be
-> evaluated after successful _EJ0).
-> 
-> Thanks,
-> Rafael
-> 
-> ---
->  drivers/acpi/scan.c     |  272 ++++++++++++++++++++++++++++++++++++++----------
->  include/acpi/acpi_bus.h |    7 +
->  2 files changed, 226 insertions(+), 53 deletions(-)
- :
-> +static void acpi_scan_bus_device_check(acpi_handle handle, u32 ost_source)
-> +{
-> +	struct acpi_device *device = NULL;
-> +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
-> +	int error;
+On Wed, Feb 20, 2013 at 1:00 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>   */
+>  void irq_exit(void)
+>  {
+> +#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
+> +       unsigned long flags;
 > +
-> +	mutex_lock(&acpi_scan_lock);
-> +
-> +	acpi_bus_get_device(handle, &device);
-> +	if (device) {
-> +		dev_warn(&device->dev, "Attempt to re-insert\n");
-> +		goto out;
-> +	}
-> +	acpi_evaluate_hotplug_ost(handle, ost_source,
-> +				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
-> +	ost_source = ACPI_OST_EC_OSPM_INSERTION;
+> +       local_irq_save(flags);
+> +#else
+> +       BUG_ON(!irqs_disabled();
+> +#endif
 
-Thanks for the update.  I confirmed that _OST was handled correctly for
-hot-delete.  However, I found there is an issue for hot-add too.
-ACPI_OST_EC_OSPM_INSERTION is used for _OST when the OS initiated a
-hot-add event (which may not happen today).  This case, however, is that
-hot-add is initiated by FW through an ACPI notification.  So, ost_source
-must have the ACPI notification event value.
+Guys, STOP DOING THIS!
 
-Thanks,
--Toshi
+Adding BUG_ON()'s just makes things much much much worse. There is
+*never* a reason to add a BUG_ON(). And doing it in an interrupt path
+is totally unacceptable. BUG_ON() makes it almost impossible to debug
+something, because you just killed the machine. So using BUG_ON() for
+"please notice this" is stupid as hell, because the most common end
+result is: "Oh, the machine just hung with no messages".
 
+Make it WARN_ON_ONCE() if you absolutely have to let people know, but
+for something like this, why would you do even that?
 
-
+                          Linus
