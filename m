@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758998Ab3BUWTy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 17:19:54 -0500
-Received: from mga09.intel.com ([134.134.136.24]:9570 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754245Ab3BUWTw convert rfc822-to-8bit (ORCPT
+	id S1759042Ab3BUWW5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 17:22:57 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:45040 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757794Ab3BUWWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 17:19:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,711,1355126400"; 
-   d="scan'208";a="289002697"
-From: "Heasley, Seth" <seth.heasley@intel.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-CC: Wolfram Sang <wsa@the-dreams.de>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ralston, James D" <james.d.ralston@intel.com>
-Subject: RE: [PATCH 1/1] i2c: iSMT SMBus patch for Intel Avoton DeviceIDs
-Thread-Topic: [PATCH 1/1] i2c: iSMT SMBus patch for Intel Avoton DeviceIDs
-Thread-Index: AQHOEHsi+AZRAVxuOE6I7EZlYEh9dZiFXF8A//+FJuA=
-Date: Thu, 21 Feb 2013 22:19:48 +0000
-Message-ID: <DEC3922D1904474A8862C7BFF516EA9A7115E094@ORSMSX101.amr.corp.intel.com>
-References: <1361485843-13560-1-git-send-email-seth.heasley@intel.com>
- <20130221213714.GB32764@hmsreliant.think-freely.org>
-In-Reply-To: <20130221213714.GB32764@hmsreliant.think-freely.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 21 Feb 2013 17:22:55 -0500
+Message-ID: <51269DF1.9050107@linux.vnet.ibm.com>
+Date: Thu, 21 Feb 2013 16:21:37 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv6 1/8] zsmalloc: add to mm/
+References: <1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com> <1361397888-14863-2-git-send-email-sjenning@linux.vnet.ibm.com> <20130221203650.GB3778@negative>
+In-Reply-To: <20130221203650.GB3778@negative>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022122-7282-0000-0000-0000147451FB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil,
+On 02/21/2013 02:36 PM, Cody P Schafer wrote:
+> On Wed, Feb 20, 2013 at 04:04:41PM -0600, Seth Jennings wrote:
+>> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+>> +#define MAX(a, b) ((a) >= (b) ? (a) : (b))
+>> +/* ZS_MIN_ALLOC_SIZE must be multiple of ZS_ALIGN */
+>> +#define ZS_MIN_ALLOC_SIZE \
+>> +	MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OBJ_INDEX_BITS))
+> 
+> Could you use the max(a,b) defined in include/linux/kernel.h?
+> 
 
->> This patch adds the iSMT SMBus Controller DeviceIDs for the Intel Avoton
->SOC.
->>
->> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
->Is there a part number (I.e. S1200) that we can use in the name, rather than
->the project code name?  That would seem to be more in keeping with the
->previous naming scheeme directly above it Neil
+Andrew Morton made the same point.  We can't use max() or max_t()
+because the value of ZS_MIN_ALLOC_SIZE is used to derive the value of
+ZS_SIZE_CLASSES which is used to size an array in struct zs_pool.
 
-The difference here is that the S1200 name is already publicly released, whereas the naming for Avoton hasn't been announced.  
+So the expression must be completely evaluated to a number by the
+precompiler.
 
-Regards,
--Seth
+Thanks,
+Seth
+
