@@ -1,129 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab3BURAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 12:00:45 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:59961 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753892Ab3BURAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 12:00:44 -0500
-Date: Thu, 21 Feb 2013 09:00:20 -0800
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] iproute2 3.8.0
-Message-ID: <20130221090020.52330a78@nehalam.linuxnetplumber.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755677Ab3BURA7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 12:00:59 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:51461 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752325Ab3BURA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 12:00:57 -0500
+Date: Thu, 21 Feb 2013 17:32:36 +0100
+Message-Id: <201302211632.r1LGWaRr025445@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Vitaly Bordug <vitb@kernel.crashing.org>,
+        Marcelo Tosatti <marcelo@kvack.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH] Handling of IRQ in MPC8xx GPIO
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update to iproute2 utilities to support features in 3.8.0 release
-and lots of small spelling and documentation fixes.
+This patch allows the use IRQ to notify the change of GPIO status on the MPC8xx
+CPM IO ports. This then allows to associate IRQs to GPIOs in the Device Tree. Ex:
+	CPM1_PIO_C: gpio-controller@960 {
+		#gpio-cells = <2>;
+		compatible = "fsl,cpm1-pario-bank-c";
+		reg = <0x960 0x10>;
+		interrupts = <255 255 255 255 1 2 6 9 10 11 14 15 23 24 26 31>;
+		interrupt-parent = <&CPM_PIC>;
+		gpio-controller;
+	};
 
-iproute2 package is available at:
-  http://kernel.org/pub/linux/utils/net/iproute2/iproute2-3.8.0.tar.gz
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-You can download the source from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
-
-Please submit your changes now for features that are going into 3.9 kernel.
-
-Andreas Henriksson (1):
-      iproute2: fix tc ematch manpage section
-
-Benjamin Poirier (1):
-      Use pkg-config to obtain xtables.h path
-
-Cong Wang (7):
-      iproute2: add mdb sub-command to bridge
-      iproute2: implement add/del mdb entry
-      iproute2: add support to monitor mdb entries too
-      iproute2: update usage info of bridge monitor
-      bridge: distinguish permanent and temporary mdb entries
-      bridge: make `bridge mdb` output consistent with input
-      bridge: update help
-
-David L Stevens (1):
-      add DOVE extensions for iproute2
-
-David Ward (1):
-      ip/iptunnel: Extend TOS syntax
-
-Eric W. Biederman (6):
-      iproute2: Don't propogate mounts out of ip
-      iproute2: Normalize return codes in "ip netns"
-      iproute2: Improve "ip netns add" failure error message
-      iproute2: Make "ip netns delete" more likely to succeed
-      iproute2: Fill in the ip-netns.8 manpage
-      iproute2: Add "ip netns pids" and "ip netns identify"
-
-Jamal Hadi Salim (1):
-      iproute2: act_ipt fix xtables breakage
-
-Jan Engelhardt (1):
-      build: unbreak linakge of m_xt.so
-
-Johannes Naab (1):
-      iproute2: tc netem rate: allow negative packet/cell overhead
-
-Kees van Reeuwijk (6):
-      iproute2: clarification of various man8 pages
-      iproute2: clarifications in the tc-hfsc.7 man page
-      iproute2: add a missing return statement
-      iproute2: clarifications in the libnetlink.3 man page
-      iproute2: improved error messages
-      iproute2: clearer error messages for fifo and tbf qdiscs
-
-Lutz Jaenicke (1):
-      rtnl_wilddump_request: fix alignment issue for embedded platforms
-
-Mike Frysinger (6):
-      configure: move toolchain init to a function
-      lib: include the Config file too
-      configure: pull AR from the env too
-      add man7 to subdirs list
-      do not ignore errors in man subdirs
-      ipxfrm: use alloca to allocate stack space
-
-Nicolas Dichtel (15):
-      ip/ip6tunnel: fix help for TCLASS
-      ip/ip6tunnel: reset encap limit flag on change
-      ip/ip6tunnel: fix update of tclass and flowlabel
-      ip: add support of netconf messages
-      ip: add support of 'ip link type ip6tnl'
-      ip: add support of 'ip link type [ipip|sit]'
-      ip/link_iptnl: fix indentation Logged in as shemminger
-      ip: update mand pages and usage() for 'ip mroute'
-      ip: update man pages for 'ip link'
-      ip: term OPTIONS was used twice in 'ip route' man pages
-      ip: use rtnelink to manage mroute
-      ip: add man pages for netconf
-      ip: update man pages and usage() for 'ip monitor'
-      ipaddr: fix a typo in error msg about SIOCGIFTXQLEN
-      iplink: display the value of IFLA_PROMISCUITY
-
-Stephen Hemminger (14):
-      Update kernel headers to 3.8-pre
-      bridge: add if_bridge.h header
-      build: indent shell functions in configure
-      configure: restore old behaviour
-      bridge: update kernel headers
-      README: update mail address and download location
-      Makefile: make warnings into errors
-      libnetlink: add caveat
-      ip: change format of promiscuity display
-      ip: make local functions static
-      lib: make string arguments const
-      Makefile: turn on warnings about missing prototypes
-      ip: handle flush with table > 2^31
-      v3.8.0
-
-Strake (1):
-      include needed files
-
-Zhi Yong Wu (1):
-      ip: add the type 'vxlan' in the output of "ip link help"
-
+diff -ur linux-3.7.9/arch/powerpc/include/asm/cpm1.h linux/arch/powerpc/include/asm/cpm1.h
+--- linux-3.7.9/arch/powerpc/include/asm/cpm1.h	2013-02-17 19:53:32.000000000 +0100
++++ linux/arch/powerpc/include/asm/cpm1.h	2012-11-03 03:18:35.000000000 +0100
+@@ -560,6 +560,8 @@
+ #define CPM_PIN_SECONDARY 2
+ #define CPM_PIN_GPIO      4
+ #define CPM_PIN_OPENDRAIN 8
++#define CPM_PIN_FALLEDGE  16
++#define CPM_PIN_ANYEDGE   0
+ 
+ enum cpm_port {
+ 	CPM_PORTA,
+diff -ur linux-3.7.9/arch/powerpc/sysdev/cpm1.c linux/arch/powerpc/sysdev/cpm1.c
+--- linux-3.7.9/arch/powerpc/sysdev/cpm1.c	2013-02-17 19:53:32.000000000 +0100
++++ linux/arch/powerpc/sysdev/cpm1.c	2013-02-21 15:52:51.000000000 +0100
+@@ -375,6 +375,10 @@
+ 			setbits16(&iop->odr_sor, pin);
+ 		else
+ 			clrbits16(&iop->odr_sor, pin);
++		if (flags & CPM_PIN_FALLEDGE)
++			setbits16(&iop->intr, pin);
++		else
++			clrbits16(&iop->intr, pin);
+ 	}
+ }
+ 
+@@ -526,6 +530,9 @@
+ 
+ 	/* shadowed data register to clear/set bits safely */
+ 	u16 cpdata;
++
++	/* IRQ associated with Pins when relevant */
++	int irq[16];
+ };
+ 
+ static inline struct cpm1_gpio16_chip *
+@@ -581,6 +588,30 @@
+ 	spin_unlock_irqrestore(&cpm1_gc->lock, flags);
+ }
+ 
++static int __cpm1_gpio16_to_irq(struct of_mm_gpio_chip *mm_gc,
++		unsigned int gpio)
++{
++	struct cpm1_gpio16_chip *cpm1_gc = to_cpm1_gpio16_chip(mm_gc);
++
++	return cpm1_gc->irq[gpio] ? cpm1_gc->irq[gpio] : -ENXIO;
++}
++
++static int cpm1_gpio16_to_irq(struct gpio_chip *gc, unsigned int gpio)
++{
++	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
++	struct cpm1_gpio16_chip *cpm1_gc = to_cpm1_gpio16_chip(mm_gc);
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&cpm1_gc->lock, flags);
++
++	ret = __cpm1_gpio16_to_irq(mm_gc, gpio);
++
++	spin_unlock_irqrestore(&cpm1_gc->lock, flags);
++
++	return ret;
++}
++
+ static int cpm1_gpio16_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
+ {
+ 	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
+@@ -621,6 +652,7 @@
+ 	struct cpm1_gpio16_chip *cpm1_gc;
+ 	struct of_mm_gpio_chip *mm_gc;
+ 	struct gpio_chip *gc;
++	int i;
+ 
+ 	cpm1_gc = kzalloc(sizeof(*cpm1_gc), GFP_KERNEL);
+ 	if (!cpm1_gc)
+@@ -628,6 +660,9 @@
+ 
+ 	spin_lock_init(&cpm1_gc->lock);
+ 
++	for (i = 0; i < 16; i++)
++		cpm1_gc->irq[i] = irq_of_parse_and_map(np, i);
++
+ 	mm_gc = &cpm1_gc->mm_gc;
+ 	gc = &mm_gc->gc;
+ 
+@@ -637,6 +672,7 @@
+ 	gc->direction_output = cpm1_gpio16_dir_out;
+ 	gc->get = cpm1_gpio16_get;
+ 	gc->set = cpm1_gpio16_set;
++	gc->to_irq = cpm1_gpio16_to_irq;
+ 
+ 	return of_mm_gpiochip_add(np, mm_gc);
+ }
+diff -ur linux-3.7.9/kernel/irq/irqdomain.c linux/kernel/irq/irqdomain.c
+--- linux-3.7.9/kernel/irq/irqdomain.c	2013-02-17 19:53:32.000000000 +0100
++++ linux/kernel/irq/irqdomain.c	2012-12-13 19:52:38.000000000 +0100
+@@ -763,7 +763,8 @@
+ 	BUG_ON(domain->revmap_type != IRQ_DOMAIN_MAP_LINEAR);
+ 
+ 	/* Check revmap bounds; complain if exceeded */
+-	if (WARN_ON(hwirq >= domain->revmap_data.linear.size))
++	/* 255 is a trick to allow UNDEF value in DTS */
++	if (hwirq == 255 || WARN_ON(hwirq >= domain->revmap_data.linear.size))
+ 		return 0;
+ 
+ 	return domain->revmap_data.linear.revmap[hwirq];
