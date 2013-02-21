@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab3BUOnz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 09:43:55 -0500
-Received: from ms.dension.com ([195.56.193.33]:39294 "EHLO ms.dension.com"
+	id S1754133Ab3BUOuj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 09:50:39 -0500
+Received: from mail.tpi.com ([70.99.223.143]:3397 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752948Ab3BUOny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 09:43:54 -0500
-X-Greylist: delayed 392 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Feb 2013 09:43:53 EST
-Date: Thu, 21 Feb 2013 15:37:17 +0100
-From: "Patrik, Kluba" <pkluba@dension.com>
-To: linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org
-Subject: bug: keep_bootcon and early printk together can lead to (invisible)
- kernel panic
-Message-ID: <20130221153717.31400a88.pkluba@dension.com>
-Organization: Dension Audio Systems Ltd.
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754005Ab3BUOuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 09:50:37 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com, Neil Brown <neilb@suse.de>,
+        linux-raid@vger.kernel.org
+Subject: [PATCH linux-next v2] DM RAID: validate_raid_redundancy: Silence uninitialized variable warning
+Date: Thu, 21 Feb 2013 07:50:26 -0700
+Message-Id: <1361458226-8142-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20130221131931.GA29577@agk-dp.fab.redhat.com>
+References: <20130221131931.GA29577@agk-dp.fab.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+drivers/md/dm-raid.c:453:53: warning: 'rebuilds_per_group' may be used uninitialized in this function [-Wuninitialized]
+drivers/md/dm-raid.c:383:11: note: 'rebuilds_per_group' was declared here
 
-I had a silent lockup on one of our embedded system under development.
-It was not easy to track it down, so here's what I discovered, in case
-somebody runs into similar trouble.
-Using 'keep_bootcon' command line parameter, and enabling early printk
-can lead to a kernel panic. At least on MIPS, it does. The problem is
-that in arch/mips/kernel/early_printk.c everything is declared as
-__init and __initdata, so they are being freed, when the kernel
-frees .init.* sections. If 'keep_bootcon' is given, the early console
-does not get unregistered, and the entry in the console_drivers list
-can point (will, believe me) to garbage data. It's up to you to imagine
-the effects...
+It is impossible that rebuilds_per_group could be used before set, but set
+it to 0 anyways to silence GCC warnings.
 
-Regards,
-Patrik
+Cc: Alasdair Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
+Cc: Neil Brown <neilb@suse.de>
+Cc: linux-raid@vger.kernel.org
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
 
---
-Patrik KLUBA
-Software Developer at
+v2 - Added GCC comment. Update commit log with a more definite explanation.
 
-DENSION Audio Systems Ltd.
-H-1116 Budapest, Sztregova u. 1
-Phone: +36 1 463 0470
-Fax:   +36 1 463 0479
-Web:   www.dension.com
+As Neil has pointed out, https://lwn.net/Articles/529954/ indicates
+uninitialized_var() is going away.
+
+ drivers/md/dm-raid.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/md/dm-raid.c b/drivers/md/dm-raid.c
+index 9d6bf19..1dbc341 100644
+--- a/drivers/md/dm-raid.c
++++ b/drivers/md/dm-raid.c
+@@ -380,7 +380,8 @@ static int validate_region_size(struct raid_set *rs, unsigned long region_size)
+ static int validate_raid_redundancy(struct raid_set *rs)
+ {
+ 	unsigned i, rebuild_cnt = 0;
+-	unsigned rebuilds_per_group, copies, d;
++	unsigned rebuilds_per_group = 0; /* GCC 4.6.3 */
++	unsigned copies, d;
+ 	unsigned group_size, last_group_start;
+ 
+ 	for (i = 0; i < rs->md.raid_disks; i++)
+-- 
+1.7.9.5
+
