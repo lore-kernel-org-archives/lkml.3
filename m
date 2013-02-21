@@ -1,160 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab3BUVtf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 16:49:35 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48764 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394Ab3BUVte (ORCPT
+	id S1755757Ab3BUVxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 16:53:10 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:50546 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab3BUVxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 16:49:34 -0500
-Message-ID: <51269668.90809@kernel.org>
-Date: Thu, 21 Feb 2013 21:49:28 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
+	Thu, 21 Feb 2013 16:53:09 -0500
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Guenter Roeck <linux@roeck-us.net>, linux-iio@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Subject: Re: [PATCH v5] iio: Add OF support
-References: <1360256940-19438-1-git-send-email-linux@roeck-us.net> <51250A0E.80806@gmail.com> <20130220181148.GA19278@roeck-us.net> <2dada206-6401-4a35-85d8-298dd08b0420@email.android.com> <20130220192458.GA29247@roeck-us.net> <51263441.90300@gmail.com>
-In-Reply-To: <51263441.90300@gmail.com>
-X-Enigmail-Version: 1.5
+In-Reply-To: <87y5ehmp8d.fsf@linaro.org>
+References: <1361389302-11968-1-git-send-email-khilman@linaro.org>
+	<1361389302-11968-3-git-send-email-khilman@linaro.org>
+	<87y5ehmp8d.fsf@linaro.org>
+Date: Thu, 21 Feb 2013 22:53:07 +0100
+Message-ID: <CAFTL4hw1=mKtUadL0WDrydtspOehKuW7jhhzr65vXR2P2zdTWw@mail.gmail.com>
+Subject: Re: [RFC/PATCH 2/5] kernel_cpustat: convert to atomic 64-bit accessors
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Mats Liljegren <mats.liljegren@enea.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 02:50 PM, Rob Herring wrote:
-> On 02/20/2013 01:24 PM, Guenter Roeck wrote:
->> On Wed, Feb 20, 2013 at 06:51:08PM +0000, Jonathan Cameron wrote:
->>>
->>>
->>> Guenter Roeck <linux@roeck-us.net> wrote:
->>>
->>>> On Wed, Feb 20, 2013 at 11:38:22AM -0600, Rob Herring wrote:
->>>>> On 02/07/2013 11:09 AM, Guenter Roeck wrote:
->>>>>> Provide bindings and parse OF data during initialization.
->>>>>>
->>>>>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>>>>> ---
->>>>>> v5:
->>>>>> - Updated examples in bindings.
->>>>>> v4:
->>>>>> - Fixed wrong parameter to dummy of_iio_channel_get_by_name if
->>>> CONFIG_OF is
->>>>>>   undefined, and wrong return value.
->>>>>> - Initialize indio_dev->of_node in iio_device_register if the
->>>> calling driver
->>>>>>   neglected to do it.
->>>>>> v3:
->>>>>> - Cleaned up documentation (formatting, left-over clock references)
->>>>>> - Updated bindings description to permit sub-devices
->>>>>> - When searching for iio devices, use the pointer to the iio device
->>>> type instead
->>>>>>   of strcmp. Rename iio_dev_type to iio_device_type (to match other
->>>> device
->>>>>>   types) and make it global for that purpose. Check the OF node
->>>> first, then the
->>>>>>   device type, as the node is less likely to match.
->>>>>> - Move the common code in of_iio_channel_get and
->>>> of_iio_channel_get_all to
->>>>>>   __of_iio_channel_get.
->>>>>> - Return NULL from of_iio_channel_get_by_name if nothing is found,
->>>> or
->>>>>>   an error if there is a problem with consistency or if the
->>>> provider device is
->>>>>>   not yet available.
->>>>>> - In iio_channel_get, return if of_iio_channel_get_by_name()
->>>> returns a channel
->>>>>>   or an error, and continue otherwise.
->>>>>> v2:
->>>>>> - Rebased to iio/togreg
->>>>>> - Documentation update per feedback
->>>>>> - Dropped io-channel-output-names from the bindings document. The
->>>> property is
->>>>>>   not used in the code, and it is not entirely clear what it would
->>>> be used for.
->>>>>>   If there is a need for it, we can add it back in later on.
->>>>>> - Don't export OF specific API calls
->>>>>> - For OF support, no longer depend on iio_map
->>>>>> - Add #ifdef CONFIG_OF where appropriate, and ensure that the code
->>>> still builds
->>>>>>   if it is not selected.
->>>>>> - Change iio_channel_get to take device pointer as argument instead
->>>> of device
->>>>>>   name. Retain old API as of_iio_channel_get_sys.
->>>>>> - iio_channel_get now works for both OF and non-OF configurations
->>>>>> - Use regulator to get vref for max1363 driver.
->>>>>>
->>>>>>  .../devicetree/bindings/iio/iio-bindings.txt       |   97
->>>> +++++++++++
->>>>>>  drivers/iio/iio_core.h                             |    1 +
->>>>>>  drivers/iio/industrialio-core.c                    |    8 +-
->>>>>>  drivers/iio/inkern.c                               |  171
->>>> ++++++++++++++++++++
->>>>>>  4 files changed, 275 insertions(+), 2 deletions(-)
->>>>>>  create mode 100644
->>>> Documentation/devicetree/bindings/iio/iio-bindings.txt
->>>>>>
->>>>>> diff --git a/Documentation/devicetree/bindings/iio/iio-bindings.txt
->>>> b/Documentation/devicetree/bindings/iio/iio-bindings.txt
->>>>>> new file mode 100644
->>>>>> index 0000000..1182845
->>>>>> --- /dev/null
->>>>>> +++ b/Documentation/devicetree/bindings/iio/iio-bindings.txt
->>>>>> @@ -0,0 +1,97 @@
->>>>>> +This binding is a work-in-progress. It is derived from clock
->>>> bindings,
->>>>>> +and based on suggestions from Lars-Peter Clausen [1].
->>>>>
->>>>> Bindings are an ABI. It should not be a WIP. What part is a WIP?
->>>>>
->>>> The text is copied from clock bindings. I do not claim to be better
->>>> than the clock subsystem is doing in respect to its bindings.
-> 
-> That should be fixed. The clock bindings are fixed.
+2013/2/21 Kevin Hilman <khilman@linaro.org>:
+> Subject: [PATCH 2/5] kernel_cpustat: convert to atomic 64-bit accessors
 >
-I'll delete it from this patch when merging.  Don't think anyone
-will mind.
+> Use the atomic64_* accessors for all the kernel_cpustat fields to
+> ensure atomic access on non-64 bit platforms.
+>
+> Thanks to Mats Liljegren for CGROUP_CPUACCT related fixes.
+>
+> Cc: Mats Liljegren <mats.liljegren@enea.com>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
 
-Jonathan
->>>>
->>>> I'll be more than happy to take this text out if it is a source of
->>>> contention,
->>>> even more so if that is what is holding up the patch. Jonathan ?
->>> I don't really care about the wording though can see why Rob asked!
->>> We will probably have other stuff to add anyway.
->>>
->>
->> Quite likely - for example, I did not add io-output-names since I did not
->> know what to do with it.
-> 
-> Good because name strings are typically optional.
-> 
-> Adding to bindings is fine. Changing what's already there should be
-> avoided. New kernels need to work with old DTBs and vice-versa.
-> 
-> Rob
-> 
->> What do you want me to do ? Submit another version with the sentence deleted,
->> or keep it as-is ?
->>
->> Thanks,
->> Guenter
->>
->>> Jonathan
->>>>
->>>> Thanks,
->>>> Guenter
->>>>
->>>>> Knowing nothing about IIO, the binding seems sane.
->>>>>
->>>>> Rob
->>>>>
+Funny stuff, I thought struct kernel_cpustat was made of cputime_t
+field. Actually it's u64. So the issue is independant from the new
+full dynticks cputime accounting. It was already broken before.
+
+But yeah that's not the point, we still want to fix this anyway. But
+let's just treat this patch as independant.
+
+> ---
+>  arch/s390/appldata/appldata_os.c   | 41 +++++++++++++++++++++++---------------
+>  drivers/cpufreq/cpufreq_governor.c | 18 ++++++++---------
+>  drivers/cpufreq/cpufreq_ondemand.c |  2 +-
+>  drivers/macintosh/rack-meter.c     |  6 +++---
+>  fs/proc/stat.c                     | 40 ++++++++++++++++++-------------------
+>  fs/proc/uptime.c                   |  2 +-
+>  include/linux/kernel_stat.h        |  2 +-
+>  kernel/sched/core.c                | 10 +++++-----
+>  kernel/sched/cputime.c             | 38 +++++++++++++++++------------------
+>  9 files changed, 84 insertions(+), 75 deletions(-)
+>
+> diff --git a/arch/s390/appldata/appldata_os.c b/arch/s390/appldata/appldata_os.c
+> index 87521ba..008b180 100644
+> --- a/arch/s390/appldata/appldata_os.c
+> +++ b/arch/s390/appldata/appldata_os.c
+> @@ -99,6 +99,7 @@ static void appldata_get_os_data(void *data)
+>         int i, j, rc;
+>         struct appldata_os_data *os_data;
+>         unsigned int new_size;
+> +       u64 val;
+>
+>         os_data = data;
+>         os_data->sync_count_1++;
+> @@ -112,22 +113,30 @@ static void appldata_get_os_data(void *data)
+>
+>         j = 0;
+>         for_each_online_cpu(i) {
+> -               os_data->os_cpu[j].per_cpu_user =
+> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_USER]);
+> -               os_data->os_cpu[j].per_cpu_nice =
+> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_NICE]);
+> -               os_data->os_cpu[j].per_cpu_system =
+> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM]);
+> -               os_data->os_cpu[j].per_cpu_idle =
+> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_IDLE]);
+> -               os_data->os_cpu[j].per_cpu_irq =
+> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_IRQ]);
+> -               os_data->os_cpu[j].per_cpu_softirq =
+> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_SOFTIRQ]);
+> -               os_data->os_cpu[j].per_cpu_iowait =
+> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_IOWAIT]);
+> -               os_data->os_cpu[j].per_cpu_steal =
+> -                       cputime_to_jiffies(kcpustat_cpu(i).cpustat[CPUTIME_STEAL]);
+> +               val = atomic64_read(&kcpustat_cpu(i).cpustat[CPUTIME_USER]);
+
+So I see this repeated pattern everywhere. How about converting that to:
+           kcpustat_cpu_get(i, CPUTIME_USER)
+
+and use that accessor in all other places. That's much more readable
+and then we can later modify the accessing code in one go.
+
+We should perhaps even use atomic_64 in 32 bits and u64 in 64 bits.
+
+[...]
+> @@ -186,11 +186,11 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+>
+>         /* Add guest time to cpustat. */
+>         if (TASK_NICE(p) > 0) {
+> -               cpustat[CPUTIME_NICE] += (__force u64) cputime;
+> -               cpustat[CPUTIME_GUEST_NICE] += (__force u64) cputime;
+> +               atomic64_add((__force u64) cputime, &cpustat[CPUTIME_NICE]);
+> +               atomic64_add((__force u64) cputime, &cpustat[CPUTIME_GUEST_NICE]);
+
+That too should be kcpustat_this_cpu_set(), or kcpustat_this_cpu_add()
+FWIW. But we probably don't need the overhead of atomic_add() that
+does a LOCK.
+atomic_set(var, atomic_read(var) + delta) would be better. All we need
+is that low/high parts of the 64 bits values are stored and read
+without messing up altogether.
+
+Thanks.
