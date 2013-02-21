@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab3BUTE1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 14:04:27 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:51589 "EHLO e7.ny.us.ibm.com"
+	id S1753262Ab3BUTEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 14:04:39 -0500
+Received: from mga02.intel.com ([134.134.136.20]:21173 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752309Ab3BUTEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 14:04:25 -0500
-Message-ID: <1361473420.29360.97.camel@falcor1>
-Subject: Re: [GIT] Security subsystem updates for 3.9
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: James Morris <jmorris@namei.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Date: Thu, 21 Feb 2013 14:03:40 -0500
-In-Reply-To: <CA+55aFxSgVX=d5RvL0kSTm5KQR-AJ=+t_+jXv9J+J3f-C4MOfA@mail.gmail.com>
-References: <alpine.LRH.2.02.1302220058500.18199@tundra.namei.org>
-	 <CA+55aFzkBA6bdLe73PKBaQNfV1m-JqSddF24-F-s1rX3oRE2Lg@mail.gmail.com>
-	 <1361469979.29360.75.camel@falcor1>
-	 <CA+55aFxSgVX=d5RvL0kSTm5KQR-AJ=+t_+jXv9J+J3f-C4MOfA@mail.gmail.com>
+	id S1753074Ab3BUTEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 14:04:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,711,1355126400"; 
+   d="scan'208";a="288928224"
+Subject: [PATCH] Update the links to the white papers on CRC32C
+ calculations with PCLMULQDQ instructions.
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        David Cote <david.m.cote@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto <linux-crypto@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+Date: Thu, 21 Feb 2013 11:04:22 -0800
+Message-ID: <1361473462.17632.202.camel@schen9-DESK>
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022119-5806-0000-0000-00002000AFA4
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-21 at 10:21 -0800, Linus Torvalds wrote:
-> On Thu, Feb 21, 2013 at 10:06 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> >
-> > Almost, and enforcing file integrity is enabled.  The merged result
-> > should look like what's contained in
-> > linux-integrity/next-upstreamed-patches:
-> >
-> > int ima_module_check(struct file *file)
-> > {
-> >         if (!file) {
-> >                 if ((ima_appraise & IMA_APPRAISE_MODULES) &&
-> >                     (ima_appraise & IMA_APPRAISE_ENFORCE)) {
-> > #ifndef CONFIG_MODULE_SIG_FORCE
-> >                         return -EACCES; /* INTEGRITY_UNKNOWN */
-> > #endif
-> >                 }
-> >                 return 0;
-> 
-> Ugh. The placement of that #ifndef is just horrible, please don't do
-> that. Just add it around the whole if-statement rather than around
-> just the return. Not because the compiler can't optimize away the
-> tests, but because it's much more obvious to a *human* what the ifndef
-> actually does.
+Herbert,
 
-Having the 'ifndef' is ugly.  Thanks for the suggestion on making it
-less ugly.
+The following patch update the stale link to the CRC32C white paper 
+that was referenced.
 
-> Anyway, I don't have the IMA_APPRAISE_ENFORCE bit checking, it wasn't
-> obvious from the conflict, so somebody will need to add that.
+Tim
 
-Commit "750943a ima: remove enforce checking duplication" moved the test
-to process_measurement().
 
-Because commit "a7f2a36 ima: fallback to MODULE_SIG_ENFORCE for existing
-kernel module syscall" never went into linux-security/next, subsequent
-patches resulted in this merge conflict.
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+ arch/x86/crypto/crc32c-pcl-intel-asm_64.S |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-I'll post an additional patch.
-
-thanks,
-
-Mimi
-
+diff --git a/arch/x86/crypto/crc32c-pcl-intel-asm_64.S b/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
+index 93c6d39..f3f1e42 100644
+--- a/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
++++ b/arch/x86/crypto/crc32c-pcl-intel-asm_64.S
+@@ -1,9 +1,10 @@
+ /*
+  * Implement fast CRC32C with PCLMULQDQ instructions. (x86_64)
+  *
+- * The white paper on CRC32C calculations with PCLMULQDQ instruction can be
++ * The white papers on CRC32C calculations with PCLMULQDQ instruction can be
+  * downloaded from:
+- * http://download.intel.com/design/intarch/papers/323405.pdf
++ * http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/crc-iscsi-polynomial-crc32-instruction-paper.pdf
++ * http://www.intel.com/content/dam/www/public/us/en/documents/white-papers/fast-crc-computation-paper.pdf
+  *
+  * Copyright (C) 2012 Intel Corporation.
+  *
+-- 
+1.7.6.5
 
 
