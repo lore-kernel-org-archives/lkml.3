@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab3BUFLs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 00:11:48 -0500
-Received: from relay.parallels.com ([195.214.232.42]:56107 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab3BUFLq (ORCPT
+	id S1751516Ab3BUFOt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 00:14:49 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:53520 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002Ab3BUFOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 00:11:46 -0500
-Message-ID: <5125AC65.7020006@parallels.com>
-Date: Thu, 21 Feb 2013 09:11:01 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 21 Feb 2013 00:14:48 -0500
+Message-ID: <5125AD3D.40400@linux.vnet.ibm.com>
+Date: Thu, 21 Feb 2013 13:14:37 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: general protection fault in do_msgrcv  [3.8]
-References: <20130219180441.GA27141@redhat.com> <512487FA.9090102@parallels.com> <20130220182432.GA32377@redhat.com>
-In-Reply-To: <20130220182432.GA32377@redhat.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.29.37]
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
+References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <1361367148.10155.30.camel@laptop>
+In-Reply-To: <1361367148.10155.30.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022105-9264-0000-0000-000003314A83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.02.2013 22:24, Dave Jones пишет:
-> On Wed, Feb 20, 2013 at 12:23:22PM +0400, Stanislav Kinsbursky wrote:
->
->   > > Pid: 887, comm: trinity-child2 Not tainted 3.8.0+ #57 Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H
->   > > RIP: 0010:[<ffffffff812aebba>]  [<ffffffff812aebba>] do_msgrcv+0x22a/0x670
->   > > ...
->   > > Looks like Stanislav recently changed this code, so problem was likely introduced
->   > > in those changes.
->   > >
->   >
->   > Is it easy to reproduce? Do you use KVM?
->
-> Only hit it once so far, no KVM
->
->   > There is a NULL selinux handler bug fix by Stephen Smalley here:
->   > https://lkml.org/lkml/2013/2/6/663
->   >
->   > But anyway, this bug fix affects only the case, when MSG_COPY flag is set.
->   >
->   > And this is not your case, I suppose?
->
->  From my reading of the traces, I'd say not. It looks like I'm oopsing before
-> we even get to the SELinux hooks.
->
+On 02/20/2013 09:32 PM, Peter Zijlstra wrote:
+> On Wed, 2013-02-20 at 11:49 +0100, Ingo Molnar wrote:
+> 
+>> The changes look clean and reasoable, 
+> 
+> I don't necessarily agree, note that O(n^2) storage requirement that
+> Michael failed to highlight ;-)
 
-Thanks, Dave. I've seen a couple of issues when running trinity in KVM somewhere in the same place.
-Look like message queue itself has been destroyed somewhere in the past.
-Have no idea how this can happen yet but still searching and will inform you in case of any fixes.
+Forgive me for not explain this point in cover, but it's really not a
+big deal in my opinion...
 
-> 	Dave
->
+And I'm going to apply Mike's suggestion, do allocation when cpu active,
+that will save some space :)
 
+Regards,
+Michael Wang
 
--- 
-Best regards,
-Stanislav Kinsbursky
+> 
+>> any ideas exactly *why* it speeds up?
+> 
+> That is indeed the most interesting part.. There's two parts to
+> select_task_rq_fair(), the 'regular' affine wakeup path, and the
+> fork/exec find_idlest_goo() path. At the very least we need to quantify
+> which of these two parts contributes most to the speedup.
+> 
+> In the power balancing discussion we already noted that the
+> find_idlest_goo() is in need of attention.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
