@@ -1,622 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab3BUPrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 10:47:17 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:47914 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540Ab3BUPrP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 10:47:15 -0500
-Date: Thu, 21 Feb 2013 15:47:09 +0000
-From: Andrew Murray <Andrew.Murray@arm.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-pci@vger.kernel.org
-Subject: [RFC PATCH v2] of/pci: Provide support for parsing PCI DT ranges
- property
-Message-ID: <20130221154709.GA26660@arm.com>
-MIME-Version: 1.0
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 21 Feb 2013 15:47:10.0656 (UTC) FILETIME=[B5F32C00:01CE104A]
-X-MC-Unique: 113022115471300101
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755373Ab3BUPsO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 10:48:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7424 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754949Ab3BUPsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 10:48:12 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: torvalds@linux-foundation.org
+cc: dhowells@redhat.com, jwboyer@redhat.com, pjones@redhat.com,
+        vgoyal@redhat.com, mjg59@srcf.ucam.org, keescook@chromium.org,
+        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Load keys from signed PE binaries
+Date: Thu, 21 Feb 2013 15:47:58 +0000
+Message-ID: <30665.1361461678@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DT bindings for PCI host bridges often use the ranges property to describe
-memory and IO ranges - this binding tends to be the same across architectures
-yet several parsing implementations exist, e.g. arch/mips/pci/pci.c,
-arch/powerpc/kernel/pci-common.c, arch/sparc/kernel/pci.c and
-arch/microblaze/pci/pci-common.c (clone of PPC). Some of these duplicate
-functionality provided by drivers/of/address.c.
 
-This patch factors out common implementations patterns to reduce overall kernel
-code and provide a means for host bridge drivers to directly obtain struct
-resources from the DT's ranges property without relying on architecture specific
-DT handling. This will make it easier to write archiecture independent host bridge
-drivers and mitigate against further duplication of DT parsing code.
+Hi Linus,
 
-This patch can be used in the following way:
+Can you pull this patchset please?
 
-	struct of_pci_range_iter iter;
-	for_each_of_pci_range(&iter, np) {
+It provides a facility by which keys can be added dynamically to a kernel that
+is running in secure-boot mode.  To permit a key to be loaded under such a
+condition, we require that the new key be signed by a key that we already have
+(and trust) - where keys that we "already have" could include those embedded in
+the kernel, those in the UEFI database and those in cryptographic hardware.
 
-		//directly access properties of the address range, e.g.:
-		//iter.pci_space, iter.pci_addr, iter.cpu_addr, iter.size or
-		//iter.flags
+Now, "keyctl add" will already handle X.509 certificates that are so signed,
+but Microsoft's signing service will only sign runnable EFI PE binaries.
 
-		//alternatively obtain a struct resource, e.g.:
-		//struct resource res;
-		//range_iter_fill_resource(iter, np, res);
+We could require that the user reboot into the BIOS, add the key, and then
+switch back, but under some circumstances we want to be able to do this whilst
+the kernel is running.
+
+The way we have come up with to get around this is to embed an X.509
+certificate containing the key in a section called ".keylist" in an EFI PE
+binary and then get the binary signed by Microsoft.  The key can then be passed
+to the kernel by passing the signed binary:
+
+	keyctl padd asymmetric "" {ID of .system_keyring} <pekey.efi.signed
+
+This command executes the following steps:
+
+ (1) Parse the PE binary to locate the signature and the new key.
+
+ (2) Parse the PKCS#7 message in the PE binary.
+
+ (3) Parse the content of the PKCS#7 message which is in "Microsoft individual
+     code signing form" (the mscode bits in my patches).  This contains the PE
+     binary digest type and the expected resultant digest value.
+
+ (4) Digest the signed parts of the PE binary and compare the digest obtained
+     to the digest expected (obtained in step (3)).
+
+ (5) Digest the signed parts of the PKCS#7 message (which covers the content
+     data used in step (3)).
+
+ (6) Verify the signature on the PKCS#7 message against one of the X.509
+     certificates it contains.
+
+ (7) Check the signatures on the chain of X.509 certificates in the PKCS#7
+     message as far as possible.
+
+ (8) Cross-reference the chain of X.509 certificates against the known keys the
+     kernel already possesses, and if one is found, verify the signature of the
+     nearest object to the PKCS#7 message that we can (or the PKCS#7 message
+     itself) against the trusted key.
+
+ (9) Pass the X.509 certificate embedded in the message to the X.509 parser to
+     be turned into a key.
+
+To make this work, step (8) requires access to the .module_sign keyring, so
+this is separated from the module code to make the build dependencies simpler.
+It is also renamed to .system_keyring as it can then be generic.
+
+To make life easier whilst testing, I got rid of the "extra_certificates" file
+and replaced it with a glob that just glues together all the "*.x509" files in
+the source and build root directories.
+
+Since this requires the ability to add to .system_keyring, I have had to turn
+on WRITE permission for root - but so that _only_ trusted keys can be added,
+I've added two more flags in key->flags:
+
+	KEY_FLAG_TRUSTED - this key is trusted.
+
+	KEY_FLAG_TRUSTED_ONLY - only links to trusted keys can be made to this
+				keyring.
+
+I'm not sure that this is the best mechanism by which to filter keyring
+additions, but it's not currently visible to the user, and so can be changed.
+One thing we might want to consider is using X.509 extension fields to contain
+bitfields that indicate what is permitted of the key inside an X.509
+certificate.  These contribute to the X.509 cryptographic digest and so are
+secure.
+
+
+What these patches then do is allow you to add new keys by signing them with a
+key a user will already have.  There can be more than one source for these
+keys: firstly, there is a key built into the kernel for module signing
+purposes, and secondly, we have patches under development for extracting keys
+from the UEFI signature database.
+
+
+Note: Though we don't actually execute the PE binary container to get at the
+key, the binary must be executable in the EFI environment for Microsoft to sign
+it.
+
+The test wrapper I'm using is this:
+
+	#include <efi.h>
+	#include <efilib.h>
+
+	EFI_STATUS
+	efi_main (EFI_HANDLE image_handle, EFI_SYSTEM_TABLE *systab)
+	{
+		InitializeLib(image_handle, systab);
+		Print(L"This program contains a list of public keys.\n");
+		return EFI_SUCCESS;
 	}
 
-Additionally the implementation takes care of adjacent ranges and merges them
-into a single range (as was the case with powerpc and microblaze).
+	extern __attribute__((section(".keylist"))) const uint8_t certificate_list[];
+	extern __attribute__((section(".keylist"))) const uint8_t certificate_list_end[];
+	asm(".section .keylist,\"a\"\n"
+	    "certificate_list:\n"
+	    ".incbin \"signing_key.x509\"\n"
+	    "certificate_list_end:"
+	    );
 
-The modifications to microblaze, mips and powerpc have not been tested.
+and is built from pekey.c by something like this:
 
-v2:
-  - This follows on from suggestions made by Grant Likely
-    (marc.info/?l=linux-kernel&m=136079602806328)
+	CPPFLAGS := -nostdinc -I /usr/include/efi -I /usr/include/efi/x86_64
 
-Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+	CFLAGS := -O2 -fpic \
+		-Wall -fshort-wchar -fno-strict-aliasing \
+		-fno-merge-constants -mno-red-zone
+
+	LDSCRIPT := /usr/lib64/gnuefi/elf_x86_64_efi.lds
+	CRT0	:= /usr/lib64/gnuefi/crt0-efi-x86_64.o
+	X509	:= magrathea
+	KEY	:= /data/modsign/linux-modsign/signing_key.priv
+
+	pekey.efi.signed: pekey.efi
+		pesign -i $< -o $@ -c $(X509) -p $(KEY) -s -f
+
+	pekey.efi: pekey.so
+		objcopy \
+			-j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rel \
+			-j .rela -j .reloc -j .keylist --target=efi-app-x86_64 $< $@
+
+	pekey.so: pekey.o
+		$(LD) -nostdlib -T $(LDSCRIPT) -shared -Bsymbolic $(CRT0) $< -o $@ \
+			-L /usr/lib64 -lefi -lgnuefi \
+			-L /usr/lib/gcc/x86_64-redhat-linux/4.7.2 -lgcc
+
+	pekey.o: pekey.c Makefile
+		$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- arch/microblaze/pci/pci-common.c |  100 +++++++++++--------------------------
- arch/mips/pci/pci.c              |   44 ++++-------------
- arch/powerpc/kernel/pci-common.c |   93 ++++++++++-------------------------
- drivers/of/address.c             |   54 ++++++++++++++++++++
- include/linux/of_address.h       |   30 +++++++++++
- 5 files changed, 151 insertions(+), 170 deletions(-)
+The following changes since commit 406089d01562f1e2bf9f089fd7637009ebaad589:
 
-diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
-index 4dbb505..ccc0d63 100644
---- a/arch/microblaze/pci/pci-common.c
-+++ b/arch/microblaze/pci/pci-common.c
-@@ -659,67 +659,37 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
- 					    struct device_node *dev,
- 					    int primary)
- {
--	const u32 *ranges;
--	int rlen;
--	int pna = of_n_addr_cells(dev);
--	int np = pna + 5;
- 	int memno = 0, isa_hole = -1;
--	u32 pci_space;
--	unsigned long long pci_addr, cpu_addr, pci_next, cpu_next, size;
- 	unsigned long long isa_mb = 0;
- 	struct resource *res;
-+	struct of_pci_range_iter iter;
- 
- 	printk(KERN_INFO "PCI host bridge %s %s ranges:\n",
- 	       dev->full_name, primary ? "(primary)" : "");
- 
--	/* Get ranges property */
--	ranges = of_get_property(dev, "ranges", &rlen);
--	if (ranges == NULL)
--		return;
--
--	/* Parse it */
- 	pr_debug("Parsing ranges property...\n");
--	while ((rlen -= np * 4) >= 0) {
-+	for_each_of_pci_range(&iter, dev) {
- 		/* Read next ranges element */
--		pci_space = ranges[0];
--		pci_addr = of_read_number(ranges + 1, 2);
--		cpu_addr = of_translate_address(dev, ranges + 3);
--		size = of_read_number(ranges + pna + 3, 2);
--
- 		pr_debug("pci_space: 0x%08x pci_addr:0x%016llx "
- 				"cpu_addr:0x%016llx size:0x%016llx\n",
--					pci_space, pci_addr, cpu_addr, size);
--
--		ranges += np;
-+				iter.pci_space, iter.pci_addr, iter.cpu_addr,
-+				iter.size);
- 
- 		/* If we failed translation or got a zero-sized region
- 		 * (some FW try to feed us with non sensical zero sized regions
- 		 * such as power3 which look like some kind of attempt
- 		 * at exposing the VGA memory hole)
- 		 */
--		if (cpu_addr == OF_BAD_ADDR || size == 0)
-+		if (iter.cpu_addr == OF_BAD_ADDR || iter.size == 0)
- 			continue;
- 
--		/* Now consume following elements while they are contiguous */
--		for (; rlen >= np * sizeof(u32);
--		     ranges += np, rlen -= np * 4) {
--			if (ranges[0] != pci_space)
--				break;
--			pci_next = of_read_number(ranges + 1, 2);
--			cpu_next = of_translate_address(dev, ranges + 3);
--			if (pci_next != pci_addr + size ||
--			    cpu_next != cpu_addr + size)
--				break;
--			size += of_read_number(ranges + pna + 3, 2);
--		}
--
- 		/* Act based on address space type */
- 		res = NULL;
--		switch ((pci_space >> 24) & 0x3) {
--		case 1:		/* PCI IO space */
-+		if (iter.flags & IORESOURCE_IO) {
- 			printk(KERN_INFO
- 			       "  IO 0x%016llx..0x%016llx -> 0x%016llx\n",
--			       cpu_addr, cpu_addr + size - 1, pci_addr);
-+			       iter.cpu_addr, iter.cpu_addr + iter.size - 1,
-+			       iter.pci_addr);
- 
- 			/* We support only one IO range */
- 			if (hose->pci_io_size) {
-@@ -728,11 +698,11 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
- 				continue;
- 			}
- 			/* On 32 bits, limit I/O space to 16MB */
--			if (size > 0x01000000)
--				size = 0x01000000;
-+			if (iter.size > 0x01000000)
-+				iter.size = 0x01000000;
- 
- 			/* 32 bits needs to map IOs here */
--			hose->io_base_virt = ioremap(cpu_addr, size);
-+			hose->io_base_virt = ioremap(iter.cpu_addr, iter.size);
- 
- 			/* Expect trouble if pci_addr is not 0 */
- 			if (primary)
-@@ -741,20 +711,18 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
- 			/* pci_io_size and io_base_phys always represent IO
- 			 * space starting at 0 so we factor in pci_addr
- 			 */
--			hose->pci_io_size = pci_addr + size;
--			hose->io_base_phys = cpu_addr - pci_addr;
-+			hose->pci_io_size = iter.pci_addr + iter.size;
-+			hose->io_base_phys = iter.cpu_addr - iter.pci_addr;
- 
- 			/* Build resource */
- 			res = &hose->io_resource;
--			res->flags = IORESOURCE_IO;
--			res->start = pci_addr;
--			break;
--		case 2:		/* PCI Memory space */
--		case 3:		/* PCI 64 bits Memory space */
-+			iter.cpu_addr = iter.pci_addr;
-+		} else if (iter.flags & IORESOURCE_MEM) {
- 			printk(KERN_INFO
- 			       " MEM 0x%016llx..0x%016llx -> 0x%016llx %s\n",
--			       cpu_addr, cpu_addr + size - 1, pci_addr,
--			       (pci_space & 0x40000000) ? "Prefetch" : "");
-+			       iter.cpu_addr, iter.cpu_addr + iter.size - 1,
-+			       iter.pci_addr,
-+			       (iter.pci_space & 0x40000000) ? "Prefetch" : "");
- 
- 			/* We support only 3 memory ranges */
- 			if (memno >= 3) {
-@@ -763,13 +731,13 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
- 				continue;
- 			}
- 			/* Handles ISA memory hole space here */
--			if (pci_addr == 0) {
-+			if (iter.pci_addr == 0) {
- 				isa_mb = cpu_addr;
- 				isa_hole = memno;
- 				if (primary || isa_mem_base == 0)
--					isa_mem_base = cpu_addr;
--				hose->isa_mem_phys = cpu_addr;
--				hose->isa_mem_size = size;
-+					isa_mem_base = iter.cpu_addr;
-+				hose->isa_mem_phys = iter.cpu_addr;
-+				hose->isa_mem_size = iter.size;
- 			}
- 
- 			/* We get the PCI/Mem offset from the first range or
-@@ -777,11 +745,13 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
- 			 * hole. If they don't match, bugger.
- 			 */
- 			if (memno == 0 ||
--			    (isa_hole >= 0 && pci_addr != 0 &&
-+			    (isa_hole >= 0 && iter.pci_addr != 0 &&
- 			     hose->pci_mem_offset == isa_mb))
--				hose->pci_mem_offset = cpu_addr - pci_addr;
--			else if (pci_addr != 0 &&
--				 hose->pci_mem_offset != cpu_addr - pci_addr) {
-+				hose->pci_mem_offset = iter.cpu_addr
-+							- iter.pci_addr;
-+			else if (iter.pci_addr != 0 &&
-+				 hose->pci_mem_offset != iter.cpu_addr
-+							- iter.pci_addr) {
- 				printk(KERN_INFO
- 				       " \\--> Skipped (offset mismatch) !\n");
- 				continue;
-@@ -789,19 +759,9 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
- 
- 			/* Build resource */
- 			res = &hose->mem_resources[memno++];
--			res->flags = IORESOURCE_MEM;
--			if (pci_space & 0x40000000)
--				res->flags |= IORESOURCE_PREFETCH;
--			res->start = cpu_addr;
--			break;
--		}
--		if (res != NULL) {
--			res->name = dev->full_name;
--			res->end = res->start + size - 1;
--			res->parent = NULL;
--			res->sibling = NULL;
--			res->child = NULL;
- 		}
-+		if (res != NULL)
-+			range_iter_fill_resource(iter, dev, res);
- 	}
- 
- 	/* If there's an ISA hole and the pci_mem_offset is -not- matching
-diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
-index 6903568..07d3769 100644
---- a/arch/mips/pci/pci.c
-+++ b/arch/mips/pci/pci.c
-@@ -123,51 +123,27 @@ static void __devinit pcibios_scanbus(struct pci_controller *hose)
- void __devinit pci_load_of_ranges(struct pci_controller *hose,
- 				struct device_node *node)
- {
--	const __be32 *ranges;
--	int rlen;
--	int pna = of_n_addr_cells(node);
--	int np = pna + 5;
-+	struct of_pci_range_iter iter;
- 
- 	pr_info("PCI host bridge %s ranges:\n", node->full_name);
--	ranges = of_get_property(node, "ranges", &rlen);
--	if (ranges == NULL)
--		return;
- 	hose->of_node = node;
- 
--	while ((rlen -= np * 4) >= 0) {
--		u32 pci_space;
-+	for_each_of_pci_range(&iter, node) {
- 		struct resource *res = NULL;
--		u64 addr, size;
--
--		pci_space = be32_to_cpup(&ranges[0]);
--		addr = of_translate_address(node, ranges + 3);
--		size = of_read_number(ranges + pna + 3, 2);
--		ranges += np;
--		switch ((pci_space >> 24) & 0x3) {
--		case 1:		/* PCI IO space */
-+
-+		if (iter.flags & IORESOURCE_IO) {
- 			pr_info("  IO 0x%016llx..0x%016llx\n",
--					addr, addr + size - 1);
-+					iter.addr, iter.addr + iter.size - 1);
- 			hose->io_map_base =
--				(unsigned long)ioremap(addr, size);
-+				(unsigned long)ioremap(iter.addr, iter.size);
- 			res = hose->io_resource;
--			res->flags = IORESOURCE_IO;
--			break;
--		case 2:		/* PCI Memory space */
--		case 3:		/* PCI 64 bits Memory space */
-+		} else if (iter.flags & IORESOURCE_MEM) {
- 			pr_info(" MEM 0x%016llx..0x%016llx\n",
--					addr, addr + size - 1);
-+					iter.addr, iter.addr + iter.size - 1);
- 			res = hose->mem_resource;
--			res->flags = IORESOURCE_MEM;
--			break;
--		}
--		if (res != NULL) {
--			res->start = addr;
--			res->name = node->full_name;
--			res->end = res->start + size - 1;
--			res->parent = NULL;
--			res->sibling = NULL;
--			res->child = NULL;
- 		}
-+		if (res != NULL)
-+			range_iter_fill_resource(iter, node, res);
- 	}
- }
- #endif
-diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
-index 2aa04f2..c6cd4e0 100644
---- a/arch/powerpc/kernel/pci-common.c
-+++ b/arch/powerpc/kernel/pci-common.c
-@@ -657,61 +657,31 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
- 					    struct device_node *dev,
- 					    int primary)
- {
--	const u32 *ranges;
--	int rlen;
--	int pna = of_n_addr_cells(dev);
--	int np = pna + 5;
- 	int memno = 0, isa_hole = -1;
--	u32 pci_space;
--	unsigned long long pci_addr, cpu_addr, pci_next, cpu_next, size;
- 	unsigned long long isa_mb = 0;
- 	struct resource *res;
-+	struct of_pci_range_iter iter;
- 
- 	printk(KERN_INFO "PCI host bridge %s %s ranges:\n",
- 	       dev->full_name, primary ? "(primary)" : "");
- 
--	/* Get ranges property */
--	ranges = of_get_property(dev, "ranges", &rlen);
--	if (ranges == NULL)
--		return;
--
- 	/* Parse it */
--	while ((rlen -= np * 4) >= 0) {
--		/* Read next ranges element */
--		pci_space = ranges[0];
--		pci_addr = of_read_number(ranges + 1, 2);
--		cpu_addr = of_translate_address(dev, ranges + 3);
--		size = of_read_number(ranges + pna + 3, 2);
--		ranges += np;
--
-+	for_each_of_pci_range(&iter, dev) {
- 		/* If we failed translation or got a zero-sized region
- 		 * (some FW try to feed us with non sensical zero sized regions
- 		 * such as power3 which look like some kind of attempt at exposing
- 		 * the VGA memory hole)
- 		 */
--		if (cpu_addr == OF_BAD_ADDR || size == 0)
-+		if (iter.cpu_addr == OF_BAD_ADDR || iter.size == 0)
- 			continue;
- 
--		/* Now consume following elements while they are contiguous */
--		for (; rlen >= np * sizeof(u32);
--		     ranges += np, rlen -= np * 4) {
--			if (ranges[0] != pci_space)
--				break;
--			pci_next = of_read_number(ranges + 1, 2);
--			cpu_next = of_translate_address(dev, ranges + 3);
--			if (pci_next != pci_addr + size ||
--			    cpu_next != cpu_addr + size)
--				break;
--			size += of_read_number(ranges + pna + 3, 2);
--		}
--
- 		/* Act based on address space type */
- 		res = NULL;
--		switch ((pci_space >> 24) & 0x3) {
--		case 1:		/* PCI IO space */
-+		if (iter.flags & IORESOURCE_IO) {
- 			printk(KERN_INFO
- 			       "  IO 0x%016llx..0x%016llx -> 0x%016llx\n",
--			       cpu_addr, cpu_addr + size - 1, pci_addr);
-+			       iter.cpu_addr, iter.cpu_addr + iter.size - 1,
-+			       iter.pci_addr);
- 
- 			/* We support only one IO range */
- 			if (hose->pci_io_size) {
-@@ -721,11 +691,11 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
- 			}
- #ifdef CONFIG_PPC32
- 			/* On 32 bits, limit I/O space to 16MB */
--			if (size > 0x01000000)
--				size = 0x01000000;
-+			if (iter.size > 0x01000000)
-+				iter.size = 0x01000000;
- 
- 			/* 32 bits needs to map IOs here */
--			hose->io_base_virt = ioremap(cpu_addr, size);
-+			hose->io_base_virt = ioremap(iter.cpu_addr, iter.size);
- 
- 			/* Expect trouble if pci_addr is not 0 */
- 			if (primary)
-@@ -735,20 +705,18 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
- 			/* pci_io_size and io_base_phys always represent IO
- 			 * space starting at 0 so we factor in pci_addr
- 			 */
--			hose->pci_io_size = pci_addr + size;
--			hose->io_base_phys = cpu_addr - pci_addr;
-+			hose->pci_io_size = iter.pci_addr + iter.size;
-+			hose->io_base_phys = iter.cpu_addr - iter.pci_addr;
- 
- 			/* Build resource */
- 			res = &hose->io_resource;
--			res->flags = IORESOURCE_IO;
--			res->start = pci_addr;
--			break;
--		case 2:		/* PCI Memory space */
--		case 3:		/* PCI 64 bits Memory space */
-+			iter.cpu_addr = iter.pci_addr;
-+		} else if (flags & IORESOURCE_MEM) {
- 			printk(KERN_INFO
- 			       " MEM 0x%016llx..0x%016llx -> 0x%016llx %s\n",
--			       cpu_addr, cpu_addr + size - 1, pci_addr,
--			       (pci_space & 0x40000000) ? "Prefetch" : "");
-+			       iter.cpu_addr, iter.cpu_addr + iter.size - 1,
-+			       iter.pci_addr,
-+			       (iter.pci_space & 0x40000000) ? "Prefetch" : "");
- 
- 			/* We support only 3 memory ranges */
- 			if (memno >= 3) {
-@@ -757,13 +725,13 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
- 				continue;
- 			}
- 			/* Handles ISA memory hole space here */
--			if (pci_addr == 0) {
-+			if (iter.pci_addr == 0) {
- 				isa_mb = cpu_addr;
- 				isa_hole = memno;
- 				if (primary || isa_mem_base == 0)
--					isa_mem_base = cpu_addr;
--				hose->isa_mem_phys = cpu_addr;
--				hose->isa_mem_size = size;
-+					isa_mem_base = iter.cpu_addr;
-+				hose->isa_mem_phys = iter.cpu_addr;
-+				hose->isa_mem_size = iter.size;
- 			}
- 
- 			/* We get the PCI/Mem offset from the first range or
-@@ -771,11 +739,13 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
- 			 * hole. If they don't match, bugger.
- 			 */
- 			if (memno == 0 ||
--			    (isa_hole >= 0 && pci_addr != 0 &&
-+			    (isa_hole >= 0 && iter.pci_addr != 0 &&
- 			     hose->pci_mem_offset == isa_mb))
--				hose->pci_mem_offset = cpu_addr - pci_addr;
-+				hose->pci_mem_offset = iter.cpu_addr -
-+							iter.pci_addr;
- 			else if (pci_addr != 0 &&
--				 hose->pci_mem_offset != cpu_addr - pci_addr) {
-+				 hose->pci_mem_offset != iter.cpu_addr -
-+							iter.pci_addr) {
- 				printk(KERN_INFO
- 				       " \\--> Skipped (offset mismatch) !\n");
- 				continue;
-@@ -783,19 +753,10 @@ void __devinit pci_process_bridge_OF_ranges(struct pci_controller *hose,
- 
- 			/* Build resource */
- 			res = &hose->mem_resources[memno++];
--			res->flags = IORESOURCE_MEM;
--			if (pci_space & 0x40000000)
--				res->flags |= IORESOURCE_PREFETCH;
--			res->start = cpu_addr;
- 			break;
- 		}
--		if (res != NULL) {
--			res->name = dev->full_name;
--			res->end = res->start + size - 1;
--			res->parent = NULL;
--			res->sibling = NULL;
--			res->child = NULL;
--		}
-+		if (res != NULL)
-+			range_iter_fill_resource(iter, dev, res);
- 	}
- 
- 	/* If there's an ISA hole and the pci_mem_offset is -not- matching
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index 7e262a6..726899b 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -219,6 +219,60 @@ int of_pci_address_to_resource(struct device_node *dev, int bar,
- 	return __of_address_to_resource(dev, addrp, size, flags, NULL, r);
- }
- EXPORT_SYMBOL_GPL(of_pci_address_to_resource);
-+
-+struct of_pci_range_iter *of_pci_process_ranges(struct of_pci_range_iter *iter,
-+						struct device_node *node)
-+{
-+	const int na = 3, ns = 2;
-+	int rlen;
-+
-+	if (!iter->range) {
-+		iter->pna = of_n_addr_cells(node);
-+		iter->np = iter->pna + na + ns;
-+
-+		iter->range = of_get_property(node, "ranges", &rlen);
-+		if (iter->range == NULL)
-+			return NULL;
-+
-+		iter->end = iter->range + rlen / sizeof(__be32);
-+	}
-+
-+	if (iter->range + iter->np > iter->end)
-+		return NULL;
-+
-+	iter->pci_space = be32_to_cpup(iter->range);
-+	iter->flags = of_bus_pci_get_flags(iter->range);
-+	iter->pci_addr = of_read_number(iter->range + 1, ns);
-+	iter->cpu_addr = of_translate_address(node, iter->range + na);
-+	iter->size = of_read_number(iter->range + iter->pna + na, ns);
-+
-+	iter->range += iter->np;
-+
-+	/* Now consume following elements while they are contiguous */
-+	while (iter->range + iter->np <= iter->end) {
-+		u32 flags, pci_space;
-+		u64 pci_addr, cpu_addr, size;
-+
-+		pci_space = be32_to_cpup(iter->range);
-+		flags = of_bus_pci_get_flags(iter->range);
-+		pci_addr = of_read_number(iter->range + 1, ns);
-+		cpu_addr = of_translate_address(node, iter->range + na);
-+		size = of_read_number(iter->range + iter->pna + na, ns);
-+
-+		if (flags != iter->flags)
-+			break;
-+		if (pci_addr != iter->pci_addr + iter->size ||
-+		    cpu_addr != iter->cpu_addr + iter->size)
-+			break;
-+
-+		iter->size += size;
-+		iter->range += iter->np;
-+	}
-+
-+	return iter;
-+}
-+EXPORT_SYMBOL_GPL(of_pci_process_ranges);
-+
- #endif /* CONFIG_PCI */
- 
- /*
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index 01b925a..15f91a1 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -4,6 +4,29 @@
- #include <linux/errno.h>
- #include <linux/of.h>
- 
-+struct of_pci_range_iter {
-+	const __be32 *range, *end;
-+	int np, pna;
-+
-+	u32 pci_space;
-+	u64 pci_addr;
-+	u64 cpu_addr;
-+	u64 size;
-+	u32 flags;
-+};
-+
-+#define for_each_of_pci_range(iter, np) \
-+	for (; of_pci_process_ranges(iter, np);)
-+
-+#define range_iter_fill_resource(iter, np, res) \
-+	do { \
-+		res->flags = iter.flags; \
-+		res->start = iter.cpu_addr; \
-+		res->end = iter.cpu_addr + iter.size - 1; \
-+		res->parent = res->child = res->sibling = NULL; \
-+		res->name = np->full_name; \
-+	} while (0)
-+
- #ifdef CONFIG_OF_ADDRESS
- extern u64 of_translate_address(struct device_node *np, const __be32 *addr);
- extern int of_address_to_resource(struct device_node *dev, int index,
-@@ -26,6 +49,8 @@ static inline unsigned long pci_address_to_pio(phys_addr_t addr) { return -1; }
- #define pci_address_to_pio pci_address_to_pio
- #endif
- 
-+struct of_pci_range_iter *of_pci_process_ranges(struct of_pci_range_iter *iter,
-+						struct device_node *node);
- #else /* CONFIG_OF_ADDRESS */
- static inline int of_address_to_resource(struct device_node *dev, int index,
- 					 struct resource *r)
-@@ -48,6 +73,11 @@ static inline const u32 *of_get_address(struct device_node *dev, int index,
- {
- 	return NULL;
- }
-+struct of_pci_range_iter *of_pci_process_ranges(struct of_pci_range_iter *iter,
-+						struct device_node *node)
-+{
-+	return NULL;
-+}
- #endif /* CONFIG_OF_ADDRESS */
- 
- 
--- 
-1.7.0.4
+  Merge tag 'trace-3.8-rc3-regression-fix' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace (2013-01-14 20:22:16 -0800)
+
+are available in the git repository at:
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-modsign.git tags/pekey-20130221
+
+for you to fetch changes up to 4ea349d3bb1d3521b7df8dbf0e88fe41cd3c0683:
+
+  MODSIGN: Fix including certificate twice when the signing_key.x509 already exists (2013-02-21 14:11:40 +0000)
+
+----------------------------------------------------------------
+(from the branch description for devel-pekey local branch)
+
+clone of "master"
+signed-pefile contained key
+
+----------------------------------------------------------------
+Chun-Yi Lee (1):
+      MODSIGN: Fix including certificate twice when the signing_key.x509 already exists
+
+David Howells (27):
+      KEYS: Load *.x509 files into kernel keyring
+      KEYS: Separate the kernel signature checking keyring from module signing
+      KEYS: Add a 'trusted' flag and a 'trusted only' flag
+      KEYS: Rename public key parameter name arrays
+      KEYS: Move the algorithm pointer array from x509 to public_key.c
+      KEYS: Store public key algo ID in public_key struct
+      KEYS: Split public_key_verify_signature() and make available
+      KEYS: Store public key algo ID in public_key_signature struct
+      X.509: struct x509_certificate needs struct tm declaring
+      X.509: Add bits needed for PKCS#7
+      X.509: Embed public_key_signature struct and create filler function
+      X.509: Check the algorithm IDs obtained from parsing an X.509 certificate
+      X.509: Handle certificates that lack an authorityKeyIdentifier field
+      X.509: Export certificate parse and free functions
+      PKCS#7: Implement a parser [RFC 2315]
+      PKCS#7: Digest the data in a signed-data message
+      PKCS#7: Find the right key in the PKCS#7 key list and verify the signature
+      PKCS#7: Verify internal certificate chain
+      PKCS#7: Find intersection between PKCS#7 message and known, trusted keys
+      Provide PE binary definitions
+      pefile: Parse a PE binary to find a key and a signature contained therein
+      pefile: Strip the wrapper off of the cert data block
+      pefile: Parse the presumed PKCS#7 content of the certificate blob
+      pefile: Parse the "Microsoft individual code signing" data blob
+      pefile: Digest the PE binary and compare to the PKCS#7 data
+      PEFILE: Validate PKCS#7 trust chain
+      PEFILE: Load the contained key if we consider the container to be validly signed
+
+ crypto/asymmetric_keys/Kconfig                     |  20 +-
+ crypto/asymmetric_keys/Makefile                    |  30 ++
+ crypto/asymmetric_keys/mscode.asn1                 |  28 ++
+ crypto/asymmetric_keys/mscode_parser.c             | 110 +++++
+ crypto/asymmetric_keys/pefile_parser.c             | 479 +++++++++++++++++++++
+ crypto/asymmetric_keys/pefile_parser.h             |  36 ++
+ crypto/asymmetric_keys/pkcs7.asn1                  | 127 ++++++
+ crypto/asymmetric_keys/pkcs7_parser.c              | 326 ++++++++++++++
+ crypto/asymmetric_keys/pkcs7_parser.h              |  72 ++++
+ crypto/asymmetric_keys/pkcs7_trust.c               | 149 +++++++
+ crypto/asymmetric_keys/pkcs7_verify.c              | 260 +++++++++++
+ crypto/asymmetric_keys/public_key.c                |  60 ++-
+ crypto/asymmetric_keys/public_key.h                |   6 +
+ crypto/asymmetric_keys/x509.asn1                   |   2 +-
+ crypto/asymmetric_keys/x509_cert_parser.c          |  55 ++-
+ crypto/asymmetric_keys/x509_parser.h               |  28 +-
+ crypto/asymmetric_keys/x509_public_key.c           | 119 ++---
+ include/crypto/public_key.h                        |   9 +-
+ include/keys/system_keyring.h                      |  23 +
+ include/linux/key-type.h                           |   1 +
+ include/linux/key.h                                |   3 +
+ include/linux/oid_registry.h                       |   7 +-
+ include/linux/pe.h                                 | 448 +++++++++++++++++++
+ init/Kconfig                                       |  13 +
+ kernel/Makefile                                    |  47 +-
+ kernel/modsign_pubkey.c                            | 104 -----
+ kernel/module-internal.h                           |   2 -
+ kernel/module_signing.c                            |   7 +-
+ ...modsign_certificate.S => system_certificates.S} |   7 +-
+ kernel/system_keyring.c                            | 103 +++++
+ security/keys/key.c                                |   8 +
+ security/keys/keyring.c                            |   4 +
+ 32 files changed, 2478 insertions(+), 215 deletions(-)
+ create mode 100644 crypto/asymmetric_keys/mscode.asn1
+ create mode 100644 crypto/asymmetric_keys/mscode_parser.c
+ create mode 100644 crypto/asymmetric_keys/pefile_parser.c
+ create mode 100644 crypto/asymmetric_keys/pefile_parser.h
+ create mode 100644 crypto/asymmetric_keys/pkcs7.asn1
+ create mode 100644 crypto/asymmetric_keys/pkcs7_parser.c
+ create mode 100644 crypto/asymmetric_keys/pkcs7_parser.h
+ create mode 100644 crypto/asymmetric_keys/pkcs7_trust.c
+ create mode 100644 crypto/asymmetric_keys/pkcs7_verify.c
+ create mode 100644 include/keys/system_keyring.h
+ create mode 100644 include/linux/pe.h
+ delete mode 100644 kernel/modsign_pubkey.c
+ rename kernel/{modsign_certificate.S => system_certificates.S} (72%)
+ create mode 100644 kernel/system_keyring.c
