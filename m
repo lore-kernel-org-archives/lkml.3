@@ -1,523 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab3BUOuv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 09:50:51 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:52909 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753516Ab3BUOur (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 09:50:47 -0500
-Message-ID: <51263441.90300@gmail.com>
-Date: Thu, 21 Feb 2013 08:50:41 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1753815Ab3BUOwx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 09:52:53 -0500
+Received: from mga09.intel.com ([134.134.136.24]:45243 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752602Ab3BUOww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 09:52:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,709,1355126400"; 
+   d="scan'208";a="265700120"
+Message-ID: <512634B1.4040101@intel.com>
+Date: Thu, 21 Feb 2013 22:52:33 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Subject: Re: [PATCH v5] iio: Add OF support
-References: <1360256940-19438-1-git-send-email-linux@roeck-us.net> <51250A0E.80806@gmail.com> <20130220181148.GA19278@roeck-us.net> <2dada206-6401-4a35-85d8-298dd08b0420@email.android.com> <20130220192458.GA29247@roeck-us.net>
-In-Reply-To: <20130220192458.GA29247@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>, torvalds@linux-foundation.org,
+        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        morten.rasmussen@arm.com
+Subject: Re: [patch v5 11/15] sched: add power/performance balance allow flag
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-12-git-send-email-alex.shi@intel.com> <20130220121256.GD16775@pd.tnic> <5124DBA3.20605@intel.com> <20130220152234.GE16775@pd.tnic> <51257946.1010505@intel.com> <20130221094213.GA4694@pd.tnic>
+In-Reply-To: <20130221094213.GA4694@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 01:24 PM, Guenter Roeck wrote:
-> On Wed, Feb 20, 2013 at 06:51:08PM +0000, Jonathan Cameron wrote:
+On 02/21/2013 05:42 PM, Borislav Petkov wrote:
+> On Thu, Feb 21, 2013 at 09:32:54AM +0800, Alex Shi wrote:
+>> Yes, use flags can save 2 int variable, I will change that.
 >>
->>
->> Guenter Roeck <linux@roeck-us.net> wrote:
->>
->>> On Wed, Feb 20, 2013 at 11:38:22AM -0600, Rob Herring wrote:
->>>> On 02/07/2013 11:09 AM, Guenter Roeck wrote:
->>>>> Provide bindings and parse OF data during initialization.
->>>>>
->>>>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>>>> ---
->>>>> v5:
->>>>> - Updated examples in bindings.
->>>>> v4:
->>>>> - Fixed wrong parameter to dummy of_iio_channel_get_by_name if
->>> CONFIG_OF is
->>>>>   undefined, and wrong return value.
->>>>> - Initialize indio_dev->of_node in iio_device_register if the
->>> calling driver
->>>>>   neglected to do it.
->>>>> v3:
->>>>> - Cleaned up documentation (formatting, left-over clock references)
->>>>> - Updated bindings description to permit sub-devices
->>>>> - When searching for iio devices, use the pointer to the iio device
->>> type instead
->>>>>   of strcmp. Rename iio_dev_type to iio_device_type (to match other
->>> device
->>>>>   types) and make it global for that purpose. Check the OF node
->>> first, then the
->>>>>   device type, as the node is less likely to match.
->>>>> - Move the common code in of_iio_channel_get and
->>> of_iio_channel_get_all to
->>>>>   __of_iio_channel_get.
->>>>> - Return NULL from of_iio_channel_get_by_name if nothing is found,
->>> or
->>>>>   an error if there is a problem with consistency or if the
->>> provider device is
->>>>>   not yet available.
->>>>> - In iio_channel_get, return if of_iio_channel_get_by_name()
->>> returns a channel
->>>>>   or an error, and continue otherwise.
->>>>> v2:
->>>>> - Rebased to iio/togreg
->>>>> - Documentation update per feedback
->>>>> - Dropped io-channel-output-names from the bindings document. The
->>> property is
->>>>>   not used in the code, and it is not entirely clear what it would
->>> be used for.
->>>>>   If there is a need for it, we can add it back in later on.
->>>>> - Don't export OF specific API calls
->>>>> - For OF support, no longer depend on iio_map
->>>>> - Add #ifdef CONFIG_OF where appropriate, and ensure that the code
->>> still builds
->>>>>   if it is not selected.
->>>>> - Change iio_channel_get to take device pointer as argument instead
->>> of device
->>>>>   name. Retain old API as of_iio_channel_get_sys.
->>>>> - iio_channel_get now works for both OF and non-OF configurations
->>>>> - Use regulator to get vref for max1363 driver.
->>>>>
->>>>>  .../devicetree/bindings/iio/iio-bindings.txt       |   97
->>> +++++++++++
->>>>>  drivers/iio/iio_core.h                             |    1 +
->>>>>  drivers/iio/industrialio-core.c                    |    8 +-
->>>>>  drivers/iio/inkern.c                               |  171
->>> ++++++++++++++++++++
->>>>>  4 files changed, 275 insertions(+), 2 deletions(-)
->>>>>  create mode 100644
->>> Documentation/devicetree/bindings/iio/iio-bindings.txt
->>>>>
->>>>> diff --git a/Documentation/devicetree/bindings/iio/iio-bindings.txt
->>> b/Documentation/devicetree/bindings/iio/iio-bindings.txt
->>>>> new file mode 100644
->>>>> index 0000000..1182845
->>>>> --- /dev/null
->>>>> +++ b/Documentation/devicetree/bindings/iio/iio-bindings.txt
->>>>> @@ -0,0 +1,97 @@
->>>>> +This binding is a work-in-progress. It is derived from clock
->>> bindings,
->>>>> +and based on suggestions from Lars-Peter Clausen [1].
->>>>
->>>> Bindings are an ABI. It should not be a WIP. What part is a WIP?
->>>>
->>> The text is copied from clock bindings. I do not claim to be better
->>> than the clock subsystem is doing in respect to its bindings.
-
-That should be fixed. The clock bindings are fixed.
-
->>>
->>> I'll be more than happy to take this text out if it is a source of
->>> contention,
->>> even more so if that is what is holding up the patch. Jonathan ?
->> I don't really care about the wording though can see why Rob asked!
->> We will probably have other stuff to add anyway.
->>
+>> Just curious, consider the lb_env size and just used in stack, plus
+>> the big cacheline size of modern cpu, and the alignment of gcc flag on
+>> kernel, seems no arch needs more cache lines. Are there any platforms
+>> performance is impacted by this 2 int variables?
 > 
-> Quite likely - for example, I did not add io-output-names since I did not
-> know what to do with it.
-
-Good because name strings are typically optional.
-
-Adding to bindings is fine. Changing what's already there should be
-avoided. New kernels need to work with old DTBs and vice-versa.
-
-Rob
-
-> What do you want me to do ? Submit another version with the sentence deleted,
-> or keep it as-is ?
+> Not that I know of. But that's not the point: if we don't pay attention
+> and are not as economical as possible in the kernel, and especially in
+> heavily walked code as the scheduler, we'll become fat and bloated (if
+> we're not halfway there already, that is).
 > 
-> Thanks,
-> Guenter
-> 
->> Jonathan
->>>
->>> Thanks,
->>> Guenter
->>>
->>>> Knowing nothing about IIO, the binding seems sane.
->>>>
->>>> Rob
->>>>
->>>>> +Sources of IIO channels can be represented by any node in the
->>> device
->>>>> +tree. Those nodes are designated as IIO providers. IIO consumer
->>>>> +nodes use a phandle and IIO specifier pair to connect IIO provider
->>>>> +outputs to IIO inputs. Similar to the gpio specifiers, an IIO
->>>>> +specifier is an array of one or more cells identifying the IIO
->>>>> +output on a device. The length of an IIO specifier is defined by
->>> the
->>>>> +value of a #io-channel-cells property in the IIO provider node.
->>>>> +
->>>>> +[1] http://marc.info/?l=linux-iio&m=135902119507483&w=2
->>>>> +
->>>>> +==IIO providers==
->>>>> +
->>>>> +Required properties:
->>>>> +#io-channel-cells: Number of cells in an IIO specifier; Typically
->>> 0 for nodes
->>>>> +		   with a single IIO output and 1 for nodes with multiple
->>>>> +		   IIO outputs.
->>>>> +
->>>>> +Example for a simple configuration with no trigger:
->>>>> +
->>>>> +	adc: voltage-sensor@35 {
->>>>> +		compatible = "maxim,max1139";
->>>>> +		reg = <0x35>;
->>>>> +		#io-channel-cells = <1>;
->>>>> +	};
->>>>> +
->>>>> +Example for a configuration with trigger:
->>>>> +
->>>>> +	adc@35 {
->>>>> +		compatible = "some-vendor,some-adc";
->>>>> +		reg = <0x35>;
->>>>> +
->>>>> +		adc1: iio-device@0 {
->>>>> +			#io-channel-cells = <1>;
->>>>> +			/* other properties */
->>>>> +		};
->>>>> +		adc2: iio-device@1 {
->>>>> +			#io-channel-cells = <1>;
->>>>> +			/* other properties */
->>>>> +		};
->>>>> +	};
->>>>> +
->>>>> +==IIO consumers==
->>>>> +
->>>>> +Required properties:
->>>>> +io-channels:	List of phandle and IIO specifier pairs, one pair
->>>>> +		for each IIO input to the device. Note: if the
->>>>> +		IIO provider specifies '0' for #io-channel-cells,
->>>>> +		then only the phandle portion of the pair will appear.
->>>>> +
->>>>> +Optional properties:
->>>>> +io-channel-names:
->>>>> +		List of IIO input name strings sorted in the same
->>>>> +		order as the io-channels property. Consumers drivers
->>>>> +		will use io-channel-names to match IIO input names
->>>>> +		with IIO specifiers.
->>>>> +io-channel-ranges:
->>>>> +		Empty property indicating that child nodes can inherit named
->>>>> +		IIO channels from this node. Useful for bus nodes to provide
->>>>> +		and IIO channel to their children.
->>>>> +
->>>>> +For example:
->>>>> +
->>>>> +	device {
->>>>> +		io-channels = <&adc 1>, <&ref 0>;
->>>>> +		io-channel-names = "vcc", "vdd";
->>>>> +	};
->>>>> +
->>>>> +This represents a device with two IIO inputs, named "vcc" and
->>> "vdd".
->>>>> +The vcc channel is connected to output 1 of the &adc device, and
->>> the
->>>>> +vdd channel is connected to output 0 of the &ref device.
->>>>> +
->>>>> +==Example==
->>>>> +
->>>>> +	adc: max1139@35 {
->>>>> +		compatible = "maxim,max1139";
->>>>> +		reg = <0x35>;
->>>>> +		#io-channel-cells = <1>;
->>>>> +	};
->>>>> +
->>>>> +	...
->>>>> +
->>>>> +	iio_hwmon {
->>>>> +		compatible = "iio-hwmon";
->>>>> +		io-channels = <&adc 0>, <&adc 1>, <&adc 2>,
->>>>> +			<&adc 3>, <&adc 4>, <&adc 5>,
->>>>> +			<&adc 6>, <&adc 7>, <&adc 8>,
->>>>> +			<&adc 9>;
->>>>> +	};
->>>>> +
->>>>> +	some_consumer {
->>>>> +		compatible = "some-consumer";
->>>>> +		io-channels = <&adc 10>, <&adc 11>;
->>>>> +		io-channel-names = "adc1", "adc2";
->>>>> +	};
->>>>> diff --git a/drivers/iio/iio_core.h b/drivers/iio/iio_core.h
->>>>> index f652e6a..05c1b74 100644
->>>>> --- a/drivers/iio/iio_core.h
->>>>> +++ b/drivers/iio/iio_core.h
->>>>> @@ -18,6 +18,7 @@
->>>>>  struct iio_chan_spec;
->>>>>  struct iio_dev;
->>>>>  
->>>>> +extern struct device_type iio_device_type;
->>>>>  
->>>>>  int __iio_add_chan_devattr(const char *postfix,
->>>>>  			   struct iio_chan_spec const *chan,
->>>>> diff --git a/drivers/iio/industrialio-core.c
->>> b/drivers/iio/industrialio-core.c
->>>>> index 8848f16..6d8b027 100644
->>>>> --- a/drivers/iio/industrialio-core.c
->>>>> +++ b/drivers/iio/industrialio-core.c
->>>>> @@ -847,7 +847,7 @@ static void iio_dev_release(struct device
->>> *device)
->>>>>  	kfree(indio_dev);
->>>>>  }
->>>>>  
->>>>> -static struct device_type iio_dev_type = {
->>>>> +struct device_type iio_device_type = {
->>>>>  	.name = "iio_device",
->>>>>  	.release = iio_dev_release,
->>>>>  };
->>>>> @@ -869,7 +869,7 @@ struct iio_dev *iio_device_alloc(int
->>> sizeof_priv)
->>>>>  
->>>>>  	if (dev) {
->>>>>  		dev->dev.groups = dev->groups;
->>>>> -		dev->dev.type = &iio_dev_type;
->>>>> +		dev->dev.type = &iio_device_type;
->>>>>  		dev->dev.bus = &iio_bus_type;
->>>>>  		device_initialize(&dev->dev);
->>>>>  		dev_set_drvdata(&dev->dev, (void *)dev);
->>>>> @@ -960,6 +960,10 @@ int iio_device_register(struct iio_dev
->>> *indio_dev)
->>>>>  {
->>>>>  	int ret;
->>>>>  
->>>>> +	/* If the calling driver did not initialize of_node, do it here
->>> */
->>>>> +	if (!indio_dev->dev.of_node && indio_dev->dev.parent)
->>>>> +		indio_dev->dev.of_node = indio_dev->dev.parent->of_node;
->>>>> +
->>>>>  	/* configure elements for the chrdev */
->>>>>  	indio_dev->dev.devt = MKDEV(MAJOR(iio_devt), indio_dev->id);
->>>>>  
->>>>> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
->>>>> index b289915..795d100 100644
->>>>> --- a/drivers/iio/inkern.c
->>>>> +++ b/drivers/iio/inkern.c
->>>>> @@ -10,6 +10,7 @@
->>>>>  #include <linux/export.h>
->>>>>  #include <linux/slab.h>
->>>>>  #include <linux/mutex.h>
->>>>> +#include <linux/of.h>
->>>>>  
->>>>>  #include <linux/iio/iio.h>
->>>>>  #include "iio_core.h"
->>>>> @@ -92,6 +93,164 @@ static const struct iio_chan_spec
->>>>>  	return chan;
->>>>>  }
->>>>>  
->>>>> +#ifdef CONFIG_OF
->>>>> +
->>>>> +static int iio_dev_node_match(struct device *dev, void *data)
->>>>> +{
->>>>> +	return dev->of_node == data && dev->type == &iio_device_type;
->>>>> +}
->>>>> +
->>>>> +static int __of_iio_channel_get(struct iio_channel *channel,
->>>>> +				struct device_node *np, int index)
->>>>> +{
->>>>> +	struct device *idev;
->>>>> +	struct iio_dev *indio_dev;
->>>>> +	int err;
->>>>> +	struct of_phandle_args iiospec;
->>>>> +
->>>>> +	err = of_parse_phandle_with_args(np, "io-channels",
->>>>> +					 "#io-channel-cells",
->>>>> +					 index, &iiospec);
->>>>> +	if (err)
->>>>> +		return err;
->>>>> +
->>>>> +	idev = bus_find_device(&iio_bus_type, NULL, iiospec.np,
->>>>> +			       iio_dev_node_match);
->>>>> +	of_node_put(iiospec.np);
->>>>> +	if (idev == NULL)
->>>>> +		return -EPROBE_DEFER;
->>>>> +
->>>>> +	indio_dev = dev_to_iio_dev(idev);
->>>>> +	channel->indio_dev = indio_dev;
->>>>> +	index = iiospec.args_count ? iiospec.args[0] : 0;
->>>>> +	if (index >= indio_dev->num_channels) {
->>>>> +		return -EINVAL;
->>>>> +		goto err_put;
->>>>> +	}
->>>>> +	channel->channel = &indio_dev->channels[index];
->>>>> +
->>>>> +	return 0;
->>>>> +
->>>>> +err_put:
->>>>> +	iio_device_put(indio_dev);
->>>>> +	return err;
->>>>> +}
->>>>> +
->>>>> +static struct iio_channel *of_iio_channel_get(struct device_node
->>> *np, int index)
->>>>> +{
->>>>> +	struct iio_channel *channel;
->>>>> +	int err;
->>>>> +
->>>>> +	if (index < 0)
->>>>> +		return ERR_PTR(-EINVAL);
->>>>> +
->>>>> +	channel = kzalloc(sizeof(*channel), GFP_KERNEL);
->>>>> +	if (channel == NULL)
->>>>> +		return ERR_PTR(-ENOMEM);
->>>>> +
->>>>> +	err = __of_iio_channel_get(channel, np, index);
->>>>> +	if (err)
->>>>> +		goto err_free_channel;
->>>>> +
->>>>> +	return channel;
->>>>> +
->>>>> +err_free_channel:
->>>>> +	kfree(channel);
->>>>> +	return ERR_PTR(err);
->>>>> +}
->>>>> +
->>>>> +static struct iio_channel *of_iio_channel_get_by_name(struct
->>> device_node *np,
->>>>> +						      const char *name)
->>>>> +{
->>>>> +	struct iio_channel *chan = NULL;
->>>>> +
->>>>> +	/* Walk up the tree of devices looking for a matching iio channel
->>> */
->>>>> +	while (np) {
->>>>> +		int index = 0;
->>>>> +
->>>>> +		/*
->>>>> +		 * For named iio channels, first look up the name in the
->>>>> +		 * "io-channel-names" property.  If it cannot be found, the
->>>>> +		 * index will be an error code, and of_iio_channel_get()
->>>>> +		 * will fail.
->>>>> +		 */
->>>>> +		if (name)
->>>>> +			index = of_property_match_string(np, "io-channel-names",
->>>>> +							 name);
->>>>> +		chan = of_iio_channel_get(np, index);
->>>>> +		if (!IS_ERR(chan))
->>>>> +			break;
->>>>> +		else if (name && index >= 0) {
->>>>> +			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
->>>>> +				np->full_name, name ? name : "", index);
->>>>> +			return chan;
->>>>> +		}
->>>>> +
->>>>> +		/*
->>>>> +		 * No matching IIO channel found on this node.
->>>>> +		 * If the parent node has a "io-channel-ranges" property,
->>>>> +		 * then we can try one of its channels.
->>>>> +		 */
->>>>> +		np = np->parent;
->>>>> +		if (np && !of_get_property(np, "io-channel-ranges", NULL))
->>>>> +			break;
->>>>> +	}
->>>>> +	return chan;
->>>>> +}
->>>>> +
->>>>> +static struct iio_channel *of_iio_channel_get_all(struct device
->>> *dev)
->>>>> +{
->>>>> +	struct iio_channel *chans;
->>>>> +	int i, mapind, nummaps = 0;
->>>>> +	int ret;
->>>>> +
->>>>> +	do {
->>>>> +		ret = of_parse_phandle_with_args(dev->of_node,
->>>>> +						 "io-channels",
->>>>> +						 "#io-channel-cells",
->>>>> +						 nummaps, NULL);
->>>>> +		if (ret < 0)
->>>>> +			break;
->>>>> +	} while (++nummaps);
->>>>> +
->>>>> +	if (nummaps == 0)	/* no error, return NULL to search map table */
->>>>> +		return NULL;
->>>>> +
->>>>> +	/* NULL terminated array to save passing size */
->>>>> +	chans = kcalloc(nummaps + 1, sizeof(*chans), GFP_KERNEL);
->>>>> +	if (chans == NULL)
->>>>> +		return ERR_PTR(-ENOMEM);
->>>>> +
->>>>> +	/* Search for OF matches */
->>>>> +	for (mapind = 0; mapind < nummaps; mapind++) {
->>>>> +		ret = __of_iio_channel_get(&chans[mapind], dev->of_node,
->>>>> +					   mapind);
->>>>> +		if (ret)
->>>>> +			goto error_free_chans;
->>>>> +	}
->>>>> +	return chans;
->>>>> +
->>>>> +error_free_chans:
->>>>> +	for (i = 0; i < mapind; i++)
->>>>> +		iio_device_put(chans[i].indio_dev);
->>>>> +	kfree(chans);
->>>>> +	return ERR_PTR(ret);
->>>>> +}
->>>>> +
->>>>> +#else /* CONFIG_OF */
->>>>> +
->>>>> +static inline struct iio_channel *
->>>>> +of_iio_channel_get_by_name(struct device_node *np, const char
->>> *name)
->>>>> +{
->>>>> +	return NULL;
->>>>> +}
->>>>> +
->>>>> +static inline struct iio_channel *of_iio_channel_get_all(struct
->>> device *dev)
->>>>> +{
->>>>> +	return NULL;
->>>>> +}
->>>>> +
->>>>> +#endif /* CONFIG_OF */
->>>>>  
->>>>>  static struct iio_channel *iio_channel_get_sys(const char *name,
->>>>>  					       const char *channel_name)
->>>>> @@ -150,7 +309,14 @@ struct iio_channel *iio_channel_get(struct
->>> device *dev,
->>>>>  				    const char *channel_name)
->>>>>  {
->>>>>  	const char *name = dev ? dev_name(dev) : NULL;
->>>>> +	struct iio_channel *channel;
->>>>>  
->>>>> +	if (dev) {
->>>>> +		channel = of_iio_channel_get_by_name(dev->of_node,
->>>>> +						     channel_name);
->>>>> +		if (channel != NULL)
->>>>> +			return channel;
->>>>> +	}
->>>>>  	return iio_channel_get_sys(name, channel_name);
->>>>>  }
->>>>>  EXPORT_SYMBOL_GPL(iio_channel_get);
->>>>> @@ -173,6 +339,11 @@ struct iio_channel *iio_channel_get_all(struct
->>> device *dev)
->>>>>  
->>>>>  	if (dev == NULL)
->>>>>  		return ERR_PTR(-EINVAL);
->>>>> +
->>>>> +	chans = of_iio_channel_get_all(dev);
->>>>> +	if (chans)
->>>>> +		return chans;
->>>>> +
->>>>>  	name = dev_name(dev);
->>>>>  
->>>>>  	mutex_lock(&iio_map_list_lock);
->>>>>
->>>>
->>>>
->>
->> -- 
->> Sent from my Android phone with K-9 Mail. Please excuse my brevity.
->>
+> It might not impact processor bandwidth now because internal paths are
+> obviously adequate but you're not the only one adding features. What
+> happens if the next guy comes and adds another two integers just because
+> it is convenient in the code?
 
+Thanks for the detailed nice explanation!
+
+I know the point, as a performance sensitive guy, just curious which
+platform maybe impacted. :)
+> 
+> Btw, sizeof(lb_env) is currently something around 80 bytes AFAICT. Now
+> that doesn't fit in one cacheline anyway. So if you add your two ints,
+> they'll be trailing in the second cacheline which needs to go up to L1.
+> 
+> Now flags will still be at the beginning of the second cacheline but
+> it is still better to add two new bits there because this is exactly
+> what this variable is for.
+> 
+> And, just for the fun of it, if you push the flags variable higher in
+> the struct itself, it will land in the first cacheline and there's your
+> design with *absolutely* no overhead in that respect. I betcha if you
+> do this, you won't see any overhead in L1 utilization even with perf
+> counters because you get it practically for free.
+
+thanks suggestion.
+looks the member's sequence was considered in lb_env. The 'flags' looks
+less important and used frequent than the fields before it. :)
+> 
+> :-)
+> 
+
+
+-- 
+Thanks
+    Alex
