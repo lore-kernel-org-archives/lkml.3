@@ -1,554 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab3BUU7H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 15:59:07 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:50123 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753022Ab3BUU7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 15:59:05 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: viro@zeniv.linux.org.uk, eric.dumazet@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nathan Zimmer <nzimmer@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v4] procfs: Improve Scaling in proc
-Date: Thu, 21 Feb 2013 14:57:06 -0600
-Message-Id: <1361480226-13965-1-git-send-email-nzimmer@sgi.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1754324Ab3BUVJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 16:09:46 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:58158 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab3BUVJn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 16:09:43 -0500
+Date: Thu, 21 Feb 2013 13:09:40 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>, Dudley Du <dudl@cypress.com>,
+        Kyle Fazzari <git@status.e4ward.com>
+Subject: Re: [PATCH] Input: fix Cypress PS/2 Trackpad in Dell XPS12
+Message-ID: <20130221210939.GB20344@core.coreip.homeip.net>
+References: <1361472955-16759-1-git-send-email-kamal@canonical.com>
+ <20130221195630.GA20344@core.coreip.homeip.net>
+ <1361476966.3827.44.camel@fourier>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361476966.3827.44.camel@fourier>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am currently tracking a hotlock reported by a customer on a large system,
-512 cores.  I am currently running 3.8-rc7 but the issue looks like it has been
-this way for a very long time.
-The offending lock is proc_dir_entry->pde_unload_lock.
+On Thu, Feb 21, 2013 at 12:02:46PM -0800, Kamal Mostafa wrote:
+> On Thu, 2013-02-21 at 11:56 -0800, Dmitry Torokhov wrote:
+> > On Thu, Feb 21, 2013 at 10:55:55AM -0800, Kamal Mostafa wrote:
+> > > Avoid firmware glitch in Cypress PS/2 Trackpad firmware version 11
+> > > (as observed in Dell XPS12) which prevents driver from recognizing
+> > > the trackpad.
+> > > 
+> > > BugLink: http://launchpad.net/bugs/1103594
+> > > 
+> > > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> > > Cc: Dudley Du <dudl@cypress.com>
+> > > ---
+> > >  drivers/input/mouse/cypress_ps2.c |   19 +++++++++++++------
+> > >  1 file changed, 13 insertions(+), 6 deletions(-)
+> > > 
+> > > diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
+> > > index 1673dc6..f51765f 100644
+> > > --- a/drivers/input/mouse/cypress_ps2.c
+> > > +++ b/drivers/input/mouse/cypress_ps2.c
+> > > @@ -236,6 +236,13 @@ static int cypress_read_fw_version(struct psmouse *psmouse)
+> > >  	cytp->fw_version = param[2] & FW_VERSION_MASX;
+> > >  	cytp->tp_metrics_supported = (param[2] & TP_METRICS_MASK) ? 1 : 0;
+> > >  
+> > > +	/*
+> > > +	 * Trackpad fw_version 11 (in Dell XPS12) yields a bogus response to
+> > > +	 * CYTP_CMD_READ_TP_METRICS so do not try to use it. LP: #1103594.
+> > > +	 */
+> > > +	if (cytp->fw_version >= 11)
+> > > +		cytp->tp_metrics_supported = 0;
+> > > +
+> > 
+> > Isn't this the only chunk that is actually needed to fix the issue?
+> 
+> No, the other parts are needed also:  The handling of
+> tp_metrics_supported gets moved so that the default values now get set
+> first, then overridden only if tp_metrics_supported is true.
+> Previously, the defaults wouldn't get set if it wasn't true (which was a
+> bug that never manifested).
 
-This patch converts the lock to use the rcu. However the pde_openers list
-still is controlled by a spin lock. I tested on a 4096 machine and the lock
-doesn't seem hot at least according to perf.
+OK, fair enough.
 
-This is a refresh of what was orignally suggested by Eric Dumazet some time
-ago.  I have also taken in some comments from Andrew and several other people
-whose names escape me but I am quite grateful too. 
+BTW, can you tell me what server you published your PGP key to? It does
+not seem to be present on the usual ones...
 
-Supporting numbers, lower is better, they are from the test I posted earlier.
-cpuinfo baseline        Rcu
-tasks   read-sec        read-sec
-1       0.0141          0.0141
-2       0.0140          0.0142
-4       0.0140          0.0141
-8       0.0145          0.0140
-16      0.0553          0.0168
-32      0.1688          0.0549
-64      0.5017          0.1690
-128     1.7005          0.5038
-256     5.2513          2.0804
-512     8.0529          3.0162
+Thanks,
+Dmitry
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com> 
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
----
- fs/proc/generic.c       |  62 +++++++++----------
- fs/proc/inode.c         | 161 ++++++++++++++++++++++++++----------------------
- include/linux/proc_fs.h |   6 +-
- 3 files changed, 123 insertions(+), 106 deletions(-)
-
-diff --git a/fs/proc/generic.c b/fs/proc/generic.c
-index 76ddae8..95ad50e 100644
---- a/fs/proc/generic.c
-+++ b/fs/proc/generic.c
-@@ -190,14 +190,16 @@ proc_file_read(struct file *file, char __user *buf, size_t nbytes,
- {
- 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
- 	ssize_t rv = -EIO;
-+	const struct file_operations *fops;
- 
--	spin_lock(&pde->pde_unload_lock);
--	if (!pde->proc_fops) {
--		spin_unlock(&pde->pde_unload_lock);
-+	rcu_read_lock();
-+	fops = rcu_dereference(pde->proc_fops);
-+	if (!fops) {
-+		rcu_read_unlock();
- 		return rv;
- 	}
--	pde->pde_users++;
--	spin_unlock(&pde->pde_unload_lock);
-+	atomic_inc(&pde->pde_users);
-+	rcu_read_unlock();
- 
- 	rv = __proc_file_read(file, buf, nbytes, ppos);
- 
-@@ -213,13 +215,16 @@ proc_file_write(struct file *file, const char __user *buffer,
- 	ssize_t rv = -EIO;
- 
- 	if (pde->write_proc) {
--		spin_lock(&pde->pde_unload_lock);
--		if (!pde->proc_fops) {
--			spin_unlock(&pde->pde_unload_lock);
-+		const struct file_operations *fops;
-+
-+		rcu_read_lock();
-+		fops = rcu_dereference(pde->proc_fops);
-+		if (!fops) {
-+			rcu_read_unlock();
- 			return rv;
- 		}
--		pde->pde_users++;
--		spin_unlock(&pde->pde_unload_lock);
-+		atomic_inc(&pde->pde_users);
-+		rcu_read_unlock();
- 
- 		/* FIXME: does this routine need ppos?  probably... */
- 		rv = pde->write_proc(file, buffer, count, pde->data);
-@@ -558,7 +563,7 @@ static int proc_register(struct proc_dir_entry * dir, struct proc_dir_entry * dp
- 
- 	if (S_ISDIR(dp->mode)) {
- 		if (dp->proc_iops == NULL) {
--			dp->proc_fops = &proc_dir_operations;
-+			RCU_INIT_POINTER(dp->proc_fops, &proc_dir_operations);
- 			dp->proc_iops = &proc_dir_inode_operations;
- 		}
- 		dir->nlink++;
-@@ -567,7 +572,7 @@ static int proc_register(struct proc_dir_entry * dir, struct proc_dir_entry * dp
- 			dp->proc_iops = &proc_link_inode_operations;
- 	} else if (S_ISREG(dp->mode)) {
- 		if (dp->proc_fops == NULL)
--			dp->proc_fops = &proc_file_operations;
-+			RCU_INIT_POINTER(dp->proc_fops, &proc_file_operations);
- 		if (dp->proc_iops == NULL)
- 			dp->proc_iops = &proc_file_inode_operations;
- 	}
-@@ -620,7 +625,8 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
- 	ent->mode = mode;
- 	ent->nlink = nlink;
- 	atomic_set(&ent->count, 1);
--	spin_lock_init(&ent->pde_unload_lock);
-+	atomic_set(&ent->pde_users, 1);
-+	spin_lock_init(&ent->pde_openers_lock);
- 	INIT_LIST_HEAD(&ent->pde_openers);
- out:
- 	return ent;
-@@ -744,7 +750,7 @@ struct proc_dir_entry *proc_create_data(const char *name, umode_t mode,
- 	pde = __proc_create(&parent, name, mode, nlink);
- 	if (!pde)
- 		goto out;
--	pde->proc_fops = proc_fops;
-+	rcu_assign_pointer(pde->proc_fops, proc_fops);
- 	pde->data = data;
- 	if (proc_register(parent, pde) < 0)
- 		goto out_free;
-@@ -780,6 +786,7 @@ void remove_proc_entry(const char *name, struct proc_dir_entry *parent)
- 	struct proc_dir_entry *de = NULL;
- 	const char *fn = name;
- 	unsigned int len;
-+	DECLARE_COMPLETION_ONSTACK(c);
- 
- 	spin_lock(&proc_subdir_lock);
- 	if (__xlate_proc_name(name, &parent, &fn) != 0) {
-@@ -802,37 +809,30 @@ void remove_proc_entry(const char *name, struct proc_dir_entry *parent)
- 		return;
- 	}
- 
--	spin_lock(&de->pde_unload_lock);
- 	/*
- 	 * Stop accepting new callers into module. If you're
- 	 * dynamically allocating ->proc_fops, save a pointer somewhere.
- 	 */
--	de->proc_fops = NULL;
--	/* Wait until all existing callers into module are done. */
--	if (de->pde_users > 0) {
--		DECLARE_COMPLETION_ONSTACK(c);
--
--		if (!de->pde_unload_completion)
--			de->pde_unload_completion = &c;
--
--		spin_unlock(&de->pde_unload_lock);
--
-+	rcu_assign_pointer(de->proc_fops, NULL);
-+	synchronize_rcu();
-+	/*
-+	 * Wait until all existing callers into module are done.
-+	 * Once pde_users hits zero we are free to clean out pde_openers.
-+	 */
-+	de->pde_unload_completion = &c;
-+	if (!atomic_dec_and_test(&de->pde_users))
- 		wait_for_completion(de->pde_unload_completion);
- 
--		spin_lock(&de->pde_unload_lock);
--	}
--
-+	spin_lock(&de->pde_openers_lock);
- 	while (!list_empty(&de->pde_openers)) {
- 		struct pde_opener *pdeo;
- 
- 		pdeo = list_first_entry(&de->pde_openers, struct pde_opener, lh);
- 		list_del(&pdeo->lh);
--		spin_unlock(&de->pde_unload_lock);
- 		pdeo->release(pdeo->inode, pdeo->file);
- 		kfree(pdeo);
--		spin_lock(&de->pde_unload_lock);
- 	}
--	spin_unlock(&de->pde_unload_lock);
-+	spin_unlock(&de->pde_openers_lock);
- 
- 	if (S_ISDIR(de->mode))
- 		parent->nlink--;
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 439ae688..29feb5d 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -128,46 +128,41 @@ static const struct super_operations proc_sops = {
- 	.show_options	= proc_show_options,
- };
- 
--static void __pde_users_dec(struct proc_dir_entry *pde)
--{
--	pde->pde_users--;
--	if (pde->pde_unload_completion && pde->pde_users == 0)
--		complete(pde->pde_unload_completion);
--}
--
- void pde_users_dec(struct proc_dir_entry *pde)
- {
--	spin_lock(&pde->pde_unload_lock);
--	__pde_users_dec(pde);
--	spin_unlock(&pde->pde_unload_lock);
-+	if (atomic_dec_and_test(&pde->pde_users) && pde->pde_unload_completion)
-+		complete(pde->pde_unload_completion);
- }
- 
- static loff_t proc_reg_llseek(struct file *file, loff_t offset, int whence)
- {
-+	const struct file_operations *fops;
- 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
- 	loff_t rv = -EINVAL;
- 	loff_t (*llseek)(struct file *, loff_t, int);
- 
--	spin_lock(&pde->pde_unload_lock);
-+	rcu_read_lock();
-+	fops = rcu_dereference(pde->proc_fops);
- 	/*
- 	 * remove_proc_entry() is going to delete PDE (as part of module
- 	 * cleanup sequence). No new callers into module allowed.
- 	 */
--	if (!pde->proc_fops) {
--		spin_unlock(&pde->pde_unload_lock);
-+	if (!fops) {
-+		rcu_read_unlock();
- 		return rv;
- 	}
- 	/*
- 	 * Bump refcount so that remove_proc_entry will wail for ->llseek to
- 	 * complete.
- 	 */
--	pde->pde_users++;
-+	atomic_inc(&pde->pde_users);
-+
- 	/*
--	 * Save function pointer under lock, to protect against ->proc_fops
--	 * NULL'ifying right after ->pde_unload_lock is dropped.
-+	 * Save function pointer under rcu lock, to protect against
-+	 * ->proc_fops NULL'ifying by remove_proc_entry.
- 	 */
--	llseek = pde->proc_fops->llseek;
--	spin_unlock(&pde->pde_unload_lock);
-+	llseek = fops->llseek;
-+	rcu_read_unlock();
- 
- 	if (!llseek)
- 		llseek = default_llseek;
-@@ -182,15 +177,17 @@ static ssize_t proc_reg_read(struct file *file, char __user *buf, size_t count,
- 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
- 	ssize_t rv = -EIO;
- 	ssize_t (*read)(struct file *, char __user *, size_t, loff_t *);
-+	const struct file_operations *fops;
- 
--	spin_lock(&pde->pde_unload_lock);
--	if (!pde->proc_fops) {
--		spin_unlock(&pde->pde_unload_lock);
-+	rcu_read_lock();
-+	fops = rcu_dereference(pde->proc_fops);
-+	if (!fops) {
-+		rcu_read_unlock();
- 		return rv;
- 	}
--	pde->pde_users++;
--	read = pde->proc_fops->read;
--	spin_unlock(&pde->pde_unload_lock);
-+	atomic_inc(&pde->pde_users);
-+	read = fops->read;
-+	rcu_read_unlock();
- 
- 	if (read)
- 		rv = read(file, buf, count, ppos);
-@@ -204,15 +201,17 @@ static ssize_t proc_reg_write(struct file *file, const char __user *buf, size_t
- 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
- 	ssize_t rv = -EIO;
- 	ssize_t (*write)(struct file *, const char __user *, size_t, loff_t *);
-+	const struct file_operations *fops;
- 
--	spin_lock(&pde->pde_unload_lock);
--	if (!pde->proc_fops) {
--		spin_unlock(&pde->pde_unload_lock);
-+	rcu_read_lock();
-+	fops = rcu_dereference(pde->proc_fops);
-+	if (!fops) {
-+		rcu_read_unlock();
- 		return rv;
- 	}
--	pde->pde_users++;
--	write = pde->proc_fops->write;
--	spin_unlock(&pde->pde_unload_lock);
-+	atomic_inc(&pde->pde_users);
-+	write = fops->write;
-+	rcu_read_unlock();
- 
- 	if (write)
- 		rv = write(file, buf, count, ppos);
-@@ -226,15 +225,17 @@ static unsigned int proc_reg_poll(struct file *file, struct poll_table_struct *p
- 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
- 	unsigned int rv = DEFAULT_POLLMASK;
- 	unsigned int (*poll)(struct file *, struct poll_table_struct *);
-+	const struct file_operations *fops;
- 
--	spin_lock(&pde->pde_unload_lock);
--	if (!pde->proc_fops) {
--		spin_unlock(&pde->pde_unload_lock);
-+	rcu_read_lock();
-+	fops = rcu_dereference(pde->proc_fops);
-+	if (!fops) {
-+		rcu_read_unlock();
- 		return rv;
- 	}
--	pde->pde_users++;
--	poll = pde->proc_fops->poll;
--	spin_unlock(&pde->pde_unload_lock);
-+	atomic_inc(&pde->pde_users);
-+	poll = fops->poll;
-+	rcu_read_unlock();
- 
- 	if (poll)
- 		rv = poll(file, pts);
-@@ -248,15 +249,17 @@ static long proc_reg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
- 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
- 	long rv = -ENOTTY;
- 	long (*ioctl)(struct file *, unsigned int, unsigned long);
-+	const struct file_operations *fops;
- 
--	spin_lock(&pde->pde_unload_lock);
--	if (!pde->proc_fops) {
--		spin_unlock(&pde->pde_unload_lock);
-+	rcu_read_lock();
-+	fops = rcu_dereference(pde->proc_fops);
-+	if (!fops) {
-+		rcu_read_unlock();
- 		return rv;
- 	}
--	pde->pde_users++;
--	ioctl = pde->proc_fops->unlocked_ioctl;
--	spin_unlock(&pde->pde_unload_lock);
-+	atomic_inc(&pde->pde_users);
-+	ioctl = fops->unlocked_ioctl;
-+	rcu_read_unlock();
- 
- 	if (ioctl)
- 		rv = ioctl(file, cmd, arg);
-@@ -271,15 +274,17 @@ static long proc_reg_compat_ioctl(struct file *file, unsigned int cmd, unsigned
- 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
- 	long rv = -ENOTTY;
- 	long (*compat_ioctl)(struct file *, unsigned int, unsigned long);
-+	const struct file_operations *fops;
- 
--	spin_lock(&pde->pde_unload_lock);
--	if (!pde->proc_fops) {
--		spin_unlock(&pde->pde_unload_lock);
-+	rcu_read_lock();
-+	fops = rcu_dereference(pde->proc_fops);
-+	if (!fops) {
-+		rcu_read_unlock();
- 		return rv;
- 	}
--	pde->pde_users++;
-+	atomic_inc(&pde->pde_users);
- 	compat_ioctl = pde->proc_fops->compat_ioctl;
--	spin_unlock(&pde->pde_unload_lock);
-+	rcu_read_unlock();
- 
- 	if (compat_ioctl)
- 		rv = compat_ioctl(file, cmd, arg);
-@@ -294,15 +299,17 @@ static int proc_reg_mmap(struct file *file, struct vm_area_struct *vma)
- 	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
- 	int rv = -EIO;
- 	int (*mmap)(struct file *, struct vm_area_struct *);
-+	const struct file_operations *fops;
- 
--	spin_lock(&pde->pde_unload_lock);
--	if (!pde->proc_fops) {
--		spin_unlock(&pde->pde_unload_lock);
-+	rcu_read_lock();
-+	fops = rcu_dereference(pde->proc_fops);
-+	if (!fops) {
-+		rcu_read_unlock();
- 		return rv;
- 	}
--	pde->pde_users++;
-+	atomic_inc(&pde->pde_users);
- 	mmap = pde->proc_fops->mmap;
--	spin_unlock(&pde->pde_unload_lock);
-+	rcu_read_unlock();
- 
- 	if (mmap)
- 		rv = mmap(file, vma);
-@@ -318,6 +325,7 @@ static int proc_reg_open(struct inode *inode, struct file *file)
- 	int (*open)(struct inode *, struct file *);
- 	int (*release)(struct inode *, struct file *);
- 	struct pde_opener *pdeo;
-+	const struct file_operations *fops;
- 
- 	/*
- 	 * What for, you ask? Well, we can have open, rmmod, remove_proc_entry
-@@ -333,32 +341,33 @@ static int proc_reg_open(struct inode *inode, struct file *file)
- 	if (!pdeo)
- 		return -ENOMEM;
- 
--	spin_lock(&pde->pde_unload_lock);
--	if (!pde->proc_fops) {
--		spin_unlock(&pde->pde_unload_lock);
-+	rcu_read_lock();
-+	fops = rcu_dereference(pde->proc_fops);
-+	if (!fops) {
-+		rcu_read_unlock();
- 		kfree(pdeo);
- 		return -ENOENT;
- 	}
--	pde->pde_users++;
--	open = pde->proc_fops->open;
--	release = pde->proc_fops->release;
--	spin_unlock(&pde->pde_unload_lock);
-+	atomic_inc(&pde->pde_users);
-+	open = fops->open;
-+	release = fops->release;
-+	rcu_read_lock();
- 
- 	if (open)
- 		rv = open(inode, file);
- 
--	spin_lock(&pde->pde_unload_lock);
- 	if (rv == 0 && release) {
- 		/* To know what to release. */
- 		pdeo->inode = inode;
- 		pdeo->file = file;
- 		/* Strictly for "too late" ->release in proc_reg_release(). */
- 		pdeo->release = release;
-+		spin_lock(&pde->pde_openers_lock);
- 		list_add(&pdeo->lh, &pde->pde_openers);
-+		spin_unlock(&pde->pde_openers_lock);
- 	} else
- 		kfree(pdeo);
--	__pde_users_dec(pde);
--	spin_unlock(&pde->pde_unload_lock);
-+	pde_users_dec(pde);
- 	return rv;
- }
- 
-@@ -367,10 +376,14 @@ static struct pde_opener *find_pde_opener(struct proc_dir_entry *pde,
- {
- 	struct pde_opener *pdeo;
- 
-+	spin_lock(&pde->pde_openers_lock);
- 	list_for_each_entry(pdeo, &pde->pde_openers, lh) {
--		if (pdeo->inode == inode && pdeo->file == file)
-+		if (pdeo->inode == inode && pdeo->file == file) {
-+			spin_unlock(&pde->pde_openers_lock);
- 			return pdeo;
-+		}
- 	}
-+	spin_unlock(&pde->pde_openers_lock);
- 	return NULL;
- }
- 
-@@ -380,10 +393,12 @@ static int proc_reg_release(struct inode *inode, struct file *file)
- 	int rv = 0;
- 	int (*release)(struct inode *, struct file *);
- 	struct pde_opener *pdeo;
-+	const struct file_operations *fops;
- 
--	spin_lock(&pde->pde_unload_lock);
- 	pdeo = find_pde_opener(pde, inode, file);
--	if (!pde->proc_fops) {
-+	rcu_read_lock();
-+	fops = rcu_dereference(pde->proc_fops);
-+	if (!fops) {
- 		/*
- 		 * Can't simply exit, __fput() will think that everything is OK,
- 		 * and move on to freeing struct file. remove_proc_entry() will
-@@ -393,21 +408,23 @@ static int proc_reg_release(struct inode *inode, struct file *file)
- 		 * But if opener is removed from list, who will ->release it?
- 		 */
- 		if (pdeo) {
-+			spin_lock(&pde->pde_openers_lock);
- 			list_del(&pdeo->lh);
--			spin_unlock(&pde->pde_unload_lock);
-+			spin_unlock(&pde->pde_openers_lock);
- 			rv = pdeo->release(inode, file);
- 			kfree(pdeo);
--		} else
--			spin_unlock(&pde->pde_unload_lock);
-+		}
- 		return rv;
- 	}
--	pde->pde_users++;
--	release = pde->proc_fops->release;
-+	atomic_inc(&pde->pde_users);
-+	release = fops->release;
-+	rcu_read_unlock();
- 	if (pdeo) {
-+		spin_lock(&pde->pde_openers_lock);
- 		list_del(&pdeo->lh);
--		kfree(pdeo);
-+		spin_unlock(&pde->pde_openers_lock);
- 	}
--	spin_unlock(&pde->pde_unload_lock);
-+	kfree(pdeo);
- 
- 	if (release)
- 		rv = release(inode, file);
-diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-index 32676b3..82628d9 100644
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -68,16 +68,16 @@ struct proc_dir_entry {
- 	 * If you're allocating ->proc_fops dynamically, save a pointer
- 	 * somewhere.
- 	 */
--	const struct file_operations *proc_fops;
-+	const struct file_operations __rcu *proc_fops;
- 	struct proc_dir_entry *next, *parent, *subdir;
- 	void *data;
- 	read_proc_t *read_proc;
- 	write_proc_t *write_proc;
- 	atomic_t count;		/* use count */
--	int pde_users;	/* number of callers into module in progress */
-+	atomic_t pde_users;	/* number of callers into module in progress */
- 	struct completion *pde_unload_completion;
-+	spinlock_t pde_openers_lock;
- 	struct list_head pde_openers;	/* who did ->open, but not ->release */
--	spinlock_t pde_unload_lock; /* proc_fops checks and pde_users bumps */
- 	u8 namelen;
- 	char name[];
- };
 -- 
-1.8.1.2
-
+Dmitry
