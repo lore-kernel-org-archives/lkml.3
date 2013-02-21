@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab3BUUHS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 15:07:18 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44494 "EHLO
+	id S1753953Ab3BUUIX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 15:08:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44508 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327Ab3BUUHP (ORCPT
+	with ESMTP id S1752503Ab3BUUIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 15:07:15 -0500
-Date: Thu, 21 Feb 2013 12:05:56 -0800
+	Thu, 21 Feb 2013 15:08:21 -0500
+Date: Thu, 21 Feb 2013 12:07:05 -0800
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-74eed0163d0def3fce27228d9ccf3d36e207b286@git.kernel.org>
+Message-ID: <tip-facd8b80c67a3cf64a467c4a2ac5fb31f2e6745b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linuxfoundation.org, peterz@infradead.org,
         paulmck@linux.vnet.ibm.com, fweisbec@gmail.com, tglx@linutronix.de
@@ -19,9 +19,8 @@ Reply-To: paulmck@linux.vnet.ibm.com, mingo@kernel.org, hpa@zytor.com,
 In-Reply-To: <alpine.LFD.2.02.1302202155320.22263@ionos>
 References: <alpine.LFD.2.02.1302202155320.22263@ionos>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] irq: Ensure irq_exit()
-  code runs with interrupts disabled
-Git-Commit-ID: 74eed0163d0def3fce27228d9ccf3d36e207b286
+Subject: [tip:irq/urgent] irq: Sanitize invoke_softirq
+Git-Commit-ID: facd8b80c67a3cf64a467c4a2ac5fb31f2e6745b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,31 +29,22 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Feb 2013 12:06:02 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Feb 2013 12:07:11 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  74eed0163d0def3fce27228d9ccf3d36e207b286
-Gitweb:     http://git.kernel.org/tip/74eed0163d0def3fce27228d9ccf3d36e207b286
+Commit-ID:  facd8b80c67a3cf64a467c4a2ac5fb31f2e6745b
+Gitweb:     http://git.kernel.org/tip/facd8b80c67a3cf64a467c4a2ac5fb31f2e6745b
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 20 Feb 2013 22:00:48 +0100
+AuthorDate: Thu, 21 Feb 2013 18:17:42 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Thu, 21 Feb 2013 20:52:24 +0100
 
-irq: Ensure irq_exit() code runs with interrupts disabled
+irq: Sanitize invoke_softirq
 
-We had already a few problems with code called from irq_exit() when
-interrupted from a nesting interrupt. This can happen on architectures
-which do not define __ARCH_IRQ_EXIT_IRQS_DISABLED.
-
-__ARCH_IRQ_EXIT_IRQS_DISABLED should go away and we want to make it
-mandatory to call irq_exit() with interrupts disabled.
-
-As a temporary protection disable interrupts for those architectures
-which do not define __ARCH_IRQ_EXIT_IRQS_DISABLED and add a WARN_ONCE
-when an architecture which defines __ARCH_IRQ_EXIT_IRQS_DISABLED calls
-irq_exit() with interrupts enabled.
+With the irq protection in irq_exit, we can remove the #ifdeffery and
+the bh_disable/enable dance in invoke_softirq()
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -65,35 +55,31 @@ Cc: Linus Torvalds <torvalds@linuxfoundation.org>
 Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1302202155320.22263@ionos
 
 ---
- kernel/softirq.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ kernel/softirq.c | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
 diff --git a/kernel/softirq.c b/kernel/softirq.c
-index f5cc25f..f2a9346 100644
+index f2a9346..24a921b 100644
 --- a/kernel/softirq.c
 +++ b/kernel/softirq.c
-@@ -341,6 +341,14 @@ static inline void invoke_softirq(void)
-  */
- void irq_exit(void)
+@@ -322,18 +322,10 @@ void irq_enter(void)
+ 
+ static inline void invoke_softirq(void)
  {
-+#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+#else
-+	WARN_ON_ONCE(!irqs_disabled());
-+#endif
-+
- 	account_irq_exit_time(current);
- 	trace_hardirq_exit();
- 	sub_preempt_count(IRQ_EXIT_OFFSET);
-@@ -354,6 +362,9 @@ void irq_exit(void)
- #endif
- 	rcu_irq_exit();
- 	sched_preempt_enable_no_resched();
-+#ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
-+	local_irq_restore(flags);
-+#endif
+-	if (!force_irqthreads) {
+-#ifdef __ARCH_IRQ_EXIT_IRQS_DISABLED
++	if (!force_irqthreads)
+ 		__do_softirq();
+-#else
+-		do_softirq();
+-#endif
+-	} else {
+-		__local_bh_disable((unsigned long)__builtin_return_address(0),
+-				SOFTIRQ_OFFSET);
++	else
+ 		wakeup_softirqd();
+-		__local_bh_enable(SOFTIRQ_OFFSET);
+-	}
  }
  
  /*
