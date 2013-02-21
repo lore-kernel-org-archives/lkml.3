@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab3BUR10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 12:27:26 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:22440 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683Ab3BUR1Z (ORCPT
+	id S1755441Ab3BUR2z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 12:28:55 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:57090 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754598Ab3BUR2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 12:27:25 -0500
-MIME-version: 1.0
-Content-type: multipart/mixed; boundary="Boundary_(ID_xqHTUGWJHSv0znYbUuqr2Q)"
-Date: Thu, 21 Feb 2013 12:27:24 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: "Woodhouse, David" <david.woodhouse@intel.com>
-Cc: Kim Phillips <kim.phillips@freescale.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Borislav Petkov <bp@alien8.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Rientjes <rientjes@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Thu, 21 Feb 2013 12:28:54 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAK=Wgba5XkK3c7qh1tYHMGEe7-Qima96uYO4E+uAPcaB8K6bmQ@mail.gmail.com>
+References: <1360669793-6921-1-git-send-email-sjur.brandeland@stericsson.com>
+	<1360669793-6921-2-git-send-email-sjur.brandeland@stericsson.com>
+	<CAK=Wgbb0EeiCh504jsoX+izzi+ZogfEDttz2cHRd4pVXvQunQw@mail.gmail.com>
+	<CAJK669bDu3SphxmEtA+h+v=btsN91t0S9Mn6ik-OKr=8gtducw@mail.gmail.com>
+	<CAK=Wgba5XkK3c7qh1tYHMGEe7-Qima96uYO4E+uAPcaB8K6bmQ@mail.gmail.com>
+Date: Thu, 21 Feb 2013 18:28:53 +0100
+Message-ID: <CAJK669YHwR=nf2zSQR6buaA-x1JSowJfU16hkz1+N_WLL0qA+A@mail.gmail.com>
+Subject: Re: [PATCHv2 vringh 1/3] remoteproc: Add support for vringh (Host vrings)
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>, netdev@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [RFC] arm: use built-in byte swap function
-In-reply-to: <1361464675.24822.53.camel@i7.infradead.org>
-Message-id: <alpine.LFD.2.03.1302211226241.6419@syhkavp.arg>
-References: <20130129181046.GC25415@pd.tnic>
- <20130207181315.GM17833@n2100.arm.linux.org.uk>
- <1360344301.6066.263.camel@shinybook.infradead.org>
- <alpine.LFD.2.02.1302081503430.6300@xanadu.home>
- <1360363233.6066.283.camel@shinybook.infradead.org>
- <alpine.LFD.2.02.1302081745500.6300@xanadu.home>
- <20130208191208.2ef3d78bda71aa7b44d00d7b@freescale.com>
- <alpine.LFD.2.02.1302082102380.6300@xanadu.home>
- <20130219203115.114eab79e8d2099c6306d921@freescale.com>
- <alpine.LFD.2.03.1302192151280.6419@syhkavp.arg>
- <1361356696.13482.269.camel@i7.infradead.org>
- <alpine.LFD.2.03.1302200835380.6419@syhkavp.arg>
- <1361367842.13482.279.camel@i7.infradead.org>
- <alpine.LFD.2.03.1302200905300.6419@syhkavp.arg>
- <1361372008.13482.280.camel@i7.infradead.org>
- <alpine.LFD.2.03.1302201040460.6419@syhkavp.arg>
- <20130220214943.9b28a5b208da9f081387c55e@freescale.com>
- <alpine.LFD.2.03.1302202327370.6419@syhkavp.arg>
- <1361464675.24822.53.camel@i7.infradead.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+        Erwan Yvin <erwan.yvin@stericsson.com>,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Ido Yariv <ido@wizery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Ohad,
 
---Boundary_(ID_xqHTUGWJHSv0znYbUuqr2Q)
-Content-type: TEXT/PLAIN; charset=UTF-8
-Content-transfer-encoding: 8BIT
+> I was wondering - can you please explain your motivation for using
+> vringh in caif ?
+>
+> We have internally discussed supporting multiple remote processors
+> talking to each other using rpmsg, and in that scenario using vringh
+> can considerably simplifies the solution (no need to decide in advance
+> which side is the "guest" and which is the "host"). Was this the
+> general incentive in using vringh in caif too or something else?
 
-On Thu, 21 Feb 2013, Woodhouse, David wrote:
+The motivation for using vringh was to avoid copying buffers
+when sending data from the modem to the host. By using
+vringh the modem can transfer datagrams to host only by
+transfering buffer pointers via the rings.
 
-> On Wed, 2013-02-20 at 23:29 -0500, Nicolas Pitre wrote:
-> > > > On Wed, 20 Feb 2013, Woodhouse, David wrote:
-> > > > > For today's compilers, unless the wind changes.
-> >  … 
-> > Crap.  OK, assembly code is the way to go then.
-> 
-> How quickly the wind changes, these days. I blame global warming. :)
+We use a carveout to declare a memory area that is passed to the
+modem internal memory allocator. This way we get both modem
+and host to work on the shared memory region.
 
-Only fools don't believe global warming.
+For TX traffic we use normal virtio queues for the same reason.
+TX buffers can be handled without copying as well.
 
+We are seeing a nice performance gain on the modem side after
+implementing this.
 
-Nicolas
+Host size zero-copy is more tricky. It's hard to handle ownership of buffers,
+if the modem crashes. But we might look into this in the future as well.
 
---Boundary_(ID_xqHTUGWJHSv0znYbUuqr2Q)--
+Regards,
+Sjur
