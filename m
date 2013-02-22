@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab3BVCbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 21:31:13 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:62712 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756560Ab3BVCbC (ORCPT
+	id S1757542Ab3BVCca (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 21:32:30 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:48524 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757420Ab3BVCcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 21:31:02 -0500
+	Thu, 21 Feb 2013 21:32:22 -0500
 MIME-Version: 1.0
-In-Reply-To: <3793606.bilcxohA80@vostro.rjw.lan>
+In-Reply-To: <10415300.xy5iOWqAMD@vostro.rjw.lan>
 References: <cover.1360568193.git.viresh.kumar@linaro.org>
-	<ece24bb874ad1834fc43b83f053b2560db8c25d3.1360568193.git.viresh.kumar@linaro.org>
-	<3793606.bilcxohA80@vostro.rjw.lan>
-Date: Fri, 22 Feb 2013 08:01:00 +0530
-Message-ID: <CAKohpokTL7DDy2aonWfFmQpQzUtLoxx2zkxSUdj3QapvzxU0=A@mail.gmail.com>
-Subject: Re: [PATCH V2 1/4] cpufreq: Add per policy governor-init/exit infrastructure
+	<31684733.Z4gjoGKC1g@vostro.rjw.lan>
+	<CAKohponQ0MVwbTpM-6MasewMQ7MWcL-3nFjf2d7DpAZbWKsNqw@mail.gmail.com>
+	<10415300.xy5iOWqAMD@vostro.rjw.lan>
+Date: Fri, 22 Feb 2013 08:02:21 +0530
+Message-ID: <CAKohpokVj33ySMHPHs+a-dgq9fxuuRo_uLZzy=8cs4JFjQVnDw@mail.gmail.com>
+Subject: Re: [PATCH V2 4/4] cpufreq: Get rid of "struct global_attr"
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
@@ -27,36 +28,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 February 2013 05:05, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Why don't you use different values here?
+On 22 February 2013 08:03, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, February 22, 2013 07:47:44 AM Viresh Kumar wrote:
+>> On 22 February 2013 05:15, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > Why did you change all of the lines of this macro instead of changing just the
+>> > one line you needed to change?
+>>
+>> I didn't like the indentation used within the macro. So did it.
 >
-> If you need only one value, one #define should be sufficient.
+> In general, things like that are for separate cleanup patches.  If you mix
+> functional changes with cleanups, poeple get confused and it's difficult to see
+> what's needed and what's "optional".
+>
+> I know it's tempting to fix stuff like that along with doing functional
+> changes and I do that sometimes.  Not very often, though, and with care.
 
-This is the fixup i have for this, I will push all patches again to
-cpufreq-for-3.10 branch:
+Even i give similar comments sometimes but forget these while writing my
+patches :)
 
-----------------------------------------------
+Anyway, fixup:
 
-commit 4d7296fb64f2353aafad5104f0a046466d0f4ea9
+commit b1bbb99467d56140cf3a8a2b70e61b456aa46e48
 Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Fri Feb 22 07:56:31 2013 +0530
+Date:   Fri Feb 22 07:59:20 2013 +0530
 
-    fixup! cpufreq: Add per policy governor-init/exit infrastructure
+    fixup! cpufreq: Get rid of "struct global_attr"
 ---
- include/linux/cpufreq.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/cpufreq/intel_pstate.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 3b822ce..b7393b5 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -183,7 +183,7 @@ static inline unsigned long cpufreq_scale(unsigned
-long old, u_int div, u_int mu
- #define CPUFREQ_GOV_STOP       2
- #define CPUFREQ_GOV_LIMITS     3
- #define CPUFREQ_GOV_POLICY_INIT        4
--#define CPUFREQ_GOV_POLICY_EXIT        4
-+#define CPUFREQ_GOV_POLICY_EXIT        5
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index e795134..49846b9 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -273,12 +273,12 @@ static void intel_pstate_debug_expose_params(void)
+ /************************** debugfs end ************************/
 
- struct cpufreq_governor {
-        char    name[CPUFREQ_NAME_LEN];
+ /************************** sysfs begin ************************/
+-#define show_one(file_name, object)                            \
+-static ssize_t show_##file_name                                        \
+-(struct cpufreq_policy *policy, char *buf)                     \
+-{                                                              \
+-       return sprintf(buf, "%u\n", limits.object);             \
+-}
++#define show_one(file_name, object)                                    \
++       static ssize_t show_##file_name                                 \
++       (struct cpufreq_policy *policy, char *buf)                      \
++       {                                                               \
++               return sprintf(buf, "%u\n", limits.object);             \
++       }
