@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab3BVIXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 03:23:38 -0500
-Received: from gmmr2.centrum.cz ([46.255.227.252]:40342 "EHLO gmmr2.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754068Ab3BVIXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 03:23:35 -0500
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_if_PF=5FNO=5FMEMCG=5FOOM_is_set?=
-Date: Fri, 22 Feb 2013 09:23:32 +0100
-From: "azurIt" <azurit@pobox.sk>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-References: <20130208094420.GA7557@dhcp22.suse.cz>, <20130208120249.FD733220@pobox.sk>, <20130208123854.GB7557@dhcp22.suse.cz>, <20130208145616.FB78CE24@pobox.sk>, <20130208152402.GD7557@dhcp22.suse.cz>, <20130208165805.8908B143@pobox.sk>, <20130208171012.GH7557@dhcp22.suse.cz>, <20130208220243.EDEE0825@pobox.sk>, <20130210150310.GA9504@dhcp22.suse.cz>, <20130210174619.24F20488@pobox.sk> <20130211112240.GC19922@dhcp22.suse.cz>
-In-Reply-To: <20130211112240.GC19922@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1754440Ab3BVI0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 03:26:38 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60541 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753232Ab3BVI0g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 03:26:36 -0500
+X-AuditID: 9c930179-b7b61ae000004061-78-51272bb79834
+Date: Fri, 22 Feb 2013 17:26:31 +0900
+From: Kyungsik Lee <kyungsik.lee@lge.com>
+To: dsterba@suse.cz
+Cc: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hyojun.im@lge.com, chan.jeong@lge.com,
+        raphael.andy.lee@gmail.com
+Subject: Re: [PATCH v2] btrfs: use kmalloc for lzo de/compress buffer
+Message-ID: <20130222082630.GA21294@Corona>
+References: <1361174164-7182-1-git-send-email-kyungsik.lee@lge.com>
+ <20130221134153.GD27541@twin.jikos.cz>
 MIME-Version: 1.0
-Message-Id: <20130222092332.4001E4B6@pobox.sk>
-X-Maser: oho
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130221134153.GD27541@twin.jikos.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Unfortunately I am not able to reproduce this behavior even if I try
->to hammer OOM like mad so I am afraid I cannot help you much without
->further debugging patches.
->I do realize that experimenting in your environment is a problem but I
->do not many options left. Please do not use strace and rather collect
->/proc/pid/stack instead. It would be also helpful to get group/tasks
->file to have a full list of tasks in the group
+On Thu, Feb 21, 2013 at 02:41:53PM +0100, David Sterba wrote:
+> On Mon, Feb 18, 2013 at 04:56:04PM +0900, Kyungsik Lee wrote:
+> > @@ -55,8 +55,9 @@ static struct list_head *lzo_alloc_workspace(void)
+> >  		return ERR_PTR(-ENOMEM);
+> >  
+> >  	workspace->mem = vmalloc(LZO1X_MEM_COMPRESS);
+> > -	workspace->buf = vmalloc(PAGE_CACHE_SIZE);
+> > -	workspace->cbuf = vmalloc(lzo1x_worst_compress(PAGE_CACHE_SIZE));
+> > +	workspace->buf = kmalloc(PAGE_CACHE_SIZE, GFP_NOFS);
+> > +	workspace->cbuf = kmalloc(lzo1x_worst_compress(PAGE_CACHE_SIZE),
+> 
+> This is still larger than usual page size and allocator may issue a
+> warning, so if we want to use kmalloc (it's ~4.4k in size and likely to
+> be available, but not always due to possible page fragmentation), the
+> __GFP_NOWARN should be supplied and if the allocation fails fall back to
+> vmalloc.
+Right, there shoud be another fixed verson for this.
 
-
-
-Hi Michal,
-
-
-sorry that i didn't response for a while. Today i installed kernel with your two patches and i'm running it now. I'm still having problems with OOM which is not able to handle low memory and is not killing processes. Here is some info:
-
-- data from cgroup 1258 while it was under OOM and no processes were killed (so OOM don't stop and cgroup was freezed)
-http://watchdog.sk/lkml/memcg-bug-6.tar.gz
-
-I noticed problem about on 8:39 and waited until 8:57 (nothing happend). Then i killed process 19864 which seems to help and other processes probably ends and cgroup started to work. But problem accoured again about 20 seconds later, so i killed all processes at 8:58. The problem is occuring all the time since then. All processes (in that cgroup) are always in state 'D' when it occurs.
-
-
-- kernel log from boot until now
-http://watchdog.sk/lkml/kern3.gz
-
-
-Btw, something probably happened also at about 3:09 but i wasn't able to gather any data because my 'load check script' killed all apache processes (load was more than 100).
-
-
-
-azur
+Thanks,
+Kyungsik
