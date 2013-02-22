@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758362Ab3BVW5U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 17:57:20 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:58189 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757482Ab3BVW5T (ORCPT
+	id S1758488Ab3BVXA4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 18:00:56 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:49464 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757647Ab3BVXAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 17:57:19 -0500
+	Fri, 22 Feb 2013 18:00:53 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AocJAEj4J1F5LJe7/2dsb2JhbABEhWW2P4UTgQsXc4IfAQEFOhwjEAgDGAklDwUlAyETiBG/HxWOGiI9B4NAA5Y5kGSDGw
+Date: Sat, 23 Feb 2013 10:00:48 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] dcache: make Oracle more scalable on large systems
+Message-ID: <20130222230048.GP26694@dastard>
+References: <1361299859-27056-1-git-send-email-Waiman.Long@hp.com>
+ <20130221233818.GM26694@dastard>
+ <m2bobdxl1i.fsf@firstfloor.org>
+ <5126F067.4040707@hp.com>
 MIME-Version: 1.0
-In-Reply-To: <1361571667.2030.13.camel@joe-AO722>
-References: <20130222204253.A37B931C1C1@corp2gmr1-1.hot.corp.google.com>
-	<1361566784.2030.6.camel@joe-AO722>
-	<1361570508.5608.10.camel@thor.lan>
-	<1361571667.2030.13.camel@joe-AO722>
-Date: Fri, 22 Feb 2013 15:57:16 -0700
-Message-ID: <CAKocOONj+gEcBXZJXGqoY00mcUf5WpLo7j7JF-S20UZED+pLCA@mail.gmail.com>
-Subject: Re: [PATCH] checkpatch: Improve CamelCase test for Page
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5126F067.4040707@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 3:21 PM, Joe Perches <joe@perches.com> wrote:
-> On Fri, 2013-02-22 at 17:01 -0500, Peter Hurley wrote:
->> I didn't bother to mention it before, but since your addressing mm
->> CamelCase exceptions, perhaps
->>
->>   xxxx_XXXX
->>   xx_XXX_xxx
->>   XXX_xxx
->>
->> could be exceptions as well?
->
-> Maybe the check should only be for "[A-Z][a-z]|[a-z][A-Z]"
-> to make '_' and any non-alpha char a name barrier.
->
-> So vars like A_foo or b_9A would be acceptable.
->
-> Maybe:
->
-> ---
->  scripts/checkpatch.pl | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 747bcd7..e08e9f6 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2929,8 +2929,8 @@ sub process {
->                 while ($line =~ m{($Constant|$Lval)}g) {
->                         my $var = $1;
->                         if ($var !~ /$Constant/ &&
-> -                           $var =~ /[A-Z]\w*[a-z]|[a-z]\w*[A-Z]/ &&
-> -                           $var !~ /^Page[A-Z]/ &&
-> +                           $var =~ /[A-Z][a-z]|[a-z][A-Z]/ &&
-> +                           $var !~ /"^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ && &&
->                             !defined $camelcase{$var}) {
->                                 $camelcase{$var} = 1;
->                                 WARN("CAMELCASE",
->
->
+On Thu, Feb 21, 2013 at 11:13:27PM -0500, Waiman Long wrote:
+> On 02/21/2013 07:13 PM, Andi Kleen wrote:
+> >Dave Chinner<david@fromorbit.com>  writes:
+> >
+> >>On Tue, Feb 19, 2013 at 01:50:55PM -0500, Waiman Long wrote:
+> >>>It was found that the Oracle database software issues a lot of call
+> >>>to the seq_path() kernel function which translates a (dentry, mnt)
+> >>>pair to an absolute path. The seq_path() function will eventually
+> >>>take the following two locks:
+> >>Nobody should be doing reverse dentry-to-name lookups in a quantity
+> >>sufficient for it to become a performance limiting factor. What is
+> >>the Oracle DB actually using this path for?
+> >Yes calling d_path frequently is usually a bug elsewhere.
+> >Is that through /proc ?
+> >
+> >-Andi
+> >
+> >
+> A sample strace of Oracle indicates that it opens a lot of /proc
+> filesystem files such as the stat, maps, etc many times while
+> running. Oracle has a very detailed system performance reporting
+> infrastructure in place to report almost all aspect of system
+> performance through its AWR reporting tool or the browser-base
+> enterprise manager. Maybe that is the reason why it is hitting this
+> performance bottleneck.
 
-What are the guidelines on camelcase warnings on patches. A recent one
-I ran into is on a variable in a structure and fixing it would require
-changing the original variable.
+That seems to me like an application problem - poking at what the
+kernel is doing via diagnostic interfaces so often that it gets in
+the way of the kernel actually doing stuff is not a problem the
+kernel can solve.
 
-WARNING: Avoid CamelCase: <cp->Header.SGList>
-#67: FILE: drivers/scsi/hpsa.c:1409:
-+		cp->Header.SGList = 0;
+Cheers,
 
-WARNING: Avoid CamelCase: <cp->Header.SGTotal>
-#68: FILE: drivers/scsi/hpsa.c:1410:
-+		cp->Header.SGTotal = 0;
-
-total: 0 errors, 2 warnings, 11 lines checked
-
-One would have to change a large portion of the code to fix it. In
-such cases, do we ignore this warning?
-
--- Shuah
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
