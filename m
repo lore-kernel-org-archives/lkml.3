@@ -1,214 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab3BVH2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 02:28:43 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:36429 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877Ab3BVH1Y (ORCPT
+	id S1755714Ab3BVH2k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 02:28:40 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:56199 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961Ab3BVH1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 02:27:24 -0500
-X-IronPort-AV: E=Sophos;i="4.84,713,1355126400"; 
-   d="scan'208";a="26425016"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Barry Song <baohua.song@csr.com>
-Subject: [PATCH 4/8] ARM: PRIMA2: Divorce timer-marco from local timer API
-Date: Thu, 21 Feb 2013 23:27:15 -0800
-Message-Id: <1361518039-16663-5-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.rc0.16.g20a599e
-In-Reply-To: <1361518039-16663-1-git-send-email-sboyd@codeaurora.org>
-References: <1361518039-16663-1-git-send-email-sboyd@codeaurora.org>
+	Fri, 22 Feb 2013 02:27:25 -0500
+Date: Fri, 22 Feb 2013 08:27:19 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: Alexander Shiyan <shc_work@mail.ru>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Dong Aisheng <dong.aisheng@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH v4] mfd: syscon: Add non-DT support
+Message-ID: <20130222072718.GA24114@avionic-0098.mockup.avionic-design.de>
+References: <1361460542-2872-1-git-send-email-shc_work@mail.ru>
+ <20130222065548.GA3252@b29396-Latitude-E6410>
+ <1361516478.223331042@f282.mail.ru>
+ <20130222071311.GB3252@b29396-Latitude-E6410>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1yeeQ81UyVL57Vl7"
+Content-Disposition: inline
+In-Reply-To: <20130222071311.GB3252@b29396-Latitude-E6410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:tfv1YHNrItr7Hn9hU2f6Cu+4kVtYsmjXjnbdhDM/sMP
+ aLXYaDeP0UzhlC3oST0Ip/Y7y56whU+/3y/okdaKPJNnQaqhGz
+ 2a4m7o5u+ujAlgxvk0kRT8YX30lR9HmPJa0igaXauzxsWnBc6Q
+ zYE3CqcziIz+jWXL/b0ZqQ0/zkingccorElHMVsxnzfVus1vuj
+ XVTXlXp7SWWBOCKBHpN8VTWAlKaY9JqBEoUMz7SxP/3zYZaIEA
+ jZlIyCuyykc8WBSZcDQYK2nRjIVh03Zc2KHNazfPeEs+Mio+d4
+ OBfwPMssDAjVnVpbWo4c68IREOw+1vEsKtkgdu/1RY41YZuZc5
+ /DOiE5uvqAbC6oanr/wezDKY69QwzKefWAa7cgOdMw+Hckhef/
+ 7EKYzdPToZjEfkmXEX41ExignwjGd/SVHpVY78Fhv+8hVxrwio
+ RXjs7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the marco local timers from the local timer API. This
-will allow us to remove ARM local timer support in the near future
-and gets us closer to moving this driver to drivers/clocksource.
 
-Cc: Barry Song <baohua.song@csr.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mach-prima2/timer-marco.c | 98 ++++++++++++++++++++------------------
- 1 file changed, 52 insertions(+), 46 deletions(-)
+--1yeeQ81UyVL57Vl7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/arm/mach-prima2/timer-marco.c b/arch/arm/mach-prima2/timer-marco.c
-index f4eea2e..d54aac2 100644
---- a/arch/arm/mach-prima2/timer-marco.c
-+++ b/arch/arm/mach-prima2/timer-marco.c
-@@ -10,6 +10,7 @@
- #include <linux/interrupt.h>
- #include <linux/clockchips.h>
- #include <linux/clocksource.h>
-+#include <linux/cpu.h>
- #include <linux/bitops.h>
- #include <linux/irq.h>
- #include <linux/clk.h>
-@@ -18,7 +19,6 @@
- #include <linux/of_irq.h>
- #include <linux/of_address.h>
- #include <asm/sched_clock.h>
--#include <asm/localtimer.h>
- #include <asm/mach/time.h>
- 
- #include "common.h"
-@@ -154,13 +154,7 @@ static void sirfsoc_clocksource_resume(struct clocksource *cs)
- 		BIT(1) | BIT(0), sirfsoc_timer_base + SIRFSOC_TIMER_64COUNTER_CTRL);
- }
- 
--static struct clock_event_device sirfsoc_clockevent = {
--	.name = "sirfsoc_clockevent",
--	.rating = 200,
--	.features = CLOCK_EVT_FEAT_ONESHOT,
--	.set_mode = sirfsoc_timer_set_mode,
--	.set_next_event = sirfsoc_timer_set_next_event,
--};
-+static struct clock_event_device __percpu *sirfsoc_clockevent;
- 
- static struct clocksource sirfsoc_clocksource = {
- 	.name = "sirfsoc_clocksource",
-@@ -176,11 +170,8 @@ static struct irqaction sirfsoc_timer_irq = {
- 	.name = "sirfsoc_timer0",
- 	.flags = IRQF_TIMER | IRQF_NOBALANCING,
- 	.handler = sirfsoc_timer_interrupt,
--	.dev_id = &sirfsoc_clockevent,
- };
- 
--#ifdef CONFIG_LOCAL_TIMERS
--
- static struct irqaction sirfsoc_timer1_irq = {
- 	.name = "sirfsoc_timer1",
- 	.flags = IRQF_TIMER | IRQF_NOBALANCING,
-@@ -189,56 +180,75 @@ static struct irqaction sirfsoc_timer1_irq = {
- 
- static int __cpuinit sirfsoc_local_timer_setup(struct clock_event_device *ce)
- {
--	/* Use existing clock_event for cpu 0 */
--	if (!smp_processor_id())
--		return 0;
-+	int cpu = smp_processor_id();
-+	struct irqaction *action;
-+
-+	if (cpu == 0)
-+		action = &sirfsoc_timer_irq;
-+	else
-+		action = &sirfsoc_timer1_irq;
- 
--	ce->irq = sirfsoc_timer1_irq.irq;
-+	ce->irq = action->irq;
- 	ce->name = "local_timer";
--	ce->features = sirfsoc_clockevent.features;
--	ce->rating = sirfsoc_clockevent.rating;
-+	ce->features = CLOCK_EVT_FEAT_ONESHOT;
-+	ce->rating = 200;
- 	ce->set_mode = sirfsoc_timer_set_mode;
- 	ce->set_next_event = sirfsoc_timer_set_next_event;
--	ce->shift = sirfsoc_clockevent.shift;
--	ce->mult = sirfsoc_clockevent.mult;
--	ce->max_delta_ns = sirfsoc_clockevent.max_delta_ns;
--	ce->min_delta_ns = sirfsoc_clockevent.min_delta_ns;
-+	clockevents_calc_mult_shift(ce, CLOCK_TICK_RATE, 60);
-+	ce->max_delta_ns = clockevent_delta2ns(-2, ce);
-+	ce->min_delta_ns = clockevent_delta2ns(2, ce);
-+	ce->cpumask = cpumask_of(cpu);
- 
--	sirfsoc_timer1_irq.dev_id = ce;
--	BUG_ON(setup_irq(ce->irq, &sirfsoc_timer1_irq));
--	irq_set_affinity(sirfsoc_timer1_irq.irq, cpumask_of(1));
-+	action->dev_id = ce;
-+	BUG_ON(setup_irq(ce->irq, action));
-+	irq_set_affinity(action->irq, cpumask_of(cpu));
- 
- 	clockevents_register_device(ce);
- 	return 0;
- }
- 
--static void sirfsoc_local_timer_stop(struct clock_event_device *ce)
-+static void __cpuinit sirfsoc_local_timer_stop(struct clock_event_device *ce)
- {
-+	int cpu = smp_processor_id();
-+
- 	sirfsoc_timer_count_disable(1);
- 
--	remove_irq(sirfsoc_timer1_irq.irq, &sirfsoc_timer1_irq);
-+	if (cpu == 0)
-+		remove_irq(sirfsoc_timer_irq.irq, &sirfsoc_timer_irq);
-+	else
-+		remove_irq(sirfsoc_timer1_irq.irq, &sirfsoc_timer1_irq);
-+}
-+
-+static int __cpuinit sirfsoc_cpu_notify(struct notifier_block *self,
-+					   unsigned long action, void *hcpu)
-+{
-+	struct clock_event_device *evt = this_cpu_ptr(sirfsoc_clockevent);
-+
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_STARTING:
-+		sirfsoc_local_timer_setup(evt);
-+		break;
-+	case CPU_DYING:
-+		sirfsoc_local_timer_stop(evt);
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
- }
- 
--static struct local_timer_ops sirfsoc_local_timer_ops __cpuinitdata = {
--	.setup	= sirfsoc_local_timer_setup,
--	.stop	= sirfsoc_local_timer_stop,
-+static struct notifier_block sirfsoc_cpu_nb __cpuinitdata = {
-+	.notifier_call = sirfsoc_cpu_notify,
- };
--#endif /* CONFIG_LOCAL_TIMERS */
- 
- static void __init sirfsoc_clockevent_init(void)
- {
--	clockevents_calc_mult_shift(&sirfsoc_clockevent, CLOCK_TICK_RATE, 60);
--
--	sirfsoc_clockevent.max_delta_ns =
--		clockevent_delta2ns(-2, &sirfsoc_clockevent);
--	sirfsoc_clockevent.min_delta_ns =
--		clockevent_delta2ns(2, &sirfsoc_clockevent);
--
--	sirfsoc_clockevent.cpumask = cpumask_of(0);
--	clockevents_register_device(&sirfsoc_clockevent);
--#ifdef CONFIG_LOCAL_TIMERS
--	local_timer_register(&sirfsoc_local_timer_ops);
--#endif
-+	sirfsoc_clockevent = alloc_percpu(struct clock_event_device);
-+	BUG_ON(!sirfsoc_clockevent);
-+
-+	BUG_ON(register_cpu_notifier(&sirfsoc_cpu_nb));
-+
-+	/* Immediately configure the timer on the boot CPU */
-+	sirfsoc_local_timer_setup(this_cpu_ptr(sirfsoc_clockevent));
- }
- 
- /* initialize the kernel jiffy timer source */
-@@ -281,8 +291,6 @@ void __init sirfsoc_marco_timer_init(void)
- 
- 	BUG_ON(clocksource_register_hz(&sirfsoc_clocksource, CLOCK_TICK_RATE));
- 
--	BUG_ON(setup_irq(sirfsoc_timer_irq.irq, &sirfsoc_timer_irq));
--
- 	sirfsoc_clockevent_init();
- }
- 
-@@ -306,11 +314,9 @@ static void __init sirfsoc_of_timer_map(void)
- 	if (!sirfsoc_timer_irq.irq)
- 		panic("No irq passed for timer0 via DT\n");
- 
--#ifdef CONFIG_LOCAL_TIMERS
- 	sirfsoc_timer1_irq.irq = irq_of_parse_and_map(np, 1);
- 	if (!sirfsoc_timer1_irq.irq)
- 		panic("No irq passed for timer1 via DT\n");
--#endif
- 
- 	of_node_put(np);
- }
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+On Fri, Feb 22, 2013 at 03:13:12PM +0800, Dong Aisheng wrote:
+> On Fri, Feb 22, 2013 at 11:01:18AM +0400, Alexander Shiyan wrote:
+> > > On Thu, Feb 21, 2013 at 07:29:02PM +0400, Alexander Shiyan wrote:
+> > > > This patch allow using syscon driver from the platform data, i.e.
+> > > > possibility using driver on systems without oftree support.
+> > > > For search syscon device from the client drivers,
+> > > > "syscon_regmap_lookup_by_pdevname" function was added.
+> > > >=20
+> > > > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> > >=20
+> > > [...]
+> > >=20
+> > > > +	syscon->base =3D devm_ioremap_resource(dev, res);
+> > > > +	if (!syscon->base)
+> > >=20
+> > > Is this correct?
+> >=20
+> > Hmm, of course IS_ERR should be used here...
+> > v5?
+> >=20
+>=20
+> Yes.
+> >From here:
+> https://lkml.org/lkml/2013/1/21/140
+> It seems it is.
+>=20
+> > >=20
+> > > > +		return -EBUSY;
+>=20
+> Both this line could also be changed.
+>=20
+> > > >
+> > >=20
+> > > Otherwise, i'm also ok with this patch.
+> > > Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > >=20
+> > > BTW, i did not see Samuel's tree having this new API.
+> > > So, who will pick this patch?
+> >=20
+> > I have same question.
+>=20
+> I CCed Thierry and Greg who may know it.
 
+Yes, devm_ioremap_resource() never returns NULL. You always need to
+check the returned pointer with IS_ERR(). The value that you return
+should be extracted from the pointer with PTR_ERR().
+
+Thierry
+
+--1yeeQ81UyVL57Vl7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRJx3WAAoJEN0jrNd/PrOhUSoP/1ANfDTxzJ5vPgqVp6IZyPYl
+5cOKBqp+jZ9lXQdp5yTr9TTkyasNCMr6LvQt6a4Iz+oMqHrzzGy9ZBceU3aL396S
+wjeCMglhSmq2faiqOJ/V8fXifF1Ee4rajxrRRJNcnE3j9XMzGWUdk5c77bRd6HVD
+TNqskIvA7R1594hJwujj4PuShDNLe06r6cWnaZMUEvIfWk8JVFYyTbAG+pdXDoKC
+lQZDlNyBHb3OTxDreMRsDf/OHRxtHFZ0iBxTpuvY99XfsU0AVvqQWSZMPowrKWrz
+pO9Q0La4S0l6y94xsidSxYTnhaGW92lyN4Fm6LySwJpyC/AOZPEv+ULoBRuFpRFK
+MbSx1QrnvDeVwEIsqmGlB1mx6mDzP59ib2gVhgh3mHG4MWTCg4Xvh7jPCo83nkgV
+pETwwTTsXfg1DE/B2liqIany0gItxMp0UCXvrKgcpSDCwKLQZyVMNgz0mv4SciXo
+r3ByVksy8jADlPXUrltu5vbPFc9gx5TUXKqHeHV4/Y+Up2z5lLBrSt4uJcQbZXZa
+nb49SI8qw3Ok0JgIJQLlx9zWAKJ4KMf/OjzQheqOVU7KkXbVpfzBZpUXgFWLWxEY
++9pb/58PxbFoxHKwJMLC4zKYWOqD7rJG4Ub2D0la4xNY+rQGTFCGBD19proGirxu
+vtX/dnrVTdUezIfPLQnu
+=Nrfn
+-----END PGP SIGNATURE-----
+
+--1yeeQ81UyVL57Vl7--
