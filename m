@@ -1,55 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303Ab3BVGUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 01:20:45 -0500
-Received: from mout.gmx.net ([212.227.17.20]:62458 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751058Ab3BVGUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 01:20:44 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX194aJM37OR4CGlAclvZrvjC9whgy8cJUDGpc5Bhyv
-	z5hVYS2Z0+4rLk
-Message-ID: <1361513971.5817.72.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
-From: Mike Galbraith <efault@gmx.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Date: Fri, 22 Feb 2013 07:19:31 +0100
-In-Reply-To: <51270AD9.9020908@linux.vnet.ibm.com>
-References: <51079178.3070002@linux.vnet.ibm.com>
-	 <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com>
-	 <1361442055.26780.3.camel@laptop> <5126D9E0.7040108@linux.vnet.ibm.com>
-	 <1361509697.5817.65.camel@marge.simpson.net>
-	 <51270AD9.9020908@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1753858Ab3BVGVr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 01:21:47 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:59409 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab3BVGVo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 01:21:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <1361512604-2720-2-git-send-email-khilman@linaro.org>
+References: <1361512604-2720-1-git-send-email-khilman@linaro.org>
+	<1361512604-2720-2-git-send-email-khilman@linaro.org>
+Date: Fri, 22 Feb 2013 11:51:43 +0530
+X-Google-Sender-Auth: u_UoMACGN3wrgDJaGrhEB32UA7I
+Message-ID: <CAOh2x=kFL5_H=LqLf14yxYQEs7zSTT8Ue8mjUEVN4_a0c53Rdg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpustat: use accessor functions for get/set/add
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-22 at 14:06 +0800, Michael Wang wrote: 
-> On 02/22/2013 01:08 PM, Mike Galbraith wrote:
-> > On Fri, 2013-02-22 at 10:37 +0800, Michael Wang wrote:
-> > 
-> >> According to the testing result, I could not agree this purpose of
-> >> wake_affine() benefit us, but I'm sure that wake_affine() is a terrible
-> >> performance killer when system is busy.
-> > 
-> > (hm, result is singular.. pgbench in 1:N mode only?)
-> 
-> I'm not sure about how pgbench implemented, all I know is it will create
-> several instance and access the database, I suppose no different from
-> several threads access database (1 server and N clients?).
+On Fri, Feb 22, 2013 at 11:26 AM, Kevin Hilman <khilman@linaro.org> wrote:
+> Add some accessor functions in order to facilitate the conversion to
+> atomic reads/writes of cpustat values.
+>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
+>  drivers/cpufreq/cpufreq_governor.c | 18 ++++++++---------
+>  drivers/cpufreq/cpufreq_ondemand.c |  2 +-
 
-It's user switchable.
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index 6c5f1d3..ec6c315 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -36,12 +36,12 @@ static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
+>
+>         cur_wall_time = jiffies64_to_cputime64(get_jiffies_64());
+>
+> -       busy_time = kcpustat_cpu(cpu).cpustat[CPUTIME_USER];
+> -       busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_SYSTEM];
+> -       busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_IRQ];
+> -       busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_SOFTIRQ];
+> -       busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_STEAL];
+> -       busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_NICE];
+> +       busy_time = kcpustat_cpu_get(cpu, CPUTIME_USER);
+> +       busy_time += kcpustat_cpu_get(cpu, CPUTIME_SYSTEM);
+> +       busy_time += kcpustat_cpu_get(cpu, CPUTIME_IRQ);
+> +       busy_time += kcpustat_cpu_get(cpu, CPUTIME_SOFTIRQ);
+> +       busy_time += kcpustat_cpu_get(cpu, CPUTIME_STEAL);
+> +       busy_time += kcpustat_cpu_get(cpu, CPUTIME_NICE);
+>
+>         idle_time = cur_wall_time - busy_time;
+>         if (wall)
+> @@ -103,7 +103,7 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+>                         u64 cur_nice;
+>                         unsigned long cur_nice_jiffies;
+>
+> -                       cur_nice = kcpustat_cpu(j).cpustat[CPUTIME_NICE] -
+> +                       cur_nice = kcpustat_cpu_get(j, CPUTIME_NICE) -
+>                                          cdbs->prev_cpu_nice;
+>                         /*
+>                          * Assumption: nice time between sampling periods will
+> @@ -113,7 +113,7 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+>                                         cputime64_to_jiffies64(cur_nice);
+>
+>                         cdbs->prev_cpu_nice =
+> -                               kcpustat_cpu(j).cpustat[CPUTIME_NICE];
+> +                               kcpustat_cpu_get(j, CPUTIME_NICE);
+>                         idle_time += jiffies_to_usecs(cur_nice_jiffies);
+>                 }
+>
+> @@ -216,7 +216,7 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
+>                                         &j_cdbs->prev_cpu_wall);
+>                         if (ignore_nice)
+>                                 j_cdbs->prev_cpu_nice =
+> -                                       kcpustat_cpu(j).cpustat[CPUTIME_NICE];
+> +                                       kcpustat_cpu_get(j, CPUTIME_NICE);
+>                 }
+>
+>                 /*
+> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+> index 7731f7c..ac5d49f 100644
+> --- a/drivers/cpufreq/cpufreq_ondemand.c
+> +++ b/drivers/cpufreq/cpufreq_ondemand.c
+> @@ -403,7 +403,7 @@ static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
+>                                                 &dbs_info->cdbs.prev_cpu_wall);
+>                 if (od_tuners.ignore_nice)
+>                         dbs_info->cdbs.prev_cpu_nice =
+> -                               kcpustat_cpu(j).cpustat[CPUTIME_NICE];
+> +                               kcpustat_cpu_get(j, CPUTIME_NICE);
+>
+>         }
+>         return count;
 
--Mike
+For cpufreq:
 
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+
+Though i believe you also need this:
+
+diff --git a/drivers/cpufreq/cpufreq_conservative.c
+b/drivers/cpufreq/cpufreq_conservative.c
+index 64ef737..38e3ad7 100644
+--- a/drivers/cpufreq/cpufreq_conservative.c
++++ b/drivers/cpufreq/cpufreq_conservative.c
+@@ -242,7 +242,7 @@ static ssize_t store_ignore_nice_load(struct
+kobject *a, struct attribute *b,
+                                                &dbs_info->cdbs.prev_cpu_wall);
+                if (cs_tuners.ignore_nice)
+                        dbs_info->cdbs.prev_cpu_nice =
+-                               kcpustat_cpu(j).cpustat[CPUTIME_NICE];
++                               kcpustat_cpu_get(j, CPUTIME_NICE);
+        }
+        return count;
+ }
+
+BTW, i don't see kcpustat_cpu() used in
+
+ kernel/sched/core.c                | 12 +++++-------
+ kernel/sched/cputime.c             | 29 +++++++++++++--------------
+
+I searched tip/master as well as lnext/master.
