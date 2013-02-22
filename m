@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab3BVKaG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 05:30:06 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:3755 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755563Ab3BVKaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 05:30:01 -0500
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-mm@kvack.org>
-Cc: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH] slub: correctly bootstrap boot caches
-Date: Fri, 22 Feb 2013 14:30:30 +0400
-Message-Id: <1361529030-17462-1-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1757032Ab3BVKbx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 05:31:53 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:59646 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754440Ab3BVKbv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 05:31:51 -0500
+Date: Fri, 22 Feb 2013 10:31:49 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Jason Liu <liu.h.jason@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: too many timer retries happen when do local timer swtich with
+ broadcast timer
+Message-ID: <20130222103149.GC12140@e102568-lin.cambridge.arm.com>
+References: <CAB4PhKevqf0e4nzYraE9ZTAFbPCFfNpguAnPoVpJh-FFe2TAZA@mail.gmail.com>
+ <alpine.LFD.2.02.1302201400400.22263@ionos>
+ <CAB4PhKfxPcyQfpM2Ra1OxsyYhS5fnkjtPy=uYgxFHim1rOdoug@mail.gmail.com>
+ <alpine.LFD.2.02.1302211015270.22263@ionos>
+ <CAB4PhKf+Z-TK4KGDZm1kYOWibg=e2Ehnhjxt_oTbFq9eqouAjA@mail.gmail.com>
+ <alpine.LFD.2.02.1302211436300.22263@ionos>
+ <51263975.20906@ti.com>
+ <alpine.LFD.2.02.1302212214020.22263@ionos>
+ <5127436E.4040100@ti.com>
+ <alpine.LFD.2.02.1302221122290.22263@ionos>
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1302221122290.22263@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 22 Feb 2013 10:31:49.0843 (UTC) FILETIME=[D2ADFA30:01CE10E7]
+X-MC-Unique: 113022210315000201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After we create a boot cache, we may allocate from it until it is bootstraped.
-This will move the page from the partial list to the cpu slab list. If this
-happens, the loop:
+On Fri, Feb 22, 2013 at 10:24:00AM +0000, Thomas Gleixner wrote:
+> On Fri, 22 Feb 2013, Santosh Shilimkar wrote:
+> > BTW, Lorenzo off-list mentioned to me about warning in boot-up
+> > which I missed while testing your patch. It will take bit more
+> > time for me to look into it and hence thought of reporting it.
+> > 
+> > [    2.186126] ------------[ cut here ]------------
+> > [    2.190979] WARNING: at kernel/time/tick-broadcast.c:501
+> > tick_broadcast_oneshot_control+0x1c0/0x21c()
+> 
+> Which one is that? tick_broadcast_pending or tick_force_broadcast_mask ?
 
-	list_for_each_entry(p, &n->partial, lru)
+It is the tick_force_broadcast_mask and I think that's because on all
+systems we are testing, the broadcast timer IRQ is a thundering herd,
+all CPUs get out of idle at once and try to get out of broadcast mode
+at more or less the same time.
 
-that we use to scan for all partial pages will yield nothing, and the pages
-will keep pointing to the boot cpu cache, which is of course, invalid. To do
-that, we should flush the cache to make sure that the cpu slab is back to the
-partial list.
-
-Although not verified in practice, I also point out that it is not safe to scan
-the full list only when debugging is on in this case. As unlikely as it is, it
-is theoretically possible for the pages to be full. If they are, they will
-become unreachable. Aside from scanning the full list, we also need to make
-sure that the pages indeed sit in there: the easiest way to do it is to make
-sure the boot caches have the SLAB_STORE_USER debug flag set.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-Reported-by:  Steffen Michalke <StMichalke@web.de>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-
- mm/slub.c | 21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
----
- mm/slub.c | 21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
-
-diff --git a/mm/slub.c b/mm/slub.c
-index ba2ca53..ab372c8 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3617,6 +3617,12 @@ static struct kmem_cache * __init bootstrap(struct kmem_cache *static_cache)
- 
- 	memcpy(s, static_cache, kmem_cache->object_size);
- 
-+	/*
-+	 * This runs very early, and only the boot processor is supposed to be
-+	 * up.  Even if it weren't true, IRQs are not up so we couldn't fire
-+	 * IPIs around.
-+	 */
-+	__flush_cpu_slab(s, smp_processor_id());
- 	for_each_node_state(node, N_NORMAL_MEMORY) {
- 		struct kmem_cache_node *n = get_node(s, node);
- 		struct page *p;
-@@ -3625,12 +3631,13 @@ static struct kmem_cache * __init bootstrap(struct kmem_cache *static_cache)
- 			list_for_each_entry(p, &n->partial, lru)
- 				p->slab_cache = s;
- 
--#ifdef CONFIG_SLUB_DEBUG
- 			list_for_each_entry(p, &n->full, lru)
- 				p->slab_cache = s;
--#endif
- 		}
- 	}
-+
-+	/* No longer needs to keep track of the full list */
-+	s->flags &= ~SLAB_STORE_USER;
- 	list_add(&s->list, &slab_caches);
- 	return s;
- }
-@@ -3648,8 +3655,14 @@ void __init kmem_cache_init(void)
- 	kmem_cache_node = &boot_kmem_cache_node;
- 	kmem_cache = &boot_kmem_cache;
- 
-+	/*
-+	 * We want to keep early pages in the full list because of the
-+	 * bootstrap process. If we don't do it, those pages become unreachable
-+	 * and we can't update their page->slab_cache information.
-+	 */
- 	create_boot_cache(kmem_cache_node, "kmem_cache_node",
--		sizeof(struct kmem_cache_node), SLAB_HWCACHE_ALIGN);
-+			sizeof(struct kmem_cache_node),
-+			SLAB_HWCACHE_ALIGN | SLAB_STORE_USER);
- 
- 	hotplug_memory_notifier(slab_memory_callback, SLAB_CALLBACK_PRI);
- 
-@@ -3659,7 +3672,7 @@ void __init kmem_cache_init(void)
- 	create_boot_cache(kmem_cache, "kmem_cache",
- 			offsetof(struct kmem_cache, node) +
- 				nr_node_ids * sizeof(struct kmem_cache_node *),
--		       SLAB_HWCACHE_ALIGN);
-+		       SLAB_HWCACHE_ALIGN | SLAB_STORE_USER);
- 
- 	kmem_cache = bootstrap(&boot_kmem_cache);
- 
--- 
-1.8.1.2
+Lorenzo
 
