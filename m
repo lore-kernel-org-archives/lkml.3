@@ -1,175 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab3BVBjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 20:39:52 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:37632 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834Ab3BVBju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 20:39:50 -0500
+	id S1755591Ab3BVBnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 20:43:45 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:41125 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753777Ab3BVBnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 20:43:42 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [Update 3][PATCH 2/7] ACPI / scan: Introduce common code for ACPI-based device hotplug
+Date: Fri, 22 Feb 2013 02:50:20 +0100
+Message-ID: <11658900.TkhCHmg9LJ@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1361495541.12845.18.camel@misato.fc.hp.com>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <2894504.SgZF7d1Dbv@vostro.rjw.lan> <1361495541.12845.18.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-In-Reply-To: <003401ce1021$ab1b6eb0$01524c10$%jun@samsung.com>
-References: <1361210793-5710-1-git-send-email-tobetter@gmail.com>
-	<000501ce0e8a$91ef7c30$b5ce7490$%jun@samsung.com>
-	<CADoNuNc2cjOU-PjWgwtB2wo9USMABGdwP=udCBHBYO9jgiLnvw@mail.gmail.com>
-	<CAGOxZ51YtUL1yOJERLZG7uWgfQ=j88HmYue1oWiuah6Gdr32Eg@mail.gmail.com>
-	<003401ce1021$ab1b6eb0$01524c10$%jun@samsung.com>
-Date: Fri, 22 Feb 2013 10:39:49 +0900
-Message-ID: <CADoNuNfDuz+njsn+7isNKf-Ud_nNEKFYYf7Xio3=94hVU6KGVA@mail.gmail.com>
-Subject: Re: [PATCH v3] mmc: dw_mmc: Add MSHC compatible for Exynos4412
-From: Dongjin Kim <tobetter@gmail.com>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Alim Akhtar <alim.akhtar@gmail.com>, "'unlisted-recipients:'"@samsung.com,
-        "'no To-header on input'"@samsung.com,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Will Newton <will.newton@imgtec.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Seungwon,
+On Thursday, February 21, 2013 06:12:21 PM Toshi Kani wrote:
+> On Fri, 2013-02-22 at 00:06 +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Multiple drivers handling hotplug-capable ACPI device nodes install
+> > notify handlers covering the same types of events in a very similar
+> > way.  Moreover, those handlers are installed in separate namespace
+> > walks, although that really should be done during namespace scans
+> > carried out by acpi_bus_scan().  This leads to substantial code
+> > duplication, unnecessary overhead and behavior that is hard to
+> > follow.
+> > 
+> > For this reason, introduce common code in drivers/acpi/scan.c for
+> > handling hotplug-related notification and carrying out device
+> > insertion and eject operations in a generic fashion, such that it
+> > may be used by all of the relevant drivers in the future.  To cover
+> > the existing differences between those drivers introduce struct
+> > acpi_hotplug_profile for representing collections of hotplug
+> > settings associated with different ACPI scan handlers that can be
+> > used by the drivers to make the common code reflect their current
+> > behavior.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> > 
+> > This update fixes an issue pointed out by Toshi Kani (that
+> > ACPI_OST_EC_OSPM_* event source codes should not be used with _OST for events
+> > that we received a notification for from the platform firmware).
+> > 
+> > Thanks,
+> > Rafael
+> > 
+> > ---
+> >  drivers/acpi/scan.c     |  270 ++++++++++++++++++++++++++++++++++++++----------
+> >  include/acpi/acpi_bus.h |    7 +
+> >  2 files changed, 224 insertions(+), 53 deletions(-)
+>  :
+> > +static void acpi_bus_device_eject(void *context)
+> > +{
+> > +	acpi_handle handle = context;
+> > +	struct acpi_device *device = NULL;
+> > +	struct acpi_scan_handler *handler;
+> > +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+> > +
+> > +	mutex_lock(&acpi_scan_lock);
+> > +
+> > +	acpi_bus_get_device(handle, &device);
+> > +	if (!device)
+> > +		goto err_out;
+> > +
+> > +	handler = device->handler;
+> > +	if (!handler || !handler->hotplug.enabled) {
+> > +		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+> > +		goto err_out;
+> > +	}
+> > +	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
+> > +				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+> > +	if (handler->hotplug.autoeject) {
+> > +		int error;
+> > +
+> > +		get_device(&device->dev);
+> > +		error = acpi_scan_hot_remove(device);
+> > +		if (error)
+> > +			goto err_out;
+> > +	} else {
+> > +		device->flags.eject_pending = true;
+> >  	}
+> > +	if (handler->hotplug.uevents)
+> > +		kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+> 
+> I confirmed that the _OST issue with hot-add is fixed.  Here is a new
+> one.  When autoeject is enabled, it crashes in kobject_uevent() since
+> the device is no longer valid. 
 
-OK, I will change the commit message. And I also think Alim's idea is
-good but need more detail about functional features of Synopsis' IP.
-Similar situation would be happened to Exynos4210 which is not
-supported by dw_mmc-exynos.c yet.
+Well, this one is more difficult.
 
-Regards,
-Dongjin.
+I can change the ordering so that kobject_uevent() is called before
+acpi_scan_hot_remove(), but then user space may not know that the device is
+being removed at the moment (which still may fail).  Still, maybe this is
+OK, because user space will get KOBJ_REMOVE when the device actually goes
+away anyway.
 
-On Thu, Feb 21, 2013 at 7:53 PM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
-> On Wednesday, February 20, 2013, Alim Akhtar wrote:
->> Hi,
->>
->> On Tue, Feb 19, 2013 at 6:04 PM, Dongjin Kim <tobetter@gmail.com> wrote:
->> > Hello Seungwon,
->> >
->> > Thank you for reviewing and I understand what you mean.
->> >
->> > I agree that Exynos5250 and Exynos4412 are not same, no idea how much
->> > they are different because no Exynos5250 spec on my hand. But at least
->> > I assumed that the capabilities below are supported by Exynos4412 in
->> > terms of its datasheet and it does work on my end as expected. :) Also
->> > I assumed it will be separated if one of both become different to add
->> > more capabilities.
->> >
->> >         MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
->> >                MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
->> >
->> > Maybe my understanding or approach is wrong since I do not have the
->> > information of Exynos5250.
->> > And suggestion do you have?
-> At least, these capabilities can be shared because of common feature, not fully same.
-> Dongjin, could you modify the commit message and comments of code?
->
-> Let me introduce the functional feature of Exynos5250 and capability extension.
-> I guess I'll send soon.
->
-> Thanks,
-> Seungwon Jeon
->
->>
->> Recently Guennadi Liakhovetski has done some work to centralize the
->> mmc capabilities. See [1] and [2].
->> Those patches are pushed to Chris's mmc-next tree.
->> Is  it possible to extend [1] and [2] and add more capabilities (at
->> least all known one) and let these caps being passed from DT instead?
->>
->> Second thought is, let the common minimum caps as a part of .caps
->> field in dw_mmc-exynos.c itself and pass the extra/advance controller
->> caps from DT and parse them via dw_mci_parse_dt() in dw_mmc.c itself.
->>
->> [1] https://patchwork.kernel.org/patch/1991851/
->> [2] https://patchwork.kernel.org/patch/2106531/
->>
->> > Regards,
->> > Dongjin.
->> >
->> > On Tue, Feb 19, 2013 at 7:19 PM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
->> >> On Tuesday, February 19, 2013, Dongjin Kim wrote:
->> >>> This patch adds the compatible string for MSHC controller of Exynos4412, and
->> >>> share the controller specific properties with Exynos5250 since they have same
->> >>> features. Its driver data name is changed to exynos_drv_data instead SoC
->> >>> specific name.
->> >>
->> >> It's not actually same.
->> >> Exynos4412 doesn't have forward compatibilities for Exynos5250.
->> >> I agree that functionality of exynos_drv_data is common.
->> >> These functions have been implemented for existing Exynos*.
->> >> But in case of caps, it can't applied completely.
->> >> I'm concerning about this.
->> >>
->> >> Thanks,
->> >> Seungwon Jeon
->> >>>
->> >>> Cc: Jaehoon Chung <jh80.chung@samsung.com>
->> >>> Cc: Sachin Kamat <sachin.kamat@linaro.org>
->> >>> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
->> >>> ---
->> >>>  drivers/mmc/host/dw_mmc-exynos.c |   12 +++++++-----
->> >>>  1 file changed, 7 insertions(+), 5 deletions(-)
->> >>>
->> >>> diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
->> >>> index 4d50da6..38cd03c 100644
->> >>> --- a/drivers/mmc/host/dw_mmc-exynos.c
->> >>> +++ b/drivers/mmc/host/dw_mmc-exynos.c
->> >>> @@ -199,8 +199,8 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
->> >>>       return 0;
->> >>>  }
->> >>>
->> >>> -/* Exynos5250 controller specific capabilities */
->> >>> -static unsigned long exynos5250_dwmmc_caps[4] = {
->> >>> +/* Exynos4412/Exynos5250 controller specific capabilities */
->> >>> +static unsigned long exynos_dwmmc_caps[4] = {
->> >>>       MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
->> >>>               MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
->> >>>       MMC_CAP_CMD23,
->> >>> @@ -208,8 +208,8 @@ static unsigned long exynos5250_dwmmc_caps[4] = {
->> >>>       MMC_CAP_CMD23,
->> >>>  };
->> >>>
->> >>> -static const struct dw_mci_drv_data exynos5250_drv_data = {
->> >>> -     .caps                   = exynos5250_dwmmc_caps,
->> >>> +static const struct dw_mci_drv_data exynos_drv_data = {
->> >>> +     .caps                   = exynos_dwmmc_caps,
->> >>>       .init                   = dw_mci_exynos_priv_init,
->> >>>       .setup_clock            = dw_mci_exynos_setup_clock,
->> >>>       .prepare_command        = dw_mci_exynos_prepare_command,
->> >>> @@ -219,8 +219,10 @@ static const struct dw_mci_drv_data exynos5250_drv_data = {
->> >>>  };
->> >>>
->> >>>  static const struct of_device_id dw_mci_exynos_match[] = {
->> >>> +     { .compatible = "samsung,exynos4412-dw-mshc",
->> >>> +                     .data = &exynos_drv_data, },
->> >>>       { .compatible = "samsung,exynos5250-dw-mshc",
->> >>> -                     .data = &exynos5250_drv_data, },
->> >>> +                     .data = &exynos_drv_data, },
->> >>>       {},
->> >>>  };
->> >>>  MODULE_DEVICE_TABLE(of, dw_mci_exynos_match);
->> >>> --
->> >>> 1.7.10.4
->> >>>
->> >>> --
->> >>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->> >>> the body of a message to majordomo@vger.kernel.org
->> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> >>
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->> --
->> Regards,
->> Alim
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Or perhaps we can emit KOBJ_OFFLINE before acpi_scan_hot_remove() and if
+it fails, emit KOBJ_ONLINE?
+
+I'm not sure.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
