@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519Ab3BVCXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 21:23:46 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:34951 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755097Ab3BVCXo (ORCPT
+	id S1755741Ab3BVC0y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 21:26:54 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:52127 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650Ab3BVC0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 21:23:44 -0500
+	Thu, 21 Feb 2013 21:26:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <eada017a865d03fe67df39c4672f258fb2d71447.1360568193.git.viresh.kumar@linaro.org>
-References: <cover.1360568193.git.viresh.kumar@linaro.org>
-	<eada017a865d03fe67df39c4672f258fb2d71447.1360568193.git.viresh.kumar@linaro.org>
-Date: Fri, 22 Feb 2013 07:53:43 +0530
-Message-ID: <CAKohpon5KSV4ZyijuG9hNqEXxwXzFev1AcygKWL9-scyWxhOyw@mail.gmail.com>
-Subject: Re: [PATCH V2 2/4] cpufreq: governor: Implement per policy instances
- of governors
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, linaro-dev@lists.linaro.org,
-        francescolavra.fl@gmail.com, toddpoynor@google.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
+In-Reply-To: <5126313E.2060608@start.ca>
+References: <20130220.170901.343210063003534302.davem@davemloft.net>
+ <CA+55aFz=tzf9a-SY1CqCAxsqRDz=ebE69YoZ30at6kHeKKhsaA@mail.gmail.com> <5126313E.2060608@start.ca>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 21 Feb 2013 21:26:19 -0500
+X-Google-Sender-Auth: virJLrl8AneoGR2Ybww506MH8RY
+Message-ID: <CAP=VYLoW2KfdWen6x0p+Kv_DbsDj=mHMdAZB5Mx_RkFZ7jk6fg@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: Mark Lord <kernel@start.ca>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 February 2013 13:20, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+On Thu, Feb 21, 2013 at 9:37 AM, Mark Lord <kernel@start.ca> wrote:
+> On 13-02-20 10:05 PM, Linus Torvalds wrote:
+>> On Wed, Feb 20, 2013 at 2:09 PM, David Miller <davem@davemloft.net> wrote:
+>>>
+>>> 15) Orphan and delete a bunch of pre-historic networking drivers from
+>>>     Paul Gortmaker.
+>>
+>> Nooo.... You killed the 3c501 and 3c503 drivers! Snif.
+>>
+>> I wonder if they still worked..
+>
+> I hope they're not really dead, because we still use them in several machines here
+> as secondary interfaces for test rigs and whatnot.
+>
+> It's a tad early to be nuking support for such widespread devices.
 
-> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+Hi Mark,
 
->  #define CPUFREQ_PRECHANGE      (0)
-> @@ -183,11 +197,10 @@ static inline unsigned long cpufreq_scale(unsigned long old, u_int div, u_int mu
->  #define CPUFREQ_GOV_STOP       2
->  #define CPUFREQ_GOV_LIMITS     3
->  #define CPUFREQ_GOV_POLICY_INIT        4
-> -#define CPUFREQ_GOV_POLICY_EXIT        4
-> +#define CPUFREQ_GOV_POLICY_EXIT        5
+Did you actually look at the drivers deleted?  This was not a blanket
+delete of _all_ ISA drivers, and I seriously doubt that you are using the
+3c501 or 3c503 drivers.  To be clear, it was a very selective removal of
+drivers from the early 1990's, and so the common ISA drivers for the
+widespread devices (like 3c509, and 8390 shared memory implementations)
+continue to exist in mainline today.
 
-See, i told you i had this change, but got merged to the wrong commit. :)
+Someday we will delete them, but it was not done here at this point in
+time, so I hope people do not get confused on that.
+
+Paul.
+--
+
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
