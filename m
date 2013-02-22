@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab3BVAEv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 19:04:51 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39065 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753608Ab3BVAEu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 19:04:50 -0500
-Message-ID: <5126B617.6010405@canonical.com>
-Date: Thu, 21 Feb 2013 19:04:39 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	id S1755711Ab3BVAId (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 19:08:33 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:41098 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753737Ab3BVAIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 19:08:32 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>
+Subject: Re: [BUG bisected]: apei_hest_parse explosion
+Date: Fri, 22 Feb 2013 01:15:10 +0100
+Message-ID: <1447813.geP1BIVYu5@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <alpine.LFD.2.02.1302220002040.22263@ionos>
+References: <alpine.LFD.2.02.1302220002040.22263@ionos>
 MIME-Version: 1.0
-To: Tanaka Takahisa <mc74hc00@gmail.com>
-CC: Joseph Salisbury <josephtsalisbury@gmail.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kernel Team <kernel-team@lists.ubuntu.com>
-Subject: Re: [v3.8 Regression] watchdog: sp5100_tco: Add SB8x0 chipset support
-References: <511D0BCC.9070208@canonical.com> <20130215073210.GM7867@spo001.leaseweb.com> <511E4C43.7080403@canonical.com> <CAHh0gOgeWn5QaDGzgstft7AoQsKdoZ+4Utp8iQxxSCO0q=cZ-Q@mail.gmail.com> <51219C56.8060504@canonical.com> <CAGHUO12ROdB4=LVyod7+RaoONHfMfiyLAj73cC+BczLGDG+i+Q@mail.gmail.com> <CAHh0gOgiSjTYvEzim-7+yEhU74c5PVV=2ScTnaJ15SPY=y-WqA@mail.gmail.com>
-In-Reply-To: <CAHh0gOgiSjTYvEzim-7+yEhU74c5PVV=2ScTnaJ15SPY=y-WqA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2013 12:14 PM, Tanaka Takahisa wrote:
-> Hi Joseph,
->
-> Thanks a lot for your help.
->
->> The bug report tested a kernel with the patches. However, he reports the kernel panic still occurs[0].
-> I understood. I guess this problem conflicts with the watchdog MMIO
-> address (*) written in SB700 chipset and other resource. So, I made a
-> patch which gets rid of the code considered to cause the problem. If
-> this patch is applied, although the SP5100 and SB7x0 chipsets can't
-> use watchdog function any longer, I'm sure attached patch resolve the
-> problem. The SB800 or later chipsets can be used as before.
-> (*)This address is obtained from allocate_resource() function.
->
-> I'm sorry to trouble you, but Would you confirm whether attached patch
-> solves a problem?
-> If there is no problem in this patch, I will submit this patch to a
-> linux-watchdog community.
+On Friday, February 22, 2013 12:56:01 AM Thomas Gleixner wrote:
+> Just booted linus head on one of my old kvm based testing systems and
+> got the following splat:
+> 
+> [    0.531910] BUG: unable to handle kernel NULL pointer dereference at 0000000000000024
+> [    0.532173] IP: [<ffffffff812f1bd2>] apei_hest_parse+0xd2/0xf0
+> [    0.532173] PGD 0 
+> [    0.532173] Oops: 0000 [#1] PREEMPT SMP 
+> [    0.532173] Modules linked in:
+> [    0.532173] CPU 3 
+> [    0.532173] Pid: 1, comm: swapper/0 Not tainted 3.8.0+ #195 Bochs Bochs
+> [    0.532173] RIP: 0010:[<ffffffff812f1bd2>]  [<ffffffff812f1bd2>] apei_hest_parse+0xd2/0xf0
+> [    0.532173] RSP: 0000:ffff88021685be78  EFLAGS: 00010206
+> [    0.532173] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000000
+> [    0.532173] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000028
+> [    0.532173] RBP: ffff88021685be98 R08: 00000000804efb06 R09: 0000000000000000
+> [    0.532173] R10: 0000000000000001 R11: 0000000000000000 R12: ffffffff81af3d40
+> [    0.532173] R13: ffffffff812bcb23 R14: 0000000000000000 R15: 0000000000000000
+> [    0.532173] FS:  0000000000000000(0000) GS:ffff88021fcc0000(0000) knlGS:0000000000000000
+> [    0.532173] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [    0.532173] CR2: 0000000000000024 CR3: 0000000001a0c000 CR4: 00000000000406a0
+> [    0.532173] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [    0.532173] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [    0.532173] Process swapper/0 (pid: 1, threadinfo ffff88021685a000, task ffff8802168c0000)
+> [    0.532173] Stack:
+> [    0.532173]  00000000fffffffa ffffffff81af3d40 0000000000000000 000000001fb3f55a
+> [    0.532173]  ffff88021685bea8 ffffffff812bcbe4 ffff88021685bec8 ffffffff81af3d5c
+> [    0.532173]  0000000000000030 0000000000000030 ffff88021685bef8 ffffffff8100023b
+> [    0.532173] Call Trace:
+> [    0.532173]  [<ffffffff81af3d40>] ? pcie_portdrv_init+0x7a/0x7a
+> [    0.532173]  [<ffffffff812bcbe4>] aer_acpi_firmware_first+0x20/0x30
+> [    0.532173]  [<ffffffff81af3d5c>] aer_service_init+0x1c/0x35
+> [    0.532173]  [<ffffffff8100023b>] do_one_initcall+0x57/0x13c
+> [    0.532173]  [<ffffffff81ad2d39>] kernel_init_freeable+0x142/0x1d1
+> [    0.532173]  [<ffffffff81ad254f>] ? loglevel+0x31/0x31
+> [    0.532173]  [<ffffffff815a8cef>] ? rest_init+0xc3/0xc3
+> [    0.532173]  [<ffffffff815a8cfd>] kernel_init+0xe/0xd6
+> [    0.532173]  [<ffffffff815bc73c>] ret_from_fork+0x7c/0xb0
+> [    0.532173]  [<ffffffff815a8cef>] ? rest_init+0xc3/0xc3
+> [    0.532173] Code: 14 0f b7 77 02 31 c0 48 c7 c7 65 c1 83 81 e8 35 1a 2c 00 eb 23 4c 89 f6 41 ff d5 85 c0 75 1e 4c 89 e7 ff c3 48 8b 05 a6 5b 7c 00 <3b> 58 24 0f 82 5a ff ff ff 31 c0 eb 05 b8 ea ff ff ff 5b 41 5c 
+> 
+> git bisect identified the following commit:
+> 
+> commit 92ef2a25c763338905dce8344a0584606f842920
+> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Date:   Fri Dec 21 00:36:40 2012 +0100
+> 
+>     ACPI: Change the ordering of PCI root bridge driver registrarion
+> 
+> A revert is impossible w/o major surgery, so I'm going to bed and let
+> the involved folks think about it.
 
-This patch did resolve the issue.  The bug reporter states the panic no 
-longer happens and the system boots.  Thanks so much for your assistance.
+Can you please post a dmesg boot log from v3.8 on the same system?
 
->
->
->> I've requested a digital image or screen capture of the panic.  Is
->> there any additional debug information you thing would be helpful?
-> I'm interested in the I/O resource of PC in which the problem has
-> occurred, So, I want the result of 'cat /proc/iomem'. When 'cat
-> /proc/iomem' is performed, I don't care about whether sp5100_tco
-> driver is loaded.
+Rafael
 
-The I/O data can be seen at:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1116835/+attachment/3540738/+files/iomem.txt
 
->
->
-> Thanks in advance.
-> Takahisa
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
