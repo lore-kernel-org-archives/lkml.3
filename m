@@ -1,80 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab3BVFjp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 00:39:45 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:11609 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab3BVFjn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 00:39:43 -0500
-X-AuditID: cbfee691-b7f556d000001a24-0d-5127049df2b9
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] lib: devres: Fix misplaced #endif
-Date: Fri, 22 Feb 2013 14:39:40 +0900
-Message-id: <000301ce10bf$028176c0$07846440$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4QvwIQvVMe0phTShywU8x8ewbKvg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t8zQ925LOqBBg8OWVtc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mc6emsRZ8YK2YsXcTUwPjE5YuRk4OCQETiX/35rJD2GISF+6t
-	Z+ti5OIQEljGKNH+ro8dpmhP114miMQiRokHSxezQDizmSR2TtrMBlLFJqAm8eXLYaAODg4R
-	AX2JthYNEJNZwEXi6DQRkAphASOJVc/2MoLYLAKqEl+W/ADr5BWwlWhb8pIJwhaU+DH5Hthx
-	zAJaEut3HmeCsOUlNq95ywwyUkJAXeLRX12QsIiAnsSsN/MYIUpEJPa9eMcIcpmEQDe7xLKF
-	y9ghdglIfJt8iAWiV1Zi0wFmiLckJQ6uuMEygVFsFpLNs5BsnoVk8ywkKxYwsqxiFE0tSC4o
-	TkovMtUrTswtLs1L10vOz93ECImTiTsY7x+wPsSYDLR+IrOUaHI+MM7ySuINjY1NzExMTcwt
-	Tc1NSRNWEueVvyQTKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFx68W5j0LW7s84OONlR+i6
-	eEedmgPG5te2W01by6gRE1BlEXbvYOHlP8nLL53Q+Zj0/pLDmzxx/7zfFz0eek3imtr6cXei
-	ls1qy1nCyT+Xc/7o3df0Zs1z1fwPthI3tasUH1zOvCwmsPefj8V+Wb4vHyQnXn9ze8eC1BuS
-	9++EXd3ov+WhXtQUWSWW4oxEQy3mouJEAOj4rx+pAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jAd25LOqBBgfum1tc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjHOnprEWfGCtmLF3E1MD
-	4xOWLkZODgkBE4k9XXuZIGwxiQv31rN1MXJxCAksYpR4sHQxC4Qzm0li56TNbCBVbAJqEl++
-	HGbvYuTgEBHQl2hr0QAxmQVcJI5OEwGpEBYwklj1bC8jiM0ioCrxZckPsE5eAVuJtiUvmSBs
-	QYkfk++B3cAsoCWxfudxJghbXmLzmrfMICMlBNQlHv3VBQmLCOhJzHozjxGiRERi34t3jBMY
-	BWYhmTQLyaRZSCbNQtKygJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwFD6T2sG4ssHi
-	EKMAB6MSD2+Di1qgEGtiWXFl7iFGCQ5mJRFe/VCgEG9KYmVValF+fFFpTmrxIcZkoEcnMkuJ
-	JucDE0ReSbyhsYmZkaWRmYWRibk5acJK4ryMp54ECAmkJ5akZqemFqQWwWxh4uCUamBcvvpE
-	942c/88rj/Cta/ttozEt8en8bdKTtrc1PY5+x+D2+vCftsB7C1JDJq6JrernqBNpWr0i46t4
-	SvqUueYHD1pPWcGdwxNofrTGoOShqtfU1cWzfx/fvHbezJDDnSG7NzfzZufZTFt2Y+aM8jQ7
-	vrurrcrCHua+yzp3T6c95JaavhqT50IBJZbijERDLeai4kQA4HsCHgYDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753983Ab3BVFoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 00:44:34 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:39874 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753554Ab3BVFob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 00:44:31 -0500
+X-IronPort-AV: E=Sophos;i="4.84,714,1355068800"; 
+   d="scan'208";a="6748267"
+From: liguang <lig.fnst@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org, rientjes@google.com, x86@kernel.org
+Cc: liguang <lig.fnst@cn.fujitsu.com>
+Subject: [rebased][PATCH 2/4] numa: avoid export acpi_numa variable
+Date: Fri, 22 Feb 2013 13:44:45 +0800
+Message-Id: <1361511887-29241-3-git-send-email-lig.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1361511887-29241-1-git-send-email-lig.fnst@cn.fujitsu.com>
+References: <1361511887-29241-1-git-send-email-lig.fnst@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/22 13:43:47,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/22 13:43:47,
+	Serialize complete at 2013/02/22 13:43:47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A misplaced #endif causes link errors related to pcim_*() functions.
+acpi_numa is used to prevent srat table
+being parsed, seems a little miss-named,
+if 'noacpi' was specified by cmdline and
+CONFIG_ACPI_NUMA was enabled, acpi_numa
+will be operated directly from everywhere
+it needed to disable/enable numa in acpi
+mode which was a bad thing, so, try to
+export a fuction to get srat table
+enable/disable info.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
 ---
- lib/devres.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/acpi.h |    2 +-
+ arch/x86/kernel/acpi/srat.c |   21 +++++++++++++--------
+ arch/x86/mm/numa.c          |    2 +-
+ arch/x86/xen/enlighten.c    |    2 +-
+ 4 files changed, 16 insertions(+), 11 deletions(-)
 
-diff --git a/lib/devres.c b/lib/devres.c
-index 88ad759..8235331 100644
---- a/lib/devres.c
-+++ b/lib/devres.c
-@@ -227,6 +227,7 @@ void devm_ioport_unmap(struct device *dev, void __iomem *addr)
- 			       devm_ioport_map_match, (void *)addr));
- }
- EXPORT_SYMBOL(devm_ioport_unmap);
-+#endif /* CONFIG_HAS_IOPORT */
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index b31bf97..449e12a 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -177,7 +177,7 @@ static inline void disable_acpi(void) { }
+ #define ARCH_HAS_POWER_INIT	1
  
- #ifdef CONFIG_PCI
- /*
-@@ -432,4 +433,3 @@ void pcim_iounmap_regions(struct pci_dev *pdev, int mask)
+ #ifdef CONFIG_ACPI_NUMA
+-extern int acpi_numa;
++extern void disable_acpi_numa(void);
+ extern int x86_acpi_numa_init(void);
+ #endif /* CONFIG_ACPI_NUMA */
+ 
+diff --git a/arch/x86/kernel/acpi/srat.c b/arch/x86/kernel/acpi/srat.c
+index b20b5b7..469a0af 100644
+--- a/arch/x86/kernel/acpi/srat.c
++++ b/arch/x86/kernel/acpi/srat.c
+@@ -24,22 +24,27 @@
+ #include <asm/apic.h>
+ #include <asm/uv/uv.h>
+ 
+-int acpi_numa __initdata;
++static bool acpi_numa __initdata;
+ 
+ static __init int setup_node(int pxm)
+ {
+ 	return acpi_map_pxm_to_node(pxm);
  }
- EXPORT_SYMBOL(pcim_iounmap_regions);
- #endif /* CONFIG_PCI */
--#endif /* CONFIG_HAS_IOPORT */
+ 
+-static __init void bad_srat(void)
++void __init disable_acpi_numa(void)
+ {
+-	printk(KERN_ERR "SRAT: SRAT not used.\n");
+-	acpi_numa = -1;
++	acpi_numa = false;
+ }
+ 
+-static __init inline int srat_disabled(void)
++static void __init bad_srat(void)
+ {
+-	return acpi_numa < 0;
++	disable_acpi_numa();
++	printk(KERN_ERR "SRAT: SRAT will not be used.\n");
++}
++
++static bool __init srat_disabled(void)
++{
++	return acpi_numa == false;
+ }
+ 
+ /* Callback for SLIT parsing */
+@@ -88,7 +93,7 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+ 	}
+ 	set_apicid_to_node(apic_id, node);
+ 	node_set(node, numa_nodes_parsed);
+-	acpi_numa = 1;
++	acpi_numa = true;
+ 	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
+ 	       pxm, apic_id, node);
+ }
+@@ -130,7 +135,7 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
+ 
+ 	set_apicid_to_node(apic_id, node);
+ 	node_set(node, numa_nodes_parsed);
+-	acpi_numa = 1;
++	acpi_numa = true;
+ 	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
+ 	       pxm, apic_id, node);
+ }
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 3545585..62e3b2a 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -47,7 +47,7 @@ static __init int numa_setup(char *opt)
+ #endif
+ #ifdef CONFIG_ACPI_NUMA
+ 	if (!strncmp(opt, "noacpi", 6))
+-		acpi_numa = -1;
++		disable_acpi_numa();
+ #endif
+ 	return 0;
+ }
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index bd4c134..724ac84 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1447,7 +1447,7 @@ asmlinkage void __init xen_start_kernel(void)
+ 	 * any NUMA information the kernel tries to get from ACPI will
+ 	 * be meaningless.  Prevent it from trying.
+ 	 */
+-	acpi_numa = -1;
++	disable_acpi_numa();
+ #endif
+ 
+ 	/* Don't do the full vcpu_info placement stuff until we have a
 -- 
 1.7.2.5
-
 
