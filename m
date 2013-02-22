@@ -1,152 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757866Ab3BVQFK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 11:05:10 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:43933 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757287Ab3BVQFH (ORCPT
+	id S1757889Ab3BVQGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 11:06:38 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:33608 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757553Ab3BVQGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 11:05:07 -0500
-Message-ID: <1361548454.12845.36.camel@misato.fc.hp.com>
-Subject: Re: [Update 3][PATCH 2/7] ACPI / scan: Introduce common code for
- ACPI-based device hotplug
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Date: Fri, 22 Feb 2013 08:54:14 -0700
-In-Reply-To: <1935999.6xb63gvAzk@vostro.rjw.lan>
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
-	 <11658900.TkhCHmg9LJ@vostro.rjw.lan> <51273190.7030106@jp.fujitsu.com>
-	 <1935999.6xb63gvAzk@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Feb 2013 11:06:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAC4Lta2aFB5ainNp=pZsnjrGyCkZsE4pVKobSw8BVAyEFsoyHA@mail.gmail.com>
+References: <20130220022712.0E8586607A4@gitolite.kernel.org>
+	<CAKocOOMo-5Hiv_dBCpZNYMP_wXWiWugBYq4qsRcMBwm=TPM=dA@mail.gmail.com>
+	<20130221085654.GB23223@gmail.com>
+	<20130221232600.GA21754@amt.cnet>
+	<CAC4Lta2aFB5ainNp=pZsnjrGyCkZsE4pVKobSw8BVAyEFsoyHA@mail.gmail.com>
+Date: Fri, 22 Feb 2013 09:06:35 -0700
+Message-ID: <CAKocOOOyt0Pg7tyPEFQ6XFiK0LCQcvrauoCkdu68SixgL0Z4fQ@mail.gmail.com>
+Subject: Re: sched: Fix signedness bug in yield_to()
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Raghavendra KT <raghavendra.kt.linux@gmail.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, dan.carpenter@oracle.com,
+        Ingo Molnar <mingo@kernel.org>, peterz@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-22 at 13:37 +0100, Rafael J. Wysocki wrote:
-> On Friday, February 22, 2013 05:51:28 PM Yasuaki Ishimatsu wrote:
-> > 2013/02/22 10:50, Rafael J. Wysocki wrote:
-> > > On Thursday, February 21, 2013 06:12:21 PM Toshi Kani wrote:
-> > >> On Fri, 2013-02-22 at 00:06 +0100, Rafael J. Wysocki wrote:
-> > >>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > >>>
-> > >>> Multiple drivers handling hotplug-capable ACPI device nodes install
-> > >>> notify handlers covering the same types of events in a very similar
-> > >>> way.  Moreover, those handlers are installed in separate namespace
-> > >>> walks, although that really should be done during namespace scans
-> > >>> carried out by acpi_bus_scan().  This leads to substantial code
-> > >>> duplication, unnecessary overhead and behavior that is hard to
-> > >>> follow.
-> > >>>
-> > >>> For this reason, introduce common code in drivers/acpi/scan.c for
-> > >>> handling hotplug-related notification and carrying out device
-> > >>> insertion and eject operations in a generic fashion, such that it
-> > >>> may be used by all of the relevant drivers in the future.  To cover
-> > >>> the existing differences between those drivers introduce struct
-> > >>> acpi_hotplug_profile for representing collections of hotplug
-> > >>> settings associated with different ACPI scan handlers that can be
-> > >>> used by the drivers to make the common code reflect their current
-> > >>> behavior.
-> > >>>
-> > >>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > >>> ---
-> > >>>
-> > >>> This update fixes an issue pointed out by Toshi Kani (that
-> > >>> ACPI_OST_EC_OSPM_* event source codes should not be used with _OST for events
-> > >>> that we received a notification for from the platform firmware).
-> > >>>
-> > >>> Thanks,
-> > >>> Rafael
-> > >>>
-> > >>> ---
-> > >>>   drivers/acpi/scan.c     |  270 ++++++++++++++++++++++++++++++++++++++----------
-> > >>>   include/acpi/acpi_bus.h |    7 +
-> > >>>   2 files changed, 224 insertions(+), 53 deletions(-)
-> > >>   :
-> > >>> +static void acpi_bus_device_eject(void *context)
-> > >>> +{
-> > >>> +	acpi_handle handle = context;
-> > >>> +	struct acpi_device *device = NULL;
-> > >>> +	struct acpi_scan_handler *handler;
-> > >>> +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
-> > >>> +
-> > >>> +	mutex_lock(&acpi_scan_lock);
-> > >>> +
-> > >>> +	acpi_bus_get_device(handle, &device);
-> > >>> +	if (!device)
-> > >>> +		goto err_out;
-> > >>> +
-> > >>> +	handler = device->handler;
-> > >>> +	if (!handler || !handler->hotplug.enabled) {
-> > >>> +		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-> > >>> +		goto err_out;
-> > >>> +	}
-> > >>> +	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
-> > >>> +				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-> > >>> +	if (handler->hotplug.autoeject) {
-> > >>> +		int error;
-> > >>> +
-> > >>> +		get_device(&device->dev);
-> > >>> +		error = acpi_scan_hot_remove(device);
-> > >>> +		if (error)
-> > >>> +			goto err_out;
-> > >>> +	} else {
-> > >>> +		device->flags.eject_pending = true;
-> > >>>   	}
-> > >>> +	if (handler->hotplug.uevents)
-> > >>> +		kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-> > >>
-> > >> I confirmed that the _OST issue with hot-add is fixed.  Here is a new
-> > >> one.  When autoeject is enabled, it crashes in kobject_uevent() since
-> > >> the device is no longer valid.
-> > >
-> > > Well, this one is more difficult.
-> > >
-> > > I can change the ordering so that kobject_uevent() is called before
-> > > acpi_scan_hot_remove(), but then user space may not know that the device is
-> > > being removed at the moment (which still may fail).  Still, maybe this is
-> > > OK, because user space will get KOBJ_REMOVE when the device actually goes
-> > > away anyway.
-> > >
-> > > Or perhaps we can emit KOBJ_OFFLINE before acpi_scan_hot_remove() and if
-> > > it fails, emit KOBJ_ONLINE?
-> > 
-> > How about following patch? My system cannot send EJECT notification.
-> > So I have not tested this patch.
-> 
-> No, that's not correct, acpi_scan_hot_remove(device) will remove the device
-> from sysfs, if successful, among other things.
-> 
-> We can't emit uevents for a device that has been, even though the data
-> structure is still around.
-> 
-> The following are the choices we have, in my opinion:
-> - Emit KOBJ_OFFLINE before removal.
-> - Emit KOBJ_OFFLINE before removal and KOBJ_ONLINE afterwards if it fails.
-> - Do not emit KOBJ_OFFLINE at all with autoeject.
-> 
-> Each of them has some disadvantages, so I'm not sure.  The last one is the
-> easiest, so I'll probably send another update implementing it.
+On Thu, Feb 21, 2013 at 11:42 PM, Raghavendra KT
+<raghavendra.kt.linux@gmail.com> wrote:
+> On Fri, Feb 22, 2013 at 4:56 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+>> On Thu, Feb 21, 2013 at 09:56:54AM +0100, Ingo Molnar wrote:
+>>>
+>>> * Shuah Khan <shuahkhan@gmail.com> wrote:
+>>>
+>>> > On Tue, Feb 19, 2013 at 7:27 PM, Linux Kernel Mailing List
+>>> > <linux-kernel@vger.kernel.org> wrote:
+>>> > > Gitweb:     http://git.kernel.org/linus/;a=commit;h=c3c186403c6abd32e719f005f0af950155a9e54d
+>>> > > Commit:     c3c186403c6abd32e719f005f0af950155a9e54d
+>>> > > Parent:     e0a79f529d5ba2507486d498b25da40911d95cf6
+>>> > > Author:     Dan Carpenter <dan.carpenter@oracle.com>
+>>> > > AuthorDate: Tue Feb 5 14:37:51 2013 +0300
+>>> > > Committer:  Ingo Molnar <mingo@kernel.org>
+>>> > > CommitDate: Tue Feb 5 12:59:29 2013 +0100
+>>> > >
+>>> > >     sched: Fix signedness bug in yield_to()
+>>> > >
+>>> > >     In 7b270f6099 "sched: Bail out of yield_to when source and
+>>> > >     target runqueue has one task" we changed this to store -ESRCH so
+>>> > >     it needs to be signed.
+>>> >
+>>> > Dan, Ingo,
+>>> >
+>>> > I can't find the 7b270f6099 "sched: Bail out of yield_to when
+>>> > source and target runqueue has one task" in the latest Linus's
+>>> > git. Am I missing something.
+>>> >
+>>> > The current kenel/sched/core.c doesn't have the code from the
+>>> > associated patch https://patchwork.kernel.org/patch/2016651/
+>>>
+>>> As per the lkml discussion that one was supposed to go upstream
+>>> via the KVM tree. Marcelo?
+>>
+>> commit c3c186403c6abd32e719f005f0af950155a9e54d
+>> Author: Dan Carpenter <dan.carpenter@oracle.com>
+>> Date:   Tue Feb 5 14:37:51 2013 +0300
+>>
+>>     sched: Fix signedness bug in yield_to()
+>>
+>>     In 7b270f6099 "sched: Bail out of yield_to when source and
+>>     target runqueue has one task" we changed this to store -ESRCH so
+>>     it needs to be signed.
+>>
+>>     Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>>     Cc: Peter Zijlstra <peterz@infradead.org>
+>>     Cc: kbuild@01.org
+>>     Cc: Steven Rostedt <rostedt@goodmis.org>
+>>     Cc: Mike Galbraith <efault@gmx.de>
+>>     Link: http://lkml.kernel.org/r/20130205113751.GA20521@elgon.mountain
+>>     Signed-off-by: Ingo Molnar <mingo@kernel.org>
+>>
+>
+> IIUC, we are only changing variable in yield_to  from bool to int.
+> I am curious whether we need changes in struct  sched_class (sched.h)
+>
+>  bool (*yield_to_task) (struct rq *rq, struct task_struct *p, bool preempt);
+> ==>
+> int (*yield_to_task) (struct rq *rq, struct task_struct *p, bool preempt);
+>
+> otherwise we would assign bool value  to int here
+>
+>  yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+>
+> this return values also cascaded to kvm_main.c.
+>
+> If we need to patchup entire thing, I can cook a correction patch.
+>
+> Thanks and Regards
+> Raghu
 
-I agree with the 3rd option.  KOBJ_REMOVE is emitted when a device is
-removed, so it should be OK to not emitting KOBJ_OFFLINE here.  Besides,
-we are going to rely on a target offlined beforehand, so this code path
-won't have to do it anyway. 
+Right/. I was attempting to back-port
+c3c186403c6abd32e719f005f0af950155a9e54d to stables when I noticed the
+discrepancy. My concerns are:
 
-BTW, it appears that KOBJ_OFFLINE is used for two different purposes
-today.  sysfs cpu/memory emits KOBJ_OFFLINE when a target has been
-offlined.  The container driver (or autoeject is not set with this
-patch) emits KOBJ_OFFLINE to request a user to offline a target.
-Expected action from user space is different from these cases. 
+1. Does it make sense to have c3c186403c6abd32e719f005f0af950155a9e54d
+in without 7b270f6099 "sched: Bail out of yield_to when source and
+target runqueue has one task" and?
+2. Second concern is, is c3c186403c6abd32e719f005f0af950155a9e54d is
+enough or more changes are needed? does __yield_to prototype needs
+changes as well.
 
-Thanks,
--Toshi
+-- Shuah
 
-
+-- Shuah
