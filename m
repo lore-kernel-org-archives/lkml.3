@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758268Ab3BVUnw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 15:43:52 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:43077 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758178Ab3BVUnv (ORCPT
+	id S1758534Ab3BVUvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 15:51:09 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:61027 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758477Ab3BVUvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 15:43:51 -0500
-Message-ID: <5127D884.6020701@linaro.org>
-Date: Fri, 22 Feb 2013 12:43:48 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 22 Feb 2013 15:51:05 -0500
+Date: Fri, 22 Feb 2013 12:50:25 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Ric Mason <ric.masonn@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/7] ksm: add some comments
+In-Reply-To: <5126F360.1060507@gmail.com>
+Message-ID: <alpine.LNX.2.00.1302221239450.6100@eggly.anvils>
+References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <alpine.LNX.2.00.1302210018100.17843@eggly.anvils> <5126F360.1060507@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, linux-efi@vger.kernel.org
-Subject: Re: [RFE PATCH 2/2] rtc, add write functionality to sysfs
-References: <1360861375-24131-1-git-send-email-prarit@redhat.com> <1360861375-24131-3-git-send-email-prarit@redhat.com>
-In-Reply-To: <1360861375-24131-3-git-send-email-prarit@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/2013 09:02 AM, Prarit Bhargava wrote:
-> /sys/class/rtc/rtcX/date and /sys/class/rtc/rtcX/time currently have
-> read-only access.  This patch introduces write functionality which will
-> set the rtc time.
->
-> Usage: echo YYYY-MM-DD > /sys/class/rtc/rtcX/date
->         echo HH:MM:SS > /sys/class/rtc/rtcX/time
+On Fri, 22 Feb 2013, Ric Mason wrote:
+> 
+> What's the root reason merge_across_nodes setting just can be changed only
+> when there are no ksm shared pages in system?
 
-Why do we want to add a new interface here?
+Simplicity.  Why add code (moving nodes from tree to tree, handling
+the collisions) for a rare case that doesn't need to be fast?
 
-thanks
--john
+> Can they be unmerged and merged again during ksmd scan?
 
+That's more or less what happens, isn't it?  Perhaps you're
+asking why the admin has to echo 2 >run; echo 0 >merge; echo 1 >run
+instead of that all happening automatically inside the echo 0 > merge?
+
+If I'd implemented it myself, I might have chosen to do it that way;
+but neither I nor other reviewers felt strongly enough to change that,
+though we could do so.
+
+Hugh
