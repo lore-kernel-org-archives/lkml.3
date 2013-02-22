@@ -1,128 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539Ab3BVOsi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 09:48:38 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:34171 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757151Ab3BVOsg convert rfc822-to-8bit (ORCPT
+	id S1757355Ab3BVOu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 09:50:56 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:42652 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755889Ab3BVOuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 09:48:36 -0500
-Date: Fri, 22 Feb 2013 14:48:30 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Jason Liu <liu.h.jason@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: too many timer retries happen when do local timer swtich with
- broadcast timer
-Message-ID: <20130222144829.GG12140@e102568-lin.cambridge.arm.com>
-References: <alpine.LFD.2.02.1302211015270.22263@ionos>
- <CAB4PhKf+Z-TK4KGDZm1kYOWibg=e2Ehnhjxt_oTbFq9eqouAjA@mail.gmail.com>
- <alpine.LFD.2.02.1302211436300.22263@ionos>
- <51263975.20906@ti.com>
- <alpine.LFD.2.02.1302212214020.22263@ionos>
- <5127436E.4040100@ti.com>
- <alpine.LFD.2.02.1302221122290.22263@ionos>
- <20130222103149.GC12140@e102568-lin.cambridge.arm.com>
- <51275058.7010809@ti.com>
- <alpine.LFD.2.02.1302221212500.22263@ionos>
+	Fri, 22 Feb 2013 09:50:54 -0500
+Date: Fri, 22 Feb 2013 09:50:47 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com
+Subject: [GIT PULL] (xen) stable/for-linus-3.9-rc0-tag
+Message-ID: <20130222145047.GA8017@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1302221212500.22263@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 22 Feb 2013 14:48:30.0738 (UTC) FILETIME=[AE540F20:01CE110B]
-X-MC-Unique: 113022214483302101
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9zSXsLTf0vkW971A"
 Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 12:07:30PM +0000, Thomas Gleixner wrote:
-> On Fri, 22 Feb 2013, Santosh Shilimkar wrote:
-> 
-> > On Friday 22 February 2013 04:01 PM, Lorenzo Pieralisi wrote:
-> > > On Fri, Feb 22, 2013 at 10:24:00AM +0000, Thomas Gleixner wrote:
-> > > > On Fri, 22 Feb 2013, Santosh Shilimkar wrote:
-> > > > > BTW, Lorenzo off-list mentioned to me about warning in boot-up
-> > > > > which I missed while testing your patch. It will take bit more
-> > > > > time for me to look into it and hence thought of reporting it.
-> > > > > 
-> > > > > [    2.186126] ------------[ cut here ]------------
-> > > > > [    2.190979] WARNING: at kernel/time/tick-broadcast.c:501
-> > > > > tick_broadcast_oneshot_control+0x1c0/0x21c()
-> > > > 
-> > > > Which one is that? tick_broadcast_pending or tick_force_broadcast_mask ?
-> > > 
-> > > It is the tick_force_broadcast_mask and I think that's because on all
-> > > systems we are testing, the broadcast timer IRQ is a thundering herd,
-> > > all CPUs get out of idle at once and try to get out of broadcast mode
-> > > at more or less the same time.
-> > > 
-> > So the issue comes ups only when the idle state used where CPU wakeup
-> > more or less at same time as Lorenzo mentioned. I have two platforms
-> > where I could test the patch and see the issue only with one platform.
-> > 
-> > Yesterday I didn't notice the warning because it wasn't seen on that
-> > platform :-) OMAP4 idle entry and exit in deep state is staggered
-> > between CPUs and hence the warning isn't seen. On OMAP5 though,
-> > there is an additional C-state where idle entry/exit for CPU
-> > isn't staggered and I see the issue in that case.
-> > 
-> > Actually the broad-cast code doesn't expect such a behavior
-> > from CPUs since only the broad-cast affine CPU should wake
-> > up and rest of the CPU should be woken up by the broad-cast
-> > IPIs.
-> 
-> That's what I feared. We might have the same issue on x86, depending
-> on the cpu model.
-> 
-> But thinking more about it. It's actually not a real problem, just
-> pointless burning of cpu cycles.
-> 
-> So on the CPU which gets woken along with the target CPU of the
-> broadcast the following happens:
-> 
->   deep_idle()
-> 			<-- spurious wakeup
->   broadcast_exit()
->     set forced bit
->   
->   enable interrupts
->     
-> 			<-- Nothing happens
-> 
->   disable interrupts
-> 
->   broadcast_enter()
-> 			<-- Here we observe the forced bit is set
->   deep_idle()
-> 
-> Now after that the target CPU of the broadcast runs the broadcast
-> handler and finds the other CPU in both the broadcast and the forced
-> mask, sends the IPI and stuff gets back to normal.
-> 
-> So it's not actually harmful, just more evidence for the theory, that
-> hardware designers have access to very special drug supplies.
-> 
-> Now we could make use of that and avoid going deep idle just to come
-> back right away via the IPI. Unfortunately the notification thingy has
-> no return value, but we can fix that.
-> 
-> To confirm that theory, could you please try the hack below and add
-> some instrumentation (trace_printk)?
 
-Applied, and it looks like that's exactly why the warning triggers, at least
-on the platform I am testing on which is a dual-cluster ARM testchip.
+--9zSXsLTf0vkW971A
+Content-Type: multipart/mixed; boundary="oyUTqETQ0mS9luUI"
+Content-Disposition: inline
 
-There is a still time window though where the CPU (the IPI target) can get
-back to idle (tick_broadcast_pending still not set) before the CPU target of
-the broadcast has a chance to run tick_handle_oneshot_broadcast (and set
-tick_broadcast_pending), or am I missing something ?
-It is a corner case, granted. Best thing would be to check pending IRQs in the
-idle driver back-end (or have always-on local timers :-)).
 
-Thanks,
-Lorenzo
+--oyUTqETQ0mS9luUI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+Hey Linus,
+
+Please git pull the following tag:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.9-rc0-tag
+
+which has two new ACPI drivers for Xen - a physical CPU offline/online and
+a memory hotplug. The way this works is that ACPI kicks the drivers and they
+make the appropiate hypercall to the hypervisor to tell it that there is a new
+CPU or memory. There also some changes to the Xen ARM ABIs and couple of fixes.
+One particularly nasty bug in the Xen PV spinlock code was fixed by Stefan Bader
+- and has been there since the 2.6.32!
+
+During the linux-next cycle we found that some of the changes in Rafael's
+pm+acpi-3.9-rc1 tree will cause compile conflicts with my tree.
+Stephen Rothwell found and developed a fix - which I am including as an
+attachment to this - please apply it immediately after my tree. There are some
+other patches that ought to be done on top of this to deal with the new ACPI API
+changes - I've them in this #linux-next-resolved tree:
+
+http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=shortlog;h=refs/heads/linux-next-resolved
+
+if you are curious - but I was thinking to submit them _after_ the rc1 has been
+tagged as I am sure I will have some bug-fixes. There looks to be a lot
+of regressions this season already :-(
+
+ arch/arm/include/asm/xen/events.h |  22 ++
+ arch/arm/include/asm/xen/page.h   |   4 +
+ arch/arm/xen/enlighten.c          |   8 +-
+ arch/x86/include/asm/xen/events.h |   3 +
+ arch/x86/include/asm/xen/page.h   |   2 +
+ arch/x86/xen/smp.c                |  42 ++--
+ arch/x86/xen/spinlock.c           |   1 -
+ drivers/tty/hvc/hvc_xen.c         |   2 +-
+ drivers/xen/Kconfig               |  34 +++
+ drivers/xen/Makefile              |   3 +
+ drivers/xen/events.c              | 115 +++++----
+ drivers/xen/evtchn.c              |  14 +-
+ drivers/xen/grant-table.c         |   2 +-
+ drivers/xen/pcpu.c                |  35 +++
+ drivers/xen/tmem.c                |   2 +-
+ drivers/xen/xen-acpi-cpuhotplug.c | 471 +++++++++++++++++++++++++++++++++++++
+ drivers/xen/xen-acpi-memhotplug.c | 483 ++++++++++++++++++++++++++++++++++++++
+ drivers/xen/xen-stub.c            | 101 ++++++++
+ drivers/xen/xenbus/xenbus_probe.c |   2 +-
+ include/xen/acpi.h                |  35 +++
+ include/xen/interface/memory.h    |   6 +
+ include/xen/interface/platform.h  |  21 +-
+ include/xen/interface/xen.h       |   8 +-
+ 23 files changed, 1331 insertions(+), 85 deletions(-)
+
+Ian Campbell (2):
+      xen: implement updated XENMEM_add_to_physmap_range ABI
+      xen: event channel arrays are xen_ulong_t and not unsigned long
+
+Konrad Rzeszutek Wilk (2):
+      xen/smp: Move the common CPU init code a bit to prep for PVH patch.
+      xen/tmem: Add missing %s in the printk statement.
+
+Liu Jinsong (6):
+      xen/stub: driver for memory hotplug
+      xen/acpi: ACPI memory hotplug
+      xen/stub: driver for CPU hotplug
+      xen/acpi: Move xen_acpi_get_pxm to Xen's acpi.h
+      xen/acpi: ACPI cpu hotplug
+      xen/acpi: move xen_acpi_get_pxm under CONFIG_XEN_DOM0
+
+Stefan Bader (1):
+      xen: Send spinlock IPI to all waiters
+
+Stefano Stabellini (1):
+      xen: introduce xen_remap, use it instead of ioremap
+
+Wei Liu (2):
+      xen-evtchn: correct comment and error output
+      xen: close evtchn port if binding to irq fails
+
+
+--oyUTqETQ0mS9luUI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="0001-xen-acpi-fix-up-for-apci_bus_add-api-change.patch"
+Content-Transfer-Encoding: quoted-printable
+
+=46rom 56810ee0f6d5ce9da9f5dddfc459ee0041eb22cc Mon Sep 17 00:00:00 2001
+=46rom: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 15 Feb 2013 15:45:51 +1100
+Subject: [PATCH] xen/acpi: fix up for apci_bus_add api change
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/xen/xen-acpi-cpuhotplug.c | 2 +-
+ drivers/xen/xen-acpi-memhotplug.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/xen/xen-acpi-cpuhotplug.c b/drivers/xen/xen-acpi-cpuho=
+tplug.c
+index 9eefbb0..acc5b12 100644
+--- a/drivers/xen/xen-acpi-cpuhotplug.c
++++ b/drivers/xen/xen-acpi-cpuhotplug.c
+@@ -251,7 +251,7 @@ int acpi_processor_device_add(acpi_handle handle, struc=
+t acpi_device **device)
+ 	if (acpi_bus_get_device(phandle, &pdev))
+ 		return -ENODEV;
+=20
+-	if (acpi_bus_add(device, pdev, handle, ACPI_BUS_TYPE_PROCESSOR))
++	if (acpi_bus_scan(handle))
+ 		return -ENODEV;
+=20
+ 	return 0;
+diff --git a/drivers/xen/xen-acpi-memhotplug.c b/drivers/xen/xen-acpi-memho=
+tplug.c
+index 678680c..164287b 100644
+--- a/drivers/xen/xen-acpi-memhotplug.c
++++ b/drivers/xen/xen-acpi-memhotplug.c
+@@ -188,7 +188,7 @@ acpi_memory_get_device(acpi_handle handle,
+ 	 * Now add the notified device.  This creates the acpi_device
+ 	 * and invokes .add function
+ 	 */
+-	result =3D acpi_bus_add(&device, pdevice, handle, ACPI_BUS_TYPE_DEVICE);
++	result =3D acpi_bus_scan(handle);
+ 	if (result) {
+ 		pr_warn(PREFIX "Cannot add acpi bus\n");
+ 		return -EINVAL;
+--=20
+1.8.0.2
+
+
+--oyUTqETQ0mS9luUI--
+
+--9zSXsLTf0vkW971A
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQEcBAEBAgAGBQJRJ4XBAAoJEFjIrFwIi8fJKQYIAKT23ASusPoYamrmn7hKFdx8
+9C+GpeQY+HeuLanH17dRZuIRFtclXKGNugV8nswhJEGzsxkEFWV/8xo+A2wX3X3w
+qsu8L1LSsvGERGGqNs0BQK0A+aeIeRi1hZMGhYhpIK+XqqLoAJrBHOpuu/jJea5N
+v8PxrY3jCuanBnq7EsfLTGMCJBG7tClXel6sHXSU/htCPwPT+zo+f4tOC+uwkDqN
+FFG36vTsdnFpbzqP9IaIfYRwFuFz0pAF5OZOnl9lp0rIghGHQs+9CwzvDB0rYrnx
+bVa7dVe2E6CVY9rMw3UoesJaSZzsdO3WO+ItpbBqN8OLadmpMoFAX1pECY1+eNs=
+=B8G4
+-----END PGP SIGNATURE-----
+
+--9zSXsLTf0vkW971A--
