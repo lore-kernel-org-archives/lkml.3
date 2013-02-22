@@ -1,202 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab3BVCMg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 21:12:36 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:41135 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753037Ab3BVCMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 21:12:33 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-        Huang Ying <ying.huang@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [BUG bisected]: apei_hest_parse explosion
-Date: Fri, 22 Feb 2013 03:19:11 +0100
-Message-ID: <4867361.uTndA5QxsU@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <3310807.g9DvzzvEFn@vostro.rjw.lan>
-References: <alpine.LFD.2.02.1302220002040.22263@ionos> <CAE9FiQXV43emyjjCb=D=xFLz-n6q0Eu0uQmVhAA470A=FGRhww@mail.gmail.com> <3310807.g9DvzzvEFn@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754858Ab3BVCNH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 21:13:07 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:37336 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086Ab3BVCNE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 21:13:04 -0500
+X-AuditID: cbfee690-b7f066d00000169f-df-5126d42d910a
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Igor Grinberg'" <grinberg@compulab.co.il>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <00cb01ce100d$dc282200$94786600$%han@samsung.com>
+ <5125DF5C.7070700@compulab.co.il>
+In-reply-to: <5125DF5C.7070700@compulab.co.il>
+Subject: Re: [PATCH] rtc: rtc-v3020: use gpio_request_one()
+Date: Fri, 22 Feb 2013 11:13:01 +0900
+Message-id: <008901ce10a2$23c9fef0$6b5dfcd0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4QED48+6yQglucRhW8LTiO1vzyDwAkXkmg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t8zfV3dK2qBBu0rVCwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG3ZuTWQouclf8+vedqYGxj7OLkZNDQsBEYtqn18wQtpjEhXvr
+	2boYuTiEBJYxSjT+/8UGU/TiwD9miMR0Rok9n4+zQjizmSQur1zGClLFJqAm8eXLYXYQW0RA
+	V2L99DZGkCJmgT2MEj93vgErEhJIlLg6+wRQgoODU0BP4tpaL5CwsIC1xPvXfWC9LAKqEssa
+	14Jt5hWwlZi38D8LhC0o8WPyPTCbWUBLYv3O40wQtrzE5jVvmUFGSgioSzz6qwtxgpHEnjmP
+	oMpFJPa9eMcI8cwidokNPUkQqwQkvk0+xALRKiux6QA0ICQlDq64wTKBUWIWksWzkCyehWTx
+	LCQbFjCyrGIUTS1ILihOSi8y0StOzC0uzUvXS87P3cQIiawJOxjvHbA+xJgMtH4is5Rocj4w
+	MvNK4g2NjU3MTExNzC1NzU1JE1YS55W/JBMoJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgTGK
+	Y/PBvftMwrdEZ/fISGrG8x2yVqs+pLLm3+uHtbPk1ueFV/MpBmzy/biKc6biHdOQhoROph0H
+	K1b1HZNpX6Da+GLGiUSthAQ21Va1aCdXkXDfigsd0alnj+tMmifVKrIiXMK+WPVgxZHNWnf8
+	5/O1y51xlKi5s6g6zGGP3DlxzeUfZB1LlFiKMxINtZiLihMBHXgJgsICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42I5/e+xoK7uFbVAg9Y/8haXd81hc2D0+LxJ
+	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
+	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4+7NySwFF7krfv37ztTA
+	2MfZxcjJISFgIvHiwD9mCFtM4sK99WxdjFwcQgLTGSX2fD7OCuHMZpK4vHIZK0gVm4CaxJcv
+	h9lBbBEBXYn109sYQYqYBfYwSvzc+QasSEggUeLq7BNACQ4OTgE9iWtrvUDCwgLWEu9f94H1
+	sgioSixrXMsGYvMK2ErMW/ifBcIWlPgx+R6YzSygJbF+53EmCFteYvOat8wgIyUE1CUe/dWF
+	OMFIYs+cR1DlIhL7XrxjnMAoNAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz
+	0vWS83M3MYIj95n0DsZVDRaHGAU4GJV4eDu81QKFWBPLiitzDzFKcDArifDqhwKFeFMSK6tS
+	i/Lji0pzUosPMSYDPTqRWUo0OR+YVPJK4g2NTcyMLI3MLIxMzM1JE1YS52U89SRASCA9sSQ1
+	OzW1ILUIZgsTB6dUA+Oyreyysw53bK76dSDnvY2lnpnOoS3RfVWVImWz1plmcYh659r5zba+
+	/uOStxnLw2/Xnu/Id+H5FiC4qelCyLE/x4XftrgenF98K+W8RdcstY9MZQwzdR4U2xXvf8VU
+	/0ib20pOcWZrrNvWNvMezZ38OlXFd34pPSmbeKzEX0vo0NUdvHEu2kosxRmJhlrMRcWJANms
+	0zYgAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 22, 2013 02:40:58 AM Rafael J. Wysocki wrote:
-> On Thursday, February 21, 2013 05:23:19 PM Yinghai Lu wrote:
-> > On Thu, Feb 21, 2013 at 4:15 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > On Friday, February 22, 2013 12:56:01 AM Thomas Gleixner wrote:
-> > >> Just booted linus head on one of my old kvm based testing systems and
-> > >> got the following splat:
-> > >>
-> > >> [    0.531910] BUG: unable to handle kernel NULL pointer dereference at 0000000000000024
-> > >> [    0.532173] IP: [<ffffffff812f1bd2>] apei_hest_parse+0xd2/0xf0
-> > >> [    0.532173] PGD 0
-> > >> [    0.532173] Oops: 0000 [#1] PREEMPT SMP
-> > >> [    0.532173] Modules linked in:
-> > >> [    0.532173] CPU 3
-> > >> [    0.532173] Pid: 1, comm: swapper/0 Not tainted 3.8.0+ #195 Bochs Bochs
-> > >> [    0.532173] RIP: 0010:[<ffffffff812f1bd2>]  [<ffffffff812f1bd2>] apei_hest_parse+0xd2/0xf0
-> > >> [    0.532173] RSP: 0000:ffff88021685be78  EFLAGS: 00010206
-> > >> [    0.532173] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000000
-> > >> [    0.532173] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000028
-> > >> [    0.532173] RBP: ffff88021685be98 R08: 00000000804efb06 R09: 0000000000000000
-> > >> [    0.532173] R10: 0000000000000001 R11: 0000000000000000 R12: ffffffff81af3d40
-> > >> [    0.532173] R13: ffffffff812bcb23 R14: 0000000000000000 R15: 0000000000000000
-> > >> [    0.532173] FS:  0000000000000000(0000) GS:ffff88021fcc0000(0000) knlGS:0000000000000000
-> > >> [    0.532173] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> > >> [    0.532173] CR2: 0000000000000024 CR3: 0000000001a0c000 CR4: 00000000000406a0
-> > >> [    0.532173] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > >> [    0.532173] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > >> [    0.532173] Process swapper/0 (pid: 1, threadinfo ffff88021685a000, task ffff8802168c0000)
-> > >> [    0.532173] Stack:
-> > >> [    0.532173]  00000000fffffffa ffffffff81af3d40 0000000000000000 000000001fb3f55a
-> > >> [    0.532173]  ffff88021685bea8 ffffffff812bcbe4 ffff88021685bec8 ffffffff81af3d5c
-> > >> [    0.532173]  0000000000000030 0000000000000030 ffff88021685bef8 ffffffff8100023b
-> > >> [    0.532173] Call Trace:
-> > >> [    0.532173]  [<ffffffff81af3d40>] ? pcie_portdrv_init+0x7a/0x7a
-> > >> [    0.532173]  [<ffffffff812bcbe4>] aer_acpi_firmware_first+0x20/0x30
-> > >> [    0.532173]  [<ffffffff81af3d5c>] aer_service_init+0x1c/0x35
-> > >> [    0.532173]  [<ffffffff8100023b>] do_one_initcall+0x57/0x13c
-> > >> [    0.532173]  [<ffffffff81ad2d39>] kernel_init_freeable+0x142/0x1d1
-> > >> [    0.532173]  [<ffffffff81ad254f>] ? loglevel+0x31/0x31
-> > >> [    0.532173]  [<ffffffff815a8cef>] ? rest_init+0xc3/0xc3
-> > >> [    0.532173]  [<ffffffff815a8cfd>] kernel_init+0xe/0xd6
-> > >> [    0.532173]  [<ffffffff815bc73c>] ret_from_fork+0x7c/0xb0
-> > >> [    0.532173]  [<ffffffff815a8cef>] ? rest_init+0xc3/0xc3
-> > >> [    0.532173] Code: 14 0f b7 77 02 31 c0 48 c7 c7 65 c1 83 81 e8 35 1a 2c 00 eb 23 4c 89 f6 41 ff d5 85 c0 75 1e 4c 89 e7 ff c3 48 8b 05 a6 5b 7c 00 <3b> 58 24 0f 82 5a ff ff ff 31 c0 eb 05 b8 ea ff ff ff 5b 41 5c
-> > >>
-> > >> git bisect identified the following commit:
-> > >>
-> > >> commit 92ef2a25c763338905dce8344a0584606f842920
-> > >> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > >> Date:   Fri Dec 21 00:36:40 2012 +0100
-> > >>
-> > >>     ACPI: Change the ordering of PCI root bridge driver registrarion
-> > >>
-> > >> A revert is impossible w/o major surgery, so I'm going to bed and let
-> > >> the involved folks think about it.
-> > >
-> > > Can you please post a dmesg boot log from v3.8 on the same system?
-> > >
-> > 
-> > looks at the code flow, acpi_hest_init() is called early correctly.
-> > 
-> > later aer_acpi_firmware_first() should not hit hest_tab is NULL, but
-> > hest_disable is not set.
-> > 
-> > could be some data corruption.. near hest_disable or hest_tab.
+On Thursday, February 21, 2013 5:48 PM, Igor Grinberg wrote:
 > 
-> Yes, that's really odd.
+> On 02/21/13 10:31, Jingoo Han wrote:
+> > Using gpio_request_one() can make the code simpler because it can
+> > set the direction and initial value in one shot.
 > 
-> It looks like the hest_tab memory mapping is unmapped between acpi_hest_init()
-> and aer_acpi_firmware_first(), but I have no idea what may be responsible for
-> that.
+> If you are on this, then I think converting to gpio_request_array()
+> would be even better.
+
+Hi Igor Grinberg,
+
+OK, I see.
+I will use gpio_request_array() and send v2 patch soon.
+Thank you for your comment.
+
+
+Best regards,
+Jingoo Han
+
 > 
-> And the only relevant difference between now and before the commit above seems
-> to be the change of the acpi_hest_init() ordering (which now is called earlier).
+> >
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > ---
+> >  drivers/rtc/rtc-v3020.c |    5 ++---
+> >  1 files changed, 2 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/rtc/rtc-v3020.c b/drivers/rtc/rtc-v3020.c
+> > index bca5d67..d59cd24 100644
+> > --- a/drivers/rtc/rtc-v3020.c
+> > +++ b/drivers/rtc/rtc-v3020.c
+> > @@ -125,11 +125,10 @@ static int v3020_gpio_map(struct v3020 *chip, struct platform_device *pdev,
+> >  	v3020_gpio[V3020_IO].gpio = pdata->gpio_io;
+> >
+> >  	for (i = 0; i < ARRAY_SIZE(v3020_gpio); i++) {
+> > -		err = gpio_request(v3020_gpio[i].gpio, v3020_gpio[i].name);
+> > +		err = gpio_request_one(v3020_gpio[i].gpio, GPIOF_OUT_INIT_HIGH,
+> > +					v3020_gpio[i].name);
+> >  		if (err)
+> >  			goto err_request;
+> > -
+> > -		gpio_direction_output(v3020_gpio[i].gpio, 1);
+> >  	}
+> 
+> If you convert to gpio_request_array(), you can also drop the for loop.
+> 
+> >
+> >  	chip->gpio = v3020_gpio;
+> >
+> 
+> --
+> Regards,
+> Igor.
 
-We actually don't really need to do that thing so early, I think.  It looks like
-we only need to make it available early enough for the AER driver to be able to
-use it, so I wonder if moving the acpi_hest_init() to a separate
-subsys_initcall() will work around the problem.  That is, something like the
-patch below.
-
-But even if this helps, I will be wanting to understand what's up here.
-
-Thanks,
-Rafael
-
-
----
- drivers/acpi/apei/hest.c |   17 +++++++++++------
- drivers/acpi/pci_root.c  |    2 --
- include/acpi/apei.h      |    6 ------
- 3 files changed, 11 insertions(+), 14 deletions(-)
-
-Index: test/drivers/acpi/apei/hest.c
-===================================================================
---- test.orig/drivers/acpi/apei/hest.c
-+++ test/drivers/acpi/apei/hest.c
-@@ -205,7 +205,7 @@ static int __init setup_hest_disable(cha
- 
- __setup("hest_disable", setup_hest_disable);
- 
--void __init acpi_hest_init(void)
-+static int __init acpi_hest_init(void)
- {
- 	acpi_status status;
- 	int rc = -ENODEV;
-@@ -213,7 +213,7 @@ void __init acpi_hest_init(void)
- 
- 	if (hest_disable) {
- 		pr_info(HEST_PFX "Table parsing disabled.\n");
--		return;
-+		return 0;
- 	}
- 
- 	if (acpi_disabled)
-@@ -221,9 +221,10 @@ void __init acpi_hest_init(void)
- 
- 	status = acpi_get_table(ACPI_SIG_HEST, 0,
- 				(struct acpi_table_header **)&hest_tab);
--	if (status == AE_NOT_FOUND)
-+	if (status == AE_NOT_FOUND) {
-+		pr_info(HEST_PFX "Table not found.\n");
- 		goto err;
--	else if (ACPI_FAILURE(status)) {
-+	} else if (ACPI_FAILURE(status)) {
- 		const char *msg = acpi_format_exception(status);
- 		pr_err(HEST_PFX "Failed to get table, %s\n", msg);
- 		rc = -EINVAL;
-@@ -240,7 +241,11 @@ void __init acpi_hest_init(void)
- 	}
- 
- 	pr_info(HEST_PFX "Table parsing has been initialized.\n");
--	return;
--err:
-+	return 0;
-+
-+ err:
- 	hest_disable = 1;
-+	return rc;
- }
-+
-+subsys_initcall(acpi_hest_init);
-Index: test/drivers/acpi/pci_root.c
-===================================================================
---- test.orig/drivers/acpi/pci_root.c
-+++ test/drivers/acpi/pci_root.c
-@@ -656,8 +656,6 @@ static void acpi_pci_root_remove(struct
- 
- void __init acpi_pci_root_init(void)
- {
--	acpi_hest_init();
--
- 	if (!acpi_pci_disabled) {
- 		pci_acpi_crs_quirks();
- 		acpi_scan_add_handler(&pci_root_handler);
-Index: test/include/acpi/apei.h
-===================================================================
---- test.orig/include/acpi/apei.h
-+++ test/include/acpi/apei.h
-@@ -24,12 +24,6 @@ extern bool ghes_disable;
- #define ghes_disable 1
- #endif
- 
--#ifdef CONFIG_ACPI_APEI
--void __init acpi_hest_init(void);
--#else
--static inline void acpi_hest_init(void) { return; }
--#endif
--
- typedef int (*apei_hest_func_t)(struct acpi_hest_header *hest_hdr, void *data);
- int apei_hest_parse(apei_hest_func_t func, void *data);
- 
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
