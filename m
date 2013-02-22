@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab3BVUhY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 15:37:24 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:50172 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756413Ab3BVUhW (ORCPT
+	id S1757165Ab3BVUhh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 15:37:37 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:43524 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756998Ab3BVUhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 15:37:22 -0500
-Message-ID: <5127D6FE.2020802@linaro.org>
-Date: Fri, 22 Feb 2013 12:37:18 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 22 Feb 2013 15:37:32 -0500
+Date: Fri, 22 Feb 2013 12:37:29 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: George Zhang <georgezhang@vmware.com>, Andy King <acking@vmware.com>,
+        Dmitry Torokhov <dtor@vmware.com>, linux-kernel@vger.kernel.org
+Subject: Re: [patch] drivers, vmci: vmware vmci driver depends on
+ CONFIG_NET
+In-Reply-To: <alpine.DEB.2.02.1302211344180.28115@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.02.1302221236480.10081@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1302211344180.28115@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Dong Zhu <bluezhudong@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] timekeeping: avoid adjust kernel time once hwclock kept
- in UTC time
-References: <20121206140334.GA24261@zhudong.nay.redhat.com>
-In-Reply-To: <20121206140334.GA24261@zhudong.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2012 06:03 AM, Dong Zhu wrote:
->  From c126376cf1837b0956e0268056db61870fbbc1d4 Mon Sep 17 00:00:00 2001
-> From: Dong Zhu <bluezhudong@gmail.com>
-> Date: Thu, 6 Dec 2012 21:45:00 +0800
-> Subject: [PATCH] timekeeping: avoid adjust kernel time once hwclock kept in
->   UTC time
->
-> If the Hardware Clock kept in local time,kernel will adjust the time
-> to be UTC time.But if Hardware Clock kept in UTC time,system will make
-> a dummy settimeofday call first (sys_tz.tz_minuteswest = 0) to make sure
-> the time is not shifted,so at this point I think maybe it is not necessary
-> to set the kernel time once the sys_tz.tz_minuteswest is zero.
->
-> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+On Thu, 21 Feb 2013, David Rientjes wrote:
 
-Sorry for the long delay here, and thank you for the reminder!
+> CONFIG_VMWARE_VMCI requires CONFIG_NET, otherwise there is a link error:
+> 
+> drivers/built-in.o: In function `__qp_memcpy_from_queue.isra.11':
+> vmci_queue_pair.c:(.text+0x2d4509): undefined reference to `memcpy_toiovec'
+> drivers/built-in.o: In function `__qp_memcpy_to_queue.isra.12':
+> vmci_queue_pair.c:(.text+0x2d4709): undefined reference to `memcpy_fromiovec'
+> 
 
-I've merged this patch in my tree (reworking it to merge with other 
-changes in that area). And I'm likely to make a follow on patch that 
-will use timekeeping_inject_offset() so we don't add any extra time 
-error unnecessarily. Both will be queued for 3.10.
-
-thanks
--john
-
+This link error has made it to Linus' tree, so hopefully this can be 
+merged and pushed before rc1.
