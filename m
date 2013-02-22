@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab3BVVEc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 16:04:32 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:59142 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757032Ab3BVVEb (ORCPT
+	id S1757430Ab3BVVF5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 16:05:57 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:62635 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756789Ab3BVVFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 16:04:31 -0500
-Date: Fri, 22 Feb 2013 13:03:51 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Ric Mason <ric.masonn@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/7] ksm: treat unstable nid like in stable tree
-In-Reply-To: <51271A7D.6020305@gmail.com>
-Message-ID: <alpine.LNX.2.00.1302221250440.6100@eggly.anvils>
-References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <alpine.LNX.2.00.1302210019390.17843@eggly.anvils> <51271A7D.6020305@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 22 Feb 2013 16:05:55 -0500
+Message-ID: <5127DDAF.2000403@linaro.org>
+Date: Fri, 22 Feb 2013 13:05:51 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Prarit Bhargava <prarit@redhat.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, linux-efi@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [RFE PATCH 2/2] rtc, add write functionality to sysfs
+References: <1360861375-24131-1-git-send-email-prarit@redhat.com> <1360861375-24131-3-git-send-email-prarit@redhat.com> <5127D884.6020701@linaro.org> <5127DB2B.3030700@redhat.com>
+In-Reply-To: <5127DB2B.3030700@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Feb 2013, Ric Mason wrote:
-> On 02/21/2013 04:20 PM, Hugh Dickins wrote:
-> > An inconsistency emerged in reviewing the NUMA node changes to KSM:
-> > when meeting a page from the wrong NUMA node in a stable tree, we say
-> > that it's okay for comparisons, but not as a leaf for merging; whereas
-> > when meeting a page from the wrong NUMA node in an unstable tree, we
-> > bail out immediately.
-> 
-> IIUC
-> - ksm page from the wrong NUMA node will be add to current node's stable tree
+On 02/22/2013 12:55 PM, Prarit Bhargava wrote:
+>
+> On 02/22/2013 03:43 PM, John Stultz wrote:
+>> On 02/14/2013 09:02 AM, Prarit Bhargava wrote:
+>>> /sys/class/rtc/rtcX/date and /sys/class/rtc/rtcX/time currently have
+>>> read-only access.  This patch introduces write functionality which will
+>>> set the rtc time.
+>>>
+>>> Usage: echo YYYY-MM-DD > /sys/class/rtc/rtcX/date
+>>>          echo HH:MM:SS > /sys/class/rtc/rtcX/time
+>> Why do we want to add a new interface here?
+> John,
+>
+> I'm not adding a new interface.  The current date/time interface only handles
+> read and I'm introducing write.
+>
 
-That should never happen (and when I was checking with a WARN_ON it did
-not happen).  What can happen is that a node already in a stable tree
-has its page migrated away to another NUMA node.
+Right, but what benefit does that provide?
+(I'm not saying there isn't any, its just not clear from your patch why 
+this is a good thing.)
 
-> - normal page from the wrong NUMA node will be merged to current node's
-> stable tree  <- where I miss here? I didn't see any special handling in
-> function stable_tree_search for this case.
+Also CC'ing Alessandro for his input.
 
-	nid = get_kpfn_nid(page_to_pfn(page));
-	root = root_stable_tree + nid;
+thanks
+-john
 
-to choose the right tree for the page, and
 
-				if (get_kpfn_nid(stable_node->kpfn) !=
-						NUMA(stable_node->nid)) {
-					put_page(tree_page);
-					goto replace;
-				}
-
-to make sure that we don't latch on to a node whose page got migrated away.
-
-> - normal page from the wrong NUMA node will compare but not as a leaf for
-> merging after the patch
-
-I don't understand you there, but hope my remarks above resolve it.
-
-Hugh
