@@ -1,68 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757667Ab3BVCgs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 21:36:48 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:57172 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757643Ab3BVCgq (ORCPT
+	id S1757712Ab3BVChc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 21:37:32 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:52288 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754649Ab3BVCha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 21:36:46 -0500
-Date: Fri, 22 Feb 2013 13:36:31 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Miao Xie <miaox@cn.fujitsu.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: linux-next: manual merge of the writeback tree with the btrfs tree
-Message-Id: <20130222133631.1441b0e703faeb40e29eb6c4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__22_Feb_2013_13_36_31_+1100_.ueqiJcrkOI1Trc9"
+	Thu, 21 Feb 2013 21:37:30 -0500
+Message-ID: <5126D9E0.7040108@linux.vnet.ibm.com>
+Date: Fri, 22 Feb 2013 10:37:20 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
+References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com> <1361442055.26780.3.camel@laptop>
+In-Reply-To: <1361442055.26780.3.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022202-3568-0000-0000-00000331AB4C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__22_Feb_2013_13_36_31_+1100_.ueqiJcrkOI1Trc9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/21/2013 06:20 PM, Peter Zijlstra wrote:
+> On Thu, 2013-02-21 at 12:51 +0800, Michael Wang wrote:
+>> The old logical when locate affine_sd is:
+>>
+>>         if prev_cpu != curr_cpu
+>>                 if wake_affine()
+>>                         prev_cpu = curr_cpu
+>>         new_cpu = select_idle_sibling(prev_cpu)
+>>         return new_cpu
+>>
+>> The new logical is same to the old one if prev_cpu == curr_cpu, so
+>> let's
+>> simplify the old logical like:
+>>
+>>         if wake_affine()
+>>                 new_cpu = select_idle_sibling(curr_cpu)
+>>         else
+>>                 new_cpu = select_idle_sibling(prev_cpu)
+>>
+>>         return new_cpu
+>>
+>> Actually that doesn't make sense.
+> 
+> It does :-)
+> 
+>> I think wake_affine() is trying to check whether move a task from
+>> prev_cpu to curr_cpu will break the balance in affine_sd or not, but
+>> why
+>> won't break balance means curr_cpu is better than prev_cpu for
+>> searching
+>> the idle cpu?
+> 
+> It doesn't, the whole affine wakeup stuff is meant to pull waking tasks
+> towards the cpu that does the wakeup, we limit this by putting bounds on
+> the imbalance this is may create.
+> 
+> The reason we want to run tasks on the cpu that does the wakeup is
+> because that cpu 'obviously' is running something related and it seems
+> like a good idea to run related tasks close together.
+> 
+> So look at affine wakeups as a force that groups related tasks.
 
-Hi Wu,
+That's right, and it's one point I've missed when judging the
+wake_affine()...
 
-Today's linux-next merge of the writeback tree got a conflict in
-fs/btrfs/extent-tree.c between commit da633a421701 ("Btrfs: flush all
-dirty inodes if writeback can not start") from the btrfs tree and commit
-10ee27a06cc8 ("vfs: re-implement writeback_inodes_sb(_nr)_if_idle() and
-rename them") from the writeback tree.
+But that's really some benefit hardly to be estimate, especially when
+the workload is heavy, the cost of wake_affine() is very high to
+calculated se one by one, is that worth for some benefit we could not
+promise?
 
-I fixed it up (I assumed that the former supercedes the latter and used
-that) and can carry the fix as necessary (no action is required).
+According to the testing result, I could not agree this purpose of
+wake_affine() benefit us, but I'm sure that wake_affine() is a terrible
+performance killer when system is busy.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+>> So the new logical in this patch set is:
+>>
+>>         new_cpu = select_idle_sibling(prev_cpu)
+>>         if idle_cpu(new_cpu)
+>>                 return new_cpu
+>>
+>>         new_cpu = select_idle_sibling(curr_cpu)
+>>         if idle_cpu(new_cpu) {
+>>                 if wake_affine()
+>>                         return new_cpu
+>>         }
+>>
+>>         return prev_cpu
+>>
+>> And now, unless we are really going to move load from prev_cpu to
+>> curr_cpu, we won't use wake_affine() any more.
+> 
+> That's completely breaks stuff, not cool.
 
---Signature=_Fri__22_Feb_2013_13_36_31_+1100_.ueqiJcrkOI1Trc9
-Content-Type: application/pgp-signature
+Could you please give more details on what's the point you think is bad?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Regards,
+Michael Wang
 
-iQIcBAEBCAAGBQJRJtmvAAoJEECxmPOUX5FEowQP/iFUnrDOnqfSUH+TGQzuRqS4
-4zsGb6HifQL9oP1av9/8gI1O6SxYYlMT6wrsxBlR5Dk9hIL/aiiX8/+DXpWHR+St
-HdJhJYOJ6Y1+PIMSt7mXNWm/nwjZLDw4wely5MYNVdCZeHV879EM5PvsZFWZZgi3
-MKOfqFzyElvD2qU77fpekwG1YLLb+St8EFlPE+8ZR9WPPfGAZaR0+d31TQ08SwML
-OJHstu0m1t8vhGmmrJreRCj1xJ7/ZF+BIpT9m2R0Wn4/RaoDBQMSPn+Pd27/UiHR
-P3/H+0Keo8G7XweotPUgCAPyGWPtihpdKvM/2W0ow7vBmr2lCXyEYWDhqDl1N5vl
-o+Sc4pah8bGi0/nt5fnFEauj04uA+EeidU+LscjYkfOF/+lsU7volPaIzfIoteZY
-SfISJ1deR6vRTPmOnwl7TXtmfWneaeirm0/PDDqFFwGzZRBZ2tJhTapoZ7R5CF3i
-IC8RWCMF2YHd5YyQ6pfUqAavPJG0UNSsEzKrYLZGhaZWYsNDqJibf1QVgOJs+4u5
-2PSVCsJsDlfxpYt2SHVWUwrbQ2w6rhMcx7vdwyjBNvNjvrevbuQfBZ/Cn0B7D+uG
-FjMyi4XyJN1mfKh+XcufZNYmKEO2Y+EUUeIDT2lVjd+/1cFZ6yLCCXrU2uZNdcZK
-PPMH9hlqmMZvlrF+aTiz
-=dcir
------END PGP SIGNATURE-----
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
---Signature=_Fri__22_Feb_2013_13_36_31_+1100_.ueqiJcrkOI1Trc9--
