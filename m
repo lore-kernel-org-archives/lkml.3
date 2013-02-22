@@ -1,145 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab3BVC7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 21:59:17 -0500
-Received: from mail-qc0-f195.google.com ([209.85.216.195]:56150 "EHLO
-	mail-qc0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754527Ab3BVC7N (ORCPT
+	id S1757648Ab3BVDBK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 22:01:10 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:25701 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755459Ab3BVDBG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 21:59:13 -0500
-Message-ID: <5126DEF6.9010303@gmail.com>
-Date: Fri, 22 Feb 2013 10:59:02 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 21 Feb 2013 22:01:06 -0500
+X-IronPort-AV: E=Sophos;i="4.84,713,1355068800"; 
+   d="scan'208";a="6746493"
+Message-ID: <5126DC06.5020005@cn.fujitsu.com>
+Date: Fri, 22 Feb 2013 10:46:30 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCHv5 2/8] zsmalloc: add documentation
-References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com> <1360780731-11708-3-git-send-email-sjenning@linux.vnet.ibm.com> <511F254D.2010909@gmail.com> <51227DF4.9020900@linux.vnet.ibm.com> <5125DFAA.4050706@gmail.com> <5126423F.7040705@linux.vnet.ibm.com>
-In-Reply-To: <5126423F.7040705@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Sasha Levin <sasha.levin@oracle.com>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kexec: prevent double free on image allocation failure
+References: <1361496375-30994-1-git-send-email-sasha.levin@oracle.com> <87vc9l5cz4.fsf@xmission.com>
+In-Reply-To: <87vc9l5cz4.fsf@xmission.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/22 10:47:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/22 11:00:20
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 11:50 PM, Seth Jennings wrote:
-> On 02/21/2013 02:49 AM, Ric Mason wrote:
->> On 02/19/2013 03:16 AM, Seth Jennings wrote:
->>> On 02/16/2013 12:21 AM, Ric Mason wrote:
->>>> On 02/14/2013 02:38 AM, Seth Jennings wrote:
->>>>> This patch adds a documentation file for zsmalloc at
->>>>> Documentation/vm/zsmalloc.txt
->>>>>
->>>>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
->>>>> ---
->>>>>     Documentation/vm/zsmalloc.txt |   68
->>>>> +++++++++++++++++++++++++++++++++++++++++
->>>>>     1 file changed, 68 insertions(+)
->>>>>     create mode 100644 Documentation/vm/zsmalloc.txt
->>>>>
->>>>> diff --git a/Documentation/vm/zsmalloc.txt
->>>>> b/Documentation/vm/zsmalloc.txt
->>>>> new file mode 100644
->>>>> index 0000000..85aa617
->>>>> --- /dev/null
->>>>> +++ b/Documentation/vm/zsmalloc.txt
->>>>> @@ -0,0 +1,68 @@
->>>>> +zsmalloc Memory Allocator
->>>>> +
->>>>> +Overview
->>>>> +
->>>>> +zmalloc a new slab-based memory allocator,
->>>>> +zsmalloc, for storing compressed pages.  It is designed for
->>>>> +low fragmentation and high allocation success rate on
->>>>> +large object, but <= PAGE_SIZE allocations.
->>>>> +
->>>>> +zsmalloc differs from the kernel slab allocator in two primary
->>>>> +ways to achieve these design goals.
->>>>> +
->>>>> +zsmalloc never requires high order page allocations to back
->>>>> +slabs, or "size classes" in zsmalloc terms. Instead it allows
->>>>> +multiple single-order pages to be stitched together into a
->>>>> +"zspage" which backs the slab.  This allows for higher allocation
->>>>> +success rate under memory pressure.
->>>>> +
->>>>> +Also, zsmalloc allows objects to span page boundaries within the
->>>>> +zspage.  This allows for lower fragmentation than could be had
->>>>> +with the kernel slab allocator for objects between PAGE_SIZE/2
->>>>> +and PAGE_SIZE.  With the kernel slab allocator, if a page compresses
->>>>> +to 60% of it original size, the memory savings gained through
->>>>> +compression is lost in fragmentation because another object of
->>>>> +the same size can't be stored in the leftover space.
->>>>> +
->>>>> +This ability to span pages results in zsmalloc allocations not being
->>>>> +directly addressable by the user.  The user is given an
->>>>> +non-dereferencable handle in response to an allocation request.
->>>>> +That handle must be mapped, using zs_map_object(), which returns
->>>>> +a pointer to the mapped region that can be used.  The mapping is
->>>>> +necessary since the object data may reside in two different
->>>>> +noncontigious pages.
->>>> Do you mean the reason of  to use a zsmalloc object must map after
->>>> malloc is object data maybe reside in two different nocontiguous pages?
->>> Yes, that is one reason for the mapping.  The other reason (more of an
->>> added bonus) is below.
->>>
->>>>> +
->>>>> +For 32-bit systems, zsmalloc has the added benefit of being
->>>>> +able to back slabs with HIGHMEM pages, something not possible
->>>> What's the meaning of "back slabs with HIGHMEM pages"?
->>> By HIGHMEM, I'm referring to the HIGHMEM memory zone on 32-bit systems
->>> with larger that 1GB (actually a little less) of RAM.  The upper 3GB
->>> of the 4GB address space, depending on kernel build options, is not
->>> directly addressable by the kernel, but can be mapped into the kernel
->>> address space with functions like kmap() or kmap_atomic().
->>>
->>> These pages can't be used by slab/slub because they are not
->>> continuously mapped into the kernel address space.  However, since
->>> zsmalloc requires a mapping anyway to handle objects that span
->>> non-contiguous page boundaries, we do the kernel mapping as part of
->>> the process.
->>>
->>> So zspages, the conceptual slab in zsmalloc backed by single-order
->>> pages can include pages from the HIGHMEM zone as well.
->> Thanks for your clarify,
->>   http://lwn.net/Articles/537422/, your article about zswap in lwn.
->>   "Additionally, the kernel slab allocator does not allow objects that
->> are less
->> than a page in size to span a page boundary. This means that if an
->> object is
->> PAGE_SIZE/2 + 1 bytes in size, it effectively use an entire page,
->> resulting in
->> ~50% waste. Hense there are *no kmalloc() cache size* between
->> PAGE_SIZE/2 and
->> PAGE_SIZE."
->> Are your sure? It seems that kmalloc cache support big size, your can
->> check in
->> include/linux/kmalloc_sizes.h
-> Yes, kmalloc can allocate large objects > PAGE_SIZE, but there are no
-> cache sizes _between_ PAGE_SIZE/2 and PAGE_SIZE.  For example, on a
-> system with 4k pages, there are no caches between kmalloc-2048 and
-> kmalloc-4096.
+于 2013年02月22日 09:55, Eric W. Biederman 写道:
+> Sasha Levin <sasha.levin@oracle.com> writes:
+> 
+>> If kimage_normal_alloc() fails to initialize an allocated kimage, it will free
+>> the image but would still set 'rimage', as a result kexec_load will try
+>> to free it again.
+>>
+>> This would explode as part of the freeing process is accessing internal
+>> members which point to uninitialized memory.
+> 
+> Agreed.
+> 
+> I don't think that failure path has ever actually been exercised.
+> 
+> The code is wrong, and it is worth fixing.
+> 
+> Andrew I do you think you could queue this up?  I don't have a handy tree.
 
-Since slub cache can merge, is it the root reason?
 
->
-> Seth
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+I still found another malloc/free problem in this function. So I update the patch.
+
+---------------------
+
+>From 1fb76a35e4109e1435f55048c20ea58622e7f87b Mon Sep 17 00:00:00 2001
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Date: Fri, 22 Feb 2013 10:34:02 +0800
+Subject: [PATCH] kexec: fix allocation problems in function kimage_normal_alloc
+
+The function kimage_normal_alloc() has 2 allocation problems that may cause
+failures:
+
+  1. If kimage_normal_alloc() fails to initialize an allocated kimage, it will
+     free the image but would still set 'rimage', as a result kexec_load will
+     try to free it again.
+
+     This would explode as part of the freeing process is accessing internal
+     members which point to uninitialized memory.
+
+  2. If kimage_normal_alloc() fails to alloc pages for image->swap_page, it
+     should call kimage_free_page_list() to free allocated pages in
+     image->control_pages list before it frees image.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ kernel/kexec.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 5e4bd78..f219357 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -223,6 +223,8 @@ out:
+ 
+ }
+ 
++static void kimage_free_page_list(struct list_head *list);
++
+ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+ 				unsigned long nr_segments,
+ 				struct kexec_segment __user *segments)
+@@ -236,8 +238,6 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+ 	if (result)
+ 		goto out;
+ 
+-	*rimage = image;
+-
+ 	/*
+ 	 * Find a location for the control code buffer, and add it
+ 	 * the vector of segments so that it's pages will also be
+@@ -259,10 +259,12 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+ 
+ 	result = 0;
+  out:
+-	if (result == 0)
++	if (result == 0) {
+ 		*rimage = image;
+-	else
++	} else {
++		kimage_free_page_list(&image->control_pages);
+ 		kfree(image);
++	}
+ 
+ 	return result;
+ }
+-- 
+1.7.1
 
