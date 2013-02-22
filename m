@@ -1,118 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758991Ab3BVS6j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 13:58:39 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:42906 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758132Ab3BVS6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 13:58:37 -0500
-Message-ID: <5127BFDB.4010608@bfs.de>
-Date: Fri, 22 Feb 2013 19:58:35 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1756414Ab3BVTBo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 14:01:44 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:55474 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794Ab3BVTBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 14:01:42 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 0/2] cpustat: use atomic operations to read/update stats
+References: <1361512604-2720-1-git-send-email-khilman@linaro.org>
+	<1361522767.26780.44.camel@laptop>
+	<20130222125019.GC17948@somewhere.redhat.com>
+	<1361542150.26780.64.camel@laptop>
+	<1361542891.3683.6.camel@edumazet-glaptop>
+	<20130222142302.GC18149@somewhere.redhat.com>
+Date: Fri, 22 Feb 2013 11:01:39 -0800
+In-Reply-To: <20130222142302.GC18149@somewhere.redhat.com> (Frederic
+	Weisbecker's message of "Fri, 22 Feb 2013 15:23:05 +0100")
+Message-ID: <87y5egyxyk.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Kumar Amit Mehta <gmate.amit@gmail.com>
-CC: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        gregkh@linuxfoundation.org, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging: comedi: drivers: usbduxfast.c: fix for DMA
- buffers on stack
-References: <1361556450-32572-1-git-send-email-gmate.amit@gmail.com>
-In-Reply-To: <1361556450-32572-1-git-send-email-gmate.amit@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Frederic Weisbecker <fweisbec@gmail.com> writes:
 
+> On Fri, Feb 22, 2013 at 06:21:31AM -0800, Eric Dumazet wrote:
+>> On Fri, 2013-02-22 at 15:09 +0100, Peter Zijlstra wrote:
+>> > On Fri, 2013-02-22 at 13:50 +0100, Frederic Weisbecker wrote:
+>> > > > Argh!! at what cost? 64bit atomics are like expensive. Wouldn't
+>> > > adding
+>> > > > a seqlock be saner?
+>> > > 
+>> > > Not sure. This requires a spinlock in the write side which is called
+>> > > from
+>> > > fast path like the timer interrupt.
+>> > 
+>> > A single spinlock is _way_ cheaper than a ton of cmpxchg8b()s to update
+>> > a few variables.
+>> 
+>> We also have include/linux/u64_stats_sync.h since 2.6.36
+>
+> Interesting, we should probably use that instead.
 
-Am 22.02.2013 19:07, schrieb Kumar Amit Mehta:
-> fix for instances of DMA buffer on stack(being passed to usb_control_msg) for
-> the USB-DUXfast Board driver.
-> 
-> Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/usbduxfast.c |   30 ++++++++++++++++-----------
->  1 file changed, 18 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
-> index 4bf5dd0..1ba0e3d 100644
-> --- a/drivers/staging/comedi/drivers/usbduxfast.c
-> +++ b/drivers/staging/comedi/drivers/usbduxfast.c
-> @@ -436,10 +436,14 @@ static void usbduxfastsub_ai_Irq(struct urb *urb)
->  static int usbduxfastsub_start(struct usbduxfastsub_s *udfs)
->  {
->  	int ret;
-> -	unsigned char local_transfer_buffer[16];
-> +	unsigned char *local_transfer_buffer;
-> +
-> +	local_transfer_buffer = kmalloc(1, GFP_KERNEL);
-> +	if (!local_transfer_buffer)
-> +		return -ENOMEM;
->  
->  	/* 7f92 to zero */
-> -	local_transfer_buffer[0] = 0;
-> +	*local_transfer_buffer = 0;
->  	/* bRequest, "Firmware" */
->  	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
->  			      USBDUXFASTSUB_FIRMWARE,
-> @@ -450,22 +454,25 @@ static int usbduxfastsub_start(struct usbduxfastsub_s *udfs)
->  			      local_transfer_buffer,
->  			      1,      /* Length */
->  			      EZTIMEOUT);    /* Timeout */
-> -	if (ret < 0) {
-> +	if (ret < 0)
->  		dev_err(&udfs->interface->dev,
->  			"control msg failed (start)\n");
-> -		return ret;
-> -	}
->  
-> -	return 0;
-> +	kfree(local_transfer_buffer);
-> +	return ret;
->  }
->  
->  static int usbduxfastsub_stop(struct usbduxfastsub_s *udfs)
->  {
->  	int ret;
-> -	unsigned char local_transfer_buffer[16];
-> +	unsigned char *local_transfer_buffer;
-> +
-> +	local_transfer_buffer = kmalloc(1, GFP_KERNEL);
-> +	if (!local_transfer_buffer)
-> +		return -ENOMEM;
->  
->  	/* 7f92 to one */
-> -	local_transfer_buffer[0] = 1;
-> +	*local_transfer_buffer = 1;
->  	/* bRequest, "Firmware" */
->  	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
->  			      USBDUXFASTSUB_FIRMWARE,
-> @@ -474,13 +481,12 @@ static int usbduxfastsub_stop(struct usbduxfastsub_s *udfs)
->  			      0x0000,	/* Index */
->  			      local_transfer_buffer, 1,	/* Length */
->  			      EZTIMEOUT);	/* Timeout */
-> -	if (ret < 0) {
-> +	if (ret < 0)
->  		dev_err(&udfs->interface->dev,
->  			"control msg failed (stop)\n");
-> -		return ret;
-> -	}
->  
-> -	return 0;
-> +	kfree(local_transfer_buffer);
-> +	return ret;
->  }
->  
->  static int usbduxfastsub_upload(struct usbduxfastsub_s *udfs,
+OK, I'll spin a version using the u64_stats interface.
 
-mmh, it seems a bit overheat to alloc 1 byte.
-Could one of the driver maintainers please comment
-is that realy need ? or is it possible to pass one byte
-in a register ? (aka char/int) without allocating ?
+Unfortunately, for 32-bit platforms that have atomic 64-bit loads
+stores[1], u64_stats leads to some unnecessary overhead, but I'll look
+at possibly optimizing u64_stats for those platforms as a follow-up
+patch.
 
-re,
- wh
+Kevin
+
+[1] ARM >= v6k devices have ldrexd/strexd instructions for 64-bit loads
+    stores which are used by the atomic64 accessors on those devices.
+    (c.f. arch/arm/include/asm/atomic.h:atomic64_read()
