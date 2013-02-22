@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab3BVESB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 23:18:01 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:53129 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755183Ab3BVER5 (ORCPT
+	id S1756545Ab3BVETn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 23:19:43 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51383 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754728Ab3BVETl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 23:17:57 -0500
-Date: Fri, 22 Feb 2013 15:17:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>
-Subject: linux-next: build failure after merge of the final tree (drm tree
- related)
-Message-Id: <20130222151746.2eff5346595ba60910df867e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__22_Feb_2013_15_17_46_+1100_xaZWhwk14VxJBSwz"
+	Thu, 21 Feb 2013 23:19:41 -0500
+Message-ID: <5126F1D4.5030308@linux.vnet.ibm.com>
+Date: Fri, 22 Feb 2013 12:19:32 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Alex Shi <alex.shi@intel.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [RFC PATCH v3 1/3] sched: schedule balance map foundation
+References: <51079178.3070002@linux.vnet.ibm.com> <510791B2.6090506@linux.vnet.ibm.com> <1361366720.10155.25.camel@laptop> <5125A966.6040601@linux.vnet.ibm.com> <1361446661.26780.15.camel@laptop> <5126DD98.7030202@linux.vnet.ibm.com> <5126E705.3040308@intel.com>
+In-Reply-To: <5126E705.3040308@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022204-5564-0000-0000-000006B75BE4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__22_Feb_2013_15_17_46_+1100_xaZWhwk14VxJBSwz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/22/2013 11:33 AM, Alex Shi wrote:
+> On 02/22/2013 10:53 AM, Michael Wang wrote:
+>>>>
+>>>>>> And the final cost is 3000 int and 1030000 pointer, and some padding,
+>>>>>> but won't bigger than 10M, not a big deal for a system with 1000 cpu
+>>>>>> too.
+>>>>
+>>>> Maybe, but quadric stuff should be frowned upon at all times, these
+>>>> things tend to explode when you least expect it.
+>>>>
+>>>> For instance, IIRC the biggest single image system SGI booted had 16k
+>>>> cpus in there, that ends up at something like 14+14+3=31 aka as 2G of
+>>>> storage just for your lookup -- that seems somewhat preposterous.
+>> Honestly, if I'm a admin who own 16k cpus system (I could not even image
+>> how many memory it could have...), I really prefer to exchange 2G memory
+>> to gain some performance.
+>>
+>> I see your point here, the cost of space will grow exponentially, but
+>> the memory of system will also grow, and according to my understanding ,
+>> it's faster.
+> 
 
-Hi all,
+Hi, Alex
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+Thanks for your reply.
 
-drivers/gpu/drm/drm_gem_cma_helper.c: In function 'drm_gem_cma_buf_destroy':
-drivers/gpu/drm/drm_gem_cma_helper.c:38:2: error: implicit declaration of f=
-unction 'dma_free_writecombine' [-Werror=3Dimplicit-function-declaration]
-drivers/gpu/drm/drm_gem_cma_helper.c: In function 'drm_gem_cma_create':
-drivers/gpu/drm/drm_gem_cma_helper.c:61:2: error: implicit declaration of f=
-unction 'dma_alloc_writecombine' [-Werror=3Dimplicit-function-declaration]
+> Why not seek other way to change O(n^2) to O(n)?
+> 
+> Access 2G memory is unbelievable performance cost.
 
-Probably caused by commit 16ea975eac67 ("drm/tilcdc: add TI LCD
-Controller DRM driver (v4)") which forced CONFIG_DRM_GEM_CMA_HELPER to
-'y'.  dma_alloc/free_writecombine are only defined on ARM.
+Not access 2G memory, but (2G / 16K) memory, the sbm size is O(N).
 
-I added this patch for today.
+And please notice that on 16k cpus system, topology will be deep if NUMA
+enabled (O(log N) as Peter said), and that's really a good stage for
+this idea to perform on, we could save lot's of recursed 'for' cycles.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 22 Feb 2013 15:14:50 +1100
-Subject: [PATCH] drm/tilcdc: only build on arm
+> 
+> There are too many jokes on the short-sight of compute scalability, like
+> Gates' 64K memory in 2000.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/gpu/drm/tilcdc/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Please do believe me that I won't give up any chance to solve or lighten
+this issue (like apply Mike's suggestion), and please let me know if you
+have any suggestions to reduce the memory cost.
 
-diff --git a/drivers/gpu/drm/tilcdc/Kconfig b/drivers/gpu/drm/tilcdc/Kconfig
-index ae14fd6..d24d040 100644
---- a/drivers/gpu/drm/tilcdc/Kconfig
-+++ b/drivers/gpu/drm/tilcdc/Kconfig
-@@ -1,6 +1,6 @@
- config DRM_TILCDC
- 	tristate "DRM Support for TI LCDC Display Controller"
--	depends on DRM && OF
-+	depends on DRM && OF && ARM
- 	select DRM_KMS_HELPER
- 	select DRM_KMS_CMA_HELPER
- 	select DRM_GEM_CMA_HELPER
---=20
-1.8.1
+May be I could make this idea as an option, override the
+select_task_rq_fair() when people want the new logical, and if they
+don't want to trade with memory, just !CONFIG.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Regards,
+Michael Wang
 
---Signature=_Fri__22_Feb_2013_15_17_46_+1100_xaZWhwk14VxJBSwz
-Content-Type: application/pgp-signature
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRJvFqAAoJEECxmPOUX5FEmXUP/39duPpEP9UsyQkPtqTSIGsB
-p+lYtOEs8Ds50G7U3A/0B8fPpwMfISge2tdxL9tn02WTTw04qNTkac4XI1iuEBVj
-NwL/9LCXSyOLPwRw7guiDtn9xsnLudaIKNuvk5zyXO16v2Zkcc9lVL4BNypdYvWC
-k5qzmPf2CuyWy+HnZFn07vJpjKY9sgc/PYv0Ib6ydP5t9Jk+RO8b1U+KXZ3Nw36n
-2AKIgxBdF542hfH7idBwyy2yWspqcDnOf88IYd5Wz2I0J8a5BMXhAcVb6mIcEuAn
-K3xmMJEPxO8NtY5p9guFXaxcV9HsEeLajWnXGvTvZNpAWz+VegcTqu8i1KeozAhz
-Oit2CjJ/Do3Bp1jKZZswIoEGvpaDr8eCOZDfb2GCbgAzIvjGI7PLthf8aSHp6YXG
-rGrhC95X5O3b+I9gB4H2t/1MM/qz/Lnr877h5ze0ZpPM4Icaz7BNvUk3+YdjPpfR
-KIKvqa7ItPCNyrvsflLpoBJbWdfB/m2i5G/4CcCq5x5O6kp67SeARCxtFivhGeW0
-cKnGe1sk4MHEakyfJVHUOihg5BYYVLDqx78Dq0476w4SHclKuLwm1h/iSB3WCCey
-VbQXdvmb/2Qm0PNpEHvcn4SLVn5oPSMEyCyKx7ObncDjJh2MTgsELrsyCjCz4TjA
-q/TDuCwaeNqdjGvnR5LC
-=YfxS
------END PGP SIGNATURE-----
-
---Signature=_Fri__22_Feb_2013_15_17_46_+1100_xaZWhwk14VxJBSwz--
