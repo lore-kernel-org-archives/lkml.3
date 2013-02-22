@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab3BVG6g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 01:58:36 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:58210 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754087Ab3BVG6c (ORCPT
+	id S1755039Ab3BVG7q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 01:59:46 -0500
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:54183 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754039Ab3BVG7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 01:58:32 -0500
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: kgene.kim@samsung.com, john.stultz@linaro.org, patches@linaro.org
-Subject: [PATCH] ARM: EXYNOS: Keep USB related LDOs always active on Origen
-Date: Fri, 22 Feb 2013 12:18:27 +0530
-Message-Id: <1361515707-8571-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <51271673.9090003@linaro.org>
-References: <51271673.9090003@linaro.org>
+	Fri, 22 Feb 2013 01:59:44 -0500
+Date: Thu, 21 Feb 2013 22:55:52 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        Orna Agmon Ben-Yehuda <ladypine@gmail.com>,
+        Muli Ben-Yehuda <mulix@mulix.org>
+Subject: Re: [PATCH v2] memcg: Add memory.pressure_level events
+Message-ID: <20130222065552.GA26194@lizard.gateway.2wire.net>
+References: <20130219044012.GA23356@lizard.sbx00618.mountca.wayport.net>
+ <20130220001743.GE16950@blaptop>
+ <CAOS58YOPjcH_pFFhPLJEAdaLkm5FoOy9mG2i-PkWAcb7O6V_Kw@mail.gmail.com>
+ <20130221230425.GA22792@lizard.fhda.edu>
+ <20130221235608.GH16950@blaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130221235608.GH16950@blaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LDO3 and LDO8 are used for powering both device and host phy controllers.
-These regulators are not handled in USB host driver. Hence we get
-unexpected behaviour when the regulators are disabled elsewhere.
+On Fri, Feb 22, 2013 at 08:56:08AM +0900, Minchan Kim wrote:
+> [...] The my point is that you have a plan to support? Why I have a
+> question is that you said your goal is to replace lowmemory killer
 
-It would be best to keep these regulators always on.
+In short: yes, of course, if the non-memcg interface will be in demand.
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
+> but android don't have enabled CONFIG_MEMCG as you know well
+> so they should enable it for using just notifier? or they need another hack to
+> connect notifier to global thing?
 
-Based on v3.8.
+A hack is not an option for me. :-) My final goal is to switch Android to
+use the notifier without need for hacks/external patches or
+drivers/staging.
 
- arch/arm/mach-exynos/mach-origen.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+But my current goal is to make the most generic case work, and do this in
+the most correct way. That is, vmpressure + MEMCG. Once I accomplish this,
+I can then think of any niche needs (such as Android).
 
-diff --git a/arch/arm/mach-exynos/mach-origen.c b/arch/arm/mach-exynos/mach-origen.c
-index 5e34b9c..7351063 100644
---- a/arch/arm/mach-exynos/mach-origen.c
-+++ b/arch/arm/mach-exynos/mach-origen.c
-@@ -169,6 +169,7 @@ static struct regulator_init_data __initdata max8997_ldo3_data = {
- 		.min_uV		= 1100000,
- 		.max_uV		= 1100000,
- 		.apply_uV	= 1,
-+		.always_on	= 1,
- 		.valid_ops_mask	= REGULATOR_CHANGE_STATUS,
- 		.state_mem	= {
- 			.disabled	= 1,
-@@ -227,6 +228,7 @@ static struct regulator_init_data __initdata max8997_ldo8_data = {
- 		.min_uV		= 3300000,
- 		.max_uV		= 3300000,
- 		.apply_uV	= 1,
-+		.always_on	= 1,
- 		.valid_ops_mask	= REGULATOR_CHANGE_STATUS,
- 		.state_mem	= {
- 			.disabled	= 1,
--- 
-1.7.4.1
+There will be two possibilities for Android:
 
+1. Obviously, turn on CONFIG_MEMCG. We need to measure its effect on real
+   devices, and see if it makes sense. (Plus, maybe there are other uses
+   for MEMCG on Android?)
+
+or
+
+2. Implement /sys/fs/cgroups/memory/memory.pressure_level interface
+   without MEMCG. Doing this will be really easy as we'll already have
+   vmpressure() core, and Android has CROUPS=y. But I do expect some
+   discussion like 'why don't you fix memcg instead?'. We'll have to
+   answer this question by looking back at '1.'
+
+Also note that cgroups vmpressure notifiers were tried by QEMU folks, and
+it seemed to be useful:
+
+   http://lists.gnu.org/archive/html/qemu-devel/2012-12/msg02821.html 
+
+So, nowadays it is not only about Android. Some time ago I also got an
+email from Orna Agmon Ben-Yehuda, who suggested to use vmpressure stuff
+with 'memcached' (but I didn't find time to actually try it, so far. :(
+Thanks for the email, btw!).
+
+So it is useful with or without MEMCG, and if we will really need to
+support vmpressure without MEMCG, I will have to implement the support in
+addition to MEMCG case, yes.
+
+Thanks,
+
+Anton
