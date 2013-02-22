@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab3BVIsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 03:48:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59442 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756135Ab3BVIsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 03:48:14 -0500
-Message-ID: <5127308C.7000209@redhat.com>
-Date: Fri, 22 Feb 2013 09:47:08 +0100
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: Ric Wheeler <rwheeler@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chris L. Mason" <clmason@fusionio.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
-        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
-Subject: Re: New copyfile system call - discuss before LSF?
-References: <512606DF.5050706@redhat.com>  <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com>  <512635D2.4090207@redhat.com> <51267CEB.8070805@redhat.com>  <51269A2B.7070000@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAE3B@SACEXCMBX04-PRD.hq.netapp.com>
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAE3B@SACEXCMBX04-PRD.hq.netapp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756331Ab3BVIst (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 03:48:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40416 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab3BVIsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 03:48:47 -0500
+From: Ike Panhc <ike.pan@canonical.com>
+To: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH] ideapad: depends on backlight subsystem and update comment
+Date: Fri, 22 Feb 2013 16:48:40 +0800
+Message-Id: <1361522920-10738-1-git-send-email-ike.pan@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 11:13 PM, Myklebust, Trond wrote:
-> On Thu, 2013-02-21 at 23:05 +0100, Ric Wheeler wrote:
->> On 02/21/2013 09:00 PM, Paolo Bonzini wrote:
->>> Il 21/02/2013 15:57, Ric Wheeler ha scritto:
->>>>> sendfile64() pretty much already has the right arguments for a
->>>>> "copyfile", however it would be nice to add a 'flags' parameter: the
->>>>> NFSv4.2 version would use that to specify whether or not to copy file
->>>>> metadata.
->>>> That would seem to be enough to me and has the advantage that it is an
->>>> relatively obvious extension to something that is at least not totally
->>>> unknown to developers.
->>>>
->>>> Do we need more than that for non-NFS paths I wonder? What does reflink
->>>> need or the SCSI mechanism?
->>> For virt we would like to be able to specify arbitrary block ranges.
->>> Copying an entire file helps some copy operations like storage
->>> migration.  However, it is not enough to convert the guest's offloaded
->>> copies to host-side offloaded copies.
->>>
->>> Paolo
->> I don't think that the NFS protocol allows arbitrary ranges, but the SCSI
->> commands are ranged based.
->>
->> If I remember what the windows people said at a SNIA event a few years back,
->> they have a requirement that the target file be pre-allocated (at least for the
->> SCSI based copy). Not clear to me where they iterate over that target file to do
->> the block range copies, but I suspect it is in their kernel.
-> The NFSv4.2 copy offload protocol _does_ allow the copying of arbitrary
-> byte ranges. The main target for that functionality is indeed
-> virtualisation and thin provisioning of virtual machines.
->
+I've got a report of build failure on ideapad-laptop, which shows
 
-For background, here is a pointer to Fred Knight's SNIA talk on the SCSI support 
-for offload:
+drivers/built-in.o: In function `ideapad_acpi_notify':
+ideapad-laptop.c:(.text+0x63876a): undefined reference to `backlight_force_update'
+drivers/built-in.o: In function `ideapad_acpi_remove':
+ideapad-laptop.c:(.devexit.text+0x64a7): undefined reference to `backlight_device_unregister'
+drivers/built-in.o: In function `ideapad_acpi_add':
+ideapad-laptop.c:(.devinit.text+0x45e28): undefined reference to `backlight_device_register'
 
-https://snia.org/sites/default/files2/SDC2011/presentations/monday/FrederickKnight_Storage_Data_Movement_Offload.pdf
+To select backlight subsystem can prevent this error from happening.
 
-and a talk from Spencer Shepler that gives some detail on the NFS spec, 
-including the "server side copy" bits:
+Also update comment for this driver.
 
-https://snia.org/sites/default/files2/SDC2011/presentations/wednesday/SpencerShepler_IETF_NFSv4_Working_Group_v4.pdf
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Ike Panhc <ike.pan@canonical.com>
+---
+ drivers/platform/x86/Kconfig |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-The talks both have references to the actual specs for the gory details.
-
-Ric
-
-
-
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index c86bae8..c5bc068 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -291,8 +291,10 @@ config IDEAPAD_LAPTOP
+ 	depends on RFKILL && INPUT
+ 	depends on SERIO_I8042
+ 	select INPUT_SPARSEKMAP
++	select BACKLIGHT_CLASS_DEVICE
+ 	help
+-	  This is a driver for the rfkill switches on Lenovo IdeaPad netbooks.
++	  This is a driver for Lenovo IdeaPad netbooks contains drivers for
++	  rfkill switch, hotkey, fan control and backlight control.
+ 
+ config THINKPAD_ACPI
+ 	tristate "ThinkPad ACPI Laptop Extras"
+-- 
+1.7.9.5
 
