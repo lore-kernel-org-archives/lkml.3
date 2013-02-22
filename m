@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244Ab3BVSJX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 13:09:23 -0500
-Received: from [89.21.227.133] ([89.21.227.133]:62537 "EHLO
+	id S932347Ab3BVSLq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 13:11:46 -0500
+Received: from [89.21.227.133] ([89.21.227.133]:26704 "EHLO
 	mail.kdh.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759105Ab3BVSIi (ORCPT
+	by vger.kernel.org with ESMTP id S1759075Ab3BVSIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 13:08:38 -0500
+	Fri, 22 Feb 2013 13:08:37 -0500
 From: Nick Dyer <nick.dyer@itdev.co.uk>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Daniel Kurtz <djkurtz@chromium.org>,
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 04/40] Input: atmel_mxt_ts - Implement debug output for messages
-Date: Fri, 22 Feb 2013 17:57:51 +0000
-Message-Id: <1361555907-19840-5-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 07/40] Input: atmel_mxt_ts - Implement CRC check for configuration data.
+Date: Fri, 22 Feb 2013 17:57:54 +0000
+Message-Id: <1361555907-19840-8-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,151 +25,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a debug switch which causes all messages from the touch controller to be
-dumped to the dmesg log with a set prefix "MXT MSG:". This is used by Atmel
-user-space utilities to debug touch operation. This does impact touch
-performance somewhat.
+The configuration is stored in NVRAM on the maXTouch chip. When the device is
+reset it reports a CRC of the stored configuration values. Therefore it isn't
+necessary to send the configuration on each probe - we can check the CRC
+matches and avoid a timeconsuming backup/reset cycle.
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   57 +++++++++++++++++++++++++-----
- 1 file changed, 49 insertions(+), 8 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   61 ++++++++++++++++++++++++------
+ include/linux/i2c/atmel_mxt_ts.h         |    1 +
+ 2 files changed, 51 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 9cfb124..dad0be9 100644
+index fa294d1..6f30713 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -80,6 +80,9 @@
- #define MXT_SPT_MESSAGECOUNT_T44	44
- #define MXT_SPT_CTECONFIG_T46		46
- 
-+/* MXT_GEN_MESSAGE_T5 object */
-+#define MXT_RPTID_NOMSG		0xff
-+
- /* MXT_GEN_COMMAND_T6 field */
- #define MXT_COMMAND_RESET	0
- #define MXT_COMMAND_BACKUPNV	1
-@@ -257,6 +260,7 @@ struct mxt_data {
- 	unsigned int max_x;
+@@ -261,6 +261,7 @@ struct mxt_data {
  	unsigned int max_y;
  	struct bin_attribute mem_access_attr;
-+	bool debug_enabled;
+ 	bool debug_enabled;
++	u32 config_crc;
  
  	/* Cached parameters from object table */
  	u8 T6_reportid;
-@@ -329,11 +333,10 @@ static bool mxt_object_writable(unsigned int type)
+@@ -528,6 +529,10 @@ static void mxt_input_touchevent(struct mxt_data *data,
+ 	int area;
+ 	int pressure;
+ 
++	/* do not report events if input device not yet registered */
++	if (!input_dev)
++		return;
++
+ 	x = (message->message[1] << 4) | ((message->message[3] >> 4) & 0xf);
+ 	y = (message->message[2] << 4) | ((message->message[3] & 0xf));
+ 	if (data->max_x < 1024)
+@@ -563,7 +568,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
  	}
  }
  
--static void mxt_dump_message(struct device *dev,
--			     struct mxt_message *message)
-+static void mxt_dump_message(struct device *dev, struct mxt_message *message)
+-static unsigned mxt_extract_T6_csum(const u8 *csum)
++static u16 mxt_extract_T6_csum(const u8 *csum)
  {
--	dev_dbg(dev, "reportid: %u\tmessage: %*ph\n",
--		message->reportid, 7, message->message);
-+	dev_dbg(dev, "MXT MSG: %*ph\n",
-+		       sizeof(struct mxt_message), message);
+ 	return csum[0] | (csum[1] << 8) | (csum[2] << 16);
+ }
+@@ -574,9 +579,8 @@ static bool mxt_is_T9_message(struct mxt_data *data, struct mxt_message *msg)
+ 	return (id >= data->T9_reportid_min && id <= data->T9_reportid_max);
  }
  
- static int mxt_check_bootloader(struct i2c_client *client,
-@@ -579,6 +582,7 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+-static irqreturn_t mxt_interrupt(int irq, void *dev_id)
++static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
+ {
+-	struct mxt_data *data = dev_id;
+ 	struct mxt_message message;
+ 	const u8 *payload = &message.message[0];
  	struct device *dev = &data->client->dev;
- 	u8 reportid;
- 	bool update_input = false;
-+	bool handled;
- 
+@@ -587,7 +591,7 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
  	do {
  		if (mxt_read_message(data, &message)) {
-@@ -587,20 +591,24 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 			dev_err(dev, "Failed to read message\n");
+-			goto end;
++			return IRQ_NONE;
  		}
  
  		reportid = message.reportid;
-+		handled = false;
+@@ -595,9 +599,9 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
  
  		if (reportid == data->T6_reportid) {
  			u8 status = payload[0];
- 			unsigned csum = mxt_extract_T6_csum(&payload[1]);
+-			unsigned csum = mxt_extract_T6_csum(&payload[1]);
++			data->config_crc = mxt_extract_T6_csum(&payload[1]);
  			dev_dbg(dev, "Status: %02x Config Checksum: %06x\n",
- 				status, csum);
-+			handled = true;
+-				status, csum);
++				status, data->config_crc);
+ 			handled = true;
  		} else if (mxt_is_T9_message(data, &message)) {
  			int id = reportid - data->T9_reportid_min;
- 			mxt_input_touchevent(data, &message, id);
- 			update_input = true;
--		} else {
--			mxt_dump_message(dev, &message);
-+			handled = true;
- 		}
--	} while (reportid != 0xff);
-+
-+		if (!handled || data->debug_enabled)
-+			mxt_dump_message(dev, &message);
-+	} while (reportid != MXT_RPTID_NOMSG);
+@@ -615,10 +619,16 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 		input_sync(data->input_dev);
+ 	}
  
- 	if (update_input) {
- 		input_mt_report_pointer_emulation(data->input_dev, false);
-@@ -719,7 +727,7 @@ static int mxt_make_highchg(struct mxt_data *data)
- 		error = mxt_read_message(data, &message);
- 		if (error)
- 			return error;
--	} while (message.reportid != 0xff && --count);
-+	} while (message.reportid != MXT_RPTID_NOMSG && --count);
- 
- 	if (!count) {
- 		dev_err(dev, "CHG pin isn't cleared\n");
-@@ -1122,6 +1130,36 @@ static ssize_t mxt_update_fw_store(struct device *dev,
- 	return count;
+-end:
+ 	return IRQ_HANDLED;
  }
  
-+static ssize_t mxt_debug_enable_show(struct device *dev,
-+	struct device_attribute *attr, char *buf)
++static irqreturn_t mxt_interrupt(int irq, void *dev_id)
 +{
-+	struct mxt_data *data = dev_get_drvdata(dev);
-+	int count;
-+	char c;
++	struct mxt_data *data = dev_id;
 +
-+	c = data->debug_enabled ? '1' : '0';
-+	count = sprintf(buf, "%c\n", c);
-+
-+	return count;
++	return mxt_process_messages_until_invalid(data);
 +}
 +
-+static ssize_t mxt_debug_enable_store(struct device *dev,
-+	struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct mxt_data *data = dev_get_drvdata(dev);
-+	int i;
-+
-+	if (sscanf(buf, "%u", &i) == 1 && i < 2) {
-+		data->debug_enabled = (i == 1);
-+
-+		dev_dbg(dev, "%s\n", i ? "debug enabled" : "debug disabled");
-+		return count;
-+	} else {
-+		dev_dbg(dev, "debug_enabled write error\n");
-+		return -EINVAL;
-+	}
-+}
-+
- static int mxt_check_mem_access_params(struct mxt_data *data, loff_t off,
- 				       size_t *count)
+ static int mxt_t6_command(struct mxt_data *data, u16 cmd_offset, u8 value, bool wait)
  {
-@@ -1176,12 +1214,15 @@ static DEVICE_ATTR(fw_version, S_IRUGO, mxt_fw_version_show, NULL);
- static DEVICE_ATTR(hw_version, S_IRUGO, mxt_hw_version_show, NULL);
- static DEVICE_ATTR(object, S_IRUGO, mxt_object_show, NULL);
- static DEVICE_ATTR(update_fw, S_IWUSR, NULL, mxt_update_fw_store);
-+static DEVICE_ATTR(debug_enable, S_IWUSR | S_IRUSR, mxt_debug_enable_show,
-+		   mxt_debug_enable_store);
+ 	u16 reg;
+@@ -679,6 +689,19 @@ static int mxt_soft_reset(struct mxt_data *data, u8 value)
+ 	return 0;
+ }
  
- static struct attribute *mxt_attrs[] = {
- 	&dev_attr_fw_version.attr,
- 	&dev_attr_hw_version.attr,
- 	&dev_attr_object.attr,
- 	&dev_attr_update_fw.attr,
-+	&dev_attr_debug_enable.attr,
- 	NULL
- };
++static void mxt_read_current_crc(struct mxt_data *data)
++{
++	/* on failure, CRC is set to 0 and config will always be downloaded */
++	data->config_crc = 0;
++
++	mxt_t6_command(data, MXT_COMMAND_REPORTALL, 1, true);
++
++	/* Read all messages until invalid, this will update the config crc
++	 * stored in mxt_data. On failure, CRC is set to 0 and config will
++	 * always be downloaded */
++	mxt_process_messages_until_invalid(data);
++}
++
+ static int mxt_check_reg_init(struct mxt_data *data)
+ {
+ 	const struct mxt_platform_data *pdata = data->pdata;
+@@ -693,6 +716,16 @@ static int mxt_check_reg_init(struct mxt_data *data)
+ 		return 0;
+ 	}
  
++	mxt_read_current_crc(data);
++
++	if (data->config_crc == pdata->config_crc) {
++		dev_info(dev, "Config CRC 0x%06X: OK\n", data->config_crc);
++		return 0;
++	} else {
++		dev_info(dev, "Config CRC 0x%06X: does not match 0x%06X\n",
++				data->config_crc, pdata->config_crc);
++	}
++
+ 	for (i = 0; i < data->info.object_num; i++) {
+ 		object = data->object_table + i;
+ 
+@@ -712,6 +745,16 @@ static int mxt_check_reg_init(struct mxt_data *data)
+ 		index += size;
+ 	}
+ 
++	ret = mxt_t6_command(data, MXT_COMMAND_BACKUPNV, MXT_BACKUP_VALUE, false);
++	if (ret)
++		return ret;
++
++	ret = mxt_soft_reset(data, MXT_RESET_VALUE);
++	if (ret)
++		return ret;
++
++	dev_info(dev, "Config written\n");
++
+ 	return 0;
+ }
+ 
+@@ -855,10 +898,6 @@ static int mxt_initialize(struct mxt_data *data)
+ 		return error;
+ 	}
+ 
+-	error = mxt_t6_command(data, MXT_COMMAND_BACKUPNV, MXT_BACKUP_VALUE, false);
+-	if (!error)
+-		mxt_soft_reset(data, MXT_RESET_VALUE);
+-
+ 	/* Update matrix size at info struct */
+ 	error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, &val);
+ 	if (error)
+diff --git a/include/linux/i2c/atmel_mxt_ts.h b/include/linux/i2c/atmel_mxt_ts.h
+index 6a879a6..1d5a664 100644
+--- a/include/linux/i2c/atmel_mxt_ts.h
++++ b/include/linux/i2c/atmel_mxt_ts.h
+@@ -29,6 +29,7 @@
+ struct mxt_platform_data {
+ 	const u8 *config;
+ 	size_t config_length;
++	u32 config_crc;
+ 
+ 	unsigned int x_size;
+ 	unsigned int y_size;
 -- 
 1.7.10.4
 
