@@ -1,78 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab3BVKiu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 05:38:50 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53743 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750834Ab3BVKis (ORCPT
+	id S1756687Ab3BVKjs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 05:39:48 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:56191 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756293Ab3BVKjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 05:38:48 -0500
-Date: Fri, 22 Feb 2013 10:38:45 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com, arnd@arndb.de,
-        linus.walleij@stericsson.com,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>
-Subject: Re: [PATCH 01/35] mfd: ab8500-gpadc: Implemented suspend/resume
-Message-ID: <20130222103306.GA19796@opensource.wolfsonmicro.com>
-References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
- <1360933026-30325-2-git-send-email-lee.jones@linaro.org>
- <20130220131912.GB13049@sirena.org.uk>
- <CAPDyKFo0MpP-d7v8v1zwB42sboR3MWT6nUmG=-L0_nayYRY7FQ@mail.gmail.com>
+	Fri, 22 Feb 2013 05:39:45 -0500
+Date: Fri, 22 Feb 2013 02:39:43 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Subject: Re: [PATCH 2/2] ima: add policy support for file system uuid
+In-Reply-To: <1361497590.29360.121.camel@falcor1>
+Message-ID: <alpine.DEB.2.02.1302220239300.16317@chino.kir.corp.google.com>
+References: <1360070895-29895-1-git-send-email-zohar@linux.vnet.ibm.com> <1360070895-29895-2-git-send-email-zohar@linux.vnet.ibm.com> <alpine.DEB.2.02.1302211352270.28115@chino.kir.corp.google.com> <1361497590.29360.121.camel@falcor1>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
-Content-Disposition: inline
-In-Reply-To: <CAPDyKFo0MpP-d7v8v1zwB42sboR3MWT6nUmG=-L0_nayYRY7FQ@mail.gmail.com>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 21 Feb 2013, Mimi Zohar wrote:
 
---GvXjxJ+pjyke8COw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> > > diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+> > > index 4adcd0f..23f49e3 100644
+> > > --- a/security/integrity/ima/ima_policy.c
+> > > +++ b/security/integrity/ima/ima_policy.c
+> > > @@ -16,6 +16,7 @@
+> > >  #include <linux/magic.h>
+> > >  #include <linux/parser.h>
+> > >  #include <linux/slab.h>
+> > > +#include <linux/genhd.h>
+> > >  
+> > >  #include "ima.h"
+> > >  
+> > > @@ -25,6 +26,7 @@
+> > >  #define IMA_FSMAGIC	0x0004
+> > >  #define IMA_UID		0x0008
+> > >  #define IMA_FOWNER	0x0010
+> > > +#define IMA_FSUUID	0x0020
+> > >  
+> > >  #define UNKNOWN		0
+> > >  #define MEASURE		0x0001	/* same as IMA_MEASURE */
+> > > @@ -45,6 +47,7 @@ struct ima_rule_entry {
+> > >  	enum ima_hooks func;
+> > >  	int mask;
+> > >  	unsigned long fsmagic;
+> > > +	u8 fsuuid[16];
+> > >  	kuid_t uid;
+> > >  	kuid_t fowner;
+> > >  	struct {
+> > > @@ -172,6 +175,9 @@ static bool ima_match_rules(struct ima_rule_entry *rule,
+> > >  	if ((rule->flags & IMA_FSMAGIC)
+> > >  	    && rule->fsmagic != inode->i_sb->s_magic)
+> > >  		return false;
+> > > +	if ((rule->flags & IMA_FSUUID) &&
+> > > +		memcmp(rule->fsuuid, inode->i_sb->s_uuid, sizeof(rule->fsuuid)))
+> > > +		return false;
+> > >  	if ((rule->flags & IMA_UID) && !uid_eq(rule->uid, cred->uid))
+> > >  		return false;
+> > >  	if ((rule->flags & IMA_FOWNER) && !uid_eq(rule->fowner, inode->i_uid))
+> > > @@ -346,7 +352,7 @@ enum {
+> > >  	Opt_obj_user, Opt_obj_role, Opt_obj_type,
+> > >  	Opt_subj_user, Opt_subj_role, Opt_subj_type,
+> > >  	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid, Opt_fowner,
+> > > -	Opt_appraise_type
+> > > +	Opt_appraise_type, Opt_fsuuid
+> > >  };
+> > >  
+> > >  static match_table_t policy_tokens = {
+> > > @@ -364,6 +370,7 @@ static match_table_t policy_tokens = {
+> > >  	{Opt_func, "func=%s"},
+> > >  	{Opt_mask, "mask=%s"},
+> > >  	{Opt_fsmagic, "fsmagic=%s"},
+> > > +	{Opt_fsuuid, "fsuuid=%s"},
+> > >  	{Opt_uid, "uid=%s"},
+> > >  	{Opt_fowner, "fowner=%s"},
+> > >  	{Opt_appraise_type, "appraise_type=%s"},
+> > > @@ -519,6 +526,19 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+> > >  			if (!result)
+> > >  				entry->flags |= IMA_FSMAGIC;
+> > >  			break;
+> > > +		case Opt_fsuuid:
+> > > +			ima_log_string(ab, "fsuuid", args[0].from);
+> > > +
+> > > +			if (memchr_inv(entry->fsuuid, 0x00,
+> > > +			    sizeof(entry->fsuuid))) {
+> > > +				result = -EINVAL;
+> > > +				break;
+> > > +			}
+> > > +
+> > > +			part_pack_uuid(args[0].from, entry->fsuuid);
+> > > +			entry->flags |= IMA_FSUUID;
+> > > +			result = 0;
+> > > +			break;
+> > >  		case Opt_uid:
+> > >  			ima_log_string(ab, "uid", args[0].from);
+> > >  
+> > 
+> > We don't have part_pack_uuid() without CONFIG_BLOCK, so should this return 
+> > -ENOTSUPP if that option is not enabled?
+> 
+> Yes, this problem showed up in Randy's randconfig.  He suggested moving
+> part_pack_uuid() outside of the "ifdef CONFIG_BLOCK" to always make it
+> visible - http://marc.info/?l=linux-next&m=136139276002173&w=2.
+> 
 
-On Thu, Feb 21, 2013 at 11:45:08PM +0100, Ulf Hansson wrote:
-> On 20 February 2013 14:19, Mark Brown
-
-> > This doesn't look especially sane...  You're doing a runtime get, taking
-> > the lock without releasing it and disabling the regulator.  This is
-> > *very* odd, both the changelog and the code need to explain what's going
-> > on and why it's safe in a lot more detail here.
-
-> You need to do pm_runtime_get_sync to be able to make sure resources
-> (which seems to be only the regulator) are safe to switch off. To my
-> understanding this is a generic way to use for being able to switch
-> off resources at a device suspend when runtime pm is used in
-> conjunction.
-
-Are you sure this actually does what you think it does, especially when
-run on modern kernels?
-
---GvXjxJ+pjyke8COw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRJ0lbAAoJELSic+t+oim9cWsP/1fu+3OgTpGzxdh2rKorgx81
-a3Fi+Z/N8t+8oToF5HKOiYokErxO51QAZwqSvss0Oc4QLnhidPRfgqz/PwUw5oCI
-f+LuouoLSSNBuztjfdKAWGmvqtevHzPUaFYEp0szcZmZZZWOT62Vu4KUFgaBcgU/
-dYx0YW7jgrLxuOEZ8+/jfsZiC8esq7XkvR6e2E0JIbTXqoN7eID69IySmeX2XkjY
-FhjlsO1UXyp1Ry2MMGPQSIP1eJpXTdBu4lCpIMweN+9jTzUVahwCv7azTVrAuxBx
-CgcB4ZPvfwSRScYq+9PusnfTPD7IDJ6tb48H11yTg3NRRnhZJ7StMOLZNF35bZgw
-ckXmu9Kee826dK74uwRzW9klhU7DDRdCLANxaiQECP6BG2mZ8bFewrlGI36+BXPv
-pG+vSl5mKwlVHhjLLWMjaSWE5G63meFHbvZr1/WlL56p4TCJvvfolCS4MYP+fYZ4
-H1h45rJihJXwJnt5Oikl8KOch8W34oDm/n7a20lS1DWeAD/jja87A+vxmow7cZd0
-rwvkZG3P9qYTwB8dhJnd+YQHhdxSEXspjdbDzwB+G5MJtmx4XzWrX73L3Wg8Ngxt
-tBPJPaePhqtedzqbeYaeqCbPf2U3uo1I4mzVk1cXCSzsqBphppHlyH9dKEyYJ3P7
-spajOZKBttCyx1VWgztO
-=OQOy
------END PGP SIGNATURE-----
-
---GvXjxJ+pjyke8COw--
+Who's pushing this to linux-next?
