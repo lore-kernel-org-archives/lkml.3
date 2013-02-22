@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759412Ab3BVSQv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 13:16:51 -0500
-Received: from [89.21.227.133] ([89.21.227.133]:7283 "EHLO
+	id S1759391Ab3BVSQu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 13:16:50 -0500
+Received: from [89.21.227.133] ([89.21.227.133]:53942 "EHLO
 	mail.kdh.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759010Ab3BVSIc (ORCPT
+	by vger.kernel.org with ESMTP id S1759019Ab3BVSIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Feb 2013 13:08:32 -0500
 From: Nick Dyer <nick.dyer@itdev.co.uk>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 26/40] Input: atmel_mxt_ts - Implement T63 Active Stylus support
-Date: Fri, 22 Feb 2013 17:58:13 +0000
-Message-Id: <1361555907-19840-27-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 34/40] Input: atmel_mxt_ts - Remove mxt_make_highchg
+Date: Fri, 22 Feb 2013 17:58:21 +0000
+Message-Id: <1361555907-19840-35-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,169 +25,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Reading all messages until an invalid is received is a way of forcing the CHG
+line high, which means that when using edge-triggered interrupts the interrupt
+can be acquired.
+
+This only papers over the problem because the interrupt may still be lost
+during message reading (although this is very rare), so it is better to either
+
+1) Use level-triggered interrupts
+or
+2) Use edge-triggered interrupts and enable the RETRIGEN feature in T18
+   COMMSCONFIG
+
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   91 +++++++++++++++++++++++++++++-
- 1 file changed, 90 insertions(+), 1 deletion(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index b0dcae4..3aac912 100644
+index 6dbd3d6..83a0837 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -76,6 +76,7 @@
- #define MXT_SPT_MESSAGECOUNT_T44	44
- #define MXT_SPT_CTECONFIG_T46		46
- #define MXT_SPT_NOISESUPPRESSION_T48	48
-+#define MXT_PROCI_ACTIVE_STYLUS_T63	63
+@@ -1925,14 +1925,9 @@ static ssize_t mxt_update_fw_store(struct device *dev,
+ 		mxt_initialize(data);
+ 	}
  
- /* MXT_GEN_MESSAGE_T5 object */
- #define MXT_RPTID_NOMSG		0xff
-@@ -188,6 +189,19 @@ struct t9_range {
- /* Define for MXT_PROCI_TOUCHSUPPRESSION_T42 */
- #define MXT_T42_MSG_TCHSUP	(1 << 0)
+-	if (data->state == APPMODE) {
++	if (data->state == APPMODE)
+ 		enable_irq(data->irq);
  
-+/* T63 Stylus */
-+#define MXT_STYLUS_PRESS	(1 << 0)
-+#define MXT_STYLUS_RELEASE	(1 << 1)
-+#define MXT_STYLUS_MOVE		(1 << 2)
-+#define MXT_STYLUS_SUPPRESS	(1 << 3)
-+
-+#define MXT_STYLUS_DETECT	(1 << 4)
-+#define MXT_STYLUS_TIP		(1 << 5)
-+#define MXT_STYLUS_ERASER	(1 << 6)
-+#define MXT_STYLUS_BARREL	(1 << 7)
-+
-+#define MXT_STYLUS_PRESSURE_MASK	0x3F
-+
- /* Delay times */
- #define MXT_BACKUP_TIME		25	/* msec */
- #define MXT_RESET_TIME		200	/* msec */
-@@ -260,6 +274,7 @@ struct mxt_data {
- 	bool update_input;
- 	u8 last_message_count;
- 	u8 num_touchids;
-+	u8 num_stylusids;
- 
- 	/* Cached parameters from object table */
- 	u16 T5_address;
-@@ -273,6 +288,8 @@ struct mxt_data {
- 	u8 T42_reportid_max;
- 	u16 T44_address;
- 	u8 T48_reportid;
-+	u8 T63_reportid_min;
-+	u8 T63_reportid_max;
- };
- 
- /* I2C slave address pairs */
-@@ -727,6 +744,60 @@ static int mxt_proc_t48_messages(struct mxt_data *data, u8 *msg)
- 	return 0;
+-		error = mxt_process_messages_until_invalid(data);
+-		if (error)
+-			return error;
+-	}
+-
+ 	return count;
  }
  
-+static void mxt_proc_t63_messages(struct mxt_data *data, u8 *msg)
-+{
-+	struct device *dev = &data->client->dev;
-+	struct input_dev *input_dev = data->input_dev;
-+	u8 id;
-+	u16 x, y;
-+	u8 pressure;
-+
-+	if (!input_dev)
-+		return;
-+
-+	/* stylus slots come after touch slots */
-+	id = data->num_touchids + (msg[0] - data->T63_reportid_min);
-+
-+	if (id < 0 || id > (data->num_touchids + data->num_stylusids)) {
-+		dev_err(dev, "invalid stylus id %d, max slot is %d\n",
-+			id, data->num_stylusids);
-+		return;
-+	}
-+
-+	x = msg[3] | (msg[4] << 8);
-+	y = msg[5] | (msg[6] << 8);
-+	pressure = msg[7] & MXT_STYLUS_PRESSURE_MASK;
-+
-+	dev_dbg(dev,
-+		"[%d] %c%c%c%c x: %d y: %d pressure: %d stylus:%c%c%c%c\n",
-+		id,
-+		(msg[1] & MXT_STYLUS_SUPPRESS) ? 'S' : '.',
-+		(msg[1] & MXT_STYLUS_MOVE)     ? 'M' : '.',
-+		(msg[1] & MXT_STYLUS_RELEASE)  ? 'R' : '.',
-+		(msg[1] & MXT_STYLUS_PRESS)    ? 'P' : '.',
-+		x, y, pressure,
-+		(msg[2] & MXT_STYLUS_BARREL) ? 'B' : '.',
-+		(msg[2] & MXT_STYLUS_ERASER) ? 'E' : '.',
-+		(msg[2] & MXT_STYLUS_TIP)    ? 'T' : '.',
-+		(msg[2] & MXT_STYLUS_DETECT) ? 'D' : '.');
-+
-+	input_mt_slot(input_dev, id);
-+
-+	if (msg[2] & MXT_STYLUS_DETECT) {
-+		input_mt_report_slot_state(input_dev, MT_TOOL_PEN, 1);
-+		input_report_abs(input_dev, ABS_MT_POSITION_X, x);
-+		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
-+		input_report_abs(input_dev, ABS_MT_PRESSURE, pressure);
-+	} else {
-+		input_mt_report_slot_state(input_dev, MT_TOOL_PEN, 0);
-+	}
-+
-+	input_report_key(input_dev, BTN_STYLUS, (msg[2] & MXT_STYLUS_ERASER));
-+	input_report_key(input_dev, BTN_STYLUS2, (msg[2] & MXT_STYLUS_BARREL));
-+
-+	mxt_input_sync(input_dev);
-+}
-+
- static int mxt_proc_message(struct mxt_data *data, u8 *message)
- {
- 	u8 report_id = message[0];
-@@ -742,6 +813,10 @@ static int mxt_proc_message(struct mxt_data *data, u8 *message)
- 	    && report_id <= data->T9_reportid_max) {
- 		mxt_proc_t9_message(data, message);
- 		handled = true;
-+	} else if (report_id >= data->T63_reportid_min
-+		   && report_id <= data->T63_reportid_max) {
-+		mxt_proc_t63_messages(data, message);
-+		handled = true;
- 	} else if (report_id >= data->T42_reportid_min
- 		   && report_id <= data->T42_reportid_max) {
- 		mxt_proc_t42_messages(data, message);
-@@ -1413,6 +1488,12 @@ static int mxt_get_object_table(struct mxt_data *data)
- 		case MXT_SPT_NOISESUPPRESSION_T48:
- 			data->T48_reportid = min_id;
- 			break;
-+		case MXT_PROCI_ACTIVE_STYLUS_T63:
-+			data->T63_reportid_min = min_id;
-+			data->T63_reportid_max = max_id;
-+			data->num_stylusids =
-+				object->num_report_ids * OBP_INSTANCES(object);
-+			break;
- 		}
+@@ -2205,12 +2200,6 @@ static int mxt_probe(struct i2c_client *client,
+ 		goto err_free_object;
+ 	}
  
- 		end_address = object->start_address
-@@ -1950,7 +2031,7 @@ static int mxt_initialize_t9_input_device(struct mxt_data *data)
- 			     0, 255, 0, 0);
- 
- 	/* For multi touch */
--	num_mt_slots = data->T9_reportid_max - data->T9_reportid_min + 1;
-+	num_mt_slots = data->num_touchids + data->num_stylusids;
- 	error = input_mt_init_slots(input_dev, num_mt_slots, 0);
- 	if (error)
- 		goto err_free_mem;
-@@ -1966,6 +2047,14 @@ static int mxt_initialize_t9_input_device(struct mxt_data *data)
- 	input_set_abs_params(input_dev, ABS_MT_ORIENTATION,
- 			     0, 255, 0, 0);
- 
-+	/* For T63 active stylus */
-+	if (data->T63_reportid_min) {
-+		input_set_capability(input_dev, EV_KEY, BTN_STYLUS);
-+		input_set_capability(input_dev, EV_KEY, BTN_STYLUS2);
-+		input_set_abs_params(input_dev, ABS_MT_TOOL_TYPE,
-+			0, MT_TOOL_MAX, 0, 0);
-+	}
-+
- 	input_set_drvdata(input_dev, data);
- 
- 	error = input_register_device(input_dev);
+-	if (data->state == APPMODE) {
+-		error = mxt_process_messages_until_invalid(data);
+-		if (error)
+-			goto err_free_irq;
+-	}
+-
+ 	error = sysfs_create_group(&client->dev.kobj, &mxt_attr_group);
+ 	if (error) {
+ 		dev_err(&client->dev, "Failure %d creating sysfs group\n",
 -- 
 1.7.10.4
 
