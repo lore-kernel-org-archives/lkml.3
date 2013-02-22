@@ -1,132 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208Ab3BVTUW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 14:20:22 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:33369 "EHLO e9.ny.us.ibm.com"
+	id S1757011Ab3BVT2M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 14:28:12 -0500
+Received: from ham1.zoner.com ([217.198.112.147]:51685 "EHLO ham1.zoner.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755146Ab3BVTUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 14:20:18 -0500
-Message-ID: <1361560460.2908.12.camel@falcor1.watson.ibm.com>
-Subject: Re: [Fwd: Re: [PATCH 2/2] ima: add policy support for file system
- uuid]
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: David Rientjes <rientjes@google.com>,
-        linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>, axboe@kernel.dk
-Date: Fri, 22 Feb 2013 14:14:20 -0500
-In-Reply-To: <5127BF0F.6040904@infradead.org>
-References: <1361558616.2908.4.camel@falcor1.watson.ibm.com>
-	 <5127BF0F.6040904@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1753628Ab3BVT2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 14:28:08 -0500
+Message-ID: <5127C6C4.2060505@zoner.cz>
+Date: Fri, 22 Feb 2013 20:28:04 +0100
+From: Martin Svec <martin.svec@zoner.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20121018 Thunderbird/10.0.7
+MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Jan Engelhardt <jengelh@inai.de>
+Subject: Re: Read I/O starvation with writeback RAID controller
+References: <5124EDF4.4010309@zoner.cz>  <1361393295.3667.21.camel@haakon2.linux-iscsi.org>  <51260869.20105@zoner.cz> <1361484084.3667.73.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1361484084.3667.73.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022219-7182-0000-0000-000005755E5C
+X-OriginalArrivalTime: 22 Feb 2013 19:28:04.0290 (UTC) FILETIME=[BC24FA20:01CE1132]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-22 at 10:55 -0800, Randy Dunlap wrote:
-> On 02/22/13 10:43, Mimi Zohar wrote:
-> > -------- Forwarded Message --------
-> > From: David Rientjes <rientjes@google.com>
-> > To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> > Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-> > Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> > Subject: Re: [PATCH 2/2] ima: add policy support for file system uuid
-> > Date: Fri, 22 Feb 2013 02:39:43 -0800 (PST)
-> > 
-> > On Thu, 21 Feb 2013, Mimi Zohar wrote:
-> > 
-> >>>> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-> >>>> index 4adcd0f..23f49e3 100644
-> >>>> --- a/security/integrity/ima/ima_policy.c
-> >>>> +++ b/security/integrity/ima/ima_policy.c
-> >>>> @@ -16,6 +16,7 @@
-> >>>>  #include <linux/magic.h>
-> >>>>  #include <linux/parser.h>
-> >>>>  #include <linux/slab.h>
-> >>>> +#include <linux/genhd.h>
-> >>>>  
-> >>>>  #include "ima.h"
-> >>>>  
-> >>>> @@ -25,6 +26,7 @@
-> >>>>  #define IMA_FSMAGIC	0x0004
-> >>>>  #define IMA_UID		0x0008
-> >>>>  #define IMA_FOWNER	0x0010
-> >>>> +#define IMA_FSUUID	0x0020
-> >>>>  
-> >>>>  #define UNKNOWN		0
-> >>>>  #define MEASURE		0x0001	/* same as IMA_MEASURE */
-> >>>> @@ -45,6 +47,7 @@ struct ima_rule_entry {
-> >>>>  	enum ima_hooks func;
-> >>>>  	int mask;
-> >>>>  	unsigned long fsmagic;
-> >>>> +	u8 fsuuid[16];
-> >>>>  	kuid_t uid;
-> >>>>  	kuid_t fowner;
-> >>>>  	struct {
-> >>>> @@ -172,6 +175,9 @@ static bool ima_match_rules(struct ima_rule_entry *rule,
-> >>>>  	if ((rule->flags & IMA_FSMAGIC)
-> >>>>  	    && rule->fsmagic != inode->i_sb->s_magic)
-> >>>>  		return false;
-> >>>> +	if ((rule->flags & IMA_FSUUID) &&
-> >>>> +		memcmp(rule->fsuuid, inode->i_sb->s_uuid, sizeof(rule->fsuuid)))
-> >>>> +		return false;
-> >>>>  	if ((rule->flags & IMA_UID) && !uid_eq(rule->uid, cred->uid))
-> >>>>  		return false;
-> >>>>  	if ((rule->flags & IMA_FOWNER) && !uid_eq(rule->fowner, inode->i_uid))
-> >>>> @@ -346,7 +352,7 @@ enum {
-> >>>>  	Opt_obj_user, Opt_obj_role, Opt_obj_type,
-> >>>>  	Opt_subj_user, Opt_subj_role, Opt_subj_type,
-> >>>>  	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid, Opt_fowner,
-> >>>> -	Opt_appraise_type
-> >>>> +	Opt_appraise_type, Opt_fsuuid
-> >>>>  };
-> >>>>  
-> >>>>  static match_table_t policy_tokens = {
-> >>>> @@ -364,6 +370,7 @@ static match_table_t policy_tokens = {
-> >>>>  	{Opt_func, "func=%s"},
-> >>>>  	{Opt_mask, "mask=%s"},
-> >>>>  	{Opt_fsmagic, "fsmagic=%s"},
-> >>>> +	{Opt_fsuuid, "fsuuid=%s"},
-> >>>>  	{Opt_uid, "uid=%s"},
-> >>>>  	{Opt_fowner, "fowner=%s"},
-> >>>>  	{Opt_appraise_type, "appraise_type=%s"},
-> >>>> @@ -519,6 +526,19 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
-> >>>>  			if (!result)
-> >>>>  				entry->flags |= IMA_FSMAGIC;
-> >>>>  			break;
-> >>>> +		case Opt_fsuuid:
-> >>>> +			ima_log_string(ab, "fsuuid", args[0].from);
-> >>>> +
-> >>>> +			if (memchr_inv(entry->fsuuid, 0x00,
-> >>>> +			    sizeof(entry->fsuuid))) {
-> >>>> +				result = -EINVAL;
-> >>>> +				break;
-> >>>> +			}
-> >>>> +
-> >>>> +			part_pack_uuid(args[0].from, entry->fsuuid);
-> >>>> +			entry->flags |= IMA_FSUUID;
-> >>>> +			result = 0;
-> >>>> +			break;
-> >>>>  		case Opt_uid:
-> >>>>  			ima_log_string(ab, "uid", args[0].from);
-> >>>>  
-> >>>
-> >>> We don't have part_pack_uuid() without CONFIG_BLOCK, so should this return 
-> >>> -ENOTSUPP if that option is not enabled?
-> 
-> It's fine with me to ifdef that entire case and just return something like
-> ENOTBLK or EINVAL.  ENOTSUPP says that it is for NFSv3.
+Hi,
 
-part_pack_uuid() is defined as static inline void.  It might be simpler
-to define an IMA wrapper.  I'll post something shortly.
+Dne 21.2.2013 23:01, Nicholas A. Bellinger napsal(a):
+> Hi Martin,
+>
+> On Thu, 2013-02-21 at 12:43 +0100, Martin Svec wrote:
+> >  I'm sorry, I forgot to mention hardware details. It isn't aacraid, it
+> >  is megaraid-based Dell PERC H700 w/ 1GB NVRAM and 12x 450GB 15k SAS
+> >  drives in RAID-10. All in Dell R510 server.
+> >
+>
+> Jan Engelhardt (CC'ed) mentioned the currently out-of-tree ROW scheduler
+> worked for him:
+>
+> https://lkml.org/lkml/2012/12/11/534
+>
+> Perhaps this would be worth a shot..?
 
-thanks,
+Yes, I've already tried the ROW scheduler. It helped for some low 
+iodepths depending on quantum settings but generally didn't solve the 
+problem. I think the key issue is that none of the schedulers can 
+throttle I/O according to e.g. average request roundtrip time. Shaohua 
+Li is right here: https://lkml.org/lkml/2012/12/11/598 -- as long as 
+there's free room in device's queue they blindly dispatch requests to it.
 
-Mimi
+Which is exactly what I see in deadline scheduler fifo queues: 
+There're no read requests to be scheduled between writes because all 
+readers are starving. So the scheduler keeps dispatching writes using 
+all the remaining capacity of device queue. Which in turn worses the 
+read starvation. Bigger queue depth and bigger writeback cache means 
+higher chance for read starvation even from a single writer.
+
+Thanks,
+Martin
+
+
+
+> --nab
+>
+> >  Thanks,
+> >
+> >  Martin
+> >
+> >  Dne 20.2.2013 21:48, Nicholas A. Bellinger napsal(a):
+> >  >  Hi Martin,
+> >  >
+> >  >  CC'ing linux-scsi here, as aacraid doesn't have an official maintainer
+> >  >  atm.
+> >  >
+> >  >  --nab
+> >  >
+> >  >  On Wed, 2013-02-20 at 16:38 +0100, Martin Svec wrote:
+> >  >>  Hello,
+> >  >>
+> >  >>  I've noticed read I/O starvation problems of LIO iSCSI target when
+> >  >>  used on top of writeback-enabled HW RAID controller (PERC H700 with
+> >  >>  1GB cache). For intensive mixed read-write workload in virtualized
+> >  >>  environments, writes are able to consume over 95% of the IOPS
+> >  >>  throughput and cause starvation of reads.
+> >  >>
+> >  >>  After a number of tests it seems to me it's a general issue of block
+> >  >>  layer I/O scheduling when running on top of a writeback device. If
+> >  >>  there is a write-intensive task, all writes go to the writeback cache
+> >  >>  with near-zero latency. This allows writer to quickly saturate the
+> >  >>  device with thousands of writes while using only a minimal fraction of
+> >  >>  queue depth. However, non-cached reads depend on spinning drive
+> >  >>  latencies which are orders of magnitude higher than writeback cache
+> >  >>  latencies, and so readers cannot submit so many requests per second as
+> >  >>  writers. Consequently, I guess the controller has totally wrong view
+> >  >>  of the incoming workload pattern, tries to satisfy the write flood
+> >  >>  first and the net result is inacceptable starvation of reads, with
+> >  >>  latencies up to hundreds of milliseconds.
+> >  >>
+> >  >>  A simple fio test with 1TiB block device where one thread does 4k
+> >  >>  random sync writes with iodepth=32 and one thread does 4k random reads
+> >  >>  with iodepth=32 shows that instead of the theoretical 50:50 IOPS
+> >  >>  ratio, the block device runs with 95:5 ratio in favor of writes. In
+> >  >>  fact, the imbalance is so high that even write iodepth=2 is enaugh to
+> >  >>  achieve the same numbers.
+> >  >>
+> >  >>  Real workloads that tend to exhibit this problem are: initial zeroing
+> >  >>  of a virtual machine disk, virtual machine migration, virtual machine
+> >  >>  cloning, intensive swapping of one virtual machine etc.
+> >  >>
+> >  >>  I tried to set WCE=1 on target iblock device, played with queue
+> >  >>  depths, tested all three I/O schedulers and their parameters,
+> >  >>  controller's parameters, but with no luck. To achieve reasonably good
+> >  >>  fairness, the only solution is to set nr_requests to 1 or disable
+> >  >>  controller's writeback cache at all -- at the expense of degraded
+> >  >>  overall performance :-(
+> >  >>
+> >  >>  Regarding nr_requests, there's obvious relation between iodepths and
+> >  >>  read starvation: if (nr_requests>= workload iodepth) then starvation
+> >  >>  surely occurs. Lowering nr_requests below this threshold slowly starts
+> >  >>  improving fairness and for every rd+wr iodepths pair, there exists
+> >  >>  sufficiently low nr_requests value at which IOPS ratio is finally
+> >  >>  balanced according to rd:wr iodepth ratio. Unfortunately it means
+> >  >>  there is no minimal nr_requests value suitable for all workloads. For
+> >  >>  iodepths around 2 to 8, only nr_requests=1 provides fair load balancing.
+> >  >>
+> >  >>  Is this a known problem? Does anybody find block layer parameters that
+> >  >>  elliminate this problem for iscsi-target storage in mixed random
+> >  >>  read-write environments like virtualization? Or should I start writing
+> >  >>  my own I/O scheduler? ;-)
+> >  >>
+> >  >>  Update: I've just found https://lkml.org/lkml/2012/12/10/550 (Read
+> >  >>  starvation by sync writes), where Jan Kara describes identical
+> >  >>  symptoms. But setting nr_requests=10000 doesn't help in my case.
+> >  >>  CC'ing LKML too (I'm not LKML subscriber).
+> >  >>
+> >  >>  Thanks,
+> >  >>
+> >  >>  Martin
+> >  >>
+> >  >>  --
+> >  >>  To unsubscribe from this list: send the line "unsubscribe target-devel" in
+> >  >>  the body of a message to majordomo@vger.kernel.org
+> >  >>  More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >  >
+> >
+> >  --
+> >  To unsubscribe from this list: send the line "unsubscribe target-devel" in
+> >  the body of a message to majordomo@vger.kernel.org
+> >  More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
