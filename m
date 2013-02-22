@@ -1,73 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab3BVJVT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 04:21:19 -0500
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:17028
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755210Ab3BVJVQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 04:21:16 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275dhz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
-Date: Fri, 22 Feb 2013 17:20:56 +0800
-From: Dong Aisheng <b29396@freescale.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Alexander Shiyan <shc_work@mail.ru>, <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Dong Aisheng <dong.aisheng@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v4] mfd: syscon: Add non-DT support
-Message-ID: <20130222092055.GF3252@b29396-Latitude-E6410>
-References: <1361460542-2872-1-git-send-email-shc_work@mail.ru>
- <20130222065548.GA3252@b29396-Latitude-E6410>
- <1361516478.223331042@f282.mail.ru>
- <20130222071311.GB3252@b29396-Latitude-E6410>
- <20130222072718.GA24114@avionic-0098.mockup.avionic-design.de>
- <20130222082954.GD3252@b29396-Latitude-E6410>
- <20130222085212.GA27653@avionic-0098.mockup.avionic-design.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130222085212.GA27653@avionic-0098.mockup.avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	id S1755727Ab3BVJYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 04:24:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28107 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753282Ab3BVJX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 04:23:57 -0500
+Date: Fri, 22 Feb 2013 05:50:21 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: linux-acpi@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH EDAC 03/13] ghes: add the needed hooks for EDAC error
+ report
+Message-ID: <20130222055021.12125c03@redhat.com>
+In-Reply-To: <1361493911.7093.37.camel@yhuang-dev>
+References: <cover.1360931635.git.mchehab@redhat.com>
+	<a6aaff7d219b878ca655fde3757ecd0170caec2c.1360931635.git.mchehab@redhat.com>
+	<1361409967.7093.20.camel@yhuang-dev>
+	<20130221090428.3b36b1ea@redhat.com>
+	<1361493911.7093.37.camel@yhuang-dev>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 09:52:12AM +0100, Thierry Reding wrote:
-> On Fri, Feb 22, 2013 at 04:29:55PM +0800, Dong Aisheng wrote:
-> > On Fri, Feb 22, 2013 at 08:27:19AM +0100, Thierry Reding wrote:
-> > ...
-> > > > > > Otherwise, i'm also ok with this patch.
-> > > > > > Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
-> > > > > > 
-> > > > > > BTW, i did not see Samuel's tree having this new API.
-> > > > > > So, who will pick this patch?
-> > > > > 
-> > > > > I have same question.
-> > > > 
-> > > > I CCed Thierry and Greg who may know it.
-> > > 
-> > > Yes, devm_ioremap_resource() never returns NULL. You always need to
-> > > check the returned pointer with IS_ERR(). The value that you return
-> > > should be extracted from the pointer with PTR_ERR().
+Em Fri, 22 Feb 2013 08:45:11 +0800
+Huang Ying <ying.huang@intel.com> escreveu:
+
+> On Thu, 2013-02-21 at 09:04 -0300, Mauro Carvalho Chehab wrote:
+> > Em Thu, 21 Feb 2013 09:26:07 +0800
+> > Huang Ying <ying.huang@intel.com> escreveu:
 > > 
-> > Thanks Thierry.
-> > Since Samuel's mdf tree does not have your patch introducing
-> > the new API of devm_ioremap_resource,
-> > do you know which tree this patch can go through, Greg's driver core tree?
-> 
-> I don't think it matters much at this point because Linus merged the
-> driver core tree yesterday, so anything that gets applied now should
-> automatically have the new API available.
-> 
-I just tried update to latest linus tree, still did not find this API defined
-in include/linux/io.h.
-Would you mind point it out for me?
 
-Regards
-Dong Aisheng
+> > There is also an advantage on taking this approach: this patch can have just
+> > the ghes changes, and will still compile fine, as CONFIG_EDAC_GHES is not
+> > defined yet. So, the patch becomes is simpler and easier to review.
+> 
+> Thanks for your explanation.  I agree to keep this in header file.
+> 
+> My original suggestion is that it may be better to move this from ghes.h
+> to some place like "ghes_edac.h", because these functions are
+> implemented in "ghes_edac.c" instead of ghes.c.
+> 
 
+Ah! Well, I considered a separate header when writing this patch, but adding 
+another header for just 3 functions where the parameters are more related to
+ghes than with ghes_edac seemed overkill to me.
+
+IMO, a single comment at the header pointing to ghes_edac.c would improve it.
+
+> >  	switch (generic->notify.type) {
+> >  	case ACPI_HEST_NOTIFY_POLLED:
+> >  		ghes->timer.function = ghes_poll_func;
+> > @@ -911,13 +920,13 @@ static int ghes_probe(struct platform_device *ghes_dev)
+> >  		if (acpi_gsi_to_irq(generic->notify.vector, &ghes->irq)) {
+> >  			pr_err(GHES_PFX "Failed to map GSI to IRQ for generic hardware error source: %d\n",
+> >  			       generic->header.source_id);
+> > -			goto err;
+> > +			goto err2;
+> >  		}
+> >  		if (request_irq(ghes->irq, ghes_irq_func,
+> >  				0, "GHES IRQ", ghes)) {
+> >  			pr_err(GHES_PFX "Failed to register IRQ for generic hardware error source: %d\n",
+> >  			       generic->header.source_id);
+> > -			goto err;
+> > +			goto err2;
+> >  		}
+> >  		break;
+> >  	case ACPI_HEST_NOTIFY_SCI:
+> > @@ -943,6 +952,8 @@ static int ghes_probe(struct platform_device *ghes_dev)
+> >  	platform_set_drvdata(ghes_dev, ghes);
+> >  
+> >  	return 0;
+> > +err2:
+> 
+> Suggest to rename it to err_edac_unreg or something like that.  Just a
+> suggestion.
+
+Done.
+
+I'm folding the enclosed patch on it.
+
+Thanks for review!
+
+Regards,
+Mauro
+
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index 19092dc..d668a8a 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -920,13 +920,13 @@ static int ghes_probe(struct platform_device *ghes_dev)
+ 		if (acpi_gsi_to_irq(generic->notify.vector, &ghes->irq)) {
+ 			pr_err(GHES_PFX "Failed to map GSI to IRQ for generic hardware error source: %d\n",
+ 			       generic->header.source_id);
+-			goto err2;
++			goto err_edac_unreg;
+ 		}
+ 		if (request_irq(ghes->irq, ghes_irq_func,
+ 				0, "GHES IRQ", ghes)) {
+ 			pr_err(GHES_PFX "Failed to register IRQ for generic hardware error source: %d\n",
+ 			       generic->header.source_id);
+-			goto err2;
++			goto err_edac_unreg;
+ 		}
+ 		break;
+ 	case ACPI_HEST_NOTIFY_SCI:
+@@ -952,7 +952,7 @@ static int ghes_probe(struct platform_device *ghes_dev)
+ 	platform_set_drvdata(ghes_dev, ghes);
+ 
+ 	return 0;
+-err2:
++err_edac_unreg:
+ 	ghes_edac_unregister(ghes);
+ err:
+ 	if (ghes) {
+diff --git a/include/acpi/ghes.h b/include/acpi/ghes.h
+index 9015ec2..d11d952 100644
+--- a/include/acpi/ghes.h
++++ b/include/acpi/ghes.h
+@@ -45,6 +45,8 @@ enum {
+ 	GHES_SEV_PANIC = 0x3,
+ };
+ 
++/* From drivers/edac/ghes_acpi.h */
++
+ #ifdef CONFIG_EDAC_GHES
+ void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
+ 				struct cper_sec_mem_err *mem_err);
+
+
+
+-- 
+
+Cheers,
+Mauro
