@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758488Ab3BVXA4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 18:00:56 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:49464 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757647Ab3BVXAx (ORCPT
+	id S1758608Ab3BVXBR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 18:01:17 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47508 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757867Ab3BVXBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 18:00:53 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AocJAEj4J1F5LJe7/2dsb2JhbABEhWW2P4UTgQsXc4IfAQEFOhwjEAgDGAklDwUlAyETiBG/HxWOGiI9B4NAA5Y5kGSDGw
-Date: Sat, 23 Feb 2013 10:00:48 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] dcache: make Oracle more scalable on large systems
-Message-ID: <20130222230048.GP26694@dastard>
-References: <1361299859-27056-1-git-send-email-Waiman.Long@hp.com>
- <20130221233818.GM26694@dastard>
- <m2bobdxl1i.fsf@firstfloor.org>
- <5126F067.4040707@hp.com>
+	Fri, 22 Feb 2013 18:01:15 -0500
+Message-ID: <5127F8B5.10002@wwwdotorg.org>
+Date: Fri, 22 Feb 2013 16:01:09 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5126F067.4040707@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rhyland Klein <rklein@nvidia.com>
+CC: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC v2 2/3] power: power_supply: Add core support for supplied_nodes
+References: <1361488272-21010-1-git-send-email-rklein@nvidia.com> <1361488272-21010-3-git-send-email-rklein@nvidia.com> <5127CBD9.9050501@wwwdotorg.org> <5127E95E.4010500@nvidia.com>
+In-Reply-To: <5127E95E.4010500@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 11:13:27PM -0500, Waiman Long wrote:
-> On 02/21/2013 07:13 PM, Andi Kleen wrote:
-> >Dave Chinner<david@fromorbit.com>  writes:
-> >
-> >>On Tue, Feb 19, 2013 at 01:50:55PM -0500, Waiman Long wrote:
-> >>>It was found that the Oracle database software issues a lot of call
-> >>>to the seq_path() kernel function which translates a (dentry, mnt)
-> >>>pair to an absolute path. The seq_path() function will eventually
-> >>>take the following two locks:
-> >>Nobody should be doing reverse dentry-to-name lookups in a quantity
-> >>sufficient for it to become a performance limiting factor. What is
-> >>the Oracle DB actually using this path for?
-> >Yes calling d_path frequently is usually a bug elsewhere.
-> >Is that through /proc ?
-> >
-> >-Andi
-> >
-> >
-> A sample strace of Oracle indicates that it opens a lot of /proc
-> filesystem files such as the stat, maps, etc many times while
-> running. Oracle has a very detailed system performance reporting
-> infrastructure in place to report almost all aspect of system
-> performance through its AWR reporting tool or the browser-base
-> enterprise manager. Maybe that is the reason why it is hitting this
-> performance bottleneck.
+On 02/22/2013 02:55 PM, Rhyland Klein wrote:
+> On 2/22/2013 2:49 PM, Stephen Warren wrote:
+>> On 02/21/2013 04:11 PM, Rhyland Klein wrote:
+>>> With the growing support for dt, it make sense to try to make use of
+>>> dt features to make the general code cleaner. This patch is an
+>>> attempt to commonize how chargers and their supplies are linked.
+>>>
+>>> Following common dt convention, the "supplied-to" char** list is
+>>> replaced with phandle lists defined in the supplies which contain
+>>> phandles of their suppliers.
+>>>
+>>> This has the effect however of introducing an inversion in the internal
+>>> mechanics of how this information is stored. In the case of non-dt,
+>>> the char** list of supplies is stored in the charger. In the dt case,
+>>> a device_node * list is stored in the supplies of their chargers,
+>>> however this seems to be the only way to support this.
+>> When parsing the DT, you can convert from phandle (or struct device_node
+>> *) to the name of the referenced supply by simple lookup. So, you could
+>> store supply names rather than device_node *. Can't you then also fill
+>> in the referenced supply's existing char** list of supplies?
+>>
+>> Of course, making this interact-with/use -EPROBE_DEFERRED might be
+>> challenging, since this would be operating in the inverse order to other
+>> producer/consumer relationships, which might cause loops.
+> The main problem I ran into when I was essentially trying to do this,
+> was that the list of names that
+> are used to match the power_supplies are the strings set as "name" in
+> the power_supply structs. This
+> doesn't get set automatically based on their nodes, and it is currently
+> up to each driver to define their
+> own name.
+> 
+> For example, the sbs-battery driver uses the name "sbs-XXX" where XX is
+> its dev_name. Other drivers
+> use "%s-$%d" as i2c_device_id->name, + instance number. Then the only
+> solution I see is to require a new
+> property that defines the power-supply's name in the devicetree.
+> 
+> This solution with device_nodes, while not ideal, seems the be the best
+> bet from what I see. Maybe
+> someone else has a better idea.
 
-That seems to me like an application problem - poking at what the
-kernel is doing via diagnostic interfaces so often that it gets in
-the way of the kernel actually doing stuff is not a problem the
-kernel can solve.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+For other resource types, this is handled by the (phandle -> whatever)
+conversion process actually being a function call on the referenced
+object, so that the driver code for it can look up the data in the
+actual device/... object etc. See the various .of_xlate functions that
+exist in the kernel.
