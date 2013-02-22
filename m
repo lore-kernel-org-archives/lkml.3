@@ -1,102 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab3BVHNL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 02:13:11 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:53820 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754570Ab3BVHNI (ORCPT
+	id S1755040Ab3BVHN1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 02:13:27 -0500
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:47460
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753557Ab3BVHNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 02:13:08 -0500
-Message-ID: <51271A7D.6020305@gmail.com>
-Date: Fri, 22 Feb 2013 15:13:01 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 22 Feb 2013 02:13:25 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432I179dNzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275dh6d523h5e7bkz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
+Date: Fri, 22 Feb 2013 15:13:12 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Alexander Shiyan <shc_work@mail.ru>
+CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <thierry.reding@avionic-design.de>, <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v4] mfd: syscon: Add non-DT support
+Message-ID: <20130222071311.GB3252@b29396-Latitude-E6410>
+References: <1361460542-2872-1-git-send-email-shc_work@mail.ru>
+ <20130222065548.GA3252@b29396-Latitude-E6410>
+ <1361516478.223331042@f282.mail.ru>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/7] ksm: treat unstable nid like in stable tree
-References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <alpine.LNX.2.00.1302210019390.17843@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1302210019390.17843@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1361516478.223331042@f282.mail.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 04:20 PM, Hugh Dickins wrote:
-> An inconsistency emerged in reviewing the NUMA node changes to KSM:
-> when meeting a page from the wrong NUMA node in a stable tree, we say
-> that it's okay for comparisons, but not as a leaf for merging; whereas
-> when meeting a page from the wrong NUMA node in an unstable tree, we
-> bail out immediately.
+On Fri, Feb 22, 2013 at 11:01:18AM +0400, Alexander Shiyan wrote:
+> > On Thu, Feb 21, 2013 at 07:29:02PM +0400, Alexander Shiyan wrote:
+> > > This patch allow using syscon driver from the platform data, i.e.
+> > > possibility using driver on systems without oftree support.
+> > > For search syscon device from the client drivers,
+> > > "syscon_regmap_lookup_by_pdevname" function was added.
+> > > 
+> > > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> > 
+> > [...]
+> > 
+> > > +	syscon->base = devm_ioremap_resource(dev, res);
+> > > +	if (!syscon->base)
+> > 
+> > Is this correct?
+> 
+> Hmm, of course IS_ERR should be used here...
+> v5?
+> 
 
-IIUC
-- ksm page from the wrong NUMA node will be add to current node's stable 
-tree
-- normal page from the wrong NUMA node will be merged to current node's 
-stable tree  <- where I miss here? I didn't see any special handling in 
-function stable_tree_search for this case.
-- normal page from the wrong NUMA node will compare but not as a leaf 
-for merging after the patch
+Yes.
+>From here:
+https://lkml.org/lkml/2013/1/21/140
+It seems it is.
 
->
-> Now, it might be that a wrong NUMA node in an unstable tree is more
-> likely to correlate with instablility (different content, with rbnode
-> now misplaced) than page migration; but even so, we are accustomed to
-> instablility in the unstable tree.
->
-> Without strong evidence for which strategy is generally better, I'd
-> rather be consistent with what's done in the stable tree: accept a page
-> from the wrong NUMA node for comparison, but not as a leaf for merging.
->
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
->   mm/ksm.c |   19 +++++++++----------
->   1 file changed, 9 insertions(+), 10 deletions(-)
->
-> --- mmotm.orig/mm/ksm.c	2013-02-20 22:28:23.584001392 -0800
-> +++ mmotm/mm/ksm.c	2013-02-20 22:28:27.288001480 -0800
-> @@ -1340,16 +1340,6 @@ struct rmap_item *unstable_tree_search_i
->   			return NULL;
->   		}
->   
-> -		/*
-> -		 * If tree_page has been migrated to another NUMA node, it
-> -		 * will be flushed out and put into the right unstable tree
-> -		 * next time: only merge with it if merge_across_nodes.
-> -		 */
-> -		if (!ksm_merge_across_nodes && page_to_nid(tree_page) != nid) {
-> -			put_page(tree_page);
-> -			return NULL;
-> -		}
-> -
->   		ret = memcmp_pages(page, tree_page);
->   
->   		parent = *new;
-> @@ -1359,6 +1349,15 @@ struct rmap_item *unstable_tree_search_i
->   		} else if (ret > 0) {
->   			put_page(tree_page);
->   			new = &parent->rb_right;
-> +		} else if (!ksm_merge_across_nodes &&
-> +			   page_to_nid(tree_page) != nid) {
-> +			/*
-> +			 * If tree_page has been migrated to another NUMA node,
-> +			 * it will be flushed out and put in the right unstable
-> +			 * tree next time: only merge with it when across_nodes.
-> +			 */
-> +			put_page(tree_page);
-> +			return NULL;
->   		} else {
->   			*tree_pagep = tree_page;
->   			return tree_rmap_item;
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > 
+> > > +		return -EBUSY;
+
+Both this line could also be changed.
+
+> > >
+> > 
+> > Otherwise, i'm also ok with this patch.
+> > Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > 
+> > BTW, i did not see Samuel's tree having this new API.
+> > So, who will pick this patch?
+> 
+> I have same question.
+
+I CCed Thierry and Greg who may know it.
+
+Regards
+Dong Aisheng
 
