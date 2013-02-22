@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845Ab3BVI26 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 03:28:58 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:8386 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754838Ab3BVI2p (ORCPT
+	id S1755919Ab3BVIaH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 03:30:07 -0500
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:1624
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754019Ab3BVIaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 03:28:45 -0500
-X-IronPort-AV: E=Sophos;i="4.84,714,1355097600"; 
-   d="scan'208";a="1770299"
-Message-ID: <1361521720.26546.93.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH XEN] xen: event channel arrays are xen_ulong_t and not
- unsigned long
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Jan Beulich <JBeulich@suse.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Keir (Xen.org)" <keir@xen.org>, "Tim (Xen.org)" <tim@xen.org>
-Date: Fri, 22 Feb 2013 08:28:40 +0000
-In-Reply-To: <5127366502000078000C0380@nat28.tlf.novell.com>
-References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
-	 <1361285363-27133-1-git-send-email-ian.campbell@citrix.com>
-	 <1361466961.26546.85.camel@zakaz.uk.xensource.com>
-	 <5127366502000078000C0380@nat28.tlf.novell.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Fri, 22 Feb 2013 03:30:04 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zz98dI1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ah1082kzz8275dhz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1155h)
+Date: Fri, 22 Feb 2013 16:29:55 +0800
+From: Dong Aisheng <b29396@freescale.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Alexander Shiyan <shc_work@mail.ru>, <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Dong Aisheng <dong.aisheng@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v4] mfd: syscon: Add non-DT support
+Message-ID: <20130222082954.GD3252@b29396-Latitude-E6410>
+References: <1361460542-2872-1-git-send-email-shc_work@mail.ru>
+ <20130222065548.GA3252@b29396-Latitude-E6410>
+ <1361516478.223331042@f282.mail.ru>
+ <20130222071311.GB3252@b29396-Latitude-E6410>
+ <20130222072718.GA24114@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130222072718.GA24114@avionic-0098.mockup.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-22 at 08:12 +0000, Jan Beulich wrote:
-> >>> On 21.02.13 at 18:16, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> > On Tue, 2013-02-19 at 14:49 +0000, Ian Campbell wrote:
-> >> On ARM we want these to be the same size on 32- and 64-bit.
-> >> 
-> >> This is an ABI change on ARM. X86 does not change.
-> >> 
-> >> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> >> Cc: Jan Beulich <JBeulich@suse.com>
-> >> Cc: Keir (Xen.org) <keir@xen.org>
+On Fri, Feb 22, 2013 at 08:27:19AM +0100, Thierry Reding wrote:
+...
+> > > > Otherwise, i'm also ok with this patch.
+> > > > Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > > > 
+> > > > BTW, i did not see Samuel's tree having this new API.
+> > > > So, who will pick this patch?
+> > > 
+> > > I have same question.
 > > 
-> > Are you guys (un)happy with this change from the Xen & x86 side?
+> > I CCed Thierry and Greg who may know it.
 > 
-> I don't see any problem with it.
+> Yes, devm_ioremap_resource() never returns NULL. You always need to
+> check the returned pointer with IS_ERR(). The value that you return
+> should be extracted from the pointer with PTR_ERR().
 
-I'll take this as an Acked-by if that's ok with you.
+Thanks Thierry.
+Since Samuel's mdf tree does not have your patch introducing
+the new API of devm_ioremap_resource,
+do you know which tree this patch can go through, Greg's driver core tree?
 
-Ian.
+Regards
+Dong Aisheng
 
