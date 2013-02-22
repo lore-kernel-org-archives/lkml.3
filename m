@@ -1,108 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab3BVMXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 07:23:38 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:41399 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755854Ab3BVMXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 07:23:35 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Huang Ying <ying.huang@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [BUG bisected]: apei_hest_parse explosion
-Date: Fri, 22 Feb 2013 13:30:14 +0100
-Message-ID: <5350252.GArARx6b7p@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <alpine.LFD.2.02.1302220903000.22263@ionos>
-References: <alpine.LFD.2.02.1302220002040.22263@ionos> <4867361.uTndA5QxsU@vostro.rjw.lan> <alpine.LFD.2.02.1302220903000.22263@ionos>
+	id S1756890Ab3BVMYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 07:24:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54006 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756768Ab3BVMYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 07:24:51 -0500
+Date: Fri, 22 Feb 2013 04:23:07 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-c06b4f1947213cd0902610fafcabac02d49ad728@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        namhyung.kim@lge.com, namhyung@kernel.org, rostedt@goodmis.org,
+        tglx@linutronix.de, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, namhyung.kim@lge.com, tglx@linutronix.de,
+        namhyung@kernel.org, dzickus@redhat.com
+In-Reply-To: <1356576585-28782-1-git-send-email-namhyung@kernel.org>
+References: <1356576585-28782-1-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] watchdog: Use local_clock for get_timestamp()
+Git-Commit-ID: c06b4f1947213cd0902610fafcabac02d49ad728
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 22 Feb 2013 04:23:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 22, 2013 09:22:15 AM Thomas Gleixner wrote:
-> On Fri, 22 Feb 2013, Rafael J. Wysocki wrote:
-> > On Friday, February 22, 2013 02:40:58 AM Rafael J. Wysocki wrote:
-> > > It looks like the hest_tab memory mapping is unmapped between acpi_hest_init()
-> > > and aer_acpi_firmware_first(), but I have no idea what may be responsible for
-> > > that.
-> > > 
-> > > And the only relevant difference between now and before the commit above seems
-> > > to be the change of the acpi_hest_init() ordering (which now is called earlier).
-> > 
-> > We actually don't really need to do that thing so early, I think.  It looks like
-> > we only need to make it available early enough for the AER driver to be able to
-> > use it, so I wonder if moving the acpi_hest_init() to a separate
-> > subsys_initcall() will work around the problem.  That is, something like the
-> > patch below.
-> 
-> Yes, that makes the machine boot.
+Commit-ID:  c06b4f1947213cd0902610fafcabac02d49ad728
+Gitweb:     http://git.kernel.org/tip/c06b4f1947213cd0902610fafcabac02d49ad728
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 27 Dec 2012 11:49:44 +0900
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 19 Feb 2013 08:42:40 +0100
 
-Although for a reason I didn't think about.
+watchdog: Use local_clock for get_timestamp()
 
-> > But even if this helps, I will be wanting to understand what's up here.
-> 
-> It's very simple. I have "acpi=off" on the command line. With that
-> acpi_hest_init is never called, so hest_disable is not set .....
+The get_timestamp() function is always called with current cpu,
+thus using local_clock() would be more appropriate and it makes
+the code shorter and cleaner IMHO.
 
-Well, that explains things (and means that acpi=off doesn't really get much
-test coverage these days).
-
-> Brilliant stuff that.
-
-The appended patch should fix the breakage too, can you please verify?
-
-Rafael
-
-
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1356576585-28782-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: ACPI / APEI: Fix crash in apei_hest_parse() for acpi=off
+ kernel/watchdog.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-After commit 92ef2a2 (ACPI: Change the ordering of PCI root bridge
-driver registrarion), acpi_hest_init() is never called for acpi=off
-(acpi_disabled), so hest_disable is not set, but hest_tab is NULL,
-which causes apei_hest_parse() to crash when it is called from
-aer_acpi_firmware_first().
-
-Fix that by making apei_hest_parse() check if hest_tab is not NULL
-in addition to checking hest_disable.  Also remove the now useless
-acpi_disabled check from apei_hest_parse().
-
-Reported-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/apei/hest.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
-
-Index: test/drivers/acpi/apei/hest.c
-===================================================================
---- test.orig/drivers/acpi/apei/hest.c
-+++ test/drivers/acpi/apei/hest.c
-@@ -89,7 +89,7 @@ int apei_hest_parse(apei_hest_func_t fun
- 	struct acpi_hest_header *hest_hdr;
- 	int i, rc, len;
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 75a2ab3..082ca68 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -112,9 +112,9 @@ static int get_softlockup_thresh(void)
+  * resolution, and we don't need to waste time with a big divide when
+  * 2^30ns == 1.074s.
+  */
+-static unsigned long get_timestamp(int this_cpu)
++static unsigned long get_timestamp(void)
+ {
+-	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
++	return local_clock() >> 30LL;  /* 2^30 ~= 10^9 */
+ }
  
--	if (hest_disable)
-+	if (hest_disable || !hest_tab)
- 		return -EINVAL;
- 
- 	hest_hdr = (struct acpi_hest_header *)(hest_tab + 1);
-@@ -216,9 +216,6 @@ void __init acpi_hest_init(void)
- 		return;
- 	}
- 
--	if (acpi_disabled)
--		goto err;
+ static void set_sample_period(void)
+@@ -132,9 +132,7 @@ static void set_sample_period(void)
+ /* Commands for resetting the watchdog */
+ static void __touch_watchdog(void)
+ {
+-	int this_cpu = smp_processor_id();
 -
- 	status = acpi_get_table(ACPI_SIG_HEST, 0,
- 				(struct acpi_table_header **)&hest_tab);
- 	if (status == AE_NOT_FOUND)
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-	__this_cpu_write(watchdog_touch_ts, get_timestamp(this_cpu));
++	__this_cpu_write(watchdog_touch_ts, get_timestamp());
+ }
+ 
+ void touch_softlockup_watchdog(void)
+@@ -195,7 +193,7 @@ static int is_hardlockup(void)
+ 
+ static int is_softlockup(unsigned long touch_ts)
+ {
+-	unsigned long now = get_timestamp(smp_processor_id());
++	unsigned long now = get_timestamp();
+ 
+ 	/* Warn about unreasonable delays: */
+ 	if (time_after(now, touch_ts + get_softlockup_thresh()))
