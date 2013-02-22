@@ -1,101 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab3BVK2m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 05:28:42 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:46776 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557Ab3BVK2l convert rfc822-to-8bit (ORCPT
+	id S1756952Ab3BVK3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 05:29:16 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:40706 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756800Ab3BVK3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 05:28:41 -0500
-Date: Fri, 22 Feb 2013 10:28:36 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+	Fri, 22 Feb 2013 05:29:15 -0500
+Message-ID: <512748BF.1060403@ti.com>
+Date: Fri, 22 Feb 2013 16:00:23 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
 To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Jason Liu <liu.h.jason@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+CC: Jason Liu <liu.h.jason@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 Subject: Re: too many timer retries happen when do local timer swtich with
  broadcast timer
-Message-ID: <20130222102836.GB12140@e102568-lin.cambridge.arm.com>
-References: <CAB4PhKevqf0e4nzYraE9ZTAFbPCFfNpguAnPoVpJh-FFe2TAZA@mail.gmail.com>
- <alpine.LFD.2.02.1302201400400.22263@ionos>
- <CAB4PhKfxPcyQfpM2Ra1OxsyYhS5fnkjtPy=uYgxFHim1rOdoug@mail.gmail.com>
- <alpine.LFD.2.02.1302211015270.22263@ionos>
- <CAB4PhKf+Z-TK4KGDZm1kYOWibg=e2Ehnhjxt_oTbFq9eqouAjA@mail.gmail.com>
- <alpine.LFD.2.02.1302211436300.22263@ionos>
- <51263975.20906@ti.com>
- <alpine.LFD.2.02.1302212214020.22263@ionos>
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1302212214020.22263@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 22 Feb 2013 10:28:37.0326 (UTC) FILETIME=[5FEE36E0:01CE10E7]
-X-MC-Unique: 113022210283907001
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+References: <CAB4PhKevqf0e4nzYraE9ZTAFbPCFfNpguAnPoVpJh-FFe2TAZA@mail.gmail.com> <alpine.LFD.2.02.1302201400400.22263@ionos> <CAB4PhKfxPcyQfpM2Ra1OxsyYhS5fnkjtPy=uYgxFHim1rOdoug@mail.gmail.com> <alpine.LFD.2.02.1302211015270.22263@ionos> <CAB4PhKf+Z-TK4KGDZm1kYOWibg=e2Ehnhjxt_oTbFq9eqouAjA@mail.gmail.com> <alpine.LFD.2.02.1302211436300.22263@ionos> <51263975.20906@ti.com> <alpine.LFD.2.02.1302212214020.22263@ionos> <5127436E.4040100@ti.com> <alpine.LFD.2.02.1302221122290.22263@ionos>
+In-Reply-To: <alpine.LFD.2.02.1302221122290.22263@ionos>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 10:19:18PM +0000, Thomas Gleixner wrote:
-> On Thu, 21 Feb 2013, Santosh Shilimkar wrote:
-> > On Thursday 21 February 2013 07:18 PM, Thomas Gleixner wrote:
-> > > find below a completely untested patch, which should address that issue.
-> > > 
-> > After looking at the thread, I tried to see the issue on OMAP and could
-> > see the same issue as Jason.
-> 
-> That's interesting. We have the same issue on x86 since 2007 and
-> nobody noticed ever. It's basically the same problem there, but it
-> seems that on x86 getting out of those low power states is way slower
-> than the minimal reprogramming delta which is used to enforce the
-> local timer to fire after the wakeup. 
-> 
-> I'm still amazed that as Jason stated a 1us reprogramming delta is
-> sufficient to get this ping-pong going. I somehow doubt that, but
-> maybe ARM is really that fast :)
+On Friday 22 February 2013 03:54 PM, Thomas Gleixner wrote:
+> On Fri, 22 Feb 2013, Santosh Shilimkar wrote:
+>> BTW, Lorenzo off-list mentioned to me about warning in boot-up
+>> which I missed while testing your patch. It will take bit more
+>> time for me to look into it and hence thought of reporting it.
+>>
+>> [    2.186126] ------------[ cut here ]------------
+>> [    2.190979] WARNING: at kernel/time/tick-broadcast.c:501
+>> tick_broadcast_oneshot_control+0x1c0/0x21c()
+>
+> Which one is that? tick_broadcast_pending or tick_force_broadcast_mask ?
+>
+The force broadcast mask one coming from below.
+"WARN_ON_ONCE(test_bit(cpu, tick_force_broadcast_mask));"
 
-It also depends on when the idle driver exits broadcast mode.
-Certainly if that's the last thing it does before enabling IRQs, that
-might help trigger the issue.
-
-I am still a bit sceptic myself too, and I take advantage of Thomas'
-knowledge on the subject, which is ways deeper than mine BTW, to ask a
-question. The thread started with a subject "too many retries...." and
-here I have a doubt. If the fix is not applied, on the CPU affine to
-the broadcast timer, it is _normal_ to have local timer retries, since
-the CPU is setting/forcing the local timer to fire after a min_delta_ns every
-time the expired event was local to the CPU affine to the broadcast timer.
-
-The problem, supposedly, is that the timer has not enough time (sorry for the
-mouthful) to expire(fire) before IRQs are disabled and the idle thread goes
-back to idle again. This means that we should notice a mismatch between
-the number of broadcast timer IRQs and local timer IRQs on the CPU
-affine to the broadcast timer IRQ (granted, we also have to take into
-account broadcast timer IRQs meant to service (through IPI) a local timer
-expired on a CPU which is not the one running the broadcast IRQ handler and
-"normal" local timer IRQs as well).
-
-I am not sure the sheer number of retries is a symptom of the problem
-happening, but I might well be mistaken so I am asking.
-
-For certain, with the fix applied, lots of duplicate IRQs on the CPU
-affine to the broadcast timer are eliminated, since the local timer is
-not reprogrammed anymore (before the fix, basically the broadcast timer
-was firing an IRQ that did nothing since the CPU was already out of
-broadcast mode by the time the broadcast handler was running, the real job
-was carried out in the local timer handler).
-
-> 
-> > Your patch fixes the retries on both CPUs on my dual core machine. So
-> > you use my tested by if you need one.
-> 
-> They are always welcome.
-> 
-> > Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-
-You can add mine too, we should fix the WARN_ON_ONCE mentioned in Santosh's
-reply.
-
-Tested-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-
+Regards,
+Santosh
