@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab3BVUJN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 15:09:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61475 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755053Ab3BVUJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 15:09:09 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
-Subject: [PATCH] x86, clocksource, fix !CONFIG_CLOCKSOURCE_WATCHDOG compile
-Date: Fri, 22 Feb 2013 15:08:56 -0500
-Message-Id: <1361563736-28241-1-git-send-email-prarit@redhat.com>
+	id S1757466Ab3BVUJp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 15:09:45 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60112 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756205Ab3BVUJn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 15:09:43 -0500
+Message-ID: <5127D083.6020308@wwwdotorg.org>
+Date: Fri, 22 Feb 2013 13:09:39 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Rhyland Klein <rklein@nvidia.com>
+CC: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-tegra@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC v2 2/3] power: power_supply: Add core support for supplied_nodes
+References: <1361488272-21010-1-git-send-email-rklein@nvidia.com> <1361488272-21010-3-git-send-email-rklein@nvidia.com>
+In-Reply-To: <1361488272-21010-3-git-send-email-rklein@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If I explicitly disable the clocksource watchdog in the x86 Kconfig,
-the x86 kernel will not compile unless this is properly defined.
+On 02/21/2013 04:11 PM, Rhyland Klein wrote:
+> With the growing support for dt, it make sense to try to make use of
+> dt features to make the general code cleaner. This patch is an
+> attempt to commonize how chargers and their supplies are linked.
+> 
+> Following common dt convention, the "supplied-to" char** list is
+> replaced with phandle lists defined in the supplies which contain
+> phandles of their suppliers.
+> 
+> This has the effect however of introducing an inversion in the internal
+> mechanics of how this information is stored. In the case of non-dt,
+> the char** list of supplies is stored in the charger. In the dt case,
+> a device_node * list is stored in the supplies of their chargers,
+> however this seems to be the only way to support this.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: x86@kernel.org
----
- kernel/time/clocksource.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index c958338..e04821f 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -450,6 +450,7 @@ static void clocksource_enqueue_watchdog(struct clocksource *cs)
- static inline void clocksource_dequeue_watchdog(struct clocksource *cs) { }
- static inline void clocksource_resume_watchdog(void) { }
- static inline int clocksource_watchdog_kthread(void *data) { return 0; }
-+void clocksource_mark_unstable(struct clocksource *cs) { }
- 
- #endif /* CONFIG_CLOCKSOURCE_WATCHDOG */
- 
--- 
-1.7.9.3
-
+grep over the whole kernel tree for supplied_to doesn't yield /too/ many
+hits, although I didn't look at the complexity of most of them. Would it
+be possible to invert all the current in-kernel uses to represent a
+supplied_from/by model instead? That would mean the proposed DT binding
+would then represent the same relationship ordering as the kernel code,
+which would be easier to handle.
