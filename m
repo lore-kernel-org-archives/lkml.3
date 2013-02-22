@@ -1,110 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab3BVFdN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 00:33:13 -0500
-Received: from smtprelay05.ispgateway.de ([80.67.31.94]:58259 "EHLO
-	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab3BVFdI (ORCPT
+	id S1753207Ab3BVFjp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 00:39:45 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:11609 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab3BVFjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 00:33:08 -0500
-References: <20130214153255.GA5033@rhlx01.hs-esslingen.de> <1361288123.2323.29.camel@rzhang1-mobl4>
-Message-ID: <cone.1361511184.64609.1639.1000@galar>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Zhang Rui <rui.zhang@intel.com>, Borislav Petkov <bp@alien8.de>
-Cc: Andreas Mohr <andi@lisas.de>, linux-kernel@vger.kernel.org,
-        Durgadoss R <durgadoss.r@intel.com>
-Subject: Re: thermal governor: does it actually work??
-Date: Fri, 22 Feb 2013 06:33:04 +0100
-Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="US-ASCII"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: NDA0MDk0
+	Fri, 22 Feb 2013 00:39:43 -0500
+X-AuditID: cbfee691-b7f556d000001a24-0d-5127049df2b9
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] lib: devres: Fix misplaced #endif
+Date: Fri, 22 Feb 2013 14:39:40 +0900
+Message-id: <000301ce10bf$028176c0$07846440$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4QvwIQvVMe0phTShywU8x8ewbKvg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t8zQ925LOqBBg8OWVtc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6Mc6emsRZ8YK2YsXcTUwPjE5YuRk4OCQETiX/35rJD2GISF+6t
+	Z+ti5OIQEljGKNH+ro8dpmhP114miMQiRokHSxezQDizmSR2TtrMBlLFJqAm8eXLYaAODg4R
+	AX2JthYNEJNZwEXi6DQRkAphASOJVc/2MoLYLAKqEl+W/ADr5BWwlWhb8pIJwhaU+DH5Hthx
+	zAJaEut3HmeCsOUlNq95ywwyUkJAXeLRX12QsIiAnsSsN/MYIUpEJPa9eMcIcpmEQDe7xLKF
+	y9ghdglIfJt8iAWiV1Zi0wFmiLckJQ6uuMEygVFsFpLNs5BsnoVk8ywkKxYwsqxiFE0tSC4o
+	TkovMtUrTswtLs1L10vOz93ECImTiTsY7x+wPsSYDLR+IrOUaHI+MM7ySuINjY1NzExMTcwt
+	Tc1NSRNWEueVvyQTKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFx68W5j0LW7s84OONlR+i6
+	eEedmgPG5te2W01by6gRE1BlEXbvYOHlP8nLL53Q+Zj0/pLDmzxx/7zfFz0eek3imtr6cXei
+	ls1qy1nCyT+Xc/7o3df0Zs1z1fwPthI3tasUH1zOvCwmsPefj8V+Wb4vHyQnXn9ze8eC1BuS
+	9++EXd3ov+WhXtQUWSWW4oxEQy3mouJEAOj4rx+pAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jAd25LOqBBgfum1tc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjHOnprEWfGCtmLF3E1MD
+	4xOWLkZODgkBE4k9XXuZIGwxiQv31rN1MXJxCAksYpR4sHQxC4Qzm0li56TNbCBVbAJqEl++
+	HGbvYuTgEBHQl2hr0QAxmQVcJI5OEwGpEBYwklj1bC8jiM0ioCrxZckPsE5eAVuJtiUvmSBs
+	QYkfk++B3cAsoCWxfudxJghbXmLzmrfMICMlBNQlHv3VBQmLCOhJzHozjxGiRERi34t3jBMY
+	BWYhmTQLyaRZSCbNQtKygJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwFD6T2sG4ssHi
+	EKMAB6MSD2+Di1qgEGtiWXFl7iFGCQ5mJRFe/VCgEG9KYmVValF+fFFpTmrxIcZkoEcnMkuJ
+	JucDE0ReSbyhsYmZkaWRmYWRibk5acJK4ryMp54ECAmkJ5akZqemFqQWwWxh4uCUamBcvvpE
+	942c/88rj/Cta/ttozEt8en8bdKTtrc1PY5+x+D2+vCftsB7C1JDJq6JrernqBNpWr0i46t4
+	SvqUueYHD1pPWcGdwxNofrTGoOShqtfU1cWzfx/fvHbezJDDnSG7NzfzZufZTFt2Y+aM8jQ7
+	vrurrcrCHua+yzp3T6c95JaavhqT50IBJZbijERDLeai4kQA4HsCHgYDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Boris,
+A misplaced #endif causes link errors related to pcim_*() functions.
 
-sorry, I can't do anything currently, I'm down with influenza.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ lib/devres.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-kind regards,
---peter;
+diff --git a/lib/devres.c b/lib/devres.c
+index 88ad759..8235331 100644
+--- a/lib/devres.c
++++ b/lib/devres.c
+@@ -227,6 +227,7 @@ void devm_ioport_unmap(struct device *dev, void __iomem *addr)
+ 			       devm_ioport_map_match, (void *)addr));
+ }
+ EXPORT_SYMBOL(devm_ioport_unmap);
++#endif /* CONFIG_HAS_IOPORT */
+ 
+ #ifdef CONFIG_PCI
+ /*
+@@ -432,4 +433,3 @@ void pcim_iounmap_regions(struct pci_dev *pdev, int mask)
+ }
+ EXPORT_SYMBOL(pcim_iounmap_regions);
+ #endif /* CONFIG_PCI */
+-#endif /* CONFIG_HAS_IOPORT */
+-- 
+1.7.2.5
 
-Zhang Rui writes:
 
-> On Thu, 2013-02-14 at 16:32 +0100, Andreas Mohr wrote:
->> For me after having loaded acerhdf the fan never stops (with kernelmode
->> active), despite staying safely below trip point
->> (acerhdf_set_cur_state() actually never gets called).
-> 
-> BTW, could you please check if this one fixes the problem for you?
-> http://git.kernel.org/?p=linux/kernel/git/rzhang/linux.git;a=commit;h=b8bb6cb999858043489c1ddef08eed2127559169
-> 
-> thanks,
-> rui
->> And AFAIR in a 3.2.0 kernel acerhdf fan operation seemed to just work
->> (i.e., no fan for low temps, from the beginning).
->> Needless to say 3.2.0 didn't even feature all the modern thermal
->> governor crapyard yet ;)
->> (ok, well, it's more complex but it's also a very nice environment capability)
->> 
->> 3.8-rc7:
->> CONFIG_ACPI_THERMAL=m
->> CONFIG_THERMAL=m
->> CONFIG_THERMAL_HWMON=y
->> CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=y
->> # CONFIG_THERMAL_DEFAULT_GOV_FAIR_SHARE is not set
->> # CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE is not set
->> CONFIG_FAIR_SHARE=y
->> CONFIG_STEP_WISE=y
->> # CONFIG_USER_SPACE is not set
->> # CONFIG_CPU_THERMAL is not set
->> 
->> 
->> 
->> Terminology in this area seems to be quite a bit off, too, at several
->> docs places, at least according to my understanding:
->> 
->> e.g. drivers/thermal/step_wise.c has the following comment:
->> 
->> /**
->>  * step_wise_throttle - throttles devices associated with the given zone
->>  * @tz - thermal_zone_device
->>  * @trip - the trip point
->>  * @trip_type - type of the trip point
->>  *
->>  * Throttling Logic: This uses the trend of the thermal zone to
->>  * throttle.
->>  * If the thermal zone is 'heating up' this throttles all the cooling
->>  * devices associated with the zone and its particular trip point, by
->>  * one
->>  * step. If the zone is 'cooling down' it brings back the performance of
->>  * the devices by one step.
->> 
->> 
->> 
->> if ... heating up ... throttles ...
->> Sorry, but at least for P4 clockmod stuff (or some such), throttle
->> states (P1...P8 IIRC) meant that the CPU operation was *reduced*,
->> i.e. with pause intervals.
->> And the translation of throttle clearly says that it does go that way
->> and not the other way...
->> (yes, you managed to confuse me that much that I even had to look up
->> things to verify)
->> 
->> ... cooling down ... brings back ...
->> This should certainly be worded "reduces" or some such.
->> 
->> So, any idea why I'm missing callbacks in acerhdf (if that is what I'm
->> supposed to expect to happen)?
->> Kernel bug, .config mistake, missing/wrong user-side setup?
->> 
->> Needless to say if kernel bug this ought to be fixed pre-3.8 ideally.
->> 
->> Thanks,
->> 
->> Andreas Mohr
-> 
-> 
