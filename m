@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab3BVF5P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 00:57:15 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:43641 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753576Ab3BVF5L (ORCPT
+	id S1753696Ab3BVF5y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 00:57:54 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:33904 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752432Ab3BVF5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 00:57:11 -0500
+	Fri, 22 Feb 2013 00:57:51 -0500
+From: Kevin Hilman <khilman@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mats Liljegren <mats.liljegren@enea.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC/PATCH 2/5] kernel_cpustat: convert to atomic 64-bit accessors
+References: <1361389302-11968-1-git-send-email-khilman@linaro.org>
+	<1361389302-11968-3-git-send-email-khilman@linaro.org>
+	<87y5ehmp8d.fsf@linaro.org>
+	<CAFTL4hw1=mKtUadL0WDrydtspOehKuW7jhhzr65vXR2P2zdTWw@mail.gmail.com>
+	<CAFTL4hzHbp-JYgAbMRc4tefJZh9ZVdqGMp3ZTQAe-kmaX1fC3w@mail.gmail.com>
+Date: Thu, 21 Feb 2013 21:57:46 -0800
+In-Reply-To: <CAFTL4hzHbp-JYgAbMRc4tefJZh9ZVdqGMp3ZTQAe-kmaX1fC3w@mail.gmail.com>
+	(Frederic Weisbecker's message of "Thu, 21 Feb 2013 22:54:43 +0100")
+Message-ID: <8738woriud.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAKohpokKCrvMYWQCRWccDJHbBNO7km5-vP=d3TwhDyU7HGX-YA@mail.gmail.com>
-References: <51253715.7080600@semaphore.gr>
-	<CAOh2x=mD4DbEH245xsceS1wyhmrRPpB2LeJ9Mh+WGHUA+bZprA@mail.gmail.com>
-	<512605A1.8090106@semaphore.gr>
-	<CAOh2x=m82jKMf+xgg+fjnCUHLpCQ_NgYqw4auyAidokt_z=uOw@mail.gmail.com>
-	<51265BC6.8030601@semaphore.gr>
-	<CAKohpokKCrvMYWQCRWccDJHbBNO7km5-vP=d3TwhDyU7HGX-YA@mail.gmail.com>
-Date: Fri, 22 Feb 2013 11:27:09 +0530
-X-Google-Sender-Auth: n-7l754Wqgl0herFokdx7tR39to
-Message-ID: <CAOh2x==cjXGqm0+y_-_Zqc1W5f9Gny7gc=CbR=JRJxXOmg4iWA@mail.gmail.com>
-Subject: Re: [PATCH v3 linux-next] cpufreq: ondemand: Calculate gradient of
- CPU load to early increase frequency
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Stratos Karafotis <stratosk@semaphore.gr>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 7:26 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 21 February 2013 23:09, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+Frederic Weisbecker <fweisbec@gmail.com> writes:
 
->> Instead of checking only the absolute value of CPU load_freq to increase
->> frequency, we detect forthcoming CPU load rise and increase frequency
->> earlier.
+> 2013/2/21 Frederic Weisbecker <fweisbec@gmail.com>:
+>> 2013/2/21 Kevin Hilman <khilman@linaro.org>:
+>>> Subject: [PATCH 2/5] kernel_cpustat: convert to atomic 64-bit accessors
+>>>
+>>> Use the atomic64_* accessors for all the kernel_cpustat fields to
+>>> ensure atomic access on non-64 bit platforms.
+>>>
+>>> Thanks to Mats Liljegren for CGROUP_CPUACCT related fixes.
+>>>
+>>> Cc: Mats Liljegren <mats.liljegren@enea.com>
+>>> Signed-off-by: Kevin Hilman <khilman@linaro.org>
 >>
->> Every sampling rate, we calculate the gradient of load_freq. If it is
->> too steep we assume that the load most probably will go over
->> up_threshold in next iteration(s) and we increase frequency immediately.
+>> Funny stuff, I thought struct kernel_cpustat was made of cputime_t
+>> field. Actually it's u64. So the issue is independant from the new
+>> full dynticks cputime accounting. It was already broken before.
 >>
->> New tuners are introduced:
->> - early_demand: to enable this functionality (disabled by default).
->> - grad_up_threshold: over this gradient of load we will increase
->> frequency immediately.
->>
->> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
->
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> But yeah that's not the point, we still want to fix this anyway. But
+>> let's just treat this patch as independant.
 
-Rafael,
+OK, I just sent an updated series based on your proposal.
 
-I applied it here with my Ack over my patches, for getting a run by
-"kbuild test robot".
+Thanks for the review,
 
-http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/cpufreq-for-3.10
+Kevin
