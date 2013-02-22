@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab3BVJEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 04:04:38 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:58526 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756333Ab3BVJEd convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Fri, 22 Feb 2013 04:04:33 -0500
-Message-Id: <512742E902000078000C0454@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Fri, 22 Feb 2013 09:05:29 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ian Campbell" <Ian.Campbell@citrix.com>
-Cc: "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Keir(Xen.org)" <keir@xen.org>, "Tim (Xen.org)" <tim@xen.org>
-Subject: Re: [PATCH XEN] xen: event channel arrays are xen_ulong_t and
- not unsigned long
-References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
- <1361285363-27133-1-git-send-email-ian.campbell@citrix.com>
- <1361466961.26546.85.camel@zakaz.uk.xensource.com>
- <5127366502000078000C0380@nat28.tlf.novell.com>
- <1361521720.26546.93.camel@zakaz.uk.xensource.com>
- <51273EE602000078000C03DC@nat28.tlf.novell.com>
- <1361523313.26546.109.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1361523313.26546.109.camel@zakaz.uk.xensource.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756764Ab3BVJKy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 04:10:54 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:48293 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756438Ab3BVJKp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 04:10:45 -0500
+Message-ID: <51273609.9080308@linux.vnet.ibm.com>
+Date: Fri, 22 Feb 2013 17:10:33 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
+References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com> <1361427108.5861.41.camel@marge.simpson.net> <5125C607.8090909@linux.vnet.ibm.com> <1361434231.5861.61.camel@marge.simpson.net> <5125E40D.6050006@linux.vnet.ibm.com> <1361439789.5861.70.camel@marge.simpson.net> <5126D9A2.8090404@linux.vnet.ibm.com> <1361521270.26780.34.camel@laptop>
+In-Reply-To: <1361521270.26780.34.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022209-3568-0000-0000-000003321D09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 22.02.13 at 09:55, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> On Fri, 2013-02-22 at 08:48 +0000, Jan Beulich wrote:
->> >>> On 22.02.13 at 09:28, Ian Campbell <Ian.Campbell@citrix.com> wrote:
->> > On Fri, 2013-02-22 at 08:12 +0000, Jan Beulich wrote:
->> >> >>> On 21.02.13 at 18:16, Ian Campbell <Ian.Campbell@citrix.com> wrote:
->> >> > On Tue, 2013-02-19 at 14:49 +0000, Ian Campbell wrote:
->> >> >> On ARM we want these to be the same size on 32- and 64-bit.
->> >> >> 
->> >> >> This is an ABI change on ARM. X86 does not change.
->> >> >> 
->> >> >> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
->> >> >> Cc: Jan Beulich <JBeulich@suse.com>
->> >> >> Cc: Keir (Xen.org) <keir@xen.org>
->> >> > 
->> >> > Are you guys (un)happy with this change from the Xen & x86 side?
->> >> 
->> >> I don't see any problem with it.
->> > 
->> > I'll take this as an Acked-by if that's ok with you.
->> 
->> Well, I specifically didn't say "ack": I don't really mind the change,
->> but I'm also not eager see it go in. Not seeing a problem with it
->> doesn't really mean there's none lurking - type changes in public
->> interfaces are always an at least slightly risky business.
+On 02/22/2013 04:21 PM, Peter Zijlstra wrote:
+> On Fri, 2013-02-22 at 10:36 +0800, Michael Wang wrote:
+>> According to my understanding, in the old world, wake_affine() will
+>> only
+>> be used if curr_cpu and prev_cpu share cache, which means they are in
+>> one package, whatever search in llc sd of curr_cpu or prev_cpu, we
+>> won't
+>> have the chance to spread the task out of that package.
 > 
-> For x86 there is no change here since:
-> xen/include/public/arch-x86/xen.h:typedef unsigned long xen_ulong_t;
+> Nah, look at where SD_WAKE_AFFINE is set. Only 'remote/big' NUMA domains
+> don't have it set, but 'small' NUMA systems will have it set over the
+> entire domain tree.
+
+Oh, I missed that point...
+
+But I don't get the reason to make NUMA level affine, cpus in different
+nodes share cache? doesn't make sense...
+
+Regards,
+Michael Wang
+
 > 
-> Also the tools/include/xen-foreign checks show no change in the size of
-> things on x86.
-
-Which is why I said I see no problem with it.
-
-> On ARM the change is deliberate, if there is any fallout we can fix it.
-
-I understand that.
-
-Jan
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
