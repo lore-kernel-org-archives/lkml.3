@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758219Ab3BVXqZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 18:46:25 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:9000 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757948Ab3BVXqT (ORCPT
+	id S1757853Ab3BVXxS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 18:53:18 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:61690 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756602Ab3BVXxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 18:46:19 -0500
-X-IronPort-AV: E=Sophos;i="4.84,717,1355126400"; 
-   d="scan'208";a="26527142"
-Message-ID: <5128034A.4000008@codeaurora.org>
-Date: Fri, 22 Feb 2013 15:46:18 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Fri, 22 Feb 2013 18:53:16 -0500
+Message-ID: <512804E9.1010408@linaro.org>
+Date: Fri, 22 Feb 2013 15:53:13 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Steve Muckle <smuckle@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: vfp: fix fpsid register subarchitecture field mask
- width
-References: <1361520485-30269-1-git-send-email-sboyd@codeaurora.org> <20130222182705.GC19527@mudshark.cambridge.arm.com>
-In-Reply-To: <20130222182705.GC19527@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <dada1@cosmosbay.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC patch 7/8] timekeeping: Implement a shadow timekeeper
+References: <20130221220147.719832397@linutronix.de> <20130221224231.174700473@linutronix.de>
+In-Reply-To: <20130221224231.174700473@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/22/2013 10:27 AM, Will Deacon wrote:
-> Hi guys,
+On 02/21/2013 02:51 PM, Thomas Gleixner wrote:
+> Use the shadow timekeeper to do the update_wall_time() adjustments and
+> then copy it over to the real timekeeper.
 >
-> On Fri, Feb 22, 2013 at 08:08:05AM +0000, Stephen Boyd wrote:
->> From: Steve Muckle <smuckle@codeaurora.org>
->>
->> The subarchitecture field in the fpsid register is 7 bits wide.
->> The topmost bit is used to designate that the subarchitecture
->> designer is not ARM. We use this field to determine which VFP
->> version is supported by the CPU. Since the topmost bit is masked
->> off we detect non-ARM subarchitectures as supporting only
->> HWCAP_VFP and not HWCAP_VFPv3 as it should be for Qualcomm's
->> processors.
-> I'm struggling to see why this has anything to do with the hwcaps being set
-> incorrectly. What value do you have in fpsid? As far as I can tell, the
-> subarchitecture bits 6:0 should start at 0x40 for you, right?
-
-Yes it does.
-
+> Keep the shadow timekeeper in sync when updating stuff outside of
+> update_wall_time().
 >
-> I can see cases for changing this code, I just don't see why it would go
-> wrong in the case you're describing.
+> This allows us to limit the timekeeper_seq hold time to the update of
+> the real timekeeper and the vsyscall data in the next patch.
+>
+> Signed-off-by: Thomas Gleixner<tglx@linutronix.de>
+> ---
 
-VFP_arch = (vfpsid & FPSID_ARCH_MASK) >> FPSID_ARCH_BIT;
+So up to here it all looks ok to me (and not so different from my 
+earlier attempts at the same).
 
-causes VFP_arch to be equal to 0 because 0x40 & 0xf == 0.
+The only gotcha here that I realized with my earlier patches, is that in 
+order to do the shadow copy update properly, we are also going to need 
+to merge the NTP state data into the timekeeper. Otherwise, we could run 
+into odd cases where as we update the shadow copy, we change the NTP 
+state which then would affect the non-shadow timekeeping state that is 
+about to be updated. One example: A the leap second lands, and the tai 
+offset gets bumped in the ntp state, while we do a similar counter 
+adjustment to the shadow-copy. Then before the real/active timekeeper is 
+updated, someone gets the tai offset and applies it to that pre-update 
+timekeeper state, and gets an invalid tai time.
 
-and then a little bit later we have
+The down side is that the NTP state data is fairly large, and so adding 
+it to the timekeeper will cause the memcopys to be a bit more painful.
 
-               if (VFP_arch >= 2) {
-                        elf_hwcap |= HWCAP_VFPv3;
+I'm looking at the NTP code now to try to see if we can bound where the 
+NTP state is accessed, so we can maybe thin out what ntp state is linked 
+to timekeeper updates, and only move that data over to the timekeeper.
+
+thanks
+-john
 
 
-The branch is not taken so we never set VFPv3.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+
 
