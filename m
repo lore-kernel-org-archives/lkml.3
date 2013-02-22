@@ -1,275 +1,417 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab3BVAgc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 19:36:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49095 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698Ab3BVAgb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 19:36:31 -0500
-Date: Thu, 21 Feb 2013 16:33:57 -0800
-Message-Id: <201302220033.r1M0XvN0008295@terminus.zytor.com>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86/cpu for v3.9-rc1 [take 2]
-Cc: Andre Przywara <andre@andrep.de>,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@suse.de>, Chen Gang <gang.chen@asianux.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Gleb Natapov <gleb@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Feb 2013 16:34:03 -0800 (PST)
+	id S1755375Ab3BVApR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 19:45:17 -0500
+Received: from mga09.intel.com ([134.134.136.24]:46796 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753792Ab3BVApO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 19:45:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,711,1355126400"; 
+   d="scan'208";a="265966451"
+Message-ID: <1361493911.7093.37.camel@yhuang-dev>
+Subject: Re: [PATCH EDAC 03/13] ghes: add the needed hooks for EDAC error
+ report
+From: Huang Ying <ying.huang@intel.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-acpi@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 22 Feb 2013 08:45:11 +0800
+In-Reply-To: <20130221090428.3b36b1ea@redhat.com>
+References: <cover.1360931635.git.mchehab@redhat.com>
+	 <a6aaff7d219b878ca655fde3757ecd0170caec2c.1360931635.git.mchehab@redhat.com>
+	 <1361409967.7093.20.camel@yhuang-dev> <20130221090428.3b36b1ea@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 2013-02-21 at 09:04 -0300, Mauro Carvalho Chehab wrote:
+> Em Thu, 21 Feb 2013 09:26:07 +0800
+> Huang Ying <ying.huang@intel.com> escreveu:
+> 
+> > Sorry for late!
+> 
+> Thanks for your comments. See my answers below.
+> > 
+> > On Fri, 2013-02-15 at 10:44 -0200, Mauro Carvalho Chehab wrote:
+> > > In order to allow reporting errors via EDAC, add hooks for:
+> > > 
+> > > 1) register an EDAC driver;
+> > > 2) unregister an EDAC driver;
+> > > 3) report errors via EDAC.
+> > > 
+> > > As the EDAC driver will need to access the ghes structure, adds it
+> > > as one of the parameters for ghes_do_proc.
+> > > 
+> > > Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> > > ---
+> > >  drivers/acpi/apei/ghes.c | 17 ++++++++++++++---
+> > >  include/acpi/ghes.h      | 27 +++++++++++++++++++++++++++
+> > >  2 files changed, 41 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+> > > index 6d0e146..a21d7da 100644
+> > > --- a/drivers/acpi/apei/ghes.c
+> > > +++ b/drivers/acpi/apei/ghes.c
+> > > @@ -409,7 +409,8 @@ static void ghes_clear_estatus(struct ghes *ghes)
+> > >  	ghes->flags &= ~GHES_TO_CLEAR;
+> > >  }
+> > >  
+> > > -static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
+> > > +static void ghes_do_proc(struct ghes *ghes,
+> > > +			 const struct acpi_hest_generic_status *estatus)
+> > >  {
+> > >  	int sev, sec_sev;
+> > >  	struct acpi_hest_generic_data *gdata;
+> > > @@ -421,6 +422,8 @@ static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
+> > >  				 CPER_SEC_PLATFORM_MEM)) {
+> > >  			struct cper_sec_mem_err *mem_err;
+> > >  			mem_err = (struct cper_sec_mem_err *)(gdata+1);
+> > > +			ghes_edac_report_mem_error(ghes, sev, mem_err);
+> > > +
+> > >  #ifdef CONFIG_X86_MCE
+> > >  			apei_mce_report_mem_error(sev == GHES_SEV_CORRECTED,
+> > >  						  mem_err);
+> > > @@ -639,7 +642,7 @@ static int ghes_proc(struct ghes *ghes)
+> > >  		if (ghes_print_estatus(NULL, ghes->generic, ghes->estatus))
+> > >  			ghes_estatus_cache_add(ghes->generic, ghes->estatus);
+> > >  	}
+> > > -	ghes_do_proc(ghes->estatus);
+> > > +	ghes_do_proc(ghes, ghes->estatus);
+> > >  out:
+> > >  	ghes_clear_estatus(ghes);
+> > >  	return 0;
+> > > @@ -732,7 +735,7 @@ static void ghes_proc_in_irq(struct irq_work *irq_work)
+> > >  		estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
+> > >  		len = apei_estatus_len(estatus);
+> > >  		node_len = GHES_ESTATUS_NODE_LEN(len);
+> > > -		ghes_do_proc(estatus);
+> > > +		ghes_do_proc(estatus_node->ghes, estatus);
+> > >  		if (!ghes_estatus_cached(estatus)) {
+> > >  			generic = estatus_node->generic;
+> > >  			if (ghes_print_estatus(NULL, generic, estatus))
+> > > @@ -821,6 +824,7 @@ static int ghes_notify_nmi(unsigned int cmd, struct pt_regs *regs)
+> > >  		estatus_node = (void *)gen_pool_alloc(ghes_estatus_pool,
+> > >  						      node_len);
+> > >  		if (estatus_node) {
+> > > +			estatus_node->ghes = ghes;
+> > >  			estatus_node->generic = ghes->generic;
+> > >  			estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
+> > >  			memcpy(estatus, ghes->estatus, len);
+> > > @@ -942,6 +946,10 @@ static int ghes_probe(struct platform_device *ghes_dev)
+> > >  	}
+> > >  	platform_set_drvdata(ghes_dev, ghes);
+> > >  
+> > > +	rc = ghes_edac_register(ghes, &ghes_dev->dev);
+> > > +	if (rc < 0)
+> > > +		goto err;
+> > > +
+> > 
+> > If ghes_edac_register() failed, we need to do some cleanup such as
+> > unregister from hed etc.
+> > 
+> > Or just move ghes_edac_register() before switch?
+> 
+> Moving it to happen before the switch() looks the better. We need to unregister
+> ghes_edac if IRQ fails.
+> 
+> > >  	return 0;
+> > >  err:
+> > >  	if (ghes) {
+> > > @@ -995,6 +1003,9 @@ static int ghes_remove(struct platform_device *ghes_dev)
+> > >  	}
+> > >  
+> > >  	ghes_fini(ghes);
+> > > +
+> > > +	ghes_edac_unregister(ghes);
+> > > +
+> > >  	kfree(ghes);
+> > >  
+> > >  	platform_set_drvdata(ghes_dev, NULL);
+> > > diff --git a/include/acpi/ghes.h b/include/acpi/ghes.h
+> > > index 3eb8dc4..c6fef72 100644
+> > > --- a/include/acpi/ghes.h
+> > > +++ b/include/acpi/ghes.h
+> > > @@ -22,11 +22,14 @@ struct ghes {
+> > >  		struct timer_list timer;
+> > >  		unsigned int irq;
+> > >  	};
+> > > +
+> > > +	struct mem_ctl_info *mci;
+> > 
+> > Why we need this?  This is not used by ghes.[hc].
+> 
+> This will be needed by the EDAC driver, as the EDAC core has its own main
+> struct, and such struct need to be recovered when reporting an error.
+> 
+> As this struct is not used by ghes, there's no need to even include the
+> include/linux/edac.h, where this is declared, as gcc will just handle it
+> as "void *" when compiling ghes.
+> 
+> I opted for this design as it is simpler, and costs just 8 bytes for each
+> ghes struct, and no extra code is needed.
+> 
+> However, as you're not happy with it, I'm removing it from there, and adding
+> a list at the edac driver, together with a mutex, to serialize its access,
+> associating each ghes struct with their corresponding MC struct.
+> 
+> I'll post the patch replacing patch 05/13 soon.
+> 
+> > 
+> > >  };
+> > >  
+> > >  struct ghes_estatus_node {
+> > >  	struct llist_node llnode;
+> > >  	struct acpi_hest_generic *generic;
+> > > +	struct ghes *ghes;
+> > >  };
+> > >  
+> > >  struct ghes_estatus_cache {
+> > > @@ -43,3 +46,27 @@ enum {
+> > >  	GHES_SEV_RECOVERABLE = 0x2,
+> > >  	GHES_SEV_PANIC = 0x3,
+> > >  };
+> > > +
+> > > +#ifdef CONFIG_EDAC_GHES
+> > > +void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
+> > > +				struct cper_sec_mem_err *mem_err);
+> > > +
+> > > +int ghes_edac_register(struct ghes *ghes, struct device *dev);
+> > > +
+> > > +void ghes_edac_unregister(struct ghes *ghes);
+> > > +
+> > > +#else
+> > > +static inline void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
+> > > +				       struct cper_sec_mem_err *mem_err)
+> > > +{
+> > > +}
+> > > +
+> > > +static inline int ghes_edac_register(struct ghes *ghes, struct device *dev)
+> > > +{
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +static inline void ghes_edac_unregister(struct ghes *ghes)
+> > > +{
+> > > +}
+> > > +#endif
+> > 
+> > I think it is better to put the above declaration into module which
+> > implement these functions instead of use these functions.
+> 
+> This is due to Linux Coding Style. See Documentation/SubmittingPatches,
+> session 2, item 1:
+> 
+> 	2) #ifdefs are ugly
+> 
+> 	Code cluttered with ifdefs is difficult to read and maintain.  Don't do
+> 	it.  Instead, put your ifdefs in a header, and conditionally define
+> 	'static inline' functions, or macros, which are used in the code.
+> 	Let the compiler optimize away the "no-op" case.
+> 
+> 	Simple example, of poor code:
+> 
+> 	        dev = alloc_etherdev (sizeof(struct funky_private));
+>        	 if (!dev)
+> 	                return -ENODEV;
+> 	        #ifdef CONFIG_NET_FUNKINESS
+> 	        init_funky_net(dev);
+> 	        #endif
+> 
+> 	Cleaned-up example:
+> 
+> 	(in header)
+> 	        #ifndef CONFIG_NET_FUNKINESS
+> 	        static inline void init_funky_net (struct net_device *d) {}
+> 	        #endif
+> 
+> 	(in the code itself)
+> 	        dev = alloc_etherdev (sizeof(struct funky_private));
+> 	        if (!dev)
+> 	                return -ENODEV;
+> 	        init_funky_net(dev);
+> 
+> There is also an advantage on taking this approach: this patch can have just
+> the ghes changes, and will still compile fine, as CONFIG_EDAC_GHES is not
+> defined yet. So, the patch becomes is simpler and easier to review.
 
-This is a corrected attempt at the x86/cpu branch, this time with the
-fixes in that makes it not break on KVM (current or past), or any
-other virtualizer which traps on this configuration.
+Thanks for your explanation.  I agree to keep this in header file.
 
-Again, the biggest change here is enabling the WC+ memory type on AMD
-processors, if the BIOS doesn't.
+My original suggestion is that it may be better to move this from ghes.h
+to some place like "ghes_edac.h", because these functions are
+implemented in "ghes_edac.c" instead of ghes.c.
+
+> If I would do it otherwise, I would need to fold patch 5 to avoid breaking
+> git bisect.
+> 
+> Regards,
+> Mauro
+> 
+> Patch with the changes enclosed.
+> 
+> -
+> 
+> [PATCH EDACv2 03/13] ghes: add the needed hooks for EDAC error report
+> 
+> In order to allow reporting errors via EDAC, add hooks for:
+> 
+> 1) register an EDAC driver;
+> 2) unregister an EDAC driver;
+> 3) report errors via EDAC.
+> 
+> As the EDAC driver will need to access the ghes structure, adds it
+> as one of the parameters for ghes_do_proc.
+> 
+> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> 
+> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+> index 6d0e146..19092dc 100644
+> --- a/drivers/acpi/apei/ghes.c
+> +++ b/drivers/acpi/apei/ghes.c
+> @@ -409,7 +409,8 @@ static void ghes_clear_estatus(struct ghes *ghes)
+>  	ghes->flags &= ~GHES_TO_CLEAR;
+>  }
+>  
+> -static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
+> +static void ghes_do_proc(struct ghes *ghes,
+> +			 const struct acpi_hest_generic_status *estatus)
+>  {
+>  	int sev, sec_sev;
+>  	struct acpi_hest_generic_data *gdata;
+> @@ -421,6 +422,8 @@ static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
+>  				 CPER_SEC_PLATFORM_MEM)) {
+>  			struct cper_sec_mem_err *mem_err;
+>  			mem_err = (struct cper_sec_mem_err *)(gdata+1);
+> +			ghes_edac_report_mem_error(ghes, sev, mem_err);
+> +
+>  #ifdef CONFIG_X86_MCE
+>  			apei_mce_report_mem_error(sev == GHES_SEV_CORRECTED,
+>  						  mem_err);
+> @@ -639,7 +642,7 @@ static int ghes_proc(struct ghes *ghes)
+>  		if (ghes_print_estatus(NULL, ghes->generic, ghes->estatus))
+>  			ghes_estatus_cache_add(ghes->generic, ghes->estatus);
+>  	}
+> -	ghes_do_proc(ghes->estatus);
+> +	ghes_do_proc(ghes, ghes->estatus);
+>  out:
+>  	ghes_clear_estatus(ghes);
+>  	return 0;
+> @@ -732,7 +735,7 @@ static void ghes_proc_in_irq(struct irq_work *irq_work)
+>  		estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
+>  		len = apei_estatus_len(estatus);
+>  		node_len = GHES_ESTATUS_NODE_LEN(len);
+> -		ghes_do_proc(estatus);
+> +		ghes_do_proc(estatus_node->ghes, estatus);
+>  		if (!ghes_estatus_cached(estatus)) {
+>  			generic = estatus_node->generic;
+>  			if (ghes_print_estatus(NULL, generic, estatus))
+> @@ -821,6 +824,7 @@ static int ghes_notify_nmi(unsigned int cmd, struct pt_regs *regs)
+>  		estatus_node = (void *)gen_pool_alloc(ghes_estatus_pool,
+>  						      node_len);
+>  		if (estatus_node) {
+> +			estatus_node->ghes = ghes;
+>  			estatus_node->generic = ghes->generic;
+>  			estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
+>  			memcpy(estatus, ghes->estatus, len);
+> @@ -899,6 +903,11 @@ static int ghes_probe(struct platform_device *ghes_dev)
+>  		ghes = NULL;
+>  		goto err;
+>  	}
+> +
+> +	rc = ghes_edac_register(ghes, &ghes_dev->dev);
+> +	if (rc < 0)
+> +		goto err;
+> +
+>  	switch (generic->notify.type) {
+>  	case ACPI_HEST_NOTIFY_POLLED:
+>  		ghes->timer.function = ghes_poll_func;
+> @@ -911,13 +920,13 @@ static int ghes_probe(struct platform_device *ghes_dev)
+>  		if (acpi_gsi_to_irq(generic->notify.vector, &ghes->irq)) {
+>  			pr_err(GHES_PFX "Failed to map GSI to IRQ for generic hardware error source: %d\n",
+>  			       generic->header.source_id);
+> -			goto err;
+> +			goto err2;
+>  		}
+>  		if (request_irq(ghes->irq, ghes_irq_func,
+>  				0, "GHES IRQ", ghes)) {
+>  			pr_err(GHES_PFX "Failed to register IRQ for generic hardware error source: %d\n",
+>  			       generic->header.source_id);
+> -			goto err;
+> +			goto err2;
+>  		}
+>  		break;
+>  	case ACPI_HEST_NOTIFY_SCI:
+> @@ -943,6 +952,8 @@ static int ghes_probe(struct platform_device *ghes_dev)
+>  	platform_set_drvdata(ghes_dev, ghes);
+>  
+>  	return 0;
+> +err2:
+
+Suggest to rename it to err_edac_unreg or something like that.  Just a
+suggestion.
+
+Best Regards,
+Huang Ying
+
+> +	ghes_edac_unregister(ghes);
+>  err:
+>  	if (ghes) {
+>  		ghes_fini(ghes);
+> @@ -995,6 +1006,9 @@ static int ghes_remove(struct platform_device *ghes_dev)
+>  	}
+>  
+>  	ghes_fini(ghes);
+> +
+> +	ghes_edac_unregister(ghes);
+> +
+>  	kfree(ghes);
+>  
+>  	platform_set_drvdata(ghes_dev, NULL);
+> diff --git a/include/acpi/ghes.h b/include/acpi/ghes.h
+> index 3eb8dc4..9015ec2 100644
+> --- a/include/acpi/ghes.h
+> +++ b/include/acpi/ghes.h
+> @@ -27,6 +27,7 @@ struct ghes {
+>  struct ghes_estatus_node {
+>  	struct llist_node llnode;
+>  	struct acpi_hest_generic *generic;
+> +	struct ghes *ghes;
+>  };
+>  
+>  struct ghes_estatus_cache {
+> @@ -43,3 +44,27 @@ enum {
+>  	GHES_SEV_RECOVERABLE = 0x2,
+>  	GHES_SEV_PANIC = 0x3,
+>  };
+> +
+> +#ifdef CONFIG_EDAC_GHES
+> +void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
+> +				struct cper_sec_mem_err *mem_err);
+> +
+> +int ghes_edac_register(struct ghes *ghes, struct device *dev);
+> +
+> +void ghes_edac_unregister(struct ghes *ghes);
+> +
+> +#else
+> +static inline void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
+> +				       struct cper_sec_mem_err *mem_err)
+> +{
+> +}
+> +
+> +static inline int ghes_edac_register(struct ghes *ghes, struct device *dev)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void ghes_edac_unregister(struct ghes *ghes)
+> +{
+> +}
+> +#endif
+> 
 
 
-The following changes since commit ff7532ca2c631e7e96dcd305a967b610259dc0ea:
-
-  Merge tag 'usb-3.8-rc4' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb (2013-01-23 20:11:35 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cpu-for-linus
-
-for you to fetch changes up to 2e32b7190641a184b8510d3e342400473ff1ab60:
-
-  x86, kvm: Add MSR_AMD64_BU_CFG2 to the list of ignored MSRs (2013-02-19 10:44:07 -0800)
-
-----------------------------------------------------------------
-Boris Ostrovsky (2):
-      x86, AMD: Clean up init_amd()
-      x86, AMD: Enable WC+ memory type on family 10 processors
-
-Borislav Petkov (2):
-      x86, cpu, amd: Fix WC+ workaround for older virtual hosts
-      x86, kvm: Add MSR_AMD64_BU_CFG2 to the list of ignored MSRs
-
-Chen Gang (1):
-      x86/process: Change %8s to %s for pr_warn() in release_thread()
-
-Kees Cook (1):
-      x86/cpu/hotplug: Remove CONFIG_EXPERIMENTAL dependency
-
- arch/x86/Kconfig                      |  4 +--
- arch/x86/include/uapi/asm/msr-index.h |  1 +
- arch/x86/kernel/cpu/amd.c             | 52 ++++++++++++++++++++---------------
- arch/x86/kernel/process_64.c          |  2 +-
- arch/x86/kvm/x86.c                    | 16 ++++++-----
- 5 files changed, 43 insertions(+), 32 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 79795af..2d62103 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1699,7 +1699,7 @@ config HOTPLUG_CPU
- config BOOTPARAM_HOTPLUG_CPU0
- 	bool "Set default setting of cpu0_hotpluggable"
- 	default n
--	depends on HOTPLUG_CPU && EXPERIMENTAL
-+	depends on HOTPLUG_CPU
- 	---help---
- 	  Set whether default state of cpu0_hotpluggable is on or off.
- 
-@@ -1728,7 +1728,7 @@ config BOOTPARAM_HOTPLUG_CPU0
- config DEBUG_HOTPLUG_CPU0
- 	def_bool n
- 	prompt "Debug CPU0 hotplug"
--	depends on HOTPLUG_CPU && EXPERIMENTAL
-+	depends on HOTPLUG_CPU
- 	---help---
- 	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
- 	  soon as possible and boots up userspace with CPU0 offlined. User
-diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
-index 433a59f..158cde9 100644
---- a/arch/x86/include/uapi/asm/msr-index.h
-+++ b/arch/x86/include/uapi/asm/msr-index.h
-@@ -173,6 +173,7 @@
- #define MSR_AMD64_OSVW_ID_LENGTH	0xc0010140
- #define MSR_AMD64_OSVW_STATUS		0xc0010141
- #define MSR_AMD64_DC_CFG		0xc0011022
-+#define MSR_AMD64_BU_CFG2		0xc001102a
- #define MSR_AMD64_IBSFETCHCTL		0xc0011030
- #define MSR_AMD64_IBSFETCHLINAD		0xc0011031
- #define MSR_AMD64_IBSFETCHPHYSAD	0xc0011032
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 15239ff..163af4a 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -518,10 +518,9 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
- static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- {
- 	u32 dummy;
--
--#ifdef CONFIG_SMP
- 	unsigned long long value;
- 
-+#ifdef CONFIG_SMP
- 	/*
- 	 * Disable TLB flush filter by setting HWCR.FFDIS on K8
- 	 * bit 6 of msr C001_0015
-@@ -559,12 +558,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 		 * (AMD Erratum #110, docId: 25759).
- 		 */
- 		if (c->x86_model < 0x14 && cpu_has(c, X86_FEATURE_LAHF_LM)) {
--			u64 val;
--
- 			clear_cpu_cap(c, X86_FEATURE_LAHF_LM);
--			if (!rdmsrl_amd_safe(0xc001100d, &val)) {
--				val &= ~(1ULL << 32);
--				wrmsrl_amd_safe(0xc001100d, val);
-+			if (!rdmsrl_amd_safe(0xc001100d, &value)) {
-+				value &= ~(1ULL << 32);
-+				wrmsrl_amd_safe(0xc001100d, value);
- 			}
- 		}
- 
-@@ -617,13 +614,12 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 	if ((c->x86 == 0x15) &&
- 	    (c->x86_model >= 0x10) && (c->x86_model <= 0x1f) &&
- 	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
--		u64 val;
- 
--		if (!rdmsrl_safe(0xc0011005, &val)) {
--			val |= 1ULL << 54;
--			wrmsrl_safe(0xc0011005, val);
--			rdmsrl(0xc0011005, val);
--			if (val & (1ULL << 54)) {
-+		if (!rdmsrl_safe(0xc0011005, &value)) {
-+			value |= 1ULL << 54;
-+			wrmsrl_safe(0xc0011005, value);
-+			rdmsrl(0xc0011005, value);
-+			if (value & (1ULL << 54)) {
- 				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
- 				printk(KERN_INFO FW_INFO "CPU: Re-enabling "
- 				  "disabled Topology Extensions Support\n");
-@@ -637,11 +633,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 	 */
- 	if ((c->x86 == 0x15) &&
- 	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
--		u64 val;
- 
--		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
--			val |= 0x1E;
--			wrmsrl_safe(0xc0011021, val);
-+		if (!rdmsrl_safe(0xc0011021, &value) && !(value & 0x1E)) {
-+			value |= 0x1E;
-+			wrmsrl_safe(0xc0011021, value);
- 		}
- 	}
- 
-@@ -703,13 +698,11 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 	if (c->x86 > 0x11)
- 		set_cpu_cap(c, X86_FEATURE_ARAT);
- 
--	/*
--	 * Disable GART TLB Walk Errors on Fam10h. We do this here
--	 * because this is always needed when GART is enabled, even in a
--	 * kernel which has no MCE support built in.
--	 */
- 	if (c->x86 == 0x10) {
- 		/*
-+		 * Disable GART TLB Walk Errors on Fam10h. We do this here
-+		 * because this is always needed when GART is enabled, even in a
-+		 * kernel which has no MCE support built in.
- 		 * BIOS should disable GartTlbWlk Errors themself. If
- 		 * it doesn't do it here as suggested by the BKDG.
- 		 *
-@@ -723,6 +716,21 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 			mask |= (1 << 10);
- 			wrmsrl_safe(MSR_AMD64_MCx_MASK(4), mask);
- 		}
-+
-+		/*
-+		 * On family 10h BIOS may not have properly enabled WC+ support,
-+		 * causing it to be converted to CD memtype. This may result in
-+		 * performance degradation for certain nested-paging guests.
-+		 * Prevent this conversion by clearing bit 24 in
-+		 * MSR_AMD64_BU_CFG2.
-+		 *
-+		 * NOTE: we want to use the _safe accessors so as not to #GP kvm
-+		 * guests on older kvm hosts.
-+		 */
-+
-+		rdmsrl_safe(MSR_AMD64_BU_CFG2, &value);
-+		value &= ~(1ULL << 24);
-+		wrmsrl_safe(MSR_AMD64_BU_CFG2, value);
- 	}
- 
- 	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 6e68a61..0f49677 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -117,7 +117,7 @@ void release_thread(struct task_struct *dead_task)
- {
- 	if (dead_task->mm) {
- 		if (dead_task->mm->context.size) {
--			pr_warn("WARNING: dead process %8s still has LDT? <%p/%d>\n",
-+			pr_warn("WARNING: dead process %s still has LDT? <%p/%d>\n",
- 				dead_task->comm,
- 				dead_task->mm->context.ldt,
- 				dead_task->mm->context.size);
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index c243b81..3704007 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1881,6 +1881,14 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
- 	u64 data = msr_info->data;
- 
- 	switch (msr) {
-+	case MSR_AMD64_NB_CFG:
-+	case MSR_IA32_UCODE_REV:
-+	case MSR_IA32_UCODE_WRITE:
-+	case MSR_VM_HSAVE_PA:
-+	case MSR_AMD64_PATCH_LOADER:
-+	case MSR_AMD64_BU_CFG2:
-+		break;
-+
- 	case MSR_EFER:
- 		return set_efer(vcpu, data);
- 	case MSR_K7_HWCR:
-@@ -1900,8 +1908,6 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
- 			return 1;
- 		}
- 		break;
--	case MSR_AMD64_NB_CFG:
--		break;
- 	case MSR_IA32_DEBUGCTLMSR:
- 		if (!data) {
- 			/* We support the non-activated case already */
-@@ -1914,11 +1920,6 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
- 		vcpu_unimpl(vcpu, "%s: MSR_IA32_DEBUGCTLMSR 0x%llx, nop\n",
- 			    __func__, data);
- 		break;
--	case MSR_IA32_UCODE_REV:
--	case MSR_IA32_UCODE_WRITE:
--	case MSR_VM_HSAVE_PA:
--	case MSR_AMD64_PATCH_LOADER:
--		break;
- 	case 0x200 ... 0x2ff:
- 		return set_msr_mtrr(vcpu, msr, data);
- 	case MSR_IA32_APICBASE:
-@@ -2253,6 +2254,7 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
- 	case MSR_K8_INT_PENDING_MSG:
- 	case MSR_AMD64_NB_CFG:
- 	case MSR_FAM10H_MMIO_CONF_BASE:
-+	case MSR_AMD64_BU_CFG2:
- 		data = 0;
- 		break;
- 	case MSR_P6_PERFCTR0:
