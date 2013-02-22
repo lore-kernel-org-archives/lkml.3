@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab3BVIys (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 03:54:48 -0500
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:42771 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab3BVIym (ORCPT
+	id S1756558Ab3BVIy5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 03:54:57 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55975 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754527Ab3BVIyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 03:54:42 -0500
-Date: Fri, 22 Feb 2013 09:54:38 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] nohz: Make tick_nohz_irq_exit() irq safe
-Message-ID: <20130222085438.GA29144@gmail.com>
-References: <1361373336-11337-1-git-send-email-fweisbec@gmail.com>
- <alpine.LFD.2.02.1302202155320.22263@ionos>
- <CA+55aFwTFOsRTX3pHeZ+664rAms-Liwco3scEPJum6=C3BCoEQ@mail.gmail.com>
- <alpine.LFD.2.02.1302211920440.22263@ionos>
- <CA+55aFwj0bVS0H1YBMq9EHbkYrU7-so8S6onCKs2M1Q+g4AmNA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwj0bVS0H1YBMq9EHbkYrU7-so8S6onCKs2M1Q+g4AmNA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 22 Feb 2013 03:54:44 -0500
+Message-ID: <1361523279.26780.45.camel@laptop>
+Subject: Re: [patch v5 09/15] sched: add power aware scheduling in
+ fork/exec/wake
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Date: Fri, 22 Feb 2013 09:54:39 +0100
+In-Reply-To: <512631C7.8060103@intel.com>
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
+	    <1361164062-20111-10-git-send-email-alex.shi@intel.com>
+	   <1361353360.10155.9.camel@laptop> <5124BCEB.8030606@intel.com>
+	  <1361367371.10155.32.camel@laptop> <5124DC76.2010801@intel.com>
+	 <1361453587.26780.18.camel@laptop> <512631C7.8060103@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Thu, Feb 21, 2013 at 10:21 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >
-> > This was a draft patch. I made it a WARN_ON_ONCE() already.
+On Thu, 2013-02-21 at 22:40 +0800, Alex Shi wrote:
+> > The name is a secondary issue, first you need to explain why you
+> think
+> > nr_running is a useful metric at all.
+> > 
+> > You can have a high nr_running and a low utilization (a burst of
+> > wakeups, each waking a process that'll instantly go to sleep again),
+> or
+> > low nr_running and high utilization (a single process cpu bound
+> > process).
 > 
-> Ok, good.
-> 
-> I really wish we could just get rid of BUG_ON(). It was a bad 
-> idea, and it makes it easy for people to do the wrong thing. 
-> Sadly, we have tons of them.
+> It is true in periodic balance. But in fork/exec/waking timing, the
+> incoming processes usually need to do something before sleep again.
 
-So my old plan was to use a little bit of psychology.
+You'd be surprised, there's a fair number of workloads that have
+negligible runtime on wakeup.
 
-Firstly, we could just turn BUG_ON() into a WARN() variant that 
-emits:
+> I use nr_running to measure how the group busy, due to 3 reasons:
+> 1, the current performance policy doesn't use utilization too.
 
-  BUG: ...
+We were planning to fix that now that its available.
 
-while a WARN()ings emit:
+> 2, the power policy don't care load weight.
 
-  WARNING: ...
+Then its broken, it should very much still care about weight. 
 
-and then we could introduce a new primitive:
+> 3, I tested some benchmarks, kbuild/tbench/hackbench/aim7 etc, some
+> benchmark results looks clear bad when use utilization. if my memory
+> right, the hackbench/aim7 both looks bad. I had tried many ways to
+> engage utilization into this balance, like use utilization only, or
+> use
+> utilization * nr_running etc. but still can not find a way to recover
+> the lose. But with nr_running, the performance seems doesn't lose much
+> with power policy.
 
-  CRASH_ON();
+You're failing to explain why utilization performs bad and you don't
+explain why nr_running is better. That things work simply isn't good
+enough, you have to have at least a general idea (but much preferable a
+very good idea) _why_ things work.
 
-which would be used in the (few) places that really, really 
-cannot continue sanely and need to crash the box.
 
-This naming alone would inhibit its use through two channels:
-
- - Putting the word 'CRASH' into your code feels risky, 
-   dissonant and wrong (perfect code does not crash) and thus 
-   needs conscious frontal lobe effort to justify it - while 
-   BUG_ON() really feels more like a harmless assert to most 
-   kernel developers, which is in our muscle memory through 
-   years training.
-
- - CRASH_ON() takes one character more typing than WARN_ON(), 
-   and we know good kernel developers are fundamentally lazy.
-
-[ This is an arguably lazy plan that does not involve changing 
-  the 10,000+ BUG_ON() call sites and does not involve the
-  re-training of thousands of mis-trained kernel developers who 
-  introduced over 900 new BUG_ON()s in the v3.7->v3.8 cycle 
-  alone (!). ]
-
-So while I don't think we can win the war against BUG_ON(), I 
-think we can fight the lazy general's war: turn the enemy over 
-to our side and declare victory?
-
-Thanks,
-
-	Ingo
