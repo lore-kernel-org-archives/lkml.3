@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3BVJB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 04:01:26 -0500
-Received: from ares07.inai.de ([5.9.24.206]:37826 "EHLO ares07.inai.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751055Ab3BVJBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 04:01:22 -0500
-Date: Fri, 22 Feb 2013 10:01:19 +0100 (CET)
-From: Jan Engelhardt <jengelh@inai.de>
-To: Pavel Emelyanov <xemul@parallels.com>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        CRIU <criu@openvz.org>
-Subject: Re: [Announce] Checkpoint-restore tool v0.4
-In-Reply-To: <5124B107.1040302@parallels.com>
-Message-ID: <alpine.LNX.2.01.1302220955160.1805@nerf07.vanv.qr>
-References: <5124B107.1040302@parallels.com>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756745Ab3BVJEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 04:04:38 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:58526 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756333Ab3BVJEd convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Fri, 22 Feb 2013 04:04:33 -0500
+Message-Id: <512742E902000078000C0454@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Fri, 22 Feb 2013 09:05:29 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Ian Campbell" <Ian.Campbell@citrix.com>
+Cc: "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Keir(Xen.org)" <keir@xen.org>, "Tim (Xen.org)" <tim@xen.org>
+Subject: Re: [PATCH XEN] xen: event channel arrays are xen_ulong_t and
+ not unsigned long
+References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
+ <1361285363-27133-1-git-send-email-ian.campbell@citrix.com>
+ <1361466961.26546.85.camel@zakaz.uk.xensource.com>
+ <5127366502000078000C0380@nat28.tlf.novell.com>
+ <1361521720.26546.93.camel@zakaz.uk.xensource.com>
+ <51273EE602000078000C03DC@nat28.tlf.novell.com>
+ <1361523313.26546.109.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1361523313.26546.109.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 22.02.13 at 09:55, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> On Fri, 2013-02-22 at 08:48 +0000, Jan Beulich wrote:
+>> >>> On 22.02.13 at 09:28, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+>> > On Fri, 2013-02-22 at 08:12 +0000, Jan Beulich wrote:
+>> >> >>> On 21.02.13 at 18:16, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+>> >> > On Tue, 2013-02-19 at 14:49 +0000, Ian Campbell wrote:
+>> >> >> On ARM we want these to be the same size on 32- and 64-bit.
+>> >> >> 
+>> >> >> This is an ABI change on ARM. X86 does not change.
+>> >> >> 
+>> >> >> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+>> >> >> Cc: Jan Beulich <JBeulich@suse.com>
+>> >> >> Cc: Keir (Xen.org) <keir@xen.org>
+>> >> > 
+>> >> > Are you guys (un)happy with this change from the Xen & x86 side?
+>> >> 
+>> >> I don't see any problem with it.
+>> > 
+>> > I'll take this as an Acked-by if that's ok with you.
+>> 
+>> Well, I specifically didn't say "ack": I don't really mind the change,
+>> but I'm also not eager see it go in. Not seeing a problem with it
+>> doesn't really mean there's none lurking - type changes in public
+>> interfaces are always an at least slightly risky business.
+> 
+> For x86 there is no change here since:
+> xen/include/public/arch-x86/xen.h:typedef unsigned long xen_ulong_t;
+> 
+> Also the tools/include/xen-foreign checks show no change in the size of
+> things on x86.
 
-On Wednesday 2013-02-20 12:18, Pavel Emelyanov wrote:
->
->As was planned, the v0.4 of C/R tools is out, right after the Linux v3.8.
->
->The most valuable thing in this release, is that all the kernel patches
->we had are now merged, and thus what crtools-v0.4 can do will work on
->the upstream kernel (properly configured)!
+Which is why I said I see no problem with it.
 
-I have trouble compiling that.
+> On ARM the change is deliberate, if there is any fallout we can fix it.
 
+I understand that.
 
-$ + make -j10 'CFLAGS=-fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fasynchronous-unwind-tables -g' V=1
-gcc -M -MT arch/x86/crtools.d -MT arch/x86/crtools.o -fmessage-length=0 -O2 -Wall -D_FORTIFY_SOURCE=2 -fstack-protector -funwind-tables -fasynchronous-unwind-tables -g   arch/x86/crtools.c -o arch/x86/crtools.d
-arch/x86/crtools.c:5:21: fatal error: asm/fpu.h: No such file or directory
+Jan
 
-fpu.h does not exist in /usr/include, nor does it exist in $linux/arch/x86/
-or $linux/include. Apparently it does exist in crtools, but there are no
-more flags pointing to crtools/include/. Which probably means you should
-place mandatory CFLAGS not in CFLAGS, but your own variable.
