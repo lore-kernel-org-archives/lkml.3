@@ -1,131 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab3BVVQY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 16:16:24 -0500
-Received: from mout.gmx.net ([212.227.15.18]:50155 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756754Ab3BVVQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 16:16:22 -0500
-X-Authenticated: #1045983
-X-Provags-ID: V01U2FsdGVkX1/myXglnlTmQSaM2yquDSNliHA7ahCR61mUqOIjEo
-	UPq7+daDDzI7WH
-Date: Fri, 22 Feb 2013 22:16:15 +0100
-From: Helge Deller <deller@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [GIT PULL] parisc updates for 3.9
-Message-ID: <20130222211615.GA5979@p100.box>
+	id S1757303Ab3BVVTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 16:19:50 -0500
+Received: from casper.infradead.org ([85.118.1.10]:52024 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756677Ab3BVVTt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 16:19:49 -0500
+Message-ID: <5127E111.6030605@infradead.org>
+Date: Fri, 22 Feb 2013 13:20:17 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Y-GMX-Trusted: 0
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+CC: David Rientjes <rientjes@google.com>, James Morris <jmorris@namei.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Subject: Re: [PATCH] ima: fix part_pack_uuid() build error
+References: <1361562413.2908.22.camel@falcor1.watson.ibm.com>
+In-Reply-To: <1361562413.2908.22.camel@falcor1.watson.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 02/22/13 11:46, Mimi Zohar wrote:
+> Fix a build error when CONFIG_BLOCK is not enabled by defining
+> a wrapper called ima_part_pack_uuid().  The wrapper returns
+> -EINVAL, when CONFIG_BLOCK is not defined.
 
-The following changes since commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200:
+Some function wrapper for the case of BLOCK not enabled should be handled
+where the function is defined, not where it is called.
+That's how it is usually done in Linux.
 
-  Linux 3.8 (2013-02-18 15:58:34 -0800)
 
-are available in the git repository at:
+> security/integrity/ima/ima_policy.c:538:4: error: implicit declaration
+> of function 'part_pack_uuid' [-Werror=implicit-function-declaration]
+> 
+> Changelog v0:
+> - fix UUID scripts/Lindent msgs
+> 
+> Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> Reported-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> ---
+>  security/integrity/ima/ima.h        | 13 +++++++++++++
+>  security/integrity/ima/ima_policy.c | 11 ++++++-----
+>  2 files changed, 19 insertions(+), 5 deletions(-)
+> 
+> diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+> index a41c9c1..902c356 100644
+> --- a/security/integrity/ima/ima.h
+> +++ b/security/integrity/ima/ima.h
+> @@ -21,6 +21,7 @@
+>  #include <linux/crypto.h>
+>  #include <linux/security.h>
+>  #include <linux/hash.h>
+> +#include <linux/genhd.h>
+>  #include <linux/tpm.h>
+>  #include <linux/audit.h>
+>  
+> @@ -199,4 +200,16 @@ static inline int security_filter_rule_match(u32 secid, u32 field, u32 op,
+>  	return -EINVAL;
+>  }
+>  #endif /* CONFIG_IMA_LSM_RULES */
+> +
+> +/* UUID policy option requires CONFIG_BLOCK */
+> +#ifdef CONFIG_BLOCK
+> +static inline int ima_part_pack_uuid(const u8 *uuid_str, u8 *to) {
+> +	part_pack_uuid(uuid_str, to);
+> +	return 0;
+> +}
+> +#else
+> +static inline int ima_part_pack_uuid(const u8 *uuid_str, u8 *to) {
+> +	return -EINVAL;
+> +}
+> +#endif
+>  #endif
+> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+> index b27535a..41b7f48 100644
+> --- a/security/integrity/ima/ima_policy.c
+> +++ b/security/integrity/ima/ima_policy.c
+> @@ -176,7 +176,7 @@ static bool ima_match_rules(struct ima_rule_entry *rule,
+>  	    && rule->fsmagic != inode->i_sb->s_magic)
+>  		return false;
+>  	if ((rule->flags & IMA_FSUUID) &&
+> -		memcmp(rule->fsuuid, inode->i_sb->s_uuid, sizeof(rule->fsuuid)))
+> +	    memcmp(rule->fsuuid, inode->i_sb->s_uuid, sizeof(rule->fsuuid)))
+>  		return false;
+>  	if ((rule->flags & IMA_UID) && !uid_eq(rule->uid, cred->uid))
+>  		return false;
+> @@ -530,14 +530,15 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+>  			ima_log_string(ab, "fsuuid", args[0].from);
+>  
+>  			if (memchr_inv(entry->fsuuid, 0x00,
+> -			    sizeof(entry->fsuuid))) {
+> +				       sizeof(entry->fsuuid))) {
+>  				result = -EINVAL;
+>  				break;
+>  			}
+>  
+> -			part_pack_uuid(args[0].from, entry->fsuuid);
+> -			entry->flags |= IMA_FSUUID;
+> -			result = 0;
+> +			result = ima_part_pack_uuid(args[0].from,
+> +						    entry->fsuuid);
+> +			if (!result)
+> +				entry->flags |= IMA_FSUUID;
+>  			break;
+>  		case Opt_uid:
+>  			ima_log_string(ab, "uid", args[0].from);
+> 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.9
 
-for you to fetch changes up to 1dda59b4f3d03fa28d86f3ea235655f0f96aab3e:
-
-  arch/parisc/include/asm: use ARRAY_SIZE macro in mmzone.h (2013-02-20 22:57:49 +0100)
-
-----------------------------------------------------------------
-Al Viro (1):
-      parisc: fix ptrace breakage
-
-Geert Uytterhoeven (1):
-      [PARISC] hpux: Remove obsolete regs parameter from do_execve() in hpux_execve()
-
-Helge Deller (13):
-      Merge tag 'parisc-fixes' of git://git.kernel.org/.../jejb/parisc-2.6 into stable-3.8
-      parisc: enhance automatic CONFIG_CROSS_COMPILE detection
-      parisc: add CONFIG_MLONGCALLS option to enable linkage of huge vmlinux executables
-      parisc: led driver requires CONFIG_VM_EVENT_COUNTERS
-      parisc: wire up process_vm_readv, process_vm_writev, kcmp and finit_module syscalls
-      parisc: fix personality on 32bit kernel
-      parisc: correctly wire up mq_* functions for CONFIG_COMPAT case
-      parisc: convert msgrcv and msgsnd syscalls to use compat layer
-      parisc: fix error return codes for rt_sigaction and rt_sigprocmask
-      parisc: fix fallocate syscall
-      parisc: switch to available compat_sched_rr_get_interval implementation
-      parisc: sendfile and sendfile64 syscall cleanups
-      parisc: remove empty lines and unnecessary #ifdef coding in include/asm/signal.h
-
-Joe Perches (1):
-      drivers/parisc: Use printf extension %pR for struct resource
-
-John David Anglin (10):
-      [PARISC] Purge existing TLB entries in set_pte_at and ptep_set_wrprotect
-      parisc: Fix comment describing setup of access rights in entry.S
-      parisc: fixes and cleanups in page cache flushing (1/4)
-      parisc: fixes and cleanups in page cache flushing (2/4)
-      parisc: fixes and cleanups in page cache flushing (3/4)
-      parisc: fixes and cleanups in page cache flushing (4/4)
-      parisc: disable preemption while flushing D- or I-caches through TMPALIAS region
-      parisc: ensure that mmapped shared pages are aligned at SHMLBA addresses
-      parisc: always detect multiple physical ranges
-      parisc: space register variables need to be in native length (unsigned long)
-
-Julia Lawall (1):
-      drivers/parisc/pdc_stable.c: use WARN
-
-Kautuk Consul (1):
-      parisc/mm/fault.c: Port OOM changes to do_page_fault
-
-Nikitas Angelinas (1):
-      arch/parisc/include/asm: use ARRAY_SIZE macro in mmzone.h
-
-Paul Bolle (1):
-      parisc: remove unused compat_rt_sigframe.h header
-
-Peter Zijlstra (1):
-      parisc: remove IRQF_DISABLED
-
-Wei Yongjun (1):
-      parisc: fix possible memory leak in pat_query_module()
-
- arch/parisc/Kconfig                          |  21 ++
- arch/parisc/Makefile                         |  13 +-
- arch/parisc/hpux/fs.c                        |   3 +-
- arch/parisc/include/asm/cacheflush.h         |   2 +
- arch/parisc/include/asm/compat.h             |  61 +++++
- arch/parisc/include/asm/compat_rt_sigframe.h |  50 ----
- arch/parisc/include/asm/elf.h                |   2 +-
- arch/parisc/include/asm/floppy.h             |   4 +-
- arch/parisc/include/asm/mmzone.h             |   7 +-
- arch/parisc/include/asm/page.h               |  20 +-
- arch/parisc/include/asm/pgtable.h            |  13 +-
- arch/parisc/include/asm/signal.h             |   4 -
- arch/parisc/include/asm/unistd.h             |   2 +
- arch/parisc/include/uapi/asm/unistd.h        |   6 +-
- arch/parisc/kernel/cache.c                   | 221 +++++++++++++++---
- arch/parisc/kernel/entry.S                   |   4 +-
- arch/parisc/kernel/inventory.c               |   2 +
- arch/parisc/kernel/irq.c                     |   4 +-
- arch/parisc/kernel/pacache.S                 | 335 +++++++++++++++++++++++----
- arch/parisc/kernel/parisc_ksyms.c            |   5 +-
- arch/parisc/kernel/signal.c                  |   2 +-
- arch/parisc/kernel/signal32.c                |  15 +-
- arch/parisc/kernel/sys_parisc.c              |  16 +-
- arch/parisc/kernel/sys_parisc32.c            | 122 ++--------
- arch/parisc/kernel/syscall.S                 |   5 +-
- arch/parisc/kernel/syscall_table.S           |  27 +--
- arch/parisc/mm/fault.c                       |  30 ++-
- drivers/parisc/Kconfig                       |   1 +
- drivers/parisc/dino.c                        |  13 +-
- drivers/parisc/hppb.c                        |   6 +-
- drivers/parisc/pdc_stable.c                  |   6 +-
- drivers/parisc/superio.c                     |   2 +-
- 32 files changed, 708 insertions(+), 316 deletions(-)
- delete mode 100644 arch/parisc/include/asm/compat_rt_sigframe.h
+-- 
+~Randy
