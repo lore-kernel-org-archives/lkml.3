@@ -1,109 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab3BVBXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 20:23:15 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:18063 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753792Ab3BVBXK (ORCPT
+	id S1755501Ab3BVBXZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 20:23:25 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:55728 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753792Ab3BVBXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 20:23:10 -0500
-Message-ID: <1361495541.12845.18.camel@misato.fc.hp.com>
-Subject: Re: [Update 3][PATCH 2/7] ACPI / scan: Introduce common code for
- ACPI-based device hotplug
-From: Toshi Kani <toshi.kani@hp.com>
+	Thu, 21 Feb 2013 20:23:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <1447813.geP1BIVYu5@vostro.rjw.lan>
+References: <alpine.LFD.2.02.1302220002040.22263@ionos>
+	<1447813.geP1BIVYu5@vostro.rjw.lan>
+Date: Thu, 21 Feb 2013 17:23:19 -0800
+X-Google-Sender-Auth: 0mPpxk3SZU5CfDYibNmZlelEP5k
+Message-ID: <CAE9FiQXV43emyjjCb=D=xFLz-n6q0Eu0uQmVhAA470A=FGRhww@mail.gmail.com>
+Subject: Re: [BUG bisected]: apei_hest_parse explosion
+From: Yinghai Lu <yinghai@kernel.org>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jiang Liu <liuj97@gmail.com>
-Date: Thu, 21 Feb 2013 18:12:21 -0700
-In-Reply-To: <2894504.SgZF7d1Dbv@vostro.rjw.lan>
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
-	 <1765527.DdJ8fCt5cH@vostro.rjw.lan> <2482081.rPvizM7IsG@vostro.rjw.lan>
-	 <2894504.SgZF7d1Dbv@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-22 at 00:06 +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Multiple drivers handling hotplug-capable ACPI device nodes install
-> notify handlers covering the same types of events in a very similar
-> way.  Moreover, those handlers are installed in separate namespace
-> walks, although that really should be done during namespace scans
-> carried out by acpi_bus_scan().  This leads to substantial code
-> duplication, unnecessary overhead and behavior that is hard to
-> follow.
-> 
-> For this reason, introduce common code in drivers/acpi/scan.c for
-> handling hotplug-related notification and carrying out device
-> insertion and eject operations in a generic fashion, such that it
-> may be used by all of the relevant drivers in the future.  To cover
-> the existing differences between those drivers introduce struct
-> acpi_hotplug_profile for representing collections of hotplug
-> settings associated with different ACPI scan handlers that can be
-> used by the drivers to make the common code reflect their current
-> behavior.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
-> 
-> This update fixes an issue pointed out by Toshi Kani (that
-> ACPI_OST_EC_OSPM_* event source codes should not be used with _OST for events
-> that we received a notification for from the platform firmware).
-> 
-> Thanks,
-> Rafael
-> 
-> ---
->  drivers/acpi/scan.c     |  270 ++++++++++++++++++++++++++++++++++++++----------
->  include/acpi/acpi_bus.h |    7 +
->  2 files changed, 224 insertions(+), 53 deletions(-)
- :
-> +static void acpi_bus_device_eject(void *context)
-> +{
-> +	acpi_handle handle = context;
-> +	struct acpi_device *device = NULL;
-> +	struct acpi_scan_handler *handler;
-> +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
-> +
-> +	mutex_lock(&acpi_scan_lock);
-> +
-> +	acpi_bus_get_device(handle, &device);
-> +	if (!device)
-> +		goto err_out;
-> +
-> +	handler = device->handler;
-> +	if (!handler || !handler->hotplug.enabled) {
-> +		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-> +		goto err_out;
-> +	}
-> +	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
-> +				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-> +	if (handler->hotplug.autoeject) {
-> +		int error;
-> +
-> +		get_device(&device->dev);
-> +		error = acpi_scan_hot_remove(device);
-> +		if (error)
-> +			goto err_out;
-> +	} else {
-> +		device->flags.eject_pending = true;
->  	}
-> +	if (handler->hotplug.uevents)
-> +		kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+On Thu, Feb 21, 2013 at 4:15 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, February 22, 2013 12:56:01 AM Thomas Gleixner wrote:
+>> Just booted linus head on one of my old kvm based testing systems and
+>> got the following splat:
+>>
+>> [    0.531910] BUG: unable to handle kernel NULL pointer dereference at 0000000000000024
+>> [    0.532173] IP: [<ffffffff812f1bd2>] apei_hest_parse+0xd2/0xf0
+>> [    0.532173] PGD 0
+>> [    0.532173] Oops: 0000 [#1] PREEMPT SMP
+>> [    0.532173] Modules linked in:
+>> [    0.532173] CPU 3
+>> [    0.532173] Pid: 1, comm: swapper/0 Not tainted 3.8.0+ #195 Bochs Bochs
+>> [    0.532173] RIP: 0010:[<ffffffff812f1bd2>]  [<ffffffff812f1bd2>] apei_hest_parse+0xd2/0xf0
+>> [    0.532173] RSP: 0000:ffff88021685be78  EFLAGS: 00010206
+>> [    0.532173] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000000
+>> [    0.532173] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000028
+>> [    0.532173] RBP: ffff88021685be98 R08: 00000000804efb06 R09: 0000000000000000
+>> [    0.532173] R10: 0000000000000001 R11: 0000000000000000 R12: ffffffff81af3d40
+>> [    0.532173] R13: ffffffff812bcb23 R14: 0000000000000000 R15: 0000000000000000
+>> [    0.532173] FS:  0000000000000000(0000) GS:ffff88021fcc0000(0000) knlGS:0000000000000000
+>> [    0.532173] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> [    0.532173] CR2: 0000000000000024 CR3: 0000000001a0c000 CR4: 00000000000406a0
+>> [    0.532173] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [    0.532173] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> [    0.532173] Process swapper/0 (pid: 1, threadinfo ffff88021685a000, task ffff8802168c0000)
+>> [    0.532173] Stack:
+>> [    0.532173]  00000000fffffffa ffffffff81af3d40 0000000000000000 000000001fb3f55a
+>> [    0.532173]  ffff88021685bea8 ffffffff812bcbe4 ffff88021685bec8 ffffffff81af3d5c
+>> [    0.532173]  0000000000000030 0000000000000030 ffff88021685bef8 ffffffff8100023b
+>> [    0.532173] Call Trace:
+>> [    0.532173]  [<ffffffff81af3d40>] ? pcie_portdrv_init+0x7a/0x7a
+>> [    0.532173]  [<ffffffff812bcbe4>] aer_acpi_firmware_first+0x20/0x30
+>> [    0.532173]  [<ffffffff81af3d5c>] aer_service_init+0x1c/0x35
+>> [    0.532173]  [<ffffffff8100023b>] do_one_initcall+0x57/0x13c
+>> [    0.532173]  [<ffffffff81ad2d39>] kernel_init_freeable+0x142/0x1d1
+>> [    0.532173]  [<ffffffff81ad254f>] ? loglevel+0x31/0x31
+>> [    0.532173]  [<ffffffff815a8cef>] ? rest_init+0xc3/0xc3
+>> [    0.532173]  [<ffffffff815a8cfd>] kernel_init+0xe/0xd6
+>> [    0.532173]  [<ffffffff815bc73c>] ret_from_fork+0x7c/0xb0
+>> [    0.532173]  [<ffffffff815a8cef>] ? rest_init+0xc3/0xc3
+>> [    0.532173] Code: 14 0f b7 77 02 31 c0 48 c7 c7 65 c1 83 81 e8 35 1a 2c 00 eb 23 4c 89 f6 41 ff d5 85 c0 75 1e 4c 89 e7 ff c3 48 8b 05 a6 5b 7c 00 <3b> 58 24 0f 82 5a ff ff ff 31 c0 eb 05 b8 ea ff ff ff 5b 41 5c
+>>
+>> git bisect identified the following commit:
+>>
+>> commit 92ef2a25c763338905dce8344a0584606f842920
+>> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> Date:   Fri Dec 21 00:36:40 2012 +0100
+>>
+>>     ACPI: Change the ordering of PCI root bridge driver registrarion
+>>
+>> A revert is impossible w/o major surgery, so I'm going to bed and let
+>> the involved folks think about it.
+>
+> Can you please post a dmesg boot log from v3.8 on the same system?
+>
 
-I confirmed that the _OST issue with hot-add is fixed.  Here is a new
-one.  When autoeject is enabled, it crashes in kobject_uevent() since
-the device is no longer valid. 
+looks at the code flow, acpi_hest_init() is called early correctly.
 
-Thanks,
--Toshi
+later aer_acpi_firmware_first() should not hit hest_tab is NULL, but
+hest_disable is not set.
 
+could be some data corruption.. near hest_disable or hest_tab.
 
+Thanks
+
+Yinghai
