@@ -1,83 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171Ab3BVWXO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 17:23:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56533 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757163Ab3BVWXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 17:23:12 -0500
-Date: Fri, 22 Feb 2013 17:23:04 -0500
-From: Dave Jones <davej@redhat.com>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        tianyu.lan@intel.com, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [GIT PATCH] USB patches for 3.9-rc1
-Message-ID: <20130222222304.GA19546@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Fabio Baltieri <fabio.baltieri@linaro.org>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-	tianyu.lan@intel.com,
-	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-	linux-acpi@vger.kernel.org
-References: <20130222085954.GA4352@redhat.com>
- <20130222215158.GA4723@balto.lan>
+	id S1758021Ab3BVWfH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 17:35:07 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:50287 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752919Ab3BVWfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 17:35:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130222215158.GA4723@balto.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1361555907-19840-29-git-send-email-nick.dyer@itdev.co.uk>
+References: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
+	<1361555907-19840-29-git-send-email-nick.dyer@itdev.co.uk>
+Date: Fri, 22 Feb 2013 14:35:03 -0800
+X-Google-Sender-Auth: BrzjR9U7S0h8pggxHgLE5vGlxcA
+Message-ID: <CANLzEktc+YnwtabBZ8zX=OeQD_1GctUu0GaB2uugcWAUmGf=sw@mail.gmail.com>
+Subject: Re: [PATCH 28/40] Input: atmel_mxt_ts - Add CHG line handling in
+ bootloader code
+From: Benson Leung <bleung@chromium.org>
+To: Nick Dyer <nick.dyer@itdev.co.uk>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        "Bowens, Alan" <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Olof Johansson <olofj@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 10:51:58PM +0100, Fabio Baltieri wrote:
- > On Fri, Feb 22, 2013 at 03:59:54AM -0500, Dave Jones wrote:
- > > On Thu, Feb 21, 2013 at 10:40:10AM -0800, Greg KH wrote:
- > > 
- > > It looks like every port on my laptop is powered down, as I can't
- > > even charge devices with it.
- > 
- > I have the same problem (and almost the same laptop, Thinkpad T430
- > here), all external USB ports without power - even the always-on one
- > :-).
- > 
- > The bug seems to be ACPI related, I bisected it down to this patch:
- > 
- > f95988d ACPI / scan: Treat power resources in a special way
- > 
- > In the dmesg I have some error like these:
- > 
- > ACPI: Power Resource [PUBS] (on)
- > ...
- > pci 0000:00:14.0: System wakeup disabled by ACPI
- > 
- > for the USB controllers in the broken kernel, there are some in your
- > dmesg too.  I'll try to come up with a fix for current mainline, but all
- > the acpi stuff is quite obscure to me and the patch does not revert
- > cleanly, maybe Rafael (in CC) has some idea!
+This is very similar to a patch that Daniel and I sent earlier this month.
 
-Good find. I see the same thing.
+http://www.spinics.net/lists/linux-input/msg24666.html
 
-[    0.930283] ACPI _OSC control for PCIe not granted, disabling ASPM
-[    0.933527] pci 0000:00:14.0: System wakeup disabled by ACPI
-[    0.935982] pci 0000:00:19.0: System wakeup disabled by ACPI
-[    0.937898] pci 0000:00:1a.0: System wakeup disabled by ACPI
-[    0.939835] pci 0000:00:1b.0: System wakeup disabled by ACPI
-[    0.940700] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.EXP1._PRT]
-[    0.942195] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.EXP2._PRT]
-[    0.943737] ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.EXP3._PRT]
-[    0.944564] pci 0000:00:1c.2: System wakeup disabled by ACPI
-[    0.966491] pci 0000:00:1d.0: System wakeup disabled by ACPI
+The major difference is that your wait_for_chg does a polling read of
+chg, while the one we worked on leaves the irq enabled and waits on
+completion.
 
-I must have pulled in the acpi bits the same time as the usb pull,
-because I don't recall seeing this problem before last night.
+On Fri, Feb 22, 2013 at 9:58 AM, Nick Dyer <nick.dyer@itdev.co.uk> wrote:
+> The bootloader state machine toggles the CHG/Interrupt line to indicate when
+> it has transitioned between states. Waiting for this event improves bootloader
+> reliability.
+>
+> Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+> ---
+>  drivers/input/touchscreen/atmel_mxt_ts.c |   29 +++++++++++++++++++++++++++--
+>  1 file changed, 27 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+> index a1f196b..f182228 100644
+> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
+> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+> @@ -430,6 +430,27 @@ static int mxt_probe_bootloader(struct mxt_data *data)
+>         return 0;
+>  }
+>
+> +static int mxt_wait_for_chg(struct mxt_data *data)
+> +{
+> +       int timeout_counter = 0;
+> +       int count = 1E6;
+> +
+> +       if (data->pdata->read_chg == NULL) {
+> +               msleep(20);
+> +               return 0;
+> +       }
+> +
+> +       while ((timeout_counter++ <= count) && data->pdata->read_chg())
+> +               udelay(20);
+> +
+> +       if (timeout_counter > count) {
+> +               dev_err(&data->client->dev, "mxt_wait_for_chg() timeout!\n");
+> +               return -EIO;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+>  static u8 mxt_get_bootloader_version(struct mxt_data *data, u8 val)
+>  {
+>         struct device *dev = &data->client->dev;
+> @@ -478,9 +499,10 @@ recheck:
+>                 val &= ~MXT_BOOT_STATUS_MASK;
+>                 break;
+>         case MXT_FRAME_CRC_PASS:
+> -               if (val == MXT_FRAME_CRC_CHECK)
+> +               if (val == MXT_FRAME_CRC_CHECK) {
+> +                       mxt_wait_for_chg(data);
+>                         goto recheck;
+> -               if (val == MXT_FRAME_CRC_FAIL) {
+> +               } else if (val == MXT_FRAME_CRC_FAIL) {
+>                         dev_err(dev, "Bootloader CRC fail\n");
+>                         return -EINVAL;
+>                 }
+> @@ -1781,6 +1803,7 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+>
+>         ret = mxt_check_bootloader(data, MXT_WAITING_BOOTLOAD_CMD);
+>         if (ret) {
+> +               mxt_wait_for_chg(data);
+>                 /* Bootloader may still be unlocked from previous update
+>                  * attempt */
+>                 ret = mxt_check_bootloader(data, MXT_WAITING_FRAME_DATA);
+> @@ -1800,6 +1823,7 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+>         }
+>
+>         while (pos < fw->size) {
+> +               mxt_wait_for_chg(data);
+>                 ret = mxt_check_bootloader(data, MXT_WAITING_FRAME_DATA);
+>                 if (ret) {
+>                         data->state = FAILED;
+> @@ -1818,6 +1842,7 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+>                         goto release_firmware;
+>                 }
+>
+> +               mxt_wait_for_chg(data);
+>                 ret = mxt_check_bootloader(data, MXT_FRAME_CRC_PASS);
+>                 if (ret) {
+>                         retry++;
+> --
+> 1.7.10.4
+>
 
-	Dave
 
+
+--
+Benson Leung
+Software Engineer, Chrom* OS
+bleung@chromium.org
