@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab3BVKud (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 05:50:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50422 "EHLO mx2.suse.de"
+	id S1757019Ab3BVK40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 05:56:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50610 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755658Ab3BVKua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 05:50:30 -0500
-Date: Fri, 22 Feb 2013 11:50:26 +0100
+	id S1756137Ab3BVK4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 05:56:24 -0500
+Date: Fri, 22 Feb 2013 11:56:21 +0100
 From: Michal Marek <mmarek@suse.cz>
-To: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: David Howells <dhowells@redhat.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jespern@axis.com
-Subject: Re: [PATCH] kbuild: Fix destination-y for installed headers
-Message-ID: <20130222105026.GG12402@pobox.suse.cz>
-References: <20130202101835.GY23529@axis.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [PATCH v2 1/1] depmod: pass -P $CONFIG_SYMBOL_PREFIX
+Message-ID: <20130222105621.GH12402@pobox.suse.cz>
+References: <1360155419-12349-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130202101835.GY23529@axis.com>
+In-Reply-To: <1360155419-12349-1-git-send-email-james.hogan@imgtec.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 02, 2013 at 11:18:35AM +0100, Jesper Nilsson wrote:
-> Commit 10b63956fce7f369cc37fd4d994f09bd5203efe4 which plumbed in UAPI
-> broke the destination-y functionality of scripts/Makefile.headersinst.
+On Wed, Feb 06, 2013 at 12:56:59PM +0000, James Hogan wrote:
+> On architectures which have symbol prefixes, depmod emits lots of
+> warnings like this:
 > 
-> The variable destination-y is used in a := assignment and so is expanded at
-> declaration time, and the include of the Kbuild fragments that set
-> destination-y to something is after this time, so it now always expands empty.
+> WARNING: $module.ko needs unknown symbol $symbol
 > 
-> There are no in-tree users of destination-y, but it allows any
-> Kbuild-fragment to redirect where headers are installed.
+> This is because depmod isn't being passed the -P <symbol_prefix>
+> arguments to specify the symbol prefix to ignore. This option is
+> included since the 3.13 release of module-init-tools.
 > 
-> Just move the assignment of the variable that uses it below the include
-> of the Kbuild fragment.
+> Update scripts/depmod.sh to take extra arguments for the symbol prefix
+> (required but may be empty), and update the main Makefile to always pass
+> "$(CONFIG_SYMBOL_PREFIX)" to scripts/depmod.sh.
 > 
-> Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
+> If the provided symbol prefix is non-empty, scripts/depmod.sh checks if
+> depmod --version reports module-init-tools with a version number < 3.13
+> otherwise it appends -P $SYMBOL_PREFIX to the depmod command line.
+> 
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
 > Cc: Michal Marek <mmarek@suse.cz>
-> Cc: David Howells <dhowells@redhat.com>
+> Cc: linux-kbuild@vger.kernel.org
+> Cc: Mike Frysinger <vapier@gentoo.org>
+> Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+> Cc: uclinux-dist-devel@blackfin.uclinux.org
 > ---
->  Makefile.headersinst |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git scripts/Makefile.headersinst scripts/Makefile.headersinst
+> changes since v1: clean up with assistance from Mike Frysinger (thanks!)
+> * always pass prefix to depmod.sh to simplify the logic
+> * use printf instead of ugly echos in version check
 
-I applied your patch to kbuild.git#kbuild, but please send -p1 patches
-next time.
+Applied to kbuild.git#kbuild, thanks.
 
 Michal
