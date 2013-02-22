@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab3BVJjl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 04:39:41 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35187 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab3BVJjg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 04:39:36 -0500
-Message-ID: <1361525962.26780.47.camel@laptop>
-Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Date: Fri, 22 Feb 2013 10:39:22 +0100
-In-Reply-To: <51273609.9080308@linux.vnet.ibm.com>
-References: <51079178.3070002@linux.vnet.ibm.com>
-	 <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com>
-	 <1361427108.5861.41.camel@marge.simpson.net>
-	 <5125C607.8090909@linux.vnet.ibm.com>
-	 <1361434231.5861.61.camel@marge.simpson.net>
-	 <5125E40D.6050006@linux.vnet.ibm.com>
-	 <1361439789.5861.70.camel@marge.simpson.net>
-	 <5126D9A2.8090404@linux.vnet.ibm.com> <1361521270.26780.34.camel@laptop>
-	 <51273609.9080308@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756769Ab3BVJj4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 04:39:56 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:36233 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755913Ab3BVJjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 04:39:45 -0500
+Date: Fri, 22 Feb 2013 10:39:20 +0100
+From: Alessandro Rubini <rubini@gnudd.com>
+To: linux-kernel@vger.kernel.org
+Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH] x86: fix warning for sta2x11
+Message-ID: <20130222093920.GA6513@mail.gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-22 at 17:10 +0800, Michael Wang wrote:
-> On 02/22/2013 04:21 PM, Peter Zijlstra wrote:
-> > On Fri, 2013-02-22 at 10:36 +0800, Michael Wang wrote:
-> >> According to my understanding, in the old world, wake_affine() will
-> >> only
-> >> be used if curr_cpu and prev_cpu share cache, which means they are in
-> >> one package, whatever search in llc sd of curr_cpu or prev_cpu, we
-> >> won't
-> >> have the chance to spread the task out of that package.
-> > 
-> > Nah, look at where SD_WAKE_AFFINE is set. Only 'remote/big' NUMA domains
-> > don't have it set, but 'small' NUMA systems will have it set over the
-> > entire domain tree.
-> 
-> Oh, I missed that point...
-> 
-> But I don't get the reason to make NUMA level affine, cpus in different
-> nodes share cache? doesn't make sense...
+The .free field of struct dma_map_ops features a prototype that is
+different from what lib/swiotlb.c offers. The new "attrs" argument in
+dma_ops.free is missing from the generic implementation.
 
-Contrary, it makes more sense, the more expensive it is to run 'remote'
-the better it is to pull 'related' tasks together.
+This removes the build warning by providing a function that just calls
+swiotlb_free_coherent() without passing "attrs", like others do.
 
+Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+---
 
+NOTE: The real solution, in my opinion, would be adding "attrs" as
+argument to the exported swiotlb_free_coherent() and remove this new
+empty function for sta2x11 as well as the identical empty functions
+found in other 6 files within arch.
 
+If you ack, I can do that.
+
+ arch/x86/pci/sta2x11-fixup.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
+index 9d8a509..5c24ccb 100644
+--- a/arch/x86/pci/sta2x11-fixup.c
++++ b/arch/x86/pci/sta2x11-fixup.c
+@@ -180,10 +180,17 @@ static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
+ 	return vaddr;
+ }
+ 
++static void sta2x11_swiotlb_free_coherent(struct device *dev, size_t size,
++					  void *vaddr, dma_addr_t dma_addr,
++					  struct dma_attrs *attrs)
++{
++	swiotlb_free_coherent(dev, size, vaddr, dma_addr);
++}
++
+ /* We have our own dma_ops: the same as swiotlb but from alloc (above) */
+ static struct dma_map_ops sta2x11_dma_ops = {
+ 	.alloc = sta2x11_swiotlb_alloc_coherent,
+-	.free = swiotlb_free_coherent,
++	.free = sta2x11_swiotlb_free_coherent,
+ 	.map_page = swiotlb_map_page,
+ 	.unmap_page = swiotlb_unmap_page,
+ 	.map_sg = swiotlb_map_sg_attrs,
+-- 
+1.7.7.2
