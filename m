@@ -1,104 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab3BVH0n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 02:26:43 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:36066 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781Ab3BVH0j (ORCPT
+	id S1754293Ab3BVH0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 02:26:47 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48582 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776Ab3BVH0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 02:26:39 -0500
-Date: Thu, 21 Feb 2013 23:26:35 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Linus Torvalds'" <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: Re: Dangerous devm_request_irq() conversions
-Message-ID: <20130222072635.GB30816@core.coreip.homeip.net>
-References: <20130222065345.GA30816@core.coreip.homeip.net>
- <000c01ce10cb$fdd4a4a0$f97dede0$%han@samsung.com>
+	Fri, 22 Feb 2013 02:26:40 -0500
+X-AuditID: 9c93016f-b7b46ae000007f43-1e-51271dada0da
+Date: Fri, 22 Feb 2013 16:26:37 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        Orna Agmon Ben-Yehuda <ladypine@gmail.com>,
+        Muli Ben-Yehuda <mulix@mulix.org>
+Subject: Re: [PATCH v2] memcg: Add memory.pressure_level events
+Message-ID: <20130222072637.GA26044@blaptop>
+References: <20130219044012.GA23356@lizard.sbx00618.mountca.wayport.net>
+ <20130220001743.GE16950@blaptop>
+ <CAOS58YOPjcH_pFFhPLJEAdaLkm5FoOy9mG2i-PkWAcb7O6V_Kw@mail.gmail.com>
+ <20130221230425.GA22792@lizard.fhda.edu>
+ <20130221235608.GH16950@blaptop>
+ <20130222065552.GA26194@lizard.gateway.2wire.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <000c01ce10cb$fdd4a4a0$f97dede0$%han@samsung.com>
+In-Reply-To: <20130222065552.GA26194@lizard.gateway.2wire.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 04:12:36PM +0900, Jingoo Han wrote:
-> On Friday, February 22, 2013 3:54 PM, Dmitry Torokhov wrote:
-> > 
-> > Hi,
-> > 
-> > It looks like a whole slew of devm_request_irq() conversions just got
-> > applied to mainline and many of them are quite broken.
-> > 
-> > Consider fd5231ce336e038037b4f0190a6838bdd6e17c6d or
-> > c1879fe80c61f3be6f2ddb82509c2e7f92a484fe: the drivers udsed first to
-> > free IRQ and then unregister the corresponding device ensuring that IRQ
-> > handler, while it runs, has the device available. The mechanic
-> > conversion to devm_request_irq() reverses the order of these operations
-> > opening the race window where IRQ can reference device (or other
-> > resource) that is already gone.
-> > 
-> > It would be nice if these could be reverted and revioewed again for
-> > correctness.
+On Thu, Feb 21, 2013 at 10:55:52PM -0800, Anton Vorontsov wrote:
+> On Fri, Feb 22, 2013 at 08:56:08AM +0900, Minchan Kim wrote:
+> > [...] The my point is that you have a plan to support? Why I have a
+> > question is that you said your goal is to replace lowmemory killer
 > 
-> Um, other RTC drivers already have been using devm_request_threaded_irq() or
-> devm_request_irq() like this, before I added these patches.
+> In short: yes, of course, if the non-memcg interface will be in demand.
 > 
-> For example, 
-> ./drivers/rtc/rtc-tegra.c
-> ./drivers/rtc/rtc-spear.c
-> ./drivers/rtc/rtc-s3c.c
-> ./drivers/rtc/rtc-mxc.c
-> ./drivers/rtc/rtc-ds1553.c
-> ./drivers/rtc/rtc-ds1511.c
-> ./drivers/rtc/rtc-snvs.c
-> ./drivers/rtc/rtc-imxdi.c
-> ./drivers/rtc/rtc-tx4939.c
-> ./drivers/rtc/rtc-mv.c
-> ./drivers/rtc/rtc-coh901331.c
-> ./drivers/rtc/rtc-stk17ta8.c
-> ./drivers/rtc/rtc-lpc32xx.c
-> ./drivers/rtc/rtc-tps65910.c
-> ./drivers/rtc/rtc-rc5t583.c
+> > but android don't have enabled CONFIG_MEMCG as you know well
+> > so they should enable it for using just notifier? or they need another hack to
+> > connect notifier to global thing?
 > 
+> A hack is not an option for me. :-) My final goal is to switch Android to
+> use the notifier without need for hacks/external patches or
+> drivers/staging.
 > 
-> Also, even more, some RTC drivers calls rtc_device_unregister() first,
-> then calls free_irq() later.
+> But my current goal is to make the most generic case work, and do this in
+> the most correct way. That is, vmpressure + MEMCG. Once I accomplish this,
+> I can then think of any niche needs (such as Android).
 > 
-> For example,
-> ./drivers/rtc/rtc-vr41xx.c
-> ./drivers/rtc/rtc-da9052.c
-> ./drivers/rtc/rtc-isl1208.c
-> ./drivers/rtc/rtc-88pm860x.c
-> ./drivers/rtc/rtc-tps6586x.c
-> ./drivers/rtc/rtc-mpc5121.c
-> ./drivers/rtc/rtc-m48t59.c
+> There will be two possibilities for Android:
 > 
-> 
-> Please, don't argue revert without concrete reasons.
+> 1. Obviously, turn on CONFIG_MEMCG. We need to measure its effect on real
+>    devices, and see if it makes sense. (Plus, maybe there are other uses
+>    for MEMCG on Android?)
 
-What more concrete reason do you need? I explained to you the exact
-reason on the patches I noticed before and also on the 2 commits
-referenced above: blind conversion to devm_* changes order of operation
-which may be deadly with IRQs (but others, like clocks and regulators,
-are important too).
-
-The fact that crap slipped in the kernel before is not the valid reason
-for adding more of the same crap.
-
-Please *understand* APIs you are using before making changes.
+I'd like to see this one.
 
 > 
-> If these devm_request_threaded_irq() or devm_request_irq() make the problem,
-> devm_free_irq() will be added later.
+> or
+> 
+> 2. Implement /sys/fs/cgroups/memory/memory.pressure_level interface
+>    without MEMCG. Doing this will be really easy as we'll already have
+>    vmpressure() core, and Android has CROUPS=y. But I do expect some
+>    discussion like 'why don't you fix memcg instead?'. We'll have to
+>    answer this question by looking back at '1.'
 
-And the point? If you use devm_request_irq() and then call
-devm_free_irq() manually in all paths what you achieved is waste of
-memory required for devm_* tracking.
+Of course.
+
+> 
+> Also note that cgroups vmpressure notifiers were tried by QEMU folks, and
+> it seemed to be useful:
+> 
+>    http://lists.gnu.org/archive/html/qemu-devel/2012-12/msg02821.html 
+
+I saw that.
+
+> 
+> So, nowadays it is not only about Android. Some time ago I also got an
+> email from Orna Agmon Ben-Yehuda, who suggested to use vmpressure stuff
+> with 'memcached' (but I didn't find time to actually try it, so far. :(
+> Thanks for the email, btw!).
+
+I also got received email from another people in embedded side about
+memory notifier which I worked long time ago and I used to introduce
+your work to them instead of my old solution.
+It seems they don't use Android and has very small RAM so they want
+to handle memory very efficiently. For such purpose, I hope vmpressure
+become tiny and can support even NOMMU system.
+
+> 
+> So it is useful with or without MEMCG, and if we will really need to
+> support vmpressure without MEMCG, I will have to implement the support in
+> addition to MEMCG case, yes.
+
+Thanks for your clarification.
+
+> 
+> Thanks,
+> 
+> Anton
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Dmitry
+Kind regards,
+Minchan Kim
