@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab3BVELl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 23:11:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52392 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132Ab3BVELc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 23:11:32 -0500
-Message-ID: <1361506273.2801.327.camel@bling.home>
-Subject: Re: [PATCH] iommu: making IOMMU sysfs nodes API public
-From: Alex Williamson <alex.williamson@redhat.com>
-To: David Gibson <david@gibson.dropbear.id.au>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Joerg Roedel <joerg.roedel@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 21 Feb 2013 21:11:13 -0700
-In-Reply-To: <20130222000415.GI21011@truffula.fritz.box>
-References: <1360628713.3248.8.camel@bling.home>
-	 <1360642004-7419-1-git-send-email-aik@ozlabs.ru>
-	 <1360645643.3248.91.camel@bling.home> <511A54DC.9030908@ozlabs.ru>
-	 <1360689304.3248.154.camel@bling.home> <5121C709.80007@ozlabs.ru>
-	 <1361251440.2801.142.camel@bling.home>
-	 <20130219073853.GS21067@truffula.fritz.box>
-	 <1361304711.2801.232.camel@bling.home>
-	 <20130222000415.GI21011@truffula.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756289Ab3BVELz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 23:11:55 -0500
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.92]:31017 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755487Ab3BVELs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 23:11:48 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>
+CC: "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
+ Driver
+Thread-Topic: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer
+ Driver
+Thread-Index: AQHOC6xQKsSDc1Q1WkuxN29CXfjd55iB8XAA//+EDqCAAJpbgP//f3DggAN2zYCAAEMw0w==
+Date: Fri, 22 Feb 2013 04:11:39 +0000
+Message-ID: <e0484554d9b44ade88b84f9e4e5ecc2d@DFM-DB3MBX15-08.exchange.corp.microsoft.com>
+References: <1360955396-14183-1-git-send-email-haiyangz@microsoft.com>
+ <20130219165118.GA17715@aepfle.de>
+ <1ca36b5d55c64ac6b8854c4f216ef8e5@DFM-TK5MBX15-06.exchange.corp.microsoft.com>
+ <20130219184009.GA21783@aepfle.de>
+ <7267f77544c24531b8fcccc2192b9f48@DFM-TK5MBX15-06.exchange.corp.microsoft.com>,<20130221155359.GA28637@aepfle.de>
+In-Reply-To: <20130221155359.GA28637@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Forefront-Antispam-Report: CIP:131.107.1.17;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454001)(51704002)(24454001)(164054002)(189002)(199002)(56776001)(76482001)(4396001)(31966008)(50986001)(44976002)(50466001)(23726001)(876001)(16406001)(51856001)(79102001)(5343655001)(59766001)(47446002)(77982001)(74662001)(74502001)(65816001)(54316002)(56816002)(47976001)(49866001)(47736001)(46406002)(47776003)(80022001)(33646001)(54356001)(46102001)(53806001)(20776003)(63696002)(66066001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BLUSR01MB603;H:hybrid.exchange.microsoft.com;RD:mail1.exchange.microsoft.com;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 07658B8EA3
+X-OriginatorOrg: DuplicateDomain-7923a859-03c9-4312-a77c-440aa45aaf52.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-22 at 11:04 +1100, David Gibson wrote:
-> On Tue, Feb 19, 2013 at 01:11:51PM -0700, Alex Williamson wrote:
-> > On Tue, 2013-02-19 at 18:38 +1100, David Gibson wrote:
-> > > On Mon, Feb 18, 2013 at 10:24:00PM -0700, Alex Williamson wrote:
-> > > > On Mon, 2013-02-18 at 17:15 +1100, Alexey Kardashevskiy wrote:
-> [snip]
-> > > >  Adding the window size to sysfs seems more readily convenient,
-> > > > but is it so hard for userspace to open the files and call a couple
-> > > > ioctls to get far enough to call IOMMU_GET_INFO?  I'm unconvinced the
-> > > > clutter in sysfs more than just a quick fix.  Thanks,
-> > > 
-> > > And finally, as Alexey points out, isn't the point here so we know how
-> > > much rlimit to give qemu?  Using ioctls we'd need a special tool just
-> > > to check the dma window sizes, which seems a bit hideous.
-> > 
-> > Is it more hideous that using iommu groups to report a vfio imposed
-> > restriction?  Are a couple open files and a handful of ioctls worse than
-> > code to parse directory entries and the future maintenance of an
-> > unrestricted grab bag of sysfs entries?
+
+> From: Olaf Hering
+> Sent: Thursday, February 21, 2013 10:53 AM
+> To: Haiyang Zhang
+> Cc: FlorianSchandinat@gmx.de; linux-fbdev@vger.kernel.org; KY Srinivasan; jasowang@redhat.com; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org
+> Subject: Re: [PATCH RFC] video: Add Hyper-V Synthetic Video Frame Buffer Driver
 > 
-> The fact that the memory is locked is a vfio restriction, but the
-> actual dma window size is, genuinely, a property of the group.
+> On Tue, Feb 19, Haiyang Zhang wrote:
+> 
+> > In my test, the vesafb doesn't automatically give up the emulated video device,
+> > unless I add the DMI based mechanism to let it exit on Hyper-V.
+> 
+> From reading the code, it seems to do that via
+> do_remove_conflicting_framebuffers(). hypervfb does not set apertures
+> etc, so that function is a noop.
 
-A group is an association of devices based on isolation and visibility.
-The dma window happens to be associated with a group on your platform,
-but that's not always the case.  This is why I was hoping something in
-sysfs already reported the dma window so that we could point to it
-rather than creating an interface where it doesn't really belong.
+We are currently allocating a new framebuffer for hyperv_fb, which is different
+from the framebuffer for the emulated video. So this cannot be detected by
+do_remove_conflicting_framebuffers() based on apertures_overlap().
+
+> My point is that with this new driver distro kernel will have no console
+> output until hypervfb is loaded. On native hardware there is at least
+> vesafb which can display something until initrd is running. So if the
+> hypervisor allows that hypervfb can shutdown the emulated vesa hardware
+> then it should do that.
+
+Since the generic vga driver starts to work early in the boot process, the console
+messages are still displayed without vesafb. Actually, I didn't see any console 
+messages missing when comparing it to the original VM before my patch.
+
 Thanks,
-
-Alex
-
+- Haiyang
