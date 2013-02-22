@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab3BVIy5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 03:54:57 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:55975 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754527Ab3BVIyo (ORCPT
+	id S1756615Ab3BVIzS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 03:55:18 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:64355 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754527Ab3BVIzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 03:54:44 -0500
-Message-ID: <1361523279.26780.45.camel@laptop>
-Subject: Re: [patch v5 09/15] sched: add power aware scheduling in
- fork/exec/wake
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: torvalds@linux-foundation.org, mingo@redhat.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Date: Fri, 22 Feb 2013 09:54:39 +0100
-In-Reply-To: <512631C7.8060103@intel.com>
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
-	    <1361164062-20111-10-git-send-email-alex.shi@intel.com>
-	   <1361353360.10155.9.camel@laptop> <5124BCEB.8030606@intel.com>
-	  <1361367371.10155.32.camel@laptop> <5124DC76.2010801@intel.com>
-	 <1361453587.26780.18.camel@laptop> <512631C7.8060103@intel.com>
+	Fri, 22 Feb 2013 03:55:15 -0500
+X-IronPort-AV: E=Sophos;i="4.84,714,1355097600"; 
+   d="scan'208";a="1771174"
+Message-ID: <1361523313.26546.109.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH XEN] xen: event channel arrays are xen_ulong_t and not
+ unsigned long
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Jan Beulich <JBeulich@suse.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Keir (Xen.org)" <keir@xen.org>, "Tim (Xen.org)" <tim@xen.org>
+Date: Fri, 22 Feb 2013 08:55:13 +0000
+In-Reply-To: <51273EE602000078000C03DC@nat28.tlf.novell.com>
+References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
+	 <1361285363-27133-1-git-send-email-ian.campbell@citrix.com>
+	 <1361466961.26546.85.camel@zakaz.uk.xensource.com>
+	 <5127366502000078000C0380@nat28.tlf.novell.com>
+	 <1361521720.26546.93.camel@zakaz.uk.xensource.com>
+	 <51273EE602000078000C03DC@nat28.tlf.novell.com>
+Organization: Citrix Systems, Inc.
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.4.4-1 
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-21 at 22:40 +0800, Alex Shi wrote:
-> > The name is a secondary issue, first you need to explain why you
-> think
-> > nr_running is a useful metric at all.
+On Fri, 2013-02-22 at 08:48 +0000, Jan Beulich wrote:
+> >>> On 22.02.13 at 09:28, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> > On Fri, 2013-02-22 at 08:12 +0000, Jan Beulich wrote:
+> >> >>> On 21.02.13 at 18:16, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> >> > On Tue, 2013-02-19 at 14:49 +0000, Ian Campbell wrote:
+> >> >> On ARM we want these to be the same size on 32- and 64-bit.
+> >> >> 
+> >> >> This is an ABI change on ARM. X86 does not change.
+> >> >> 
+> >> >> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> >> >> Cc: Jan Beulich <JBeulich@suse.com>
+> >> >> Cc: Keir (Xen.org) <keir@xen.org>
+> >> > 
+> >> > Are you guys (un)happy with this change from the Xen & x86 side?
+> >> 
+> >> I don't see any problem with it.
 > > 
-> > You can have a high nr_running and a low utilization (a burst of
-> > wakeups, each waking a process that'll instantly go to sleep again),
-> or
-> > low nr_running and high utilization (a single process cpu bound
-> > process).
+> > I'll take this as an Acked-by if that's ok with you.
 > 
-> It is true in periodic balance. But in fork/exec/waking timing, the
-> incoming processes usually need to do something before sleep again.
+> Well, I specifically didn't say "ack": I don't really mind the change,
+> but I'm also not eager see it go in. Not seeing a problem with it
+> doesn't really mean there's none lurking - type changes in public
+> interfaces are always an at least slightly risky business.
 
-You'd be surprised, there's a fair number of workloads that have
-negligible runtime on wakeup.
+For x86 there is no change here since:
+xen/include/public/arch-x86/xen.h:typedef unsigned long xen_ulong_t;
 
-> I use nr_running to measure how the group busy, due to 3 reasons:
-> 1, the current performance policy doesn't use utilization too.
+Also the tools/include/xen-foreign checks show no change in the size of
+things on x86.
 
-We were planning to fix that now that its available.
+On ARM the change is deliberate, if there is any fallout we can fix it.
 
-> 2, the power policy don't care load weight.
-
-Then its broken, it should very much still care about weight. 
-
-> 3, I tested some benchmarks, kbuild/tbench/hackbench/aim7 etc, some
-> benchmark results looks clear bad when use utilization. if my memory
-> right, the hackbench/aim7 both looks bad. I had tried many ways to
-> engage utilization into this balance, like use utilization only, or
-> use
-> utilization * nr_running etc. but still can not find a way to recover
-> the lose. But with nr_running, the performance seems doesn't lose much
-> with power policy.
-
-You're failing to explain why utilization performs bad and you don't
-explain why nr_running is better. That things work simply isn't good
-enough, you have to have at least a general idea (but much preferable a
-very good idea) _why_ things work.
-
+Ian.
 
