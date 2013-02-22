@@ -1,38 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757934Ab3BVQLh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 11:11:37 -0500
-Received: from mx0.parallels.com ([199.115.104.20]:36609 "EHLO
-	mx0.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757775Ab3BVQLd (ORCPT
+	id S1757912Ab3BVQSy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 11:18:54 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:52232 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757653Ab3BVQSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 11:11:33 -0500
-Message-ID: <512798CC.2080501@parallels.com>
-Date: Fri, 22 Feb 2013 20:11:56 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 22 Feb 2013 11:18:53 -0500
+Date: Fri, 22 Feb 2013 08:19:30 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, JBeulich@suse.com
+Subject: Re: Put git commit 51ac8893a7a51b196501164e645583bf78138699 on the
+ stable tree please
+Message-ID: <20130222161930.GA27694@kroah.com>
+References: <20130222154644.GB8809@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] slub: correctly bootstrap boot caches
-References: <1361529030-17462-1-git-send-email-glommer@parallels.com> <0000013d026b4e5f-1b3deecb-7e37-4476-a27b-3a7db8c1f0a8-000000@email.amazonses.com> <51278A12.4000504@parallels.com> <0000013d028eec8e-012456de-9b98-4bcb-9427-2fbee58ecc74-000000@email.amazonses.com> <5127928A.20000@parallels.com> <0000013d02ab8230-de441d64-395f-4c87-89e7-3f2cd2209680-000000@email.amazonses.com>
-In-Reply-To: <0000013d02ab8230-de441d64-395f-4c87-89e7-3f2cd2209680-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130222154644.GB8809@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 08:10 PM, Christoph Lameter wrote:
-> kmem_cache_node creation runs before PARTIAL and kmem_cache runs
-> after. So there would be 2 kmem_cache_node structures allocated. Ok so
-> that would use cpu slabs and therefore remove pages from the partial list.
-> Pushing that back using the flushing should fix this. But I thought there
-> was already code that went through the cpu slabs to address this?
+On Fri, Feb 22, 2013 at 10:46:45AM -0500, Konrad Rzeszutek Wilk wrote:
+> Hey Greg,
+> 
+> Please put git commit 51ac8893a7a51b196501164e645583bf78138699
+> commit 51ac8893a7a51b196501164e645583bf78138699
+> Author: Jan Beulich <jbeulich@suse.com>
+> Date:   Wed Feb 6 10:30:38 2013 -0500
+> 
+>     xen-pciback: rate limit error messages from xen_pcibk_enable_msi{,x}()
+> 
+> on the stable tree please. It is an security errata fix and should
+> have had the CC: stable@vger.kernel.org but did not.
 
-not in bootstrap(), which is quite primitive. (and should remain so)
+Thanks, what stable kernel releases should it be queued up for?
 
+And, in the future, always send this to stable@vger.kernel.org, not to
+me and lkml, the other stable kernel maintainers will want to know this.
+
+greg k-h
