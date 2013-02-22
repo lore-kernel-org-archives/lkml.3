@@ -1,105 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632Ab3BVF2g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 00:28:36 -0500
-Received: from mail.servus.at ([193.170.194.20]:38929 "EHLO mail.servus.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707Ab3BVF2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 00:28:35 -0500
-Message-ID: <51270182.4080205@oberhumer.com>
-Date: Fri, 22 Feb 2013 06:26:26 +0100
-From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
-Organization: oberhumer.com
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] Update LZO compression code for v3.9
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752813Ab3BVFdN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 00:33:13 -0500
+Received: from smtprelay05.ispgateway.de ([80.67.31.94]:58259 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866Ab3BVFdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 00:33:08 -0500
+References: <20130214153255.GA5033@rhlx01.hs-esslingen.de> <1361288123.2323.29.camel@rzhang1-mobl4>
+Message-ID: <cone.1361511184.64609.1639.1000@galar>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Zhang Rui <rui.zhang@intel.com>, Borislav Petkov <bp@alien8.de>
+Cc: Andreas Mohr <andi@lisas.de>, linux-kernel@vger.kernel.org,
+        Durgadoss R <durgadoss.r@intel.com>
+Subject: Re: thermal governor: does it actually work??
+Date: Fri, 22 Feb 2013 06:33:04 +0100
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Adding Boris,
 
-please pull my "lzo-update" branch from
+sorry, I can't do anything currently, I'm down with influenza.
 
-  git://github.com/markus-oberhumer/linux.git lzo-update
+kind regards,
+--peter;
 
-You can also browse the branch at
+Zhang Rui writes:
 
-  https://github.com/markus-oberhumer/linux/compare/lzo-update
-
-The LZO update actually had been approved by akpm for a 3.7 merge and is
-available in linux-next since October, but I've only recently learned
-that there is no automatic flow from linux-next to linux and I have
-to personally send a pull request.
-
-Many thanks,
-Markus
-
-
-Summary:
-========
-
-Update the Linux kernel LZO compression and decompression code to the current
-upstream version which features significant performance improvements
-on modern machines.
-
-$ git shortlog v3.8..lzo-update
-Markus F.X.J. Oberhumer (3):
-      lib/lzo: Rename lzo1x_decompress.c to lzo1x_decompress_safe.c
-      lib/lzo: Update LZO compression to current upstream version
-      crypto: testmgr - update LZO compression test vectors
-
-$ git diff --stat v3.8..lzo-update
- crypto/testmgr.h                |   38 +++--
- include/linux/lzo.h             |   15 +-
- lib/decompress_unlzo.c          |    2 +-
- lib/lzo/Makefile                |    2 +-
- lib/lzo/lzo1x_compress.c        |  335 ++++++++++++++++++++++----------------
- lib/lzo/lzo1x_decompress.c      |  255 -----------------------------
- lib/lzo/lzo1x_decompress_safe.c |  237 +++++++++++++++++++++++++++
- lib/lzo/lzodefs.h               |   38 +++--
- 8 files changed, 488 insertions(+), 434 deletions(-)
-
-
-Some *synthetic* benchmarks:
-============================
-
-x86_64 (Sandy Bridge), gcc-4.6 -O3, Silesia test corpus, 256 kB block-size:
-
-                   compression speed   decompression speed
-
-  LZO-2005    :         150 MB/sec          468 MB/sec
-  LZO-2012    :         434 MB/sec         1210 MB/sec
-
-i386 (Sandy Bridge), gcc-4.6 -O3, Silesia test corpus, 256 kB block-size:
-
-                   compression speed   decompression speed
-
-  LZO-2005    :         143 MB/sec          409 MB/sec
-  LZO-2012    :         372 MB/sec         1121 MB/sec
-
-armv7 (Cortex-A9), Linaro gcc-4.6 -O3, Silesia test corpus, 256 kB block-size:
-
-                   compression speed   decompression speed
-
-  LZO-2005    :          27 MB/sec           84 MB/sec
-  LZO-2012    :          44 MB/sec          117 MB/sec
-**LZO-2013-UA :          47 MB/sec          167 MB/sec
-
-Legend:
-
-  LZO-2005    : LZO version in current 3.8 kernel (which is based on
-                   the LZO 2.02 release from 2005)
-  LZO-2012    : updated LZO version available in linux-next
-**LZO-2013-UA : updated LZO version available in linux-next plus experimental
-                   ARM Unaligned Access patch. This needs approval
-                   from some ARM maintainer ist NOT YET INCLUDED.
-
-
--- 
-Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
+> On Thu, 2013-02-14 at 16:32 +0100, Andreas Mohr wrote:
+>> For me after having loaded acerhdf the fan never stops (with kernelmode
+>> active), despite staying safely below trip point
+>> (acerhdf_set_cur_state() actually never gets called).
+> 
+> BTW, could you please check if this one fixes the problem for you?
+> http://git.kernel.org/?p=linux/kernel/git/rzhang/linux.git;a=commit;h=b8bb6cb999858043489c1ddef08eed2127559169
+> 
+> thanks,
+> rui
+>> And AFAIR in a 3.2.0 kernel acerhdf fan operation seemed to just work
+>> (i.e., no fan for low temps, from the beginning).
+>> Needless to say 3.2.0 didn't even feature all the modern thermal
+>> governor crapyard yet ;)
+>> (ok, well, it's more complex but it's also a very nice environment capability)
+>> 
+>> 3.8-rc7:
+>> CONFIG_ACPI_THERMAL=m
+>> CONFIG_THERMAL=m
+>> CONFIG_THERMAL_HWMON=y
+>> CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=y
+>> # CONFIG_THERMAL_DEFAULT_GOV_FAIR_SHARE is not set
+>> # CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE is not set
+>> CONFIG_FAIR_SHARE=y
+>> CONFIG_STEP_WISE=y
+>> # CONFIG_USER_SPACE is not set
+>> # CONFIG_CPU_THERMAL is not set
+>> 
+>> 
+>> 
+>> Terminology in this area seems to be quite a bit off, too, at several
+>> docs places, at least according to my understanding:
+>> 
+>> e.g. drivers/thermal/step_wise.c has the following comment:
+>> 
+>> /**
+>>  * step_wise_throttle - throttles devices associated with the given zone
+>>  * @tz - thermal_zone_device
+>>  * @trip - the trip point
+>>  * @trip_type - type of the trip point
+>>  *
+>>  * Throttling Logic: This uses the trend of the thermal zone to
+>>  * throttle.
+>>  * If the thermal zone is 'heating up' this throttles all the cooling
+>>  * devices associated with the zone and its particular trip point, by
+>>  * one
+>>  * step. If the zone is 'cooling down' it brings back the performance of
+>>  * the devices by one step.
+>> 
+>> 
+>> 
+>> if ... heating up ... throttles ...
+>> Sorry, but at least for P4 clockmod stuff (or some such), throttle
+>> states (P1...P8 IIRC) meant that the CPU operation was *reduced*,
+>> i.e. with pause intervals.
+>> And the translation of throttle clearly says that it does go that way
+>> and not the other way...
+>> (yes, you managed to confuse me that much that I even had to look up
+>> things to verify)
+>> 
+>> ... cooling down ... brings back ...
+>> This should certainly be worded "reduces" or some such.
+>> 
+>> So, any idea why I'm missing callbacks in acerhdf (if that is what I'm
+>> supposed to expect to happen)?
+>> Kernel bug, .config mistake, missing/wrong user-side setup?
+>> 
+>> Needless to say if kernel bug this ought to be fixed pre-3.8 ideally.
+>> 
+>> Thanks,
+>> 
+>> Andreas Mohr
+> 
+> 
