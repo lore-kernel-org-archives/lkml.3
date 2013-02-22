@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab3BVPof (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 10:44:35 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:56454 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757094Ab3BVPoe (ORCPT
+	id S1757644Ab3BVPoy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 10:44:54 -0500
+Received: from mx0.parallels.com ([199.115.104.20]:52209 "EHLO
+	mx0.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757594Ab3BVPov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 10:44:34 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: john.stultz@linaro.org, tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, linus.walleij@stericsson.com
-Subject: [PATCH] clocksource : nomadik-mtu : fix missing irq initialization
-Date: Fri, 22 Feb 2013 16:44:30 +0100
-Message-Id: <1361547870-32638-1-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 22 Feb 2013 10:44:51 -0500
+Message-ID: <5127928A.20000@parallels.com>
+Date: Fri, 22 Feb 2013 19:45:14 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] slub: correctly bootstrap boot caches
+References: <1361529030-17462-1-git-send-email-glommer@parallels.com> <0000013d026b4e5f-1b3deecb-7e37-4476-a27b-3a7db8c1f0a8-000000@email.amazonses.com> <51278A12.4000504@parallels.com> <0000013d028eec8e-012456de-9b98-4bcb-9427-2fbee58ecc74-000000@email.amazonses.com>
+In-Reply-To: <0000013d028eec8e-012456de-9b98-4bcb-9427-2fbee58ecc74-000000@email.amazonses.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix the clock device irq field which is not initialized.
+On 02/22/2013 07:39 PM, Christoph Lameter wrote:
+> On Fri, 22 Feb 2013, Glauber Costa wrote:
+> 
+>> As I've mentioned in the description, the real bug is from partial slabs
+>> being temporarily in the cpu_slab during a recent allocation and
+>> therefore unreachable through the partial list.
+> 
+> The bootstrap code does not use cpu slabs but goes directly to the slab
+> pages. See early_kmem_cache_node_alloc.
+> 
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
----
- drivers/clocksource/nomadik-mtu.c |    1 +
- 1 file changed, 1 insertion(+)
+That differs from what I am seeing here.
+I can trace an early __slab_alloc allocation from
+the kmem_cache_node cache, very likely coming from the kmem_cache boot
+cache creation. It takes the page out of the partial list and moves it
+to the cpu_slab. After that, that particular page becomes unreachable
+for bootstrap.
 
-diff --git a/drivers/clocksource/nomadik-mtu.c b/drivers/clocksource/nomadik-mtu.c
-index 8914c3c..7cbcaa0 100644
---- a/drivers/clocksource/nomadik-mtu.c
-+++ b/drivers/clocksource/nomadik-mtu.c
-@@ -226,5 +226,6 @@ void __init nmdk_timer_init(void __iomem *base, int irq)
- 	/* Timer 1 is used for events, register irq and clockevents */
- 	setup_irq(irq, &nmdk_timer_irq);
- 	nmdk_clkevt.cpumask = cpumask_of(0);
-+	nmdk_clkevt.irq = irq;
- 	clockevents_config_and_register(&nmdk_clkevt, rate, 2, 0xffffffffU);
- }
--- 
-1.7.9.5
+At this point, we are already slab_state == PARTIAL, while
+init_kmem_cache_nodes will only differentiate against slab_state == DOWN.
+
+
 
