@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383Ab3BVIWU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 03:22:20 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56193 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab3BVIWT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 03:22:19 -0500
-Date: Fri, 22 Feb 2013 09:22:15 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Huang Ying <ying.huang@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: Re: [BUG bisected]: apei_hest_parse explosion
-In-Reply-To: <4867361.uTndA5QxsU@vostro.rjw.lan>
-Message-ID: <alpine.LFD.2.02.1302220903000.22263@ionos>
-References: <alpine.LFD.2.02.1302220002040.22263@ionos> <CAE9FiQXV43emyjjCb=D=xFLz-n6q0Eu0uQmVhAA470A=FGRhww@mail.gmail.com> <3310807.g9DvzzvEFn@vostro.rjw.lan> <4867361.uTndA5QxsU@vostro.rjw.lan>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1755615Ab3BVIXi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 03:23:38 -0500
+Received: from gmmr2.centrum.cz ([46.255.227.252]:40342 "EHLO gmmr2.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754068Ab3BVIXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 03:23:35 -0500
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_if_PF=5FNO=5FMEMCG=5FOOM_is_set?=
+Date: Fri, 22 Feb 2013 09:23:32 +0100
+From: "azurIt" <azurit@pobox.sk>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+References: <20130208094420.GA7557@dhcp22.suse.cz>, <20130208120249.FD733220@pobox.sk>, <20130208123854.GB7557@dhcp22.suse.cz>, <20130208145616.FB78CE24@pobox.sk>, <20130208152402.GD7557@dhcp22.suse.cz>, <20130208165805.8908B143@pobox.sk>, <20130208171012.GH7557@dhcp22.suse.cz>, <20130208220243.EDEE0825@pobox.sk>, <20130210150310.GA9504@dhcp22.suse.cz>, <20130210174619.24F20488@pobox.sk> <20130211112240.GC19922@dhcp22.suse.cz>
+In-Reply-To: <20130211112240.GC19922@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Message-Id: <20130222092332.4001E4B6@pobox.sk>
+X-Maser: oho
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Feb 2013, Rafael J. Wysocki wrote:
-> On Friday, February 22, 2013 02:40:58 AM Rafael J. Wysocki wrote:
-> > It looks like the hest_tab memory mapping is unmapped between acpi_hest_init()
-> > and aer_acpi_firmware_first(), but I have no idea what may be responsible for
-> > that.
-> > 
-> > And the only relevant difference between now and before the commit above seems
-> > to be the change of the acpi_hest_init() ordering (which now is called earlier).
-> 
-> We actually don't really need to do that thing so early, I think.  It looks like
-> we only need to make it available early enough for the AER driver to be able to
-> use it, so I wonder if moving the acpi_hest_init() to a separate
-> subsys_initcall() will work around the problem.  That is, something like the
-> patch below.
+>Unfortunately I am not able to reproduce this behavior even if I try
+>to hammer OOM like mad so I am afraid I cannot help you much without
+>further debugging patches.
+>I do realize that experimenting in your environment is a problem but I
+>do not many options left. Please do not use strace and rather collect
+>/proc/pid/stack instead. It would be also helpful to get group/tasks
+>file to have a full list of tasks in the group
 
-Yes, that makes the machine boot.
- 
-> But even if this helps, I will be wanting to understand what's up here.
 
-It's very simple. I have "acpi=off" on the command line. With that
-acpi_hest_init is never called, so hest_disable is not set .....
 
-Brilliant stuff that.
+Hi Michal,
+
+
+sorry that i didn't response for a while. Today i installed kernel with your two patches and i'm running it now. I'm still having problems with OOM which is not able to handle low memory and is not killing processes. Here is some info:
+
+- data from cgroup 1258 while it was under OOM and no processes were killed (so OOM don't stop and cgroup was freezed)
+http://watchdog.sk/lkml/memcg-bug-6.tar.gz
+
+I noticed problem about on 8:39 and waited until 8:57 (nothing happend). Then i killed process 19864 which seems to help and other processes probably ends and cgroup started to work. But problem accoured again about 20 seconds later, so i killed all processes at 8:58. The problem is occuring all the time since then. All processes (in that cgroup) are always in state 'D' when it occurs.
+
+
+- kernel log from boot until now
+http://watchdog.sk/lkml/kern3.gz
+
+
+Btw, something probably happened also at about 3:09 but i wasn't able to gather any data because my 'load check script' killed all apache processes (load was more than 100).
+
+
+
+azur
