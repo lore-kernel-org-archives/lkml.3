@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab3BVH5d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 02:57:33 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:9334 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab3BVH5b (ORCPT
+	id S1755620Ab3BVIEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 03:04:20 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:13740 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754415Ab3BVIES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 02:57:31 -0500
-X-AuditID: cbfee68e-b7fc26d000001938-4a-512724e9b369
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
-Cc: "'Linus Torvalds'" <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Al Viro'" <viro@zeniv.linux.org.uk>, "'Tejun Heo'" <tj@kernel.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <20130222065345.GA30816@core.coreip.homeip.net>
- <000c01ce10cb$fdd4a4a0$f97dede0$%han@samsung.com>
- <20130222072635.GB30816@core.coreip.homeip.net>
-In-reply-to: <20130222072635.GB30816@core.coreip.homeip.net>
-Subject: RE: Dangerous devm_request_irq() conversions
-Date: Fri, 22 Feb 2013 16:57:29 +0900
-Message-id: <001301ce10d2$42e8e960$c8babc20$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
+	Fri, 22 Feb 2013 03:04:18 -0500
+X-AuditID: cbfee691-b7f556d000001a24-67-5127267fd99d
+From: Boojin Kim <boojin.kim@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        spi-devel-general@lists.sourceforge.net, alsa-devel@alsa-project.org
+Cc: "'Vinod Koul'" <vinod.koul@intel.com>, "'Dan Williams'" <djbw@fb.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        "'Rob Herring'" <rob.herring@calxeda.com>,
+        "'Sangbeom Kim'" <sbkim73@samsung.com>,
+        "'Boojin Kim'" <boojin.kim@samsung.com>
+Subject: [PATCH v2 1/4] DMA: pl330: support burst mode for dev-to-mem and
+ mem-to-dev transmit
+Date: Fri, 22 Feb 2013 17:04:15 +0900
+Message-id: <000001ce10d3$354dd440$9fe97cc0$%kim@samsung.com>
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4QzfSysoI6QAPmRsefd9wGJ4+CQAAApPww
+Thread-index: Ac4Q0zRNgYHsZtryQK2Zcgnt7X5e4w==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t8zI92XKuqBBh3z5Swu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG9UMzmQpWSFa0TlzP0sB4RKSLkZNDQsBE4seJM8wQtpjEhXvr
-	2boYuTiEBJYxSjxfu58ZpujzzDZGiMQiRoljRxeyQzizmSRWNb5hB6liE1CT+PLlMJDNwSEi
-	YCgxY00VSA2zwGtGiV93PrJCNCxklGj8sBJsLKeAjcT19z8ZQWxhAVOJ7hkbweIsAqoSkzon
-	gsV5BWwlPs3fwAxhC0r8mHyPBcRmFtCSWL/zOBOELS+xec1bZpDFEgLqEo/+6oKERQSMJGZv
-	u8oGUSIise/FO7APJARWsUt0bvzKBLFLQOLb5EMsEL2yEpsOQH0sKXFwxQ2WCYwSs5BsnoVk
-	8ywkm2chWbGAkWUVo2hqQXJBcVJ6kZFecWJucWleul5yfu4mRkh09e1gvHnA+hBjMtD6icxS
-	osn5wOjMK4k3NDY2MTMxNTG3NDU3JU1YSZxX/pJMoJBAemJJanZqakFqUXxRaU5q8SFGJg5O
-	qQZGw3l/xJd1Z9+Ju954SzYsdFNDr0Jl9Nn3rXK+9++ZadpZBbjsV5rcxTjn6Ftf3lw+w1Nz
-	Aou2Vbc6PozLiNqe5BasvMd/ZVjPCk2F9Zr3rk5fIbL/9nfxe/N/e+yta89O7+3v+8Xu+Wlj
-	4jdVD+9b865Zbwp+GBsrf5DniELQSRXRXPel618rsRRnJBpqMRcVJwIAL9sm6cQCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjleLIzCtJLcpLzFFi42I5/e+xgO5LFfVAg7ONUhaXd81hc2D0+LxJ
-	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
-	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4x4/qhmUwFKyQrWieuZ2lg
-	PCLSxcjJISFgIvF5ZhsjhC0mceHeerYuRi4OIYFFjBLHji5kh3BmM0msanzDDlLFJqAm8eXL
-	YSCbg0NEwFBixpoqkBpmgdeMEr/ufGSFaFjIKNH4YSUzSAOngI3E9fc/wVYIC5hKdM/YCBZn
-	EVCVmNQ5ESzOK2Ar8Wn+BmYIW1Dix+R7LCA2s4CWxPqdx5kgbHmJzWveMoMslhBQl3j0Vxck
-	LCJgJDF721U2iBIRiX0v3jFOYBSahWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5hnrFibnF
-	pXnpesn5uZsYwbH7TGoH48oGi0OMAhyMSjy8DS5qgUKsiWXFlbmHGCU4mJVEeBcpqAcK8aYk
-	VlalFuXHF5XmpBYfYkwGenQis5Rocj4wreSVxBsam5gZWRqZWRiZmJuTJqwkzst46kmAkEB6
-	YklqdmpqQWoRzBYmDk6pBsZ9raptJTVcdrwa1owBWzk3BlQ43vbys1ywKce8onLtnndS/3Ju
-	f0+6vW5TeZtJ2q1pNx6v3OFxaK7bvZqMRWePfz0154C1fp/5qYx2T7uI6vSnIey5fDtKbHYc
-	4poUPjGtZMGEgj/LJ3696qbX8rmn3fzcRd4rxU8SUzpLqxZV7Yq6rSG/+YgSS3FGoqEWc1Fx
-	IgD+mnlNIQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t8zY916NfVAgwkbFS0u75rDZjHj/D4m
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDLefDrMWNDJX7F99wf2Bsa1PF2MnBwSAiYSrxa/ZYWw
+	xSQu3FvP1sXIxSEksIxR4k1HAytM0ZOJZ1khEtMZJWbencgE4fxllFi6ZBs7SBWbgKbEjO/T
+	wWwRgc2MEpNfZ4EUMQt8YZLou30VLCEsEC8xrW8tmM0ioCrxr+EiE4jNK2ArsWHvc5YuRg6g
+	deoSj/7qQszRk1i2YiULiM0sICKx78U7RpCZEgKP2SQeLZ3PDDFHQOLb5ENQvbISmw4wQ1wt
+	KXFwxQ2WCYzCs5C0L2BkXMUomlqQXFCclF5kqlecmFtcmpeul5yfu4kREqYTdzDeP2B9iDEZ
+	aPREZinR5HxgmOeVxBsaG5uYmZiamFuampuSJqwkzit/SSZQSCA9sSQ1OzW1ILUovqg0J7X4
+	ECMTB6dUA6PHieMPuDldouq9TDW2T1Nnl0z4suDO5eq2Yzk75Mz+sjPZ9pnPMxNXsu7Qj95e
+	/Hr/cqauFXYlvlv44rYY5cze8+/I1O2B+/JLl37s+t0nN5u3vFR+sVSokqc7X2qH2YQnvHny
+	rskBNm9Lq9uW5t1++WbN4uPFs12EgtccONJorh8pdOmPrBJLcUaioRZzUXEiAP/dflFpAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t9jQd16NfVAg0urZSwu75rDZjHj/D4m
+	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
+	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz3nw6zFjQyV+x
+	ffcH9gbGtTxdjJwcEgImEk8mnmWFsMUkLtxbz9bFyMUhJDCdUWLm3YlMEM5fRomlS7axg1Sx
+	CWhKzPg+HcwWEdjMKDH5dRZIEbPAFyaJvttXwRLCAvES0/rWgtksAqoS/xouMoHYvAK2Ehv2
+	PmfpYuQAWqcu8eivLsQcPYllK1aygNjMAiIS+168Y5zAyDsLibuAkXEVo2hqQXJBcVJ6rqFe
+	cWJucWleul5yfu4mRnAUPJPawbiyweIQowAHoxIPb4OLWqAQa2JZcWXuIUYJDmYlEd5FCuqB
+	QrwpiZVVqUX58UWlOanFhxiTgQ6cyCwlmpwPjNC8knhDYxMzI0sjMwsjE3Nz0oSVxHkZTz0J
+	EBJITyxJzU5NLUgtgtnCxMEp1cDotqLnk+3mhZG5MSETrFt4E1zXJZt+WZV07IBL84pPM72u
+	+x2ymH3y9c68JzE8GU8f8QrlfJTf/LZ2RdH2SBvmGibB1VOuydee3LPy+rG1ep0Wme4u+4+n
+	Tbx0kPnLz9NvJRrFeFYsTelkZgqoTtg+5xf/tgtO3ttOpx58f8zy6xbB0/syP3E4KrEUZyQa
+	ajEXFScCAC0URQbGAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,95 +56,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 22, 2013 4:27 PM, Dmitry Torokhov wrote:
-> On Fri, Feb 22, 2013 at 04:12:36PM +0900, Jingoo Han wrote:
-> > On Friday, February 22, 2013 3:54 PM, Dmitry Torokhov wrote:
-> > >
-> > > Hi,
-> > >
-> > > It looks like a whole slew of devm_request_irq() conversions just got
-> > > applied to mainline and many of them are quite broken.
-> > >
-> > > Consider fd5231ce336e038037b4f0190a6838bdd6e17c6d or
-> > > c1879fe80c61f3be6f2ddb82509c2e7f92a484fe: the drivers udsed first to
-> > > free IRQ and then unregister the corresponding device ensuring that IRQ
-> > > handler, while it runs, has the device available. The mechanic
-> > > conversion to devm_request_irq() reverses the order of these operations
-> > > opening the race window where IRQ can reference device (or other
-> > > resource) that is already gone.
-> > >
-> > > It would be nice if these could be reverted and revioewed again for
-> > > correctness.
-> >
-> > Um, other RTC drivers already have been using devm_request_threaded_irq() or
-> > devm_request_irq() like this, before I added these patches.
-> >
-> > For example,
-> > ./drivers/rtc/rtc-tegra.c
-> > ./drivers/rtc/rtc-spear.c
-> > ./drivers/rtc/rtc-s3c.c
-> > ./drivers/rtc/rtc-mxc.c
-> > ./drivers/rtc/rtc-ds1553.c
-> > ./drivers/rtc/rtc-ds1511.c
-> > ./drivers/rtc/rtc-snvs.c
-> > ./drivers/rtc/rtc-imxdi.c
-> > ./drivers/rtc/rtc-tx4939.c
-> > ./drivers/rtc/rtc-mv.c
-> > ./drivers/rtc/rtc-coh901331.c
-> > ./drivers/rtc/rtc-stk17ta8.c
-> > ./drivers/rtc/rtc-lpc32xx.c
-> > ./drivers/rtc/rtc-tps65910.c
-> > ./drivers/rtc/rtc-rc5t583.c
-> >
-> >
-> > Also, even more, some RTC drivers calls rtc_device_unregister() first,
-> > then calls free_irq() later.
-> >
-> > For example,
-> > ./drivers/rtc/rtc-vr41xx.c
-> > ./drivers/rtc/rtc-da9052.c
-> > ./drivers/rtc/rtc-isl1208.c
-> > ./drivers/rtc/rtc-88pm860x.c
-> > ./drivers/rtc/rtc-tps6586x.c
-> > ./drivers/rtc/rtc-mpc5121.c
-> > ./drivers/rtc/rtc-m48t59.c
-> >
-> >
-> > Please, don't argue revert without concrete reasons.
-> 
-> What more concrete reason do you need? I explained to you the exact
-> reason on the patches I noticed before and also on the 2 commits
-> referenced above: blind conversion to devm_* changes order of operation
-> which may be deadly with IRQs (but others, like clocks and regulators,
-> are important too).
-> 
-> The fact that crap slipped in the kernel before is not the valid reason
-> for adding more of the same crap.
-> 
-> Please *understand* APIs you are using before making changes.
-> 
-> >
-> > If these devm_request_threaded_irq() or devm_request_irq() make the problem,
-> > devm_free_irq() will be added later.
-> 
-> And the point? If you use devm_request_irq() and then call
-> devm_free_irq() manually in all paths what you achieved is waste of
-> memory required for devm_* tracking.
+This patch adds to support burst mode for dev-to-mem and mem-to-dev transmit
 
-CC'ed Al Viro, Tejun Heo
+Change-Id: I9723e49383416773699cf7735168177c8d036f30
+Signed-off-by: Boojin Kim <boojin.kim@samsung.com>
+---
+ drivers/dma/pl330.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 80680ee..c67f037 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -1271,10 +1271,11 @@ static inline int _ldst_devtomem(unsigned dry_run, u8 buf[],
+ 		const struct _xfer_spec *pxs, int cyc)
+ {
+ 	int off = 0;
++	enum pl330_cond cond = (pxs->r->cfg->brst_len == 1) ? SINGLE : BURST;
+
+ 	while (cyc--) {
+-		off += _emit_WFP(dry_run, &buf[off], SINGLE, pxs->r->peri);
+-		off += _emit_LDP(dry_run, &buf[off], SINGLE, pxs->r->peri);
++		off += _emit_WFP(dry_run, &buf[off], cond, pxs->r->peri);
++		off += _emit_LDP(dry_run, &buf[off], cond, pxs->r->peri);
+ 		off += _emit_ST(dry_run, &buf[off], ALWAYS);
+ 		off += _emit_FLUSHP(dry_run, &buf[off], pxs->r->peri);
+ 	}
+@@ -1286,11 +1287,12 @@ static inline int _ldst_memtodev(unsigned dry_run, u8 buf[],
+ 		const struct _xfer_spec *pxs, int cyc)
+ {
+ 	int off = 0;
++	enum pl330_cond cond = (pxs->r->cfg->brst_len == 1) ? SINGLE : BURST;
+
+ 	while (cyc--) {
+-		off += _emit_WFP(dry_run, &buf[off], SINGLE, pxs->r->peri);
++		off += _emit_WFP(dry_run, &buf[off], cond, pxs->r->peri);
+ 		off += _emit_LD(dry_run, &buf[off], ALWAYS);
+-		off += _emit_STP(dry_run, &buf[off], SINGLE, pxs->r->peri);
++		off += _emit_STP(dry_run, &buf[off], cond, pxs->r->peri);
+ 		off += _emit_FLUSHP(dry_run, &buf[off], pxs->r->peri);
+ 	}
+
+@@ -2835,7 +2837,7 @@ pl330_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 		}
+
+ 		desc->rqcfg.brst_size = pch->burst_sz;
+-		desc->rqcfg.brst_len = 1;
++		desc->rqcfg.brst_len = pch->burst_len;
+ 	}
+
+ 	/* Return the last desc in the chain */
+--
+1.7.5.4
 
 
-So, is there any report that the devm_request_threaded_irq() makes
-the deadly problem related IRQ in such cases?
-
-According to your comment, it seems that there is no reason to use
-devm_request_irq() or devm_request_threaded_irq().
-
-Please, argue that it would be better to deprecate devm_request_irq()
-or devm_request_threaded_irq().
-
-
-> 
-> --
-> Dmitry
 
