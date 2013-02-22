@@ -1,127 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab3BVTGt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 14:06:49 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:42555 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756451Ab3BVTGr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 14:06:47 -0500
-Date: Fri, 22 Feb 2013 11:06:44 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: walter harms <wharms@bfs.de>
-Cc: Kumar Amit Mehta <gmate.amit@gmail.com>, devel@driverdev.osuosl.org,
-        fmhess@users.sourceforge.net, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, abbotti@mev.co.uk
-Subject: Re: [PATCH 2/2] staging: comedi: drivers: usbduxfast.c: fix for DMA
- buffers on stack
-Message-ID: <20130222190644.GA16011@kroah.com>
-References: <1361556450-32572-1-git-send-email-gmate.amit@gmail.com>
- <5127BFDB.4010608@bfs.de>
+	id S1756984Ab3BVTOc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 14:14:32 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:60955 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756892Ab3BVTOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 14:14:30 -0500
+Date: Fri, 22 Feb 2013 13:14:26 -0600
+From: Ben Myers <bpm@sgi.com>
+To: Tony Lu <zlu@tilera.com>
+Cc: "xfs@oss.sgi.com" <xfs@oss.sgi.com>, Alex Elder <elder@kernel.org>,
+        Dave Chinner <dchinner@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] xfs: Fix possible truncation of log data in
+ xlog_bread_noalign()
+Message-ID: <20130222191426.GW22182@sgi.com>
+References: <BAB94DBB0E89D8409949BC28AC95914C47C485E5@USMAExch1.tad.internal.tilera.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5127BFDB.4010608@bfs.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BAB94DBB0E89D8409949BC28AC95914C47C485E5@USMAExch1.tad.internal.tilera.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 07:58:35PM +0100, walter harms wrote:
+Hi Tony,
+
+On Fri, Feb 22, 2013 at 08:12:52AM +0000, Tony Lu wrote:
+> I encountered the following panic when using xfs partitions as rootfs, which
+> is due to the truncated log data read by xlog_bread_noalign(). We should
+> extend the buffer by one extra log sector to ensure there's enough space to
+> accommodate requested log data, which we indeed did in xlog_get_bp(), but we
+> forgot to do in xlog_bread_noalign().
 > 
+> XFS mounting filesystem sda2
+> Starting XFS recovery on filesystem: sda2 (logdev: internal)
+> XFS: xlog_recover_process_data: bad clientid
+> XFS: log mount/recovery failed: error 5
+> XFS: log mount failedVFS: Cannot open root device "sda2" or unknown-block(8,)
+> Please append a correct "root=" boot option; here are the available partitio:
+> 0800       156290904 sda  driver: sd
+>   0801        31463271 sda1 00000000-0000-0000-0000-000000000000
+>   0802        31463302 sda2 00000000-0000-0000-0000-000000000000
+>   0803        31463302 sda3 00000000-0000-0000-0000-000000000000
+>   0804               1 sda4 00000000-0000-0000-0000-000000000000
+>   0805        10490413 sda5 00000000-0000-0000-0000-000000000000
+>   0806        51407968 sda6 00000000-0000-0000-0000-000000000000
+> Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(8,)
 > 
-> Am 22.02.2013 19:07, schrieb Kumar Amit Mehta:
-> > fix for instances of DMA buffer on stack(being passed to usb_control_msg) for
-> > the USB-DUXfast Board driver.
-> > 
-> > Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
-> > ---
-> >  drivers/staging/comedi/drivers/usbduxfast.c |   30 ++++++++++++++++-----------
-> >  1 file changed, 18 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
-> > index 4bf5dd0..1ba0e3d 100644
-> > --- a/drivers/staging/comedi/drivers/usbduxfast.c
-> > +++ b/drivers/staging/comedi/drivers/usbduxfast.c
-> > @@ -436,10 +436,14 @@ static void usbduxfastsub_ai_Irq(struct urb *urb)
-> >  static int usbduxfastsub_start(struct usbduxfastsub_s *udfs)
-> >  {
-> >  	int ret;
-> > -	unsigned char local_transfer_buffer[16];
-> > +	unsigned char *local_transfer_buffer;
-> > +
-> > +	local_transfer_buffer = kmalloc(1, GFP_KERNEL);
-> > +	if (!local_transfer_buffer)
-> > +		return -ENOMEM;
-> >  
-> >  	/* 7f92 to zero */
-> > -	local_transfer_buffer[0] = 0;
-> > +	*local_transfer_buffer = 0;
-> >  	/* bRequest, "Firmware" */
-> >  	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
-> >  			      USBDUXFASTSUB_FIRMWARE,
-> > @@ -450,22 +454,25 @@ static int usbduxfastsub_start(struct usbduxfastsub_s *udfs)
-> >  			      local_transfer_buffer,
-> >  			      1,      /* Length */
-> >  			      EZTIMEOUT);    /* Timeout */
-> > -	if (ret < 0) {
-> > +	if (ret < 0)
-> >  		dev_err(&udfs->interface->dev,
-> >  			"control msg failed (start)\n");
-> > -		return ret;
-> > -	}
-> >  
-> > -	return 0;
-> > +	kfree(local_transfer_buffer);
-> > +	return ret;
-> >  }
-> >  
-> >  static int usbduxfastsub_stop(struct usbduxfastsub_s *udfs)
-> >  {
-> >  	int ret;
-> > -	unsigned char local_transfer_buffer[16];
-> > +	unsigned char *local_transfer_buffer;
-> > +
-> > +	local_transfer_buffer = kmalloc(1, GFP_KERNEL);
-> > +	if (!local_transfer_buffer)
-> > +		return -ENOMEM;
-> >  
-> >  	/* 7f92 to one */
-> > -	local_transfer_buffer[0] = 1;
-> > +	*local_transfer_buffer = 1;
-> >  	/* bRequest, "Firmware" */
-> >  	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
-> >  			      USBDUXFASTSUB_FIRMWARE,
-> > @@ -474,13 +481,12 @@ static int usbduxfastsub_stop(struct usbduxfastsub_s *udfs)
-> >  			      0x0000,	/* Index */
-> >  			      local_transfer_buffer, 1,	/* Length */
-> >  			      EZTIMEOUT);	/* Timeout */
-> > -	if (ret < 0) {
-> > +	if (ret < 0)
-> >  		dev_err(&udfs->interface->dev,
-> >  			"control msg failed (stop)\n");
-> > -		return ret;
-> > -	}
-> >  
-> > -	return 0;
-> > +	kfree(local_transfer_buffer);
-> > +	return ret;
-> >  }
-> >  
-> >  static int usbduxfastsub_upload(struct usbduxfastsub_s *udfs,
+> Starting stack dump of tid 1, pid 1 (swapper) on cpu 35 at cycle 42273138234
+>   frame 0: 0xfffffff70016e5a0 dump_stack+0x0/0x20 (sp 0xfffffe03fbedfe88)
+>   frame 1: 0xfffffff7004af470 panic+0x150/0x3a0 (sp 0xfffffe03fbedfe88)
+>   frame 2: 0xfffffff700881e88 mount_block_root+0x2c0/0x4c8 (sp 0xfffffe03fbe)
+>   frame 3: 0xfffffff700882390 prepare_namespace+0x250/0x358 (sp 0xfffffe03fb)
+>   frame 4: 0xfffffff700880778 kernel_init+0x4c8/0x520 (sp 0xfffffe03fbedffb0)
+>   frame 5: 0xfffffff70011ecb8 start_kernel_thread+0x18/0x20 (sp 0xfffffe03fb)
+> Stack dump complete
 > 
-> mmh, it seems a bit overheat to alloc 1 byte.
-> Could one of the driver maintainers please comment
-> is that realy need ?
+> Signed-off-by: Zhigang Lu <zlu@tilera.com>
+> Reviewed-by: Chris Metcalf <cmetcalf@tilera.com>
 
-Yes it is needed.
+Looks fine to me.  I'll pull it in after some testing.
 
-> or is it possible to pass one byte
-> in a register ? (aka char/int) without allocating ?
+Do you happen to have a metadump of this filesystem?
 
-Nope, the USB host controllers must be able to DMA to this memory
-location, so you have to allocate it dynamically, sorry.
+Reviewed-by: Ben Myers <bpm@sgi.com>
 
-thanks,
-
-greg k-h
+Thanks!
+-Ben
