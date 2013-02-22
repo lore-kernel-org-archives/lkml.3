@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab3BVUOX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 15:14:23 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60315 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757083Ab3BVUOW (ORCPT
+	id S1757515Ab3BVUO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 15:14:27 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:46855 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757276Ab3BVUOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 15:14:22 -0500
-Date: Fri, 22 Feb 2013 21:14:12 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Prarit Bhargava <prarit@redhat.com>
-cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        x86@kernel.org
-Subject: Re: [PATCH] x86, clocksource, fix !CONFIG_CLOCKSOURCE_WATCHDOG
- compile
-In-Reply-To: <1361563736-28241-1-git-send-email-prarit@redhat.com>
-Message-ID: <alpine.LFD.2.02.1302222111400.22263@ionos>
-References: <1361563736-28241-1-git-send-email-prarit@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 22 Feb 2013 15:14:23 -0500
+Date: Fri, 22 Feb 2013 15:14:20 -0500 (EST)
+Message-Id: <20130222.151420.1087260069127274940.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: davej@redhat.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        brouer@redhat.com
+Subject: Re: [PATCH] net: fix possible deadlock in sum_frag_mem_limit
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1361555015.3683.14.camel@edumazet-glaptop>
+References: <20130222171343.GB27619@redhat.com>
+	<1361555015.3683.14.camel@edumazet-glaptop>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 22 Feb 2013 12:14:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Feb 2013, Prarit Bhargava wrote:
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Fri, 22 Feb 2013 09:43:35 -0800
 
-> If I explicitly disable the clocksource watchdog in the x86 Kconfig,
-> the x86 kernel will not compile unless this is properly defined.
-
-You shouldn't do that. :)
- 
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: x86@kernel.org
-> ---
->  kernel/time/clocksource.c |    1 +
->  1 file changed, 1 insertion(+)
+> From: Eric Dumazet <edumazet@google.com>
 > 
-> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-> index c958338..e04821f 100644
-> --- a/kernel/time/clocksource.c
-> +++ b/kernel/time/clocksource.c
-> @@ -450,6 +450,7 @@ static void clocksource_enqueue_watchdog(struct clocksource *cs)
->  static inline void clocksource_dequeue_watchdog(struct clocksource *cs) { }
->  static inline void clocksource_resume_watchdog(void) { }
->  static inline int clocksource_watchdog_kthread(void *data) { return 0; }
-> +void clocksource_mark_unstable(struct clocksource *cs) { }
+> Dave Jones reported a lockdep splat occurring in IP defrag code.
+> 
+> commit 6d7b857d541ecd1d (net: use lib/percpu_counter API for
+> fragmentation mem accounting) added a possible deadlock.
+> 
+> Because percpu_counter_sum_positive() needs to acquire
+> a lock that can be used from softirq, we need to disable BH
+> in sum_frag_mem_limit()
+> 
+> Reported-by: Dave Jones <davej@redhat.com>
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> Cc: Jesper Dangaard Brouer <brouer@redhat.com>
 
-Unless this is defined as
-
-> +static inline void clocksource_mark_unstable(struct clocksource *cs) { }
-
-Right?
-
-	tglx
+Applied.
