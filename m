@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759372Ab3BVSOh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 13:14:37 -0500
-Received: from [89.21.227.133] ([89.21.227.133]:47019 "EHLO
+	id S1759359Ab3BVSOd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 13:14:33 -0500
+Received: from [89.21.227.133] ([89.21.227.133]:47683 "EHLO
 	mail.kdh.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759034Ab3BVSId (ORCPT
+	by vger.kernel.org with ESMTP id S1759030Ab3BVSId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Feb 2013 13:08:33 -0500
 From: Nick Dyer <nick.dyer@itdev.co.uk>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 32/40] Input: atmel_mxt_ts - remove unused defines
-Date: Fri, 22 Feb 2013 17:58:19 +0000
-Message-Id: <1361555907-19840-33-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 02/40] Input: atmel_mxt_ts - add macros for object instances and size
+Date: Fri, 22 Feb 2013 17:57:49 +0000
+Message-Id: <1361555907-19840-3-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,125 +25,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The raw Atmel Object Based Protocol stores the instances and size minus one as
+an efficiency measure. This can easily lead to bugs. Rename the variables to
+make it clear what they are and implement macros for the conversion.
+
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   67 +-----------------------------
- 1 file changed, 1 insertion(+), 66 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 8794353..2f3793a 100644
+index b4bf946..1de1d24 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -22,29 +22,14 @@
- #include <linux/interrupt.h>
- #include <linux/slab.h>
+@@ -216,6 +216,9 @@
+ /* Touchscreen absolute values */
+ #define MXT_MAX_AREA		0xff
  
--/* Version */
--#define MXT_VER_20		20
--#define MXT_VER_21		21
--#define MXT_VER_22		22
--
- /* Firmware files */
- #define MXT_FW_NAME		"maxtouch.fw"
- #define MXT_CFG_NAME		"maxtouch.cfg"
- #define MXT_CFG_MAGIC		"OBP_RAW V1"
++#define OBP_INSTANCES(o) ((u16)((o)->instances_minus_one) + 1)
++#define OBP_SIZE(o) ((u16)((o)->size_minus_one) + 1)
++
+ struct mxt_info {
+ 	u8 family_id;
+ 	u8 variant_id;
+@@ -229,8 +232,8 @@ struct mxt_info {
+ struct mxt_object {
+ 	u8 type;
+ 	u16 start_address;
+-	u8 size;		/* Size of each instance - 1 */
+-	u8 instances;		/* Number of instances - 1 */
++	u8 size_minus_one;
++	u8 instances_minus_one;
+ 	u8 num_report_ids;
+ } __packed;
  
- /* Registers */
--#define MXT_INFO		0x00
--#define MXT_FAMILY_ID		0x00
--#define MXT_VARIANT_ID		0x01
--#define MXT_VERSION		0x02
--#define MXT_BUILD		0x03
--#define MXT_MATRIX_X_SIZE	0x04
--#define MXT_MATRIX_Y_SIZE	0x05
--#define MXT_OBJECT_NUM		0x06
- #define MXT_OBJECT_START	0x07
--
- #define MXT_OBJECT_SIZE		6
--
- #define MXT_MAX_BLOCK_WRITE	256
+@@ -500,7 +503,7 @@ static int mxt_write_object(struct mxt_data *data,
+ 	u16 reg;
  
- /* Object types */
-@@ -105,15 +90,6 @@ struct t7_config {
- #define MXT_POWER_CFG_RUN		0
- #define MXT_POWER_CFG_DEEPSLEEP		1
+ 	object = mxt_get_object(data, type);
+-	if (!object || offset >= object->size + 1)
++	if (!object || offset >= OBP_SIZE(object))
+ 		return -EINVAL;
  
--/* MXT_GEN_ACQUIRE_T8 field */
--#define MXT_ACQUIRE_CHRGTIME	0
--#define MXT_ACQUIRE_TCHDRIFT	2
--#define MXT_ACQUIRE_DRIFTST	3
--#define MXT_ACQUIRE_TCHAUTOCAL	4
--#define MXT_ACQUIRE_SYNC	5
--#define MXT_ACQUIRE_ATCHCALST	6
--#define MXT_ACQUIRE_ATCHCALSTHR	7
--
- /* MXT_TOUCH_MULTI_T9 field */
- #define MXT_T9_ORIENT		9
- #define MXT_T9_RANGE		18
-@@ -136,36 +112,6 @@ struct t9_range {
- /* MXT_TOUCH_MULTI_T9 orient */
- #define MXT_T9_ORIENT_SWITCH	(1 << 0)
+ 	reg = object->start_address;
+@@ -684,7 +687,7 @@ static int mxt_check_reg_init(struct mxt_data *data)
+ 		if (!mxt_object_writable(object->type))
+ 			continue;
  
--/* MXT_PROCI_GRIPFACE_T20 field */
--#define MXT_GRIPFACE_CTRL	0
--#define MXT_GRIPFACE_XLOGRIP	1
--#define MXT_GRIPFACE_XHIGRIP	2
--#define MXT_GRIPFACE_YLOGRIP	3
--#define MXT_GRIPFACE_YHIGRIP	4
--#define MXT_GRIPFACE_MAXTCHS	5
--#define MXT_GRIPFACE_SZTHR1	7
--#define MXT_GRIPFACE_SZTHR2	8
--#define MXT_GRIPFACE_SHPTHR1	9
--#define MXT_GRIPFACE_SHPTHR2	10
--#define MXT_GRIPFACE_SUPEXTTO	11
--
--/* MXT_PROCI_NOISE field */
--#define MXT_NOISE_CTRL		0
--#define MXT_NOISE_OUTFLEN	1
--#define MXT_NOISE_GCAFUL_LSB	3
--#define MXT_NOISE_GCAFUL_MSB	4
--#define MXT_NOISE_GCAFLL_LSB	5
--#define MXT_NOISE_GCAFLL_MSB	6
--#define MXT_NOISE_ACTVGCAFVALID	7
--#define MXT_NOISE_NOISETHR	8
--#define MXT_NOISE_FREQHOPSCALE	10
--#define MXT_NOISE_FREQ0		11
--#define MXT_NOISE_FREQ1		12
--#define MXT_NOISE_FREQ2		13
--#define MXT_NOISE_FREQ3		14
--#define MXT_NOISE_FREQ4		15
--#define MXT_NOISE_IDLEGCAFVALID	16
--
- /* T15 Key array */
- int mxt_t15_keys[] = { };
+-		size = (object->size + 1) * (object->instances + 1);
++		size = OBP_SIZE(object) * OBP_INSTANCES(object);
+ 		if (index + size > pdata->config_length) {
+ 			dev_err(dev, "Not enough config data!\n");
+ 			return -EINVAL;
+@@ -809,7 +812,7 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 		if (object->num_report_ids) {
+ 			min_id = reportid;
+ 			reportid += object->num_report_ids *
+-					(object->instances + 1);
++					OBP_INSTANCES(object);
+ 			max_id = reportid - 1;
+ 		} else {
+ 			min_id = 0;
+@@ -818,8 +821,8 @@ static int mxt_get_object_table(struct mxt_data *data)
  
-@@ -175,17 +121,6 @@ static unsigned long mxt_t15_keystatus;
- #define MXT_COMMS_CTRL		0
- #define MXT_COMMS_CMD		1
+ 		dev_dbg(&data->client->dev,
+ 			"Type %2d Start %3d Size %3d Instances %2d ReportIDs %3u : %3u\n",
+-			object->type, object->start_address, object->size + 1,
+-			object->instances + 1, min_id, max_id);
++			object->type, object->start_address, OBP_SIZE(object),
++			OBP_INSTANCES(object), min_id, max_id);
  
--/* MXT_SPT_CTECONFIG_T28 field */
--#define MXT_CTE_CTRL		0
--#define MXT_CTE_CMD		1
--#define MXT_CTE_MODE		2
--#define MXT_CTE_IDLEGCAFDEPTH	3
--#define MXT_CTE_ACTVGCAFDEPTH	4
--#define MXT_CTE_VOLTAGE		5
--
--#define MXT_VOLTAGE_DEFAULT	2700000
--#define MXT_VOLTAGE_STEP	10000
--
- /* Define for MXT_GEN_COMMAND_T6 */
- #define MXT_BOOT_VALUE		0xa5
- #define MXT_RESET_VALUE		0x01
-@@ -1453,7 +1388,7 @@ static int mxt_get_info(struct mxt_data *data)
- 	int error;
+ 		switch (object->type) {
+ 		case MXT_GEN_COMMAND_T6:
+@@ -949,11 +952,11 @@ static ssize_t mxt_show_instance(char *buf, int count,
+ {
+ 	int i;
  
- 	/* Read 7-byte info block starting at address 0 */
--	error = __mxt_read_reg(client, MXT_INFO, sizeof(*info), info);
-+	error = __mxt_read_reg(client, 0, sizeof(*info), info);
- 	if (error)
- 		return error;
+-	if (object->instances > 0)
++	if (OBP_INSTANCES(object) > 1)
+ 		count += scnprintf(buf + count, PAGE_SIZE - count,
+ 				   "Instance %u\n", instance);
  
+-	for (i = 0; i < object->size + 1; i++)
++	for (i = 0; i < OBP_SIZE(object); i++)
+ 		count += scnprintf(buf + count, PAGE_SIZE - count,
+ 				"\t[%2u]: %02x (%d)\n", i, val[i], val[i]);
+ 	count += scnprintf(buf + count, PAGE_SIZE - count, "\n");
+@@ -986,8 +989,8 @@ static ssize_t mxt_object_show(struct device *dev,
+ 		count += scnprintf(buf + count, PAGE_SIZE - count,
+ 				"T%u:\n", object->type);
+ 
+-		for (j = 0; j < object->instances + 1; j++) {
+-			u16 size = object->size + 1;
++		for (j = 0; j < OBP_INSTANCES(object); j++) {
++			u16 size = OBP_SIZE(object);
+ 			u16 addr = object->start_address + j * size;
+ 
+ 			error = __mxt_read_reg(data->client, addr, size, obuf);
 -- 
 1.7.10.4
 
