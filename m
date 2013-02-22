@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759359Ab3BVSOd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 13:14:33 -0500
-Received: from [89.21.227.133] ([89.21.227.133]:47683 "EHLO
+	id S1759109Ab3BVSOc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 13:14:32 -0500
+Received: from [89.21.227.133] ([89.21.227.133]:10930 "EHLO
 	mail.kdh.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759030Ab3BVSId (ORCPT
+	by vger.kernel.org with ESMTP id S1759039Ab3BVSIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 13:08:33 -0500
+	Fri, 22 Feb 2013 13:08:34 -0500
 From: Nick Dyer <nick.dyer@itdev.co.uk>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Daniel Kurtz <djkurtz@chromium.org>,
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 02/40] Input: atmel_mxt_ts - add macros for object instances and size
-Date: Fri, 22 Feb 2013 17:57:49 +0000
-Message-Id: <1361555907-19840-3-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 08/40] Input: atmel_mxt_ts - Download device config using firmware loader
+Date: Fri, 22 Feb 2013 17:57:55 +0000
+Message-Id: <1361555907-19840-9-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,103 +25,294 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The raw Atmel Object Based Protocol stores the instances and size minus one as
-an efficiency measure. This can easily lead to bugs. Rename the variables to
-make it clear what they are and implement macros for the conversion.
+The existing implementation which encodes the configuration as a binary blob
+in platform data is unsatisfactory since it requires a kernel recompile for
+the configuration to be changed, and it doesn't deal well with firmware
+changes that move values around on the chip.
+
+Atmel define an ASCII format for the configuration which can be exported from
+their tools. This patch implements a parser for that format which loads the
+configuration via the firmware loader and sends it to the MXT chip.
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   25 ++++++++++++++-----------
- 1 file changed, 14 insertions(+), 11 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |  207 +++++++++++++++++++++---------
+ include/linux/i2c/atmel_mxt_ts.h         |    4 -
+ 2 files changed, 148 insertions(+), 63 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index b4bf946..1de1d24 100644
+index 6f30713..d015168 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -216,6 +216,9 @@
- /* Touchscreen absolute values */
- #define MXT_MAX_AREA		0xff
+@@ -33,8 +33,10 @@
+ #define MXT_BOOT_LOW		0x24
+ #define MXT_BOOT_HIGH		0x25
  
-+#define OBP_INSTANCES(o) ((u16)((o)->instances_minus_one) + 1)
-+#define OBP_SIZE(o) ((u16)((o)->size_minus_one) + 1)
-+
- struct mxt_info {
- 	u8 family_id;
- 	u8 variant_id;
-@@ -229,8 +232,8 @@ struct mxt_info {
- struct mxt_object {
- 	u8 type;
- 	u16 start_address;
--	u8 size;		/* Size of each instance - 1 */
--	u8 instances;		/* Number of instances - 1 */
-+	u8 size_minus_one;
-+	u8 instances_minus_one;
- 	u8 num_report_ids;
- } __packed;
+-/* Firmware */
++/* Firmware files */
+ #define MXT_FW_NAME		"maxtouch.fw"
++#define MXT_CFG_NAME		"maxtouch.cfg"
++#define MXT_CFG_MAGIC		"OBP_RAW V1"
  
-@@ -500,7 +503,7 @@ static int mxt_write_object(struct mxt_data *data,
- 	u16 reg;
+ /* Registers */
+ #define MXT_INFO		0x00
+@@ -303,37 +305,6 @@ static bool mxt_object_readable(unsigned int type)
+ 	}
+ }
  
- 	object = mxt_get_object(data, type);
--	if (!object || offset >= object->size + 1)
-+	if (!object || offset >= OBP_SIZE(object))
- 		return -EINVAL;
- 
- 	reg = object->start_address;
-@@ -684,7 +687,7 @@ static int mxt_check_reg_init(struct mxt_data *data)
- 		if (!mxt_object_writable(object->type))
- 			continue;
- 
--		size = (object->size + 1) * (object->instances + 1);
-+		size = OBP_SIZE(object) * OBP_INSTANCES(object);
- 		if (index + size > pdata->config_length) {
- 			dev_err(dev, "Not enough config data!\n");
- 			return -EINVAL;
-@@ -809,7 +812,7 @@ static int mxt_get_object_table(struct mxt_data *data)
- 		if (object->num_report_ids) {
- 			min_id = reportid;
- 			reportid += object->num_report_ids *
--					(object->instances + 1);
-+					OBP_INSTANCES(object);
- 			max_id = reportid - 1;
- 		} else {
- 			min_id = 0;
-@@ -818,8 +821,8 @@ static int mxt_get_object_table(struct mxt_data *data)
- 
- 		dev_dbg(&data->client->dev,
- 			"Type %2d Start %3d Size %3d Instances %2d ReportIDs %3u : %3u\n",
--			object->type, object->start_address, object->size + 1,
--			object->instances + 1, min_id, max_id);
-+			object->type, object->start_address, OBP_SIZE(object),
-+			OBP_INSTANCES(object), min_id, max_id);
- 
- 		switch (object->type) {
- 		case MXT_GEN_COMMAND_T6:
-@@ -949,11 +952,11 @@ static ssize_t mxt_show_instance(char *buf, int count,
+-static bool mxt_object_writable(unsigned int type)
+-{
+-	switch (type) {
+-	case MXT_GEN_COMMAND_T6:
+-	case MXT_GEN_POWER_T7:
+-	case MXT_GEN_ACQUIRE_T8:
+-	case MXT_TOUCH_MULTI_T9:
+-	case MXT_TOUCH_KEYARRAY_T15:
+-	case MXT_TOUCH_PROXIMITY_T23:
+-	case MXT_TOUCH_PROXKEY_T52:
+-	case MXT_PROCI_GRIPFACE_T20:
+-	case MXT_PROCG_NOISE_T22:
+-	case MXT_PROCI_ONETOUCH_T24:
+-	case MXT_PROCI_TWOTOUCH_T27:
+-	case MXT_PROCI_GRIP_T40:
+-	case MXT_PROCI_PALM_T41:
+-	case MXT_PROCI_TOUCHSUPPRESSION_T42:
+-	case MXT_PROCI_STYLUS_T47:
+-	case MXT_PROCG_NOISESUPPRESSION_T48:
+-	case MXT_SPT_COMMSCONFIG_T18:
+-	case MXT_SPT_GPIOPWM_T19:
+-	case MXT_SPT_SELFTEST_T25:
+-	case MXT_SPT_CTECONFIG_T28:
+-	case MXT_SPT_DIGITIZER_T43:
+-	case MXT_SPT_CTECONFIG_T46:
+-		return true;
+-	default:
+-		return false;
+-	}
+-}
+-
+ static void mxt_dump_message(struct device *dev, struct mxt_message *message)
  {
- 	int i;
+ 	dev_dbg(dev, "MXT MSG: %*ph\n",
+@@ -704,58 +675,176 @@ static void mxt_read_current_crc(struct mxt_data *data)
  
--	if (object->instances > 0)
-+	if (OBP_INSTANCES(object) > 1)
- 		count += scnprintf(buf + count, PAGE_SIZE - count,
- 				   "Instance %u\n", instance);
+ static int mxt_check_reg_init(struct mxt_data *data)
+ {
+-	const struct mxt_platform_data *pdata = data->pdata;
+-	struct mxt_object *object;
+ 	struct device *dev = &data->client->dev;
+-	int index = 0;
+-	int i, size;
++	struct mxt_info cfg_info;
++	struct mxt_object *object;
++	const struct firmware *cfg = NULL;
+ 	int ret;
++	int offset;
++	int pos;
++	int i;
++	u32 info_crc, config_crc;
++	unsigned int type, instance, size;
++	u8 val;
++	u16 reg;
  
--	for (i = 0; i < object->size + 1; i++)
-+	for (i = 0; i < OBP_SIZE(object); i++)
- 		count += scnprintf(buf + count, PAGE_SIZE - count,
- 				"\t[%2u]: %02x (%d)\n", i, val[i], val[i]);
- 	count += scnprintf(buf + count, PAGE_SIZE - count, "\n");
-@@ -986,8 +989,8 @@ static ssize_t mxt_object_show(struct device *dev,
- 		count += scnprintf(buf + count, PAGE_SIZE - count,
- 				"T%u:\n", object->type);
+-	if (!pdata->config) {
+-		dev_dbg(dev, "No cfg data defined, skipping reg init\n");
++	ret = request_firmware(&cfg, MXT_CFG_NAME, dev);
++	if (ret < 0) {
++		dev_err(dev, "Failure to request config file %s\n",
++			MXT_CFG_NAME);
+ 		return 0;
+ 	}
  
--		for (j = 0; j < object->instances + 1; j++) {
--			u16 size = object->size + 1;
-+		for (j = 0; j < OBP_INSTANCES(object); j++) {
-+			u16 size = OBP_SIZE(object);
- 			u16 addr = object->start_address + j * size;
+ 	mxt_read_current_crc(data);
  
- 			error = __mxt_read_reg(data->client, addr, size, obuf);
+-	if (data->config_crc == pdata->config_crc) {
+-		dev_info(dev, "Config CRC 0x%06X: OK\n", data->config_crc);
+-		return 0;
++	if (strncmp(cfg->data, MXT_CFG_MAGIC, strlen(MXT_CFG_MAGIC))) {
++		dev_err(dev, "Unrecognised config file\n");
++		ret = -EINVAL;
++		goto release;
++	}
++
++	pos = strlen(MXT_CFG_MAGIC);
++
++	/* Load information block and check */
++	for (i = 0; i < sizeof(struct mxt_info); i++) {
++		ret = sscanf(cfg->data + pos, "%hhx%n",
++			     (unsigned char *)&cfg_info + i,
++			     &offset);
++		if (ret != 1) {
++			dev_err(dev, "Bad format\n");
++			ret = -EINVAL;
++			goto release;
++		}
++
++		pos += offset;
++	}
++
++	if (cfg_info.family_id != data->info.family_id) {
++		dev_err(dev, "Family ID mismatch!\n");
++		ret = -EINVAL;
++		goto release;
++	}
++
++	if (cfg_info.variant_id != data->info.variant_id) {
++		dev_err(dev, "Variant ID mismatch!\n");
++		ret = -EINVAL;
++		goto release;
++	}
++
++	if (cfg_info.version != data->info.version)
++		dev_err(dev, "Warning: version mismatch!\n");
++
++	if (cfg_info.build != data->info.build)
++		dev_err(dev, "Warning: build num mismatch!\n");
++
++	ret = sscanf(cfg->data + pos, "%x%n", &info_crc, &offset);
++	if (ret != 1) {
++		dev_err(dev, "Bad format: failed to parse Info CRC\n");
++		ret = -EINVAL;
++		goto release;
++	}
++	pos += offset;
++
++	/* Check config CRC */
++	ret = sscanf(cfg->data + pos, "%x%n", &config_crc, &offset);
++	if (ret != 1) {
++		dev_err(dev, "Bad format: failed to parse Config CRC\n");
++		ret = -EINVAL;
++		goto release;
++	}
++	pos += offset;
++
++	if (data->config_crc == config_crc) {
++		dev_info(dev, "Config CRC 0x%06X: OK\n", config_crc);
++		ret = 0;
++		goto release;
+ 	} else {
+-		dev_info(dev, "Config CRC 0x%06X: does not match 0x%06X\n",
+-				data->config_crc, pdata->config_crc);
++		dev_info(dev, "Config CRC 0x%06X: does not match file 0x%06X\n",
++			 data->config_crc, config_crc);
+ 	}
+ 
+-	for (i = 0; i < data->info.object_num; i++) {
+-		object = data->object_table + i;
++	while (pos < cfg->size) {
++		/* Read type, instance, length */
++		ret = sscanf(cfg->data + pos, "%x %x %x%n",
++			     &type, &instance, &size, &offset);
++		if (ret == 0) {
++			/* EOF */
++			ret = 1;
++			goto release;
++		} else if (ret != 3) {
++			dev_err(dev, "Bad format: failed to parse object\n");
++			ret = -EINVAL;
++			goto release;
++		}
++		pos += offset;
+ 
+-		if (!mxt_object_writable(object->type))
+-			continue;
++		object = mxt_get_object(data, type);
++		if (!object) {
++			ret = -EINVAL;
++			goto release;
++		}
+ 
+-		size = OBP_SIZE(object) * OBP_INSTANCES(object);
+-		if (index + size > pdata->config_length) {
+-			dev_err(dev, "Not enough config data!\n");
+-			return -EINVAL;
++		if (size > OBP_SIZE(object)) {
++			dev_err(dev, "Object length exceeded!\n");
++			ret = -EINVAL;
++			goto release;
+ 		}
+ 
+-		ret = __mxt_write_reg(data->client, object->start_address,
+-				size, &pdata->config[index]);
+-		if (ret)
+-			return ret;
+-		index += size;
++		if (instance >= OBP_INSTANCES(object)) {
++			dev_err(dev, "Object instances exceeded!\n");
++			ret = -EINVAL;
++			goto release;
++		}
++
++		reg = object->start_address + OBP_SIZE(object) * instance;
++
++		for (i = 0; i < size; i++) {
++			ret = sscanf(cfg->data + pos, "%hhx%n",
++				     &val,
++				     &offset);
++			if (ret != 1) {
++				dev_err(dev, "Bad format in T%d\n", type);
++				ret = -EINVAL;
++				goto release;
++			}
++
++			ret = mxt_write_reg(data->client, reg + i, val);
++			if (ret)
++				goto release;
++
++			pos += offset;
++		}
++
++		/* If firmware is upgraded, new bytes may be added to end of
++		 * objects. It is generally forward compatible to zero these
++		 * bytes - previous behaviour will be retained. However
++		 * this does invalidate the CRC and will force a config
++		 * download every time until the configuration is updated */
++		if (size < OBP_SIZE(object)) {
++			dev_info(dev, "Warning: zeroing %d byte(s) in T%d\n",
++				 OBP_SIZE(object) - size, type);
++
++			for (i = size + 1; i < OBP_SIZE(object); i++) {
++				ret = mxt_write_reg(data->client, reg + i, 0);
++				if (ret)
++					goto release;
++			}
++		}
+ 	}
+ 
+ 	ret = mxt_t6_command(data, MXT_COMMAND_BACKUPNV, MXT_BACKUP_VALUE, false);
+ 	if (ret)
+-		return ret;
++		goto release;
+ 
+ 	ret = mxt_soft_reset(data, MXT_RESET_VALUE);
+ 	if (ret)
+-		return ret;
++		goto release;
+ 
+ 	dev_info(dev, "Config written\n");
+ 
+-	return 0;
++release:
++	release_firmware(cfg);
++	return ret;
+ }
+ 
+ static int mxt_make_highchg(struct mxt_data *data)
+diff --git a/include/linux/i2c/atmel_mxt_ts.h b/include/linux/i2c/atmel_mxt_ts.h
+index 1d5a664..1ebb8fd 100644
+--- a/include/linux/i2c/atmel_mxt_ts.h
++++ b/include/linux/i2c/atmel_mxt_ts.h
+@@ -27,10 +27,6 @@
+ 
+ /* The platform data for the Atmel maXTouch touchscreen driver */
+ struct mxt_platform_data {
+-	const u8 *config;
+-	size_t config_length;
+-	u32 config_crc;
+-
+ 	unsigned int x_size;
+ 	unsigned int y_size;
+ 	unsigned char orient;
 -- 
 1.7.10.4
 
