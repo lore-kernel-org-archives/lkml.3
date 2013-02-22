@@ -1,120 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab3BVH2k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 02:28:40 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:56199 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961Ab3BVH1Z (ORCPT
+	id S1755835Ab3BVH2p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 02:28:45 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:37814 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711Ab3BVH1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 02:27:25 -0500
-Date: Fri, 22 Feb 2013 08:27:19 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Dong Aisheng <b29396@freescale.com>
-Cc: Alexander Shiyan <shc_work@mail.ru>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Dong Aisheng <dong.aisheng@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH v4] mfd: syscon: Add non-DT support
-Message-ID: <20130222072718.GA24114@avionic-0098.mockup.avionic-design.de>
-References: <1361460542-2872-1-git-send-email-shc_work@mail.ru>
- <20130222065548.GA3252@b29396-Latitude-E6410>
- <1361516478.223331042@f282.mail.ru>
- <20130222071311.GB3252@b29396-Latitude-E6410>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1yeeQ81UyVL57Vl7"
-Content-Disposition: inline
-In-Reply-To: <20130222071311.GB3252@b29396-Latitude-E6410>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:tfv1YHNrItr7Hn9hU2f6Cu+4kVtYsmjXjnbdhDM/sMP
- aLXYaDeP0UzhlC3oST0Ip/Y7y56whU+/3y/okdaKPJNnQaqhGz
- 2a4m7o5u+ujAlgxvk0kRT8YX30lR9HmPJa0igaXauzxsWnBc6Q
- zYE3CqcziIz+jWXL/b0ZqQ0/zkingccorElHMVsxnzfVus1vuj
- XVTXlXp7SWWBOCKBHpN8VTWAlKaY9JqBEoUMz7SxP/3zYZaIEA
- jZlIyCuyykc8WBSZcDQYK2nRjIVh03Zc2KHNazfPeEs+Mio+d4
- OBfwPMssDAjVnVpbWo4c68IREOw+1vEsKtkgdu/1RY41YZuZc5
- /DOiE5uvqAbC6oanr/wezDKY69QwzKefWAa7cgOdMw+Hckhef/
- 7EKYzdPToZjEfkmXEX41ExignwjGd/SVHpVY78Fhv+8hVxrwio
- RXjs7
+	Fri, 22 Feb 2013 02:27:24 -0500
+X-IronPort-AV: E=Sophos;i="4.84,713,1355126400"; 
+   d="scan'208";a="26425015"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH 3/8] ARM: EXYNOS4: Divorce mct from local timer API
+Date: Thu, 21 Feb 2013 23:27:14 -0800
+Message-Id: <1361518039-16663-4-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.rc0.16.g20a599e
+In-Reply-To: <1361518039-16663-1-git-send-email-sboyd@codeaurora.org>
+References: <1361518039-16663-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Separate the mct local timers from the local timer API. This will
+allow us to remove ARM local timer support in the near future and
+gets us closer to moving this driver to drivers/clocksource.
 
---1yeeQ81UyVL57Vl7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mach-exynos/mct.c | 53 ++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 37 insertions(+), 16 deletions(-)
 
-On Fri, Feb 22, 2013 at 03:13:12PM +0800, Dong Aisheng wrote:
-> On Fri, Feb 22, 2013 at 11:01:18AM +0400, Alexander Shiyan wrote:
-> > > On Thu, Feb 21, 2013 at 07:29:02PM +0400, Alexander Shiyan wrote:
-> > > > This patch allow using syscon driver from the platform data, i.e.
-> > > > possibility using driver on systems without oftree support.
-> > > > For search syscon device from the client drivers,
-> > > > "syscon_regmap_lookup_by_pdevname" function was added.
-> > > >=20
-> > > > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-> > >=20
-> > > [...]
-> > >=20
-> > > > +	syscon->base =3D devm_ioremap_resource(dev, res);
-> > > > +	if (!syscon->base)
-> > >=20
-> > > Is this correct?
-> >=20
-> > Hmm, of course IS_ERR should be used here...
-> > v5?
-> >=20
->=20
-> Yes.
-> >From here:
-> https://lkml.org/lkml/2013/1/21/140
-> It seems it is.
->=20
-> > >=20
-> > > > +		return -EBUSY;
->=20
-> Both this line could also be changed.
->=20
-> > > >
-> > >=20
-> > > Otherwise, i'm also ok with this patch.
-> > > Acked-by: Dong Aisheng <dong.aisheng@linaro.org>
-> > >=20
-> > > BTW, i did not see Samuel's tree having this new API.
-> > > So, who will pick this patch?
-> >=20
-> > I have same question.
->=20
-> I CCed Thierry and Greg who may know it.
+diff --git a/arch/arm/mach-exynos/mct.c b/arch/arm/mach-exynos/mct.c
+index c9d6650..5a9a73f 100644
+--- a/arch/arm/mach-exynos/mct.c
++++ b/arch/arm/mach-exynos/mct.c
+@@ -16,13 +16,13 @@
+ #include <linux/err.h>
+ #include <linux/clk.h>
+ #include <linux/clockchips.h>
++#include <linux/cpu.h>
+ #include <linux/platform_device.h>
+ #include <linux/delay.h>
+ #include <linux/percpu.h>
+ #include <linux/of.h>
+ 
+ #include <asm/arch_timer.h>
+-#include <asm/localtimer.h>
+ 
+ #include <plat/cpu.h>
+ 
+@@ -42,7 +42,7 @@ static unsigned long clk_rate;
+ static unsigned int mct_int_type;
+ 
+ struct mct_clock_event_device {
+-	struct clock_event_device *evt;
++	struct clock_event_device evt;
+ 	void __iomem *base;
+ 	char name[10];
+ };
+@@ -264,8 +264,6 @@ static void exynos4_clockevent_init(void)
+ 		setup_irq(EXYNOS4_IRQ_MCT_G0, &mct_comp_event_irq);
+ }
+ 
+-#ifdef CONFIG_LOCAL_TIMERS
+-
+ static DEFINE_PER_CPU(struct mct_clock_event_device, percpu_mct_tick);
+ 
+ /* Clock event handling */
+@@ -338,7 +336,7 @@ static inline void exynos4_tick_set_mode(enum clock_event_mode mode,
+ 
+ static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
+ {
+-	struct clock_event_device *evt = mevt->evt;
++	struct clock_event_device *evt = &mevt->evt;
+ 
+ 	/*
+ 	 * This is for supporting oneshot mode.
+@@ -360,7 +358,7 @@ static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
+ static irqreturn_t exynos4_mct_tick_isr(int irq, void *dev_id)
+ {
+ 	struct mct_clock_event_device *mevt = dev_id;
+-	struct clock_event_device *evt = mevt->evt;
++	struct clock_event_device *evt = &mevt->evt;
+ 
+ 	exynos4_mct_tick_clear(mevt);
+ 
+@@ -388,7 +386,6 @@ static int __cpuinit exynos4_local_timer_setup(struct clock_event_device *evt)
+ 	int mct_lx_irq;
+ 
+ 	mevt = this_cpu_ptr(&percpu_mct_tick);
+-	mevt->evt = evt;
+ 
+ 	mevt->base = EXYNOS4_MCT_L_BASE(cpu);
+ 	sprintf(mevt->name, "mct_tick%d", cpu);
+@@ -426,7 +423,7 @@ static int __cpuinit exynos4_local_timer_setup(struct clock_event_device *evt)
+ 	return 0;
+ }
+ 
+-static void exynos4_local_timer_stop(struct clock_event_device *evt)
++static void __cpuinit exynos4_local_timer_stop(struct clock_event_device *evt)
+ {
+ 	unsigned int cpu = smp_processor_id();
+ 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
+@@ -439,22 +436,38 @@ static void exynos4_local_timer_stop(struct clock_event_device *evt)
+ 		disable_percpu_irq(EXYNOS_IRQ_MCT_LOCALTIMER);
+ }
+ 
+-static struct local_timer_ops exynos4_mct_tick_ops __cpuinitdata = {
+-	.setup	= exynos4_local_timer_setup,
+-	.stop	= exynos4_local_timer_stop,
++static int __cpuinit exynos4_mct_cpu_notify(struct notifier_block *self,
++					   unsigned long action, void *hcpu)
++{
++	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
++	struct clock_event_device *evt = &mevt->evt;
++
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_STARTING:
++		exynos4_local_timer_setup(evt);
++		break;
++	case CPU_DYING:
++		exynos4_local_timer_stop(evt);
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block exynos4_mct_cpu_nb __cpuinitdata = {
++	.notifier_call = exynos4_mct_cpu_notify,
+ };
+-#endif /* CONFIG_LOCAL_TIMERS */
+ 
+ static void __init exynos4_timer_resources(void)
+ {
++	int err;
++	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
+ 	struct clk *mct_clk;
+ 	mct_clk = clk_get(NULL, "xtal");
+ 
+ 	clk_rate = clk_get_rate(mct_clk);
+ 
+-#ifdef CONFIG_LOCAL_TIMERS
+ 	if (mct_int_type == MCT_INT_PPI) {
+-		int err;
+ 
+ 		err = request_percpu_irq(EXYNOS_IRQ_MCT_LOCALTIMER,
+ 					 exynos4_mct_tick_isr, "MCT",
+@@ -463,8 +476,16 @@ static void __init exynos4_timer_resources(void)
+ 		     EXYNOS_IRQ_MCT_LOCALTIMER, err);
+ 	}
+ 
+-	local_timer_register(&exynos4_mct_tick_ops);
+-#endif /* CONFIG_LOCAL_TIMERS */
++	err = register_cpu_notifier(&exynos4_mct_cpu_nb);
++	if (err)
++		goto out_irq;
++
++	/* Immediately configure the timer on the boot CPU */
++	exynos4_local_timer_setup(&mevt->evt);
++	return;
++
++out_irq:
++	free_percpu_irq(EXYNOS_IRQ_MCT_LOCALTIMER, &percpu_mct_tick);
+ }
+ 
+ void __init exynos4_timer_init(void)
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-Yes, devm_ioremap_resource() never returns NULL. You always need to
-check the returned pointer with IS_ERR(). The value that you return
-should be extracted from the pointer with PTR_ERR().
-
-Thierry
-
---1yeeQ81UyVL57Vl7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRJx3WAAoJEN0jrNd/PrOhUSoP/1ANfDTxzJ5vPgqVp6IZyPYl
-5cOKBqp+jZ9lXQdp5yTr9TTkyasNCMr6LvQt6a4Iz+oMqHrzzGy9ZBceU3aL396S
-wjeCMglhSmq2faiqOJ/V8fXifF1Ee4rajxrRRJNcnE3j9XMzGWUdk5c77bRd6HVD
-TNqskIvA7R1594hJwujj4PuShDNLe06r6cWnaZMUEvIfWk8JVFYyTbAG+pdXDoKC
-lQZDlNyBHb3OTxDreMRsDf/OHRxtHFZ0iBxTpuvY99XfsU0AVvqQWSZMPowrKWrz
-pO9Q0La4S0l6y94xsidSxYTnhaGW92lyN4Fm6LySwJpyC/AOZPEv+ULoBRuFpRFK
-MbSx1QrnvDeVwEIsqmGlB1mx6mDzP59ib2gVhgh3mHG4MWTCg4Xvh7jPCo83nkgV
-pETwwTTsXfg1DE/B2liqIany0gItxMp0UCXvrKgcpSDCwKLQZyVMNgz0mv4SciXo
-r3ByVksy8jADlPXUrltu5vbPFc9gx5TUXKqHeHV4/Y+Up2z5lLBrSt4uJcQbZXZa
-nb49SI8qw3Ok0JgIJQLlx9zWAKJ4KMf/OjzQheqOVU7KkXbVpfzBZpUXgFWLWxEY
-+9pb/58PxbFoxHKwJMLC4zKYWOqD7rJG4Ub2D0la4xNY+rQGTFCGBD19proGirxu
-vtX/dnrVTdUezIfPLQnu
-=Nrfn
------END PGP SIGNATURE-----
-
---1yeeQ81UyVL57Vl7--
