@@ -1,63 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760Ab3BVDNf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 22:13:35 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:49121 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab3BVDNc (ORCPT
+	id S1754877Ab3BVDRQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 22:17:16 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43574 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab3BVDRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 22:13:32 -0500
-Message-ID: <5126E253.2030105@gmail.com>
-Date: Fri, 22 Feb 2013 11:13:23 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 21 Feb 2013 22:17:14 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <5126E2B6.9090002@jp.fujitsu.com>
+Date: Fri, 22 Feb 2013 12:15:02 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Questin about swap_slot free and invalidate page
-References: <20130131051140.GB23548@blaptop> <alpine.LNX.2.00.1302031732520.4050@eggly.anvils> <20130204024950.GD2688@blaptop> <d6fc41b7-8448-40be-84c3-c24d0833bd85@default> <51236C11.1010208@gmail.com> <1f089254-3abe-4c63-a72a-c9e564ae7d0d@default> <51242F0D.4040201@gmail.com> <7793705b-a076-4c5a-be4d-9572d7560860@default>
-In-Reply-To: <7793705b-a076-4c5a-be4d-9572d7560860@default>
+To: Glauber Costa <glommer@parallels.com>
+CC: Tejun Heo <tj@kernel.org>, Steffen Michalke <StMichalke@web.de>,
+        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        containers@lists.linux-foundation.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: PROBLEM: Crash cgdeleting empty memory cgroups with memory.kmem.limit_in_bytes
+ set
+References: <1361375371.7786.5.camel@michalke-online.eu> <20130220230019.GJ3570@htj.dyndns.org> <5125DC11.7060106@parallels.com>
+In-Reply-To: <5125DC11.7060106@parallels.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 05:42 AM, Dan Magenheimer wrote:
->> From: Ric Mason [mailto:ric.masonn@gmail.com]
->> Subject: Re: Questin about swap_slot free and invalidate page
+(2013/02/21 17:34), Glauber Costa wrote:
+> On 02/21/2013 03:00 AM, Tejun Heo wrote:
+>> (cc'ing cgroup / memcg people and quoting whole body)
 >>
->> On 02/19/2013 11:27 PM, Dan Magenheimer wrote:
->>>> From: Ric Mason [mailto:ric.masonn@gmail.com]
->>>>> Hugh is right that handling the possibility of duplicates is
->>>>> part of the tmem ABI.  If there is any possibility of duplicates,
->>>>> the ABI defines how a backend must handle them to avoid data
->>>>> coherency issues.
->>>>>
->>>>> The kernel implements an in-kernel API which implements the tmem
->>>>> ABI.  If the frontend and backend can always agree that duplicate
->>>> Which ABI in zcache implement that?
->>> https://oss.oracle.com/projects/tmem/dist/documentation/api/tmemspec-v001.pdf
->>>
->>> The in-kernel APIs are frontswap and cleancache.  For more information about
->>> tmem, see http://lwn.net/Articles/454795/
->> But you mentioned that you have in-kernel API which can handle
->> duplicate.  Do you mean zcache_cleancache/frontswap_put_page? I think
->> they just overwrite instead of optional flush the page on the
->> second(duplicate) put as mentioned in your tmemspec.
-> Maybe I am misunderstanding your question...  The spec allows
-> overwrite (and return success) OR flush the page (and return
-> failure).  Zcache does the latter (flush).  The code that implements
-> it is in tmem_put.
-
-Thanks for your point out.  Pers pages can have duplicate put since swap 
-cache page can be reused. Can eph pages also have duplicate put? If yes, 
-when can happen?
-
+>> Looks like something is going wrong with memcg cache destruction.
+>> Glauber, any ideas?  Also, can we please not use names as generic as
+>> kmem_cache_destroy_work_func for something specific to memcg?  How
+>> about something like memcg_destroy_cache_workfn?
+>>
 >
+> I will take a look. Thanks for the report for the reportee: I tested
+> cgroup deletion quite extensively (quite important feature for me) so it
+> is nice to have an uncaught case.
+>
+> About naming, I can change, no problem.
+>
+
+seems reproduced on linux-3.8 On KVM guest , Fedora18's config + kmemcg.
+-Kame
+==
+[  250.533831] general protection fault: 0000 [#1] SMP
+[  250.538096] Modules linked in: ebtable_nat xt_CHECKSUM nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack tun bridge stp llc ebtable_filter ebtables be2iscsi iscsi_boot_sysfs ip6table_filter ip6_tables bnx2i cnic uio cxgb4i cxgb4 cxgb3i cxgb3 mdio libcxgbi ib_iser rdma_cm ib_addr iw_cm ib_cm ib_sa ib_mad ib_core iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc 8139too snd_timer microcode snd 8139cp mii floppy pcspkr virtio_balloon soundcore i2c_piix4 btrfs libcrc32c zlib_deflate cirrus drm_kms_helper ttm drm virtio_blk i2c_core
+[  250.538096] CPU 1
+[  250.538096] Pid: 38, comm: kworker/1:1 Not tainted 3.8.0 #3 Bochs Bochs
+[  250.538096] RIP: 0010:[<ffffffff81181f8a>]  [<ffffffff81181f8a>] kmem_cache_free+0x13a/0x1d0
+[  250.538096] RSP: 0018:ffff880214345cc8  EFLAGS: 00010286
+[  250.538096] RAX: ffffffff81d84020 RBX: ffff880217000f00 RCX: 0000000000000068
+[  250.538096] RDX: cccccccccccccccc RSI: ffff880217000f00 RDI: ffff880217000f00
+[  250.538096] RBP: ffff880214345ce8 R08: 00000000000013c0 R09: 000000000000006c
+[  250.538096] R10: 0007ebc0ffffffe0 R11: 0007ebc0ffffffe0 R12: ffff880217001100
+[  250.538096] R13: ffff880214042c00 R14: 0000000000000200 R15: ffff880217000ef0
+[  250.538096] FS:  0000000000000000(0000) GS:ffff88021fc80000(0000) knlGS:0000000000000000
+[  250.538096] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  250.538096] CR2: 0000003e98ae6ef0 CR3: 0000000213650000 CR4: 00000000000006e0
+[  250.538096] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  250.538096] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  250.538096] Process kworker/1:1 (pid: 38, threadinfo ffff880214344000, task ffff880214350000)
+[  250.538096] Stack:
+[  250.538096]  ffffe8ffffc013c0 0000000000000000 0000000000000000 ffff880214042c00
+[  250.538096]  ffff880214345d18 ffffffff81182084 ffff880214042c00 ffff880217000ef0
+[  250.538096]  ffff880217000ef0 ffff880214042c00 ffff880214345d88 ffffffff81184d7e
+[  250.538096] Call Trace:
+[  250.538096]  [<ffffffff81182084>] free_kmem_cache_nodes+0x64/0xb0
+[  250.538096]  [<ffffffff81184d7e>] __kmem_cache_shutdown+0x24e/0x320
+[  250.538096]  [<ffffffff811842b0>] ? kmem_cache_shrink+0x210/0x230
+[  250.538096]  [<ffffffff81153f3f>] kmem_cache_destroy+0x3f/0xe0
+[  250.538096]  [<ffffffff8118f080>] kmem_cache_destroy_work_func+0x30/0x60
+[  250.538096]  [<ffffffff8107a3c7>] process_one_work+0x147/0x490
+[  250.538096]  [<ffffffff8118f050>] ? mem_cgroup_slabinfo_read+0xb0/0xb0
+[  250.538096]  [<ffffffff8107cc5e>] worker_thread+0x15e/0x450
+[  250.538096]  [<ffffffff8107cb00>] ? busy_worker_rebind_fn+0x110/0x110
+[  250.538096]  [<ffffffff81081d20>] kthread+0xc0/0xd0
+[  250.538096]  [<ffffffff81010000>] ? ftrace_define_fields_xen_mc_entry+0xa0/0xf0
+[  250.538096]  [<ffffffff81081c60>] ? kthread_create_on_node+0x120/0x120
+[  250.538096]  [<ffffffff8165ab6c>] ret_from_fork+0x7c/0xb0
+[  250.538096]  [<ffffffff81081c60>] ? kthread_create_on_node+0x120/0x120
+[  250.538096] Code: c1 e0 06 48 01 d0 48 8b 10 80 e6 80 0f 85 98 00 00 00 48 8b 40 30 49 39 c4 0f 84 f9 fe ff ff 48 8b 90 b8 00 00 00 48 85 d2 74 06 <4c> 3b 62 20 74 50 48 8b 50 60 49 8b 4c 24 60 31 c0 48 c7 c6 68
+[  250.538096] RIP  [<ffffffff81181f8a>] kmem_cache_free+0x13a/0x1d0
+[  250.538096]  RSP <ffff880214345cc8>
+[  250.746175] ---[ end trace 91abe13b8481aaaf ]---
+[  250.748879] BUG: unable to handle kernel paging request at ffffffffffffffd8
+[  250.749818] IP: [<ffffffff81082100>] kthread_data+0x10/0x20
+[  250.749818] PGD 1c0e067 PUD 1c0f067 PMD 0
+[  250.749818] Oops: 0000 [#2] SMP
+[  250.749818] Modules linked in: ebtable_nat xt_CHECKSUM nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack tun bridge stp llc ebtable_filter ebtables be2iscsi iscsi_boot_sysfs ip6table_filter ip6_tables bnx2i cnic uio cxgb4i cxgb4 cxgb3i cxgb3 mdio libcxgbi ib_iser rdma_cm ib_addr iw_cm ib_cm ib_sa ib_mad ib_core iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc 8139too snd_timer microcode snd 8139cp mii floppy pcspkr virtio_balloon soundcore i2c_piix4 btrfs libcrc32c zlib_deflate cirrus drm_kms_helper ttm drm virtio_blk i2c_core
+[  250.749818] CPU 1
+[  250.749818] Pid: 38, comm: kworker/1:1 Tainted: G      D      3.8.0 #3 Bochs Bochs
+[  250.749818] RIP: 0010:[<ffffffff81082100>]  [<ffffffff81082100>] kthread_data+0x10/0x20
+[  250.749818] RSP: 0018:ffff880214345a38  EFLAGS: 00010096
+[  250.749818] RAX: 0000000000000000 RBX: 0000000000000001 RCX: 000000000000000f
+[  250.749818] RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffff880214350000
+[  250.749818] RBP: ffff880214345a38 R08: ffff880214350070 R09: 0000000000000000
+[  250.749818] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88021fc93d80
+[  250.749818] R13: 0000000000000001 R14: ffff88021434fff0 R15: ffff880214350000
+[  250.749818] FS:  0000000000000000(0000) GS:ffff88021fc80000(0000) knlGS:0000000000000000
+[  250.749818] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  250.749818] CR2: ffffffffffffffd8 CR3: 0000000213650000 CR4: 00000000000006e0
+[  250.749818] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  250.749818] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  250.749818] Process kworker/1:1 (pid: 38, threadinfo ffff880214344000, task ffff880214350000)
+[  250.749818] Stack:
+[  250.749818]  ffff880214345a58 ffffffff8107d505 ffff880214345a58 ffff8802143503e0
+[  250.749818]  ffff880214345ac8 ffffffff81650f92 ffff880214350000 ffff880214345fd8
+[  250.749818]  ffff880214345fd8 ffff880214345fd8 ffff880214350000 ffff880214350000
+[  250.749818] Call Trace:
+[  250.749818]  [<ffffffff8107d505>] wq_worker_sleeping+0x15/0xc0
+[  250.749818]  [<ffffffff81650f92>] __schedule+0x5c2/0x7a0
+[  250.749818]  [<ffffffff81651499>] schedule+0x29/0x70
+[  250.749818]  [<ffffffff810642f2>] do_exit+0x692/0x9e0
+[  250.749818]  [<ffffffff8165381d>] oops_end+0x9d/0xe0
+[  250.749818]  [<ffffffff81017848>] die+0x58/0x90
+[  250.749818]  [<ffffffff8165329a>] do_general_protection+0xda/0x160
+[  250.749818]  [<ffffffff81652c28>] general_protection+0x28/0x30
+[  250.749818]  [<ffffffff81181f8a>] ? kmem_cache_free+0x13a/0x1d0
+[  250.749818]  [<ffffffff81181f50>] ? kmem_cache_free+0x100/0x1d0
+[  250.749818]  [<ffffffff81182084>] free_kmem_cache_nodes+0x64/0xb0
+[  250.749818]  [<ffffffff81184d7e>] __kmem_cache_shutdown+0x24e/0x320
+[  250.749818]  [<ffffffff811842b0>] ? kmem_cache_shrink+0x210/0x230
+[  250.749818]  [<ffffffff81153f3f>] kmem_cache_destroy+0x3f/0xe0
+[  250.749818]  [<ffffffff8118f080>] kmem_cache_destroy_work_func+0x30/0x60
+[  250.749818]  [<ffffffff8107a3c7>] process_one_work+0x147/0x490
+[  250.749818]  [<ffffffff8118f050>] ? mem_cgroup_slabinfo_read+0xb0/0xb0
+[  250.749818]  [<ffffffff8107cc5e>] worker_thread+0x15e/0x450
+[  250.749818]  [<ffffffff8107cb00>] ? busy_worker_rebind_fn+0x110/0x110
+[  250.749818]  [<ffffffff81081d20>] kthread+0xc0/0xd0
+[  250.749818]  [<ffffffff81010000>] ? ftrace_define_fields_xen_mc_entry+0xa0/0xf0
+[  250.749818]  [<ffffffff81081c60>] ? kthread_create_on_node+0x120/0x120
+[  250.749818]  [<ffffffff8165ab6c>] ret_from_fork+0x7c/0xb0
+[  250.749818]  [<ffffffff81081c60>] ? kthread_create_on_node+0x120/0x120
+[  250.749818] Code: 00 48 89 e5 5d 48 8b 40 c8 48 c1 e8 02 83 e0 01 c3 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 48 8b 87 88 03 00 00 55 48 89 e5 <48> 8b 40 d8 5d c3 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00
+[  250.749818] RIP  [<ffffffff81082100>] kthread_data+0x10/0x20
+[  250.749818]  RSP <ffff880214345a38>
+[  250.749818] CR2: ffffffffffffffd8
+[  250.749818] ---[ end trace 91abe13b8481aab0 ]---
+[  250.749818] Fixing recursive fault but reboot is needed!
+
 
