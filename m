@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab3BVJLe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 04:11:34 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48848 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754780Ab3BVJL2 (ORCPT
+	id S1756194Ab3BVJMP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 04:12:15 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:53247 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752871Ab3BVJMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 04:11:28 -0500
-Message-ID: <51273636.6080907@linux.vnet.ibm.com>
-Date: Fri, 22 Feb 2013 17:11:18 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 22 Feb 2013 04:12:03 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH v4] mfd: syscon: Add non-DT support
+Date: Fri, 22 Feb 2013 09:11:53 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: Dong Aisheng <b29396@freescale.com>, Alexander Shiyan <shc_work@mail.ru>,
+        linux-kernel@vger.kernel.org, Dong Aisheng <dong.aisheng@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        gregkh@linuxfoundation.org
+References: <1361460542-2872-1-git-send-email-shc_work@mail.ru> <20130222071311.GB3252@b29396-Latitude-E6410> <20130222072718.GA24114@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20130222072718.GA24114@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
-References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com> <1361442055.26780.3.camel@laptop> <5126D9E0.7040108@linux.vnet.ibm.com> <1361522197.26780.39.camel@laptop>
-In-Reply-To: <1361522197.26780.39.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022209-6102-0000-0000-0000030BA659
+Message-Id: <201302220911.53537.arnd@arndb.de>
+X-Provags-ID: V02:K0:PvpkfN2RvbRe6pwoF6aqeV2x9sOrkmClh6vjiEIHBYr
+ j2d6QEn5pXCFuTbKlb4SU7KP3y5xB/5Z8dFwd4A0VCCSTu6/GC
+ anZwmNuc6NSiJluENWE1altCmIlSnT6P//nH2ia2N41mOA4Gog
+ BOF1k8MH9GWouxKYmZcnwlSxfLMl5yWwxwzOuiiIXfA2Frv4w6
+ +Fc29+sEPcpBM/NL88TXBSaSkHKPL+8XJ/9BAL8lfXiUrLoZDe
+ JMYaEVzEbkxbcfnpL1AzTCYtOU+a5mW1JDKDmZ/CKLaNbKo7X8
+ Ti1VBbzUBEco8dHH308QYSwAfpzalX8jpNgiKWMyV0RCVgR9kG
+ nB+wP7inDbBmts1GRdfI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 04:36 PM, Peter Zijlstra wrote:
-> On Fri, 2013-02-22 at 10:37 +0800, Michael Wang wrote:
->> But that's really some benefit hardly to be estimate, especially when
->> the workload is heavy, the cost of wake_affine() is very high to
->> calculated se one by one, is that worth for some benefit we could not
->> promise?
+On Friday 22 February 2013, Thierry Reding wrote:
+> On Fri, Feb 22, 2013 at 03:13:12PM +0800, Dong Aisheng wrote:
+> > On Fri, Feb 22, 2013 at 11:01:18AM +0400, Alexander Shiyan wrote:
+> > > > On Thu, Feb 21, 2013 at 07:29:02PM +0400, Alexander Shiyan wrote:
+> > > > > This patch allow using syscon driver from the platform data, i.e.
+> > > > > possibility using driver on systems without oftree support.
+> > > > > For search syscon device from the client drivers,
+> > > > > "syscon_regmap_lookup_by_pdevname" function was added.
+> > > > > 
+> > > > > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+> > > > 
+> > > > [...]
+> > > > 
+> > > > > +       syscon->base = devm_ioremap_resource(dev, res);
+> > > > > +       if (!syscon->base)
+> > > > 
+> > > > Is this correct?
+> > > 
+> > > Hmm, of course IS_ERR should be used here...
+> > > v5?
+> > > 
+> > 
+> > Yes.
+> > >From here:
+> > https://lkml.org/lkml/2013/1/21/140
+> > It seems it is.
 > 
-> Look at something like pipe-test.. wake_affine() used to ensure both
-> client/server ran on the same cpu, but then I think we added
-> select_idle_sibling() and wrecked it again :/
-> 
-> $ taskset 1 perf bench sched pipe
-> # Running sched/pipe benchmark...
-> # Extecuted 1000000 pipe operations between two tasks
-> 
->      Total time: 3.761 [sec]
-> 
->        3.761725 usecs/op
->          265835 ops/sec
-> 
-> $ perf bench sched pipe
-> # Running sched/pipe benchmark...
-> # Extecuted 1000000 pipe operations between two tasks
-> 
->      Total time: 29.809 [sec]
-> 
->       29.809720 usecs/op
->           33546 ops/sec
-> 
-
-Ok, it do looks like wake_affine() lost it's value...
-
-> 
-> Now as far as I can see there's two options, either we find there's
-> absolutely no benefit in wake_affine() as it stands today and we simply
-> disable/remove it, or we go fix it. What we don't do is completely
-> wreck it at atrocious cost.
-
-I get your point, we should replace wake_affine() with some feature
-which could really achieve the goal to make client and server on same cpu.
-
-But is the logical that the waker/wakee are server/client(or reversed)
-still works now? that sounds a little arbitrary to me...
-
-Regards,
-Michael Wang
-
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Yes, devm_ioremap_resource() never returns NULL. You always need to
+> check the returned pointer with IS_ERR(). The value that you return
+> should be extracted from the pointer with PTR_ERR().
 > 
 
+Well, devm_ioremap_resource also tries to request the resource, which
+as someone (Dong or Shawn?) pointed out, we should not do for the imx6q
+case. I think this has to be reverted to platform_get_resource
+and dev_ioremap.
+
+	Arnd
