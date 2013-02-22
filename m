@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757839Ab3BVVwN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 16:52:13 -0500
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:40339 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757009Ab3BVVwL (ORCPT
+	id S1757561Ab3BVVzt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 16:55:49 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6210 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756922Ab3BVVzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 16:52:11 -0500
-Date: Fri, 22 Feb 2013 22:51:58 +0100
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        tianyu.lan@intel.com, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [GIT PATCH] USB patches for 3.9-rc1
-Message-ID: <20130222215158.GA4723@balto.lan>
-References: <20130222085954.GA4352@redhat.com>
+	Fri, 22 Feb 2013 16:55:46 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 22 Feb 2013 13:54:17 -0800
+Message-ID: <5127E95E.4010500@nvidia.com>
+Date: Fri, 22 Feb 2013 16:55:42 -0500
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130222085954.GA4352@redhat.com>
-X-Operating-System: Linux balto 3.8.0-rc2-00017-ge0ebda2 x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC v2 2/3] power: power_supply: Add core support for supplied_nodes
+References: <1361488272-21010-1-git-send-email-rklein@nvidia.com> <1361488272-21010-3-git-send-email-rklein@nvidia.com> <5127CBD9.9050501@wwwdotorg.org>
+In-Reply-To: <5127CBD9.9050501@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 03:59:54AM -0500, Dave Jones wrote:
-> On Thu, Feb 21, 2013 at 10:40:10AM -0800, Greg KH wrote:
-> 
->  > USB patches for 3.9-rc1
->  > 
->  > Here's the big USB merge for 3.9-rc1
->  > 
->  > Nothing major, lots of gadget fixes, and of course, xhci stuff.
-> 
-> I get no USB devices recognised when I insert them any more, which
-> I think is pretty major.  I suspect it has something to do with this ?
-> 
->  > Lan Tianyu (12):
->  >       usb: add runtime pm support for usb port device
->  >       usb: add usb port auto power off mechanism
-> 
-> It looks like every port on my laptop is powered down, as I can't
-> even charge devices with it.
+On 2/22/2013 2:49 PM, Stephen Warren wrote:
+> On 02/21/2013 04:11 PM, Rhyland Klein wrote:
+>> With the growing support for dt, it make sense to try to make use of
+>> dt features to make the general code cleaner. This patch is an
+>> attempt to commonize how chargers and their supplies are linked.
+>>
+>> Following common dt convention, the "supplied-to" char** list is
+>> replaced with phandle lists defined in the supplies which contain
+>> phandles of their suppliers.
+>>
+>> This has the effect however of introducing an inversion in the internal
+>> mechanics of how this information is stored. In the case of non-dt,
+>> the char** list of supplies is stored in the charger. In the dt case,
+>> a device_node * list is stored in the supplies of their chargers,
+>> however this seems to be the only way to support this.
+> When parsing the DT, you can convert from phandle (or struct device_node
+> *) to the name of the referenced supply by simple lookup. So, you could
+> store supply names rather than device_node *. Can't you then also fill
+> in the referenced supply's existing char** list of supplies?
+>
+> Of course, making this interact-with/use -EPROBE_DEFERRED might be
+> challenging, since this would be operating in the inverse order to other
+> producer/consumer relationships, which might cause loops.
+The main problem I ran into when I was essentially trying to do this, 
+was that the list of names that
+are used to match the power_supplies are the strings set as "name" in 
+the power_supply structs. This
+doesn't get set automatically based on their nodes, and it is currently 
+up to each driver to define their
+own name.
 
-Hi Dave,
+For example, the sbs-battery driver uses the name "sbs-XXX" where XX is 
+its dev_name. Other drivers
+use "%s-$%d" as i2c_device_id->name, + instance number. Then the only 
+solution I see is to require a new
+property that defines the power-supply's name in the devicetree.
 
-I have the same problem (and almost the same laptop, Thinkpad T430
-here), all external USB ports without power - even the always-on one
-:-).
+This solution with device_nodes, while not ideal, seems the be the best 
+bet from what I see. Maybe
+someone else has a better idea.
 
-The bug seems to be ACPI related, I bisected it down to this patch:
-
-f95988d ACPI / scan: Treat power resources in a special way
-
-In the dmesg I have some error like these:
-
-ACPI: Power Resource [PUBS] (on)
-...
-pci 0000:00:14.0: System wakeup disabled by ACPI
-
-for the USB controllers in the broken kernel, there are some in your
-dmesg too.  I'll try to come up with a fix for current mainline, but all
-the acpi stuff is quite obscure to me and the patch does not revert
-cleanly, maybe Rafael (in CC) has some idea!
-
-Fabio
+-rhyland
 
 -- 
-Fabio Baltieri
+nvpublic
+
