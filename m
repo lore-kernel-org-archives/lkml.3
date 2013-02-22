@@ -1,176 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab3BVBgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 20:36:41 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:56622 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755187Ab3BVBgY (ORCPT
+	id S1755253Ab3BVBjw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 20:39:52 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:37632 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab3BVBju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 20:36:24 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 2/2] irq: Cleanup context state transitions in irq_exit()
-Date: Fri, 22 Feb 2013 02:36:11 +0100
-Message-Id: <1361496971-16939-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1361496971-16939-1-git-send-email-fweisbec@gmail.com>
-References: <1361496971-16939-1-git-send-email-fweisbec@gmail.com>
+	Thu, 21 Feb 2013 20:39:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <003401ce1021$ab1b6eb0$01524c10$%jun@samsung.com>
+References: <1361210793-5710-1-git-send-email-tobetter@gmail.com>
+	<000501ce0e8a$91ef7c30$b5ce7490$%jun@samsung.com>
+	<CADoNuNc2cjOU-PjWgwtB2wo9USMABGdwP=udCBHBYO9jgiLnvw@mail.gmail.com>
+	<CAGOxZ51YtUL1yOJERLZG7uWgfQ=j88HmYue1oWiuah6Gdr32Eg@mail.gmail.com>
+	<003401ce1021$ab1b6eb0$01524c10$%jun@samsung.com>
+Date: Fri, 22 Feb 2013 10:39:49 +0900
+Message-ID: <CADoNuNfDuz+njsn+7isNKf-Ud_nNEKFYYf7Xio3=94hVU6KGVA@mail.gmail.com>
+Subject: Re: [PATCH v3] mmc: dw_mmc: Add MSHC compatible for Exynos4412
+From: Dongjin Kim <tobetter@gmail.com>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: Alim Akhtar <alim.akhtar@gmail.com>, "'unlisted-recipients:'"@samsung.com,
+        "'no To-header on input'"@samsung.com,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Will Newton <will.newton@imgtec.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The irq code is run under HARDIRQ_OFFSET preempt offset until
-we reach the softirq code. Then it's substracted, leaving the
-preempt count to 0, whether we have pending softirqs or not.
+Hello Seungwon,
 
-Afterward, if we have softirqs to run, we'll run them under
-the SOFTIRQ_OFFSET then set the preempt offset back to 0
-after softirqs completion.
+OK, I will change the commit message. And I also think Alim's idea is
+good but need more detail about functional features of Synopsis' IP.
+Similar situation would be happened to Exynos4210 which is not
+supported by dw_mmc-exynos.c yet.
 
-The rest of the code in irq_exit(), mainly tick_nohz_irq_exit()
-and rcu_irq_exit(), are executed with this NULL preempt offset.
+Regards,
+Dongjin.
 
-The semantics here are not very intuitive. They leave several portions
-of the code into some half-defined context state, where in_interrupt()
-returns false while we actually are in an interrupt.
-
-In order to make the context definition less confusing, let's
-cover the whole code in irq_exit() under HARDIRQ_OFFSET, except
-for the softirq processing where we switch back and forth
-from HARDIRQ_OFFSET to SOFTIRQ_OFFSET without leaving a gap
-in the context definition.
-
-There is a drawback though: raise_softirq() relies on the previous
-semantics considering that as long as we are in_interrupt(), the
-pending softirq will be handled in the end of the interrupt. Otherwise
-it kicks ksoftirqd so the softirq is always processed.
-
-Now tick_nohz_irq_exit() and rcu_irq_exit() can raise softirqs
-themselves. Since these functions were not under the HARDIRQ_OFFSET,
-calling raise_softirq() resulted in waking up the ksoftirqd thread.
-This is correct because invoke_softirq() has already been invoked at
-this stage. But with this patch they are now under HARDIRQ_OFFSET and
-raise_softirq() wrongly thinks invoke_softirq() has yet to be called.
-In the end, this could leave the softirq unprocessed for a while.
-
-So as Thomas suggested me, this also brings a check in the end of
-irq_exit() that looks for pending softirqs raised after invoke_softirq()
-and wake up ksoftirqd if needed.
-
-Given that the cleanup on the contexts transition involves that
-new unpretty workaround, I have mixed feelings about this patch so I
-tagged it as "RFC" and I wait for your opinion.
-
-This is mostly based on a patch written by Linus Torvalds.
-
-Original-patch-by: Linus Torvalds <torvalds@linux-foundation.org>
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- include/linux/hardirq.h |    1 +
- kernel/softirq.c        |   52 +++++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 45 insertions(+), 8 deletions(-)
-
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index c1d6555..62e084d 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -87,6 +87,7 @@
- #define in_irq()		(hardirq_count())
- #define in_softirq()		(softirq_count())
- #define in_interrupt()		(irq_count())
-+#define in_nesting_interrupt()  (irq_count() - HARDIRQ_OFFSET)
- #define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
- 
- /*
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index f42ff97..3ecaee9 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -320,12 +320,34 @@ void irq_enter(void)
- 	__irq_enter();
- }
- 
-+/* Invoke softirq's from irq_exit(). */
- static inline void invoke_softirq(void)
- {
--	if (!force_irqthreads)
--		__do_softirq();
--	else
-+	/* Can we run softirq's at all? We might be nesting interrupts */
-+	if (in_nesting_interrupt())
-+		return;
-+
-+	/* Are there any pending? */
-+	if (!local_softirq_pending())
-+		return;
-+
-+	if (force_irqthreads) {
- 		wakeup_softirqd();
-+		return;
-+	}
-+
-+	/*
-+	 * Ok, do actual softirq handling!
-+	 *
-+	 * This downgrades us from hardirq context to softirq context.
-+	 */
-+	preempt_count() += SOFTIRQ_OFFSET - HARDIRQ_OFFSET;
-+	trace_softirqs_off((unsigned long)__builtin_return_address(0));
-+
-+	__do_softirq();
-+
-+	preempt_count() += HARDIRQ_OFFSET - SOFTIRQ_OFFSET;
-+	trace_softirqs_on((unsigned long)__builtin_return_address(0));
- }
- 
- /*
-@@ -343,16 +365,30 @@ void irq_exit(void)
- 
- 	account_irq_exit_time(current);
- 	trace_hardirq_exit();
--	sub_preempt_count(HARDIRQ_OFFSET);
--	if (!in_interrupt() && local_softirq_pending())
--		invoke_softirq();
-+	invoke_softirq();
- 
- #ifdef CONFIG_NO_HZ
- 	/* Make sure that timer wheel updates are propagated */
--	if (idle_cpu(smp_processor_id()) && !in_interrupt() && !need_resched())
--		tick_nohz_irq_exit();
-+	if (idle_cpu(smp_processor_id())) {
-+		if (!in_nesting_interrupt() && !need_resched())
-+			tick_nohz_irq_exit();
-+	}
- #endif
- 	rcu_irq_exit();
-+	sub_preempt_count(HARDIRQ_OFFSET);
-+
-+	/*
-+	 * Softirqs have been processed already from invoke_softirq().
-+	 * However tick_nohz_irq_exit() may raise timer or hrtimer
-+	 * softirqs and rcu_irq_exit() may raise the RCU softirq.
-+	 * But raise_softirq() won't wakeup ksoftirqd from these callsites:
-+	 * it sees we are in_interrupt() so it makes the wrong assumption
-+	 * that softirqs can still be processed through invoke_softirq().
-+	 * But we already called it. So we need to do the last check here.
-+	 */
-+	if (local_softirq_pending() && !in_nesting_interrupt())
-+		wakeup_softirqd();
-+
- #ifndef __ARCH_IRQ_EXIT_IRQS_DISABLED
- 	local_irq_restore(flags);
- #endif
--- 
-1.7.5.4
-
+On Thu, Feb 21, 2013 at 7:53 PM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> On Wednesday, February 20, 2013, Alim Akhtar wrote:
+>> Hi,
+>>
+>> On Tue, Feb 19, 2013 at 6:04 PM, Dongjin Kim <tobetter@gmail.com> wrote:
+>> > Hello Seungwon,
+>> >
+>> > Thank you for reviewing and I understand what you mean.
+>> >
+>> > I agree that Exynos5250 and Exynos4412 are not same, no idea how much
+>> > they are different because no Exynos5250 spec on my hand. But at least
+>> > I assumed that the capabilities below are supported by Exynos4412 in
+>> > terms of its datasheet and it does work on my end as expected. :) Also
+>> > I assumed it will be separated if one of both become different to add
+>> > more capabilities.
+>> >
+>> >         MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
+>> >                MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
+>> >
+>> > Maybe my understanding or approach is wrong since I do not have the
+>> > information of Exynos5250.
+>> > And suggestion do you have?
+> At least, these capabilities can be shared because of common feature, not fully same.
+> Dongjin, could you modify the commit message and comments of code?
+>
+> Let me introduce the functional feature of Exynos5250 and capability extension.
+> I guess I'll send soon.
+>
+> Thanks,
+> Seungwon Jeon
+>
+>>
+>> Recently Guennadi Liakhovetski has done some work to centralize the
+>> mmc capabilities. See [1] and [2].
+>> Those patches are pushed to Chris's mmc-next tree.
+>> Is  it possible to extend [1] and [2] and add more capabilities (at
+>> least all known one) and let these caps being passed from DT instead?
+>>
+>> Second thought is, let the common minimum caps as a part of .caps
+>> field in dw_mmc-exynos.c itself and pass the extra/advance controller
+>> caps from DT and parse them via dw_mci_parse_dt() in dw_mmc.c itself.
+>>
+>> [1] https://patchwork.kernel.org/patch/1991851/
+>> [2] https://patchwork.kernel.org/patch/2106531/
+>>
+>> > Regards,
+>> > Dongjin.
+>> >
+>> > On Tue, Feb 19, 2013 at 7:19 PM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+>> >> On Tuesday, February 19, 2013, Dongjin Kim wrote:
+>> >>> This patch adds the compatible string for MSHC controller of Exynos4412, and
+>> >>> share the controller specific properties with Exynos5250 since they have same
+>> >>> features. Its driver data name is changed to exynos_drv_data instead SoC
+>> >>> specific name.
+>> >>
+>> >> It's not actually same.
+>> >> Exynos4412 doesn't have forward compatibilities for Exynos5250.
+>> >> I agree that functionality of exynos_drv_data is common.
+>> >> These functions have been implemented for existing Exynos*.
+>> >> But in case of caps, it can't applied completely.
+>> >> I'm concerning about this.
+>> >>
+>> >> Thanks,
+>> >> Seungwon Jeon
+>> >>>
+>> >>> Cc: Jaehoon Chung <jh80.chung@samsung.com>
+>> >>> Cc: Sachin Kamat <sachin.kamat@linaro.org>
+>> >>> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+>> >>> ---
+>> >>>  drivers/mmc/host/dw_mmc-exynos.c |   12 +++++++-----
+>> >>>  1 file changed, 7 insertions(+), 5 deletions(-)
+>> >>>
+>> >>> diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
+>> >>> index 4d50da6..38cd03c 100644
+>> >>> --- a/drivers/mmc/host/dw_mmc-exynos.c
+>> >>> +++ b/drivers/mmc/host/dw_mmc-exynos.c
+>> >>> @@ -199,8 +199,8 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
+>> >>>       return 0;
+>> >>>  }
+>> >>>
+>> >>> -/* Exynos5250 controller specific capabilities */
+>> >>> -static unsigned long exynos5250_dwmmc_caps[4] = {
+>> >>> +/* Exynos4412/Exynos5250 controller specific capabilities */
+>> >>> +static unsigned long exynos_dwmmc_caps[4] = {
+>> >>>       MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
+>> >>>               MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
+>> >>>       MMC_CAP_CMD23,
+>> >>> @@ -208,8 +208,8 @@ static unsigned long exynos5250_dwmmc_caps[4] = {
+>> >>>       MMC_CAP_CMD23,
+>> >>>  };
+>> >>>
+>> >>> -static const struct dw_mci_drv_data exynos5250_drv_data = {
+>> >>> -     .caps                   = exynos5250_dwmmc_caps,
+>> >>> +static const struct dw_mci_drv_data exynos_drv_data = {
+>> >>> +     .caps                   = exynos_dwmmc_caps,
+>> >>>       .init                   = dw_mci_exynos_priv_init,
+>> >>>       .setup_clock            = dw_mci_exynos_setup_clock,
+>> >>>       .prepare_command        = dw_mci_exynos_prepare_command,
+>> >>> @@ -219,8 +219,10 @@ static const struct dw_mci_drv_data exynos5250_drv_data = {
+>> >>>  };
+>> >>>
+>> >>>  static const struct of_device_id dw_mci_exynos_match[] = {
+>> >>> +     { .compatible = "samsung,exynos4412-dw-mshc",
+>> >>> +                     .data = &exynos_drv_data, },
+>> >>>       { .compatible = "samsung,exynos5250-dw-mshc",
+>> >>> -                     .data = &exynos5250_drv_data, },
+>> >>> +                     .data = &exynos_drv_data, },
+>> >>>       {},
+>> >>>  };
+>> >>>  MODULE_DEVICE_TABLE(of, dw_mci_exynos_match);
+>> >>> --
+>> >>> 1.7.10.4
+>> >>>
+>> >>> --
+>> >>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> >>> the body of a message to majordomo@vger.kernel.org
+>> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> >>
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>> --
+>> Regards,
+>> Alim
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
