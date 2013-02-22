@@ -1,84 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab3BVCx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 21:53:29 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:36835 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755730Ab3BVCxX (ORCPT
+	id S1755563Ab3BVC5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 21:57:12 -0500
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:32964 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754527Ab3BVC5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 21:53:23 -0500
-Message-ID: <5126DD98.7030202@linux.vnet.ibm.com>
-Date: Fri, 22 Feb 2013 10:53:12 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 21 Feb 2013 21:57:11 -0500
+Message-ID: <5126DE7B.2010203@gmail.com>
+Date: Fri, 22 Feb 2013 10:56:59 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [RFC PATCH v3 1/3] sched: schedule balance map foundation
-References: <51079178.3070002@linux.vnet.ibm.com> <510791B2.6090506@linux.vnet.ibm.com> <1361366720.10155.25.camel@laptop> <5125A966.6040601@linux.vnet.ibm.com> <1361446661.26780.15.camel@laptop>
-In-Reply-To: <1361446661.26780.15.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv5 2/8] zsmalloc: add documentation
+References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com> <1360780731-11708-3-git-send-email-sjenning@linux.vnet.ibm.com> <511F254D.2010909@gmail.com> <51227DF4.9020900@linux.vnet.ibm.com> <5125DFAA.4050706@gmail.com> <5126423F.7040705@linux.vnet.ibm.com>
+In-Reply-To: <5126423F.7040705@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022202-2000-0000-0000-00000B0A9D98
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 07:37 PM, Peter Zijlstra wrote:
-> On Thu, 2013-02-21 at 12:58 +0800, Michael Wang wrote:
->>
->> You are right, it cost space in order to accelerate the system, I've
->> calculated the cost once before (I'm really not good at this, please
->> let
->> me know if I make any silly calculation...), 
-> 
-> The exact size isn't that important, but its trivial to see its quadric.
-> You have a NR_CPUS array per-cpu, thus O(n^2).
-> 
-> ( side note; invest in getting good at complexity analysis -- or at
-> least competent, its the single most important aspect of programming. )
-> 
-> ...
-> 
->> And the final cost is 3000 int and 1030000 pointer, and some padding,
->> but won't bigger than 10M, not a big deal for a system with 1000 cpu
->> too.
-> 
-> Maybe, but quadric stuff should be frowned upon at all times, these
-> things tend to explode when you least expect it.
-> 
-> For instance, IIRC the biggest single image system SGI booted had 16k
-> cpus in there, that ends up at something like 14+14+3=31 aka as 2G of
-> storage just for your lookup -- that seems somewhat preposterous.
+On 02/21/2013 11:50 PM, Seth Jennings wrote:
+> On 02/21/2013 02:49 AM, Ric Mason wrote:
+>> On 02/19/2013 03:16 AM, Seth Jennings wrote:
+>>> On 02/16/2013 12:21 AM, Ric Mason wrote:
+>>>> On 02/14/2013 02:38 AM, Seth Jennings wrote:
+>>>>> This patch adds a documentation file for zsmalloc at
+>>>>> Documentation/vm/zsmalloc.txt
+>>>>>
+>>>>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+>>>>> ---
+>>>>>     Documentation/vm/zsmalloc.txt |   68
+>>>>> +++++++++++++++++++++++++++++++++++++++++
+>>>>>     1 file changed, 68 insertions(+)
+>>>>>     create mode 100644 Documentation/vm/zsmalloc.txt
+>>>>>
+>>>>> diff --git a/Documentation/vm/zsmalloc.txt
+>>>>> b/Documentation/vm/zsmalloc.txt
+>>>>> new file mode 100644
+>>>>> index 0000000..85aa617
+>>>>> --- /dev/null
+>>>>> +++ b/Documentation/vm/zsmalloc.txt
+>>>>> @@ -0,0 +1,68 @@
+>>>>> +zsmalloc Memory Allocator
+>>>>> +
+>>>>> +Overview
+>>>>> +
+>>>>> +zmalloc a new slab-based memory allocator,
+>>>>> +zsmalloc, for storing compressed pages.  It is designed for
+>>>>> +low fragmentation and high allocation success rate on
+>>>>> +large object, but <= PAGE_SIZE allocations.
+>>>>> +
+>>>>> +zsmalloc differs from the kernel slab allocator in two primary
+>>>>> +ways to achieve these design goals.
+>>>>> +
+>>>>> +zsmalloc never requires high order page allocations to back
+>>>>> +slabs, or "size classes" in zsmalloc terms. Instead it allows
+>>>>> +multiple single-order pages to be stitched together into a
+>>>>> +"zspage" which backs the slab.  This allows for higher allocation
+>>>>> +success rate under memory pressure.
+>>>>> +
+>>>>> +Also, zsmalloc allows objects to span page boundaries within the
+>>>>> +zspage.  This allows for lower fragmentation than could be had
+>>>>> +with the kernel slab allocator for objects between PAGE_SIZE/2
+>>>>> +and PAGE_SIZE.  With the kernel slab allocator, if a page compresses
+>>>>> +to 60% of it original size, the memory savings gained through
+>>>>> +compression is lost in fragmentation because another object of
+>>>>> +the same size can't be stored in the leftover space.
+>>>>> +
+>>>>> +This ability to span pages results in zsmalloc allocations not being
+>>>>> +directly addressable by the user.  The user is given an
+>>>>> +non-dereferencable handle in response to an allocation request.
+>>>>> +That handle must be mapped, using zs_map_object(), which returns
+>>>>> +a pointer to the mapped region that can be used.  The mapping is
+>>>>> +necessary since the object data may reside in two different
+>>>>> +noncontigious pages.
+>>>> Do you mean the reason of  to use a zsmalloc object must map after
+>>>> malloc is object data maybe reside in two different nocontiguous pages?
+>>> Yes, that is one reason for the mapping.  The other reason (more of an
+>>> added bonus) is below.
+>>>
+>>>>> +
+>>>>> +For 32-bit systems, zsmalloc has the added benefit of being
+>>>>> +able to back slabs with HIGHMEM pages, something not possible
+>>>> What's the meaning of "back slabs with HIGHMEM pages"?
+>>> By HIGHMEM, I'm referring to the HIGHMEM memory zone on 32-bit systems
+>>> with larger that 1GB (actually a little less) of RAM.  The upper 3GB
+>>> of the 4GB address space, depending on kernel build options, is not
+>>> directly addressable by the kernel, but can be mapped into the kernel
+>>> address space with functions like kmap() or kmap_atomic().
+>>>
+>>> These pages can't be used by slab/slub because they are not
+>>> continuously mapped into the kernel address space.  However, since
+>>> zsmalloc requires a mapping anyway to handle objects that span
+>>> non-contiguous page boundaries, we do the kernel mapping as part of
+>>> the process.
+>>>
+>>> So zspages, the conceptual slab in zsmalloc backed by single-order
+>>> pages can include pages from the HIGHMEM zone as well.
+>> Thanks for your clarify,
+>>   http://lwn.net/Articles/537422/, your article about zswap in lwn.
+>>   "Additionally, the kernel slab allocator does not allow objects that
+>> are less
+>> than a page in size to span a page boundary. This means that if an
+>> object is
+>> PAGE_SIZE/2 + 1 bytes in size, it effectively use an entire page,
+>> resulting in
+>> ~50% waste. Hense there are *no kmalloc() cache size* between
+>> PAGE_SIZE/2 and
+>> PAGE_SIZE."
+>> Are your sure? It seems that kmalloc cache support big size, your can
+>> check in
+>> include/linux/kmalloc_sizes.h
+> Yes, kmalloc can allocate large objects > PAGE_SIZE, but there are no
+> cache sizes _between_ PAGE_SIZE/2 and PAGE_SIZE.  For example, on a
+> system with 4k pages, there are no caches between kmalloc-2048 and
+> kmalloc-4096.
 
-Honestly, if I'm a admin who own 16k cpus system (I could not even image
-how many memory it could have...), I really prefer to exchange 2G memory
-to gain some performance.
+kmalloc object > PAGE_SIZE/2 or > PAGE_SIZE should also allocate from 
+slab cache, correct? Then how can alloc object w/o slab cache which 
+contains this object size objects?
 
-I see your point here, the cost of space will grow exponentially, but
-the memory of system will also grow, and according to my understanding ,
-it's faster.
-
-Regards,
-Michael Wang
-
-> 
-> The domain levels are roughly O(log n) related to the total cpus, so
-> what you're doing is replacing an O(log n) lookup with an O(1) lookup,
-> but at the cost of O(n^2) storage. 
-> 
-> 
-> 
+>
+> Seth
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
