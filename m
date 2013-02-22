@@ -1,75 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757627Ab3BVCgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 21:36:33 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:52193 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756449Ab3BVCgc (ORCPT
+	id S1757667Ab3BVCgs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 21:36:48 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:57172 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757643Ab3BVCgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 21:36:32 -0500
-Message-ID: <5126D9A2.8090404@linux.vnet.ibm.com>
-Date: Fri, 22 Feb 2013 10:36:18 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
-References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com> <1361427108.5861.41.camel@marge.simpson.net> <5125C607.8090909@linux.vnet.ibm.com> <1361434231.5861.61.camel@marge.simpson.net> <5125E40D.6050006@linux.vnet.ibm.com> <1361439789.5861.70.camel@marge.simpson.net>
-In-Reply-To: <1361439789.5861.70.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022202-3568-0000-0000-00000331AAF4
+	Thu, 21 Feb 2013 21:36:46 -0500
+Date: Fri, 22 Feb 2013 13:36:31 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Miao Xie <miaox@cn.fujitsu.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: linux-next: manual merge of the writeback tree with the btrfs tree
+Message-Id: <20130222133631.1441b0e703faeb40e29eb6c4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__22_Feb_2013_13_36_31_+1100_.ueqiJcrkOI1Trc9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 05:43 PM, Mike Galbraith wrote:
-> On Thu, 2013-02-21 at 17:08 +0800, Michael Wang wrote:
-> 
->> But is this patch set really cause regression on your Q6600? It may
->> sacrificed some thing, but I still think it will benefit far more,
->> especially on huge systems.
-> 
-> We spread on FORK/EXEC, and will no longer will pull communicating tasks
-> back to a shared cache with the new logic preferring to leave wakee
-> remote, so while no, I haven't tested (will try to find round tuit) it
-> seems  it _must_ hurt.  Dragging data from one llc to the other on Q6600
-> hurts a LOT.  Every time a client and server are cross llc, it's a huge
-> hit.  The previous logic pulled communicating tasks together right when
-> it matters the most, intermittent load... or interactive use.
+--Signature=_Fri__22_Feb_2013_13_36_31_+1100_.ueqiJcrkOI1Trc9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I agree that this is a problem need to be solved, but don't agree that
-wake_affine() is the solution.
+Hi Wu,
 
-According to my understanding, in the old world, wake_affine() will only
-be used if curr_cpu and prev_cpu share cache, which means they are in
-one package, whatever search in llc sd of curr_cpu or prev_cpu, we won't
-have the chance to spread the task out of that package.
+Today's linux-next merge of the writeback tree got a conflict in
+fs/btrfs/extent-tree.c between commit da633a421701 ("Btrfs: flush all
+dirty inodes if writeback can not start") from the btrfs tree and commit
+10ee27a06cc8 ("vfs: re-implement writeback_inodes_sb(_nr)_if_idle() and
+rename them") from the writeback tree.
 
-I'm going to recover the logical that only do select_idle_sibling() when
-prev_cpu and curr_cpu are affine, so now the new logical will only
-prefer leaving task in old package if both prev_cpu and curr_cpu are in
-that package, I think this could solve the problem, isn't it?
+I fixed it up (I assumed that the former supercedes the latter and used
+that) and can carry the fix as necessary (no action is required).
 
-Regards,
-Michael Wang
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Fri__22_Feb_2013_13_36_31_+1100_.ueqiJcrkOI1Trc9
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+iQIcBAEBCAAGBQJRJtmvAAoJEECxmPOUX5FEowQP/iFUnrDOnqfSUH+TGQzuRqS4
+4zsGb6HifQL9oP1av9/8gI1O6SxYYlMT6wrsxBlR5Dk9hIL/aiiX8/+DXpWHR+St
+HdJhJYOJ6Y1+PIMSt7mXNWm/nwjZLDw4wely5MYNVdCZeHV879EM5PvsZFWZZgi3
+MKOfqFzyElvD2qU77fpekwG1YLLb+St8EFlPE+8ZR9WPPfGAZaR0+d31TQ08SwML
+OJHstu0m1t8vhGmmrJreRCj1xJ7/ZF+BIpT9m2R0Wn4/RaoDBQMSPn+Pd27/UiHR
+P3/H+0Keo8G7XweotPUgCAPyGWPtihpdKvM/2W0ow7vBmr2lCXyEYWDhqDl1N5vl
+o+Sc4pah8bGi0/nt5fnFEauj04uA+EeidU+LscjYkfOF/+lsU7volPaIzfIoteZY
+SfISJ1deR6vRTPmOnwl7TXtmfWneaeirm0/PDDqFFwGzZRBZ2tJhTapoZ7R5CF3i
+IC8RWCMF2YHd5YyQ6pfUqAavPJG0UNSsEzKrYLZGhaZWYsNDqJibf1QVgOJs+4u5
+2PSVCsJsDlfxpYt2SHVWUwrbQ2w6rhMcx7vdwyjBNvNjvrevbuQfBZ/Cn0B7D+uG
+FjMyi4XyJN1mfKh+XcufZNYmKEO2Y+EUUeIDT2lVjd+/1cFZ6yLCCXrU2uZNdcZK
+PPMH9hlqmMZvlrF+aTiz
+=dcir
+-----END PGP SIGNATURE-----
 
+--Signature=_Fri__22_Feb_2013_13_36_31_+1100_.ueqiJcrkOI1Trc9--
