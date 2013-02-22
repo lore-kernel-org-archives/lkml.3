@@ -1,130 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab3BVILN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 03:11:13 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:34727 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076Ab3BVILL convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
-	Fri, 22 Feb 2013 03:11:11 -0500
-Message-Id: <5127366502000078000C0380@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Fri, 22 Feb 2013 08:12:05 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Ian Campbell" <Ian.Campbell@citrix.com>
-Cc: "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Keir (Xen.org)" <keir@xen.org>, "Tim(Xen.org)" <tim@xen.org>
-Subject: Re: [PATCH XEN] xen: event channel arrays are xen_ulong_t and
- not unsigned long
-References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
- <1361285363-27133-1-git-send-email-ian.campbell@citrix.com>
- <1361466961.26546.85.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1361466961.26546.85.camel@zakaz.uk.xensource.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755427Ab3BVINJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 03:13:09 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:37409 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754458Ab3BVING convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 03:13:06 -0500
+From: Tony Lu <zlu@tilera.com>
+To: "xfs@oss.sgi.com" <xfs@oss.sgi.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, Dave Chinner <dchinner@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Lu <zlu@tilera.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [PATCH] xfs: Fix possible truncation of log data in
+ xlog_bread_noalign()
+Thread-Topic: [PATCH] xfs: Fix possible truncation of log data in
+ xlog_bread_noalign()
+Thread-Index: Ac4Q1GkSs67IJq+zR5aVm2NJSgVsAw==
+Date: Fri, 22 Feb 2013 08:12:52 +0000
+Message-ID: <BAB94DBB0E89D8409949BC28AC95914C47C485E5@USMAExch1.tad.internal.tilera.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 21.02.13 at 18:16, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> On Tue, 2013-02-19 at 14:49 +0000, Ian Campbell wrote:
->> On ARM we want these to be the same size on 32- and 64-bit.
->> 
->> This is an ABI change on ARM. X86 does not change.
->> 
->> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
->> Cc: Jan Beulich <JBeulich@suse.com>
->> Cc: Keir (Xen.org) <keir@xen.org>
-> 
-> Are you guys (un)happy with this change from the Xen & x86 side?
+I encountered the following panic when using xfs partitions as rootfs, which
+is due to the truncated log data read by xlog_bread_noalign(). We should
+extend the buffer by one extra log sector to ensure there's enough space to
+accommodate requested log data, which we indeed did in xlog_get_bp(), but we
+forgot to do in xlog_bread_noalign().
 
-I don't see any problem with it.
+XFS mounting filesystem sda2
+Starting XFS recovery on filesystem: sda2 (logdev: internal)
+XFS: xlog_recover_process_data: bad clientid
+XFS: log mount/recovery failed: error 5
+XFS: log mount failedVFS: Cannot open root device "sda2" or unknown-block(8,)
+Please append a correct "root=" boot option; here are the available partitio:
+0800       156290904 sda  driver: sd
+  0801        31463271 sda1 00000000-0000-0000-0000-000000000000
+  0802        31463302 sda2 00000000-0000-0000-0000-000000000000
+  0803        31463302 sda3 00000000-0000-0000-0000-000000000000
+  0804               1 sda4 00000000-0000-0000-0000-000000000000
+  0805        10490413 sda5 00000000-0000-0000-0000-000000000000
+  0806        51407968 sda6 00000000-0000-0000-0000-000000000000
+Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(8,)
 
-Jan
+Starting stack dump of tid 1, pid 1 (swapper) on cpu 35 at cycle 42273138234
+  frame 0: 0xfffffff70016e5a0 dump_stack+0x0/0x20 (sp 0xfffffe03fbedfe88)
+  frame 1: 0xfffffff7004af470 panic+0x150/0x3a0 (sp 0xfffffe03fbedfe88)
+  frame 2: 0xfffffff700881e88 mount_block_root+0x2c0/0x4c8 (sp 0xfffffe03fbe)
+  frame 3: 0xfffffff700882390 prepare_namespace+0x250/0x358 (sp 0xfffffe03fb)
+  frame 4: 0xfffffff700880778 kernel_init+0x4c8/0x520 (sp 0xfffffe03fbedffb0)
+  frame 5: 0xfffffff70011ecb8 start_kernel_thread+0x18/0x20 (sp 0xfffffe03fb)
+Stack dump complete
 
->> Cc: Tim Deegan <tim@xen.org>
->> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Cc: linux-arm-kernel@lists.infradead.org 
->> Cc: xen-devel@lists.xen.org 
->> ---
->>  tools/include/xen-foreign/mkheader.py |    6 ++++++
->>  xen/include/public/xen.h              |    8 ++++----
->>  2 files changed, 10 insertions(+), 4 deletions(-)
->> 
->> diff --git a/tools/include/xen-foreign/mkheader.py 
-> b/tools/include/xen-foreign/mkheader.py
->> index d189b07..57681fa 100644
->> --- a/tools/include/xen-foreign/mkheader.py
->> +++ b/tools/include/xen-foreign/mkheader.py
->> @@ -21,13 +21,18 @@ inttypes["arm"] = {
->>      "unsigned long" : "uint32_t",
->>      "long"          : "uint32_t",
->>      "xen_pfn_t"     : "uint64_t",
->> +    "xen_ulong_t"   : "uint64_t",
->>  };
->> +header["arm"] = """
->> +#define __arm___ARM32 1
->> +""";
->>  
->>  # x86_32
->>  inttypes["x86_32"] = {
->>      "unsigned long" : "uint32_t",
->>      "long"          : "uint32_t",
->>      "xen_pfn_t"     : "uint32_t",
->> +    "xen_ulong_t"   : "uint32_t",
->>  };
->>  header["x86_32"] = """
->>  #define __i386___X86_32 1
->> @@ -42,6 +47,7 @@ inttypes["x86_64"] = {
->>      "unsigned long" : "__align8__ uint64_t",
->>      "long"          : "__align8__ uint64_t",
->>      "xen_pfn_t"     : "__align8__ uint64_t",
->> +    "xen_ulong_t"   : "__align8__ uint64_t",
->>  };
->>  header["x86_64"] = """
->>  #if defined(__GNUC__) && !defined(__STRICT_ANSI__)
->> diff --git a/xen/include/public/xen.h b/xen/include/public/xen.h
->> index 5593066..99c8212 100644
->> --- a/xen/include/public/xen.h
->> +++ b/xen/include/public/xen.h
->> @@ -556,7 +556,7 @@ DEFINE_XEN_GUEST_HANDLE(multicall_entry_t);
->>   * Event channel endpoints per domain:
->>   *  1024 if a long is 32 bits; 4096 if a long is 64 bits.
->>   */
->> -#define NR_EVENT_CHANNELS (sizeof(unsigned long) * sizeof(unsigned long) * 
-> 64)
->> +#define NR_EVENT_CHANNELS (sizeof(xen_ulong_t) * sizeof(xen_ulong_t) * 64)
->>  
->>  struct vcpu_time_info {
->>      /*
->> @@ -613,7 +613,7 @@ struct vcpu_info {
->>       */
->>      uint8_t evtchn_upcall_pending;
->>      uint8_t evtchn_upcall_mask;
->> -    unsigned long evtchn_pending_sel;
->> +    xen_ulong_t evtchn_pending_sel;
->>      struct arch_vcpu_info arch;
->>      struct vcpu_time_info time;
->>  }; /* 64 bytes (x86) */
->> @@ -663,8 +663,8 @@ struct shared_info {
->>       * per-vcpu selector word to be set. Each bit in the selector covers a
->>       * 'C long' in the PENDING bitfield array.
->>       */
->> -    unsigned long evtchn_pending[sizeof(unsigned long) * 8];
->> -    unsigned long evtchn_mask[sizeof(unsigned long) * 8];
->> +    xen_ulong_t evtchn_pending[sizeof(xen_ulong_t) * 8];
->> +    xen_ulong_t evtchn_mask[sizeof(xen_ulong_t) * 8];
->>  
->>      /*
->>       * Wallclock time: updated only by control software. Guests should base
+Signed-off-by: Zhigang Lu <zlu@tilera.com>
+Reviewed-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ fs/xfs/xfs_log_recover.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-
-
+diff --git a/fs/xfs/xfs_log_recover.c b/fs/xfs/xfs_log_recover.c
+index 96fcbb8..64264a5 100644
+--- a/fs/xfs/xfs_log_recover.c
++++ b/fs/xfs/xfs_log_recover.c
+@@ -179,6 +179,21 @@ xlog_bread_noalign(
+                return EFSCORRUPTED;
+        }
+ 
++       /*
++        * The blk_no may be a non-sector-aligned block offset, in
++        * which case we round down the blk_no to be aligned with
++        * the sector size, and if the nbblks is sector-aligned,
++        * an I/O of the size nbblks could truncate the requested
++        * log data.  If the requested size is only 1 basic block it
++        * will never straddle a sector boundary, so this won't be
++        * an issue.  Nor will this be a problem if the log I/O is
++        * done in basic blocks (sector size 1).  But otherwise we
++        * extend the buffer by one extra log sector to ensure
++        * there's space to accommodate this possibility.
++        */
++       if (nbblks > 1 && log->l_sectBBsize > 1)
++               nbblks += log->l_sectBBsize;
++
+        blk_no = round_down(blk_no, log->l_sectBBsize);
+        nbblks = round_up(nbblks, log->l_sectBBsize);
+ 
+-- 
+1.7.10.3
