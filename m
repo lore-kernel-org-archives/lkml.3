@@ -1,68 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757823Ab3BVP74 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 10:59:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56489 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757213Ab3BVP7y (ORCPT
+	id S1757866Ab3BVQFK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 11:05:10 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:43933 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757287Ab3BVQFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 10:59:54 -0500
-Date: Fri, 22 Feb 2013 07:58:35 -0800
-From: tip-bot for Daniel Lezcano <tipbot@zytor.com>
-Message-ID: <tip-00f4e13c4634b10f6a16b26a980b22a53dfa6bb5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, daniel.lezcano@linaro.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, daniel.lezcano@linaro.org
-In-Reply-To: <1361547870-32638-1-git-send-email-daniel.lezcano@linaro.org>
-References: <1361547870-32638-1-git-send-email-daniel.lezcano@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] clocksource : Nomadik-mtu :
-  fix missing irq initialization
-Git-Commit-ID: 00f4e13c4634b10f6a16b26a980b22a53dfa6bb5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 22 Feb 2013 07:58:40 -0800 (PST)
+	Fri, 22 Feb 2013 11:05:07 -0500
+Message-ID: <1361548454.12845.36.camel@misato.fc.hp.com>
+Subject: Re: [Update 3][PATCH 2/7] ACPI / scan: Introduce common code for
+ ACPI-based device hotplug
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>
+Date: Fri, 22 Feb 2013 08:54:14 -0700
+In-Reply-To: <1935999.6xb63gvAzk@vostro.rjw.lan>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
+	 <11658900.TkhCHmg9LJ@vostro.rjw.lan> <51273190.7030106@jp.fujitsu.com>
+	 <1935999.6xb63gvAzk@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  00f4e13c4634b10f6a16b26a980b22a53dfa6bb5
-Gitweb:     http://git.kernel.org/tip/00f4e13c4634b10f6a16b26a980b22a53dfa6bb5
-Author:     Daniel Lezcano <daniel.lezcano@linaro.org>
-AuthorDate: Fri, 22 Feb 2013 16:44:30 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 22 Feb 2013 16:47:59 +0100
+On Fri, 2013-02-22 at 13:37 +0100, Rafael J. Wysocki wrote:
+> On Friday, February 22, 2013 05:51:28 PM Yasuaki Ishimatsu wrote:
+> > 2013/02/22 10:50, Rafael J. Wysocki wrote:
+> > > On Thursday, February 21, 2013 06:12:21 PM Toshi Kani wrote:
+> > >> On Fri, 2013-02-22 at 00:06 +0100, Rafael J. Wysocki wrote:
+> > >>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > >>>
+> > >>> Multiple drivers handling hotplug-capable ACPI device nodes install
+> > >>> notify handlers covering the same types of events in a very similar
+> > >>> way.  Moreover, those handlers are installed in separate namespace
+> > >>> walks, although that really should be done during namespace scans
+> > >>> carried out by acpi_bus_scan().  This leads to substantial code
+> > >>> duplication, unnecessary overhead and behavior that is hard to
+> > >>> follow.
+> > >>>
+> > >>> For this reason, introduce common code in drivers/acpi/scan.c for
+> > >>> handling hotplug-related notification and carrying out device
+> > >>> insertion and eject operations in a generic fashion, such that it
+> > >>> may be used by all of the relevant drivers in the future.  To cover
+> > >>> the existing differences between those drivers introduce struct
+> > >>> acpi_hotplug_profile for representing collections of hotplug
+> > >>> settings associated with different ACPI scan handlers that can be
+> > >>> used by the drivers to make the common code reflect their current
+> > >>> behavior.
+> > >>>
+> > >>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > >>> ---
+> > >>>
+> > >>> This update fixes an issue pointed out by Toshi Kani (that
+> > >>> ACPI_OST_EC_OSPM_* event source codes should not be used with _OST for events
+> > >>> that we received a notification for from the platform firmware).
+> > >>>
+> > >>> Thanks,
+> > >>> Rafael
+> > >>>
+> > >>> ---
+> > >>>   drivers/acpi/scan.c     |  270 ++++++++++++++++++++++++++++++++++++++----------
+> > >>>   include/acpi/acpi_bus.h |    7 +
+> > >>>   2 files changed, 224 insertions(+), 53 deletions(-)
+> > >>   :
+> > >>> +static void acpi_bus_device_eject(void *context)
+> > >>> +{
+> > >>> +	acpi_handle handle = context;
+> > >>> +	struct acpi_device *device = NULL;
+> > >>> +	struct acpi_scan_handler *handler;
+> > >>> +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+> > >>> +
+> > >>> +	mutex_lock(&acpi_scan_lock);
+> > >>> +
+> > >>> +	acpi_bus_get_device(handle, &device);
+> > >>> +	if (!device)
+> > >>> +		goto err_out;
+> > >>> +
+> > >>> +	handler = device->handler;
+> > >>> +	if (!handler || !handler->hotplug.enabled) {
+> > >>> +		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+> > >>> +		goto err_out;
+> > >>> +	}
+> > >>> +	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
+> > >>> +				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+> > >>> +	if (handler->hotplug.autoeject) {
+> > >>> +		int error;
+> > >>> +
+> > >>> +		get_device(&device->dev);
+> > >>> +		error = acpi_scan_hot_remove(device);
+> > >>> +		if (error)
+> > >>> +			goto err_out;
+> > >>> +	} else {
+> > >>> +		device->flags.eject_pending = true;
+> > >>>   	}
+> > >>> +	if (handler->hotplug.uevents)
+> > >>> +		kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+> > >>
+> > >> I confirmed that the _OST issue with hot-add is fixed.  Here is a new
+> > >> one.  When autoeject is enabled, it crashes in kobject_uevent() since
+> > >> the device is no longer valid.
+> > >
+> > > Well, this one is more difficult.
+> > >
+> > > I can change the ordering so that kobject_uevent() is called before
+> > > acpi_scan_hot_remove(), but then user space may not know that the device is
+> > > being removed at the moment (which still may fail).  Still, maybe this is
+> > > OK, because user space will get KOBJ_REMOVE when the device actually goes
+> > > away anyway.
+> > >
+> > > Or perhaps we can emit KOBJ_OFFLINE before acpi_scan_hot_remove() and if
+> > > it fails, emit KOBJ_ONLINE?
+> > 
+> > How about following patch? My system cannot send EJECT notification.
+> > So I have not tested this patch.
+> 
+> No, that's not correct, acpi_scan_hot_remove(device) will remove the device
+> from sysfs, if successful, among other things.
+> 
+> We can't emit uevents for a device that has been, even though the data
+> structure is still around.
+> 
+> The following are the choices we have, in my opinion:
+> - Emit KOBJ_OFFLINE before removal.
+> - Emit KOBJ_OFFLINE before removal and KOBJ_ONLINE afterwards if it fails.
+> - Do not emit KOBJ_OFFLINE at all with autoeject.
+> 
+> Each of them has some disadvantages, so I'm not sure.  The last one is the
+> easiest, so I'll probably send another update implementing it.
 
-clocksource : Nomadik-mtu : fix missing irq initialization
+I agree with the 3rd option.  KOBJ_REMOVE is emitted when a device is
+removed, so it should be OK to not emitting KOBJ_OFFLINE here.  Besides,
+we are going to rely on a target offlined beforehand, so this code path
+won't have to do it anyway. 
 
-This patch fix the clock device irq field which is not initialized.
+BTW, it appears that KOBJ_OFFLINE is used for two different purposes
+today.  sysfs cpu/memory emits KOBJ_OFFLINE when a target has been
+offlined.  The container driver (or autoeject is not set with this
+patch) emits KOBJ_OFFLINE to request a user to offline a target.
+Expected action from user space is different from these cases. 
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: patches@linaro.org
-Cc: linus.walleij@stericsson.com
-Cc: john.stultz@linaro.org
-Link: http://lkml.kernel.org/r/1361547870-32638-1-git-send-email-daniel.lezcano@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/clocksource/nomadik-mtu.c | 1 +
- 1 file changed, 1 insertion(+)
+Thanks,
+-Toshi
 
-diff --git a/drivers/clocksource/nomadik-mtu.c b/drivers/clocksource/nomadik-mtu.c
-index 8914c3c..7cbcaa0 100644
---- a/drivers/clocksource/nomadik-mtu.c
-+++ b/drivers/clocksource/nomadik-mtu.c
-@@ -226,5 +226,6 @@ void __init nmdk_timer_init(void __iomem *base, int irq)
- 	/* Timer 1 is used for events, register irq and clockevents */
- 	setup_irq(irq, &nmdk_timer_irq);
- 	nmdk_clkevt.cpumask = cpumask_of(0);
-+	nmdk_clkevt.irq = irq;
- 	clockevents_config_and_register(&nmdk_clkevt, rate, 2, 0xffffffffU);
- }
+
