@@ -1,225 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592Ab3BVXUs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 18:20:48 -0500
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:41507 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757032Ab3BVXUp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 18:20:45 -0500
+	id S1757782Ab3BVX1o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 18:27:44 -0500
+Received: from hibox-130.abo.fi ([130.232.216.130]:35436 "EHLO centre.hibox.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757139Ab3BVX1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 18:27:42 -0500
+Message-ID: <5127FEEA.60207@hibox.fi>
+Date: Sat, 23 Feb 2013 01:27:38 +0200
+From: Marcus Sundman <marcus@hibox.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1361555907-19840-2-git-send-email-nick.dyer@itdev.co.uk>
-References: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
-	<1361555907-19840-2-git-send-email-nick.dyer@itdev.co.uk>
-Date: Fri, 22 Feb 2013 15:20:44 -0800
-X-Google-Sender-Auth: Xyoqx5S7aYSAYrZjlGgANj6xGUg
-Message-ID: <CANLzEktLxLOtFCH3jJoiMuAn32Wde0zSMs4uMBX-vju0dWK3+A@mail.gmail.com>
-Subject: Re: [PATCH 01/40] Input: atmel_mxt_ts - Make wait-after-reset period
- compatible with all chips
-From: Benson Leung <bleung@chromium.org>
-To: Nick Dyer <nick.dyer@itdev.co.uk>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        "Bowens, Alan" <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Olof Johansson <olofj@chromium.org>,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Yufeng Shen <miletus@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jan Kara <jack@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Debugging system freezes on filesystem writes
+References: <20121107161730.GB23654@quack.suse.cz> <509C4339.2090506@hibox.fi> <509D014B.2080709@hibox.fi> <20121113135159.GA18651@quack.suse.cz> <50A592BA.8050709@hibox.fi> <20121121233021.GA8730@quack.suse.cz> <50B4E6F2.6010000@hibox.fi> <20121205153216.GF5706@quack.suse.cz> <51248C5F.4040606@hibox.fi> <5124B613.6040400@hibox.fi> <20130222205144.GA30600@quack.suse.cz>
+In-Reply-To: <20130222205144.GA30600@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Spam_score: -2.7
+X-Spam_bar: --
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nick,
+On 22.02.2013 22:51, Jan Kara wrote:
+> On Wed 20-02-13 13:40:03, Marcus Sundman wrote:
+>> On 20.02.2013 10:42, Marcus Sundman wrote:
+>>> On 05.12.2012 17:32, Jan Kara wrote:
+>>>>    I see. Maybe you could have something like
+>>>> while true; do echo w >/proc/sysrq-trigger; sleep 10; done
+>>>>    running in the background?
+>>> Sure, but I suspect it'll take until the worst is over before it
+>>> manages to load and execute that "echo w".
+>> Here is a big run of sysrq-triggering, all while I was uncompressing
+>> a big rar file causing the whole system to be utterly unusable.
+>> NB: Even with realtime I/O-priority the sysrq couldn't be triggered
+>> between 12:41:54 and 12:42:49, as you can see from the dmesg-3.txt
+>> file.
+>>
+>> $ sudo ionice -c 1 su
+>> # ionice
+>> realtime: prio 4
+>> # while true; do sleep 10; echo w >/proc/sysrq-trigger; done
+>> ^C
+>> # tail -n +1700 /var/log/syslog >dmesg-3.txt
+>>
+>> http://sundman.iki.fi/dmesg-3.txt
+>    Thanks for the traces. I was looking at them and we seem to be always
+> waiting for IO. There don't seem to be that much CPU load either.
+>
+> I'm actually starting to suspect the SSD in your laptop.
 
-Thanks for this patch. Comments inline.
+I've suspected the driver, because I don't remember it being slow in 
+windows before I wiped it and installed ubuntu on it. (I didn't do very 
+much with it in windows, though. I just downloaded the ubuntu image, but 
+AFAICR it had no problem saving the image at the speed of my internet 
+connection (which is normally around 6 MiB/s), but nowadays I have to 
+strype my downloads to less than 1 MiB/s for it to not lock up so much.)
 
-On Fri, Feb 22, 2013 at 9:57 AM, Nick Dyer <nick.dyer@itdev.co.uk> wrote:
-> From: Iiro Valkonen <iiro.valkonen@atmel.com>
->
-> The delay before the chip can be accessed after reset varies between different
-> chips in maXTouch family. Waiting for 200ms and then monitoring the CHG (chip
-> is ready when the line is low) is guaranteed to work with all chips.
->
-> Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
-> ---
->  drivers/input/touchscreen/atmel_mxt_ts.c |   91 ++++++++++++++++++++++++------
->  include/linux/i2c/atmel_mxt_ts.h         |    1 +
->  2 files changed, 76 insertions(+), 16 deletions(-)
->
-> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-> index d04f810..b4bf946 100644
-> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
-> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-> @@ -2,6 +2,7 @@
->   * Atmel maXTouch Touchscreen driver
->   *
->   * Copyright (C) 2010 Samsung Electronics Co.Ltd
-> + * Copyright (C) 2011 Atmel Corporation
->   * Author: Joonyoung Shim <jy0922.shim@samsung.com>
->   *
->   * This program is free software; you can redistribute  it and/or modify it
-> @@ -175,11 +176,14 @@
->
->  /* Define for MXT_GEN_COMMAND_T6 */
->  #define MXT_BOOT_VALUE         0xa5
-> +#define MXT_RESET_VALUE                0x01
->  #define MXT_BACKUP_VALUE       0x55
-> -#define MXT_BACKUP_TIME                25      /* msec */
-> -#define MXT_RESET_TIME         65      /* msec */
->
-> -#define MXT_FWRESET_TIME       175     /* msec */
-> +/* Delay times */
-> +#define MXT_BACKUP_TIME                25      /* msec */
-> +#define MXT_RESET_TIME         200     /* msec */
-> +#define MXT_RESET_NOCHGREAD    400     /* msec */
-> +#define MXT_FWRESET_TIME       1000    /* msec */
->
->  /* Command to unlock bootloader */
->  #define MXT_UNLOCK_CMD_MSB     0xaa
-> @@ -249,6 +253,7 @@ struct mxt_data {
->
->         /* Cached parameters from object table */
->         u8 T6_reportid;
-> +       u16 T6_address;
->         u8 T9_reportid_min;
->         u8 T9_reportid_max;
->  };
-> @@ -599,6 +604,66 @@ end:
->         return IRQ_HANDLED;
->  }
->
-> +static int mxt_t6_command(struct mxt_data *data, u16 cmd_offset, u8 value, bool wait)
-> +{
-> +       u16 reg;
-> +       u8 command_register;
-> +       int ret;
-> +       int timeout_counter = 0;
-> +
-> +       reg = data->T6_address + cmd_offset;
-> +
-> +       ret = mxt_write_reg(data->client, reg, value);
-> +       if (ret)
-> +               return ret;
-> +
-> +       if (!wait)
-> +               return 0;
-> +
-> +       do {
-> +               msleep(20);
-> +               ret = __mxt_read_reg(data->client, reg, 1, &command_register);
-> +               if (ret)
-> +                       return ret;
-> +       } while ((command_register != 0) && (timeout_counter++ <= 100));
-> +
-> +       if (timeout_counter > 100) {
-> +               dev_err(&data->client->dev, "Command failed!\n");
-> +               return -EIO;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static int mxt_soft_reset(struct mxt_data *data, u8 value)
-> +{
-> +       int ret;
-> +       int timeout_counter = 0;
-> +       struct device *dev = &data->client->dev;
-> +
-> +       dev_info(dev, "Resetting chip\n");
-> +
-> +       ret = mxt_t6_command(data, MXT_COMMAND_RESET, value, false);
-> +       if (ret)
-> +               return ret;
-> +
-> +       if (data->pdata->read_chg == NULL) {
+> The svctm field
+> from iostat output shows it takes 1 second on average to complete an IO
+> request. That is awfully slow given one request has ~180 KB of data on
+> average. Ah, one more idea - can you post your /proc/mounts please?
 
-Is it possible for data->pdata to be NULL here?
-For our chromiumos projects, we operate with a NULL pdata. There may
-be a bunch of other places where this is a problem, actually.
+Sure:
+> $ cat /proc/mounts
+> rootfs / rootfs rw 0 0
+> sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
+> proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+> udev /dev devtmpfs rw,relatime,size=1964816k,nr_inodes=491204,mode=755 0 0
+> devpts /dev/pts devpts 
+> rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000 0 0
+> tmpfs /run tmpfs rw,nosuid,relatime,size=789652k,mode=755 0 0
+> /dev/disk/by-uuid/5bfa7a58-2d35-4758-954e-4deafb09b892 / ext4 
+> rw,noatime,discard,errors=remount-ro 0 0
+> none /sys/fs/fuse/connections fusectl rw,relatime 0 0
+> none /sys/kernel/debug debugfs rw,relatime 0 0
+> none /sys/kernel/security securityfs rw,relatime 0 0
+> none /run/lock tmpfs rw,nosuid,nodev,noexec,relatime,size=5120k 0 0
+> none /run/shm tmpfs rw,nosuid,nodev,relatime 0 0
+> none /run/user tmpfs 
+> rw,nosuid,nodev,noexec,relatime,size=102400k,mode=755 0 0
+> /dev/sda6 /home ext4 rw,noatime,discard 0 0
+> binfmt_misc /proc/sys/fs/binfmt_misc binfmt_misc 
+> rw,nosuid,nodev,noexec,relatime 0 0
+> gvfsd-fuse /run/user/marcus/gvfs fuse.gvfsd-fuse 
+> rw,nosuid,nodev,relatime,user_id=1000,group_id=100 0 0
 
-> +               msleep(MXT_RESET_NOCHGREAD);
-> +       } else {
-> +               msleep(MXT_RESET_TIME);
-> +
-> +               timeout_counter = 0;
-> +               while ((timeout_counter++ <= 100) && data->pdata->read_chg())
-> +                       msleep(20);
-> +               if (timeout_counter > 100) {
-> +                       dev_err(dev, "No response after reset!\n");
-> +                       return -EIO;
-> +               }
-> +       }
-> +
-> +       return 0;
-> +}
-> +
->  static int mxt_check_reg_init(struct mxt_data *data)
->  {
->         const struct mxt_platform_data *pdata = data->pdata;
-> @@ -759,6 +824,7 @@ static int mxt_get_object_table(struct mxt_data *data)
->                 switch (object->type) {
->                 case MXT_GEN_COMMAND_T6:
->                         data->T6_reportid = min_id;
-> +                       data->T6_address = object->start_address;
->                         break;
->                 case MXT_TOUCH_MULTI_T9:
->                         data->T9_reportid_min = min_id;
-> @@ -811,16 +877,9 @@ static int mxt_initialize(struct mxt_data *data)
->
->         mxt_handle_pdata(data);
->
-> -       /* Backup to memory */
-> -       mxt_write_object(data, MXT_GEN_COMMAND_T6,
-> -                       MXT_COMMAND_BACKUPNV,
-> -                       MXT_BACKUP_VALUE);
-> -       msleep(MXT_BACKUP_TIME);
-> -
-> -       /* Soft reset */
-> -       mxt_write_object(data, MXT_GEN_COMMAND_T6,
-> -                       MXT_COMMAND_RESET, 1);
-> -       msleep(MXT_RESET_TIME);
-> +       error = mxt_t6_command(data, MXT_COMMAND_BACKUPNV, MXT_BACKUP_VALUE, false);
-> +       if (!error)
-> +               mxt_soft_reset(data, MXT_RESET_VALUE);
->
->         /* Update matrix size at info struct */
->         error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, &val);
-> @@ -960,9 +1019,9 @@ static int mxt_load_fw(struct device *dev, const char *fn)
->         }
->
->         /* Change to the bootloader mode */
-> -       mxt_write_object(data, MXT_GEN_COMMAND_T6,
-> -                       MXT_COMMAND_RESET, MXT_BOOT_VALUE);
-> -       msleep(MXT_RESET_TIME);
-> +       ret = mxt_soft_reset(data, MXT_BOOT_VALUE);
-> +       if (ret)
-> +               return ret;
->
->         /* Change to slave address of bootloader */
->         if (client->addr == MXT_APP_LOW)
-> diff --git a/include/linux/i2c/atmel_mxt_ts.h b/include/linux/i2c/atmel_mxt_ts.h
-> index f027f7a..ef59c22 100644
-> --- a/include/linux/i2c/atmel_mxt_ts.h
-> +++ b/include/linux/i2c/atmel_mxt_ts.h
-> @@ -39,6 +39,7 @@ struct mxt_platform_data {
->         unsigned int voltage;
->         unsigned char orient;
->         unsigned long irqflags;
-> +       u8(*read_chg) (void);
->  };
->
->  #endif /* __LINUX_ATMEL_MXT_TS_H */
-> --
-> 1.7.10.4
->
+Both / and /home are on the same SSD and suffer from the same problem. 
+(I think the swap does as well, but I have my swappiness set very low to 
+minimize swapping.)
 
+Regards,
+Marcus
 
-
--- 
-Benson Leung
-Software Engineer, Chrom* OS
-bleung@chromium.org
