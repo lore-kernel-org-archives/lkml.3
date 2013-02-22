@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3BVF5A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 00:57:00 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:60266 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752871Ab3BVF4y (ORCPT
+	id S1754183Ab3BVF5P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 00:57:15 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:43641 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753576Ab3BVF5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 00:56:54 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org
-Subject: [PATCH 2/2] cpustat: convert to atomic operations
-Date: Thu, 21 Feb 2013 21:56:44 -0800
-Message-Id: <1361512604-2720-3-git-send-email-khilman@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1361512604-2720-1-git-send-email-khilman@linaro.org>
-References: <1361512604-2720-1-git-send-email-khilman@linaro.org>
+	Fri, 22 Feb 2013 00:57:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKohpokKCrvMYWQCRWccDJHbBNO7km5-vP=d3TwhDyU7HGX-YA@mail.gmail.com>
+References: <51253715.7080600@semaphore.gr>
+	<CAOh2x=mD4DbEH245xsceS1wyhmrRPpB2LeJ9Mh+WGHUA+bZprA@mail.gmail.com>
+	<512605A1.8090106@semaphore.gr>
+	<CAOh2x=m82jKMf+xgg+fjnCUHLpCQ_NgYqw4auyAidokt_z=uOw@mail.gmail.com>
+	<51265BC6.8030601@semaphore.gr>
+	<CAKohpokKCrvMYWQCRWccDJHbBNO7km5-vP=d3TwhDyU7HGX-YA@mail.gmail.com>
+Date: Fri, 22 Feb 2013 11:27:09 +0530
+X-Google-Sender-Auth: n-7l754Wqgl0herFokdx7tR39to
+Message-ID: <CAOh2x==cjXGqm0+y_-_Zqc1W5f9Gny7gc=CbR=JRJxXOmg4iWA@mail.gmail.com>
+Subject: Re: [PATCH v3 linux-next] cpufreq: ondemand: Calculate gradient of
+ CPU load to early increase frequency
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Stratos Karafotis <stratosk@semaphore.gr>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For non 64-bit platforms, convert cpustat fields to atomic64 type so
-reads and udpates of cpustats are atomic on those platforms as well.
+On Fri, Feb 22, 2013 at 7:26 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 21 February 2013 23:09, Stratos Karafotis <stratosk@semaphore.gr> wrote:
 
-For 64-bit platforms, the cpustat field is left as u64 because on
-64-bit, using atomic64_add will have the additional overhead of a lock.
-We could also have used atomic64_set(atomic64_read() + delta), but on
-32-bit platforms using the generic 64-bit ops (lib/atomic64.c), that
-results in taking a lock twice.
+>> Instead of checking only the absolute value of CPU load_freq to increase
+>> frequency, we detect forthcoming CPU load rise and increase frequency
+>> earlier.
+>>
+>> Every sampling rate, we calculate the gradient of load_freq. If it is
+>> too steep we assume that the load most probably will go over
+>> up_threshold in next iteration(s) and we increase frequency immediately.
+>>
+>> New tuners are introduced:
+>> - early_demand: to enable this functionality (disabled by default).
+>> - grad_up_threshold: over this gradient of load we will increase
+>> frequency immediately.
+>>
+>> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
----
- include/linux/kernel_stat.h | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+Rafael,
 
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index df8ad75..a433f87 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -32,7 +32,11 @@ enum cpu_usage_stat {
- };
- 
- struct kernel_cpustat {
-+#ifdef CONFIG_64BIT
- 	u64 _cpustat[NR_STATS];
-+#else
-+	atomic64_t _cpustat[NR_STATS];
-+#endif
- };
- 
- struct kernel_stat {
-@@ -51,11 +55,23 @@ DECLARE_PER_CPU(struct kernel_cpustat, kernel_cpustat);
- #define kcpustat_this_cpu (&__get_cpu_var(kernel_cpustat))
- #define kstat_cpu(cpu) per_cpu(kstat, cpu)
- #define kcpustat_cpu(cpu) per_cpu(kernel_cpustat, cpu)
-+#ifdef CONFIG_64BIT
- #define kcpustat_cpu_get(cpu, i) (kcpustat_cpu(cpu)._cpustat[i])
- #define kcpustat_cpu_set(cpu, i, val) (kcpustat_cpu(cpu)._cpustat[i] = (val))
- #define kcpustat_cpu_add(cpu, i, val) (kcpustat_cpu(cpu)._cpustat[i] += (val))
- #define kcpustat_this_cpu_set(i, val) (kcpustat_this_cpu->_cpustat[i] = (val))
- #define kcpustat_this_cpu_add(i, val) (kcpustat_this_cpu->_cpustat[i] += (val))
-+#else
-+#define kcpustat_cpu_get(cpu, i) atomic64_read(&kcpustat_cpu(cpu)._cpustat[i])
-+#define kcpustat_cpu_set(cpu, i, val) \
-+	atomic64_set(val, &kcpustat_cpu(cpu)._cpustat[i])
-+#define kcpustat_cpu_add(cpu, i, val) \
-+	atomic64_add(val, &kcpustat_cpu(cpu)._cpustat[i])
-+#define kcpustat_this_cpu_set(i, val) \
-+	atomic64_set(val, &kcpustat_this_cpu->_cpustat[i])
-+#define kcpustat_this_cpu_add(i, val) \
-+	atomic64_add(val, &kcpustat_this_cpu->_cpustat[i])
-+#endif
- 
- extern unsigned long long nr_context_switches(void);
- 
--- 
-1.8.1.2
+I applied it here with my Ack over my patches, for getting a run by
+"kbuild test robot".
 
+http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/cpufreq-for-3.10
