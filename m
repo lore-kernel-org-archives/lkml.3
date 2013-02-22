@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757814Ab3BVWme (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 17:42:34 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:46598 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757482Ab3BVWmd (ORCPT
+	id S1758238Ab3BVWsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 17:48:24 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:55228 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757867Ab3BVWsV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 17:42:33 -0500
+	Fri, 22 Feb 2013 17:48:21 -0500
+X-IronPort-AV: E=Sophos;i="4.84,717,1355126400"; 
+   d="scan'208";a="25317006"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Zach Brown <zab@redhat.com>, Ric Wheeler <rwheeler@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
+        Hannes Reinecke <hare@suse.de>, "Joel Becker" <jlbec@evilplan.org>
+Subject: RE: New copyfile system call - discuss before LSF?
+Thread-Topic: New copyfile system call - discuss before LSF?
+Thread-Index: AQHOECfzherspfmEjEqBTzfvhb3EUJiE2wAAgAASTQCAAFTBgIAADekAgAAaWoCAAL7IgIAAAWGAgACOYAD//8MR0A==
+Date: Fri, 22 Feb 2013 22:48:18 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA9235DCDA7@SACEXCMBX04-PRD.hq.netapp.com>
+References: <512606DF.5050706@redhat.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com>
+ <512635D2.4090207@redhat.com> <51267CEB.8070805@redhat.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com>
+ <20130221222449.GY22221@lenny.home.zabbo.net> <51273EBB.1010305@redhat.com>
+ <51273FE3.8000306@redhat.com> <20130222182210.GA22221@lenny.home.zabbo.net>
+In-Reply-To: <20130222182210.GA22221@lenny.home.zabbo.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CANeU7QmMYERbg9fCnyGuDcEdzwfErNT4B_7YbAD7w243hWdaQQ@mail.gmail.com>
-References: <CANeU7QmbzX4Tx1Dtu6xOiYzr6h6_8tPQvVG32Wvkt=5wAwEEAg@mail.gmail.com>
-	<20130219100849.72d2330b@jbarnes-desktop>
-	<CANeU7QmJb+yUGu9mVgq=_pHhvpPu6ORrikm=E6PkuHpOz9OREA@mail.gmail.com>
-	<20130219125217.6b6f55ff@jbarnes-desktop>
-	<CANeU7QnQmKYXHA=aEuRGZDc7hVdY6037i=+s_n3FZNMN2njDsw@mail.gmail.com>
-	<CAKMK7uG7TgiAn0ZQ=E_-QBPNAVhTSxpORkX3Z1mY=54mgTzM-g@mail.gmail.com>
-	<CANeU7QnMzYuG6iiU3nLh4k0dGFMEDOyfUDQgxQSKj20_y-oL+Q@mail.gmail.com>
-	<CAKMK7uGDpSKga9=2SrGQDxBGzY5B1cGJAchZvfKfQy1ivRONMg@mail.gmail.com>
-	<CANeU7Q=K4Adu3yokT182ZaG3hW04bhDiXhyZgjngd7Nn+JD3aQ@mail.gmail.com>
-	<CANeU7QmMYERbg9fCnyGuDcEdzwfErNT4B_7YbAD7w243hWdaQQ@mail.gmail.com>
-Date: Fri, 22 Feb 2013 14:42:32 -0800
-X-Google-Sender-Auth: 1j06iqhMu5VXAwCWw-oRm23cPKk
-Message-ID: <CANeU7Q=hbU89zfcrP15ZAqMYaZPhQzM4f7i71txQDmESt0J36w@mail.gmail.com>
-Subject: Re: i915 black screen introduced by ACPI changes
-From: Chris Li <lkml@chrisli.org>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-        robert.moore@intel.com, feng.tang@intel.com, len.brown@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping. Any update for this black screen problem?
+> -----Original Message-----
+> From: Zach Brown [mailto:zab@redhat.com]
+> Sent: Friday, February 22, 2013 1:22 PM
+> To: Ric Wheeler
+> Cc: Paolo Bonzini; Myklebust, Trond; Linux FS Devel; linux-
+> kernel@vger.kernel.org; Chris L. Mason; Christoph Hellwig; Alexander Viro;
+> Martin K. Petersen; Hannes Reinecke; Joel Becker
+> Subject: Re: New copyfile system call - discuss before LSF?
+> 
+> > This seems to be suspiciously close to a clear consensus on how to
+> > move forward after many years of spinning our wheels. Anyone want to
+> > promote an actual patch before we change our collective minds?
+> 
+> It seems like we'd want to start with the exisiting (presumably
+> bitrotten) prototypes that Trond has for nfs and that Martin has for
+> block->scsi.  Mash the new syscall on top of and get them working in
+> current mainline.
+> 
+> I'd be happy to take responsibility for making forward progress if no one else
+> has the bandwidth.
+> 
+> Trond, Martin, would that make sense?  Are the most recent versions of the
+> prototypes available somewhere?
 
-Chris
+Hi Zach,
 
-On Wed, Feb 20, 2013 at 1:04 PM, Chris Li <lkml@chrisli.org> wrote:
-> Here is the dmesg with "drm.debug=0xe" at
-> 80187431762989ebade986468d3c548287a12689
->
-> That is the 3.6 kernel, exactly one commit before the ACPI commit
-> which  triggering the black screen.
->
-> Thanks
->
-> Chris
+The wildly bitrotten NFS copyfile prototype can be found on
+
+    ftp://ftp.netapp.com/frm-ntap/opensource/linux_copyfileat/v2/linux_copyfileat_v2.tgz
+
+Please open with extreme caution and apply the resulting patches to a Linux 2.6.34.2 kernel...
+
+Cheers
+   Trond
