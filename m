@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759382Ab3BVSOk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 13:14:40 -0500
-Received: from [89.21.227.133] ([89.21.227.133]:26704 "EHLO
+	id S1759372Ab3BVSOh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 13:14:37 -0500
+Received: from [89.21.227.133] ([89.21.227.133]:47019 "EHLO
 	mail.kdh.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759031Ab3BVSId (ORCPT
+	by vger.kernel.org with ESMTP id S1759034Ab3BVSId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Feb 2013 13:08:33 -0500
 From: Nick Dyer <nick.dyer@itdev.co.uk>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 19/40] Input: atmel_mxt_ts - Decode T6 status messages
-Date: Fri, 22 Feb 2013 17:58:06 +0000
-Message-Id: <1361555907-19840-20-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 32/40] Input: atmel_mxt_ts - remove unused defines
+Date: Fri, 22 Feb 2013 17:58:19 +0000
+Message-Id: <1361555907-19840-33-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -27,89 +27,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   41 ++++++++++++++++++++++--------
- 1 file changed, 31 insertions(+), 10 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   67 +-----------------------------
+ 1 file changed, 1 insertion(+), 66 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index c879778..bdf7555 100644
+index 8794353..2f3793a 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -86,6 +86,14 @@
- #define MXT_COMMAND_REPORTALL	3
- #define MXT_COMMAND_DIAGNOSTIC	5
+@@ -22,29 +22,14 @@
+ #include <linux/interrupt.h>
+ #include <linux/slab.h>
  
-+/* Define for T6 status byte */
-+#define MXT_T6_STATUS_RESET	(1 << 7)
-+#define MXT_T6_STATUS_OFL	(1 << 6)
-+#define MXT_T6_STATUS_SIGERR	(1 << 5)
-+#define MXT_T6_STATUS_CAL	(1 << 4)
-+#define MXT_T6_STATUS_CFGERR	(1 << 3)
-+#define MXT_T6_STATUS_COMSERR	(1 << 2)
-+
- /* MXT_GEN_POWER_T7 field */
- struct t7_config {
- 	u8 idle;
-@@ -562,6 +570,28 @@ mxt_get_object(struct mxt_data *data, u8 type)
- 	return NULL;
- }
- 
-+static void mxt_proc_t6_messages(struct mxt_data *data, u8 *msg)
-+{
-+	struct device *dev = &data->client->dev;
-+	u8 status = msg[1];
-+	u32 crc = msg[2] | (msg[3] << 8) | (msg[4] << 16);
-+
-+	if (crc != data->config_crc) {
-+		data->config_crc = crc;
-+		dev_dbg(dev, "T6 Config Checksum: 0x%06X\n", crc);
-+	}
-+
-+	if (status)
-+		dev_dbg(dev, "T6 Status 0x%02X%s%s%s%s%s%s\n",
-+				status,
-+				(status & MXT_T6_STATUS_RESET) ? " RESET" : "",
-+				(status & MXT_T6_STATUS_OFL) ? " OFL" : "",
-+				(status & MXT_T6_STATUS_SIGERR) ? " SIGERR" : "",
-+				(status & MXT_T6_STATUS_CAL) ? " CAL" : "",
-+				(status & MXT_T6_STATUS_CFGERR) ? " CFGERR" : "",
-+				(status & MXT_T6_STATUS_COMSERR) ? " COMSERR" : "");
-+}
-+
- static int mxt_read_message(struct mxt_data *data, u8 *message)
- {
- 	struct mxt_object *object;
-@@ -647,11 +677,6 @@ static void mxt_input_touchevent(struct mxt_data *data, u8 *message)
- 	}
- }
- 
--static u16 mxt_extract_T6_csum(const u8 *csum)
--{
--	return csum[0] | (csum[1] << 8) | (csum[2] << 16);
--}
+-/* Version */
+-#define MXT_VER_20		20
+-#define MXT_VER_21		21
+-#define MXT_VER_22		22
 -
- static bool mxt_is_T9_message(struct mxt_data *data, u8 *msg)
- {
- 	u8 id = msg[0];
-@@ -661,7 +686,6 @@ static bool mxt_is_T9_message(struct mxt_data *data, u8 *msg)
- static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
- {
- 	u8 *message = &data->msg_buf[0];
--	const u8 *payload = &data->msg_buf[1];
- 	struct device *dev = &data->client->dev;
- 	u8 reportid;
- 	bool update_input = false;
-@@ -677,10 +701,7 @@ static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
- 		handled = false;
+ /* Firmware files */
+ #define MXT_FW_NAME		"maxtouch.fw"
+ #define MXT_CFG_NAME		"maxtouch.cfg"
+ #define MXT_CFG_MAGIC		"OBP_RAW V1"
  
- 		if (reportid == data->T6_reportid) {
--			u8 status = payload[0];
--			data->config_crc = mxt_extract_T6_csum(&payload[1]);
--			dev_dbg(dev, "Status: %02x Config Checksum: %06x\n",
--				status, data->config_crc);
-+			mxt_proc_t6_messages(data, message);
- 			handled = true;
- 		} else if (mxt_is_T9_message(data, message)) {
- 			mxt_input_touchevent(data, message);
+ /* Registers */
+-#define MXT_INFO		0x00
+-#define MXT_FAMILY_ID		0x00
+-#define MXT_VARIANT_ID		0x01
+-#define MXT_VERSION		0x02
+-#define MXT_BUILD		0x03
+-#define MXT_MATRIX_X_SIZE	0x04
+-#define MXT_MATRIX_Y_SIZE	0x05
+-#define MXT_OBJECT_NUM		0x06
+ #define MXT_OBJECT_START	0x07
+-
+ #define MXT_OBJECT_SIZE		6
+-
+ #define MXT_MAX_BLOCK_WRITE	256
+ 
+ /* Object types */
+@@ -105,15 +90,6 @@ struct t7_config {
+ #define MXT_POWER_CFG_RUN		0
+ #define MXT_POWER_CFG_DEEPSLEEP		1
+ 
+-/* MXT_GEN_ACQUIRE_T8 field */
+-#define MXT_ACQUIRE_CHRGTIME	0
+-#define MXT_ACQUIRE_TCHDRIFT	2
+-#define MXT_ACQUIRE_DRIFTST	3
+-#define MXT_ACQUIRE_TCHAUTOCAL	4
+-#define MXT_ACQUIRE_SYNC	5
+-#define MXT_ACQUIRE_ATCHCALST	6
+-#define MXT_ACQUIRE_ATCHCALSTHR	7
+-
+ /* MXT_TOUCH_MULTI_T9 field */
+ #define MXT_T9_ORIENT		9
+ #define MXT_T9_RANGE		18
+@@ -136,36 +112,6 @@ struct t9_range {
+ /* MXT_TOUCH_MULTI_T9 orient */
+ #define MXT_T9_ORIENT_SWITCH	(1 << 0)
+ 
+-/* MXT_PROCI_GRIPFACE_T20 field */
+-#define MXT_GRIPFACE_CTRL	0
+-#define MXT_GRIPFACE_XLOGRIP	1
+-#define MXT_GRIPFACE_XHIGRIP	2
+-#define MXT_GRIPFACE_YLOGRIP	3
+-#define MXT_GRIPFACE_YHIGRIP	4
+-#define MXT_GRIPFACE_MAXTCHS	5
+-#define MXT_GRIPFACE_SZTHR1	7
+-#define MXT_GRIPFACE_SZTHR2	8
+-#define MXT_GRIPFACE_SHPTHR1	9
+-#define MXT_GRIPFACE_SHPTHR2	10
+-#define MXT_GRIPFACE_SUPEXTTO	11
+-
+-/* MXT_PROCI_NOISE field */
+-#define MXT_NOISE_CTRL		0
+-#define MXT_NOISE_OUTFLEN	1
+-#define MXT_NOISE_GCAFUL_LSB	3
+-#define MXT_NOISE_GCAFUL_MSB	4
+-#define MXT_NOISE_GCAFLL_LSB	5
+-#define MXT_NOISE_GCAFLL_MSB	6
+-#define MXT_NOISE_ACTVGCAFVALID	7
+-#define MXT_NOISE_NOISETHR	8
+-#define MXT_NOISE_FREQHOPSCALE	10
+-#define MXT_NOISE_FREQ0		11
+-#define MXT_NOISE_FREQ1		12
+-#define MXT_NOISE_FREQ2		13
+-#define MXT_NOISE_FREQ3		14
+-#define MXT_NOISE_FREQ4		15
+-#define MXT_NOISE_IDLEGCAFVALID	16
+-
+ /* T15 Key array */
+ int mxt_t15_keys[] = { };
+ 
+@@ -175,17 +121,6 @@ static unsigned long mxt_t15_keystatus;
+ #define MXT_COMMS_CTRL		0
+ #define MXT_COMMS_CMD		1
+ 
+-/* MXT_SPT_CTECONFIG_T28 field */
+-#define MXT_CTE_CTRL		0
+-#define MXT_CTE_CMD		1
+-#define MXT_CTE_MODE		2
+-#define MXT_CTE_IDLEGCAFDEPTH	3
+-#define MXT_CTE_ACTVGCAFDEPTH	4
+-#define MXT_CTE_VOLTAGE		5
+-
+-#define MXT_VOLTAGE_DEFAULT	2700000
+-#define MXT_VOLTAGE_STEP	10000
+-
+ /* Define for MXT_GEN_COMMAND_T6 */
+ #define MXT_BOOT_VALUE		0xa5
+ #define MXT_RESET_VALUE		0x01
+@@ -1453,7 +1388,7 @@ static int mxt_get_info(struct mxt_data *data)
+ 	int error;
+ 
+ 	/* Read 7-byte info block starting at address 0 */
+-	error = __mxt_read_reg(client, MXT_INFO, sizeof(*info), info);
++	error = __mxt_read_reg(client, 0, sizeof(*info), info);
+ 	if (error)
+ 		return error;
+ 
 -- 
 1.7.10.4
 
