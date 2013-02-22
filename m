@@ -1,309 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab3BVAcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 19:32:13 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:49724 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab3BVAcM (ORCPT
+	id S1754684Ab3BVAgc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 19:36:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49095 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698Ab3BVAgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 19:32:12 -0500
-MIME-Version: 1.0
-In-Reply-To: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
-References: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
-Date: Fri, 22 Feb 2013 08:32:10 +0800
-Message-ID: <CAEH94LidoKSWwBnc2SV4_9hrEf7c1M3ROUbA+1FCjsZ4rqYGKQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND v1 00/16] vfs: hot data tracking
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, david@fromorbit.com,
-        dave@jikos.cz, darrick.wong@oracle.com, andi@firstfloor.org,
-        hch@infradead.org, linuxram@linux.vnet.ibm.com, zwu.kernel@gmail.com,
-        wuzhy@linux.vnet.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 21 Feb 2013 19:36:31 -0500
+Date: Thu, 21 Feb 2013 16:33:57 -0800
+Message-Id: <201302220033.r1M0XvN0008295@terminus.zytor.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86/cpu for v3.9-rc1 [take 2]
+Cc: Andre Przywara <andre@andrep.de>,
+        Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@suse.de>, Chen Gang <gang.chen@asianux.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Gleb Natapov <gleb@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Feb 2013 16:34:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping? any comments?
+Hi Linus,
 
-On Thu, Dec 20, 2012 at 10:43 PM,  <zwu.kernel@gmail.com> wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->
-> HI, guys,
->
->   This patchset has been done scalability or performance tests
-> by fs_mark, ffsb and compilebench.
->   I have done the perf testing on Linux 3.7.0-rc8+ with Intel(R) Core(TM)
-> i7-3770 CPU @ 3.40GHz with 8 CPUs, 16G ram and 260G disk.
->
->   Any comments or ideas are appreciated, thanks.
->
-> NOTE:
->
->   The patchset can be obtained via my kernel dev git on github:
-> git://github.com/wuzhy/kernel.git hot_tracking
->   If you're interested, you can also review them via
-> https://github.com/wuzhy/kernel/commits/hot_tracking
->
->   For more info, please check hot_tracking.txt in Documentation
->
-> Below is the perf testing report:
->
-> 1. fs_mark test
->
-> w/o: without hot tracking
-> w/ : with hot tracking
->
->   Count     Size      FSUse%               Files/sec                     App Overhead
->
->                     w/o    w/           w/o          w/                   w/o        w/
->
->   800000     1       2      3          13756.4     32144.9              5350627    5436291
->  1600000     1       4      5           1163.4      1799.3             20848119   21708216
->  2400000     1       6      6           1360.8      1252.5              6798705    8715322
->  3200000     1       8      8           1600.1      1196.3              5751129    6013792
->  4000000     1       9      9           1071.4      1191.2             17204725   26786369
->  4800000     1      10     10           1483.5      1447.9             19555541    8383046
->  5600000     1      11     11           1457.9      1699.5              5783588   10074681
->  6400000     1      12     13           1658.8      1628.5              6992697    6185551
->  7200000     1      14     14           1662.4      1857.1              5796793   13772592
->  8000000     1      15     15           2930.0      2653.8             12431682    6152573
->  8800000     1      16     17           1630.8      1665.0              7666719   13682765
->  9600000     1      18     18           1530.3      1583.9              5823644   10171644
-> 10400000     1      19     19           1437.9      1798.6             20935224    6048083
-> 11200000     1      20     20           1529.0      1550.6              6647450    6003151
-> 12000000     1      21     22           1558.6      1501.8             12539509   18144939
-> 12800000     1      23     23           1644.2      1432.1              7074419   28101975
-> 13600000     1      24     24           1753.6      1650.2              7164297   20888972
-> 14400000     1      25     25           2750.0      1483.9             12756692    7441225
-> 15200000     1      27     27           1551.1      1514.3              5741066    8250443
-> 16000000     1      28     28           1610.8      1635.9             72193860    8545285
-> 16800000     1      29     29           1646.7      1907.7              8945856   11703513
-> 17600000     1      30     31           1496.6      2722.3              5858961    8989393
-> 18400000     1      32     32           1457.7      1565.7             10914475   26504660
-> 19200000     1      33     33           1437.6      1518.7              6708975  213303618
-> 20000000     1      34     34           1825.4      1521.1              5722086   12490907
-> 20800000     1      36     35           1718.4      1611.5              5873290   17942534
-> 21600000     1      37     37           2152.6      1536.9            113050627    8717940
-> 22400000     1      38     38           2443.7      1788.2              7398122   19834765
-> 23200000     1      39     39           1518.5      1587.6              5770959   10134882
-> 24000000     1      41     41           1536.8      2164.0              5751248    7214626
-> 24800000     1      42     42           1576.6      2939.4              7390314    6070271
-> 25600000     1      43     43           1707.4      1535.9             11075939    6052896
-> 26400000     1      44     44           1522.5      1563.1             10142987   22549898
-> 27200000     1      46     46           1827.4      1608.5             11613016   24828125
-> 28000000     1      47     47           3420.5      1741.9              8059985   16599156
-> 28800000     1      48     48           1815.5      1944.4              7847931    9043277
-> 29600000     1      50     49           1650.0      1596.6              5636323    7929164
-> 30400000     1      51     51           1683.7      1573.3              5766323   19369146
-> 31200000     1      52     52           1610.1      1669.8              9256111    9899107
-> 32000000     1      53     53           1645.2      3081.0              7855010    6057257
-> 32800000     1      54     55           1835.3      3122.0              6899141    6143875
-> 33600000     1      56     56           1916.8      1734.8             10271967    6049509
-> 34400000     1      57     57           3119.2      1630.8             11503274   13975417
-> 35200000     1      58     58           1629.2      1695.7              6827225    6214248
-> 36000000     1      60     60           1636.5      1695.4             38077664   16211067
-> 36800000     1      61     61           1665.2      2069.1             19948817    9358494
-> 37600000     1      62     62           1734.5      1931.5             26487196    8954836
-> 38400000     1      63     63           1625.8      1654.0              6649289    9131844
-> 39200000     1      65     65           1778.4      1663.3             11653376    7144960
-> 40000000     1      66     66           1851.0      1935.6              8164470   11288753
-> 40800000     1      67     67           3171.0      3431.6             12358380    6072820
-> 41600000     1      69     69           1714.3      1954.3             13765035    9364495
-> 42400000     1      70     70           1591.0      1681.8             18733304    7407689
-> 43200000     1      71     71           1537.2      1642.8             19534908    6163018
-> 44000000     1      72     72           1630.3      1641.2             23479883   10967509
-> 44800000     1      74     74           1877.5      1651.9              8174965    9484587
-> 45600000     1      75     75           3322.4      1653.6             14740938    7497831
-> 46400000     1      76     76           1706.9      1840.6             10348550   23296562
-> 47200000     1      77     78           1837.7      2515.3             13917543   14683192
-> 48000000     1      79     79           1642.6      2368.6             14365759    6080942
-> 48800000     1      80     80           1827.1      1655.2              9234312    7412406
-> 49600000     1      81     81           1631.0      1858.7              7543970   18610881
-> 50400000     1      82     82           1560.5      1865.0             21374219    6598771
->
->
-> From the above table, when the same count files with same size are created, how FS is full is
-> basically same.
->
-> 2. FFSB test
->                               w/o hot tracking         w/ hot tracking           ratio
->                                        v1                     v2               (v2-v1)/v1
-> large_file_create
->         1 thread
->            - Trans/sec              28918.75               29014.48               +0.33%
->            - Throughput             113MB/sec              113MB/sec              +0.0%
->            - %CPU                     4.8%                    5.1%                +6.3%
->            - Trans/%CPU             602473.96              568911.37              -5.6%
->         8 threads
->            - Trans/sec              28480.37               28541.25               +0.2%
->            - Throughput             111MB/sec              111MB/sec              +0.0%
->            - %CPU                     5.6%                    5.9%                +5.4%
->            - Trans/%CPU             508578.04               483750                -4.9%
->         32 threads
->            - Trans/sec              25011.86               26992.32               +7.9%
->            - Throughput             97.7MB/sec             105MB/sec              +7.5%
->            - %CPU                     6.2%                    7.1%                +14.8%
->            - Trans/%CPU             403417.10              380173.52              -5.8%
->
-> large_file_seq_read
->         1 thread
->            - Trans/sec              35303.23               34838.02               -1.3%
->            - Throughput             138MB/sec              136MB/sec              -1.4%
->            - %CPU                     5.4%                    5.4%                +0.0%
->            - Trans/%CPU             653763.52              645148.52              -1.3%
->         8 threads
->            - Trans/sec              11902.82               11205.22               -5.9%
->            - Throughput             46.5MB/sec             43.8MB/sec             -5.8%
->            - %CPU                     2.1%                    2.0%                -4.8%
->            - Trans/%CPU             566800.95                560261               -1.2%
->         32 threads
->            - Trans/sec               5068.48                5316.36               +4.9%
->            - Throughput             19.8MB/sec             20.8MB/sec             +5.1%
->            - %CPU                     0.9%                    1.0%                +11.1%
->            - Trans/%CPU             563164.45                531636               -5.6%
->
-> random_write
->         1 thread
->            - Trans/sec                729.01                 738.89               +1.4%
->            - Throughput             99.7MB/sec              101MB/sec             +1.3%
->            - %CPU                     0.1%                    0.1%                +0.0%
->            - Trans/%CPU               72901                  73889                +1.4%
->         8 threads
->            - Trans/sec               714.56                  714.57               +0.0%
->            - Throughput            97.7MB/sec               97.7MB/sec            +0.0%
->            - %CPU                     0.2%                    0.2%                +0.0%
->            - Trans/%CPU               35728                  35728.5              +0.0%
->         32 threads
->            - Trans/sec               698.62                  692.59               -0.9%
->            - Throughput            95.5MB/sec               94.7MB/sec            -0.8%
->            - %CPU                     0.2%                    0.2%                +0.0%
->            - Trans/%CPU               34931                 34629.5               -0.9%
->
-> random_read
->         1 thread
->            - Trans/sec               225.49                 227.03                +0.7%
->            - Throughput             902KB/sec               908KB/sec             +0.7%
->            - %CPU                     1.1%                    1.1%                +0.0%
->            - Trans/%CPU             20499.10                20639.10              +0.7%
->         8 threads
->            - Trans/sec               106.72                  105.76               -0.9%
->            - Throughput             427KB/sec               423KB/sec             -0.9%
->            - %CPU                     0.5%                    0.5%                +0.0%
->            - Trans/%CPU              2134.4                  2115.2               -0.9%
->         32 threads
->            - Trans/sec               107.44                  108.26               +0.8%
->            - Throughput             430KB/sec               433KB/sec             +0.7%
->            - %CPU                     0.5%                    0.5%                +0.0%
->            - Trans/%CPU              2148.8                  2165.2               +0.8%
->
-> mail_server
->         1 thread
->            - Trans/sec               681.67                  732.66               +7.5%
->            - Throughput [read]      1.77MB/sec              1.99MB/sec            +12.4%
->            - Throughput [write]     858KB/sec               887KB/sec             +3.4%
->            - %CPU                     0.6%                    0.6%                +0.0%
->            - Trans/%CPU             11361.17                 12211                +7.5%
->         8 threads
->            - Trans/sec               630.48                  597.08               -5.3%
->            - Throughput [read]      1.64MB/sec             1.54MB/sec             -6.1%
->            - Throughput [write]     814KB/sec              784KB/sec              -3.7%
->            - %CPU                     0.6%                    0.5%                -16.7%
->            - Trans/%CPU               10508                 11941.6               +13.6%
->         32 threads
->            - Trans/sec               598.68                 566.05                -5.5%
->            - Throughput [read]      1.53MB/sec             1.5MB/sec              -2.0%
->            - Throughput [write]     804KB/sec              705KB/sec              -12.3%
->            - %CPU                     0.7%                    0.6%                -14.2%
->            - Trans/%CPU              8552.57                9434.17               +10.3%
->
-> 3. Compilebench test
->
->                         w/o hot tracking        w/ hot tracking            ratio
->                                v1                     v2                 (v2-v1)/v1
-> intial create              114.81 MB/s             118.32 MB/s             +3.1%
-> create                     11.98 MB/s              12.26 MB/s              +2.3%
-> patch                      3.61 MB/s               3.66 MB/s               +1.4%
-> compile                    46.40 MB/s              48.07 MB/s              +3.6%
-> clean                      126.33 MB/s             128.75 MB/s             +1.9%
-> read tree                  9.93 MB/s               9.71 MB/s               -2.2%
-> read compiled tree         17.19 MB/s              17.52 MB/s              +1.9%
-> delete tree                12.23 seconds           11.13 seconds           -9.0%
-> delete compiled tree       12.98 seconds           16.05 seconds           +26.7%
-> stat tree                  7.03 seconds            5.51 seconds            -21.6%
-> stat compiled tree         12.19 seconds           9.06 seconds            -25.7%
->
-> Changelog:
->
->  - Solved 64 bits inode number issue. [David Sterba]
->  - Embed struct hot_type in struct file_system_type [Darrick J. Wong]
->  - Cleanup Some issues [David Sterba]
->  - Use a static hot debugfs root [Greg KH]
->  - Rewritten debugfs support based on seq_file operation. [Dave Chinner]
->  - Refactored workqueue support. [Dave Chinner]
->  - Turn some Micro into be tunable   [Zhiyong, Zheng Liu]
->        TIME_TO_KICK, and HEAT_UPDATE_DELAY
->  - Introduce hot func registering framework [Zhiyong]
->  - Remove global variable for hot tracking [Zhiyong]
->  - Add xfs hot tracking support [Dave Chinner]
->  - Add ext4 hot tracking support [Zheng Liu]
->  - Cleanedup a lot of other issues [Dave Chinner]
->  - Added memory shrinker [Dave Chinner]
->  - Converted to one workqueue to update map info periodically [Dave Chinner]
->  - Cleanedup a lot of other issues [Dave Chinner]
->  - Reduce new files and put all in fs/hot_tracking.[ch] [Dave Chinner]
->  - Add btrfs hot tracking support [Zhiyong]
->  - The first three patches can probably just be flattened into one.
->                                         [Marco Stornelli , Dave Chinner]
->
-> Zhi Yong Wu (16):
->   vfs: introduce some data structures
->   vfs: add init and cleanup functions
->   vfs: add I/O frequency update function
->   vfs: add two map arrays
->   vfs: add hooks to enable hot tracking
->   vfs: add temp calculation function
->   vfs: add map info update function
->   vfs: add aging function
->   vfs: add one work queue
->   vfs: add FS hot type support
->   vfs: register one shrinker
->   vfs: add one ioctl interface
->   vfs: add debugfs support
->   proc: add two hot_track proc files
->   btrfs: add hot tracking support
->   vfs: add documentation
->
->  Documentation/filesystems/00-INDEX         |    2 +
->  Documentation/filesystems/hot_tracking.txt |  255 ++++++
->  fs/Makefile                                |    2 +-
->  fs/btrfs/ctree.h                           |    1 +
->  fs/btrfs/super.c                           |   22 +-
->  fs/compat_ioctl.c                          |    5 +
->  fs/dcache.c                                |    2 +
->  fs/direct-io.c                             |    6 +
->  fs/hot_tracking.c                          | 1345 ++++++++++++++++++++++++++++
->  fs/hot_tracking.h                          |   52 ++
->  fs/ioctl.c                                 |   74 ++
->  include/linux/fs.h                         |    5 +
->  include/linux/hot_tracking.h               |  152 ++++
->  kernel/sysctl.c                            |   14 +
->  mm/filemap.c                               |    6 +
->  mm/page-writeback.c                        |   12 +
->  mm/readahead.c                             |    7 +
->  17 files changed, 1960 insertions(+), 2 deletions(-)
->  create mode 100644 Documentation/filesystems/hot_tracking.txt
->  create mode 100644 fs/hot_tracking.c
->  create mode 100644 fs/hot_tracking.h
->  create mode 100644 include/linux/hot_tracking.h
->
-> --
-> 1.7.6.5
->
+This is a corrected attempt at the x86/cpu branch, this time with the
+fixes in that makes it not break on KVM (current or past), or any
+other virtualizer which traps on this configuration.
+
+Again, the biggest change here is enabling the WC+ memory type on AMD
+processors, if the BIOS doesn't.
 
 
+The following changes since commit ff7532ca2c631e7e96dcd305a967b610259dc0ea:
 
--- 
-Regards,
+  Merge tag 'usb-3.8-rc4' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb (2013-01-23 20:11:35 -0800)
 
-Zhi Yong Wu
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-cpu-for-linus
+
+for you to fetch changes up to 2e32b7190641a184b8510d3e342400473ff1ab60:
+
+  x86, kvm: Add MSR_AMD64_BU_CFG2 to the list of ignored MSRs (2013-02-19 10:44:07 -0800)
+
+----------------------------------------------------------------
+Boris Ostrovsky (2):
+      x86, AMD: Clean up init_amd()
+      x86, AMD: Enable WC+ memory type on family 10 processors
+
+Borislav Petkov (2):
+      x86, cpu, amd: Fix WC+ workaround for older virtual hosts
+      x86, kvm: Add MSR_AMD64_BU_CFG2 to the list of ignored MSRs
+
+Chen Gang (1):
+      x86/process: Change %8s to %s for pr_warn() in release_thread()
+
+Kees Cook (1):
+      x86/cpu/hotplug: Remove CONFIG_EXPERIMENTAL dependency
+
+ arch/x86/Kconfig                      |  4 +--
+ arch/x86/include/uapi/asm/msr-index.h |  1 +
+ arch/x86/kernel/cpu/amd.c             | 52 ++++++++++++++++++++---------------
+ arch/x86/kernel/process_64.c          |  2 +-
+ arch/x86/kvm/x86.c                    | 16 ++++++-----
+ 5 files changed, 43 insertions(+), 32 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 79795af..2d62103 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1699,7 +1699,7 @@ config HOTPLUG_CPU
+ config BOOTPARAM_HOTPLUG_CPU0
+ 	bool "Set default setting of cpu0_hotpluggable"
+ 	default n
+-	depends on HOTPLUG_CPU && EXPERIMENTAL
++	depends on HOTPLUG_CPU
+ 	---help---
+ 	  Set whether default state of cpu0_hotpluggable is on or off.
+ 
+@@ -1728,7 +1728,7 @@ config BOOTPARAM_HOTPLUG_CPU0
+ config DEBUG_HOTPLUG_CPU0
+ 	def_bool n
+ 	prompt "Debug CPU0 hotplug"
+-	depends on HOTPLUG_CPU && EXPERIMENTAL
++	depends on HOTPLUG_CPU
+ 	---help---
+ 	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
+ 	  soon as possible and boots up userspace with CPU0 offlined. User
+diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+index 433a59f..158cde9 100644
+--- a/arch/x86/include/uapi/asm/msr-index.h
++++ b/arch/x86/include/uapi/asm/msr-index.h
+@@ -173,6 +173,7 @@
+ #define MSR_AMD64_OSVW_ID_LENGTH	0xc0010140
+ #define MSR_AMD64_OSVW_STATUS		0xc0010141
+ #define MSR_AMD64_DC_CFG		0xc0011022
++#define MSR_AMD64_BU_CFG2		0xc001102a
+ #define MSR_AMD64_IBSFETCHCTL		0xc0011030
+ #define MSR_AMD64_IBSFETCHLINAD		0xc0011031
+ #define MSR_AMD64_IBSFETCHPHYSAD	0xc0011032
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 15239ff..163af4a 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -518,10 +518,9 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
+ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ {
+ 	u32 dummy;
+-
+-#ifdef CONFIG_SMP
+ 	unsigned long long value;
+ 
++#ifdef CONFIG_SMP
+ 	/*
+ 	 * Disable TLB flush filter by setting HWCR.FFDIS on K8
+ 	 * bit 6 of msr C001_0015
+@@ -559,12 +558,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		 * (AMD Erratum #110, docId: 25759).
+ 		 */
+ 		if (c->x86_model < 0x14 && cpu_has(c, X86_FEATURE_LAHF_LM)) {
+-			u64 val;
+-
+ 			clear_cpu_cap(c, X86_FEATURE_LAHF_LM);
+-			if (!rdmsrl_amd_safe(0xc001100d, &val)) {
+-				val &= ~(1ULL << 32);
+-				wrmsrl_amd_safe(0xc001100d, val);
++			if (!rdmsrl_amd_safe(0xc001100d, &value)) {
++				value &= ~(1ULL << 32);
++				wrmsrl_amd_safe(0xc001100d, value);
+ 			}
+ 		}
+ 
+@@ -617,13 +614,12 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 	if ((c->x86 == 0x15) &&
+ 	    (c->x86_model >= 0x10) && (c->x86_model <= 0x1f) &&
+ 	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
+-		u64 val;
+ 
+-		if (!rdmsrl_safe(0xc0011005, &val)) {
+-			val |= 1ULL << 54;
+-			wrmsrl_safe(0xc0011005, val);
+-			rdmsrl(0xc0011005, val);
+-			if (val & (1ULL << 54)) {
++		if (!rdmsrl_safe(0xc0011005, &value)) {
++			value |= 1ULL << 54;
++			wrmsrl_safe(0xc0011005, value);
++			rdmsrl(0xc0011005, value);
++			if (value & (1ULL << 54)) {
+ 				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
+ 				printk(KERN_INFO FW_INFO "CPU: Re-enabling "
+ 				  "disabled Topology Extensions Support\n");
+@@ -637,11 +633,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 	 */
+ 	if ((c->x86 == 0x15) &&
+ 	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
+-		u64 val;
+ 
+-		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
+-			val |= 0x1E;
+-			wrmsrl_safe(0xc0011021, val);
++		if (!rdmsrl_safe(0xc0011021, &value) && !(value & 0x1E)) {
++			value |= 0x1E;
++			wrmsrl_safe(0xc0011021, value);
+ 		}
+ 	}
+ 
+@@ -703,13 +698,11 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 	if (c->x86 > 0x11)
+ 		set_cpu_cap(c, X86_FEATURE_ARAT);
+ 
+-	/*
+-	 * Disable GART TLB Walk Errors on Fam10h. We do this here
+-	 * because this is always needed when GART is enabled, even in a
+-	 * kernel which has no MCE support built in.
+-	 */
+ 	if (c->x86 == 0x10) {
+ 		/*
++		 * Disable GART TLB Walk Errors on Fam10h. We do this here
++		 * because this is always needed when GART is enabled, even in a
++		 * kernel which has no MCE support built in.
+ 		 * BIOS should disable GartTlbWlk Errors themself. If
+ 		 * it doesn't do it here as suggested by the BKDG.
+ 		 *
+@@ -723,6 +716,21 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 			mask |= (1 << 10);
+ 			wrmsrl_safe(MSR_AMD64_MCx_MASK(4), mask);
+ 		}
++
++		/*
++		 * On family 10h BIOS may not have properly enabled WC+ support,
++		 * causing it to be converted to CD memtype. This may result in
++		 * performance degradation for certain nested-paging guests.
++		 * Prevent this conversion by clearing bit 24 in
++		 * MSR_AMD64_BU_CFG2.
++		 *
++		 * NOTE: we want to use the _safe accessors so as not to #GP kvm
++		 * guests on older kvm hosts.
++		 */
++
++		rdmsrl_safe(MSR_AMD64_BU_CFG2, &value);
++		value &= ~(1ULL << 24);
++		wrmsrl_safe(MSR_AMD64_BU_CFG2, value);
+ 	}
+ 
+ 	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 6e68a61..0f49677 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -117,7 +117,7 @@ void release_thread(struct task_struct *dead_task)
+ {
+ 	if (dead_task->mm) {
+ 		if (dead_task->mm->context.size) {
+-			pr_warn("WARNING: dead process %8s still has LDT? <%p/%d>\n",
++			pr_warn("WARNING: dead process %s still has LDT? <%p/%d>\n",
+ 				dead_task->comm,
+ 				dead_task->mm->context.ldt,
+ 				dead_task->mm->context.size);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index c243b81..3704007 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1881,6 +1881,14 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+ 	u64 data = msr_info->data;
+ 
+ 	switch (msr) {
++	case MSR_AMD64_NB_CFG:
++	case MSR_IA32_UCODE_REV:
++	case MSR_IA32_UCODE_WRITE:
++	case MSR_VM_HSAVE_PA:
++	case MSR_AMD64_PATCH_LOADER:
++	case MSR_AMD64_BU_CFG2:
++		break;
++
+ 	case MSR_EFER:
+ 		return set_efer(vcpu, data);
+ 	case MSR_K7_HWCR:
+@@ -1900,8 +1908,6 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+ 			return 1;
+ 		}
+ 		break;
+-	case MSR_AMD64_NB_CFG:
+-		break;
+ 	case MSR_IA32_DEBUGCTLMSR:
+ 		if (!data) {
+ 			/* We support the non-activated case already */
+@@ -1914,11 +1920,6 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
+ 		vcpu_unimpl(vcpu, "%s: MSR_IA32_DEBUGCTLMSR 0x%llx, nop\n",
+ 			    __func__, data);
+ 		break;
+-	case MSR_IA32_UCODE_REV:
+-	case MSR_IA32_UCODE_WRITE:
+-	case MSR_VM_HSAVE_PA:
+-	case MSR_AMD64_PATCH_LOADER:
+-		break;
+ 	case 0x200 ... 0x2ff:
+ 		return set_msr_mtrr(vcpu, msr, data);
+ 	case MSR_IA32_APICBASE:
+@@ -2253,6 +2254,7 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+ 	case MSR_K8_INT_PENDING_MSG:
+ 	case MSR_AMD64_NB_CFG:
+ 	case MSR_FAM10H_MMIO_CONF_BASE:
++	case MSR_AMD64_BU_CFG2:
+ 		data = 0;
+ 		break;
+ 	case MSR_P6_PERFCTR0:
