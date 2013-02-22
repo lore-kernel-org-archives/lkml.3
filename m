@@ -1,50 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab3BVDyl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 22:54:41 -0500
-Received: from mouse.start.ca ([64.140.120.56]:43211 "EHLO mouse.start.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756138Ab3BVDyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 22:54:37 -0500
-Message-ID: <5126EBF9.9090107@start.ca>
-Date: Thu, 21 Feb 2013 22:54:33 -0500
-From: Mark Lord <kernel@start.ca>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1755876Ab3BVELX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 23:11:23 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:19504 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755501Ab3BVELW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 23:11:22 -0500
+X-IronPort-AV: E=Sophos;i="4.84,713,1355068800"; 
+   d="scan'208";a="6746975"
+Message-ID: <5126ECF8.2050806@cn.fujitsu.com>
+Date: Fri, 22 Feb 2013 11:58:48 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT] Networking
-References: <20130220.170901.343210063003534302.davem@davemloft.net> <CA+55aFz=tzf9a-SY1CqCAxsqRDz=ebE69YoZ30at6kHeKKhsaA@mail.gmail.com> <5126313E.2060608@start.ca> <CAP=VYLoW2KfdWen6x0p+Kv_DbsDj=mHMdAZB5Mx_RkFZ7jk6fg@mail.gmail.com>
-In-Reply-To: <CAP=VYLoW2KfdWen6x0p+Kv_DbsDj=mHMdAZB5Mx_RkFZ7jk6fg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kexec: prevent double free on image allocation failure
+References: <1361496375-30994-1-git-send-email-sasha.levin@oracle.com> <87vc9l5cz4.fsf@xmission.com> <5126DC06.5020005@cn.fujitsu.com> <5126E8F2.70502@oracle.com>
+In-Reply-To: <5126E8F2.70502@oracle.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/22 11:59:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/22 11:59:52
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-02-21 09:26 PM, Paul Gortmaker wrote:
-> On Thu, Feb 21, 2013 at 9:37 AM, Mark Lord <kernel@start.ca> wrote:
->> On 13-02-20 10:05 PM, Linus Torvalds wrote:
->>> On Wed, Feb 20, 2013 at 2:09 PM, David Miller <davem@davemloft.net> wrote:
-..
->>> Nooo.... You killed the 3c501 and 3c503 drivers! Snif.
+于 2013年02月22日 11:41, Sasha Levin 写道:
+> On 02/21/2013 09:46 PM, Zhang Yanfei wrote:
+>> 于 2013年02月22日 09:55, Eric W. Biederman 写道:
+>>> Sasha Levin <sasha.levin@oracle.com> writes:
 >>>
->>> I wonder if they still worked..
+>>>> If kimage_normal_alloc() fails to initialize an allocated kimage, it will free
+>>>> the image but would still set 'rimage', as a result kexec_load will try
+>>>> to free it again.
+>>>>
+>>>> This would explode as part of the freeing process is accessing internal
+>>>> members which point to uninitialized memory.
+>>>
+>>> Agreed.
+>>>
+>>> I don't think that failure path has ever actually been exercised.
+>>>
+>>> The code is wrong, and it is worth fixing.
+>>>
+>>> Andrew I do you think you could queue this up?  I don't have a handy tree.
 >>
->> I hope they're not really dead, because we still use them in several machines here
->> as secondary interfaces for test rigs and whatnot.
-..
-> Did you actually look at the drivers deleted?
-..
+>>
+>> I still found another malloc/free problem in this function. So I update the patch.
+>>
+>> ---------------------
+>>
+>> From 1fb76a35e4109e1435f55048c20ea58622e7f87b Mon Sep 17 00:00:00 2001
+>> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+>> Date: Fri, 22 Feb 2013 10:34:02 +0800
+>> Subject: [PATCH] kexec: fix allocation problems in function kimage_normal_alloc
+>>
+>> The function kimage_normal_alloc() has 2 allocation problems that may cause
+>> failures:
+>>
+>>   1. If kimage_normal_alloc() fails to initialize an allocated kimage, it will
+>>      free the image but would still set 'rimage', as a result kexec_load will
+>>      try to free it again.
+>>
+>>      This would explode as part of the freeing process is accessing internal
+>>      members which point to uninitialized memory.
+>>
+>>   2. If kimage_normal_alloc() fails to alloc pages for image->swap_page, it
+>>      should call kimage_free_page_list() to free allocated pages in
+>>      image->control_pages list before it frees image.
+>>
+>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+>> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+>> ---
+>>  kernel/kexec.c |   10 ++++++----
+>>  1 files changed, 6 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/kernel/kexec.c b/kernel/kexec.c
+>> index 5e4bd78..f219357 100644
+>> --- a/kernel/kexec.c
+>> +++ b/kernel/kexec.c
+>> @@ -223,6 +223,8 @@ out:
+>>  
+>>  }
+>>  
+>> +static void kimage_free_page_list(struct list_head *list);
+>> +
+>>  static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+>>  				unsigned long nr_segments,
+>>  				struct kexec_segment __user *segments)
+>> @@ -236,8 +238,6 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+>>  	if (result)
+>>  		goto out;
+>>  
+>> -	*rimage = image;
+>> -
+>>  	/*
+>>  	 * Find a location for the control code buffer, and add it
+>>  	 * the vector of segments so that it's pages will also be
+>> @@ -259,10 +259,12 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+>>  
+>>  	result = 0;
+>>   out:
+>> -	if (result == 0)
+>> +	if (result == 0) {
+>>  		*rimage = image;
+>> -	else
+>> +	} else {
+>> +		kimage_free_page_list(&image->control_pages);
+>>  		kfree(image);
+>> +	}
+>>  
+>>  	return result;
+>>  }
+> 
+> And if do_kimage_alloc() fails instead of kimage_alloc_control_pages()
+> you will NULL deref 'image', so now instead of leaking pages the kernel
+> will explode.
 
-Finally got to one of the boxes here to check.
-And you're right, I was confusing drivers.
+Oh, I missed this.
 
-I always seem to get the 3c509 (ISA) stuff confused with the 3c59x (PCI).
-Our boxes here have the 3c59x (PCI) cards.
+> 
+> Either way, this issue you've pointed out should be fixed in a separate
+> patch.
+> 
+> 
 
-R.I.P. 3c50x.  :)
+OK，I will send another patch.
+
+Thanks
+Zhang
+
