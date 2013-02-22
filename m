@@ -1,131 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab3BVMeu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 07:34:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54140 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755873Ab3BVMes (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 07:34:48 -0500
-Date: Fri, 22 Feb 2013 04:33:31 -0800
-From: tip-bot for Yong Zhang <tipbot@zytor.com>
-Message-ID: <tip-9fb1b90ce0a847a8cc9492a6c1f347b5be1f33ff@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yong.zhang0@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, yong.zhang0@gmail.com
-In-Reply-To: <1334559716-18447-2-git-send-email-yong.zhang0@gmail.com>
-References: <1334559716-18447-2-git-send-email-yong.zhang0@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] lockdep: Selftest:
-  convert spinlock to raw spinlock
-Git-Commit-ID: 9fb1b90ce0a847a8cc9492a6c1f347b5be1f33ff
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1757273Ab3BVMfR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 07:35:17 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:41415 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757244Ab3BVMfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 07:35:14 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: myungjoo.ham@samsung.com
+Cc: Nishanth Menon <nm@ti.com>, Wei Yongjun <weiyj.lk@gmail.com>,
+        =?utf-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
+        "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM / devfreq: fix missing unlock on error in exynos4_busfreq_pm_notifier_event()
+Date: Fri, 22 Feb 2013 13:41:51 +0100
+Message-ID: <11191890.8oYqJ4b1Vm@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <2946170.20251361514836501.JavaMail.weblogic@epml14>
+References: <2946170.20251361514836501.JavaMail.weblogic@epml14>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 22 Feb 2013 04:33:37 -0800 (PST)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9fb1b90ce0a847a8cc9492a6c1f347b5be1f33ff
-Gitweb:     http://git.kernel.org/tip/9fb1b90ce0a847a8cc9492a6c1f347b5be1f33ff
-Author:     Yong Zhang <yong.zhang0@gmail.com>
-AuthorDate: Mon, 16 Apr 2012 15:01:55 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 19 Feb 2013 08:43:35 +0100
+On Friday, February 22, 2013 06:33:58 AM MyungJoo Ham wrote:
+> > On 12:33-20130222, Wei Yongjun wrote:
+> > > From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> > > 
+> > > Add the missing unlock before return from function
+> > > exynos4_busfreq_pm_notifier_event() in the error
+> > > handling case.
+> > > 
+> > > This issue introduced by commit 8fa938
+> > > (PM / devfreq: exynos4_bus: honor RCU lock usage)
+> > > 
+> > > Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> > Arrgh.. Thanks for catching this :( My bad.
+> > 
+> > Fix looks good to me. upto  MyungJoo.
+> 
+> Applied to devfreq repository.
+> I'll send pull request to Rafael soon along with other patches.
+> 
+> > 
+> > MyungJoo, Rafael,
+> > btw, adding linux-pm@vger.kernel.org to  MAINTAINERS for devfreq might
+> > be a nice idea to have right audience.
+> 
+> It appears that replacing the current mailing list address with linux-pm is
+> appropriate. If no one objects, I'll post the suggestion later.
 
-lockdep: Selftest: convert spinlock to raw spinlock
+Sure, please do.
 
-To make the lockdep selftest working on RT we need to convert the
-spinlock tests to a raw spinlock. Otherwise we cannot run the irq
-context checks. For mainline this is just annotational as spinlocks
-are mapped to raw_spinlocks anyway.
+Thanks,
+Rafael
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Link: http://lkml.kernel.org/r/1334559716-18447-2-git-send-email-yong.zhang0@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- lib/locking-selftest.c | 34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
-index 7aae0f2..c3eb261 100644
---- a/lib/locking-selftest.c
-+++ b/lib/locking-selftest.c
-@@ -47,10 +47,10 @@ __setup("debug_locks_verbose=", setup_debug_locks_verbose);
-  * Normal standalone locks, for the circular and irq-context
-  * dependency tests:
-  */
--static DEFINE_SPINLOCK(lock_A);
--static DEFINE_SPINLOCK(lock_B);
--static DEFINE_SPINLOCK(lock_C);
--static DEFINE_SPINLOCK(lock_D);
-+static DEFINE_RAW_SPINLOCK(lock_A);
-+static DEFINE_RAW_SPINLOCK(lock_B);
-+static DEFINE_RAW_SPINLOCK(lock_C);
-+static DEFINE_RAW_SPINLOCK(lock_D);
- 
- static DEFINE_RWLOCK(rwlock_A);
- static DEFINE_RWLOCK(rwlock_B);
-@@ -73,12 +73,12 @@ static DECLARE_RWSEM(rwsem_D);
-  * but X* and Y* are different classes. We do this so that
-  * we do not trigger a real lockup:
-  */
--static DEFINE_SPINLOCK(lock_X1);
--static DEFINE_SPINLOCK(lock_X2);
--static DEFINE_SPINLOCK(lock_Y1);
--static DEFINE_SPINLOCK(lock_Y2);
--static DEFINE_SPINLOCK(lock_Z1);
--static DEFINE_SPINLOCK(lock_Z2);
-+static DEFINE_RAW_SPINLOCK(lock_X1);
-+static DEFINE_RAW_SPINLOCK(lock_X2);
-+static DEFINE_RAW_SPINLOCK(lock_Y1);
-+static DEFINE_RAW_SPINLOCK(lock_Y2);
-+static DEFINE_RAW_SPINLOCK(lock_Z1);
-+static DEFINE_RAW_SPINLOCK(lock_Z2);
- 
- static DEFINE_RWLOCK(rwlock_X1);
- static DEFINE_RWLOCK(rwlock_X2);
-@@ -107,10 +107,10 @@ static DECLARE_RWSEM(rwsem_Z2);
-  */
- #define INIT_CLASS_FUNC(class) 				\
- static noinline void					\
--init_class_##class(spinlock_t *lock, rwlock_t *rwlock, struct mutex *mutex, \
--		 struct rw_semaphore *rwsem)		\
-+init_class_##class(raw_spinlock_t *lock, rwlock_t *rwlock, \
-+	struct mutex *mutex, struct rw_semaphore *rwsem)\
- {							\
--	spin_lock_init(lock);				\
-+	raw_spin_lock_init(lock);			\
- 	rwlock_init(rwlock);				\
- 	mutex_init(mutex);				\
- 	init_rwsem(rwsem);				\
-@@ -168,10 +168,10 @@ static void init_shared_classes(void)
-  * Shortcuts for lock/unlock API variants, to keep
-  * the testcases compact:
-  */
--#define L(x)			spin_lock(&lock_##x)
--#define U(x)			spin_unlock(&lock_##x)
-+#define L(x)			raw_spin_lock(&lock_##x)
-+#define U(x)			raw_spin_unlock(&lock_##x)
- #define LU(x)			L(x); U(x)
--#define SI(x)			spin_lock_init(&lock_##x)
-+#define SI(x)			raw_spin_lock_init(&lock_##x)
- 
- #define WL(x)			write_lock(&rwlock_##x)
- #define WU(x)			write_unlock(&rwlock_##x)
-@@ -911,7 +911,7 @@ GENERATE_PERMUTATIONS_3_EVENTS(irq_read_recursion_soft)
- 
- #define I2(x)					\
- 	do {					\
--		spin_lock_init(&lock_##x);	\
-+		raw_spin_lock_init(&lock_##x);	\
- 		rwlock_init(&rwlock_##x);	\
- 		mutex_init(&mutex_##x);		\
- 		init_rwsem(&rwsem_##x);		\
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
