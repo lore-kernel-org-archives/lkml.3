@@ -1,114 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950Ab3BVMaQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 07:30:16 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54093 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756590Ab3BVMaL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 07:30:11 -0500
-Date: Fri, 22 Feb 2013 04:28:54 -0800
-From: tip-bot for Mike Galbraith <tipbot@zytor.com>
-Message-ID: <tip-066361a7c58cb6c8b18c7ce0ee8527bb1ce58460@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, efault@gmx.de, andrew.d.henroid@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, efault@gmx.de, tglx@linutronix.de,
-        andrew.d.henroid@intel.com
-In-Reply-To: <1323258522.5057.73.camel@marge.simson.net>
-References: <1323258522.5057.73.camel@marge.simson.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] intel_idle:
-  Convert i7300_idle_lock to raw_spinlock
-Git-Commit-ID: 066361a7c58cb6c8b18c7ce0ee8527bb1ce58460
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1757199Ab3BVMag (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 07:30:36 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:41408 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756863Ab3BVMae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 07:30:34 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [Update 3][PATCH 2/7] ACPI / scan: Introduce common code for ACPI-based device hotplug
+Date: Fri, 22 Feb 2013 13:37:13 +0100
+Message-ID: <1935999.6xb63gvAzk@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51273190.7030106@jp.fujitsu.com>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <11658900.TkhCHmg9LJ@vostro.rjw.lan> <51273190.7030106@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 22 Feb 2013 04:29:00 -0800 (PST)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  066361a7c58cb6c8b18c7ce0ee8527bb1ce58460
-Gitweb:     http://git.kernel.org/tip/066361a7c58cb6c8b18c7ce0ee8527bb1ce58460
-Author:     Mike Galbraith <efault@gmx.de>
-AuthorDate: Wed, 7 Dec 2011 12:48:42 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 19 Feb 2013 08:42:47 +0100
+On Friday, February 22, 2013 05:51:28 PM Yasuaki Ishimatsu wrote:
+> 2013/02/22 10:50, Rafael J. Wysocki wrote:
+> > On Thursday, February 21, 2013 06:12:21 PM Toshi Kani wrote:
+> >> On Fri, 2013-02-22 at 00:06 +0100, Rafael J. Wysocki wrote:
+> >>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >>>
+> >>> Multiple drivers handling hotplug-capable ACPI device nodes install
+> >>> notify handlers covering the same types of events in a very similar
+> >>> way.  Moreover, those handlers are installed in separate namespace
+> >>> walks, although that really should be done during namespace scans
+> >>> carried out by acpi_bus_scan().  This leads to substantial code
+> >>> duplication, unnecessary overhead and behavior that is hard to
+> >>> follow.
+> >>>
+> >>> For this reason, introduce common code in drivers/acpi/scan.c for
+> >>> handling hotplug-related notification and carrying out device
+> >>> insertion and eject operations in a generic fashion, such that it
+> >>> may be used by all of the relevant drivers in the future.  To cover
+> >>> the existing differences between those drivers introduce struct
+> >>> acpi_hotplug_profile for representing collections of hotplug
+> >>> settings associated with different ACPI scan handlers that can be
+> >>> used by the drivers to make the common code reflect their current
+> >>> behavior.
+> >>>
+> >>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >>> ---
+> >>>
+> >>> This update fixes an issue pointed out by Toshi Kani (that
+> >>> ACPI_OST_EC_OSPM_* event source codes should not be used with _OST for events
+> >>> that we received a notification for from the platform firmware).
+> >>>
+> >>> Thanks,
+> >>> Rafael
+> >>>
+> >>> ---
+> >>>   drivers/acpi/scan.c     |  270 ++++++++++++++++++++++++++++++++++++++----------
+> >>>   include/acpi/acpi_bus.h |    7 +
+> >>>   2 files changed, 224 insertions(+), 53 deletions(-)
+> >>   :
+> >>> +static void acpi_bus_device_eject(void *context)
+> >>> +{
+> >>> +	acpi_handle handle = context;
+> >>> +	struct acpi_device *device = NULL;
+> >>> +	struct acpi_scan_handler *handler;
+> >>> +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+> >>> +
+> >>> +	mutex_lock(&acpi_scan_lock);
+> >>> +
+> >>> +	acpi_bus_get_device(handle, &device);
+> >>> +	if (!device)
+> >>> +		goto err_out;
+> >>> +
+> >>> +	handler = device->handler;
+> >>> +	if (!handler || !handler->hotplug.enabled) {
+> >>> +		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+> >>> +		goto err_out;
+> >>> +	}
+> >>> +	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
+> >>> +				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+> >>> +	if (handler->hotplug.autoeject) {
+> >>> +		int error;
+> >>> +
+> >>> +		get_device(&device->dev);
+> >>> +		error = acpi_scan_hot_remove(device);
+> >>> +		if (error)
+> >>> +			goto err_out;
+> >>> +	} else {
+> >>> +		device->flags.eject_pending = true;
+> >>>   	}
+> >>> +	if (handler->hotplug.uevents)
+> >>> +		kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+> >>
+> >> I confirmed that the _OST issue with hot-add is fixed.  Here is a new
+> >> one.  When autoeject is enabled, it crashes in kobject_uevent() since
+> >> the device is no longer valid.
+> >
+> > Well, this one is more difficult.
+> >
+> > I can change the ordering so that kobject_uevent() is called before
+> > acpi_scan_hot_remove(), but then user space may not know that the device is
+> > being removed at the moment (which still may fail).  Still, maybe this is
+> > OK, because user space will get KOBJ_REMOVE when the device actually goes
+> > away anyway.
+> >
+> > Or perhaps we can emit KOBJ_OFFLINE before acpi_scan_hot_remove() and if
+> > it fails, emit KOBJ_ONLINE?
+> 
+> How about following patch? My system cannot send EJECT notification.
+> So I have not tested this patch.
 
-intel_idle: Convert i7300_idle_lock to raw_spinlock
+No, that's not correct, acpi_scan_hot_remove(device) will remove the device
+from sysfs, if successful, among other things.
 
-24 core Intel box's first exposure to 3.0.12-rt30-rc3 didn't go well.
+We can't emit uevents for a device that has been, even though the data
+structure is still around.
 
-[   27.104159] i7300_idle: loaded v1.55
-[   27.104192] BUG: scheduling while atomic: swapper/2/0/0x00000002
-[   27.104309] Pid: 0, comm: swapper/2 Tainted: G           N  3.0.12-rt30-rc3-rt #1
-[   27.104317] Call Trace:
-[   27.104338]  [<ffffffff810046a5>] dump_trace+0x85/0x2e0
-[   27.104372]  [<ffffffff8144eb00>] thread_return+0x12b/0x30b
-[   27.104381]  [<ffffffff8144f1b9>] schedule+0x29/0xb0
-[   27.104389]  [<ffffffff814506e5>] rt_spin_lock_slowlock+0xc5/0x240
-[   27.104401]  [<ffffffffa01f818f>] i7300_idle_notifier+0x3f/0x360 [i7300_idle]
-[   27.104415]  [<ffffffff814546c7>] notifier_call_chain+0x37/0x70
-[   27.104426]  [<ffffffff81454748>] __atomic_notifier_call_chain+0x48/0x70
-[   27.104439]  [<ffffffff81001a39>] cpu_idle+0x89/0xb0
-[   27.104449] bad: scheduling from the idle thread!
+The following are the choices we have, in my opinion:
+- Emit KOBJ_OFFLINE before removal.
+- Emit KOBJ_OFFLINE before removal and KOBJ_ONLINE afterwards if it fails.
+- Do not emit KOBJ_OFFLINE at all with autoeject.
 
-This lock is taken from interrupt disabled context in the guts of
-idle. Convert it to a raw_spinlock.
+Each of them has some disadvantages, so I'm not sure.  The last one is the
+easiest, so I'll probably send another update implementing it.
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andy Henroid <andrew.d.henroid@intel.com>
-Link: http://lkml.kernel.org/r/1323258522.5057.73.camel@marge.simson.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/idle/i7300_idle.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Thanks,
+Rafael
 
-diff --git a/drivers/idle/i7300_idle.c b/drivers/idle/i7300_idle.c
-index fa080eb..ffeebc7 100644
---- a/drivers/idle/i7300_idle.c
-+++ b/drivers/idle/i7300_idle.c
-@@ -75,7 +75,7 @@ static unsigned long past_skip;
- 
- static struct pci_dev *fbd_dev;
- 
--static spinlock_t i7300_idle_lock;
-+static raw_spinlock_t i7300_idle_lock;
- static int i7300_idle_active;
- 
- static u8 i7300_idle_thrtctl_saved;
-@@ -457,7 +457,7 @@ static int i7300_idle_notifier(struct notifier_block *nb, unsigned long val,
- 		idle_begin_time = ktime_get();
- 	}
- 
--	spin_lock_irqsave(&i7300_idle_lock, flags);
-+	raw_spin_lock_irqsave(&i7300_idle_lock, flags);
- 	if (val == IDLE_START) {
- 
- 		cpumask_set_cpu(smp_processor_id(), idle_cpumask);
-@@ -506,7 +506,7 @@ static int i7300_idle_notifier(struct notifier_block *nb, unsigned long val,
- 		}
- 	}
- end:
--	spin_unlock_irqrestore(&i7300_idle_lock, flags);
-+	raw_spin_unlock_irqrestore(&i7300_idle_lock, flags);
- 	return 0;
- }
- 
-@@ -548,7 +548,7 @@ struct debugfs_file_info {
- 
- static int __init i7300_idle_init(void)
- {
--	spin_lock_init(&i7300_idle_lock);
-+	raw_spin_lock_init(&i7300_idle_lock);
- 	total_us = 0;
- 
- 	if (i7300_idle_platform_probe(&fbd_dev, &ioat_dev, forceload))
+
+> # Recently when I send a patch, tabs of the patch is changed to spaces often.
+> # So I attached the patch.
+> 
+> ---
+> 
+> When hotplug.autoeject and uevents are enabled, it crashes in
+> kobject_uevent() since the device is no longer valid.
+> 
+> This patch fixes the problem.
+> 
+> Reported-by: Toshi Kani <toshi.kani@hp.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> ---
+>   drivers/acpi/scan.c |    7 +++----
+>   1 file changed, 3 insertions(+), 4 deletions(-)
+> 
+> Index: linux-pm/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/scan.c	2013-02-22 16:02:07.000000000 +0900
+> +++ linux-pm/drivers/acpi/scan.c	2013-02-22 16:06:36.792816699 +0900
+> @@ -139,9 +139,6 @@ static int acpi_scan_hot_remove(struct a
+>   		"Hot-removing device %s...\n", dev_name(&device->dev)));
+>   
+>   	acpi_bus_trim(device);
+> -	/* Device node has been unregistered. */
+> -	put_device(&device->dev);
+> -	device = NULL;
+>   
+>   	if (ACPI_SUCCESS(acpi_get_handle(handle, "_LCK", &not_used))) {
+>   		arg_list.count = 1;
+> @@ -191,10 +188,10 @@ static void acpi_bus_device_eject(void *
+>   	}
+>   	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
+>   				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+> +	get_device(&device->dev);
+>   	if (handler->hotplug.autoeject) {
+>   		int error;
+>   
+> -		get_device(&device->dev);
+>   		error = acpi_scan_hot_remove(device);
+>   		if (error)
+>   			goto err_out;
+> @@ -204,6 +201,7 @@ static void acpi_bus_device_eject(void *
+>   	if (handler->hotplug.uevents)
+>   		kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+>   
+> +	put_device(&device->dev);
+>    out:
+>   	mutex_unlock(&acpi_scan_lock);
+>   	return;
+> @@ -312,6 +310,7 @@ void acpi_bus_hot_remove_device(void *co
+>   					  ACPI_OST_SC_NON_SPECIFIC_FAILURE,
+>   					  NULL);
+>   
+> +	put_device(&acpi_device->dev);
+>   	mutex_unlock(&acpi_scan_lock);
+>   	kfree(context);
+>   }
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
