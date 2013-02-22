@@ -1,108 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651Ab3BVPFe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 10:05:34 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:5624 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757570Ab3BVPFO (ORCPT
+	id S1757712Ab3BVPHE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 10:07:04 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58168 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757355Ab3BVPHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 10:05:14 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 22 Feb 2013 07:03:45 -0800
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, <linux-kernel@vger.kernel.org>
-Subject: [REPOST PATCH 2/2] clk: tegra: adapt tegra periph clk to mux table/mask
-Date: Fri, 22 Feb 2013 17:02:29 +0200
-Message-ID: <1361545358-22721-3-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1361545358-22721-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1361545358-22721-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	Fri, 22 Feb 2013 10:07:00 -0500
+Date: Fri, 22 Feb 2013 16:06:55 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2] irq: Cleanup context state transitions in
+ irq_exit()
+In-Reply-To: <20130222150444.GD18149@somewhere.redhat.com>
+Message-ID: <alpine.LFD.2.02.1302221605520.22263@ionos>
+References: <1361496971-16939-1-git-send-email-fweisbec@gmail.com> <1361496971-16939-3-git-send-email-fweisbec@gmail.com> <alpine.LFD.2.02.1302221528470.22263@ionos> <20130222150444.GD18149@somewhere.redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tegra peripheral clock type uses struct clk_mux directly, so it needs to
-be updated to handle the new mask and table fields. Also the macros need
-to be updated
+On Fri, 22 Feb 2013, Frederic Weisbecker wrote:
+> On Fri, Feb 22, 2013 at 03:33:51PM +0100, Thomas Gleixner wrote:
+> > The minimal extra check at the end of irq_exit() is way better than
+> > any other special cased workaround and the softirq stuff is really the
+> > only thing which needs to be taken care of. Anything else just works.
+> 
+> Yeah that's indeed a point in favour of this patch.
+> 
+> I prefer to let you guys have the final word on this patch. Whether you
+> apply it or not, I fear I'll never be entirely happy either way :)
+> That's the sad fate of dealing with circular dependencies...
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/tegra/clk.h |   27 +++++++++++++++++++--------
- 1 files changed, 19 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index 0744731..a09d7dc 100644
---- a/drivers/clk/tegra/clk.h
-+++ b/drivers/clk/tegra/clk.h
-@@ -355,15 +355,16 @@ struct clk *tegra_clk_register_periph_nodiv(const char *name,
- 		struct tegra_clk_periph *periph, void __iomem *clk_base,
- 		u32 offset);
- 
--#define TEGRA_CLK_PERIPH(_mux_shift, _mux_width, _mux_flags,		\
-+#define TEGRA_CLK_PERIPH(_mux_shift, _mux_mask, _mux_flags,		\
- 			 _div_shift, _div_width, _div_frac_width,	\
- 			 _div_flags, _clk_num, _enb_refcnt, _regs,	\
--			 _gate_flags)					\
-+			 _gate_flags, _table)				\
- 	{								\
- 		.mux = {						\
- 			.flags = _mux_flags,				\
- 			.shift = _mux_shift,				\
--			.width = _mux_width,				\
-+			.mask = _mux_mask,				\
-+			.table = _table,				\
- 		},							\
- 		.divider = {						\
- 			.flags = _div_flags,				\
-@@ -393,26 +394,36 @@ struct tegra_periph_init_data {
- 	const char *dev_id;
- };
- 
--#define TEGRA_INIT_DATA(_name, _con_id, _dev_id, _parent_names, _offset, \
--			_mux_shift, _mux_width, _mux_flags, _div_shift,	\
-+#define TEGRA_INIT_DATA_TABLE(_name, _con_id, _dev_id, _parent_names, _offset,\
-+			_mux_shift, _mux_mask, _mux_flags, _div_shift,	\
- 			_div_width, _div_frac_width, _div_flags, _regs,	\
--			_clk_num, _enb_refcnt, _gate_flags, _clk_id)	\
-+			_clk_num, _enb_refcnt, _gate_flags, _clk_id, _table) \
- 	{								\
- 		.name = _name,						\
- 		.clk_id = _clk_id,					\
- 		.parent_names = _parent_names,				\
- 		.num_parents = ARRAY_SIZE(_parent_names),		\
--		.periph = TEGRA_CLK_PERIPH(_mux_shift, _mux_width,	\
-+		.periph = TEGRA_CLK_PERIPH(_mux_shift, _mux_mask,	\
- 					   _mux_flags, _div_shift,	\
- 					   _div_width, _div_frac_width,	\
- 					   _div_flags, _clk_num,	\
- 					   _enb_refcnt, _regs,		\
--					   _gate_flags),		\
-+					   _gate_flags, _table),	\
- 		.offset = _offset,					\
- 		.con_id = _con_id,					\
- 		.dev_id = _dev_id,					\
- 	}
- 
-+#define TEGRA_INIT_DATA(_name, _con_id, _dev_id, _parent_names, _offset,\
-+			_mux_shift, _mux_width, _mux_flags, _div_shift,	\
-+			_div_width, _div_frac_width, _div_flags, _regs,	\
-+			_clk_num, _enb_refcnt, _gate_flags, _clk_id)	\
-+	TEGRA_INIT_DATA_TABLE(_name, _con_id, _dev_id, _parent_names, _offset,\
-+			_mux_shift, BIT(_mux_width) - 1, _mux_flags,	\
-+			_div_shift, _div_width, _div_frac_width, _div_flags, \
-+			_regs, _clk_num, _enb_refcnt, _gate_flags, _clk_id,\
-+			NULL)
-+
- /**
-  * struct clk_super_mux - super clock
-  *
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+plus the butt ugly softirq semantics or the lack thereof ...
 
