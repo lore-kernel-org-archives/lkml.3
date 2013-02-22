@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab3BVPEz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 10:04:55 -0500
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:62055 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756996Ab3BVPEw (ORCPT
+	id S1757558Ab3BVPFF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 10:05:05 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5742 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757454Ab3BVPFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 10:04:52 -0500
-Date: Fri, 22 Feb 2013 16:04:46 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] irq: Cleanup context state transitions in irq_exit()
-Message-ID: <20130222150444.GD18149@somewhere.redhat.com>
-References: <1361496971-16939-1-git-send-email-fweisbec@gmail.com>
- <1361496971-16939-3-git-send-email-fweisbec@gmail.com>
- <alpine.LFD.2.02.1302221528470.22263@ionos>
+	Fri, 22 Feb 2013 10:05:01 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 22 Feb 2013 07:03:29 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, <linux-kernel@vger.kernel.org>
+Subject: [REPOST PATCH 0/2] Table lookup for mux clock type
+Date: Fri, 22 Feb 2013 17:02:27 +0200
+Message-ID: <1361545358-22721-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1302221528470.22263@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 03:33:51PM +0100, Thomas Gleixner wrote:
-> On Fri, 22 Feb 2013, Frederic Weisbecker wrote:
-> > The irq code is run under HARDIRQ_OFFSET preempt offset until
-> > we reach the softirq code. Then it's substracted, leaving the
-> > preempt count to 0, whether we have pending softirqs or not.
-> > 
-> > Afterward, if we have softirqs to run, we'll run them under
-> > the SOFTIRQ_OFFSET then set the preempt offset back to 0
-> > after softirqs completion.
-> > 
-> > The rest of the code in irq_exit(), mainly tick_nohz_irq_exit()
-> > and rcu_irq_exit(), are executed with this NULL preempt offset.
-> > 
-> > The semantics here are not very intuitive. They leave several portions
-> > of the code into some half-defined context state, where in_interrupt()
-> > returns false while we actually are in an interrupt.
-> > 
-> > In order to make the context definition less confusing, let's
-> > cover the whole code in irq_exit() under HARDIRQ_OFFSET, except
-> > for the softirq processing where we switch back and forth
-> > from HARDIRQ_OFFSET to SOFTIRQ_OFFSET without leaving a gap
-> > in the context definition.
-> > 
-> > There is a drawback though: raise_softirq() relies on the previous
-> > semantics considering that as long as we are in_interrupt(), the
-> > pending softirq will be handled in the end of the interrupt. Otherwise
-> > it kicks ksoftirqd so the softirq is always processed.
-> > 
-> > Now tick_nohz_irq_exit() and rcu_irq_exit() can raise softirqs
-> > themselves. Since these functions were not under the HARDIRQ_OFFSET,
-> > calling raise_softirq() resulted in waking up the ksoftirqd thread.
-> > This is correct because invoke_softirq() has already been invoked at
-> > this stage. But with this patch they are now under HARDIRQ_OFFSET and
-> > raise_softirq() wrongly thinks invoke_softirq() has yet to be called.
-> > In the end, this could leave the softirq unprocessed for a while.
-> > 
-> > So as Thomas suggested me, this also brings a check in the end of
-> > irq_exit() that looks for pending softirqs raised after invoke_softirq()
-> > and wake up ksoftirqd if needed.
-> > 
-> > Given that the cleanup on the contexts transition involves that
-> > new unpretty workaround, I have mixed feelings about this patch so I
-> > tagged it as "RFC" and I wait for your opinion.
-> 
-> Of course, I'm all for it because I suggested that solution :)
-> 
-> Seriously, I prefer to have in_interrupt() and in_irq() working in the
-> functions which are called from irq_exit() rather than having special
-> case workarounds inside of them. We are in interrupt context at this
-> point and not in some magic virtual place. 
-> 
-> The minimal extra check at the end of irq_exit() is way better than
-> any other special cased workaround and the softirq stuff is really the
-> only thing which needs to be taken care of. Anything else just works.
+This patchset adds a table lookup feature to the mux clock type. This will
+be used by the forthcoming Tegra114 clock implementation. Also instead of
+a fixed field width, a mask is used. This is because Tegra114 has some muxes
+where the parent selector is spread over several bitfields. The second patch
+adapts the tegra periph clock implementation which uses struct clk_mux
+directly.
 
-Yeah that's indeed a point in favour of this patch.
+--
 
-I prefer to let you guys have the final word on this patch. Whether you
-apply it or not, I fear I'll never be entirely happy either way :)
-That's the sad fate of dealing with circular dependencies...
+Mike,
+
+This patch is a dependency for the Tegra114 CCF implementation. Could you
+review it and merge on a topic branch so Stephen can pull it in to verify
+the integration?
+
+Thanks,
+
+Peter.
+
+Peter De Schrijver (2):
+  clk: add table lookup to mux
+  clk: tegra: adapt tegra periph clk to mux table/mask
+
+ drivers/clk/clk-mux.c        |   51 ++++++++++++++++++++++++++++++++---------
+ drivers/clk/tegra/clk.h      |   27 +++++++++++++++------
+ include/linux/clk-private.h  |    3 +-
+ include/linux/clk-provider.h |    9 ++++++-
+ 4 files changed, 69 insertions(+), 21 deletions(-)
+
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
+
