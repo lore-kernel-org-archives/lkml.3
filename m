@@ -1,134 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab3BVTxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 14:53:33 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:5497 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753628Ab3BVTxb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 14:53:31 -0500
-From: Toshi Kani <toshi.kani@hp.com>
-To: rjw@sisk.pl
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, vasilis.liaskovitis@profitbricks.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH] ACPI: Add sysfs links from memory device to memblocks
-Date: Fri, 22 Feb 2013 12:42:27 -0700
-Message-Id: <1361562147-30801-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1757176Ab3BVT76 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 14:59:58 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:59858 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756101Ab3BVT75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 14:59:57 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] [SCSI] scsi_dh_hp_sw: return -ENOMEM if kzalloc() failed
+Date: Fri, 22 Feb 2013 23:59:44 +0400
+Message-Id: <1361563184-7705-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to eject a memory device object represented as "PNP0C80:%d"
-in sysfs, its associated memblocks (system/memory/memory%d) need to
-be off-lined.  However, there is no user friendly way to correlate
-between a memory device object and its memblocks in sysfs.
+If kzalloc() failed, hp_sw_bus_attach() breaks off initialization, but returns zero.
+The patch adds -ENOMEM as return value in this case.
 
-This patch creates sysfs links to memblocks under a memory device
-object so that a user can easily checks and manipulates its memblocks
-in sysfs.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-For example, when PNP0C80:05 is associated with memory8 and memory9,
-the following two links are created under PNP0C80:05.  This allows
-a user to access memory8/9 directly from PNP0C80:05.
-
-  # ll /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C80:05
-  lrwxrwxrwx. memory8 -> ../../../system/memory/memory8
-  lrwxrwxrwx. memory9 -> ../../../system/memory/memory9
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
-This patch applies on top of the Rafael's patch below.
-https://patchwork.kernel.org/patch/2153261/
+ drivers/scsi/device_handler/scsi_dh_hp_sw.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
----
- drivers/acpi/acpi_memhotplug.c |   54 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
+diff --git a/drivers/scsi/device_handler/scsi_dh_hp_sw.c b/drivers/scsi/device_handler/scsi_dh_hp_sw.c
+index 084062b..4619473 100644
+--- a/drivers/scsi/device_handler/scsi_dh_hp_sw.c
++++ b/drivers/scsi/device_handler/scsi_dh_hp_sw.c
+@@ -364,7 +364,7 @@ static int hp_sw_bus_attach(struct scsi_device *sdev)
+ 	if (!scsi_dh_data) {
+ 		sdev_printk(KERN_ERR, sdev, "%s: Attach Failed\n",
+ 			    HP_SW_NAME);
+-		return 0;
++		return -ENOMEM;
+ 	}
+ 
+ 	scsi_dh_data->scsi_dh = &hp_sw_dh;
+-- 
+1.7.9.5
 
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 3b3abbc..d6226b3 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -28,6 +28,7 @@
-  */
- 
- #include <linux/acpi.h>
-+#include <linux/memory.h>
- #include <linux/memory_hotplug.h>
- 
- #include "internal.h"
-@@ -168,6 +169,53 @@ static int acpi_memory_check_device(struct acpi_memory_device *mem_device)
- 	return 0;
- }
- 
-+static void acpi_setup_mem_blk_links(struct acpi_memory_device *mem_device,
-+		struct acpi_memory_info *info, bool add_links)
-+{
-+	struct memory_block *mem_blk = NULL;
-+	struct mem_section *mem_sect;
-+	unsigned long start_pfn, end_pfn, pfn;
-+	unsigned long section_nr;
-+	int ret;
-+
-+	start_pfn = PFN_DOWN(info->start_addr);
-+	end_pfn = PFN_UP(info->start_addr + info->length-1);
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-+		section_nr = pfn_to_section_nr(pfn);
-+
-+		if (!present_section_nr(section_nr))
-+			continue;
-+
-+		mem_sect = __nr_to_section(section_nr);
-+
-+		/* skip if the same memblock */
-+		if (mem_blk)
-+			if ((section_nr >= mem_blk->start_section_nr) &&
-+			    (section_nr <= mem_blk->end_section_nr))
-+				continue;
-+
-+		mem_blk = find_memory_block_hinted(mem_sect, mem_blk);
-+
-+		if (add_links) {
-+			ret = sysfs_create_link_nowarn(
-+				&mem_device->device->dev.kobj,
-+				&mem_blk->dev.kobj,
-+				kobject_name(&mem_blk->dev.kobj));
-+			if (ret && ret != -EEXIST)
-+				dev_err(&mem_device->device->dev,
-+					"Failed to create sysfs link %s\n",
-+					kobject_name(&mem_blk->dev.kobj));
-+		} else {
-+			sysfs_remove_link(&mem_device->device->dev.kobj,
-+				kobject_name(&mem_blk->dev.kobj));
-+		}
-+	}
-+
-+	if (mem_blk)
-+		kobject_put(&mem_blk->dev.kobj);
-+}
-+
- static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
- {
- 	int result, num_enabled = 0;
-@@ -207,6 +255,9 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
- 			continue;
- 		}
- 
-+		/* Create sysfs links to its mem_blk devices */
-+		acpi_setup_mem_blk_links(mem_device, info, true);
-+
- 		if (!result)
- 			info->enabled = 1;
- 		/*
-@@ -241,6 +292,9 @@ static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
- 			/* The kernel does not use this memory block */
- 			continue;
- 
-+		/* Remove sysfs links to its mem_blk devices */
-+		acpi_setup_mem_blk_links(mem_device, info, false);
-+
- 		if (!info->enabled)
- 			/*
- 			 * The kernel uses this memory block, but it may be not
