@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758035Ab3BVQpb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 11:45:31 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:34643 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757921Ab3BVQp0 (ORCPT
+	id S1758164Ab3BVQyk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 11:54:40 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:47399 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757639Ab3BVQyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 11:45:26 -0500
-X-Authority-Analysis: v=2.0 cv=cYNQXw/M c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=Qsx_du5GiBkA:10 a=qvxnG7FKX0EA:10 a=XqmpcVLOK6kA:10 a=S1A5HrydsesA:10 a=8nJEP1OIZ-IA:10 a=fxJcL_dCAAAA:8 a=7V-_XTfuMtAA:10 a=QfKxxUxMAAAA:8 a=tR1OGehjCua5FyPP3aoA:9 a=wPNLvfGTeEIA:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.78.168.186
-Message-ID: <5127A0A3.6040904@ubuntu.com>
-Date: Fri, 22 Feb 2013 11:45:23 -0500
-From: Phillip Susi <psusi@ubuntu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Fri, 22 Feb 2013 11:54:37 -0500
+Message-ID: <5127A2AF.9030502@oracle.com>
+Date: Fri, 22 Feb 2013 11:54:07 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Eric Wong <normalperson@yhbt.net>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fadvise: perform WILLNEED readahead in a workqueue
-References: <20121215005448.GA7698@dcvr.yhbt.net> <20121216024520.GH9806@dastard>
-In-Reply-To: <20121216024520.GH9806@dastard>
-X-Enigmail-Version: 1.5
+To: Marek Lindner <lindner_marek@yahoo.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Antonio Quartulli <ordex@autistici.org>
+CC: "David S. Miller" <davem@davemloft.net>, b.a.t.m.a.n@lists.open-mesh.org,
+        netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: batman-adv: gpf in batadv_slide_own_bcast_window
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Hi all,
 
-On 12/15/2012 9:45 PM, Dave Chinner wrote:
-> On Sat, Dec 15, 2012 at 12:54:48AM +0000, Eric Wong wrote:
->> Applications streaming large files may want to reduce disk
->> spinups and I/O latency by performing large amounts of readahead
->> up front. Applications also tend to read files soon after opening
->> them, so waiting on a slow fadvise may cause unpleasant latency
->> when the application starts reading the file.
->> 
->> As a userspace hacker, I'm sometimes tempted to create a
->> background thread in my app to run readahead().  However, I
->> believe doing this in the kernel will make life easier for other
->> userspace hackers.
->> 
->> Since fadvise makes no guarantees about when (or even if)
->> readahead is performed, this change should not hurt existing
->> applications.
->> 
->> "strace -T" timing on an uncached, one gigabyte file:
->> 
->> Before: fadvise64(3, 0, 0, POSIX_FADV_WILLNEED) = 0 <2.484832> 
->> After: fadvise64(3, 0, 0, POSIX_FADV_WILLNEED) = 0 <0.000061>
-> 
-> You've basically asked fadvise() to readahead the entire file if
-> it can. That means it is likely to issue enough readahead to fill
-> the IO queue, and that's where all the latency is coming from. If
-> all you are trying to do is reduce the latency of the first read,
-> then only readahead the initial range that you are going to need to
-> read...
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel
+I've stumbled on the following:
 
-It shouldn't take 2 seconds to queue up some async reads.  Are you
-using ext3?  The blocks have to be mapped in order to queue the reads,
-and without ext4 extents, this means the indirect blocks have to be
-read and can cause fadvise to block.
+[ 3148.615130] batman_adv: <98>\<AE><A4><C7>^?: Removing interface: eth0
+[ 3148.991938] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 3148.993736] Dumping ftrace buffer:
+[ 3148.997554]    (ftrace buffer empty)
+[ 3148.998426] Modules linked in:
+[ 3148.999135] CPU 3
+[ 3148.999606] Pid: 6, comm: kworker/u:0 Tainted: G        W    3.8.0-next-20130222-sasha-00038-gba27e20-dirty #11
+[ 3149.001223] RIP: 0010:[<ffffffff83d217d8>]  [<ffffffff83d217d8>] batadv_slide_own_bcast_window+0xb8/0x2b0
+[ 3149.001223] RSP: 0018:ffff8800b9f4fc58  EFLAGS: 00010246
+[ 3149.001223] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000001
+[ 3149.001223] RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000001
+[ 3149.001223] RBP: ffff8800b9f4fcb8 R08: 0000000000000002 R09: ffff8800b9f63950
+[ 3149.001223] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800abad2238
+[ 3149.001223] R13: 6b6b6b6b6b6b865b R14: ffff88004c13cda0 R15: 0000000000000001
+[ 3149.001223] FS:  0000000000000000(0000) GS:ffff8800bbc00000(0000) knlGS:0000000000000000
+[ 3149.001223] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 3149.001223] CR2: 00007f006711f1d0 CR3: 000000008258e000 CR4: 00000000000406e0
+[ 3149.001223] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 3149.001223] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 3149.001223] Process kworker/u:0 (pid: 6, threadinfo ffff8800b9f4e000, task ffff8800b9f63000)
+[ 3149.001223] Stack:
+[ 3149.001223]  ffffffff83d21760 ffff8800b9f63000 ffff8800abad2238 0000000000000000
+[ 3149.001223]  ffff880068f6c438 0000035e00000001 ffff8800b9f4fc98 0000000000000000
+[ 3149.001223]  ffff8800abad2238 ffff88004c13c2a0 ffff88004c13cda0 0000000000000001
+[ 3149.001223] Call Trace:
+[ 3149.001223]  [<ffffffff83d21760>] ? batadv_slide_own_bcast_window+0x40/0x2b0
+[ 3149.001223]  [<ffffffff83d10ee4>] batadv_iv_ogm_schedule+0x254/0x300
+[ 3149.001223]  [<ffffffff83d10c90>] ? batadv_iv_ogm_queue_add+0x710/0x710
+[ 3149.001223]  [<ffffffff811178bf>] ? local_bh_enable_ip+0xef/0x150
+[ 3149.001223]  [<ffffffff83d25a15>] batadv_send_outstanding_bat_ogm_packet+0xc5/0xf0
+[ 3149.001223]  [<ffffffff81133ce6>] process_one_work+0x366/0x6a0
+[ 3149.001223]  [<ffffffff81133ba8>] ? process_one_work+0x228/0x6a0
+[ 3149.001223]  [<ffffffff811345a8>] worker_thread+0x238/0x370
+[ 3149.001223]  [<ffffffff81134370>] ? rescuer_thread+0x310/0x310
+[ 3149.001223]  [<ffffffff8113eb73>] kthread+0xe3/0xf0
+[ 3149.001223]  [<ffffffff8113ea90>] ? flush_kthread_work+0x1f0/0x1f0
+[ 3149.001223]  [<ffffffff83dc203c>] ret_from_fork+0x7c/0xb0
+[ 3149.001223]  [<ffffffff8113ea90>] ? flush_kthread_work+0x1f0/0x1f0
+[ 3149.001223] Code: 31 4b fd 85 c0 74 24 48 c7 c2 50 cd bd 84 be 02 03 00 00 48 c7 c7 b4 da bd 84 c6 05 14 ab 16 02 01 e8 ed 16
+46 fd 0f 1f 44 00 00 <49> 8b 55 00 48 89 55 b8 e8 0b 55 41 fd 85 c0 74 37 80 3d ee aa
+[ 3149.001223] RIP  [<ffffffff83d217d8>] batadv_slide_own_bcast_window+0xb8/0x2b0
+[ 3149.001223]  RSP <ffff8800b9f4fc58>
+[ 3149.105631] ---[ end trace ba69e369627c73e7 ]---
+
+Rip points to:
+
+        for (i = 0; i < hash->size; i++) {
+                head = &hash->table[i];
+
+                rcu_read_lock();
+                hlist_for_each_entry_rcu(orig_node, head, hash_entry) { <--- here
+                        spin_lock_bh(&orig_node->ogm_cnt_lock);
+                        word_index = hard_iface->if_num * BATADV_NUM_WORDS;
+                        word = &(orig_node->bcast_own[word_index]);
 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (MingW32)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBAgAGBQJRJ6CjAAoJEJrBOlT6nu759s8IAKmIyZYDk1JSRP6oJaGaGZ/r
-aZCBH52wTPH8DaqFGe+62L8lyIQ5hD15Y+zTuaWh+fJ7C1k/lU8F/QbKCG2D+xCB
-vfLF0WRx63fWLLg8xZTRU1x8X6sG+Byp+UYWNspTDrL15ChlaqqGGmwLNo4JxLa8
-+AGQVt1WMU3TitD9CUMUfYFWGUQsMR0gWeJkJnjHiEZ7VoGzft2PTlnvElzIk76u
-3cmwfoKHrnXzi50rPtP2gonRjMwd8VY859qOk0zlHoMDMcXklAWeIN9PEUIMx+VP
-fMnBm6u48cKXPYGvQrGMOdjxlt7k4LhGDZxIlvmwNHWUSaifmkJ8oBMvfbAYtUA=
-=G5rE
------END PGP SIGNATURE-----
+Thanks,
+Sasha
