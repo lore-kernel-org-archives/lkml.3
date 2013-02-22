@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab3BVJKy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 04:10:54 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:48293 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756438Ab3BVJKp (ORCPT
+	id S1756597Ab3BVJLe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 04:11:34 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48848 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754780Ab3BVJL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 04:10:45 -0500
-Message-ID: <51273609.9080308@linux.vnet.ibm.com>
-Date: Fri, 22 Feb 2013 17:10:33 +0800
+	Fri, 22 Feb 2013 04:11:28 -0500
+Message-ID: <51273636.6080907@linux.vnet.ibm.com>
+Date: Fri, 22 Feb 2013 17:11:18 +0800
 From: Michael Wang <wangyun@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>,
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>, Mike Galbraith <efault@gmx.de>,
         Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
         Ram Pai <linuxram@us.ibm.com>,
         "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
         Namhyung Kim <namhyung@kernel.org>
 Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
-References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com> <1361427108.5861.41.camel@marge.simpson.net> <5125C607.8090909@linux.vnet.ibm.com> <1361434231.5861.61.camel@marge.simpson.net> <5125E40D.6050006@linux.vnet.ibm.com> <1361439789.5861.70.camel@marge.simpson.net> <5126D9A2.8090404@linux.vnet.ibm.com> <1361521270.26780.34.camel@laptop>
-In-Reply-To: <1361521270.26780.34.camel@laptop>
+References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com> <1361442055.26780.3.camel@laptop> <5126D9E0.7040108@linux.vnet.ibm.com> <1361522197.26780.39.camel@laptop>
+In-Reply-To: <1361522197.26780.39.camel@laptop>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022209-3568-0000-0000-000003321D09
+x-cbid: 13022209-6102-0000-0000-0000030BA659
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 04:21 PM, Peter Zijlstra wrote:
-> On Fri, 2013-02-22 at 10:36 +0800, Michael Wang wrote:
->> According to my understanding, in the old world, wake_affine() will
->> only
->> be used if curr_cpu and prev_cpu share cache, which means they are in
->> one package, whatever search in llc sd of curr_cpu or prev_cpu, we
->> won't
->> have the chance to spread the task out of that package.
+On 02/22/2013 04:36 PM, Peter Zijlstra wrote:
+> On Fri, 2013-02-22 at 10:37 +0800, Michael Wang wrote:
+>> But that's really some benefit hardly to be estimate, especially when
+>> the workload is heavy, the cost of wake_affine() is very high to
+>> calculated se one by one, is that worth for some benefit we could not
+>> promise?
 > 
-> Nah, look at where SD_WAKE_AFFINE is set. Only 'remote/big' NUMA domains
-> don't have it set, but 'small' NUMA systems will have it set over the
-> entire domain tree.
+> Look at something like pipe-test.. wake_affine() used to ensure both
+> client/server ran on the same cpu, but then I think we added
+> select_idle_sibling() and wrecked it again :/
+> 
+> $ taskset 1 perf bench sched pipe
+> # Running sched/pipe benchmark...
+> # Extecuted 1000000 pipe operations between two tasks
+> 
+>      Total time: 3.761 [sec]
+> 
+>        3.761725 usecs/op
+>          265835 ops/sec
+> 
+> $ perf bench sched pipe
+> # Running sched/pipe benchmark...
+> # Extecuted 1000000 pipe operations between two tasks
+> 
+>      Total time: 29.809 [sec]
+> 
+>       29.809720 usecs/op
+>           33546 ops/sec
+> 
 
-Oh, I missed that point...
+Ok, it do looks like wake_affine() lost it's value...
 
-But I don't get the reason to make NUMA level affine, cpus in different
-nodes share cache? doesn't make sense...
+> 
+> Now as far as I can see there's two options, either we find there's
+> absolutely no benefit in wake_affine() as it stands today and we simply
+> disable/remove it, or we go fix it. What we don't do is completely
+> wreck it at atrocious cost.
+
+I get your point, we should replace wake_affine() with some feature
+which could really achieve the goal to make client and server on same cpu.
+
+But is the logical that the waker/wakee are server/client(or reversed)
+still works now? that sounds a little arbitrary to me...
 
 Regards,
 Michael Wang
 
-> 
-> 
 > 
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
