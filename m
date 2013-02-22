@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab3BVHum (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 02:50:42 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:45560 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030Ab3BVHuk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 02:50:40 -0500
+	id S1755732Ab3BVHvA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 02:51:00 -0500
+Received: from mail.servus.at ([193.170.194.20]:46092 "EHLO mail.servus.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755219Ab3BVHul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 02:50:41 -0500
+Message-ID: <51272257.7050907@oberhumer.com>
+Date: Fri, 22 Feb 2013 08:46:31 +0100
+From: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Organization: oberhumer.com
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <CAP245DVYsjgvww-3qBnbZ4T7SsJ=whbVvhf06fArxcspyX9bwQ@mail.gmail.com>
-References: <1361512604-2720-1-git-send-email-khilman@linaro.org>
-	<1361512604-2720-2-git-send-email-khilman@linaro.org>
-	<CAOh2x=kFL5_H=LqLf14yxYQEs7zSTT8Ue8mjUEVN4_a0c53Rdg@mail.gmail.com>
-	<CAP245DVYsjgvww-3qBnbZ4T7SsJ=whbVvhf06fArxcspyX9bwQ@mail.gmail.com>
-Date: Fri, 22 Feb 2013 13:20:25 +0530
-Message-ID: <CAKohpomx8B+=XhC=WFo0ZtEMM-DuBfwyMSKE4-Ng=5gyGGCxWg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpustat: use accessor functions for get/set/add
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Amit Kucheria <amit.kucheria@linaro.org>
-Cc: Kevin Hilman <khilman@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Ingo Molnar <mingo@kernel.org>,
-        Lists LAKML <linux-arm-kernel@lists.infradead.org>
+To: Bojan Smojver <bojan@rexursive.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] PM: align buffers for LZO compression
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 February 2013 12:47, Amit Kucheria <amit.kucheria@linaro.org> wrote:
-> On Fri, Feb 22, 2013 at 11:51 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> BTW, i don't see kcpustat_cpu() used in
->>
->>  kernel/sched/core.c                | 12 +++++-------
->>  kernel/sched/cputime.c             | 29 +++++++++++++--------------
->>
->> I searched tip/master as well as lnext/master.
->
-> Added by Frederic's Adaptive NOHZ patchset?
+Hi,
 
-I don't even see them on our unused-nohz-adaptive-tickless-v2 branch :)
-Maybe some other latest work.
+for performance reasons I'd strongly suggest that you explicitly align all
+buffers passed to the LZO compress and decompress functions.
+
+Below is a small (and completely untested!) patch, but I think you
+get the idea.
+
+BTW, it might be even more beneficial (esp. for NUMA systems) to align *all*
+individual unc/cmp/wrk pointers to a multiple of the PAGE_SIZE, but this would
+require some code restructuring.
+
+Cheers,
+Markus
+
+completely untested patch:
+
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 7c33ed2..7af4293 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -532,9 +532,9 @@ struct cmp_data {
+        wait_queue_head_t done;                   /* compression done */
+        size_t unc_len;                           /* uncompressed length */
+        size_t cmp_len;                           /* compressed length */
+-       unsigned char unc[LZO_UNC_SIZE];          /* uncompressed buffer */
+-       unsigned char cmp[LZO_CMP_SIZE];          /* compressed buffer */
+-       unsigned char wrk[LZO1X_1_MEM_COMPRESS];  /* compression workspace */
++       unsigned char unc[LZO_UNC_SIZE]         ____cacheline_aligned; /* uncompressed buffer */
++       unsigned char cmp[LZO_CMP_SIZE]         ____cacheline_aligned; /* compressed buffer */
++       unsigned char wrk[LZO1X_1_MEM_COMPRESS] ____cacheline_aligned; /* compression workspace */
+ };
+
+ /**
+@@ -1021,8 +1021,8 @@ struct dec_data {
+        wait_queue_head_t done;                   /* decompression done */
+        size_t unc_len;                           /* uncompressed length */
+        size_t cmp_len;                           /* compressed length */
+-       unsigned char unc[LZO_UNC_SIZE];          /* uncompressed buffer */
+-       unsigned char cmp[LZO_CMP_SIZE];          /* compressed buffer */
++       unsigned char unc[LZO_UNC_SIZE]         ____cacheline_aligned; /* uncompressed buffer */
++       unsigned char cmp[LZO_CMP_SIZE]         ____cacheline_aligned; /* compressed buffer */
+ };
+
+ /**
+
+
+Signed-off-by: Markus F.X.J. Oberhumer <markus@oberhumer.com>
+
+-- 
+Markus Oberhumer, <markus@oberhumer.com>, http://www.oberhumer.com/
