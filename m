@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab3BVIJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 03:09:26 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:42578 "EHLO
+	id S1755346Ab3BVIKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 03:10:16 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:42752 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab3BVIJU (ORCPT
+	with ESMTP id S1751908Ab3BVIKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 03:09:20 -0500
-X-AuditID: cbfee691-b7f556d000001a24-a9-512727ae662e
+	Fri, 22 Feb 2013 03:10:11 -0500
+X-AuditID: cbfee68f-b7f656d000000d78-1d-512727e12759
 From: Boojin Kim <boojin.kim@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
@@ -21,35 +21,35 @@ Cc: "'Vinod Koul'" <vinod.koul@intel.com>, "'Dan Williams'" <djbw@fb.com>,
         "'Sangbeom Kim'" <sbkim73@samsung.com>
 References: 
 In-reply-to: 
-Subject: [PATCH v2 3/4] spi: s3c64xx: add dma maxburst size initialization
-Date: Fri, 22 Feb 2013 17:09:18 +0900
-Message-id: <001b01ce10d3$e9f78620$bde69260$%kim@samsung.com>
+Subject: [PATCH v2 4/4] ASoC: samsung: add to configure dma maxburst size
+Date: Fri, 22 Feb 2013 17:10:10 +0900
+Message-id: <001c01ce10d4$088ea3c0$19abeb40$%kim@samsung.com>
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4Q0zRNgYHsZtryQK2Zcgnt7X5e4wAABD9gAAAJYXA=
+Thread-index: Ac4Q0zRNgYHsZtryQK2Zcgnt7X5e4wAABD9gAAAJYXAAACCDgA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t8zY9116uqBBms3qFtc3jWHzWLG+X1M
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGW8b9vMUjCPt2L/h0PMDYzPuboYOTkkBEwk7l67zwph
-	i0lcuLeerYuRi0NIYBmjxJHZK1lgin79uMQEkZjOKPHmwhxmCOcvo8SGrz/ZQKrYBDQlZnyf
-	zg5iiwhsZpSY/DoLpIhZ4DSTxILL7UAdHEAd3BKrm4NAajgFeCTW/elkBrGFBbwkJkz4BjaH
-	RUBV4sKap0wgNq+ArcTZeRfBWiUE1CUe/dWFGG8lsWjOO7BVzAIiEvtevGMEWSUh8JtNYvrs
-	GewQcwQkvk0+xALRKyux6QAzxDOSEgdX3GCZwCg6C0n7AkbGVYyiqQXJBcVJ6UWmesWJucWl
-	eel6yfm5mxghQT1xB+P9A9aHGJOBRk9klhJNzgdGRV5JvKGxsYmZiamJuaWpuSlpwkrivPKX
-	ZAKFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MIrc7Zu568/sOf/dGjJN5sv/5T9W+8dHfsG8
-	23yFgeYvrc/4e7rN+L/Y/ESt96kd/n8L/OaXz7J6bVARXnDlb8Gvc/KuL1Xbz0aXFb24Pe1u
-	eHqM+KrpFlcezLjKuK9F4c0S92uN/A88LvbPiltsdTqHmcNib/PmvktdEdHak0vXpq16HOwp
-	s0WJpTgj0VCLuag4EQDYo0P8gAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t9jQd116uqBBnf2KFlc3jWHzWLG+X1M
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmvG/bzFIwj7di
-	/4dDzA2Mz7m6GDk5JARMJH79uMQEYYtJXLi3nq2LkYtDSGA6o8SbC3OYIZy/jBIbvv5kA6li
-	E9CUmPF9OjuILSKwmVFi8usskCJmgdNMEgsutwN1cAB1cEusbg4CqeEU4JFY96eTGcQWFvCS
-	mDDhG9gcFgFViQtrnoJt5hWwlTg77yJYq4SAusSjv7oQ460kFs15B7aKWUBEYt+Ld4wTGPln
-	IXEXMDKuYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOmWdSOxhXNlgcYhTgYFTi4W1wUQsU
-	Yk0sK67MPcQowcGsJMK7SEE9UIg3JbGyKrUoP76oNCe1+BBjMtCBE5mlRJPzgfGcVxJvaGxi
-	ZmRpZGZhZGJuTpqwkjgv46knAUIC6YklqdmpqQWpRTBbmDg4pRoYM96+eFYm+caKh6tyhZNG
-	1q6QgHfrrsZGhU+XmPI8xFD6oYZe2N11ohxmG+VXH1/dbXWz6YoXP/P1Q69iJeafavX7XyLM
-	y2/NN2H9RtmJX/s5pYWPh6vcDlB9WfNzdvnFvxqGOey390cnGKj9D8/o2WXg08h+Rd5Lpuvu
-	V0GT17XRAn1T5A8rsRRnJBpqMRcVJwIAw6dLld0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t8zQ92H6uqBBp3/LCwu75rDZjHj/D4m
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDIWrxEt+MNa0dK1i72B8R9LFyMnh4SAicSHvRvZIGwx
+	iQv31gPZXBxCAssYJVb8WsTYxcgBVrRihgdEfBGjxLan25ggnL+MEj/P7mYG6WYT0JSY8X06
+	O4gtIrCZUWLy6yyQImaB00wSCy63M4NMEhLglljdHARSwynAI7HuTydYWFjAU+LdixiQMIuA
+	qsTE79vYQcK8ArYSr08ZQpygLvHory7EcCeJl0segy1iFhCR2PfiHSPIIgmB72wSU49OYYIY
+	IyDxbfIhFoheWYlNB5ghXpSUOLjiBssERtFZSNoXMDKuYhRNLUguKE5KLzLWK07MLS7NS9dL
+	zs/dxAgJ5v4djHcPWB9iTAYaPZFZSjQ5HxgNeSXxhsbGJmYmpibmlqbmpqQJK4nzyl+SCRQS
+	SE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAWGZUIPmmeNZ838IPTn5PZ61M+jRdoONwZE5Xxg4n
+	FUujuzc5pz9Q2bP+YoBLxyoxi02bpeb0zrqavDpJaMKncyzfp0YrpUXWFjrHdPZq22x9dvfl
+	1c7eNa8/fWU+fPNty+SlAkxmc2Nz3Axi9cRFgg5Y1Tew8Wv9/s77o+PV+dhFaQ92nc7UVWIp
+	zkg01GIuKk4EAI/AC258AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsVy+t9jAd2H6uqBBrt6jC0u75rDZjHj/D4m
+	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
+	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzFq8RLfjDWtHS
+	tYu9gfEfSxcjB4eEgInEihkeXYycQKaYxIV769m6GLk4hAQWMUpse7qNCcL5yyjx8+xuZpAq
+	NgFNiRnfp7OD2CICmxklJr/OAiliFjjNJLHgcjszyFQhAW6J1c1BIDWcAjwS6/50goWFBTwl
+	3r2IAQmzCKhKTPy+jR0kzCtgK/H6lCHEOeoSj/7qQgx3kni55DHYImYBEYl9L94xTmDkn4XE
+	XcDIuIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOFaeSe1gXNlgcYhRgINRiYe3wUUtUIg1
+	say4MvcQowQHs5II7yIF9UAh3pTEyqrUovz4otKc1OJDjMlA901klhJNzgfGcV5JvKGxiZmR
+	pZGZhZGJuTlpwkrivIynngQICaQnlqRmp6YWpBbBbGHi4JRqYOxLe/Hjt1Z9mK1qeNuCT+Ib
+	fshu8xeTU5KM45N95rmgYOLXVI2Zh1OFd8ye/e3Fn/ho6Q/r3Yun9kueP7VhVuzF9+s622bs
+	m3rGb561H2PG7IwHHPY2U++1qQU537zJX2GrsNbuT+ak2369on0BvXfzzy4zMNW78t/+Zya/
+	V0gOz5Zo81wLFyWW4oxEQy3mouJEAFUvlKzZAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,55 +57,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds dma maxburst size initialization.
-The maxburst should be set by MODE_CFGn.DMA_TYPE,
-because the pl330 dma driver supports burst mode.
+This patch adds to configure dma maxburst size.
 
-Signed-off-by: Hyeonkook Kim <hk619.kim@samsung.com>
+Signed-off-by: Boojin Kim <boojin.kim@samsung.com>
 ---
- drivers/spi/spi-s3c64xx.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+ sound/soc/samsung/dma.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-index e862ab8..5e6cafe 100644
---- a/drivers/spi/spi-s3c64xx.c
-+++ b/drivers/spi/spi-s3c64xx.c
-@@ -287,10 +287,20 @@ static void prepare_dma(struct s3c64xx_spi_dma_data *dma,
- 	struct s3c64xx_spi_driver_data *sdd;
- 	struct samsung_dma_prep info;
- 	struct samsung_dma_config config;
-+	void __iomem *regs;
-+	unsigned int mode_cfg;
-
- 	if (dma->direction == DMA_DEV_TO_MEM) {
- 		sdd = container_of((void *)dma,
- 			struct s3c64xx_spi_driver_data, rx_dma);
-+
-+		regs = sdd->regs;
-+		mode_cfg = readl(regs + S3C64XX_SPI_MODE_CFG);
-+		if (mode_cfg & S3C64XX_SPI_MODE_4BURST)
-+			config.maxburst = 4;
-+		else
-+			config.maxburst = 1;
-+
- 		config.direction = sdd->rx_dma.direction;
- 		config.fifo = sdd->sfr_start + S3C64XX_SPI_RX_DATA;
- 		config.width = sdd->cur_bpw / 8;
-@@ -298,6 +308,14 @@ static void prepare_dma(struct s3c64xx_spi_dma_data *dma,
- 	} else {
- 		sdd = container_of((void *)dma,
- 			struct s3c64xx_spi_driver_data, tx_dma);
-+
-+		regs = sdd->regs;
-+		mode_cfg = readl(regs + S3C64XX_SPI_MODE_CFG);
-+		if (mode_cfg & S3C64XX_SPI_MODE_4BURST)
-+			config.maxburst = 4;
-+		else
-+			config.maxburst = 1;
-+
- 		config.direction =  sdd->tx_dma.direction;
- 		config.fifo = sdd->sfr_start + S3C64XX_SPI_TX_DATA;
- 		config.width = sdd->cur_bpw / 8;
+diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
+index 21b7926..bd4faa0 100644
+--- a/sound/soc/samsung/dma.c
++++ b/sound/soc/samsung/dma.c
+@@ -172,6 +172,7 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
+ 			(substream->stream == SNDRV_PCM_STREAM_PLAYBACK
+ 			? DMA_MEM_TO_DEV : DMA_DEV_TO_MEM);
+ 		config.width = prtd->params->dma_size;
++		config.maxburst = 1;
+ 		config.fifo = prtd->params->dma_addr;
+ 		prtd->params->ch = prtd->params->ops->request(
+ 				prtd->params->channel, &req, rtd->cpu_dai->dev,
 --
 1.7.5.4
 
