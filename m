@@ -1,138 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab3BVELX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 23:11:23 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:19504 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755501Ab3BVELW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 23:11:22 -0500
-X-IronPort-AV: E=Sophos;i="4.84,713,1355068800"; 
-   d="scan'208";a="6746975"
-Message-ID: <5126ECF8.2050806@cn.fujitsu.com>
-Date: Fri, 22 Feb 2013 11:58:48 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
-MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] kexec: prevent double free on image allocation failure
-References: <1361496375-30994-1-git-send-email-sasha.levin@oracle.com> <87vc9l5cz4.fsf@xmission.com> <5126DC06.5020005@cn.fujitsu.com> <5126E8F2.70502@oracle.com>
-In-Reply-To: <5126E8F2.70502@oracle.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/22 11:59:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/22 11:59:52
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+	id S1756181Ab3BVELl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 23:11:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52392 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756132Ab3BVELc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 23:11:32 -0500
+Message-ID: <1361506273.2801.327.camel@bling.home>
+Subject: Re: [PATCH] iommu: making IOMMU sysfs nodes API public
+From: Alex Williamson <alex.williamson@redhat.com>
+To: David Gibson <david@gibson.dropbear.id.au>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Joerg Roedel <joerg.roedel@amd.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 21 Feb 2013 21:11:13 -0700
+In-Reply-To: <20130222000415.GI21011@truffula.fritz.box>
+References: <1360628713.3248.8.camel@bling.home>
+	 <1360642004-7419-1-git-send-email-aik@ozlabs.ru>
+	 <1360645643.3248.91.camel@bling.home> <511A54DC.9030908@ozlabs.ru>
+	 <1360689304.3248.154.camel@bling.home> <5121C709.80007@ozlabs.ru>
+	 <1361251440.2801.142.camel@bling.home>
+	 <20130219073853.GS21067@truffula.fritz.box>
+	 <1361304711.2801.232.camel@bling.home>
+	 <20130222000415.GI21011@truffula.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年02月22日 11:41, Sasha Levin 写道:
-> On 02/21/2013 09:46 PM, Zhang Yanfei wrote:
->> 于 2013年02月22日 09:55, Eric W. Biederman 写道:
->>> Sasha Levin <sasha.levin@oracle.com> writes:
->>>
->>>> If kimage_normal_alloc() fails to initialize an allocated kimage, it will free
->>>> the image but would still set 'rimage', as a result kexec_load will try
->>>> to free it again.
->>>>
->>>> This would explode as part of the freeing process is accessing internal
->>>> members which point to uninitialized memory.
->>>
->>> Agreed.
->>>
->>> I don't think that failure path has ever actually been exercised.
->>>
->>> The code is wrong, and it is worth fixing.
->>>
->>> Andrew I do you think you could queue this up?  I don't have a handy tree.
->>
->>
->> I still found another malloc/free problem in this function. So I update the patch.
->>
->> ---------------------
->>
->> From 1fb76a35e4109e1435f55048c20ea58622e7f87b Mon Sep 17 00:00:00 2001
->> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
->> Date: Fri, 22 Feb 2013 10:34:02 +0800
->> Subject: [PATCH] kexec: fix allocation problems in function kimage_normal_alloc
->>
->> The function kimage_normal_alloc() has 2 allocation problems that may cause
->> failures:
->>
->>   1. If kimage_normal_alloc() fails to initialize an allocated kimage, it will
->>      free the image but would still set 'rimage', as a result kexec_load will
->>      try to free it again.
->>
->>      This would explode as part of the freeing process is accessing internal
->>      members which point to uninitialized memory.
->>
->>   2. If kimage_normal_alloc() fails to alloc pages for image->swap_page, it
->>      should call kimage_free_page_list() to free allocated pages in
->>      image->control_pages list before it frees image.
->>
->> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
->> ---
->>  kernel/kexec.c |   10 ++++++----
->>  1 files changed, 6 insertions(+), 4 deletions(-)
->>
->> diff --git a/kernel/kexec.c b/kernel/kexec.c
->> index 5e4bd78..f219357 100644
->> --- a/kernel/kexec.c
->> +++ b/kernel/kexec.c
->> @@ -223,6 +223,8 @@ out:
->>  
->>  }
->>  
->> +static void kimage_free_page_list(struct list_head *list);
->> +
->>  static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
->>  				unsigned long nr_segments,
->>  				struct kexec_segment __user *segments)
->> @@ -236,8 +238,6 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
->>  	if (result)
->>  		goto out;
->>  
->> -	*rimage = image;
->> -
->>  	/*
->>  	 * Find a location for the control code buffer, and add it
->>  	 * the vector of segments so that it's pages will also be
->> @@ -259,10 +259,12 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
->>  
->>  	result = 0;
->>   out:
->> -	if (result == 0)
->> +	if (result == 0) {
->>  		*rimage = image;
->> -	else
->> +	} else {
->> +		kimage_free_page_list(&image->control_pages);
->>  		kfree(image);
->> +	}
->>  
->>  	return result;
->>  }
+On Fri, 2013-02-22 at 11:04 +1100, David Gibson wrote:
+> On Tue, Feb 19, 2013 at 01:11:51PM -0700, Alex Williamson wrote:
+> > On Tue, 2013-02-19 at 18:38 +1100, David Gibson wrote:
+> > > On Mon, Feb 18, 2013 at 10:24:00PM -0700, Alex Williamson wrote:
+> > > > On Mon, 2013-02-18 at 17:15 +1100, Alexey Kardashevskiy wrote:
+> [snip]
+> > > >  Adding the window size to sysfs seems more readily convenient,
+> > > > but is it so hard for userspace to open the files and call a couple
+> > > > ioctls to get far enough to call IOMMU_GET_INFO?  I'm unconvinced the
+> > > > clutter in sysfs more than just a quick fix.  Thanks,
+> > > 
+> > > And finally, as Alexey points out, isn't the point here so we know how
+> > > much rlimit to give qemu?  Using ioctls we'd need a special tool just
+> > > to check the dma window sizes, which seems a bit hideous.
+> > 
+> > Is it more hideous that using iommu groups to report a vfio imposed
+> > restriction?  Are a couple open files and a handful of ioctls worse than
+> > code to parse directory entries and the future maintenance of an
+> > unrestricted grab bag of sysfs entries?
 > 
-> And if do_kimage_alloc() fails instead of kimage_alloc_control_pages()
-> you will NULL deref 'image', so now instead of leaking pages the kernel
-> will explode.
+> The fact that the memory is locked is a vfio restriction, but the
+> actual dma window size is, genuinely, a property of the group.
 
-Oh, I missed this.
+A group is an association of devices based on isolation and visibility.
+The dma window happens to be associated with a group on your platform,
+but that's not always the case.  This is why I was hoping something in
+sysfs already reported the dma window so that we could point to it
+rather than creating an interface where it doesn't really belong.
+Thanks,
 
-> 
-> Either way, this issue you've pointed out should be fixed in a separate
-> patch.
-> 
-> 
-
-OK，I will send another patch.
-
-Thanks
-Zhang
+Alex
 
