@@ -1,81 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab3BVHKA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 02:10:00 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:38676 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193Ab3BVHJ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 02:09:58 -0500
-From: Yuan-Hsin Chen <yuanlmm@gmail.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Yuan-Hsin Chen <yuanlmm@gmail.com>,
-        Yuan-Hsin Chen <yhchen@faraday-tech.com>
-Subject: [PATCH] fusb300_udc: modify stall clear and idma reset procedure
-Date: Fri, 22 Feb 2013 07:09:39 +0000
-Message-Id: <1361516979-7340-1-git-send-email-yhchen@faraday-tech.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754625Ab3BVHKZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 02:10:25 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29791 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754440Ab3BVHKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 02:10:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,713,1355126400"; 
+   d="scan'208";a="289150807"
+Message-ID: <1361517037.2734.145.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH RFC 4/5] UBIFS: Add security.* XATTR support for the
+ UBIFS
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reply-To: artem.bityutskiy@linux.intel.com
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: linux-mtd@lists.infradead.org, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Subodh Nijsure <snijsure@grid-net.com>
+Date: Fri, 22 Feb 2013 09:10:37 +0200
+In-Reply-To: <1360750998-15191-5-git-send-email-mkl@pengutronix.de>
+References: <1360750998-15191-1-git-send-email-mkl@pengutronix.de>
+	 <1360750998-15191-5-git-send-email-mkl@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yuan-Hsin Chen <yuanlmm@gmail.com>
+OK, the lockdep warnings clearly tell the reason:
 
-Due to fusb300 controller modification, stall clear procedure should be
-modified consistantly. This patch also fixes software bugs: only
-enter IDMA_RESET when the condition matched and disable corresponding
-PRD interrupt in IDMA_RESET.
+        CPU0                    CPU1
+        ----                    ----
+   lock(&ui->ui_mutex);
+                                lock(&sb->s_type->i_mutex_key#10);
+                                lock(&ui->ui_mutex);
+   lock(&sb->s_type->i_mutex_key#10);
 
+And then there are 2 tracebacks which are useful and show that you
+unnecessarily initialize the inode security contenxt whil holding the
+parent inode lock. I think you do not need to hold that lock. Move the
+initialization out of the protected section.
 
-Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
----
- drivers/usb/gadget/fusb300_udc.c |    9 ++++++---
- drivers/usb/gadget/fusb300_udc.h |    2 +-
- 2 files changed, 7 insertions(+), 4 deletions(-)
+See below my suggestions.
 
-diff --git a/drivers/usb/gadget/fusb300_udc.c b/drivers/usb/gadget/fusb300_udc.c
-index 72cd5e6..109cab1 100644
---- a/drivers/usb/gadget/fusb300_udc.c
-+++ b/drivers/usb/gadget/fusb300_udc.c
-@@ -394,7 +394,7 @@ static void fusb300_clear_epnstall(struct fusb300 *fusb300, u8 ep)
- 
- 	if (reg & FUSB300_EPSET0_STL) {
- 		printk(KERN_DEBUG "EP%d stall... Clear!!\n", ep);
--		reg &= ~FUSB300_EPSET0_STL;
-+		reg |= FUSB300_EPSET0_STL_CLR;
- 		iowrite32(reg, fusb300->reg + FUSB300_OFFSET_EPSET0(ep));
- 	}
- }
-@@ -930,9 +930,12 @@ static void fusb300_wait_idma_finished(struct fusb300_ep *ep)
- 
- 	fusb300_clear_int(ep->fusb300, FUSB300_OFFSET_IGR0,
- 		FUSB300_IGR0_EPn_PRD_INT(ep->epnum));
-+	return;
-+
- IDMA_RESET:
--	fusb300_clear_int(ep->fusb300, FUSB300_OFFSET_IGER0,
--		FUSB300_IGER0_EEPn_PRD_INT(ep->epnum));
-+	reg = ioread32(ep->fusb300->reg + FUSB300_OFFSET_IGER0);
-+	reg &= ~FUSB300_IGER0_EEPn_PRD_INT(ep->epnum);
-+	iowrite32(reg, ep->fusb300->reg + FUSB300_OFFSET_IGER0);
- }
- 
- static void  fusb300_set_idma(struct fusb300_ep *ep,
-diff --git a/drivers/usb/gadget/fusb300_udc.h b/drivers/usb/gadget/fusb300_udc.h
-index 542cd83..ccae1b5 100644
---- a/drivers/usb/gadget/fusb300_udc.h
-+++ b/drivers/usb/gadget/fusb300_udc.h
-@@ -111,8 +111,8 @@
- /*
-  * * EPn Setting 0 (EPn_SET0, offset = 020H+(n-1)*30H, n=1~15 )
-  * */
-+#define FUSB300_EPSET0_STL_CLR		(1 << 3)
- #define FUSB300_EPSET0_CLRSEQNUM	(1 << 2)
--#define FUSB300_EPSET0_EPn_TX0BYTE	(1 << 1)
- #define FUSB300_EPSET0_STL		(1 << 0)
- 
- /*
+On Wed, 2013-02-13 at 11:23 +0100, Marc Kleine-Budde wrote:
+> @@ -280,6 +280,10 @@ static int ubifs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+>  	err = ubifs_jnl_update(c, dir, &dentry->d_name, inode, 0, 0);
+>  	if (err)
+>  		goto out_cancel;
+> +
+> +	err = ubifs_init_security(dir, inode, &dentry->d_name);
+> +	if (err)
+> +		goto out_cancel;
+>  	mutex_unlock(&dir_ui->ui_mutex);
+
+Can you move ubifs_init_security() up to before
+'mutex_lock(&dir_ui->ui_mutex)'
+
+> @@ -742,6 +746,10 @@ static int ubifs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+...
+> +	err = ubifs_init_security(dir, inode, &dentry->d_name);
+> +	if (err)
+> +		goto out_cancel;
+>  	mutex_unlock(&dir_ui->ui_mutex);
+
+Ditto.
+
+> @@ -818,6 +826,10 @@ static int ubifs_mknod(struct inode *dir, struct dentry *dentry,
+...
+> +	err = ubifs_init_security(dir, inode, &dentry->d_name);
+> +	if (err)
+> +		goto out_cancel;
+>  	mutex_unlock(&dir_ui->ui_mutex);
+
+Ditto.
+
+> @@ -894,6 +906,10 @@ static int ubifs_symlink(struct inode *dir, struct dentry *dentry,
+...
+> +	err = ubifs_init_security(dir, inode, &dentry->d_name);
+> +	if (err)
+> +		goto out_cancel;
+>  	mutex_unlock(&dir_ui->ui_mutex);
+
+Ditto.
+
+> +int ubifs_init_security(struct inode *dentry, struct inode *inode,
+> +			const struct qstr *qstr)
+> +{
+> +	int err;
+> +
+> +	mutex_lock(&inode->i_mutex);
+> +	err = security_inode_init_security(inode, dentry, qstr,
+> +					   &ubifs_initxattrs, 0);
+> +	mutex_unlock(&inode->i_mutex);
+
+I did not verify, but I doubt that you need i_mutex here, because you
+only call this function when you create an inode, before it becomes
+visible to VFS. Please, double-check this.
+
+Thanks!
+
 -- 
-1.7.4.1
+Best Regards,
+Artem Bityutskiy
 
