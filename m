@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab3BVOZn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 09:25:43 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49672 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756235Ab3BVOZl (ORCPT
+	id S1757143Ab3BVO0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 09:26:40 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:47982 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755889Ab3BVO0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 09:25:41 -0500
-Message-ID: <1361543128.26780.65.camel@laptop>
-Subject: Re: [PATCH 0/2] cpustat: use atomic operations to read/update stats
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org
-Date: Fri, 22 Feb 2013 15:25:28 +0100
-In-Reply-To: <20130222141635.GA9606@gmail.com>
-References: <1361512604-2720-1-git-send-email-khilman@linaro.org>
-	 <1361522767.26780.44.camel@laptop>
-	 <20130222125019.GC17948@somewhere.redhat.com>
-	 <1361540926.26780.56.camel@laptop> <20130222135411.GA9202@gmail.com>
-	 <1361541894.26780.62.camel@laptop> <20130222141635.GA9606@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Feb 2013 09:26:39 -0500
+Date: Fri, 22 Feb 2013 06:26:20 -0800
+From: Kumar amit mehta <gmate.amit@gmail.com>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: gregkh@linuxfoundation.org, fmhess@users.sourceforge.net,
+        hsweeten@visionengravers.com, dan.carpenter@oracle.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] staging: comedi: drivers: usbduxsigma.c: fix DMA
+ buffers on stack
+Message-ID: <20130222142619.GA11141@gmail.com>
+References: <1361513228-8897-1-git-send-email-gmate.amit@gmail.com>
+ <51274244.6080507@mev.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51274244.6080507@mev.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-22 at 15:16 +0100, Ingo Molnar wrote:
-> > I checked arch/x86/include/asm/atomic64_32.h and we use 
-> > cmpxchg8b for everything from _set() to _read(), which 
-> > translates into 'horridly stupendifyingly slow' for a number 
-> > of machines, but coherent.
+On Fri, Feb 22, 2013 at 10:02:44AM +0000, Ian Abbott wrote:
+> On 2013-02-22 06:07, Kumar Amit Mehta wrote:
+> >This patch fixes an instance of DMA buffer on stack(being passed to
+> >usb_control_msg)for the USB-DUXsigma Board driver. Found using smatch.
+> >
 > 
-> That's a valid concern - and cmpxchg8b is the only 64-bit op 
-> available on most 32-bit x86 CPUs which does not involve the 
-> FPU.
+> Looks good here too.
 > 
-> Wondering how significant this range of x86 problem boxes will 
-> be by the time any of these changes reaches upstream and distros 
-> - and how much 'horridly stupendifyingly slow' is in terms of 
-> cycles expended.
+> Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+> 
+> Would you mind doing the same for usbdux.c and usbduxfast.c?
+Sure. 
+As pointed out by Dan, Do you really want the buffer to be of 16 bytes, as we
+are using only the first byte and passing the length as '1' in:
+usbduxsub_start, usbduxsub_stop, usbduxfastsub_start, usbduxfastsub_stop ?
 
-On the !x86 side of things we're implementing (generic) atomic64 using
-hashed spinlocks, so there too using a single spinlock around the
-entire data structure is a complete win.
-
+~Amit
