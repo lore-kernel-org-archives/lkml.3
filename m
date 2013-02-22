@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759202Ab3BVSJn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 13:09:43 -0500
-Received: from [89.21.227.133] ([89.21.227.133]:44662 "EHLO
+	id S932405Ab3BVSJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 13:09:36 -0500
+Received: from [89.21.227.133] ([89.21.227.133]:47683 "EHLO
 	mail.kdh.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759081Ab3BVSIh (ORCPT
+	by vger.kernel.org with ESMTP id S1759085Ab3BVSIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Feb 2013 13:08:37 -0500
 From: Nick Dyer <nick.dyer@itdev.co.uk>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 12/40] Input: atmel_mxt_ts - Read screen config from chip
-Date: Fri, 22 Feb 2013 17:57:59 +0000
-Message-Id: <1361555907-19840-13-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 21/40] Input: atmel_mxt_ts - Implement T44 message handling
+Date: Fri, 22 Feb 2013 17:58:08 +0000
+Message-Id: <1361555907-19840-22-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,289 +25,299 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than having a separate configuration in platform data for screen size
-and orientation, read it from the settings that the touchscreen controller is
-using.
+maXTouch chips allow the reading of multiple messages in a single I2C
+transaction. The number of messages available to be read is given by the value
+in the T44 object which is located directly before the T5 object.
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 ---
- arch/arm/mach-exynos/mach-nuri.c           |    3 -
- arch/arm/mach-exynos/mach-universal_c210.c |    3 -
- arch/arm/mach-s5pv210/mach-goni.c          |    3 -
- drivers/input/touchscreen/atmel_mxt_ts.c   |  144 ++++++++++++++--------------
- include/linux/i2c/atmel_mxt_ts.h           |   14 ---
- 5 files changed, 70 insertions(+), 97 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |  188 ++++++++++++++++++++++++------
+ 1 file changed, 155 insertions(+), 33 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/mach-nuri.c b/arch/arm/mach-exynos/mach-nuri.c
-index 770d314..0c8dac8 100644
---- a/arch/arm/mach-exynos/mach-nuri.c
-+++ b/arch/arm/mach-exynos/mach-nuri.c
-@@ -335,9 +335,6 @@ static struct i2c_board_info i2c1_devs[] __initdata = {
- 
- /* TSP */
- static struct mxt_platform_data mxt_platform_data = {
--	.x_size			= 1024,
--	.y_size			= 600,
--	.orient			= MXT_DIAGONAL_COUNTER,
- 	.irqflags		= IRQF_TRIGGER_FALLING,
- };
- 
-diff --git a/arch/arm/mach-exynos/mach-universal_c210.c b/arch/arm/mach-exynos/mach-universal_c210.c
-index 8de6e36..15aae25 100644
---- a/arch/arm/mach-exynos/mach-universal_c210.c
-+++ b/arch/arm/mach-exynos/mach-universal_c210.c
-@@ -605,9 +605,6 @@ static struct i2c_board_info i2c5_devs[] __initdata = {
- 
- /* I2C3 (TSP) */
- static struct mxt_platform_data qt602240_platform_data = {
--	.x_size		= 800,
--	.y_size		= 480,
--	.orient		= MXT_DIAGONAL,
- 	.irqflags	= IRQF_TRIGGER_FALLING,
- };
- 
-diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
-index 2743751..7cc1387 100644
---- a/arch/arm/mach-s5pv210/mach-goni.c
-+++ b/arch/arm/mach-s5pv210/mach-goni.c
-@@ -240,9 +240,6 @@ static void __init goni_radio_init(void)
- 
- /* TSP */
- static struct mxt_platform_data qt602240_platform_data = {
--	.x_size		= 800,
--	.y_size		= 480,
--	.orient		= MXT_DIAGONAL,
- 	.irqflags	= IRQF_TRIGGER_FALLING,
- };
- 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 903ff54..e1f2bd3 100644
+index 51901b7..238c11c 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -102,33 +102,16 @@
+@@ -246,12 +246,15 @@ struct mxt_data {
+ 	unsigned int max_y;
+ 	struct bin_attribute mem_access_attr;
+ 	bool debug_enabled;
++	u8 max_reportid;
+ 	u32 config_crc;
+ 	u32 info_crc;
+ 	u8 bootloader_addr;
+ 	struct t7_config t7_cfg;
+ 	u8 *msg_buf;
+ 	bool update_input;
++	u8 last_message_count;
++	u8 num_touchids;
  
- /* MXT_TOUCH_MULTI_T9 field */
- #define MXT_TOUCH_CTRL		0
--#define MXT_TOUCH_XORIGIN	1
--#define MXT_TOUCH_YORIGIN	2
--#define MXT_TOUCH_XSIZE		3
--#define MXT_TOUCH_YSIZE		4
--#define MXT_TOUCH_BLEN		6
--#define MXT_TOUCH_TCHTHR	7
--#define MXT_TOUCH_TCHDI		8
--#define MXT_TOUCH_ORIENT	9
--#define MXT_TOUCH_MOVHYSTI	11
--#define MXT_TOUCH_MOVHYSTN	12
--#define MXT_TOUCH_NUMTOUCH	14
--#define MXT_TOUCH_MRGHYST	15
--#define MXT_TOUCH_MRGTHR	16
--#define MXT_TOUCH_AMPHYST	17
--#define MXT_TOUCH_XRANGE_LSB	18
--#define MXT_TOUCH_XRANGE_MSB	19
--#define MXT_TOUCH_YRANGE_LSB	20
--#define MXT_TOUCH_YRANGE_MSB	21
--#define MXT_TOUCH_XLOCLIP	22
--#define MXT_TOUCH_XHICLIP	23
--#define MXT_TOUCH_YLOCLIP	24
--#define MXT_TOUCH_YHICLIP	25
--#define MXT_TOUCH_XEDGECTRL	26
--#define MXT_TOUCH_XEDGEDIST	27
--#define MXT_TOUCH_YEDGECTRL	28
--#define MXT_TOUCH_YEDGEDIST	29
--#define MXT_TOUCH_JUMPLIMIT	30
-+#define MXT_T9_ORIENT		9
-+#define MXT_T9_RANGE		18
-+
-+struct t9_range {
-+	u16 x;
-+	u16 y;
-+} __packed;
-+
-+/* Touch orient bits */
-+#define MXT_XY_SWITCH		(1 << 0)
+ 	/* Cached parameters from object table */
+ 	u16 T5_address;
+@@ -261,6 +264,7 @@ struct mxt_data {
+ 	u16 T7_address;
+ 	u8 T9_reportid_min;
+ 	u8 T9_reportid_max;
++	u16 T44_address;
+ };
  
- /* MXT_PROCI_GRIPFACE_T20 field */
- #define MXT_GRIPFACE_CTRL	0
-@@ -211,11 +194,6 @@
- #define MXT_PRESS		(1 << 6)
- #define MXT_DETECT		(1 << 7)
- 
--/* Touch orient bits */
--#define MXT_XY_SWITCH		(1 << 0)
--#define MXT_X_INVERT		(1 << 1)
--#define MXT_Y_INVERT		(1 << 2)
--
- /* Touchscreen absolute values */
- #define MXT_MAX_AREA		0xff
- 
-@@ -532,11 +510,6 @@ static int __mxt_read_reg(struct i2c_client *client,
- 	return ret;
+ /* I2C slave address pairs */
+@@ -690,30 +694,143 @@ static int mxt_proc_message(struct mxt_data *data, u8 *message)
+ 	return 1;
  }
  
--static int mxt_read_reg(struct i2c_client *client, u16 reg, u8 *val)
--{
--	return __mxt_read_reg(client, reg, 1, val);
--}
--
- static int __mxt_write_reg(struct i2c_client *client, u16 reg, u16 len,
- 			   const void *val)
+-static int mxt_read_and_process_message(struct mxt_data *data)
++static int mxt_read_and_process_messages(struct mxt_data *data, u8 count)
  {
-@@ -1178,12 +1151,66 @@ static void mxt_free_object_table(struct mxt_data *data)
- 
- }
- 
-+static int mxt_read_t9_resolution(struct mxt_data *data)
-+{
-+	struct i2c_client *client = data->client;
-+	int error;
-+	struct t9_range range;
-+	unsigned char orient;
-+	struct mxt_object *object;
+ 	struct device *dev = &data->client->dev;
+ 	int ret;
++	int i;
++	u8 num_valid = 0;
 +
-+	object = mxt_get_object(data, MXT_TOUCH_MULTI_T9);
-+	if (!object)
++	/* Safety check for msg_buf */
++	if (count > data->max_reportid)
 +		return -EINVAL;
-+
-+	/* Update matrix size in info struct (may change after reset) */
-+	error = mxt_get_info(data);
-+	if (error)
-+		return error;
-+
-+	error = __mxt_read_reg(client,
-+			       object->start_address + MXT_T9_RANGE,
-+			       sizeof(range), &range);
-+	if (error)
-+		return error;
-+
-+	le16_to_cpus(range.x);
-+	le16_to_cpus(range.y);
-+
-+	error =  __mxt_read_reg(client,
-+				object->start_address + MXT_T9_ORIENT,
-+				1, &orient);
-+	if (error)
-+		return error;
-+
-+	/* Handle default values */
-+	if (range.x == 0)
-+		range.x = 1023;
-+
-+	if (range.y == 0)
-+		range.y = 1023;
-+
-+	if (orient & MXT_XY_SWITCH) {
-+		data->max_x = range.y;
-+		data->max_y = range.x;
-+	} else {
-+		data->max_x = range.x;
-+		data->max_y = range.y;
-+	}
-+
-+	dev_info(&client->dev,
-+			"Matrix Size X%uY%u Touchscreen size X%uY%u\n",
-+			data->info.matrix_xsize, data->info.matrix_ysize,
-+			data->max_x, data->max_y);
-+
-+	return 0;
-+}
-+
- static int mxt_initialize(struct mxt_data *data)
- {
- 	struct i2c_client *client = data->client;
- 	struct mxt_info *info = &data->info;
- 	int error;
--	u8 val;
  
- 	error = mxt_get_info(data);
- 	if (error) {
-@@ -1222,46 +1249,17 @@ static int mxt_initialize(struct mxt_data *data)
- 		return error;
++	/* Process remaining messages if necessary */
+ 	ret = __mxt_read_reg(data->client, data->T5_address,
+-				data->T5_msg_size, data->msg_buf);
++				data->T5_msg_size * count, data->msg_buf);
+ 	if (ret) {
+-		dev_err(dev, "Error %d reading message\n", ret);
++		dev_err(dev, "Failed to read %u messages (%d)\n", count, ret);
+ 		return ret;
  	}
  
--	/* Update matrix size at info struct */
--	error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, &val);
-+	error = mxt_read_t9_resolution(data);
- 	if (error)
--		goto err_free_object_table;
--	info->matrix_xsize = val;
--
--	error = mxt_read_reg(client, MXT_MATRIX_Y_SIZE, &val);
--	if (error)
--		goto err_free_object_table;
--	info->matrix_ysize = val;
-+		dev_warn(&client->dev, "Failed to initialize T9 resolution\n");
- 
- 	dev_info(&client->dev,
--			"Family ID: %u Variant ID: %u Firmware V%u.%u.%02X\n",
-+			"Family ID: %u Variant ID: %u Firmware V%u.%u.%02X "
-+			" Object Num:%d\n",
- 			info->family_id, info->variant_id, info->version >> 4,
--			info->version & 0xf, info->build);
--
--	dev_info(&client->dev,
--			"Matrix X Size: %u Matrix Y Size: %u Object Num: %u\n",
--			info->matrix_xsize, info->matrix_ysize,
--			info->object_num);
-+			info->version & 0xf, info->build, info->object_num);
- 
- 	return 0;
--
--err_free_object_table:
--	mxt_free_object_table(data);
--	return error;
--}
--
--static void mxt_calc_resolution(struct mxt_data *data)
--{
--	unsigned int max_x = data->pdata->x_size - 1;
--	unsigned int max_y = data->pdata->y_size - 1;
--
--	if (data->pdata->orient & MXT_XY_SWITCH) {
--		data->max_x = max_y;
--		data->max_y = max_x;
--	} else {
--		data->max_x = max_x;
--		data->max_y = max_y;
--	}
+-	return mxt_proc_message(data, data->msg_buf);
++	for (i = 0;  i < count; i++) {
++		ret = mxt_proc_message(data,
++			data->msg_buf + data->T5_msg_size * i);
++
++		if (ret == 1)
++			num_valid++;
++	}
++
++	/* return number of messages read */
++	return num_valid;
  }
  
- /* Firmware Version is returned as Major.Minor.Build */
-@@ -1650,8 +1648,6 @@ static int mxt_probe(struct i2c_client *client,
- 	data->pdata = pdata;
- 	data->irq = client->irq;
+-static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
++static irqreturn_t mxt_process_messages_t44(struct mxt_data *data)
+ {
++	struct device *dev = &data->client->dev;
+ 	int ret;
++	u8 count, num_left;
  
--	mxt_calc_resolution(data);
--
- 	error = mxt_initialize(data);
- 	if (error)
- 		goto err_free_mem;
-diff --git a/include/linux/i2c/atmel_mxt_ts.h b/include/linux/i2c/atmel_mxt_ts.h
-index 1ebb8fd..e7bceee 100644
---- a/include/linux/i2c/atmel_mxt_ts.h
-+++ b/include/linux/i2c/atmel_mxt_ts.h
-@@ -15,22 +15,8 @@
+-	do {
+-		ret = mxt_read_and_process_message(data);
++	/* Read T44 and T5 together */
++	ret = __mxt_read_reg(data->client, data->T44_address,
++		data->T5_msg_size + 1, data->msg_buf);
++	if (ret) {
++		dev_err(dev, "Failed to read T44 and T5 (%d)\n", ret);
++		return IRQ_NONE;
++	}
++
++	count = data->msg_buf[0];
++
++	if (count == 0) {
++		dev_warn(dev, "Interrupt triggered but zero messages\n");
++		return IRQ_NONE;
++	} else if (count > data->max_reportid) {
++		dev_err(dev, "T44 count exceeded max report id\n");
++		count = data->max_reportid;
++	}
++
++	/* Process first message */
++	ret = mxt_proc_message(data, data->msg_buf + 1);
++	if (ret < 0) {
++		dev_warn(dev, "Unexpected invalid message\n");
++		return IRQ_NONE;
++	}
++
++	num_left = count - 1;
++
++	/* Process remaining messages if necessary */
++	if (num_left) {
++		ret = mxt_read_and_process_messages(data, num_left);
+ 		if (ret < 0)
++			goto end;
++		else if (ret != num_left)
++			dev_warn(dev, "Unexpected invalid message\n");
++	}
++
++end:
++	if (data->update_input) {
++		mxt_input_sync(data->input_dev);
++		data->update_input = false;
++	}
++
++	return IRQ_HANDLED;
++}
++
++static int mxt_process_messages_until_invalid(struct mxt_data *data)
++{
++	struct device *dev = &data->client->dev;
++	int count, read;
++	u8 tries = 2;
++
++	count = data->max_reportid;
++
++	/* Read messages until we force an invalid */
++	do {
++		read = mxt_read_and_process_messages(data, count);
++		if (read < count)
++			return 0;
++	} while (--tries);
++
++	if (data->update_input) {
++		mxt_input_sync(data->input_dev);
++		data->update_input = false;
++	}
++
++	dev_err(dev, "CHG pin isn't cleared\n");
++	return -EBUSY;
++}
++
++static irqreturn_t mxt_process_messages(struct mxt_data *data)
++{
++	int total_handled, num_handled;
++	u8 count = data->last_message_count;
++
++	if (count < 1 || count > data->max_reportid)
++		count = 1;
++
++	/* include final invalid message */
++	total_handled = mxt_read_and_process_messages(data, count + 1);
++	if (total_handled < 0)
++		return IRQ_NONE;
++	/* if there were invalid messages, then we are done */
++	else if (total_handled <= count)
++		goto update_count;
++
++	/* read two at a time until an invalid message or else we reach
++	 * reportid limit */
++	do {
++		num_handled = mxt_read_and_process_messages(data, 2);
++		if (num_handled < 0)
+ 			return IRQ_NONE;
+-	} while (ret > 0);
++
++		total_handled += num_handled;
++
++		if (num_handled < 2)
++			break;
++	} while (total_handled < data->num_touchids);
++
++update_count:
++	data->last_message_count = total_handled;
  
- #include <linux/types.h>
+ 	if (data->update_input) {
+ 		mxt_input_sync(data->input_dev);
+@@ -727,7 +844,10 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ {
+ 	struct mxt_data *data = dev_id;
  
--/* Orient */
--#define MXT_NORMAL		0x0
--#define MXT_DIAGONAL		0x1
--#define MXT_HORIZONTAL_FLIP	0x2
--#define MXT_ROTATED_90_COUNTER	0x3
--#define MXT_VERTICAL_FLIP	0x4
--#define MXT_ROTATED_90		0x5
--#define MXT_ROTATED_180		0x6
--#define MXT_DIAGONAL_COUNTER	0x7
+-	return mxt_process_messages_until_invalid(data);
++	if (data->T44_address)
++		return mxt_process_messages_t44(data);
++	else
++		return mxt_process_messages(data);
+ }
+ 
+ static int mxt_t6_command(struct mxt_data *data, u16 cmd_offset, u8 value, bool wait)
+@@ -1129,25 +1249,6 @@ recheck:
+ 	}
+ }
+ 
+-static int mxt_make_highchg(struct mxt_data *data)
+-{
+-	struct device *dev = &data->client->dev;
+-	int count = 10;
+-	int ret;
 -
- /* The platform data for the Atmel maXTouch touchscreen driver */
- struct mxt_platform_data {
--	unsigned int x_size;
--	unsigned int y_size;
--	unsigned char orient;
+-	/* Read messages until we force an invalid */
+-	do {
+-		ret = mxt_read_and_process_message(data);
+-		if (ret == 0)
+-			return 0;
+-		else if (ret < 0)
+-			return ret;
+-	} while (--count);
 -
- 	unsigned long irqflags;
- 	u8(*read_chg) (void);
- };
+-	dev_err(dev, "CHG pin isn't cleared\n");
+-	return -EBUSY;
+-}
+-
+ static int mxt_get_info(struct mxt_data *data)
+ {
+ 	struct i2c_client *client = data->client;
+@@ -1217,8 +1318,14 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 
+ 		switch (object->type) {
+ 		case MXT_GEN_MESSAGE_T5:
+-			/* CRC not enabled, therefore don't read last byte */
+-			data->T5_msg_size = OBP_SIZE(object) - 1;
++			if (data->info.family_id == 0x80) {
++				/* On mXT224 read and discard unused CRC byte
++				 * otherwise DMA reads are misaligned */
++				data->T5_msg_size = OBP_SIZE(object);
++			} else {
++				/* CRC not enabled, therefore don't read last byte */
++				data->T5_msg_size = OBP_SIZE(object) - 1;
++			}
+ 			data->T5_address = object->start_address;
+ 		case MXT_GEN_COMMAND_T6:
+ 			data->T6_reportid = min_id;
+@@ -1230,6 +1337,11 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 		case MXT_TOUCH_MULTI_T9:
+ 			data->T9_reportid_min = min_id;
+ 			data->T9_reportid_max = max_id;
++			data->num_touchids =
++				object->num_report_ids * OBP_INSTANCES(object);
++			break;
++		case MXT_SPT_MESSAGECOUNT_T44:
++			data->T44_address = object->start_address;
+ 			break;
+ 		}
+ 
+@@ -1240,7 +1352,17 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 			data->mem_size = end_address + 1;
+ 	}
+ 
+-	data->msg_buf = kzalloc(data->T5_msg_size, GFP_KERNEL);
++	/* Store maximum reportid */
++	data->max_reportid = reportid;
++
++	/* If T44 exists, T5 position has to be directly after */
++	if (data->T44_address && (data->T5_address != data->T44_address + 1)) {
++		dev_err(&client->dev, "Invalid T44 position\n");
++		error = -EINVAL;
++		goto free_object_table;
++	}
++
++	data->msg_buf = kcalloc(data->max_reportid, data->T5_msg_size, GFP_KERNEL);
+ 	if (!data->msg_buf) {
+ 		dev_err(&client->dev, "Failed to allocate message buffer\n");
+ 		error = -ENOMEM;
+@@ -1577,7 +1699,7 @@ static ssize_t mxt_update_fw_store(struct device *dev,
+ 	if (data->state == APPMODE) {
+ 		enable_irq(data->irq);
+ 
+-		error = mxt_make_highchg(data);
++		error = mxt_process_messages_until_invalid(data);
+ 		if (error)
+ 			return error;
+ 	}
+@@ -1826,7 +1948,7 @@ static int mxt_probe(struct i2c_client *client,
+ 	}
+ 
+ 	if (data->state == APPMODE) {
+-		error = mxt_make_highchg(data);
++		error = mxt_process_messages_until_invalid(data);
+ 		if (error)
+ 			goto err_free_irq;
+ 	}
 -- 
 1.7.10.4
 
