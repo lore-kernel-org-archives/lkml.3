@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab3BVI0i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 03:26:38 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60541 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab3BVI0g (ORCPT
+	id S1755703Ab3BVI2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 03:28:47 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:8386 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754624Ab3BVI2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 03:26:36 -0500
-X-AuditID: 9c930179-b7b61ae000004061-78-51272bb79834
-Date: Fri, 22 Feb 2013 17:26:31 +0900
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: dsterba@suse.cz
-Cc: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hyojun.im@lge.com, chan.jeong@lge.com,
-        raphael.andy.lee@gmail.com
-Subject: Re: [PATCH v2] btrfs: use kmalloc for lzo de/compress buffer
-Message-ID: <20130222082630.GA21294@Corona>
-References: <1361174164-7182-1-git-send-email-kyungsik.lee@lge.com>
- <20130221134153.GD27541@twin.jikos.cz>
+	Fri, 22 Feb 2013 03:28:44 -0500
+X-IronPort-AV: E=Sophos;i="4.84,714,1355097600"; 
+   d="scan'208";a="1770297"
+Message-ID: <1361521714.26546.91.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH XEN] xen: event channel arrays are xen_ulong_t and not
+ unsigned long
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Keir Fraser <keir.xen@gmail.com>
+CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>, "Keir (Xen.org)" <keir@xen.org>,
+        "Tim (Xen.org)" <tim@xen.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 22 Feb 2013 08:28:34 +0000
+In-Reply-To: <CD4C1B4B.4C72B%keir.xen@gmail.com>
+References: <CD4C1B4B.4C72B%keir.xen@gmail.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130221134153.GD27541@twin.jikos.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 02:41:53PM +0100, David Sterba wrote:
-> On Mon, Feb 18, 2013 at 04:56:04PM +0900, Kyungsik Lee wrote:
-> > @@ -55,8 +55,9 @@ static struct list_head *lzo_alloc_workspace(void)
-> >  		return ERR_PTR(-ENOMEM);
-> >  
-> >  	workspace->mem = vmalloc(LZO1X_MEM_COMPRESS);
-> > -	workspace->buf = vmalloc(PAGE_CACHE_SIZE);
-> > -	workspace->cbuf = vmalloc(lzo1x_worst_compress(PAGE_CACHE_SIZE));
-> > +	workspace->buf = kmalloc(PAGE_CACHE_SIZE, GFP_NOFS);
-> > +	workspace->cbuf = kmalloc(lzo1x_worst_compress(PAGE_CACHE_SIZE),
+On Thu, 2013-02-21 at 18:43 +0000, Keir Fraser wrote:
+> On 21/02/2013 17:16, "Ian Campbell" <Ian.Campbell@citrix.com> wrote:
 > 
-> This is still larger than usual page size and allocator may issue a
-> warning, so if we want to use kmalloc (it's ~4.4k in size and likely to
-> be available, but not always due to possible page fragmentation), the
-> __GFP_NOWARN should be supplied and if the allocation fails fall back to
-> vmalloc.
-Right, there shoud be another fixed verson for this.
+> > On Tue, 2013-02-19 at 14:49 +0000, Ian Campbell wrote:
+> >> On ARM we want these to be the same size on 32- and 64-bit.
+> >> 
+> >> This is an ABI change on ARM. X86 does not change.
+> >> 
+> >> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> >> Cc: Jan Beulich <JBeulich@suse.com>
+> >> Cc: Keir (Xen.org) <keir@xen.org>
+> > 
+> > Are you guys (un)happy with this change from the Xen & x86 side?
+> 
+> Fine by me.
 
-Thanks,
-Kyungsik
+I'm going to take that as an Acked-by then, assuming that's ok with you.
+I suppose Fine-by: Keir would do too ;-)
+
+Ian.
+
+
