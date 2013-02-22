@@ -1,133 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757712Ab3BVPOc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 10:14:32 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:56931 "EHLO
+	id S1756996Ab3BVPSk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 10:18:40 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:33613 "EHLO
 	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757092Ab3BVPOb (ORCPT
+	with ESMTP id S1756743Ab3BVPSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 10:14:31 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 1/2] cpustat: use accessor functions for get/set/add
-References: <1361512604-2720-1-git-send-email-khilman@linaro.org>
-	<1361512604-2720-2-git-send-email-khilman@linaro.org>
-	<CAOh2x=kFL5_H=LqLf14yxYQEs7zSTT8Ue8mjUEVN4_a0c53Rdg@mail.gmail.com>
-Date: Fri, 22 Feb 2013 07:14:27 -0800
-In-Reply-To: <CAOh2x=kFL5_H=LqLf14yxYQEs7zSTT8Ue8mjUEVN4_a0c53Rdg@mail.gmail.com>
-	(Viresh Kumar's message of "Fri, 22 Feb 2013 11:51:43 +0530")
-Message-ID: <87txp41iuk.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 22 Feb 2013 10:18:38 -0500
+From: Dongjin Kim <tobetter@gmail.com>
+Cc: Dongjin Kim <tobetter@gmail.com>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Will Newton <will.newton@imgtec.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4] mmc: dw_mmc: Add MSHC compatible for Exynos4412
+Date: Sat, 23 Feb 2013 00:17:45 +0900
+Message-Id: <1361546283-7479-1-git-send-email-tobetter@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1361210793-5710-1-git-send-email-tobetter@gmail.com>
+References: <1361210793-5710-1-git-send-email-tobetter@gmail.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Viresh Kumar <viresh.kumar@linaro.org> writes:
+This patch adds the compatible string for MSHC controller of Exynos4412.
+And exynos5250_dwmmc_caps is renamed to exynos_dwmmc_caps, since it has the
+capablities of common feature supported by Exynos4 and Exynos5.
 
-> On Fri, Feb 22, 2013 at 11:26 AM, Kevin Hilman <khilman@linaro.org> wrote:
->> Add some accessor functions in order to facilitate the conversion to
->> atomic reads/writes of cpustat values.
->>
->> Signed-off-by: Kevin Hilman <khilman@linaro.org>
->> ---
->>  drivers/cpufreq/cpufreq_governor.c | 18 ++++++++---------
->>  drivers/cpufreq/cpufreq_ondemand.c |  2 +-
->
->> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
->> index 6c5f1d3..ec6c315 100644
->> --- a/drivers/cpufreq/cpufreq_governor.c
->> +++ b/drivers/cpufreq/cpufreq_governor.c
->> @@ -36,12 +36,12 @@ static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
->>
->>         cur_wall_time = jiffies64_to_cputime64(get_jiffies_64());
->>
->> -       busy_time = kcpustat_cpu(cpu).cpustat[CPUTIME_USER];
->> -       busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_SYSTEM];
->> -       busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_IRQ];
->> -       busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_SOFTIRQ];
->> -       busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_STEAL];
->> -       busy_time += kcpustat_cpu(cpu).cpustat[CPUTIME_NICE];
->> +       busy_time = kcpustat_cpu_get(cpu, CPUTIME_USER);
->> +       busy_time += kcpustat_cpu_get(cpu, CPUTIME_SYSTEM);
->> +       busy_time += kcpustat_cpu_get(cpu, CPUTIME_IRQ);
->> +       busy_time += kcpustat_cpu_get(cpu, CPUTIME_SOFTIRQ);
->> +       busy_time += kcpustat_cpu_get(cpu, CPUTIME_STEAL);
->> +       busy_time += kcpustat_cpu_get(cpu, CPUTIME_NICE);
->>
->>         idle_time = cur_wall_time - busy_time;
->>         if (wall)
->> @@ -103,7 +103,7 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
->>                         u64 cur_nice;
->>                         unsigned long cur_nice_jiffies;
->>
->> -                       cur_nice = kcpustat_cpu(j).cpustat[CPUTIME_NICE] -
->> +                       cur_nice = kcpustat_cpu_get(j, CPUTIME_NICE) -
->>                                          cdbs->prev_cpu_nice;
->>                         /*
->>                          * Assumption: nice time between sampling periods will
->> @@ -113,7 +113,7 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
->>                                         cputime64_to_jiffies64(cur_nice);
->>
->>                         cdbs->prev_cpu_nice =
->> -                               kcpustat_cpu(j).cpustat[CPUTIME_NICE];
->> +                               kcpustat_cpu_get(j, CPUTIME_NICE);
->>                         idle_time += jiffies_to_usecs(cur_nice_jiffies);
->>                 }
->>
->> @@ -216,7 +216,7 @@ int cpufreq_governor_dbs(struct dbs_data *dbs_data,
->>                                         &j_cdbs->prev_cpu_wall);
->>                         if (ignore_nice)
->>                                 j_cdbs->prev_cpu_nice =
->> -                                       kcpustat_cpu(j).cpustat[CPUTIME_NICE];
->> +                                       kcpustat_cpu_get(j, CPUTIME_NICE);
->>                 }
->>
->>                 /*
->> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
->> index 7731f7c..ac5d49f 100644
->> --- a/drivers/cpufreq/cpufreq_ondemand.c
->> +++ b/drivers/cpufreq/cpufreq_ondemand.c
->> @@ -403,7 +403,7 @@ static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
->>                                                 &dbs_info->cdbs.prev_cpu_wall);
->>                 if (od_tuners.ignore_nice)
->>                         dbs_info->cdbs.prev_cpu_nice =
->> -                               kcpustat_cpu(j).cpustat[CPUTIME_NICE];
->> +                               kcpustat_cpu_get(j, CPUTIME_NICE);
->>
->>         }
->>         return count;
->
-> For cpufreq:
->
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
->
-> Though i believe you also need this:
->
-> diff --git a/drivers/cpufreq/cpufreq_conservative.c
-> b/drivers/cpufreq/cpufreq_conservative.c
-> index 64ef737..38e3ad7 100644
-> --- a/drivers/cpufreq/cpufreq_conservative.c
-> +++ b/drivers/cpufreq/cpufreq_conservative.c
-> @@ -242,7 +242,7 @@ static ssize_t store_ignore_nice_load(struct
-> kobject *a, struct attribute *b,
->                                                 &dbs_info->cdbs.prev_cpu_wall);
->                 if (cs_tuners.ignore_nice)
->                         dbs_info->cdbs.prev_cpu_nice =
-> -                               kcpustat_cpu(j).cpustat[CPUTIME_NICE];
-> +                               kcpustat_cpu_get(j, CPUTIME_NICE);
->         }
->         return count;
->  }
+Cc: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>
+Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+---
+ drivers/mmc/host/dw_mmc-exynos.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-Thanks, I missed that one.  I've added it in locally.
+diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
+index 4d50da6..dd8f58c 100644
+--- a/drivers/mmc/host/dw_mmc-exynos.c
++++ b/drivers/mmc/host/dw_mmc-exynos.c
+@@ -199,8 +199,8 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
+ 	return 0;
+ }
+ 
+-/* Exynos5250 controller specific capabilities */
+-static unsigned long exynos5250_dwmmc_caps[4] = {
++/* Common capabilities of Exynos4/Exynos5 SoC */
++static unsigned long exynos_dwmmc_caps[4] = {
+ 	MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
+ 		MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
+ 	MMC_CAP_CMD23,
+@@ -208,8 +208,8 @@ static unsigned long exynos5250_dwmmc_caps[4] = {
+ 	MMC_CAP_CMD23,
+ };
+ 
+-static const struct dw_mci_drv_data exynos5250_drv_data = {
+-	.caps			= exynos5250_dwmmc_caps,
++static const struct dw_mci_drv_data exynos_drv_data = {
++	.caps			= exynos_dwmmc_caps,
+ 	.init			= dw_mci_exynos_priv_init,
+ 	.setup_clock		= dw_mci_exynos_setup_clock,
+ 	.prepare_command	= dw_mci_exynos_prepare_command,
+@@ -219,8 +219,10 @@ static const struct dw_mci_drv_data exynos5250_drv_data = {
+ };
+ 
+ static const struct of_device_id dw_mci_exynos_match[] = {
++	{ .compatible = "samsung,exynos4412-dw-mshc",
++			.data = &exynos_drv_data, },
+ 	{ .compatible = "samsung,exynos5250-dw-mshc",
+-			.data = &exynos5250_drv_data, },
++			.data = &exynos_drv_data, },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, dw_mci_exynos_match);
+-- 
+1.7.10.4
 
-Kevin
