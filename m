@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759288Ab3BVSQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 13:16:11 -0500
-Received: from [89.21.227.133] ([89.21.227.133]:61778 "EHLO
+	id S932226Ab3BVSQz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 13:16:55 -0500
+Received: from [89.21.227.133] ([89.21.227.133]:18360 "EHLO
 	mail.kdh.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759026Ab3BVSId (ORCPT
+	by vger.kernel.org with ESMTP id S1759006Ab3BVSIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 13:08:33 -0500
+	Fri, 22 Feb 2013 13:08:32 -0500
 From: Nick Dyer <nick.dyer@itdev.co.uk>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Daniel Kurtz <djkurtz@chromium.org>,
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
 Cc: Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 24/40] Input: atmel_mxt_ts - Implement vector/orientation support
-Date: Fri, 22 Feb 2013 17:58:11 +0000
-Message-Id: <1361555907-19840-25-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 27/40] Input: atmel_mxt_ts - Add check for incorrect firmware file format
+Date: Fri, 22 Feb 2013 17:58:14 +0000
+Message-Id: <1361555907-19840-28-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -25,72 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The atmel touch messages contain orientation information as a byte in a packed
-format which can be passed straight on to Android if the input device
-configuration is correct, see
-http://source.android.com/tech/input/touch-devices.html#touchorientationcalibration
-
-This requires vector reports to be enabled in maXTouch config (zero DISVECT
-bit in T9 CTRL field)
-
-Android converts the format in frameworks/base/services/input/Input.cpp,
-search for ORIENTATION_CALIBRATION_VECTOR.
+Atmel supplies firmware files in ASCII HEX format (.enc) which must be
+converted before they can be loaded by kernel driver. Try to detect the error
+and print a friendly error message rather than feeding junk to the bootloader.
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index b1fdc36..6ab7ef6 100644
+index 3aac912..a1f196b 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -621,6 +621,7 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
- 	int y;
- 	int area;
- 	int amplitude;
-+	u8 vector;
+@@ -1724,6 +1724,27 @@ done:
+ 	return error ?: count;
+ }
  
- 	/* do not report events if input device not yet registered */
- 	if (!input_dev)
-@@ -638,9 +639,10 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
++static int mxt_check_firmware_format(struct device *dev, const struct firmware *fw)
++{
++	unsigned int pos = 0;
++	char c;
++
++	while (pos < fw->size) {
++		c = *(fw->data + pos);
++
++		if (c < '0' || (c > '9' && c < 'A') || c > 'F')
++			return 0;
++
++		pos++;
++	}
++
++	/* To convert file try
++	 * xxd -r -p mXTXXX__APP_VX-X-XX.enc > maxtouch.fw */
++	dev_err(dev, "Aborting: firmware file must be in binary format\n");
++
++	return -1;
++}
++
+ static int mxt_load_fw(struct device *dev, const char *fn)
+ {
+ 	struct mxt_data *data = dev_get_drvdata(dev);
+@@ -1740,6 +1761,11 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 		return ret;
+ 	}
  
- 	area = message[5];
- 	amplitude = message[6];
-+	vector = message[7];
- 
- 	dev_dbg(dev,
--		"[%u] %c%c%c%c%c%c%c%c x: %5u y: %5u area: %3u amp: %3u\n",
-+		"[%u] %c%c%c%c%c%c%c%c x: %5u y: %5u area: %3u amp: %3u vector: %02X\n",
- 		id,
- 		(status & MXT_T9_DETECT) ? 'D' : '.',
- 		(status & MXT_T9_PRESS) ? 'P' : '.',
-@@ -650,7 +652,7 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
- 		(status & MXT_T9_AMP) ? 'A' : '.',
- 		(status & MXT_T9_SUPPRESS) ? 'S' : '.',
- 		(status & MXT_T9_UNGRIP) ? 'U' : '.',
--		x, y, area, amplitude);
-+		x, y, area, amplitude, vector);
- 
- 	input_mt_slot(input_dev, id);
- 
-@@ -670,6 +672,7 @@ static void mxt_proc_t9_message(struct mxt_data *data, u8 *message)
- 		input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
- 		input_report_abs(input_dev, ABS_MT_PRESSURE, amplitude);
- 		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, area);
-+		input_report_abs(input_dev, ABS_MT_ORIENTATION, vector);
- 	} else {
- 		/* Touch no longer active, close out slot */
- 		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, 0);
-@@ -1945,6 +1948,8 @@ static int mxt_initialize_t9_input_device(struct mxt_data *data)
- 			     0, data->max_y, 0, 0);
- 	input_set_abs_params(input_dev, ABS_MT_PRESSURE,
- 			     0, 255, 0, 0);
-+	input_set_abs_params(input_dev, ABS_MT_ORIENTATION,
-+			     0, 255, 0, 0);
- 
- 	input_set_drvdata(input_dev, data);
- 
++	/* Check for incorrect enc file */
++	ret = mxt_check_firmware_format(dev, fw);
++	if (ret)
++		goto release_firmware;
++
+ 	if (data->state != BOOTLOADER) {
+ 		/* Change to the bootloader mode */
+ 		ret = mxt_soft_reset(data, MXT_BOOT_VALUE);
 -- 
 1.7.10.4
 
