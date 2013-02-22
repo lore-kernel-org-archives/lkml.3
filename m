@@ -1,92 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758164Ab3BVQyk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 11:54:40 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47399 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757639Ab3BVQyh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 11:54:37 -0500
-Message-ID: <5127A2AF.9030502@oracle.com>
-Date: Fri, 22 Feb 2013 11:54:07 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Marek Lindner <lindner_marek@yahoo.de>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        Antonio Quartulli <ordex@autistici.org>
-CC: "David S. Miller" <davem@davemloft.net>, b.a.t.m.a.n@lists.open-mesh.org,
-        netdev@vger.kernel.org,
+	id S1758190Ab3BVQy7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 11:54:59 -0500
+Received: from mail4.gandi.net ([217.70.183.210]:42841 "EHLO mail4.gandi.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757516Ab3BVQyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 11:54:54 -0500
+X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Feb 2013 11:54:54 EST
+Date: Fri, 22 Feb 2013 17:47:28 +0100
+From: William Dauchy <william@gandi.net>
+To: stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: batman-adv: gpf in batadv_slide_own_bcast_window
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+        ian.campbell@citrix.com, david.vrabel@citrix.com,
+        "Christopher S. Aker" <caker@theshore.net>
+Subject: xen-netback fixes for stable 35876b5 3e55f8b
+Message-ID: <20130222164728.GB27794@gandi.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ITEy4z2kE7rjCDPK"
+Content-Disposition: inline
+Reply_to: William Dauchy <william@gandi.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-While fuzzing with trinity inside a KVM tools guest running latest -next kernel
-I've stumbled on the following:
+--ITEy4z2kE7rjCDPK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[ 3148.615130] batman_adv: <98>\<AE><A4><C7>^?: Removing interface: eth0
-[ 3148.991938] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 3148.993736] Dumping ftrace buffer:
-[ 3148.997554]    (ftrace buffer empty)
-[ 3148.998426] Modules linked in:
-[ 3148.999135] CPU 3
-[ 3148.999606] Pid: 6, comm: kworker/u:0 Tainted: G        W    3.8.0-next-20130222-sasha-00038-gba27e20-dirty #11
-[ 3149.001223] RIP: 0010:[<ffffffff83d217d8>]  [<ffffffff83d217d8>] batadv_slide_own_bcast_window+0xb8/0x2b0
-[ 3149.001223] RSP: 0018:ffff8800b9f4fc58  EFLAGS: 00010246
-[ 3149.001223] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000001
-[ 3149.001223] RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000001
-[ 3149.001223] RBP: ffff8800b9f4fcb8 R08: 0000000000000002 R09: ffff8800b9f63950
-[ 3149.001223] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800abad2238
-[ 3149.001223] R13: 6b6b6b6b6b6b865b R14: ffff88004c13cda0 R15: 0000000000000001
-[ 3149.001223] FS:  0000000000000000(0000) GS:ffff8800bbc00000(0000) knlGS:0000000000000000
-[ 3149.001223] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 3149.001223] CR2: 00007f006711f1d0 CR3: 000000008258e000 CR4: 00000000000406e0
-[ 3149.001223] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 3149.001223] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 3149.001223] Process kworker/u:0 (pid: 6, threadinfo ffff8800b9f4e000, task ffff8800b9f63000)
-[ 3149.001223] Stack:
-[ 3149.001223]  ffffffff83d21760 ffff8800b9f63000 ffff8800abad2238 0000000000000000
-[ 3149.001223]  ffff880068f6c438 0000035e00000001 ffff8800b9f4fc98 0000000000000000
-[ 3149.001223]  ffff8800abad2238 ffff88004c13c2a0 ffff88004c13cda0 0000000000000001
-[ 3149.001223] Call Trace:
-[ 3149.001223]  [<ffffffff83d21760>] ? batadv_slide_own_bcast_window+0x40/0x2b0
-[ 3149.001223]  [<ffffffff83d10ee4>] batadv_iv_ogm_schedule+0x254/0x300
-[ 3149.001223]  [<ffffffff83d10c90>] ? batadv_iv_ogm_queue_add+0x710/0x710
-[ 3149.001223]  [<ffffffff811178bf>] ? local_bh_enable_ip+0xef/0x150
-[ 3149.001223]  [<ffffffff83d25a15>] batadv_send_outstanding_bat_ogm_packet+0xc5/0xf0
-[ 3149.001223]  [<ffffffff81133ce6>] process_one_work+0x366/0x6a0
-[ 3149.001223]  [<ffffffff81133ba8>] ? process_one_work+0x228/0x6a0
-[ 3149.001223]  [<ffffffff811345a8>] worker_thread+0x238/0x370
-[ 3149.001223]  [<ffffffff81134370>] ? rescuer_thread+0x310/0x310
-[ 3149.001223]  [<ffffffff8113eb73>] kthread+0xe3/0xf0
-[ 3149.001223]  [<ffffffff8113ea90>] ? flush_kthread_work+0x1f0/0x1f0
-[ 3149.001223]  [<ffffffff83dc203c>] ret_from_fork+0x7c/0xb0
-[ 3149.001223]  [<ffffffff8113ea90>] ? flush_kthread_work+0x1f0/0x1f0
-[ 3149.001223] Code: 31 4b fd 85 c0 74 24 48 c7 c2 50 cd bd 84 be 02 03 00 00 48 c7 c7 b4 da bd 84 c6 05 14 ab 16 02 01 e8 ed 16
-46 fd 0f 1f 44 00 00 <49> 8b 55 00 48 89 55 b8 e8 0b 55 41 fd 85 c0 74 37 80 3d ee aa
-[ 3149.001223] RIP  [<ffffffff83d217d8>] batadv_slide_own_bcast_window+0xb8/0x2b0
-[ 3149.001223]  RSP <ffff8800b9f4fc58>
-[ 3149.105631] ---[ end trace ba69e369627c73e7 ]---
+Hello,
 
-Rip points to:
+I believe the two commits 35876b5 and 3e55f8b could be included in stable t=
+ree.
+35876b5 is related to 4885628 already in the stable tree and fixes a
+possible oops.
+3e55f8b is fixing another possible oops (see commit messages).
 
-        for (i = 0; i < hash->size; i++) {
-                head = &hash->table[i];
+I tested them on top of a v3.4.33.
+Could we consider adding these patches in stable tree at least for v3.4?
 
-                rcu_read_lock();
-                hlist_for_each_entry_rcu(orig_node, head, hash_entry) { <--- here
-                        spin_lock_bh(&orig_node->ogm_cnt_lock);
-                        word_index = hard_iface->if_num * BATADV_NUM_WORDS;
-                        word = &(orig_node->bcast_own[word_index]);
+Tested-by: William Dauchy <william@gandi.net>
+Cc: stable@vger.kernel.org
 
 
-Thanks,
-Sasha
+
+commit 35876b5ffc154c357476b2c3bdab10feaf4bd8f0
+Author: David Vrabel <david.vrabel@citrix.com>
+Date:   Thu Feb 14 03:18:57 2013 +0000
+
+    xen-netback: correctly return errors from netbk_count_requests()
+  =20
+    netbk_count_requests() could detect an error, call
+    netbk_fatal_tx_error() but return 0.  The vif may then be used
+    afterwards (e.g., in a call to netbk_tx_error().
+  =20
+    Since netbk_fatal_tx_error() could set vif->refcnt to 1, the vif may
+    be freed immediately after the call to netbk_fatal_tx_error() (e.g.,
+    if the vif is also removed).
+  =20
+    Netback thread              Xenwatch thread
+    -------------------------------------------
+    netbk_fatal_tx_err()        netback_remove()
+                                  xenvif_disconnect()
+                                    ...
+                                    free_netdev()
+    netbk_tx_err() Oops!
+  =20
+    Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+    Signed-off-by: Jan Beulich <JBeulich@suse.com>
+    Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+    Reported-by: Christopher S. Aker <caker@theshore.net>
+    Acked-by: Ian Campbell <ian.campbell@citrix.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+commit 3e55f8b306cf305832a4ac78aa82e1b40e818ece
+Author: David Vrabel <david.vrabel@citrix.com>
+Date:   Thu Feb 14 03:18:58 2013 +0000
+
+    xen-netback: cancel the credit timer when taking the vif down
+  =20
+    If the credit timer is left armed after calling
+    xen_netbk_remove_xenvif(), then it may fire and attempt to schedule
+    the vif which will then oops as vif->netbk =3D=3D NULL.
+  =20
+    This may happen both in the fatal error path and during normal
+    disconnection from the front end.
+  =20
+    The sequencing during shutdown is critical to ensure that: a)
+    vif->netbk doesn't become unexpectedly NULL; and b) the net device/vif
+    is not freed.
+  =20
+    1. Mark as unschedulable (netif_carrier_off()).
+    2. Synchronously cancel the timer.
+    3. Remove the vif from the schedule list.
+    4. Remove it from it netback thread group.
+    5. Wait for vif->refcnt to become 0.
+  =20
+    Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+    Acked-by: Ian Campbell <ian.campbell@citrix.com>
+    Reported-by: Christopher S. Aker <caker@theshore.net>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+
+Regards,
+--=20
+William
+
+--ITEy4z2kE7rjCDPK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlEnoSAACgkQ1I6eqOUidQEUsACgoixSadvxakgB2QiACg62KY8O
+Bn4AmgO+UpS2f5GFv+HGo+VVUz0Ij1mO
+=jdvI
+-----END PGP SIGNATURE-----
+
+--ITEy4z2kE7rjCDPK--
