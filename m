@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab3BVKYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 05:24:08 -0500
-Received: from www.linutronix.de ([62.245.132.108]:56650 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026Ab3BVKYF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 05:24:05 -0500
-Date: Fri, 22 Feb 2013 11:24:00 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-cc: Jason Liu <liu.h.jason@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: Re: too many timer retries happen when do local timer swtich with
- broadcast timer
-In-Reply-To: <5127436E.4040100@ti.com>
-Message-ID: <alpine.LFD.2.02.1302221122290.22263@ionos>
-References: <CAB4PhKevqf0e4nzYraE9ZTAFbPCFfNpguAnPoVpJh-FFe2TAZA@mail.gmail.com> <alpine.LFD.2.02.1302201400400.22263@ionos> <CAB4PhKfxPcyQfpM2Ra1OxsyYhS5fnkjtPy=uYgxFHim1rOdoug@mail.gmail.com> <alpine.LFD.2.02.1302211015270.22263@ionos>
- <CAB4PhKf+Z-TK4KGDZm1kYOWibg=e2Ehnhjxt_oTbFq9eqouAjA@mail.gmail.com> <alpine.LFD.2.02.1302211436300.22263@ionos> <51263975.20906@ti.com> <alpine.LFD.2.02.1302212214020.22263@ionos> <5127436E.4040100@ti.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756844Ab3BVKZI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 05:25:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49608 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754220Ab3BVKZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 05:25:05 -0500
+Date: Fri, 22 Feb 2013 11:25:04 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Julia.Lawall@lip6.fr, Gilles.Muller@lip6.fr, nicolas.palix@imag.fr,
+        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, elezegarcia@gmail.com
+Subject: Re: [PATCH V2] scripts/coccinelle/misc/memcpy-assign.cocci:
+	Replace memcpy with struct assignment
+Message-ID: <20130222102503.GD12402@pobox.suse.cz>
+References: <1358978790-2990-1-git-send-email-peter.senna@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1358978790-2990-1-git-send-email-peter.senna@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Feb 2013, Santosh Shilimkar wrote:
-> BTW, Lorenzo off-list mentioned to me about warning in boot-up
-> which I missed while testing your patch. It will take bit more
-> time for me to look into it and hence thought of reporting it.
+On Wed, Jan 23, 2013 at 08:06:30PM -0200, Peter Senna Tschudin wrote:
+> There are error-prone memcpy() that can be replaced by struct
+> assignment that are type-safe and much easier to read. This semantic
+> patch looks for memcpy() that can be replaced by struct assignment.
 > 
-> [    2.186126] ------------[ cut here ]------------
-> [    2.190979] WARNING: at kernel/time/tick-broadcast.c:501
-> tick_broadcast_oneshot_control+0x1c0/0x21c()
+> Inspired by patches sent by Ezequiel Garcia <elezegarcia@gmail.com>
+> 
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> ---
+> Changes from V1:
+>  Updated commit message
+>  Changed Confidence comment to High on the semantic patch
 
-Which one is that? tick_broadcast_pending or tick_force_broadcast_mask ?
+Applied to kbuild.git#misc, thanks.
 
+Michal
