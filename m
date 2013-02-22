@@ -1,93 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab3BVK1Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 05:27:16 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:38631 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754910Ab3BVK1O (ORCPT
+	id S1756914Ab3BVK2m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 05:28:42 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:46776 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557Ab3BVK2l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 05:27:14 -0500
-X-AuditID: cbfee68f-b7f656d000000d78-80-51274800ce2a
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] backlight: ams369fg06: make power_on() call optional
-Date: Fri, 22 Feb 2013 19:27:12 +0900
-Message-id: <002b01ce10e7$2d7364b0$885a2e10$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4Q5y1dDoEECFIES6StXVdKKgOFZA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t8zfV0GD/VAg1WXrCwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG1BmHGAuOc1RMXXeFqYGxhb2LkZNDQsBE4vC3Z0wQtpjEhXvr
-	2boYuTiEBJYxSrx+9pkNpuhZ834miMQiRokrvzvZIZzZTBKte9eAjWITUJP48uUwkM3BISKg
-	L9HWogESZhYoldj64D0LiC0s4Crxaek0VhCbRUBVYuvB6ywg5bwCthJvfuSAhHkFBCV+TL7H
-	AtGqJbF+53EmCFteYvOat8wg5RIC6hKP/upCLNKTWLxXFKJCRGLfi3eMIIdJCLSzS1ydvIUR
-	YpOAxLfJh1ggWmUlNh1ghvhKUuLgihssExjFZiFZPAvJ4llIFs9CsmIBI8sqRtHUguSC4qT0
-	ImO94sTc4tK8dL3k/NxNjJAo6d/BePeA9SHGZKD1E5mlRJPzgVGWVxJvaGxsYmZiamJuaWpu
-	Spqwkjiv/CWZQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2Me7KnXA9cMGNK8K3XqhVrIjeU
-	GlRMeHq/j/2fqoX5hssGNy1cGpWDC2MWLOD4npioka4rEje/nnHB+umP68sVzXxfz7plH8gn
-	wnk3PLijTs/J1NRz8tYuw7XHBI8rbSjk+yJ3X7rabXr3yd+7heKrLjw+bPgsx5ExsMXop+6z
-	jQ94ouO3TapSYinOSDTUYi4qTgQADb7ptKgCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsVy+t9jAV0GD/VAg9VtZhaXd81hc2D0+LxJ
-	LoAxqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdo
-	qpJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4xY+qMQ4wFxzkqpq67wtTA
-	2MLexcjJISFgIvGseT8ThC0mceHeerYuRi4OIYFFjBJXfneyQzizmSRa964B62ATUJP48uUw
-	kM3BISKgL9HWogESZhYoldj64D0LiC0s4Crxaek0VhCbRUBVYuvB6ywg5bwCthJvfuSAhHkF
-	BCV+TL7HAtGqJbF+53EmCFteYvOat8wg5RIC6hKP/upCLNKTWLxXFKJCRGLfi3eMExgFZiEZ
-	NAvJoFlIBs1C0rKAkWUVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnAMPpPawbiyweIQowAH
-	oxIPb4OLWqAQa2JZcWXuIUYJDmYlEV4DC/VAId6UxMqq1KL8+KLSnNTiQ4zJQG9OZJYSTc4H
-	poe8knhDYxMzI0sjMwsjE3Nz0oSVxHkZTz0JEBJITyxJzU5NLUgtgtnCxMEp1cDIsMZPQn6z
-	mAP/v2Yh7R9Ck5yvdUy2PyB4JMzvp1/SRIOJi3efM1n35X9PUMYLhTdSLGmX2bQuCd3bvr2N
-	f956w5UCsdMMN116yJPlb5WtYSRpFXf9tY+mQX2nRcU3Yy6fmn3RXFNmXgioij5ax+Kr9erh
-	q4vzo6zXB32w/H4x9LvqTtcnpYuUWIozEg21mIuKEwGVNCi/BQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 22 Feb 2013 05:28:41 -0500
+Date: Fri, 22 Feb 2013 10:28:36 +0000
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Jason Liu <liu.h.jason@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: too many timer retries happen when do local timer swtich with
+ broadcast timer
+Message-ID: <20130222102836.GB12140@e102568-lin.cambridge.arm.com>
+References: <CAB4PhKevqf0e4nzYraE9ZTAFbPCFfNpguAnPoVpJh-FFe2TAZA@mail.gmail.com>
+ <alpine.LFD.2.02.1302201400400.22263@ionos>
+ <CAB4PhKfxPcyQfpM2Ra1OxsyYhS5fnkjtPy=uYgxFHim1rOdoug@mail.gmail.com>
+ <alpine.LFD.2.02.1302211015270.22263@ionos>
+ <CAB4PhKf+Z-TK4KGDZm1kYOWibg=e2Ehnhjxt_oTbFq9eqouAjA@mail.gmail.com>
+ <alpine.LFD.2.02.1302211436300.22263@ionos>
+ <51263975.20906@ti.com>
+ <alpine.LFD.2.02.1302212214020.22263@ionos>
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1302212214020.22263@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 22 Feb 2013 10:28:37.0326 (UTC) FILETIME=[5FEE36E0:01CE10E7]
+X-MC-Unique: 113022210283907001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes power_on() call optional. The voltage source can
-be provided to some boards using ams369fg06 panel, thus in this
-case, power on/off sequence is not necessary.
+On Thu, Feb 21, 2013 at 10:19:18PM +0000, Thomas Gleixner wrote:
+> On Thu, 21 Feb 2013, Santosh Shilimkar wrote:
+> > On Thursday 21 February 2013 07:18 PM, Thomas Gleixner wrote:
+> > > find below a completely untested patch, which should address that issue.
+> > > 
+> > After looking at the thread, I tried to see the issue on OMAP and could
+> > see the same issue as Jason.
+> 
+> That's interesting. We have the same issue on x86 since 2007 and
+> nobody noticed ever. It's basically the same problem there, but it
+> seems that on x86 getting out of those low power states is way slower
+> than the minimal reprogramming delta which is used to enforce the
+> local timer to fire after the wakeup. 
+> 
+> I'm still amazed that as Jason stated a 1us reprogramming delta is
+> sufficient to get this ping-pong going. I somehow doubt that, but
+> maybe ARM is really that fast :)
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/ams369fg06.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+It also depends on when the idle driver exits broadcast mode.
+Certainly if that's the last thing it does before enabling IRQs, that
+might help trigger the issue.
 
-diff --git a/drivers/video/backlight/ams369fg06.c b/drivers/video/backlight/ams369fg06.c
-index d29e494..c02aa2c 100644
---- a/drivers/video/backlight/ams369fg06.c
-+++ b/drivers/video/backlight/ams369fg06.c
-@@ -317,10 +317,7 @@ static int ams369fg06_power_on(struct ams369fg06 *lcd)
- 	pd = lcd->lcd_pd;
- 	bd = lcd->bd;
- 
--	if (!pd->power_on) {
--		dev_err(lcd->dev, "power_on is NULL.\n");
--		return -EINVAL;
--	} else {
-+	if (pd->power_on) {
- 		pd->power_on(lcd->ld, 1);
- 		msleep(pd->power_on_delay);
- 	}
-@@ -370,7 +367,8 @@ static int ams369fg06_power_off(struct ams369fg06 *lcd)
- 
- 	msleep(pd->power_off_delay);
- 
--	pd->power_on(lcd->ld, 0);
-+	if (pd->power_on)
-+		pd->power_on(lcd->ld, 0);
- 
- 	return 0;
- }
--- 
-1.7.2.5
+I am still a bit sceptic myself too, and I take advantage of Thomas'
+knowledge on the subject, which is ways deeper than mine BTW, to ask a
+question. The thread started with a subject "too many retries...." and
+here I have a doubt. If the fix is not applied, on the CPU affine to
+the broadcast timer, it is _normal_ to have local timer retries, since
+the CPU is setting/forcing the local timer to fire after a min_delta_ns every
+time the expired event was local to the CPU affine to the broadcast timer.
 
+The problem, supposedly, is that the timer has not enough time (sorry for the
+mouthful) to expire(fire) before IRQs are disabled and the idle thread goes
+back to idle again. This means that we should notice a mismatch between
+the number of broadcast timer IRQs and local timer IRQs on the CPU
+affine to the broadcast timer IRQ (granted, we also have to take into
+account broadcast timer IRQs meant to service (through IPI) a local timer
+expired on a CPU which is not the one running the broadcast IRQ handler and
+"normal" local timer IRQs as well).
+
+I am not sure the sheer number of retries is a symptom of the problem
+happening, but I might well be mistaken so I am asking.
+
+For certain, with the fix applied, lots of duplicate IRQs on the CPU
+affine to the broadcast timer are eliminated, since the local timer is
+not reprogrammed anymore (before the fix, basically the broadcast timer
+was firing an IRQ that did nothing since the CPU was already out of
+broadcast mode by the time the broadcast handler was running, the real job
+was carried out in the local timer handler).
+
+> 
+> > Your patch fixes the retries on both CPUs on my dual core machine. So
+> > you use my tested by if you need one.
+> 
+> They are always welcome.
+> 
+> > Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+
+You can add mine too, we should fix the WARN_ON_ONCE mentioned in Santosh's
+reply.
+
+Tested-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
 
