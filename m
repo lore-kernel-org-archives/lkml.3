@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab3BVEt2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 23:49:28 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:56104 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755730Ab3BVEt1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 23:49:27 -0500
-Date: Thu, 21 Feb 2013 22:49:17 -0600
-From: Nishanth Menon <nm@ti.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-CC: <myungjoo.ham@samsung.com>, <kyungmin.park@samsung.com>,
-        <yongjun_wei@trendmicro.com.cn>, <linux-kernel@vger.kernel.org>,
-        <rjw@sisk.pl>
-Subject: Re: [PATCH] PM / devfreq: fix missing unlock on error in
- exynos4_busfreq_pm_notifier_event()
-Message-ID: <20130222044917.GA24752@kahuna>
-References: <CAPgLHd-xToKRxXtknB0O3DZnaqEAqJ4cXpV_HHnJNs0Gx9OVPA@mail.gmail.com>
+	id S1755729Ab3BVEw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 23:52:29 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:58591 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754971Ab3BVEw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 23:52:28 -0500
+X-IronPort-AV: E=Sophos;i="4.84,713,1355068800"; 
+   d="scan'208";a="6747735"
+Message-ID: <5126F92A.2030007@cn.fujitsu.com>
+Date: Fri, 22 Feb 2013 12:50:50 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd-xToKRxXtknB0O3DZnaqEAqJ4cXpV_HHnJNs0Gx9OVPA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kexec: avoid freeing NULL pointer in function kimage_crash_alloc
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/22 12:51:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/22 12:51:43,
+	Serialize complete at 2013/02/22 12:51:43
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12:33-20130222, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Add the missing unlock before return from function
-> exynos4_busfreq_pm_notifier_event() in the error
-> handling case.
-> 
-> This issue introduced by commit 8fa938
-> (PM / devfreq: exynos4_bus: honor RCU lock usage)
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/devfreq/exynos4_bus.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
-> index 46d94e9..6208a68 100644
-> --- a/drivers/devfreq/exynos4_bus.c
-> +++ b/drivers/devfreq/exynos4_bus.c
-> @@ -974,6 +974,7 @@ static int exynos4_busfreq_pm_notifier_event(struct notifier_block *this,
->  			rcu_read_unlock();
->  			dev_err(data->dev, "%s: unable to find a min freq\n",
->  				__func__);
-> +			mutex_unlock(&data->lock);
->  			return PTR_ERR(opp);
->  		}
->  		new_oppinfo.rate = opp_get_freq(opp);
-> 
-> 
-Arrgh.. Thanks for catching this :( My bad.
+Though there is no error if we free a NULL pointer, I think we could
+avoid this behaviour. Change the code a little in kimage_crash_alloc()
+could avoid this kind of unnecessary free.
 
-Fix looks good to me. upto  MyungJoo.
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ kernel/kexec.c |   15 +++++++--------
+ 1 files changed, 7 insertions(+), 8 deletions(-)
 
-MyungJoo, Rafael,
-btw, adding linux-pm@vger.kernel.org to  MAINTAINERS for devfreq might
-be a nice idea to have right audience.
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 5e4bd78..4e96fa7 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -310,7 +310,7 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
+ 		mend = mstart + image->segment[i].memsz - 1;
+ 		/* Ensure we are within the crash kernel limits */
+ 		if ((mstart < crashk_res.start) || (mend > crashk_res.end))
+-			goto out;
++			goto out_free;
+ 	}
+ 
+ 	/*
+@@ -323,16 +323,15 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
+ 					   get_order(KEXEC_CONTROL_PAGE_SIZE));
+ 	if (!image->control_code_page) {
+ 		printk(KERN_ERR "Could not allocate control_code_buffer\n");
+-		goto out;
++		goto out_free;
+ 	}
+ 
+-	result = 0;
+-out:
+-	if (result == 0)
+-		*rimage = image;
+-	else
+-		kfree(image);
++	*rimage = image;
++	return 0;
+ 
++out_free:
++	kfree(image);
++out:
+ 	return result;
+ }
+ 
 -- 
-Regards,
-Nishanth Menon
+1.7.1
