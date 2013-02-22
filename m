@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757767Ab3BVPIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 10:08:47 -0500
-Received: from mx0.parallels.com ([199.115.104.20]:34492 "EHLO
-	mx0.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757355Ab3BVPIm (ORCPT
+	id S1757804Ab3BVPIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 10:08:53 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:63710 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757771Ab3BVPIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 10:08:42 -0500
-Message-ID: <51278A12.4000504@parallels.com>
-Date: Fri, 22 Feb 2013 19:09:06 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 22 Feb 2013 10:08:47 -0500
+Date: Fri, 22 Feb 2013 12:08:14 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Sergei Trofimovich <slyich@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Sergei Trofimovich <slyfox@gentoo.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] tools/perf/Makefile: drop _FORTIFY_SOURCE right before
+ redefinition
+Message-ID: <20130222150814.GD18567@ghostprotocols.net>
+References: <1361528274-27126-1-git-send-email-slyich@gmail.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] slub: correctly bootstrap boot caches
-References: <1361529030-17462-1-git-send-email-glommer@parallels.com> <0000013d026b4e5f-1b3deecb-7e37-4476-a27b-3a7db8c1f0a8-000000@email.amazonses.com>
-In-Reply-To: <0000013d026b4e5f-1b3deecb-7e37-4476-a27b-3a7db8c1f0a8-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361528274-27126-1-git-send-email-slyich@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 07:00 PM, Christoph Lameter wrote:
-> On Fri, 22 Feb 2013, Glauber Costa wrote:
+Em Fri, Feb 22, 2013 at 01:17:54PM +0300, Sergei Trofimovich escreveu:
+> From: Sergei Trofimovich <slyfox@gentoo.org>
 > 
->> Although not verified in practice, I also point out that it is not safe to scan
->> the full list only when debugging is on in this case. As unlikely as it is, it
->> is theoretically possible for the pages to be full. If they are, they will
->> become unreachable. Aside from scanning the full list, we also need to make
->> sure that the pages indeed sit in there: the easiest way to do it is to make
->> sure the boot caches have the SLAB_STORE_USER debug flag set.
+> Gentoo's toolchain sets _FORTIFY_SOURCE by default
+> which leads to very obscure error:
 > 
-> SLAB_STORE_USER typically increases the size of the managed object. It is
-> not available when slab debugging is not compiled in. There is no list of
-> full slab objects that is maintained in the non debug case and if the
-> allocator is compiled without debug support also the code to manage full
-> lists will not be present.
+> perf # make clean && make
+> Makefile:455: No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev
+> Makefile:470: *** No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static.  Stop
 > 
-> Only one or two kmem_cache item is allocated in the bootstrap code and so
-> far the size of the objects was signficantly smaller than page size. So
-> the slab pages will be on the partial lists. Why are your slab management
-> structures so large that a page can no longer contain multiple objects?
-> 
-They are not.
+> Patch explicitely undefines _FORTIFY_SOURCE. Thanks!
 
-As I've mentioned in the description, the real bug is from partial slabs
-being temporarily in the cpu_slab during a recent allocation and
-therefore unreachable through the partial list.
+There was a fix merged recently related to this define, can you please
+check?
 
-I've just read the code, and it seemed to me that theoretically that
-could happen. I agree with you that this is an unlikely scenario and if
-you prefer I can resend the patch without that part.
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux
 
-Would that be preferable ?
+branch
 
+perf/core
+
+This patch:
+
+http://git.kernel.org/?p=linux/kernel/git/acme/linux.git;a=commitdiff;h=1807606ac70da5cda870362c13e71d60e94f9c13
+
+- Arnaldo
