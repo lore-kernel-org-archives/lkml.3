@@ -1,128 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab3BVH0r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 02:26:47 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48582 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab3BVH0k (ORCPT
+	id S1754465Ab3BVH12 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 02:27:28 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:37814 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab3BVH1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 02:26:40 -0500
-X-AuditID: 9c93016f-b7b46ae000007f43-1e-51271dada0da
-Date: Fri, 22 Feb 2013 16:26:37 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        Orna Agmon Ben-Yehuda <ladypine@gmail.com>,
-        Muli Ben-Yehuda <mulix@mulix.org>
-Subject: Re: [PATCH v2] memcg: Add memory.pressure_level events
-Message-ID: <20130222072637.GA26044@blaptop>
-References: <20130219044012.GA23356@lizard.sbx00618.mountca.wayport.net>
- <20130220001743.GE16950@blaptop>
- <CAOS58YOPjcH_pFFhPLJEAdaLkm5FoOy9mG2i-PkWAcb7O6V_Kw@mail.gmail.com>
- <20130221230425.GA22792@lizard.fhda.edu>
- <20130221235608.GH16950@blaptop>
- <20130222065552.GA26194@lizard.gateway.2wire.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130222065552.GA26194@lizard.gateway.2wire.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 22 Feb 2013 02:27:23 -0500
+X-IronPort-AV: E=Sophos;i="4.84,713,1355126400"; 
+   d="scan'208";a="26425012"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Barry Song <baohua.song@csr.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: [PATCH 0/8] Remove ARM local timer API
+Date: Thu, 21 Feb 2013 23:27:11 -0800
+Message-Id: <1361518039-16663-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.rc0.16.g20a599e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 10:55:52PM -0800, Anton Vorontsov wrote:
-> On Fri, Feb 22, 2013 at 08:56:08AM +0900, Minchan Kim wrote:
-> > [...] The my point is that you have a plan to support? Why I have a
-> > question is that you said your goal is to replace lowmemory killer
-> 
-> In short: yes, of course, if the non-memcg interface will be in demand.
-> 
-> > but android don't have enabled CONFIG_MEMCG as you know well
-> > so they should enable it for using just notifier? or they need another hack to
-> > connect notifier to global thing?
-> 
-> A hack is not an option for me. :-) My final goal is to switch Android to
-> use the notifier without need for hacks/external patches or
-> drivers/staging.
-> 
-> But my current goal is to make the most generic case work, and do this in
-> the most correct way. That is, vmpressure + MEMCG. Once I accomplish this,
-> I can then think of any niche needs (such as Android).
-> 
-> There will be two possibilities for Android:
-> 
-> 1. Obviously, turn on CONFIG_MEMCG. We need to measure its effect on real
->    devices, and see if it makes sense. (Plus, maybe there are other uses
->    for MEMCG on Android?)
+In light of Mark Rutland's recent work on divorcing the ARM architected
+timers from the ARM local timer API and introducing a generic arch hook for
+broadcast it seems that we should remove the local timer API entirely.
+Doing so will reduce the architecture dependencies of our timer drivers,
+reduce code in ARM core, and simplify timer drivers because they no longer
+go through an architecture layer that is essentially a hotplug notifier.
 
-I'd like to see this one.
+Previous attempts have been made[1] unsuccessfully. I'm hoping this can
+be accepted now so that we can clean up the timer drivers that are
+used in both UP and SMP situations. Right now these drivers have to ignore
+the timer setup callback on the boot CPU to avoid registering clockevents
+twice. This is not very symmetric and causes convuluted code that does
+the same thing in two places.
 
-> 
-> or
-> 
-> 2. Implement /sys/fs/cgroups/memory/memory.pressure_level interface
->    without MEMCG. Doing this will be really easy as we'll already have
->    vmpressure() core, and Android has CROUPS=y. But I do expect some
->    discussion like 'why don't you fix memcg instead?'. We'll have to
->    answer this question by looking back at '1.'
+Patches based on linux-next-20130221. Mostly compile tested as I don't
+have access to the hardware.
 
-Of course.
+[1] http://article.gmane.org/gmane.linux.ports.arm.kernel/145705
 
-> 
-> Also note that cgroups vmpressure notifiers were tried by QEMU folks, and
-> it seemed to be useful:
-> 
->    http://lists.gnu.org/archive/html/qemu-devel/2012-12/msg02821.html 
+Note: A hotplug notifier is used by both x86 for the apb_timer (see 
+apbt_cpuhp_notify) and by metag (see arch_timer_cpu_notify in
+metag_generic.c) so this is not new.
 
-I saw that.
+Stephen Boyd (8):
+  ARM: smp: Lower rating of dummy broadcast device
+  ARM: smp_twd: Divorce smp_twd from local timer API
+  ARM: EXYNOS4: Divorce mct from local timer API
+  ARM: PRIMA2: Divorce timer-marco from local timer API
+  ARM: MSM: Divorce msm_timer from local timer API
+  clocksource: time-armada-370-xp: Fix sparse warning
+  clocksource: time-armada-370-xp: Divorce from local timer API
+  ARM: smp: Remove local timer API
 
-> 
-> So, nowadays it is not only about Android. Some time ago I also got an
-> email from Orna Agmon Ben-Yehuda, who suggested to use vmpressure stuff
-> with 'memcached' (but I didn't find time to actually try it, so far. :(
-> Thanks for the email, btw!).
-
-I also got received email from another people in embedded side about
-memory notifier which I worked long time ago and I used to introduce
-your work to them instead of my old solution.
-It seems they don't use Android and has very small RAM so they want
-to handle memory very efficiently. For such purpose, I hope vmpressure
-become tiny and can support even NOMMU system.
-
-> 
-> So it is useful with or without MEMCG, and if we will really need to
-> support vmpressure without MEMCG, I will have to implement the support in
-> addition to MEMCG case, yes.
-
-Thanks for your clarification.
-
-> 
-> Thanks,
-> 
-> Anton
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+ arch/arm/Kconfig                         |  12 +--
+ arch/arm/include/asm/localtimer.h        |  34 ---------
+ arch/arm/kernel/smp.c                    |  69 +++--------------
+ arch/arm/kernel/smp_twd.c                |  48 ++++++++----
+ arch/arm/mach-exynos/mct.c               |  53 +++++++++----
+ arch/arm/mach-msm/timer.c                | 125 +++++++++++++++++--------------
+ arch/arm/mach-omap2/Kconfig              |   1 -
+ arch/arm/mach-omap2/timer.c              |   7 --
+ arch/arm/mach-prima2/timer-marco.c       |  98 ++++++++++++------------
+ drivers/clocksource/time-armada-370-xp.c |  88 ++++++++++------------
+ include/linux/time-armada-370-xp.h       |   4 +-
+ 11 files changed, 241 insertions(+), 298 deletions(-)
+ delete mode 100644 arch/arm/include/asm/localtimer.h
 
 -- 
-Kind regards,
-Minchan Kim
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
