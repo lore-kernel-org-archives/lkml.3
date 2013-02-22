@@ -1,128 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756382Ab3BVJuX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 04:50:23 -0500
-Received: from [195.254.252.204] ([195.254.252.204]:60145 "EHLO
-	out4.rolmail.net" rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754103Ab3BVJuR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 04:50:17 -0500
-Message-ID: <51273F30.5020207@enas.net>
-Date: Fri, 22 Feb 2013 10:49:36 +0100
-From: Urban Loesch <bind@enas.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1756685Ab3BVJvS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 04:51:18 -0500
+Received: from mga14.intel.com ([143.182.124.37]:42686 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756392Ab3BVJvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 04:51:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,714,1355126400"; 
+   d="scan'208";a="205229393"
+Message-ID: <51273F8E.3020807@intel.com>
+Date: Fri, 22 Feb 2013 17:51:10 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: Re: Kernel 3.7.2 strange warning and short system hang
-References: <5124F57A.6080908@enas.net> <1361379176.19353.187.camel@edumazet-glaptop>
-In-Reply-To: <1361379176.19353.187.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Dave Jones <davej@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [GIT PATCH] USB patches for 3.9-rc1
+References: <20130221184010.GA24692@kroah.com> <20130222085954.GA4352@redhat.com>
+In-Reply-To: <20130222085954.GA4352@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2013/2/22 16:59, Dave Jones wrote:
+> On Thu, Feb 21, 2013 at 10:40:10AM -0800, Greg KH wrote:
+>
+>   > USB patches for 3.9-rc1
+>   >
+>   > Here's the big USB merge for 3.9-rc1
+>   >
+>   > Nothing major, lots of gadget fixes, and of course, xhci stuff.
+>
+> I get no USB devices recognised when I insert them any more, which
+> I think is pretty major.  I suspect it has something to do with this ?
+>
+>   > Lan Tianyu (12):
+>   >       usb: add runtime pm support for usb port device
+>   >       usb: add usb port auto power off mechanism
+>
+> It looks like every port on my laptop is powered down, as I can't
+> even charge devices with it.
+Hi Dave:
+	Do you enable the port/power/pm_qos_no_power_off?
+	cat /sys/bus/usb/devices/(dev)/port/power/pm_qos_no_power_off to show.
+>
+> I tried running powertop, which noted autosuspend for the usb controllers
+> was 'good'. I flipped them to 'bad', but it made no difference.
+>
+> What can I do to debug this ?
+	Can you attach the output of dmesg with CONFIG_USB_DEBUG?
+>
+> $ lspci | grep USB
+> 00:14.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset Family USB xHCI Host Controller (rev 04)
+> 00:1a.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset Family USB Enhanced Host Controller #2 (rev 04)
+> 00:1d.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset Family USB Enhanced Host Controller #1 (rev 04)
+>
+> $ lsusb
+> Bus 001 Device 002: ID 8087:0024 Intel Corp. Integrated Rate Matching Hub
+> Bus 002 Device 002: ID 8087:0024 Intel Corp. Integrated Rate Matching Hub
+> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+> Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+> Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+> Bus 004 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+> Bus 001 Device 003: ID 0a5c:21e6 Broadcom Corp. BCM20702 Bluetooth 4.0 [ThinkPad]
+> Bus 001 Device 004: ID 5986:02d5 Acer, Inc
+Can you show the "lusb -s 1:1 -v"?
+>
+> (inserted USB devices don't show up in this list)
+>
+> $ dmesg | grep -i usb
+> [    0.996096] ACPI: bus type usb registered
+> [    0.996428] usbcore: registered new interface driver usbfs
+> [    0.996638] usbcore: registered new interface driver hub
+> [    0.996875] usbcore: registered new device driver usb
+> [    1.874896] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+> [    1.876103] ehci-pci 0000:00:1a.0: new USB bus registered, assigned bus number 1
+> [    1.886220] ehci-pci 0000:00:1a.0: USB 2.0 started, EHCI 1.00
+> [    1.886781] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
+> [    1.886878] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+> [    1.887017] usb usb1: Product: EHCI Host Controller
+> [    1.887111] usb usb1: Manufacturer: Linux 3.8.0+ ehci_hcd
+> [    1.887220] usb usb1: SerialNumber: 0000:00:1a.0
+> [    1.888942] hub 1-0:1.0: USB hub found
+> [    1.892347] ehci-pci 0000:00:1d.0: new USB bus registered, assigned bus number 2
+> [    1.902216] ehci-pci 0000:00:1d.0: USB 2.0 started, EHCI 1.00
+> [    1.902674] usb usb2: New USB device found, idVendor=1d6b, idProduct=0002
+> [    1.902770] usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+> [    1.902910] usb usb2: Product: EHCI Host Controller
+> [    1.903004] usb usb2: Manufacturer: Linux 3.8.0+ ehci_hcd
+> [    1.903098] usb usb2: SerialNumber: 0000:00:1d.0
+> [    1.904444] hub 2-0:1.0: USB hub found
+> [    1.906795] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+> [    1.906970] uhci_hcd: USB Universal Host Controller Interface driver
+> [    1.908243] xhci_hcd 0000:00:14.0: new USB bus registered, assigned bus number 3
+> [    1.909823] usb usb3: New USB device found, idVendor=1d6b, idProduct=0002
+> [    1.909920] usb usb3: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+> [    1.910060] usb usb3: Product: xHCI Host Controller
+> [    1.910153] usb usb3: Manufacturer: Linux 3.8.0+ xhci_hcd
+> [    1.910260] usb usb3: SerialNumber: 0000:00:14.0
+> [    1.911644] hub 3-0:1.0: USB hub found
+> [    1.930176] xhci_hcd 0000:00:14.0: new USB bus registered, assigned bus number 4
+> [    1.930802] usb usb4: New USB device found, idVendor=1d6b, idProduct=0003
+> [    1.930899] usb usb4: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+> [    1.931039] usb usb4: Product: xHCI Host Controller
+> [    1.931131] usb usb4: Manufacturer: Linux 3.8.0+ xhci_hcd
+> [    1.931239] usb usb4: SerialNumber: 0000:00:14.0
+> [    1.932568] hub 4-0:1.0: USB hub found
+> [    1.950215] usbcore: registered new interface driver usbserial
+> [    1.950388] usbcore: registered new interface driver usbserial_generic
+> [    1.950612] usbserial: USB Serial support registered for generic
+> [    1.950781] usbcore: registered new interface driver usb_debug
+> [    1.950959] usbserial: USB Serial support registered for debug
+> [    1.972227] usbcore: registered new interface driver usbhid
+> [    1.972322] usbhid: USB HID core driver
+> [    2.193584] usb 1-1: new high-speed USB device number 2 using ehci-pci
+> [    2.309836] usb 1-1: New USB device found, idVendor=8087, idProduct=0024
+> [    2.309965] usb 1-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+> [    2.313198] hub 1-1:1.0: USB hub found
+> [    2.436596] usb 2-1: new high-speed USB device number 2 using ehci-pci
+> [    2.551777] usb 2-1: New USB device found, idVendor=8087, idProduct=0024
+> [    2.551906] usb 2-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+> [    2.555603] hub 2-1:1.0: USB hub found
+> [    2.673812] usb 1-1.4: new full-speed USB device number 3 using ehci-pci
+> [    2.754662] usb 1-1.4: New USB device found, idVendor=0a5c, idProduct=21e6
+> [    2.754791] usb 1-1.4: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+> [    2.754968] usb 1-1.4: Product: BCM20702A0
+> [    2.755081] usb 1-1.4: Manufacturer: Broadcom Corp
+> [    2.755194] usb 1-1.4: SerialNumber: 689423EB48E2
+> [    2.827871] usb 1-1.6: new high-speed USB device number 4 using ehci-pci
+> [    2.921573] usb 1-1.6: New USB device found, idVendor=5986, idProduct=02d5
+> [    2.921671] usb 1-1.6: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+> [    2.921820] usb 1-1.6: Product: Integrated Camera
+> [    2.921932] usb 1-1.6: Manufacturer: Ricoh Company Ltd.
+>
+> *after this point, inserting devices made no printk's at all*
+>
+>
+> 	Dave
+>
 
-thanks for your help. I patched my kernel yesterday. Now I have to wait some days.
-The error occurs not periodically. If it occurs again I let you now.
-
-many thanks
-Urban
-
-On 20.02.2013 17:52, Eric Dumazet wrote:
-> On Wed, 2013-02-20 at 17:10 +0100, Urban Loesch wrote:
->> Hi,
->>
->> today I had a strange system hang on one of our new Dell PER620 machines.
->> I'm running a self compiled kernel, version 3.7.2 with linux vserver patch included.
->>
->> uname -a
->> Linux dbhost04 3.7.2-vs2.3.5.5-rol-em64t #4 SMP Sun Feb 3 14:08:37 CET 2013 x86_64 GNU/Linux
->>
->> 15min. systemload between 1-3.
->>
->>
->> Today the system hangs for some seconds and I got the folling errors in syslog multiple times within one second:
->>
->> ...
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196338] WARNING: at net/core/skbuff.c:573 skb_release_head_state+0xed/0x100()
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196338] Hardware name: PowerEdge R620
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196352] Modules linked in: lru_cache netconsole configfs act_police cls_basic cls_flow cls_fw cls_u32
->> sch_tbf sch_prio sch_hfsc sch_htb sch_ingress sch_sfq xt_statistic xt_CT xt_realm xt_LOG xt_c
->> onnlimit iptable_raw xt_comment xt_nat xt_recent ipt_ULOG ipt_REJECT ipt_MASQUERADE ipt_ECN ipt_CLUSTERIP ipt_ah nf_nat_tftp nf_nat_sip nf_nat_pptp
->> nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda nf_conntrack_tftp nf_con
->> ntrack_sane nf_conntrack_sip nf_conntrack_proto_udplite nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_netlink
->> nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_irc ts_kmp nf_conntrack_h323 nf_con
->> ntrack_amanda nf_conntrack_ftp xt_TPROXY xt_time nf_tproxy_core xt_TCPMSS xt_tcpmss xt_sctp xt_policy xt_pkttype xt_NFLOG nfnetlink_log xt_physdev
->> xt_owner xt_NFQUEUE xt_multiport xt_mark xt_mac xt_limit xt_length xt_iprange xt_helper xt
->> _hashlimit xt_DSCP xt_dscp xt_dccp xt_connmark xt_CLASSIFY iptable_nat nf_nat_ipv
->> Feb 20 15:58:04 dbhost04 kernel: 4 nf_nat ip6t_REJECT nf_conntrack_ipv4 xt_tcpudp nf_defrag_ipv4 xt_state nf_conntrack_ipv6 nf_defrag_ipv6
->> xt_conntrack nf_conntrack iptable_mangle ip6table_raw ip6table_mangle nfnetlink ip6table_filter ip
->> 6_tables iptable_filter ip_tables x_tables ipmi_devintf ipmi_si ipmi_msghandler coretemp kvm_intel kvm ghash_clmulni_intel aesni_intel xts aes_x86_64
->> lrw gf128mul ablk_helper cryptd iTCO_wdt iTCO_vendor_support dcdbas microcode pcspkr jo
->> ydev lpc_ich shpchp hed evbug hid_generic usbhid hid ahci libahci megaraid_sas tg3 [last unloaded: drbd]
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196368] Pid: 10942, comm: mysqld Tainted: G        W    3.7.2-vs2.3.5.5-rol-em64t #4
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196368] Call Trace:
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196370]  <IRQ> [<ffffffff81053bff>] warn_slowpath_common+0x7f/0xc0
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196371] [<ffffffff81594c52>] ? skb_release_data+0xf2/0x110
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196372] [<ffffffff81053c5a>] warn_slowpath_null+0x1a/0x20
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196373] [<ffffffff81594e9d>] skb_release_head_state+0xed/0x100
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196374] [<ffffffff81594c86>] __kfree_skb+0x16/0xa0
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196375] [<ffffffff8159521c>] consume_skb+0x2c/0x80
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196379] [<ffffffffa000b0af>] tg3_poll_work+0x5ef/0xdb0 [tg3]
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196384] [<ffffffffa000b055>] ? tg3_poll_work+0x595/0xdb0 [tg3]
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196388] [<ffffffffa00145cf>] tg3_poll+0x7f/0x390 [tg3]
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196392] [<ffffffffa000b927>] ? tg3_poll_msix+0xb7/0x140 [tg3]
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196394] [<ffffffff815b9622>] netpoll_poll_dev+0x162/0x580
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196395] [<ffffffff815b9bcc>] netpoll_send_skb_on_dev+0x18c/0x3a0
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196398] [<ffffffff815ba0f7>] netpoll_send_udp+0x277/0x290
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196400] [<ffffffffa03ae91f>] write_msg+0xaf/0x100 [netconsole]
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196401] [<ffffffff81054959>] call_console_drivers.constprop.16+0x99/0x100
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196403] [<ffffffff810553b9>] console_unlock+0x3d9/0x420
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196404] [<ffffffff81055ca5>] vprintk_emit+0x255/0x510
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196406] [<ffffffff8169f0b9>] printk+0x61/0x63
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196407] [<ffffffff81031e8e>] therm_throt_process+0x13e/0x180
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196408] [<ffffffff81032066>] intel_thermal_interrupt+0x196/0x1a0
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196410] [<ffffffff810320c1>] smp_thermal_interrupt+0x21/0x40
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196411] [<ffffffff816b1a1a>] thermal_interrupt+0x6a/0x70
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196413]  <EOI> [<ffffffff816b0e19>] ? system_call_fastpath+0x16/0x1b
->> Feb 20 15:58:04 dbhost04 kernel: [1463997.196414] ---[ end trace e3ec69533a534ff5 ]---
->> ...
->>
->> After the last message I got this entries in syslog, too:
->> Feb 20 15:58:04 dbhost04 kernel: [1464001.755218] CPU18: Core power limit normal
->> Feb 20 15:58:04 dbhost04 kernel: [1464001.760038] Clocksource tsc unstable (delta = 299966106527 ns)
->> Feb 20 15:58:04 dbhost04 kernel: [1464001.769627] Switching to clocksource hpet
->>
->> I searched the archives for this error, but I can't find any solution.
->> And my second PER620 doesn't show this error until now.
->>
->> Have you any idea what this problem could be?
->>
->> I'm not subscribed to lkml, if you need more information please contact me directly by email.
->>
->> Many thanks for your help.
->> Urban
->
-> CC netdev
->
-> I guess tg3 needs to call dev_kfree_skb_any()
->
-> diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-> index bdb0869..22d9e44 100644
-> --- a/drivers/net/ethernet/broadcom/tg3.c
-> +++ b/drivers/net/ethernet/broadcom/tg3.c
-> @@ -5942,7 +5942,7 @@ static void tg3_tx(struct tg3_napi *tnapi)
->   		pkts_compl++;
->   		bytes_compl += skb->len;
->
-> -		dev_kfree_skb(skb);
-> +		dev_kfree_skb_any(skb);
->
->   		if (unlikely(tx_bug)) {
->   			tg3_tx_recover(tp);
->
->
->
+-- 
+Best Regards
+Tianyu Lan
+linux kernel enabling team
