@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab3BVUjO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 15:39:14 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:46040 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757435Ab3BVUjM (ORCPT
+	id S1756585Ab3BVUnF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 15:43:05 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:61813 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758021Ab3BVUnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 15:39:12 -0500
-Date: Fri, 22 Feb 2013 12:38:26 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Ric Mason <ric.masonn@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Petr Holasek <pholasek@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 0/7] ksm: responses to NUMA review
-In-Reply-To: <5126E987.7020809@gmail.com>
-Message-ID: <alpine.LNX.2.00.1302221227530.6100@eggly.anvils>
-References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <5126E987.7020809@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 22 Feb 2013 15:43:02 -0500
+Message-ID: <5127D853.6030703@linaro.org>
+Date: Fri, 22 Feb 2013 12:42:59 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Prarit Bhargava <prarit@redhat.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Matt Fleming <matt.fleming@intel.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, linux-efi@vger.kernel.org
+Subject: Re: [RFE PATCH 1/2] x86, rtc, ntp, Do full rtc synchronization with
+ ntp
+References: <1360861375-24131-1-git-send-email-prarit@redhat.com> <1360861375-24131-2-git-send-email-prarit@redhat.com>
+In-Reply-To: <1360861375-24131-2-git-send-email-prarit@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Feb 2013, Ric Mason wrote:
-> On 02/21/2013 04:17 PM, Hugh Dickins wrote:
-> > Here's a second KSM series, based on mmotm 2013-02-19-17-20: partly in
-> > response to Mel's review feedback, partly fixes to issues that I found
-> > myself in doing more review and testing.  None of the issues fixed are
-> > truly show-stoppers, though I would prefer them fixed sooner than later.
-> 
-> Do you have any ideas ksm support page cache and tmpfs?
+On 02/14/2013 09:02 AM, Prarit Bhargava wrote:
+> Every 11 minutes ntp attempts to update the x86 rtc with the current
+> system time.  Currently, the x86 code only updates the rtc if the system
+> time is within +/-15 minutes of the current value of the rtc.  Other
+> architectures do a full synchronization and there is no reason that x86
+> should be software limited to a 30 minute window.
+>
+> This patch changes the behavior of the kernel to do a full synchronization
+> (year, month, day, hour, minute, and second) of the rtc when ntp requests
+> a synchronization between the system time and the rtc.
+>
+> I've used the RTC library functions in this patchset as they do all the
+> required bounds checking.
+>
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: x86@kernel.org
+> Cc: Matt Fleming <matt.fleming@intel.com>
+> Cc: David Vrabel <david.vrabel@citrix.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: linux-efi@vger.kernel.org
 
-No.  It's only been asked as a hypothetical question: I don't know of
-anyone actually needing it, and I wouldn't have time to do it myself.
 
-It would be significantly more invasive than just dealing with anonymous
-memory: with anon, we already have the infrastructure for read-only pages,
-but we don't at present have any notion of read-only pagecache.
+This looks reasonable to me.
 
-Just doing it in tmpfs?  Well, yes, that might be easier: since v3.1's
-radix_tree rework, shmem/tmpfs mostly goes through its own interfaces
-to pagecache, so read-only pagecache, and hence KSM, might be easier
-to implement there than more generally.
+Though I want to make sure we get this thoroughly tested by the various 
+distros so we don't surprise anyone, since it has to potential to cause 
+problems where folks are dualbooting windows (using a localtime RTC) and 
+do not have their OS setup to trigger warp_clock to adjust for the 
+localtime rtc (instead getting a time correction later via NTP).
 
-Hugh
+I'll queue it and see about getting it merged to -tip & -next. Then 
+we'll have to decide if 3.10 or 3.11 is the right time frame to land it.
+
+thanks
+-john
+
+
