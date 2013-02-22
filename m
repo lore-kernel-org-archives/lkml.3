@@ -1,139 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab3BVShz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 13:37:55 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:44517 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932200Ab3BVShv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 13:37:51 -0500
-Message-ID: <1361558250.14402.6.camel@thor.lan>
-Subject: Re: [PATCH v4 00/32] ldisc patchset
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Ilya Zykov <ilya@ilyx.ru>, Dave Jones <davej@redhat.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Shawn Guo <shawn.guo@linaro.org>
-Date: Fri, 22 Feb 2013 13:37:30 -0500
-In-Reply-To: <1361453910.10685.7.camel@thor.lan>
-References: <1360095638-6624-1-git-send-email-peter@hurleysoftware.com>
-	 <1361390599-15195-1-git-send-email-peter@hurleysoftware.com>
-	 <51261E30.9040907@gmail.com> <1361453910.10685.7.camel@thor.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	id S1758361Ab3BVSno (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 13:43:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753659Ab3BVSnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 13:43:40 -0500
+Date: Fri, 22 Feb 2013 15:43:22 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, jolsa@redhat.com, peterz@infradead.org,
+        mingo@elte.hu, namhyung@gmail.com
+Subject: Re: [PATCH] perf report: fix handling of memory sampling sort orders
+Message-ID: <20130222184322.GF16956@infradead.org>
+References: <20130222142838.GA2847@quad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130222142838.GA2847@quad>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-02-21 at 08:38 -0500, Peter Hurley wrote:
-> On Thu, 2013-02-21 at 08:16 -0500, Sasha Levin wrote:
-> > On 02/20/2013 03:02 PM, Peter Hurley wrote:
-> > > Sasha and Dave, my trinity testbeds die in other areas right now;
-> > > I would really appreciate if you would please re-test this series.
-> > 
-> > Hi Peter,
-> > 
-> > I saw this twice in overnight fuzzing:
-> > 
-> > [ 1473.912280] =================================
-> > [ 1473.913180] [ BUG: bad contention detected! ]
-> > [ 1473.914071] 3.8.0-next-20130220-sasha-00038-g1ad55df-dirty #8 Tainted: G        W
-> > [ 1473.915684] ---------------------------------
-> > [ 1473.916549] kworker/1:1/361 is trying to contend lock (&tty->ldisc_sem) at:
-> > [ 1473.918031] [<ffffffff81c493df>] tty_ldisc_ref+0x1f/0x60
-> > [ 1473.919060] but there are no locks held!
+Em Fri, Feb 22, 2013 at 03:28:38PM +0100, Stephane Eranian escreveu:
 > 
-> Ahh, of course. That explains why the rwsem trylock doesn't track lock
-> stats -- because by the time lock_contended() is called, up_write()
-> could have just called lockdep_release(), so that it appears as if the
-> lock has been released when in fact it has not but is about to.
+> When the memory sampling sort orders were used on perf.data
+> files without memory sampling data, it would crash perf. This
+> patch fixes this by  handling the lack of memory information
+> gracefully, printing N/A and formatting columns correctly
+> whenever necessary.
 > 
-> I'll just remove the lock contention test from the trylocks.
+> This patch is to be applied on top of the memory sampling
+> patchset. It is relative to Arnaldo's perf/mem branch.
 
-Hi Sasha,
+Ok, folded that into the original patch, so that we can bisect things in
+this area.
 
-Sorry for the delay. I was actually looking into if I could tickle
-lockdep into just recording the lock contention without testing, but
-unfortunately, changes to where lockdep stores the contention now
-requires the lockdep state to have an existing owner.
+Updating the perf/mem branch with this, i.e. force pushed.
 
-So here's the trivial patch:
-
---- >% ---
-Subject: [PATCH] tty: Drop lock contention stat from ldsem trylocks
-
-When lockdep is notified of lock contention, lockdep expects its
-internal state to indicate the lock is held. Since trylocks cannot
-reflect this state unless the lock is actually acquired, contention
-stats cannot be collected for trylocks.
-
-Fixes:
-[ 1473.912280] =================================
-[ 1473.913180] [ BUG: bad contention detected! ]
-[ 1473.914071] 3.8.0-next-20130220-sasha-00038-g1ad55df-dirty #8 Tainted: G        W
-[ 1473.915684] ---------------------------------
-[ 1473.916549] kworker/1:1/361 is trying to contend lock (&tty->ldisc_sem) at:
-[ 1473.918031] [<ffffffff81c493df>] tty_ldisc_ref+0x1f/0x60
-[ 1473.919060] but there are no locks held!
-[ 1473.919813]
-[ 1473.919813] other info that might help us debug this:
-[ 1473.920044] 2 locks held by kworker/1:1/361:
-[ 1473.920044]  #0:  (events){.+.+.+}, at: [<ffffffff811328a8>] process_one_work+0x228/0x6a0
-[ 1473.920044]  #1:  ((&buf->work)){+.+...}, at: [<ffffffff811328a8>] process_one_work+0x228/0x6a0
-[ 1473.920044]
-[ 1473.920044] stack backtrace:
-[ 1473.920044] Pid: 361, comm: kworker/1:1 Tainted: G        W    3.8.0-next-20130220-sasha-00038-g1ad55df-dirty #8
-[ 1473.920044] Call Trace:
-[ 1473.920044]  [<ffffffff81c493df>] ? tty_ldisc_ref+0x1f/0x60
-[ 1473.920044]  [<ffffffff81182026>] print_lock_contention_bug+0xf6/0x110
-[ 1473.920044]  [<ffffffff81184973>] lock_contended+0x213/0x4e0
-[ 1473.920044]  [<ffffffff81c4bb41>] ldsem_down_read_trylock+0xb1/0xc0
-[ 1473.920044]  [<ffffffff81c493df>] tty_ldisc_ref+0x1f/0x60
-[ 1473.920044]  [<ffffffff81c4a687>] flush_to_ldisc+0x37/0x1a0
-[ 1473.920044]  [<ffffffff811329e6>] process_one_work+0x366/0x6a0
-[ 1473.920044]  [<ffffffff811328a8>] ? process_one_work+0x228/0x6a0
-[ 1473.920044]  [<ffffffff811332a8>] worker_thread+0x238/0x370
-[ 1473.920044]  [<ffffffff81133070>] ? rescuer_thread+0x310/0x310
-[ 1473.920044]  [<ffffffff8113d873>] kthread+0xe3/0xf0
-[ 1473.920044]  [<ffffffff8113d790>] ? flush_kthread_work+0x1f0/0x1f0
-[ 1473.920044]  [<ffffffff83dab4fc>] ret_from_fork+0x7c/0xb0
-[ 1473.920044]  [<ffffffff8113d790>] ? flush_kthread_work+0x1f0/0x1f0
-
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/tty_ldsem.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/tty/tty_ldsem.c b/drivers/tty/tty_ldsem.c
-index 0ab5b09..ce26fc0 100644
---- a/drivers/tty/tty_ldsem.c
-+++ b/drivers/tty/tty_ldsem.c
-@@ -419,7 +419,6 @@ int ldsem_down_read_trylock(struct ld_semaphore *sem)
- 			return 1;
- 		}
- 	}
--	lock_stat(sem, contended);
- 	return 0;
- }
+- Arnaldo
  
-@@ -455,7 +454,6 @@ int ldsem_down_write_trylock(struct ld_semaphore *sem)
- 	}
- 
- 	raw_spin_unlock_irq(&sem->wait_lock);
--	lock_stat(sem, contended);
- 	return 0;
- }
- 
--- 
-1.8.1.2
-
-
-
+> Reported-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> ---
+> 
+> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+> index 4008b7f..98572ca 100644
+> --- a/tools/perf/util/event.h
+> +++ b/tools/perf/util/event.h
+> @@ -99,6 +99,13 @@ struct perf_sample {
+>  	struct stack_dump user_stack;
+>  };
+>  
+> +#define PERF_MEM_DATA_SRC_NONE \
+> +	(PERF_MEM_S(OP, NA) |\
+> +	 PERF_MEM_S(LVL, NA) |\
+> +	 PERF_MEM_S(SNOOP, NA) |\
+> +	 PERF_MEM_S(LOCK, NA) |\
+> +	 PERF_MEM_S(TLB, NA))
+> +
+>  struct build_id_event {
+>  	struct perf_event_header header;
+>  	pid_t			 pid;
+> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+> index bace0cc..d1799a4 100644
+> --- a/tools/perf/util/evsel.c
+> +++ b/tools/perf/util/evsel.c
+> @@ -1175,7 +1175,7 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+>  		array++;
+>  	}
+>  
+> -	data->dsrc = 0;
+> +	data->dsrc = PERF_MEM_DATA_SRC_NONE;
+>  	if (type & PERF_SAMPLE_DATA_SRC) {
+>  		data->dsrc = *array;
+>  		array++;
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index 043593d..454d7f1 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -118,7 +118,9 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+>  			hists__new_col_len(hists, HISTC_SYMBOL_TO, symlen);
+>  			hists__set_unres_dso_col_len(hists, HISTC_DSO_TO);
+>  		}
+> -	} else if (h->mem_info) {
+> +	}
+> +
+> +	if (h->mem_info) {
+>  		/*
+>  		 * +4 accounts for '[x] ' priv level info
+>  		 * +2 account of 0x prefix on raw addresses
+> @@ -141,11 +143,15 @@ void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+>  			symlen = unresolved_col_width + 4 + 2;
+>  			hists__set_unres_dso_col_len(hists, HISTC_MEM_DADDR_DSO);
+>  		}
+> -		hists__new_col_len(hists, HISTC_MEM_LOCKED, 6);
+> -		hists__new_col_len(hists, HISTC_MEM_TLB, 22);
+> -		hists__new_col_len(hists, HISTC_MEM_SNOOP, 12);
+> -		hists__new_col_len(hists, HISTC_MEM_LVL, 21+3);
+> +	} else {
+> +		symlen = unresolved_col_width + 4 + 2;
+> +		hists__new_col_len(hists, HISTC_MEM_DADDR_SYMBOL, symlen);
+> +		hists__set_unres_dso_col_len(hists, HISTC_MEM_DADDR_DSO);
+>  	}
+> +	hists__new_col_len(hists, HISTC_MEM_LOCKED, 6);
+> +	hists__new_col_len(hists, HISTC_MEM_TLB, 22);
+> +	hists__new_col_len(hists, HISTC_MEM_SNOOP, 12);
+> +	hists__new_col_len(hists, HISTC_MEM_LVL, 21+3);
+>  
+>  }
+>  
+> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+> index 1dc3860..0fdaac7 100644
+> --- a/tools/perf/util/sort.c
+> +++ b/tools/perf/util/sort.c
+> @@ -198,7 +198,7 @@ static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
+>  	}
+>  
+>  	ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", level);
+> -	if (sym) {
+> +	if (sym && map) {
+>  		if (map->type == MAP__VARIABLE) {
+>  			ret += repsep_snprintf(bf + ret, size - ret, "%s", sym->name);
+>  			ret += repsep_snprintf(bf + ret, size - ret, "+0x%llx",
+> @@ -469,39 +469,72 @@ static int hist_entry__mispredict_snprintf(struct hist_entry *self, char *bf,
+>  static int64_t
+>  sort__daddr_cmp(struct hist_entry *left, struct hist_entry *right)
+>  {
+> -	struct addr_map_symbol *l = &left->mem_info->daddr;
+> -	struct addr_map_symbol *r = &right->mem_info->daddr;
+> +	uint64_t l = 0, r = 0;
+>  
+> -	return (int64_t)(r->addr - l->addr);
+> +	if (left->mem_info)
+> +		l = left->mem_info->daddr.addr;
+> +	if (right->mem_info)
+> +		r = right->mem_info->daddr.addr;
+> +
+> +	return (int64_t)(r - l);
+>  }
+>  
+>  static int hist_entry__daddr_snprintf(struct hist_entry *self, char *bf,
+>  				    size_t size, unsigned int width)
+>  {
+> -	return _hist_entry__sym_snprintf(self->mem_info->daddr.map,
+> -					 self->mem_info->daddr.sym,
+> -					 self->mem_info->daddr.addr,
+> -					 self->level, bf, size, width);
+> +	uint64_t addr = 0;
+> +	struct map *map = NULL;
+> +	struct symbol *sym = NULL;
+> +
+> +	if (self->mem_info) {
+> +		addr = self->mem_info->daddr.addr;
+> +		map = self->mem_info->daddr.map;
+> +		sym = self->mem_info->daddr.sym;
+> +	}
+> +	return _hist_entry__sym_snprintf(map, sym, addr, self->level, bf, size,
+> +					 width);
+>  }
+>  
+>  static int64_t
+>  sort__dso_daddr_cmp(struct hist_entry *left, struct hist_entry *right)
+>  {
+> -	return _sort__dso_cmp(left->mem_info->daddr.map, right->mem_info->daddr.map);
+> +	struct map *map_l = NULL;
+> +	struct map *map_r = NULL;
+> +
+> +	if (left->mem_info)
+> +		map_l = left->mem_info->daddr.map;
+> +	if (right->mem_info)
+> +		map_r = right->mem_info->daddr.map;
+> +
+> +	return _sort__dso_cmp(map_l, map_r);
+>  }
+>  
+>  static int hist_entry__dso_daddr_snprintf(struct hist_entry *self, char *bf,
+>  				    size_t size, unsigned int width)
+>  {
+> -	return _hist_entry__dso_snprintf(self->mem_info->daddr.map, bf, size,
+> -					 width);
+> +	struct map *map = NULL;
+> +
+> +	if (self->mem_info)
+> +		map = self->mem_info->daddr.map;
+> +
+> +	return _hist_entry__dso_snprintf(map, bf, size, width);
+>  }
+>  
+>  static int64_t
+>  sort__locked_cmp(struct hist_entry *left, struct hist_entry *right)
+>  {
+> -	union perf_mem_data_src dsrc_l = left->mem_info->dsrc;
+> -	union perf_mem_data_src dsrc_r = right->mem_info->dsrc;
+> +	union perf_mem_data_src dsrc_l;
+> +	union perf_mem_data_src dsrc_r;
+> +
+> +	if (left->mem_info)
+> +		dsrc_l = left->mem_info->dsrc;
+> +	else
+> +		dsrc_l.mem_lock = PERF_MEM_LOCK_NA;
+> +
+> +	if (right->mem_info)
+> +		dsrc_r = right->mem_info->dsrc;
+> +	else
+> +		dsrc_r.mem_lock = PERF_MEM_LOCK_NA;
+>  
+>  	return (int64_t)(dsrc_r.mem_lock - dsrc_l.mem_lock);
+>  }
+> @@ -509,8 +542,11 @@ sort__locked_cmp(struct hist_entry *left, struct hist_entry *right)
+>  static int hist_entry__locked_snprintf(struct hist_entry *self, char *bf,
+>  				    size_t size, unsigned int width)
+>  {
+> -	const char *out = "??";
+> -	u64 mask = self->mem_info->dsrc.mem_lock;
+> +	const char *out;
+> +	u64 mask = PERF_MEM_LOCK_NA;
+> +
+> +	if (self->mem_info)
+> +		mask = self->mem_info->dsrc.mem_lock;
+>  
+>  	if (mask & PERF_MEM_LOCK_NA)
+>  		out = "N/A";
+> @@ -525,8 +561,18 @@ static int hist_entry__locked_snprintf(struct hist_entry *self, char *bf,
+>  static int64_t
+>  sort__tlb_cmp(struct hist_entry *left, struct hist_entry *right)
+>  {
+> -	union perf_mem_data_src dsrc_l = left->mem_info->dsrc;
+> -	union perf_mem_data_src dsrc_r = right->mem_info->dsrc;
+> +	union perf_mem_data_src dsrc_l;
+> +	union perf_mem_data_src dsrc_r;
+> +
+> +	if (left->mem_info)
+> +		dsrc_l = left->mem_info->dsrc;
+> +	else
+> +		dsrc_l.mem_dtlb = PERF_MEM_TLB_NA;
+> +
+> +	if (right->mem_info)
+> +		dsrc_r = right->mem_info->dsrc;
+> +	else
+> +		dsrc_r.mem_dtlb = PERF_MEM_TLB_NA;
+>  
+>  	return (int64_t)(dsrc_r.mem_dtlb - dsrc_l.mem_dtlb);
+>  }
+> @@ -548,11 +594,14 @@ static int hist_entry__tlb_snprintf(struct hist_entry *self, char *bf,
+>  	char out[64];
+>  	size_t sz = sizeof(out) - 1; /* -1 for null termination */
+>  	size_t l = 0, i;
+> -	u64 m = self->mem_info->dsrc.mem_dtlb;
+> +	u64 m = PERF_MEM_TLB_NA;
+>  	u64 hit, miss;
+>  
+>  	out[0] = '\0';
+>  
+> +	if (self->mem_info)
+> +		m = self->mem_info->dsrc.mem_dtlb;
+> +
+>  	hit = m & PERF_MEM_TLB_HIT;
+>  	miss = m & PERF_MEM_TLB_MISS;
+>  
+> @@ -569,6 +618,8 @@ static int hist_entry__tlb_snprintf(struct hist_entry *self, char *bf,
+>  		strncat(out, tlb_access[i], sz - l);
+>  		l += strlen(tlb_access[i]);
+>  	}
+> +	if (*out == '\0')
+> +		strcpy(out, "N/A");
+>  	if (hit)
+>  		strncat(out, " hit", sz - l);
+>  	if (miss)
+> @@ -580,8 +631,18 @@ static int hist_entry__tlb_snprintf(struct hist_entry *self, char *bf,
+>  static int64_t
+>  sort__lvl_cmp(struct hist_entry *left, struct hist_entry *right)
+>  {
+> -	union perf_mem_data_src dsrc_l = left->mem_info->dsrc;
+> -	union perf_mem_data_src dsrc_r = right->mem_info->dsrc;
+> +	union perf_mem_data_src dsrc_l;
+> +	union perf_mem_data_src dsrc_r;
+> +
+> +	if (left->mem_info)
+> +		dsrc_l = left->mem_info->dsrc;
+> +	else
+> +		dsrc_l.mem_lvl = PERF_MEM_LVL_NA;
+> +
+> +	if (right->mem_info)
+> +		dsrc_r = right->mem_info->dsrc;
+> +	else
+> +		dsrc_r.mem_lvl = PERF_MEM_LVL_NA;
+>  
+>  	return (int64_t)(dsrc_r.mem_lvl - dsrc_l.mem_lvl);
+>  }
+> @@ -610,9 +671,12 @@ static int hist_entry__lvl_snprintf(struct hist_entry *self, char *bf,
+>  	char out[64];
+>  	size_t sz = sizeof(out) - 1; /* -1 for null termination */
+>  	size_t i, l = 0;
+> -	u64 m = self->mem_info->dsrc.mem_lvl;
+> +	u64 m =  PERF_MEM_LVL_NA;
+>  	u64 hit, miss;
+>  
+> +	if (self->mem_info)
+> +		m  = self->mem_info->dsrc.mem_lvl;
+> +
+>  	out[0] = '\0';
+>  
+>  	hit = m & PERF_MEM_LVL_HIT;
+> @@ -631,6 +695,8 @@ static int hist_entry__lvl_snprintf(struct hist_entry *self, char *bf,
+>  		strncat(out, mem_lvl[i], sz - l);
+>  		l += strlen(mem_lvl[i]);
+>  	}
+> +	if (*out == '\0')
+> +		strcpy(out, "N/A");
+>  	if (hit)
+>  		strncat(out, " hit", sz - l);
+>  	if (miss)
+> @@ -642,8 +708,18 @@ static int hist_entry__lvl_snprintf(struct hist_entry *self, char *bf,
+>  static int64_t
+>  sort__snoop_cmp(struct hist_entry *left, struct hist_entry *right)
+>  {
+> -	union perf_mem_data_src dsrc_l = left->mem_info->dsrc;
+> -	union perf_mem_data_src dsrc_r = right->mem_info->dsrc;
+> +	union perf_mem_data_src dsrc_l;
+> +	union perf_mem_data_src dsrc_r;
+> +
+> +	if (left->mem_info)
+> +		dsrc_l = left->mem_info->dsrc;
+> +	else
+> +		dsrc_l.mem_snoop = PERF_MEM_SNOOP_NA;
+> +
+> +	if (right->mem_info)
+> +		dsrc_r = right->mem_info->dsrc;
+> +	else
+> +		dsrc_r.mem_snoop = PERF_MEM_SNOOP_NA;
+>  
+>  	return (int64_t)(dsrc_r.mem_snoop - dsrc_l.mem_snoop);
+>  }
+> @@ -663,10 +739,13 @@ static int hist_entry__snoop_snprintf(struct hist_entry *self, char *bf,
+>  	char out[64];
+>  	size_t sz = sizeof(out) - 1; /* -1 for null termination */
+>  	size_t i, l = 0;
+> -	u64 m = self->mem_info->dsrc.mem_snoop;
+> +	u64 m = PERF_MEM_SNOOP_NA;
+>  
+>  	out[0] = '\0';
+>  
+> +	if (self->mem_info)
+> +		m = self->mem_info->dsrc.mem_snoop;
+> +
+>  	for (i = 0; m && i < NUM_SNOOP_ACCESS; i++, m >>= 1) {
+>  		if (!(m & 0x1))
+>  			continue;
+> @@ -678,6 +757,9 @@ static int hist_entry__snoop_snprintf(struct hist_entry *self, char *bf,
+>  		l += strlen(snoop_access[i]);
+>  	}
+>  
+> +	if (*out == '\0')
+> +		strcpy(out, "N/A");
+> +
+>  	return repsep_snprintf(bf, size, "%-*s", width, out);
+>  }
+>  
