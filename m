@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab3BVLOR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 06:14:17 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:58371 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026Ab3BVLOP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 06:14:15 -0500
+	id S1756785Ab3BVLP2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 06:15:28 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:51049 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755930Ab3BVLP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 06:15:27 -0500
+Date: Fri, 22 Feb 2013 12:15:21 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Feuerer <peter@piie.net>
+Cc: Zhang Rui <rui.zhang@intel.com>, Andreas Mohr <andi@lisas.de>,
+        linux-kernel@vger.kernel.org, Durgadoss R <durgadoss.r@intel.com>
+Subject: Re: thermal governor: does it actually work??
+Message-ID: <20130222111521.GA25473@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Peter Feuerer <peter@piie.net>, Zhang Rui <rui.zhang@intel.com>,
+	Andreas Mohr <andi@lisas.de>, linux-kernel@vger.kernel.org,
+	Durgadoss R <durgadoss.r@intel.com>
+References: <20130214153255.GA5033@rhlx01.hs-esslingen.de>
+ <1361288123.2323.29.camel@rzhang1-mobl4>
+ <cone.1361511184.64609.1639.1000@galar>
 MIME-Version: 1.0
-In-Reply-To: <CAFtRNNzcUpxT3R6ttUJ0c-7QTVRxbwRVq6bPqvkSL93vbstT4g@mail.gmail.com>
-References: <51157686.9000404@chronox.de>
-	<CAFtRNNzcUpxT3R6ttUJ0c-7QTVRxbwRVq6bPqvkSL93vbstT4g@mail.gmail.com>
-Date: Fri, 22 Feb 2013 13:14:14 +0200
-Message-ID: <CAFtRNNxb+o0P2wpu=k7r_V_rNr8PQf_44emqku_64QD6Ox7p6Q@mail.gmail.com>
-Subject: Re: [RFC][PATCH] Entropy generator with 100 kB/s throughput
-From: Nick Kossifidis <mickflemm@gmail.com>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: "Ted Ts'o" <tytso@mit.edu>, linux-crypto@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <cone.1361511184.64609.1639.1000@galar>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm so sorry, something went terribly wrong with gmail/thunderbird :-(
+On Fri, Feb 22, 2013 at 06:33:04AM +0100, Peter Feuerer wrote:
+> Adding Boris,
+> 
+> sorry, I can't do anything currently, I'm down with influenza.
 
-2013/2/22 Nick Kossifidis <mickflemm@gmail.com>:
-> Hello all,
->
-> It's nice to see there is still discussion on the matter of using cpu
-> timings for entropy. In general using cpu timings for gathering entropy is a
-> nice idea but it's not that unpredictable. If someone can profile the system
-> he/she can get enough infos to predict (to some point) the generator's
-> outcome, especially during boot/reboot. You might pass the tests on a single
-> run but if you try to compare the runs e.g. when booting the system multiple
-> times you'll see they are correlated.
->
-> Take a look at this:
->
-> http://dl.dropbox.com/u/11670313/runtime-data.tar.bz2
->
-> It's the output of this patch, before passing data to the entropy pool (btw
-> did anyone review this patch or should I resend it ?):
->
-> https://patchwork.kernel.org/patch/1759821/
->
-> If you plot the datasets you'll see e.g. that across reboots you get a very
-> similar distribution. It is somehow different across boots but still there
-> is some correlation there too, notice the difference when fsck runs, still
-> not much.
->
-> The distribution is good in general, for mixing it with the rest in the
-> system's entropy pool, but on its own I don't think it's enough, especially
-> without crypto post-processing.
+Oh, sorry to hear that - gute Besserung! :-)
 
-
+Sure, I'll take a look, Zhang's idea made sense to me, let me try it
+out.
 
 -- 
-GPG ID: 0xEE878588
-As you read this post global entropy rises. Have Fun ;-)
-Nick
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
