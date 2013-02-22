@@ -1,783 +1,1049 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab3BVNTG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 08:19:06 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:38745 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756890Ab3BVNTD (ORCPT
+	id S1757387Ab3BVNTQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 08:19:16 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:45228 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757317Ab3BVNTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 08:19:03 -0500
-Message-ID: <51277004.20702@st.com>
-Date: Fri, 22 Feb 2013 14:17:56 +0100
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Fri, 22 Feb 2013 08:19:12 -0500
+Date: Fri, 22 Feb 2013 14:19:08 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] locking changes for v3.9
+Message-ID: <20130222131908.GA8058@gmail.com>
 MIME-Version: 1.0
-To: Byungho An <bh74.an@samsung.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        jeffrey.t.kirsher@intel.com, kgene.kim@samsung.com, cpgs@samsung.com
-Subject: Re: [PATCH net-next 1/3] net: stmmac: add gmac autoneg set for SGMII,
- TBI, and RTBI
-References: <00c001cdf369$9b25bdf0$d17139d0$@samsung.com> <50F6568D.3060703@st.com> <01e201cdf5a3$1f3e1890$5dba49b0$@samsung.com> <50FFB094.5000100@st.com> <013e01cdfb47$8f5d2b30$ae178190$@samsung.com>
-In-Reply-To: <013e01cdfb47$8f5d2b30$ae178190$@samsung.com>
-Content-Type: multipart/mixed;
- boundary="------------090907080700060704020909"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090907080700060704020909
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Linus,
 
-Hello Byungho
+Please pull the latest core-locking-for-linus git tree from:
 
-sorry for my late reply. I'm attaching two patches built for net-next
-as we had clarified. I had written the first patch long time ago
-and on top of it I have added some part of your code below with some
-fixes (see also the comments inline below).
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-locking-for-linus
 
-This work is not yet completed but I do hope these two patches will
-help you to complete all. Unfortunately, I cannot do any tests
-because I have no HW that supports PCS. :-(
+   HEAD: 41ef8f826692c8f65882bec0a8211bd4d1d2d19a rwsem-spinlock: Implement writer lock-stealing for better scalability
 
-In the second patch, take a look at the comment that reports
-the missing parts. For example, ethtool, SGMII etc.
+The biggest change is the rwsem lock-steal improvements, both to 
+the assembly optimized and the spinlock based variants.
 
-I wonder if you could review/test the two patches on your side.
-Also I hope you can improve all adding the missing features (that is
-what you were already doing).
+The other notable change is the clean up of the seqlock 
+implementation to be based on the seqcount infrastructure.
 
-If you agree, you could also re-send *all* to the mailing list to
-be finally reviewed.
+The rest is assorted smaller debuggability, cleanup and 
+continued -rt locking changes.
 
-On 1/25/2013 11:01 PM, Byungho An wrote:
->
-> On 1/23/2013 1:43 PM, Giuseppe CAVALLARO write:
+ Thanks,
 
-[snip]
+	Ingo
 
->>
-> I modified this part like below
->
-> @@ -1044,12 +1046,8 @@ static int stmmac_open(struct net_device *dev)
->          priv->hw->mac->core_init(priv->ioaddr);
->
->          /* Enable auto-negotiation for SGMII, TBI or RTBI */
-> -       if (interface == PHY_INTERFACE_MODE_SGMII ||
-> -           interface == PHY_INTERFACE_MODE_TBI ||
-> -           interface == PHY_INTERFACE_MODE_RTBI) {
-> -               if (priv->phydev->autoneg)
-> -                       priv->hw->mac->set_autoneg(priv->ioaddr);
-> -       }
-> +       if (priv->dma_cap.pcs)
-> +               priv->hw->mac->ctrl_ane(priv->ioaddr, 0);
->
->          /* Request the IRQ lines */
->          ret = request_irq(dev->irq, stmmac_interrupt,
->
-> As you may know, auto-negotiation is essential for SGMII, TBI, or RTBI
-> interface.
->
+------------------>
+Alex Shi (1):
+      rwsem: Implement writer lock-stealing for better scalability
 
-good, add it on top of the second patch.
+Ben Greear (1):
+      lockdep: Print more info when MAX_LOCK_DEPTH is exceeded
 
-> And ctrl_ane funciont is like that
->
-> @@ -311,6 +317,18 @@ static void dwmac1000_set_autoneg(void __iomem *ioaddr)
->          writel(value, ioaddr + GMAC_AN_CTRL);
->   }
->
-> +static void dwmac1000_ctrl_ane(void __iomem *ioaddr, bool restart)
-> +{
-> +       u32 value;
-> +
-> +       value = readl(ioaddr + GMAC_AN_CTRL);
-> +     /* auto negotiation enable and External Loopback enable */
-> +       value = GMAC_AN_CTRL__ANE | GMAC_AN_CTRL__ELE;
-> +
-> +       if (restart)
-> +               value |= GMAC_AN_CTRL_RAN;
-> +
-> +       writel(value, ioaddr + GMAC_AN_CTRL);
-> +}
->
->   static const struct stmmac_ops dwmac1000_ops = {
->          .core_init = dwmac1000_core_init,
+Ingo Molnar (1):
+      generic: Use raw local irq variant for generic cmpxchg
 
-well done and added in the second patch.
+Mike Galbraith (1):
+      intel_idle: Convert i7300_idle_lock to raw_spinlock
 
-[snip]
-> I've  changed restart AN like below.
->
-> @@ -610,6 +607,27 @@ static int stmmac_set_coalesce(struct net_device *dev,
->          return 0;
->   }
->
-> +static int
-> +stmmac_nway_reset(struct net_device *netdev)
-> +{
-> +       struct stmmac_priv *priv = netdev_priv(netdev);
-> +       struct phy_device *phy = priv->phydev;
-> +       int ret = 0;
-> +
-> +       spin_lock(&priv->lock);
-> +
-> +       if (netif_running(netdev)) {
-> +               phy_stop(phy);
-> +               phy_start(phy);
-> +               ret = phy_start_aneg(phy);
-> +               if (priv->dma_cap.pcs)
-> +                       priv->hw->mac->ctrl_ane(priv->ioaddr, true);
-> +       }
-> +
-> +       spin_unlock(&priv->lock);
-> +       return ret;
-> +}
-> +
->   static const struct ethtool_ops stmmac_ethtool_ops = {
->          .begin = stmmac_check_if_running,
->          .get_drvinfo = stmmac_ethtool_getdrvinfo,
->
->
+Namhyung Kim (1):
+      watchdog: Use local_clock for get_timestamp()
 
-we have to review this. I expect to have a new patch that includes the
-ethtool support but, at first glance, the stmmac_nway_reset should only
-call the ctrl_ane.
+Paul Bolle (1):
+      lockdep: Silence warning if CONFIG_LOCKDEP isn't set
 
-pay attention that also some other ethtool functions have to be fixed
-for this support.
+Srivatsa S. Bhat (1):
+      lockdep: Rename print_unlock_inbalance_bug() to print_unlock_imbalance_bug()
 
-[snip]
+Thomas Gleixner (5):
+      locking: Various static lock initializer fixes
+      ntp: Make ntp_lock raw
+      seqlock: Remove unused functions
+      seqlock: Use seqcount infrastructure
+      futex: Revert "futex: Mark get_robust_list as deprecated"
 
-> I think whenever link is changed, phy->state is changed and call
-> stmmac_adjust_link. It would update gmac's link.
-> I can get autonegotiation complete and link change irqs if we need something
-> we can add code in the handler but I'm not sure which one is need yet.
-> As of now I just added phy_state = PHY_CHANGELINK as a test code in the link
-> change irq handler.
->
-> @@ -1624,8 +1629,43 @@ static irqreturn_t stmmac_interrupt(int irq, void
-> *dev_id)
->                                  priv->xstats.mmc_rx_csum_offload_irq_n++;
->                          if (status & core_irq_receive_pmt_irq)
->                                  priv->xstats.irq_receive_pmt_irq_n++;
-> +                       if (status & core_irq_pcs_autoneg_complete)
-> +                                priv->core_pcs_an = true;
-> +                       if (status & core_irq_pcs_link_status_change) {
-> +                               priv->core_pcs_link_change = true;
-> +                               status = readl(priv->ioaddr +
-> GMAC_AN_STATUS);
-> +                               if (status & GMAC_AN_STATUS_LS)
-> +                                       if ((priv->speed != phy->speed) ||
-> (priv->oldduplex != phy->duplex))
-> +                                       phy->state = PHY_CHANGELINK;  /* for
-> test */
-> +                       }
->
->                          /* For LPI we need to save the tx status */
->                          if (status & core_irq_tx_path_in_lpi_mode) {
->
-> I have a question, how to hand over phy's irq number, as I analyzed
-> phydev->irq is irqlist and irqlist is like below but I can not find a way to
-> set phy's irq number.
-> How to register or set priv->mii_irq or mdio_bus_data->irqs.
->
->          if (mdio_bus_data->irqs)
->                  irqlist = mdio_bus_data->irqs;
->          else
->                  irqlist = priv->mii_irq;
+Yong Zhang (1):
+      lockdep: Selftest: convert spinlock to raw spinlock
 
-I had added something in my first patch that should be ok.
+Yuanhan Liu (2):
+      locking/stat: Fix a typo
+      rwsem-spinlock: Implement writer lock-stealing for better scalability
 
-> I added some defines for AN like below
-> @@ -97,6 +97,20 @@ enum power_event {
->   #define GMAC_TBI       0x000000d4      /* TBI extend status */
->   #define GMAC_GMII_STATUS 0x000000d8    /* S/R-GMII status */
->
-> +/* AN Configuration defines */
-> +#define GMAC_AN_CTRL_RAN       0x00000200      /* Restart Auto-Negotiation
-> */
-> +#define GMAC_AN_CTRL_ANE       0x00001000      /* Auto-Negotiation Enable
-> */
-> +#define GMAC_AN_CTRL_ELE       0x00004000      /* External Loopback Enable
-> */
-> +#define GMAC_AN_CTRL_ECD       0x00010000      /* Enable Comma Detect */
-> +#define GMAC_AN_CTRL_LR        0x00020000      /* Lock to Reference */
-> +#define GMAC_AN_CTRL_SGMRAL    0x00040000      /* SGMII RAL Control */
-> +
-> +/* AN Status defines */
-> +#define GMAC_AN_STATUS_LS      0x00000004      /* Link Status 0:down 1:up
-> */
-> +#define GMAC_AN_STATUS_ANA     0x00000008      /* Auto-Negotiation Ability
-> */
-> +#define GMAC_AN_STATUS_ANC     0x00000020      /* Auto-Negotiation Complete
-> */
-> +#define GMAC_AN_STATUS_ES      0x00000100      /* Extended Status */
-> +
->   /* GMAC Configuration defines */
->   #define GMAC_CONTROL_TC        0x01000000      /* Transmit Conf. in
-> RGMII/SGMII */
->   #define GMAC_CONTROL_WD        0x00800000      /* Disable Watchdog on
-> receive */
 
-ok, these are in the second patch
+ Documentation/lockstat.txt          |   2 +-
+ drivers/char/random.c               |   6 +-
+ drivers/idle/i7300_idle.c           |   8 +-
+ drivers/usb/chipidea/debug.c        |   2 +-
+ fs/file.c                           |   2 +-
+ include/asm-generic/cmpxchg-local.h |   8 +-
+ include/linux/idr.h                 |   2 +-
+ include/linux/lockdep.h             |   2 +-
+ include/linux/seqlock.h             | 193 +++++++++++++++++-------------------
+ kernel/futex.c                      |   2 -
+ kernel/futex_compat.c               |   2 -
+ kernel/lockdep.c                    |  15 ++-
+ kernel/time/ntp.c                   |  26 ++---
+ kernel/watchdog.c                   |  10 +-
+ lib/locking-selftest.c              |  34 +++----
+ lib/rwsem-spinlock.c                |  69 +++++--------
+ lib/rwsem.c                         |  75 ++++++++------
+ 17 files changed, 221 insertions(+), 237 deletions(-)
 
---------------090907080700060704020909
-Content-Type: text/x-patch;
- name="0001-stmmac-start-adding-pcs-and-rgmii-core-irq.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-stmmac-start-adding-pcs-and-rgmii-core-irq.patch"
-
->From 13a4be74f7a4a7d180cae25f4528dc0a78bf5d7c Mon Sep 17 00:00:00 2001
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Date: Mon, 17 Dec 2012 07:22:18 +0100
-Subject: [net-next.git 1/2] stmmac: start adding pcs and rgmii core irq
-
-This patch starts adding in the main ISR the management of the PCS and
-RGMII/SGMII core interrupts. This is to help further development
-on this area. Currently the core irq handler only clears the
-PCS and S-R_MII interrupts and reports the event in the ethtool stats.
-
-Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Cc: Udit Kumar <udit-dlh.kumar@st.com>
----
- drivers/net/ethernet/stmicro/stmmac/common.h       |   25 ++++++-----
- drivers/net/ethernet/stmicro/stmmac/dwmac1000.h    |    5 +-
- .../net/ethernet/stmicro/stmmac/dwmac1000_core.c   |   44 ++++++++++++-------
- .../net/ethernet/stmicro/stmmac/dwmac100_core.c    |    3 +-
- .../net/ethernet/stmicro/stmmac/stmmac_ethtool.c   |    3 +
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c  |   24 ++---------
- 6 files changed, 54 insertions(+), 50 deletions(-)
-
-diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h b/drivers/net/ethernet/stmicro/stmmac/common.h
-index 186d148..1db761c 100644
---- a/drivers/net/ethernet/stmicro/stmmac/common.h
-+++ b/drivers/net/ethernet/stmicro/stmmac/common.h
-@@ -117,6 +117,10 @@ struct stmmac_extra_stats {
- 	unsigned long irq_rx_path_in_lpi_mode_n;
- 	unsigned long irq_rx_path_exit_lpi_mode_n;
- 	unsigned long phy_eee_wakeup_error_n;
-+	/* PCS */
-+	unsigned long irq_pcs_ane_n;
-+	unsigned long irq_pcs_link_n;
-+	unsigned long irq_rgmii_n;
+diff --git a/Documentation/lockstat.txt b/Documentation/lockstat.txt
+index cef00d4..dd2f7b2 100644
+--- a/Documentation/lockstat.txt
++++ b/Documentation/lockstat.txt
+@@ -65,7 +65,7 @@ that had to wait on lock acquisition.
+ 
+  - CONFIGURATION
+ 
+-Lock statistics are enabled via CONFIG_LOCK_STATS.
++Lock statistics are enabled via CONFIG_LOCK_STAT.
+ 
+  - USAGE
+ 
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 85e81ec..594bda9 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -445,7 +445,7 @@ static struct entropy_store input_pool = {
+ 	.poolinfo = &poolinfo_table[0],
+ 	.name = "input",
+ 	.limit = 1,
+-	.lock = __SPIN_LOCK_UNLOCKED(&input_pool.lock),
++	.lock = __SPIN_LOCK_UNLOCKED(input_pool.lock),
+ 	.pool = input_pool_data
  };
  
- /* CSR Frequency Access Defines*/
-@@ -194,16 +198,14 @@ enum dma_irq_status {
- 	handle_tx = 0x8,
+@@ -454,7 +454,7 @@ static struct entropy_store blocking_pool = {
+ 	.name = "blocking",
+ 	.limit = 1,
+ 	.pull = &input_pool,
+-	.lock = __SPIN_LOCK_UNLOCKED(&blocking_pool.lock),
++	.lock = __SPIN_LOCK_UNLOCKED(blocking_pool.lock),
+ 	.pool = blocking_pool_data
  };
  
--enum core_specific_irq_mask {
--	core_mmc_tx_irq = 1,
--	core_mmc_rx_irq = 2,
--	core_mmc_rx_csum_offload_irq = 4,
--	core_irq_receive_pmt_irq = 8,
--	core_irq_tx_path_in_lpi_mode = 16,
--	core_irq_tx_path_exit_lpi_mode = 32,
--	core_irq_rx_path_in_lpi_mode = 64,
--	core_irq_rx_path_exit_lpi_mode = 128,
--};
-+#define	CORE_IRQ_TX_PATH_IN_LPI_MODE	(1 << 1)
-+#define	CORE_IRQ_TX_PATH_EXIT_LPI_MODE	(1 << 2)
-+#define	CORE_IRQ_RX_PATH_IN_LPI_MODE	(1 << 3)
-+#define	CORE_IRQ_RX_PATH_EXIT_LPI_MODE	(1 << 4)
-+
-+#define	CORE_PCS_ANE_COMPLETE		(1 << 5)
-+#define	CORE_PCS_LINK_STATUS		(1 << 6)
-+#define	CORE_RGMII_IRQ			(1 << 7)
+@@ -462,7 +462,7 @@ static struct entropy_store nonblocking_pool = {
+ 	.poolinfo = &poolinfo_table[1],
+ 	.name = "nonblocking",
+ 	.pull = &input_pool,
+-	.lock = __SPIN_LOCK_UNLOCKED(&nonblocking_pool.lock),
++	.lock = __SPIN_LOCK_UNLOCKED(nonblocking_pool.lock),
+ 	.pool = nonblocking_pool_data
+ };
  
- /* DMA HW capabilities */
- struct dma_features {
-@@ -327,7 +329,8 @@ struct stmmac_ops {
- 	/* Dump MAC registers */
- 	void (*dump_regs) (void __iomem *ioaddr);
- 	/* Handle extra events on specific interrupts hw dependent */
--	int (*host_irq_status) (void __iomem *ioaddr);
-+	int (*host_irq_status) (void __iomem *ioaddr,
-+				struct stmmac_extra_stats *x);
- 	/* Multicast filter setting */
- 	void (*set_filter) (struct net_device *dev, int id);
- 	/* Flow control setting */
-diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000.h b/drivers/net/ethernet/stmicro/stmmac/dwmac1000.h
-index 7ad56af..8a8c39f 100644
---- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000.h
-+++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000.h
-@@ -89,13 +89,14 @@ enum power_event {
- 				(reg * 8))
- #define GMAC_MAX_PERFECT_ADDRESSES	32
+diff --git a/drivers/idle/i7300_idle.c b/drivers/idle/i7300_idle.c
+index fa080eb..ffeebc7 100644
+--- a/drivers/idle/i7300_idle.c
++++ b/drivers/idle/i7300_idle.c
+@@ -75,7 +75,7 @@ static unsigned long past_skip;
  
-+/* PCS registers (AN/TBI/SGMII/RGMII) offset */
- #define GMAC_AN_CTRL	0x000000c0	/* AN control */
- #define GMAC_AN_STATUS	0x000000c4	/* AN status */
- #define GMAC_ANE_ADV	0x000000c8	/* Auto-Neg. Advertisement */
--#define GMAC_ANE_LINK	0x000000cc	/* Auto-Neg. link partener ability */
-+#define GMAC_ANE_LPA	0x000000cc	/* Auto-Neg. link partener ability */
- #define GMAC_ANE_EXP	0x000000d0	/* ANE expansion */
- #define GMAC_TBI	0x000000d4	/* TBI extend status */
--#define GMAC_GMII_STATUS 0x000000d8	/* S/R-GMII status */
-+#define GMAC_S_R_GMII	0x000000d8	/* SGMII RGMII status */
+ static struct pci_dev *fbd_dev;
  
- /* GMAC Configuration defines */
- #define GMAC_CONTROL_TC	0x01000000	/* Transmit Conf. in RGMII/SGMII */
-diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-index bfe0226..ff4c79e 100644
---- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-@@ -194,58 +194,70 @@ static void dwmac1000_pmt(void __iomem *ioaddr, unsigned long mode)
- }
+-static spinlock_t i7300_idle_lock;
++static raw_spinlock_t i7300_idle_lock;
+ static int i7300_idle_active;
  
- 
--static int dwmac1000_irq_status(void __iomem *ioaddr)
-+static int dwmac1000_irq_status(void __iomem *ioaddr,
-+				struct stmmac_extra_stats *x)
- {
- 	u32 intr_status = readl(ioaddr + GMAC_INT_STATUS);
--	int status = 0;
-+	int ret = 0;
- 
- 	/* Not used events (e.g. MMC interrupts) are not handled. */
- 	if ((intr_status & mmc_tx_irq)) {
- 		CHIP_DBG(KERN_INFO "GMAC: MMC tx interrupt: 0x%08x\n",
- 		    readl(ioaddr + GMAC_MMC_TX_INTR));
--		status |= core_mmc_tx_irq;
-+		x->mmc_tx_irq_n++;
+ static u8 i7300_idle_thrtctl_saved;
+@@ -457,7 +457,7 @@ static int i7300_idle_notifier(struct notifier_block *nb, unsigned long val,
+ 		idle_begin_time = ktime_get();
  	}
- 	if (unlikely(intr_status & mmc_rx_irq)) {
- 		CHIP_DBG(KERN_INFO "GMAC: MMC rx interrupt: 0x%08x\n",
- 		    readl(ioaddr + GMAC_MMC_RX_INTR));
--		status |= core_mmc_rx_irq;
-+		x->mmc_rx_irq_n++;
- 	}
- 	if (unlikely(intr_status & mmc_rx_csum_offload_irq)) {
- 		CHIP_DBG(KERN_INFO "GMAC: MMC rx csum offload: 0x%08x\n",
- 		    readl(ioaddr + GMAC_MMC_RX_CSUM_OFFLOAD));
--		status |= core_mmc_rx_csum_offload_irq;
-+		x->mmc_rx_csum_offload_irq_n++;
- 	}
- 	if (unlikely(intr_status & pmt_irq)) {
- 		CHIP_DBG(KERN_INFO "GMAC: received Magic frame\n");
- 		/* clear the PMT bits 5 and 6 by reading the PMT
- 		 * status register. */
- 		readl(ioaddr + GMAC_PMT);
--		status |= core_irq_receive_pmt_irq;
-+		x->irq_receive_pmt_irq_n++;
- 	}
- 	/* MAC trx/rx EEE LPI entry/exit interrupts */
- 	if (intr_status & lpiis_irq) {
- 		/* Clean LPI interrupt by reading the Reg 12 */
--		u32 lpi_status = readl(ioaddr + LPI_CTRL_STATUS);
-+		ret = readl(ioaddr + LPI_CTRL_STATUS);
  
--		if (lpi_status & LPI_CTRL_STATUS_TLPIEN) {
-+		if (ret & LPI_CTRL_STATUS_TLPIEN) {
- 			CHIP_DBG(KERN_INFO "GMAC TX entered in LPI\n");
--			status |= core_irq_tx_path_in_lpi_mode;
-+			x->irq_tx_path_in_lpi_mode_n++;
- 		}
--		if (lpi_status & LPI_CTRL_STATUS_TLPIEX) {
-+		if (ret & LPI_CTRL_STATUS_TLPIEX) {
- 			CHIP_DBG(KERN_INFO "GMAC TX exit from LPI\n");
--			status |= core_irq_tx_path_exit_lpi_mode;
-+			x->irq_tx_path_exit_lpi_mode_n++;
- 		}
--		if (lpi_status & LPI_CTRL_STATUS_RLPIEN) {
-+		if (ret & LPI_CTRL_STATUS_RLPIEN) {
- 			CHIP_DBG(KERN_INFO "GMAC RX entered in LPI\n");
--			status |= core_irq_rx_path_in_lpi_mode;
-+			x->irq_rx_path_in_lpi_mode_n++;
- 		}
--		if (lpi_status & LPI_CTRL_STATUS_RLPIEX) {
-+		if (ret & LPI_CTRL_STATUS_RLPIEX) {
- 			CHIP_DBG(KERN_INFO "GMAC RX exit from LPI\n");
--			status |= core_irq_rx_path_exit_lpi_mode;
-+			x->irq_rx_path_exit_lpi_mode_n++;
+-	spin_lock_irqsave(&i7300_idle_lock, flags);
++	raw_spin_lock_irqsave(&i7300_idle_lock, flags);
+ 	if (val == IDLE_START) {
+ 
+ 		cpumask_set_cpu(smp_processor_id(), idle_cpumask);
+@@ -506,7 +506,7 @@ static int i7300_idle_notifier(struct notifier_block *nb, unsigned long val,
  		}
  	}
- 
--	return status;
-+	if ((intr_status & pcs_ane_irq) || (intr_status & pcs_link_irq)) {
-+		CHIP_DBG(KERN_INFO "GMAC PCS ANE IRQ\n");
-+		readl(ioaddr + GMAC_AN_STATUS);
-+		x->irq_pcs_ane_n++;
-+	}
-+	if (intr_status & rgmii_irq) {
-+		CHIP_DBG(KERN_INFO "GMAC RGMII IRQ status\n");
-+		readl(ioaddr + GMAC_S_R_GMII);
-+		x->irq_rgmii_n++;
-+	}
-+
-+	return ret;
- }
- 
- static void  dwmac1000_set_eee_mode(void __iomem *ioaddr)
-diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac100_core.c b/drivers/net/ethernet/stmicro/stmmac/dwmac100_core.c
-index f83210e..cb86a58 100644
---- a/drivers/net/ethernet/stmicro/stmmac/dwmac100_core.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/dwmac100_core.c
-@@ -72,7 +72,8 @@ static int dwmac100_rx_ipc_enable(void __iomem *ioaddr)
+ end:
+-	spin_unlock_irqrestore(&i7300_idle_lock, flags);
++	raw_spin_unlock_irqrestore(&i7300_idle_lock, flags);
  	return 0;
  }
  
--static int dwmac100_irq_status(void __iomem *ioaddr)
-+static int dwmac100_irq_status(void __iomem *ioaddr,
-+			       struct stmmac_extra_stats *x)
+@@ -548,7 +548,7 @@ struct debugfs_file_info {
+ 
+ static int __init i7300_idle_init(void)
  {
- 	return 0;
- }
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-index d1ac39c..e15004f 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-@@ -108,6 +108,9 @@ static const struct stmmac_stats stmmac_gstrings_stats[] = {
- 	STMMAC_STAT(irq_rx_path_in_lpi_mode_n),
- 	STMMAC_STAT(irq_rx_path_exit_lpi_mode_n),
- 	STMMAC_STAT(phy_eee_wakeup_error_n),
-+	/* PCS */
-+	STMMAC_STAT(irq_pcs_ane_n),
-+	STMMAC_STAT(irq_rgmii_n),
- };
- #define STMMAC_STATS_LEN ARRAY_SIZE(stmmac_gstrings_stats)
+-	spin_lock_init(&i7300_idle_lock);
++	raw_spin_lock_init(&i7300_idle_lock);
+ 	total_us = 0;
  
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 39c6c55..1f2f349 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -1604,30 +1604,14 @@ static irqreturn_t stmmac_interrupt(int irq, void *dev_id)
- 	/* To handle GMAC own interrupts */
- 	if (priv->plat->has_gmac) {
- 		int status = priv->hw->mac->host_irq_status((void __iomem *)
--							    dev->base_addr);
-+							    dev->base_addr,
-+							    &priv->xstats);
- 		if (unlikely(status)) {
--			if (status & core_mmc_tx_irq)
--				priv->xstats.mmc_tx_irq_n++;
--			if (status & core_mmc_rx_irq)
--				priv->xstats.mmc_rx_irq_n++;
--			if (status & core_mmc_rx_csum_offload_irq)
--				priv->xstats.mmc_rx_csum_offload_irq_n++;
--			if (status & core_irq_receive_pmt_irq)
--				priv->xstats.irq_receive_pmt_irq_n++;
--
- 			/* For LPI we need to save the tx status */
--			if (status & core_irq_tx_path_in_lpi_mode) {
--				priv->xstats.irq_tx_path_in_lpi_mode_n++;
-+			if (status & CORE_IRQ_TX_PATH_IN_LPI_MODE)
- 				priv->tx_path_in_lpi_mode = true;
--			}
--			if (status & core_irq_tx_path_exit_lpi_mode) {
--				priv->xstats.irq_tx_path_exit_lpi_mode_n++;
-+			if (status & CORE_IRQ_TX_PATH_EXIT_LPI_MODE)
- 				priv->tx_path_in_lpi_mode = false;
--			}
--			if (status & core_irq_rx_path_in_lpi_mode)
--				priv->xstats.irq_rx_path_in_lpi_mode_n++;
--			if (status & core_irq_rx_path_exit_lpi_mode)
--				priv->xstats.irq_rx_path_exit_lpi_mode_n++;
- 		}
- 	}
- 
--- 
-1.7.4.4
-
-
---------------090907080700060704020909
-Content-Type: text/x-patch;
- name="0002-stmmac-start-managing-pcs-RGMII-modes-and-restart-AN.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0002-stmmac-start-managing-pcs-RGMII-modes-and-restart-AN.pa";
- filename*1="tch"
-
->From 952f89212446f3f346d2ade62aada1d7c06842b0 Mon Sep 17 00:00:00 2001
-From: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Date: Fri, 22 Feb 2013 12:24:00 +0100
-Subject: [net-next.git 2/2] stmmac: start managing pcs  RGMII modes and
- restart ANE
-
-This patch adds the minimal support to manage the PCS
-modes (RGMII) and restart the ANE when the interface is
-opened.
-
-Currently the following main things are missing:
-
-o SGMII/TBI support
-o manage the advertisement register (e.g. reg 50)
-o manage pause via ADV.
-o manage the Auto-Nogotiation Ability Register (51)
-o improve the ethtool.
-
-Thanks to Byungho that wrote some part of this code.
-
-Signed-off-by: Byungho An <bh74.an@samsung.com>
-Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
----
- drivers/net/ethernet/stmicro/stmmac/common.h       |    7 +++
- drivers/net/ethernet/stmicro/stmmac/dwmac1000.h    |   20 +++++++
- .../net/ethernet/stmicro/stmmac/dwmac1000_core.c   |   15 +++++
- drivers/net/ethernet/stmicro/stmmac/stmmac.h       |    1 +
- .../net/ethernet/stmicro/stmmac/stmmac_ethtool.c   |   13 +++++
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c  |   55 +++++++++++++++----
- 6 files changed, 99 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h b/drivers/net/ethernet/stmicro/stmmac/common.h
-index 1db761c..04134ad 100644
---- a/drivers/net/ethernet/stmicro/stmmac/common.h
-+++ b/drivers/net/ethernet/stmicro/stmmac/common.h
-@@ -142,6 +142,12 @@ struct stmmac_extra_stats {
- #define FLOW_TX		2
- #define FLOW_AUTO	(FLOW_TX | FLOW_RX)
- 
-+/* PCS defines */
-+#define STMMAC_PCS_RGMII	(1<<0)
-+#define STMMAC_PCS_SGMII	(1<<1)
-+#define STMMAC_PCS_TBI		(1<<2)
-+#define STMMAC_PCS_RTBI		(1<<1)
-+
- #define SF_DMA_MODE 1 /* DMA STORE-AND-FORWARD Operation Mode */
- 
- /* DAM HW feature register fields */
-@@ -347,6 +353,7 @@ struct stmmac_ops {
- 	void (*reset_eee_mode) (void __iomem *ioaddr);
- 	void (*set_eee_timer) (void __iomem *ioaddr, int ls, int tw);
- 	void (*set_eee_pls) (void __iomem *ioaddr, int link);
-+	void (*ctrl_ane) (void __iomem *ioaddr, bool restart);
+ 	if (i7300_idle_platform_probe(&fbd_dev, &ioat_dev, forceload))
+diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
+index 3bc244d..a62c4a4 100644
+--- a/drivers/usb/chipidea/debug.c
++++ b/drivers/usb/chipidea/debug.c
+@@ -222,7 +222,7 @@ static struct {
+ } dbg_data = {
+ 	.idx = 0,
+ 	.tty = 0,
+-	.lck = __RW_LOCK_UNLOCKED(lck)
++	.lck = __RW_LOCK_UNLOCKED(dbg_data.lck)
  };
  
- struct mac_link {
-diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000.h b/drivers/net/ethernet/stmicro/stmmac/dwmac1000.h
-index 8a8c39f..5cfd4d2 100644
---- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000.h
-+++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000.h
-@@ -98,6 +98,24 @@ enum power_event {
- #define GMAC_TBI	0x000000d4	/* TBI extend status */
- #define GMAC_S_R_GMII	0x000000d8	/* SGMII RGMII status */
- 
-+/* AN Configuration defines */
-+#define GMAC_AN_CTRL_RAN	0x00000200 /* Restart Auto-Negotiation */
-+#define GMAC_AN_CTRL_ANE	0x00001000 /* Auto-Negotiation Enable */
-+#define GMAC_AN_CTRL_ELE	0x00004000 /* External Loopback Enable */
-+#define GMAC_AN_CTRL_ECD	0x00010000 /* Enable Comma Detect */
-+#define GMAC_AN_CTRL_LR		0x00020000 /* Lock to Reference */
-+#define GMAC_AN_CTRL_SGMRAL	0x00040000 /* SGMII RAL Control */
-+
-+/* AN Status defines */
-+#define GMAC_AN_STATUS_LS	0x00000004 /* Link Status 0:down 1:up */
-+#define GMAC_AN_STATUS_ANA	0x00000008 /* Auto-Negotiation Ability */
-+#define GMAC_AN_STATUS_ANC	0x00000020 /* Auto-Negotiation Complete */
-+#define GMAC_AN_STATUS_ES	0x00000100 /* Extended Status */
-+
-+ /* GMAC Configuration defines */
-+#define GMAC_CONTROL_TC	0x01000000 /* Transmit Conf. in RGMII/SGMII */
-+#define GMAC_CONTROL_WD	0x00800000 /* Disable Watchdog on receive */
-+
- /* GMAC Configuration defines */
- #define GMAC_CONTROL_TC	0x01000000	/* Transmit Conf. in RGMII/SGMII */
- #define GMAC_CONTROL_WD	0x00800000	/* Disable Watchdog on receive */
-@@ -231,5 +249,7 @@ enum rtc_control {
- #define GMAC_MMC_TX_INTR   0x108
- #define GMAC_MMC_RX_CSUM_OFFLOAD   0x208
- 
-+
-+
- extern const struct stmmac_dma_ops dwmac1000_dma_ops;
- #endif /* __DWMAC1000_H__ */
-diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-index ff4c79e..f59366d 100644
---- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-@@ -309,6 +309,20 @@ static void  dwmac1000_set_eee_timer(void __iomem *ioaddr, int ls, int tw)
- 	writel(value, ioaddr + LPI_TIMER_CTRL);
- }
- 
-+static void dwmac1000_ctrl_ane(void __iomem *ioaddr, bool restart)
-+{
-+	u32 value;
-+
-+	value = readl(ioaddr + GMAC_AN_CTRL);
-+	/* auto negotiation enable and External Loopback enable */
-+	value = GMAC_AN_CTRL_ANE | GMAC_AN_CTRL_ELE;
-+
-+	if (restart)
-+		value |= GMAC_AN_CTRL_RAN;
-+
-+	writel(value, ioaddr + GMAC_AN_CTRL);
-+}
-+
- static const struct stmmac_ops dwmac1000_ops = {
- 	.core_init = dwmac1000_core_init,
- 	.rx_ipc = dwmac1000_rx_ipc_enable,
-@@ -323,6 +337,7 @@ static const struct stmmac_ops dwmac1000_ops = {
- 	.reset_eee_mode =  dwmac1000_reset_eee_mode,
- 	.set_eee_timer =  dwmac1000_set_eee_timer,
- 	.set_eee_pls =  dwmac1000_set_eee_pls,
-+	.ctrl_ane = dwmac1000_ctrl_ane,
- };
- 
- struct mac_device_info *dwmac1000_setup(void __iomem *ioaddr)
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac.h b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-index b05df89..197497c 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac.h
-@@ -93,6 +93,7 @@ struct stmmac_priv {
- 	u32 tx_coal_timer;
- 	int use_riwt;
- 	u32 rx_riwt;
-+	int pcs;
- };
- 
- extern int phyaddr;
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-index e15004f..71b58ea 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
-@@ -222,6 +222,10 @@ static int stmmac_ethtool_getsettings(struct net_device *dev,
- 	struct stmmac_priv *priv = netdev_priv(dev);
- 	struct phy_device *phy = priv->phydev;
- 	int rc;
-+
-+	if (priv->pcs) /* FIXME */
-+		return -EOPNOTSUPP;
-+
- 	if (phy == NULL) {
- 		pr_err("%s: %s: PHY is not registered\n",
- 		       __func__, dev->name);
-@@ -246,6 +250,9 @@ static int stmmac_ethtool_setsettings(struct net_device *dev,
- 	struct phy_device *phy = priv->phydev;
- 	int rc;
- 
-+	if (priv->pcs) /* FIXME */
-+		return -EOPNOTSUPP;
-+
- 	spin_lock(&priv->lock);
- 	rc = phy_ethtool_sset(phy, cmd);
- 	spin_unlock(&priv->lock);
-@@ -317,6 +324,9 @@ stmmac_get_pauseparam(struct net_device *netdev,
- 
- 	spin_lock(&priv->lock);
- 
-+	if (priv->pcs)
-+		return -EOPNOTSUPP;
-+
- 	pause->rx_pause = 0;
- 	pause->tx_pause = 0;
- 	pause->autoneg = priv->phydev->autoneg;
-@@ -338,6 +348,9 @@ stmmac_set_pauseparam(struct net_device *netdev,
- 	int new_pause = FLOW_OFF;
- 	int ret = 0;
- 
-+	if (priv->pcs)
-+		return -EOPNOTSUPP;
-+
- 	spin_lock(&priv->lock);
- 
- 	if (pause->rx_pause)
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 1f2f349..6366266 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -398,6 +398,21 @@ static void stmmac_adjust_link(struct net_device *dev)
- 	DBG(probe, DEBUG, "stmmac_adjust_link: exiting\n");
- }
- 
-+static void stmmac_check_pcs_mode(struct stmmac_priv *priv)
-+{
-+	int interface = priv->plat->interface;
-+
-+	if (priv->dma_cap.pcs) {
-+		if ((interface & PHY_INTERFACE_MODE_RGMII) ||
-+		    (interface & PHY_INTERFACE_MODE_RGMII_ID) ||
-+		    (interface & PHY_INTERFACE_MODE_RGMII_RXID) ||
-+		    (interface & PHY_INTERFACE_MODE_RGMII_TXID)) {
-+			pr_debug("STMMAC: PCS RGMII support enable\n");
-+			priv->pcs = STMMAC_PCS_RGMII;
-+		}
-+	}
-+}
-+
  /**
-  * stmmac_init_phy - PHY initialization
-  * @dev: net device structure
-@@ -1012,10 +1027,13 @@ static int stmmac_open(struct net_device *dev)
+diff --git a/fs/file.c b/fs/file.c
+index 2b3570b..3906d95 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -516,7 +516,7 @@ struct files_struct init_files = {
+ 		.close_on_exec	= init_files.close_on_exec_init,
+ 		.open_fds	= init_files.open_fds_init,
+ 	},
+-	.file_lock	= __SPIN_LOCK_UNLOCKED(init_task.file_lock),
++	.file_lock	= __SPIN_LOCK_UNLOCKED(init_files.file_lock),
+ };
  
- 	stmmac_check_ether_addr(priv);
+ /*
+diff --git a/include/asm-generic/cmpxchg-local.h b/include/asm-generic/cmpxchg-local.h
+index 2533fdd..d8d4c89 100644
+--- a/include/asm-generic/cmpxchg-local.h
++++ b/include/asm-generic/cmpxchg-local.h
+@@ -21,7 +21,7 @@ static inline unsigned long __cmpxchg_local_generic(volatile void *ptr,
+ 	if (size == 8 && sizeof(unsigned long) != 8)
+ 		wrong_size_cmpxchg(ptr);
  
--	ret = stmmac_init_phy(dev);
--	if (unlikely(ret)) {
--		pr_err("%s: Cannot attach to PHY (error: %d)\n", __func__, ret);
--		goto open_error;
-+	if (!priv->pcs) {
-+		ret = stmmac_init_phy(dev);
-+		if (unlikely(ret)) {
-+			pr_err("%s: Cannot attach to PHY (error: %d)\n",
-+			       __func__, ret);
-+			goto open_error;
-+		}
+-	local_irq_save(flags);
++	raw_local_irq_save(flags);
+ 	switch (size) {
+ 	case 1: prev = *(u8 *)ptr;
+ 		if (prev == old)
+@@ -42,7 +42,7 @@ static inline unsigned long __cmpxchg_local_generic(volatile void *ptr,
+ 	default:
+ 		wrong_size_cmpxchg(ptr);
+ 	}
+-	local_irq_restore(flags);
++	raw_local_irq_restore(flags);
+ 	return prev;
+ }
+ 
+@@ -55,11 +55,11 @@ static inline u64 __cmpxchg64_local_generic(volatile void *ptr,
+ 	u64 prev;
+ 	unsigned long flags;
+ 
+-	local_irq_save(flags);
++	raw_local_irq_save(flags);
+ 	prev = *(u64 *)ptr;
+ 	if (prev == old)
+ 		*(u64 *)ptr = new;
+-	local_irq_restore(flags);
++	raw_local_irq_restore(flags);
+ 	return prev;
+ }
+ 
+diff --git a/include/linux/idr.h b/include/linux/idr.h
+index de7e190..e5eb125 100644
+--- a/include/linux/idr.h
++++ b/include/linux/idr.h
+@@ -136,7 +136,7 @@ struct ida {
+ 	struct ida_bitmap	*free_bitmap;
+ };
+ 
+-#define IDA_INIT(name)		{ .idr = IDR_INIT(name), .free_bitmap = NULL, }
++#define IDA_INIT(name)		{ .idr = IDR_INIT((name).idr), .free_bitmap = NULL, }
+ #define DEFINE_IDA(name)	struct ida name = IDA_INIT(name)
+ 
+ int ida_pre_get(struct ida *ida, gfp_t gfp_mask);
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index 2bca44b..f05631e 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -410,7 +410,7 @@ struct lock_class_key { };
+ 
+ #define lockdep_depth(tsk)	(0)
+ 
+-#define lockdep_assert_held(l)			do { } while (0)
++#define lockdep_assert_held(l)			do { (void)(l); } while (0)
+ 
+ #define lockdep_recursing(tsk)			(0)
+ 
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index 600060e2..1829905 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -30,92 +30,12 @@
+ #include <linux/preempt.h>
+ #include <asm/processor.h>
+ 
+-typedef struct {
+-	unsigned sequence;
+-	spinlock_t lock;
+-} seqlock_t;
+-
+-/*
+- * These macros triggered gcc-3.x compile-time problems.  We think these are
+- * OK now.  Be cautious.
+- */
+-#define __SEQLOCK_UNLOCKED(lockname) \
+-		 { 0, __SPIN_LOCK_UNLOCKED(lockname) }
+-
+-#define seqlock_init(x)					\
+-	do {						\
+-		(x)->sequence = 0;			\
+-		spin_lock_init(&(x)->lock);		\
+-	} while (0)
+-
+-#define DEFINE_SEQLOCK(x) \
+-		seqlock_t x = __SEQLOCK_UNLOCKED(x)
+-
+-/* Lock out other writers and update the count.
+- * Acts like a normal spin_lock/unlock.
+- * Don't need preempt_disable() because that is in the spin_lock already.
+- */
+-static inline void write_seqlock(seqlock_t *sl)
+-{
+-	spin_lock(&sl->lock);
+-	++sl->sequence;
+-	smp_wmb();
+-}
+-
+-static inline void write_sequnlock(seqlock_t *sl)
+-{
+-	smp_wmb();
+-	sl->sequence++;
+-	spin_unlock(&sl->lock);
+-}
+-
+-static inline int write_tryseqlock(seqlock_t *sl)
+-{
+-	int ret = spin_trylock(&sl->lock);
+-
+-	if (ret) {
+-		++sl->sequence;
+-		smp_wmb();
+-	}
+-	return ret;
+-}
+-
+-/* Start of read calculation -- fetch last complete writer token */
+-static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
+-{
+-	unsigned ret;
+-
+-repeat:
+-	ret = ACCESS_ONCE(sl->sequence);
+-	if (unlikely(ret & 1)) {
+-		cpu_relax();
+-		goto repeat;
+-	}
+-	smp_rmb();
+-
+-	return ret;
+-}
+-
+-/*
+- * Test if reader processed invalid data.
+- *
+- * If sequence value changed then writer changed data while in section.
+- */
+-static __always_inline int read_seqretry(const seqlock_t *sl, unsigned start)
+-{
+-	smp_rmb();
+-
+-	return unlikely(sl->sequence != start);
+-}
+-
+-
+ /*
+  * Version using sequence counter only.
+  * This can be used when code has its own mutex protecting the
+  * updating starting before the write_seqcountbeqin() and ending
+  * after the write_seqcount_end().
+  */
+-
+ typedef struct seqcount {
+ 	unsigned sequence;
+ } seqcount_t;
+@@ -218,7 +138,6 @@ static inline int __read_seqcount_retry(const seqcount_t *s, unsigned start)
+ static inline int read_seqcount_retry(const seqcount_t *s, unsigned start)
+ {
+ 	smp_rmb();
+-
+ 	return __read_seqcount_retry(s, start);
+ }
+ 
+@@ -252,31 +171,101 @@ static inline void write_seqcount_barrier(seqcount_t *s)
+ 	s->sequence+=2;
+ }
+ 
++typedef struct {
++	struct seqcount seqcount;
++	spinlock_t lock;
++} seqlock_t;
++
+ /*
+- * Possible sw/hw IRQ protected versions of the interfaces.
++ * These macros triggered gcc-3.x compile-time problems.  We think these are
++ * OK now.  Be cautious.
+  */
+-#define write_seqlock_irqsave(lock, flags)				\
+-	do { local_irq_save(flags); write_seqlock(lock); } while (0)
+-#define write_seqlock_irq(lock)						\
+-	do { local_irq_disable();   write_seqlock(lock); } while (0)
+-#define write_seqlock_bh(lock)						\
+-        do { local_bh_disable();    write_seqlock(lock); } while (0)
++#define __SEQLOCK_UNLOCKED(lockname)			\
++	{						\
++		.seqcount = SEQCNT_ZERO,		\
++		.lock =	__SPIN_LOCK_UNLOCKED(lockname)	\
++	}
++
++#define seqlock_init(x)					\
++	do {						\
++		seqcount_init(&(x)->seqcount);		\
++		spin_lock_init(&(x)->lock);		\
++	} while (0)
+ 
+-#define write_sequnlock_irqrestore(lock, flags)				\
+-	do { write_sequnlock(lock); local_irq_restore(flags); } while(0)
+-#define write_sequnlock_irq(lock)					\
+-	do { write_sequnlock(lock); local_irq_enable(); } while(0)
+-#define write_sequnlock_bh(lock)					\
+-	do { write_sequnlock(lock); local_bh_enable(); } while(0)
++#define DEFINE_SEQLOCK(x) \
++		seqlock_t x = __SEQLOCK_UNLOCKED(x)
+ 
+-#define read_seqbegin_irqsave(lock, flags)				\
+-	({ local_irq_save(flags);   read_seqbegin(lock); })
++/*
++ * Read side functions for starting and finalizing a read side section.
++ */
++static inline unsigned read_seqbegin(const seqlock_t *sl)
++{
++	return read_seqcount_begin(&sl->seqcount);
++}
+ 
+-#define read_seqretry_irqrestore(lock, iv, flags)			\
+-	({								\
+-		int ret = read_seqretry(lock, iv);			\
+-		local_irq_restore(flags);				\
+-		ret;							\
+-	})
++static inline unsigned read_seqretry(const seqlock_t *sl, unsigned start)
++{
++	return read_seqcount_retry(&sl->seqcount, start);
++}
++
++/*
++ * Lock out other writers and update the count.
++ * Acts like a normal spin_lock/unlock.
++ * Don't need preempt_disable() because that is in the spin_lock already.
++ */
++static inline void write_seqlock(seqlock_t *sl)
++{
++	spin_lock(&sl->lock);
++	write_seqcount_begin(&sl->seqcount);
++}
++
++static inline void write_sequnlock(seqlock_t *sl)
++{
++	write_seqcount_end(&sl->seqcount);
++	spin_unlock(&sl->lock);
++}
++
++static inline void write_seqlock_bh(seqlock_t *sl)
++{
++	spin_lock_bh(&sl->lock);
++	write_seqcount_begin(&sl->seqcount);
++}
++
++static inline void write_sequnlock_bh(seqlock_t *sl)
++{
++	write_seqcount_end(&sl->seqcount);
++	spin_unlock_bh(&sl->lock);
++}
++
++static inline void write_seqlock_irq(seqlock_t *sl)
++{
++	spin_lock_irq(&sl->lock);
++	write_seqcount_begin(&sl->seqcount);
++}
++
++static inline void write_sequnlock_irq(seqlock_t *sl)
++{
++	write_seqcount_end(&sl->seqcount);
++	spin_unlock_irq(&sl->lock);
++}
++
++static inline unsigned long __write_seqlock_irqsave(seqlock_t *sl)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&sl->lock, flags);
++	write_seqcount_begin(&sl->seqcount);
++	return flags;
++}
++
++#define write_seqlock_irqsave(lock, flags)				\
++	do { flags = __write_seqlock_irqsave(lock); } while (0)
++
++static inline void
++write_sequnlock_irqrestore(seqlock_t *sl, unsigned long flags)
++{
++	write_seqcount_end(&sl->seqcount);
++	spin_unlock_irqrestore(&sl->lock, flags);
++}
+ 
+ #endif /* __LINUX_SEQLOCK_H */
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 19eb089..8879430 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2471,8 +2471,6 @@ SYSCALL_DEFINE3(get_robust_list, int, pid,
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+ 
+-	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
+-
+ 	rcu_read_lock();
+ 
+ 	ret = -ESRCH;
+diff --git a/kernel/futex_compat.c b/kernel/futex_compat.c
+index 83e368b..a9642d5 100644
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -142,8 +142,6 @@ compat_sys_get_robust_list(int pid, compat_uptr_t __user *head_ptr,
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+ 
+-	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
+-
+ 	rcu_read_lock();
+ 
+ 	ret = -ESRCH;
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 7981e5b..8a0efac 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -3190,9 +3190,14 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+ #endif
+ 	if (unlikely(curr->lockdep_depth >= MAX_LOCK_DEPTH)) {
+ 		debug_locks_off();
+-		printk("BUG: MAX_LOCK_DEPTH too low!\n");
++		printk("BUG: MAX_LOCK_DEPTH too low, depth: %i  max: %lu!\n",
++		       curr->lockdep_depth, MAX_LOCK_DEPTH);
+ 		printk("turning off the locking correctness validator.\n");
++
++		lockdep_print_held_locks(current);
++		debug_show_all_locks();
+ 		dump_stack();
++
+ 		return 0;
  	}
  
- 	/* Create and initialize the TX/RX descriptors chains. */
-@@ -1104,7 +1122,12 @@ static int stmmac_open(struct net_device *dev)
- 		phy_start(priv->phydev);
+@@ -3203,7 +3208,7 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+ }
  
- 	priv->tx_lpi_timer = STMMAC_DEFAULT_TWT_LS_TIMER;
--	priv->eee_enabled = stmmac_eee_init(priv);
-+
-+	/* Using PCS we cannot dial with the phy registers at this stage
-+	 * so we do not support extra feature like EEE.
-+	 */
-+	if (!priv->pcs)
-+		priv->eee_enabled = stmmac_eee_init(priv);
+ static int
+-print_unlock_inbalance_bug(struct task_struct *curr, struct lockdep_map *lock,
++print_unlock_imbalance_bug(struct task_struct *curr, struct lockdep_map *lock,
+ 			   unsigned long ip)
+ {
+ 	if (!debug_locks_off())
+@@ -3246,7 +3251,7 @@ static int check_unlock(struct task_struct *curr, struct lockdep_map *lock,
+ 		return 0;
  
- 	stmmac_init_tx_coalesce(priv);
+ 	if (curr->lockdep_depth <= 0)
+-		return print_unlock_inbalance_bug(curr, lock, ip);
++		return print_unlock_imbalance_bug(curr, lock, ip);
  
-@@ -1113,6 +1136,9 @@ static int stmmac_open(struct net_device *dev)
- 		priv->hw->dma->rx_watchdog(priv->ioaddr, MAX_DMA_RIWT);
+ 	return 1;
+ }
+@@ -3317,7 +3322,7 @@ __lock_set_class(struct lockdep_map *lock, const char *name,
+ 			goto found_it;
+ 		prev_hlock = hlock;
+ 	}
+-	return print_unlock_inbalance_bug(curr, lock, ip);
++	return print_unlock_imbalance_bug(curr, lock, ip);
+ 
+ found_it:
+ 	lockdep_init_map(lock, name, key, 0);
+@@ -3384,7 +3389,7 @@ lock_release_non_nested(struct task_struct *curr,
+ 			goto found_it;
+ 		prev_hlock = hlock;
+ 	}
+-	return print_unlock_inbalance_bug(curr, lock, ip);
++	return print_unlock_imbalance_bug(curr, lock, ip);
+ 
+ found_it:
+ 	if (hlock->instance == lock)
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index 24174b4..bb1edfa 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -22,7 +22,7 @@
+  * NTP timekeeping variables:
+  */
+ 
+-DEFINE_SPINLOCK(ntp_lock);
++DEFINE_RAW_SPINLOCK(ntp_lock);
+ 
+ 
+ /* USER_HZ period (usecs): */
+@@ -347,7 +347,7 @@ void ntp_clear(void)
+ {
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&ntp_lock, flags);
++	raw_spin_lock_irqsave(&ntp_lock, flags);
+ 
+ 	time_adjust	= 0;		/* stop active adjtime() */
+ 	time_status	|= STA_UNSYNC;
+@@ -361,7 +361,7 @@ void ntp_clear(void)
+ 
+ 	/* Clear PPS state variables */
+ 	pps_clear();
+-	spin_unlock_irqrestore(&ntp_lock, flags);
++	raw_spin_unlock_irqrestore(&ntp_lock, flags);
+ 
+ }
+ 
+@@ -371,9 +371,9 @@ u64 ntp_tick_length(void)
+ 	unsigned long flags;
+ 	s64 ret;
+ 
+-	spin_lock_irqsave(&ntp_lock, flags);
++	raw_spin_lock_irqsave(&ntp_lock, flags);
+ 	ret = tick_length;
+-	spin_unlock_irqrestore(&ntp_lock, flags);
++	raw_spin_unlock_irqrestore(&ntp_lock, flags);
+ 	return ret;
+ }
+ 
+@@ -394,7 +394,7 @@ int second_overflow(unsigned long secs)
+ 	int leap = 0;
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&ntp_lock, flags);
++	raw_spin_lock_irqsave(&ntp_lock, flags);
+ 
+ 	/*
+ 	 * Leap second processing. If in leap-insert state at the end of the
+@@ -478,7 +478,7 @@ int second_overflow(unsigned long secs)
+ 	time_adjust = 0;
+ 
+ out:
+-	spin_unlock_irqrestore(&ntp_lock, flags);
++	raw_spin_unlock_irqrestore(&ntp_lock, flags);
+ 
+ 	return leap;
+ }
+@@ -660,7 +660,7 @@ int do_adjtimex(struct timex *txc)
+ 
+ 	getnstimeofday(&ts);
+ 
+-	spin_lock_irq(&ntp_lock);
++	raw_spin_lock_irq(&ntp_lock);
+ 
+ 	if (txc->modes & ADJ_ADJTIME) {
+ 		long save_adjust = time_adjust;
+@@ -702,7 +702,7 @@ int do_adjtimex(struct timex *txc)
+ 	/* fill PPS status fields */
+ 	pps_fill_timex(txc);
+ 
+-	spin_unlock_irq(&ntp_lock);
++	raw_spin_unlock_irq(&ntp_lock);
+ 
+ 	txc->time.tv_sec = ts.tv_sec;
+ 	txc->time.tv_usec = ts.tv_nsec;
+@@ -900,7 +900,7 @@ void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
+ 
+ 	pts_norm = pps_normalize_ts(*phase_ts);
+ 
+-	spin_lock_irqsave(&ntp_lock, flags);
++	raw_spin_lock_irqsave(&ntp_lock, flags);
+ 
+ 	/* clear the error bits, they will be set again if needed */
+ 	time_status &= ~(STA_PPSJITTER | STA_PPSWANDER | STA_PPSERROR);
+@@ -913,7 +913,7 @@ void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
+ 	 * just start the frequency interval */
+ 	if (unlikely(pps_fbase.tv_sec == 0)) {
+ 		pps_fbase = *raw_ts;
+-		spin_unlock_irqrestore(&ntp_lock, flags);
++		raw_spin_unlock_irqrestore(&ntp_lock, flags);
+ 		return;
  	}
  
-+	if (priv->pcs && priv->hw->mac->ctrl_ane)
-+		priv->hw->mac->ctrl_ane(priv->ioaddr, 1);
-+
- 	napi_enable(&priv->napi);
- 	netif_start_queue(dev);
+@@ -928,7 +928,7 @@ void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
+ 		time_status |= STA_PPSJITTER;
+ 		/* restart the frequency calibration interval */
+ 		pps_fbase = *raw_ts;
+-		spin_unlock_irqrestore(&ntp_lock, flags);
++		raw_spin_unlock_irqrestore(&ntp_lock, flags);
+ 		pr_err("hardpps: PPSJITTER: bad pulse\n");
+ 		return;
+ 	}
+@@ -945,7 +945,7 @@ void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
  
-@@ -2028,12 +2054,16 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
- 	else
- 		priv->clk_csr = priv->plat->clk_csr;
+ 	hardpps_update_phase(pts_norm.nsec);
  
--	/* MDIO bus Registration */
--	ret = stmmac_mdio_register(ndev);
--	if (ret < 0) {
--		pr_debug("%s: MDIO bus (id: %d) registration failed",
--			 __func__, priv->plat->bus_id);
--		goto error_mdio_register;
-+	stmmac_check_pcs_mode(priv);
-+
-+	if (!priv->pcs) {
-+		/* MDIO bus Registration */
-+		ret = stmmac_mdio_register(ndev);
-+		if (ret < 0) {
-+			pr_debug("%s: MDIO bus (id: %d) registration failed",
-+				 __func__, priv->plat->bus_id);
-+			goto error_mdio_register;
-+		}
+-	spin_unlock_irqrestore(&ntp_lock, flags);
++	raw_spin_unlock_irqrestore(&ntp_lock, flags);
+ }
+ EXPORT_SYMBOL(hardpps);
+ 
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 75a2ab3..082ca68 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -112,9 +112,9 @@ static int get_softlockup_thresh(void)
+  * resolution, and we don't need to waste time with a big divide when
+  * 2^30ns == 1.074s.
+  */
+-static unsigned long get_timestamp(int this_cpu)
++static unsigned long get_timestamp(void)
+ {
+-	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
++	return local_clock() >> 30LL;  /* 2^30 ~= 10^9 */
+ }
+ 
+ static void set_sample_period(void)
+@@ -132,9 +132,7 @@ static void set_sample_period(void)
+ /* Commands for resetting the watchdog */
+ static void __touch_watchdog(void)
+ {
+-	int this_cpu = smp_processor_id();
+-
+-	__this_cpu_write(watchdog_touch_ts, get_timestamp(this_cpu));
++	__this_cpu_write(watchdog_touch_ts, get_timestamp());
+ }
+ 
+ void touch_softlockup_watchdog(void)
+@@ -195,7 +193,7 @@ static int is_hardlockup(void)
+ 
+ static int is_softlockup(unsigned long touch_ts)
+ {
+-	unsigned long now = get_timestamp(smp_processor_id());
++	unsigned long now = get_timestamp();
+ 
+ 	/* Warn about unreasonable delays: */
+ 	if (time_after(now, touch_ts + get_softlockup_thresh()))
+diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
+index 7aae0f2..c3eb261 100644
+--- a/lib/locking-selftest.c
++++ b/lib/locking-selftest.c
+@@ -47,10 +47,10 @@ __setup("debug_locks_verbose=", setup_debug_locks_verbose);
+  * Normal standalone locks, for the circular and irq-context
+  * dependency tests:
+  */
+-static DEFINE_SPINLOCK(lock_A);
+-static DEFINE_SPINLOCK(lock_B);
+-static DEFINE_SPINLOCK(lock_C);
+-static DEFINE_SPINLOCK(lock_D);
++static DEFINE_RAW_SPINLOCK(lock_A);
++static DEFINE_RAW_SPINLOCK(lock_B);
++static DEFINE_RAW_SPINLOCK(lock_C);
++static DEFINE_RAW_SPINLOCK(lock_D);
+ 
+ static DEFINE_RWLOCK(rwlock_A);
+ static DEFINE_RWLOCK(rwlock_B);
+@@ -73,12 +73,12 @@ static DECLARE_RWSEM(rwsem_D);
+  * but X* and Y* are different classes. We do this so that
+  * we do not trigger a real lockup:
+  */
+-static DEFINE_SPINLOCK(lock_X1);
+-static DEFINE_SPINLOCK(lock_X2);
+-static DEFINE_SPINLOCK(lock_Y1);
+-static DEFINE_SPINLOCK(lock_Y2);
+-static DEFINE_SPINLOCK(lock_Z1);
+-static DEFINE_SPINLOCK(lock_Z2);
++static DEFINE_RAW_SPINLOCK(lock_X1);
++static DEFINE_RAW_SPINLOCK(lock_X2);
++static DEFINE_RAW_SPINLOCK(lock_Y1);
++static DEFINE_RAW_SPINLOCK(lock_Y2);
++static DEFINE_RAW_SPINLOCK(lock_Z1);
++static DEFINE_RAW_SPINLOCK(lock_Z2);
+ 
+ static DEFINE_RWLOCK(rwlock_X1);
+ static DEFINE_RWLOCK(rwlock_X2);
+@@ -107,10 +107,10 @@ static DECLARE_RWSEM(rwsem_Z2);
+  */
+ #define INIT_CLASS_FUNC(class) 				\
+ static noinline void					\
+-init_class_##class(spinlock_t *lock, rwlock_t *rwlock, struct mutex *mutex, \
+-		 struct rw_semaphore *rwsem)		\
++init_class_##class(raw_spinlock_t *lock, rwlock_t *rwlock, \
++	struct mutex *mutex, struct rw_semaphore *rwsem)\
+ {							\
+-	spin_lock_init(lock);				\
++	raw_spin_lock_init(lock);			\
+ 	rwlock_init(rwlock);				\
+ 	mutex_init(mutex);				\
+ 	init_rwsem(rwsem);				\
+@@ -168,10 +168,10 @@ static void init_shared_classes(void)
+  * Shortcuts for lock/unlock API variants, to keep
+  * the testcases compact:
+  */
+-#define L(x)			spin_lock(&lock_##x)
+-#define U(x)			spin_unlock(&lock_##x)
++#define L(x)			raw_spin_lock(&lock_##x)
++#define U(x)			raw_spin_unlock(&lock_##x)
+ #define LU(x)			L(x); U(x)
+-#define SI(x)			spin_lock_init(&lock_##x)
++#define SI(x)			raw_spin_lock_init(&lock_##x)
+ 
+ #define WL(x)			write_lock(&rwlock_##x)
+ #define WU(x)			write_unlock(&rwlock_##x)
+@@ -911,7 +911,7 @@ GENERATE_PERMUTATIONS_3_EVENTS(irq_read_recursion_soft)
+ 
+ #define I2(x)					\
+ 	do {					\
+-		spin_lock_init(&lock_##x);	\
++		raw_spin_lock_init(&lock_##x);	\
+ 		rwlock_init(&rwlock_##x);	\
+ 		mutex_init(&mutex_##x);		\
+ 		init_rwsem(&rwsem_##x);		\
+diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
+index 7e0d6a5..7542afb 100644
+--- a/lib/rwsem-spinlock.c
++++ b/lib/rwsem-spinlock.c
+@@ -73,20 +73,13 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wakewrite)
+ 		goto dont_wake_writers;
  	}
  
- 	return priv;
-@@ -2065,7 +2095,8 @@ int stmmac_dvr_remove(struct net_device *ndev)
- 	priv->hw->dma->stop_tx(priv->ioaddr);
+-	/* if we are allowed to wake writers try to grant a single write lock
+-	 * if there's a writer at the front of the queue
+-	 * - we leave the 'waiting count' incremented to signify potential
+-	 *   contention
++	/*
++	 * as we support write lock stealing, we can't set sem->activity
++	 * to -1 here to indicate we get the lock. Instead, we wake it up
++	 * to let it go get it again.
+ 	 */
+ 	if (waiter->flags & RWSEM_WAITING_FOR_WRITE) {
+-		sem->activity = -1;
+-		list_del(&waiter->list);
+-		tsk = waiter->task;
+-		/* Don't touch waiter after ->task has been NULLed */
+-		smp_mb();
+-		waiter->task = NULL;
+-		wake_up_process(tsk);
+-		put_task_struct(tsk);
++		wake_up_process(waiter->task);
+ 		goto out;
+ 	}
  
- 	stmmac_set_mac(priv->ioaddr, false);
--	stmmac_mdio_unregister(ndev);
-+	if (!priv->pcs)
-+		stmmac_mdio_unregister(ndev);
- 	netif_carrier_off(ndev);
- 	unregister_netdev(ndev);
- 	free_netdev(ndev);
--- 
-1.7.4.4
-
-
---------------090907080700060704020909--
+@@ -121,18 +114,10 @@ static inline struct rw_semaphore *
+ __rwsem_wake_one_writer(struct rw_semaphore *sem)
+ {
+ 	struct rwsem_waiter *waiter;
+-	struct task_struct *tsk;
+-
+-	sem->activity = -1;
+ 
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+-	list_del(&waiter->list);
++	wake_up_process(waiter->task);
+ 
+-	tsk = waiter->task;
+-	smp_mb();
+-	waiter->task = NULL;
+-	wake_up_process(tsk);
+-	put_task_struct(tsk);
+ 	return sem;
+ }
+ 
+@@ -204,7 +189,6 @@ int __down_read_trylock(struct rw_semaphore *sem)
+ 
+ /*
+  * get a write lock on the semaphore
+- * - we increment the waiting count anyway to indicate an exclusive lock
+  */
+ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+ {
+@@ -214,37 +198,32 @@ void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+ 
+ 	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+-	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
+-		/* granted */
+-		sem->activity = -1;
+-		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+-		goto out;
+-	}
+-
+-	tsk = current;
+-	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+-
+ 	/* set up my own style of waitqueue */
++	tsk = current;
+ 	waiter.task = tsk;
+ 	waiter.flags = RWSEM_WAITING_FOR_WRITE;
+-	get_task_struct(tsk);
+-
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+ 
+-	/* we don't need to touch the semaphore struct anymore */
+-	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+-
+-	/* wait to be given the lock */
++	/* wait for someone to release the lock */
+ 	for (;;) {
+-		if (!waiter.task)
++		/*
++		 * That is the key to support write lock stealing: allows the
++		 * task already on CPU to get the lock soon rather than put
++		 * itself into sleep and waiting for system woke it or someone
++		 * else in the head of the wait list up.
++		 */
++		if (sem->activity == 0)
+ 			break;
+-		schedule();
+ 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
++		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
++		schedule();
++		raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 	}
++	/* got the lock */
++	sem->activity = -1;
++	list_del(&waiter.list);
+ 
+-	tsk->state = TASK_RUNNING;
+- out:
+-	;
++	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+ }
+ 
+ void __sched __down_write(struct rw_semaphore *sem)
+@@ -262,8 +241,8 @@ int __down_write_trylock(struct rw_semaphore *sem)
+ 
+ 	raw_spin_lock_irqsave(&sem->wait_lock, flags);
+ 
+-	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
+-		/* granted */
++	if (sem->activity == 0) {
++		/* got the lock */
+ 		sem->activity = -1;
+ 		ret = 1;
+ 	}
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index 8337e1b..ad5e0df 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -2,6 +2,8 @@
+  *
+  * Written by David Howells (dhowells@redhat.com).
+  * Derived from arch/i386/kernel/semaphore.c
++ *
++ * Writer lock-stealing by Alex Shi <alex.shi@intel.com>
+  */
+ #include <linux/rwsem.h>
+ #include <linux/sched.h>
+@@ -60,7 +62,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 	struct rwsem_waiter *waiter;
+ 	struct task_struct *tsk;
+ 	struct list_head *next;
+-	signed long oldcount, woken, loop, adjustment;
++	signed long woken, loop, adjustment;
+ 
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+ 	if (!(waiter->flags & RWSEM_WAITING_FOR_WRITE))
+@@ -72,30 +74,8 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 		 */
+ 		goto out;
+ 
+-	/* There's a writer at the front of the queue - try to grant it the
+-	 * write lock.  However, we only wake this writer if we can transition
+-	 * the active part of the count from 0 -> 1
+-	 */
+-	adjustment = RWSEM_ACTIVE_WRITE_BIAS;
+-	if (waiter->list.next == &sem->wait_list)
+-		adjustment -= RWSEM_WAITING_BIAS;
+-
+- try_again_write:
+-	oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
+-	if (oldcount & RWSEM_ACTIVE_MASK)
+-		/* Someone grabbed the sem already */
+-		goto undo_write;
+-
+-	/* We must be careful not to touch 'waiter' after we set ->task = NULL.
+-	 * It is an allocated on the waiter's stack and may become invalid at
+-	 * any time after that point (due to a wakeup from another source).
+-	 */
+-	list_del(&waiter->list);
+-	tsk = waiter->task;
+-	smp_mb();
+-	waiter->task = NULL;
+-	wake_up_process(tsk);
+-	put_task_struct(tsk);
++	/* Wake up the writing waiter and let the task grab the sem: */
++	wake_up_process(waiter->task);
+ 	goto out;
+ 
+  readers_only:
+@@ -157,12 +137,40 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 
+  out:
+ 	return sem;
++}
++
++/* Try to get write sem, caller holds sem->wait_lock: */
++static int try_get_writer_sem(struct rw_semaphore *sem,
++					struct rwsem_waiter *waiter)
++{
++	struct rwsem_waiter *fwaiter;
++	long oldcount, adjustment;
+ 
+-	/* undo the change to the active count, but check for a transition
+-	 * 1->0 */
+- undo_write:
++	/* only steal when first waiter is writing */
++	fwaiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
++	if (!(fwaiter->flags & RWSEM_WAITING_FOR_WRITE))
++		return 0;
++
++	adjustment = RWSEM_ACTIVE_WRITE_BIAS;
++	/* Only one waiter in the queue: */
++	if (fwaiter == waiter && waiter->list.next == &sem->wait_list)
++		adjustment -= RWSEM_WAITING_BIAS;
++
++try_again_write:
++	oldcount = rwsem_atomic_update(adjustment, sem) - adjustment;
++	if (!(oldcount & RWSEM_ACTIVE_MASK)) {
++		/* No active lock: */
++		struct task_struct *tsk = waiter->task;
++
++		list_del(&waiter->list);
++		smp_mb();
++		put_task_struct(tsk);
++		tsk->state = TASK_RUNNING;
++		return 1;
++	}
++	/* some one grabbed the sem already */
+ 	if (rwsem_atomic_update(-adjustment, sem) & RWSEM_ACTIVE_MASK)
+-		goto out;
++		return 0;
+ 	goto try_again_write;
+ }
+ 
+@@ -210,6 +218,15 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 	for (;;) {
+ 		if (!waiter.task)
+ 			break;
++
++		raw_spin_lock_irq(&sem->wait_lock);
++		/* Try to get the writer sem, may steal from the head writer: */
++		if (flags == RWSEM_WAITING_FOR_WRITE)
++			if (try_get_writer_sem(sem, &waiter)) {
++				raw_spin_unlock_irq(&sem->wait_lock);
++				return sem;
++			}
++		raw_spin_unlock_irq(&sem->wait_lock);
+ 		schedule();
+ 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+ 	}
