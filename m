@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758474Ab3BVRXd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 12:23:33 -0500
-Received: from a194-210.smtp-out.amazonses.com ([199.255.194.210]:46862 "EHLO
-	a194-210.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757752Ab3BVRXb (ORCPT
+	id S1758445Ab3BVRZr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 12:25:47 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:41725 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757765Ab3BVRZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 12:23:31 -0500
-Date: Fri, 22 Feb 2013 17:23:28 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH v2] slub: correctly bootstrap boot caches
-In-Reply-To: <5127A607.3040603@parallels.com>
-Message-ID: <0000013d02ee5bf7-a2d47cfc-64fb-4faa-b92e-e567aeb6b587-000000@email.amazonses.com>
-References: <1361550000-14173-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.02.1302221034380.7600@gentwo.org> <alpine.DEB.2.02.1302221057430.7600@gentwo.org> <0000013d02d9ee83-9b41b446-ee42-4498-863e-33b3175c007c-000000@email.amazonses.com>
- <5127A607.3040603@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 22 Feb 2013 12:25:44 -0500
+Message-ID: <5127AA15.9030900@linaro.org>
+Date: Fri, 22 Feb 2013 09:25:41 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.210
+To: Tushar Behera <tushar.behera@linaro.org>
+CC: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kgene.kim@samsung.com, patches@linaro.org
+Subject: Re: [PATCH] ARM: EXYNOS: Keep USB related LDOs always active on Origen
+References: <51271673.9090003@linaro.org> <1361515707-8571-1-git-send-email-tushar.behera@linaro.org>
+In-Reply-To: <1361515707-8571-1-git-send-email-tushar.behera@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Feb 2013, Glauber Costa wrote:
-
-> On 02/22/2013 09:01 PM, Christoph Lameter wrote:
-> > Argh. This one was the final version:
-> >
-> > https://patchwork.kernel.org/patch/2009521/
-> >
+On 02/21/2013 10:48 PM, Tushar Behera wrote:
+> LDO3 and LDO8 are used for powering both device and host phy controllers.
+> These regulators are not handled in USB host driver. Hence we get
+> unexpected behaviour when the regulators are disabled elsewhere.
 >
-> It seems it would work. It is all the same to me.
-> Which one do you prefer?
+> It would be best to keep these regulators always on.
+>
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+>
+> Based on v3.8.
 
-Flushing seems to be simpler and less code.
+This works great for me! Thanks so much Tushar!
+
+Tested-by: John Stultz <john.stultz@linaro.org>
+
 
