@@ -1,136 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab3BVDGb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 22:06:31 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:36455 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab3BVDGa (ORCPT
+	id S1755760Ab3BVDNf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 22:13:35 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:49121 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab3BVDNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 22:06:30 -0500
-Message-ID: <5126E0AD.7000704@linux.vnet.ibm.com>
-Date: Fri, 22 Feb 2013 11:06:21 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 21 Feb 2013 22:13:32 -0500
+Message-ID: <5126E253.2030105@gmail.com>
+Date: Fri, 22 Feb 2013 11:13:23 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH] sched: Skip looking at skip if next or last is set
-References: <20130218130146.GA7472@linux.vnet.ibm.com> <1361349985.10155.1.camel@laptop> <20130221160613.GA18617@linux.vnet.ibm.com>
-In-Reply-To: <20130221160613.GA18617@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Questin about swap_slot free and invalidate page
+References: <20130131051140.GB23548@blaptop> <alpine.LNX.2.00.1302031732520.4050@eggly.anvils> <20130204024950.GD2688@blaptop> <d6fc41b7-8448-40be-84c3-c24d0833bd85@default> <51236C11.1010208@gmail.com> <1f089254-3abe-4c63-a72a-c9e564ae7d0d@default> <51242F0D.4040201@gmail.com> <7793705b-a076-4c5a-be4d-9572d7560860@default>
+In-Reply-To: <7793705b-a076-4c5a-be4d-9572d7560860@default>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022203-3864-0000-0000-000006EFC68A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 12:06 AM, Srikar Dronamraju wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2013-02-20 09:46:25]:
-> 
->> On Mon, 2013-02-18 at 18:31 +0530, Srikar Dronamraju wrote:
->>> pick_next_entity() prefers next, then last. However code checks if the
->>> left entity can be skipped even if next / last is set.
+On 02/22/2013 05:42 AM, Dan Magenheimer wrote:
+>> From: Ric Mason [mailto:ric.masonn@gmail.com]
+>> Subject: Re: Questin about swap_slot free and invalidate page
+>>
+>> On 02/19/2013 11:27 PM, Dan Magenheimer wrote:
+>>>> From: Ric Mason [mailto:ric.masonn@gmail.com]
+>>>>> Hugh is right that handling the possibility of duplicates is
+>>>>> part of the tmem ABI.  If there is any possibility of duplicates,
+>>>>> the ABI defines how a backend must handle them to avoid data
+>>>>> coherency issues.
+>>>>>
+>>>>> The kernel implements an in-kernel API which implements the tmem
+>>>>> ABI.  If the frontend and backend can always agree that duplicate
+>>>> Which ABI in zcache implement that?
+>>> https://oss.oracle.com/projects/tmem/dist/documentation/api/tmemspec-v001.pdf
 >>>
->>> Check if left entity should be skipped only if next/last is not set.
->>
->> You fail to explain why its a problem and continue to make a horrid mess
->> of the code..
->>
-> 
-> If we look at the comments above pick_next_entity(),  it states:
-> /*
->  * Pick the next process, keeping these things in mind, in this order:
->  * 1) keep things fair between processes/task groups
->  * 2) pick the "next" process, since someone really wants that to run
->  * 3) pick the "last" process, for cache locality
->  * 4) do not run the "skip" process, if something else is available
->  */ 
-> 
-> Currently the code checks in the reverse order, though the preference is
-> correctly maintained as listed in comments.  But in some cases, we might be
-> doing redundant checks.  Lets assume next is set, then we should avoid 
-> checking for skip, last and their fairness with left.
-> 
-> So what I intended to do was change the order, i.e check for last only if next
-> is not set (or was picking next was unfair wrt left) and check for "something
-> else (second from left)" if last is not set (or picking last was unfair wrt
-> left).
-> 
-> However after sending the patch, I stumbled across these links.
-> https://lkml.org/lkml/2012/1/16/500 and https://lkml.org/lkml/2012/1/25/195
+>>> The in-kernel APIs are frontswap and cleancache.  For more information about
+>>> tmem, see http://lwn.net/Articles/454795/
+>> But you mentioned that you have in-kernel API which can handle
+>> duplicate.  Do you mean zcache_cleancache/frontswap_put_page? I think
+>> they just overwrite instead of optional flush the page on the
+>> second(duplicate) put as mentioned in your tmemspec.
+> Maybe I am misunderstanding your question...  The spec allows
+> overwrite (and return success) OR flush the page (and return
+> failure).  Zcache does the latter (flush).  The code that implements
+> it is in tmem_put.
 
-Hi, Srikar
+Thanks for your point out.  Pers pages can have duplicate put since swap 
+cache page can be reused. Can eph pages also have duplicate put? If yes, 
+when can happen?
 
-That drag me back to the time when I'm starting to look at scheduler ;-)
-
-Actually I give up this idea since I missed one point that the code will
-be optimized by the compiler, and usually it will become some logical we
-could not image.
-
-My patch is correct logically, but it may not benefit scheduler a lot, I
-don't think there will be a benchmark show us better results, and in
-scheduler world, benchmark talks...
-
-Regards,
-Michael Wang
-
-> 
->>> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->>> ---
->>>  kernel/sched/fair.c |   31 +++++++++++++++----------------
->>>  1 files changed, 15 insertions(+), 16 deletions(-)
->>>
->>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>> index fdee793..cc97b12 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -1900,27 +1900,26 @@ static struct sched_entity *pick_next_entity(struct cfs_rq *cfs_rq)
->>>  	struct sched_entity *left = se;
->>>  
->>>  	/*
->>> -	 * Avoid running the skip buddy, if running something else can
->>> -	 * be done without getting too unfair.
->>> +	 * Someone really wants next to run. If it's not unfair, run it.
->>>  	 */
->>> -	if (cfs_rq->skip == se) {
->>> -		struct sched_entity *second = __pick_next_entity(se);
->>> +	if (cfs_rq->next && wakeup_preempt_entity(cfs_rq->next, left) < 1) {
->>> +		se = cfs_rq->next;
->>> +	} else if (cfs_rq->last && wakeup_preempt_entity(cfs_rq->last, left) < 1) {
->>> +		/*
->>> +		 * Prefer last buddy, try to return the CPU to a preempted
->>> +		 * task.
->>> +		 */
->>> +		se = cfs_rq->last;
->>> +	} else if (cfs_rq->skip == left) {
->>> +		/*
->>> +		 * Avoid running the skip buddy, if running something else
->>> +		 * can be done without getting too unfair.
->>> +		 */
->>> +		struct sched_entity *second = __pick_next_entity(left);
->>>  		if (second && wakeup_preempt_entity(second, left) < 1)
->>>  			se = second;
->>>  	}
->>>  
->>> -	/*
->>> -	 * Prefer last buddy, try to return the CPU to a preempted task.
->>> -	 */
->>> -	if (cfs_rq->last && wakeup_preempt_entity(cfs_rq->last, left) < 1)
->>> -		se = cfs_rq->last;
->>> -
->>> -	/*
->>> -	 * Someone really wants this to run. If it's not unfair, run it.
->>> -	 */
->>> -	if (cfs_rq->next && wakeup_preempt_entity(cfs_rq->next, left) < 1)
->>> -		se = cfs_rq->next;
->>> -
->>>  	clear_buddies(cfs_rq, se);
->>>  
->>>  	return se;
->>>
->>
->>
-> 
+>
 
