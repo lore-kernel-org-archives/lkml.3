@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab3BVMYy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 07:24:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54006 "EHLO
+	id S1756985Ab3BVM0l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 07:26:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54034 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756768Ab3BVMYv (ORCPT
+	with ESMTP id S1756899Ab3BVM0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 07:24:51 -0500
-Date: Fri, 22 Feb 2013 04:23:07 -0800
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-c06b4f1947213cd0902610fafcabac02d49ad728@git.kernel.org>
+	Fri, 22 Feb 2013 07:26:39 -0500
+Date: Fri, 22 Feb 2013 04:24:16 -0800
+From: tip-bot for Paul Bolle <tipbot@zytor.com>
+Message-ID: <tip-5cd3f5affad2109fd1458aab3f6216f2181e26ea@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        namhyung.kim@lge.com, namhyung@kernel.org, rostedt@goodmis.org,
-        tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, namhyung.kim@lge.com, tglx@linutronix.de,
-        namhyung@kernel.org, dzickus@redhat.com
-In-Reply-To: <1356576585-28782-1-git-send-email-namhyung@kernel.org>
-References: <1356576585-28782-1-git-send-email-namhyung@kernel.org>
+        peterz@infradead.org, bfields@redhat.com, pebolle@tiscali.nl,
+        skinsbursky@parallels.com, tglx@linutronix.de
+Reply-To: pebolle@tiscali.nl, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, skinsbursky@parallels.com,
+        peterz@infradead.org, tglx@linutronix.de, bfields@redhat.com
+In-Reply-To: <1359060797.1325.33.camel@x61.thuisdomein>
+References: <1359060797.1325.33.camel@x61.thuisdomein>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] watchdog: Use local_clock for get_timestamp()
-Git-Commit-ID: c06b4f1947213cd0902610fafcabac02d49ad728
+Subject: [tip:core/locking] lockdep: Silence warning if CONFIG_LOCKDEP isn
+ 't set
+Git-Commit-ID: 5cd3f5affad2109fd1458aab3f6216f2181e26ea
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,66 +30,55 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 22 Feb 2013 04:23:14 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 22 Feb 2013 04:24:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c06b4f1947213cd0902610fafcabac02d49ad728
-Gitweb:     http://git.kernel.org/tip/c06b4f1947213cd0902610fafcabac02d49ad728
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 27 Dec 2012 11:49:44 +0900
+Commit-ID:  5cd3f5affad2109fd1458aab3f6216f2181e26ea
+Gitweb:     http://git.kernel.org/tip/5cd3f5affad2109fd1458aab3f6216f2181e26ea
+Author:     Paul Bolle <pebolle@tiscali.nl>
+AuthorDate: Thu, 24 Jan 2013 21:53:17 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 19 Feb 2013 08:42:40 +0100
+CommitDate: Tue, 19 Feb 2013 08:42:41 +0100
 
-watchdog: Use local_clock for get_timestamp()
+lockdep: Silence warning if CONFIG_LOCKDEP isn't set
 
-The get_timestamp() function is always called with current cpu,
-thus using local_clock() would be more appropriate and it makes
-the code shorter and cleaner IMHO.
+Since commit c9a4962881929df7f1ef6e63e1b9da304faca4dd ("nfsd:
+make client_lock per net") compiling nfs4state.o without
+CONFIG_LOCKDEP set, triggers this GCC warning:
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1356576585-28782-1-git-send-email-namhyung@kernel.org
+    fs/nfsd/nfs4state.c: In function ‘free_client’:
+    fs/nfsd/nfs4state.c:1051:19: warning: unused variable ‘nn’ [-Wunused-variable]
+
+The cause of that warning is that lockdep_assert_held() compiles
+away if CONFIG_LOCKDEP is not set. Silence this warning by using
+the argument to lockdep_assert_held() as a nop if CONFIG_LOCKDEP
+is not set.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: J. Bruce Fields <bfields@redhat.com>
+Link: http://lkml.kernel.org/r/1359060797.1325.33.camel@x61.thuisdomein
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+--
+ include/linux/lockdep.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 ---
- kernel/watchdog.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ include/linux/lockdep.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 75a2ab3..082ca68 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -112,9 +112,9 @@ static int get_softlockup_thresh(void)
-  * resolution, and we don't need to waste time with a big divide when
-  * 2^30ns == 1.074s.
-  */
--static unsigned long get_timestamp(int this_cpu)
-+static unsigned long get_timestamp(void)
- {
--	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
-+	return local_clock() >> 30LL;  /* 2^30 ~= 10^9 */
- }
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index 2bca44b..f05631e 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -410,7 +410,7 @@ struct lock_class_key { };
  
- static void set_sample_period(void)
-@@ -132,9 +132,7 @@ static void set_sample_period(void)
- /* Commands for resetting the watchdog */
- static void __touch_watchdog(void)
- {
--	int this_cpu = smp_processor_id();
--
--	__this_cpu_write(watchdog_touch_ts, get_timestamp(this_cpu));
-+	__this_cpu_write(watchdog_touch_ts, get_timestamp());
- }
+ #define lockdep_depth(tsk)	(0)
  
- void touch_softlockup_watchdog(void)
-@@ -195,7 +193,7 @@ static int is_hardlockup(void)
+-#define lockdep_assert_held(l)			do { } while (0)
++#define lockdep_assert_held(l)			do { (void)(l); } while (0)
  
- static int is_softlockup(unsigned long touch_ts)
- {
--	unsigned long now = get_timestamp(smp_processor_id());
-+	unsigned long now = get_timestamp();
+ #define lockdep_recursing(tsk)			(0)
  
- 	/* Warn about unreasonable delays: */
- 	if (time_after(now, touch_ts + get_softlockup_thresh()))
