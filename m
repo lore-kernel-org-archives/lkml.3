@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab3BVE56 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 23:57:58 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50967 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754989Ab3BVE55 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 23:57:57 -0500
-Date: Thu, 21 Feb 2013 20:56:36 -0800
-Message-Id: <201302220456.r1M4ua12006362@terminus.zytor.com>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86/microcode for v3.9-rc1
-Cc: Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 21 Feb 2013 20:56:41 -0800 (PST)
+	id S1751058Ab3BVFDF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 00:03:05 -0500
+Received: from mout.gmx.net ([212.227.17.21]:58056 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750773Ab3BVFDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 00:03:02 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+kxBFm31OktPPIMr+Q+YR4dd8zDMRH5kBmhvu4OF
+	XPX3i4eIFLzwOE
+Message-ID: <1361509372.5817.60.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Fri, 22 Feb 2013 06:02:52 +0100
+In-Reply-To: <5126D9A2.8090404@linux.vnet.ibm.com>
+References: <51079178.3070002@linux.vnet.ibm.com>
+	 <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com>
+	 <1361427108.5861.41.camel@marge.simpson.net>
+	 <5125C607.8090909@linux.vnet.ibm.com>
+	 <1361434231.5861.61.camel@marge.simpson.net>
+	 <5125E40D.6050006@linux.vnet.ibm.com>
+	 <1361439789.5861.70.camel@marge.simpson.net>
+	 <5126D9A2.8090404@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 2013-02-22 at 10:36 +0800, Michael Wang wrote: 
+> On 02/21/2013 05:43 PM, Mike Galbraith wrote:
+> > On Thu, 2013-02-21 at 17:08 +0800, Michael Wang wrote:
+> > 
+> >> But is this patch set really cause regression on your Q6600? It may
+> >> sacrificed some thing, but I still think it will benefit far more,
+> >> especially on huge systems.
+> > 
+> > We spread on FORK/EXEC, and will no longer will pull communicating tasks
+> > back to a shared cache with the new logic preferring to leave wakee
+> > remote, so while no, I haven't tested (will try to find round tuit) it
+> > seems  it _must_ hurt.  Dragging data from one llc to the other on Q6600
+> > hurts a LOT.  Every time a client and server are cross llc, it's a huge
+> > hit.  The previous logic pulled communicating tasks together right when
+> > it matters the most, intermittent load... or interactive use.
+> 
+> I agree that this is a problem need to be solved, but don't agree that
+> wake_affine() is the solution.
 
-This patchset lets us update the CPU microcode very, very early in
-initialization if the BIOS fails to do so (never happens, right?)
-This is handy for dealing with things like the Atom erratum where we
-have to run without PSE because microcode loading happens too late.
+It's not perfect, but it's better than no countering force at all.  It's
+a relic of the dark ages, when affine meant L2, ie this cpu.  Now days,
+affine has a whole new meaning, L3, so it could be done differently, but
+_some_ kind of opposing force is required.
 
-As I mentioned in the x86/mm push request it depends on that
-infrastructure but it is otherwise a standalone feature.
+> According to my understanding, in the old world, wake_affine() will only
+> be used if curr_cpu and prev_cpu share cache, which means they are in
+> one package, whatever search in llc sd of curr_cpu or prev_cpu, we won't
+> have the chance to spread the task out of that package.
 
-----------------------------------------------------------------
+? affine_sd is the first domain spanning both cpus, that may be NODE.
+True we won't ever spread in the wakeup path unless SD_WAKE_BALANCE is
+set that is.  Would be nice to be able to do that without shredding
+performance.
 
-The following changes since commit ac2cbab21f318e19bc176a7f38a120cec835220f:
+Off the top of my pointy head, I can think of a way to _maybe_ improve
+the "affine" wakeup criteria:  Add a small (package size? and very fast)
+FIFO queue to task struct, record waker/wakee relationship.  If
+relationship exists in that queue (rbtree), try to wake local, if not,
+wake remote.  The thought is to identify situations ala 1:N pgbench
+where you really need to keep the load spread.  That need arises when
+the sum wakees + waker won't fit in one cache.  True buddies would
+always hit (hm, hit rate), always try to become affine where they
+thrive.  1:N stuff starts missing when client count exceeds package
+size, starts expanding it's horizons. 'Course you would still need to
+NAK if imbalanced too badly, and let NUMA stuff NAK touching lard-balls
+and whatnot.  With a little more smarts, we could have happy 1:N, and
+buddies don't have to chat through 2m thick walls to make 1:N scale as
+well as it can before it dies of stupidity.
 
-  x86: Don't panic if can not alloc buffer for swiotlb (2013-01-29 19:36:53 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86/microcode
-
-for you to fetch changes up to da76f64e7eb28b718501d15c1b79af560b7ca4ea:
-
-  x86/Kconfig: Make early microcode loading a configuration feature (2013-01-31 13:20:42 -0800)
-
-----------------------------------------------------------------
-
-Fenghua Yu (12):
-      x86, doc: Documentation for early microcode loading
-      x86/microcode_intel.h: Define functions and macros for early loading ucode
-      x86/common.c: Make have_cpuid_p() a global function
-      x86/common.c: load ucode in 64 bit or show loading ucode info in 32 bit on AP
-      x86/microcode_core_early.c: Define interfaces for early loading ucode
-      x86/microcode_intel_lib.c: Early update ucode on Intel's CPU
-      x86/tlbflush.h: Define __native_flush_tlb_global_irq_disabled()
-      x86/microcode_intel_early.c: Early update ucode on Intel's CPU
-      x86/head_32.S: Early update ucode in 32-bit
-      x86/head64.c: Early update ucode in 64-bit
-      x86/mm/init.c: Copy ucode from initrd image to kernel memory
-      x86/Kconfig: Make early microcode loading a configuration feature
-
- Documentation/x86/early-microcode.txt   |  43 ++
- arch/x86/Kconfig                        |  18 +
- arch/x86/include/asm/microcode.h        |  14 +
- arch/x86/include/asm/microcode_intel.h  |  85 ++++
- arch/x86/include/asm/processor.h        |   8 +
- arch/x86/include/asm/tlbflush.h         |  18 +-
- arch/x86/kernel/Makefile                |   3 +
- arch/x86/kernel/cpu/common.c            |  17 +-
- arch/x86/kernel/head64.c                |   6 +
- arch/x86/kernel/head_32.S               |  11 +
- arch/x86/kernel/microcode_core.c        |   7 +-
- arch/x86/kernel/microcode_core_early.c  |  76 +++
- arch/x86/kernel/microcode_intel.c       | 198 ++------
- arch/x86/kernel/microcode_intel_early.c | 796 ++++++++++++++++++++++++++++++++
- arch/x86/kernel/microcode_intel_lib.c   | 174 +++++++
- arch/x86/mm/init.c                      |  10 +
- 16 files changed, 1301 insertions(+), 183 deletions(-)
-
-[full diff omitted due to length]
+-Mike
 
