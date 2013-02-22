@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab3BWJuQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 04:50:16 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49513 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755011Ab3BWJuL convert rfc822-to-8bit (ORCPT
+	id S1756688Ab3BWKBI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 05:01:08 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:54870 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756109Ab3BWKA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 04:50:11 -0500
+	Sat, 23 Feb 2013 05:00:57 -0500
+Date: Fri, 22 Feb 2013 14:54:01 -0800
+From: Simon Horman <horms@verge.net.au>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kexec: fix memory leak in function kimage_normal_alloc
+Message-ID: <20130222225400.GD4737@verge.net.au>
+References: <5126F5BD.1030602@cn.fujitsu.com>
 MIME-Version: 1.0
-X-Originating-IP: [109.186.70.35]
-In-Reply-To: <CAJK669Yr=rkmBhUNZGSQAQzC46c3v2KVewnAaEJhKT1a0Ci8Pw@mail.gmail.com>
-References: <1360669793-6921-1-git-send-email-sjur.brandeland@stericsson.com>
- <1360669793-6921-2-git-send-email-sjur.brandeland@stericsson.com>
- <CAK=Wgbb0EeiCh504jsoX+izzi+ZogfEDttz2cHRd4pVXvQunQw@mail.gmail.com>
- <CAJK669bDu3SphxmEtA+h+v=btsN91t0S9Mn6ik-OKr=8gtducw@mail.gmail.com>
- <CAK=Wgba5XkK3c7qh1tYHMGEe7-Qima96uYO4E+uAPcaB8K6bmQ@mail.gmail.com>
- <CAJK669YHwR=nf2zSQR6buaA-x1JSowJfU16hkz1+N_WLL0qA+A@mail.gmail.com>
- <CAK=Wgbam=Y5GJQxg2DSt2yR6CdcDxjZ5k_Av_0H8+6m+scN+Yw@mail.gmail.com> <CAJK669Yr=rkmBhUNZGSQAQzC46c3v2KVewnAaEJhKT1a0Ci8Pw@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sat, 23 Feb 2013 11:49:49 +0200
-Message-ID: <CAK=Wgba5JamLr4ocFfkBPf5WTh-kAFEuxhgkoj=5rc9mten9eA@mail.gmail.com>
-Subject: Re: [PATCHv2 vringh 1/3] remoteproc: Add support for vringh (Host vrings)
-To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
-Cc: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>, netdev@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Erwan Yvin <erwan.yvin@stericsson.com>,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Ido Yariv <ido@wizery.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5126F5BD.1030602@cn.fujitsu.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 21, 2013 at 9:36 PM, Sjur Brændeland <sjurbren@gmail.com> wrote:
-> OK, We did carefully consider using the normal vrings, but concluded it was
-> not doable. I'll try to give you some of the background that I can
-> recall from top of my head.
-> (I can dig out more if you're still not convinced :)
->
-> The modem we're integrating with is a complex beast (multi mode modem
-> LTE, HSPA+, etc).
-> When a packet is received deep down in the radio stack, it allocates packet
-> buffers using the internal slab allocator.The packet may contain
-> anything from control, voice,
-> or IP packets. If the packet contains IP-payload it will travel to a
-> different asymmetric CPU that
-> handles the IPC towards the modem. If the packet is not a IP-packet it will be
-> processed internally and eventually freed.
->
-> What we have done to integrate virtio is to inject the carveout into the
-> the modem internal slab-allocator.
->
-> Using the reversed ring allows us to introduce zero-copy for virtio
-> with virtually no
-> impact on the radio-stack, only a small change on the modem slab allocator.
-> It supports dynamic size buffer allocation, and modem internal
-> messaging using data
-> allocated from the shared region. It also allows modem to manage it's
-> own memory,
-> without any dependency on host side allocators.
+On Fri, Feb 22, 2013 at 12:36:13PM +0800, Zhang Yanfei wrote:
+> If kimage_normal_alloc() fails to alloc pages for image->swap_page, it
+> should call kimage_free_page_list() to free allocated pages in
+> image->control_pages list before it frees image.
+> 
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-Thanks for the description, Sjur.
 
-It sounds like this mostly simplifies your modem-side code, especially
-if it talks to other cores as well. My impression is that persistently
-sticking to guest vrings is also possible, but it makes things
-cumbersome.
+Reviewed-by: Simon Horman <horms@verge.net.au>
 
-We will most probably adopt vringh in rpmsg too when a real multicore
-use case shows up.
-
-Ohad.
+> ---
+>  kernel/kexec.c |   18 ++++++++++--------
+>  1 files changed, 10 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 5e4bd78..a57face 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -223,6 +223,8 @@ out:
+>  
+>  }
+>  
+> +static void kimage_free_page_list(struct list_head *list);
+> +
+>  static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+>  				unsigned long nr_segments,
+>  				struct kexec_segment __user *segments)
+> @@ -248,22 +250,22 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+>  					   get_order(KEXEC_CONTROL_PAGE_SIZE));
+>  	if (!image->control_code_page) {
+>  		printk(KERN_ERR "Could not allocate control_code_buffer\n");
+> -		goto out;
+> +		goto out_free;
+>  	}
+>  
+>  	image->swap_page = kimage_alloc_control_pages(image, 0);
+>  	if (!image->swap_page) {
+>  		printk(KERN_ERR "Could not allocate swap buffer\n");
+> -		goto out;
+> +		goto out_free;
+>  	}
+>  
+> -	result = 0;
+> - out:
+> -	if (result == 0)
+> -		*rimage = image;
+> -	else
+> -		kfree(image);
+> +	*rimage = image;
+> +	return 0;
+>  
+> +out_free:
+> +	kimage_free_page_list(&image->control_pages);
+> +	kfree(image);
+> +out:
+>  	return result;
+>  }
+>  
+> -- 
+> 1.7.1
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
