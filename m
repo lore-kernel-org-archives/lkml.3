@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757478Ab3BVPjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 10:39:16 -0500
-Received: from a194-210.smtp-out.amazonses.com ([199.255.194.210]:16047 "EHLO
-	a194-210.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757094Ab3BVPjP (ORCPT
+	id S1757542Ab3BVPlw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 10:41:52 -0500
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:32820 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757387Ab3BVPlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 10:39:15 -0500
-Date: Fri, 22 Feb 2013 15:39:13 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] slub: correctly bootstrap boot caches
-In-Reply-To: <51278A12.4000504@parallels.com>
-Message-ID: <0000013d028eec8e-012456de-9b98-4bcb-9427-2fbee58ecc74-000000@email.amazonses.com>
-References: <1361529030-17462-1-git-send-email-glommer@parallels.com> <0000013d026b4e5f-1b3deecb-7e37-4476-a27b-3a7db8c1f0a8-000000@email.amazonses.com> <51278A12.4000504@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 22 Feb 2013 10:41:50 -0500
+Date: Fri, 22 Feb 2013 10:41:49 -0500 (EST)
+From: Rado Vrbovsky <rvrbovsk@redhat.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff <jgarzik@redhat.com>
+Message-ID: <1914029230.7688830.1361547709132.JavaMail.root@redhat.com>
+In-Reply-To: <5127841B.2060207@cogentembedded.com>
+Subject: Re: [PATCH] ata_piix: Add MODULE_PARM_DESC to prefer_ms_hyperv
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.210
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.34.1.244]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Feb 2013, Glauber Costa wrote:
+> Hello.
 
-> As I've mentioned in the description, the real bug is from partial slabs
-> being temporarily in the cpu_slab during a recent allocation and
-> therefore unreachable through the partial list.
+Hi Sergei,
+ 
+> On 21-02-2013 23:01, Rado Vrbovsky wrote:
+> 
+> > From: Andrew Brownfield <abrownfi@redhat.com>
+> 
+> > In reference to the commit cd006086fa5d91414d8ff9ff2b78fbb593878e3c
+> > "ata_piix: defer disks to the Hyper-V drivers by default",
+> > this trivial patch adds a description to prefer_ms_hyperv.
+> 
+> > [rvrbovsk@redhat.com: MODULE_PARM_DESC() string formatting
+> > modified]
+> 
+> > Signed-off-by: Andrew Brownfield <abrownfi@redhat.com>
+> 
+>     Note that you can't jus mechanically add Andrew's signoff to the
+>     patch,
+> you have to ask him to sign it off... I hope you did.
 
-The bootstrap code does not use cpu slabs but goes directly to the slab
-pages. See early_kmem_cache_node_alloc.
+It was in the original patch and I erased by mistake.
 
+> > Signed-off-by: Radomir Vrbovsky <rvrbovsk@redhat.com>
+> 
+> MBR, Sergei
+> 
+
+Brg,
+
+Rado
