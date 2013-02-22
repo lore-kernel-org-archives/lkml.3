@@ -1,103 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab3BVGeI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 01:34:08 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:22538 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285Ab3BVGd7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 01:33:59 -0500
-X-AuditID: cbfee690-b7f066d00000169f-3a-512711560402
-Date: Fri, 22 Feb 2013 06:33:58 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: Re: [PATCH] PM / devfreq: fix missing unlock on error in
- exynos4_busfreq_pm_notifier_event()
-To: Nishanth Menon <nm@ti.com>, Wei Yongjun <weiyj.lk@gmail.com>
-Cc: =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20130222063349729@myungjoo.ham
-Msgkey: 20130222063349729@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130222063349729@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <2946170.20251361514836501.JavaMail.weblogic@epml14>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+Ztm6YoHqgwe+NAhaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSvjzqtL7AUPOCv+LVrE2sC4h7OLkZNDSEBdYtGSk2wgtoSAicSj
-	vU/YIWwxiQv31rNB1MxilLjxxL6LkQOs5tm1tC5GLqDwfEaJtec3soLUsAioSlxbs5MVpIZN
-	QE9i5udkkLCwQKbE1JaVYGERATeJn6sdQFqZBZ4wSuy8/I8RYrySxJp9r1hAbF4BQYmTM5+w
-	QJygKrHr7n4WkF5eATWJOW18EGEJiVnTL7BC2LwSM9qfQpXLSUz7uoYZwpaWOD9rAyPMJ4u/
-	P4aK80scu72DCeITXokn94Nhxuze/AUaCAISU88chGrVkliwZSOUzSexZuFbFpgxu04tZ4bp
-	vb9lLhOIzSygKDGl+yE7hK0l8eXHPjZ0X/EKOEhsf7yXcQKj8iwkqVlI2mchaUdWs4CRZRWj
-	aGpBckFxUnqRiV5xYm5xaV66XnJ+7iZGSEKYsIPx3gHrQ4zJwAiZyCwlmpwPTCh5JfGGxgbG
-	hoaWhmamlqYGpAkrifPKX5IJFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDYs7ZWVDSV17F0
-	9e2zzXm3CsM/zl3P8C77bZDhpAD1joBj014o3d3f0J/PrCje4LB5WzrfPu4Wew8G0Tz2ubOj
-	r7KbzNXZ47XHo1t0fW3RkqKtjAfEAquKev/7pC2IuLy9/nSue9a2bo+bvDUuB0/fKFfU+Rb4
-	xZfPWeHrhFAvTeP8oraPU5VYijMSDbWYi4oTAU4eQNUeAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPKsWRmVeSWpSXmKPExsVy+t/t6bphguqBBieucFtc3jWHzYHR4/Mm
-	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
-	jDuvLrEXPOCs+LdoEWsD4x7OLkZODiEBdYlFS06ydTFycEgImEg8u5YGEpYQEJO4cG89UJgL
-	qGQ+o8Ta8xtZQRIsAqoS19bsZAWpZxPQk5j5ORkkLCyQKTG1ZSVYWETATeLnageQVmaBJ4wS
-	Oy//Y4RYpSSxZt8rFhCbV0BQ4uTMJywQu1Qldt3dzwLSyyugJjGnjQ8iLCExa/oFVgibV2JG
-	+1OocjmJaV/XMEPY0hLnZ21ghDl58ffHUHF+iWO3dzBBfMUr8eR+MMyY3Zu/sEHYAhJTzxyE
-	atWSWLBlI5TNJ7Fm4VsWmDG7Ti1nhum9v2UuE4jNLKAoMaX7ITuErSXx5cc+NnRf8Qo4SGx/
-	vJdxAqPcLCSpWUjaZyFpR1azgJFlFaNoakFyQXFSeqqZXnFibnFpXrpecn7uJkZwcnomsINx
-	SYPFIUYBDkYlHt4GF7VAIdbEsuLK3EOMEhzMSiK8+qFAId6UxMqq1KL8+KLSnNTiQ4zJwOib
-	yCwlmpwPTJx5JfGGxgbGhoaW5gamhkYWpAkrifOyV0wPEBJITyxJzU5NLUgtgtnCxMEp1cDI
-	yVAxIfhK0e9X10+vWsikeapbcAOfDodUkFugpKXnrxWWmQvlA9KSYmUtdISOnslwUzxa/LFg
-	ywXfpCVyu+5Nm8zLIHvs/bU1faXWZx7sllI+tUXc6m8s617X4scdVQwJE/3+eX7mjLg6QUZB
-	NWxO7ermo7mTN11epe5Xbv/c+ynryn05ZteUWIozEg21mIuKEwHHsvr8kgMAAA==
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	id S1753193Ab3BVGit (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 01:38:49 -0500
+Received: from mga02.intel.com ([134.134.136.20]:20761 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750901Ab3BVGis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 01:38:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,713,1355126400"; 
+   d="scan'208";a="289142853"
+Message-ID: <51271253.5050503@intel.com>
+Date: Fri, 22 Feb 2013 14:38:11 +0800
+From: xtu4 <xiaobing.tu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        chao.bi@intel.com, faouazx.tenoutit@intel.com, yanmin.zhang@intel.com
+Subject: Resend: [patch] hsi : Avoid race condition between HSI controller
+ and HSI client when system restart and power down
+References: <51271130.10406@intel.com>
+In-Reply-To: <51271130.10406@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1M6Yc78014207
 
-> On 12:33-20130222, Wei Yongjun wrote:
-> > From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> > 
-> > Add the missing unlock before return from function
-> > exynos4_busfreq_pm_notifier_event() in the error
-> > handling case.
-> > 
-> > This issue introduced by commit 8fa938
-> > (PM / devfreq: exynos4_bus: honor RCU lock usage)
-> > 
-> > Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> Arrgh.. Thanks for catching this :( My bad.
-> 
-> Fix looks good to me. upto  MyungJoo.
+Avoid race condition between HSI controller and HSI client when system 
+restart and power down
 
-Applied to devfreq repository.
-I'll send pull request to Rafael soon along with other patches.
+> hsi_isr_tasklet disabled in HSI_controller exit, but before HSI 
+> controller exit,
+> HSI client will cleanup, this cleanup will destroy the spinlock used 
+> by the
+> hsi_isr_tasklet,so if after HSI client cleanup, there still such 
+> tasklet running,
+> issue will happend. here is the issue stack as below.
+> hsi-ctrl: WAKEf514b000: f9a800e5 00000010 60000006 00000000 013f5bf9 
+> 582bf9b8 3d565244
+> hsi-dlp: TTY device close request (mmgr, 133)
+> hsi-dlp: port shutdown request
+> mdm_ctrl: Unexpected RESET_OUT 0x0
+> BUG: spinlock bad magic on CPU#3, zygote/137
+> lock: f53a0fbc, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
+> Pid: 137, comm: zygote Tainted: G         C 3.0.34-141888-g9e0a6fb #1
+> Call Trace:
+>  [<c185c92c>] ? printk+0x1d/0x1f
+>  [<c1860826>] spin_bug+0xa4/0xac
+>  [<c14a5d6d>] do_raw_spin_lock+0x7d/0x170
+>  [<c1866c86>] ? _raw_spin_unlock_irqrestore+0x26/0x50
+>  [<c1866afc>] _raw_spin_lock_irqsave+0x2c/0x40
+>  [<c12325d0>] complete+0x20/0x60
+>  [<c1866c86>] ? _raw_spin_unlock_irqrestore+0x26/0x50
+>  [<c1576ff9>] dlp_ctrl_complete_tx+0x29/0x40
+>  [<c1570164>] hsi_isr_tasklet+0x394/0x11a0
+>  [<c12709f5>] ? sched_clock_cpu+0xe5/0x150
+>  [<c1251a39>] tasklet_hi_action+0x59/0x120
+>  [<c12500d8>] ? it_real_fn+0x18/0xb0
+>  [<c12522ab>] __do_softirq+0x9b/0x220
+>  [<c1252210>] ? remote_softirq_receive+0x110/0x110
+> Change-Id: I6a0ca0c14409bfc4cd7a2767a4f203c171ece007
+> Signed-off-by: xiaobing tu <xiaobing.tu@intel.com>
+> Signed-off-by: chao bi <chao.bi@intel.com>
+> ---
+>  drivers/hsi/clients/dlp_ctrl.c  |    4 ++++
+>  drivers/hsi/clients/dlp_flash.c |    5 ++++-
+>  drivers/hsi/clients/dlp_net.c   |    4 ++++
+>  drivers/hsi/clients/dlp_trace.c |    1 -
+>  drivers/hsi/clients/dlp_tty.c   |    5 ++++-
+>  5 files changed, 16 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/hsi/clients/dlp_ctrl.c 
+> b/drivers/hsi/clients/dlp_ctrl.c
+> index b09f9e6..e980f0c 100644
+> --- a/drivers/hsi/clients/dlp_ctrl.c
+> +++ b/drivers/hsi/clients/dlp_ctrl.c
+> @@ -394,6 +394,8 @@ static void dlp_ctrl_complete_tx(struct hsi_msg *msg)
+>      struct dlp_command *dlp_cmd = msg->context;
+>      struct dlp_channel *ch_ctx = dlp_cmd->channel;
+>
+> +    if (dlp_drv.channels[DLP_CHANNEL_CTRL] == NULL)
+> +        return;
+>      dlp_cmd->status = (msg->status == HSI_STATUS_COMPLETED) ? 0 : -EIO;
+>
+>      /* Command done, notify the sender */
+> @@ -433,6 +435,8 @@ static void dlp_ctrl_complete_rx(struct hsi_msg *msg)
+>      unsigned long flags;
+>      int hsi_channel, elp_channel, ret, response, msg_complete, state;
+>
+> +    if (dlp_drv.channels[DLP_CHANNEL_CTRL] == NULL)
+> +        return;
+>      /* Copy the reponse */
+>      memcpy(&params,
+>             sg_virt(msg->sgt.sgl), sizeof(struct dlp_command_params));
+> diff --git a/drivers/hsi/clients/dlp_flash.c 
+> b/drivers/hsi/clients/dlp_flash.c
+> index 885b73a..b333d74 100644
+> --- a/drivers/hsi/clients/dlp_flash.c
+> +++ b/drivers/hsi/clients/dlp_flash.c
+> @@ -42,7 +42,6 @@
+>   */
+>  #define DLP_FLASH_NB_RX_MSG 10
+>
+> -
+>  /*
+>   * struct flashing_driver - HSI Modem flashing driver protocol
+>   *
+> @@ -259,6 +258,8 @@ static struct hsi_msg *dlp_boot_rx_dequeue(struct 
+> dlp_channel *ch_ctx)
+>  */
+>  static void dlp_flash_complete_tx(struct hsi_msg *msg)
+>  {
+> +    if (dlp_drv.channels[DLP_CHANNEL_FLASH] == NULL)
+> +        return;
+>      /* Delete the received msg */
+>      dlp_pdu_free(msg, -1);
+>  }
+> @@ -274,6 +275,8 @@ static void dlp_flash_complete_rx(struct hsi_msg 
+> *msg)
+>      struct dlp_flash_ctx *flash_ctx = ch_ctx->ch_data;
+>      int ret;
+>
+> +    if (dlp_drv.channels[DLP_CHANNEL_FLASH] == NULL)
+> +        return;
+>      if (msg->status != HSI_STATUS_COMPLETED) {
+>          pr_err(DRVNAME ": Invalid msg status: %d (ignored)\n",
+>                  msg->status);
+> diff --git a/drivers/hsi/clients/dlp_net.c 
+> b/drivers/hsi/clients/dlp_net.c
+> index f3ca817..0c3e672 100644
+> --- a/drivers/hsi/clients/dlp_net.c
+> +++ b/drivers/hsi/clients/dlp_net.c
+> @@ -158,6 +158,8 @@ static void dlp_net_complete_tx(struct hsi_msg *pdu)
+>      struct dlp_net_context *net_ctx = ch_ctx->ch_data;
+>      struct dlp_xfer_ctx *xfer_ctx = &ch_ctx->tx;
+>
+> +    if (dlp_drv.channels[ch_ctx->hsi_channel] == NULL)
+> +            return;
+>      /* TX done, free the skb */
+>      dev_kfree_skb(msg_param->skb);
+>
+> @@ -197,6 +199,8 @@ static void dlp_net_complete_rx(struct hsi_msg *pdu)
+>      unsigned int *ptr;
+>      unsigned long flags;
+>
+> +    if (dlp_drv.channels[ch_ctx->hsi_channel] == NULL)
+> +        return;
+>      /* Pop the CTRL queue */
+>      write_lock_irqsave(&xfer_ctx->lock, flags);
+>      dlp_hsi_controller_pop(xfer_ctx);
+> diff --git a/drivers/hsi/clients/dlp_trace.c 
+> b/drivers/hsi/clients/dlp_trace.c
+> index fa91985..0067798 100644
+> --- a/drivers/hsi/clients/dlp_trace.c
+> +++ b/drivers/hsi/clients/dlp_trace.c
+> @@ -84,7 +84,6 @@ static unsigned int log_dropped_data;
+>  module_param_named(log_dropped_data, log_dropped_data, int, S_IRUGO | 
+> S_IWUSR);
+>  #endif
+>
+> -
+>  /*
+>   *
+>   */
+> diff --git a/drivers/hsi/clients/dlp_tty.c 
+> b/drivers/hsi/clients/dlp_tty.c
+> index 7774484..47f6697 100644
+> --- a/drivers/hsi/clients/dlp_tty.c
+> +++ b/drivers/hsi/clients/dlp_tty.c
+> @@ -68,7 +68,6 @@ struct dlp_tty_context {
+>      struct work_struct    do_tty_forward;
+>  };
+>
+> -
+>  /**
+>   * Push as many RX PDUs  as possible to the controller FIFO
+>   *
+> @@ -337,6 +336,8 @@ static void dlp_tty_complete_tx(struct hsi_msg *pdu)
+>      int wakeup, avail, pending;
+>      unsigned long flags;
+>
+> +    if (dlp_drv.channels[DLP_CHANNEL_TTY] == NULL)
+> +        return;
+>      /* Recycle or Free the pdu */
+>      write_lock_irqsave(&xfer_ctx->lock, flags);
+>      dlp_pdu_delete(xfer_ctx, pdu);
+> @@ -375,6 +376,8 @@ static void dlp_tty_complete_rx(struct hsi_msg *pdu)
+>      unsigned long flags;
+>      int ret;
+>
+> +    if (dlp_drv.channels[DLP_CHANNEL_TTY] == NULL)
+> +        return;
+>      /* Check the received PDU header & seq_num */
+>      ret = dlp_pdu_header_check(xfer_ctx, pdu);
+>      if (ret == -EINVAL) {
 
-> 
-> MyungJoo, Rafael,
-> btw, adding linux-pm@vger.kernel.org to  MAINTAINERS for devfreq might
-> be a nice idea to have right audience.
-
-It appears that replacing the current mailing list address with linux-pm is appropriate. If no one objects, I'll post the suggestion later.
-
-
-Cheers,
-MyungJoo
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
