@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab3BVIzS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 03:55:18 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:64355 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754527Ab3BVIzP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 03:55:15 -0500
-X-IronPort-AV: E=Sophos;i="4.84,714,1355097600"; 
-   d="scan'208";a="1771174"
-Message-ID: <1361523313.26546.109.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH XEN] xen: event channel arrays are xen_ulong_t and not
- unsigned long
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Jan Beulich <JBeulich@suse.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Keir (Xen.org)" <keir@xen.org>, "Tim (Xen.org)" <tim@xen.org>
-Date: Fri, 22 Feb 2013 08:55:13 +0000
-In-Reply-To: <51273EE602000078000C03DC@nat28.tlf.novell.com>
-References: <1361285327.1051.115.camel@zakaz.uk.xensource.com>
-	 <1361285363-27133-1-git-send-email-ian.campbell@citrix.com>
-	 <1361466961.26546.85.camel@zakaz.uk.xensource.com>
-	 <5127366502000078000C0380@nat28.tlf.novell.com>
-	 <1361521720.26546.93.camel@zakaz.uk.xensource.com>
-	 <51273EE602000078000C03DC@nat28.tlf.novell.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S1756652Ab3BVI4e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 03:56:34 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:35907 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753653Ab3BVI4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 03:56:32 -0500
+Message-ID: <512732BE.60503@c-s.fr>
+Date: Fri, 22 Feb 2013 09:56:30 +0100
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+To: Michal Marek <mmarek@suse.cz>
+CC: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] Unset LANG in setlocalversion script
+References: <201302211249.r1LCno6O024776@localhost.localdomain> <51268E25.6070104@suse.cz>
+In-Reply-To: <51268E25.6070104@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-22 at 08:48 +0000, Jan Beulich wrote:
-> >>> On 22.02.13 at 09:28, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> > On Fri, 2013-02-22 at 08:12 +0000, Jan Beulich wrote:
-> >> >>> On 21.02.13 at 18:16, Ian Campbell <Ian.Campbell@citrix.com> wrote:
-> >> > On Tue, 2013-02-19 at 14:49 +0000, Ian Campbell wrote:
-> >> >> On ARM we want these to be the same size on 32- and 64-bit.
-> >> >> 
-> >> >> This is an ABI change on ARM. X86 does not change.
-> >> >> 
-> >> >> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> >> >> Cc: Jan Beulich <JBeulich@suse.com>
-> >> >> Cc: Keir (Xen.org) <keir@xen.org>
-> >> > 
-> >> > Are you guys (un)happy with this change from the Xen & x86 side?
-> >> 
-> >> I don't see any problem with it.
-> > 
-> > I'll take this as an Acked-by if that's ok with you.
-> 
-> Well, I specifically didn't say "ack": I don't really mind the change,
-> but I'm also not eager see it go in. Not seeing a problem with it
-> doesn't really mean there's none lurking - type changes in public
-> interfaces are always an at least slightly risky business.
+Le 21/02/2013 22:14, Michal Marek a écrit :
+> Dne 21.2.2013 13:49, Christophe Leroy napsal(a):
+>> This patch allows the use of setlocalversion script regardless of the LANG
+>> parameter. Otherwise, the `svn info 2>/dev/null | grep '^Last Changed Rev'`
+>> returns nothing because for instance, in French the text 'Last Changed Rev'
+>> is replaced by 'Révision de la dernière modification'
+> Unsetting LANG might not be enough. You should unset LC_ALL and set
+> LC_MESSAGES=C. But - is this a problem for other commands in the script?
+>  From a quick look, we only parse English output of svn, so I suggest to
+> only set the env var for the svn command.
+>
+> Michal
+>
 
-For x86 there is no change here since:
-xen/include/public/arch-x86/xen.h:typedef unsigned long xen_ulong_t;
+Ok, I will propose a new patch.
+I confirm my only issue at the time being is with the svn command.
 
-Also the tools/include/xen-foreign checks show no change in the size of
-things on x86.
-
-On ARM the change is deliberate, if there is any fallout we can fix it.
-
-Ian.
-
+Christophe
