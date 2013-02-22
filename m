@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab3BVNqj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 08:46:39 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:46797 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755376Ab3BVNqf (ORCPT
+	id S1756304Ab3BVNtR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 08:49:17 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54977
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755061Ab3BVNtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 08:46:35 -0500
-Date: Fri, 22 Feb 2013 14:46:30 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
+	Fri, 22 Feb 2013 08:49:13 -0500
+Message-ID: <1361540926.26780.56.camel@laptop>
+Subject: Re: [PATCH 0/2] cpustat: use atomic operations to read/update stats
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Kevin Hilman <khilman@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/5] perf, x86: Support full width counting v3
-Message-ID: <20130222134630.GA8960@gmail.com>
-References: <1361213287-7636-1-git-send-email-andi@firstfloor.org>
- <1361213287-7636-5-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361213287-7636-5-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org
+Date: Fri, 22 Feb 2013 14:48:46 +0100
+In-Reply-To: <20130222125019.GC17948@somewhere.redhat.com>
+References: <1361512604-2720-1-git-send-email-khilman@linaro.org>
+	 <1361522767.26780.44.camel@laptop>
+	 <20130222125019.GC17948@somewhere.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-02-22 at 13:50 +0100, Frederic Weisbecker wrote:
+> atomic64_read() and atomic64_set() are supposed to take care of that,
+> without
+> even the need for _inc() or _add() parts that use LOCK.
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+Are you sure? Generally atomic*_set() is not actually an atomic
+operation.
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Recent Intel CPUs like Haswell and IvyBridge have a new 
-> alternative MSR range for perfctrs that allows writing the 
-> full counter width. Enable this range if the hardware reports 
-> it using a new capability bit.
-> 
-> This lowers the overhead of perf stat slightly because it has 
-> to do less interrupts to accumulate the counter value. On 
-> Haswell it also avoids some problems with TSX aborting when 
-> the end of the counter range is reached.
-
-The changelog does not adequately explain why this patch is 
-critical for basic Haswell enablement. "Avoids some problems 
-with TSX aborting" is not very helpful.
-
-Thanks,
-
-	Ingo
