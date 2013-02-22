@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101Ab3BVPTy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 10:19:54 -0500
-Received: from two.firstfloor.org ([193.170.194.197]:35064 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756597Ab3BVPTw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 10:19:52 -0500
-Date: Fri, 22 Feb 2013 16:19:50 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/5] perf, x86: Support full width counting v3
-Message-ID: <20130222151950.GK2928@two.firstfloor.org>
-References: <1361213287-7636-1-git-send-email-andi@firstfloor.org>
- <1361213287-7636-5-git-send-email-andi@firstfloor.org>
- <20130222134630.GA8960@gmail.com>
+	id S1757324Ab3BVPZP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 10:25:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33264 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757219Ab3BVPZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 10:25:12 -0500
+Date: Fri, 22 Feb 2013 16:25:07 +0100
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: [PULL REQUEST] ext2, ext3, udf updates for 3.9-rc1
+Message-ID: <20130222152507.GD15083@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130222134630.GA8960@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 02:46:30PM +0100, Ingo Molnar wrote:
-> 
-> * Andi Kleen <andi@firstfloor.org> wrote:
-> 
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > Recent Intel CPUs like Haswell and IvyBridge have a new 
-> > alternative MSR range for perfctrs that allows writing the 
-> > full counter width. Enable this range if the hardware reports 
-> > it using a new capability bit.
-> > 
-> > This lowers the overhead of perf stat slightly because it has 
-> > to do less interrupts to accumulate the counter value. On 
-> > Haswell it also avoids some problems with TSX aborting when 
-> > the end of the counter range is reached.
-> 
-> The changelog does not adequately explain why this patch is 
-> critical for basic Haswell enablement. "Avoids some problems 
-> with TSX aborting" is not very helpful.
+  Hello Linus,
 
-Updated description below. I don't want you from stop reviewing
-the rest of the patches, so I'm not posting a new series
-for now just for a new description. Please keep reading.
-You may make it through to the end.
+  could you please pull from
 
----
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
 
-Recent Intel CPUs like Haswell and IvyBridge have a new
-alternative MSR range for perfctrs that allows writing the
-full counter width. Enable this range if the hardware reports
-it using a new capability bit.
+  to get several UDF fixes, a support for UDF extent cache, and couple of
+ext2 and ext3 cleanups and minor fixes.
 
-This lowers the overhead of perf stat slightly because it has
-to do less interrupts to accumulate the counter value. On
-Haswell it also avoids some problems with TSX aborting when
-the end of the counter range is reached. This can be observed
-when the checkpoint flag has been set, which has been enabled
-by the basic PMU patch. An overflow will abort the transaction
-and set the counter back. If the counter is near the overflow
-before the transaction this could happen continuously, forcing
-a transaction to continuously abort.
-This is a partial fix, but it makes the overflows much less 
-likely by using a larger counter, to lower the probability of the
-event. Additional counter measures are in the additional extended
-Haswell patchkit.
+Top of the tree is 712ddc5. The full shortlog is:
 
+Guo Chao (1):
+      ext3, ext4, ocfs2: remove unused macro NAMEI_RA_INDEX
+
+Jan Kara (5):
+      ext3: Fix memory leak when quota options are specified multiple times
+      udf: Write LVID to disk after opening / closing
+      udf: Fix bitmap overflow on large filesystems with small block size
+      udf: Make s_block_bitmap standard array
+      udf: Remove unused s_extLength from udf_bitmap
+
+Namjae Jeon (1):
+      udf: add extent cache support in case of file reading
+
+Wang Shilong (9):
+      Ext2: free memory allocated and forget buffer head when io error happens
+      Ext3: add necessary check in case IO error happens
+      Ext2: use unlikely to improve the efficiency of the kernel
+      Ext3: use unlikely to improve the efficiency of the kernel
+      Ext2: return ENOMEM rather than EIO if sb_getblk fails
+      Ext3: return ENOMEM rather than EIO if sb_getblk fails
+      Ext2: remove the overhead check about sb in the function ext2_new_blocks
+      Ext2: mark inode dirty after the function dquot_free_block_nodirty is called
+      Ext2: remove the static function release_blocks to optimize the kernel
+
+The diffstat is
+
+ fs/ext2/balloc.c |   28 ++++++-----------
+ fs/ext2/inode.c  |   12 +++++++
+ fs/ext2/super.c  |    2 +-
+ fs/ext2/xattr.c  |    4 +-
+ fs/ext3/inode.c  |   16 ++++++----
+ fs/ext3/namei.c  |    1 -
+ fs/ext3/resize.c |   12 ++++----
+ fs/ext3/super.c  |   51 +++++++++++++++++++-------------
+ fs/ext3/xattr.c  |    4 +-
+ fs/ext4/namei.c  |    1 -
+ fs/ocfs2/dir.c   |    1 -
+ fs/udf/inode.c   |   86 ++++++++++++++++++++++++++++++++++++++++++++++++++----
+ fs/udf/super.c   |   11 ++++---
+ fs/udf/udf_i.h   |   16 ++++++++++
+ fs/udf/udf_sb.h  |    5 +--
+ fs/udf/udfdecl.h |    5 ---
+ 16 files changed, 177 insertions(+), 78 deletions(-)
+
+							Thanks
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
