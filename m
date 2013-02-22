@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab3BVG7q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 01:59:46 -0500
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:54183 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039Ab3BVG7o (ORCPT
+	id S1754270Ab3BVHKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 02:10:00 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:38676 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753193Ab3BVHJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 01:59:44 -0500
-Date: Thu, 21 Feb 2013 22:55:52 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        Orna Agmon Ben-Yehuda <ladypine@gmail.com>,
-        Muli Ben-Yehuda <mulix@mulix.org>
-Subject: Re: [PATCH v2] memcg: Add memory.pressure_level events
-Message-ID: <20130222065552.GA26194@lizard.gateway.2wire.net>
-References: <20130219044012.GA23356@lizard.sbx00618.mountca.wayport.net>
- <20130220001743.GE16950@blaptop>
- <CAOS58YOPjcH_pFFhPLJEAdaLkm5FoOy9mG2i-PkWAcb7O6V_Kw@mail.gmail.com>
- <20130221230425.GA22792@lizard.fhda.edu>
- <20130221235608.GH16950@blaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130221235608.GH16950@blaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 22 Feb 2013 02:09:58 -0500
+From: Yuan-Hsin Chen <yuanlmm@gmail.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Yuan-Hsin Chen <yuanlmm@gmail.com>,
+        Yuan-Hsin Chen <yhchen@faraday-tech.com>
+Subject: [PATCH] fusb300_udc: modify stall clear and idma reset procedure
+Date: Fri, 22 Feb 2013 07:09:39 +0000
+Message-Id: <1361516979-7340-1-git-send-email-yhchen@faraday-tech.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 08:56:08AM +0900, Minchan Kim wrote:
-> [...] The my point is that you have a plan to support? Why I have a
-> question is that you said your goal is to replace lowmemory killer
+From: Yuan-Hsin Chen <yuanlmm@gmail.com>
 
-In short: yes, of course, if the non-memcg interface will be in demand.
+Due to fusb300 controller modification, stall clear procedure should be
+modified consistantly. This patch also fixes software bugs: only
+enter IDMA_RESET when the condition matched and disable corresponding
+PRD interrupt in IDMA_RESET.
 
-> but android don't have enabled CONFIG_MEMCG as you know well
-> so they should enable it for using just notifier? or they need another hack to
-> connect notifier to global thing?
 
-A hack is not an option for me. :-) My final goal is to switch Android to
-use the notifier without need for hacks/external patches or
-drivers/staging.
+Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+---
+ drivers/usb/gadget/fusb300_udc.c |    9 ++++++---
+ drivers/usb/gadget/fusb300_udc.h |    2 +-
+ 2 files changed, 7 insertions(+), 4 deletions(-)
 
-But my current goal is to make the most generic case work, and do this in
-the most correct way. That is, vmpressure + MEMCG. Once I accomplish this,
-I can then think of any niche needs (such as Android).
+diff --git a/drivers/usb/gadget/fusb300_udc.c b/drivers/usb/gadget/fusb300_udc.c
+index 72cd5e6..109cab1 100644
+--- a/drivers/usb/gadget/fusb300_udc.c
++++ b/drivers/usb/gadget/fusb300_udc.c
+@@ -394,7 +394,7 @@ static void fusb300_clear_epnstall(struct fusb300 *fusb300, u8 ep)
+ 
+ 	if (reg & FUSB300_EPSET0_STL) {
+ 		printk(KERN_DEBUG "EP%d stall... Clear!!\n", ep);
+-		reg &= ~FUSB300_EPSET0_STL;
++		reg |= FUSB300_EPSET0_STL_CLR;
+ 		iowrite32(reg, fusb300->reg + FUSB300_OFFSET_EPSET0(ep));
+ 	}
+ }
+@@ -930,9 +930,12 @@ static void fusb300_wait_idma_finished(struct fusb300_ep *ep)
+ 
+ 	fusb300_clear_int(ep->fusb300, FUSB300_OFFSET_IGR0,
+ 		FUSB300_IGR0_EPn_PRD_INT(ep->epnum));
++	return;
++
+ IDMA_RESET:
+-	fusb300_clear_int(ep->fusb300, FUSB300_OFFSET_IGER0,
+-		FUSB300_IGER0_EEPn_PRD_INT(ep->epnum));
++	reg = ioread32(ep->fusb300->reg + FUSB300_OFFSET_IGER0);
++	reg &= ~FUSB300_IGER0_EEPn_PRD_INT(ep->epnum);
++	iowrite32(reg, ep->fusb300->reg + FUSB300_OFFSET_IGER0);
+ }
+ 
+ static void  fusb300_set_idma(struct fusb300_ep *ep,
+diff --git a/drivers/usb/gadget/fusb300_udc.h b/drivers/usb/gadget/fusb300_udc.h
+index 542cd83..ccae1b5 100644
+--- a/drivers/usb/gadget/fusb300_udc.h
++++ b/drivers/usb/gadget/fusb300_udc.h
+@@ -111,8 +111,8 @@
+ /*
+  * * EPn Setting 0 (EPn_SET0, offset = 020H+(n-1)*30H, n=1~15 )
+  * */
++#define FUSB300_EPSET0_STL_CLR		(1 << 3)
+ #define FUSB300_EPSET0_CLRSEQNUM	(1 << 2)
+-#define FUSB300_EPSET0_EPn_TX0BYTE	(1 << 1)
+ #define FUSB300_EPSET0_STL		(1 << 0)
+ 
+ /*
+-- 
+1.7.4.1
 
-There will be two possibilities for Android:
-
-1. Obviously, turn on CONFIG_MEMCG. We need to measure its effect on real
-   devices, and see if it makes sense. (Plus, maybe there are other uses
-   for MEMCG on Android?)
-
-or
-
-2. Implement /sys/fs/cgroups/memory/memory.pressure_level interface
-   without MEMCG. Doing this will be really easy as we'll already have
-   vmpressure() core, and Android has CROUPS=y. But I do expect some
-   discussion like 'why don't you fix memcg instead?'. We'll have to
-   answer this question by looking back at '1.'
-
-Also note that cgroups vmpressure notifiers were tried by QEMU folks, and
-it seemed to be useful:
-
-   http://lists.gnu.org/archive/html/qemu-devel/2012-12/msg02821.html 
-
-So, nowadays it is not only about Android. Some time ago I also got an
-email from Orna Agmon Ben-Yehuda, who suggested to use vmpressure stuff
-with 'memcached' (but I didn't find time to actually try it, so far. :(
-Thanks for the email, btw!).
-
-So it is useful with or without MEMCG, and if we will really need to
-support vmpressure without MEMCG, I will have to implement the support in
-addition to MEMCG case, yes.
-
-Thanks,
-
-Anton
