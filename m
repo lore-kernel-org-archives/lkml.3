@@ -1,82 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab3BVBWm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 20:22:42 -0500
-Received: from ozlabs.org ([203.10.76.45]:57165 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753970Ab3BVBWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 20:22:40 -0500
-Date: Fri, 22 Feb 2013 11:04:15 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Joerg Roedel <joerg.roedel@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iommu: making IOMMU sysfs nodes API public
-Message-ID: <20130222000415.GI21011@truffula.fritz.box>
-References: <1360628713.3248.8.camel@bling.home>
- <1360642004-7419-1-git-send-email-aik@ozlabs.ru>
- <1360645643.3248.91.camel@bling.home>
- <511A54DC.9030908@ozlabs.ru>
- <1360689304.3248.154.camel@bling.home>
- <5121C709.80007@ozlabs.ru>
- <1361251440.2801.142.camel@bling.home>
- <20130219073853.GS21067@truffula.fritz.box>
- <1361304711.2801.232.camel@bling.home>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oxV4ZoPwBLqAyY+a"
-Content-Disposition: inline
-In-Reply-To: <1361304711.2801.232.camel@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755249Ab3BVBXP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 20:23:15 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:18063 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753792Ab3BVBXK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 20:23:10 -0500
+Message-ID: <1361495541.12845.18.camel@misato.fc.hp.com>
+Subject: Re: [Update 3][PATCH 2/7] ACPI / scan: Introduce common code for
+ ACPI-based device hotplug
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jiang Liu <liuj97@gmail.com>
+Date: Thu, 21 Feb 2013 18:12:21 -0700
+In-Reply-To: <2894504.SgZF7d1Dbv@vostro.rjw.lan>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
+	 <1765527.DdJ8fCt5cH@vostro.rjw.lan> <2482081.rPvizM7IsG@vostro.rjw.lan>
+	 <2894504.SgZF7d1Dbv@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-02-22 at 00:06 +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Multiple drivers handling hotplug-capable ACPI device nodes install
+> notify handlers covering the same types of events in a very similar
+> way.  Moreover, those handlers are installed in separate namespace
+> walks, although that really should be done during namespace scans
+> carried out by acpi_bus_scan().  This leads to substantial code
+> duplication, unnecessary overhead and behavior that is hard to
+> follow.
+> 
+> For this reason, introduce common code in drivers/acpi/scan.c for
+> handling hotplug-related notification and carrying out device
+> insertion and eject operations in a generic fashion, such that it
+> may be used by all of the relevant drivers in the future.  To cover
+> the existing differences between those drivers introduce struct
+> acpi_hotplug_profile for representing collections of hotplug
+> settings associated with different ACPI scan handlers that can be
+> used by the drivers to make the common code reflect their current
+> behavior.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+> 
+> This update fixes an issue pointed out by Toshi Kani (that
+> ACPI_OST_EC_OSPM_* event source codes should not be used with _OST for events
+> that we received a notification for from the platform firmware).
+> 
+> Thanks,
+> Rafael
+> 
+> ---
+>  drivers/acpi/scan.c     |  270 ++++++++++++++++++++++++++++++++++++++----------
+>  include/acpi/acpi_bus.h |    7 +
+>  2 files changed, 224 insertions(+), 53 deletions(-)
+ :
+> +static void acpi_bus_device_eject(void *context)
+> +{
+> +	acpi_handle handle = context;
+> +	struct acpi_device *device = NULL;
+> +	struct acpi_scan_handler *handler;
+> +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+> +
+> +	mutex_lock(&acpi_scan_lock);
+> +
+> +	acpi_bus_get_device(handle, &device);
+> +	if (!device)
+> +		goto err_out;
+> +
+> +	handler = device->handler;
+> +	if (!handler || !handler->hotplug.enabled) {
+> +		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
+> +		goto err_out;
+> +	}
+> +	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
+> +				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
+> +	if (handler->hotplug.autoeject) {
+> +		int error;
+> +
+> +		get_device(&device->dev);
+> +		error = acpi_scan_hot_remove(device);
+> +		if (error)
+> +			goto err_out;
+> +	} else {
+> +		device->flags.eject_pending = true;
+>  	}
+> +	if (handler->hotplug.uevents)
+> +		kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
 
---oxV4ZoPwBLqAyY+a
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I confirmed that the _OST issue with hot-add is fixed.  Here is a new
+one.  When autoeject is enabled, it crashes in kobject_uevent() since
+the device is no longer valid. 
 
-On Tue, Feb 19, 2013 at 01:11:51PM -0700, Alex Williamson wrote:
-> On Tue, 2013-02-19 at 18:38 +1100, David Gibson wrote:
-> > On Mon, Feb 18, 2013 at 10:24:00PM -0700, Alex Williamson wrote:
-> > > On Mon, 2013-02-18 at 17:15 +1100, Alexey Kardashevskiy wrote:
-[snip]
-> > >  Adding the window size to sysfs seems more readily convenient,
-> > > but is it so hard for userspace to open the files and call a couple
-> > > ioctls to get far enough to call IOMMU_GET_INFO?  I'm unconvinced the
-> > > clutter in sysfs more than just a quick fix.  Thanks,
-> >=20
-> > And finally, as Alexey points out, isn't the point here so we know how
-> > much rlimit to give qemu?  Using ioctls we'd need a special tool just
-> > to check the dma window sizes, which seems a bit hideous.
->=20
-> Is it more hideous that using iommu groups to report a vfio imposed
-> restriction?  Are a couple open files and a handful of ioctls worse than
-> code to parse directory entries and the future maintenance of an
-> unrestricted grab bag of sysfs entries?
+Thanks,
+-Toshi
 
-The fact that the memory is locked is a vfio restriction, but the
-actual dma window size is, genuinely, a property of the group.
 
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
-
---oxV4ZoPwBLqAyY+a
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlEmtf8ACgkQaILKxv3ab8Yx2wCeIZi02eSK4V91QamKoq1R4LQb
-jrAAniA1BHfvqKgrn+e+59edyq2MXpSM
-=XHeH
------END PGP SIGNATURE-----
-
---oxV4ZoPwBLqAyY+a--
