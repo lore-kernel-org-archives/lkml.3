@@ -1,38 +1,30 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018Ab3B1N6H (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Thu, 28 Feb 2013 08:58:07 -0500
-Received: from pub10-106.mobius.fr ([80.69.210.106]:42796 "EHLO
-	mail1.mobius.fr" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752742Ab3B1N6D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Feb 2013 08:58:03 -0500
-From: 1925.directaccess@gmail.com
-Subject: LOAN OFFER!!!
-X-Mailer: CommuniGate Pro WebUser v5.3.13
-Date: Thu, 28 Feb 2013 16:16:01 +0400
-Message-ID: <web-104085736@mobiustechnology.com>
+        id S1757619Ab3BVVbU (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Fri, 22 Feb 2013 16:31:20 -0500
+Received: from mail.bvunet.net ([216.184.64.3]:36448 "EHLO emailsrv.bvu.net"
+        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1757324Ab3BVVbT convert rfc822-to-8bit (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Fri, 22 Feb 2013 16:31:19 -0500
+Message-Id: <201302222129.r1MLSwoj010324@emailsrv.bvu.net>
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-MOBIUS-MailScanner-Information: Please contact the ISP for more information
-X-MOBIUS-MailScanner-ID: r1SCG3G3018874
-X-MOBIUS-MailScanner: Found to be clean
-X-MOBIUS-MailScanner-From: test@cegelec.re
-X-MOBIUS-Spam-Status: No
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: LOAN CONTACT
+To: Recipients <info@omegatechnologygroup.net>
+From: "Mr. Nelson Emmanuel" <info@omegatechnologygroup.net>
+Date: Fri, 22 Feb 2013 15:30:06 -0600
+Reply-To: bendavid250@gmail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Contact Us Today for a loan at 1925.directaccess@gmail.com
- Finances offered from $10,000 to $9,000,000 , The interest rate for my
- loan is 3%,
+My name is MR. NELSON EMMANUEL ,I am a private lender who give out
+loan to private and corporate individuals. Have you been turned down
+by so many banks? Do you need finance to establish your business? Do
+you need finance for the expansion of your business? Or do you need a
+personal loan of 5%
 
- Full Name: 
- Loan Amount Needed:
- Loan Duration:
- Valid Phone Number:
- Gender:
- Address:
- Country:
- purpose of the loan:
+All Reply should be sent to this Email : mrnelsonemmanuel@zing.vn
