@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab3BVXBR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 18:01:17 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47508 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757867Ab3BVXBP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 18:01:15 -0500
-Message-ID: <5127F8B5.10002@wwwdotorg.org>
-Date: Fri, 22 Feb 2013 16:01:09 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Rhyland Klein <rklein@nvidia.com>
-CC: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC v2 2/3] power: power_supply: Add core support for supplied_nodes
-References: <1361488272-21010-1-git-send-email-rklein@nvidia.com> <1361488272-21010-3-git-send-email-rklein@nvidia.com> <5127CBD9.9050501@wwwdotorg.org> <5127E95E.4010500@nvidia.com>
-In-Reply-To: <5127E95E.4010500@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756210Ab3BVXGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 18:06:35 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:33389 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755117Ab3BVXGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 18:06:30 -0500
+Message-ID: <1361574388.6168.6.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Improve CamelCase test for Page
+From: Joe Perches <joe@perches.com>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 22 Feb 2013 15:06:28 -0800
+In-Reply-To: <CAKocOONj+gEcBXZJXGqoY00mcUf5WpLo7j7JF-S20UZED+pLCA@mail.gmail.com>
+References: <20130222204253.A37B931C1C1@corp2gmr1-1.hot.corp.google.com>
+	 <1361566784.2030.6.camel@joe-AO722> <1361570508.5608.10.camel@thor.lan>
+	 <1361571667.2030.13.camel@joe-AO722>
+	 <CAKocOONj+gEcBXZJXGqoY00mcUf5WpLo7j7JF-S20UZED+pLCA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 02:55 PM, Rhyland Klein wrote:
-> On 2/22/2013 2:49 PM, Stephen Warren wrote:
->> On 02/21/2013 04:11 PM, Rhyland Klein wrote:
->>> With the growing support for dt, it make sense to try to make use of
->>> dt features to make the general code cleaner. This patch is an
->>> attempt to commonize how chargers and their supplies are linked.
->>>
->>> Following common dt convention, the "supplied-to" char** list is
->>> replaced with phandle lists defined in the supplies which contain
->>> phandles of their suppliers.
->>>
->>> This has the effect however of introducing an inversion in the internal
->>> mechanics of how this information is stored. In the case of non-dt,
->>> the char** list of supplies is stored in the charger. In the dt case,
->>> a device_node * list is stored in the supplies of their chargers,
->>> however this seems to be the only way to support this.
->> When parsing the DT, you can convert from phandle (or struct device_node
->> *) to the name of the referenced supply by simple lookup. So, you could
->> store supply names rather than device_node *. Can't you then also fill
->> in the referenced supply's existing char** list of supplies?
->>
->> Of course, making this interact-with/use -EPROBE_DEFERRED might be
->> challenging, since this would be operating in the inverse order to other
->> producer/consumer relationships, which might cause loops.
-> The main problem I ran into when I was essentially trying to do this,
-> was that the list of names that
-> are used to match the power_supplies are the strings set as "name" in
-> the power_supply structs. This
-> doesn't get set automatically based on their nodes, and it is currently
-> up to each driver to define their
-> own name.
-> 
-> For example, the sbs-battery driver uses the name "sbs-XXX" where XX is
-> its dev_name. Other drivers
-> use "%s-$%d" as i2c_device_id->name, + instance number. Then the only
-> solution I see is to require a new
-> property that defines the power-supply's name in the devicetree.
-> 
-> This solution with device_nodes, while not ideal, seems the be the best
-> bet from what I see. Maybe
-> someone else has a better idea.
+dOn Fri, 2013-02-22 at 15:57 -0700, Shuah Khan wrote:
+> What are the guidelines on camelcase warnings on patches. A recent one
+> I ran into is on a variable in a structure and fixing it would require
+> changing the original variable.
 
-For other resource types, this is handled by the (phandle -> whatever)
-conversion process actually being a function call on the referenced
-object, so that the driver code for it can look up the data in the
-actual device/... object etc. See the various .of_xlate functions that
-exist in the kernel.
+The same as all other checkpatch warnings.
+Ignore the ones you don't agree with.
+
+Errors maybe should be fixed.  You should be able
+to ignore those too though.
+
+> One would have to change a large portion of the code to fix it. In
+> such cases, do we ignore this warning?
+
+Yes.
+
+Taste is always author's choice.
+
+Of course, lots of things depends on the upstream
+path and files you chose to work on.
+
+If you're working in drivers/net, most of these
+warnings seem more likely to get patches that have
+them rejected.
+
+If you're working on drivers/scsi, it seems you
+don't have to bother running checkpatch at all.
+
