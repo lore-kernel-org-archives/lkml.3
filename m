@@ -1,52 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758361Ab3BVROe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 12:14:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58389 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758001Ab3BVROc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 12:14:32 -0500
-Date: Fri, 22 Feb 2013 12:14:24 -0500
-From: Dave Jones <davej@redhat.com>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Lan Tianyu <lantianyu1986@gmail.com>
-Subject: Re: [GIT PATCH] USB patches for 3.9-rc1
-Message-ID: <20130222171424.GC27619@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Lan Tianyu <tianyu.lan@intel.com>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-	Lan Tianyu <lantianyu1986@gmail.com>
-References: <20130221184010.GA24692@kroah.com>
- <20130222085954.GA4352@redhat.com>
- <51273F8E.3020807@intel.com>
- <20130222164318.GA27619@redhat.com>
- <5127A493.8040900@intel.com>
+	id S1758217Ab3BVRRR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 12:17:17 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:32810 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757555Ab3BVRRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 12:17:15 -0500
+Date: Fri, 22 Feb 2013 09:16:30 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Petr Holasek <pholasek@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 5/7] mm,ksm: swapoff might need to copy
+In-Reply-To: <20130221145316.GA23767@cmpxchg.org>
+Message-ID: <alpine.LNX.2.00.1302220808020.4942@eggly.anvils>
+References: <alpine.LNX.2.00.1302210013120.17843@eggly.anvils> <alpine.LNX.2.00.1302210023350.17843@eggly.anvils> <20130221145316.GA23767@cmpxchg.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5127A493.8040900@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 23, 2013 at 01:02:11AM +0800, Lan Tianyu wrote:
+On Thu, 21 Feb 2013, Johannes Weiner wrote:
+> On Thu, Feb 21, 2013 at 12:25:40AM -0800, Hugh Dickins wrote:
+> > Before establishing that KSM page migration was the cause of my
+> > WARN_ON_ONCE(page_mapped(page))s, I suspected that they came from the
+> > lack of a ksm_might_need_to_copy() in swapoff's unuse_pte() - which
+> > in many respects is equivalent to faulting in a page.
+> > 
+> > In fact I've never caught that as the cause: but in theory it does
+> > at least need the KSM_RUN_UNMERGE check in ksm_might_need_to_copy(),
+> > to avoid bringing a KSM page back in when it's not supposed to be.
+> 
+> Maybe I am mistaken, maybe it was just too obvious to you to mention,
+> but the main reason for me would be that this can break eviction,
+> migration, etc. of that page when there is no rmap_item representing
+> the vma->anon_vma (the cross-anon_vma merge case), no?
 
- > >   > > What can I do to debug this ?
- > >   > 	Can you attach the output of dmesg with CONFIG_USB_DEBUG?
- > >
- > > http://paste.fedoraproject.org/3620
- > How about"sudo lsusb -s 1:1 -v" or "2:1"?
+Hah, thank you for asking that question, sir.
+(People will think that I planted you in the Cc just to ask it.)
 
-(12:13:51:davej@t430s:~)$ sudo lsusb -s 1:1
-Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-(12:13:53:davej@t430s:~)$ sudo lsusb -s 2:1
-Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+I did write a longer paragraph there, but it got to rambling off the
+point, with some vagueness: so I wasn't sure that I wanted it all in
+the commit message, and deleted the trailing sentences.
 
+For most of the time that I had this patch waiting in my tree, before
+coming to write the description, I believed exactly as you do above.
+But felt that I couldn't submit the patch, without understanding how
+I had never actually come across such a serious problem in testing.
+I only got around to looking into it a few days ago.
+
+At first I suspected a weakness in the CONFIG_DEBUG_VM checking in
+__page_check_anon_rmap() (no, it looks good), or the early PageAnon
+return in __page_set_anon_rmap() (shouldn't that do some anon_vma
+checking first? maybe, but I didn't think it through before moving
+on, and don't want to be too quick to add spurious warnings).
+
+But then I remembered how this actually was working,
+the key lines are a few levels up in unuse_vma():
+	if (page_anon_vma(page)) {
+		addr = page_address_in_vma(page, vma);
+
+Those lines started out, in 2004, as an optimization to swapoff:
+that once brute force (searching every swapped mm) has found one pte
+for the page (page->mapping and page->index then set to the right
+place in the right anon_vma), we can locate any remaining references
+to the page much more quickly, but just looking at the right offset
+of other vmas sharing the same anon_vma.
+
+When KSM swapping came along, it turned out that the only change needed
+there was not assume that page->mapping is set to an anon_vma pointer:
+page_anon_vma(page) returns NULL on a KSM page.  What happens (on a
+page freshly read in from swap) is that once one pte has been found,
+page->mapping is pointed to an anon_vma, and the quicker lookup only
+finds ptes which do belong to that anon_vma.  Then try_to_unuse() gives
+up on that swap entry for the moment, deletes the page from swap cache,
+moves on to the next used swap entry, comes back to the unresolved
+swap entry next cycle, reads it from swap into a new page, and locates
+the next anon_vma for it.  Or, if the KSM page was still lingering in
+swapcache when swapoff first reaches it (with page->mapping pointing
+to a stable_node), it would be correctly fixed up to all the various
+ptes found by the brute force search.
+
+Re-reading the page from swap is obviously not optimal, when it would
+be much faster to memcpy.  But swapoff has never been remotely optimal
+anyway; and the complete lack of code for the KSM case was delightful -
+the only problem being that there no code to place a comment in!
+
+I did have a nasty moment (well, it lasted a bit longer than that)
+in replying to you yesterday: but what about when the anon_vma_chains
+came in?  Has swapoff been doing lots of unnecessary re-reading from
+swap to match ptes belonging to different anon_vmas in the chain?  But
+actually it's okay, Andrea fixed up page_address_in_vma() in 2.6.36,
+and I added a comment on KSM there (I see my 4829b906 also speaks of
+a bug with respect to "half-KSM" pages, that I promise to fix in the
+next release: I have yet to reconstruct the full story of what that was
+about, but for now I'm assuming that I failed to keep my promise there).
+
+Anyway, long story short (oh, people are supposed to say that at the
+beginning not the end, aren't they?), the KSM swapoff code was already
+working almost right before adding in the ksm_might_need_to_copy():
+that's only needed to fix up the case of swapoff racing with unmerge
+(a check that didn't even exist for swapin before the NUMA series).
+
+> 
+> > I intended to copy how it's done in do_swap_page(), but have a strong
+> > aversion to how "swapcache" ends up being used there: rework it with
+> > "page != swapcache".
+> > 
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> 
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Thanks,
+Hugh
