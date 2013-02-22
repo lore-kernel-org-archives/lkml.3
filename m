@@ -1,122 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab3BVBnp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 20:43:45 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:41125 "EHLO hydra.sisk.pl"
+	id S1756110Ab3BVBqj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 20:46:39 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:35843 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753777Ab3BVBnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 20:43:42 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [Update 3][PATCH 2/7] ACPI / scan: Introduce common code for ACPI-based device hotplug
-Date: Fri, 22 Feb 2013 02:50:20 +0100
-Message-ID: <11658900.TkhCHmg9LJ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1361495541.12845.18.camel@misato.fc.hp.com>
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <2894504.SgZF7d1Dbv@vostro.rjw.lan> <1361495541.12845.18.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755187Ab3BVBqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Feb 2013 20:46:37 -0500
+Message-ID: <1361497590.29360.121.camel@falcor1>
+Subject: Re: [PATCH 2/2] ima: add policy support for file system uuid
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Date: Thu, 21 Feb 2013 20:46:30 -0500
+In-Reply-To: <alpine.DEB.2.02.1302211352270.28115@chino.kir.corp.google.com>
+References: <1360070895-29895-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1360070895-29895-2-git-send-email-zohar@linux.vnet.ibm.com>
+	 <alpine.DEB.2.02.1302211352270.28115@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022201-9360-0000-0000-000010F8A578
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 21, 2013 06:12:21 PM Toshi Kani wrote:
-> On Fri, 2013-02-22 at 00:06 +0100, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Multiple drivers handling hotplug-capable ACPI device nodes install
-> > notify handlers covering the same types of events in a very similar
-> > way.  Moreover, those handlers are installed in separate namespace
-> > walks, although that really should be done during namespace scans
-> > carried out by acpi_bus_scan().  This leads to substantial code
-> > duplication, unnecessary overhead and behavior that is hard to
-> > follow.
-> > 
-> > For this reason, introduce common code in drivers/acpi/scan.c for
-> > handling hotplug-related notification and carrying out device
-> > insertion and eject operations in a generic fashion, such that it
-> > may be used by all of the relevant drivers in the future.  To cover
-> > the existing differences between those drivers introduce struct
-> > acpi_hotplug_profile for representing collections of hotplug
-> > settings associated with different ACPI scan handlers that can be
-> > used by the drivers to make the common code reflect their current
-> > behavior.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> > 
-> > This update fixes an issue pointed out by Toshi Kani (that
-> > ACPI_OST_EC_OSPM_* event source codes should not be used with _OST for events
-> > that we received a notification for from the platform firmware).
-> > 
-> > Thanks,
-> > Rafael
-> > 
-> > ---
-> >  drivers/acpi/scan.c     |  270 ++++++++++++++++++++++++++++++++++++++----------
-> >  include/acpi/acpi_bus.h |    7 +
-> >  2 files changed, 224 insertions(+), 53 deletions(-)
->  :
-> > +static void acpi_bus_device_eject(void *context)
-> > +{
-> > +	acpi_handle handle = context;
-> > +	struct acpi_device *device = NULL;
-> > +	struct acpi_scan_handler *handler;
-> > +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
-> > +
-> > +	mutex_lock(&acpi_scan_lock);
-> > +
-> > +	acpi_bus_get_device(handle, &device);
-> > +	if (!device)
-> > +		goto err_out;
-> > +
-> > +	handler = device->handler;
-> > +	if (!handler || !handler->hotplug.enabled) {
-> > +		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-> > +		goto err_out;
-> > +	}
-> > +	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
-> > +				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-> > +	if (handler->hotplug.autoeject) {
-> > +		int error;
-> > +
-> > +		get_device(&device->dev);
-> > +		error = acpi_scan_hot_remove(device);
-> > +		if (error)
-> > +			goto err_out;
-> > +	} else {
-> > +		device->flags.eject_pending = true;
-> >  	}
-> > +	if (handler->hotplug.uevents)
-> > +		kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+On Thu, 2013-02-21 at 13:54 -0800, David Rientjes wrote:
+> On Tue, 5 Feb 2013, Mimi Zohar wrote:
 > 
-> I confirmed that the _OST issue with hot-add is fixed.  Here is a new
-> one.  When autoeject is enabled, it crashes in kobject_uevent() since
-> the device is no longer valid. 
+> > diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+> > index 4adcd0f..23f49e3 100644
+> > --- a/security/integrity/ima/ima_policy.c
+> > +++ b/security/integrity/ima/ima_policy.c
+> > @@ -16,6 +16,7 @@
+> >  #include <linux/magic.h>
+> >  #include <linux/parser.h>
+> >  #include <linux/slab.h>
+> > +#include <linux/genhd.h>
+> >  
+> >  #include "ima.h"
+> >  
+> > @@ -25,6 +26,7 @@
+> >  #define IMA_FSMAGIC	0x0004
+> >  #define IMA_UID		0x0008
+> >  #define IMA_FOWNER	0x0010
+> > +#define IMA_FSUUID	0x0020
+> >  
+> >  #define UNKNOWN		0
+> >  #define MEASURE		0x0001	/* same as IMA_MEASURE */
+> > @@ -45,6 +47,7 @@ struct ima_rule_entry {
+> >  	enum ima_hooks func;
+> >  	int mask;
+> >  	unsigned long fsmagic;
+> > +	u8 fsuuid[16];
+> >  	kuid_t uid;
+> >  	kuid_t fowner;
+> >  	struct {
+> > @@ -172,6 +175,9 @@ static bool ima_match_rules(struct ima_rule_entry *rule,
+> >  	if ((rule->flags & IMA_FSMAGIC)
+> >  	    && rule->fsmagic != inode->i_sb->s_magic)
+> >  		return false;
+> > +	if ((rule->flags & IMA_FSUUID) &&
+> > +		memcmp(rule->fsuuid, inode->i_sb->s_uuid, sizeof(rule->fsuuid)))
+> > +		return false;
+> >  	if ((rule->flags & IMA_UID) && !uid_eq(rule->uid, cred->uid))
+> >  		return false;
+> >  	if ((rule->flags & IMA_FOWNER) && !uid_eq(rule->fowner, inode->i_uid))
+> > @@ -346,7 +352,7 @@ enum {
+> >  	Opt_obj_user, Opt_obj_role, Opt_obj_type,
+> >  	Opt_subj_user, Opt_subj_role, Opt_subj_type,
+> >  	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid, Opt_fowner,
+> > -	Opt_appraise_type
+> > +	Opt_appraise_type, Opt_fsuuid
+> >  };
+> >  
+> >  static match_table_t policy_tokens = {
+> > @@ -364,6 +370,7 @@ static match_table_t policy_tokens = {
+> >  	{Opt_func, "func=%s"},
+> >  	{Opt_mask, "mask=%s"},
+> >  	{Opt_fsmagic, "fsmagic=%s"},
+> > +	{Opt_fsuuid, "fsuuid=%s"},
+> >  	{Opt_uid, "uid=%s"},
+> >  	{Opt_fowner, "fowner=%s"},
+> >  	{Opt_appraise_type, "appraise_type=%s"},
+> > @@ -519,6 +526,19 @@ static int ima_parse_rule(char *rule, struct ima_rule_entry *entry)
+> >  			if (!result)
+> >  				entry->flags |= IMA_FSMAGIC;
+> >  			break;
+> > +		case Opt_fsuuid:
+> > +			ima_log_string(ab, "fsuuid", args[0].from);
+> > +
+> > +			if (memchr_inv(entry->fsuuid, 0x00,
+> > +			    sizeof(entry->fsuuid))) {
+> > +				result = -EINVAL;
+> > +				break;
+> > +			}
+> > +
+> > +			part_pack_uuid(args[0].from, entry->fsuuid);
+> > +			entry->flags |= IMA_FSUUID;
+> > +			result = 0;
+> > +			break;
+> >  		case Opt_uid:
+> >  			ima_log_string(ab, "uid", args[0].from);
+> >  
+> 
+> We don't have part_pack_uuid() without CONFIG_BLOCK, so should this return 
+> -ENOTSUPP if that option is not enabled?
 
-Well, this one is more difficult.
+Yes, this problem showed up in Randy's randconfig.  He suggested moving
+part_pack_uuid() outside of the "ifdef CONFIG_BLOCK" to always make it
+visible - http://marc.info/?l=linux-next&m=136139276002173&w=2.
 
-I can change the ordering so that kobject_uevent() is called before
-acpi_scan_hot_remove(), but then user space may not know that the device is
-being removed at the moment (which still may fail).  Still, maybe this is
-OK, because user space will get KOBJ_REMOVE when the device actually goes
-away anyway.
+thanks,
 
-Or perhaps we can emit KOBJ_OFFLINE before acpi_scan_hot_remove() and if
-it fails, emit KOBJ_ONLINE?
+Mimi
 
-I'm not sure.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
