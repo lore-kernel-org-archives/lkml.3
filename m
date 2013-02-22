@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab3BVC5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 21:57:12 -0500
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:32964 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754527Ab3BVC5L (ORCPT
+	id S1757422Ab3BVC7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 21:59:17 -0500
+Received: from mail-qc0-f195.google.com ([209.85.216.195]:56150 "EHLO
+	mail-qc0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754527Ab3BVC7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 21:57:11 -0500
-Message-ID: <5126DE7B.2010203@gmail.com>
-Date: Fri, 22 Feb 2013 10:56:59 +0800
+	Thu, 21 Feb 2013 21:59:13 -0500
+Message-ID: <5126DEF6.9010303@gmail.com>
+Date: Fri, 22 Feb 2013 10:59:02 +0800
 From: Ric Mason <ric.masonn@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
@@ -132,9 +132,7 @@ On 02/21/2013 11:50 PM, Seth Jennings wrote:
 > system with 4k pages, there are no caches between kmalloc-2048 and
 > kmalloc-4096.
 
-kmalloc object > PAGE_SIZE/2 or > PAGE_SIZE should also allocate from 
-slab cache, correct? Then how can alloc object w/o slab cache which 
-contains this object size objects?
+Since slub cache can merge, is it the root reason?
 
 >
 > Seth
