@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758480Ab3BVRIC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 12:08:02 -0500
-Received: from mx0.parallels.com ([199.115.104.20]:37892 "EHLO
-	mx0.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758429Ab3BVRIA (ORCPT
+	id S1758538Ab3BVRId (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 12:08:33 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:59028 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758183Ab3BVRIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 12:08:00 -0500
-Message-ID: <5127A607.3040603@parallels.com>
-Date: Fri, 22 Feb 2013 21:08:23 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 22 Feb 2013 12:08:30 -0500
+Date: Fri, 22 Feb 2013 09:08:27 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: William Dauchy <william@gandi.net>
+Cc: stable@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ian.campbell@citrix.com, david.vrabel@citrix.com,
+        "Christopher S. Aker" <caker@theshore.net>
+Subject: Re: xen-netback fixes for stable 35876b5 3e55f8b
+Message-ID: <20130222170827.GB5126@kroah.com>
+References: <20130222164728.GB27794@gandi.net>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "Tejun Heo" <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH v2] slub: correctly bootstrap boot caches
-References: <1361550000-14173-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.02.1302221034380.7600@gentwo.org> <alpine.DEB.2.02.1302221057430.7600@gentwo.org> <0000013d02d9ee83-9b41b446-ee42-4498-863e-33b3175c007c-000000@email.amazonses.com>
-In-Reply-To: <0000013d02d9ee83-9b41b446-ee42-4498-863e-33b3175c007c-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [46.39.244.6]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130222164728.GB27794@gandi.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 09:01 PM, Christoph Lameter wrote:
-> Argh. This one was the final version:
+On Fri, Feb 22, 2013 at 05:47:28PM +0100, William Dauchy wrote:
+> Hello,
 > 
-> https://patchwork.kernel.org/patch/2009521/
+> I believe the two commits 35876b5 and 3e55f8b could be included in stable tree.
+> 35876b5 is related to 4885628 already in the stable tree and fixes a
+> possible oops.
+> 3e55f8b is fixing another possible oops (see commit messages).
 > 
+> I tested them on top of a v3.4.33.
+> Could we consider adding these patches in stable tree at least for v3.4?
 
-It seems it would work. It is all the same to me.
-Which one do you prefer?
+You mean 3.4 and newer, right?
 
+Are you sure that 3.2 and 3.0 aren't also relevant here?
 
+thanks,
+
+greg k-h
