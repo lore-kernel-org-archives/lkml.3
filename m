@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab3BVCeQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Feb 2013 21:34:16 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:20981 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757563Ab3BVCeM (ORCPT
+	id S1757627Ab3BVCgd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Feb 2013 21:36:33 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:52193 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756449Ab3BVCgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Feb 2013 21:34:12 -0500
-Message-ID: <5126D90D.4080603@oracle.com>
-Date: Thu, 21 Feb 2013 21:33:49 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
+	Thu, 21 Feb 2013 21:36:32 -0500
+Message-ID: <5126D9A2.8090404@linux.vnet.ibm.com>
+Date: Fri, 22 Feb 2013 10:36:18 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: ebiederm@xmission.com
-CC: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH] kexec: prevent double free on image allocation failure
-References: <1361496375-30994-1-git-send-email-sasha.levin@oracle.com> <87vc9l5cz4.fsf@xmission.com>
-In-Reply-To: <87vc9l5cz4.fsf@xmission.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mike Galbraith <efault@gmx.de>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
+        Ram Pai <linuxram@us.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
+References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com> <1361427108.5861.41.camel@marge.simpson.net> <5125C607.8090909@linux.vnet.ibm.com> <1361434231.5861.61.camel@marge.simpson.net> <5125E40D.6050006@linux.vnet.ibm.com> <1361439789.5861.70.camel@marge.simpson.net>
+In-Reply-To: <1361439789.5861.70.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022202-3568-0000-0000-00000331AAF4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/21/2013 08:55 PM, ebiederm@xmission.com wrote:
-> Sasha Levin <sasha.levin@oracle.com> writes:
+On 02/21/2013 05:43 PM, Mike Galbraith wrote:
+> On Thu, 2013-02-21 at 17:08 +0800, Michael Wang wrote:
 > 
->> If kimage_normal_alloc() fails to initialize an allocated kimage, it will free
->> the image but would still set 'rimage', as a result kexec_load will try
->> to free it again.
->>
->> This would explode as part of the freeing process is accessing internal
->> members which point to uninitialized memory.
+>> But is this patch set really cause regression on your Q6600? It may
+>> sacrificed some thing, but I still think it will benefit far more,
+>> especially on huge systems.
 > 
-> Agreed.
+> We spread on FORK/EXEC, and will no longer will pull communicating tasks
+> back to a shared cache with the new logic preferring to leave wakee
+> remote, so while no, I haven't tested (will try to find round tuit) it
+> seems  it _must_ hurt.  Dragging data from one llc to the other on Q6600
+> hurts a LOT.  Every time a client and server are cross llc, it's a huge
+> hit.  The previous logic pulled communicating tasks together right when
+> it matters the most, intermittent load... or interactive use.
+
+I agree that this is a problem need to be solved, but don't agree that
+wake_affine() is the solution.
+
+According to my understanding, in the old world, wake_affine() will only
+be used if curr_cpu and prev_cpu share cache, which means they are in
+one package, whatever search in llc sd of curr_cpu or prev_cpu, we won't
+have the chance to spread the task out of that package.
+
+I'm going to recover the logical that only do select_idle_sibling() when
+prev_cpu and curr_cpu are affine, so now the new logical will only
+prefer leaving task in old package if both prev_cpu and curr_cpu are in
+that package, I think this could solve the problem, isn't it?
+
+Regards,
+Michael Wang
+
+
+
 > 
-> I don't think that failure path has ever actually been exercised.
+> -Mike
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-trinity is actually quite good at hitting that, which is how I discovered
-it:
-
-[  418.138251] Could not allocate control_code_buffer
-[  418.143739] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  418.147131] Dumping ftrace buffer:
-[  418.147901]    (ftrace buffer empty)
-[  418.148697] Modules linked in:
-[  418.153440] CPU 1
-[  418.153440] Pid: 18098, comm: trinity Tainted: G        W    3.8.0-next-20130220-sasha-00037-gc07b3b2-dirty #7
-[  418.153440] RIP: 0010:[<ffffffff8119b5a6>]  [<ffffffff8119b5a6>] kimage_free_page_list+0x16/0x50
-[  418.153440] RSP: 0018:ffff88009bfade78  EFLAGS: 00010292
-[  418.153440] RAX: 0000000000180004 RBX: 0000000000000002 RCX: 0000000000000000
-[  418.153440] RDX: ffff88009c1a0000 RSI: 0000000000000001 RDI: 6b6b6b6b6b6b6b6b
-[  418.153440] RBP: ffff88009bfade98 R08: 0000000000002782 R09: 0000000000000000
-[  418.153440] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88009c6cb4d0
-[  418.153440] R13: ffff88009c6cb720 R14: ffff88009c6cb4d0 R15: 00000000000000f6
-[  418.153440] FS:  00007fb7eb95b700(0000) GS:ffff8800bb800000(0000) knlGS:0000000000000000
-[  418.153440] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  418.153440] CR2: 00000000004808e0 CR3: 000000009eaaa000 CR4: 00000000000406e0
-[  418.153440] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  418.153440] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  418.153440] Process trinity (pid: 18098, threadinfo ffff88009bfac000, task ffff88009c1a0000)
-[  418.153440] Stack:
-[  418.153440]  ffffffff8546e948 0000000000000002 ffff88009c6cb4d0 0000000000000000
-[  418.153440]  ffff88009bfaded8 ffffffff8119b60f 0000000000000002 0000000000000002
-[  418.153440]  ffff88009c6cb4d0 ffff88009c6cb4d0 fffffffffffffff4 00000000000000f6
-[  418.153440] Call Trace:
-[  418.153440]  [<ffffffff8119b60f>] kimage_free+0x2f/0x100
-[  418.153440]  [<ffffffff8119c563>] sys_kexec_load+0x593/0x660
-[  418.153440]  [<ffffffff8118363d>] ? trace_hardirqs_on+0xd/0x10
-[  418.153440]  [<ffffffff83dab7d8>] tracesys+0xe1/0xe6
-[  418.153440] Code: c1 ef 0c 55 48 c1 e7 06 48 89 e5 48 01 c7 e8 82 ff ff ff 5d c3 55 48 89 e5 41 55 49 89 fd 41 54 53 48 83 ec
-08 48 8b 3f 49 39 fd <48> 8b 1f 75 08 eb 22 0f 1f 00 48 89 d3 4c 8d 67 e0 e8 54 a6 8a
-[  418.153440] RIP  [<ffffffff8119b5a6>] kimage_free_page_list+0x16/0x50
-[  418.153440]  RSP <ffff88009bfade78>
-[  418.219646] ---[ end trace 0adb1d6b71fefb29 ]---
-
-
-Thanks,
-Sasha
