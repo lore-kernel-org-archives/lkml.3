@@ -1,114 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3BVGmw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 01:42:52 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:44535 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753983Ab3BVGms (ORCPT
+	id S1754491Ab3BVGrQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 01:47:16 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:51920 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754143Ab3BVGrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 01:42:48 -0500
-Message-ID: <5127135E.7030502@linux.vnet.ibm.com>
-Date: Fri, 22 Feb 2013 14:42:38 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 22 Feb 2013 01:47:13 -0500
+Date: Fri, 22 Feb 2013 07:47:08 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [GIT PATCH] USB patches for 3.9-rc1
+Message-ID: <20130222064708.GA30458@avionic-0098.mockup.avionic-design.de>
+References: <20130221184010.GA24692@kroah.com>
+ <CA+55aFwjbGRvGHhQQ7vUYP+wChp_ZBQ54ZFxzrRjTkdffcteWQ@mail.gmail.com>
+ <20130221215839.GB28131@kroah.com>
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, alex.shi@intel.com,
-        Ram Pai <linuxram@us.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [RFC PATCH v3 0/3] sched: simplify the select_task_rq_fair()
-References: <51079178.3070002@linux.vnet.ibm.com> <20130220104958.GA9152@gmail.com> <5125A7C8.8020308@linux.vnet.ibm.com> <1361427108.5861.41.camel@marge.simpson.net> <5125C607.8090909@linux.vnet.ibm.com> <1361434231.5861.61.camel@marge.simpson.net> <5125E40D.6050006@linux.vnet.ibm.com> <1361439789.5861.70.camel@marge.simpson.net> <5126D9A2.8090404@linux.vnet.ibm.com> <1361509372.5817.60.camel@marge.simpson.net>
-In-Reply-To: <1361509372.5817.60.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022206-3568-0000-0000-00000331F2F2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
+Content-Disposition: inline
+In-Reply-To: <20130221215839.GB28131@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:RBcjdsXkNUhDEwdBpQOLvFwEqagtCakhynKm3svBqkM
+ kx8LsRtSLKYPXMat1HKv4jHRfGNi1/5djnqbr5CBJm6bm0B3tn
+ Q0nqeb/ZSNrA2SvlAsVWMXUFpTXqCk2zRw9S3i1NMmEu6nAlwS
+ X/PT+A20wBHUDKhlZOOvj+PRcqdYYwIR4Wup1aHn7cDawTD0dL
+ xwDss+Ho4hOxO9Xh13RAd/t8+csBjelmgeYBJGSJmZz6pfcKKa
+ 4uuTdFrqGuGf6/l1c8wu2mEy94X1zTD3IPOFDTNgccMzVt+LVq
+ Qk1sV59wl+zjf+b/KHMuOx/NJEhEpL8bTIDh/dmAin4hlDYpeZ
+ h7qsq7iiI5IJ2BNyz/YY8FZCIThhSL3tTyvOi6PNHL62qVLORk
+ mhajhHZuTtpHMqHJphtkPUfh7dYHjuN/SSzRN34Bxk8c5QTOzb
+ Msm2/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 01:02 PM, Mike Galbraith wrote:
-> On Fri, 2013-02-22 at 10:36 +0800, Michael Wang wrote: 
->> On 02/21/2013 05:43 PM, Mike Galbraith wrote:
->>> On Thu, 2013-02-21 at 17:08 +0800, Michael Wang wrote:
->>>
->>>> But is this patch set really cause regression on your Q6600? It may
->>>> sacrificed some thing, but I still think it will benefit far more,
->>>> especially on huge systems.
->>>
->>> We spread on FORK/EXEC, and will no longer will pull communicating tasks
->>> back to a shared cache with the new logic preferring to leave wakee
->>> remote, so while no, I haven't tested (will try to find round tuit) it
->>> seems  it _must_ hurt.  Dragging data from one llc to the other on Q6600
->>> hurts a LOT.  Every time a client and server are cross llc, it's a huge
->>> hit.  The previous logic pulled communicating tasks together right when
->>> it matters the most, intermittent load... or interactive use.
->>
->> I agree that this is a problem need to be solved, but don't agree that
->> wake_affine() is the solution.
-> 
-> It's not perfect, but it's better than no countering force at all.  It's
-> a relic of the dark ages, when affine meant L2, ie this cpu.  Now days,
-> affine has a whole new meaning, L3, so it could be done differently, but
-> _some_ kind of opposing force is required.
-> 
->> According to my understanding, in the old world, wake_affine() will only
->> be used if curr_cpu and prev_cpu share cache, which means they are in
->> one package, whatever search in llc sd of curr_cpu or prev_cpu, we won't
->> have the chance to spread the task out of that package.
-> 
-> ? affine_sd is the first domain spanning both cpus, that may be NODE.
-> True we won't ever spread in the wakeup path unless SD_WAKE_BALANCE is
-> set that is.  Would be nice to be able to do that without shredding
-> performance.
 
-That's right, we need two conditions in each select instance:
-1. prev_cpu and curr_cpu are not affine
-2. SD_WAKE_BALANCE
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> Off the top of my pointy head, I can think of a way to _maybe_ improve
-> the "affine" wakeup criteria:  Add a small (package size? and very fast)
-> FIFO queue to task struct, record waker/wakee relationship.  If
-> relationship exists in that queue (rbtree), try to wake local, if not,
-> wake remote.  The thought is to identify situations ala 1:N pgbench
-> where you really need to keep the load spread.  That need arises when
-> the sum wakees + waker won't fit in one cache.  True buddies would
-> always hit (hm, hit rate), always try to become affine where they
-> thrive.  1:N stuff starts missing when client count exceeds package
-> size, starts expanding it's horizons. 'Course you would still need to
-> NAK if imbalanced too badly, and let NUMA stuff NAK touching lard-balls
-> and whatnot.  With a little more smarts, we could have happy 1:N, and
-> buddies don't have to chat through 2m thick walls to make 1:N scale as
-> well as it can before it dies of stupidity.
+On Thu, Feb 21, 2013 at 01:58:39PM -0800, Greg KH wrote:
+> On Thu, Feb 21, 2013 at 12:25:24PM -0800, Linus Torvalds wrote:
+> > On Thu, Feb 21, 2013 at 10:40 AM, Greg KH <gregkh@linuxfoundation.org> =
+wrote:
+> > >
+> > > USB patches for 3.9-rc1
+> > >
+> > > Here's the big USB merge for 3.9-rc1
+> > >
+> > > Nothing major, lots of gadget fixes, and of course, xhci stuff.
+> >=20
+> > Ok, so there were a couple of conflicts with Thierry Reding's series
+> > to convert devm_request_and_ioremap() users into
+> > devm_ioremap_resource(), where some of the old users had been
+> > converted to use other helper functions (eg omap_get_control_dev()).
+>=20
+> That's fine.
+>=20
+> > I left the omap_get_control_dev() users alone, but I do want to note
+> > that omap_control_usb_probe() itself now uses that
+> > devm_request_and_ioremap() function. And I did *not* extend the merge
+> > to do that kind of conversion in the helper function, so I'm assuming
+> > Thierry might want to extend his work. Assuming people care enough..
+>=20
+> Yes, his plan was to do another sweep of the calls and hopefully remove
+> the old api in 3.10 or so once that is all cleaned up.
 
-So this is trying to take care the condition when curr_cpu(local) and
-prev_cpu(remote) are on different nodes, which in the old world,
-wake_affine() won't be invoked, correct?
+Given that even devm_request_and_ioremap() is rather new and people have
+been busy sending patches to use it I had expected that the initial
+series wouldn't catch all uses once it had been merged. grepping is easy
+and I even have a semantic patch to help with the conversion so I'll
+keep an eye out for any new occurrences.
 
-Hmm...I think this maybe a good additional checking before enter balance
-path, but I could not estimate the cost to record the relationship at
-this moment of time...
+Thierry
 
-Whatever, after applied the affine logical into new world, it will gain
-the ability to spread tasks cross nodes just like the old world, your
-idea may be an optimization, but the logical is out of the changing in
-this patch set, which means if it benefits, the beneficiary will be not
-only new but also old.
+--YZ5djTAD1cGYuMQK
+Content-Type: application/pgp-signature
 
-Regards,
-Michael Wang
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+iQIcBAEBAgAGBQJRJxRsAAoJEN0jrNd/PrOhjaIQAMJWjGWsqrt7q5r8HHEHftgq
+VcIe8bO7oheFSWmrdaozVCyK9kSYEoSk0HgWyGLIoEKLohz2RhtwYk454KIExSD4
+LrwIe4l4k299Jp9gPsRaKrwR8IyjbEb9s3QiipzWi17lkb3z84vsOQJKQ/h5jRk4
+XArbNu23HwO5dZD6L18UzPEYAFr/uyBefX7jFGGfYFZOmeaGfehab9oRb6YmI5iw
+MyJ0cd5sCRc2gJX9HJ466Vdk0wvgtfwCFyrjpNMgktTfBw3gW1e5LwzZ2s1aUwVO
+Lxi/LoXdZmrD9nZ3VrKxyIWAoysuaYi0NjKEKMKkZv+HSin/v2Q8l4zvGjqaf8/v
+t0DQExcyCGgLY3PUcFRAtObvB9Q3iohU3mowFSGzt0iH4uYIC/aQQbxXu1vSMfGu
+WU4yMCuSoc8abhGs+QDwH4jx1R9bl8QxOy19A4/v+cnXHu0pCJ2xmQ7kj7tl4oiF
+bImEazH1No+CX608TQ90jInss3e87zVVqhQzu31mkLrGRb0QRpHSlWCBRBmlbz/1
+jPUv+S+vy7rUySdWEUIKa7TE78I1lApq2D2I+wK1qgVcjTTMJWbpmIOZ3Up3nDyJ
+lyqGgJ+vfCpNQaSwRcclG8o34ZeN52lfi01ngLy3+pYAMhVDOfvuRECV7oqokoTh
+m4MAjJEVKlobCU/nJG97
+=lLvO
+-----END PGP SIGNATURE-----
 
+--YZ5djTAD1cGYuMQK--
