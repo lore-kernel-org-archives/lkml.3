@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab3BWHZq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 02:25:46 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:46543 "EHLO smtp.outflux.net"
+	id S1755622Ab3BWHb3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 02:31:29 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:46574 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754260Ab3BWHZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 02:25:43 -0500
-Date: Fri, 22 Feb 2013 23:25:38 -0800
+	id S1751762Ab3BWHbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 02:31:25 -0500
+Date: Fri, 22 Feb 2013 23:29:59 -0800
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, Kees Cook <keescook@chromium.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        netdev@vger.kernel.org
-Subject: [PATCH] vxlan: remove depends on CONFIG_EXPERIMENTAL
-Message-ID: <20130223072538.GA4770@www.outflux.net>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Mukesh Rathor <mukesh.rathor@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] arch/x86/xen: remove depends on CONFIG_EXPERIMENTAL
+Message-ID: <20130223072959.GA4894@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,25 +33,26 @@ while now and is almost always enabled by default. As agreed during the
 Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Stephen Hemminger <shemminger@vyatta.com>
-Cc: David S. Miller <davem@davemloft.net>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/net/Kconfig |    2 +-
+ arch/x86/xen/Kconfig |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 56c2d75..87f1d39 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -150,7 +150,7 @@ config MACVTAP
+diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+index 93ff4e1..8cada4c 100644
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@ -53,7 +53,7 @@ config XEN_DEBUG_FS
  
- config VXLAN
-        tristate "Virtual eXtensible Local Area Network (VXLAN)"
--       depends on EXPERIMENTAL && INET
-+       depends on INET
-        ---help---
- 	  This allows one to create vxlan virtual interfaces that provide
- 	  Layer 2 Networks over Layer 3 Networks. VXLAN is often used
+ config XEN_X86_PVH
+ 	bool "Support for running as a PVH guest (EXPERIMENTAL)"
+-	depends on X86_64 && XEN && EXPERIMENTAL
++	depends on X86_64 && XEN
+ 	default n
+ 	help
+ 	   This option enables support for running as a PVH guest (PV guest
 -- 
 1.7.9.5
 
