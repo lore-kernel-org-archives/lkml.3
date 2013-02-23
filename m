@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab3BWJtd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 04:49:33 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48878 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755011Ab3BWJt2 (ORCPT
+	id S1755863Ab3BWJuQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 04:50:16 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49513 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755011Ab3BWJuL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 04:49:28 -0500
-Date: Sat, 23 Feb 2013 09:49:21 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Brad Parker <bparker@reach3d.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: ARM: ixp4xx regression (bisected) since v3.5-rc1
-Message-ID: <20130223094921.GG17833@n2100.arm.linux.org.uk>
-References: <CAKb8eTkimk2jXAqPVUWcoQKFBba+=kpH96gRqx9pGGFFXGf15g@mail.gmail.com>
+	Sat, 23 Feb 2013 04:50:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKb8eTkimk2jXAqPVUWcoQKFBba+=kpH96gRqx9pGGFFXGf15g@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Originating-IP: [109.186.70.35]
+In-Reply-To: <CAJK669Yr=rkmBhUNZGSQAQzC46c3v2KVewnAaEJhKT1a0Ci8Pw@mail.gmail.com>
+References: <1360669793-6921-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1360669793-6921-2-git-send-email-sjur.brandeland@stericsson.com>
+ <CAK=Wgbb0EeiCh504jsoX+izzi+ZogfEDttz2cHRd4pVXvQunQw@mail.gmail.com>
+ <CAJK669bDu3SphxmEtA+h+v=btsN91t0S9Mn6ik-OKr=8gtducw@mail.gmail.com>
+ <CAK=Wgba5XkK3c7qh1tYHMGEe7-Qima96uYO4E+uAPcaB8K6bmQ@mail.gmail.com>
+ <CAJK669YHwR=nf2zSQR6buaA-x1JSowJfU16hkz1+N_WLL0qA+A@mail.gmail.com>
+ <CAK=Wgbam=Y5GJQxg2DSt2yR6CdcDxjZ5k_Av_0H8+6m+scN+Yw@mail.gmail.com> <CAJK669Yr=rkmBhUNZGSQAQzC46c3v2KVewnAaEJhKT1a0Ci8Pw@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sat, 23 Feb 2013 11:49:49 +0200
+Message-ID: <CAK=Wgba5JamLr4ocFfkBPf5WTh-kAFEuxhgkoj=5rc9mten9eA@mail.gmail.com>
+Subject: Re: [PATCHv2 vringh 1/3] remoteproc: Add support for vringh (Host vrings)
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Cc: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>, netdev@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Erwan Yvin <erwan.yvin@stericsson.com>,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Ido Yariv <ido@wizery.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 23, 2013 at 01:30:57AM -0500, Brad Parker wrote:
-> I then reversed this commit on 3.7.9 and the board booted
-> successfully. I'm not sure if this affects other boards of the same
-> arch or not, I only have access to a Pronghorn which also requires a
-> patch for the board files as they are not part of mainline.
+On Thu, Feb 21, 2013 at 9:36 PM, Sjur Brændeland <sjurbren@gmail.com> wrote:
+> OK, We did carefully consider using the normal vrings, but concluded it was
+> not doable. I'll try to give you some of the background that I can
+> recall from top of my head.
+> (I can dig out more if you're still not convinced :)
+>
+> The modem we're integrating with is a complex beast (multi mode modem
+> LTE, HSPA+, etc).
+> When a packet is received deep down in the radio stack, it allocates packet
+> buffers using the internal slab allocator.The packet may contain
+> anything from control, voice,
+> or IP packets. If the packet contains IP-payload it will travel to a
+> different asymmetric CPU that
+> handles the IPC towards the modem. If the packet is not a IP-packet it will be
+> processed internally and eventually freed.
+>
+> What we have done to integrate virtio is to inject the carveout into the
+> the modem internal slab-allocator.
+>
+> Using the reversed ring allows us to introduce zero-copy for virtio
+> with virtually no
+> impact on the radio-stack, only a small change on the modem slab allocator.
+> It supports dynamic size buffer allocation, and modem internal
+> messaging using data
+> allocated from the shared region. It also allows modem to manage it's
+> own memory,
+> without any dependency on host side allocators.
 
-So it's an externally maintained board which breaks because of changes
-made in mainline?  Likely, it's not been updated for the mainline changes
-correctly.  *Sigh* unmerged external platform support sucks.
+Thanks for the description, Sjur.
 
-What the commit you refer to above does is change the core code to do
-this:
+It sounds like this mostly simplifies your modem-side code, especially
+if it talks to other cores as well. My impression is that persistently
+sticking to guest vrings is also possible, but it makes things
+cumbersome.
 
-+                       if (hw->scan)
-+                               sys->bus = hw->scan(nr, sys);
-+                       else
-+                               sys->bus = pci_scan_root_bus(NULL, sys->busnr,
-+                                               hw->ops, sys, &sys->resources);
+We will most probably adopt vringh in rpmsg too when a real multicore
+use case shows up.
 
-then changes each of the IXP4xx board files:
-
-+       .ops            = &ixp4xx_ops,
--       .scan           = ixp4xx_scan_bus,
-
-and removes this:
-
--struct pci_bus * __devinit ixp4xx_scan_bus(int nr, struct pci_sys_data *sys)
--{
--       return pci_scan_root_bus(NULL, sys->busnr, &ixp4xx_ops, sys,
--                                &sys->resources);
--}
-
-What you will notice is that when .scan = NULL, and .ops = &ixp4xx_ops,
-the code is exactly identical.
-
-So, I doubt this is a regression with the mainline kernel, but is brought
-about by the non-visibility of your platforms code to mainline... I think
-your platform code needs updating appropriately.
+Ohad.
