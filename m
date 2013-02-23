@@ -1,28 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab3BWQip (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 11:38:45 -0500
-Received: from mail.comune.ragusa.it ([88.53.219.210]:56251 "EHLO
-	mail.comune.ragusa.gov.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932070Ab3BWQim (ORCPT
+	id S932242Ab3BWQkw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 11:40:52 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:47940 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932085Ab3BWQkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 11:38:42 -0500
-X-Greylist: delayed 494 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Feb 2013 11:38:42 EST
-Date: Sat, 23 Feb 2013 17:30:03 +0100 (CET)
-From: Livina Efuna <carmelo.campo@comune.ragusa.gov.it>
-Reply-To: "livinaeffuna@ymail.comm" <livinaeffuna@ymail.com>
-Message-ID: <854968251.108427.1361637003696.JavaMail.root@comune.ragusa.gov.it>
-Subject: Hello my dear.
+	Sat, 23 Feb 2013 11:40:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: Zimbra 7.2.2_GA_2852 (ZimbraWebClient - FF3.0 (Win)/7.2.2_GA_2852)
-To: undisclosed-recipients:;
+In-Reply-To: <5127AA9E.9030008@linaro.org>
+References: <51257FFF.3070109@linaro.org>
+	<51266897.9070308@linaro.org>
+	<51271673.9090003@linaro.org>
+	<5127AA9E.9030008@linaro.org>
+Date: Sat, 23 Feb 2013 22:10:48 +0530
+Message-ID: <CAHbNUh0U=vFXs7p5REPZ79DR+Pi4oAHkrQRD3sfY2e-infv4DQ@mail.gmail.com>
+Subject: Re: Origen board hang with functionfs
+From: Tushar Behera <tushar.behera@linaro.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 22 February 2013 22:57, John Stultz <john.stultz@linaro.org> wrote:
+>
+> On 02/21/2013 10:55 PM, Tushar Behera wrote:
+>>
+>>
+>> I think the issue is because of the USB phy regulators. LDO3 and LDO8
+>> power the phy regulators for OTG and HOST. These regulators are disabled
+>> in OTG probe whereas they are not handled at all in HOST driver. Keeping
+>> these LDOs always active should solve the problem for the time being.
+>>
+>> I will follow-up with a patch shortly. But I am not sure if this patch
+>> will be considered for mainline as board patches are not getting
+>> accepted these days.
+>
+>
+> So your patch worked great for me! Thanks for the analysis and the patch!
+>
+> In the above, do you mean board-patches aren't getting accepted since the
+> 3.9 merge window is already open, or that folks aren't accepting board
+> patches at all?
+>
+
+As the board file may eventually be removed within 1-2 kernel
+releases, maintainers are
+not very keen in accepting new board patches. I will check if the
+issue persists with DT
+based system and submit related patch after the merge window.
+
+> thanks
+> -john
+>
 
 
-Hello my dear.
-I am miss Livina Efuna 24years and single, hope am not offending you by expressing my feelings of having a friendship or relationship with you, can you please write to me back with my email below for more communication and exchange of pictures to know more about each other       Thanks,  Yours Livina
+
+--
+Tushar Behera
