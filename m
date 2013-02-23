@@ -1,293 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758986Ab3BWBnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 20:43:55 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:52164
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758840Ab3BWBnx (ORCPT
+	id S932163Ab3BWBok (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 20:44:40 -0500
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:37540 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757747Ab3BWBoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 20:43:53 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VS2(zz98dI1432Ib922lzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275ch17326ah8275bh8275dhz2dh2a8h668h839h944hd24he5bhf0ah1220h1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1155h)
-Date: Fri, 22 Feb 2013 19:40:32 -0600
-From: Kim Phillips <kim.phillips@freescale.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-CC: "Woodhouse, David" <david.woodhouse@intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Borislav Petkov <bp@alien8.de>,
+	Fri, 22 Feb 2013 20:44:38 -0500
+Date: Sat, 23 Feb 2013 02:44:27 +0100
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Dave Jones <davej@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Rientjes <rientjes@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>
-Subject: [PATCH v6] arm: use built-in byte swap function
-Message-ID: <20130222194032.f7b44aefa5e2723d16767a1b@freescale.com>
-In-Reply-To: <alpine.LFD.2.03.1302212219100.6419@syhkavp.arg>
-References: <20130129181046.GC25415@pd.tnic>
-	<1360363233.6066.283.camel@shinybook.infradead.org>
-	<alpine.LFD.2.02.1302081745500.6300@xanadu.home>
-	<20130208191208.2ef3d78bda71aa7b44d00d7b@freescale.com>
-	<alpine.LFD.2.02.1302082102380.6300@xanadu.home>
-	<20130219203115.114eab79e8d2099c6306d921@freescale.com>
-	<alpine.LFD.2.03.1302192151280.6419@syhkavp.arg>
-	<1361356696.13482.269.camel@i7.infradead.org>
-	<alpine.LFD.2.03.1302200835380.6419@syhkavp.arg>
-	<1361367842.13482.279.camel@i7.infradead.org>
-	<alpine.LFD.2.03.1302200905300.6419@syhkavp.arg>
-	<1361372008.13482.280.camel@i7.infradead.org>
-	<alpine.LFD.2.03.1302201040460.6419@syhkavp.arg>
-	<20130220214943.9b28a5b208da9f081387c55e@freescale.com>
-	<alpine.LFD.2.03.1302202327370.6419@syhkavp.arg>
-	<20130221005221.15279b1372501af12c1e4f32@freescale.com>
-	<alpine.LFD.2.03.1302211134160.6419@syhkavp.arg>
-	<20130221203327.6558f89277468f7ffffa6506@freescale.com>
-	<alpine.LFD.2.03.1302212219100.6419@syhkavp.arg>
-Organization: Freescale Semiconductor, Inc.
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        tianyu.lan@intel.com, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [GIT PATCH] USB patches for 3.9-rc1
+Message-ID: <20130223014427.GA1709@balto.lan>
+References: <20130222085954.GA4352@redhat.com>
+ <20130222222304.GA19546@redhat.com>
+ <20130223001055.GA1622@balto.lan>
+ <8156425.nbPzS18WCu@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8156425.nbPzS18WCu@vostro.rjw.lan>
+X-Operating-System: Linux balto 3.8.0-06471-g2ef14f4-dirty x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Feb 2013 22:40:08 -0500
-Nicolas Pitre <nico@fluxnic.net> wrote:
-
-> On Thu, 21 Feb 2013, Kim Phillips wrote:
-> 
-> > Here's the asm version I'm working on now, based on compiler
-> > output of the C version.  Haven't tested beyond defconfig builds,
-> > which pass ok.
+On Sat, Feb 23, 2013 at 01:35:26AM +0100, Rafael J. Wysocki wrote:
+> On Saturday, February 23, 2013 01:10:55 AM Fabio Baltieri wrote:
+> > Well, this did the trick in my case:
 > > 
-> > Is there anything I have to do for thumb mode?  If so, how to test?
+> > --- >8 ---
+> > diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+> > index b820528..54175a0 100644
+> > --- a/drivers/acpi/power.c
+> > +++ b/drivers/acpi/power.c
+> > @@ -795,7 +795,7 @@ int acpi_add_power_resource(acpi_handle handle)
+> >         int state, result = -ENODEV;
+> >  
+> >         acpi_bus_get_device(handle, &device);
+> > -       if (device)
+> > +       if (!device)
+> >                 return 0;
+> >  
+> >         resource = kzalloc(sizeof(*resource), GFP_KERNEL);
+> > --- >8 ---
+> > 
+> > But I guess it's working as a coincidence and something else is wrong -
+> > I'll not even try to make a patch out of it and will leave the dirty
+> > work to the ACPI guys instead.
 > 
-> You just need to pick a config that uses some ARMv7 processor, and 
-> enable CONFIG_THUMB2_KERNEL.  I don't see any problem with your patch 
-> wrt Thumb2.
+> Well, this patch effectively disables the handling of power resources on your
+> machine entirely.  The effect of which is probably that the power resources
+> can't be turned off for the USB controllers, so they don't go into D3cold.
 
-ok, I've addressed your comments and tested both pre-armv6 and armv6
-+ bswapsi2s on i.mx hardware with CONFIG_CC_OPTIMIZE_FOR_SIZE and
-CONFIG_THUMB2_KERNEL set:
+Ok, as I wrote, I suspected this was just shutting off something and not
+solving the real problem.
 
->From c22f4050174d8da71fdddba2cf67ae40c00ca5cc Mon Sep 17 00:00:00 2001
-From: Kim Phillips <kim.phillips@freescale.com>
-Date: Tue, 19 Feb 2013 17:16:11 -0600
-Subject: [PATCH] arm: use built-in byte swap function
+So, I'll try to recap all the threads here:
 
-Enable the compiler intrinsic for byte swapping on arch ARM.  This
-allows the compiler to detect and be able to optimize out byte
-swappings, and has a tiny benefit on vmlinux size (Linaro gcc 4.7.3):
+> And the bisection found a commit that restores the handling of power resources
+> for you, which is not entirely surprising, but the root cause is somewhere else
+> most likely.
 
-   text	   data	    bss	    dec	    hex	filename
-2754100	 121144	  56520	2931764	 2cbc34	vmlinux-lart #orig
-2754050	 121144	  56520	2931714	 2cbc02	vmlinux-lart #builtin-bswap
-6282699	 307852	5578076	12168627 b9adb3	vmlinux-mxs #orig
-6282241	 307832	5578076	12168149 b9abd5	vmlinux-mxs #builtin-bswap
-7200193	 364180	 361748	7926121	 78f169	vmlinux-imx_v6_v7 #orig
-7199515	 364188	 361748	7925451	 78eecb	vmlinux-imx_v6_v7 #builtin-bswap
+Indeed.
 
-Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
----
-akin to: http://comments.gmane.org/gmane.linux.kernel.cross-arch/16016
+> The new sysfs interface for power resources control may be helpful here.  You
+> need to use the Linus' current for it to work, though.
+> 
+> Can you please do
+> 
+> $ find /sys/devices/LNXSYSTM:00/ -name power_state -print -exec cat {} \;
+> $ find /sys/devices/LNXSYSTM:00/ -name real_power_state -print -exec cat {} \;
+> $ find /sys/devices/LNXSYSTM:00/ -name power_resources_D\* -print -exec ls {} \;
+> $ find /sys/devices/LNXSYSTM:00/ -name resource_in_use -print -exec cat {} \;
+> and send the output?
 
-based on linux-next-20130221.
+With the acpi_add_power_resource disabled all power_state read "D0",
+other attributes are not generated.
 
-changes from last diff:
-- addressed Nicolas' comments
-- updated commit text figures and reformatted as a patch
+With a plain kernel that's the output:
 
-changes from diff before that:
-- 1st asm version
+$ find /sys/devices/LNXSYSTM:00/ -name power_state -print -exec cat {} \;
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:09/LNXVIDEO:01/power_state
+D0
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:29/power_state
+D0
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:34/power_state
+D0
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:1f/power_state
+D0
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/LNXVIDEO:00/power_state
+D0
 
-changes from diff before that:
-- enforce -O2 for bswapsdi2.o
-- fix building out-of-source tree
+$ find /sys/devices/LNXSYSTM:00/ -name real_power_state -print -exec cat {} \;
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:29/real_power_state
+D3cold
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:34/real_power_state
+D3cold
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:1f/real_power_state
+D3cold
 
-changes from diff before that:
-- implement custom __bswap[sd]i2 in arch/arm/lib/bswapsdi2.c
+$ find /sys/devices/LNXSYSTM:00/ -name power_resources_D\* -print -exec ls {} \;
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:29/power_resources_D0
+LNXPOWER:00
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:29/power_resources_D1
+LNXPOWER:00
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:29/power_resources_D2
+LNXPOWER:00
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:34/power_resources_D0
+LNXPOWER:00
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:34/power_resources_D1
+LNXPOWER:00
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:34/power_resources_D2
+LNXPOWER:00
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:1f/power_resources_D0
+LNXPOWER:00
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:1f/power_resources_D1
+LNXPOWER:00
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:1f/power_resources_D2
+LNXPOWER:00
 
-v5: re-work based on new gcc version test data:
-  - moved outside armv6 protection
-  - check for gcc 4.6+ demoted to gcc 4.5+ with:
-    !defined(CONFIG_CC_OPTIMIZE_FOR_SIZE)
+$ find /sys/devices/LNXSYSTM:00/ -name resource_in_use -print -exec cat {} \;
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:08/PNP0C09:00/LNXPOWER:00/resource_in_use
+0
 
-v4:
-- undo v2-2's addition of ARCH_DEFINES_BUILTIN_BSWAP per Boris
-  and David - object is to find arches that define _HAVE_BSWAP
-  and clean it up in the future: patch is much less intrusive. :)
+> Can you please check if the problem is still there in the master
+> branch of the linux-pm.git tree alone?
 
-v3:
-- moved out of uapi swab.h into arch/arm/include/asm/swab.h
-- moved ARCH_DEFINES_BUILTIN_BSWAP help text into commit message
-- moved GCC_VERSION >= 40800 ifdef into GCC_VERSION >= 40600 block
+Not sure if this was for me or Dave, anyway linux-pm.git master
+currently points as:
 
-v2:
-- at91 and lpd270 builds fixed by limiting to ARMv6 and above
-  (i.e., ARM cores that have support for the 'rev' instruction).
-  Otherwise, the compiler emits calls to libgcc's __bswapsi2 on
-  these ARMv4/v5 builds (and arch ARM doesn't link with libgcc).
-  All ARM defconfigs now have the same build status as they did
-  without this patch (some are broken on linux-next).
+10baf04 Merge branch 'release' of git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux
 
-- move ARM check from generic compiler.h to arch ARM's swab.h.
-  - pretty sure it should be limited to __KERNEL__ builds
+and the problem is still there.
 
-- add new ARCH_DEFINES_BUILTIN_BSWAP (see Kconfig help).
-  - if set, generic compiler header does not set HAVE_BUILTIN_BSWAPxx
-  - not too sure about this having to be a new CONFIG_, but it's hard
-    to find a place for it given linux/compiler.h doesn't include any
-    arch-specific files.
+> May I see the bisection log, BTW?
 
-- move new selects to end of CONFIG_ARM's Kconfig select list,
-  as is done in David Woodhouse's original patchseries for ppc/x86.
+Sure, here it is:
 
- arch/arm/Kconfig                  |  1 +
- arch/arm/boot/compressed/Makefile | 15 +++++++++++----
- arch/arm/kernel/armksyms.c        |  4 ++++
- arch/arm/lib/Makefile             |  2 +-
- arch/arm/lib/bswapsdi2.S          | 36 ++++++++++++++++++++++++++++++++++++
- 5 files changed, 53 insertions(+), 5 deletions(-)
- create mode 100644 arch/arm/lib/bswapsdi2.S
+git bisect start
+# bad: [8793422fd9ac5037f5047f80473007301df3689f] Merge tag 'pm+acpi-3.9-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm
+git bisect bad 8793422fd9ac5037f5047f80473007301df3689f
+# good: [19f949f52599ba7c3f67a5897ac6be14bfcb1200] Linux 3.8
+git bisect good 19f949f52599ba7c3f67a5897ac6be14bfcb1200
+# good: [8909ff652ddfc83ecdf450f96629c25489d88f77] Merge tag 'regulator-3.9' of git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator
+git bisect good 8909ff652ddfc83ecdf450f96629c25489d88f77
+# good: [3aad3f03b2b6d2d977b985c49274cdb78a1593e5] Merge tag 'spi-for-linus' of git://git.secretlab.ca/git/linux
+git bisect good 3aad3f03b2b6d2d977b985c49274cdb78a1593e5
+# bad: [e8f71df723339b6d3861886f58c245812d1994f8] Merge branch 'acpi-cleanup'
+git bisect bad e8f71df723339b6d3861886f58c245812d1994f8
+# bad: [701190fd7419f6757c19cdc6473830c79debb3ae] clk: x86: add support for Lynxpoint LPSS clocks
+git bisect bad 701190fd7419f6757c19cdc6473830c79debb3ae
+# good: [3e5621a750e2cfb26748c34acbb67c691845494a] ACPICA: Update ACPICA initialization messages.
+git bisect good 3e5621a750e2cfb26748c34acbb67c691845494a
+# bad: [115c9ad854bd4c0f58ebcb967ec1b0a1c4e4b2d3] ACPI: remove unused acpi_op_bind and acpi_op_unbind
+git bisect bad 115c9ad854bd4c0f58ebcb967ec1b0a1c4e4b2d3
+# good: [e3863094c6f9b2f980d6e7a5cad6b4d03a4dd579] ACPI: Drop the second argument of acpi_bus_scan()
+git bisect good e3863094c6f9b2f980d6e7a5cad6b4d03a4dd579
+# good: [38a9a67a281eeebcd7cccf87f0e371f58ae625e3] ACPI / PCI: Move the _PRT setup and cleanup code to pci-acpi.c
+git bisect good 38a9a67a281eeebcd7cccf87f0e371f58ae625e3
+# good: [e0ebda2ee12c261fb2f2d7abf21489b93d9caa4e] ACPI: Remove unused struct acpi_pci_root.id member
+git bisect good e0ebda2ee12c261fb2f2d7abf21489b93d9caa4e
+# bad: [abe99210e0f624cea39f1dc375ba818b201c0d7f] ACPI / scan: Fix check of device_attach() return value.
+git bisect bad abe99210e0f624cea39f1dc375ba818b201c0d7f
+# bad: [f95988de06ea62ef5bd861f06e9ef56cea405ed1] ACPI / scan: Treat power resources in a special way
+git bisect bad f95988de06ea62ef5bd861f06e9ef56cea405ed1
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index dedf02b..e8a41d0 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -59,6 +59,7 @@ config ARM
- 	select CLONE_BACKWARDS
- 	select OLD_SIGSUSPEND3
- 	select OLD_SIGACTION
-+	select ARCH_USE_BUILTIN_BSWAP
- 	help
- 	  The ARM series is a line of low-power-consumption RISC chip designs
- 	  licensed by ARM Ltd and targeted at embedded applications and
-diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-index 5cad8a6..d9b5ee5 100644
---- a/arch/arm/boot/compressed/Makefile
-+++ b/arch/arm/boot/compressed/Makefile
-@@ -108,12 +108,12 @@ endif
- 
- targets       := vmlinux vmlinux.lds \
- 		 piggy.$(suffix_y) piggy.$(suffix_y).o \
--		 lib1funcs.o lib1funcs.S ashldi3.o ashldi3.S \
--		 font.o font.c head.o misc.o $(OBJS)
-+		 lib1funcs.o lib1funcs.S ashldi3.o ashldi3.S bswapsdi2.o \
-+		 bswapsdi2.S font.o font.c head.o misc.o $(OBJS)
- 
- # Make sure files are removed during clean
- extra-y       += piggy.gzip piggy.lzo piggy.lzma piggy.xzkern \
--		 lib1funcs.S ashldi3.S $(libfdt) $(libfdt_hdrs)
-+		 lib1funcs.S ashldi3.S bswapsdi2.S $(libfdt) $(libfdt_hdrs)
- 
- ifeq ($(CONFIG_FUNCTION_TRACER),y)
- ORIG_CFLAGS := $(KBUILD_CFLAGS)
-@@ -155,6 +155,12 @@ ashldi3 = $(obj)/ashldi3.o
- $(obj)/ashldi3.S: $(srctree)/arch/$(SRCARCH)/lib/ashldi3.S
- 	$(call cmd,shipped)
- 
-+# For __bswapsi2, __bswapdi2
-+bswapsdi2 = $(obj)/bswapsdi2.o
-+
-+$(obj)/bswapsdi2.S: $(srctree)/arch/$(SRCARCH)/lib/bswapsdi2.S
-+	$(call cmd,shipped)
-+
- # We need to prevent any GOTOFF relocs being used with references
- # to symbols in the .bss section since we cannot relocate them
- # independently from the rest at run time.  This can be achieved by
-@@ -176,7 +182,8 @@ if [ $(words $(ZRELADDR)) -gt 1 -a "$(CONFIG_AUTO_ZRELADDR)" = "" ]; then \
- fi
- 
- $(obj)/vmlinux: $(obj)/vmlinux.lds $(obj)/$(HEAD) $(obj)/piggy.$(suffix_y).o \
--		$(addprefix $(obj)/, $(OBJS)) $(lib1funcs) $(ashldi3) FORCE
-+		$(addprefix $(obj)/, $(OBJS)) $(lib1funcs) $(ashldi3) \
-+		$(bswapsdi2) FORCE
- 	@$(check_for_multiple_zreladdr)
- 	$(call if_changed,ld)
- 	@$(check_for_bad_syms)
-diff --git a/arch/arm/kernel/armksyms.c b/arch/arm/kernel/armksyms.c
-index 60d3b73..ba578f7 100644
---- a/arch/arm/kernel/armksyms.c
-+++ b/arch/arm/kernel/armksyms.c
-@@ -35,6 +35,8 @@ extern void __ucmpdi2(void);
- extern void __udivsi3(void);
- extern void __umodsi3(void);
- extern void __do_div64(void);
-+extern void __bswapsi2(void);
-+extern void __bswapdi2(void);
- 
- extern void __aeabi_idiv(void);
- extern void __aeabi_idivmod(void);
-@@ -114,6 +116,8 @@ EXPORT_SYMBOL(__ucmpdi2);
- EXPORT_SYMBOL(__udivsi3);
- EXPORT_SYMBOL(__umodsi3);
- EXPORT_SYMBOL(__do_div64);
-+EXPORT_SYMBOL(__bswapsi2);
-+EXPORT_SYMBOL(__bswapdi2);
- 
- #ifdef CONFIG_AEABI
- EXPORT_SYMBOL(__aeabi_idiv);
-diff --git a/arch/arm/lib/Makefile b/arch/arm/lib/Makefile
-index af72969..5383df7 100644
---- a/arch/arm/lib/Makefile
-+++ b/arch/arm/lib/Makefile
-@@ -13,7 +13,7 @@ lib-y		:= backtrace.o changebit.o csumipv6.o csumpartial.o   \
- 		   ashldi3.o ashrdi3.o lshrdi3.o muldi3.o             \
- 		   ucmpdi2.o lib1funcs.o div64.o                      \
- 		   io-readsb.o io-writesb.o io-readsl.o io-writesl.o  \
--		   call_with_stack.o
-+		   call_with_stack.o bswapsdi2.o
- 
- mmu-y	:= clear_user.o copy_page.o getuser.o putuser.o
- 
-diff --git a/arch/arm/lib/bswapsdi2.S b/arch/arm/lib/bswapsdi2.S
-new file mode 100644
-index 0000000..2ba43a0
---- /dev/null
-+++ b/arch/arm/lib/bswapsdi2.S
-@@ -0,0 +1,36 @@
-+#include <linux/linkage.h>
-+
-+#if __LINUX_ARM_ARCH__ >= 6
-+ENTRY(__bswapsi2)
-+	rev	r0, r0
-+	bx	lr
-+ENDPROC(__bswapsi2)
-+
-+ENTRY(__bswapdi2)
-+	rev	r3, r0
-+	rev	r0, r1
-+	mov	r1, r3
-+	bx	lr
-+ENDPROC(__bswapdi2)
-+#else
-+ENTRY(__bswapsi2)
-+	eor     r3, r0, r0, ror #16
-+	mov     r3, r3, lsr #8
-+	bic     r3, r3, #0xff00
-+	eor     r0, r3, r0, ror #8
-+	mov     pc, lr
-+ENDPROC(__bswapsi2)
-+
-+ENTRY(__bswapdi2)
-+	mov     ip, r1
-+	eor     r3, ip, ip, ror #16
-+	eor     r1, r0, r0, ror #16
-+	mov     r1, r1, lsr #8
-+	mov     r3, r3, lsr #8
-+	bic     r3, r3, #0xff00
-+	bic     r1, r1, #0xff00
-+	eor     r1, r1, r0, ror #8
-+	eor     r0, r3, ip, ror #8
-+	mov     pc, lr
-+ENDPROC(__bswapdi2)
-+#endif
+> Can you please send a dmesg boot log and the output of acpidump from the
+> affected machine?
+
+dmesg:
+http://paste.ubuntu.com/5556864/
+
+acpidump:
+http://paste.ubuntu.com/5556867/
+
+Thanks,
+Fabio
+
 -- 
-1.8.1.4
-
-
+Fabio Baltieri
