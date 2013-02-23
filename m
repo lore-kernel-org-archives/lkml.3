@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757652Ab3BWTUU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 14:20:20 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:54220 "EHLO mail.skyhub.de"
+	id S1757853Ab3BWTXb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 14:23:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31087 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756980Ab3BWTUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 14:20:14 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Zhang Rui <rui.zhang@intel.com>, Durgadoss R <durgadoss.r@intel.com>,
-        Borislav Petkov <bp@suse.de>, Peter Feuerer <peter@piie.net>,
-        Andreas Mohr <andi@lisas.de>, Alexander Lam <azl@andrew.cmu.edu>
-Subject: [PATCH] acerhdf: Fix fan activation with new thermal governor
-Date: Sat, 23 Feb 2013 20:20:10 +0100
-Message-Id: <1361647210-12983-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.1.3.535.ga923c31
-In-Reply-To: <20130222111521.GA25473@pd.tnic>
-References: <20130222111521.GA25473@pd.tnic>
+	id S1756959Ab3BWTX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 14:23:29 -0500
+Date: Sat, 23 Feb 2013 20:21:58 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Ben Chan <benchan@chromium.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 5/5] coredump: ignore non-fatal signals when core
+	dumping to a pipe
+Message-ID: <20130223192158.GA9405@redhat.com>
+References: <1361008406-2307-1-git-send-email-msb@chromium.org> <1361008406-2307-5-git-send-email-msb@chromium.org> <20130216171010.GE4910@redhat.com> <20130216194643.GA31569@redhat.com> <CACBanvpOVxdiM3FWMiZMM5sAkxXbguT1VhFMkyQv-ntVPE8Y=Q@mail.gmail.com> <20130219142721.GA5709@redhat.com> <CACBanvq+Sdtv-tNXTmJyb3EvXGshC=D4NjR8aVOCjRXcTKp+Mw@mail.gmail.com> <20130219194517.GA9986@redhat.com> <CACBanvo6NqbG7mzD76rM-5kEZ3bOXKfGSbRghvuejSD5S_jnBQ@mail.gmail.com> <CACBanvqF8GjPM0yfEy=7yHCQk5vct6G_T9MD4KJsDiCfwkCQnQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACBanvqF8GjPM0yfEy=7yHCQk5vct6G_T9MD4KJsDiCfwkCQnQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+Mandeep, sorry for delay.
 
-The new step_wise thermal governor wasn't able to handle the one-trip
-point design of acerhdf where we want to turn off the fan if we go under
-the 'fanoff' temperature and to turn it on only after exceeding the
-'fanon' temperature.
+On 02/20, Mandeep Singh Baines wrote:
+>
+> On Tue, Feb 19, 2013 at 12:20 PM, Mandeep Singh Baines <msb@chromium.org> wrote:
+> > Ah. Good point. How about this then:
+> >
+> > /* can't use wait_event_freezable since we suppress the fake signal on
+> > SIGNAL_GROUP_COREDUMP */
+> > freezer_do_not_count();
+> > wait_event_interruptible(pipe->wait, pipe->readers == 1);
+> > freezer_count();
 
-Do that by looking at the current fan state and return the temperature
-accordingly.
+Yes, I thought about freezer_do_not_count() + wait_event_interruptible()
+too, but
 
-Suggested-by: Zhang Rui <rui.zhang@intel.com>
-Cc: Peter Feuerer <peter@piie.net>
-Cc: Andreas Mohr <andi@lisas.de>
-Cc: Alexander Lam <azl@andrew.cmu.edu>
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
+> No that won't work either. You can't block the fake signal.
 
-Guys,
+Yes.
 
-this fixes acerhdf to the old behavior. Testing here looks ok - I'd
-appreciate if you could verify this too.
+And wait_event_freezable() can't work because it is buggy, it doesn't
+clear TIF_SIGPENDING so it becomes a busy-wait loop after freezing.
+34b087e48 broke the logic. Perhaps my fault, I do not remember when
+I sent the patch which was applied as 24b7ead3 (but the code was wrong
+anyway). And its usage is wrong too, unless I missed something. But
+lets discuss this later.
 
-Thanks.
+As for coredump, we can fix wait_event_freezable() or reintroduce
+recalc_sigpending() in __refrigerator() as you suggested.
 
- drivers/platform/x86/acerhdf.c | 24 ++++++++++++++++++++++--
- 1 file changed, 22 insertions(+), 2 deletions(-)
+But this doesn't solve other problems, we need more try_to_freeze's
+before wait_for_dump_helper() is called.
 
-diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
-index f94467c05225..b44033756909 100644
---- a/drivers/platform/x86/acerhdf.c
-+++ b/drivers/platform/x86/acerhdf.c
-@@ -405,13 +405,33 @@ static int acerhdf_get_trip_type(struct thermal_zone_device *thermal, int trip,
- 	return 0;
- }
- 
-+/*
-+ * This is more or less a quirky wagging the dog so that a one-trip
-+ * point can still work with the step_wise governor. Basically, we cheat
-+ * with the trip temperature depending on whether the current state of
-+ * the fan (on vs off).
-+ */
- static int acerhdf_get_trip_temp(struct thermal_zone_device *thermal, int trip,
- 				 unsigned long *temp)
- {
--	if (trip == 0)
-+	int err = 0, state;
-+
-+	err = acerhdf_get_fanstate(&state);
-+	if (err) {
-+		/*
-+		 * We want to be conservative here: in the unlikely event that
-+		 * reading the fanstate failed, we want to leave the fan on.
-+		 */
- 		*temp = fanon;
-+		return err;
-+	}
- 
--	return 0;
-+	if (state == ACERHDF_FAN_AUTO)
-+		*temp = fanoff;
-+	else
-+		*temp = fanon;
-+
-+	return err;
- }
- 
- static int acerhdf_get_crit_temp(struct thermal_zone_device *thermal,
--- 
-1.8.1.3.535.ga923c31
+> On suspend, you might truncate a core-dump but at least you can
+> reliably suspend.
+
+Btw, yes. Perhaps coredump should simply fail if it races with
+freezer, in this case the necessary changes are simple.
+
+But so far I'll try to make the fixes which will allow to freeze
+the dumping task correctly, I hope I'll send the patches tomorrow.
+
+It is still not clear to me whether we should change freeze_task(),
+but most probably yes, this would be simpler.
+
+Oleg.
 
