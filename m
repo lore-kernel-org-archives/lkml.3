@@ -1,136 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759257Ab3BWP7r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 10:59:47 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:8869 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614Ab3BWP7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 10:59:45 -0500
-Message-ID: <5128E76F.1000607@bfs.de>
-Date: Sat, 23 Feb 2013 16:59:43 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1759016Ab3BWQIF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 11:08:05 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:44369
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751649Ab3BWQID (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 11:08:03 -0500
+X-IronPort-AV: E=Sophos;i="4.84,721,1355094000"; 
+   d="scan'208";a="3228574"
+Date: Sat, 23 Feb 2013 17:07:58 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Dan Carpenter <dan.carpenter@oracle.com>
+cc: Michal Marek <mmarek@suse.cz>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles.Muller@lip6.fr, nicolas.palix@imag.fr, cocci@systeme.lip6.fr,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] scripts/coccinelle: find constant additions that could
+ be bit ors
+In-Reply-To: <20130223150521.GK9138@mwanda>
+Message-ID: <alpine.DEB.2.02.1302231706060.2085@localhost6.localdomain6>
+References: <1359821995-27910-1-git-send-email-Julia.Lawall@lip6.fr> <20130222104431.GF12402@pobox.suse.cz> <20130223150521.GK9138@mwanda>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Kumar Amit Mehta <gmate.amit@gmail.com>, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging: comedi: drivers: usbduxfast.c: fix for DMA
- buffers on stack
-References: <1361556450-32572-1-git-send-email-gmate.amit@gmail.com> <5127BFDB.4010608@bfs.de> <20130222190644.GA16011@kroah.com>
-In-Reply-To: <20130222190644.GA16011@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 23 Feb 2013, Dan Carpenter wrote:
 
-
-Am 22.02.2013 20:06, schrieb Greg KH:
-> On Fri, Feb 22, 2013 at 07:58:35PM +0100, walter harms wrote:
->>
->>
->> Am 22.02.2013 19:07, schrieb Kumar Amit Mehta:
->>> fix for instances of DMA buffer on stack(being passed to usb_control_msg) for
->>> the USB-DUXfast Board driver.
->>>
->>> Signed-off-by: Kumar Amit Mehta <gmate.amit@gmail.com>
->>> ---
->>>  drivers/staging/comedi/drivers/usbduxfast.c |   30 ++++++++++++++++-----------
->>>  1 file changed, 18 insertions(+), 12 deletions(-)
->>>
->>> diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
->>> index 4bf5dd0..1ba0e3d 100644
->>> --- a/drivers/staging/comedi/drivers/usbduxfast.c
->>> +++ b/drivers/staging/comedi/drivers/usbduxfast.c
->>> @@ -436,10 +436,14 @@ static void usbduxfastsub_ai_Irq(struct urb *urb)
->>>  static int usbduxfastsub_start(struct usbduxfastsub_s *udfs)
->>>  {
->>>  	int ret;
->>> -	unsigned char local_transfer_buffer[16];
->>> +	unsigned char *local_transfer_buffer;
->>> +
->>> +	local_transfer_buffer = kmalloc(1, GFP_KERNEL);
->>> +	if (!local_transfer_buffer)
->>> +		return -ENOMEM;
->>>  
->>>  	/* 7f92 to zero */
->>> -	local_transfer_buffer[0] = 0;
->>> +	*local_transfer_buffer = 0;
->>>  	/* bRequest, "Firmware" */
->>>  	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
->>>  			      USBDUXFASTSUB_FIRMWARE,
->>> @@ -450,22 +454,25 @@ static int usbduxfastsub_start(struct usbduxfastsub_s *udfs)
->>>  			      local_transfer_buffer,
->>>  			      1,      /* Length */
->>>  			      EZTIMEOUT);    /* Timeout */
->>> -	if (ret < 0) {
->>> +	if (ret < 0)
->>>  		dev_err(&udfs->interface->dev,
->>>  			"control msg failed (start)\n");
->>> -		return ret;
->>> -	}
->>>  
->>> -	return 0;
->>> +	kfree(local_transfer_buffer);
->>> +	return ret;
->>>  }
->>>  
->>>  static int usbduxfastsub_stop(struct usbduxfastsub_s *udfs)
->>>  {
->>>  	int ret;
->>> -	unsigned char local_transfer_buffer[16];
->>> +	unsigned char *local_transfer_buffer;
->>> +
->>> +	local_transfer_buffer = kmalloc(1, GFP_KERNEL);
->>> +	if (!local_transfer_buffer)
->>> +		return -ENOMEM;
->>>  
->>>  	/* 7f92 to one */
->>> -	local_transfer_buffer[0] = 1;
->>> +	*local_transfer_buffer = 1;
->>>  	/* bRequest, "Firmware" */
->>>  	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
->>>  			      USBDUXFASTSUB_FIRMWARE,
->>> @@ -474,13 +481,12 @@ static int usbduxfastsub_stop(struct usbduxfastsub_s *udfs)
->>>  			      0x0000,	/* Index */
->>>  			      local_transfer_buffer, 1,	/* Length */
->>>  			      EZTIMEOUT);	/* Timeout */
->>> -	if (ret < 0) {
->>> +	if (ret < 0)
->>>  		dev_err(&udfs->interface->dev,
->>>  			"control msg failed (stop)\n");
->>> -		return ret;
->>> -	}
->>>  
->>> -	return 0;
->>> +	kfree(local_transfer_buffer);
->>> +	return ret;
->>>  }
->>>  
->>>  static int usbduxfastsub_upload(struct usbduxfastsub_s *udfs,
->>
->> mmh, it seems a bit overheat to alloc 1 byte.
->> Could one of the driver maintainers please comment
->> is that realy need ?
+> On Fri, Feb 22, 2013 at 11:44:31AM +0100, Michal Marek wrote:
+> > On Sat, Feb 02, 2013 at 05:19:55PM +0100, Julia Lawall wrote:
+> > > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> > > 
+> > > Semantic patch (http://coccinelle.lip6.fr/) to check for constants that are
+> > > added but are used elsewhere as bitmasks.
+> > > 
+> > > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> > 
+> > Applied to kbuild.git#misc.
+> > 
 > 
-> Yes it is needed.
-> 
->> or is it possible to pass one byte
->> in a register ? (aka char/int) without allocating ?
-> 
-> Nope, the USB host controllers must be able to DMA to this memory
-> location, so you have to allocate it dynamically, sorry.
-> 
-> thanks,
+> I'm not sure we want to do this.  The one patch which was sent with
+> this script wasn't applied.
 
-thx for clarification.
+I think that the view on it was that if it isn't broken, don't fix it.  
+But if the rules that are being added to the kernel are primarily being 
+used for new code, then it could be reasonable for developers to consider 
+whether they would really rather use | rather than the confusing +.
 
-@Kumar Amit Mehta:
-Would you mind to add this as comment ? Allocating one byte does not
-look clever so maybe will come up with the idea of changing that.
-
-re,
- wh
-
+julia
