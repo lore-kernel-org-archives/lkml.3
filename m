@@ -1,72 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab3BWH7I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 02:59:08 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:42017 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753699Ab3BWH6p (ORCPT
+	id S1754626Ab3BWIcS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 03:32:18 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:46244 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753782Ab3BWIcQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 02:58:45 -0500
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Evgeniy Polyakov <zbr@ioremap.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ville Syrjala <syrjala@sci.fi>, Daniel Mack <zonque@gmail.com>
-Subject: [PATCH 3/5] W1: w1-gpio - guard DT IDs with CONFIG_OF
-Date: Fri, 22 Feb 2013 23:58:38 -0800
-Message-Id: <1361606320-4479-3-git-send-email-dmitry.torokhov@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1361606320-4479-1-git-send-email-dmitry.torokhov@gmail.com>
-References: <1361606320-4479-1-git-send-email-dmitry.torokhov@gmail.com>
+	Sat, 23 Feb 2013 03:32:16 -0500
+From: Tony Lu <zlu@tilera.com>
+To: Ben Myers <bpm@sgi.com>
+CC: "xfs@oss.sgi.com" <xfs@oss.sgi.com>, Alex Elder <elder@kernel.org>,
+        Dave Chinner <dchinner@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: RE: [PATCH] xfs: Fix possible truncation of log data in
+ xlog_bread_noalign()
+Thread-Topic: [PATCH] xfs: Fix possible truncation of log data in
+ xlog_bread_noalign()
+Thread-Index: Ac4Q1GkSs67IJq+zR5aVm2NJSgVsAwAhlQoAAA89lsA=
+Date: Sat, 23 Feb 2013 08:32:09 +0000
+Message-ID: <BAB94DBB0E89D8409949BC28AC95914C47C48715@USMAExch1.tad.internal.tilera.com>
+References: <BAB94DBB0E89D8409949BC28AC95914C47C485E5@USMAExch1.tad.internal.tilera.com>
+ <20130222191426.GW22182@sgi.com>
+In-Reply-To: <20130222191426.GW22182@sgi.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following warning:
+>-----Original Message-----
+>From: Ben Myers [mailto:bpm@sgi.com]
+>
+>Hi Tony,
+>
+>On Fri, Feb 22, 2013 at 08:12:52AM +0000, Tony Lu wrote:
+>> I encountered the following panic when using xfs partitions as rootfs, which
+>> is due to the truncated log data read by xlog_bread_noalign(). We should
+>> extend the buffer by one extra log sector to ensure there's enough space to
+>> accommodate requested log data, which we indeed did in xlog_get_bp(), but we
+>> forgot to do in xlog_bread_noalign().
+>>
+>> XFS mounting filesystem sda2
+>> Starting XFS recovery on filesystem: sda2 (logdev: internal)
+>> XFS: xlog_recover_process_data: bad clientid
+>> XFS: log mount/recovery failed: error 5
+>> XFS: log mount failedVFS: Cannot open root device "sda2" or unknown-block(8,)
+>> Please append a correct "root=" boot option; here are the available partitio:
+>> 0800       156290904 sda  driver: sd
+>>   0801        31463271 sda1 00000000-0000-0000-0000-000000000000
+>>   0802        31463302 sda2 00000000-0000-0000-0000-000000000000
+>>   0803        31463302 sda3 00000000-0000-0000-0000-000000000000
+>>   0804               1 sda4 00000000-0000-0000-0000-000000000000
+>>   0805        10490413 sda5 00000000-0000-0000-0000-000000000000
+>>   0806        51407968 sda6 00000000-0000-0000-0000-000000000000
+>> Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(8,)
+>>
+>> Starting stack dump of tid 1, pid 1 (swapper) on cpu 35 at cycle 42273138234
+>>   frame 0: 0xfffffff70016e5a0 dump_stack+0x0/0x20 (sp 0xfffffe03fbedfe88)
+>>   frame 1: 0xfffffff7004af470 panic+0x150/0x3a0 (sp 0xfffffe03fbedfe88)
+>>   frame 2: 0xfffffff700881e88 mount_block_root+0x2c0/0x4c8 (sp
+>0xfffffe03fbe)
+>>   frame 3: 0xfffffff700882390 prepare_namespace+0x250/0x358 (sp
+>0xfffffe03fb)
+>>   frame 4: 0xfffffff700880778 kernel_init+0x4c8/0x520 (sp
+>0xfffffe03fbedffb0)
+>>   frame 5: 0xfffffff70011ecb8 start_kernel_thread+0x18/0x20 (sp
+>0xfffffe03fb)
+>> Stack dump complete
+>>
+>> Signed-off-by: Zhigang Lu <zlu@tilera.com>
+>> Reviewed-by: Chris Metcalf <cmetcalf@tilera.com>
+>
+>Looks fine to me.  I'll pull it in after some testing.
+>
+>Do you happen to have a metadump of this filesystem?
+>
+>Reviewed-by: Ben Myers <bpm@sgi.com>
 
-  CC      drivers/w1/masters/w1-gpio.o
-drivers/w1/masters/w1-gpio.c:50:28: warning: ‘w1_gpio_dt_ids’ defined but not used [-Wunused-variable]
+Sorry I did not keep the metadump of it. But I kept some debugging info when I debugged and fixed it a year ago.
 
-Also provide stub for w1_gpio_probe_dt() if device tree support is
-disabled.
+Starting XFS recovery on filesystem: ram0 (logdev: internal)
+xlog_bread_noalign--before round down/up: blk_no=0xf4d,nbblks=0x1
+xlog_bread_noalign--after round down/up: blk_no=0xf4c,nbblks=0x4
+xlog_bread_noalign--before round down/up: blk_no=0xf4d,nbblks=0x1
+xlog_bread_noalign--after round down/up: blk_no=0xf4c,nbblks=0x4
+xlog_bread_noalign--before round down/up: blk_no=0xf4e,nbblks=0x3f
+xlog_bread_noalign--after round down/up: blk_no=0xf4c,nbblks=0x40
+XFS: xlog_recover_process_data: bad clientid
+Assertion failed: 0, file: /home/scratch/zlu/zlu-main/sys/linux/source/fs/xfs/xfs_log_recover.c, line: 2852
+BUG: failure at /home/scratch/zlu/zlu-main/sys/linux/source/fs/xfs/support/debug.c:100/assfail()!
+Kernel panic - not syncing: BUG!
 
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/w1/masters/w1-gpio.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+Starting stack dump of tid 843, pid 843 (mount) on cpu 1 at cycle 345934778384
+  frame 0: 0xfffffff7001380a0 dump_stack+0x0/0x20 (sp 0xfffffe43e55df7b0)
+  frame 1: 0xfffffff7003b5470 panic+0x150/0x3a0 (sp 0xfffffe43e55df7b0)
+  frame 2: 0xfffffff700824cf0 assfail+0x80/0x80 (sp 0xfffffe43e55df858)
+  frame 3: 0xfffffff70037c7c0 xlog_recover_process_data+0x598/0x698 (sp 0xfffffe43e55df868)
+  frame 4: 0xfffffff7002c55e8 xlog_do_recovery_pass+0x810/0x908 (sp 0xfffffe43e55df8e8)
+  frame 5: 0xfffffff70068f0d8 xlog_do_log_recovery+0xc8/0x1d8 (sp 0xfffffe43e55dfa48)
+  frame 6: 0xfffffff70054cf60 xlog_do_recover+0x48/0x380 (sp 0xfffffe43e55dfa88)
+  frame 7: 0xfffffff7006fdbf0 xlog_recover+0x138/0x170 (sp 0xfffffe43e55dfac0)
+  frame 8: 0xfffffff7005b2d70 xfs_log_mount+0x150/0x2e8 (sp 0xfffffe43e55dfb00)
+  frame 9: 0xfffffff700269830 xfs_mountfs+0x510/0xb20 (sp 0xfffffe43e55dfb38)
+  frame 10: 0xfffffff700486930 xfs_fs_fill_super+0x2e0/0x3f0 (sp 0xfffffe43e55dfba8)
+  frame 11: 0xfffffff7000950c8 mount_bdev+0x168/0x2d0 (sp 0xfffffe43e55dfbe0)
+  frame 12: 0xfffffff700071e08 vfs_kern_mount+0x110/0x408 (sp 0xfffffe43e55dfc50)
+  frame 13: 0xfffffff7000badf8 do_kern_mount+0x68/0x1e0 (sp 0xfffffe43e55dfc98)
+  frame 14: 0xfffffff700046470 do_mount+0x200/0x878 (sp 0xfffffe43e55dfcd8)
+  frame 15: 0xfffffff7000c8050 sys_mount+0xd0/0x1a0 (sp 0xfffffe43e55dfd60)
+  frame 16: 0xfffffff7001a2c30 handle_syscall+0x280/0x340 (sp 0xfffffe43e55dfdc0)
+  <syscall while in user mode>
+  frame 17: 0xaaaad46688 libc-2.12.so[aaaac20000+1d0000] (sp 0x1ffffddf4b0)
+  frame 18: 0x15555555560 mount[15555550000+20000] (sp 0x1ffffddf4b0)
+  frame 19: 0x15555557dc0 mount[15555550000+20000] (sp 0x1ffffddf500)
+  frame 20: 0x15555558a80 mount[15555550000+20000] (sp 0x1ffffddf858)
+  frame 21: 0x15555559a60 mount[15555550000+20000] (sp 0x1ffffddf930)
+  frame 22: 0xaaaac3e5e8 libc-2.12.so[aaaac20000+1d0000] (sp 0x1ffffddfaf8)
+Stack dump complete
+Client requested halt.
 
-diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
-index c45b9ae..aa97a96 100644
---- a/drivers/w1/masters/w1-gpio.c
-+++ b/drivers/w1/masters/w1-gpio.c
-@@ -47,6 +47,8 @@ static u8 w1_gpio_read_bit(void *data)
- 	return gpio_get_value(pdata->pin) ? 1 : 0;
- }
- 
-+#ifdef CONFIG_OF
-+
- static struct of_device_id w1_gpio_dt_ids[] = {
- 	{ .compatible = "w1-gpio" },
- 	{}
-@@ -72,6 +74,15 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#else
-+
-+static inline int w1_gpio_probe_dt(struct platform_device *pdev)
-+{
-+	return -ENOSYS;
-+}
-+
-+#endif
-+
- static int w1_gpio_probe(struct platform_device *pdev)
- {
- 	struct w1_bus_master *master;
--- 
-1.7.11.7
-
+Thanks
+-Tony
