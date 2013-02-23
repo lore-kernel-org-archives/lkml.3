@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab3BWKBF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 05:01:05 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:54838 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab3BWKAx (ORCPT
+	id S1757399Ab3BWLOG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 06:14:06 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:55500 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757040Ab3BWLOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 05:00:53 -0500
-Date: Fri, 22 Feb 2013 15:12:15 -0800
-From: Simon Horman <horms@verge.net.au>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kexec: avoid freeing NULL pointer in function
- kimage_crash_alloc
-Message-ID: <20130222231214.GH4737@verge.net.au>
-References: <5126F92A.2030007@cn.fujitsu.com>
+	Sat, 23 Feb 2013 06:14:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5126F92A.2030007@cn.fujitsu.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [76.122.121.143]
+In-Reply-To: <20130223094921.GG17833@n2100.arm.linux.org.uk>
+References: <CAKb8eTkimk2jXAqPVUWcoQKFBba+=kpH96gRqx9pGGFFXGf15g@mail.gmail.com>
+	<20130223094921.GG17833@n2100.arm.linux.org.uk>
+Date: Sat, 23 Feb 2013 06:13:59 -0500
+Message-ID: <CAKb8eT=fL03WgUOOSs+ynvqL8wyVCJk2+Rs8416Om4w_H4UQ1Q@mail.gmail.com>
+Subject: Re: ARM: ixp4xx regression (bisected) since v3.5-rc1
+From: Brad Parker <bparker@reach3d.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 12:50:50PM +0800, Zhang Yanfei wrote:
-> Though there is no error if we free a NULL pointer, I think we could
-> avoid this behaviour. Change the code a little in kimage_crash_alloc()
-> could avoid this kind of unnecessary free.
-> 
-> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+On Sat, Feb 23, 2013 at 4:49 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sat, Feb 23, 2013 at 01:30:57AM -0500, Brad Parker wrote:
+>> I then reversed this commit on 3.7.9 and the board booted
+>> successfully. I'm not sure if this affects other boards of the same
+>> arch or not, I only have access to a Pronghorn which also requires a
+>> patch for the board files as they are not part of mainline.
+>
+> So it's an externally maintained board which breaks because of changes
+> made in mainline?  Likely, it's not been updated for the mainline changes
+> correctly.  *Sigh* unmerged external platform support sucks.
+>
+> What the commit you refer to above does is change the core code to do
+> this:
+>
+> +                       if (hw->scan)
+> +                               sys->bus = hw->scan(nr, sys);
+> +                       else
+> +                               sys->bus = pci_scan_root_bus(NULL, sys->busnr,
+> +                                               hw->ops, sys, &sys->resources);
+>
+> then changes each of the IXP4xx board files:
+>
+> +       .ops            = &ixp4xx_ops,
+> -       .scan           = ixp4xx_scan_bus,
+>
+> and removes this:
+>
+> -struct pci_bus * __devinit ixp4xx_scan_bus(int nr, struct pci_sys_data *sys)
+> -{
+> -       return pci_scan_root_bus(NULL, sys->busnr, &ixp4xx_ops, sys,
+> -                                &sys->resources);
+> -}
+>
+> What you will notice is that when .scan = NULL, and .ops = &ixp4xx_ops,
+> the code is exactly identical.
+>
+> So, I doubt this is a regression with the mainline kernel, but is brought
+> about by the non-visibility of your platforms code to mainline... I think
+> your platform code needs updating appropriately.
 
-
-Reviewed-by: Simon Horman <horms@verge.net.au>
-
-> ---
->  kernel/kexec.c |   15 +++++++--------
->  1 files changed, 7 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 5e4bd78..4e96fa7 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -310,7 +310,7 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
->  		mend = mstart + image->segment[i].memsz - 1;
->  		/* Ensure we are within the crash kernel limits */
->  		if ((mstart < crashk_res.start) || (mend > crashk_res.end))
-> -			goto out;
-> +			goto out_free;
->  	}
->  
->  	/*
-> @@ -323,16 +323,15 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
->  					   get_order(KEXEC_CONTROL_PAGE_SIZE));
->  	if (!image->control_code_page) {
->  		printk(KERN_ERR "Could not allocate control_code_buffer\n");
-> -		goto out;
-> +		goto out_free;
->  	}
->  
-> -	result = 0;
-> -out:
-> -	if (result == 0)
-> -		*rimage = image;
-> -	else
-> -		kfree(image);
-> +	*rimage = image;
-> +	return 0;
->  
-> +out_free:
-> +	kfree(image);
-> +out:
->  	return result;
->  }
->  
-> -- 
-> 1.7.1
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
-> 
+You're right. I just forgot to add .ops, now it works without
+reverting your commit. I think the patch could be merged in if someone
+were willing to clean it up, I just don't really have the time. ADI
+originally wrote the patch themselves for 2.6.26 and they claim that
+it was included in 2.6.27 upstream, if that's true I assume it has
+been removed at some point in the past. OpenWRT also maintains a
+similar patch to get the board running on 3.3. I think the only thing
+necessary to get it to 3.7/3.8 is remove .swizzle/.scan and add .ops.
