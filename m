@@ -1,58 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab3BWHFc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 02:05:32 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:32811 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab3BWHFb (ORCPT
+	id S1755625Ab3BWHGV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 02:06:21 -0500
+Received: from usmamail.tilera.com ([12.216.194.151]:46661 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353Ab3BWHGS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 02:05:31 -0500
+	Sat, 23 Feb 2013 02:06:18 -0500
+From: Tony Lu <zlu@tilera.com>
+To: Dave Chinner <david@fromorbit.com>, Ben Myers <bpm@sgi.com>
+CC: "xfs@oss.sgi.com" <xfs@oss.sgi.com>, Alex Elder <elder@kernel.org>,
+        Dave Chinner <dchinner@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: RE: [PATCH] xfs: Fix possible truncation of log data in
+ xlog_bread_noalign()
+Thread-Topic: [PATCH] xfs: Fix possible truncation of log data in
+ xlog_bread_noalign()
+Thread-Index: Ac4Q1GkSs67IJq+zR5aVm2NJSgVsAwAr1ggAAAINLLA=
+Date: Sat, 23 Feb 2013 07:06:10 +0000
+Message-ID: <BAB94DBB0E89D8409949BC28AC95914C47C48702@USMAExch1.tad.internal.tilera.com>
+References: <BAB94DBB0E89D8409949BC28AC95914C47C485E5@USMAExch1.tad.internal.tilera.com>
+ <20130223000802.GB26081@dastard>
+In-Reply-To: <20130223000802.GB26081@dastard>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1361475708-25991-9-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1361475708-25991-9-git-send-email-n-horiguchi@ah.jp.nec.com>
-Date: Sat, 23 Feb 2013 15:05:30 +0800
-Message-ID: <CAJd=RBDvqFYUgy+d=DJTBZoaafXoDP+QodAh2CzV2XpDMjaw7Q@mail.gmail.com>
-Subject: Re: [PATCH 8/9] memory-hotplug: enable memory hotplug to handle hugepage
-From: Hillf Danton <dhillf@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Hillf Danton <dhillf@gmail.com>, Michal Hocko <mhocko@suse.cz>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Naoya
-
-[add Michal in cc list]
-
-On Fri, Feb 22, 2013 at 3:41 AM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
+>From: Dave Chinner [mailto:david@fromorbit.com]
+>On Fri, Feb 22, 2013 at 08:12:52AM +0000, Tony Lu wrote:
+>> I encountered the following panic when using xfs partitions as rootfs, which
+>> is due to the truncated log data read by xlog_bread_noalign(). We should
+>> extend the buffer by one extra log sector to ensure there's enough space to
+>> accommodate requested log data, which we indeed did in xlog_get_bp(), but we
+>> forgot to do in xlog_bread_noalign().
 >
-> +/* Returns true for head pages of in-use hugepages, otherwise returns false. */
-> +int is_hugepage_movable(struct page *hpage)
-s/int/bool/  can we?
-> +{
-> +       struct page *page;
-> +       struct page *tmp;
-> +       struct hstate *h = page_hstate(hpage);
-Make sense to compute hstate for a tail page?
-> +       int ret = 0;
-> +
-> +       VM_BUG_ON(!PageHuge(hpage));
-> +       if (PageTail(hpage))
-> +               return 0;
-VM_BUG_ON(!PageHuge(hpage) || PageTail(hpage)), can we?
-> +       spin_lock(&hugetlb_lock);
-> +       list_for_each_entry_safe(page, tmp, &h->hugepage_activelist, lru)
-s/_safe//  can we?
-> +               if (page == hpage)
-> +                       ret = 1;
-Can we bail out with ret set to be true?
-> +       spin_unlock(&hugetlb_lock);
-> +       return ret;
-> +}
+>We've never done that round up in xlog_bread_noalign(). It shouldn't
+>be necessary as xlog_get_bp() and xlog_bread_noalign() are doing
+>fundamentally different things. That is, xlog_get_bp() is ensuring
+>the buffer is large enough for the upcoming IO that will be
+>requested, while xlog_bread_noalign() is simply ensuring what it is
+>passed is correctly aligned to device sector boundaries.
+
+I set the sector size as 4096 when making the xfs filesystem.
+-sh-4.1# mkfs.xfs -s size=4096 -f /dev/sda3
+
+In this case, xlog_bread_noalign() needs to do such round up and round down frequently. And it is used to ensure what it is passed is aligned to the log sector size, but not the device sector boundaries.
+
+Here is the debug info I added when mounting this xfs partition.
+-sh-4.1# mount /dev/sda3 /home/
+XFS (sda3): Mounting Filesystem
+xlog_bread_noalign:blk_no=0,nbblks=1,l_sectBBsize=8
+xlog_bread_noalign:blk_no=61447,nbblks=1,l_sectBBsize=8
+xlog_bread_noalign:blk_no=0,nbblks=1,l_sectBBsize=8
+.......
+xlog_bread_noalign:blk_no=8695,nbblks=1,l_sectBBsize=8
+xlog_bread_noalign:blk_no=4600,nbblks=4096,l_sectBBsize=8
+xlog_bread_noalign:blk_no=8184,nbblks=512,l_sectBBsize=8
+
+>So, if you have to fudge an extra block for xlog_bread_noalign(),
+>that implies that what xlog_bread_noalign() was passed was probably
+>not correct. It also implies that you are using sector sizes larger
+>than 512 bytes, because that's the only time this might matter. Put
+>simply, this:
+
+While debugging, I found when it crashed, the blk_no was not align to the log sector size and nnblks was aligned to the log sector size, which makes sense.
+
+For example, if xlog_bread_noalign() wants to read blocks from #1 to # 9, in which case the passed parameter blk_no is 1, and nbblks is 8, sectBBsize is 8, after the round down and round up operations, we get blk_no as 0, and nbblks as still 8. We definitely lose the last block of the log data.
+
+>> XFS mounting filesystem sda2
+>> Starting XFS recovery on filesystem: sda2 (logdev: internal)
+>> XFS: xlog_recover_process_data: bad clientid
+>> XFS: log mount/recovery failed: error 5
+>> XFS: log mount failed
+>
+>Is not sufficient information for me to determine if you've correctly
+>analysed the problem you were seeing and that this is the correct
+>fix for it. I don't even know what kernel you are seeing this on, or
+>how you are reproducing it.
+
+I was using the 2.6.38.6 kernel, and using xfs as a rootfs partition. After untaring the rootfs files on the xfs partition, and tried to reboot from the xfs, then the panic occasionally occurred.
+
+>
+>Note that I'm not saying the fix isn't necessary or correct, just
+>that I cannot review it based this commit message.  Given that this
+>code is essentially unchanged in behaviour since the large sector
+>size support was adding in 2003(*), understanding how it is
+>deficient is critical part of the reviewi process....
+>
+>Information you need to provide so I have a chance of reviewing
+>whether it is correct or not:
+>
+>	- what kernel you saw this on,
+>	- what the filesystem configuration was
+>	- what workload reproduced this problem (a test case would
+>	  be nice, and xfstest even better)
+>	- the actual contents of the log that lead to the short read
+>	  during recovery
+>	- whether xfs_logprint was capable of parsing the log
+>	  correctly
+>	- where in the actual log recovery process the failure
+>	  occurred (e.g. was it trying to recover transactions from
+>	  a section of a wrapped log?)
+
+I hope I can provide the corrupted log for you, but probably I could not find it, since I fixed this bug a year ago. Recently when I do some clean-up on my code, I find this one, so I think I should return it back to the community.
+
+>IOWs, please show your working so we can determine if this is the
+>root cause of the problem you are seeing. :)
+>
+>(*)
+>http://oss.sgi.com/cgi-bin/gitweb.cgi?p=archive/xfs-import.git;a=commitdiff
+>;h=f14e527f411712f89178c31370b5d733ea1d0280
+>
+>FWIW, I think your change might need work - there's the possibility
+>that is can round up the length beyond the end of the log if we ask
+>to read up to the last sector of the log (i.e. blkno + blklen ==
+>end of log) and then round up blklen by one sector....
+>
+Good catch, you are right on this. To avoid this possibility, I changed the patch a little bit as following.
+--- a/fs/xfs/xfs_log_recover.c
++++ b/fs/xfs/xfs_log_recover.c
+@@ -171,6 +171,7 @@ xlog_bread_noalign(
+        struct xfs_buf  *bp)
+ {
+        int             error;
++       xfs_daddr_t     orig_blk_no = blk_no;
+ 
+        if (!xlog_buf_bbcount_valid(log, nbblks)) {
+                xfs_warn(log->l_mp, "Invalid block length (0x%x) for buffer",
+@@ -180,6 +181,13 @@ xlog_bread_noalign(
+        }
+ 
+        blk_no = round_down(blk_no, log->l_sectBBsize);
++
++       /* 
++        * If the blk_no is rounded down to be sector-aligned, we need to
++        * increase the nbblks accordingly, avoiding truncating the requested
++        * log data.
++        */
++       nbblks += orig_blk_no - blk_no;
+        nbblks = round_up(nbblks, log->l_sectBBsize);
+ 
+        ASSERT(nbblks > 0);
+
+Thanks
+-Tony
