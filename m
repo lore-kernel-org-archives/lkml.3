@@ -1,115 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab3BWAcl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 19:32:41 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:47305 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755256Ab3BWAck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 19:32:40 -0500
-Date: Sat, 23 Feb 2013 00:32:39 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Zach Brown <zab@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chris L. Mason" <clmason@fusionio.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
-        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
-Subject: Re: New copyfile system call - discuss before LSF?
-Message-ID: <20130223003239.GA1469@dcvr.yhbt.net>
-References: <512606DF.5050706@redhat.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com>
- <512635D2.4090207@redhat.com>
- <51267CEB.8070805@redhat.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com>
- <20130221222449.GY22221@lenny.home.zabbo.net>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9235DB089@SACEXCMBX04-PRD.hq.netapp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA9235DB089@SACEXCMBX04-PRD.hq.netapp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932093Ab3BWAhF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 19:37:05 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:32474 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758028Ab3BWAhB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Feb 2013 19:37:01 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: hpa@zytor.com, linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] xen/mmu: Provide an early version of write_cr3.
+Date: Fri, 22 Feb 2013 19:36:52 -0500
+Message-Id: <1361579812-23709-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.0.2
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Myklebust, Trond" <Trond.Myklebust@netapp.com> wrote:
-> > -----Original Message-----
-> > From: Zach Brown [mailto:zab@redhat.com]
-> > Sent: Thursday, February 21, 2013 5:25 PM
-> > To: Myklebust, Trond
-> > Cc: Paolo Bonzini; Ric Wheeler; Linux FS Devel; linux-kernel@vger.kernel.org;
-> > Chris L. Mason; Christoph Hellwig; Alexander Viro; Martin K. Petersen;
-> > Hannes Reinecke; Joel Becker
-> > Subject: Re: New copyfile system call - discuss before LSF?
-> > 
-> > On Thu, Feb 21, 2013 at 08:50:27PM +0000, Myklebust, Trond wrote:
-> > > On Thu, 2013-02-21 at 21:00 +0100, Paolo Bonzini wrote:
-> > > > Il 21/02/2013 15:57, Ric Wheeler ha scritto:
-> > > > >>>
-> > > > >> sendfile64() pretty much already has the right arguments for a
-> > > > >> "copyfile", however it would be nice to add a 'flags' parameter:
-> > > > >> the
-> > > > >> NFSv4.2 version would use that to specify whether or not to copy
-> > > > >> file metadata.
-> > > > >
-> > > > > That would seem to be enough to me and has the advantage that it
-> > > > > is an relatively obvious extension to something that is at least
-> > > > > not totally unknown to developers.
-> > > > >
-> > > > > Do we need more than that for non-NFS paths I wonder? What does
-> > > > > reflink need or the SCSI mechanism?
-> > > >
-> > > > For virt we would like to be able to specify arbitrary block ranges.
-> > > > Copying an entire file helps some copy operations like storage
-> > > > migration.  However, it is not enough to convert the guest's
-> > > > offloaded copies to host-side offloaded copies.
-> > >
-> > > So how would a system call based on sendfile64() plus my flag
-> > > parameter prevent an underlying implementation from meeting your
-> > criterion?
-> > 
-> > If I'm guessing correctly, sendfile64()+flags would be annoying because it's
-> > missing an out_fd_offset.  The host will want to offload the guest's copies by
-> > calling sendfile on block ranges of a guest disk image file that correspond to
-> > the mappings of the in and out files in the guest.
-> > 
-> > You could make it work with some locking and out_fd seeking to set the
-> > write offset before calling sendfile64()+flags, but ugh.
-> > 
-> >  ssize_t sendfile(int out_fd, int in_fd, off_t in_offset, off_t
-> >                   out_offset, size_t count, int flags);
-> > 
-> > That seems closer.
-> 
-> psendfile() ?
-> 
-> I fully agree that sounds reasonable... Just being an ass. :-)
+With git commit 8170e6bed465b4b0c7687f93e9948aca4358a33b
+"x86, 64bit: Use a #PF handler to materialize early mappings on demand"
 
-splice() already has offset for both fds and a flags arg:
+we started hitting an early bootup crash where the Xen hypervisor
+would inform us that:
 
-       ssize_t splice(int fd_in, loff_t *off_in, int fd_out,
-                      loff_t *off_out, size_t len, unsigned int flags);
+(XEN) d7:v0: unhandled page fault (ec=0000)
+(XEN) Pagetable walk from ffffea000005b2d0:
+(XEN)  L4[0x1d4] = 0000000000000000 ffffffffffffffff
+(XEN) domain_crash_sync called from entry.S
+(XEN) Domain 7 (vcpu#0) crashed on cpu#3:
+(XEN) ----[ Xen-4.2.0  x86_64  debug=n  Not tainted ]----
 
-The current downside is it requires one fd to be a pipe, so it's
-just not very easy to use from my perspective[1].
+.. that Xen was unable to context switch back to dom0.
 
-> > We might also want to pre-emptively offer iovs instead of offsets, because
-> > that's the very first thing that's going to be requested after people prototype
-> > having to iterate calling sendfile() for each contiguous copy region.
-> 
-> vpsendfile() then? I agree that might be a little more future-proof. Particularly given that the underlying protocols tend to be fully asynchronous, and so it makes sense to queue up more than one copy at a time...
+Looking at the calling stack we find that:
 
-splicev() might be nice to have in that case, too.
+  [<ffffffff8103feba>] xen_get_user_pgd+0x5a  <--
+  [<ffffffff8103feba>] xen_get_user_pgd+0x5a
+  [<ffffffff81042d27>] xen_write_cr3+0x77
+  [<ffffffff81ad2d21>] init_mem_mapping+0x1f9
+  [<ffffffff81ac293f>] setup_arch+0x742
+  [<ffffffff81666d71>] printk+0x48
 
+We are trying to figure out whether we need to up-date the user PGD
+as well. Please keep in mind that under 64-bit PV guests we have
+a limited amount of rings: 0 for the Hypervisor, and 1 for both
+the Linux kernel and user-space. As such the Linux pvops'fied
+version of write_cr3 checks if it has to update the user-space cr3
+as well.
 
+That clearly is not needed during early bootup. The
+recent changes (see above git commit) streamline the X86 page table
+allocation to be much simpler (And also incidentally the #PF handler
+ends up in spirit being similar to how the Xen toolstack sets up
+the initial page-tables).
 
-[1] my splice() annoyances:
-    * need to create/manage a pipe
-    * copy size limited by pipe size
-    * doesn't reduce userspace syscalls (just data copy overhead)
-    * easy to misuse and starve with blocking sockets + big buffers
-    * not many users, so bugs creep in (v3.7.8 was the first usable
-      version of the 3.7 series for TCP sockets)
+The fix is to have an early-bootup version of cr3 that just loads
+the kernel %cr3.  The later version - which also handles user-page
+modifications will be used after the initial page tables have been setup.
+
+Tested-by: "H. Peter Anvin" <hpa@zytor.com>
+Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/mmu.c | 42 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 40 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index f5e86ee..2c82917 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1408,7 +1408,6 @@ static void __xen_write_cr3(bool kernel, unsigned long cr3)
+ 		xen_mc_callback(set_current_cr3, (void *)cr3);
+ 	}
+ }
+-
+ static void xen_write_cr3(unsigned long cr3)
+ {
+ 	BUG_ON(preemptible());
+@@ -1434,6 +1433,45 @@ static void xen_write_cr3(unsigned long cr3)
+ 	xen_mc_issue(PARAVIRT_LAZY_CPU);  /* interrupts restored */
+ }
+ 
++#ifdef CONFIG_X86_64
++/*
++ * At the start of the day - when Xen launches a guest, it has already
++ * built pagetables for the guest. We diligently look over them
++ * in xen_setup_kernel_pagetable and graft as appropiate them in the
++ * init_level4_pgt and its friends. Then when we are happy we load
++ * the new init_level4_pgt - and continue on.
++ *
++ * The generic code starts (start_kernel) and 'init_mem_mapping' sets
++ * up the rest of the pagetables. When it has completed it loads the cr3.
++ * N.B. that baremetal would start at 'start_kernel' (and the early
++ * #PF handler would create bootstrap pagetables) - so we are running
++ * with the same assumptions as what to do when write_cr3 is executed
++ * at this point.
++ *
++ * Since there are no user-page tables at all, we have two variants
++ * of xen_write_cr3 - the early bootup (this one), and the late one
++ * (xen_write_cr3). The reason we have to do that is that in 64-bit
++ * the Linux kernel and user-space are both in ring 3 while the
++ * hypervisor is in ring 0.
++ */
++static void xen_write_cr3_init(unsigned long cr3)
++{
++	BUG_ON(preemptible());
++
++	xen_mc_batch();  /* disables interrupts */
++
++	/* Update while interrupts are disabled, so its atomic with
++	   respect to ipis */
++	this_cpu_write(xen_cr3, cr3);
++
++	__xen_write_cr3(true, cr3);
++
++	xen_mc_issue(PARAVIRT_LAZY_CPU);  /* interrupts restored */
++
++	pv_mmu_ops.write_cr3 = &xen_write_cr3;
++}
++#endif
++
+ static int xen_pgd_alloc(struct mm_struct *mm)
+ {
+ 	pgd_t *pgd = mm->pgd;
+@@ -2105,7 +2143,7 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
+ #ifdef CONFIG_X86_32
+ 	.write_cr3 = xen_write_cr3_init,
+ #else
+-	.write_cr3 = xen_write_cr3,
++	.write_cr3 = xen_write_cr3_init,
+ #endif
+ 
+ 	.flush_tlb_user = xen_flush_tlb,
+-- 
+1.8.0.2
+
