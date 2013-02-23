@@ -1,193 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab3BWFZp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 00:25:45 -0500
-Received: from fallback6.mail.ru ([94.100.176.134]:40050 "EHLO
-	fallback6.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177Ab3BWFZo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 00:25:44 -0500
-From: Alexander Shiyan <shc_work@mail.ru>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Dong Aisheng <dong.aisheng@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH v5 3/3] mfd: syscon: Add non-DT support
-Date: Sat, 23 Feb 2013 09:15:20 +0400
-Message-Id: <1361596520-19332-3-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.7.12.4
-In-Reply-To: <1361596520-19332-1-git-send-email-shc_work@mail.ru>
-References: <1361596520-19332-1-git-send-email-shc_work@mail.ru>
+	id S932159Ab3BWF2c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 00:28:32 -0500
+Received: from f2.mail.ru ([217.69.129.64]:60353 "EHLO f2.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754722Ab3BWF2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 00:28:31 -0500
+X-Greylist: delayed 1051 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Feb 2013 00:28:31 EST
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?U3RlcGhlbiBXYXJyZW4=?= <swarren@wwwdotorg.org>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>,
+        =?UTF-8?B?RG9uZyBBaXNoZW5n?= <dong.aisheng@linaro.org>,
+        =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
+        =?UTF-8?B?TWFyayBCcm93bg==?= <broonie@opensource.wolfsonmicro.com>,
+        =?UTF-8?B?VGhpZXJyeSBSZWRpbmc=?= <thierry.reding@avionic-design.de>,
+        =?UTF-8?B?R3JlZyBLcm9haC1IYXJ0bWFu?= <gregkh@linuxfoundation.org>
+Subject: =?UTF-8?B?UmVbMl06IFtQQVRDSCB2NSAxLzNdIG1mZDogc3lzY29uOiBSZW1vdmVkIHN1?=
+ =?UTF-8?B?cHBvcnQgZm9yIHVubG9hZGluZw==?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [188.134.40.128]
+Date: Sat, 23 Feb 2013 09:28:28 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1361597308.137178281@f2.mail.ru>
+Content-Type: text/plain; charset=utf-8
 X-Spam: Not detected
 X-Mras: Ok
+In-Reply-To: <512851E0.7000808@wwwdotorg.org>
+References: <1361596520-19332-1-git-send-email-shc_work@mail.ru> <512851E0.7000808@wwwdotorg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1N5SY4H019065
 
-This patch allow using syscon driver from the platform data, i.e.
-possibility using driver on systems without oftree support.
-For search syscon device from the client drivers,
-"syscon_regmap_lookup_by_pdevname" function was added.
+> On 02/22/2013 10:15 PM, Alexander Shiyan wrote:
+> > The driver can be used in various subsystems and therefore should not
+> > be unloaded when it is defined in the kernel configuration, so remove
+> > support for unloading it.
+> 
+> Why not fix the clients to module_get() at the appropriate times; then
+> you could still allow unloading, couldn't you?
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+I has explain this before. Driver defined as "bool" and loaded via postcore_initcall.
+Once loaded it should not be unloaded, in other case it have not way to be loaded back.
+I am correctly understand your question?
+Thanks.
+
 ---
- drivers/mfd/Kconfig        |  1 -
- drivers/mfd/syscon.c       | 67 ++++++++++++++++++++++++++++++++--------------
- include/linux/mfd/syscon.h |  1 +
- 3 files changed, 48 insertions(+), 21 deletions(-)
-
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 671f5b1..8fdd87e 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -1070,7 +1070,6 @@ config MFD_STA2X11
- 
- config MFD_SYSCON
- 	bool "System Controller Register R/W Based on Regmap"
--	depends on OF
- 	select REGMAP_MMIO
- 	help
- 	  Select this option to enable accessing system control registers
-diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-index 2c59ce6..ead27d6 100644
---- a/drivers/mfd/syscon.c
-+++ b/drivers/mfd/syscon.c
-@@ -29,7 +29,7 @@ struct syscon {
- 	struct regmap *regmap;
- };
- 
--static int syscon_match(struct device *dev, void *data)
-+static int syscon_match_node(struct device *dev, void *data)
- {
- 	struct device_node *dn = data;
- 
-@@ -42,7 +42,7 @@ struct regmap *syscon_node_to_regmap(struct device_node *np)
- 	struct device *dev;
- 
- 	dev = driver_find_device(&syscon_driver.driver, NULL, np,
--				 syscon_match);
-+				 syscon_match_node);
- 	if (!dev)
- 		return ERR_PTR(-EPROBE_DEFER);
- 
-@@ -68,6 +68,34 @@ struct regmap *syscon_regmap_lookup_by_compatible(const char *s)
- }
- EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_compatible);
- 
-+static int syscon_match_pdevname(struct device *dev, void *data)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	const struct platform_device_id *id = platform_get_device_id(pdev);
-+
-+	if (id)
-+		if (!strcmp(id->name, (const char *)data))
-+			return 1;
-+
-+	return !strcmp(dev_name(dev), (const char *)data);
-+}
-+
-+struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
-+{
-+	struct device *dev;
-+	struct syscon *syscon;
-+
-+	dev = driver_find_device(&syscon_driver.driver, NULL, (void *)s,
-+				 syscon_match_pdevname);
-+	if (!dev)
-+		return ERR_PTR(-ENODEV);
-+
-+	syscon = dev_get_drvdata(dev);
-+
-+	return syscon->regmap;
-+}
-+EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
-+
- struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *np,
- 					const char *property)
- {
-@@ -99,30 +127,24 @@ static struct regmap_config syscon_regmap_config = {
- static int syscon_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
--	struct device_node *np = dev->of_node;
- 	struct syscon *syscon;
--	struct resource res;
--	int ret;
--
--	if (!np)
--		return -ENOENT;
-+	struct resource *res;
- 
--	syscon = devm_kzalloc(dev, sizeof(struct syscon),
--			    GFP_KERNEL);
-+	syscon = devm_kzalloc(dev, sizeof(struct syscon), GFP_KERNEL);
- 	if (!syscon)
- 		return -ENOMEM;
- 
--	syscon->base = of_iomap(np, 0);
--	if (!syscon->base)
--		return -EADDRNOTAVAIL;
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -ENOENT;
- 
--	ret = of_address_to_resource(np, 0, &res);
--	if (ret)
--		return ret;
-+	syscon->base = devm_ioremap(dev, res->start, resource_size(res));
-+	if (!syscon->base)
-+		return -ENOMEM;
- 
--	syscon_regmap_config.max_register = res.end - res.start - 3;
-+	syscon_regmap_config.max_register = res->end - res->start - 3;
- 	syscon->regmap = devm_regmap_init_mmio(dev, syscon->base,
--					&syscon_regmap_config);
-+					       &syscon_regmap_config);
- 	if (IS_ERR(syscon->regmap)) {
- 		dev_err(dev, "regmap init failed\n");
- 		return PTR_ERR(syscon->regmap);
-@@ -130,12 +152,16 @@ static int syscon_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, syscon);
- 
--	dev_info(dev, "syscon regmap start 0x%x end 0x%x registered\n",
--		res.start, res.end);
-+	dev_info(dev, "regmap 0x%x-0x%x registered\n", res->start, res->end);
- 
- 	return 0;
- }
- 
-+static const struct platform_device_id syscon_ids[] = {
-+	{ "syscon", },
-+	{ }
-+};
-+
- static struct platform_driver syscon_driver = {
- 	.driver = {
- 		.name = "syscon",
-@@ -143,6 +169,7 @@ static struct platform_driver syscon_driver = {
- 		.of_match_table = of_syscon_match,
- 	},
- 	.probe		= syscon_probe,
-+	.id_table	= syscon_ids,
- };
- 
- static int __init syscon_init(void)
-diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
-index 6aeb6b8..5c9ee6e 100644
---- a/include/linux/mfd/syscon.h
-+++ b/include/linux/mfd/syscon.h
-@@ -17,6 +17,7 @@
- 
- extern struct regmap *syscon_node_to_regmap(struct device_node *np);
- extern struct regmap *syscon_regmap_lookup_by_compatible(const char *s);
-+extern struct regmap *syscon_regmap_lookup_by_pdevname(const char *s);
- extern struct regmap *syscon_regmap_lookup_by_phandle(
- 					struct device_node *np,
- 					const char *property);
--- 
-1.7.12.4
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
