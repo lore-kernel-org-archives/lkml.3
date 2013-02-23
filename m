@@ -1,69 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517Ab3BWFQC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 00:16:02 -0500
-Received: from fallback2.mail.ru ([94.100.176.87]:58016 "EHLO
-	fallback2.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015Ab3BWFQB (ORCPT
+	id S1754070Ab3BWFT4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 00:19:56 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:35273 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753176Ab3BWFTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 00:16:01 -0500
-From: Alexander Shiyan <shc_work@mail.ru>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Dong Aisheng <dong.aisheng@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH v5 2/3] mfd: syscon: Removed unneeded field "dev" from private driver structure
-Date: Sat, 23 Feb 2013 09:15:19 +0400
-Message-Id: <1361596520-19332-2-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.7.12.4
-In-Reply-To: <1361596520-19332-1-git-send-email-shc_work@mail.ru>
-References: <1361596520-19332-1-git-send-email-shc_work@mail.ru>
-X-Spam: Not detected
-X-Mras: Ok
+	Sat, 23 Feb 2013 00:19:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130222211615.GA5979@p100.box>
+References: <20130222211615.GA5979@p100.box>
+Date: Fri, 22 Feb 2013 21:19:52 -0800
+X-Google-Sender-Auth: ndjyn6L_HrQ9VZQ3lUNfGD-ubZA
+Message-ID: <CA+55aFy5PZgcj9JpFpEbyoi1w2Nx8fbjk1L-56SHLuE2vPAMtw@mail.gmail.com>
+Subject: Re: [GIT PULL] parisc updates for 3.9
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Helge Deller <deller@gmx.de>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Feb 22, 2013 at 1:16 PM, Helge Deller <deller@gmx.de> wrote:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.9
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
----
- drivers/mfd/syscon.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+In general, I'd love to also get a short human-readable explanation of
+what the pull does for the merge message. As it is, I just made
+something up.
 
-diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-index 55d7915..2c59ce6 100644
---- a/drivers/mfd/syscon.c
-+++ b/drivers/mfd/syscon.c
-@@ -25,17 +25,15 @@
- static struct platform_driver syscon_driver;
- 
- struct syscon {
--	struct device *dev;
- 	void __iomem *base;
- 	struct regmap *regmap;
- };
- 
- static int syscon_match(struct device *dev, void *data)
- {
--	struct syscon *syscon = dev_get_drvdata(dev);
- 	struct device_node *dn = data;
- 
--	return (syscon->dev->of_node == dn) ? 1 : 0;
-+	return (dev->of_node == dn) ? 1 : 0;
- }
- 
- struct regmap *syscon_node_to_regmap(struct device_node *np)
-@@ -130,7 +128,6 @@ static int syscon_probe(struct platform_device *pdev)
- 		return PTR_ERR(syscon->regmap);
- 	}
- 
--	syscon->dev = dev;
- 	platform_set_drvdata(pdev, syscon);
- 
- 	dev_info(dev, "syscon regmap start 0x%x end 0x%x registered\n",
--- 
-1.7.12.4
-
+               Linus
