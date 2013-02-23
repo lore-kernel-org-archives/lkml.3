@@ -1,44 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758238Ab3BWUXJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 15:23:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756959Ab3BWUXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 15:23:06 -0500
-Date: Sat, 23 Feb 2013 21:21:25 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        Neil Horman <nhorman@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] coredump: fix the ancient signal problems
-Message-ID: <20130223202125.GA13646@redhat.com>
-References: <20130217191819.GA21778@redhat.com> <CACBanvoxwb341yO_hoJDDqZf9htgY2NNiOw0LfYj3TUe9zM5+w@mail.gmail.com> <20130220223226.GA16194@redhat.com> <20130220151418.bb91dc4e.akpm@linux-foundation.org>
+	id S1758780Ab3BWUpJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 15:45:09 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:58737 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758219Ab3BWUpF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 15:45:05 -0500
+Message-ID: <51292A2B.3000304@ahsoftware.de>
+Date: Sat, 23 Feb 2013 21:44:27 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130220151418.bb91dc4e.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Disable IPv4-mapped - enforce IPV6_V6ONLY
+References: <51278CF6.2060402@ahsoftware.de>
+In-Reply-To: <51278CF6.2060402@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20, Andrew Morton wrote:
+Am 22.02.2013 16:21, schrieb Alexander Holler:
+> Hello,
 >
-> On Wed, 20 Feb 2013 23:32:26 +0100
-> Oleg Nesterov <oleg@redhat.com> wrote:
+> I'm searching for a way to either enforce IPV6_V6ONLY or to block
+> IPv4-mapped addresses on ipv6-sockets (e.g. by using iptables) system-wide.
 >
-> > Andrew, could you take it? We will make more fixes on top.
+> E.g. net.ipv6.bindv6only doesn't help if something calls
 >
-> Did that, but the timing and somewhat tentative nature of the changes
-> makes me think "3.10-rc1".
+> int v6on = 0;
+> setsockopt(sd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&v6on, sizeof(v6on))
+>
+> In such a case I still want to disable or block IPv4-mapped addresses on
+> that socket, even if the program thinks it nows it better.
+>
+> Until now I haven't found a solution.
 
-Oh, yes, I will sleep much better if these changes get more testing
-in -mm, I do not think this is 3.9 material.
+I've now done it by the following hack:
 
-Oleg.
+-----------
+diff --git a/net/ipv6/ipv6_sockglue.c b/net/ipv6/ipv6_sockglue.c
+index d1e2e8e..9eefd3e 100644
+--- a/net/ipv6/ipv6_sockglue.c
++++ b/net/ipv6/ipv6_sockglue.c
+@@ -235,7 +235,7 @@ static int do_ipv6_setsockopt(struct sock *sk, int 
+level, int optname,
+                 if (optlen < sizeof(int) ||
+                     inet_sk(sk)->inet_num)
+                         goto e_inval;
+-               np->ipv6only = valbool;
++               np->ipv6only = valbool || net->ipv6.sysctl.bindv6only;
+                 retv = 0;
+                 break;
+-----------
 
+A proper solution would be to either return false if net.ipv6.bindv6only 
+is true and optval is false (which would break downward compatibility 
+because it wouldn't just be a default and setsockopt might return an 
+error) or to introduce a new sysctl variable like 
+net.ipv6.bindv6only_enforced_silently. ("silently" because setsockopt() 
+wouldn't return an error if net.ipv6.bindv6only is true and optval 
+(v6only in the example above) is false.)
+
+I would volunteer to write a patch which introduces something like 
+net.ipv6.bindv6only_enforced_silently if some maintainer would give me 
+his ok.
+
+If so, the question remains if
+
+systemctl net.ipv6.bindv6only_enforced_silently = 1
+
+should set systemctl.net.ipv6.bindv6only too or if an error should be 
+returned if net.ipv6.bindv6only is false.
+
+Regards,
+
+Alexander
