@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab3BWGOi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 01:14:38 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:48645 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755283Ab3BWGOg (ORCPT
+	id S932203Ab3BWGTB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 01:19:01 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:41663 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870Ab3BWGTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 01:14:36 -0500
+	Sat, 23 Feb 2013 01:19:00 -0500
+Message-ID: <51285F51.5040902@linaro.org>
+Date: Sat, 23 Feb 2013 07:18:57 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <5126B617.6010405@canonical.com>
-References: <511D0BCC.9070208@canonical.com>
-	<20130215073210.GM7867@spo001.leaseweb.com>
-	<511E4C43.7080403@canonical.com>
-	<CAHh0gOgeWn5QaDGzgstft7AoQsKdoZ+4Utp8iQxxSCO0q=cZ-Q@mail.gmail.com>
-	<51219C56.8060504@canonical.com>
-	<CAGHUO12ROdB4=LVyod7+RaoONHfMfiyLAj73cC+BczLGDG+i+Q@mail.gmail.com>
-	<CAHh0gOgiSjTYvEzim-7+yEhU74c5PVV=2ScTnaJ15SPY=y-WqA@mail.gmail.com>
-	<5126B617.6010405@canonical.com>
-Date: Sat, 23 Feb 2013 15:14:32 +0900
-Message-ID: <CAHh0gOi3b+CKMVLwQQxJ+n2XOseirJ6cFhLOVX_BboN9rzM5Jw@mail.gmail.com>
-Subject: Re: [v3.8 Regression] watchdog: sp5100_tco: Add SB8x0 chipset support
-From: Tanaka Takahisa <mc74hc00@gmail.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: Joseph Salisbury <josephtsalisbury@gmail.com>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kernel Team <kernel-team@lists.ubuntu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: john.stultz@linaro.org, tglx@linutronix.de, linus.walleij@stericsson.com,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org
+Subject: Re: [PATCH] clocksource : nomadik-mtu : fix missing irq initialization
+References: <1361547870-32638-1-git-send-email-daniel.lezcano@linaro.org> <CACRpkdYUC4UoZN0ZLcu4S=oma-vd46fbAqQNTFgisG24OPubVA@mail.gmail.com>
+In-Reply-To: <CACRpkdYUC4UoZN0ZLcu4S=oma-vd46fbAqQNTFgisG24OPubVA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joseph,
+On 02/22/2013 06:21 PM, Linus Walleij wrote:
+> On Fri, Feb 22, 2013 at 4:44 PM, Daniel Lezcano
+> <daniel.lezcano@linaro.org> wrote:
+> 
+>> This patch fix the clock device irq field which is not initialized.
+>>
+>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> 
+> Makes perfect sense:
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> Sorry that I might have missed some background here or just be
+> out-of-track with things, how did this driver work for years without
+> the irq assigned? Or was this field recently introduced?
 
-Thank you for testing!
-I will submit this patch to the linux-watchdog community after adding
-commit log to patch.
+The irq is assigned through:
 
-2013/2/22 Joseph Salisbury <joseph.salisbury@canonical.com>:
-> The I/O data can be seen at:
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1116835/+attachment/3540738/+files/iomem.txt
+setup_irq(irq, &nmdk_timer_irq);
 
-In the case of SP5100 and SB7x0 chipset, the sp5100_tco driver
-overwrites a free resource I/O memory address obtained by
-allocate_resource() to the MMIO address registers for watchdog timer.
-In the case of M3A78-CM, the sp5100_tco driver was using 0xfed45000 as
-a MMIO address. Since 0xfed45000 is the free I/O memory resource
-address, this is the expected behavior.
+two lines above but the clockevent's irq field was not set.
 
-  [   18.852540] sp5100_tco: Using 0xfed45000 for watchdog MMIO address
+I did not investigate a lot, but at the first glance it worked because
+the code path used by the default kernel configuration (CONFIG_NO_HZ)
+does not use this field.
 
-However, Rewriting the MMIO address registers for the watchdog timer
-must have generated the problem. I think that the problem has occurred
-with the chipset or the BIOS layer. So, It's difficult for me to
-investigate the problem, and the problem is critical. Thus, I decided
-to delete the concerned codes.
+But when using the dynamic irq affinity [1], I noticed it was set to 0.
+
+[1] http://www.spinics.net/lists/arm-kernel/msg226371.html
+
+Thanks
+  -- Daniel
 
 
-Regards,
-Takahisa
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
