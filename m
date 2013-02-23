@@ -1,124 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759314Ab3BWWor (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 17:44:47 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:63096 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759195Ab3BWWoo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 17:44:44 -0500
-Date: Sat, 23 Feb 2013 16:44:40 -0600
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v2 1/5] drivers: phy: add generic PHY framework
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: tony@atomide.com, linux@arm.linux.org.uk, eballetbo@gmail.com,
-        javier@dowhile0.org, kishon@ti.com, balbi@ti.com,
-        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        mchehab@redhat.com, cesarb@cesarb.net, davem@davemloft.net,
-        arnd@arndb.de, santosh.shilimkar@ti.com,
-        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <1361253198-7401-2-git-send-email-kishon@ti.com> (from
-	kishon@ti.com on Mon Feb 18 23:53:14 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1361659480.11282.15@driftwood>
+	id S1759195Ab3BWW4s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 17:56:48 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:48696 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758847Ab3BWW4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 17:56:46 -0500
+Date: Sat, 23 Feb 2013 23:56:13 +0100
+From: Alessandro Rubini <rubini@gnudd.com>
+To: rob@landley.net
+Cc: linux-kernel@vger.kernel.org, greg@kroah.com, dcobas@cern.ch,
+        cota@braap.org, siglesias@igalia.com, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 4/8] FMC: add documentation for the core
+Message-ID: <20130223225613.GA24239@mail.gnudd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <1361643677.11282.5@driftwood>
+References: <1361643677.11282.5@driftwood> 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/18/2013 11:53:14 PM, Kishon Vijay Abraham I wrote:
-> The PHY framework provides a set of APIs for the PHY drivers to
-> create/destroy a PHY and APIs for the PHY users to obtain a reference  
-> to the
-> PHY with or without using phandle. To obtain a reference to the PHY  
-> without
-> using phandle, the platform specfic intialization code (say from  
-> board file)
-> should have already called phy_bind with the binding information. The  
-> binding
-> information consists of phy's device name, phy user device name and  
-> an index.
-> The index is used when the same phy user binds to mulitple phys.
+> Acked-by: Rob Landley <rob@landley.net>
 
-Given that this has a separately selectable config option, I'm guessing  
-that it's useful all by itself even in the absence of a driver using  
-this phy? (Or it gives user visibility to the phy buried in an E1000 or  
-SATA drive or some such?)
+Thanks.
 
-> +1. Introduction
-> +
-> +*PHY* is the abbreviation for physical layer. It is used to connect  
-> a device
-> +to the physical medium e.g., the USB controller has a PHY to provide  
-> functions
-> +such as serialization, de-serialization, encoding, decoding and is  
-> responsible
-> +for obtaining the required data transmission rate. Note that some USB
-> +controller has PHY functionality embedded into it and others use an  
-> external
-> +PHY. Other peripherals that uses a PHY include Wireless LAN,  
-> Ethernet,
-> +SATA etc.
+> What is this *note thingy:: syntax? It recurs a lot. Some sort of  
+> reference into the PDF you started out with a link to, maybe?
 
-I've usually heard the word "transciever" used to describe these.
+My documentation is texinfo and this is the ASCII output, manually
+split into different files. I fixed some of the internal references
+when I noted them.  But since it's manual work, I didn't do it
+carefully.  I suspect I'll need to V2 for some reason anyways.
 
-> +The intention of creating this framework is to bring the phy drivers  
-> spread
-> +all over the Linux kernel to drivers/phy to increase code re-use and  
-> to
-> +increase code maintainability.
-> +
-> +This framework will be of use only to devices that uses external PHY  
-> (PHY
-> +functionality is not embedded within the controller).
-> +
-> +2. Creating the PHY
-> +
-> +The PHY driver should create the PHY in order for other peripheral  
-> controllers
-> +to make use of it. The PHY framework provides 2 APIs to create the  
-> PHY.
+> A basic concept of this framework is that you have a 70x75 PCB? Is this  
+> part of that ANSI-VITA standard?
 
-Given that a PHY is a chip (random example  
-http://ark.intel.com/products/47620/Intel-82579LM-Gigabit-Ethernet-PHY),  
-you seem to be saying that software should manifest a piece of hardware  
-out of thin air through sheer willpower. I'm pretty sure I've  
-misunderstood this phrasing.
+Yes. the form-factor is fixed, like PC104 in the PC world.  Here's the
+jpg of a carrier: http://www.ohwr.org/attachments/download/552 (from
+http://www.ohwr.org/projects/spec/wiki). And here's the jpg of a
+mezzanine:
+http://www.ohwr.org/attachments/download/833/FmcAdc100M14b4cha_top_small.JPG
 
-> +struct phy *phy_create(struct device *dev, struct phy_descriptor  
-> *desc);
-> +struct phy *devm_phy_create(struct device *dev, struct  
-> phy_descriptor *desc);
-> +
-> +The PHY drivers can use one of the above 2 APIs to create the PHY by  
-> passing
+You find more on the net, also from commercial vendors.
 
-Um, the driver should _bind_ to the phy, maybe? Allocate? Initialize?
+>> +FMC, as such, is not a bus in the usual meaning of the term, because
+>> +most carriers have only one connector, and carriers with several
+>> +connectors have completely separate electrical connections to them.
+>> +This package, however, implements a bus as a software abstraction.
+> 
+> USB is point to point connections with switches in between. It's still  
+> got B in the acronym. I'm not sure what you're saying here.
 
-> +6. Destroying the PHY
+FMC has no switches, no hotplug, not even shared wires like ISA.  I
+took a while to explain some hardware guys that it ought to be a
+"bus" in software. That's why I have the paragraph.
 
-I've run drivers like that. I try not to, though.
+>> +What is SDB
+>> +***********
+>> +
+>> +SDB (Self Describing Bus) is a set of data structures that we use for
+>> +enumerating the internal structure of an FPGA image. We also use it  
+>> as
+>> +a filesystem inside the FMC EEPROM.
+> 
+> Are you trying to document infrastructure to implement a standard, or a  
+> bespoke driver for a specific piece of hardware? How much of this is  
+> generic? Are there other vendors who might someday want to use this  
+> code?
 
-> +7. Current Status
-> +
-> +Currently only USB in OMAP is made to use this framework. However  
-> using the
-> +USB PHY library cannot be completely removed because it is  
-> intertwined with
-> +OTG. Once we move OTG out of PHY completely, using the old PHY  
-> library can be
-> +completely removed. SATA in OMAP will also more likely use this new  
-> framework
-> +and we should have a patch for it soon.
+SDB is already implemented and is generic.  We enumerate the devices
+inside the FPGA already, and it only costs a few lines of VHDL (using
+the support files by Wesley Terpstra) to describe your own FPGA
+design. Wesley even discovers and enumerates devices over the
+Ethernet, by means of Ethernet-driven device access and SDB-aware host
+code -- all code is published.
 
-Does this paragraph belong in the documentation? (Git commit, sure, but  
-I've seen a lot of stale paragraphs like these hang around a  
-surprisingly long time.)
+The SDB specification is discussed in a mailing list and is public
+(http://www.ohwr.org/attachments/download/1486/sdb-1.0.pdf). By having
+64-bit vendor identifiers we encourage anyone who finds SDB useful to
+become a vendor. There are a few vendors already, although I admit the
+early adopters are involved in the same set of projects.
 
-Rob
+> Anyway, no serious objection, but I note that reading to this point I  
+> didn't feel I had enough information to wrap my head around what it's  
+> for. It's documentation by people who already know this stuff, for  
+> people who already know this stuff. (There's a long tradition of that.  
+> Oh well.)
+
+I'm aware of this. But it's the same if you read USB documentation
+without ever seeing one such device (I remember the feeling :).  FMC
+is not common on the shelf, but it is already renown in high-profile
+I/O environments.
+
+Thanks
+/alessandro
