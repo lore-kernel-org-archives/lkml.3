@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab3BWHlE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 02:41:04 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:55292 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314Ab3BWHlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 02:41:01 -0500
-Date: Fri, 22 Feb 2013 23:40:01 -0800
-From: Kees Cook <keescook@chromium.org>
+	id S1754272Ab3BWH6q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 02:58:46 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:55485 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070Ab3BWH6n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 02:58:43 -0500
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] md/raid456: remove depends on CONFIG_EXPERIMENTAL
-Message-ID: <20130223074001.GA5199@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+Cc: Evgeniy Polyakov <zbr@ioremap.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ville Syrjala <syrjala@sci.fi>, Daniel Mack <zonque@gmail.com>
+Subject: [PATCH 2/5] W1: w1-gpio - switch to using dev_pm_ops
+Date: Fri, 22 Feb 2013 23:58:37 -0800
+Message-Id: <1361606320-4479-2-git-send-email-dmitry.torokhov@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1361606320-4479-1-git-send-email-dmitry.torokhov@gmail.com>
+References: <1361606320-4479-1-git-send-email-dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
-while now and is almost always enabled by default. As agreed during the
-Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- drivers/md/Kconfig |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/w1/masters/w1-gpio.c | 20 ++++++++------------
+ 1 file changed, 8 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
-index 7cdf359..0cc3a3d 100644
---- a/drivers/md/Kconfig
-+++ b/drivers/md/Kconfig
-@@ -158,7 +158,6 @@ config MULTICORE_RAID456
- 	bool "RAID-4/RAID-5/RAID-6 Multicore processing (EXPERIMENTAL)"
- 	depends on MD_RAID456
- 	depends on SMP
--	depends on EXPERIMENTAL
- 	---help---
- 	  Enable the raid456 module to dispatch per-stripe raid operations to a
- 	  thread pool.
+diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
+index 799dafd..c45b9ae 100644
+--- a/drivers/w1/masters/w1-gpio.c
++++ b/drivers/w1/masters/w1-gpio.c
+@@ -176,11 +176,10 @@ static int w1_gpio_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
+-
+-static int w1_gpio_suspend(struct platform_device *pdev, pm_message_t state)
++#ifdef CONFIG_PM_SLEEP
++static int w1_gpio_suspend(struct device *dev)
+ {
+-	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
++	const struct w1_gpio_platform_data *pdata = dev_get_platdata(dev);
+ 
+ 	if (pdata->enable_external_pullup)
+ 		pdata->enable_external_pullup(0);
+@@ -188,31 +187,28 @@ static int w1_gpio_suspend(struct platform_device *pdev, pm_message_t state)
+ 	return 0;
+ }
+ 
+-static int w1_gpio_resume(struct platform_device *pdev)
++static int w1_gpio_resume(struct device *dev)
+ {
+-	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
++	const struct w1_gpio_platform_data *pdata = dev_get_platdata(dev);
+ 
+ 	if (pdata->enable_external_pullup)
+ 		pdata->enable_external_pullup(1);
+ 
+ 	return 0;
+ }
+-
+-#else
+-#define w1_gpio_suspend	NULL
+-#define w1_gpio_resume	NULL
+ #endif
+ 
++static SIMPLE_DEV_PM_OPS(w1_gpio_pm_ops, w1_gpio_suspend, w1_gpio_resume);
++
+ static struct platform_driver w1_gpio_driver = {
+ 	.driver = {
+ 		.name	= "w1-gpio",
+ 		.owner	= THIS_MODULE,
++		.pm	= &w1_gpio_pm_ops,
+ 		.of_match_table = of_match_ptr(w1_gpio_dt_ids),
+ 	},
+ 	.probe = w1_gpio_probe,
+ 	.remove = w1_gpio_remove,
+-	.suspend = w1_gpio_suspend,
+-	.resume = w1_gpio_resume,
+ };
+ 
+ module_platform_driver(w1_gpio_driver);
 -- 
-1.7.9.5
+1.7.11.7
 
-
--- 
-Kees Cook
-Chrome OS Security
