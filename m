@@ -1,435 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759109Ab3BWWbf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 17:31:35 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:42502 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757539Ab3BWWbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 17:31:33 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [Update 4][PATCH 2/7] ACPI / scan: Introduce common code for ACPI-based device hotplug
-Date: Sat, 23 Feb 2013 23:38:13 +0100
-Message-ID: <1478394.ryVNRuTre2@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2894504.SgZF7d1Dbv@vostro.rjw.lan>
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <2482081.rPvizM7IsG@vostro.rjw.lan> <2894504.SgZF7d1Dbv@vostro.rjw.lan>
+	id S1759284Ab3BWWcO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 17:32:14 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:49993 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759013Ab3BWWcN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 17:32:13 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [patch 2/2] arm: Wire up kcmp syscall
+Date: Sat, 23 Feb 2013 22:31:45 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
+        Russell King <linux@arm.linux.org.uk>, xemul@parallels.com,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com,
+        akpm@linux-foundation.org,
+        Alexander Kartashov <alekskartashov@parallels.com>
+References: <20130219064800.719149796@openvz.org> <20130219065210.148067470@openvz.org> <20130219070703.GC20312@moon>
+In-Reply-To: <20130219070703.GC20312@moon>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302232231.45972.arnd@arndb.de>
+X-Provags-ID: V02:K0:2s7ZqQmx19DllXCPJ94rxO3uoVi52I5oFJgyCREJKIw
+ DLeB/CCrKhk7QSzFe92/zd3y+HLTT7R77Eb9YWtIPGpdA62qED
+ 5TIxrU3SpZFPHu3wCQlZIsDnMXwEALF2fDkWmxCt0v625zYkna
+ LS+/ySMqrxg20nEQybhxY9wK4C2O73gMw0h1iV3LQCwYCenl9X
+ IZ3WsBA2G+65qAIraOFCGRfadfVACZ31MVGuSssgcWYVfhT6P5
+ 5COaRBuBMOh9LnM69uBhBa2n25TjW0/s1cA05COp2RL8rhE5PD
+ 0IuwVjc4D4RmoITzp59EuP9xOv39UhKDFf+RlFInNt6uwXd2I+
+ 87+OLn+R4VIqKSRi0ZIk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Tuesday 19 February 2013, Cyrill Gorcunov wrote:
+> From: Alexander Kartashov <alekskartashov@parallels.com>
+> Subject: arm: Wire up kcmp syscall
+> 
+> Signed-off-by: Alexander Kartashov <alekskartashov@parallels.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
 
-Multiple drivers handling hotplug-capable ACPI device nodes install
-notify handlers covering the same types of events in a very similar
-way.  Moreover, those handlers are installed in separate namespace
-walks, although that really should be done during namespace scans
-carried out by acpi_bus_scan().  This leads to substantial code
-duplication, unnecessary overhead and behavior that is hard to
-follow.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-For this reason, introduce common code in drivers/acpi/scan.c for
-handling hotplug-related notification and carrying out device
-insertion and eject operations in a generic fashion, such that it
-may be used by all of the relevant drivers in the future.  To cover
-the existing differences between those drivers introduce struct
-acpi_hotplug_profile for representing collections of hotplug
-settings associated with different ACPI scan handlers that can be
-used by the drivers to make the common code reflect their current
-behavior.
+Looks uncontroversial since the number is already reserved and
+there is a cond_syscall() line, which means it does not
+even depend on patch 1.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
-
-This update causes acpi_bus_device_eject() to only emit KOBJ_OFFLINE uevent if
-autoexec is unset for the given scan handler.
-
-This will require the doc in patch [5/7] to be updated which I'm going to do if
-everyone is OK with the $subject patch.
-
-Thanks,
-Rafael
-
----
- drivers/acpi/scan.c     |  270 ++++++++++++++++++++++++++++++++++++++----------
- include/acpi/acpi_bus.h |    7 +
- 2 files changed, 224 insertions(+), 53 deletions(-)
-
-Index: test/include/acpi/acpi_bus.h
-===================================================================
---- test.orig/include/acpi/acpi_bus.h
-+++ test/include/acpi/acpi_bus.h
-@@ -88,11 +88,18 @@ struct acpi_device;
-  * -----------------
-  */
- 
-+struct acpi_hotplug_profile {
-+	bool enabled:1;
-+	bool uevents:1;
-+	bool autoeject:1;
-+};
-+
- struct acpi_scan_handler {
- 	const struct acpi_device_id *ids;
- 	struct list_head list_node;
- 	int (*attach)(struct acpi_device *dev, const struct acpi_device_id *id);
- 	void (*detach)(struct acpi_device *dev);
-+	struct acpi_hotplug_profile hotplug;
- };
- 
- /*
-Index: test/drivers/acpi/scan.c
-===================================================================
---- test.orig/drivers/acpi/scan.c
-+++ test/drivers/acpi/scan.c
-@@ -107,32 +107,19 @@ acpi_device_modalias_show(struct device
- }
- static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
- 
--/**
-- * acpi_bus_hot_remove_device: hot-remove a device and its children
-- * @context: struct acpi_eject_event pointer (freed in this func)
-- *
-- * Hot-remove a device and its children. This function frees up the
-- * memory space passed by arg context, so that the caller may call
-- * this function asynchronously through acpi_os_hotplug_execute().
-- */
--void acpi_bus_hot_remove_device(void *context)
-+static int acpi_scan_hot_remove(struct acpi_device *device)
- {
--	struct acpi_eject_event *ej_event = context;
--	struct acpi_device *device = ej_event->device;
- 	acpi_handle handle = device->handle;
--	acpi_handle temp;
-+	acpi_handle not_used;
- 	struct acpi_object_list arg_list;
- 	union acpi_object arg;
--	acpi_status status = AE_OK;
--	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
--
--	mutex_lock(&acpi_scan_lock);
-+	acpi_status status;
- 
- 	/* If there is no handle, the device node has been unregistered. */
--	if (!device->handle) {
-+	if (!handle) {
- 		dev_dbg(&device->dev, "ACPI handle missing\n");
- 		put_device(&device->dev);
--		goto out;
-+		return -EINVAL;
- 	}
- 
- 	ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-@@ -143,7 +130,7 @@ void acpi_bus_hot_remove_device(void *co
- 	put_device(&device->dev);
- 	device = NULL;
- 
--	if (ACPI_SUCCESS(acpi_get_handle(handle, "_LCK", &temp))) {
-+	if (ACPI_SUCCESS(acpi_get_handle(handle, "_LCK", &not_used))) {
- 		arg_list.count = 1;
- 		arg_list.pointer = &arg;
- 		arg.type = ACPI_TYPE_INTEGER;
-@@ -161,18 +148,159 @@ void acpi_bus_hot_remove_device(void *co
- 	 */
- 	status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
- 	if (ACPI_FAILURE(status)) {
--		if (status != AE_NOT_FOUND)
-+		if (status == AE_NOT_FOUND) {
-+			return -ENODEV;
-+		} else {
- 			acpi_handle_warn(handle, "Eject failed\n");
-+			return -EIO;
-+		}
-+	}
-+	return 0;
-+}
- 
--		/* Tell the firmware the hot-remove operation has failed. */
--		acpi_evaluate_hotplug_ost(handle, ej_event->event,
--					  ost_code, NULL);
-+static void acpi_bus_device_eject(void *context)
-+{
-+	acpi_handle handle = context;
-+	struct acpi_device *device = NULL;
-+	struct acpi_scan_handler *handler;
-+	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
-+
-+	mutex_lock(&acpi_scan_lock);
-+
-+	acpi_bus_get_device(handle, &device);
-+	if (!device)
-+		goto err_out;
-+
-+	handler = device->handler;
-+	if (!handler || !handler->hotplug.enabled) {
-+		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
-+		goto err_out;
-+	}
-+	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST,
-+				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-+	if (handler->hotplug.autoeject) {
-+		int error;
-+
-+		get_device(&device->dev);
-+		error = acpi_scan_hot_remove(device);
-+		if (error)
-+			goto err_out;
-+	} else {
-+		device->flags.eject_pending = true;
-+		if (handler->hotplug.uevents)
-+			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
- 	}
- 
-  out:
- 	mutex_unlock(&acpi_scan_lock);
--	kfree(context);
- 	return;
-+
-+ err_out:
-+	acpi_evaluate_hotplug_ost(handle, ACPI_NOTIFY_EJECT_REQUEST, ost_code,
-+				  NULL);
-+	goto out;
-+}
-+
-+static void acpi_scan_bus_device_check(acpi_handle handle, u32 ost_source)
-+{
-+	struct acpi_device *device = NULL;
-+	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
-+	int error;
-+
-+	mutex_lock(&acpi_scan_lock);
-+
-+	acpi_bus_get_device(handle, &device);
-+	if (device) {
-+		dev_warn(&device->dev, "Attempt to re-insert\n");
-+		goto out;
-+	}
-+	acpi_evaluate_hotplug_ost(handle, ost_source,
-+				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
-+	error = acpi_bus_scan(handle);
-+	if (error) {
-+		acpi_handle_warn(handle, "Namespace scan failure\n");
-+		goto out;
-+	}
-+	error = acpi_bus_get_device(handle, &device);
-+	if (error) {
-+		acpi_handle_warn(handle, "Missing device node object\n");
-+		goto out;
-+	}
-+	ost_code = ACPI_OST_SC_SUCCESS;
-+	if (device->handler && device->handler->hotplug.uevents)
-+		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
-+
-+ out:
-+	acpi_evaluate_hotplug_ost(handle, ost_source, ost_code, NULL);
-+	mutex_unlock(&acpi_scan_lock);
-+}
-+
-+static void acpi_scan_bus_check(void *context)
-+{
-+	acpi_scan_bus_device_check((acpi_handle)context,
-+				   ACPI_NOTIFY_BUS_CHECK);
-+}
-+
-+static void acpi_scan_device_check(void *context)
-+{
-+	acpi_scan_bus_device_check((acpi_handle)context,
-+				   ACPI_NOTIFY_DEVICE_CHECK);
-+}
-+
-+static void acpi_hotplug_notify_cb(acpi_handle handle, u32 type, void *not_used)
-+{
-+	acpi_osd_exec_callback callback;
-+	acpi_status status;
-+
-+	switch (type) {
-+	case ACPI_NOTIFY_BUS_CHECK:
-+		acpi_handle_debug(handle, "ACPI_NOTIFY_BUS_CHECK event\n");
-+		callback = acpi_scan_bus_check;
-+		break;
-+	case ACPI_NOTIFY_DEVICE_CHECK:
-+		acpi_handle_debug(handle, "ACPI_NOTIFY_DEVICE_CHECK event\n");
-+		callback = acpi_scan_device_check;
-+		break;
-+	case ACPI_NOTIFY_EJECT_REQUEST:
-+		acpi_handle_debug(handle, "ACPI_NOTIFY_EJECT_REQUEST event\n");
-+		callback = acpi_bus_device_eject;
-+		break;
-+	default:
-+		/* non-hotplug event; possibly handled by other handler */
-+		return;
-+	}
-+	status = acpi_os_hotplug_execute(callback, handle);
-+	if (ACPI_FAILURE(status))
-+		acpi_evaluate_hotplug_ost(handle, type,
-+					  ACPI_OST_SC_NON_SPECIFIC_FAILURE,
-+					  NULL);
-+}
-+
-+/**
-+ * acpi_bus_hot_remove_device: hot-remove a device and its children
-+ * @context: struct acpi_eject_event pointer (freed in this func)
-+ *
-+ * Hot-remove a device and its children. This function frees up the
-+ * memory space passed by arg context, so that the caller may call
-+ * this function asynchronously through acpi_os_hotplug_execute().
-+ */
-+void acpi_bus_hot_remove_device(void *context)
-+{
-+	struct acpi_eject_event *ej_event = context;
-+	struct acpi_device *device = ej_event->device;
-+	acpi_handle handle = device->handle;
-+	int error;
-+
-+	mutex_lock(&acpi_scan_lock);
-+
-+	error = acpi_scan_hot_remove(device);
-+	if (error && handle)
-+		acpi_evaluate_hotplug_ost(handle, ej_event->event,
-+					  ACPI_OST_SC_NON_SPECIFIC_FAILURE,
-+					  NULL);
-+
-+	mutex_unlock(&acpi_scan_lock);
-+	kfree(context);
- }
- EXPORT_SYMBOL(acpi_bus_hot_remove_device);
- 
-@@ -206,51 +334,61 @@ static ssize_t
- acpi_eject_store(struct device *d, struct device_attribute *attr,
- 		const char *buf, size_t count)
- {
--	int ret = count;
--	acpi_status status;
--	acpi_object_type type = 0;
- 	struct acpi_device *acpi_device = to_acpi_device(d);
- 	struct acpi_eject_event *ej_event;
-+	acpi_object_type not_used;
-+	acpi_status status;
-+	u32 ost_source;
-+	int ret;
- 
--	if ((!count) || (buf[0] != '1')) {
-+	if (!count || buf[0] != '1')
- 		return -EINVAL;
--	}
--	if (!acpi_device->driver && !acpi_device->handler) {
--		ret = -ENODEV;
--		goto err;
--	}
--	status = acpi_get_type(acpi_device->handle, &type);
--	if (ACPI_FAILURE(status) || (!acpi_device->flags.ejectable)) {
--		ret = -ENODEV;
--		goto err;
--	}
- 
--	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
--	if (!ej_event) {
--		ret = -ENOMEM;
--		goto err;
--	}
-+	if ((!acpi_device->handler || !acpi_device->handler->hotplug.enabled)
-+	    && !acpi_device->driver)
-+		return -ENODEV;
-+
-+	status = acpi_get_type(acpi_device->handle, &not_used);
-+	if (ACPI_FAILURE(status) || !acpi_device->flags.ejectable)
-+		return -ENODEV;
-+
-+	mutex_lock(&acpi_scan_lock);
- 
--	get_device(&acpi_device->dev);
--	ej_event->device = acpi_device;
- 	if (acpi_device->flags.eject_pending) {
--		/* event originated from ACPI eject notification */
--		ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
-+		/* ACPI eject notification event. */
-+		ost_source = ACPI_NOTIFY_EJECT_REQUEST;
- 		acpi_device->flags.eject_pending = 0;
- 	} else {
--		/* event originated from user */
--		ej_event->event = ACPI_OST_EC_OSPM_EJECT;
--		(void) acpi_evaluate_hotplug_ost(acpi_device->handle,
--			ej_event->event, ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-+		/* Eject initiated by user space. */
-+		ost_source = ACPI_OST_EC_OSPM_EJECT;
- 	}
--
-+	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
-+	if (!ej_event) {
-+		ret = -ENOMEM;
-+		goto err_out;
-+	}
-+	acpi_evaluate_hotplug_ost(acpi_device->handle, ost_source,
-+				  ACPI_OST_SC_EJECT_IN_PROGRESS, NULL);
-+	ej_event->device = acpi_device;
-+	ej_event->event = ost_source;
-+	get_device(&acpi_device->dev);
- 	status = acpi_os_hotplug_execute(acpi_bus_hot_remove_device, ej_event);
- 	if (ACPI_FAILURE(status)) {
- 		put_device(&acpi_device->dev);
- 		kfree(ej_event);
-+		ret = status == AE_NO_MEMORY ? -ENOMEM : -EAGAIN;
-+		goto err_out;
- 	}
--err:
-+	ret = count;
-+
-+ out:
-+	mutex_unlock(&acpi_scan_lock);
- 	return ret;
-+
-+ err_out:
-+	acpi_evaluate_hotplug_ost(acpi_device->handle, ost_source,
-+				  ACPI_OST_SC_NON_SPECIFIC_FAILURE, NULL);
-+	goto out;
- }
- 
- static DEVICE_ATTR(eject, 0200, NULL, acpi_eject_store);
-@@ -1548,6 +1686,30 @@ static struct acpi_scan_handler *acpi_sc
- 	return NULL;
- }
- 
-+static void acpi_scan_init_hotplug(acpi_handle handle)
-+{
-+	struct acpi_device_info *info;
-+	struct acpi_scan_handler *handler;
-+
-+	if (ACPI_FAILURE(acpi_get_object_info(handle, &info)))
-+		return;
-+
-+	if (!(info->valid & ACPI_VALID_HID)) {
-+		kfree(info);
-+		return;
-+	}
-+
-+	/*
-+	 * This relies on the fact that acpi_install_notify_handler() will not
-+	 * install the same notify handler routine twice for the same handle.
-+	 */
-+	handler = acpi_scan_match_handler(info->hardware_id.string, NULL);
-+	kfree(info);
-+	if (handler && handler->hotplug.enabled)
-+		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-+					    acpi_hotplug_notify_cb, NULL);
-+}
-+
- static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
- 				      void *not_used, void **return_value)
- {
-@@ -1570,6 +1732,8 @@ static acpi_status acpi_bus_check_add(ac
- 		return AE_OK;
- 	}
- 
-+	acpi_scan_init_hotplug(handle);
-+
- 	if (!(sta & ACPI_STA_DEVICE_PRESENT) &&
- 	    !(sta & ACPI_STA_DEVICE_FUNCTIONING)) {
- 		struct acpi_device_wakeup wakeup;
-
+Russell, are you picking this one up?
