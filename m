@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758962Ab3BWUEQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 15:04:16 -0500
-Received: from mga03.intel.com ([143.182.124.21]:36018 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757580Ab3BWUEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 15:04:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,723,1355126400"; 
-   d="scan'208";a="205628707"
-Message-ID: <1361649846.4025.28.camel@ideak-mobl>
-Subject: Re: [PATCH v3 2/2] lib/scatterlist: use page iterator in the
- mapping iterator
-From: Imre Deak <imre.deak@intel.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linaro-mm-sig@lists.linaro.org,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Date: Sat, 23 Feb 2013 22:04:06 +0200
-In-Reply-To: <51284595.5040903@wwwdotorg.org>
-References: <1360768224-18163-1-git-send-email-imre.deak@intel.com>
-	 <1360768224-18163-2-git-send-email-imre.deak@intel.com>
-	 <51284595.5040903@wwwdotorg.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759075Ab3BWUGc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 15:06:32 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:55319 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757471Ab3BWUGb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 15:06:31 -0500
+Date: Sat, 23 Feb 2013 12:06:27 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>
+Cc: linux-kernel@vger.kernel.org, Evgeniy Polyakov <zbr@ioremap.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Daniel Mack <zonque@gmail.com>
+Subject: Re: [PATCH 4/5] W1: w1-gpio - rework handling of platform data
+Message-ID: <20130223200627.GA5505@core.coreip.homeip.net>
+References: <1361606320-4479-1-git-send-email-dmitry.torokhov@gmail.com>
+ <1361606320-4479-4-git-send-email-dmitry.torokhov@gmail.com>
+ <20130223165544.GA11587@sci.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130223165544.GA11587@sci.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-22 at 21:29 -0700, Stephen Warren wrote:
-> On 02/13/2013 08:10 AM, Imre Deak wrote:
-> > For better code reuse use the newly added page iterator to iterate
-> > through the pages. The offset, length within the page is still
-> > calculated by the mapping iterator as well as the actual mapping.
-> > Idea from Tejun Heo <tj@kernel.org>.
+On Sat, Feb 23, 2013 at 06:55:45PM +0200, Ville Syrjälä wrote:
+> On Fri, Feb 22, 2013 at 11:58:39PM -0800, Dmitry Torokhov wrote:
+> > The platform data in the dveice structure does not belong to the driver
+> > and so it should not be trying to alter it, but instead use a local pointer
+> > and populate it with a local copy in case we are dealing with device tree
+> > setup.
+> > 
+> > Also allow mixed setups where platform data coexists with device tree and
+> > prefer kernel-supplied data (it may be easier to fiddle in kernel structure
+> > before committing final result to device tree).
+> > 
+> > Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > ---
+> >  drivers/w1/masters/w1-gpio.c | 93 +++++++++++++++++++++++++-------------------
+> >  1 file changed, 53 insertions(+), 40 deletions(-)
+> > 
+> > diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
+> > index aa97a96..ee6b6e3 100644
+> > --- a/drivers/w1/masters/w1-gpio.c
+> > +++ b/drivers/w1/masters/w1-gpio.c
+> > @@ -23,28 +23,33 @@
+> >  #include "../w1.h"
+> >  #include "../w1_int.h"
+> >  
+> > +struct w1_gpio {
+> > +	struct w1_bus_master master;
+> > +	const struct w1_gpio_platform_data *pdata;
+> > +};
 > 
-> This patch appears in linux-next since next-20130220. It breaks mounting
-> a root filesystem on an SD card on the Raspberry Pi ARM platform, with
-> errors such as those shown below.
-> 
-> next-20130222 with just this patch reverted works fine.
+> I don't understand why you need this wrapper struct. It doesn't
+> seem to serve much purpose, other than to cause code churn in
+> the patch.
 
-Thanks for tracking this down. I noticed now an obvious mistake I've
-made, not limiting the mapping size to page size :/ I didn't hit it
-since it only causes a problem when the user of miter modifies
-miter->consumed and I think nothing does this on my machine. Since the
-sdhci driver on Raspberry Pi does this the following might fix the
-problem you saw. Could you give it a try? It applies on top of
-v4 of the patch [1]:
+Hm, yes, you are right, I should be able to get rid of it...
 
-diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-index 2645acf..b83c144 100644
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -493,6 +493,8 @@ bool sg_miter_next(struct sg_mapping_iter *miter)
- 		miter->__offset = pgoffset ? 0 : sg->offset;
- 		miter->__remaining = sg->offset + sg->length -
- 				(pgoffset << PAGE_SHIFT) - miter->__offset;
-+		miter->__remaining = min_t(unsigned long, miter->__remaining,
-+					   PAGE_SIZE - miter->__offset);
- 	}
- 	miter->page = miter->piter.page;
- 	miter->consumed = miter->length = miter->__remaining;
+Thanks.
 
-
---Imre
-
-[1]
-http://lists.linaro.org/pipermail/linaro-mm-sig/2013-February/003069.html
-
+-- 
+Dmitry
