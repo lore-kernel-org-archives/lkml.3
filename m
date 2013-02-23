@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758906Ab3BWVdm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 16:33:42 -0500
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:50499 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758744Ab3BWVdj convert rfc822-to-8bit (ORCPT
+	id S932241Ab3BWVeH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 16:34:07 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:48993 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759309Ab3BWVdl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 16:33:39 -0500
-Date: Sat, 23 Feb 2013 14:05:42 -0600
+	Sat, 23 Feb 2013 16:33:41 -0500
+Date: Sat, 23 Feb 2013 13:51:14 -0600
 From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH v2 0/5] Generic PHY Framework
-To: balbi@ti.com
-Cc: Arnd Bergmann <arnd@arndb.de>, balbi@ti.com, kishon <kishon@ti.com>,
-        tony@atomide.com, linux@arm.linux.org.uk, eballetbo@gmail.com,
-        javier@dowhile0.org, gregkh@linuxfoundation.org,
-        akpm@linux-foundation.org, mchehab@redhat.com, cesarb@cesarb.net,
-        davem@davemloft.net, santosh.shilimkar@ti.com,
-        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <20130219150500.GG4390@arwen.pp.htv.fi> (from balbi@ti.com on
-	Tue Feb 19 09:05:00 2013)
+Subject: Re: [v3 0/6] ARM: tegra: convert device tree files to use CLK
+ defines
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
+        pdeschrijver@nvidia.com, pgaikwad@nvidia.com,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <1360917814-27236-1-git-send-email-hdoyu@nvidia.com>
+	<1361138717.29465.2@driftwood> <5123B1F8.4040102@wwwdotorg.org>
+In-Reply-To: <5123B1F8.4040102@wwwdotorg.org> (from swarren@wwwdotorg.org on
+	Tue Feb 19 11:10:16 2013)
 X-Mailer: Balsa 2.4.11
-Message-Id: <1361649942.11282.13@driftwood>
+Message-Id: <1361649074.11282.12@driftwood>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
@@ -32,36 +33,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/19/2013 09:05:00 AM, Felipe Balbi wrote:
-> Greg, can you pitch your suggestion here ? It would be great to hear
-> your rationale behind dropping class infrastructure, couldn't find
-> anything through Google and since feature-removal-schedule.txt has  
-> been
-> removed (without adding it to feature-removal-schedule.txt, I must add
-> :-) I don't know what's the idea behind removing classes.
+On 02/19/2013 11:10:16 AM, Stephen Warren wrote:
+> On 02/17/2013 03:05 PM, Rob Landley wrote:
+> > On 02/15/2013 02:43:11 AM, Hiroshi Doyu wrote:
+> >> Hi,
+> >>
+> >> With new dtc+cpp feature, we could get rid of magic numbers in dts*
+> >> files. This patch replaces CLK IDs.
+> >>
+> >> We also plan to share those DT header files with kernel source
+> >> later[1].
+> > ...
+> >> [1]
+> >>  
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/149804.html
+> >>
+> >
+> > This really smells like documentation should be updated, probably
+> > booting-without-of.txt or similar. Alas, I'm not capable of writing  
+> such
+> > an update...
+> 
+> I'm not sure what documentation would be updated nor why. Can you
+> describe that?
 
-I actually went through and poked a couple of people about old entries  
-in feature-removal-shedule.txt last year, but I haven't been very  
-active since the kernel.org breakin because my account got disabled,  
-and I needed to meet kernel developers in person to get keys signed to  
-get it switched back on (or set up a separate git tree with signed  
-commits -next could pull from).
+"When writing new device tree files, please do not include magic  
+numbers. Here's how to avoid them."
 
-I don't get out much; as a consultant I have to take time off from work  
-and pay for my own travel and lodging. So I've been to exactly two  
-conferences in the past 3 years: last year's Texas Linux Fest (my house  
-got broken into and a netbook with the key on it stolen the following  
-wednesday), and CELF (which I'm on the plane back from now, Greg KH  
-signed my key! Woo!).
-
-If I can use that to get my account back, set up a tree feeding into  
-linux-next, and maybe even recover the ability to update  
-http://kernel.org/doc, I'd happily field some sort of  
-feature-removal-schedule list and make sure it stays current. (Linus  
-didn't ask me about removing the old one, I found out about it from the  
-git log. But I can't blame him, I haven't exactly been tearing through  
-the bureaucracy to get my access back. "Volunteer work" and "painful"  
-tend not to combine well on my todo list in terms of scheduling  
-priority...)
+Does something in Documentation already say this somewhere?
 
 Rob
+
