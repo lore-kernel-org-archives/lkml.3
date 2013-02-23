@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750935Ab3BWFBF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 00:01:05 -0500
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:33423 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab3BWFBB (ORCPT
+	id S1751780Ab3BWFQE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 00:16:04 -0500
+Received: from fallback4.mail.ru ([94.100.176.42]:36454 "EHLO
+	fallback4.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab3BWFQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 00:01:01 -0500
-X-Greylist: delayed 4085 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Feb 2013 00:01:01 EST
-From: Thiago Farina <tfransosi@gmail.com>
+	Sat, 23 Feb 2013 00:16:01 -0500
+From: Alexander Shiyan <shc_work@mail.ru>
 To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Subject: [PATCH] regulators: max8998.c: use dev_err() instead of printk()
-Date: Sat, 23 Feb 2013 00:52:35 -0300
-Message-Id: <1361591555-12729-1-git-send-email-tfarina@chromium.org>
-X-Mailer: git-send-email 1.8.1.151.g32238ae
+Cc: Arnd Bergmann <arnd@arndb.de>, Dong Aisheng <dong.aisheng@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH v5 1/3] mfd: syscon: Removed support for unloading
+Date: Sat, 23 Feb 2013 09:15:18 +0400
+Message-Id: <1361596520-19332-1-git-send-email-shc_work@mail.ru>
+X-Mailer: git-send-email 1.7.12.4
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes the following checkpatch warning:
+The driver can be used in various subsystems and therefore should not
+be unloaded when it is defined in the kernel configuration, so remove
+support for unloading it.
 
-WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
-
-Signed-off-by: Thiago Farina <tfarina@chromium.org>
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
 ---
- drivers/regulator/max8998.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/mfd/syscon.c | 18 ------------------
+ 1 file changed, 18 deletions(-)
 
-diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
-index b588f07..a57a1b1 100644
---- a/drivers/regulator/max8998.c
-+++ b/drivers/regulator/max8998.c
-@@ -665,14 +665,16 @@ static int max8998_pmic_probe(struct platform_device *pdev)
- 	    gpio_is_valid(pdata->buck1_set2)) {
- 		/* Check if SET1 is not equal to 0 */
- 		if (!pdata->buck1_set1) {
--			printk(KERN_ERR "MAX8998 SET1 GPIO defined as 0 !\n");
-+			dev_err(&pdev->dev,
-+				"MAX8998 SET1 GPIO defined as 0 !\n");
- 			WARN_ON(!pdata->buck1_set1);
- 			ret = -EIO;
- 			goto err_out;
- 		}
- 		/* Check if SET2 is not equal to 0 */
- 		if (!pdata->buck1_set2) {
--			printk(KERN_ERR "MAX8998 SET2 GPIO defined as 0 !\n");
-+			dev_err(&pdev->dev,
-+				"MAX8998 SET2 GPIO defined as 0 !\n");
- 			WARN_ON(!pdata->buck1_set2);
- 			ret = -EIO;
- 			goto err_out;
-@@ -738,7 +740,8 @@ static int max8998_pmic_probe(struct platform_device *pdev)
- 	if (gpio_is_valid(pdata->buck2_set3)) {
- 		/* Check if SET3 is not equal to 0 */
- 		if (!pdata->buck2_set3) {
--			printk(KERN_ERR "MAX8998 SET3 GPIO defined as 0 !\n");
-+			dev_err(&pdev->dev,
-+				"MAX8998 SET3 GPIO defined as 0 !\n");
- 			WARN_ON(!pdata->buck2_set3);
- 			ret = -EIO;
- 			goto err_out;
+diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+index 61aea63..55d7915 100644
+--- a/drivers/mfd/syscon.c
++++ b/drivers/mfd/syscon.c
+@@ -139,17 +139,6 @@ static int syscon_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int syscon_remove(struct platform_device *pdev)
+-{
+-	struct syscon *syscon;
+-
+-	syscon = platform_get_drvdata(pdev);
+-	iounmap(syscon->base);
+-	platform_set_drvdata(pdev, NULL);
+-
+-	return 0;
+-}
+-
+ static struct platform_driver syscon_driver = {
+ 	.driver = {
+ 		.name = "syscon",
+@@ -157,7 +146,6 @@ static struct platform_driver syscon_driver = {
+ 		.of_match_table = of_syscon_match,
+ 	},
+ 	.probe		= syscon_probe,
+-	.remove		= syscon_remove,
+ };
+ 
+ static int __init syscon_init(void)
+@@ -166,12 +154,6 @@ static int __init syscon_init(void)
+ }
+ postcore_initcall(syscon_init);
+ 
+-static void __exit syscon_exit(void)
+-{
+-	platform_driver_unregister(&syscon_driver);
+-}
+-module_exit(syscon_exit);
+-
+ MODULE_AUTHOR("Dong Aisheng <dong.aisheng@linaro.org>");
+ MODULE_DESCRIPTION("System Control driver");
+ MODULE_LICENSE("GPL v2");
 -- 
-1.8.1.151.g32238ae
+1.7.12.4
 
