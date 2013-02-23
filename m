@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab3BWTXb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 14:23:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31087 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756959Ab3BWTX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 14:23:29 -0500
-Date: Sat, 23 Feb 2013 20:21:58 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Ben Chan <benchan@chromium.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 5/5] coredump: ignore non-fatal signals when core
-	dumping to a pipe
-Message-ID: <20130223192158.GA9405@redhat.com>
-References: <1361008406-2307-1-git-send-email-msb@chromium.org> <1361008406-2307-5-git-send-email-msb@chromium.org> <20130216171010.GE4910@redhat.com> <20130216194643.GA31569@redhat.com> <CACBanvpOVxdiM3FWMiZMM5sAkxXbguT1VhFMkyQv-ntVPE8Y=Q@mail.gmail.com> <20130219142721.GA5709@redhat.com> <CACBanvq+Sdtv-tNXTmJyb3EvXGshC=D4NjR8aVOCjRXcTKp+Mw@mail.gmail.com> <20130219194517.GA9986@redhat.com> <CACBanvo6NqbG7mzD76rM-5kEZ3bOXKfGSbRghvuejSD5S_jnBQ@mail.gmail.com> <CACBanvqF8GjPM0yfEy=7yHCQk5vct6G_T9MD4KJsDiCfwkCQnQ@mail.gmail.com>
+	id S1758407Ab3BWTY2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 14:24:28 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:45436 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757278Ab3BWTY1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 14:24:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACBanvqF8GjPM0yfEy=7yHCQk5vct6G_T9MD4KJsDiCfwkCQnQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130223182059.GA23049@somewhere>
+References: <1361496971-16939-1-git-send-email-fweisbec@gmail.com>
+	<1361496971-16939-3-git-send-email-fweisbec@gmail.com>
+	<alpine.LFD.2.02.1302221528470.22263@ionos>
+	<20130222150444.GD18149@somewhere.redhat.com>
+	<alpine.LFD.2.02.1302221605520.22263@ionos>
+	<CA+55aFxOreKQ-uzfMtXEb6XH4D8By2i=qOxfDLJnchSYsa34PQ@mail.gmail.com>
+	<20130223182059.GA23049@somewhere>
+Date: Sat, 23 Feb 2013 11:24:26 -0800
+X-Google-Sender-Auth: CEGZU-JgossKkn0zmc5oczjHF9o
+Message-ID: <CA+55aFzQ+7_oLgp6Evdn0yiJYO9psOpdMbZMy7goXktLsBYUYg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] irq: Cleanup context state transitions in irq_exit()
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mandeep, sorry for delay.
-
-On 02/20, Mandeep Singh Baines wrote:
+On Sat, Feb 23, 2013 at 10:21 AM, Frederic Weisbecker
+<fweisbec@gmail.com> wrote:
 >
-> On Tue, Feb 19, 2013 at 12:20 PM, Mandeep Singh Baines <msb@chromium.org> wrote:
-> > Ah. Good point. How about this then:
-> >
-> > /* can't use wait_event_freezable since we suppress the fake signal on
-> > SIGNAL_GROUP_COREDUMP */
-> > freezer_do_not_count();
-> > wait_event_interruptible(pipe->wait, pipe->readers == 1);
-> > freezer_count();
+> But tick_nohz_irq_exit() may trigger the timer softirq itself.
 
-Yes, I thought about freezer_do_not_count() + wait_event_interruptible()
-too, but
+Suggestion: merge it with the whole softirq handler.
 
-> No that won't work either. You can't block the fake signal.
+The softirq code *already* knows about the whole "oops, one softirq
+may trigger another" issue, and has a loop - with protection against
+excess - for exactly this reason. See the whole "goto restart" thing.
 
-Yes.
+And tick_nohz_irq_exit() really has very similar semantics to
+softiq's, it's just "CPU is idle and no pending reschedule" instead of
+a softirq. But the basic rules are the same ("only run this at the
+top-level context when exiting the last irq").
 
-And wait_event_freezable() can't work because it is buggy, it doesn't
-clear TIF_SIGPENDING so it becomes a busy-wait loop after freezing.
-34b087e48 broke the logic. Perhaps my fault, I do not remember when
-I sent the patch which was applied as 24b7ead3 (but the code was wrong
-anyway). And its usage is wrong too, unless I missed something. But
-lets discuss this later.
+So maybe the right thing to do is move the whole "goto restart" one
+level up, and do softirq's and tick_nohz_irq_exit both inside that
+loop.
 
-As for coredump, we can fix wait_event_freezable() or reintroduce
-recalc_sigpending() in __refrigerator() as you suggested.
-
-But this doesn't solve other problems, we need more try_to_freeze's
-before wait_for_dump_helper() is called.
-
-> On suspend, you might truncate a core-dump but at least you can
-> reliably suspend.
-
-Btw, yes. Perhaps coredump should simply fail if it races with
-freezer, in this case the necessary changes are simple.
-
-But so far I'll try to make the fixes which will allow to freeze
-the dumping task correctly, I hope I'll send the patches tomorrow.
-
-It is still not clear to me whether we should change freeze_task(),
-but most probably yes, this would be simpler.
-
-Oleg.
-
+              Linus
