@@ -1,138 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758333Ab3BWDBZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 22:01:25 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:60976 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757172Ab3BWDBX (ORCPT
+	id S1758879Ab3BWDjg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 22:39:36 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:49881 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758817Ab3BWDjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 22:01:23 -0500
-Date: Fri, 22 Feb 2013 19:00:34 -0800 (PST)
-From: Min Zhang <mzhang@mvista.com>
-X-X-Sender: mzhang@linux-acr3.site
-To: gregkh@linuxfoundation.org
-cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] tty: fix ldisc flush and termios setting race
-Message-ID: <alpine.LNX.2.00.1302221848440.15944@linux-acr3.site>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 22 Feb 2013 22:39:32 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1361550275-5716-3-git-send-email-nzimmer@sgi.com>
+References: <51265E0F.6090209@sgi.com>
+	<1361550275-5716-1-git-send-email-nzimmer@sgi.com>
+	<1361550275-5716-3-git-send-email-nzimmer@sgi.com>
+Date: Sat, 23 Feb 2013 09:09:31 +0530
+Message-ID: <CAKohpom9q93cVD61qeht2WXgA=no64dwXowtMHS0wCy0k6qxXw@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] cpufreq: Convert the cpufreq_driver_lock to use
+ the rcu
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Min Zhang <mzhang@mvista.com>
+Hi Nathan,
 
-A race condition can clear tty ldisc icanon bit unintentionally which 
-could stop n_tty from processing received characters. It can occur when
-tty receiver buffer was full, e.g. 4096 chars received, 8250 serial driver
-interrupt tried to flush_to_ldisc them, but other shell thread tried
-to change_termios the tty setting too. Then n_tty_receive_char and
-n_tty_set_termios both tried to modify n_tty_data fields.
+Sorry for pointing out this so late but i still feel we are missing something
+really important.
 
-Specifically the icanon and its neighbor fields are defines as bits:
+On 22 February 2013 21:54, Nathan Zimmer <nzimmer@sgi.com> wrote:
 
-    unsigned char lnext:1, erasing:1, raw:1, real_raw:1, icanon:1;
+> -       read_lock_irqsave(&cpufreq_driver_lock, flags);
+> +       rcu_read_lock();
+> +       freqs->flags = rcu_dereference(cpufreq_driver)->flags;
+>         policy = per_cpu(cpufreq_cpu_data, freqs->cpu);
+> -       read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +       rcu_read_unlock();
 
-However they are not atomically accessed in the follow race condition:
+> -       write_lock_irqsave(&cpufreq_driver_lock, flags);
+> +       spin_lock_irqsave(&cpufreq_driver_lock, flags);
+>         for_each_cpu(j, policy->cpus) {
+>                 per_cpu(cpufreq_cpu_data, j) = policy;
+>                 per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
+>         }
+> -       write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +       spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
 
-serial8250_handle_irq
-  serail8250_rx_chars
-    tty_flip_buffer_push
-      schdule_work -------> flush_to_ldisc
-                              n_tty_receive_buf
-                                n_tty_receive_char
-                                  (holds no lock)
-ioctl
-  set_termios
-    tty_set_termios
-      n_tty_set_termios
-        (holds termios_mutex)
+Look at how we are protecting cpufreq_cpu_data here. rcu_read_[un]lock()
+only marks the start/end of critical section. How are we sure here that
+cpufreq_cpu_data is not read simultaneously when we are updating it?
 
-The patch let change_termios to use TTY_LDISC_FLUSHING to prevent
-flush_to_ldisc from running, and flush_to_ldisc use TTY_FLUSHING
-to make change_termios wait until the flag is cleared.
+rcu lock/unlock only works for cpufreq_driver pointer only and not for
+this data. We still need the same locking for for cpufreq_cpu_data.
 
-The patch also replaces flush_to_ldisc's wake_up with wake_up_all,
-because it can now wake up both TTY_FLUSHING and TTY_FLUSHPENDING
-on the same tty->read_wait queue. Event waiters need check which event.
-
-Signed-off-by: Min Zhang <mzhang@mvista.com>
----
- drivers/tty/tty_buffer.c |   12 +++++++++++-
- drivers/tty/tty_ioctl.c  |   27 ++++++++++++++++++++++++++-
- 2 files changed, 37 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 45d9161..37f4818 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -482,6 +482,13 @@ static void flush_to_ldisc(struct work_struct *work)
- 
- 	spin_lock_irqsave(&buf->lock, flags);
- 
-+	/* Ldisc change by change_termios can race with ldisc receive_buf, esp
-+	   to access N_TTY line discipline field in tty_struct, so we defer */
-+	if (test_bit(TTY_LDISC_CHANGING, &tty->flags)) {
-+		schedule_delayed_work(&buf->work, 1);
-+		goto out;
-+	}
-+
- 	if (!test_and_set_bit(TTYP_FLUSHING, &port->iflags)) {
- 		struct tty_buffer *head;
- 		while ((head = buf->head) != NULL) {
-@@ -522,8 +529,11 @@ static void flush_to_ldisc(struct work_struct *work)
- 	if (test_bit(TTYP_FLUSHPENDING, &port->iflags)) {
- 		__tty_buffer_flush(port);
- 		clear_bit(TTYP_FLUSHPENDING, &port->iflags);
--		wake_up(&tty->read_wait);
- 	}
-+
-+	/* wake up tasks waiting for TTYP_FLUSHING or TTYP_FLUSHPENDING */
-+	wake_up_all(&tty->read_wait);
-+out:
- 	spin_unlock_irqrestore(&buf->lock, flags);
- 
- 	tty_ldisc_deref(disc);
-diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
-index 8481b29..36a1bfa 100644
---- a/drivers/tty/tty_ioctl.c
-+++ b/drivers/tty/tty_ioctl.c
-@@ -546,8 +546,33 @@ int tty_set_termios(struct tty_struct *tty, struct ktermios *new_termios)
- 
- 	ld = tty_ldisc_ref(tty);
- 	if (ld != NULL) {
--		if (ld->ops->set_termios)
-+		unsigned long 	flags;
-+		struct tty_port *port = tty->port;
-+		struct tty_bufhead *buf = &port->buf;
-+		if (!ld->ops->set_termios)
-+			goto no_set_termios;
-+
-+		/* Wait if the data is being pushed to the tty layer */
-+		spin_lock_irqsave(&buf->lock, flags);
-+		while (test_bit(TTYP_FLUSHING, &port->iflags)) {
-+			spin_unlock_irqrestore(&buf->lock, flags);
-+			printk(KERN_CRIT "%s flushing\n", __FUNCTION__);
-+			wait_event(tty->read_wait,
-+				   test_bit(TTYP_FLUSHING, &port->iflags) == 0);
-+			spin_lock_irqsave(&buf->lock, flags);
-+		}
-+		printk(KERN_CRIT "%s survived flushing\n", __FUNCTION__);
-+
-+		/* Prevent future flush_to_ldisc while we are setting */
-+		if (!test_and_set_bit(TTY_LDISC_CHANGING, &tty->flags)) {
-+			spin_unlock_irqrestore(&buf->lock, flags);
- 			(ld->ops->set_termios)(tty, &old_termios);
-+			spin_lock_irqsave(&buf->lock, flags);
-+			clear_bit(TTY_LDISC_CHANGING, &tty->flags);
-+		}
-+		spin_unlock_irqrestore(&buf->lock, flags);
-+
-+no_set_termios:
- 		tty_ldisc_deref(ld);
- 	}
- 	mutex_unlock(&tty->termios_mutex);
--- 
-1.7.7.4
-
+What do you say?
