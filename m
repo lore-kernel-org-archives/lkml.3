@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759195Ab3BWW4s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 17:56:48 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:48696 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758847Ab3BWW4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 17:56:46 -0500
-Date: Sat, 23 Feb 2013 23:56:13 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: rob@landley.net
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com, dcobas@cern.ch,
-        cota@braap.org, siglesias@igalia.com, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 4/8] FMC: add documentation for the core
-Message-ID: <20130223225613.GA24239@mail.gnudd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <1361643677.11282.5@driftwood>
-References: <1361643677.11282.5@driftwood> 
+	id S1759346Ab3BWXUL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 18:20:11 -0500
+Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:42043 "EHLO
+	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759051Ab3BWXUJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 18:20:09 -0500
+X-Greylist: delayed 507 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Feb 2013 18:20:09 EST
+References: <1360861375-24131-1-git-send-email-prarit@redhat.com> <1360861375-24131-3-git-send-email-prarit@redhat.com> <5127D884.6020701@linaro.org> <5127DB2B.3030700@redhat.com> <5127DDAF.2000403@linaro.org>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <5127DDAF.2000403@linaro.org>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B22B05C4-B8D2-44B9-971B-37913DE59EF6@towertech.it>
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
+X-Mailer: iPad Mail (10B141)
+From: Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [RFE PATCH 2/2] rtc, add write functionality to sysfs
+Date: Sun, 24 Feb 2013 00:11:32 +0100
+To: John Stultz <john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Acked-by: Rob Landley <rob@landley.net>
+On 22/feb/2013, at 22:05, John Stultz <john.stultz@linaro.org> wrote:
 
-Thanks.
-
-> What is this *note thingy:: syntax? It recurs a lot. Some sort of  
-> reference into the PDF you started out with a link to, maybe?
-
-My documentation is texinfo and this is the ASCII output, manually
-split into different files. I fixed some of the internal references
-when I noted them.  But since it's manual work, I didn't do it
-carefully.  I suspect I'll need to V2 for some reason anyways.
-
-> A basic concept of this framework is that you have a 70x75 PCB? Is this  
-> part of that ANSI-VITA standard?
-
-Yes. the form-factor is fixed, like PC104 in the PC world.  Here's the
-jpg of a carrier: http://www.ohwr.org/attachments/download/552 (from
-http://www.ohwr.org/projects/spec/wiki). And here's the jpg of a
-mezzanine:
-http://www.ohwr.org/attachments/download/833/FmcAdc100M14b4cha_top_small.JPG
-
-You find more on the net, also from commercial vendors.
-
->> +FMC, as such, is not a bus in the usual meaning of the term, because
->> +most carriers have only one connector, and carriers with several
->> +connectors have completely separate electrical connections to them.
->> +This package, however, implements a bus as a software abstraction.
+> On 02/22/2013 12:55 PM, Prarit Bhargava wrote:
+>> 
+>> On 02/22/2013 03:43 PM, John Stultz wrote:
+>>> On 02/14/2013 09:02 AM, Prarit Bhargava wrote:
+>>>> /sys/class/rtc/rtcX/date and /sys/class/rtc/rtcX/time currently have
+>>>> read-only access.  This patch introduces write functionality which will
+>>>> set the rtc time.
+>>>> 
+>>>> Usage: echo YYYY-MM-DD > /sys/class/rtc/rtcX/date
+>>>>         echo HH:MM:SS > /sys/class/rtc/rtcX/time
+>>> Why do we want to add a new interface here?
+>> John,
+>> 
+>> I'm not adding a new interface.  The current date/time interface only handles
+>> read and I'm introducing write.
+>> 
 > 
-> USB is point to point connections with switches in between. It's still  
-> got B in the acronym. I'm not sure what you're saying here.
-
-FMC has no switches, no hotplug, not even shared wires like ISA.  I
-took a while to explain some hardware guys that it ought to be a
-"bus" in software. That's why I have the paragraph.
-
->> +What is SDB
->> +***********
->> +
->> +SDB (Self Describing Bus) is a set of data structures that we use for
->> +enumerating the internal structure of an FPGA image. We also use it  
->> as
->> +a filesystem inside the FMC EEPROM.
+> Right, but what benefit does that provide?
+> (I'm not saying there isn't any, its just not clear from your patch why this is a good thing.)
 > 
-> Are you trying to document infrastructure to implement a standard, or a  
-> bespoke driver for a specific piece of hardware? How much of this is  
-> generic? Are there other vendors who might someday want to use this  
-> code?
+> Also CC'ing Alessandro for his input.
 
-SDB is already implemented and is generic.  We enumerate the devices
-inside the FPGA already, and it only costs a few lines of VHDL (using
-the support files by Wesley Terpstra) to describe your own FPGA
-design. Wesley even discovers and enumerates devices over the
-Ethernet, by means of Ethernet-driven device access and SDB-aware host
-code -- all code is published.
+I'd like to keep the interfaces as simple as possible but I'm open to improvements if there are good use cases.
 
-The SDB specification is discussed in a mailing list and is public
-(http://www.ohwr.org/attachments/download/1486/sdb-1.0.pdf). By having
-64-bit vendor identifiers we encourage anyone who finds SDB useful to
-become a vendor. There are a few vendors already, although I admit the
-early adopters are involved in the same set of projects.
 
-> Anyway, no serious objection, but I note that reading to this point I  
-> didn't feel I had enough information to wrap my head around what it's  
-> for. It's documentation by people who already know this stuff, for  
-> people who already know this stuff. (There's a long tradition of that.  
-> Oh well.)
-
-I'm aware of this. But it's the same if you read USB documentation
-without ever seeing one such device (I remember the feeling :).  FMC
-is not common on the shelf, but it is already renown in high-profile
-I/O environments.
-
-Thanks
-/alessandro
+--
+Best regards,
+ Alessandro Zummo
+    Tower Technologies
