@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159Ab3BWF2c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 00:28:32 -0500
-Received: from f2.mail.ru ([217.69.129.64]:60353 "EHLO f2.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754722Ab3BWF2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 00:28:31 -0500
-X-Greylist: delayed 1051 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Feb 2013 00:28:31 EST
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?U3RlcGhlbiBXYXJyZW4=?= <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>,
-        =?UTF-8?B?RG9uZyBBaXNoZW5n?= <dong.aisheng@linaro.org>,
-        =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
-        =?UTF-8?B?TWFyayBCcm93bg==?= <broonie@opensource.wolfsonmicro.com>,
-        =?UTF-8?B?VGhpZXJyeSBSZWRpbmc=?= <thierry.reding@avionic-design.de>,
-        =?UTF-8?B?R3JlZyBLcm9haC1IYXJ0bWFu?= <gregkh@linuxfoundation.org>
-Subject: =?UTF-8?B?UmVbMl06IFtQQVRDSCB2NSAxLzNdIG1mZDogc3lzY29uOiBSZW1vdmVkIHN1?=
- =?UTF-8?B?cHBvcnQgZm9yIHVubG9hZGluZw==?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [188.134.40.128]
-Date: Sat, 23 Feb 2013 09:28:28 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1361597308.137178281@f2.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Spam: Not detected
-X-Mras: Ok
-In-Reply-To: <512851E0.7000808@wwwdotorg.org>
-References: <1361596520-19332-1-git-send-email-shc_work@mail.ru> <512851E0.7000808@wwwdotorg.org>
+	id S1755032Ab3BWGEi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 01:04:38 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:62551 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870Ab3BWGEh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 01:04:37 -0500
+Message-ID: <51285BF1.2090208@linaro.org>
+Date: Fri, 22 Feb 2013 22:04:33 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Stephane Eranian <eranian@google.com>, Pawel Moll <pawel.moll@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user samples
+ with kernel samples
+References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>  <1350408232.2336.42.camel@laptop> <1359728280.8360.15.camel@hornet>  <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>  <51118797.9080800@linaro.org> <alpine.LFD.2.02.1302182132230.22263@ionos>  <5123C3AF.8060100@linaro.org> <1361356160.10155.22.camel@laptop>
+In-Reply-To: <1361356160.10155.22.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1N5SY4H019065
 
-> On 02/22/2013 10:15 PM, Alexander Shiyan wrote:
-> > The driver can be used in various subsystems and therefore should not
-> > be unloaded when it is defined in the kernel configuration, so remove
-> > support for unloading it.
-> 
-> Why not fix the clients to module_get() at the appropriate times; then
-> you could still allow unloading, couldn't you?
+On 02/20/2013 02:29 AM, Peter Zijlstra wrote:
+> On Tue, 2013-02-19 at 10:25 -0800, John Stultz wrote:
+>> So describe how the perf time domain is different then
+>> CLOCK_MONOTONIC_RAW.
+> The primary difference is that the trace/sched/perf time domain is not
+> strictly monotonic, it is only locally monotonic -- that is two time
+> stamps taken on the same cpu are guaranteed to be monotonic.
 
-I has explain this before. Driver defined as "bool" and loaded via postcore_initcall.
-Once loaded it should not be unloaded, in other case it have not way to be loaded back.
-I am correctly understand your question?
-Thanks.
+So how would a clock_gettime(CLOCK_PERF,...) interface help you figure 
+out which cpu you got your timestamp from?
 
----
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+> Furthermore, to make it useful, there's an actual bound on the inter-cpu
+> drift (implemented by limiting the drift to CLOCK_MONOTONIC).
+
+So this sounds like you're already sort of interpolating to 
+CLOCK_MONOTONIC, or am I just misunderstanding you?
+
+> Additionally -- to increase use -- we also added a monotonic sync point
+> when cpu A queries time of cpu B.
+
+Not sure I'm following this bit. But I'll have to go look at the code on 
+Monday.
+
+>
+>> My concern here is that we're basically creating a kernel interface
+>> that
+>> exports implementation-defined semantics (again: whatever perf does
+>> right now). And I think folks want to do this, because adding
+>> CLOCK_PERF
+>> is easier then trying to:
+>>
+>> 1) Get a lock-free method for accessing CLOCK_MONOTONIC_RAW
+>>
+>> 2) Having perf interpolate its timestamps to CLOCK_MONOTONIC, or
+>> CLOCKMONOTONIC_RAW when it exports the data
+> Mostly cheaper, not easier. Given unstable TSC, MONOTONIC will have to
+> fall back to another clock source (hpet, acpi_pm and other assorted
+> crap).
+>
+> In order to avoid this, we'd had to relax the requirements. Using
+> anything other than TSC is simply not an option.
+
+Right, and this I understand. We can can play a little fast and lose 
+with the rules for in-kernel uses, given the variety of hardware and the 
+fact that performance is more critical then perfect accuracy. Since 
+we're in-kernel we also have more information then userland does about 
+what cpu we're running on, so we can get away with only 
+locally-monotonic timestamps.
+
+But I want to be careful if we're exporting this out to userland that 
+its both useful and that there's an actual specification for how 
+CLOCK_PERF behaves, applications can rely upon not changing in the future.
+
+thanks
+-john
+
+
