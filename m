@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112Ab3BWE3Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 23:29:16 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46894 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757366Ab3BWE3L (ORCPT
+	id S1750935Ab3BWFBF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 00:01:05 -0500
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:33423 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab3BWFBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 23:29:11 -0500
-Message-ID: <51284595.5040903@wwwdotorg.org>
-Date: Fri, 22 Feb 2013 21:29:09 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Imre Deak <imre.deak@intel.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linaro-mm-sig@lists.linaro.org,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH v3 2/2] lib/scatterlist: use page iterator in the mapping
- iterator
-References: <1360768224-18163-1-git-send-email-imre.deak@intel.com> <1360768224-18163-2-git-send-email-imre.deak@intel.com>
-In-Reply-To: <1360768224-18163-2-git-send-email-imre.deak@intel.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 23 Feb 2013 00:01:01 -0500
+X-Greylist: delayed 4085 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Feb 2013 00:01:01 EST
+From: Thiago Farina <tfransosi@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: [PATCH] regulators: max8998.c: use dev_err() instead of printk()
+Date: Sat, 23 Feb 2013 00:52:35 -0300
+Message-Id: <1361591555-12729-1-git-send-email-tfarina@chromium.org>
+X-Mailer: git-send-email 1.8.1.151.g32238ae
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/2013 08:10 AM, Imre Deak wrote:
-> For better code reuse use the newly added page iterator to iterate
-> through the pages. The offset, length within the page is still
-> calculated by the mapping iterator as well as the actual mapping.
-> Idea from Tejun Heo <tj@kernel.org>.
+Fixes the following checkpatch warning:
 
-This patch appears in linux-next since next-20130220. It breaks mounting
-a root filesystem on an SD card on the Raspberry Pi ARM platform, with
-errors such as those shown below.
+WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
 
-next-20130222 with just this patch reverted works fine.
+Signed-off-by: Thiago Farina <tfarina@chromium.org>
+---
+ drivers/regulator/max8998.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-> [    0.708426] VFS: Mounted root (ext4 filesystem) on device 179:2.
-> [    0.723742] devtmpfs: mounted
-> [    0.733064] Freeing init memory: 204K
-> [    0.777992] EXT4-fs error (device mmcblk0p2): ext4_iget:3814: inode #4259: comm swapper: bad extra_isize (57200 != 256)
-> [    0.815172] EXT4-fs error (device mmcblk0p2): ext4_lookup:1428: inode #8198: comm swapper: deleted inode referenced: 487
-> [    0.826179] Kernel panic - not syncing: No init found.  Try passing init= option to kernel. See Linux Documentation/init.txt for guidance.
-
-> [    0.719365] VFS: Mounted root (ext4 filesystem) on device 179:2.
-> [    0.740918] devtmpfs: mounted
-> [    0.745219] Freeing init memory: 204K
-> ERROR: ld.so: object '/usr/lib/arm-linux-gnueabihf/libcofi_rpi.so' from /etc/ld.so.preload cannot be preloaded: ignored.
-> [    0.906840] Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
-
-> [    0.724018] VFS: Mounted root (ext4 filesystem) on device 179:2.
-> [    0.739404] devtmpfs: mounted
-> [    0.748741] Freeing init memory: 204K
-> [    0.793603] EXT4-fs error (device mmcblk0p2): ext4_iget:3814: inode #4259: comm swapper: bad extra_isize (57200 != 256)
-> [    0.822138] Kernel panic - not syncing: No init found.  Try passing init= option to kernel. See Linux Documentation/init.txt for guidance.
-
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index b588f07..a57a1b1 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -665,14 +665,16 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 	    gpio_is_valid(pdata->buck1_set2)) {
+ 		/* Check if SET1 is not equal to 0 */
+ 		if (!pdata->buck1_set1) {
+-			printk(KERN_ERR "MAX8998 SET1 GPIO defined as 0 !\n");
++			dev_err(&pdev->dev,
++				"MAX8998 SET1 GPIO defined as 0 !\n");
+ 			WARN_ON(!pdata->buck1_set1);
+ 			ret = -EIO;
+ 			goto err_out;
+ 		}
+ 		/* Check if SET2 is not equal to 0 */
+ 		if (!pdata->buck1_set2) {
+-			printk(KERN_ERR "MAX8998 SET2 GPIO defined as 0 !\n");
++			dev_err(&pdev->dev,
++				"MAX8998 SET2 GPIO defined as 0 !\n");
+ 			WARN_ON(!pdata->buck1_set2);
+ 			ret = -EIO;
+ 			goto err_out;
+@@ -738,7 +740,8 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 	if (gpio_is_valid(pdata->buck2_set3)) {
+ 		/* Check if SET3 is not equal to 0 */
+ 		if (!pdata->buck2_set3) {
+-			printk(KERN_ERR "MAX8998 SET3 GPIO defined as 0 !\n");
++			dev_err(&pdev->dev,
++				"MAX8998 SET3 GPIO defined as 0 !\n");
+ 			WARN_ON(!pdata->buck2_set3);
+ 			ret = -EIO;
+ 			goto err_out;
+-- 
+1.8.1.151.g32238ae
 
