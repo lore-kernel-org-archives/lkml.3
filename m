@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759316Ab3BWRDW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 12:03:22 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:38978 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759266Ab3BWRDV (ORCPT
+	id S1755102Ab3BWRfJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 12:35:09 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:43245 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628Ab3BWRfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 12:03:21 -0500
+	Sat, 23 Feb 2013 12:35:06 -0500
+Date: Sat, 23 Feb 2013 20:34:42 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: walter harms <wharms@bfs.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Kumar Amit Mehta <gmate.amit@gmail.com>, devel@driverdev.osuosl.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: comedi: drivers: usbduxfast.c: fix for DMA
+ buffers on stack
+Message-ID: <20130223173442.GL9138@mwanda>
+References: <1361556450-32572-1-git-send-email-gmate.amit@gmail.com>
+ <5127BFDB.4010608@bfs.de>
+ <20130222190644.GA16011@kroah.com>
+ <5128E76F.1000607@bfs.de>
 MIME-Version: 1.0
-In-Reply-To: <CAE8XmWoX_TyHMTnGCMn6j_qiK0hptCgyrnVYpDJkfTAQfUNQPA@mail.gmail.com>
-References: <20130223072959.GA4894@www.outflux.net>
-	<CAE8XmWoX_TyHMTnGCMn6j_qiK0hptCgyrnVYpDJkfTAQfUNQPA@mail.gmail.com>
-Date: Sat, 23 Feb 2013 09:03:20 -0800
-X-Google-Sender-Auth: DDPNUkbAiqmudKOOrWPCNWZ3hiQ
-Message-ID: <CAGXu5jKkaTStWRDQLOb6HxM7sGyj+1ekxxkGK8hw6rWkHRrVsQ@mail.gmail.com>
-Subject: Re: [PATCH] arch/x86/xen: remove depends on CONFIG_EXPERIMENTAL
-From: Kees Cook <keescook@chromium.org>
-To: Dongsheng Song <dongsheng.song@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Mukesh Rathor <mukesh.rathor@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5128E76F.1000607@bfs.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 23, 2013 at 3:59 AM, Dongsheng Song
-<dongsheng.song@gmail.com> wrote:
-> On Sat, Feb 23, 2013 at 3:29 PM, Kees Cook <keescook@chromium.org> wrote:
->>
->> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
->> while now and is almost always enabled by default. As agreed during the
->> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->> Cc: Mukesh Rathor <mukesh.rathor@oracle.com>
->> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> ---
->>  arch/x86/xen/Kconfig |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
->> index 93ff4e1..8cada4c 100644
->> --- a/arch/x86/xen/Kconfig
->> +++ b/arch/x86/xen/Kconfig
->> @@ -53,7 +53,7 @@ config XEN_DEBUG_FS
->>
->>  config XEN_X86_PVH
->>         bool "Support for running as a PVH guest (EXPERIMENTAL)"
->
-> Why not remove this 'EXPERIMENTAL' too ?
+On Sat, Feb 23, 2013 at 04:59:43PM +0100, walter harms wrote:
+> >> or is it possible to pass one byte
+> >> in a register ? (aka char/int) without allocating ?
+> > 
+> > Nope, the USB host controllers must be able to DMA to this memory
+> > location, so you have to allocate it dynamically, sorry.
+> > 
+> > thanks,
+> 
+> thx for clarification.
+> 
+> @Kumar Amit Mehta:
+> Would you mind to add this as comment ? Allocating one byte does not
+> look clever so maybe will come up with the idea of changing that.
+> 
 
-It was unclear to me if the feature was actually considered unstable.
-I can resend with the text removed from the title too, if that's the
-correct action here?
+That can't happen.  The reason is already recorded in the git
+history.  Greg and Ian know that DMA to stack memory doesn't work.
+Most maintainers know about that.  If someone changed it back then
+Fengguang would send an automatic email about it as soon as it was
+committed to a public git tree.
 
--Kees
-
->
->> -       depends on X86_64 && XEN && EXPERIMENTAL
->> +       depends on X86_64 && XEN
->>         default n
->>         help
->>            This option enables support for running as a PVH guest (PV guest
->> --
->> 1.7.9.5
->>
->>
->> --
->> Kees Cook
->> Chrome OS Security
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+regards,
+dan carpenter
