@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758879Ab3BWDjg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Feb 2013 22:39:36 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:49881 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758817Ab3BWDjc (ORCPT
+	id S1757069Ab3BWDvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Feb 2013 22:51:52 -0500
+Received: from mail-ye0-f176.google.com ([209.85.213.176]:59614 "EHLO
+	mail-ye0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754840Ab3BWDvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Feb 2013 22:39:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <1361550275-5716-3-git-send-email-nzimmer@sgi.com>
-References: <51265E0F.6090209@sgi.com>
-	<1361550275-5716-1-git-send-email-nzimmer@sgi.com>
-	<1361550275-5716-3-git-send-email-nzimmer@sgi.com>
-Date: Sat, 23 Feb 2013 09:09:31 +0530
-Message-ID: <CAKohpom9q93cVD61qeht2WXgA=no64dwXowtMHS0wCy0k6qxXw@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] cpufreq: Convert the cpufreq_driver_lock to use
- the rcu
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 22 Feb 2013 22:51:48 -0500
+From: Thiago Farina <tfransosi@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: [PATCH 2/2] regulators: max8998.c: use dev_err() instead of printk()
+Date: Sat, 23 Feb 2013 00:51:26 -0300
+Message-Id: <1361591486-12663-1-git-send-email-tfarina@chromium.org>
+X-Mailer: git-send-email 1.8.1.151.g32238ae
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nathan,
+Fixes the following checkpatch warning:
 
-Sorry for pointing out this so late but i still feel we are missing something
-really important.
+WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
 
-On 22 February 2013 21:54, Nathan Zimmer <nzimmer@sgi.com> wrote:
+Signed-off-by: Thiago Farina <tfarina@chromium.org>
+---
+ drivers/regulator/max8998.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-> -       read_lock_irqsave(&cpufreq_driver_lock, flags);
-> +       rcu_read_lock();
-> +       freqs->flags = rcu_dereference(cpufreq_driver)->flags;
->         policy = per_cpu(cpufreq_cpu_data, freqs->cpu);
-> -       read_unlock_irqrestore(&cpufreq_driver_lock, flags);
-> +       rcu_read_unlock();
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index faeb7e8..a57a1b1 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -666,7 +666,7 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 		/* Check if SET1 is not equal to 0 */
+ 		if (!pdata->buck1_set1) {
+ 			dev_err(&pdev->dev,
+-                                "MAX8998 SET1 GPIO defined as 0 !\n");
++				"MAX8998 SET1 GPIO defined as 0 !\n");
+ 			WARN_ON(!pdata->buck1_set1);
+ 			ret = -EIO;
+ 			goto err_out;
+@@ -674,7 +674,7 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 		/* Check if SET2 is not equal to 0 */
+ 		if (!pdata->buck1_set2) {
+ 			dev_err(&pdev->dev,
+-                                "MAX8998 SET2 GPIO defined as 0 !\n");
++				"MAX8998 SET2 GPIO defined as 0 !\n");
+ 			WARN_ON(!pdata->buck1_set2);
+ 			ret = -EIO;
+ 			goto err_out;
+@@ -740,7 +740,8 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 	if (gpio_is_valid(pdata->buck2_set3)) {
+ 		/* Check if SET3 is not equal to 0 */
+ 		if (!pdata->buck2_set3) {
+-			printk(KERN_ERR "MAX8998 SET3 GPIO defined as 0 !\n");
++			dev_err(&pdev->dev,
++				"MAX8998 SET3 GPIO defined as 0 !\n");
+ 			WARN_ON(!pdata->buck2_set3);
+ 			ret = -EIO;
+ 			goto err_out;
+-- 
+1.8.1.151.g32238ae
 
-> -       write_lock_irqsave(&cpufreq_driver_lock, flags);
-> +       spin_lock_irqsave(&cpufreq_driver_lock, flags);
->         for_each_cpu(j, policy->cpus) {
->                 per_cpu(cpufreq_cpu_data, j) = policy;
->                 per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
->         }
-> -       write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-> +       spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-
-Look at how we are protecting cpufreq_cpu_data here. rcu_read_[un]lock()
-only marks the start/end of critical section. How are we sure here that
-cpufreq_cpu_data is not read simultaneously when we are updating it?
-
-rcu lock/unlock only works for cpufreq_driver pointer only and not for
-this data. We still need the same locking for for cpufreq_cpu_data.
-
-What do you say?
