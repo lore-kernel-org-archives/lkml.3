@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759289Ab3BWQzv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 11:55:51 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:60198 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182Ab3BWQzu (ORCPT
+	id S1759316Ab3BWRDW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 12:03:22 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:38978 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759266Ab3BWRDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 11:55:50 -0500
-Date: Sat, 23 Feb 2013 18:55:45 +0200
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Evgeniy Polyakov <zbr@ioremap.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Daniel Mack <zonque@gmail.com>
-Subject: Re: [PATCH 4/5] W1: w1-gpio - rework handling of platform data
-Message-ID: <20130223165544.GA11587@sci.fi>
-Mail-Followup-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	linux-kernel@vger.kernel.org, Evgeniy Polyakov <zbr@ioremap.net>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Daniel Mack <zonque@gmail.com>
-References: <1361606320-4479-1-git-send-email-dmitry.torokhov@gmail.com>
- <1361606320-4479-4-git-send-email-dmitry.torokhov@gmail.com>
+	Sat, 23 Feb 2013 12:03:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1361606320-4479-4-git-send-email-dmitry.torokhov@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE8XmWoX_TyHMTnGCMn6j_qiK0hptCgyrnVYpDJkfTAQfUNQPA@mail.gmail.com>
+References: <20130223072959.GA4894@www.outflux.net>
+	<CAE8XmWoX_TyHMTnGCMn6j_qiK0hptCgyrnVYpDJkfTAQfUNQPA@mail.gmail.com>
+Date: Sat, 23 Feb 2013 09:03:20 -0800
+X-Google-Sender-Auth: DDPNUkbAiqmudKOOrWPCNWZ3hiQ
+Message-ID: <CAGXu5jKkaTStWRDQLOb6HxM7sGyj+1ekxxkGK8hw6rWkHRrVsQ@mail.gmail.com>
+Subject: Re: [PATCH] arch/x86/xen: remove depends on CONFIG_EXPERIMENTAL
+From: Kees Cook <keescook@chromium.org>
+To: Dongsheng Song <dongsheng.song@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Mukesh Rathor <mukesh.rathor@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 11:58:39PM -0800, Dmitry Torokhov wrote:
-> The platform data in the dveice structure does not belong to the driver
-> and so it should not be trying to alter it, but instead use a local pointer
-> and populate it with a local copy in case we are dealing with device tree
-> setup.
-> 
-> Also allow mixed setups where platform data coexists with device tree and
-> prefer kernel-supplied data (it may be easier to fiddle in kernel structure
-> before committing final result to device tree).
-> 
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->  drivers/w1/masters/w1-gpio.c | 93 +++++++++++++++++++++++++-------------------
->  1 file changed, 53 insertions(+), 40 deletions(-)
-> 
-> diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
-> index aa97a96..ee6b6e3 100644
-> --- a/drivers/w1/masters/w1-gpio.c
-> +++ b/drivers/w1/masters/w1-gpio.c
-> @@ -23,28 +23,33 @@
->  #include "../w1.h"
->  #include "../w1_int.h"
->  
-> +struct w1_gpio {
-> +	struct w1_bus_master master;
-> +	const struct w1_gpio_platform_data *pdata;
-> +};
+On Sat, Feb 23, 2013 at 3:59 AM, Dongsheng Song
+<dongsheng.song@gmail.com> wrote:
+> On Sat, Feb 23, 2013 at 3:29 PM, Kees Cook <keescook@chromium.org> wrote:
+>>
+>> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+>> while now and is almost always enabled by default. As agreed during the
+>> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>> Cc: Mukesh Rathor <mukesh.rathor@oracle.com>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> ---
+>>  arch/x86/xen/Kconfig |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+>> index 93ff4e1..8cada4c 100644
+>> --- a/arch/x86/xen/Kconfig
+>> +++ b/arch/x86/xen/Kconfig
+>> @@ -53,7 +53,7 @@ config XEN_DEBUG_FS
+>>
+>>  config XEN_X86_PVH
+>>         bool "Support for running as a PVH guest (EXPERIMENTAL)"
+>
+> Why not remove this 'EXPERIMENTAL' too ?
 
-I don't understand why you need this wrapper struct. It doesn't
-seem to serve much purpose, other than to cause code churn in
-the patch.
+It was unclear to me if the feature was actually considered unstable.
+I can resend with the text removed from the title too, if that's the
+correct action here?
 
-But feel free to ignore me if you think it's useful. get_maintainer.pl
-doesn't even list me anymore, and that's a good thing since I haven't
-even used this driver in years.
+-Kees
+
+>
+>> -       depends on X86_64 && XEN && EXPERIMENTAL
+>> +       depends on X86_64 && XEN
+>>         default n
+>>         help
+>>            This option enables support for running as a PVH guest (PV guest
+>> --
+>> 1.7.9.5
+>>
+>>
+>> --
+>> Kees Cook
+>> Chrome OS Security
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+
+
 
 -- 
-Ville Syrjälä
-syrjala@sci.fi
-http://www.sci.fi/~syrjala/
+Kees Cook
+Chrome OS Security
