@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759090Ab3BXWaf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 17:30:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24818 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755769Ab3BXWae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 17:30:34 -0500
-Date: Mon, 25 Feb 2013 00:30:40 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: virtualization@lists.linux-foundation.org, sjur.brandeland@stericsson.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] vringh
-Message-ID: <20130224223039.GA5461@redhat.com>
-References: <1361226573-12481-1-git-send-email-rusty@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361226573-12481-1-git-send-email-rusty@rustcorp.com.au>
+	id S1759509Ab3BXWfu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 17:35:50 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:42445 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759154Ab3BXWft (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 17:35:49 -0500
+From: Syam Sidhardhan <syamsidhardh@gmail.com>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: syamsidhardh@gmail.com, airlied@linux.ie, daniel.vetter@ffwll.ch
+Subject: [PATCH] drm/i915: Fix missing variable initilization
+Date: Mon, 25 Feb 2013 04:05:38 +0530
+Message-Id: <1361745338-28522-1-git-send-email-s.syam@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 19, 2013 at 08:59:27AM +1030, Rusty Russell wrote:
-> This introduces vringh, which are generic accessors for virtio rings (host side).
-> There's a host-side implementation in vhost, but it assumes that the rings are
-> in userspace, and is tied to the vhost implementation.  I have patches to adapt
-> it to use vringh, but I'm pushing this in the next merge window for Sjur, who has
-> CAIF patches which need it.
-> 
-> This also includes a test program in tools/virtio.  There's a fixup patch for
-> the current tools, since they didn't compile for me.  MST?
-> 
-> Review and comments welcome!
-> Rusty.
+Need to initialize the variable wait to false.
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Syam Sidhardhan <s.syam@samsung.com>
+---
+ drivers/gpu/drm/i915/intel_ddi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_ddi.c b/drivers/gpu/drm/i915/intel_ddi.c
+index fc95ef0..5d0a687 100644
+--- a/drivers/gpu/drm/i915/intel_ddi.c
++++ b/drivers/gpu/drm/i915/intel_ddi.c
+@@ -1391,8 +1391,8 @@ void intel_ddi_prepare_link_retrain(struct drm_encoder *encoder)
+ 	struct intel_dp *intel_dp = &intel_dig_port->dp;
+ 	struct drm_i915_private *dev_priv = encoder->dev->dev_private;
+ 	enum port port = intel_dig_port->port;
+-	bool wait;
+ 	uint32_t val;
++	bool wait = false;
+ 
+ 	if (I915_READ(DP_TP_CTL(port)) & DP_TP_CTL_ENABLE) {
+ 		val = I915_READ(DDI_BUF_CTL(port));
+-- 
+1.7.9.5
+
