@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757988Ab3BXM7x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 07:59:53 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:56355 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551Ab3BXM7v (ORCPT
+	id S1755136Ab3BXNjt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 08:39:49 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:28819 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754229Ab3BXNjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 07:59:51 -0500
-Message-ID: <512A0EBB.30406@gmail.com>
-Date: Sun, 24 Feb 2013 20:59:39 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Sun, 24 Feb 2013 08:39:48 -0500
+X-IronPort-AV: E=Sophos;i="4.84,728,1355094000"; 
+   d="scan'208";a="4259588"
+Date: Sun, 24 Feb 2013 14:39:45 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Julia Lawall <julia.lawall@lip6.fr>, ben-linux@fluff.org,
+        kgene.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, heiko@sntech.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: question about arch/arm/mach-s3c24xx/irq.c
+In-Reply-To: <20130224123849.GH17833@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1302241437360.1943@hadrien>
+References: <alpine.DEB.2.02.1302241241440.1943@hadrien> <20130224123849.GH17833@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Simon Horman <horms@verge.net.au>
-CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kexec: use min_t/max_t to avoid 'if (foo == bar)' thing
-References: <512990F4.3030203@cn.fujitsu.com> <20130224105533.GG18639@verge.net.au>
-In-Reply-To: <20130224105533.GG18639@verge.net.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年02月24日 18:55, Simon Horman 写道:
-> On Sun, Feb 24, 2013 at 12:03:00PM +0800, Zhang Yanfei wrote:
->> This is just a tweak: using min_t/max_t to avoid `if (foo = bar)' thing.
-> 
-> - s/=/==/; s/[/]max_t//
-> 
-> 
-> But in any case the change is more than that.
-> I'd be happier with something like:
-> 
-> 	kexec: Use min_t to simplify logic
+[Adding the person who introduced the code]
 
-Hmm, agreed.
+On Sun, 24 Feb 2013, Russell King - ARM Linux wrote:
 
-> 
->> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Simon Horman <horms@verge.net.au>
->> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
->> ---
->>  kernel/kexec.c |   20 +++++---------------
->>  1 files changed, 5 insertions(+), 15 deletions(-)
->>
->> diff --git a/kernel/kexec.c b/kernel/kexec.c
->> index 2436ffc..065db87 100644
->> --- a/kernel/kexec.c
->> +++ b/kernel/kexec.c
->> @@ -822,13 +822,8 @@ static int kimage_load_normal_segment(struct kimage *image,
->>  		/* Start with a clear page */
->>  		clear_page(ptr);
->>  		ptr += maddr & ~PAGE_MASK;
->> -		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
->> -		if (mchunk > mbytes)
->> -			mchunk = mbytes;
->> -
->> -		uchunk = mchunk;
->> -		if (uchunk > ubytes)
->> -			uchunk = ubytes;
->> +		mchunk = min_t(size_t, mbytes, PAGE_SIZE - (maddr & ~PAGE_MASK));
->> +		uchunk = min_t(size_t, ubytes, mchunk);
->>  
->>  		result = copy_from_user(ptr, buf, uchunk);
->>  		kunmap(page);
->> @@ -874,13 +869,9 @@ static int kimage_load_crash_segment(struct kimage *image,
->>  		}
->>  		ptr = kmap(page);
->>  		ptr += maddr & ~PAGE_MASK;
->> -		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
->> -		if (mchunk > mbytes)
->> -			mchunk = mbytes;
->> -
->> -		uchunk = mchunk;
->> +		mchunk = min_t(size_t, mbytes, PAGE_SIZE - (maddr & ~PAGE_MASK));
->> +		uchunk = min_t(size_t, ubytes, mchunk);
-> 
-> The line above means that uchunk can now never be greater than ubytes.
-> 
->>  		if (uchunk > ubytes) {
-> 
-> So the following seems more appropriate to me:
-> 
-> 		if (mchunk > uchunk) {
+> On Sun, Feb 24, 2013 at 12:45:11PM +0100, Julia Lawall wrote:
+> > The function s3c24xx_irq_map in arch/arm/mach-s3c24xx/irq.c contains the
+> > code:
+> >
+> >                 parent_irq_data = &parent_intc->irqs[irq_data->parent_irq];
+> > 		if (!irq_data) {
+> >                         pr_err("irq-s3c24xx: no irq data found for hwirq %lu\n",
+> >                                hw);
+> >                         goto err;
+> > 		}
+> >
+> > At this point irq_data has already been tested, so the null test on
+> > irq_data does not look correct.  But I wonder if parent_irq_data could
+> > ever be null here?
+>
+> That would be really obscure - because that would require parent_intc to
+> be a "negative" pointer (to counter-act the indexing by
+> irq_data->parent_irq).  So it looks to me like the above is redundant.
 
-Oops, this is really a mistake. Thanks.
+Even at its original definition irq_data seems unlikely to be NULL:
 
-I will send the v2 patch.
+        struct s3c_irq_intc *intc = h->host_data;
+	struct s3c_irq_data *irq_data = &intc->irqs[hw];
+	...
+	if (!irq_data) {
+                pr_err("irq-s3c24xx: no irq data found for hwirq %lu\n", hw);
+                return -EINVAL;
+        }
 
-> 
-> 
->> -			uchunk = ubytes;
->>  			/* Zero the trailing part of the page */
->>  			memset(ptr + uchunk, 0, mchunk - uchunk);
->>  		}
->> @@ -1461,8 +1452,7 @@ void vmcoreinfo_append_str(const char *fmt, ...)
->>  	r = vsnprintf(buf, sizeof(buf), fmt, args);
->>  	va_end(args);
->>  
->> -	if (r + vmcoreinfo_size > vmcoreinfo_max_size)
->> -		r = vmcoreinfo_max_size - vmcoreinfo_size;
->> +	r = min_t(size_t, r, vmcoreinfo_max_size - vmcoreinfo_size);
->>  
->>  	memcpy(&vmcoreinfo_data[vmcoreinfo_size], buf, r);
->>  
->> -- 
->> 1.7.1
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+That is, it could be an invalid value, but whether it actually hits 0
+would seem to depend on the value hw?
 
+Heiko, is NULL really a possibility?
+
+thanks,
+julia
