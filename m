@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750951Ab3BXFAH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 00:00:07 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:65410 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750761Ab3BXFAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 00:00:06 -0500
-X-IronPort-AV: E=Sophos;i="4.84,726,1355068800"; 
-   d="scan'208";a="6757004"
-Message-ID: <512990F4.3030203@cn.fujitsu.com>
-Date: Sun, 24 Feb 2013 12:03:00 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Simon Horman <horms@verge.net.au>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kexec: use min_t/max_t to avoid 'if (foo == bar)' thing
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/24 12:03:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/24 12:04:07,
-	Serialize complete at 2013/02/24 12:04:07
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1751312Ab3BXFZk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 00:25:40 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:4304 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab3BXFZi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 00:25:38 -0500
+From: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+To: alex.williamson@redhat.com, gleb@redhat.com, bhelgaas@google.com,
+        blauwirbel@gmail.com, lance.oritz@hp.com, kvm@vger.kernel.org,
+        qemu-devel@nongnu.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 0/3] AER-KVM: Error containment of VFIO devices assigned to KVM guests
+Date: Sat, 23 Feb 2013 23:25:13 -0600
+Message-Id: <1361683516-31946-1-git-send-email-vijaymohan.pandarathil@hp.com>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just a tweak: using min_t/max_t to avoid `if (foo = bar)' thing.
+Add support for error containment when a VFIO device assigned to a KVM
+guest encounters an error. This is for PCIe devices/drivers that support AER
+functionality. When the host OS is notified of an error in a device either
+through the firmware first approach or through an interrupt handled by the AER
+root port driver, the error handler registered by the vfio-pci driver gets
+invoked. The qemu process is signaled through an eventfd registered per
+VFIO device by the qemu process. In the eventfd handler, qemu decides on
+what action to take. In this implementation, guest is brought down to
+contain the error.
 
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Simon Horman <horms@verge.net.au>
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+
+v5:
+ - Rebased to latest upstream stable bits
+ - Incorporated v4 feedback
+v4:
+ - Stop the guest instead of terminating
+ - Remove unwanted returns from functions
+ - Incorporate other feedback
+v3:
+ - Removed PCI_AER* flags from device info ioctl.
+ - Incorporated feedback
+v2:
+ - Rebased to latest upstream stable bits
+ - Changed the new ioctl to be part of VFIO_SET_IRQs ioctl
+ - Added a new patch to get/put reference to a vfio device from struct device
+ - Incorporated all other feedback.
+
 ---
- kernel/kexec.c |   20 +++++---------------
- 1 files changed, 5 insertions(+), 15 deletions(-)
 
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 2436ffc..065db87 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -822,13 +822,8 @@ static int kimage_load_normal_segment(struct kimage *image,
- 		/* Start with a clear page */
- 		clear_page(ptr);
- 		ptr += maddr & ~PAGE_MASK;
--		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
--		if (mchunk > mbytes)
--			mchunk = mbytes;
--
--		uchunk = mchunk;
--		if (uchunk > ubytes)
--			uchunk = ubytes;
-+		mchunk = min_t(size_t, mbytes, PAGE_SIZE - (maddr & ~PAGE_MASK));
-+		uchunk = min_t(size_t, ubytes, mchunk);
- 
- 		result = copy_from_user(ptr, buf, uchunk);
- 		kunmap(page);
-@@ -874,13 +869,9 @@ static int kimage_load_crash_segment(struct kimage *image,
- 		}
- 		ptr = kmap(page);
- 		ptr += maddr & ~PAGE_MASK;
--		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
--		if (mchunk > mbytes)
--			mchunk = mbytes;
--
--		uchunk = mchunk;
-+		mchunk = min_t(size_t, mbytes, PAGE_SIZE - (maddr & ~PAGE_MASK));
-+		uchunk = min_t(size_t, ubytes, mchunk);
- 		if (uchunk > ubytes) {
--			uchunk = ubytes;
- 			/* Zero the trailing part of the page */
- 			memset(ptr + uchunk, 0, mchunk - uchunk);
- 		}
-@@ -1461,8 +1452,7 @@ void vmcoreinfo_append_str(const char *fmt, ...)
- 	r = vsnprintf(buf, sizeof(buf), fmt, args);
- 	va_end(args);
- 
--	if (r + vmcoreinfo_size > vmcoreinfo_max_size)
--		r = vmcoreinfo_max_size - vmcoreinfo_size;
-+	r = min_t(size_t, r, vmcoreinfo_max_size - vmcoreinfo_size);
- 
- 	memcpy(&vmcoreinfo_data[vmcoreinfo_size], buf, r);
- 
--- 
-1.7.1
+Vijay Mohan Pandarathil(3):
+
+[PATCH 1/3] VFIO: Wrapper to get reference to vfio_device from device 
+[PATCH 2/3] VFIO-AER: Vfio-pci driver changes for supporting AER
+[PATCH 3/3] QEMU-AER: Qemu changes to support AER for VFIO-PCI devices
+
+Kernel files changed
+
+ drivers/vfio/vfio.c  | 47 ++++++++++++++++++++++++++++++++++-------------
+ include/linux/vfio.h |  3 +++
+ 2 files changed, 37 insertions(+), 13 deletions(-)
+
+ drivers/vfio/pci/vfio_pci.c         | 44 ++++++++++++++++++++++++++++++++-
+ drivers/vfio/pci/vfio_pci_intrs.c   | 49 +++++++++++++++++++++++++++++++++++++
+ drivers/vfio/pci/vfio_pci_private.h |  1 +
+ include/uapi/linux/vfio.h           |  1 +
+ 4 files changed, 94 insertions(+), 1 deletion(-)
+
+Qemu files changed
+
+ hw/vfio_pci.c              | 123 +++++++++++++++++++++++++++++++++++++++++++++
+ linux-headers/linux/vfio.h |   1 +
+ 2 files changed, 124 insertions(+)
