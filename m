@@ -1,74 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757785Ab3BXM7Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 07:59:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38672 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756223Ab3BXM7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 07:59:24 -0500
-Date: Sun, 24 Feb 2013 13:59:17 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Peter Feuerer <peter@piie.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        Durgadoss R <durgadoss.r@intel.com>, Borislav Petkov <bp@suse.de>,
-        Andreas Mohr <andi@lisas.de>, Alexander Lam <azl@andrew.cmu.edu>
-Subject: Re: [PATCH] acerhdf: Fix fan activation with new thermal governor
-Message-ID: <20130224125917.GD19609@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@suse.de>,
-	Peter Feuerer <peter@piie.net>, LKML <linux-kernel@vger.kernel.org>,
-	Zhang Rui <rui.zhang@intel.com>, Durgadoss R <durgadoss.r@intel.com>,
-	Andreas Mohr <andi@lisas.de>, Alexander Lam <azl@andrew.cmu.edu>
-References: <20130222111521.GA25473@pd.tnic>
- <1361647210-12983-1-git-send-email-bp@alien8.de>
- <20130224112851.GA19609@pd.tnic>
- <cone.1361706175.908398.1806.1000@galar>
- <20130224120952.GB19609@pd.tnic>
+	id S1757988Ab3BXM7x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 07:59:53 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:56355 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755551Ab3BXM7v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 07:59:51 -0500
+Message-ID: <512A0EBB.30406@gmail.com>
+Date: Sun, 24 Feb 2013 20:59:39 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130224120952.GB19609@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Simon Horman <horms@verge.net.au>
+CC: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kexec: use min_t/max_t to avoid 'if (foo == bar)' thing
+References: <512990F4.3030203@cn.fujitsu.com> <20130224105533.GG18639@verge.net.au>
+In-Reply-To: <20130224105533.GG18639@verge.net.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 24, 2013 at 01:09:52PM +0100, Borislav Petkov wrote:
-> On Sun, Feb 24, 2013 at 12:42:55PM +0100, Peter Feuerer wrote:
-> > Hi Boris,
-> > 
-> > thanks for your best wishes in the last mail, I'm feeling little better now.
+于 2013年02月24日 18:55, Simon Horman 写道:
+> On Sun, Feb 24, 2013 at 12:03:00PM +0800, Zhang Yanfei wrote:
+>> This is just a tweak: using min_t/max_t to avoid `if (foo = bar)' thing.
 > 
-> Nice :)
+> - s/=/==/; s/[/]max_t//
 > 
-> > Please test my last patch with the 4 trip points ;) - even if you
-> > don't really like it, it is working great! - And to be honest, I still
-> > prefer this solution!
 > 
-> Right, but 4 trip points for this simple driver is a bit of a overkill,
-> don't you think? If we want to be really accurate, we'd only need two,
-> think of three temperature intervals here:
+> But in any case the change is more than that.
+> I'd be happier with something like:
 > 
-> 0 - temp <= fanon
-> 1 - fanon =< temp < crit
-> 2 - temp >= crit
+> 	kexec: Use min_t to simplify logic
+
+Hmm, agreed.
+
 > 
-> I need to go stare at it a bit more.
+>> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Simon Horman <horms@verge.net.au>
+>> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+>> ---
+>>  kernel/kexec.c |   20 +++++---------------
+>>  1 files changed, 5 insertions(+), 15 deletions(-)
+>>
+>> diff --git a/kernel/kexec.c b/kernel/kexec.c
+>> index 2436ffc..065db87 100644
+>> --- a/kernel/kexec.c
+>> +++ b/kernel/kexec.c
+>> @@ -822,13 +822,8 @@ static int kimage_load_normal_segment(struct kimage *image,
+>>  		/* Start with a clear page */
+>>  		clear_page(ptr);
+>>  		ptr += maddr & ~PAGE_MASK;
+>> -		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
+>> -		if (mchunk > mbytes)
+>> -			mchunk = mbytes;
+>> -
+>> -		uchunk = mchunk;
+>> -		if (uchunk > ubytes)
+>> -			uchunk = ubytes;
+>> +		mchunk = min_t(size_t, mbytes, PAGE_SIZE - (maddr & ~PAGE_MASK));
+>> +		uchunk = min_t(size_t, ubytes, mchunk);
+>>  
+>>  		result = copy_from_user(ptr, buf, uchunk);
+>>  		kunmap(page);
+>> @@ -874,13 +869,9 @@ static int kimage_load_crash_segment(struct kimage *image,
+>>  		}
+>>  		ptr = kmap(page);
+>>  		ptr += maddr & ~PAGE_MASK;
+>> -		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
+>> -		if (mchunk > mbytes)
+>> -			mchunk = mbytes;
+>> -
+>> -		uchunk = mchunk;
+>> +		mchunk = min_t(size_t, mbytes, PAGE_SIZE - (maddr & ~PAGE_MASK));
+>> +		uchunk = min_t(size_t, ubytes, mchunk);
+> 
+> The line above means that uchunk can now never be greater than ubytes.
+> 
+>>  		if (uchunk > ubytes) {
+> 
+> So the following seems more appropriate to me:
+> 
+> 		if (mchunk > uchunk) {
 
-Oh, and then there's thermal_cdev_update which calls down
-->set_cur_state, i.e. acerhdf_set_cur_state() handing us down a state
-which we're supposed to take into consideration but we completely ignore
-and no our own thing.
+Oops, this is really a mistake. Thanks.
 
-And, AFAICT, when this thing gets called, we need to set the fan to
-either AUTO or OFF, based on the state it's giving us from above, no?
-Because with acerhdf_get_max_state() we tell it that we have two states,
-0 and 1.
+I will send the v2 patch.
 
-Hmm.
+> 
+> 
+>> -			uchunk = ubytes;
+>>  			/* Zero the trailing part of the page */
+>>  			memset(ptr + uchunk, 0, mchunk - uchunk);
+>>  		}
+>> @@ -1461,8 +1452,7 @@ void vmcoreinfo_append_str(const char *fmt, ...)
+>>  	r = vsnprintf(buf, sizeof(buf), fmt, args);
+>>  	va_end(args);
+>>  
+>> -	if (r + vmcoreinfo_size > vmcoreinfo_max_size)
+>> -		r = vmcoreinfo_max_size - vmcoreinfo_size;
+>> +	r = min_t(size_t, r, vmcoreinfo_max_size - vmcoreinfo_size);
+>>  
+>>  	memcpy(&vmcoreinfo_data[vmcoreinfo_size], buf, r);
+>>  
+>> -- 
+>> 1.7.1
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
