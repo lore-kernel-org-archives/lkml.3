@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757785Ab3BXOhc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 09:37:32 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:55455 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114Ab3BXOhb (ORCPT
+	id S1758028Ab3BXOje (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 09:39:34 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:64239 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757908Ab3BXOjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 09:37:31 -0500
-Message-ID: <512A25A1.4040002@gmail.com>
-Date: Sun, 24 Feb 2013 22:37:21 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Sun, 24 Feb 2013 09:39:33 -0500
+Date: Sun, 24 Feb 2013 06:40:17 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Dongsheng Song <dongsheng.song@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Mukesh Rathor <mukesh.rathor@oracle.com>
+Subject: Re: [PATCH] arch/x86/xen: remove depends on CONFIG_EXPERIMENTAL
+Message-ID: <20130224144017.GB1111@kroah.com>
+References: <20130223072959.GA4894@www.outflux.net>
+ <CAE8XmWoX_TyHMTnGCMn6j_qiK0hptCgyrnVYpDJkfTAQfUNQPA@mail.gmail.com>
+ <CAGXu5jKkaTStWRDQLOb6HxM7sGyj+1ekxxkGK8hw6rWkHRrVsQ@mail.gmail.com>
+ <CAE8XmWq+dA5Pvhyoxm2Nqbt0psLpPxUdR7i5MKFhxVxubY0QtQ@mail.gmail.com>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Simon Horman <horms@verge.net.au>
-CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] kexec: Use min_t to simplify logic
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE8XmWq+dA5Pvhyoxm2Nqbt0psLpPxUdR7i5MKFhxVxubY0QtQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+On Sun, Feb 24, 2013 at 05:51:44PM +0800, Dongsheng Song wrote:
+> On Sun, Feb 24, 2013 at 1:03 AM, Kees Cook <keescook@chromium.org> wrote:
+> > On Sat, Feb 23, 2013 at 3:59 AM, Dongsheng Song
+> > <dongsheng.song@gmail.com> wrote:
+> >> On Sat, Feb 23, 2013 at 3:29 PM, Kees Cook <keescook@chromium.org> wrote:
+> >>>
+> >>> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+> >>> while now and is almost always enabled by default. As agreed during the
+> >>> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
+> >>>
+> >>> Signed-off-by: Kees Cook <keescook@chromium.org>
+> >>> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> >>> Cc: Mukesh Rathor <mukesh.rathor@oracle.com>
+> >>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >>> ---
+> >>>  arch/x86/xen/Kconfig |    2 +-
+> >>>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>>
+> >>> diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+> >>> index 93ff4e1..8cada4c 100644
+> >>> --- a/arch/x86/xen/Kconfig
+> >>> +++ b/arch/x86/xen/Kconfig
+> >>> @@ -53,7 +53,7 @@ config XEN_DEBUG_FS
+> >>>
+> >>>  config XEN_X86_PVH
+> >>>         bool "Support for running as a PVH guest (EXPERIMENTAL)"
+> >>
+> >> Why not remove this 'EXPERIMENTAL' too ?
+> >
+> > It was unclear to me if the feature was actually considered unstable.
+> > I can resend with the text removed from the title too, if that's the
+> > correct action here?
+> >
+> > -Kees
+> >
+> 
+> If such a feature was considered unstable, it should depends on EXPERIMENTAL.
 
-This is just a tweak: using min_t to simplify logic of variable
-assignments.
+CONFIG_EXPERIMENTAL is going away.
 
-v2:
-- Rewrite patch description as Simon suggested.
-- Fix an inappropriate if test introduced by v1. Thanks Simon.
+> We should not surprised users.
 
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Simon Horman <horms@verge.net.au>
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- kernel/kexec.c |   22 ++++++----------------
- 1 files changed, 6 insertions(+), 16 deletions(-)
+You should not have unstable options in the kernel in the first place,
+sorry.
 
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 2436ffc..effd655 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -822,13 +822,8 @@ static int kimage_load_normal_segment(struct kimage *image,
- 		/* Start with a clear page */
- 		clear_page(ptr);
- 		ptr += maddr & ~PAGE_MASK;
--		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
--		if (mchunk > mbytes)
--			mchunk = mbytes;
--
--		uchunk = mchunk;
--		if (uchunk > ubytes)
--			uchunk = ubytes;
-+		mchunk = min_t(size_t, mbytes, PAGE_SIZE - (maddr & ~PAGE_MASK));
-+		uchunk = min_t(size_t, ubytes, mchunk);
- 
- 		result = copy_from_user(ptr, buf, uchunk);
- 		kunmap(page);
-@@ -874,13 +869,9 @@ static int kimage_load_crash_segment(struct kimage *image,
- 		}
- 		ptr = kmap(page);
- 		ptr += maddr & ~PAGE_MASK;
--		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
--		if (mchunk > mbytes)
--			mchunk = mbytes;
--
--		uchunk = mchunk;
--		if (uchunk > ubytes) {
--			uchunk = ubytes;
-+		mchunk = min_t(size_t, mbytes, PAGE_SIZE - (maddr & ~PAGE_MASK));
-+		uchunk = min_t(size_t, ubytes, mchunk);
-+		if (mchunk > uchunk) {
- 			/* Zero the trailing part of the page */
- 			memset(ptr + uchunk, 0, mchunk - uchunk);
- 		}
-@@ -1461,8 +1452,7 @@ void vmcoreinfo_append_str(const char *fmt, ...)
- 	r = vsnprintf(buf, sizeof(buf), fmt, args);
- 	va_end(args);
- 
--	if (r + vmcoreinfo_size > vmcoreinfo_max_size)
--		r = vmcoreinfo_max_size - vmcoreinfo_size;
-+	r = min_t(size_t, r, vmcoreinfo_max_size - vmcoreinfo_size);
- 
- 	memcpy(&vmcoreinfo_data[vmcoreinfo_size], buf, r);
- 
--- 
-1.7.1
+greg k-h
