@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757045Ab3BXMJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 07:09:56 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:40582 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752067Ab3BXMJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 07:09:55 -0500
-Date: Sun, 24 Feb 2013 13:09:52 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Feuerer <peter@piie.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        Durgadoss R <durgadoss.r@intel.com>, Borislav Petkov <bp@suse.de>,
-        Andreas Mohr <andi@lisas.de>, Alexander Lam <azl@andrew.cmu.edu>
-Subject: Re: [PATCH] acerhdf: Fix fan activation with new thermal governor
-Message-ID: <20130224120952.GB19609@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Peter Feuerer <peter@piie.net>, LKML <linux-kernel@vger.kernel.org>,
-	Zhang Rui <rui.zhang@intel.com>,
-	Durgadoss R <durgadoss.r@intel.com>, Borislav Petkov <bp@suse.de>,
-	Andreas Mohr <andi@lisas.de>, Alexander Lam <azl@andrew.cmu.edu>
-References: <20130222111521.GA25473@pd.tnic>
- <1361647210-12983-1-git-send-email-bp@alien8.de>
- <20130224112851.GA19609@pd.tnic>
- <cone.1361706175.908398.1806.1000@galar>
+	id S1757495Ab3BXMXX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 07:23:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47555 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755612Ab3BXMXV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 07:23:21 -0500
+Date: Sun, 24 Feb 2013 04:21:48 -0800
+From: tip-bot for Li Zhong <tipbot@zytor.com>
+Message-ID: <tip-c78a4bcd1a879b39fb7646c887b0c195f1018909@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        zhong@linux.vnet.ibm.com, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de, khilman@linaro.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        zhong@linux.vnet.ibm.com, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de, khilman@linaro.org
+In-Reply-To: <1361636925-22288-2-git-send-email-fweisbec@gmail.com>
+References: <1361636925-22288-2-git-send-email-fweisbec@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] cputime: Constify timeval_to_cputime(timeval)
+  argument
+Git-Commit-ID: c78a4bcd1a879b39fb7646c887b0c195f1018909
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <cone.1361706175.908398.1806.1000@galar>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sun, 24 Feb 2013 04:21:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 24, 2013 at 12:42:55PM +0100, Peter Feuerer wrote:
-> Hi Boris,
-> 
-> thanks for your best wishes in the last mail, I'm feeling little better now.
+Commit-ID:  c78a4bcd1a879b39fb7646c887b0c195f1018909
+Gitweb:     http://git.kernel.org/tip/c78a4bcd1a879b39fb7646c887b0c195f1018909
+Author:     Li Zhong <zhong@linux.vnet.ibm.com>
+AuthorDate: Sat, 23 Feb 2013 17:28:44 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sun, 24 Feb 2013 12:57:15 +0100
 
-Nice :)
+cputime: Constify timeval_to_cputime(timeval) argument
 
-> Please test my last patch with the 4 trip points ;) - even if you
-> don't really like it, it is working great! - And to be honest, I still
-> prefer this solution!
+Saw the following compiler warning on the linux-next tree:
 
-Right, but 4 trip points for this simple driver is a bit of a overkill,
-don't you think? If we want to be really accurate, we'd only need two,
-think of three temperature intervals here:
+  kernel/itimer.c: In function 'set_cpu_itimer':
+  kernel/itimer.c:152:2: warning: passing argument 1 of 'timeval_to_cputime' discards 'const' qualifier from pointer target type [enabled by default]
+  ...
 
-0 - temp <= fanon
-1 - fanon =< temp < crit
-2 - temp >= crit
+timeval_to_cputime() is always passed a constant timeval in
+argument, we need to teach the nsecs based cputime
+implementation about that.
 
-I need to go stare at it a bit more.
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Kevin Hilman <khilman@linaro.org>
+Link: http://lkml.kernel.org/r/1361636925-22288-2-git-send-email-fweisbec@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Kevin Hilman <khilman@linaro.org>
+---
+ include/asm-generic/cputime_nsecs.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Anyhow, did you test what Rui asked us to test?
-
-Yep.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+diff --git a/include/asm-generic/cputime_nsecs.h b/include/asm-generic/cputime_nsecs.h
+index b6485ca..a8ece9a 100644
+--- a/include/asm-generic/cputime_nsecs.h
++++ b/include/asm-generic/cputime_nsecs.h
+@@ -76,7 +76,7 @@ static inline void cputime_to_timespec(const cputime_t ct, struct timespec *val)
+ /*
+  * Convert cputime <-> timeval (msec)
+  */
+-static inline cputime_t timeval_to_cputime(struct timeval *val)
++static inline cputime_t timeval_to_cputime(const struct timeval *val)
+ {
+ 	u64 ret = val->tv_sec * NSEC_PER_SEC + val->tv_usec * NSEC_PER_USEC;
+ 	return (__force cputime_t) ret;
