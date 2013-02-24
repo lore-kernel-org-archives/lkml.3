@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759448Ab3BXXQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 18:16:56 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:39376 "EHLO gloria.sntech.de"
+	id S1759441Ab3BXXcX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 18:32:23 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:43310 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758716Ab3BXXQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 18:16:54 -0500
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] i2c: s3c2410: check for NULL pinctrl handle
-Date: Mon, 25 Feb 2013 00:16:49 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Tomasz Figa <t.figa@samsung.com>
-References: <201302231855.47560.heiko@sntech.de> <1366216.NzXQfD1BG7@flatron> <CACRpkdbfQOeJ3u8_UvgVMRyu_MMmOZD0tjQT+qNr9iOEpAHLWQ@mail.gmail.com>
-In-Reply-To: <CACRpkdbfQOeJ3u8_UvgVMRyu_MMmOZD0tjQT+qNr9iOEpAHLWQ@mail.gmail.com>
+	id S1758955Ab3BXXcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 18:32:22 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Neil Horman <nhorman@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] freezer: do not send a fake signal to a PF_DUMPCORE thread
+Date: Mon, 25 Feb 2013 00:39:03 +0100
+Message-ID: <45402727.PXDVBuj6zy@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130224183656.GA8903@redhat.com>
+References: <20130224173144.GA32179@redhat.com> <20130224173206.GA32206@redhat.com> <20130224183656.GA8903@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302250016.49773.heiko@sntech.de>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 24. Februar 2013, 23:39:44 schrieb Linus Walleij:
-> On Sun, Feb 24, 2013 at 6:00 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> >> > Note that we are talking here about a temporary solution. The legacy
-> >> > DT- based pin configuration will go away after all the DT-enabled
-> >> > platforms using this driver get migrated to pin control and so will
-> >> > the need to check if pin control is available.
-> >> 
-> >> So use AUXDATA, and you get a pdata for that driver?
-> > 
-> > Hmm, and then have some platform data passed statically and some parsed
-> > from device tree?
+On Sunday, February 24, 2013 07:36:56 PM Oleg Nesterov wrote:
+> A coredumping thread can't be frozen anyway but the fake signal sent
+> by freeze_task() can confuse dump_write/wait_for_dump_helpers/etc
+> and interrupt the coredump.
 > 
-> This is done by several in-tree drivers today. It is even necessary for
-> things like machine-specific callbacks.
+> We are going to make the do_coredump() paths freezable but the fake
+> TIF_SIGPENDING doesn't help, it only makes sense when we assume that
+> the target can return to user-mode and call get_signal_to_deliver().
 > 
-> > Not even saying that we are going towards getting rid of
-> > auxdata, not adding further dependencies for it.
+> Change freeze_task() to check PF_DUMPCORE along with PF_KTHREAD. We
+> need to recheck PF_DUMPCORE under ->siglock to avoid the race with
+> zap_threads() which can set this flag right before we take the lock.
 > 
-> The other option is to do the non-temporary solution you are
-> referring to below...
-> 
-> > Sorry, but this sounds more broken to me than checking the return value
-> > of devm_pinctrl_get_select_default for NULL in the driver.
-> 
-> Both are bad solution, auxdata is less bad than trying to check
-> struct pinctrl * handles for non-NULL, which has *never* been a
-> good thing to do and should never have been merged in the first
-> place.
-> 
-> (Maybe I ACKed that, then I was doing something stupid.)
-> 
-> > Still, all the platforms relying on the legacy DT GPIO support should
-> > have been already migrated to pin control, so ideally instead of
-> > "fixing" the drivers to continue supporting the deprecated method, such
-> > platforms should be fixed.
-> 
-> I agree.
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Fine by me ... I'll work on a pinctrl driver for s3c24xx then :-)
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-
-Heiko
+> ---
+>  kernel/freezer.c |   19 ++++++++++++-------
+>  1 files changed, 12 insertions(+), 7 deletions(-)
+> 
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index c38893b..595afab 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -85,14 +85,21 @@ bool __refrigerator(bool check_kthr_stop)
+>  }
+>  EXPORT_SYMBOL(__refrigerator);
+>  
+> -static void fake_signal_wake_up(struct task_struct *p)
+> +static bool fake_signal_wake_up(struct task_struct *p)
+>  {
+>  	unsigned long flags;
+> +	bool ret = false;
+> +
+> +	if (p->flags & (PF_KTHREAD | PF_DUMPCORE))
+> +		return ret;
+>  
+>  	if (lock_task_sighand(p, &flags)) {
+> -		signal_wake_up(p, 0);
+> +		ret = !(p->flags & PF_DUMPCORE);
+> +		if (ret)
+> +			signal_wake_up(p, 0);
+>  		unlock_task_sighand(p, &flags);
+>  	}
+> +	return ret;
+>  }
+>  
+>  /**
+> @@ -100,8 +107,8 @@ static void fake_signal_wake_up(struct task_struct *p)
+>   * @p: task to send the request to
+>   *
+>   * If @p is freezing, the freeze request is sent either by sending a fake
+> - * signal (if it's not a kernel thread) or waking it up (if it's a kernel
+> - * thread).
+> + * signal (if it's not a kernel thread or a coredumping thread) or waking
+> + * it up otherwise.
+>   *
+>   * RETURNS:
+>   * %false, if @p is not freezing or already frozen; %true, otherwise
+> @@ -116,9 +123,7 @@ bool freeze_task(struct task_struct *p)
+>  		return false;
+>  	}
+>  
+> -	if (!(p->flags & PF_KTHREAD))
+> -		fake_signal_wake_up(p);
+> -	else
+> +	if (!fake_signal_wake_up(p))
+>  		wake_up_state(p, TASK_INTERRUPTIBLE);
+>  
+>  	spin_unlock_irqrestore(&freezer_lock, flags);
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
