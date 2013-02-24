@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759528Ab3BXWf6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 17:35:58 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:55580 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759512Ab3BXWfz (ORCPT
+	id S1759530Ab3BXWjs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 17:39:48 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:44449 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758354Ab3BXWjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 17:35:55 -0500
-Date: Mon, 25 Feb 2013 09:35:47 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-next@vger.kernel.org
-Subject: linux-next: please clean up
-Message-Id: <20130225093547.fc35a0499146047933e52f17@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__25_Feb_2013_09_35_47_+1100_iUMngB0Tk=4pFoTr"
+	Sun, 24 Feb 2013 17:39:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <1366216.NzXQfD1BG7@flatron>
+References: <201302231855.47560.heiko@sntech.de>
+	<31669750.ZZOiY1AEPv@flatron>
+	<CACRpkdYBjZgEo6qEyBOcYuPzpQUAZ9x-kvFabz0y0pEQs35sKw@mail.gmail.com>
+	<1366216.NzXQfD1BG7@flatron>
+Date: Sun, 24 Feb 2013 23:39:44 +0100
+Message-ID: <CACRpkdbfQOeJ3u8_UvgVMRyu_MMmOZD0tjQT+qNr9iOEpAHLWQ@mail.gmail.com>
+Subject: Re: [PATCH] i2c: s3c2410: check for NULL pinctrl handle
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Tomasz Figa <t.figa@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Feb_2013_09_35_47_+1100_iUMngB0Tk=4pFoTr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Feb 24, 2013 at 6:00 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
 
-Hi all,
+>> > Note that we are talking here about a temporary solution. The legacy
+>> > DT- based pin configuration will go away after all the DT-enabled
+>> > platforms using this driver get migrated to pin control and so will
+>> > the need to check if pin control is available.
+>>
+>> So use AUXDATA, and you get a pdata for that driver?
+>
+> Hmm, and then have some platform data passed statically and some parsed
+> from device tree?
 
-As your work is merged by upstream trees, please clean up your linux-next
-included branches.
+This is done by several in-tree drivers today. It is even necessary for things
+like machine-specific callbacks.
 
-A big thanks to those who already do this in a timely fashion.
+> Not even saying that we are going towards getting rid of
+> auxdata, not adding further dependencies for it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The other option is to do the non-temporary solution you are
+referring to below...
 
---Signature=_Mon__25_Feb_2013_09_35_47_+1100_iUMngB0Tk=4pFoTr
-Content-Type: application/pgp-signature
+> Sorry, but this sounds more broken to me than checking the return value of
+> devm_pinctrl_get_select_default for NULL in the driver.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Both are bad solution, auxdata is less bad than trying to check
+struct pinctrl * handles for non-NULL, which has *never* been a
+good thing to do and should never have been merged in the first
+place.
 
-iQIcBAEBCAAGBQJRKpXDAAoJEECxmPOUX5FE2QUP/0ZEwOvSbyRZ0cyrGdl4pmWU
-5FrcY3jBxW3bfQdiNaJTDqaQrpwOA/UfATKcawHrdfJjhNvDxdDqQFTDjIYs18BS
-HI78wncLQP0F/UvtnZJlKV3r6AxmHFTMFHf29QGxCB1D1fwW7amhbL8B3XNvuvkp
-Rz4cVqRC+I49czdgyeQZPCbFZ+FWPey5VHbj6NDsirCVNF2BiQz3bhHc4l2hbyK2
-92NblgNi8ZU+V32aoZRxsoa1lj3YGSZtUUGgHwq7bJi4VFxWO8EQqwGoZES3s+SX
-e4NkQVKY7faWJQUdXOljHvYDeEHkwo5AkvmnK0ZK93HrxsfpLeVmq8jPLPo1f2DU
-LlpY1ouom+fpza/ZV4XixLCXxzcScQn5/TEMiSDtM75I6iQnCjsf94VhEn+/bHoc
-JCidIEwNoEqVBnCy7x+5UICr4oW7vtosTZxEC0LvfBK618hy2gx9ZEI4qcDALtss
-FH2gNWwStIptdNXjPrQuHZZVok4zwt4Y9S/DqzLLoKC8xPoZDV1Tv4/Ekq0iFBI0
-F5bHT/Hxt6mLhRZB5toSwVOGP5oq+9m63n/xkx/DYxfdTNR2cMxr+I15jaa0Awns
-cU7vX60pq4BTB/yc8FIPbi+99p+56l90SfXkpf5EVKZBIBUVsDdmICJHb2WnYCtp
-DHnHt9UeWBnNjlDLHtjz
-=x+uE
------END PGP SIGNATURE-----
+(Maybe I ACKed that, then I was doing something stupid.)
 
---Signature=_Mon__25_Feb_2013_09_35_47_+1100_iUMngB0Tk=4pFoTr--
+> Still, all the platforms relying on the legacy DT GPIO support should have
+> been already migrated to pin control, so ideally instead of "fixing" the
+> drivers to continue supporting the deprecated method, such platforms
+> should be fixed.
+
+I agree.
+
+Yours,
+Linus Walleij
