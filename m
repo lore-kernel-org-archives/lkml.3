@@ -1,107 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab3BXRuA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 12:50:00 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:37328 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751015Ab3BXRt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 12:49:58 -0500
-From: Heiko =?iso-8859-15?q?St=FCbner?= <heiko@sntech.de>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: question about arch/arm/mach-s3c24xx/irq.c
-Date: Sun, 24 Feb 2013 18:49:41 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>, ben-linux@fluff.org,
-        kgene.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <alpine.DEB.2.02.1302241241440.1943@hadrien> <201302241611.13028.heiko@sntech.de> <alpine.DEB.2.02.1302241644540.1943@hadrien>
-In-Reply-To: <alpine.DEB.2.02.1302241644540.1943@hadrien>
+	id S1756379Ab3BXRxI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 12:53:08 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:60597 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934Ab3BXRxH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 12:53:07 -0500
+Message-ID: <512A5332.6040507@linux.vnet.ibm.com>
+Date: Sun, 24 Feb 2013 23:21:46 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201302241849.41638.heiko@sntech.de>
+To: Alex Shi <alex.shi@intel.com>
+CC: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
+        mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Subject: Re: [patch v5 09/15] sched: add power aware scheduling in fork/exec/wake
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com> <1361164062-20111-10-git-send-email-alex.shi@intel.com> <1361353360.10155.9.camel@laptop> <5124BCEB.8030606@intel.com> <1361367371.10155.32.camel@laptop> <5124DC76.2010801@intel.com> <1361453587.26780.18.camel@laptop> <512631C7.8060103@intel.com> <1361523279.26780.45.camel@laptop> <5129DD1A.8070509@intel.com>
+In-Reply-To: <5129DD1A.8070509@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022417-5490-0000-0000-00000303932E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 24. Februar 2013, 16:45:18 schrieb Julia Lawall:
-> On Sun, 24 Feb 2013, Heiko Stübner wrote:
-> > Am Sonntag, 24. Februar 2013, 14:39:45 schrieb Julia Lawall:
-> > > [Adding the person who introduced the code]
-> > > 
-> > > On Sun, 24 Feb 2013, Russell King - ARM Linux wrote:
-> > > > On Sun, Feb 24, 2013 at 12:45:11PM +0100, Julia Lawall wrote:
-> > > > > The function s3c24xx_irq_map in arch/arm/mach-s3c24xx/irq.c
-> > > > > contains the
-> > > > > 
-> > > > > code:
-> > > > >                 parent_irq_data =
-> > > > >                 &parent_intc->irqs[irq_data->parent_irq];
-> > > > > 		
-> > > > > 		if (!irq_data) {
-> > > > > 		
-> > > > >                         pr_err("irq-s3c24xx: no irq data found for
-> > > > >                         hwirq %lu\n",
-> > > > >                         
-> > > > >                                hw);
-> > > > >                         
-> > > > >                         goto err;
-> > > > > 		
-> > > > > 		}
-> > > > > 
-> > > > > At this point irq_data has already been tested, so the null test on
-> > > > > irq_data does not look correct.  But I wonder if parent_irq_data
-> > > > > could ever be null here?
-> > > > 
-> > > > That would be really obscure - because that would require parent_intc
-> > > > to be a "negative" pointer (to counter-act the indexing by
-> > > > irq_data->parent_irq).  So it looks to me like the above is
-> > > > redundant.
-> > > 
-> > > Even at its original definition irq_data seems unlikely to be NULL:
-> > >         struct s3c_irq_intc *intc = h->host_data;
-> > > 	
-> > > 	struct s3c_irq_data *irq_data = &intc->irqs[hw];
-> > > 	...
-> > > 	if (!irq_data) {
-> > > 	
-> > >                 pr_err("irq-s3c24xx: no irq data found for hwirq
-> > >                 %lu\n",
-> > > 
-> > > hw); return -EINVAL;
-> > > 
-> > >         }
-> > > 
-> > > That is, it could be an invalid value, but whether it actually hits 0
-> > > would seem to depend on the value hw?
-> > > 
-> > > Heiko, is NULL really a possibility?
-> > 
-> > The test you quoted is of course wrong ... it would need to test
-> > parent_irq_data. But you're also right that the test is not necessary at
-> > all.
-> > 
-> > All the s3c_irq_data arrays used always contain 32 entries to reach all
-> > bits of the register (which is used differently on each SoC). So if we
-> > have found the parent_intc at all, it should contain a 32 entries array
-> > of irq_data structs, so no need to test for the existence of the
-> > individual array element.
-> > 
-> > 
-> > And now that I look at it, I also see another glitch. The code tests for
-> > parent_irq != 0, which of course won't work if the parent_irq is the
-> > 0-hwirq of the parent controller.
-> > The only SoC using such a mapping is the s3c2412 [0], which explains why
-> > I haven't been bitten by this myself.
+Hi,
+
+On 02/24/2013 02:57 PM, Alex Shi wrote:
+> On 02/22/2013 04:54 PM, Peter Zijlstra wrote:
+>> On Thu, 2013-02-21 at 22:40 +0800, Alex Shi wrote:
+>>>> The name is a secondary issue, first you need to explain why you
+>>> think
+>>>> nr_running is a useful metric at all.
+>>>>
+>>>> You can have a high nr_running and a low utilization (a burst of
+>>>> wakeups, each waking a process that'll instantly go to sleep again),
+>>> or
+>>>> low nr_running and high utilization (a single process cpu bound
+>>>> process).
+>>>
+>>> It is true in periodic balance. But in fork/exec/waking timing, the
+>>> incoming processes usually need to do something before sleep again.
+>>
+>> You'd be surprised, there's a fair number of workloads that have
+>> negligible runtime on wakeup.
 > 
-> Do you want to make all the fixes?
+> will appreciate if you like introduce some workload. :)
+> BTW, do you has some idea to handle them?
+> Actually, if tasks is just like transitory, it is also hard to catch
+> them in balance, like 'cyclitest -t 100' on my 4 LCPU laptop, vmstat
+> just can catch 1 or 2 tasks very second.
+>>
+>>> I use nr_running to measure how the group busy, due to 3 reasons:
+>>> 1, the current performance policy doesn't use utilization too.
+>>
+>> We were planning to fix that now that its available.
+> 
+> I had tried, but failed on aim9 benchmark. As a result I give up to use
+> utilization in performance balance.
+> Some trying and talking in the thread.
+> https://lkml.org/lkml/2013/1/6/96
+> https://lkml.org/lkml/2013/1/22/662
+>>
+>>> 2, the power policy don't care load weight.
+>>
+>> Then its broken, it should very much still care about weight.
+> 
+> Here power policy just use nr_running as the criteria to check if it's
+> eligible for power aware balance. when do balancing the load weight is
+> still the key judgment.
+> 
+>>
+>>> 3, I tested some benchmarks, kbuild/tbench/hackbench/aim7 etc, some
+>>> benchmark results looks clear bad when use utilization. if my memory
+>>> right, the hackbench/aim7 both looks bad. I had tried many ways to
+>>> engage utilization into this balance, like use utilization only, or
+>>> use
+>>> utilization * nr_running etc. but still can not find a way to recover
+>>> the lose. But with nr_running, the performance seems doesn't lose much
+>>> with power policy.
+>>
+>> You're failing to explain why utilization performs bad and you don't
+>> explain why nr_running is better. That things work simply isn't good
+> 
+> Um, let me try to explain again, The utilisation need much time to
+> accumulate itself(345ms). Whenever with or without load weight, many
+> bursting tasks just give a minimum weight to the carrier CPU at the
+> first few ms. So, it is too easy to do a incorrect distribution here and
+> need migration on later periodic balancing.
 
-Yep, I just need to find out what the best fix for my parent_irq mess up would 
-be :-)
+Why can't this be attacked in *either* of the following ways:
 
-The easiest way would of course be to use a value outside the valid range to 
-indicate no parent-irq, so either < 0 (would need a type change) or > 32 .
+1.Attack this problem at the source, by ensuring that the utilisation is
+accumulated faster by making the update window smaller.
 
-But I might be overlooking something here.
+2.Balance on nr->running only if you detect burst wakeups.
+Alex, you had released a patch earlier which could detect this right?
+Instead of balancing on nr_running all the time, why not balance on it
+only if burst wakeups are detected. By doing so you ensure that
+nr_running as a metric for load balancing is used when it is right to do
+so and the reason to use it also gets well documented.
+
+Regards
+Preeti U Murthy
 
