@@ -1,42 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab3BXGZE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 01:25:04 -0500
-Received: from miso.sublimeip.com ([203.12.5.51]:47288 "EHLO
+	id S1753837Ab3BXG2h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 01:28:37 -0500
+Received: from miso.sublimeip.com ([203.12.5.51]:55295 "EHLO
 	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab3BXGZD (ORCPT
+	with ESMTP id S1751172Ab3BXG2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 01:25:03 -0500
+	Sun, 24 Feb 2013 01:28:36 -0500
 Subject: Re: prctl(PR_SET_MM)
 To: akpm@linux-foundation.org (Andrew Morton)
-Date: Sun, 24 Feb 2013 17:24:58 +1100 (EST)
-Cc: Steven@miso.sublimeip.com, Rostedt@miso.sublimeip.com,
-        <rostedt@goodmis.org>, Oleg@miso.sublimeip.com,
-        Nesterov@miso.sublimeip.com, <oleg@redhat.com>,
-        Pedro@miso.sublimeip.com, Alves@miso.sublimeip.com,
-        <palves@redhat.com>, Denys@miso.sublimeip.com,
-        Vlasenko@miso.sublimeip.com, <dvlasenk@redhat.com>,
-        Jan@miso.sublimeip.com, Kratochvil@miso.sublimeip.com,
-        <jan.kratochvil@redhat.com>, Pavel@miso.sublimeip.com,
-        Emelyanov@miso.sublimeip.com, <xemul@parallels.com>,
-        Frederic@miso.sublimeip.com, Weisbecker@miso.sublimeip.com,
-        <fweisbec@gmail.com>, Ingo@miso.sublimeip.com,
-        Molnar@miso.sublimeip.com, <mingo@redhat.com>,
-        Peter@miso.sublimeip.com, Zijlstra@miso.sublimeip.com,
-        <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Date: Sun, 24 Feb 2013 17:28:33 +1100 (EST)
+Cc: rostedt@goodmis.org, oleg@redhat.com, palves@redhat.com, oleg@redhat.com,
+        palves@redhat.com, dvlasenk@redhat.com, jan.kratochvil@redhat.com,
+        xemul@parallels.com, fweisbec@gmail.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org
 Reply-To: u3557@dialix.com.au
 In-Reply-To: <20130222142603.987c6e3c.akpm@linux-foundation.org>
 X-Mailer: ELM [version 2.5 PL8]
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="%--multipart-mixed-boundary-1.83095.1361687098--%"
-Message-Id: <20130224062458.4A39659205C@miso.sublimeip.com>
+Content-Type: multipart/mixed; boundary="%--multipart-mixed-boundary-2.83095.1361687313--%"
+Message-Id: <20130224062833.EFCE259205C@miso.sublimeip.com>
 From: u3557@miso.sublimeip.com (Amnon Shiloh)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---%--multipart-mixed-boundary-1.83095.1361687098--%
+--%--multipart-mixed-boundary-2.83095.1361687313--%
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 
@@ -122,7 +112,7 @@ Amnon.
 > cc's and send it along?
 > 
 
---%--multipart-mixed-boundary-1.83095.1361687098--%
+--%--multipart-mixed-boundary-2.83095.1361687313--%
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Content-Description: unified diff output, ASCII text
@@ -204,7 +194,7 @@ diff -Naur linux-3.8/kernel/sys.c option2/kernel/sys.c
  {
  	return -EINVAL;
 
---%--multipart-mixed-boundary-1.83095.1361687098--%
+--%--multipart-mixed-boundary-2.83095.1361687313--%
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Content-Description: unified diff output, ASCII text
@@ -242,4 +232,4 @@ diff -Naur linux-3.8/kernel/sys.c option1/kernel/sys.c
  {
  	return -EINVAL;
 
---%--multipart-mixed-boundary-1.83095.1361687098--%--
+--%--multipart-mixed-boundary-2.83095.1361687313--%--
