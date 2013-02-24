@@ -1,104 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758190Ab3BXPpX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 10:45:23 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:22112
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757495Ab3BXPpW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 10:45:22 -0500
-X-IronPort-AV: E=Sophos;i="4.84,728,1355094000"; 
-   d="scan'208";a="3282033"
-Date: Sun, 24 Feb 2013 16:45:18 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: =?ISO-8859-15?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-cc: Julia Lawall <julia.lawall@lip6.fr>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, ben-linux@fluff.org,
-        kgene.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: question about arch/arm/mach-s3c24xx/irq.c
-In-Reply-To: <201302241611.13028.heiko@sntech.de>
-Message-ID: <alpine.DEB.2.02.1302241644540.1943@hadrien>
-References: <alpine.DEB.2.02.1302241241440.1943@hadrien> <20130224123849.GH17833@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1302241437360.1943@hadrien> <201302241611.13028.heiko@sntech.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758288Ab3BXPu0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 10:50:26 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:52909 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755670Ab3BXPuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 10:50:25 -0500
+Message-ID: <512A36BB.9070309@gentoo.org>
+Date: Sun, 24 Feb 2013 16:50:19 +0100
+From: Justin <jlec@gentoo.org>
+Reply-To: jlec@gentoo.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130222 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1105248376-1361720719=:1943"
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Use config scripts to detect ncurses libs for, menuconfig/nconfig
+ dialogs
+X-Enigmail-Version: 1.5
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="----enig2PFGENJVPRCQRCDRRQKOG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2PFGENJVPRCQRCDRRQKOG
+Content-Type: multipart/mixed;
+ boundary="------------020007030509030600020302"
 
---8323329-1105248376-1361720719=:1943
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+This is a multi-part message in MIME format.
+--------------020007030509030600020302
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, 24 Feb 2013, Heiko Stübner wrote:
+Hi,
 
-> Am Sonntag, 24. Februar 2013, 14:39:45 schrieb Julia Lawall:
-> > [Adding the person who introduced the code]
-> >
-> > On Sun, 24 Feb 2013, Russell King - ARM Linux wrote:
-> > > On Sun, Feb 24, 2013 at 12:45:11PM +0100, Julia Lawall wrote:
-> > > > The function s3c24xx_irq_map in arch/arm/mach-s3c24xx/irq.c contains
-> > > > the
-> > > >
-> > > > code:
-> > > >                 parent_irq_data =
-> > > >                 &parent_intc->irqs[irq_data->parent_irq];
-> > > >
-> > > > 		if (!irq_data) {
-> > > >
-> > > >                         pr_err("irq-s3c24xx: no irq data found for
-> > > >                         hwirq %lu\n",
-> > > >
-> > > >                                hw);
-> > > >
-> > > >                         goto err;
-> > > >
-> > > > 		}
-> > > >
-> > > > At this point irq_data has already been tested, so the null test on
-> > > > irq_data does not look correct.  But I wonder if parent_irq_data could
-> > > > ever be null here?
-> > >
-> > > That would be really obscure - because that would require parent_intc to
-> > > be a "negative" pointer (to counter-act the indexing by
-> > > irq_data->parent_irq).  So it looks to me like the above is redundant.
-> >
-> > Even at its original definition irq_data seems unlikely to be NULL:
-> >
-> >         struct s3c_irq_intc *intc = h->host_data;
-> > 	struct s3c_irq_data *irq_data = &intc->irqs[hw];
-> > 	...
-> > 	if (!irq_data) {
-> >                 pr_err("irq-s3c24xx: no irq data found for hwirq %lu\n",
-> > hw); return -EINVAL;
-> >         }
-> >
-> > That is, it could be an invalid value, but whether it actually hits 0
-> > would seem to depend on the value hw?
-> >
-> > Heiko, is NULL really a possibility?
->
-> The test you quoted is of course wrong ... it would need to test
-> parent_irq_data. But you're also right that the test is not necessary at all.
->
-> All the s3c_irq_data arrays used always contain 32 entries to reach all bits
-> of the register (which is used differently on each SoC). So if we have found
-> the parent_intc at all, it should contain a 32 entries array of irq_data
-> structs, so no need to test for the existence of the individual array element.
->
->
-> And now that I look at it, I also see another glitch. The code tests for
-> parent_irq != 0, which of course won't work if the parent_irq is the 0-hwirq
-> of the parent controller.
-> The only SoC using such a mapping is the s3c2412 [0], which explains why I
-> haven't been bitten by this myself.
+when ncurses is build with --with-termlib several symbols are moved to a
+seperate terminfo library (libtinfo.so). Current Kernel buildsystem
+results in a build error with menuconfig and nconfig dialogs.
 
-Do you want to make all the fixes?
+gcc  -o scripts/kconfig/mconf scripts/kconfig/mconf.o
+scripts/kconfig/zconf.tab.o scripts/kconfig/lxdialog/checklist.o
+scripts/kconfig/lxdialog/util.o scripts/kconfig/lxdialog/inputbox.o
+scripts/kconfig/lxdialog/textbox.o scripts/kconfig/lxdialog/yesno.o
+scripts/kconfig/lxdialog/menubox.o  -lncursesw
+scripts/kconfig/mconf.o:mconf.c:function show_help: error: undefined
+reference to 'stdscr'
+scripts/kconfig/lxdialog/checklist.o:checklist.c:function print_arrows:
+error: undefined reference to 'acs_map'
+scripts/kconfig/lxdialog/checklist.o:checklist.c:function print_arrows:
+error: undefined reference to 'acs_map'
+scripts/kconfig/lxdialog/checklist.o:checklist.c:function print_arrows:
+error: undefined reference to 'acs_map'
+scripts/kconfig/lxdialog/checklist.o:checklist.c:function print_arrows:
+error: undefined reference to 'acs_map'
+scripts/kconfig/lxdialog/checklist.o:checklist.c:function
+dialog_checklist: error: undefined reference to 'stdscr'
+scripts/kconfig/lxdialog/checklist.o:checklist.c:function
+dialog_checklist: error: undefined reference to 'COLS'
+scripts/kconfig/lxdialog/checklist.o:checklist.c:function
+dialog_checklist: error: undefined reference to 'stdscr'
+scripts/kconfig/lxdialog/checklist.o:checklist.c:function
+dialog_checklist: error: undefined reference to 'LINES'
+scripts/kconfig/lxdialog/checklist.o:checklist.c:function
+dialog_checklist: error: undefined reference to 'keypad'
+scripts/kconfig/lxdialog/checklist.o:checklist.c:function
+dialog_checklist: error: undefined reference to 'keypad'
+scripts/kconfig/lxdialog/util.o:util.c:function dialog_clear: error:
+undefined reference to 'COLS'
+scripts/kconfig/lxdialog/util.o:util.c:function dialog_clear: error:
+undefined reference to 'LINES'
+scripts/kconfig/lxdialog/util.o:util.c:function dialog_clear: error:
+undefined reference to 'stdscr'
+scripts/kconfig/lxdialog/util.o:util.c:function dialog_clear: error:
+undefined reference to 'COLS'
+scripts/kconfig/lxdialog/util.o:util.c:function dialog_clear: error:
+undefined reference to 'COLS'
+scripts/kconfig/lxdialog/util.o:util.c:function init_dialog: error:
+undefined reference to 'keypad'
+scripts/kconfig/lxdialog/util.o:util.c:function init_dialog: error:
+undefined reference to 'cbreak'
+scripts/kconfig/lxdialog/util.o:util.c:function on_key_esc: error:
+undefined reference to 'nodelay'
+scripts/kconfig/lxdialog/util.o:util.c:function on_key_esc: error:
+undefined reference to 'keypad'
+scripts/kconfig/lxdialog/util.o:util.c:function on_key_esc: error:
+undefined reference to 'nodelay'
+scripts/kconfig/lxdialog/inputbox.o:inputbox.c:function dialog_inputbox:
+error: undefined reference to 'LINES'
+scripts/kconfig/lxdialog/textbox.o:textbox.c:function dialog_textbox:
+error: undefined reference to 'LINES'
+collect2: error: ld returned 1 exit status
 
-julia
---8323329-1105248376-1361720719=:1943--
+
+Attached patch uses ncurses5-config and pkg-config to detect the libs to
+link with. Please include this to fix the build error.
+
+justin
+
+--------------020007030509030600020302
+Content-Type: text/x-patch;
+ name="0001-Use-config-scripts-to-detect-ncurses-libs-for-menuco.patch"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment;
+ filename*0="0001-Use-config-scripts-to-detect-ncurses-libs-for-menuco.pa";
+ filename*1="tch"
+
+=46rom 5c3e9e44432697b9f638c5367e01bdde47adf0f2 Mon Sep 17 00:00:00 2001
+From: Justin Lecher <jlec@gentoo.org>
+Date: Sun, 24 Feb 2013 16:02:00 +0100
+Subject: [PATCH] Use config scripts to detect ncurses libs for
+ menuconfig/nconfig dialogs
+
+When building ncurses with --with-termlib several symbols get moved from
+libncurses.so to libtinfo.so. Thus when linking with libncurses.so, one
+additionally needs to link with libtinfo.so.
+
+Ncurses provides a config script (ncurses5-config) and an interface with
+pkg-config. This patch makes use of those to detect the necessary libs
+for linking of the ncurses menuconfig and nconfig dialogs.
+
+Signed-off-by: Justin Lecher <jlec@gentoo.org>
+---
+ scripts/kconfig/Makefile                   |  2 +-
+ scripts/kconfig/lxdialog/check-lxdialog.sh | 22 ++++++++++++++--------
+ 2 files changed, 15 insertions(+), 9 deletions(-)
+
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index 3091794..7649047 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -216,7 +216,7 @@ HOSTCFLAGS_gconf.o	=3D `pkg-config --cflags gtk+-2.0 =
+gmodule-2.0 libglade-2.0` \
+=20
+ HOSTLOADLIBES_mconf   =3D $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldf=
+lags $(HOSTCC))
+=20
+-HOSTLOADLIBES_nconf	=3D -lmenu -lpanel -lncurses
++HOSTLOADLIBES_nconf	=3D `pkg-config --libs menu panel ncurses`
+ $(obj)/qconf.o: $(obj)/.tmp_qtcheck
+=20
+ ifeq ($(qconf-target),1)
+diff --git a/scripts/kconfig/lxdialog/check-lxdialog.sh b/scripts/kconfig=
+/lxdialog/check-lxdialog.sh
+index c8e8a71..4699c1b 100644
+--- a/scripts/kconfig/lxdialog/check-lxdialog.sh
++++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
+@@ -4,15 +4,21 @@
+ # What library to link
+ ldflags()
+ {
+-	for ext in so a dll.a dylib ; do
+-		for lib in ncursesw ncurses curses ; do
+-			$cc -print-file-name=3Dlib${lib}.${ext} | grep -q /
+-			if [ $? -eq 0 ]; then
+-				echo "-l${lib}"
+-				exit
+-			fi
++	if type -p ncurses5-config &> /dev/null ; then
++		ncurses5-config --libs
++		exit 0
++	else
++		for ext in so a dll.a dylib ; do
++			for lib in ncursesw ncurses curses ; do
++				$cc -print-file-name=3Dlib${lib}.${ext} | \
++					grep -q /
++				if [ $? -eq 0 ]; then
++					echo "-l${lib}"
++					exit
++				fi
++			done
+ 		done
+-	done
++	fi
+ 	exit 1
+ }
+=20
+--=20
+1.8.1.4
+
+
+--------------020007030509030600020302--
+
+------enig2PFGENJVPRCQRCDRRQKOG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEAREKAAYFAlEqNrsACgkQgAnW8HDreRY3jgCeOA8lnT+M26XzRVKyK/MLpnMt
+96EAnjFRmKqcWwb5rCB1JC09fkOcZGpx
+=iuB0
+-----END PGP SIGNATURE-----
+
+------enig2PFGENJVPRCQRCDRRQKOG--
