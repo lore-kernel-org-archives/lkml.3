@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759393Ab3BXEqh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 23:46:37 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:58499 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759241Ab3BXEqg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 23:46:36 -0500
-From: Tony Lu <zlu@tilera.com>
-To: Dave Chinner <david@fromorbit.com>
-CC: Ben Myers <bpm@sgi.com>, "xfs@oss.sgi.com" <xfs@oss.sgi.com>,
-        Alex Elder <elder@kernel.org>, Dave Chinner <dchinner@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: RE: [PATCH] xfs: Fix possible truncation of log data in
- xlog_bread_noalign()
-Thread-Topic: [PATCH] xfs: Fix possible truncation of log data in
- xlog_bread_noalign()
-Thread-Index: Ac4Q1GkSs67IJq+zR5aVm2NJSgVsAwAr1ggAACdj+ZYACHDHQA==
-Date: Sun, 24 Feb 2013 04:46:30 +0000
-Message-ID: <BAB94DBB0E89D8409949BC28AC95914C47C488D8@USMAExch1.tad.internal.tilera.com>
-References: <BAB94DBB0E89D8409949BC28AC95914C47C485E5@USMAExch1.tad.internal.tilera.com>
- <20130223000802.GB26081@dastard>
- <BAB94DBB0E89D8409949BC28AC95914C47C48702@USMAExch1.tad.internal.tilera.com>
- <20130223235546.GA5551@dastard>
-In-Reply-To: <20130223235546.GA5551@dastard>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750951Ab3BXFAH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 00:00:07 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:65410 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750761Ab3BXFAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 00:00:06 -0500
+X-IronPort-AV: E=Sophos;i="4.84,726,1355068800"; 
+   d="scan'208";a="6757004"
+Message-ID: <512990F4.3030203@cn.fujitsu.com>
+Date: Sun, 24 Feb 2013 12:03:00 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Simon Horman <horms@verge.net.au>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kexec: use min_t/max_t to avoid 'if (foo == bar)' thing
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/24 12:03:52,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/24 12:04:07,
+	Serialize complete at 2013/02/24 12:04:07
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> For example, if xlog_bread_noalign() wants to read blocks from #1
->> to # 9, in which case the passed parameter blk_no is 1, and nbblks
->> is 8, sectBBsize is 8, after the round down and round up
->> operations, we get blk_no as 0, and nbblks as still 8. We
->> definitely lose the last block of the log data.
->
->Yes, I fully understand that. But I also understand how the log
->works and that this behaviour *should not happen*. That's why
->I'm asking questions about what the problem you are trying to fix.
+This is just a tweak: using min_t/max_t to avoid `if (foo = bar)' thing.
 
-I am not sure about this, since I saw many reads on non-sector-align blocks even when successfully mounting good XFS partitions. 
--sh-4.1# mount /dev/sda3 /home/
-XFS (sda3): Mounting Filesystem
-xlog_bread_noalign:blk_no=0,nbblks=1,l_sectBBsize=8
-xlog_bread_noalign:blk_no=61447,nbblks=1,l_sectBBsize=8
-xlog_bread_noalign:blk_no=0,nbblks=1,l_sectBBsize=8
-.......
-xlog_bread_noalign:blk_no=8695,nbblks=1,l_sectBBsize=8
-xlog_bread_noalign:blk_no=4600,nbblks=4096,l_sectBBsize=8
-xlog_bread_noalign:blk_no=8184,nbblks=512,l_sectBBsize=8
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Simon Horman <horms@verge.net.au>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ kernel/kexec.c |   20 +++++---------------
+ 1 files changed, 5 insertions(+), 15 deletions(-)
 
-And also there is code in xlog_write_log_records() which handles non-sector-align reads and writes.
-
-	/* We may need to do a read at the start to fill in part of
-	 * the buffer in the starting sector not covered by the first
-	 * write below.
-	 */
-	balign = round_down(start_block, sectbb);
-	if (balign != start_block) {
-		error = xlog_bread_noalign(log, start_block, 1, bp);
-		if (error)
-			goto out_put_bp;
-
-		j = start_block - balign;
-	}
-
->Ramdisks don't persist over a reboot, so you must have had some
->other way of reproducing the problem. Can you tell me how you
->reproduced it on a ramdisk? Better yet, send me a script that
->reproduces the problem?
-
-I will try to reproduce it. Basically it is a loop of mount, creating many files and unmount.
-
-Thanks
--Tony
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 2436ffc..065db87 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -822,13 +822,8 @@ static int kimage_load_normal_segment(struct kimage *image,
+ 		/* Start with a clear page */
+ 		clear_page(ptr);
+ 		ptr += maddr & ~PAGE_MASK;
+-		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
+-		if (mchunk > mbytes)
+-			mchunk = mbytes;
+-
+-		uchunk = mchunk;
+-		if (uchunk > ubytes)
+-			uchunk = ubytes;
++		mchunk = min_t(size_t, mbytes, PAGE_SIZE - (maddr & ~PAGE_MASK));
++		uchunk = min_t(size_t, ubytes, mchunk);
+ 
+ 		result = copy_from_user(ptr, buf, uchunk);
+ 		kunmap(page);
+@@ -874,13 +869,9 @@ static int kimage_load_crash_segment(struct kimage *image,
+ 		}
+ 		ptr = kmap(page);
+ 		ptr += maddr & ~PAGE_MASK;
+-		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
+-		if (mchunk > mbytes)
+-			mchunk = mbytes;
+-
+-		uchunk = mchunk;
++		mchunk = min_t(size_t, mbytes, PAGE_SIZE - (maddr & ~PAGE_MASK));
++		uchunk = min_t(size_t, ubytes, mchunk);
+ 		if (uchunk > ubytes) {
+-			uchunk = ubytes;
+ 			/* Zero the trailing part of the page */
+ 			memset(ptr + uchunk, 0, mchunk - uchunk);
+ 		}
+@@ -1461,8 +1452,7 @@ void vmcoreinfo_append_str(const char *fmt, ...)
+ 	r = vsnprintf(buf, sizeof(buf), fmt, args);
+ 	va_end(args);
+ 
+-	if (r + vmcoreinfo_size > vmcoreinfo_max_size)
+-		r = vmcoreinfo_max_size - vmcoreinfo_size;
++	r = min_t(size_t, r, vmcoreinfo_max_size - vmcoreinfo_size);
+ 
+ 	memcpy(&vmcoreinfo_data[vmcoreinfo_size], buf, r);
+ 
+-- 
+1.7.1
