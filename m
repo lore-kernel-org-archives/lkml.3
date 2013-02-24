@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab3BXMHc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 07:07:32 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:53649 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754822Ab3BXMHa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 07:07:30 -0500
-Date: Sun, 24 Feb 2013 13:07:26 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/5] perf, x86: Support full width counting v3
-Message-ID: <20130224120726.GB20905@gmail.com>
-References: <1361213287-7636-1-git-send-email-andi@firstfloor.org>
- <1361213287-7636-5-git-send-email-andi@firstfloor.org>
- <20130222134630.GA8960@gmail.com>
- <20130222151950.GK2928@two.firstfloor.org>
+	id S1757045Ab3BXMJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 07:09:56 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40582 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752067Ab3BXMJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 07:09:55 -0500
+Date: Sun, 24 Feb 2013 13:09:52 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Feuerer <peter@piie.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        Durgadoss R <durgadoss.r@intel.com>, Borislav Petkov <bp@suse.de>,
+        Andreas Mohr <andi@lisas.de>, Alexander Lam <azl@andrew.cmu.edu>
+Subject: Re: [PATCH] acerhdf: Fix fan activation with new thermal governor
+Message-ID: <20130224120952.GB19609@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Peter Feuerer <peter@piie.net>, LKML <linux-kernel@vger.kernel.org>,
+	Zhang Rui <rui.zhang@intel.com>,
+	Durgadoss R <durgadoss.r@intel.com>, Borislav Petkov <bp@suse.de>,
+	Andreas Mohr <andi@lisas.de>, Alexander Lam <azl@andrew.cmu.edu>
+References: <20130222111521.GA25473@pd.tnic>
+ <1361647210-12983-1-git-send-email-bp@alien8.de>
+ <20130224112851.GA19609@pd.tnic>
+ <cone.1361706175.908398.1806.1000@galar>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130222151950.GK2928@two.firstfloor.org>
+In-Reply-To: <cone.1361706175.908398.1806.1000@galar>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Andi Kleen <andi@firstfloor.org> wrote:
-
-> Recent Intel CPUs like Haswell and IvyBridge have a new 
-> alternative MSR range for perfctrs that allows writing the 
-> full counter width. Enable this range if the hardware reports 
-> it using a new capability bit.
+On Sun, Feb 24, 2013 at 12:42:55PM +0100, Peter Feuerer wrote:
+> Hi Boris,
 > 
-> This lowers the overhead of perf stat slightly because it has
-> to do less interrupts to accumulate the counter value. On
-> Haswell it also avoids some problems with TSX aborting when
-> the end of the counter range is reached.
->
-> This can be observed when the checkpoint flag has been set, 
-> which has been enabled by the basic PMU patch. An overflow 
-> will abort the transaction and set the counter back. If the 
-> counter is near the overflow before the transaction this could 
-> happen continuously, forcing a transaction to continuously 
-> abort.
->
-> This is a partial fix, but it makes the overflows much less 
-> likely by using a larger counter, to lower the probability of 
-> the event. Additional counter measures are in the additional 
-> extended Haswell patchkit.
+> thanks for your best wishes in the last mail, I'm feeling little better now.
 
-It would actually be _much_ more useful to first try to fix that 
-condition - then extend the counter range. As you say it in the 
-changelog it can happen anyway: and it's much more testable if 
-the counter width is narrower initially.
+Nice :)
 
-Mind restructuring the basic patches thusly, putting the fix 
-first and moving the counter extension to the later patches?
+> Please test my last patch with the 4 trip points ;) - even if you
+> don't really like it, it is working great! - And to be honest, I still
+> prefer this solution!
 
-(If you don't have the time for that we can delay it all to 
-v3.10, it's pretty late already even for v3.9.)
+Right, but 4 trip points for this simple driver is a bit of a overkill,
+don't you think? If we want to be really accurate, we'd only need two,
+think of three temperature intervals here:
 
-Thanks,
+0 - temp <= fanon
+1 - fanon =< temp < crit
+2 - temp >= crit
 
-	Ingo
+I need to go stare at it a bit more.
+
+> Anyhow, did you test what Rui asked us to test?
+
+Yep.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
