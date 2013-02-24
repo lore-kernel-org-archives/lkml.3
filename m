@@ -1,143 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759440Ab3BXEGD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 23:06:03 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:41125 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759244Ab3BXEGB (ORCPT
+	id S1759345Ab3BXEWb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 23:22:31 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:49832 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759180Ab3BXEWa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 23:06:01 -0500
-Date: Sat, 23 Feb 2013 20:05:57 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [RFC/PATCH] devres: allow adding custom actions to the stack
-Message-ID: <20130224040556.GA15339@core.coreip.homeip.net>
+	Sat, 23 Feb 2013 23:22:30 -0500
+Date: Sat, 23 Feb 2013 18:14:48 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH RFC] pwm: add sysfs interface
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+Cc: poeschel@lemonage.de, thierry.reding@avionic-design.de,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+In-Reply-To: <1361284061-2874-1-git-send-email-larsi@wh2.tu-dresden.de>
+	(from larsi@wh2.tu-dresden.de on Tue Feb 19 08:27:41 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1361664888.11282.16@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes drivers need to execute one-off actions in their error handling
-or device teardown paths. An example would be toggling a GPIO line to
-reset the controlled device into predefined state.
+On 02/19/2013 08:27:41 AM, Lars Poeschel wrote:
+> From: Lars Poeschel <poeschel@lemonage.de>
+> 
+> This adds a simple sysfs interface to the pwm subsystem. It is
+> heavily inspired by the gpio sysfs interface.
 
-To allow performing such actions when using managed resources let's allow
-adding them to stack/group of devres resources.
+Docs!
 
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/base/devres.c  | 74 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/device.h |  4 +++
- 2 files changed, 78 insertions(+)
+> diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
+> index 7d2b4c9..b349d16 100644
+> --- a/Documentation/pwm.txt
+> +++ b/Documentation/pwm.txt
+> @@ -45,6 +45,52 @@ int pwm_config(struct pwm_device *pwm, int  
+> duty_ns, int period_ns);
+> 
+>  To start/stop toggling the PWM output use pwm_enable()/pwm_disable().
 
-diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-index 6683906..507379e 100644
---- a/drivers/base/devres.c
-+++ b/drivers/base/devres.c
-@@ -671,6 +671,80 @@ int devres_release_group(struct device *dev, void *id)
- EXPORT_SYMBOL_GPL(devres_release_group);
- 
- /*
-+ * Custom devres actions allow inserting a simple function call
-+ * into the teadown sequence.
-+ */
-+
-+struct action_devres {
-+	void *data;
-+	void (*action)(void *);
-+};
-+
-+static int devm_action_match(struct device *dev, void *res, void *p)
-+{
-+	struct action_devres *devres = res;
-+	struct action_devres *target = p;
-+
-+	return devres->action == target->action &&
-+	       devres->data == target->data;
-+}
-+
-+static void devm_action_release(struct device *dev, void *res)
-+{
-+	struct action_devres *devres = res;
-+
-+	devres->action(devres->data);
-+}
-+
-+/**
-+ * devm_add_action() - add a custom action to list of managed resources
-+ * @dev: Device that owns the action
-+ * @action: Function that should be called
-+ * @data: Pointer to data passed to @action implementation
-+ *
-+ * This adds a custom action to the list of managed resources so that
-+ * it gets executed as part of standard resource unwinding.
-+ */
-+int devm_add_action(struct device *dev, void (*action)(void *), void *data)
-+{
-+	struct action_devres *devres;
-+
-+	devres = devres_alloc(devm_action_release,
-+			      sizeof(struct action_devres), GFP_KERNEL);
-+	if (!devres)
-+		return -ENOMEM;
-+
-+	devres->data = data;
-+	devres->action = action;
-+
-+	devres_add(dev, devres);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(devm_add_action);
-+
-+/**
-+ * devm_remove_action() - removes previously added custom action
-+ * @dev: Device that owns the action
-+ * @action: Function implementing the action
-+ * @data: Pointer to data passed to @action implementation
-+ *
-+ * Removes instance of @action previously added by devm_add_action().
-+ * Both action and data should match one of the existing entries.
-+ */
-+void devm_remove_action(struct device *dev, void (*action)(void *), void *data)
-+{
-+	struct action_devres devres = {
-+		.data = data,
-+		.action = action,
-+	};
-+
-+	WARN_ON(devres_destroy(dev, devm_action_release, devm_action_match,
-+			       &devres));
-+
-+}
-+EXPORT_SYMBOL_GPL(devm_remove_action);
-+
-+/*
-  * Managed kzalloc/kfree
-  */
- static void devm_kzalloc_release(struct device *dev, void *res)
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 2fbf088..ba7c802 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -578,6 +578,10 @@ extern void devm_kfree(struct device *dev, void *p);
- void __iomem *devm_request_and_ioremap(struct device *dev,
- 			struct resource *res);
- 
-+/* allows to add/remove a custom action to devres stack */
-+int devm_add_action(struct device *dev, void (*action)(void *), void *data);
-+void devm_remove_action(struct device *dev, void (*action)(void *), void *data);
-+
- struct device_dma_parameters {
- 	/*
- 	 * a low level driver may set these to teach IOMMU code about
--- 
-1.7.11.7
+Hm, read read read existing file...
 
+So a PWM is a GPIO that blinks on its own, in hardware, without needing  
+a kernel thread and a timer to tell it to? (I think? Correction, an  
+output-only gpio...)
 
--- 
-Dmitry
+> +Using PWMs with the sysfs interface
+> +-----------------------------------
+> +
+> +You have to enable CONFIG_PWM_SYSFS in your kernel configuration to  
+> use
+> +the sysfs interface. It is exposed at /sys/class/pwm/. If there are  
+> pwm
+> +drivers loaded and these drivers successfully probed a chip, this  
+> chip
+> +is exported as pwmchipX . Note that a single driver can probe  
+> multiple chips.
+> +Inside the directory you can read these properties:
+> +
+> +base - This is the linux global start where the chips pwm channels  
+> get
+> +exposed.
+> +
+> +npwm - This is the number of pwm channels this chip supports.
+> +
+> +If you want to start using a pwm channel with sysfs first you have to
+> +export it. If you are finished with it and want to free the pwm for  
+> other
+> +uses, you can unexport it:
+> +
+> +export - Write the global pwm channel number to this file to start  
+> using
+> +the channel with sysfs.
+> +
+> +unexport - Write the global pwm channel number of the channel you  
+> are finshed
+> +with to this file to make the channel available for other uses.
+> +
+> +Once a pwm is exported a pwmX (X ranging from 0 to MAX_PWMS)  
+> directory appears
+> +with the following read/write properties inside to control the pwm:
+> +
+> +duty_ns - Write the number of nanoseconds the active portion of the  
+> pwm period
+> +should last to this file. This can not be longer than the period_ns.
+> +
+> +period_ns - Write the length of the pwm period in nanoseconds to  
+> this file.
+> +This includes the active and inactive portion of the pwm period and  
+> can not
+> +be smaller than duty_ns.
+> +
+> +polarity - The normal behaviour is to put out a high for the active  
+> portion of
+> +the pwm period. Write a 1 to this file to inverse the signal and  
+> output a low
+> +on the active portion. Write a 0 to switch back to the normal  
+> behaviour. The
+> +polarity can only be changed if the pwm is not running. This file is  
+> only
+> +visible if the underlying driver/device supports changing the  
+> polarity.
+> +
+> +run - Write a 1 to this file to start the pwm signal generation,  
+> write a 0 to
+> +stop it. Set your desired period_ns, duty_ns and polarity before  
+> starting the
+> +pwm.
+> +
+> +It is recommend to set the period_ns at first and duty_ns after that.
+> +
+>  Implementing a PWM driver
+>  -------------------------
+
+Doc part looks good to me:
+
+Acked-by Rob Landley <rob@landley.net>
+
+> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> index e513cd9..1c3432e 100644
+> --- a/drivers/pwm/Kconfig
+> +++ b/drivers/pwm/Kconfig
+> @@ -28,6 +28,21 @@ menuconfig PWM
+> 
+>  if PWM
+> 
+> +config PWM_SYSFS
+> +	bool "/sys/class/pwm/... (sysfs interface)"
+> +	depends on SYSFS
+> +	help
+> +	  Say Y here to add a sysfs interface for PWMs.
+> +
+> +	  This exports directories and files to userspace using sysfs.
+
+Given that that's what a sysfs interface _is_, does that last line  
+actually add anything?
+
+> +	  This way the PWM outputs of a device can easyly be used,
+
+s/easyly/easily/
+
+> +	  controlled and tested.
+
+And again, this sentence isn't hugely helpful if you already know what  
+sysfs is. Why not start here:
+
+> +	  For every instance of an PWM capable
+> +	  device there is a pwmchipX directory exported to
+> +	  /sys/class/pwm. If you want to use a PWM, you have to export
+> +	  it to sysfs, which is done by writing the number into
+> +	  /sys/class/pwm/export. After that /sys/class/pwm/pwmX is
+> +	  reaady to be used.
+> +
+
+s/reaady/ready/
+
+Rob
