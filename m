@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231Ab3BXBBs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Feb 2013 20:01:48 -0500
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:41476 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759373Ab3BXBBq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Feb 2013 20:01:46 -0500
+	id S1759416Ab3BXBVG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Feb 2013 20:21:06 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:49618 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758968Ab3BXBVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Feb 2013 20:21:05 -0500
+Date: Sat, 23 Feb 2013 20:20:52 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Marcus Sundman <marcus@hibox.fi>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Debugging system freezes on filesystem writes
+Message-ID: <20130224012052.GC1196@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Chinner <david@fromorbit.com>,
+	Marcus Sundman <marcus@hibox.fi>, Jan Kara <jack@suse.cz>,
+	linux-kernel@vger.kernel.org
+References: <20121113135159.GA18651@quack.suse.cz>
+ <50A592BA.8050709@hibox.fi>
+ <20121121233021.GA8730@quack.suse.cz>
+ <50B4E6F2.6010000@hibox.fi>
+ <20121205153216.GF5706@quack.suse.cz>
+ <51248C5F.4040606@hibox.fi>
+ <5124B613.6040400@hibox.fi>
+ <20130222205144.GA30600@quack.suse.cz>
+ <5127FEEA.60207@hibox.fi>
+ <20130224001222.GB5551@dastard>
 MIME-Version: 1.0
-In-Reply-To: <31669750.ZZOiY1AEPv@flatron>
-References: <201302231855.47560.heiko@sntech.de>
-	<5027662.bpQdq7jhyn@flatron>
-	<CACRpkdaFv=V8M_Ztb5-hrYm6YnXiG6fg6Z13y3NVFdszBk=7ZQ@mail.gmail.com>
-	<31669750.ZZOiY1AEPv@flatron>
-Date: Sun, 24 Feb 2013 02:01:45 +0100
-Message-ID: <CACRpkdYBjZgEo6qEyBOcYuPzpQUAZ9x-kvFabz0y0pEQs35sKw@mail.gmail.com>
-Subject: Re: [PATCH] i2c: s3c2410: check for NULL pinctrl handle
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Tomasz Figa <t.figa@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130224001222.GB5551@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 24, 2013 at 1:58 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+On Sun, Feb 24, 2013 at 11:12:22AM +1100, Dave Chinner wrote:
+> > >/dev/sda6 /home ext4 rw,noatime,discard 0 0
+>                                    ^^^^^^^
+> I'd say that's your problem....
 
-> [Me]
->> Surely you know this when setting up the pdata from your machine?
->
-> Cases 2) and 3) are both DT-enabled cases, where there is no pdata coming
-> from board-specific code.
-(...)
-> Note that we are talking here about a temporary solution. The legacy DT-
-> based pin configuration will go away after all the DT-enabled platforms
-> using this driver get migrated to pin control and so will the need to
-> check if pin control is available.
+Looks like the Sandisk U100 is a good SSD for me to put on my personal
+"avoid" list:
 
-So use AUXDATA, and you get a pdata for that driver?
+http://thessdreview.com/our-reviews/asus-zenbook-ssd-review-not-necessarily-sandforce-driven-shows-significant-speed-bump/
 
-Yours,
-Linus Walleij
+There are a number of SSD's which do not implement "trim" efficiently,
+so these days, the recommended way to use trim is to run the "fstrim"
+command out of crontab.
+
+There are some high performance flash devices (especially PCIe
+attached flash devices, where the TRIM command doesn't necessarily
+mean waiting for the entire contents of the Native Command Queue to
+drain) where using the discard mount option makes sense for best
+performance, but for most SATA drives (especially the really
+cheap-sh*t ones), I don't recommend it.  If it weren't for the fact
+that for these devices exist and the discard option is especially
+useful for them, I probably would have removed the discard option from
+ext4.
+
+						- Ted
