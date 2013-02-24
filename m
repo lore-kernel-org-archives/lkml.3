@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab3BXLSd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 06:18:33 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:46340 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755085Ab3BXLSb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 06:18:31 -0500
+	id S1756620Ab3BXL25 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 06:28:57 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:60389 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755085Ab3BXL2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 06:28:55 -0500
+Date: Sun, 24 Feb 2013 12:28:51 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Zhang Rui <rui.zhang@intel.com>, Durgadoss R <durgadoss.r@intel.com>,
+        Borislav Petkov <bp@suse.de>, Peter Feuerer <peter@piie.net>,
+        Andreas Mohr <andi@lisas.de>, Alexander Lam <azl@andrew.cmu.edu>
+Subject: Re: [PATCH] acerhdf: Fix fan activation with new thermal governor
+Message-ID: <20130224112851.GA19609@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Zhang Rui <rui.zhang@intel.com>,
+	Durgadoss R <durgadoss.r@intel.com>, Borislav Petkov <bp@suse.de>,
+	Peter Feuerer <peter@piie.net>, Andreas Mohr <andi@lisas.de>,
+	Alexander Lam <azl@andrew.cmu.edu>
+References: <20130222111521.GA25473@pd.tnic>
+ <1361647210-12983-1-git-send-email-bp@alien8.de>
 MIME-Version: 1.0
-In-Reply-To: <5129F39D.10900@gmx.de>
-References: <5129F39D.10900@gmx.de>
-Date: Sun, 24 Feb 2013 12:18:29 +0100
-Message-ID: <CAFLxGvx8hx42GX-u4850bqZu6doRabPKeLVGeQ1VDoO4_27TSA@mail.gmail.com>
-Subject: Re: [uml-user] v3.8-6988-g9e2d59a compile error
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-Cc: user-mode-linux-user@lists.sourceforge.net,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1361647210-12983-1-git-send-email-bp@alien8.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 24, 2013 at 12:03 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
-> Moin,
->
-> got this wit the attached .config :
->
-> ...
->   CC      kernel/mutex.o
->   CC      kernel/hrtimer.o
-> kernel/mutex.c:34:37: error: include/asm-generic/mutex-null.h: Input/output error
+On Sat, Feb 23, 2013 at 08:20:10PM +0100, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
+> 
+> The new step_wise thermal governor wasn't able to handle the one-trip
+> point design of acerhdf where we want to turn off the fan if we go under
+> the 'fanoff' temperature and to turn it on only after exceeding the
+> 'fanon' temperature.
+> 
+> Do that by looking at the current fan state and return the temperature
+> accordingly.
+> 
+> Suggested-by: Zhang Rui <rui.zhang@intel.com>
+> Cc: Peter Feuerer <peter@piie.net>
+> Cc: Andreas Mohr <andi@lisas.de>
+> Cc: Alexander Lam <azl@andrew.cmu.edu>
+> Signed-off-by: Borislav Petkov <bp@suse.de>
 
-The compiler got -EIO while opening include/asm-generic/mutex-null.h.
-Maybe a you should fsck your disk first. :-)
+Ok, ignore this one for now - the suspend/resume path doesn't pan out
+somehow, need to do some more handholding here.
 
 -- 
-Thanks,
-//richard
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
