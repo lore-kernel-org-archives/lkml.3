@@ -1,123 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757901Ab3BXPgy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 10:36:54 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58809 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757229Ab3BXPgx (ORCPT
+	id S1758190Ab3BXPpX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 10:45:23 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:22112
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757495Ab3BXPpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 10:36:53 -0500
-From: Markus Pargmann <mpa@pengutronix.de>
-To: vinod.koul@intel.com
-Cc: kernel@pengutronix.de, jon-hunter@ti.com, djbw@fb.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Markus Pargmann <mpa@pengutronix.de>
-Subject: [PATCH] DMA: of: Constant names
-Date: Sun, 24 Feb 2013 16:36:09 +0100
-Message-Id: <1361720169-3832-1-git-send-email-mpa@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Sun, 24 Feb 2013 10:45:22 -0500
+X-IronPort-AV: E=Sophos;i="4.84,728,1355094000"; 
+   d="scan'208";a="3282033"
+Date: Sun, 24 Feb 2013 16:45:18 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: =?ISO-8859-15?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+cc: Julia Lawall <julia.lawall@lip6.fr>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>, ben-linux@fluff.org,
+        kgene.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: question about arch/arm/mach-s3c24xx/irq.c
+In-Reply-To: <201302241611.13028.heiko@sntech.de>
+Message-ID: <alpine.DEB.2.02.1302241644540.1943@hadrien>
+References: <alpine.DEB.2.02.1302241241440.1943@hadrien> <20130224123849.GH17833@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1302241437360.1943@hadrien> <201302241611.13028.heiko@sntech.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1105248376-1361720719=:1943"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No DMA of-function alters the name, so this patch changes the name arguments
-to be constant. Most drivers will probably request DMA channels using a
-constant name.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
----
- drivers/dma/dmaengine.c   | 2 +-
- drivers/dma/of-dma.c      | 6 +++---
- include/linux/dmaengine.h | 4 ++--
- include/linux/of_dma.h    | 4 ++--
- 4 files changed, 8 insertions(+), 8 deletions(-)
+--8323329-1105248376-1361720719=:1943
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index 242b8c0..779f43a 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -555,7 +555,7 @@ EXPORT_SYMBOL_GPL(__dma_request_channel);
-  * @dev:	pointer to client device structure
-  * @name:	slave channel name
-  */
--struct dma_chan *dma_request_slave_channel(struct device *dev, char *name)
-+struct dma_chan *dma_request_slave_channel(struct device *dev, const char *name)
- {
- 	/* If device-tree is present get slave info from here */
- 	if (dev->of_node)
-diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-index 69d04d2..6036cd0 100644
---- a/drivers/dma/of-dma.c
-+++ b/drivers/dma/of-dma.c
-@@ -172,8 +172,8 @@ EXPORT_SYMBOL_GPL(of_dma_controller_free);
-  * specifiers, matches the name provided. Returns 0 if the name matches and
-  * a valid pointer to the DMA specifier is found. Otherwise returns -ENODEV.
-  */
--static int of_dma_match_channel(struct device_node *np, char *name, int index,
--				struct of_phandle_args *dma_spec)
-+static int of_dma_match_channel(struct device_node *np, const char *name,
-+				int index, struct of_phandle_args *dma_spec)
- {
- 	const char *s;
- 
-@@ -198,7 +198,7 @@ static int of_dma_match_channel(struct device_node *np, char *name, int index,
-  * Returns pointer to appropriate dma channel on success or NULL on error.
-  */
- struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
--					      char *name)
-+					      const char *name)
- {
- 	struct of_phandle_args	dma_spec;
- 	struct of_dma		*ofdma;
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index f593999..f062f89 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -968,7 +968,7 @@ enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
- enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
- void dma_issue_pending_all(void);
- struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask, dma_filter_fn fn, void *fn_param);
--struct dma_chan *dma_request_slave_channel(struct device *dev, char *name);
-+struct dma_chan *dma_request_slave_channel(struct device *dev, const char *name);
- void dma_release_channel(struct dma_chan *chan);
- #else
- static inline enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx)
-@@ -984,7 +984,7 @@ static inline struct dma_chan *__dma_request_channel(dma_cap_mask_t *mask,
- 	return NULL;
- }
- static inline struct dma_chan *dma_request_slave_channel(struct device *dev,
--							 char *name)
-+							 const char *name)
- {
- 	return NULL;
- }
-diff --git a/include/linux/of_dma.h b/include/linux/of_dma.h
-index d15073e..ce6a8ab 100644
---- a/include/linux/of_dma.h
-+++ b/include/linux/of_dma.h
-@@ -40,7 +40,7 @@ extern int of_dma_controller_register(struct device_node *np,
- 		void *data);
- extern int of_dma_controller_free(struct device_node *np);
- extern struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
--						     char *name);
-+						     const char *name);
- extern struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
- 		struct of_dma *ofdma);
- #else
-@@ -58,7 +58,7 @@ static inline int of_dma_controller_free(struct device_node *np)
- }
- 
- static inline struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
--						     char *name)
-+						     const char *name)
- {
- 	return NULL;
- }
--- 
-1.8.1.2
+On Sun, 24 Feb 2013, Heiko Stübner wrote:
 
+> Am Sonntag, 24. Februar 2013, 14:39:45 schrieb Julia Lawall:
+> > [Adding the person who introduced the code]
+> >
+> > On Sun, 24 Feb 2013, Russell King - ARM Linux wrote:
+> > > On Sun, Feb 24, 2013 at 12:45:11PM +0100, Julia Lawall wrote:
+> > > > The function s3c24xx_irq_map in arch/arm/mach-s3c24xx/irq.c contains
+> > > > the
+> > > >
+> > > > code:
+> > > >                 parent_irq_data =
+> > > >                 &parent_intc->irqs[irq_data->parent_irq];
+> > > >
+> > > > 		if (!irq_data) {
+> > > >
+> > > >                         pr_err("irq-s3c24xx: no irq data found for
+> > > >                         hwirq %lu\n",
+> > > >
+> > > >                                hw);
+> > > >
+> > > >                         goto err;
+> > > >
+> > > > 		}
+> > > >
+> > > > At this point irq_data has already been tested, so the null test on
+> > > > irq_data does not look correct.  But I wonder if parent_irq_data could
+> > > > ever be null here?
+> > >
+> > > That would be really obscure - because that would require parent_intc to
+> > > be a "negative" pointer (to counter-act the indexing by
+> > > irq_data->parent_irq).  So it looks to me like the above is redundant.
+> >
+> > Even at its original definition irq_data seems unlikely to be NULL:
+> >
+> >         struct s3c_irq_intc *intc = h->host_data;
+> > 	struct s3c_irq_data *irq_data = &intc->irqs[hw];
+> > 	...
+> > 	if (!irq_data) {
+> >                 pr_err("irq-s3c24xx: no irq data found for hwirq %lu\n",
+> > hw); return -EINVAL;
+> >         }
+> >
+> > That is, it could be an invalid value, but whether it actually hits 0
+> > would seem to depend on the value hw?
+> >
+> > Heiko, is NULL really a possibility?
+>
+> The test you quoted is of course wrong ... it would need to test
+> parent_irq_data. But you're also right that the test is not necessary at all.
+>
+> All the s3c_irq_data arrays used always contain 32 entries to reach all bits
+> of the register (which is used differently on each SoC). So if we have found
+> the parent_intc at all, it should contain a 32 entries array of irq_data
+> structs, so no need to test for the existence of the individual array element.
+>
+>
+> And now that I look at it, I also see another glitch. The code tests for
+> parent_irq != 0, which of course won't work if the parent_irq is the 0-hwirq
+> of the parent controller.
+> The only SoC using such a mapping is the s3c2412 [0], which explains why I
+> haven't been bitten by this myself.
+
+Do you want to make all the fixes?
+
+julia
+--8323329-1105248376-1361720719=:1943--
