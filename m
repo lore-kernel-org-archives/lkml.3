@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759530Ab3BXWjs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 17:39:48 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:44449 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758354Ab3BXWjp (ORCPT
+	id S1759457Ab3BXWme (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 17:42:34 -0500
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:64363 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759403Ab3BXWmd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 17:39:45 -0500
+	Sun, 24 Feb 2013 17:42:33 -0500
 MIME-Version: 1.0
-In-Reply-To: <1366216.NzXQfD1BG7@flatron>
+In-Reply-To: <201302242334.42408.heiko@sntech.de>
 References: <201302231855.47560.heiko@sntech.de>
-	<31669750.ZZOiY1AEPv@flatron>
-	<CACRpkdYBjZgEo6qEyBOcYuPzpQUAZ9x-kvFabz0y0pEQs35sKw@mail.gmail.com>
-	<1366216.NzXQfD1BG7@flatron>
-Date: Sun, 24 Feb 2013 23:39:44 +0100
-Message-ID: <CACRpkdbfQOeJ3u8_UvgVMRyu_MMmOZD0tjQT+qNr9iOEpAHLWQ@mail.gmail.com>
-Subject: Re: [PATCH] i2c: s3c2410: check for NULL pinctrl handle
+	<201302231856.35083.heiko@sntech.de>
+	<CACRpkdbA-S7qYHnN72c65Wo_Q7qD3tUxUSNYEXkk4gHbpez4+Q@mail.gmail.com>
+	<201302242334.42408.heiko@sntech.de>
+Date: Sun, 24 Feb 2013 23:42:32 +0100
+Message-ID: <CACRpkdbKFWcT_Oa00nd_Op5ndOEc-cEkZm6fzHRuxs0Rc+ZOeA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: return real error codes when pinctrl is not included
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Tomasz Figa <t.figa@samsung.com>, Prathyush K <prathyush@chromium.org>,
         Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org,
         Kukjin Kim <kgene.kim@samsung.com>,
         linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Tomasz Figa <t.figa@samsung.com>
+        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 24, 2013 at 6:00 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+On Sun, Feb 24, 2013 at 11:34 PM, Heiko Stübner <heiko@sntech.de> wrote:
 
->> > Note that we are talking here about a temporary solution. The legacy
->> > DT- based pin configuration will go away after all the DT-enabled
->> > platforms using this driver get migrated to pin control and so will
->> > the need to check if pin control is available.
->>
->> So use AUXDATA, and you get a pdata for that driver?
+> [Me]
+>> This make me suspect that you have this ugly patch in some
+>> private repo and I will be seeing it again and again :-(
 >
-> Hmm, and then have some platform data passed statically and some parsed
-> from device tree?
+> All my s3c24xx work is done is my spare time, so I have to confess I came up
+> with this "ugly patch" all by myself when working on dt support for my machine
+> and stumbling upon the described problem with the pin configuration.
+>
+> So, as it is obviously wrong, I also won't hold onto it.
+>
+> In any case, thanks for the thorough explanation, which I probably won't
+> forget anytime soon.
 
-This is done by several in-tree drivers today. It is even necessary for things
-like machine-specific callbacks.
+Hm, maybe I have come across as too harsh and then I feel bad about
+that :-(
 
-> Not even saying that we are going towards getting rid of
-> auxdata, not adding further dependencies for it.
-
-The other option is to do the non-temporary solution you are
-referring to below...
-
-> Sorry, but this sounds more broken to me than checking the return value of
-> devm_pinctrl_get_select_default for NULL in the driver.
-
-Both are bad solution, auxdata is less bad than trying to check
-struct pinctrl * handles for non-NULL, which has *never* been a
-good thing to do and should never have been merged in the first
-place.
-
-(Maybe I ACKed that, then I was doing something stupid.)
-
-> Still, all the platforms relying on the legacy DT GPIO support should have
-> been already migrated to pin control, so ideally instead of "fixing" the
-> drivers to continue supporting the deprecated method, such platforms
-> should be fixed.
-
-I agree.
+I really want spare-time contributors, they are often more valueable
+in addition to the corporate ones since they provide an outside view
+of things.
 
 Yours,
 Linus Walleij
