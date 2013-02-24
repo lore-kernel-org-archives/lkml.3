@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309Ab3BXSi2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 13:38:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6984 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085Ab3BXSi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 13:38:27 -0500
-Date: Sun, 24 Feb 2013 19:36:56 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>, Neil Horman <nhorman@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] freezer: do not send a fake signal to a PF_DUMPCORE
-	thread
-Message-ID: <20130224183656.GA8903@redhat.com>
-References: <20130224173144.GA32179@redhat.com> <20130224173206.GA32206@redhat.com>
+	id S1758190Ab3BXSxQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 13:53:16 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:64044 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab3BXSxO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 13:53:14 -0500
+Message-ID: <512A6197.2000908@lwfinger.net>
+Date: Sun, 24 Feb 2013 12:53:11 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130224173206.GA32206@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: =?UTF-8?B?TWljaGFlbCBCw7xzY2g=?= <m@bues.ch>
+CC: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        b43-dev <b43-dev@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Lockdep splat when unloading b43
+References: <512A4E83.5090901@lwfinger.net> <20130224193239.3517e6ac@milhouse>
+In-Reply-To: <20130224193239.3517e6ac@milhouse>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A coredumping thread can't be frozen anyway but the fake signal sent
-by freeze_task() can confuse dump_write/wait_for_dump_helpers/etc
-and interrupt the coredump.
+On 02/24/2013 12:32 PM, Michael Büsch wrote:
+> On Sun, 24 Feb 2013 11:31:47 -0600
+> Larry Finger <Larry.Finger@lwfinger.net> wrote:
+>
+>> With the current wireless-testing tree, unloading b43 produces the lockdep log
+>> splat copied below. My understanding of locking is deficient, and I would like
+>> to learn. Any help on understanding this problem is appreciated.
+>
+> A few questions:
+> Is there any reason for using the global workqueue and not mac80211's workqueue?
 
-We are going to make the do_coredump() paths freezable but the fake
-TIF_SIGPENDING doesn't help, it only makes sense when we assume that
-the target can return to user-mode and call get_signal_to_deliver().
+My original thought was that we needed the firmware load queue before mac80211 
+was running for b43; however, I now realize that my thinking was wrong.
 
-Change freeze_task() to check PF_DUMPCORE along with PF_KTHREAD. We
-need to recheck PF_DUMPCORE under ->siglock to avoid the race with
-zap_threads() which can set this flag right before we take the lock.
+> Why is the workqueue cancelled in the core_stop callback? Wouldn't it make more
+> sense to cancel it in bcma_remove/ssb_remove?
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/freezer.c |   19 ++++++++++++-------
- 1 files changed, 12 insertions(+), 7 deletions(-)
+It certainly would.
 
-diff --git a/kernel/freezer.c b/kernel/freezer.c
-index c38893b..595afab 100644
---- a/kernel/freezer.c
-+++ b/kernel/freezer.c
-@@ -85,14 +85,21 @@ bool __refrigerator(bool check_kthr_stop)
- }
- EXPORT_SYMBOL(__refrigerator);
- 
--static void fake_signal_wake_up(struct task_struct *p)
-+static bool fake_signal_wake_up(struct task_struct *p)
- {
- 	unsigned long flags;
-+	bool ret = false;
-+
-+	if (p->flags & (PF_KTHREAD | PF_DUMPCORE))
-+		return ret;
- 
- 	if (lock_task_sighand(p, &flags)) {
--		signal_wake_up(p, 0);
-+		ret = !(p->flags & PF_DUMPCORE);
-+		if (ret)
-+			signal_wake_up(p, 0);
- 		unlock_task_sighand(p, &flags);
- 	}
-+	return ret;
- }
- 
- /**
-@@ -100,8 +107,8 @@ static void fake_signal_wake_up(struct task_struct *p)
-  * @p: task to send the request to
-  *
-  * If @p is freezing, the freeze request is sent either by sending a fake
-- * signal (if it's not a kernel thread) or waking it up (if it's a kernel
-- * thread).
-+ * signal (if it's not a kernel thread or a coredumping thread) or waking
-+ * it up otherwise.
-  *
-  * RETURNS:
-  * %false, if @p is not freezing or already frozen; %true, otherwise
-@@ -116,9 +123,7 @@ bool freeze_task(struct task_struct *p)
- 		return false;
- 	}
- 
--	if (!(p->flags & PF_KTHREAD))
--		fake_signal_wake_up(p);
--	else
-+	if (!fake_signal_wake_up(p))
- 		wake_up_state(p, TASK_INTERRUPTIBLE);
- 
- 	spin_unlock_irqrestore(&freezer_lock, flags);
--- 
-1.5.5.1
+> This would probably fix the circular dependency. But I'm not entirely sure, because
+> I'm not that familiar with the code anymore.
+
+I know that a lot has changed, but your instincts are still good.
+
+Thanks,
+
+Larry
+
 
 
