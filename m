@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759463Ab3BXV3J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 16:29:09 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:42174 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757221Ab3BXV3H (ORCPT
+	id S1758926Ab3BXV7P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 16:59:15 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:43347 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758237Ab3BXV7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 16:29:07 -0500
-Message-ID: <1361741338.21499.38.camel@thor.lan>
-Subject: Re: [PATCH 0/5] [v3] fix illegal use of __pa() in KVM code
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Gleb Natapov <gleb@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Rik van Riel <riel@redhat.com>
-Date: Sun, 24 Feb 2013 16:28:58 -0500
-In-Reply-To: <20130122212428.8DF70119@kernel.stglabs.ibm.com>
-References: <20130122212428.8DF70119@kernel.stglabs.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Sun, 24 Feb 2013 16:59:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <CABQ2P6FJBSeuGjQbOEuek6QXkRzRbQMHvsApq4g2-0OGykjKZw@mail.gmail.com>
+References: <CABQ2P6FJBSeuGjQbOEuek6QXkRzRbQMHvsApq4g2-0OGykjKZw@mail.gmail.com>
+Date: Sun, 24 Feb 2013 22:59:13 +0100
+Message-ID: <CABQ2P6FVZHWCUogV=xmxv8g-y7RWV_tQqxRMJyxTQK_ixnySjw@mail.gmail.com>
+Subject: Fwd: Cpu hotplug causes stutter on AMD platform, how can I disable it?
+From: Mario Giammarco <mgiammarco@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
+I have an AMD Athlon(tm) II X4 635 Processor
+on an asus M4A89TD PRO/USB3   motherboard with AMD 890FX chipset.
+When I play videos on nvidia card (even on open source driver) the
+video stutters and I can
+see in syslog:
 
-On Tue, 2013-01-22 at 13:24 -0800, Dave Hansen wrote:
-> This series fixes a hard-to-debug early boot hang on 32-bit
-> NUMA systems.  It adds coverage to the debugging code,
-> adds some helpers, and eventually fixes the original bug I
-> was hitting.
-
-Hi Dave,
-
-Now that the alloc_remap() has been/is being removed, is most/all of
-this being reverted?
-
-I ask because I was fixing a different bug in KVM's para-virt clock and
-saw part of this series (from [PATCH 5/5] fix kvm's use of __pa() on
-percpu areas):
-
-diff -puN arch/x86/kernel/kvmclock.c~fix-kvm-__pa-use-on-percpu-areas arch/x86/kernel/kvmclock.c
---- linux-2.6.git/arch/x86/kernel/kvmclock.c~fix-kvm-__pa-use-on-percpu-areas   2013-01-22 13:17:16.428317508 -0800
-+++ linux-2.6.git-dave/arch/x86/kernel/kvmclock.c       2013-01-22 13:17:16.432317541 -0800
-@@ -162,8 +162,8 @@ int kvm_register_clock(char *txt)
-        int low, high, ret;
-        struct pvclock_vcpu_time_info *src = &hv_clock[cpu].pvti;
- 
--       low = (int)__pa(src) | 1;
--       high = ((u64)__pa(src) >> 32);
-+       low = (int)slow_virt_to_phys(src) | 1;
-+       high = ((u64)slow_virt_to_phys(src) >> 32);
-        ret = native_write_msr_safe(msr_kvm_system_time, low, high);
-        printk(KERN_INFO "kvm-clock: cpu %d, msr %x:%x, %s\n",
-               cpu, high, low, txt);
-
-which confused me because hv_clock is the __va of allocated physical
-memory, not a per-cpu variable.
-
-	mem = memblock_alloc(size, PAGE_SIZE);
-	if (!mem)
-		return;
-	hv_clock = __va(mem);
-
-So in short, my questions are:
-1) is the slow_virt_to_phys() necessary anymore?
-2) if yes, does it apply to the code above?
-3) if yes, would you explain in more detail what the 32-bit NUMA mm is
-doing, esp. wrt. when __va(__pa) is not identical across all cpus?
-
-Regards,
-Peter Hurley
+Feb 24 00:30:50 virtual1 kernel: [  719.834878] CPU 1 is now offline
+Feb 24 00:30:50 virtual1 kernel: [  719.842450] CPU 2 is now offline
+Feb 24 00:30:50 virtual1 kernel: [  719.852534] CPU 3 is now offline
+Feb 24 00:30:50 virtual1 kernel: [  719.852538] SMP alternatives:
+switching to UP code
+Feb 24 00:30:51 virtual1 /usr/sbin/irqbalance: WARNING, didn't collect
+load info for all cpus, balancing is broken
+Feb 24 00:30:52 virtual1 kernel: [  722.294565] SMP alternatives:
+switching to SMP code
+Feb 24 00:30:52 virtual1 kernel: [  722.334866] Booting Node 0
+Processor 1 APIC 0x1
+Feb 24 00:30:52 virtual1 kernel: [  722.346033] LVT offset 1 assigned
+for vector 0x400
+Feb 24 00:30:52 virtual1 kernel: [  722.361174] Switch to broadcast mode on CPU1
+Feb 24 00:30:52 virtual1 kernel: [  722.378717] microcode: CPU1: new
+patch_level=0x010000db
+Feb 24 00:30:52 virtual1 kernel: [  722.398515] Booting Node 0
+Processor 2 APIC 0x2
+Feb 24 00:30:52 virtual1 kernel: [  722.413375] Switch to broadcast mode on CPU2
+Feb 24 00:30:52 virtual1 kernel: [  722.420603] microcode: CPU2: new
+patch_level=0x010000db
+Feb 24 00:30:52 virtual1 kernel: [  722.428782] Booting Node 0
+Processor 3 APIC 0x3
+Feb 24 00:30:52 virtual1 kernel: [  722.446283] Switch to broadcast mode on CPU3
+Feb 24 00:30:52 virtual1 kernel: [  722.448615] microcode: CPU3: new
+patch_level=0x010000db
 
 
+I have searched on internet and I see that is a problem common to
+several AMD platforms.
+Even in Microsoft Windows several people have the same problem and
+they solved it disabling cool&quiet on bios. It seems that some amd
+cpus on power saving cut off also HT bus blocking data from pcie bus
+(!?!)
+I have tried too and infact disabling cool&quiet improves a lot the problem.
+But I would like to find a better solution, can I disable cpu hotplug?
+Have you heard of this bug before?
+Please CC me because I am not on kernel mailing list.
+
+Thanks in advance for any help,
+Mario
