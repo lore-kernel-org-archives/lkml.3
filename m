@@ -1,127 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759386Ab3BXVXw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 16:23:52 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:41871 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757908Ab3BXVXu (ORCPT
+	id S1759408Ab3BXV13 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 16:27:29 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:34446 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758354Ab3BXV11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 16:23:50 -0500
-Message-ID: <1361741024.21499.37.camel@thor.lan>
-Subject: Re: [Bisected][-next-20130204+] [x86/kvm] udevd:[97]: segfault at
- ffffffffff5fd020 ip 00007fff069e277f sp 00007fff068c9ef8 error d
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Date: Sun, 24 Feb 2013 16:23:44 -0500
-In-Reply-To: <20130219082656.GE3600@redhat.com>
-References: <1360715210.31472.20.camel@thor.lan>
-	 <511AE0A7.2000101@linux.intel.com> <20130213105129.GB9817@redhat.com>
-	 <1360756629.4803.5.camel@thor.lan> <20130218225955.GA6166@amt.cnet>
-	 <1361236341.3263.11.camel@thor.lan> <20130219082656.GE3600@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
+	Sun, 24 Feb 2013 16:27:27 -0500
+Message-ID: <512A85BB.8070500@suse.cz>
+Date: Sun, 24 Feb 2013 22:27:23 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+MIME-Version: 1.0
+To: Hillf Danton <dhillf@gmail.com>
+CC: Daniel J Blueman <daniel@numascale-asia.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Steffen Persvold <sp@numascale.com>
+Subject: Re: kswapd craziness round 2
+References: <5121C7AF.2090803@numascale-asia.com> <CAJd=RBArPT8YowhLuE8YVGNfH7G-xXTOjSyDgdV2RsatL-9m+Q@mail.gmail.com> <51254AD2.7000906@suse.cz> <CAJd=RBCiYof5rRVK+62OFMw+5F=5rS=qxRYF+OHpuRz895bn4w@mail.gmail.com>
+In-Reply-To: <CAJd=RBCiYof5rRVK+62OFMw+5F=5rS=qxRYF+OHpuRz895bn4w@mail.gmail.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-19 at 10:26 +0200, Gleb Natapov wrote:
-> On Mon, Feb 18, 2013 at 08:12:21PM -0500, Peter Hurley wrote:
-> > On Mon, 2013-02-18 at 19:59 -0300, Marcelo Tosatti wrote:
-> > > On Wed, Feb 13, 2013 at 06:57:09AM -0500, Peter Hurley wrote:
-> > > > On Wed, 2013-02-13 at 12:51 +0200, Gleb Natapov wrote:
-> > > > > On Tue, Feb 12, 2013 at 04:39:03PM -0800, H. Peter Anvin wrote:
-> > > > > > On 02/12/2013 04:26 PM, Peter Hurley wrote:
-> > > > > > > With -next-20130204+ in ubuntu 12.10 VM (so the 80x25 VGA
-> > > > > > > device/console):
-> > > > > > > 
-> > > > > > > [    0.666410] udevd[97]: starting version 175
-> > > > > > > [    0.674043] udevd[97]: udevd:[97]: segfault at ffffffffff5fd020 ip 00007fff069e277f sp 00007fff068c9ef8 error d
-> > > > > > > 
-> > > > > > > and boots to an initramfs prompt.
-> > > > > > > 
-> > > > > > > git bisect (log attached) blames:
-> > > > > > > 
-> > > > > > > commit 7b5c4a65cc27f017c170b025f8d6d75dabb11c6f
-> > > > > > > Merge: 3596f5b 949db15
-> > > > > > > Author: H. Peter Anvin <hpa@linux.intel.com>
-> > > > > > > Date:   Fri Jan 25 16:31:21 2013 -0800
-> > > > > > > 
-> > > > > > >     Merge tag 'v3.8-rc5' into x86/mm
-> > > > > > >     
-> > > > > > >     The __pa() fixup series that follows touches KVM code that is not
-> > > > > > >     present in the existing branch based on v3.7-rc5, so merge in the
-> > > > > > >     current upstream from Linus.
-> > > > > > >     
-> > > > > > >     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> > > > > > > 
-> > > > > > > 
-> > > > > > > This only happens with the VGA device/console but that is the default
-> > > > > > > configuration for Ubuntu/KVM because it blacklists pretty much every fb
-> > > > > > > driver.
-> > > > > > > 
-> > > > > > 
-> > > > > > I am guessing this is another bad use of __pa()... need to look into that.
-> > > 
-> > > Can't find this commit on kvm.git or linux-2.6.git. Is it reproducible
-> > > there?
-> > 
-> > This is in the linux-next repo (any git tag after 'next-20130204' will
-> > reproduce this). It's a pretty large merge commit.
-> > 
-> > This doesn't happen on 3.8-rc7.
-> > 
-> > I'll try to repro this on kvm.git sometime this week. Otherwise, we can
-> > wait for it to show up in 3.9.
-> > 
-> Can you also drop 5dfd486c4750c9278c63fa96e6e85bdd2fb58e9d from linux-next and reproduce?
+On 02/21/2013 01:07 PM, Hillf Danton wrote:
+> On Thu, Feb 21, 2013 at 6:14 AM, Jiri Slaby <jslaby@suse.cz> wrote:
+>>>
+>>> Does Ingo's revert help? https://lkml.org/lkml/2013/2/15/168
+>>
+>> Not at all...
+>>
+> Then mind taking a try?
 
-Ok, found and fixed. This will need to go to stable for 3.8 as well.
+Applied now, I'll report in a week or so as it needs a couple of days of
+uptime to occur.
 
-Regards,
-Peter Hurley
-
---- >% ---
-From: Peter Hurley <peter@hurleysoftware.com>
-Date: Sun, 24 Feb 2013 10:55:09 -0500
-Subject: [PATCH] x86/kvm: Fix pvclock vsyscall fixmap
-
-The physical memory fixmapped for the pvclock clock_gettime vsyscall
-was allocated, and thus is not a kernel symbol. __pa() is the proper
-method to use in this case.
-
-Fixes the crash below when booting a next-20130204+ smp guest on a
-3.8-rc5+ KVM host.
-
-[    0.666410] udevd[97]: starting version 175
-[    0.674043] udevd[97]: udevd:[97]: segfault at ffffffffff5fd020
-     ip 00007fff069e277f sp 00007fff068c9ef8 error d
-
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- arch/x86/kernel/pvclock.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index 85c3959..2cb9470 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -185,7 +185,7 @@ int __init pvclock_init_vsyscall(struct pvclock_vsyscall_time_info *i,
- 
- 	for (idx = 0; idx <= (PVCLOCK_FIXMAP_END-PVCLOCK_FIXMAP_BEGIN); idx++) {
- 		__set_fixmap(PVCLOCK_FIXMAP_BEGIN + idx,
--			     __pa_symbol(i) + (idx*PAGE_SIZE),
-+			     __pa(i) + (idx*PAGE_SIZE),
- 			     PAGE_KERNEL_VVAR);
- 	}
- 
+thanks,
 -- 
-1.8.1.2
-
-
-
+js
+suse labs
