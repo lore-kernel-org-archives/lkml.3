@@ -1,85 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759388Ab3BXRdl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 12:33:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43494 "EHLO mx1.redhat.com"
+	id S1753950Ab3BXRuA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 12:50:00 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:37328 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759370Ab3BXRdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 12:33:39 -0500
-Date: Sun, 24 Feb 2013 18:32:09 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>, Neil Horman <nhorman@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] coredump: make wait_for_dump_helpers() freezable
-Message-ID: <20130224173209.GA32209@redhat.com>
+	id S1751015Ab3BXRt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 12:49:58 -0500
+From: Heiko =?iso-8859-15?q?St=FCbner?= <heiko@sntech.de>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: question about arch/arm/mach-s3c24xx/irq.c
+Date: Sun, 24 Feb 2013 18:49:41 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>, ben-linux@fluff.org,
+        kgene.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <alpine.DEB.2.02.1302241241440.1943@hadrien> <201302241611.13028.heiko@sntech.de> <alpine.DEB.2.02.1302241644540.1943@hadrien>
+In-Reply-To: <alpine.DEB.2.02.1302241644540.1943@hadrien>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130224173144.GA32179@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201302241849.41638.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wait_for_dump_helpers() calls wake_up/kill_fasync from inside the
-wait_event-like loop. This is not needed and in fact this is not
-strictly correct, we can/should do this only once after we change
-pipe->writers. We could even check if it becomes zero.
+Am Sonntag, 24. Februar 2013, 16:45:18 schrieb Julia Lawall:
+> On Sun, 24 Feb 2013, Heiko Stübner wrote:
+> > Am Sonntag, 24. Februar 2013, 14:39:45 schrieb Julia Lawall:
+> > > [Adding the person who introduced the code]
+> > > 
+> > > On Sun, 24 Feb 2013, Russell King - ARM Linux wrote:
+> > > > On Sun, Feb 24, 2013 at 12:45:11PM +0100, Julia Lawall wrote:
+> > > > > The function s3c24xx_irq_map in arch/arm/mach-s3c24xx/irq.c
+> > > > > contains the
+> > > > > 
+> > > > > code:
+> > > > >                 parent_irq_data =
+> > > > >                 &parent_intc->irqs[irq_data->parent_irq];
+> > > > > 		
+> > > > > 		if (!irq_data) {
+> > > > > 		
+> > > > >                         pr_err("irq-s3c24xx: no irq data found for
+> > > > >                         hwirq %lu\n",
+> > > > >                         
+> > > > >                                hw);
+> > > > >                         
+> > > > >                         goto err;
+> > > > > 		
+> > > > > 		}
+> > > > > 
+> > > > > At this point irq_data has already been tested, so the null test on
+> > > > > irq_data does not look correct.  But I wonder if parent_irq_data
+> > > > > could ever be null here?
+> > > > 
+> > > > That would be really obscure - because that would require parent_intc
+> > > > to be a "negative" pointer (to counter-act the indexing by
+> > > > irq_data->parent_irq).  So it looks to me like the above is
+> > > > redundant.
+> > > 
+> > > Even at its original definition irq_data seems unlikely to be NULL:
+> > >         struct s3c_irq_intc *intc = h->host_data;
+> > > 	
+> > > 	struct s3c_irq_data *irq_data = &intc->irqs[hw];
+> > > 	...
+> > > 	if (!irq_data) {
+> > > 	
+> > >                 pr_err("irq-s3c24xx: no irq data found for hwirq
+> > >                 %lu\n",
+> > > 
+> > > hw); return -EINVAL;
+> > > 
+> > >         }
+> > > 
+> > > That is, it could be an invalid value, but whether it actually hits 0
+> > > would seem to depend on the value hw?
+> > > 
+> > > Heiko, is NULL really a possibility?
+> > 
+> > The test you quoted is of course wrong ... it would need to test
+> > parent_irq_data. But you're also right that the test is not necessary at
+> > all.
+> > 
+> > All the s3c_irq_data arrays used always contain 32 entries to reach all
+> > bits of the register (which is used differently on each SoC). So if we
+> > have found the parent_intc at all, it should contain a 32 entries array
+> > of irq_data structs, so no need to test for the existence of the
+> > individual array element.
+> > 
+> > 
+> > And now that I look at it, I also see another glitch. The code tests for
+> > parent_irq != 0, which of course won't work if the parent_irq is the
+> > 0-hwirq of the parent controller.
+> > The only SoC using such a mapping is the s3c2412 [0], which explains why
+> > I haven't been bitten by this myself.
+> 
+> Do you want to make all the fixes?
 
-With this change it is trivial to convert this code to use
-wait_event_freezable() and make this function freezable/killable,
-only SIGKILL can set TIF_SIGPENDING.
+Yep, I just need to find out what the best fix for my parent_irq mess up would 
+be :-)
 
-With this patch we check pipe->readers without pipe_lock(), this
-is fine. Once we see pipe->readers == 1 we know that the handler
-decremented the counter, this is all we need.
+The easiest way would of course be to use a value outside the valid range to 
+indicate no parent-irq, so either < 0 (would need a type change) or > 32 .
 
-Note: wait_event_freezable() is "strange", perhaps it should be
-changed or simply removed. In the latter case we can change this
-code again to use freezer_do_not_count + wait_event_interruptible.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- fs/coredump.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/fs/coredump.c b/fs/coredump.c
-index 4f3c8d1..284d841 100644
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -32,6 +32,7 @@
- #include <linux/pipe_fs_i.h>
- #include <linux/oom.h>
- #include <linux/compat.h>
-+#include <linux/freezer.h>
- 
- #include <asm/uaccess.h>
- #include <asm/mmu_context.h>
-@@ -428,17 +429,16 @@ static void wait_for_dump_helpers(struct file *file)
- 	pipe_lock(pipe);
- 	pipe->readers++;
- 	pipe->writers--;
-+	wake_up_interruptible_sync(&pipe->wait);
-+	kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
-+	pipe_unlock(pipe);
- 
--	while ((pipe->readers > 1) && (!signal_pending(current))) {
--		wake_up_interruptible_sync(&pipe->wait);
--		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
--		pipe_wait(pipe);
--	}
-+	wait_event_freezable(pipe->wait, pipe->readers == 1);
- 
-+	pipe_lock(pipe);
- 	pipe->readers--;
- 	pipe->writers++;
- 	pipe_unlock(pipe);
--
- }
- 
- /*
--- 
-1.5.5.1
+But I might be overlooking something here.
 
