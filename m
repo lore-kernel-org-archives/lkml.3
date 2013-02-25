@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759867Ab3BYWhf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:37:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55519 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758924Ab3BYWhb (ORCPT
+	id S932275Ab3BYWkR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:40:17 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:58752 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759614Ab3BYWkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:37:31 -0500
-Date: Mon, 25 Feb 2013 14:37:28 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: mtk.manpages@gmail.com
-Cc: Andrey Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, linux-api@vger.kernel.org,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pedro Alves <palves@redhat.com>
-Subject: Re: [PATCH] ptrace: add ability to retrieve signals without
- removing from a queue (v2)
-Message-Id: <20130225143728.3ddb88fc.akpm@linux-foundation.org>
-In-Reply-To: <CAKgNAkhoK4KQ-5PC+C=g1i+J7WQsdvOWFiJ9PiqD26EdCZW0OA@mail.gmail.com>
-References: <1361786813-14652-1-git-send-email-avagin@openvz.org>
-	<20130225141234.99b76738.akpm@linux-foundation.org>
-	<CAKgNAkhoK4KQ-5PC+C=g1i+J7WQsdvOWFiJ9PiqD26EdCZW0OA@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Feb 2013 17:40:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130225221238.GA10575@kroah.com>
+References: <1361473348-7660-1-git-send-email-milos.vyletel@sde.cz>
+ <87y5ehfczy.fsf@rustcorp.com.au> <20130225221238.GA10575@kroah.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 25 Feb 2013 23:39:52 +0100
+Message-ID: <CAPXgP13M_krpPMFoBroYkXc4dUQHsZJDua-jSGby8cQ1Afy-HQ@mail.gmail.com>
+Subject: Re: [PATCH] virtio-blk: emit udev event when device is resized
+To: Greg KH <greg@kroah.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Milos Vyletel <milos.vyletel@sde.cz>, linux-kernel@vger.kernel.org,
+        linux-hotplug@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, mst@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Feb 2013 23:28:11 +0100
-"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
+On Mon, Feb 25, 2013 at 11:12 PM, Greg KH <greg@kroah.com> wrote:
 
-> > Please, document the interface *completely* so that others can review
-> > the design and can then check that the implementation matches that
-> > design.  As it stands, we're reduced to mind-reading.
-> 
-> +1.
+> Hm, I thought we were frowning apon running binaries from udev rules
+> these days, especially ones that might have big consequences (like
+> resizing a disk image) like this.
+>
+> Kay, am I right?
 
-I suddenly feel less lonely.
+We removed most of them from the default setups, yes. But there is
+nothing wrong if people want to ship that in some package or as custom
+rules.
 
-> Andrey, please don't assume that people have read past mails. Even if
-> they have, they're forgetful. Don't make people hunt down old mails to
-> try to put the pieces together. The changelog should include a full
-> description of the interface, and also the sample user-space code that
-> you showed at some point in another mail.
+It looks fine to me, we would just not add such things to the default
+set of of rules these days.
 
-If there's sample userspace code, there are all sorts of good reasons
-for putting that into tools/testing/selftests/your-name-here/
+> We already emit KOBJECT_CHANGE events when block devices change, from
+> within the block core code.  Why is the patch below needed instead of
+> using these events that are already generated?  How are virtio block
+> devices special?
 
-> That may help you get better
-> review, and it will certainly help make a better man page.
+I think we only do that for dm and md and a couple of special cases
+like loop and read-only settings.
 
+Kay
