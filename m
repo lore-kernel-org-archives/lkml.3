@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759730Ab3BYD03 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 22:26:29 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38642 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757463Ab3BYD02 (ORCPT
+	id S1759802Ab3BYD3o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 22:29:44 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:40255 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757463Ab3BYD3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 22:26:28 -0500
-Date: Sun, 24 Feb 2013 19:26:25 -0800
+	Sun, 24 Feb 2013 22:29:43 -0500
+Date: Sun, 24 Feb 2013 19:29:40 -0800
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Regulator: db8500-prcmu - remove incorrect __exit markup
-Message-ID: <20130225032624.GA10547@core.coreip.homeip.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] SPI: spi-ppc4xx - remove incorrect __exit markup
+Message-ID: <20130225032939.GA11603@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -30,31 +29,31 @@ attributes.
 
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- drivers/regulator/db8500-prcmu.c | 4 ++--
+ drivers/spi/spi-ppc4xx.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/db8500-prcmu.c b/drivers/regulator/db8500-prcmu.c
-index 219d162..a53c11a 100644
---- a/drivers/regulator/db8500-prcmu.c
-+++ b/drivers/regulator/db8500-prcmu.c
-@@ -528,7 +528,7 @@ static int db8500_regulator_probe(struct platform_device *pdev)
- 	return 0;
+diff --git a/drivers/spi/spi-ppc4xx.c b/drivers/spi/spi-ppc4xx.c
+index 7a85f22..027b474 100644
+--- a/drivers/spi/spi-ppc4xx.c
++++ b/drivers/spi/spi-ppc4xx.c
+@@ -560,7 +560,7 @@ free_master:
+ 	return ret;
  }
  
--static int __exit db8500_regulator_remove(struct platform_device *pdev)
-+static int db8500_regulator_remove(struct platform_device *pdev)
+-static int __exit spi_ppc4xx_of_remove(struct platform_device *op)
++static int spi_ppc4xx_of_remove(struct platform_device *op)
  {
- 	int i;
+ 	struct spi_master *master = dev_get_drvdata(&op->dev);
+ 	struct ppc4xx_spi *hw = spi_master_get_devdata(master);
+@@ -583,7 +583,7 @@ MODULE_DEVICE_TABLE(of, spi_ppc4xx_of_match);
  
-@@ -553,7 +553,7 @@ static struct platform_driver db8500_regulator_driver = {
+ static struct platform_driver spi_ppc4xx_of_driver = {
+ 	.probe = spi_ppc4xx_of_probe,
+-	.remove = __exit_p(spi_ppc4xx_of_remove),
++	.remove = spi_ppc4xx_of_remove,
+ 	.driver = {
+ 		.name = DRIVER_NAME,
  		.owner = THIS_MODULE,
- 	},
- 	.probe = db8500_regulator_probe,
--	.remove = __exit_p(db8500_regulator_remove),
-+	.remove = db8500_regulator_remove,
- };
- 
- static int __init db8500_regulator_init(void)
 -- 
 1.7.11.7
 
