@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759633Ab3BYVaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 16:30:14 -0500
-Received: from ozlabs.org ([203.10.76.45]:46606 "EHLO ozlabs.org"
+	id S1759771Ab3BYVbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 16:31:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41368 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752513Ab3BYVaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 16:30:10 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Sjur =?utf-8?Q?Br=C3=A6ndeland?= <sjur@brendeland.net>,
-        netdev@vger.kernel.org,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Erwan Yvin <erwan.yvin@stericsson.com>, Ido Yariv <ido@wizery.com>
-Subject: Re: [PATCHv2 vringh 1/3] remoteproc: Add support for vringh (Host vrings)
-In-Reply-To: <CAK=WgbYt6mQeJ+4kCFsfGppfaq3JcS6OedNE+ZGd4itfR1hU4A@mail.gmail.com>
-References: <1360669793-6921-1-git-send-email-sjur.brandeland@stericsson.com> <1360669793-6921-2-git-send-email-sjur.brandeland@stericsson.com> <CAK=Wgbb0EeiCh504jsoX+izzi+ZogfEDttz2cHRd4pVXvQunQw@mail.gmail.com> <8738wqgok6.fsf@rustcorp.com.au> <CAK=WgbYt6mQeJ+4kCFsfGppfaq3JcS6OedNE+ZGd4itfR1hU4A@mail.gmail.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 22 Feb 2013 11:12:13 +1030
-Message-ID: <87k3q1faca.fsf@rustcorp.com.au>
+	id S1759733Ab3BYVa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 16:30:59 -0500
+Date: Mon, 25 Feb 2013 13:30:58 -0800
+From: Mark Fasheh <mfasheh@suse.de>
+To: Richard Weinberger <richard@nod.at>
+Cc: ocfs2-devel@oss.oracle.com, ocfs2-user@oss.oracle.com,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        jlbec@evilplan.org, linux-fsdevel@vger.kernel.org, david@sigma-star.at
+Subject: Re: OCFS2 mainline state?
+Message-ID: <20130225213058.GD13510@wotan.suse.de>
+Reply-To: Mark Fasheh <mfasheh@suse.de>
+References: <512BCA9E.4090702@nod.at> <20130225211103.GA13510@wotan.suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130225211103.GA13510@wotan.suse.de>
+Organization: SUSE Labs
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ohad Ben-Cohen <ohad@wizery.com> writes:
-> On Thu, Feb 21, 2013 at 8:37 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> Hmm... I clearly jumped the gun, assuming consensus was already reached.
->> I have put these patches *back* into pending-rebases, and they will not
->> be merged this merge window.
->
-> Thanks.
->
-> What do you think about creating some virtio-level wrappers for the
-> vringh handlers?
->
-> I don't think we're going to stop with caif as the only vringh user,
-> and it could be nice if we follow the virtio spirit of decoupling the
-> drivers from the low level implementation. It sure did prove itself
-> when the remoteproc use cases started showing up, and it's neat.
+On Mon, Feb 25, 2013 at 01:11:03PM -0800, Mark Fasheh wrote:
+> On Mon, Feb 25, 2013 at 09:33:34PM +0100, Richard Weinberger wrote:
+> > Today I encountered the following problem on v3.8:
+> > [   28.940032] general protection fault: 0000 [#1] PREEMPT SMP
+> > ...
+> > [   28.984953] Call Trace:
+> > [   28.986628   [<ffffffffa04cb200>] ocfs2_fast_symlink_readpage+0x70/0x1b0 [ocfs2]
+> > [   28.988302]  [<ffffffff8110dc49>] ? add_to_page_cache_lru+0x29/0x40
+> > [   28.989942]  [<ffffffff8110ddca>] do_read_cache_page+0x7a/0x170
+> > [   28.991573]  [<ffffffff8110def4>] read_cache_page_async+0x14/0x20
+> > [   28.993212]  [<ffffffff8110df09>] read_cache_page+0x9/0x20
+> > [   28.994827]  [<ffffffff81170ae5>] page_getlink.isra.9+0x25/0x80
+> > [   28.996442]  [<ffffffff81170b61>] page_follow_link_light+0x21/0x40
+> > [   28.998049]  [<ffffffff8117090d>] generic_readlink+0x3d/0xa0
+> > [   28.999653]  [<ffffffff8116c0db>] sys_readlinkat+0xfb/0x130
+> > [   29.001246]  [<ffffffff8116c126>] sys_readlink+0x16/0x20
+> > [   29.002839]  [<ffffffff815d8dad>] system_call_fastpath+0x1a/0x1f
+> 
+> I've seen that patch actually and yes it should have been in mainline
+> already. I didn't see whether it's in -mm (Andrew is pickup up some of the
+> patches for us right now).
+> 
+> I'll check and if it's not I'll try to send him a version of it today.
 
-The problem space is a bit different.  My immediate concern is getting
-vhost (and thus vhost_net/blk) to use vringh: I wanted to unify the
-in-userspace and in-kernelspace ring implementations.  We don't have
-that issue in virtqueue.c.
+Checked - this is in linux-next so I would expect to see it upstream
+eventually.
+	--Mark
 
-vhost is (will be) the higher abstraction for in-userspace rings,
-perhaps we want an equivalent for in-kernelspace rings.  I'm happy to
-look at patches, but I don't immediately see what it would look like...
-
-Thanks,
-Rusty.
+--
+Mark Fasheh
