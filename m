@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758825Ab3BYOLH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 09:11:07 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38892
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756539Ab3BYOLF (ORCPT
+	id S1759502Ab3BYOLk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 09:11:40 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:44120 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754239Ab3BYOLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 09:11:05 -0500
-Message-ID: <1361801441.4007.40.camel@laptop>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
- samples with kernel samples
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Stephane Eranian <eranian@google.com>, Pawel Moll <pawel.moll@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Robert Richter <robert.richter@amd.com>
-Date: Mon, 25 Feb 2013 15:10:41 +0100
-In-Reply-To: <51285BF1.2090208@linaro.org>
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
-	  <1350408232.2336.42.camel@laptop> <1359728280.8360.15.camel@hornet>
-	  <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>
-	  <51118797.9080800@linaro.org> <alpine.LFD.2.02.1302182132230.22263@ionos>
-	  <5123C3AF.8060100@linaro.org> <1361356160.10155.22.camel@laptop>
-	 <51285BF1.2090208@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+	Mon, 25 Feb 2013 09:11:39 -0500
+Date: Tue, 26 Feb 2013 01:11:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        m.grzeschik@pengutronix.de
+Subject: Re: [PATCH] kbuild: Fix reading of .config in link-vmlinux.sh
+Message-Id: <20130226011128.192ed5a7d145dd2703b395f6@canb.auug.org.au>
+In-Reply-To: <512B5F8A.1060705@suse.cz>
+References: <20130225215845.c0ec14a467aa6fe8e788e80e@canb.auug.org.au>
+	<1361796898-19642-1-git-send-email-mmarek@suse.cz>
+	<512B5F8A.1060705@suse.cz>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__26_Feb_2013_01_11_28_+1100_VupF40=G/.YzpNk3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-02-22 at 22:04 -0800, John Stultz wrote:
-> On 02/20/2013 02:29 AM, Peter Zijlstra wrote:
-> > On Tue, 2013-02-19 at 10:25 -0800, John Stultz wrote:
-> >> So describe how the perf time domain is different then
-> >> CLOCK_MONOTONIC_RAW.
-> > The primary difference is that the trace/sched/perf time domain is not
-> > strictly monotonic, it is only locally monotonic -- that is two time
-> > stamps taken on the same cpu are guaranteed to be monotonic.
-> 
-> So how would a clock_gettime(CLOCK_PERF,...) interface help you figure 
-> out which cpu you got your timestamp from?
+--Signature=_Tue__26_Feb_2013_01_11_28_+1100_VupF40=G/.YzpNk3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm not sure we want to expose it that far.. The reason people want
-this clock exposed is to be able to do logging on the same time-line so
-we can correlate events from both sources (kernel and user-space).
+Hi Michal,
 
-In case of parallel execution we cannot guarantee order and reading
-logs/reconstructing events things require a bit of human intelligence.
+On Mon, 25 Feb 2013 13:56:42 +0100 Michal Marek <mmarek@suse.cz> wrote:
+>
+> On 25.2.2013 13:54, Michal Marek wrote:
+> > The shell '.' command is not required to search the current directory as
+> > a fallback and in fact newer versions of bash in sh-mode do not do this.
+> > Force reading the file from the current directory if $KCONFIG_CONFIG
+> > contains no '/'.
+> >=20
+> > Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Signed-off-by: Michal Marek <mmarek@suse.cz>
+> > ---
+> >  scripts/link-vmlinux.sh |    9 ++++++++-
+> >  1 file changed, 8 insertions(+), 1 deletion(-)
+>=20
+> I was able to reproduce the failure and this patch fixed it. So I am
+> going to push this in a couple of hours, so that tomorrow's linux-next
+> can include the latest kbuild changes.
 
-> > Furthermore, to make it useful, there's an actual bound on the inter-cpu
-> > drift (implemented by limiting the drift to CLOCK_MONOTONIC).
-> 
-> So this sounds like you're already sort of interpolating to 
-> CLOCK_MONOTONIC, or am I just misunderstanding you?
+Thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-That's right, although there's modes where the TSC is guaranteed stable
-where we don't do this (it avoids some expensive bits), so we can not
-rely on this.
+--Signature=_Tue__26_Feb_2013_01_11_28_+1100_VupF40=G/.YzpNk3
+Content-Type: application/pgp-signature
 
-> > Additionally -- to increase use -- we also added a monotonic sync point
-> > when cpu A queries time of cpu B.
-> 
-> Not sure I'm following this bit. But I'll have to go look at the code
-> on Monday.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-It will basically pull the 'slowest' cpu forward so that for that
-'event' we can say the two time-lines have a common point.
+iQIcBAEBCAAGBQJRK3EQAAoJEECxmPOUX5FEOHMQAKXDK8Qa4Rrg2ZFzOL/VraR2
+dbcW58hN7U4aQw84uj6mMtl08h0SYINFzKJutWMwSLcCzze0yXDC5nfcGpHM5KkN
+H2eUYbg0RWW+IxeD0oCMo4+s9K2hPwXKg3nSDRP5Slfnpd3R8vSiVocTYgCSD3mX
+/523aJq93uUcJGjCGqQz4EUHks+eRK1kfLSqSh1nRhvh3nRE+idimARHRt1HbE3t
+Phn2U8/KrBZe8fTwCBg1BWYpdCFIulRZ7aRKECEpyU5hgnw5N/MgF2w4np02HwRs
+rkktIsUGqUfYj3ooHRwBPVF7lQTH0RzDX333/weIhIK1mgsMHs1f/pfgw8VfPATk
+TBiVbx2JLSTR+Jkm+2MQA+jOedZe7V81EsVsq8RIgmeWAWSf+Cy9J0ay0zMRM2z9
+znAKc5TFoZjxAVA5pTvmz3lMFEVKJjRPj36dAektHs1ef9fUYpoxKRuuTfKxN7FU
+NCdmmt9/TDvCwjlNgPvs6dREpTode5tH3M3i7qiKxG1p18VtG9B1jvid2P2KxYAT
+JneFMzeoH5Vf/VWkuyfzCmUhVVuHyCM+y7OhAhoFAJAjS9COy1hIAbhRcZKnNFA6
+SfMRHMCxqHW7mK63C8kG0MrGHr3cBJzmaciZ6izSijfdNer54tjM0dfC1NHj8VZd
+TQuEEHAc0Xk/Cz9Prsw0
+=PMhj
+-----END PGP SIGNATURE-----
 
-> Right, and this I understand. We can can play a little fast and lose 
-> with the rules for in-kernel uses, given the variety of hardware and the 
-> fact that performance is more critical then perfect accuracy. Since 
-> we're in-kernel we also have more information then userland does about 
-> what cpu we're running on, so we can get away with only 
-> locally-monotonic timestamps.
-> 
-> But I want to be careful if we're exporting this out to userland that 
-> its both useful and that there's an actual specification for how 
-> CLOCK_PERF behaves, applications can rely upon not changing in the future.
-
-Well, the timestamps themselves are already exposed to userspace
-through the ftrace and perf data logs. All people want is to add
-secondary data stream in the same time-line.
-
+--Signature=_Tue__26_Feb_2013_01_11_28_+1100_VupF40=G/.YzpNk3--
