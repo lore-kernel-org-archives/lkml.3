@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759919Ab3BYWUE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:20:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55097 "EHLO
+	id S932696Ab3BYWUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:20:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55295 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759685Ab3BYWT7 (ORCPT
+	with ESMTP id S932417Ab3BYWUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:19:59 -0500
+	Mon, 25 Feb 2013 17:20:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [ 04/58] x86-32, mm: Remove reference to alloc_remap()
-Date: Mon, 25 Feb 2013 14:19:00 -0800
-Message-Id: <20130225221637.133964988@linuxfoundation.org>
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 54/58] sparc64: Fix get_user_pages_fast() wrt. THP.
+Date: Mon, 25 Feb 2013 14:19:50 -0800
+Message-Id: <20130225221647.806519639@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -28,72 +27,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 07f4207a305c834f528d08428df4531744e25678 upstream.
+From: "David S. Miller" <davem@davemloft.net>
 
-We have removed the remap allocator for x86-32, and x86-64 never had
-it (and doesn't need it).  Remove residual reference to it.
+[ Upstream commit 89a77915e0f56dc7b9f9082ba787895b6a83f809 ]
 
-Reported-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/CAE9FiQVn6_QZi3fNQ-JHYiR-7jeDJ5hT0SyT_%2BzVvfOj=PzF3w@mail.gmail.com
+Mostly mirrors the s390 logic, as unlike x86 we don't need the
+SetPageReferenced() bits.
+
+On sparc64 we also lack a user/privileged bit in the huge PMDs.
+
+In order to make this work for THP and non-THP builds, some header
+file adjustments were necessary.  Namely, provide the PMD_HUGE_* bit
+defines and the pmd_large() inline unconditionally rather than
+protected by TRANSPARENT_HUGEPAGE.
+
+Reported-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/mm/numa.c |   29 +++++++++++------------------
- 1 file changed, 11 insertions(+), 18 deletions(-)
+ arch/sparc/include/asm/pgtable_64.h |   14 +++-----
+ arch/sparc/mm/gup.c                 |   59 ++++++++++++++++++++++++++++++++++--
+ 2 files changed, 63 insertions(+), 10 deletions(-)
 
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -193,7 +193,6 @@ int __init numa_add_memblk(int nid, u64
- static void __init setup_node_data(int nid, u64 start, u64 end)
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -71,7 +71,6 @@
+ #define PMD_PADDR	_AC(0xfffffffe,UL)
+ #define PMD_PADDR_SHIFT	_AC(11,UL)
+ 
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ #define PMD_ISHUGE	_AC(0x00000001,UL)
+ 
+ /* This is the PMD layout when PMD_ISHUGE is set.  With 4MB huge
+@@ -86,7 +85,6 @@
+ #define PMD_HUGE_ACCESSED	_AC(0x00000080,UL)
+ #define PMD_HUGE_EXEC		_AC(0x00000040,UL)
+ #define PMD_HUGE_SPLITTING	_AC(0x00000020,UL)
+-#endif
+ 
+ /* PGDs point to PMD tables which are 8K aligned.  */
+ #define PGD_PADDR	_AC(0xfffffffc,UL)
+@@ -622,6 +620,12 @@ static inline unsigned long pte_special(
+ 	return pte_val(pte) & _PAGE_SPECIAL;
+ }
+ 
++static inline int pmd_large(pmd_t pmd)
++{
++	return (pmd_val(pmd) & (PMD_ISHUGE | PMD_HUGE_PRESENT)) ==
++		(PMD_ISHUGE | PMD_HUGE_PRESENT);
++}
++
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ static inline int pmd_young(pmd_t pmd)
  {
- 	const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
--	bool remapped = false;
- 	u64 nd_pa;
- 	void *nd;
- 	int tnid;
-@@ -211,28 +210,22 @@ static void __init setup_node_data(int n
- 	       nid, start, end - 1);
+@@ -640,12 +644,6 @@ static inline unsigned long pmd_pfn(pmd_
+ 	return val >> (PAGE_SHIFT - PMD_PADDR_SHIFT);
+ }
  
- 	/*
--	 * Allocate node data.  Try remap allocator first, node-local
--	 * memory and then any node.  Never allocate in DMA zone.
-+	 * Allocate node data.  Try node-local memory and then any node.
-+	 * Never allocate in DMA zone.
- 	 */
--	nd = alloc_remap(nid, nd_size);
--	if (nd) {
--		nd_pa = __pa(nd);
--		remapped = true;
--	} else {
--		nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
--		if (!nd_pa) {
--			pr_err("Cannot find %zu bytes in node %d\n",
--			       nd_size, nid);
--			return;
--		}
--		nd = __va(nd_pa);
-+	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
-+	if (!nd_pa) {
-+		pr_err("Cannot find %zu bytes in node %d\n",
-+		       nd_size, nid);
-+		return;
- 	}
-+	nd = __va(nd_pa);
+-static inline int pmd_large(pmd_t pmd)
+-{
+-	return (pmd_val(pmd) & (PMD_ISHUGE | PMD_HUGE_PRESENT)) ==
+-		(PMD_ISHUGE | PMD_HUGE_PRESENT);
+-}
+-
+ static inline int pmd_trans_splitting(pmd_t pmd)
+ {
+ 	return (pmd_val(pmd) & (PMD_ISHUGE|PMD_HUGE_SPLITTING)) ==
+--- a/arch/sparc/mm/gup.c
++++ b/arch/sparc/mm/gup.c
+@@ -66,6 +66,56 @@ static noinline int gup_pte_range(pmd_t
+ 	return 1;
+ }
  
- 	/* report and initialize */
--	printk(KERN_INFO "  NODE_DATA [mem %#010Lx-%#010Lx]%s\n",
--	       nd_pa, nd_pa + nd_size - 1, remapped ? " (remapped)" : "");
-+	printk(KERN_INFO "  NODE_DATA [mem %#010Lx-%#010Lx]\n",
-+	       nd_pa, nd_pa + nd_size - 1);
- 	tnid = early_pfn_to_nid(nd_pa >> PAGE_SHIFT);
--	if (!remapped && tnid != nid)
-+	if (tnid != nid)
- 		printk(KERN_INFO "    NODE_DATA(%d) on node %d\n", nid, tnid);
++static int gup_huge_pmd(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
++			unsigned long end, int write, struct page **pages,
++			int *nr)
++{
++	struct page *head, *page, *tail;
++	u32 mask;
++	int refs;
++
++	mask = PMD_HUGE_PRESENT;
++	if (write)
++		mask |= PMD_HUGE_WRITE;
++	if ((pmd_val(pmd) & mask) != mask)
++		return 0;
++
++	refs = 0;
++	head = pmd_page(pmd);
++	page = head + ((addr & ~PMD_MASK) >> PAGE_SHIFT);
++	tail = page;
++	do {
++		VM_BUG_ON(compound_head(page) != head);
++		pages[*nr] = page;
++		(*nr)++;
++		page++;
++		refs++;
++	} while (addr += PAGE_SIZE, addr != end);
++
++	if (!page_cache_add_speculative(head, refs)) {
++		*nr -= refs;
++		return 0;
++	}
++
++	if (unlikely(pmd_val(pmd) != pmd_val(*pmdp))) {
++		*nr -= refs;
++		while (refs--)
++			put_page(head);
++		return 0;
++	}
++
++	/* Any tail page need their mapcount reference taken before we
++	 * return.
++	 */
++	while (refs--) {
++		if (PageTail(tail))
++			get_huge_page_tail(tail);
++		tail++;
++	}
++
++	return 1;
++}
++
+ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
+ 		int write, struct page **pages, int *nr)
+ {
+@@ -77,9 +127,14 @@ static int gup_pmd_range(pud_t pud, unsi
+ 		pmd_t pmd = *pmdp;
  
- 	node_data[nid] = nd;
+ 		next = pmd_addr_end(addr, end);
+-		if (pmd_none(pmd))
++		if (pmd_none(pmd) || pmd_trans_splitting(pmd))
+ 			return 0;
+-		if (!gup_pte_range(pmd, addr, next, write, pages, nr))
++		if (unlikely(pmd_large(pmd))) {
++			if (!gup_huge_pmd(pmdp, pmd, addr, next,
++					  write, pages, nr))
++				return 0;
++		} else if (!gup_pte_range(pmd, addr, next, write,
++					  pages, nr))
+ 			return 0;
+ 	} while (pmdp++, addr = next, addr != end);
+ 
 
 
