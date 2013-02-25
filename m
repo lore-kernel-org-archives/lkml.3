@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759771Ab3BYVbG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 16:31:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41368 "EHLO mx2.suse.de"
+	id S1759604Ab3BYVe5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 16:34:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10558 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759733Ab3BYVa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 16:30:59 -0500
-Date: Mon, 25 Feb 2013 13:30:58 -0800
-From: Mark Fasheh <mfasheh@suse.de>
-To: Richard Weinberger <richard@nod.at>
-Cc: ocfs2-devel@oss.oracle.com, ocfs2-user@oss.oracle.com,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        jlbec@evilplan.org, linux-fsdevel@vger.kernel.org, david@sigma-star.at
-Subject: Re: OCFS2 mainline state?
-Message-ID: <20130225213058.GD13510@wotan.suse.de>
-Reply-To: Mark Fasheh <mfasheh@suse.de>
-References: <512BCA9E.4090702@nod.at> <20130225211103.GA13510@wotan.suse.de>
+	id S1755402Ab3BYVez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 16:34:55 -0500
+Date: Mon, 25 Feb 2013 23:35:04 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Asias He <asias@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 08/16] virtio_ring: virtqueue_add_outbuf /
+ virtqueue_add_inbuf.
+Message-ID: <20130225213504.GC18167@redhat.com>
+References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au>
+ <1361260594-601-9-git-send-email-rusty@rustcorp.com.au>
+ <20130221170902.GA27097@redhat.com>
+ <87sj4pfc61.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130225211103.GA13510@wotan.suse.de>
-Organization: SUSE Labs
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <87sj4pfc61.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 01:11:03PM -0800, Mark Fasheh wrote:
-> On Mon, Feb 25, 2013 at 09:33:34PM +0100, Richard Weinberger wrote:
-> > Today I encountered the following problem on v3.8:
-> > [   28.940032] general protection fault: 0000 [#1] PREEMPT SMP
-> > ...
-> > [   28.984953] Call Trace:
-> > [   28.986628   [<ffffffffa04cb200>] ocfs2_fast_symlink_readpage+0x70/0x1b0 [ocfs2]
-> > [   28.988302]  [<ffffffff8110dc49>] ? add_to_page_cache_lru+0x29/0x40
-> > [   28.989942]  [<ffffffff8110ddca>] do_read_cache_page+0x7a/0x170
-> > [   28.991573]  [<ffffffff8110def4>] read_cache_page_async+0x14/0x20
-> > [   28.993212]  [<ffffffff8110df09>] read_cache_page+0x9/0x20
-> > [   28.994827]  [<ffffffff81170ae5>] page_getlink.isra.9+0x25/0x80
-> > [   28.996442]  [<ffffffff81170b61>] page_follow_link_light+0x21/0x40
-> > [   28.998049]  [<ffffffff8117090d>] generic_readlink+0x3d/0xa0
-> > [   28.999653]  [<ffffffff8116c0db>] sys_readlinkat+0xfb/0x130
-> > [   29.001246]  [<ffffffff8116c126>] sys_readlink+0x16/0x20
-> > [   29.002839]  [<ffffffff815d8dad>] system_call_fastpath+0x1a/0x1f
+On Fri, Feb 22, 2013 at 10:32:46AM +1030, Rusty Russell wrote:
+> "Michael S. Tsirkin" <mst@redhat.com> writes:
+> > On Tue, Feb 19, 2013 at 06:26:26PM +1030, Rusty Russell wrote:
+> >> These are specialized versions of virtqueue_add_buf(), which cover
+> >> over 50% of cases and are far clearer.
+> >> 
+> >> In particular, the scatterlists passed to these functions don't have
+> >> to be clean (ie. we ignore end markers).
+> >> 
+> >> FIXME: I'm not sure about the unclean sglist bit.  I had a more
+> >> ambitious one which conditionally ignored end markers in the iterator,
+> >> but it was ugly and I suspect this is just as fast.  Maybe we should
+> >> just fix all the drivers?
+> >> 
+> >> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> >
+> > Looking at code, it seems that most users really have a single sg, in
+> > low memory. So how about simply passing void * instead of sg? Whoever
+> > has multiple sgs can use the rich interface.
 > 
-> I've seen that patch actually and yes it should have been in mainline
-> already. I didn't see whether it's in -mm (Andrew is pickup up some of the
-> patches for us right now).
+> Good point, let's do that:
+> 1) Make virtqueue_add_outbuf()/inbuf() take a void * and len.
+> 2) Transfer users across to use that.
+> 3) Make everyone else use clean scatterlists with virtqueue_add_sgs[].
+> 4) Remove virtqueue_add_bufs().
 > 
-> I'll check and if it's not I'll try to send him a version of it today.
+> > Long term we might optimize this unrolling some loops, I think
+> > I saw this giving a small performance gain for -net.
+> 
+> I *think* we could make virtqueue_add() an inline and implement an
+> virtqueue_add_outsg() wrapper and gcc will eliminate the loops for us.
+> But not sure it's worth the text bloat...
+> 
+> Cheers,
+> Rusty.
 
-Checked - this is in linux-next so I would expect to see it upstream
-eventually.
-	--Mark
+inline is mostly useless nowdays...  We can make it a static function and
+let gcc decide.
 
---
-Mark Fasheh
+-- 
+MST
