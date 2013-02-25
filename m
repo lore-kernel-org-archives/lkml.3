@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759941Ab3BYWUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:20:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55145 "EHLO
+	id S933148Ab3BYWbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:31:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759685Ab3BYWUE (ORCPT
+	with ESMTP id S1759930Ab3BYWUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:04 -0500
+	Mon, 25 Feb 2013 17:20:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olaf Hering <olaf@aepfle.de>, "K. Y. Srinivasan" <kys@microsoft.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 12/58] x86: Hyper-V: register clocksource only if its advertised
-Date: Mon, 25 Feb 2013 14:19:08 -0800
-Message-Id: <20130225221638.749015889@linuxfoundation.org>
+        Roman Rakus <rrakus@redhat.com>, Lingzhu Xiang <lxiang@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [ 17/58] tty: set_termios/set_termiox should not return -EINTR
+Date: Mon, 25 Feb 2013 14:19:13 -0800
+Message-Id: <20130225221639.701366903@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -27,48 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olaf Hering <[mailto:olaf@aepfle.de]>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 32068f6527b8f1822a30671dedaf59c567325026 upstream.
+commit 183d95cdd834381c594d3aa801c1f9f9c0c54fa9 upstream.
 
-Enable hyperv_clocksource only if its advertised as a feature.
-XenServer 6 returns the signature which is checked in
-ms_hyperv_platform(), but it does not offer all features. Currently the
-clocksource is enabled unconditionally in ms_hyperv_init_platform(), and
-the result is a hanging guest.
+See https://bugzilla.redhat.com/show_bug.cgi?id=904907
+read command causes bash to abort with double free or corruption (out).
 
-Hyper-V spec Bit 1 indicates the availability of Partition Reference
-Counter.  Register the clocksource only if this bit is set.
+A simple test-case from Roman:
 
-The guest in question prints this in dmesg:
- [    0.000000] Hypervisor detected: Microsoft HyperV
- [    0.000000] HyperV: features 0x70, hints 0x0
+	// Compile the reproducer and send sigchld ti that process.
+	// EINTR occurs even if SA_RESTART flag is set.
 
-This bug can be reproduced easily be setting 'viridian=1' in a HVM domU
-.cfg file. A workaround without this patch is to boot the HVM guest with
-'clocksource=jiffies'.
+	void handler(int sig)
+	{
+	}
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Link: http://lkml.kernel.org/r/1359940959-32168-1-git-send-email-kys@microsoft.com
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+	main()
+	{
+	  struct sigaction act;
+	  act.sa_handler = handler;
+	  act.sa_flags = SA_RESTART;
+	  sigaction (SIGCHLD, &act, 0);
+	  struct termio ttp;
+	  ioctl(0, TCGETA, &ttp);
+	  while(1)
+	  {
+	    if (ioctl(0, TCSETAW, ttp) < 0)
+	      {
+		if (errno == EINTR)
+		{
+		  fprintf(stderr, "BUG!"); return(1);
+		}
+	      }
+	  }
+	}
+
+Change set_termios/set_termiox to return -ERESTARTSYS to fix this
+particular problem.
+
+I didn't dare to change other EINTR's in drivers/tty/, but they look
+equally wrong.
+
+Reported-by: Roman Rakus <rrakus@redhat.com>
+Reported-by: Lingzhu Xiang <lxiang@redhat.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/mshyperv.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/tty/tty_ioctl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -68,7 +68,8 @@ static void __init ms_hyperv_init_platfo
- 	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
- 	       ms_hyperv.features, ms_hyperv.hints);
+--- a/drivers/tty/tty_ioctl.c
++++ b/drivers/tty/tty_ioctl.c
+@@ -617,7 +617,7 @@ static int set_termios(struct tty_struct
+ 	if (opt & TERMIOS_WAIT) {
+ 		tty_wait_until_sent(tty, 0);
+ 		if (signal_pending(current))
+-			return -EINTR;
++			return -ERESTARTSYS;
+ 	}
  
--	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
-+	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
-+		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
- }
+ 	tty_set_termios(tty, &tmp_termios);
+@@ -684,7 +684,7 @@ static int set_termiox(struct tty_struct
+ 	if (opt & TERMIOS_WAIT) {
+ 		tty_wait_until_sent(tty, 0);
+ 		if (signal_pending(current))
+-			return -EINTR;
++			return -ERESTARTSYS;
+ 	}
  
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+ 	mutex_lock(&tty->termios_mutex);
 
 
