@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759777Ab3BYWQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:16:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34107 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754434Ab3BYWQb (ORCPT
+	id S932156Ab3BYWQh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:16:37 -0500
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:54916 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755402Ab3BYWQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Feb 2013 17:16:31 -0500
-Date: Mon, 25 Feb 2013 14:15:18 -0800
-From: tip-bot for Konrad Rzeszutek Wilk <tipbot@zytor.com>
-Message-ID: <tip-1256276c98dbcfb009ac8e0687df9a1e291fd149@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1361825650-14031-4-git-send-email-konrad.wilk@oracle.com>
-References: <1361825650-14031-4-git-send-email-konrad.wilk@oracle.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, doc:
-  Fix incorrect comment about 64-bit code segment descriptors
-Git-Commit-ID: 1256276c98dbcfb009ac8e0687df9a1e291fd149
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 25 Feb 2013 14:15:24 -0800 (PST)
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA928699C17@sacexcmbx05-prd.hq.netapp.com>
+References: <512606DF.5050706@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com>
+ <512635D2.4090207@redhat.com> <51267CEB.8070805@redhat.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com>
+ <20130221222449.GY22221@lenny.home.zabbo.net> <512BD44C.40907@amacapital.net>
+ <512BDC82.5060203@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA928699C17@sacexcmbx05-prd.hq.netapp.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 25 Feb 2013 14:16:10 -0800
+Message-ID: <CALCETrVXxdJ0Pg7wLS9T7mHRj8Ak2M1Yn3EPE_eBmHN3L9+70A@mail.gmail.com>
+Subject: Re: New copyfile system call - discuss before LSF?
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Ric Wheeler <rwheeler@redhat.com>, Zach Brown <zab@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
+        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1256276c98dbcfb009ac8e0687df9a1e291fd149
-Gitweb:     http://git.kernel.org/tip/1256276c98dbcfb009ac8e0687df9a1e291fd149
-Author:     Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-AuthorDate: Mon, 25 Feb 2013 15:54:10 -0500
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 25 Feb 2013 13:42:37 -0800
+On Mon, Feb 25, 2013 at 1:59 PM, Myklebust, Trond
+<Trond.Myklebust@netapp.com> wrote:
+> On Mon, 2013-02-25 at 16:49 -0500, Ric Wheeler wrote:
+>> On 02/25/2013 04:14 PM, Andy Lutomirski wrote:
+>> > On 02/21/2013 02:24 PM, Zach Brown wrote:
+>> >> On Thu, Feb 21, 2013 at 08:50:27PM +0000, Myklebust, Trond wrote:
+>> >>> On Thu, 2013-02-21 at 21:00 +0100, Paolo Bonzini wrote:
+>> >>>> Il 21/02/2013 15:57, Ric Wheeler ha scritto:
+>> >>>>>> sendfile64() pretty much already has the right arguments for a
+>> >>>>>> "copyfile", however it would be nice to add a 'flags' parameter: the
+>> >>>>>> NFSv4.2 version would use that to specify whether or not to copy file
+>> >>>>>> metadata.
+>> >>>>> That would seem to be enough to me and has the advantage that it is an
+>> >>>>> relatively obvious extension to something that is at least not totally
+>> >>>>> unknown to developers.
+>> >>>>>
+>> >>>>> Do we need more than that for non-NFS paths I wonder? What does reflink
+>> >>>>> need or the SCSI mechanism?
+>> >>>> For virt we would like to be able to specify arbitrary block ranges.
+>> >>>> Copying an entire file helps some copy operations like storage
+>> >>>> migration.  However, it is not enough to convert the guest's offloaded
+>> >>>> copies to host-side offloaded copies.
+>> >>> So how would a system call based on sendfile64() plus my flag parameter
+>> >>> prevent an underlying implementation from meeting your criterion?
+>> >> If I'm guessing correctly, sendfile64()+flags would be annoying because
+>> >> it's missing an out_fd_offset.  The host will want to offload the
+>> >> guest's copies by calling sendfile on block ranges of a guest disk image
+>> >> file that correspond to the mappings of the in and out files in the
+>> >> guest.
+>> >>
+>> >> You could make it work with some locking and out_fd seeking to set the
+>> >> write offset before calling sendfile64()+flags, but ugh.
+>> >>
+>> >>   ssize_t sendfile(int out_fd, int in_fd, off_t in_offset, off_t
+>> >>                    out_offset, size_t count, int flags);
+>> >>
+>> >> That seems closer.
+>> >>
+>> >> We might also want to pre-emptively offer iovs instead of offsets,
+>> >> because that's the very first thing that's going to be requested after
+>> >> people prototype having to iterate calling sendfile() for each
+>> >> contiguous copy region.
+>> > I thought the first thing people would ask for is to atomically create a
+>> > new file and copy the old file into it (at least on local file systems).
+>> >   The idea is that nothing should see an empty destination file, either
+>> > by race or by crash.  (This feature would perhaps be described as a
+>> > pony, but it should be implementable.)
+>> >
+>> > This would be like a better link(2).
+>> >
+>> > --Andy
+>>
+>> Why would this need to be atomic? That would seem to be a very difficult
+>> property to provide across all target types with multi-GB sized files...
+>
+> Right. It may sound cool, but what's the real-life use case?
+>
 
-x86, doc: Fix incorrect comment about 64-bit code segment descriptors
+Download file from some source and then verify it.  Now copyfile it
+into my repository of known-good files.
 
-The AMD64 Architecture Programmer's Manual Volume 2, on page
-89 mentions: "If the processor is running in 64-bit mode (L=1),
-the only valid setting of the D bit is 0." This matches
-with what the code does.
+Admittedly I could link + unlink or rename it there, but I consider
+hard links to be rather evil, especially when cow links are available.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/1361825650-14031-4-git-send-email-konrad.wilk@oracle.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/head_64.S | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 980053c..37f5304 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -49,7 +49,7 @@ L3_START_KERNEL = pud_index(__START_KERNEL_map)
- startup_64:
- 
- 	/*
--	 * At this point the CPU runs in 64bit mode CS.L = 1 CS.D = 1,
-+	 * At this point the CPU runs in 64bit mode CS.L = 1 CS.D = 0,
- 	 * and someone has loaded an identity mapped page table
- 	 * for us.  These identity mapped page tables map all of the
- 	 * kernel pages and possibly all of memory.
-@@ -146,7 +146,7 @@ ident_complete:
- 	jmp secondary_startup_64
- ENTRY(secondary_startup_64)
- 	/*
--	 * At this point the CPU runs in 64bit mode CS.L = 1 CS.D = 1,
-+	 * At this point the CPU runs in 64bit mode CS.L = 1 CS.D = 0,
- 	 * and someone has loaded a mapped page table.
- 	 *
- 	 * %esi holds a physical pointer to real_mode_data.
+--Andy
