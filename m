@@ -1,218 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168Ab3BYIvu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 03:51:50 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:47013 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754959Ab3BYIvs (ORCPT
+	id S932180Ab3BYIze (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 03:55:34 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:40386 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758098Ab3BYIzc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 03:51:48 -0500
+	Mon, 25 Feb 2013 03:55:32 -0500
+From: "J, KEERTHY" <j-keerthy@ti.com>
+To: "J, KEERTHY" <j-keerthy@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "liam.r.girdwood@intel.com" <liam.r.girdwood@intel.com>
+Subject: RE: [PATCH 1/4] documentation: add palmas dts definition
+Thread-Topic: [PATCH 1/4] documentation: add palmas dts definition
+Thread-Index: AQHODx7rXccjEGg3CE6BVl49YkJwT5iCP9wAgACBM1CAB4vYIA==
+Date: Mon, 25 Feb 2013 08:55:12 +0000
+Message-ID: <DC88CAD03C0052499C1907B327FC63229BC5A7@DBDE01.ent.ti.com>
+References: <1361332815-2348-1-git-send-email-j-keerthy@ti.com>
+ <20130220112639.GA2726@opensource.wolfsonmicro.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.159.88]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20130225081723.GD25749@arwen.pp.htv.fi>
-References: <1360071958-20797-1-git-send-email-gautam.vivek@samsung.com>
-	<20130225081723.GD25749@arwen.pp.htv.fi>
-Date: Mon, 25 Feb 2013 14:21:46 +0530
-Message-ID: <CAFp+6iHaP96F0OF9_C1DTsfmkPNZMVC78tj7m0YGdV=d_znWrA@mail.gmail.com>
-Subject: Re: [PATCH RFC] usb: dwc3: Set GCTL.PrtCapDir based on selected mode.
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: balbi@ti.com
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        gregkh@linuxfoundation.org, kishon@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Balbi,
 
 
-On Mon, Feb 25, 2013 at 1:47 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Tue, Feb 05, 2013 at 07:15:58PM +0530, Vivek Gautam wrote:
->> Now that machines may select the mode of working of DWC3,
->> we can set the Port capability direction based on selected mode.
->>
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> ---
->>  drivers/usb/dwc3/core.c |   11 ++++++++---
->>  1 files changed, 8 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
->> index 177f4c6..f4c47f7 100644
->> --- a/drivers/usb/dwc3/core.c
->> +++ b/drivers/usb/dwc3/core.c
->> @@ -479,7 +479,6 @@ static int dwc3_probe(struct platform_device *pdev)
->>
->>       switch (mode) {
->>       case DWC3_MODE_DEVICE:
->> -             dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_DEVICE);
->>               ret = dwc3_gadget_init(dwc);
->>               if (ret) {
->>                       dev_err(dev, "failed to initialize gadget\n");
->> @@ -487,7 +486,6 @@ static int dwc3_probe(struct platform_device *pdev)
->>               }
->>               break;
->>       case DWC3_MODE_HOST:
->> -             dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_HOST);
->>               ret = dwc3_host_init(dwc);
->>               if (ret) {
->>                       dev_err(dev, "failed to initialize host\n");
->> @@ -495,7 +493,6 @@ static int dwc3_probe(struct platform_device *pdev)
->>               }
->>               break;
->>       case DWC3_MODE_DRD:
->> -             dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_OTG);
->>               ret = dwc3_host_init(dwc);
->>               if (ret) {
->>                       dev_err(dev, "failed to initialize host\n");
->> @@ -514,6 +511,14 @@ static int dwc3_probe(struct platform_device *pdev)
->>       }
->>       dwc->mode = mode;
->>
->> +#if IS_ENABLED(CONFIG_USB_DWC3_HOST)
->> +     dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_HOST);
->> +#elif IS_ENABLED(CONFIG_USB_DWC3_GADGET)
->> +     dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_DEVICE);
->> +#else
->> +     dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_OTG);
->> +#endif
->
-> you can actually use:
->
-> if (IS_ENABLED(CONFIG_USB_DWC3_HOST))
->         dwc3_set_mode(dwc...
-> else if (IS_ENABLED( ...
->         ...
-> else
->         ...
->
+> -----Original Message-----
+> From: J, KEERTHY
+> Sent: Wednesday, February 20, 2013 7:19 PM
+> To: 'Mark Brown'
+> Cc: devicetree-discuss@lists.ozlabs.org; linux-doc@vger.kernel.org;
+> linux-kernel@vger.kernel.org; grant.likely@secretlab.ca;
+> rob.herring@calxeda.com; rob@landley.net; gg@slimlogic.co.uk;
+> sameo@linux.intel.com; liam.r.girdwood@intel.com
+> Subject: RE: [PATCH 1/4] documentation: add palmas dts definition
+> 
+> 
+> 
+> > -----Original Message-----
+> > From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+> > Sent: Wednesday, February 20, 2013 4:57 PM
+> > To: J, KEERTHY
+> > Cc: devicetree-discuss@lists.ozlabs.org; linux-doc@vger.kernel.org;
+> > linux-kernel@vger.kernel.org; grant.likely@secretlab.ca;
+> > rob.herring@calxeda.com; rob@landley.net; gg@slimlogic.co.uk;
+> > sameo@linux.intel.com; liam.r.girdwood@intel.com
+> > Subject: Re: [PATCH 1/4] documentation: add palmas dts definition
+> >
+> > On Wed, Feb 20, 2013 at 09:30:15AM +0530, J Keerthy wrote:
+> > > From: Graeme Gregory <gg@slimlogic.co.uk>
+> > >
+> > > Add the DTS definition for the palmas device including the MFD
+> > children.
+> > >
+> > > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> > > [j-keerthy@ti.com: changed the DT node property names to follow the
+> > > convention]
+> > > Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> > > ---
+> > >  Documentation/devicetree/bindings/mfd/palmas.txt |   67
+> > ++++++++++++++++++++++
+> > >  1 files changed, 67 insertions(+), 0 deletions(-)  create mode
+> > 100644
+> > > Documentation/devicetree/bindings/mfd/palmas.txt
+> > >
+> > > diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt
+> > > b/Documentation/devicetree/bindings/mfd/palmas.txt
+> > > new file mode 100644
+> > > index 0000000..5fa922e
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/mfd/palmas.txt
+> > > @@ -0,0 +1,67 @@
+> > > +Texas Instruments Palmas family
+> > > +
+> > > +The Palmas familly are Integrated Power Management Chips.
+> > > +These chips are connected to an i2c bus.
+> >
+> > I would expect this to enumerate the regulators that the user can
+> > select but it doesn't appear to do that.
+> 
+> 
+> Mark,
+> 
+> Thanks for reviewing the patch.
+> 
+> I went through the DT Documentation files in the regulator/ folder.
+> So shall I add a list of regulators which are in the Palmas device
+> Under a separate file under Documentation/devicetree/bindings/regulator
+> ?
+> Is that what you are looking for?
 
-I am actually hoping to change this to something like below (after
-of course changing the preprocessor conditionals) :
+Any inputs on this Mark? Sorry I did not understand the comment.
 
-commit 9a62ed948dcb6ac5d78aff41f5355c0a5ea86475
-Author: Vivek Gautam <gautam.vivek@samsung.com>
-Date:   Thu Jan 24 11:58:05 2013 +0530
+> 
+> Regards,
+> Keerthy
 
-    usb: dwc3: Set GCTL.PrtCapDir based on selected mode.
-
-    Now that machines may select the mode of working of DWC3,
-    we can set the Port capability direction based on selected mode.
-
-    Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index 79f335f..9444fbe 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -478,7 +478,13 @@ static int dwc3_probe(struct platform_device *pdev)
-                goto err1;
-        }
-
--       mode = DWC3_MODE(dwc->hwparams.hwparams0);
-+#if IS_ENABLED(CONFIG_USB_DWC3_HOST)
-+       mode = DWC3_MODE_HOST;
-+#elif IS_ENABLED(CONFIG_USB_DWC3_GADGET)
-+       mode = DWC3_MODE_DEVICE;
-+#else
-+       mode = DWC3_MODE_DRD;
-+#endif
-
-        switch (mode) {
-        case DWC3_MODE_DEVICE:
-
-
-Since the mode is now software dependent, we can skip
-initializing gadget/host in case of Host-only/Gadget-only modes respectively.
-Can't guess how much this is valid though :-(
-
-> instead of pre-processor conditionals. In fact, I have recently written
-> a patch converting #if IS_ENABLED() to if (IS_ENABLED()) but I haven't
-> posted yet:
->
-
-Right, very valid change. Missed this in earlier change :-(
-
-> commit 42dbbbc272bc941ec2b0cac51342609e61e13a01
-> Author: Felipe Balbi <balbi@ti.com>
-> Date:   Fri Feb 22 16:24:49 2013 +0200
->
->     usb: dwc3: debugfs: improve debugfs file creation
->
->     when commit 388e5c5 (usb: dwc3: remove dwc3
->     dependency on host AND gadget.) changed the
->     way debugfs files are created, it failed to
->     note that 'mode' is necessary in Dual Role
->     mode only while 'testmode' and 'link_state'
->     are valid in Dual Role and Peripheral-only
->     builds. Fix this while also converting pre-
->     processor conditional to C conditionals.
->
->     Signed-off-by: Felipe Balbi <balbi@ti.com>
->
-> diff --git a/drivers/usb/dwc3/debugfs.c b/drivers/usb/dwc3/debugfs.c
-> index a1bac9a..8b23d045 100644
-> --- a/drivers/usb/dwc3/debugfs.c
-> +++ b/drivers/usb/dwc3/debugfs.c
-> @@ -667,28 +667,31 @@ int dwc3_debugfs_init(struct dwc3 *dwc)
->                 goto err1;
->         }
->
-> -#if IS_ENABLED(CONFIG_USB_DWC3_GADGET)
-> -       file = debugfs_create_file("mode", S_IRUGO | S_IWUSR, root,
-> -                       dwc, &dwc3_mode_fops);
-> -       if (!file) {
-> -               ret = -ENOMEM;
-> -               goto err1;
-> +       if (IS_ENABLED(CONFIG_USB_DWC3_DUAL_ROLE)) {
-> +               file = debugfs_create_file("mode", S_IRUGO | S_IWUSR, root,
-> +                               dwc, &dwc3_mode_fops);
-> +               if (!file) {
-> +                       ret = -ENOMEM;
-> +                       goto err1;
-> +               }
->         }
->
-> -       file = debugfs_create_file("testmode", S_IRUGO | S_IWUSR, root,
-> -                       dwc, &dwc3_testmode_fops);
-> -       if (!file) {
-> -               ret = -ENOMEM;
-> -               goto err1;
-> -       }
-> -
-> -       file = debugfs_create_file("link_state", S_IRUGO | S_IWUSR, root,
-> -                       dwc, &dwc3_link_state_fops);
-> -       if (!file) {
-> -               ret = -ENOMEM;
-> -               goto err1;
-> +       if (IS_ENABLED(CONFIG_USB_DWC3_DUAL_ROLE) ||
-> +                       IS_ENABLED(CONFIG_USB_DWC3_GADGET)) {
-> +               file = debugfs_create_file("testmode", S_IRUGO | S_IWUSR, root,
-> +                               dwc, &dwc3_testmode_fops);
-> +               if (!file) {
-> +                       ret = -ENOMEM;
-> +                       goto err1;
-> +               }
-> +
-> +               file = debugfs_create_file("link_state", S_IRUGO | S_IWUSR, root,
-> +                               dwc, &dwc3_link_state_fops);
-> +               if (!file) {
-> +                       ret = -ENOMEM;
-> +                       goto err1;
-> +               }
->         }
-> -#endif
->
->         return 0;
->
->
-> --
-> balbi
-
-
-
--- 
-Thanks & Regards
-Vivek
+Regards,
+Keerthy
