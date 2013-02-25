@@ -1,100 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab3BYWQh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:16:37 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:54916 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755402Ab3BYWQb (ORCPT
+	id S932167Ab3BYWUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:20:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55149 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759922Ab3BYWUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:16:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA928699C17@sacexcmbx05-prd.hq.netapp.com>
-References: <512606DF.5050706@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com>
- <512635D2.4090207@redhat.com> <51267CEB.8070805@redhat.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com>
- <20130221222449.GY22221@lenny.home.zabbo.net> <512BD44C.40907@amacapital.net>
- <512BDC82.5060203@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA928699C17@sacexcmbx05-prd.hq.netapp.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 25 Feb 2013 14:16:10 -0800
-Message-ID: <CALCETrVXxdJ0Pg7wLS9T7mHRj8Ak2M1Yn3EPE_eBmHN3L9+70A@mail.gmail.com>
-Subject: Re: New copyfile system call - discuss before LSF?
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Ric Wheeler <rwheeler@redhat.com>, Zach Brown <zab@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chris L. Mason" <clmason@fusionio.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
-        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Feb 2013 17:20:05 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 13/58] workqueue: un-GPL function delayed_work_timer_fn()
+Date: Mon, 25 Feb 2013 14:19:09 -0800
+Message-Id: <20130225221638.964918329@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
+References: <20130225221636.018756060@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 1:59 PM, Myklebust, Trond
-<Trond.Myklebust@netapp.com> wrote:
-> On Mon, 2013-02-25 at 16:49 -0500, Ric Wheeler wrote:
->> On 02/25/2013 04:14 PM, Andy Lutomirski wrote:
->> > On 02/21/2013 02:24 PM, Zach Brown wrote:
->> >> On Thu, Feb 21, 2013 at 08:50:27PM +0000, Myklebust, Trond wrote:
->> >>> On Thu, 2013-02-21 at 21:00 +0100, Paolo Bonzini wrote:
->> >>>> Il 21/02/2013 15:57, Ric Wheeler ha scritto:
->> >>>>>> sendfile64() pretty much already has the right arguments for a
->> >>>>>> "copyfile", however it would be nice to add a 'flags' parameter: the
->> >>>>>> NFSv4.2 version would use that to specify whether or not to copy file
->> >>>>>> metadata.
->> >>>>> That would seem to be enough to me and has the advantage that it is an
->> >>>>> relatively obvious extension to something that is at least not totally
->> >>>>> unknown to developers.
->> >>>>>
->> >>>>> Do we need more than that for non-NFS paths I wonder? What does reflink
->> >>>>> need or the SCSI mechanism?
->> >>>> For virt we would like to be able to specify arbitrary block ranges.
->> >>>> Copying an entire file helps some copy operations like storage
->> >>>> migration.  However, it is not enough to convert the guest's offloaded
->> >>>> copies to host-side offloaded copies.
->> >>> So how would a system call based on sendfile64() plus my flag parameter
->> >>> prevent an underlying implementation from meeting your criterion?
->> >> If I'm guessing correctly, sendfile64()+flags would be annoying because
->> >> it's missing an out_fd_offset.  The host will want to offload the
->> >> guest's copies by calling sendfile on block ranges of a guest disk image
->> >> file that correspond to the mappings of the in and out files in the
->> >> guest.
->> >>
->> >> You could make it work with some locking and out_fd seeking to set the
->> >> write offset before calling sendfile64()+flags, but ugh.
->> >>
->> >>   ssize_t sendfile(int out_fd, int in_fd, off_t in_offset, off_t
->> >>                    out_offset, size_t count, int flags);
->> >>
->> >> That seems closer.
->> >>
->> >> We might also want to pre-emptively offer iovs instead of offsets,
->> >> because that's the very first thing that's going to be requested after
->> >> people prototype having to iterate calling sendfile() for each
->> >> contiguous copy region.
->> > I thought the first thing people would ask for is to atomically create a
->> > new file and copy the old file into it (at least on local file systems).
->> >   The idea is that nothing should see an empty destination file, either
->> > by race or by crash.  (This feature would perhaps be described as a
->> > pony, but it should be implementable.)
->> >
->> > This would be like a better link(2).
->> >
->> > --Andy
->>
->> Why would this need to be atomic? That would seem to be a very difficult
->> property to provide across all target types with multi-GB sized files...
->
-> Right. It may sound cool, but what's the real-life use case?
->
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-Download file from some source and then verify it.  Now copyfile it
-into my repository of known-good files.
+------------------
 
-Admittedly I could link + unlink or rename it there, but I consider
-hard links to be rather evil, especially when cow links are available.
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+
+commit 1438ade5670b56d5386c220e1ad4b5a824a1e585 upstream.
+
+commit d8e794dfd51c368ed3f686b7f4172830b60ae47b ("workqueue: set
+delayed_work->timer function on initialization") exports function
+delayed_work_timer_fn() only for GPL modules. This makes delayed-works
+unusable for non-GPL modules, because initialization macro now requires
+GPL symbol. For example schedule_delayed_work() available for non-GPL.
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/workqueue.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1350,7 +1350,7 @@ void delayed_work_timer_fn(unsigned long
+ 	/* should have been called from irqsafe timer with irq already off */
+ 	__queue_work(dwork->cpu, cwq->wq, &dwork->work);
+ }
+-EXPORT_SYMBOL_GPL(delayed_work_timer_fn);
++EXPORT_SYMBOL(delayed_work_timer_fn);
+ 
+ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
+ 				struct delayed_work *dwork, unsigned long delay)
 
 
---Andy
