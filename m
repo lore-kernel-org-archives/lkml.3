@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758362Ab3BYOrT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 09:47:19 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:46301 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148Ab3BYOrR (ORCPT
+	id S1758786Ab3BYOsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 09:48:17 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:52851 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148Ab3BYOsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 09:47:17 -0500
-Date: Mon, 25 Feb 2013 22:48:06 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, alex.williamson@redhat.com,
-        joerg.roedel@amd.com
-Subject: [PATCH]iommu: Include linux/err.h
-Message-ID: <20130225144806.GA25108@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-	alex.williamson@redhat.com, joerg.roedel@amd.com
+	Mon, 25 Feb 2013 09:48:14 -0500
+Message-ID: <512B799F.6080009@ahsoftware.de>
+Date: Mon, 25 Feb 2013 15:47:59 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Laight <David.Laight@ACULAB.COM>
+CC: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Disable IPv4-mapped - enforce IPV6_V6ONLY
+References: <51278CF6.2060402@ahsoftware.de> <51292A2B.3000304@ahsoftware.de> <512B4EAF.2050301@linux-ipv6.org> <AE90C24D6B3A694183C094C60CF0A2F6026B7168@saturn3.aculab.com>
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7168@saturn3.aculab.com>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The linux/iommu.h header uses ERR_PTR defined
-in linux/err.h but doesn't include it.
+Am 25.02.2013 14:23, schrieb David Laight:
+>>> A proper solution would be to either return false if net.ipv6.bindv6only is true and optval is false
+>> (which would break downward compatibility because it wouldn't just be a default and setsockopt might
+>> return an error) or to introduce a new sysctl variable like net.ipv6.bindv6only_enforced_silently.
+>> ("silently" because setsockopt() wouldn't return an error if net.ipv6.bindv6only is true and optval
+>> (v6only in the example above) is false.)
+>>>
+>>> I would volunteer to write a patch which introduces something like
+>> net.ipv6.bindv6only_enforced_silently if some maintainer would give me his ok.
+>>>
+>>> If so, the question remains if
+>>>
+>>> systemctl net.ipv6.bindv6only_enforced_silently = 1
+>>>
+>>> should set systemctl.net.ipv6.bindv6only too or if an error should be returned if
+>> net.ipv6.bindv6only is false.
+>>
+>> I am not convinced why you need this, and I am not in favor of
+>> enfocing IPV6_V6ONLY, but... some points:
 
-Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- I send this twice to joerg.roedel@amd.com more than one
- month, but it had been ignored, I don't why.
+It's some kind of security feature I want to have. I just don't want to 
+search for applications which are listening on IPv4 ports (too) even 
+when only IPv6 was configured. There exists several of them.
 
- include/linux/iommu.h | 1 +
- 1 file changed, 1 insertion(+)
+>>
+>> - We should allow system-admin to "enforce" IPV6_V6ONLY to 0 as well.
+>> - CAP_NET_ADMIN users should always be able to use both modes
+>>    (They can do sysctl anyway.)
+>> - setsockopt should fail w/ EPERM if user tries to override.
+>
+> I can imagine that some programs will always try to clear IPV6_V6ONLY
+> (maybe for portability with other OS which default to setting it
+> for security reasons) and will error-exit if it fails.
+> So non-silent enforcing could be a PITA.
 
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index f3b99e1..f4a49a6 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -20,6 +20,7 @@
- #define __LINUX_IOMMU_H
- 
- #include <linux/errno.h>
-+#include <linux/err.h>
- #include <linux/types.h>
- 
- #define IOMMU_READ	(1)
--- 
-1.7.11.1.116.g8228a23
+Exactly.
+
+> You really don't want to (globally) stop an application setting
+> IPV6_V6ONLY, such a program may well be creating separate IPv4
+> and IPv6 sockets.
+
+Agreed. Applications which are setting IPV6_V6ONLY to true usually do 
+know what they are doing. But some braindead (configured) applications 
+are disabling it (and would bail out if setsockopt() would return an error).
+
+>
+> Some of this needs to be part of some application wide 'security'
+> framework - that probably doesn't exist!
+>
+> Should there also be similar controls for the use of IPv4
+> mapped addresses in actual on-the-wire IPv6 packets - eg those
+> destined for a remote gateway on an IPv6 only system?
+
+I think that can be handled by iptables by just blocking e.g. 
+::ffff:0:0/96 and  ::0/96.
+
+But it's a pain to find and take care of apps which are ignoring the 
+default (net.ipv6.bindv6only) and are disabling IPV6_V6ONLY explicit for 
+whatever reason.
+
+Therefor I would like to have that 
+net.ipv6.bindv6only_enforced_silently. Disabling IPv4 in general is not 
+what I want.
+
+Regards,
+
+Alexander
+
