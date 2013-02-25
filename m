@@ -1,147 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758867Ab3BYNpQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 08:45:16 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42234 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756044Ab3BYNpN (ORCPT
+	id S1759076Ab3BYNv3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 08:51:29 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44225 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751780Ab3BYNv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 08:45:13 -0500
-Date: Mon, 25 Feb 2013 13:44:57 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 8/8] ARM: smp: Remove local timer API
-Message-ID: <20130225134457.GB22785@e106331-lin.cambridge.arm.com>
-References: <1361518039-16663-1-git-send-email-sboyd@codeaurora.org>
- <1361518039-16663-9-git-send-email-sboyd@codeaurora.org>
- <20130222111545.GA15020@e106331-lin.cambridge.arm.com>
- <51297CDB.5000604@codeaurora.org>
+	Mon, 25 Feb 2013 08:51:27 -0500
+Date: Mon, 25 Feb 2013 13:51:24 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com, arnd@arndb.de,
+        linus.walleij@stericsson.com,
+        Daniel WILLERUD <daniel.willerud@stericsson.com>
+Subject: Re: [PATCH 01/35] mfd: ab8500-gpadc: Implemented suspend/resume
+Message-ID: <20130225135123.GA28907@opensource.wolfsonmicro.com>
+References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
+ <1360933026-30325-2-git-send-email-lee.jones@linaro.org>
+ <20130220131912.GB13049@sirena.org.uk>
+ <CAPDyKFo0MpP-d7v8v1zwB42sboR3MWT6nUmG=-L0_nayYRY7FQ@mail.gmail.com>
+ <20130222103306.GA19796@opensource.wolfsonmicro.com>
+ <CAPDyKFpJzuzB_7=eH7iNV69TLOTbdBCTx3CgqPTkianZCctKag@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
 Content-Disposition: inline
-In-Reply-To: <51297CDB.5000604@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAPDyKFpJzuzB_7=eH7iNV69TLOTbdBCTx3CgqPTkianZCctKag@mail.gmail.com>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 24, 2013 at 02:37:15AM +0000, Stephen Boyd wrote:
-> On 2/22/2013 3:15 AM, Mark Rutland wrote:
-> > Hi Stephen,
-> >
-> > One thing that struck me when I was fiddling with the broadcast mechanism was
-> > that it should be possible to have a generic dummy timer implementation. As
-> > long as the architecture calls notifiers at the appropriate times, it should
-> > look like any other timer driver (apart from not touching any hardware). It just
-> > needs to depend on ARCH_HAS_TICK_BROADCAST.
-> >
-> > I believe it shouldn't be too difficult to implement, though I may be blind to
-> > some problems.
-> 
-> I completely agree and I was thinking the same thing while writing this
-> patchset.
 
-Great! I've just sent a first attempt in another subthread [1].
+--LZvS9be/3tNcYl/X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-February/151539.html
+On Mon, Feb 25, 2013 at 10:27:36AM +0100, Ulf Hansson wrote:
+> On 22 February 2013 11:38, Mark Brown
 
-[...]
+> > Are you sure this actually does what you think it does, especially when
+> > run on modern kernels?
 
-> >> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> >> index dedf02b..7d4338d 100644
-> >> --- a/arch/arm/Kconfig
-> >> +++ b/arch/arm/Kconfig
-> >> @@ -1527,6 +1527,7 @@ config SMP
-> >>  	depends on HAVE_SMP
-> >>  	depends on MMU
-> >>  	select HAVE_ARM_SCU if !ARCH_MSM_SCORPIONMP
-> >> +	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT)
-> >>  	select USE_GENERIC_SMP_HELPERS
-> >>  	help
-> >>  	  This enables support for systems with more than one CPU. If you have
-> > Should this have been in an earlier patch?
-> 
-> It could be part of the smp_twd patch if you like.
+> Not sure, what you are thinking of more precisely here. Runtime pm has
+> been in the kernel for quite some time now.
 
-I think it'd be better placed there.
+Yes, thanks - I was aware of that.  The integration between runtime and
+system PM has been an area that's had some development though.
 
-> 
-> > Why is it necessary?
-> 
-> It shouldn't be. In fact, I sent a patchset a few months ago that pushed
-> down the TWD and SCU selects to the respective machines that need them.
-> I should resend that.
+> Anyway, to make it a bit clearer, we switch the regulator on/off at
+> the runtime suspend/resume callbacks. We want to take similar actions
+> in device suspend/resume.
+> To accomplish this a pm_runtime_get_sync is done in suspend and vice
+> verse in resume, otherwise you can not safely handle the regulator.
 
-That would be even better.
+Are you absolutely positive that with modern kernels your get actually
+resumes the device?
 
-> 
-> >
-> > [...]
-> >
-> >> -static void percpu_timer_setup(void);
-> >> +static void broadcast_timer_setup(void);
-> >>  
-> >>  /*
-> >>   * This is the secondary CPU boot entry.  We're using this CPUs
-> >> @@ -325,9 +317,9 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
-> >>  	complete(&cpu_running);
-> >>  
-> >>  	/*
-> >> -	 * Setup the percpu timer for this CPU.
-> >> +	 * Setup the dummy broadcast timer for this CPU.
-> > To me, calling something a broadcast timer makes it sound like it performs the
-> > broadcast. We use the term "broadcast timer" elsewhere here (e.g.
-> > broadcast_timer_setup), and I think it's any unnecessarily confusing term.
-> >
-> > Might it be better to say "dummy timer" consistently?
-> 
-> Sure. I wonder if we need the comment at all. I can rename the function
-> to dummy_timer_setup() and it pretty much sounds like what the comment
-> will say.
+--LZvS9be/3tNcYl/X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Sounds good to me, unless we try to fold the generic dummy driver into this
-series.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> 
-> >
-> > [...]
-> >
-> >> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-> >> index 2bdd4cf..c00a8f8 100644
-> >> --- a/arch/arm/mach-omap2/timer.c
-> >> +++ b/arch/arm/mach-omap2/timer.c
-> >> @@ -587,7 +587,6 @@ OMAP_SYS_GP_TIMER_INIT(3_am33xx, 1, OMAP4_MPU_SOURCE, "ti,timer-alwon",
-> >>  #ifdef CONFIG_ARCH_OMAP4
-> >>  OMAP_SYS_32K_TIMER_INIT(4, 1, OMAP4_32K_SOURCE, "ti,timer-alwon",
-> >>  			2, OMAP4_MPU_SOURCE);
-> >> -#ifdef CONFIG_LOCAL_TIMERS
-> >>  static DEFINE_TWD_LOCAL_TIMER(twd_local_timer, OMAP44XX_LOCAL_TWD_BASE, 29);
-> >>  void __init omap4_local_timer_init(void)
-> >>  {
-> >> @@ -606,12 +605,6 @@ void __init omap4_local_timer_init(void)
-> >>  			pr_err("twd_local_timer_register failed %d\n", err);
-> >>  	}
-> >>  }
-> >> -#else /* CONFIG_LOCAL_TIMERS */
-> >> -void __init omap4_local_timer_init(void)
-> >> -{
-> >> -	omap4_sync32k_timer_init();
-> >> -}
-> >> -#endif /* CONFIG_LOCAL_TIMERS */
-> >>  #endif /* CONFIG_ARCH_OMAP4 */
-> >>  
-> >>  #ifdef CONFIG_SOC_OMAP5
-> > I believe the above OMAP changes should have been in an earlier patch?
-> 
-> There isn't an omap patch. I could make it part of the smp_twd patch?
+iQIcBAEBAgAGBQJRK2xQAAoJELSic+t+oim9AlAP/1SbYUfNUAFxaodyggSCdr7v
+MT2qTl9ustYH7W3CFrdCOUKvB9sV8mwN5TK2DyJIvaFZ0hTruGOVKvuqQGRbFM+r
+LDtH/xAXk56UTOGFvxHpf7clyTtcdbYlthRtAY/j+s04RZL6Mp4H94zOZxiWQMH0
+RhYEisyC6c2RCGwZbU9DFMUFgPadvdHWAXDUU3HmrKkwZ8pWHtNR2kUIio+lVE9q
+Iv/K69WPEH2inHoa68WLpY9kxIAAkZD7FsGUzVPECPIYsLuvPSEs0OsCt0qTvIUb
+1laj6cg+pKRXyp77LsaJlo6dKy7whtjW3kZEbwYf5HH9dDg9d7wKVRraSIQxGJv4
+2mnvgYKkvR8T6LlWokbPEF6jY/Y65ZArQlsesEX+rfGUyBbwzcg8hP6RjCS3x846
+pTbs2cQQpgrDsFa2VwNQIc2I1xiW4v+/WpFD/6kMoNbhCfRjWAvVRk6Nku8OL+Zl
+3VpB71xJN2gaby4OgNCVVSzYQ2D1taVamZU3tSifCpVecXGlN+uM1ul8+Qaa5oH5
+2gL0lx+dEVBTw4+IByzokVVwVSlq03+PPLcyWtMZJCWU9IMlZrjhPEfHuQ19fz18
+tcZg52CEuFtrTLjg4x9gCQ3+uYBlRaabP4lnltbAdIH1u2equQRyyJZLIUTWOMfP
+/KNEwErvNIzoV0Q/aCUo
+=7sKR
+-----END PGP SIGNATURE-----
 
-Sorry, I missed that while skimming the series. That might make more sense.
-Possibly this could be its own patch?
-
-Thanks,
-Mark.
+--LZvS9be/3tNcYl/X--
