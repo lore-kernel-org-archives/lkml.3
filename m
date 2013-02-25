@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab3BYWXr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:23:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55300 "EHLO
+	id S932861Ab3BYWX6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:23:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55293 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932581Ab3BYWU3 (ORCPT
+	with ESMTP id S932539Ab3BYWU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:29 -0500
+	Mon, 25 Feb 2013 17:20:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 40/58] drivercore: Fix ordering between deferred_probe and exiting initcalls
-Date: Mon, 25 Feb 2013 14:19:36 -0800
-Message-Id: <20130225221644.890301978@linuxfoundation.org>
+        Pawel Moll <mail@pawelmoll.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 46/58] ALSA: usb: Fix Processing Unit Descriptor parsers
+Date: Mon, 25 Feb 2013 14:19:42 -0800
+Message-Id: <20130225221646.218243797@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -29,47 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grant Likely <grant.likely@secretlab.ca>
+From: Pawel Moll <mail@pawelmoll.com>
 
-commit d72cca1eee5b26e313da2a380d4862924e271031 upstream.
+commit b531f81b0d70ffbe8d70500512483227cc532608 upstream.
 
-One of the side effects of deferred probe is that some drivers which
-used to be probed before initcalls completed are now happening slightly
-later. This causes two problems.
-- If a console driver gets deferred, then it may not be ready when
-  userspace starts. For example, if a uart depends on pinctrl, then the
-  uart will get deferred and /dev/console will not be available
-- __init sections will be discarded before built-in drivers are probed.
-  Strictly speaking, __init functions should not be called in a drivers
-  __probe path, but there are a lot of drivers (console stuff again)
-  that do anyway. In the past it was perfectly safe to do so because all
-  built-in drivers got probed before the end of initcalls.
+Commit 99fc86450c439039d2ef88d06b222fd51a779176 "ALSA: usb-mixer:
+parse descriptors with structs" introduced a set of useful parsers
+for descriptors. Unfortunately the parses for the Processing Unit
+Descriptor came with a very subtle bug...
 
-This patch fixes the problem by forcing the first pass of the deferred
-list to complete at late_initcall time. This is late enough to catch the
-drivers that are known to have the above issues.
+Functions uac_processing_unit_iProcessing() and
+uac_processing_unit_specific() were indexing the baSourceID array
+forgetting the fields before the iProcessing and process-specific
+descriptors.
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Tested-by: Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+The problem was observed with Sound Blaster Extigy mixer,
+where nNrModes in Up/Down-mix Processing Unit Descriptor
+was accessed at offset 10 of the descriptor (value 0)
+instead of offset 15 (value 7). In result the resulting
+control had interesting limit values:
+
+Simple mixer control 'Channel Routing Mode Select',0
+  Capabilities: volume volume-joined penum
+  Playback channels: Mono
+  Capture channels: Mono
+  Limits: 0 - -1
+  Mono: -1 [100%]
+
+Fixed by starting from the bmControls, which was calculated
+correctly, instead of baSourceID.
+
+Now the mentioned control is fine:
+
+Simple mixer control 'Channel Routing Mode Select',0
+  Capabilities: volume volume-joined penum
+  Playback channels: Mono
+  Capture channels: Mono
+  Limits: 0 - 6
+  Mono: 0 [0%]
+
+Signed-off-by: Pawel Moll <mail@pawelmoll.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/dd.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/uapi/linux/usb/audio.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -172,6 +172,8 @@ static int deferred_probe_initcall(void)
- 
- 	driver_deferred_probe_enable = true;
- 	driver_deferred_probe_trigger();
-+	/* Sort as many dependencies as possible before exiting initcalls */
-+	flush_workqueue(deferred_wq);
- 	return 0;
+--- a/include/uapi/linux/usb/audio.h
++++ b/include/uapi/linux/usb/audio.h
+@@ -384,14 +384,16 @@ static inline __u8 uac_processing_unit_i
+ 						   int protocol)
+ {
+ 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
+-	return desc->baSourceID[desc->bNrInPins + control_size];
++	return *(uac_processing_unit_bmControls(desc, protocol)
++			+ control_size);
  }
- late_initcall(deferred_probe_initcall);
+ 
+ static inline __u8 *uac_processing_unit_specific(struct uac_processing_unit_descriptor *desc,
+ 						 int protocol)
+ {
+ 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
+-	return &desc->baSourceID[desc->bNrInPins + control_size + 1];
++	return uac_processing_unit_bmControls(desc, protocol)
++			+ control_size + 1;
+ }
+ 
+ /* 4.5.2 Class-Specific AS Interface Descriptor */
 
 
