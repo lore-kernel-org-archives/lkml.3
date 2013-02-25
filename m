@@ -1,17 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751006Ab3BYFTH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 00:19:07 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:55256 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab3BYFTG (ORCPT
+	id S1753518Ab3BYFTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 00:19:13 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:48634 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab3BYFTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 00:19:06 -0500
-Subject: [PATCH  RESEND 0/3] e1000e: return runtime-pm back to work
+	Mon, 25 Feb 2013 00:19:09 -0500
+Subject: [PATCH  RESEND 1/3] e1000e: fix pci-device enable-counter balance
 To: linux-kernel@vger.kernel.org
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date: Mon, 25 Feb 2013 09:18:59 +0400
-Message-ID: <20130225051010.12689.28611.stgit@zurg>
+Cc: e1000-devel@lists.sourceforge.net,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Date: Mon, 25 Feb 2013 09:19:04 +0400
+Message-ID: <20130225051903.12689.77185.stgit@zurg>
+In-Reply-To: <20130225051010.12689.28611.stgit@zurg>
+References: <20130225051010.12689.28611.stgit@zurg>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -20,21 +26,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-here some fixes for e1000e driver from:
-https://lkml.org/lkml/2013/2/4/185
-The rest patches from that patchset already committed.
+This patch removes redundant and unbalanced pci_disable_device() from
+__e1000_shutdown(). pci_clear_master() is enough, device can go into
+suspended state with elevated enable_cnt.
 
+Bug was introduced in commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+("e1000e / PCI / PM: Add basic runtime PM support (rev. 4)") in v2.6.35
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: e1000-devel@lists.sourceforge.net
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Bruce Allan <bruce.w.allan@intel.com>
 ---
+ drivers/net/ethernet/intel/e1000e/netdev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Konstantin Khlebnikov (3):
-      e1000e: fix pci-device enable-counter balance
-      e1000e: fix runtime power management transitions
-      e1000e: fix accessing to suspended device
+diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+index a177b8b..1799021 100644
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -5986,7 +5986,7 @@ static int __e1000_shutdown(struct pci_dev *pdev, bool *enable_wake,
+ 	 */
+ 	e1000e_release_hw_control(adapter);
+ 
+-	pci_disable_device(pdev);
++	pci_clear_master(pdev);
+ 
+ 	return 0;
+ }
 
-
- drivers/net/ethernet/intel/e1000e/ethtool.c |   13 ++++
- drivers/net/ethernet/intel/e1000e/netdev.c  |   82 +++++++--------------------
- 2 files changed, 34 insertions(+), 61 deletions(-)
-
--- 
-Signature
