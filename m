@@ -1,142 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933222Ab3BYWaP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:30:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55450 "EHLO
+	id S933119Ab3BYWbA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:31:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55169 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301Ab3BYW37 (ORCPT
+	with ESMTP id S932091Ab3BYWUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:29:59 -0500
-Date: Mon, 25 Feb 2013 14:29:57 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: linux-kernel@vger.kernel.org, "'Tejun Heo'" <tj@kernel.org>,
-        "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com
-Subject: Re: [PATCH] rtc: add devm_rtc_device_{register,unregister}()
-Message-Id: <20130225142957.8e4aca8a.akpm@linux-foundation.org>
-In-Reply-To: <000e01ce132a$be08b940$3a1a2bc0$%han@samsung.com>
-References: <000e01ce132a$be08b940$3a1a2bc0$%han@samsung.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Feb 2013 17:20:10 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 19/58] serial: imx: Fix recursive locking bug
+Date: Mon, 25 Feb 2013 14:19:15 -0800
+Message-Id: <20130225221640.151605582@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
+References: <20130225221636.018756060@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Feb 2013 16:35:53 +0900
-Jingoo Han <jg1.han@samsung.com> wrote:
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-> These functios allows the driver core to automatically clean up
-> any allocation made by rtc drivers. Thus, it simplifies the error
-> paths.
-> 
-> ...
->
-> @@ -259,6 +259,78 @@ void rtc_device_unregister(struct rtc_device *rtc)
->  }
->  EXPORT_SYMBOL_GPL(rtc_device_unregister);
->  
-> +static void devm_rtc_device_release(struct device *dev, void *res)
-> +{
-> +	struct rtc_device *rtc = *(struct rtc_device **)res;
-> +
-> +	rtc_device_unregister(rtc);
-> +}
-> +
-> +static int devm_rtc_device_match(struct device *dev, void *res, void *data)
-> +{
-> +	struct rtc **r = res;
-> +	if (!r || !*r) {
-> +		WARN_ON(!r || !*r);
-> +		return 0;
-> +	}
+------------------
 
-Use
+From: Thomas Gleixner <tglx@linutronix.de>
 
-	if (WARN_ON(!r || !*r))
-		return 0;
+commit 677fe555cbfb188af58cce105f4dae9505e58c31 upstream.
 
-However, if anyone ever reports this warning you will be sad because
-you won't know which condition triggered it.  So a more useful approach
-is
+commit 9ec1882df2 (tty: serial: imx: console write routing is unsafe
+on SMP) introduced a recursive locking bug in imx_console_write().
 
-	if (WARN_ON(!r))
-		return 0;
-	if (WARN_ON(!*r))
-		return 0;
+The callchain is:
 
-> +	return *r == data;
-> +}
-> +
-> +/**
-> + * devm_rtc_device_register - resource managed rtc_device_register()
-> + * @name: the name of the device
-> + * @dev: the device to register
-> + * @ops: the rtc operations structure
-> + * @owner: the module owner
-> + *
-> + * Managed rtc_device_register(). The rtc_device returned from this function
-> + * are automatically freed on driver detach. See rtc_device_register()
-> + * for more information.
-> + */
+imx_rxint()
+  spin_lock_irqsave(&sport->port.lock,flags);
+  ...
+  uart_handle_sysrq_char();
+    sysrq_function();
+      printk();
+        imx_console_write();
+          spin_lock_irqsave(&sport->port.lock,flags); <--- DEAD
 
-I think the name is inappropriate.  devm functions start with "devm"
-and rtc functions start with "rtc" and this code is a part of rtc core,
-not a part of devm core.  Hence it should be something like
-"rtc_devm_device_register".
+The bad news is that the kernel debugging facilities can dectect the
+problem, but the printks never surface on the serial console for
+obvious reasons.
 
-> +struct rtc_device *devm_rtc_device_register(const char *name,
-> +					struct device *dev,
-> +					const struct rtc_class_ops *ops,
-> +					struct module *owner)
-> +{
-> +	struct rtc_device **ptr, *rtc;
-> +
-> +	ptr = devres_alloc(devm_rtc_device_release, sizeof(*ptr), GFP_KERNEL);
-> +	if (!ptr)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	rtc = rtc_device_register(name, dev, ops, owner);
-> +	if (!IS_ERR(rtc)) {
-> +		*ptr = rtc;
-> +		devres_add(dev, ptr);
-> +	} else {
-> +		devres_free(ptr);
-> +	}
-> +
-> +	return rtc;
-> +}
-> +EXPORT_SYMBOL_GPL(devm_rtc_device_register);
+There is a similar issue with oops_in_progress. If the kernel crashes
+we really don't want to be stuck on the lock and unable to tell what
+happened.
 
-So this function will return an ERR_PTR on error.  Please add a
-description of the return value into the kerneldoc.
+In general most UP originated drivers miss these checks and nobody
+ever notices because CONFIG_PROVE_LOCKING seems to be still ignored by
+a large number of developers.
+
+The solution is to avoid locking in the sysrq case and trylock in the
+oops_in_progress case.
+
+This scheme is used in other drivers as well and it would be nice if
+we could move this to a common place, so the usual copy/paste/modify
+bugs can be avoided.
+
+Now there is another issue with this scheme:
+
+CPU0 	    	     	 CPU1
+printk()
+			 rxint()
+			   sysrq_detection() -> sets port->sysrq
+			 return from interrupt
+  console_write()
+     if (port->sysrq)
+     	avoid locking
+
+port->sysrq is reset with the next receive character. So as long as
+the port->sysrq is not reset and this can take an endless amount of
+time if after the break no futher receive character follows, all
+console writes happen unlocked.
+
+While the current writer is protected against other console writers by
+the console sem, it's unprotected against open/close or other
+operations which fiddle with the port. That's what the above mentioned
+commit tried to solve.
+
+That's an issue in all drivers which use that scheme and unfortunately
+there is no easy workaround. The only solution is to have a separate
+indicator port->sysrq_cpu. uart_handle_sysrq_char() then sets it to
+smp_processor_id() before calling into handle_sysrq() and resets it to
+-1 after that. Then change the locking check to:
+
+     if (port->sysrq_cpu == smp_processor_id())
+     	 locked = 0;
+     else if (oops_in_progress)
+         locked = spin_trylock_irqsave(port->lock, flags);
+     else
+  	 spin_lock_irqsave(port->lock, flags);
+
+That would force all other cpus into the spin_lock path. Problem
+solved, but that's way beyond the scope of this fix and really wants
+to be implemented in a common function which calls the uart specific
+write function to avoid another gazillion of hard to debug
+copy/paste/modify bugs.
+
+Reported-and-tested-by: Tim Sander <tim@krieglstein.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/tty/serial/imx.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -1213,8 +1213,14 @@ imx_console_write(struct console *co, co
+ 	struct imx_port_ucrs old_ucr;
+ 	unsigned int ucr1;
+ 	unsigned long flags;
++	int locked = 1;
+ 
+-	spin_lock_irqsave(&sport->port.lock, flags);
++	if (sport->port.sysrq)
++		locked = 0;
++	else if (oops_in_progress)
++		locked = spin_trylock_irqsave(&sport->port.lock, flags);
++	else
++		spin_lock_irqsave(&sport->port.lock, flags);
+ 
+ 	/*
+ 	 *	First, save UCR1/2/3 and then disable interrupts
+@@ -1241,7 +1247,8 @@ imx_console_write(struct console *co, co
+ 
+ 	imx_port_ucrs_restore(&sport->port, &old_ucr);
+ 
+-	spin_unlock_irqrestore(&sport->port.lock, flags);
++	if (locked)
++		spin_unlock_irqrestore(&sport->port.lock, flags);
+ }
+ 
+ /*
 
 
-> +/**
-> + * devm_rtc_device_unregister - resource managed devm_rtc_device_unregister()
-> + * @dev: the device to unregister
-> + * @rtc: the RTC class device to unregister
-> + *
-> + * Deallocated a rtc allocated with devm_rtc_device_register(). Normally this
-> + * function will not need to be called and the resource management code will
-> + * ensure that the resource is freed.
-> + */
-> +void devm_rtc_device_unregister(struct device *dev, struct rtc_device *rtc)
-> +{
-> +	int rc;
-> +
-> +	rc = devres_release(dev, devm_rtc_device_release,
-> +				devm_rtc_device_match, rtc);
-> +	if (rc != 0)
-> +		WARN_ON(rc);
-
-	WARN_ON(!rc);
-
-> +}
-> +EXPORT_SYMBOL_GPL(devm_rtc_device_unregister);
-> +
->
-> ...
->
