@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322Ab3BYWUS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:20:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55169 "EHLO
+	id S933045Ab3BYW1H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:27:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55233 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759943Ab3BYWUI (ORCPT
+	with ESMTP id S932354Ab3BYWUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:08 -0500
+	Mon, 25 Feb 2013 17:20:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirkjan Bussink <dirkjan.bussink@nedap.com>
-Subject: [ 16/58] tty: Prevent deadlock in n_gsm driver
-Date: Mon, 25 Feb 2013 14:19:12 -0800
-Message-Id: <20130225221639.518423325@linuxfoundation.org>
+        Jim Somerville <Jim.Somerville@windriver.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 33/58] inotify: remove broken mask checks causing unmount to be EINVAL
+Date: Mon, 25 Feb 2013 14:19:29 -0800
+Message-Id: <20130225221643.354030785@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -26,195 +32,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirkjan Bussink <d.bussink@gmail.com>
+From: Jim Somerville <Jim.Somerville@windriver.com>
 
-commit 4d9b109060f690f5c835130ff54165ae157b3087 upstream.
+commit 676a0675cf9200ac047fb50825f80867b3bb733b upstream.
 
-This change fixes a deadlock when the multiplexer is closed while there
-are still client side ports open.
+Running the command:
 
-When the multiplexer is closed and there are active tty's it tries to
-close them with tty_vhangup. This has a problem though, because
-tty_vhangup needs the tty_lock. This patch changes it to unlock the
-tty_lock before attempting the hangup and relocks afterwards. The
-additional call to tty_port_tty_set is needed because otherwise the
-port stays active because of the reference counter.
+	inotifywait -e unmount /mnt/disk
 
-This change also exposed another problem that other code paths don't
-expect that the multiplexer could have been closed. This patch also adds
-checks for these cases in the gsmtty_ class of function that could be
-called.
+immediately aborts with a -EINVAL return code.  This is however a valid
+parameter.  This abort occurs only if unmount is the sole event
+parameter.  If other event parameters are supplied, then the unmount
+event wait will work.
 
-The documentation explicitly states that "first close all virtual ports
-before closing the physical port" but we've found this to not always
-reality in our field situations. The GPRS / UTMS modem sometimes crashes
-and needs a power cycle in that case which means cleanly shutting down
-everything is not always possible. This change makes it much more robust
-for our situation where at least the system is recoverable with this patch
-and doesn't hang in a deadlock situation inside the kernel.
+The problem was introduced by commit 44b350fc23e ("inotify: Fix mask
+checks").  In that commit, it states:
 
-The patch is against the long term support kernel (3.4.27) and should
-apply cleanly to more recent branches. Tested with a Telit GE864-QUADV2
-and Telit HE910 modem.
+	The mask checks in inotify_update_existing_watch() and
+	inotify_new_watch() are useless because inotify_arg_to_mask()
+	sets FS_IN_IGNORED and FS_EVENT_ON_CHILD bits anyway.
 
-Signed-off-by: Dirkjan Bussink <dirkjan.bussink@nedap.com>
+But instead of removing the useless checks, it did this:
+
+	        mask = inotify_arg_to_mask(arg);
+	-       if (unlikely(!mask))
+	+       if (unlikely(!(mask & IN_ALL_EVENTS)))
+	                return -EINVAL;
+
+The problem is that IN_ALL_EVENTS doesn't include IN_UNMOUNT, and other
+parts of the code keep IN_UNMOUNT separate from IN_ALL_EVENTS.  So the
+check should be:
+
+	if (unlikely(!(mask & (IN_ALL_EVENTS | IN_UNMOUNT))))
+
+But inotify_arg_to_mask(arg) always sets the IN_UNMOUNT bit in the mask
+anyway, so the check is always going to pass and thus should simply be
+removed.  Also note that inotify_arg_to_mask completely controls what
+mask bits get set from arg, there's no way for invalid bits to get
+enabled there.
+
+Lets fix it by simply removing the useless broken checks.
+
+Signed-off-by: Jim Somerville <Jim.Somerville@windriver.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Cc: John McCutchan <john@johnmccutchan.com>
+Cc: Robert Love <rlove@rlove.org>
+Cc: Eric Paris <eparis@parisplace.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |   42 +++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 41 insertions(+), 1 deletion(-)
+ fs/notify/inotify/inotify_user.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1691,6 +1691,8 @@ static inline void dlci_put(struct gsm_d
- 	kref_put(&dlci->ref, gsm_dlci_free);
- }
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -579,8 +579,6 @@ static int inotify_update_existing_watch
  
-+static void gsm_destroy_network(struct gsm_dlci *dlci);
-+
- /**
-  *	gsm_dlci_release		-	release DLCI
-  *	@dlci: DLCI to destroy
-@@ -1704,9 +1706,19 @@ static void gsm_dlci_release(struct gsm_
- {
- 	struct tty_struct *tty = tty_port_tty_get(&dlci->port);
- 	if (tty) {
-+		mutex_lock(&dlci->mutex);
-+		gsm_destroy_network(dlci);
-+		mutex_unlock(&dlci->mutex);
-+
-+		/* tty_vhangup needs the tty_lock, so unlock and
-+		   relock after doing the hangup. */
-+		tty_unlock(tty);
- 		tty_vhangup(tty);
-+		tty_lock(tty);
-+		tty_port_tty_set(&dlci->port, NULL);
- 		tty_kref_put(tty);
- 	}
-+	dlci->state = DLCI_CLOSED;
- 	dlci_put(dlci);
- }
+ 	/* don't allow invalid bits: we don't want flags set */
+ 	mask = inotify_arg_to_mask(arg);
+-	if (unlikely(!(mask & IN_ALL_EVENTS)))
+-		return -EINVAL;
  
-@@ -2948,6 +2960,8 @@ static void gsmtty_close(struct tty_stru
+ 	fsn_mark = fsnotify_find_inode_mark(group, inode);
+ 	if (!fsn_mark)
+@@ -632,8 +630,6 @@ static int inotify_new_watch(struct fsno
  
- 	if (dlci == NULL)
- 		return;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	mutex_lock(&dlci->mutex);
- 	gsm_destroy_network(dlci);
- 	mutex_unlock(&dlci->mutex);
-@@ -2966,6 +2980,8 @@ out:
- static void gsmtty_hangup(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	tty_port_hangup(&dlci->port);
- 	gsm_dlci_begin_close(dlci);
- }
-@@ -2973,9 +2989,12 @@ static void gsmtty_hangup(struct tty_str
- static int gsmtty_write(struct tty_struct *tty, const unsigned char *buf,
- 								    int len)
- {
-+	int sent;
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	/* Stuff the bytes into the fifo queue */
--	int sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
-+	sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
- 	/* Need to kick the channel */
- 	gsm_dlci_data_kick(dlci);
- 	return sent;
-@@ -2984,18 +3003,24 @@ static int gsmtty_write(struct tty_struc
- static int gsmtty_write_room(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	return TX_SIZE - kfifo_len(dlci->fifo);
- }
+ 	/* don't allow invalid bits: we don't want flags set */
+ 	mask = inotify_arg_to_mask(arg);
+-	if (unlikely(!(mask & IN_ALL_EVENTS)))
+-		return -EINVAL;
  
- static int gsmtty_chars_in_buffer(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	return kfifo_len(dlci->fifo);
- }
- 
- static void gsmtty_flush_buffer(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	/* Caution needed: If we implement reliable transport classes
- 	   then the data being transmitted can't simply be junked once
- 	   it has first hit the stack. Until then we can just blow it
-@@ -3014,6 +3039,8 @@ static void gsmtty_wait_until_sent(struc
- static int gsmtty_tiocmget(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	return dlci->modem_rx;
- }
- 
-@@ -3023,6 +3050,8 @@ static int gsmtty_tiocmset(struct tty_st
- 	struct gsm_dlci *dlci = tty->driver_data;
- 	unsigned int modem_tx = dlci->modem_tx;
- 
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	modem_tx &= ~clear;
- 	modem_tx |= set;
- 
-@@ -3041,6 +3070,8 @@ static int gsmtty_ioctl(struct tty_struc
- 	struct gsm_netconfig nc;
- 	int index;
- 
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	switch (cmd) {
- 	case GSMIOC_ENABLE_NET:
- 		if (copy_from_user(&nc, (void __user *)arg, sizeof(nc)))
-@@ -3067,6 +3098,9 @@ static int gsmtty_ioctl(struct tty_struc
- 
- static void gsmtty_set_termios(struct tty_struct *tty, struct ktermios *old)
- {
-+	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	/* For the moment its fixed. In actual fact the speed information
- 	   for the virtual channel can be propogated in both directions by
- 	   the RPN control message. This however rapidly gets nasty as we
-@@ -3078,6 +3112,8 @@ static void gsmtty_set_termios(struct tt
- static void gsmtty_throttle(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	if (tty->termios.c_cflag & CRTSCTS)
- 		dlci->modem_tx &= ~TIOCM_DTR;
- 	dlci->throttled = 1;
-@@ -3088,6 +3124,8 @@ static void gsmtty_throttle(struct tty_s
- static void gsmtty_unthrottle(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	if (tty->termios.c_cflag & CRTSCTS)
- 		dlci->modem_tx |= TIOCM_DTR;
- 	dlci->throttled = 0;
-@@ -3099,6 +3137,8 @@ static int gsmtty_break_ctl(struct tty_s
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
- 	int encode = 0;	/* Off */
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 
- 	if (state == -1)	/* "On indefinitely" - we can't encode this
- 				    properly */
+ 	tmp_i_mark = kmem_cache_alloc(inotify_inode_mark_cachep, GFP_KERNEL);
+ 	if (unlikely(!tmp_i_mark))
 
 
