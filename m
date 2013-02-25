@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759928Ab3BYWdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:33:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55123 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758924Ab3BYWUB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759887Ab3BYWUB (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 25 Feb 2013 17:20:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55092 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758924Ab3BYWT5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 17:19:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 07/58] mm: fix pageblock bitmap allocation
-Date: Mon, 25 Feb 2013 14:19:03 -0800
-Message-Id: <20130225221637.673949424@linuxfoundation.org>
+        Peter Hurley <peter@hurleysoftware.com>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 01/58] drm/nouveau/vm: fix memory corruption when pgt allocation fails
+Date: Mon, 25 Feb 2013 14:18:57 -0800
+Message-Id: <20130225221636.330542309@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -27,83 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-commit 7c45512df987c5619db041b5c9b80d281e26d3db upstream.
+commit cfd376b6bfccf33782a0748a9c70f7f752f8b869 upstream.
 
-Commit c060f943d092 ("mm: use aligned zone start for pfn_to_bitidx
-calculation") fixed out calculation of the index into the pageblock
-bitmap when a !SPARSEMEM zome was not aligned to pageblock_nr_pages.
+If we return freed vm, nouveau_drm_open will happily call nouveau_cli_destroy,
+which will try to free it again.
 
-However, the _allocation_ of that bitmap had never taken this alignment
-requirement into accout, so depending on the exact size and alignment of
-the zone, the use of that index could then access past the allocation,
-resulting in some very subtle memory corruption.
-
-This was reported (and bisected) by Ingo Molnar: one of his random
-config builds would hang with certain very specific kernel command line
-options.
-
-In the meantime, commit c060f943d092 has been marked for stable, so this
-fix needs to be back-ported to the stable kernels that backported the
-commit to use the right alignment.
-
-Bisected-and-tested-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/nouveau/core/subdev/vm/base.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4351,10 +4351,11 @@ static void __meminit calculate_node_tot
-  * round what is now in bits to nearest long in bits, then return it in
-  * bytes.
-  */
--static unsigned long __init usemap_size(unsigned long zonesize)
-+static unsigned long __init usemap_size(unsigned long zone_start_pfn, unsigned long zonesize)
- {
- 	unsigned long usemapsize;
+--- a/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
+@@ -352,7 +352,7 @@ nouveau_vm_create(struct nouveau_vmmgr *
+ 	u64 mm_length = (offset + length) - mm_offset;
+ 	int ret;
  
-+	zonesize += zone_start_pfn & (pageblock_nr_pages-1);
- 	usemapsize = roundup(zonesize, pageblock_nr_pages);
- 	usemapsize = usemapsize >> pageblock_order;
- 	usemapsize *= NR_PAGEBLOCK_BITS;
-@@ -4364,17 +4365,19 @@ static unsigned long __init usemap_size(
+-	vm = *pvm = kzalloc(sizeof(*vm), GFP_KERNEL);
++	vm = kzalloc(sizeof(*vm), GFP_KERNEL);
+ 	if (!vm)
+ 		return -ENOMEM;
+ 
+@@ -376,6 +376,8 @@ nouveau_vm_create(struct nouveau_vmmgr *
+ 		return ret;
+ 	}
+ 
++	*pvm = vm;
++
+ 	return 0;
  }
  
- static void __init setup_usemap(struct pglist_data *pgdat,
--				struct zone *zone, unsigned long zonesize)
-+				struct zone *zone,
-+				unsigned long zone_start_pfn,
-+				unsigned long zonesize)
- {
--	unsigned long usemapsize = usemap_size(zonesize);
-+	unsigned long usemapsize = usemap_size(zone_start_pfn, zonesize);
- 	zone->pageblock_flags = NULL;
- 	if (usemapsize)
- 		zone->pageblock_flags = alloc_bootmem_node_nopanic(pgdat,
- 								   usemapsize);
- }
- #else
--static inline void setup_usemap(struct pglist_data *pgdat,
--				struct zone *zone, unsigned long zonesize) {}
-+static inline void setup_usemap(struct pglist_data *pgdat, struct zone *zone,
-+				unsigned long zone_start_pfn, unsigned long zonesize) {}
- #endif /* CONFIG_SPARSEMEM */
- 
- #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
-@@ -4492,7 +4495,7 @@ static void __paginginit free_area_init_
- 			continue;
- 
- 		set_pageblock_order();
--		setup_usemap(pgdat, zone, size);
-+		setup_usemap(pgdat, zone, zone_start_pfn, size);
- 		ret = init_currently_empty_zone(zone, zone_start_pfn,
- 						size, MEMMAP_EARLY);
- 		BUG_ON(ret);
 
 
