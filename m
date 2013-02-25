@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932709Ab3BYWV4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:21:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55329 "EHLO
+	id S932732Ab3BYWWS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:22:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55326 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932648Ab3BYWUf (ORCPT
+	with ESMTP id S932642Ab3BYWUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Feb 2013 17:20:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Meelis Roos <mroos@ut.ee>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 57/58] sparc64: Fix tsb_grow() in atomic context.
-Date: Mon, 25 Feb 2013 14:19:53 -0800
-Message-Id: <20130225221648.454163646@linuxfoundation.org>
+        Staffan Lindberg <pike@xbmc.org>, Anssi Hannula <anssi.hannula@iki.fi>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 48/58] ALSA: hda - Fix default multichannel HDMI mapping regression
+Date: Mon, 25 Feb 2013 14:19:44 -0800
+Message-Id: <20130225221646.578532457@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -26,193 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-From: "David S. Miller" <davem@davemloft.net>
+commit 20608731f479d48be6bcb88e727f360ddf98ddaf upstream.
 
-[ Upstream commit 0fbebed682ff2788dee58e8d7f7dda46e33aa10b ]
+Commit d45e6889ee69456a4d5b1bbb32252f460cd48fa9 ("ALSA: hda - Provide
+the proper channel mapping for generic HDMI driver") added support for
+custom channel maps in the HDA HDMI driver. Due to a mistake in an
+'if' condition the custom map is always used even when no such map has
+been set. This causes incorrect channel mapping for multichannel audio
+by default.
 
-If our first THP installation for an MM is via the set_pmd_at() done
-during khugepaged's collapsing we'll end up in tsb_grow() trying to do
-a GFP_KERNEL allocation with several locks held.
+Pass per_pin->chmap_set to hdmi_setup_channel_mapping() as a parameter
+so that it can use it for detecting if a custom map has been set instead
+of checking if map is NULL (which is never the case).
 
-Simply using GFP_ATOMIC in this situation is not the best option
-because we really can't have this fail, so we'd really like to keep
-this an order 0 GFP_KERNEL allocation if possible.
-
-Also, doing the TSB allocation from khugepaged is a really bad idea
-because we'll allocate it potentially from the wrong NUMA node in that
-context.
-
-So what we do is defer the hugepage TSB allocation until the first TLB
-miss we take on a hugepage.  This is slightly tricky because we have
-to handle two unusual cases:
-
-1) Taking the first hugepage TLB miss in the window trap handler.
-   We'll call the winfix_trampoline when that is detected.
-
-2) An initial TSB allocation via TLB miss races with a hugetlb
-   fault on another cpu running the same MM.  We handle this by
-   unconditionally loading the TSB we see into the current cpu
-   even if it's non-NULL at hugetlb_setup time.
-
-Reported-by: Meelis Roos <mroos@ut.ee>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Staffan Lindberg <pike@xbmc.org>
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/include/asm/hugetlb.h |    1 -
- arch/sparc/include/asm/page_64.h |    4 ++--
- arch/sparc/kernel/tsb.S          |   39 +++++++++++++++++++++++++++++++++++----
- arch/sparc/mm/fault_64.c         |    9 +++++++--
- arch/sparc/mm/init_64.c          |   24 +++++++++++++++++++-----
- arch/sparc/mm/tlb.c              |   11 +++++++++--
- 6 files changed, 72 insertions(+), 16 deletions(-)
 
---- a/arch/sparc/include/asm/hugetlb.h
-+++ b/arch/sparc/include/asm/hugetlb.h
-@@ -12,7 +12,6 @@ pte_t huge_ptep_get_and_clear(struct mm_
+---
+ sound/pci/hda/patch_hdmi.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -714,9 +714,10 @@ static void hdmi_setup_fake_chmap(unsign
  
- static inline void hugetlb_prefault_arch_hook(struct mm_struct *mm)
+ static void hdmi_setup_channel_mapping(struct hda_codec *codec,
+ 				       hda_nid_t pin_nid, bool non_pcm, int ca,
+-				       int channels, unsigned char *map)
++				       int channels, unsigned char *map,
++				       bool chmap_set)
  {
--	hugetlb_setup(mm);
- }
- 
- static inline int is_hugepage_only_range(struct mm_struct *mm,
---- a/arch/sparc/include/asm/page_64.h
-+++ b/arch/sparc/include/asm/page_64.h
-@@ -27,8 +27,8 @@
- #ifndef __ASSEMBLY__
- 
- #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
--struct mm_struct;
--extern void hugetlb_setup(struct mm_struct *mm);
-+struct pt_regs;
-+extern void hugetlb_setup(struct pt_regs *regs);
- #endif
- 
- #define WANT_PAGE_VIRTUAL
---- a/arch/sparc/kernel/tsb.S
-+++ b/arch/sparc/kernel/tsb.S
-@@ -136,12 +136,43 @@ tsb_miss_page_table_walk_sun4v_fastpath:
- 	 nop
- 
- 	/* It is a huge page, use huge page TSB entry address we
--	 * calculated above.
-+	 * calculated above.  If the huge page TSB has not been
-+	 * allocated, setup a trap stack and call hugetlb_setup()
-+	 * to do so, then return from the trap to replay the TLB
-+	 * miss.
-+	 *
-+	 * This is necessary to handle the case of transparent huge
-+	 * pages where we don't really have a non-atomic context
-+	 * in which to allocate the hugepage TSB hash table.  When
-+	 * the 'mm' faults in the hugepage for the first time, we
-+	 * thus handle it here.  This also makes sure that we can
-+	 * allocate the TSB hash table on the correct NUMA node.
- 	 */
- 	TRAP_LOAD_TRAP_BLOCK(%g7, %g2)
--	ldx		[%g7 + TRAP_PER_CPU_TSB_HUGE_TEMP], %g2
--	cmp		%g2, -1
--	movne		%xcc, %g2, %g1
-+	ldx		[%g7 + TRAP_PER_CPU_TSB_HUGE_TEMP], %g1
-+	cmp		%g1, -1
-+	bne,pt		%xcc, 60f
-+	 nop
-+
-+661:	rdpr		%pstate, %g5
-+	wrpr		%g5, PSTATE_AG | PSTATE_MG, %pstate
-+	.section	.sun4v_2insn_patch, "ax"
-+	.word		661b
-+	SET_GL(1)
-+	nop
-+	.previous
-+
-+	rdpr	%tl, %g3
-+	cmp	%g3, 1
-+	bne,pn	%xcc, winfix_trampoline
-+	 nop
-+	ba,pt	%xcc, etrap
-+	 rd	%pc, %g7
-+	call	hugetlb_setup
-+	 add	%sp, PTREGS_OFF, %o0
-+	ba,pt	%xcc, rtrap
-+	 nop
-+
- 60:
- #endif
- 
---- a/arch/sparc/mm/fault_64.c
-+++ b/arch/sparc/mm/fault_64.c
-@@ -472,8 +472,13 @@ good_area:
- #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
- 	mm_rss = mm->context.huge_pte_count;
- 	if (unlikely(mm_rss >
--		     mm->context.tsb_block[MM_TSB_HUGE].tsb_rss_limit))
--		tsb_grow(mm, MM_TSB_HUGE, mm_rss);
-+		     mm->context.tsb_block[MM_TSB_HUGE].tsb_rss_limit)) {
-+		if (mm->context.tsb_block[MM_TSB_HUGE].tsb)
-+			tsb_grow(mm, MM_TSB_HUGE, mm_rss);
-+		else
-+			hugetlb_setup(regs);
-+
-+	}
- #endif
- 	return;
- 
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2718,14 +2718,28 @@ static void context_reload(void *__data)
- 		load_secondary_context(mm);
- }
- 
--void hugetlb_setup(struct mm_struct *mm)
-+void hugetlb_setup(struct pt_regs *regs)
- {
--	struct tsb_config *tp = &mm->context.tsb_block[MM_TSB_HUGE];
-+	struct mm_struct *mm = current->mm;
-+	struct tsb_config *tp;
- 
--	if (likely(tp->tsb != NULL))
--		return;
-+	if (in_atomic() || !mm) {
-+		const struct exception_table_entry *entry;
-+
-+		entry = search_exception_tables(regs->tpc);
-+		if (entry) {
-+			regs->tpc = entry->fixup;
-+			regs->tnpc = regs->tpc + 4;
-+			return;
-+		}
-+		pr_alert("Unexpected HugeTLB setup in atomic context.\n");
-+		die_if_kernel("HugeTSB in atomic", regs);
-+	}
-+
-+	tp = &mm->context.tsb_block[MM_TSB_HUGE];
-+	if (likely(tp->tsb == NULL))
-+		tsb_grow(mm, MM_TSB_HUGE, 0);
- 
--	tsb_grow(mm, MM_TSB_HUGE, 0);
- 	tsb_context_switch(mm);
- 	smp_tsb_sync(mm);
- 
---- a/arch/sparc/mm/tlb.c
-+++ b/arch/sparc/mm/tlb.c
-@@ -135,8 +135,15 @@ void set_pmd_at(struct mm_struct *mm, un
- 			mm->context.huge_pte_count++;
- 		else
- 			mm->context.huge_pte_count--;
--		if (mm->context.huge_pte_count == 1)
--			hugetlb_setup(mm);
-+
-+		/* Do not try to allocate the TSB hash table if we
-+		 * don't have one already.  We have various locks held
-+		 * and thus we'll end up doing a GFP_KERNEL allocation
-+		 * in an atomic context.
-+		 *
-+		 * Instead, we let the first TLB miss on a hugepage
-+		 * take care of this.
-+		 */
+-	if (!non_pcm && map) {
++	if (!non_pcm && chmap_set) {
+ 		hdmi_manual_setup_channel_mapping(codec, pin_nid,
+ 						  channels, map);
+ 	} else {
+@@ -905,7 +906,8 @@ static void hdmi_setup_audio_infoframe(s
+ 			    pin_nid,
+ 			    channels);
+ 		hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
+-					   channels, per_pin->chmap);
++					   channels, per_pin->chmap,
++					   per_pin->chmap_set);
+ 		hdmi_stop_infoframe_trans(codec, pin_nid);
+ 		hdmi_fill_audio_infoframe(codec, pin_nid,
+ 					    ai.bytes, sizeof(ai));
+@@ -915,7 +917,8 @@ static void hdmi_setup_audio_infoframe(s
+ 		 * accordingly */
+ 		if (per_pin->non_pcm != non_pcm)
+ 			hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
+-						   channels, per_pin->chmap);
++						   channels, per_pin->chmap,
++						   per_pin->chmap_set);
  	}
  
- 	if (!pmd_none(orig)) {
+ 	per_pin->non_pcm = non_pcm;
 
 
