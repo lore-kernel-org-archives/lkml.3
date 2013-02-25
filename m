@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab3BYQhd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 11:37:33 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:25226 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab3BYQhc (ORCPT
+	id S1754656Ab3BYQrH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 11:47:07 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37004 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412Ab3BYQrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 11:37:32 -0500
-Message-ID: <1361810245.2975.14.camel@lorien2>
-Subject: Re: [PATCH 1/4] pci: Add PCI_BUS() and PCI_DEVID() interfaces to
- return bus number and device id
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: dhowells@redhat.com, Joerg Roedel <joro@8bytes.org>,
-        paulmck@linux.vnet.ibm.com, linasvepstas@gmail.com, davej@redhat.com,
-        tglx@linutronix.de, mtk.manpages@gmail.com,
-        iommu@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org, shemminger@vyatta.com, jiang.liu@huawei.com,
-        wangyijing@huawei.com, shuahkhan@gmail.com
-Date: Mon, 25 Feb 2013 09:37:25 -0700
-In-Reply-To: <CAErSpo6jY1bX9G59uz8Zt_pDJ4OoR=kJkGjNLYYRTrKVXM8+eg@mail.gmail.com>
-References: <1360623637.2950.63.camel@lorien2>
-	 <CAErSpo6jY1bX9G59uz8Zt_pDJ4OoR=kJkGjNLYYRTrKVXM8+eg@mail.gmail.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 25 Feb 2013 11:47:02 -0500
+Date: Mon, 25 Feb 2013 11:46:54 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Greg KH <greg@kroah.com>
+Cc: Jan Beulich <JBeulich@suse.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Put git commit 51ac8893a7a51b196501164e645583bf78138699 on the
+  stable tree please
+Message-ID: <20130225164654.GA10672@phenom.dumpdata.com>
+References: <5127AED302000078000C0779@nat28.tlf.novell.com>
+ <20130222165704.GA21811@phenom.dumpdata.com>
+ <20130222170742.GA5126@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130222170742.GA5126@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-20 at 18:19 -0700, Bjorn Helgaas wrote:
-> On Mon, Feb 11, 2013 at 4:00 PM, Shuah Khan <shuah.khan@hp.com> wrote:
-> > pci defines PCI_DEVFN(), PCI_SLOT(), and PCI_FUNC() interfaces, however,
-> > it doesn't have interfaces to return PCI bus and PCI device id. Drivers
-> > (AMD IOMMU, and AER) implement module specific definitions for PCI_BUS()
-> > and AMD_IOMMU driver also has a module specific interface to calculate PCI
-> > device id from bus number and devfn.
-> >
-> > Add PCI_BUS and PCI_DEVID interfaces to return PCI bus number and PCI device
-> > id respectively to avoid the need for duplicate definitions in other modules.
-> > AER driver code and AMD IOMMU driver define PCI_BUS. AMD IOMMU driver defines
-> > an interface to calculate device id from bus number, and devfn pair.
-> >
-> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> > ---
-> >  include/uapi/linux/pci.h |    4 ++++
-> >  1 file changed, 4 insertions(+)
-> >
-> > diff --git a/include/uapi/linux/pci.h b/include/uapi/linux/pci.h
-> > index 3c292bc0..6b2c8b3 100644
-> > --- a/include/uapi/linux/pci.h
-> > +++ b/include/uapi/linux/pci.h
-> > @@ -30,6 +30,10 @@
-> >  #define PCI_DEVFN(slot, func)  ((((slot) & 0x1f) << 3) | ((func) & 0x07))
-> >  #define PCI_SLOT(devfn)                (((devfn) >> 3) & 0x1f)
-> >  #define PCI_FUNC(devfn)                ((devfn) & 0x07)
-> > +#define PCI_DEVID(bus, devfn)  ((((u16)bus) << 8) | devfn)
-> > +
-> > +/* return bus from PCI devid = ((u16)bus_number) << 8) | devfn */
-> > +#define PCI_BUS(x) (((x) >> 8) & 0xff)
-> >
-> >  /* Ioctls for /proc/bus/pci/X/Y nodes. */
-> >  #define PCIIOC_BASE            ('P' << 24 | 'C' << 16 | 'I' << 8)
+On Fri, Feb 22, 2013 at 09:07:42AM -0800, Greg KH wrote:
+> On Fri, Feb 22, 2013 at 11:57:04AM -0500, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Feb 22, 2013 at 08:19:30AM -0800, Greg KH wrote:
+> > > On Fri, Feb 22, 2013 at 10:46:45AM -0500, Konrad Rzeszutek Wilk wrote:
+> > > > Hey Greg,
+> > > > 
+> > > > Please put git commit 51ac8893a7a51b196501164e645583bf78138699
+> > > > commit 51ac8893a7a51b196501164e645583bf78138699
+> > > > Author: Jan Beulich <jbeulich@suse.com>
+> > > > Date:   Wed Feb 6 10:30:38 2013 -0500
+> > > > 
+> > > >     xen-pciback: rate limit error messages from xen_pcibk_enable_msi{,x}()
+> > > > 
+> > > > on the stable tree please. It is an security errata fix and should
+> > > > have had the CC: stable@vger.kernel.org but did not.
+> > > 
+> > > Thanks, what stable kernel releases should it be queued up for?
+> > 
+> > 3.4 and later please.
 > 
-> David, can you point me at a description of include/uapi ... what is
-> there and why, and how we should decide what new things go in
-> include/uapi/linux/pci.h as opposed to include/linux/pci.h?  Maybe
-> there should be something in Documentation/?
+> On Fri, Feb 22, 2013 at 04:45:55PM +0000, Jan Beulich wrote:
+> > Anyone from 3.1 onwards that is still being maintained.
 > 
-> I'm guessing it's something to do with being exported to userland, but
-> I'm not sure the things in this patch (PCI_DEV_ID, PCI_BUS) are really
-> exportable in the sense of being used for syscalls, etc.
+> Hm, who should I believe here...  :)
+
+Just in case my previous email crossed paths or got deleted.
 > 
+> It doesn't matter for me, but for the 3.2 tree, it does.
 
-Bjorn,David,
-
-Looks like the following thread answers some of the questions about when
-this uapi export was done on the existing defines.
-
-https://lkml.org/lkml/2011/7/28/198 
-
-Sounds like the concern is that the older defines PCI_DEVFN, PCI_SLOT,
-PCI_FUNC,  and PCI_DEVID could be exported, but not the new ones I
-added. I could find any discussion on whether these four older defines
-are exportable or the reasons for the export in the above thread.
-
-So the question is if uapi/linux.pci.h isn't the right place, do you
-have a recommendation on where they belong. The only alternative I can
-think of is include/linux/pci.h. It makes functional and logical sense
-to add the new defines to where the existing ones are defines. At least,
-not knowing the details of the change that moved PCI_DEVFN etc. to
-uapi/pci.h, that is my conclusion.
-
--- Shuah
-
-
-
-
+3.1 and later please.
