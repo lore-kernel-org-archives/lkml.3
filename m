@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932901Ab3BYWZa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:25:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55278 "EHLO
+	id S932413Ab3BYWUW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:20:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55200 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932481Ab3BYWUZ (ORCPT
+	with ESMTP id S1758692Ab3BYWUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:25 -0500
+	Mon, 25 Feb 2013 17:20:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wangyuan Zhang <Wangyuan.Zhang@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 42/58] NLM: Ensure that we resend all pending blocking locks after a reclaim
-Date: Mon, 25 Feb 2013 14:19:38 -0800
-Message-Id: <20130225221645.405636105@linuxfoundation.org>
+        Jerome Marchand <jmarchand@redhat.com>,
+        Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@kernel.org>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [ 27/58] zram: Fix deadlock bug in partial read/write
+Date: Mon, 25 Feb 2013 14:19:23 -0800
+Message-Id: <20130225221641.976584648@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -27,36 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Minchan Kim <minchan@kernel.org>
 
-commit 666b3d803a511fbc9bc5e5ea8ce66010cf03ea13 upstream.
+commit 7e5a5104c6af709a8d97d5f4711e7c917761d464 upstream.
 
-Currently, nlmclnt_lock will break out of the for(;;) loop when
-the reclaimer wakes up the blocking lock thread by setting
-nlm_lck_denied_grace_period. This causes the lock request to fail
-with an ENOLCK error.
-The intention was always to ensure that we resend the lock request
-after the grace period has expired.
+Now zram allocates new page with GFP_KERNEL in zram I/O path
+if IO is partial. Unfortunately, It may cause deadlock with
+reclaim path like below.
 
-Reported-by: Wangyuan Zhang <Wangyuan.Zhang@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+write_page from fs
+fs_lock
+allocation(GFP_KERNEL)
+reclaim
+pageout
+				write_page from fs
+				fs_lock <-- deadlock
+
+This patch fixes it by using GFP_NOIO.  In read path, we
+reorganize code flow so that kmap_atomic is called after the
+GFP_NOIO allocation.
+
+Acked-by: Jerome Marchand <jmarchand@redhat.com>
+Acked-by: Nitin Gupta <ngupta@vflare.org>
+[ penberg@kernel.org: don't use GFP_ATOMIC ]
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/clntproc.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/staging/zram/zram_drv.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/fs/lockd/clntproc.c
-+++ b/fs/lockd/clntproc.c
-@@ -551,6 +551,9 @@ again:
- 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
- 		if (status < 0)
- 			break;
-+		/* Resend the blocking lock request after a server reboot */
-+		if (resp->status ==  nlm_lck_denied_grace_period)
-+			continue;
- 		if (resp->status != nlm_lck_blocked)
- 			break;
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -228,11 +228,12 @@ static int zram_bvec_read(struct zram *z
+ 		return 0;
  	}
+ 
+-	user_mem = kmap_atomic(page);
+ 	if (is_partial_io(bvec))
+ 		/* Use  a temporary buffer to decompress the page */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+-	else
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
++
++	user_mem = kmap_atomic(page);
++	if (!is_partial_io(bvec))
+ 		uncmem = user_mem;
+ 
+ 	if (!uncmem) {
+@@ -279,7 +280,7 @@ static int zram_bvec_write(struct zram *
+ 		 * This is a partial IO. We need to read the full page
+ 		 * before to write the changes.
+ 		 */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+ 		if (!uncmem) {
+ 			pr_info("Error allocating temp memory!\n");
+ 			ret = -ENOMEM;
 
 
