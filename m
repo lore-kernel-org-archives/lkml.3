@@ -1,304 +1,789 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759772Ab3BYEdQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 23:33:16 -0500
-Received: from DMZ-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.34]:59236 "EHLO
-	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759618Ab3BYEdP (ORCPT
+	id S1759757Ab3BYEfU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 23:35:20 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54983 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759567Ab3BYEfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 23:33:15 -0500
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Feb 2013 23:33:14 EST
-X-AuditID: 12074422-b7f5c6d000000545-9c-512ae85d99e9
-Date: Sun, 24 Feb 2013 23:28:08 -0500
-From: Greg Price <price@MIT.EDU>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] perf report: Add option to collapse undesired parts of
- call graph
-Message-ID: <20130225042807.GG22203@biohazard-cafe.mit.edu>
-References: <20121207072726.GY22203@biohazard-cafe.mit.edu>
- <20130111052736.GG3054@ghostprotocols.net>
+	Sun, 24 Feb 2013 23:35:18 -0500
+X-AuditID: 9c930179-b7b61ae000004061-19-512aea03c10f
+Date: Mon, 25 Feb 2013 13:35:51 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv6 4/8] zswap: add to mm/
+Message-ID: <20130225043551.GA12158@lge.com>
+References: <1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1361397888-14863-5-git-send-email-sjenning@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130111052736.GG3054@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPKsWRmVeSWpSXmKPExsUixCmqrBv7QivQoOWSnsXFtotsFgceH2Cx
-	2Lr3DYvF0bN/mSwu75rDZnHpwAImizVHFrM7sHtcecrhcbpHz2PnrLvsHu/3XWXzmLurj9Hj
-	8ya5ALYoLpuU1JzMstQifbsEroy+9jbWgg6/ivnLX7A0MO606GLk4JAQMJGYN4eni5ETyBST
-	uHBvPRuILSSwj1Gi8XdkFyMXkL2RUWJ72wVWCOczo8TTOe+YQapYBFQlzpyazA5iswkoSPyY
-	vw4sLiJgJvF/+U8mkAZmgbuMEt8mTWECSQgLREhM3/yfFcTmFbCW2DazhRViXYbEp3c72SDi
-	ghInZz5hAbGZBbQkbvx7yQRyKbOAtMTyfxwgJqeAucSVxTogFaICKhLX9rezTWAUnIWkeRaS
-	5lkIzQsYmVcxyqbkVunmJmbmFKcm6xYnJ+blpRbpmurlZpbopaaUbmIExQO7i9IOxp8HlQ4x
-	CnAwKvHwaizXChRiTSwrrsw9xCjJwaQkyrv3OVCILyk/pTIjsTgjvqg0J7X4EKMEB7OSCK9m
-	KFCONyWxsiq1KB8mJc3BoiTOey3lpr+QQHpiSWp2ampBahFMVoaDQ0mClwMY90KCRanpqRVp
-	mTklCGkmDk6Q4TxAw0+ALOYtLkjMLc5Mh8ifYlSUEudtAUkIgCQySvPgemHp6hWjONArwryX
-	QKp4gKkOrvsV0GAmoMEPddRBBpckIqSkGhib5NU2inZOCN/k2awpF2apZxF9YBXr9+JtQQ4n
-	lvK9r/kWM0ukWlLop4fmnOkSW2/NZ9589pbd6oPn9trxzzn5rvXOnZl/H7S2XNuwovbH26Zs
-	xVzzR6EXay2+Sj6691n1qWb47rIFdonHVj+U7r7W+zKopLbsvIWE05S3YtuLasOqPulcb7ZV
-	YinOSDTUYi4qTgQAkLr1IDIDAAA=
+In-Reply-To: <1361397888-14863-5-git-send-email-sjenning@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 11, 2013 at 02:27:36AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Dec 07, 2012 at 02:30:44AM -0500, Greg Price escreveu:
-> > If an application has an expensive function implemented with a large
-> > tree of calls to helper functions, the default call-graph presentation
-> > will be dominated by the many different call-chains within that
-> > function.  By treating the function as a black box, we can collect the
-> > call-chains leading into the function and compactly identify what to
-> > blame for expensive calls.
+Hello, Seth.
+Here comes minor comments.
+
+On Wed, Feb 20, 2013 at 04:04:44PM -0600, Seth Jennings wrote:
+> zswap is a thin compression backend for frontswap. It receives
+> pages from frontswap and attempts to store them in a compressed
+> memory pool, resulting in an effective partial memory reclaim and
+> dramatically reduced swap device I/O.
 > 
-> Looks like an interesting feature, will review this soon,
+> Additionally, in most cases, pages can be retrieved from this
+> compressed store much more quickly than reading from tradition
+> swap devices resulting in faster performance for many workloads.
+> 
+> This patch adds the zswap driver to mm/
+> 
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> ---
+>  mm/Kconfig  |  15 ++
+>  mm/Makefile |   1 +
+>  mm/zswap.c  | 665 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 681 insertions(+)
+>  create mode 100644 mm/zswap.c
+> 
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 25b8f38..f9f35b7 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -470,3 +470,18 @@ config PGTABLE_MAPPING
+>  
+>  	  You can check speed with zsmalloc benchmark[1].
+>  	  [1] https://github.com/spartacus06/zsmalloc
+> +
+> +config ZSWAP
+> +	bool "In-kernel swap page compression"
+> +	depends on FRONTSWAP && CRYPTO
+> +	select CRYPTO_LZO
+> +	select ZSMALLOC
+> +	default n
+> +	help
+> +	  Zswap is a backend for the frontswap mechanism in the VMM.
+> +	  It receives pages from frontswap and attempts to store them
+> +	  in a compressed memory pool, resulting in an effective
+> +	  partial memory reclaim.  In addition, pages and be retrieved
+> +	  from this compressed store much faster than most tradition
+> +	  swap devices resulting in reduced I/O and faster performance
+> +	  for many workloads.
+> diff --git a/mm/Makefile b/mm/Makefile
+> index 0f6ef0a..1e0198f 100644
+> --- a/mm/Makefile
+> +++ b/mm/Makefile
+> @@ -32,6 +32,7 @@ obj-$(CONFIG_HAVE_MEMBLOCK) += memblock.o
+>  obj-$(CONFIG_BOUNCE)	+= bounce.o
+>  obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o
+>  obj-$(CONFIG_FRONTSWAP)	+= frontswap.o
+> +obj-$(CONFIG_ZSWAP)	+= zswap.o
+>  obj-$(CONFIG_HAS_DMA)	+= dmapool.o
+>  obj-$(CONFIG_HUGETLBFS)	+= hugetlb.o
+>  obj-$(CONFIG_NUMA) 	+= mempolicy.o
+> diff --git a/mm/zswap.c b/mm/zswap.c
+> new file mode 100644
+> index 0000000..d3b4943
+> --- /dev/null
+> +++ b/mm/zswap.c
+> @@ -0,0 +1,665 @@
+> +/*
+> + * zswap.c - zswap driver file
+> + *
+> + * zswap is a backend for frontswap that takes pages that are in the
+> + * process of being swapped out and attempts to compress them and store
+> + * them in a RAM-based memory pool.  This results in a significant I/O
+> + * reduction on the real swap device and, in the case of a slow swap
+> + * device, can also improve workload performance.
+> + *
+> + * Copyright (C) 2012  Seth Jennings <sjenning@linux.vnet.ibm.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version 2
+> + * of the License, or (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> +*/
+> +
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+> +#include <linux/module.h>
+> +#include <linux/cpu.h>
+> +#include <linux/highmem.h>
+> +#include <linux/slab.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/types.h>
+> +#include <linux/atomic.h>
+> +#include <linux/frontswap.h>
+> +#include <linux/rbtree.h>
+> +#include <linux/swap.h>
+> +#include <linux/crypto.h>
+> +#include <linux/mempool.h>
+> +#include <linux/zsmalloc.h>
+> +
+> +/*********************************
+> +* statistics
+> +**********************************/
+> +/* Number of memory pages used by the compressed pool */
+> +static atomic_t zswap_pool_pages = ATOMIC_INIT(0);
+> +/* The number of compressed pages currently stored in zswap */
+> +static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
+> +
+> +/*
+> + * The statistics below are not protected from concurrent access for
+> + * performance reasons so they may not be a 100% accurate.  However,
+> + * they do provide useful information on roughly how many times a
+> + * certain event is occurring.
+> +*/
+> +static u64 zswap_pool_limit_hit;
+> +static u64 zswap_reject_compress_poor;
+> +static u64 zswap_reject_zsmalloc_fail;
+> +static u64 zswap_reject_kmemcache_fail;
+> +static u64 zswap_duplicate_entry;
+> +
+> +/*********************************
+> +* tunables
+> +**********************************/
+> +/* Enable/disable zswap (disabled by default, fixed at boot for now) */
+> +static bool zswap_enabled;
+> +module_param_named(enabled, zswap_enabled, bool, 0);
+> +
+> +/* Compressor to be used by zswap (fixed at boot for now) */
+> +#define ZSWAP_COMPRESSOR_DEFAULT "lzo"
+> +static char *zswap_compressor = ZSWAP_COMPRESSOR_DEFAULT;
+> +module_param_named(compressor, zswap_compressor, charp, 0);
+> +
+> +/* The maximum percentage of memory that the compressed pool can occupy */
+> +static unsigned int zswap_max_pool_percent = 20;
+> +module_param_named(max_pool_percent,
+> +			zswap_max_pool_percent, uint, 0644);
+> +
+> +/*
+> + * Maximum compression ratio, as as percentage, for an acceptable
+> + * compressed page. Any pages that do not compress by at least
+> + * this ratio will be rejected.
+> +*/
+> +static unsigned int zswap_max_compression_ratio = 80;
+> +module_param_named(max_compression_ratio,
+> +			zswap_max_compression_ratio, uint, 0644);
+> +
+> +/*********************************
+> +* compression functions
+> +**********************************/
+> +/* per-cpu compression transforms */
+> +static struct crypto_comp * __percpu *zswap_comp_pcpu_tfms;
+> +
+> +enum comp_op {
+> +	ZSWAP_COMPOP_COMPRESS,
+> +	ZSWAP_COMPOP_DECOMPRESS
+> +};
+> +
+> +static int zswap_comp_op(enum comp_op op, const u8 *src, unsigned int slen,
+> +				u8 *dst, unsigned int *dlen)
+> +{
+> +	struct crypto_comp *tfm;
+> +	int ret;
+> +
+> +	tfm = *per_cpu_ptr(zswap_comp_pcpu_tfms, get_cpu());
+> +	switch (op) {
+> +	case ZSWAP_COMPOP_COMPRESS:
+> +		ret = crypto_comp_compress(tfm, src, slen, dst, dlen);
+> +		break;
+> +	case ZSWAP_COMPOP_DECOMPRESS:
+> +		ret = crypto_comp_decompress(tfm, src, slen, dst, dlen);
+> +		break;
+> +	default:
+> +		ret = -EINVAL;
+> +	}
+> +
+> +	put_cpu();
+> +	return ret;
+> +}
+> +
+> +static int __init zswap_comp_init(void)
+> +{
+> +	if (!crypto_has_comp(zswap_compressor, 0, 0)) {
+> +		pr_info("%s compressor not available\n", zswap_compressor);
+> +		/* fall back to default compressor */
+> +		zswap_compressor = ZSWAP_COMPRESSOR_DEFAULT;
+> +		if (!crypto_has_comp(zswap_compressor, 0, 0))
+> +			/* can't even load the default compressor */
+> +			return -ENODEV;
+> +	}
+> +	pr_info("using %s compressor\n", zswap_compressor);
+> +
+> +	/* alloc percpu transforms */
+> +	zswap_comp_pcpu_tfms = alloc_percpu(struct crypto_comp *);
+> +	if (!zswap_comp_pcpu_tfms)
+> +		return -ENOMEM;
+> +	return 0;
+> +}
+> +
+> +static void zswap_comp_exit(void)
+> +{
+> +	/* free percpu transforms */
+> +	if (zswap_comp_pcpu_tfms)
+> +		free_percpu(zswap_comp_pcpu_tfms);
+> +}
+> +
+> +/*********************************
+> +* data structures
+> +**********************************/
+> +struct zswap_entry {
+> +	struct rb_node rbnode;
+> +	unsigned type;
+> +	pgoff_t offset;
+> +	unsigned long handle;
+> +	unsigned int length;
+> +};
+> +
+> +struct zswap_tree {
+> +	struct rb_root rbroot;
+> +	spinlock_t lock;
+> +	struct zs_pool *pool;
+> +};
+> +
+> +static struct zswap_tree *zswap_trees[MAX_SWAPFILES];
+> +
+> +/*********************************
+> +* zswap entry functions
+> +**********************************/
+> +#define ZSWAP_KMEM_CACHE_NAME "zswap_entry_cache"
+> +static struct kmem_cache *zswap_entry_cache;
+> +
+> +static inline int zswap_entry_cache_create(void)
+> +{
+> +	zswap_entry_cache =
+> +		kmem_cache_create(ZSWAP_KMEM_CACHE_NAME,
+> +			sizeof(struct zswap_entry), 0, 0, NULL);
+> +	return (zswap_entry_cache == NULL);
+> +}
+> +
+> +static inline void zswap_entry_cache_destory(void)
+> +{
+> +	kmem_cache_destroy(zswap_entry_cache);
+> +}
+> +
+> +static inline struct zswap_entry *zswap_entry_cache_alloc(gfp_t gfp)
+> +{
+> +	struct zswap_entry *entry;
+> +	entry = kmem_cache_alloc(zswap_entry_cache, gfp);
+> +	if (!entry)
+> +		return NULL;
+> +	return entry;
+> +}
+> +
+> +static inline void zswap_entry_cache_free(struct zswap_entry *entry)
+> +{
+> +	kmem_cache_free(zswap_entry_cache, entry);
+> +}
+> +
+> +/*********************************
+> +* rbtree functions
+> +**********************************/
+> +static struct zswap_entry *zswap_rb_search(struct rb_root *root, pgoff_t offset)
+> +{
+> +	struct rb_node *node = root->rb_node;
+> +	struct zswap_entry *entry;
+> +
+> +	while (node) {
+> +		entry = rb_entry(node, struct zswap_entry, rbnode);
+> +		if (entry->offset > offset)
+> +			node = node->rb_left;
+> +		else if (entry->offset < offset)
+> +			node = node->rb_right;
+> +		else
+> +			return entry;
+> +	}
+> +	return NULL;
+> +}
+> +
+> +/*
+> + * In the case that a entry with the same offset is found, it a pointer to
+> + * the existing entry is stored in dupentry and the function returns -EEXIST
+> +*/
+> +static int zswap_rb_insert(struct rb_root *root, struct zswap_entry *entry,
+> +			struct zswap_entry **dupentry)
+> +{
+> +	struct rb_node **link = &root->rb_node, *parent = NULL;
+> +	struct zswap_entry *myentry;
+> +
+> +	while (*link) {
+> +		parent = *link;
+> +		myentry = rb_entry(parent, struct zswap_entry, rbnode);
+> +		if (myentry->offset > entry->offset)
+> +			link = &(*link)->rb_left;
+> +		else if (myentry->offset < entry->offset)
+> +			link = &(*link)->rb_right;
+> +		else {
+> +			*dupentry = myentry;
+> +			return -EEXIST;
+> +		}
+> +	}
+> +	rb_link_node(&entry->rbnode, parent, link);
+> +	rb_insert_color(&entry->rbnode, root);
+> +	return 0;
+> +}
+> +
+> +/*********************************
+> +* per-cpu code
+> +**********************************/
+> +static DEFINE_PER_CPU(u8 *, zswap_dstmem);
+> +
+> +static int __zswap_cpu_notifier(unsigned long action, unsigned long cpu)
+> +{
+> +	struct crypto_comp *tfm;
+> +	u8 *dst;
+> +
+> +	switch (action) {
+> +	case CPU_UP_PREPARE:
+> +		tfm = crypto_alloc_comp(zswap_compressor, 0, 0);
+> +		if (IS_ERR(tfm)) {
+> +			pr_err("can't allocate compressor transform\n");
+> +			return NOTIFY_BAD;
+> +		}
+> +		*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = tfm;
+> +		dst = (u8 *)__get_free_pages(GFP_KERNEL, 1);
 
-Hi Arnaldo,
+Order 1 is really needed?
+Following code uses only PAGE_SIZE, not 2 * PAGE_SIZE.
 
-Have you had a chance to look at this yet?
+> +		if (!dst) {
+> +			pr_err("can't allocate compressor buffer\n");
+> +			crypto_free_comp(tfm);
+> +			*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = NULL;
+> +			return NOTIFY_BAD;
+> +		}
+> +		per_cpu(zswap_dstmem, cpu) = dst;
+> +		break;
+> +	case CPU_DEAD:
+> +	case CPU_UP_CANCELED:
+> +		tfm = *per_cpu_ptr(zswap_comp_pcpu_tfms, cpu);
+> +		if (tfm) {
+> +			crypto_free_comp(tfm);
+> +			*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = NULL;
+> +		}
+> +		dst = per_cpu(zswap_dstmem, cpu);
+> +		if (dst) {
+> +			free_pages((unsigned long)dst, 1);
+> +			per_cpu(zswap_dstmem, cpu) = NULL;
+> +		}
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +	return NOTIFY_OK;
+> +}
+> +
+> +static int zswap_cpu_notifier(struct notifier_block *nb,
+> +				unsigned long action, void *pcpu)
+> +{
+> +	unsigned long cpu = (unsigned long)pcpu;
+> +	return __zswap_cpu_notifier(action, cpu);
+> +}
+> +
+> +static struct notifier_block zswap_cpu_notifier_block = {
+> +	.notifier_call = zswap_cpu_notifier
+> +};
+> +
+> +static int zswap_cpu_init(void)
+> +{
+> +	unsigned long cpu;
+> +
+> +	get_online_cpus();
+> +	for_each_online_cpu(cpu)
+> +		if (__zswap_cpu_notifier(CPU_UP_PREPARE, cpu) != NOTIFY_OK)
+> +			goto cleanup;
+> +	register_cpu_notifier(&zswap_cpu_notifier_block);
+> +	put_online_cpus();
+> +	return 0;
+> +
+> +cleanup:
+> +	for_each_online_cpu(cpu)
+> +		__zswap_cpu_notifier(CPU_UP_CANCELED, cpu);
+> +	put_online_cpus();
+> +	return -ENOMEM;
+> +}
+> +
+> +/*********************************
+> +* zsmalloc callbacks
+> +**********************************/
+> +static mempool_t *zswap_page_pool;
+> +
+> +static inline unsigned int zswap_max_pool_pages(void)
+> +{
+> +	return zswap_max_pool_percent * totalram_pages / 100;
+> +}
+> +
+> +static inline int zswap_page_pool_create(void)
+> +{
+> +	/* TODO: dynamically size mempool */
+> +	zswap_page_pool = mempool_create_page_pool(256, 0);
+> +	if (!zswap_page_pool)
+> +		return -ENOMEM;
+> +	return 0;
+> +}
+> +
+> +static inline void zswap_page_pool_destroy(void)
+> +{
+> +	mempool_destroy(zswap_page_pool);
+> +}
+> +
+> +static struct page *zswap_alloc_page(gfp_t flags)
+> +{
+> +	struct page *page;
+> +
+> +	if (atomic_read(&zswap_pool_pages) >= zswap_max_pool_pages()) {
+> +		zswap_pool_limit_hit++;
+> +		return NULL;
+> +	}
+> +	page = mempool_alloc(zswap_page_pool, flags);
+> +	if (page)
+> +		atomic_inc(&zswap_pool_pages);
+> +	return page;
+> +}
+> +
+> +static void zswap_free_page(struct page *page)
+> +{
+> +	if (!page)
+> +		return;
+> +	mempool_free(page, zswap_page_pool);
+> +	atomic_dec(&zswap_pool_pages);
+> +}
+> +
+> +static struct zs_ops zswap_zs_ops = {
+> +	.alloc = zswap_alloc_page,
+> +	.free = zswap_free_page
+> +};
+> +
+> +/*********************************
+> +* frontswap hooks
+> +**********************************/
+> +/* attempts to compress and store an single page */
+> +static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+> +				struct page *page)
+> +{
+> +	struct zswap_tree *tree = zswap_trees[type];
+> +	struct zswap_entry *entry, *dupentry;
+> +	int ret;
+> +	unsigned int dlen = PAGE_SIZE;
+> +	unsigned long handle;
+> +	char *buf;
+> +	u8 *src, *dst;
+> +
+> +	if (!tree) {
+> +		ret = -ENODEV;
+> +		goto reject;
+> +	}
+> +
+> +	/* compress */
+> +	dst = get_cpu_var(zswap_dstmem);
+> +	src = kmap_atomic(page);
+> +	ret = zswap_comp_op(ZSWAP_COMPOP_COMPRESS, src, PAGE_SIZE, dst, &dlen);
+> +	kunmap_atomic(src);
+> +	if (ret) {
+> +		ret = -EINVAL;
+> +		goto putcpu;
+> +	}
+> +	if ((dlen * 100 / PAGE_SIZE) > zswap_max_compression_ratio) {
+> +		zswap_reject_compress_poor++;
+> +		ret = -E2BIG;
+> +		goto putcpu;
+> +	}
+> +
+> +	/* store */
+> +	handle = zs_malloc(tree->pool, dlen,
+> +		__GFP_NORETRY | __GFP_HIGHMEM | __GFP_NOMEMALLOC |
+> +			__GFP_NOWARN);
+> +	if (!handle) {
+> +		zswap_reject_zsmalloc_fail++;
+> +		ret = -ENOMEM;
+> +		goto putcpu;
+> +	}
+> +
+> +	buf = zs_map_object(tree->pool, handle, ZS_MM_WO);
+> +	memcpy(buf, dst, dlen);
+> +	zs_unmap_object(tree->pool, handle);
+> +	put_cpu_var(zswap_dstmem);
+> +
+> +	/* allocate entry */
+> +	entry = zswap_entry_cache_alloc(GFP_KERNEL);
+> +	if (!entry) {
+> +		zs_free(tree->pool, handle);
+> +		zswap_reject_kmemcache_fail++;
+> +		ret = -ENOMEM;
+> +		goto reject;
+> +	}
 
-Cheers,
-Greg
+How about moving up zswap_entry_cache_alloc()?
+It can save compression processing time
+if zswap_entry_cache_alloc() is failed.
 
+> +
+> +	/* populate entry */
+> +	entry->type = type;
+> +	entry->offset = offset;
+> +	entry->handle = handle;
+> +	entry->length = dlen;
+> +
+> +	/* map */
+> +	spin_lock(&tree->lock);
+> +	do {
+> +		ret = zswap_rb_insert(&tree->rbroot, entry, &dupentry);
+> +		if (ret == -EEXIST) {
+> +			zswap_duplicate_entry++;
+> +
+> +			/* remove from rbtree */
+> +			rb_erase(&dupentry->rbnode, &tree->rbroot);
+> +			
+> +			/* free */
+> +			zs_free(tree->pool, dupentry->handle);
+> +			zswap_entry_cache_free(dupentry);
+> +			atomic_dec(&zswap_stored_pages);
+> +		}
+> +	} while (ret == -EEXIST);
+> +	spin_unlock(&tree->lock);
+> +
+> +	/* update stats */
+> +	atomic_inc(&zswap_stored_pages);
+> +
+> +	return 0;
+> +
+> +putcpu:
+> +	put_cpu_var(zswap_dstmem);
+> +reject:
+> +	return ret;
+> +}
+> +
+> +/*
+> + * returns 0 if the page was successfully decompressed
+> + * return -1 on entry not found or error
+> +*/
+> +static int zswap_frontswap_load(unsigned type, pgoff_t offset,
+> +				struct page *page)
+> +{
+> +	struct zswap_tree *tree = zswap_trees[type];
+> +	struct zswap_entry *entry;
+> +	u8 *src, *dst;
+> +	unsigned int dlen;
+> +
+> +	/* find */
+> +	spin_lock(&tree->lock);
+> +	entry = zswap_rb_search(&tree->rbroot, offset);
+> +	spin_unlock(&tree->lock);
+> +
+> +	/* decompress */
+> +	dlen = PAGE_SIZE;
+> +	src = zs_map_object(tree->pool, entry->handle, ZS_MM_RO);
+> +	dst = kmap_atomic(page);
+> +	zswap_comp_op(ZSWAP_COMPOP_DECOMPRESS, src, entry->length,
+> +		dst, &dlen);
+> +	kunmap_atomic(dst);
+> +	zs_unmap_object(tree->pool, entry->handle);
+> +
+> +	return 0;
+> +}
+> +
+> +/* invalidates a single page */
+> +static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
+> +{
+> +	struct zswap_tree *tree = zswap_trees[type];
+> +	struct zswap_entry *entry;
+> +
+> +	/* find */
+> +	spin_lock(&tree->lock);
+> +	entry = zswap_rb_search(&tree->rbroot, offset);
+> +
+> +	/* remove from rbtree */
+> +	rb_erase(&entry->rbnode, &tree->rbroot);
+> +	spin_unlock(&tree->lock);
+> +
+> +	/* free */
+> +	zs_free(tree->pool, entry->handle);
+> +	zswap_entry_cache_free(entry);
+> +	atomic_dec(&zswap_stored_pages);
+> +}
+> +
+> +/* invalidates all pages for the given swap type */
+> +static void zswap_frontswap_invalidate_area(unsigned type)
+> +{
+> +	struct zswap_tree *tree = zswap_trees[type];
+> +	struct rb_node *node;
+> +	struct zswap_entry *entry;
+> +
+> +	if (!tree)
+> +		return;
+> +
+> +	/* walk the tree and free everything */
+> +	spin_lock(&tree->lock);
+> +	/*
+> +	 * TODO: Even though this code should not be executed because
+> +	 * the try_to_unuse() in swapoff should have emptied the tree,
+> +	 * it is very wasteful to rebalance the tree after every
+> +	 * removal when we are freeing the whole tree.
+> +	 *
+> +	 * If post-order traversal code is ever added to the rbtree
+> +	 * implementation, it should be used here.
+> +	 */
+> +	while ((node = rb_first(&tree->rbroot))) {
+> +		entry = rb_entry(node, struct zswap_entry, rbnode);
+> +		rb_erase(&entry->rbnode, &tree->rbroot);
+> +		zs_free(tree->pool, entry->handle);
+> +		zswap_entry_cache_free(entry);
+> +	}
 
+You should decrease zswap_stored_pages in while loop.
 
-
-
-> > For example, in this report the callers of garbage_collect() are
-> > scattered across the tree:
-> > $ perf report -d ruby 2>- | grep -m10 ^[^#]*[a-z]
-> >     22.03%     ruby  [.] gc_mark
-> >                --- gc_mark
-> >                   |--59.40%-- mark_keyvalue
-> >                   |          st_foreach
-> >                   |          gc_mark_children
-> >                   |          |--99.75%-- rb_gc_mark
-> >                   |          |          rb_vm_mark
-> >                   |          |          gc_mark_children
-> >                   |          |          gc_marks
-> >                   |          |          |--99.00%-- garbage_collect
-> > 
-> > If we make garbage_collect() a black box, its callers are coalesced:
-> > $ perf report --blackbox garbage_collect -d ruby 2>- | grep -m10 ^[^#]*[a-z]
-> >     72.92%     ruby  [.] garbage_collect
-> >                --- garbage_collect
-> >                    vm_xmalloc
-> >                   |--47.08%-- ruby_xmalloc
-> >                   |          st_insert2
-> >                   |          rb_hash_aset
-> >                   |          |--98.45%-- features_index_add
-> >                   |          |          rb_provide_feature
-> >                   |          |          rb_require_safe
-> >                   |          |          vm_call_method
-> > 
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Ingo Molnar <mingo@redhat.com>
-> > Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> > Cc: Jiri Olsa <jolsa@redhat.com>
-> > Cc: David Ahern <dsahern@gmail.com>
-> > Signed-off-by: Greg Price <price@mit.edu>
-> > ---
-> >  tools/perf/builtin-report.c | 17 +++++++++++++++--
-> >  tools/perf/builtin-top.c    |  3 +--
-> >  tools/perf/util/map.h       |  4 +++-
-> >  tools/perf/util/session.c   | 29 ++++++++++++++++++-----------
-> >  tools/perf/util/session.h   |  5 +++++
-> >  5 files changed, 42 insertions(+), 16 deletions(-)
-> > 
-> > diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> > index a61725d..3bbda35 100644
-> > --- a/tools/perf/builtin-report.c
-> > +++ b/tools/perf/builtin-report.c
-> > @@ -70,7 +70,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
-> >  	if ((sort__has_parent || symbol_conf.use_callchain)
-> >  	    && sample->callchain) {
-> >  		err = machine__resolve_callchain(machine, evsel, al->thread,
-> > -						 sample, &parent);
-> > +						 sample, &parent, al);
-> >  		if (err)
-> >  			return err;
-> >  	}
-> > @@ -141,7 +141,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
-> >  
-> >  	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
-> >  		err = machine__resolve_callchain(machine, evsel, al->thread,
-> > -						 sample, &parent);
-> > +						 sample, &parent, al);
-> >  		if (err)
-> >  			return err;
-> >  	}
-> > @@ -607,6 +607,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
-> >  		     "Default: fractal,0.5,callee", &parse_callchain_opt, callchain_default_opt),
-> >  	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
-> >  		    "alias for inverted call graph"),
-> > +	OPT_STRING(0, "blackbox", &blackbox_pattern, "regex",
-> > +		   "functions to treat as black boxes in call graphs, collapsing callees"),
-> >  	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
-> >  		   "only consider symbols in these dsos"),
-> >  	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
-> > @@ -687,6 +689,17 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
-> >  
-> >  	}
-> >  
-> > +	if (blackbox_pattern) {
-> > +		int err = regcomp(&blackbox_regex, blackbox_pattern, REG_EXTENDED);
-> > +		if (err) {
-> > +			char buf[BUFSIZ];
-> > +			regerror(err, &blackbox_regex, buf, sizeof(buf));
-> > +			pr_err("Invalid blackbox regex: %s\n%s", blackbox_pattern, buf);
-> > +			goto error;
-> > +		}
-> > +		have_blackbox = 1;
-> > +	}
-> > +
-> >  	if (strcmp(report.input_name, "-") != 0)
-> >  		setup_browser(true);
-> >  	else {
-> > diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-> > index ff6db80..ee969b5 100644
-> > --- a/tools/perf/builtin-top.c
-> > +++ b/tools/perf/builtin-top.c
-> > @@ -786,8 +786,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
-> >  		    sample->callchain) {
-> >  			err = machine__resolve_callchain(machine, evsel,
-> >  							 al.thread, sample,
-> > -							 &parent);
-> > -
-> > +							 &parent, NULL);
-> >  			if (err)
-> >  				return;
-> >  		}
-> > diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-> > index d2250fc..6d1b8e1 100644
-> > --- a/tools/perf/util/map.h
-> > +++ b/tools/perf/util/map.h
-> > @@ -23,6 +23,7 @@ struct ref_reloc_sym;
-> >  struct map_groups;
-> >  struct machine;
-> >  struct perf_evsel;
-> > +struct addr_location;
-> >  
-> >  struct map {
-> >  	union {
-> > @@ -163,7 +164,8 @@ int machine__resolve_callchain(struct machine *machine,
-> >  			       struct perf_evsel *evsel,
-> >  			       struct thread *thread,
-> >  			       struct perf_sample *sample,
-> > -			       struct symbol **parent);
-> > +			       struct symbol **parent,
-> > +			       struct addr_location *root_al);
-> >  int maps__set_kallsyms_ref_reloc_sym(struct map **maps, const char *symbol_name,
-> >  				     u64 addr);
-> >  
-> > diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> > index 8cdd232..9a8798c 100644
-> > --- a/tools/perf/util/session.c
-> > +++ b/tools/perf/util/session.c
-> > @@ -19,6 +19,10 @@
-> >  #include "unwind.h"
-> >  #include "vdso.h"
-> >  
-> > +regex_t blackbox_regex;
-> > +const char *blackbox_pattern;
-> > +int have_blackbox = 0;
-> > +
-> >  static int perf_session__open(struct perf_session *self, bool force)
-> >  {
-> >  	struct stat input_stat;
-> > @@ -226,11 +230,10 @@ void machine__remove_thread(struct machine *self, struct thread *th)
-> >  	list_add_tail(&th->node, &self->dead_threads);
-> >  }
-> >  
-> > -static bool symbol__match_parent_regex(struct symbol *sym)
-> > +static bool symbol__match_regex(struct symbol *sym, regex_t *regex)
-> >  {
-> > -	if (sym->name && !regexec(&parent_regex, sym->name, 0, NULL, 0))
-> > +	if (sym->name && !regexec(regex, sym->name, 0, NULL, 0))
-> >  		return 1;
-> > -
-> >  	return 0;
-> >  }
-> >  
-> > @@ -295,8 +298,8 @@ struct branch_info *machine__resolve_bstack(struct machine *self,
-> >  static int machine__resolve_callchain_sample(struct machine *machine,
-> >  					     struct thread *thread,
-> >  					     struct ip_callchain *chain,
-> > -					     struct symbol **parent)
-> > -
-> > +					     struct symbol **parent,
-> > +					     struct addr_location *root_al)
-> >  {
-> >  	u8 cpumode = PERF_RECORD_MISC_USER;
-> >  	unsigned int i;
-> > @@ -347,8 +350,13 @@ static int machine__resolve_callchain_sample(struct machine *machine,
-> >  					   MAP__FUNCTION, ip, &al, NULL);
-> >  		if (al.sym != NULL) {
-> >  			if (sort__has_parent && !*parent &&
-> > -			    symbol__match_parent_regex(al.sym))
-> > +			    symbol__match_regex(al.sym, &parent_regex))
-> >  				*parent = al.sym;
-> > +			else if (have_blackbox && root_al &&
-> > +			         symbol__match_regex(al.sym, &blackbox_regex)) {
-> > +				*root_al = al;
-> > +				callchain_cursor_reset(&callchain_cursor);
-> > +			}
-> >  			if (!symbol_conf.use_callchain)
-> >  				break;
-> >  		}
-> > @@ -373,15 +381,15 @@ int machine__resolve_callchain(struct machine *machine,
-> >  			       struct perf_evsel *evsel,
-> >  			       struct thread *thread,
-> >  			       struct perf_sample *sample,
-> > -			       struct symbol **parent)
-> > -
-> > +			       struct symbol **parent,
-> > +			       struct addr_location *root_al)
-> >  {
-> >  	int ret;
-> >  
-> >  	callchain_cursor_reset(&callchain_cursor);
-> >  
-> >  	ret = machine__resolve_callchain_sample(machine, thread,
-> > -						sample->callchain, parent);
-> > +	                                        sample->callchain, parent, root_al);
-> >  	if (ret)
-> >  		return ret;
-> >  
-> > @@ -1603,9 +1611,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
-> >  
-> >  	if (symbol_conf.use_callchain && sample->callchain) {
-> >  
-> > -
-> >  		if (machine__resolve_callchain(machine, evsel, al.thread,
-> > -					       sample, NULL) != 0) {
-> > +					       sample, NULL, NULL) != 0) {
-> >  			if (verbose)
-> >  				error("Failed to resolve callchain. Skipping\n");
-> >  			return;
-> > diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-> > index 0eae00a..6db3e55 100644
-> > --- a/tools/perf/util/session.h
-> > +++ b/tools/perf/util/session.h
-> > @@ -1,6 +1,7 @@
-> >  #ifndef __PERF_SESSION_H
-> >  #define __PERF_SESSION_H
-> >  
-> > +#include <regex.h>
-> >  #include "hist.h"
-> >  #include "event.h"
-> >  #include "header.h"
-> > @@ -9,6 +10,10 @@
-> >  #include <linux/rbtree.h>
-> >  #include <linux/perf_event.h>
-> >  
-> > +extern regex_t blackbox_regex;
-> > +extern const char *blackbox_pattern;
-> > +extern int have_blackbox;
-> > +
-> >  struct sample_queue;
-> >  struct ip_callchain;
-> >  struct thread;
-> > -- 
-> > 1.7.11.3
+> +	tree->rbroot = RB_ROOT;
+> +	spin_unlock(&tree->lock);
+> +}
+> +
+> +/* NOTE: this is called in atomic context from swapon and must not sleep */
+> +static void zswap_frontswap_init(unsigned type)
+> +{
+> +	struct zswap_tree *tree;
+> +
+> +	tree = kzalloc(sizeof(struct zswap_tree), GFP_NOWAIT);
+> +	if (!tree)
+> +		goto err;
+> +	tree->pool = zs_create_pool(GFP_NOWAIT, &zswap_zs_ops);
+> +	if (!tree->pool)
+> +		goto freetree;
+> +	tree->rbroot = RB_ROOT;
+> +	spin_lock_init(&tree->lock);
+> +	zswap_trees[type] = tree;
+> +	return;
+> +
+> +freetree:
+> +	kfree(tree);
+> +err:
+> +	pr_err("alloc failed, zswap disabled for swap type %d\n", type);
+> +}
+> +
+> +static struct frontswap_ops zswap_frontswap_ops = {
+> +	.store = zswap_frontswap_store,
+> +	.load = zswap_frontswap_load,
+> +	.invalidate_page = zswap_frontswap_invalidate_page,
+> +	.invalidate_area = zswap_frontswap_invalidate_area,
+> +	.init = zswap_frontswap_init
+> +};
+> +
+> +/*********************************
+> +* debugfs functions
+> +**********************************/
+> +#ifdef CONFIG_DEBUG_FS
+> +#include <linux/debugfs.h>
+> +
+> +static struct dentry *zswap_debugfs_root;
+> +
+> +static int __init zswap_debugfs_init(void)
+> +{
+> +	if (!debugfs_initialized())
+> +		return -ENODEV;
+> +
+> +	zswap_debugfs_root = debugfs_create_dir("zswap", NULL);
+> +	if (!zswap_debugfs_root)
+> +		return -ENOMEM;
+> +
+> +	debugfs_create_u64("pool_limit_hit", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_pool_limit_hit);
+> +	debugfs_create_u64("reject_zsmalloc_fail", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_reject_zsmalloc_fail);
+> +	debugfs_create_u64("reject_kmemcache_fail", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_reject_kmemcache_fail);
+> +	debugfs_create_u64("reject_compress_poor", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_reject_compress_poor);
+> +	debugfs_create_u64("duplicate_entry", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_duplicate_entry);
+> +	debugfs_create_atomic_t("pool_pages", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_pool_pages);
+> +	debugfs_create_atomic_t("stored_pages", S_IRUGO,
+> +			zswap_debugfs_root, &zswap_stored_pages);
+> +
+> +	return 0;
+> +}
+> +
+> +static void __exit zswap_debugfs_exit(void)
+> +{
+> +	debugfs_remove_recursive(zswap_debugfs_root);
+> +}
+> +#else
+> +static inline int __init zswap_debugfs_init(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void __exit zswap_debugfs_exit(void) { }
+> +#endif
+> +
+> +/*********************************
+> +* module init and exit
+> +**********************************/
+> +static int __init init_zswap(void)
+> +{
+> +	if (!zswap_enabled)
+> +		return 0;
+> +
+> +	pr_info("loading zswap\n");
+> +	if (zswap_entry_cache_create()) {
+> +		pr_err("entry cache creation failed\n");
+> +		goto error;
+> +	}
+> +	if (zswap_page_pool_create()) {
+> +		pr_err("page pool initialization failed\n");
+> +		goto pagepoolfail;
+> +	}
+> +	if (zswap_comp_init()) {
+> +		pr_err("compressor initialization failed\n");
+> +		goto compfail;
+> +	}
+> +	if (zswap_cpu_init()) {
+> +		pr_err("per-cpu initialization failed\n");
+> +		goto pcpufail;
+> +	}
+> +	frontswap_register_ops(&zswap_frontswap_ops);
+> +	if (zswap_debugfs_init())
+> +		pr_warn("debugfs initialization failed\n");
+> +	return 0;
+> +pcpufail:
+> +	zswap_comp_exit();
+> +compfail:
+> +	zswap_page_pool_destroy();
+> +pagepoolfail:
+> +	zswap_entry_cache_destory();
+> +error:
+> +	return -ENOMEM;
+> +}
+> +/* must be late so crypto has time to come up */
+> +late_initcall(init_zswap);
+> +
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Seth Jennings <sjenning@linux.vnet.ibm.com>");
+> +MODULE_DESCRIPTION("Compressed cache for swap pages");
+> -- 
+> 1.8.1.1
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
