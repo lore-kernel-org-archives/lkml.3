@@ -1,103 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759546Ab3BYAN1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 19:13:27 -0500
-Received: from ozlabs.org ([203.10.76.45]:41429 "EHLO ozlabs.org"
+	id S1759437Ab3BYAZi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 19:25:38 -0500
+Received: from mga01.intel.com ([192.55.52.88]:15748 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758404Ab3BYAN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 19:13:26 -0500
-Date: Mon, 25 Feb 2013 11:03:22 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Joerg Roedel <joerg.roedel@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iommu: making IOMMU sysfs nodes API public
-Message-ID: <20130225000322.GN30946@truffula.fritz.box>
-References: <1360642004-7419-1-git-send-email-aik@ozlabs.ru>
- <1360645643.3248.91.camel@bling.home>
- <511A54DC.9030908@ozlabs.ru>
- <1360689304.3248.154.camel@bling.home>
- <5121C709.80007@ozlabs.ru>
- <1361251440.2801.142.camel@bling.home>
- <20130219073853.GS21067@truffula.fritz.box>
- <1361304711.2801.232.camel@bling.home>
- <20130222000415.GI21011@truffula.fritz.box>
- <1361506273.2801.327.camel@bling.home>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="F7w+4yMapWozG0Ib"
-Content-Disposition: inline
-In-Reply-To: <1361506273.2801.327.camel@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759311Ab3BYAZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 19:25:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,730,1355126400"; 
+   d="scan'208";a="295309821"
+Message-ID: <1361751932.29320.1.camel@yhuang-dev>
+Subject: Re: [PATCH EDAC 03/13] ghes: add the needed hooks for EDAC error
+ report
+From: Huang Ying <ying.huang@intel.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-acpi@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 25 Feb 2013 08:25:32 +0800
+In-Reply-To: <20130222055755.22f7c5e3@redhat.com>
+References: <cover.1360931635.git.mchehab@redhat.com>
+	 <a6aaff7d219b878ca655fde3757ecd0170caec2c.1360931635.git.mchehab@redhat.com>
+	 <1361409967.7093.20.camel@yhuang-dev> <20130221090428.3b36b1ea@redhat.com>
+	 <1361493911.7093.37.camel@yhuang-dev> <20130222055021.12125c03@redhat.com>
+	 <20130222055755.22f7c5e3@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-02-22 at 05:57 -0300, Mauro Carvalho Chehab wrote:
+> Em Fri, 22 Feb 2013 05:50:21 -0300
+> Mauro Carvalho Chehab <mchehab@redhat.com> escreveu:
+> 
+> > Em Fri, 22 Feb 2013 08:45:11 +0800
+> > Huang Ying <ying.huang@intel.com> escreveu:
+> > 
+> > > On Thu, 2013-02-21 at 09:04 -0300, Mauro Carvalho Chehab wrote:
+> > > > Em Thu, 21 Feb 2013 09:26:07 +0800
+> > > > Huang Ying <ying.huang@intel.com> escreveu:
+> > > > 
+> > 
+> > > > There is also an advantage on taking this approach: this patch can have just
+> > > > the ghes changes, and will still compile fine, as CONFIG_EDAC_GHES is not
+> > > > defined yet. So, the patch becomes is simpler and easier to review.
+> > > 
+> > > Thanks for your explanation.  I agree to keep this in header file.
+> > > 
+> > > My original suggestion is that it may be better to move this from ghes.h
+> > > to some place like "ghes_edac.h", because these functions are
+> > > implemented in "ghes_edac.c" instead of ghes.c.
+> > > 
+> > 
+> > Ah! Well, I considered a separate header when writing this patch, but adding 
+> > another header for just 3 functions where the parameters are more related to
+> > ghes than with ghes_edac seemed overkill to me.
+> > 
+> > IMO, a single comment at the header pointing to ghes_edac.c would improve it.
+> > 
+> ...
+> > +/* From drivers/edac/ghes_acpi.h */
+> 
+> ...with is obviously wrong.
+> 
+> Mental note to myself: never hack too early in the morning before drinking a
+> cup of coffee.
+> 
+> Anyway, fixed on the patch below. Could you please ack?
+> 
+> Regards,
+> Mauro.
+> 
+> 
+> [PATCH EDAC] ghes: add the needed hooks for EDAC error report
+> 
+> In order to allow reporting errors via EDAC, add hooks for:
+> 
+> 1) register an EDAC driver;
+> 2) unregister an EDAC driver;
+> 3) report errors via EDAC.
+> 
+> As the EDAC driver will need to access the ghes structure, adds it
+> as one of the parameters for ghes_do_proc.
+> 
+> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
---F7w+4yMapWozG0Ib
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Huang Ying <ying.huang@intel.com>
 
-On Thu, Feb 21, 2013 at 09:11:13PM -0700, Alex Williamson wrote:
-> On Fri, 2013-02-22 at 11:04 +1100, David Gibson wrote:
-> > On Tue, Feb 19, 2013 at 01:11:51PM -0700, Alex Williamson wrote:
-> > > On Tue, 2013-02-19 at 18:38 +1100, David Gibson wrote:
-> > > > On Mon, Feb 18, 2013 at 10:24:00PM -0700, Alex Williamson wrote:
-> > > > > On Mon, 2013-02-18 at 17:15 +1100, Alexey Kardashevskiy wrote:
-> > [snip]
-> > > > >  Adding the window size to sysfs seems more readily convenient,
-> > > > > but is it so hard for userspace to open the files and call a coup=
-le
-> > > > > ioctls to get far enough to call IOMMU_GET_INFO?  I'm unconvinced=
- the
-> > > > > clutter in sysfs more than just a quick fix.  Thanks,
-> > > >=20
-> > > > And finally, as Alexey points out, isn't the point here so we know =
-how
-> > > > much rlimit to give qemu?  Using ioctls we'd need a special tool ju=
-st
-> > > > to check the dma window sizes, which seems a bit hideous.
-> > >=20
-> > > Is it more hideous that using iommu groups to report a vfio imposed
-> > > restriction?  Are a couple open files and a handful of ioctls worse t=
-han
-> > > code to parse directory entries and the future maintenance of an
-> > > unrestricted grab bag of sysfs entries?
-> >=20
-> > The fact that the memory is locked is a vfio restriction, but the
-> > actual dma window size is, genuinely, a property of the group.
->=20
-> A group is an association of devices based on isolation and visibility.
-> The dma window happens to be associated with a group on your platform,
-> but that's not always the case.
+> 
+> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+> index 6d0e146..d668a8a 100644
+> --- a/drivers/acpi/apei/ghes.c
+> +++ b/drivers/acpi/apei/ghes.c
+> @@ -409,7 +409,8 @@ static void ghes_clear_estatus(struct ghes *ghes)
+>  	ghes->flags &= ~GHES_TO_CLEAR;
+>  }
+>  
+> -static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
+> +static void ghes_do_proc(struct ghes *ghes,
+> +			 const struct acpi_hest_generic_status *estatus)
+>  {
+>  	int sev, sec_sev;
+>  	struct acpi_hest_generic_data *gdata;
+> @@ -421,6 +422,8 @@ static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
+>  				 CPER_SEC_PLATFORM_MEM)) {
+>  			struct cper_sec_mem_err *mem_err;
+>  			mem_err = (struct cper_sec_mem_err *)(gdata+1);
+> +			ghes_edac_report_mem_error(ghes, sev, mem_err);
+> +
+>  #ifdef CONFIG_X86_MCE
+>  			apei_mce_report_mem_error(sev == GHES_SEV_CORRECTED,
+>  						  mem_err);
+> @@ -639,7 +642,7 @@ static int ghes_proc(struct ghes *ghes)
+>  		if (ghes_print_estatus(NULL, ghes->generic, ghes->estatus))
+>  			ghes_estatus_cache_add(ghes->generic, ghes->estatus);
+>  	}
+> -	ghes_do_proc(ghes->estatus);
+> +	ghes_do_proc(ghes, ghes->estatus);
+>  out:
+>  	ghes_clear_estatus(ghes);
+>  	return 0;
+> @@ -732,7 +735,7 @@ static void ghes_proc_in_irq(struct irq_work *irq_work)
+>  		estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
+>  		len = apei_estatus_len(estatus);
+>  		node_len = GHES_ESTATUS_NODE_LEN(len);
+> -		ghes_do_proc(estatus);
+> +		ghes_do_proc(estatus_node->ghes, estatus);
+>  		if (!ghes_estatus_cached(estatus)) {
+>  			generic = estatus_node->generic;
+>  			if (ghes_print_estatus(NULL, generic, estatus))
+> @@ -821,6 +824,7 @@ static int ghes_notify_nmi(unsigned int cmd, struct pt_regs *regs)
+>  		estatus_node = (void *)gen_pool_alloc(ghes_estatus_pool,
+>  						      node_len);
+>  		if (estatus_node) {
+> +			estatus_node->ghes = ghes;
+>  			estatus_node->generic = ghes->generic;
+>  			estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
+>  			memcpy(estatus, ghes->estatus, len);
+> @@ -899,6 +903,11 @@ static int ghes_probe(struct platform_device *ghes_dev)
+>  		ghes = NULL;
+>  		goto err;
+>  	}
+> +
+> +	rc = ghes_edac_register(ghes, &ghes_dev->dev);
+> +	if (rc < 0)
+> +		goto err;
+> +
+>  	switch (generic->notify.type) {
+>  	case ACPI_HEST_NOTIFY_POLLED:
+>  		ghes->timer.function = ghes_poll_func;
+> @@ -911,13 +920,13 @@ static int ghes_probe(struct platform_device *ghes_dev)
+>  		if (acpi_gsi_to_irq(generic->notify.vector, &ghes->irq)) {
+>  			pr_err(GHES_PFX "Failed to map GSI to IRQ for generic hardware error source: %d\n",
+>  			       generic->header.source_id);
+> -			goto err;
+> +			goto err_edac_unreg;
+>  		}
+>  		if (request_irq(ghes->irq, ghes_irq_func,
+>  				0, "GHES IRQ", ghes)) {
+>  			pr_err(GHES_PFX "Failed to register IRQ for generic hardware error source: %d\n",
+>  			       generic->header.source_id);
+> -			goto err;
+> +			goto err_edac_unreg;
+>  		}
+>  		break;
+>  	case ACPI_HEST_NOTIFY_SCI:
+> @@ -943,6 +952,8 @@ static int ghes_probe(struct platform_device *ghes_dev)
+>  	platform_set_drvdata(ghes_dev, ghes);
+>  
+>  	return 0;
+> +err_edac_unreg:
+> +	ghes_edac_unregister(ghes);
+>  err:
+>  	if (ghes) {
+>  		ghes_fini(ghes);
+> @@ -995,6 +1006,9 @@ static int ghes_remove(struct platform_device *ghes_dev)
+>  	}
+>  
+>  	ghes_fini(ghes);
+> +
+> +	ghes_edac_unregister(ghes);
+> +
+>  	kfree(ghes);
+>  
+>  	platform_set_drvdata(ghes_dev, NULL);
+> diff --git a/include/acpi/ghes.h b/include/acpi/ghes.h
+> index 3eb8dc4..720446c 100644
+> --- a/include/acpi/ghes.h
+> +++ b/include/acpi/ghes.h
+> @@ -27,6 +27,7 @@ struct ghes {
+>  struct ghes_estatus_node {
+>  	struct llist_node llnode;
+>  	struct acpi_hest_generic *generic;
+> +	struct ghes *ghes;
+>  };
+>  
+>  struct ghes_estatus_cache {
+> @@ -43,3 +44,29 @@ enum {
+>  	GHES_SEV_RECOVERABLE = 0x2,
+>  	GHES_SEV_PANIC = 0x3,
+>  };
+> +
+> +/* From drivers/edac/ghes_edac.c */
+> +
+> +#ifdef CONFIG_EDAC_GHES
+> +void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
+> +				struct cper_sec_mem_err *mem_err);
+> +
+> +int ghes_edac_register(struct ghes *ghes, struct device *dev);
+> +
+> +void ghes_edac_unregister(struct ghes *ghes);
+> +
+> +#else
+> +static inline void ghes_edac_report_mem_error(struct ghes *ghes, int sev,
+> +				       struct cper_sec_mem_err *mem_err)
+> +{
+> +}
+> +
+> +static inline int ghes_edac_register(struct ghes *ghes, struct device *dev)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void ghes_edac_unregister(struct ghes *ghes)
+> +{
+> +}
+> +#endif
+> 
 
-It's certainly an iommu driver specific group property, but a group
-property nonetheless.
 
->  This is why I was hoping something in
-> sysfs already reported the dma window so that we could point to it
-> rather than creating an interface where it doesn't really belong.
-
-Alas, no.  There's been no reason to expose PEs previously.
-
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
-
---F7w+4yMapWozG0Ib
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlEqqkoACgkQaILKxv3ab8ZERwCfZCL8DaFxn+x9wNLHs84DEfJD
-QFEAnj7UA8EAxAfDs00nGBzEMj7Ehj9T
-=4K+c
------END PGP SIGNATURE-----
-
---F7w+4yMapWozG0Ib--
