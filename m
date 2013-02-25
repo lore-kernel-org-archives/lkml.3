@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab3BYWeH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:34:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55115 "EHLO
+	id S933175Ab3BYWeb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:34:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55100 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759873Ab3BYWUB (ORCPT
+	with ESMTP id S1759825Ab3BYWUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:01 -0500
+	Mon, 25 Feb 2013 17:20:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [ 06/58] perf hists: Fix period symbol_conf.field_sep display
-Date: Mon, 25 Feb 2013 14:19:02 -0800
-Message-Id: <20130225221637.474565564@linuxfoundation.org>
+        Vinson Lee <vlee@twitter.com>, Li Zefan <lizefan@huawei.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [ 05/58] perf tools: Fix build with bison 2.3 and older.
+Date: Mon, 25 Feb 2013 14:19:01 -0800
+Message-Id: <20130225221637.275081804@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -34,48 +30,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Vinson Lee <vlee@twitter.com>
 
-commit c0d246b85fc7d42688d7a5d999ea671777caf65b upstream.
+commit 85df3b3769222894e9692b383c7af124b7721086 upstream.
 
-Currently we don't properly display hist data with symbol_conf.field_sep
-separator. We need to display either space or separator.
+The %name-prefix "prefix" syntax is not available on bison 2.3 and
+older. Substitute with the -p "prefix" command-line option for
+compatibility with older versions of bison.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
+This patch fixes this build error with older versions of bison.
+
+    CC util/sysfs.o
+    BISON util/pmu-bison.c
+util/pmu.y:2.14-24: syntax error, unexpected string, expecting =
+make: *** [util/pmu-bison.c] Error 1
+
+Signed-off-by: Vinson Lee <vlee@twitter.com>
+Tested-by: Li Zefan <lizefan@huawei.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/n/tip-cyggwys0bz5kqdowwvfd8h72@git.kernel.org
+Cc: Pekka Enberg <penberg@kernel.org>
+Link: http://lkml.kernel.org/r/1360792138-29186-1-git-send-email-vlee@twitter.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/ui/hist.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ tools/perf/Makefile            |    4 ++--
+ tools/perf/util/parse-events.y |    1 -
+ tools/perf/util/pmu.y          |    1 -
+ 3 files changed, 2 insertions(+), 4 deletions(-)
 
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -363,11 +363,15 @@ int hist_entry__period_snprintf(struct p
- 		if (!perf_hpp__format[i].cond)
- 			continue;
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -268,13 +268,13 @@ $(OUTPUT)util/parse-events-flex.c: util/
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
  
-+		/*
-+		 * If there's no field_sep, we still need
-+		 * to display initial '  '.
-+		 */
- 		if (!sep || !first) {
- 			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
- 			advance_hpp(hpp, ret);
-+		} else
- 			first = false;
--		}
+ $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
+-	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c
++	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c -p parse_events_
  
- 		if (color && perf_hpp__format[i].color)
- 			ret = perf_hpp__format[i].color(hpp, he);
+ $(OUTPUT)util/pmu-flex.c: util/pmu.l $(OUTPUT)util/pmu-bison.c
+ 	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
+ 
+ $(OUTPUT)util/pmu-bison.c: util/pmu.y
+-	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c
++	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c -p perf_pmu_
+ 
+ $(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
+ $(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -1,5 +1,4 @@
+ %pure-parser
+-%name-prefix "parse_events_"
+ %parse-param {void *_data}
+ %parse-param {void *scanner}
+ %lex-param {void* scanner}
+--- a/tools/perf/util/pmu.y
++++ b/tools/perf/util/pmu.y
+@@ -1,5 +1,4 @@
+ 
+-%name-prefix "perf_pmu_"
+ %parse-param {struct list_head *format}
+ %parse-param {char *name}
+ 
 
 
