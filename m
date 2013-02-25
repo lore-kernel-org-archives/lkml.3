@@ -1,152 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759848Ab3BYEwM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 23:52:12 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47736 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759705Ab3BYEwK (ORCPT
+	id S1759924Ab3BYE4Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 23:56:25 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54177 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759567Ab3BYE4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 23:52:10 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <512AEDCE.6060509@jp.fujitsu.com>
-Date: Mon, 25 Feb 2013 13:51:26 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Sun, 24 Feb 2013 23:56:24 -0500
+X-AuditID: 9c93016f-b7b46ae000007f43-26-512aeef6d343
+Date: Mon, 25 Feb 2013 13:56:59 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] correct load_balance()
+Message-ID: <20130225045659.GB12158@lge.com>
+References: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <rjw@sisk.pl>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <vasilis.liaskovitis@profitbricks.com>
-Subject: Re: [PATCH] ACPI: Add sysfs links from memory device to memblocks
-References: <1361562147-30801-1-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1361562147-30801-1-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360820921-2513-1-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
-
-2013/02/23 4:42, Toshi Kani wrote:
-> In order to eject a memory device object represented as "PNP0C80:%d"
-> in sysfs, its associated memblocks (system/memory/memory%d) need to
-> be off-lined.  However, there is no user friendly way to correlate
-> between a memory device object and its memblocks in sysfs.
+On Thu, Feb 14, 2013 at 02:48:33PM +0900, Joonsoo Kim wrote:
+> Commit 88b8dac0 makes load_balance() consider other cpus in its group.
+> But, there are some missing parts for this feature to work properly.
+> This patchset correct these things and make load_balance() robust.
 > 
-> This patch creates sysfs links to memblocks under a memory device
-> object so that a user can easily checks and manipulates its memblocks
-> in sysfs.
+> Others are related to LBF_ALL_PINNED. This is fallback functionality
+> when all tasks can't be moved as cpu affinity. But, currently,
+> if imbalance is not large enough to task's load, we leave LBF_ALL_PINNED
+> flag and 'redo' is triggered. This is not our intention, so correct it.
 > 
-> For example, when PNP0C80:05 is associated with memory8 and memory9,
-> the following two links are created under PNP0C80:05.  This allows
-> a user to access memory8/9 directly from PNP0C80:05.
+> These are based on v3.8-rc7.
 > 
->    # ll /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C80:05
->    lrwxrwxrwx. memory8 -> ../../../system/memory/memory8
->    lrwxrwxrwx. memory9 -> ../../../system/memory/memory9
+> Joonsoo Kim (8):
+>   sched: change position of resched_cpu() in load_balance()
+>   sched: explicitly cpu_idle_type checking in rebalance_domains()
+>   sched: don't consider other cpus in our group in case of NEWLY_IDLE
+>   sched: clean up move_task() and move_one_task()
+>   sched: move up affinity check to mitigate useless redoing overhead
+>   sched: rename load_balance_tmpmask to load_balance_cpu_active
+>   sched: prevent to re-select dst-cpu in load_balance()
+>   sched: reset lb_env when redo in load_balance()
 > 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> ---
-> This patch applies on top of the Rafael's patch below.
-> https://patchwork.kernel.org/patch/2153261/
+>  kernel/sched/core.c |    9 +++--
+>  kernel/sched/fair.c |  107 +++++++++++++++++++++++++++++----------------------
+>  2 files changed, 67 insertions(+), 49 deletions(-)
+
+Hello, Ingo and Peter.
+
+Could you review this patch set?
+Please let me know what I should do for merging this?
+
+Thanks.
+
+> -- 
+> 1.7.9.5
 > 
-> ---
->   drivers/acpi/acpi_memhotplug.c |   54 ++++++++++++++++++++++++++++++++++++++++
->   1 file changed, 54 insertions(+)
-> 
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index 3b3abbc..d6226b3 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -28,6 +28,7 @@
->    */
->   
->   #include <linux/acpi.h>
-> +#include <linux/memory.h>
->   #include <linux/memory_hotplug.h>
->   
->   #include "internal.h"
-> @@ -168,6 +169,53 @@ static int acpi_memory_check_device(struct acpi_memory_device *mem_device)
->   	return 0;
->   }
->   
-> +static void acpi_setup_mem_blk_links(struct acpi_memory_device *mem_device,
-> +		struct acpi_memory_info *info, bool add_links)
-> +{
-> +	struct memory_block *mem_blk = NULL;
-> +	struct mem_section *mem_sect;
-> +	unsigned long start_pfn, end_pfn, pfn;
-> +	unsigned long section_nr;
-> +	int ret;
-> +
-> +	start_pfn = PFN_DOWN(info->start_addr);
-> +	end_pfn = PFN_UP(info->start_addr + info->length-1);
-> +
-> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-> +		section_nr = pfn_to_section_nr(pfn);
-> +
-> +		if (!present_section_nr(section_nr))
-> +			continue;
-> +
-> +		mem_sect = __nr_to_section(section_nr);
-> +
-> +		/* skip if the same memblock */
-> +		if (mem_blk)
-> +			if ((section_nr >= mem_blk->start_section_nr) &&
-> +			    (section_nr <= mem_blk->end_section_nr))
-> +				continue;
-> +
-
-> +		mem_blk = find_memory_block_hinted(mem_sect, mem_blk);
-
-NULL pointer check is needed.			
-
-Thank,
-Yasuaki Ishimatsu
-
-> +
-> +		if (add_links) {
-> +			ret = sysfs_create_link_nowarn(
-> +				&mem_device->device->dev.kobj,
-> +				&mem_blk->dev.kobj,
-> +				kobject_name(&mem_blk->dev.kobj));
-> +			if (ret && ret != -EEXIST)
-> +				dev_err(&mem_device->device->dev,
-> +					"Failed to create sysfs link %s\n",
-> +					kobject_name(&mem_blk->dev.kobj));
-> +		} else {
-> +			sysfs_remove_link(&mem_device->device->dev.kobj,
-> +				kobject_name(&mem_blk->dev.kobj));
-> +		}
-> +	}
-> +
-> +	if (mem_blk)
-> +		kobject_put(&mem_blk->dev.kobj);
-> +}
-> +
->   static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->   {
->   	int result, num_enabled = 0;
-> @@ -207,6 +255,9 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
->   			continue;
->   		}
->   
-> +		/* Create sysfs links to its mem_blk devices */
-> +		acpi_setup_mem_blk_links(mem_device, info, true);
-> +
->   		if (!result)
->   			info->enabled = 1;
->   		/*
-> @@ -241,6 +292,9 @@ static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->   			/* The kernel does not use this memory block */
->   			continue;
->   
-> +		/* Remove sysfs links to its mem_blk devices */
-> +		acpi_setup_mem_blk_links(mem_device, info, false);
-> +
->   		if (!info->enabled)
->   			/*
->   			 * The kernel uses this memory block, but it may be not
-> 
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
