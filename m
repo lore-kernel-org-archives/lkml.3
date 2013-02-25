@@ -1,140 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759078Ab3BYVNO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 16:13:14 -0500
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:15839 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779Ab3BYVNM (ORCPT
+	id S1759563Ab3BYVO6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 16:14:58 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:51343 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753779Ab3BYVOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 16:13:12 -0500
-From: Toshi Kani <toshi.kani@hp.com>
-To: rjw@sisk.pl
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, vasilis.liaskovitis@profitbricks.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v2] ACPI: Add sysfs links from memory device to memblocks
-Date: Mon, 25 Feb 2013 14:02:10 -0700
-Message-Id: <1361826130-31062-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.11.7
+	Mon, 25 Feb 2013 16:14:55 -0500
+Message-ID: <512BD44C.40907@amacapital.net>
+Date: Mon, 25 Feb 2013 13:14:52 -0800
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Zach Brown <zab@redhat.com>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chris L. Mason" <clmason@fusionio.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
+        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
+Subject: Re: New copyfile system call - discuss before LSF?
+References: <512606DF.5050706@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com> <512635D2.4090207@redhat.com> <51267CEB.8070805@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com> <20130221222449.GY22221@lenny.home.zabbo.net>
+In-Reply-To: <20130221222449.GY22221@lenny.home.zabbo.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to eject a memory device object represented as "PNP0C80:%d"
-in sysfs, its associated memblocks (system/memory/memory%d) need to
-be off-lined.  However, there is no user friendly way to correlate
-between a memory device object and its memblocks in sysfs.
+On 02/21/2013 02:24 PM, Zach Brown wrote:
+> On Thu, Feb 21, 2013 at 08:50:27PM +0000, Myklebust, Trond wrote:
+>> On Thu, 2013-02-21 at 21:00 +0100, Paolo Bonzini wrote:
+>>> Il 21/02/2013 15:57, Ric Wheeler ha scritto:
+>>>>>>
+>>>>> sendfile64() pretty much already has the right arguments for a
+>>>>> "copyfile", however it would be nice to add a 'flags' parameter: the
+>>>>> NFSv4.2 version would use that to specify whether or not to copy file
+>>>>> metadata.
+>>>>
+>>>> That would seem to be enough to me and has the advantage that it is an
+>>>> relatively obvious extension to something that is at least not totally
+>>>> unknown to developers.
+>>>>
+>>>> Do we need more than that for non-NFS paths I wonder? What does reflink
+>>>> need or the SCSI mechanism?
+>>>
+>>> For virt we would like to be able to specify arbitrary block ranges.
+>>> Copying an entire file helps some copy operations like storage
+>>> migration.  However, it is not enough to convert the guest's offloaded
+>>> copies to host-side offloaded copies.
+>>
+>> So how would a system call based on sendfile64() plus my flag parameter
+>> prevent an underlying implementation from meeting your criterion?
+> 
+> If I'm guessing correctly, sendfile64()+flags would be annoying because
+> it's missing an out_fd_offset.  The host will want to offload the
+> guest's copies by calling sendfile on block ranges of a guest disk image
+> file that correspond to the mappings of the in and out files in the
+> guest.
+> 
+> You could make it work with some locking and out_fd seeking to set the
+> write offset before calling sendfile64()+flags, but ugh.
+> 
+>  ssize_t sendfile(int out_fd, int in_fd, off_t in_offset, off_t
+>                   out_offset, size_t count, int flags);
+> 
+> That seems closer.
+> 
+> We might also want to pre-emptively offer iovs instead of offsets,
+> because that's the very first thing that's going to be requested after
+> people prototype having to iterate calling sendfile() for each
+> contiguous copy region. 
 
-This patch creates sysfs links to memblocks under a memory device
-object so that a user can easily checks and manipulates its memblocks
-in sysfs.
+I thought the first thing people would ask for is to atomically create a
+new file and copy the old file into it (at least on local file systems).
+ The idea is that nothing should see an empty destination file, either
+by race or by crash.  (This feature would perhaps be described as a
+pony, but it should be implementable.)
 
-For example, when PNP0C80:05 is associated with memory8 and memory9,
-the following two links are created under PNP0C80:05.  This allows
-a user to access memory8/9 directly from PNP0C80:05.
+This would be like a better link(2).
 
-  # ll /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C80:05
-  lrwxrwxrwx. memory8 -> ../../../system/memory/memory8
-  lrwxrwxrwx. memory9 -> ../../../system/memory/memory9
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
-
-This patch applies on top of the Rafael's patch below.
-https://patchwork.kernel.org/patch/2153261/
-
-v2: Added a NULL return check for find_memory_block_hinted() as
-pointed by Yasuaki Ishimatsu.
-
----
- drivers/acpi/acpi_memhotplug.c |   56 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 56 insertions(+)
-
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 3b3abbc..98477a5 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -28,6 +28,7 @@
-  */
- 
- #include <linux/acpi.h>
-+#include <linux/memory.h>
- #include <linux/memory_hotplug.h>
- 
- #include "internal.h"
-@@ -168,6 +169,55 @@ static int acpi_memory_check_device(struct acpi_memory_device *mem_device)
- 	return 0;
- }
- 
-+static void acpi_setup_mem_blk_links(struct acpi_memory_device *mem_device,
-+		struct acpi_memory_info *info, bool add_links)
-+{
-+	struct memory_block *mem_blk = NULL;
-+	struct mem_section *mem_sect;
-+	unsigned long start_pfn, end_pfn, pfn;
-+	unsigned long section_nr;
-+	int ret;
-+
-+	start_pfn = PFN_DOWN(info->start_addr);
-+	end_pfn = PFN_UP(info->start_addr + info->length-1);
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-+		section_nr = pfn_to_section_nr(pfn);
-+
-+		if (!present_section_nr(section_nr))
-+			continue;
-+
-+		mem_sect = __nr_to_section(section_nr);
-+
-+		/* skip if the same memblock */
-+		if (mem_blk)
-+			if ((section_nr >= mem_blk->start_section_nr) &&
-+			    (section_nr <= mem_blk->end_section_nr))
-+				continue;
-+
-+		mem_blk = find_memory_block_hinted(mem_sect, mem_blk);
-+		if (!mem_blk)
-+			continue;
-+
-+		if (add_links) {
-+			ret = sysfs_create_link_nowarn(
-+				&mem_device->device->dev.kobj,
-+				&mem_blk->dev.kobj,
-+				kobject_name(&mem_blk->dev.kobj));
-+			if (ret && ret != -EEXIST)
-+				dev_err(&mem_device->device->dev,
-+					"Failed to create sysfs link %s\n",
-+					kobject_name(&mem_blk->dev.kobj));
-+		} else {
-+			sysfs_remove_link(&mem_device->device->dev.kobj,
-+				kobject_name(&mem_blk->dev.kobj));
-+		}
-+	}
-+
-+	if (mem_blk)
-+		kobject_put(&mem_blk->dev.kobj);
-+}
-+
- static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
- {
- 	int result, num_enabled = 0;
-@@ -207,6 +257,9 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
- 			continue;
- 		}
- 
-+		/* Create sysfs links to its mem_blk devices */
-+		acpi_setup_mem_blk_links(mem_device, info, true);
-+
- 		if (!result)
- 			info->enabled = 1;
- 		/*
-@@ -241,6 +294,9 @@ static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
- 			/* The kernel does not use this memory block */
- 			continue;
- 
-+		/* Remove sysfs links to its mem_blk devices */
-+		acpi_setup_mem_blk_links(mem_device, info, false);
-+
- 		if (!info->enabled)
- 			/*
- 			 * The kernel uses this memory block, but it may be not
+--Andy
