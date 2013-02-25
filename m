@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab3BYJ1j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 04:27:39 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:44176 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758032Ab3BYJ1i (ORCPT
+	id S1758578Ab3BYJ3f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 04:29:35 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:63827 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753786Ab3BYJ3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 04:27:38 -0500
+	Mon, 25 Feb 2013 04:29:33 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130222103306.GA19796@opensource.wolfsonmicro.com>
-References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
-	<1360933026-30325-2-git-send-email-lee.jones@linaro.org>
-	<20130220131912.GB13049@sirena.org.uk>
-	<CAPDyKFo0MpP-d7v8v1zwB42sboR3MWT6nUmG=-L0_nayYRY7FQ@mail.gmail.com>
-	<20130222103306.GA19796@opensource.wolfsonmicro.com>
-Date: Mon, 25 Feb 2013 10:27:36 +0100
-Message-ID: <CAPDyKFpJzuzB_7=eH7iNV69TLOTbdBCTx3CgqPTkianZCctKag@mail.gmail.com>
-Subject: Re: [PATCH 01/35] mfd: ab8500-gpadc: Implemented suspend/resume
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com, arnd@arndb.de,
-        linus.walleij@stericsson.com,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>
+In-Reply-To: <20130225091935.GF25749@arwen.pp.htv.fi>
+References: <1360071958-20797-1-git-send-email-gautam.vivek@samsung.com>
+	<20130225081723.GD25749@arwen.pp.htv.fi>
+	<CAFp+6iHaP96F0OF9_C1DTsfmkPNZMVC78tj7m0YGdV=d_znWrA@mail.gmail.com>
+	<20130225091935.GF25749@arwen.pp.htv.fi>
+Date: Mon, 25 Feb 2013 14:59:31 +0530
+Message-ID: <CAFp+6iGGAY=nMg03-bqHz=XuNP+1t9mQR=M53HGoqCXv=t+f0Q@mail.gmail.com>
+Subject: Re: [PATCH RFC] usb: dwc3: Set GCTL.PrtCapDir based on selected mode.
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: balbi@ti.com
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        gregkh@linuxfoundation.org, kishon@ti.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 February 2013 11:38, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Feb 21, 2013 at 11:45:08PM +0100, Ulf Hansson wrote:
->> On 20 February 2013 14:19, Mark Brown
+On Mon, Feb 25, 2013 at 2:49 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
 >
->> > This doesn't look especially sane...  You're doing a runtime get, taking
->> > the lock without releasing it and disabling the regulator.  This is
->> > *very* odd, both the changelog and the code need to explain what's going
->> > on and why it's safe in a lot more detail here.
+> On Mon, Feb 25, 2013 at 02:21:46PM +0530, Vivek Gautam wrote:
+>> >> @@ -514,6 +511,14 @@ static int dwc3_probe(struct platform_device *pdev)
+>> >>       }
+>> >>       dwc->mode = mode;
+>> >>
+>> >> +#if IS_ENABLED(CONFIG_USB_DWC3_HOST)
+>> >> +     dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_HOST);
+>> >> +#elif IS_ENABLED(CONFIG_USB_DWC3_GADGET)
+>> >> +     dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_DEVICE);
+>> >> +#else
+>> >> +     dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_OTG);
+>> >> +#endif
+>> >
+>> > you can actually use:
+>> >
+>> > if (IS_ENABLED(CONFIG_USB_DWC3_HOST))
+>> >         dwc3_set_mode(dwc...
+>> > else if (IS_ENABLED( ...
+>> >         ...
+>> > else
+>> >         ...
+>> >
+>>
+>> I am actually hoping to change this to something like below (after
+>> of course changing the preprocessor conditionals) :
+>>
+>> commit 9a62ed948dcb6ac5d78aff41f5355c0a5ea86475
+>> Author: Vivek Gautam <gautam.vivek@samsung.com>
+>> Date:   Thu Jan 24 11:58:05 2013 +0530
+>>
+>>     usb: dwc3: Set GCTL.PrtCapDir based on selected mode.
+>>
+>>     Now that machines may select the mode of working of DWC3,
+>>     we can set the Port capability direction based on selected mode.
+>>
+>>     Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>
+>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+>> index 79f335f..9444fbe 100644
+>> --- a/drivers/usb/dwc3/core.c
+>> +++ b/drivers/usb/dwc3/core.c
+>> @@ -478,7 +478,13 @@ static int dwc3_probe(struct platform_device *pdev)
+>>                 goto err1;
+>>         }
+>>
+>> -       mode = DWC3_MODE(dwc->hwparams.hwparams0);
+>> +#if IS_ENABLED(CONFIG_USB_DWC3_HOST)
+>> +       mode = DWC3_MODE_HOST;
+>> +#elif IS_ENABLED(CONFIG_USB_DWC3_GADGET)
+>> +       mode = DWC3_MODE_DEVICE;
+>> +#else
+>> +       mode = DWC3_MODE_DRD;
 >
->> You need to do pm_runtime_get_sync to be able to make sure resources
->> (which seems to be only the regulator) are safe to switch off. To my
->> understanding this is a generic way to use for being able to switch
->> off resources at a device suspend when runtime pm is used in
->> conjunction.
+> looks alright.
 >
-> Are you sure this actually does what you think it does, especially when
-> run on modern kernels?
+Fine then, i'll post this.
 
-Not sure, what you are thinking of more precisely here. Runtime pm has
-been in the kernel for quite some time now.
 
-Anyway, to make it a bit clearer, we switch the regulator on/off at
-the runtime suspend/resume callbacks. We want to take similar actions
-in device suspend/resume.
-To accomplish this a pm_runtime_get_sync is done in suspend and vice
-verse in resume, otherwise you can not safely handle the regulator.
-
-Kind regards
-Ulf Hansson
+-- 
+Thanks & Regards
+Vivek
