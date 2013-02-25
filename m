@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758947Ab3BYMJv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 07:09:51 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:57231 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751661Ab3BYMJt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 07:09:49 -0500
+	id S1759342Ab3BYMQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 07:16:14 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:46143 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756622Ab3BYMQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 07:16:13 -0500
+Date: Mon, 25 Feb 2013 13:16:08 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Peter Feuerer <peter@piie.net>, LKML <linux-kernel@vger.kernel.org>,
+        Durgadoss R <durgadoss.r@intel.com>, Andreas Mohr <andi@lisas.de>,
+        Alexander Lam <azl@andrew.cmu.edu>, bp@suse.de
+Subject: Re: [PATCH] acerhdf: Fix fan activation with new thermal governor
+Message-ID: <20130225121608.GC12067@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Zhang Rui <rui.zhang@intel.com>, Peter Feuerer <peter@piie.net>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Durgadoss R <durgadoss.r@intel.com>, Andreas Mohr <andi@lisas.de>,
+	Alexander Lam <azl@andrew.cmu.edu>
+References: <20130222111521.GA25473@pd.tnic>
+ <1361647210-12983-1-git-send-email-bp@alien8.de>
+ <20130224112851.GA19609@pd.tnic>
+ <cone.1361706175.908398.1806.1000@galar>
+ <20130224143452.GE19609@pd.tnic>
+ <1361762514.2303.21.camel@rzhang1-mobl4>
+ <20130225102526.GB12067@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1302251227140.3030@axis700.grange>
-References: <Pine.LNX.4.64.1302251227140.3030@axis700.grange>
-Date: Mon, 25 Feb 2013 17:39:47 +0530
-X-Google-Sender-Auth: GHRQdL85Td4E5OolhGRa_CanJEg
-Message-ID: <CAOh2x=n-G0BwhjH+VXgy=+nbsaH0+5FqWHhDoyU=xWp-EH9Zdg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: fix sign check of an unsigned variable in cpufreq-cpu0
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130225102526.GB12067@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 5:02 PM, Guennadi Liakhovetski
-<g.liakhovetski@gmx.de> wrote:
-> A "< 0" test for an unsigned variable is meaningless, change the variable
-> to signed.
->
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> ---
->
-> stable?
->
->  drivers/cpufreq/cpufreq-cpu0.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-> index 52bf36d..e7bad3c 100644
-> --- a/drivers/cpufreq/cpufreq-cpu0.c
-> +++ b/drivers/cpufreq/cpufreq-cpu0.c
-> @@ -44,7 +44,8 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
->  {
->         struct cpufreq_freqs freqs;
->         struct opp *opp;
-> -       unsigned long freq_Hz, volt = 0, volt_old = 0, tol = 0;
-> +       unsigned long volt = 0, volt_old = 0, tol = 0;
-> +       long freq_Hz;
+On Mon, Feb 25, 2013 at 11:25:26AM +0100, Borislav Petkov wrote:
+> > has anybody checked if the patch at lkml.org/lkml/2012/12/30/47 fixes
+> > the problem, without any other patch?
+> 
+> Ok, let me try it out.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Ok, doing a short test here proves successful. I'll run it the next days
+too to make sure - it would be nice if people could confirm my test
+results, though.
 
-The disease is spread across a bigger region though.
+Tested-by: Borislav Petkov <bp@suse.de>
 
-@Mike: clk_round_rate returns long and __clk_round_rate returns unsigned long
-and clk_ops->round_rate returns long again.. Don't you see something
-strange here?
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
