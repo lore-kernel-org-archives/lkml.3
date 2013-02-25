@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932988Ab3BYW02 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:26:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55233 "EHLO
+	id S933004Ab3BYW0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:26:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55224 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932398Ab3BYWUV (ORCPT
+	with ESMTP id S932368Ab3BYWUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:21 -0500
+	Mon, 25 Feb 2013 17:20:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 37/58] tmpfs: fix use-after-free of mempolicy object
-Date: Mon, 25 Feb 2013 14:19:33 -0800
-Message-Id: <20130225221644.225908372@linuxfoundation.org>
+Subject: [ 35/58] ocfs2: unlock super lock if lockres refresh failed
+Date: Mon, 25 Feb 2013 14:19:31 -0800
+Message-Id: <20130225221643.862127008@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -28,107 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Thelen <gthelen@google.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit 5f00110f7273f9ff04ac69a5f85bb535a4fd0987 upstream.
+commit 3278bb748d2437eb1464765f36429e5d6aa91c38 upstream.
 
-The tmpfs remount logic preserves filesystem mempolicy if the mpol=M
-option is not specified in the remount request.  A new policy can be
-specified if mpol=M is given.
+If lockres refresh failed, the super lock will never be released which
+will cause some processes on other cluster nodes hung forever.
 
-Before this patch remounting an mpol bound tmpfs without specifying
-mpol= mount option in the remount request would set the filesystem's
-mempolicy object to a freed mempolicy object.
-
-To reproduce the problem boot a DEBUG_PAGEALLOC kernel and run:
-    # mkdir /tmp/x
-
-    # mount -t tmpfs -o size=100M,mpol=interleave nodev /tmp/x
-
-    # grep /tmp/x /proc/mounts
-    nodev /tmp/x tmpfs rw,relatime,size=102400k,mpol=interleave:0-3 0 0
-
-    # mount -o remount,size=200M nodev /tmp/x
-
-    # grep /tmp/x /proc/mounts
-    nodev /tmp/x tmpfs rw,relatime,size=204800k,mpol=??? 0 0
-        # note ? garbage in mpol=... output above
-
-    # dd if=/dev/zero of=/tmp/x/f count=1
-        # panic here
-
-Panic:
-    BUG: unable to handle kernel NULL pointer dereference at           (null)
-    IP: [<          (null)>]           (null)
-    [...]
-    Oops: 0010 [#1] SMP DEBUG_PAGEALLOC
-    Call Trace:
-      mpol_shared_policy_init+0xa5/0x160
-      shmem_get_inode+0x209/0x270
-      shmem_mknod+0x3e/0xf0
-      shmem_create+0x18/0x20
-      vfs_create+0xb5/0x130
-      do_last+0x9a1/0xea0
-      path_openat+0xb3/0x4d0
-      do_filp_open+0x42/0xa0
-      do_sys_open+0xfe/0x1e0
-      compat_sys_open+0x1b/0x20
-      cstar_dispatch+0x7/0x1f
-
-Non-debug kernels will not crash immediately because referencing the
-dangling mpol will not cause a fault.  Instead the filesystem will
-reference a freed mempolicy object, which will cause unpredictable
-behavior.
-
-The problem boils down to a dropped mpol reference below if
-shmem_parse_options() does not allocate a new mpol:
-
-    config = *sbinfo
-    shmem_parse_options(data, &config, true)
-    mpol_put(sbinfo->mpol)
-    sbinfo->mpol = config.mpol  /* BUG: saves unreferenced mpol */
-
-This patch avoids the crash by not releasing the mempolicy if
-shmem_parse_options() doesn't create a new mpol.
-
-How far back does this issue go? I see it in both 2.6.36 and 3.3.  I did
-not look back further.
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/shmem.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ fs/ocfs2/dlmglue.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2397,6 +2397,7 @@ static int shmem_remount_fs(struct super
- 	unsigned long inodes;
- 	int error = -EINVAL;
+--- a/fs/ocfs2/dlmglue.c
++++ b/fs/ocfs2/dlmglue.c
+@@ -2545,6 +2545,7 @@ int ocfs2_super_lock(struct ocfs2_super
+ 	 * everything is up to the caller :) */
+ 	status = ocfs2_should_refresh_lock_res(lockres);
+ 	if (status < 0) {
++		ocfs2_cluster_unlock(osb, lockres, level);
+ 		mlog_errno(status);
+ 		goto bail;
+ 	}
+@@ -2553,8 +2554,10 @@ int ocfs2_super_lock(struct ocfs2_super
  
-+	config.mpol = NULL;
- 	if (shmem_parse_options(data, &config, true))
- 		return error;
+ 		ocfs2_complete_lock_res_refresh(lockres, status);
  
-@@ -2421,8 +2422,13 @@ static int shmem_remount_fs(struct super
- 	sbinfo->max_inodes  = config.max_inodes;
- 	sbinfo->free_inodes = config.max_inodes - inodes;
- 
--	mpol_put(sbinfo->mpol);
--	sbinfo->mpol        = config.mpol;	/* transfers initial ref */
-+	/*
-+	 * Preserve previous mempolicy unless mpol remount option was specified.
-+	 */
-+	if (config.mpol) {
-+		mpol_put(sbinfo->mpol);
-+		sbinfo->mpol = config.mpol;	/* transfers initial ref */
-+	}
- out:
- 	spin_unlock(&sbinfo->stat_lock);
- 	return error;
+-		if (status < 0)
++		if (status < 0) {
++			ocfs2_cluster_unlock(osb, lockres, level);
+ 			mlog_errno(status);
++		}
+ 		ocfs2_track_lock_refresh(lockres);
+ 	}
+ bail:
 
 
