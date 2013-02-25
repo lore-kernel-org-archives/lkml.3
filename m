@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520Ab3BYKOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 05:14:17 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:35396 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758546Ab3BYKOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 05:14:16 -0500
-Message-ID: <512B3957.1020505@parallels.com>
-Date: Mon, 25 Feb 2013 14:13:43 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S932570Ab3BYKPv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 05:15:51 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:50663 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977Ab3BYKPt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 05:15:49 -0500
 MIME-Version: 1.0
-To: Andrey Vagin <avagin@openvz.org>
-CC: linux-kernel@vger.kernel.org, criu@openvz.org, linux-api@vger.kernel.org,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pedro Alves <palves@redhat.com>
-Subject: Re: [PATCH] ptrace: add ability to retrieve signals without removing
- from a queue (v2)
-References: <1361786813-14652-1-git-send-email-avagin@openvz.org>
-In-Reply-To: <1361786813-14652-1-git-send-email-avagin@openvz.org>
+In-Reply-To: <20130220200625.GA1321@polaris.bitmath.org>
+References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
+	<1360334256-22127-4-git-send-email-benjamin.tissoires@gmail.com>
+	<20130220200625.GA1321@polaris.bitmath.org>
+Date: Mon, 25 Feb 2013 11:15:47 +0100
+Message-ID: <CAN+gG=Fy9Be2ebVEB6rGUp8mUsd4ZpRbz6FeAenDh=O+KXEtpA@mail.gmail.com>
+Subject: Re: [PATCH 3/7] HID: Kconfig: Remove explicit transport layer dependencies
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +	for (i = 0; i < arg.nr; i++) {
-> +		off = arg.off + i;
-> +
-> +		spin_lock_irq(&child->sighand->siglock);
-> +		list_for_each_entry(q, &pending->list, list) {
-> +			if (!off--) {
-> +				copy_siginfo(&info, &q->info);
-> +				break;
-> +			}
-> +		}
-> +		spin_unlock_irq(&child->sighand->siglock);
+Hi Henrik,
 
-What's the point of arg.nr if you for every single siginfo drop the lock
-and perform linear search anyway?
+On Wed, Feb 20, 2013 at 9:06 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Benjamin,
+>
+>> Most HID drivers (rightfully) only depend on the HID bus, not the
+>> specific transport layer. Remove such dependencies where applicable.
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+>> ---
+>
+> I suppose you checked this list against newcomers as well, so:
+>
+>     Acked-by: Henrik Rydberg <rydberg@euromail.se>
 
-Thanks,
-Pavel
+I checked, but a newcomer came since: thingM... I'll update the patch
+accordingly in the v2.
+
+Cheers,
+Benjamin
