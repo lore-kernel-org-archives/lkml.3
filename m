@@ -1,183 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759625Ab3BYDWA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 22:22:00 -0500
-Received: from mga03.intel.com ([143.182.124.21]:56855 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759505Ab3BYDV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 22:21:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,731,1355126400"; 
-   d="scan'208";a="260912565"
-Message-ID: <1361762514.2303.21.camel@rzhang1-mobl4>
-Subject: Re: [PATCH] acerhdf: Fix fan activation with new thermal governor
-From: Zhang Rui <rui.zhang@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Peter Feuerer <peter@piie.net>, LKML <linux-kernel@vger.kernel.org>,
-        Durgadoss R <durgadoss.r@intel.com>, Andreas Mohr <andi@lisas.de>,
-        Alexander Lam <azl@andrew.cmu.edu>, bp@suse.de
-Date: Mon, 25 Feb 2013 11:21:54 +0800
-In-Reply-To: <20130224143452.GE19609@pd.tnic>
-References: <20130222111521.GA25473@pd.tnic>
-	 <1361647210-12983-1-git-send-email-bp@alien8.de>
-	 <20130224112851.GA19609@pd.tnic> <cone.1361706175.908398.1806.1000@galar>
-	 <20130224143452.GE19609@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759681Ab3BYDWV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 22:22:21 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:47433 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759527Ab3BYDWT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 22:22:19 -0500
+Date: Sun, 24 Feb 2013 19:22:16 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Timo Kokkonen <timo.t.kokkonen@iki.fi>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Media: remove incorrect __exit markups
+Message-ID: <20130225032215.GA9352@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-02-24 at 15:34 +0100, Borislav Petkov wrote:
-> On Sun, Feb 24, 2013 at 12:42:55PM +0100, Peter Feuerer wrote:
-> > Please test my last patch with the 4 trip points ;) - even if you
-> > don't really like it, it is working great! - And to be honest, I still
-> > prefer this solution!
-> 
-> Ok, I remember everything now - had to add some debug output to see what
-> the stepwise governor hands us down.
-> 
-> Btw, Zhang, is there any way we can tell the upper layer to not
-> poll trips and temps for this driver? I mean, ->get_trip_type and
-> ->get_trip_temp get called every polling interval and the data it
-> receives back each time is static and don't change so polling the same
-> values each time for this driver doesn't make any sense.
-> 
-the reason we keep on calling it because the thermal zone trip point
-info may be changed at runtime.
+Even if bus is not hot-pluggable, the devices can be unbound from the
+driver via sysfs, so we should not be using __exit annotations on
+remove() methods. The only exception is drivers registered with
+platform_driver_probe() which specifically disables sysfs bind/unbind
+attributes.
 
-> Can we pass trip points and temperature levels upon registration time
-> instead?
-> 
-no, but we can cache it in the thermal layer, and do update when
-necessary.
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/media/i2c/adp1653.c                      | 4 ++--
+ drivers/media/i2c/smiapp/smiapp-core.c           | 4 ++--
+ drivers/media/platform/soc_camera/omap1_camera.c | 4 ++--
+ drivers/media/radio/radio-si4713.c               | 4 ++--
+ drivers/media/rc/ir-rx51.c                       | 4 ++--
+ 5 files changed, 10 insertions(+), 10 deletions(-)
 
-> @Peter: I took your patch, removed one trip point and added comments so
-> that we don't forget why we do what we do. Please take a look - it works
-> fine here.
-> 
-> --
-> From 1827ed71ff1b73a83d81d21f9dd167fe8e0d4198 Mon Sep 17 00:00:00 2001
-> From: Peter Feuerer <peter@piie.net>
-> Date: Sun, 24 Feb 2013 15:04:17 +0100
-> Subject: [PATCH] acerhdf: Fix fan activation with new thermal governor
-> 
-> After recent thermal subsys rework, acerhdf couldn't cope with the
-> stepwise governor since it had only one trip point and this didn't fit
-> into the stepwise scheme.
-
-why? I do not think the stepwise scheme will break it. If it happens, we
-should fix stepwise governor instead.
-
->  Therefore, add two more trip points - an
-> active one where we turn on the fan, and a critical one.
-> 
-I think you add a passive trip point and a critical one here.
-
-> However, we still need to flatten out peaks of turning the fan on
-> and off in acerhdf_set_cur_state because stepwise looks also at the
-> direction the temperature is going and applies respective policy. This
-> results in short bursts of interchanging on and off which are really
-> annoying.
-> 
-> So, we keep the old logic where we turn on the fan only if we exceed
-> 'fanon' temperature and leave it on until we go under 'fanoff'. Document
-> this behavior while at it.
-> 
-has anybody checked if the patch at lkml.org/lkml/2012/12/30/47 fixes
-the problem, without any other patch?
-
-thanks,
-rui
-> Signed-off-by: Peter Feuerer <peter@piie.net>
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  drivers/platform/x86/acerhdf.c | 30 ++++++++++++++++++++++++++----
->  1 file changed, 26 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
-> index f94467c05225..b06cdb099e6a 100644
-> --- a/drivers/platform/x86/acerhdf.c
-> +++ b/drivers/platform/x86/acerhdf.c
-> @@ -400,7 +400,13 @@ static int acerhdf_get_trip_type(struct thermal_zone_device *thermal, int trip,
->  				 enum thermal_trip_type *type)
->  {
->  	if (trip == 0)
-> +		*type = THERMAL_TRIP_PASSIVE;
-> +	else if (trip == 1)
->  		*type = THERMAL_TRIP_ACTIVE;
-> +	else if (trip == 2)
-> +		*type = THERMAL_TRIP_CRITICAL;
-> +	else
-> +		WARN_ONCE(1, "%s: Funny trip point %d\n", KBUILD_MODNAME, trip);
->  
->  	return 0;
->  }
-> @@ -409,7 +415,13 @@ static int acerhdf_get_trip_temp(struct thermal_zone_device *thermal, int trip,
->  				 unsigned long *temp)
->  {
->  	if (trip == 0)
-> +		*temp = 0;
-> +	else if (trip == 1)
->  		*temp = fanon;
-> +	else if (trip == 2)
-> +		*temp = ACERHDF_TEMP_CRIT;
-> +	else
-> +		WARN_ONCE(1, "%s: Funny trip point %d\n", KBUILD_MODNAME, trip);
->  
->  	return 0;
->  }
-> @@ -459,7 +471,9 @@ static int acerhdf_get_cur_state(struct thermal_cooling_device *cdev,
->  	return 0;
->  }
->  
-> -/* change current fan state - is overwritten when running in kernel mode */
-> +/*
-> + * Change current fan state - is overwritten when running in kernel mode
-> + */
->  static int acerhdf_set_cur_state(struct thermal_cooling_device *cdev,
->  				 unsigned long state)
->  {
-> @@ -480,15 +494,23 @@ static int acerhdf_set_cur_state(struct thermal_cooling_device *cdev,
->  		goto err_out;
->  	}
->  
-> +	/*
-> +	 * We need to flatten out the on-off peaks we get from the stepwise
-> +	 * governor into the wider span between fanoff and fanon because
-> +	 * otherwise we turn on/off the fan in short bursts, everytime the
-> +	 * thermal zone decides to throttle and this is annoying.
-> +	 */
->  	if (state == 0) {
->  		/* turn fan off only if below fanoff temperature */
->  		if ((cur_state == ACERHDF_FAN_AUTO) &&
-> -		    (cur_temp < fanoff))
-> +		    (cur_temp <= fanoff))
->  			acerhdf_change_fanstate(ACERHDF_FAN_OFF);
->  	} else {
-> -		if (cur_state == ACERHDF_FAN_OFF)
-> +		if ((cur_state == ACERHDF_FAN_OFF) &&
-> +		    (cur_temp >= fanon))
->  			acerhdf_change_fanstate(ACERHDF_FAN_AUTO);
->  	}
-> +
->  	return 0;
->  
->  err_out:
-> @@ -661,7 +683,7 @@ static int acerhdf_register_thermal(void)
->  	if (IS_ERR(cl_dev))
->  		return -EINVAL;
->  
-> -	thz_dev = thermal_zone_device_register("acerhdf", 1, 0, NULL,
-> +	thz_dev = thermal_zone_device_register("acerhdf", 3, 0, NULL,
->  					      &acerhdf_dev_ops, NULL, 0,
->  					      (kernelmode) ? interval*1000 : 0);
->  	if (IS_ERR(thz_dev))
-> -- 
-> 1.8.1.3.535.ga923c31
-> 
-> 
+diff --git a/drivers/media/i2c/adp1653.c b/drivers/media/i2c/adp1653.c
+index df16380..ef75abe 100644
+--- a/drivers/media/i2c/adp1653.c
++++ b/drivers/media/i2c/adp1653.c
+@@ -447,7 +447,7 @@ free_and_quit:
+ 	return ret;
+ }
+ 
+-static int __exit adp1653_remove(struct i2c_client *client)
++static int adp1653_remove(struct i2c_client *client)
+ {
+ 	struct v4l2_subdev *subdev = i2c_get_clientdata(client);
+ 	struct adp1653_flash *flash = to_adp1653_flash(subdev);
+@@ -476,7 +476,7 @@ static struct i2c_driver adp1653_i2c_driver = {
+ 		.pm	= &adp1653_pm_ops,
+ 	},
+ 	.probe		= adp1653_probe,
+-	.remove		= __exit_p(adp1653_remove),
++	.remove		= adp1653_remove,
+ 	.id_table	= adp1653_id_table,
+ };
+ 
+diff --git a/drivers/media/i2c/smiapp/smiapp-core.c b/drivers/media/i2c/smiapp/smiapp-core.c
+index 83c7ed7..cae4f46 100644
+--- a/drivers/media/i2c/smiapp/smiapp-core.c
++++ b/drivers/media/i2c/smiapp/smiapp-core.c
+@@ -2833,7 +2833,7 @@ static int smiapp_probe(struct i2c_client *client,
+ 				 sensor->src->pads, 0);
+ }
+ 
+-static int __exit smiapp_remove(struct i2c_client *client)
++static int smiapp_remove(struct i2c_client *client)
+ {
+ 	struct v4l2_subdev *subdev = i2c_get_clientdata(client);
+ 	struct smiapp_sensor *sensor = to_smiapp_sensor(subdev);
+@@ -2881,7 +2881,7 @@ static struct i2c_driver smiapp_i2c_driver = {
+ 		.pm = &smiapp_pm_ops,
+ 	},
+ 	.probe	= smiapp_probe,
+-	.remove	= __exit_p(smiapp_remove),
++	.remove	= smiapp_remove,
+ 	.id_table = smiapp_id_table,
+ };
+ 
+diff --git a/drivers/media/platform/soc_camera/omap1_camera.c b/drivers/media/platform/soc_camera/omap1_camera.c
+index 39a77f0..5f548ac 100644
+--- a/drivers/media/platform/soc_camera/omap1_camera.c
++++ b/drivers/media/platform/soc_camera/omap1_camera.c
+@@ -1677,7 +1677,7 @@ exit:
+ 	return err;
+ }
+ 
+-static int __exit omap1_cam_remove(struct platform_device *pdev)
++static int omap1_cam_remove(struct platform_device *pdev)
+ {
+ 	struct soc_camera_host *soc_host = to_soc_camera_host(&pdev->dev);
+ 	struct omap1_cam_dev *pcdev = container_of(soc_host,
+@@ -1709,7 +1709,7 @@ static struct platform_driver omap1_cam_driver = {
+ 		.name	= DRIVER_NAME,
+ 	},
+ 	.probe		= omap1_cam_probe,
+-	.remove		= __exit_p(omap1_cam_remove),
++	.remove		= omap1_cam_remove,
+ };
+ 
+ module_platform_driver(omap1_cam_driver);
+diff --git a/drivers/media/radio/radio-si4713.c b/drivers/media/radio/radio-si4713.c
+index 1507c9d..8ae8442d 100644
+--- a/drivers/media/radio/radio-si4713.c
++++ b/drivers/media/radio/radio-si4713.c
+@@ -328,7 +328,7 @@ exit:
+ }
+ 
+ /* radio_si4713_pdriver_remove - remove the device */
+-static int __exit radio_si4713_pdriver_remove(struct platform_device *pdev)
++static int radio_si4713_pdriver_remove(struct platform_device *pdev)
+ {
+ 	struct v4l2_device *v4l2_dev = platform_get_drvdata(pdev);
+ 	struct radio_si4713_device *rsdev = container_of(v4l2_dev,
+@@ -350,7 +350,7 @@ static struct platform_driver radio_si4713_pdriver = {
+ 		.name	= "radio-si4713",
+ 	},
+ 	.probe		= radio_si4713_pdriver_probe,
+-	.remove         = __exit_p(radio_si4713_pdriver_remove),
++	.remove         = radio_si4713_pdriver_remove,
+ };
+ 
+ module_platform_driver(radio_si4713_pdriver);
+diff --git a/drivers/media/rc/ir-rx51.c b/drivers/media/rc/ir-rx51.c
+index 8ead492..31b955b 100644
+--- a/drivers/media/rc/ir-rx51.c
++++ b/drivers/media/rc/ir-rx51.c
+@@ -464,14 +464,14 @@ static int lirc_rx51_probe(struct platform_device *dev)
+ 	return 0;
+ }
+ 
+-static int __exit lirc_rx51_remove(struct platform_device *dev)
++static int lirc_rx51_remove(struct platform_device *dev)
+ {
+ 	return lirc_unregister_driver(lirc_rx51_driver.minor);
+ }
+ 
+ struct platform_driver lirc_rx51_platform_driver = {
+ 	.probe		= lirc_rx51_probe,
+-	.remove		= __exit_p(lirc_rx51_remove),
++	.remove		= lirc_rx51_remove,
+ 	.suspend	= lirc_rx51_suspend,
+ 	.resume		= lirc_rx51_resume,
+ 	.driver		= {
+-- 
+1.7.11.7
 
 
+-- 
+Dmitry
