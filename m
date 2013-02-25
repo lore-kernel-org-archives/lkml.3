@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771Ab3BYWVZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:21:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55338 "EHLO
+	id S932668Ab3BYWUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:20:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55261 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932421Ab3BYWUh (ORCPT
+	with ESMTP id S932421Ab3BYWUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:37 -0500
+	Mon, 25 Feb 2013 17:20:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 56/58] sparc64: Handle hugepage TSB being NULL.
-Date: Mon, 25 Feb 2013 14:19:52 -0800
-Message-Id: <20130225221648.317896578@linuxfoundation.org>
+        Jan Beulich <jbeulich@suse.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 39/58] xen-pciback: rate limit error messages from xen_pcibk_enable_msi{,x}()
+Date: Mon, 25 Feb 2013 14:19:35 -0800
+Message-Id: <20130225221644.699348668@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -26,91 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Jan Beulich <jbeulich@suse.com>
 
-From: "David S. Miller" <davem@davemloft.net>
+commit 51ac8893a7a51b196501164e645583bf78138699 upstream.
 
-[ Upstream commit bcd896bae0166b4443503482a26ecf84d9ba60ab ]
+... as being guest triggerable (e.g. by invoking
+XEN_PCI_OP_enable_msi{,x} on a device not being MSI/MSI-X capable).
 
-Accomodate the possibility that the TSB might be NULL at
-the point that update_mmu_cache() is invoked.  This is
-necessary because we will sometimes need to defer the TSB
-allocation to the first fault that happens in the 'mm'.
+This is CVE-2013-0231 / XSA-43.
 
-Seperate out the hugepage PTE test into a seperate function
-so that the logic is clearer.
+Also make the two messages uniform in both their wording and severity.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/mm/init_64.c |   38 ++++++++++++++++++++++----------------
- 1 file changed, 22 insertions(+), 16 deletions(-)
 
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -314,16 +314,31 @@ static void __update_mmu_tsb_insert(stru
- 	struct tsb *tsb = mm->context.tsb_block[tsb_index].tsb;
- 	unsigned long tag;
- 
-+	if (unlikely(!tsb))
-+		return;
-+
- 	tsb += ((address >> tsb_hash_shift) &
- 		(mm->context.tsb_block[tsb_index].tsb_nentries - 1UL));
- 	tag = (address >> 22UL);
- 	tsb_insert(tsb, tag, tte);
- }
- 
-+#if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
-+static inline bool is_hugetlb_pte(pte_t pte)
-+{
-+	if ((tlb_type == hypervisor &&
-+	     (pte_val(pte) & _PAGE_SZALL_4V) == _PAGE_SZHUGE_4V) ||
-+	    (tlb_type != hypervisor &&
-+	     (pte_val(pte) & _PAGE_SZALL_4U) == _PAGE_SZHUGE_4U))
-+		return true;
-+	return false;
-+}
-+#endif
-+
- void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *ptep)
+---
+ drivers/xen/xen-pciback/pciback_ops.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+--- a/drivers/xen/xen-pciback/pciback_ops.c
++++ b/drivers/xen/xen-pciback/pciback_ops.c
+@@ -135,7 +135,6 @@ int xen_pcibk_enable_msi(struct xen_pcib
+ 			 struct pci_dev *dev, struct xen_pci_op *op)
  {
--	unsigned long tsb_index, tsb_hash_shift, flags;
- 	struct mm_struct *mm;
-+	unsigned long flags;
- 	pte_t pte = *ptep;
+ 	struct xen_pcibk_dev_data *dev_data;
+-	int otherend = pdev->xdev->otherend_id;
+ 	int status;
  
- 	if (tlb_type != hypervisor) {
-@@ -335,25 +350,16 @@ void update_mmu_cache(struct vm_area_str
+ 	if (unlikely(verbose_request))
+@@ -144,8 +143,9 @@ int xen_pcibk_enable_msi(struct xen_pcib
+ 	status = pci_enable_msi(dev);
  
- 	mm = vma->vm_mm;
- 
--	tsb_index = MM_TSB_BASE;
--	tsb_hash_shift = PAGE_SHIFT;
--
- 	spin_lock_irqsave(&mm->context.lock, flags);
- 
- #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
--	if (mm->context.tsb_block[MM_TSB_HUGE].tsb != NULL) {
--		if ((tlb_type == hypervisor &&
--		     (pte_val(pte) & _PAGE_SZALL_4V) == _PAGE_SZHUGE_4V) ||
--		    (tlb_type != hypervisor &&
--		     (pte_val(pte) & _PAGE_SZALL_4U) == _PAGE_SZHUGE_4U)) {
--			tsb_index = MM_TSB_HUGE;
--			tsb_hash_shift = HPAGE_SHIFT;
--		}
+ 	if (status) {
+-		printk(KERN_ERR "error enable msi for guest %x status %x\n",
+-			otherend, status);
++		pr_warn_ratelimited(DRV_NAME ": %s: error enabling MSI for guest %u: err %d\n",
++				    pci_name(dev), pdev->xdev->otherend_id,
++				    status);
+ 		op->value = 0;
+ 		return XEN_PCI_ERR_op_failed;
+ 	}
+@@ -223,10 +223,10 @@ int xen_pcibk_enable_msix(struct xen_pci
+ 						pci_name(dev), i,
+ 						op->msix_entries[i].vector);
+ 		}
+-	} else {
+-		printk(KERN_WARNING DRV_NAME ": %s: failed to enable MSI-X: err %d!\n",
+-			pci_name(dev), result);
 -	}
-+	if (mm->context.huge_pte_count && is_hugetlb_pte(pte))
-+		__update_mmu_tsb_insert(mm, MM_TSB_HUGE, HPAGE_SHIFT,
-+					address, pte_val(pte));
-+	else
- #endif
--
--	__update_mmu_tsb_insert(mm, tsb_index, tsb_hash_shift,
--				address, pte_val(pte));
-+		__update_mmu_tsb_insert(mm, MM_TSB_BASE, PAGE_SHIFT,
-+					address, pte_val(pte));
++	} else
++		pr_warn_ratelimited(DRV_NAME ": %s: error enabling MSI-X for guest %u: err %d!\n",
++				    pci_name(dev), pdev->xdev->otherend_id,
++				    result);
+ 	kfree(entries);
  
- 	spin_unlock_irqrestore(&mm->context.lock, flags);
- }
+ 	op->value = result;
 
 
