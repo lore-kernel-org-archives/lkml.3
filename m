@@ -1,48 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab3BYPu5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 10:50:57 -0500
-Received: from ka.mail.enyo.de ([87.106.162.201]:42889 "EHLO ka.mail.enyo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759895Ab3BYPu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 10:50:56 -0500
-From: Florian Weimer <fw@deneb.enyo.de>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Peter Jones <pjones@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
-        keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-References: <30665.1361461678@warthog.procyon.org.uk>
-	<CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
-	<20130221164244.GA19625@srcf.ucam.org>
-	<CA+55aFy4k07GPmszkBdYvCE-KphKLVowkZoW7hoAvcR+0U=stg@mail.gmail.com>
-	<20130221174955.GA20886@srcf.ucam.org>
-	<CA+55aFxZ4f4KiHQBCAgTghm+deniS6rDz4wna9bce6vK8WppsA@mail.gmail.com>
-	<20130222140539.GE20629@fenchurch.internal.datastacks.com>
-	<877glw78p5.fsf@mid.deneb.enyo.de>
-	<20130225154215.GB13605@srcf.ucam.org>
-Date: Mon, 25 Feb 2013 16:50:50 +0100
-In-Reply-To: <20130225154215.GB13605@srcf.ucam.org> (Matthew Garrett's message
-	of "Mon, 25 Feb 2013 15:42:15 +0000")
-Message-ID: <87obf85r51.fsf@mid.deneb.enyo.de>
+	id S1759940Ab3BYPx2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 10:53:28 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:59333 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756871Ab3BYPxX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 10:53:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <51226F91.7000108@linux.vnet.ibm.com>
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
+	<20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com>
+	<CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com>
+	<5122551E.1080703@linux.vnet.ibm.com>
+	<51226B46.9080707@linux.vnet.ibm.com>
+	<CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com>
+	<51226F91.7000108@linux.vnet.ibm.com>
+Date: Mon, 25 Feb 2013 23:53:22 +0800
+Message-ID: <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com>
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+From: Lai Jiangshan <eag0628@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
+        vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Matthew Garrett:
+Hi, Srivatsa,
 
-> On Mon, Feb 25, 2013 at 03:46:14PM +0100, Florian Weimer wrote:
->
->> You could just drop the requirement that ring 0 code must be signed.
->> I don't think Windows 8 enforces this, but I'm not yet sure if there
->> is a physical presence check before you can enter a mode in which
->> Windows loads self-signed kernel modules.
->
-> Windows 8 will not load unsigned drivers if Secure Boot is enabled.
+The target of the whole patchset is nice for me.
+A question: How did you find out the such usages of
+"preempt_disable()" and convert them? did all are converted?
 
-What about "bcdedit /set ... testsigning on"?
+And I think the lock is too complex and reinvent the wheel, why don't
+you reuse the lglock?
+I wrote an untested draft here.
+
+Thanks,
+Lai
+
+PS: Some HA tools(I'm writing one) which takes checkpoints of
+virtual-machines frequently, I guess this patchset can speedup the
+tools.
+
+>From 01db542693a1b7fc6f9ece45d57cb529d9be5b66 Mon Sep 17 00:00:00 2001
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date: Mon, 25 Feb 2013 23:14:27 +0800
+Subject: [PATCH] lglock: add read-preference local-global rwlock
+
+locality via lglock(trylock)
+read-preference read-write-lock via fallback rwlock_t
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ include/linux/lglock.h |   31 +++++++++++++++++++++++++++++++
+ kernel/lglock.c        |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 76 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/lglock.h b/include/linux/lglock.h
+index 0d24e93..30fe887 100644
+--- a/include/linux/lglock.h
++++ b/include/linux/lglock.h
+@@ -67,4 +67,35 @@ void lg_local_unlock_cpu(struct lglock *lg, int cpu);
+ void lg_global_lock(struct lglock *lg);
+ void lg_global_unlock(struct lglock *lg);
+
++struct lgrwlock {
++	unsigned long __percpu *fallback_reader_refcnt;
++	struct lglock lglock;
++	rwlock_t fallback_rwlock;
++};
++
++#define DEFINE_LGRWLOCK(name)						\
++	static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)		\
++	= __ARCH_SPIN_LOCK_UNLOCKED;					\
++	static DEFINE_PER_CPU(unsigned long, name ## _refcnt);		\
++	struct lgrwlock name = {					\
++		.fallback_reader_refcnt = &name ## _refcnt,		\
++		.lglock = { .lock = &name ## _lock } }
++
++#define DEFINE_STATIC_LGRWLOCK(name)					\
++	static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)		\
++	= __ARCH_SPIN_LOCK_UNLOCKED;					\
++	static DEFINE_PER_CPU(unsigned long, name ## _refcnt);		\
++	static struct lgrwlock name = {					\
++		.fallback_reader_refcnt = &name ## _refcnt,		\
++		.lglock = { .lock = &name ## _lock } }
++
++static inline void lg_rwlock_init(struct lgrwlock *lgrw, char *name)
++{
++	lg_lock_init(&lgrw->lglock, name);
++}
++
++void lg_rwlock_local_read_lock(struct lgrwlock *lgrw);
++void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw);
++void lg_rwlock_global_write_lock(struct lgrwlock *lgrw);
++void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw);
+ #endif
+diff --git a/kernel/lglock.c b/kernel/lglock.c
+index 6535a66..463543a 100644
+--- a/kernel/lglock.c
++++ b/kernel/lglock.c
+@@ -87,3 +87,48 @@ void lg_global_unlock(struct lglock *lg)
+ 	preempt_enable();
+ }
+ EXPORT_SYMBOL(lg_global_unlock);
++
++void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
++{
++	struct lglock *lg = &lgrw->lglock;
++
++	preempt_disable();
++	if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
++		if (likely(arch_spin_trylock(this_cpu_ptr(lg->lock)))) {
++			rwlock_acquire_read(&lg->lock_dep_map, 0, 0, _RET_IP_);
++			return;
++		}
++		read_lock(&lgrw->fallback_rwlock);
++	}
++
++	__this_cpu_inc(*lgrw->fallback_reader_refcnt);
++}
++EXPORT_SYMBOL(lg_rwlock_local_read_lock);
++
++void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
++{
++	if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
++		lg_local_unlock(&lgrw->lglock);
++		return;
++	}
++
++	if (!__this_cpu_dec_return(*lgrw->fallback_reader_refcnt))
++		read_unlock(&lgrw->fallback_rwlock);
++
++	preempt_enable();
++}
++EXPORT_SYMBOL(lg_rwlock_local_read_unlock);
++
++void lg_rwlock_global_write_lock(struct lgrwlock *lgrw)
++{
++	lg_global_lock(&lgrw->lglock);
++	write_lock(&lgrw->fallback_rwlock);
++}
++EXPORT_SYMBOL(lg_rwlock_global_write_lock);
++
++void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw)
++{
++	write_unlock(&lgrw->fallback_rwlock);
++	lg_global_unlock(&lgrw->lglock);
++}
++EXPORT_SYMBOL(lg_rwlock_global_write_unlock);
+-- 
+1.7.7.6
