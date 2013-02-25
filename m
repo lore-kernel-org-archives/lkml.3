@@ -1,110 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759150Ab3BYUmN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 15:42:13 -0500
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:41759 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755004Ab3BYUmL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 15:42:11 -0500
-Message-ID: <1361824276.12845.75.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI: Add sysfs links from memory device to memblocks
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: rjw@sisk.pl, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vasilis.liaskovitis@profitbricks.com
-Date: Mon, 25 Feb 2013 13:31:16 -0700
-In-Reply-To: <512AEDCE.6060509@jp.fujitsu.com>
-References: <1361562147-30801-1-git-send-email-toshi.kani@hp.com>
-	 <512AEDCE.6060509@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1755863Ab3BYUpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 15:45:19 -0500
+Received: from mouse.start.ca ([64.140.120.56]:35575 "EHLO mouse.start.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750927Ab3BYUpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 15:45:15 -0500
+Message-ID: <512BCD53.8070904@start.ca>
+Date: Mon, 25 Feb 2013 15:45:07 -0500
+From: Mark Lord <kernel@start.ca>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Mark Lord <kernel@teksavvy.com>, linux-nfs@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG at net/sunrpc/svc_xprt.c:921
+References: <50F42F85.50907@teksavvy.com> <50F7F898.5050605@teksavvy.com> <20130117135333.GF6598@fieldses.org>
+In-Reply-To: <20130117135333.GF6598@fieldses.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-25 at 13:51 +0900, Yasuaki Ishimatsu wrote:
-> Hi Toshi,
-> 
-> 2013/02/23 4:42, Toshi Kani wrote:
-> > In order to eject a memory device object represented as "PNP0C80:%d"
-> > in sysfs, its associated memblocks (system/memory/memory%d) need to
-> > be off-lined.  However, there is no user friendly way to correlate
-> > between a memory device object and its memblocks in sysfs.
-> > 
-> > This patch creates sysfs links to memblocks under a memory device
-> > object so that a user can easily checks and manipulates its memblocks
-> > in sysfs.
-> > 
-> > For example, when PNP0C80:05 is associated with memory8 and memory9,
-> > the following two links are created under PNP0C80:05.  This allows
-> > a user to access memory8/9 directly from PNP0C80:05.
-> > 
-> >    # ll /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C80:05
-> >    lrwxrwxrwx. memory8 -> ../../../system/memory/memory8
-> >    lrwxrwxrwx. memory9 -> ../../../system/memory/memory9
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > ---
-> > This patch applies on top of the Rafael's patch below.
-> > https://patchwork.kernel.org/patch/2153261/
-> > 
-> > ---
-> >   drivers/acpi/acpi_memhotplug.c |   54 ++++++++++++++++++++++++++++++++++++++++
-> >   1 file changed, 54 insertions(+)
-> > 
-> > diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> > index 3b3abbc..d6226b3 100644
-> > --- a/drivers/acpi/acpi_memhotplug.c
-> > +++ b/drivers/acpi/acpi_memhotplug.c
-> > @@ -28,6 +28,7 @@
-> >    */
-> >   
-> >   #include <linux/acpi.h>
-> > +#include <linux/memory.h>
-> >   #include <linux/memory_hotplug.h>
-> >   
-> >   #include "internal.h"
-> > @@ -168,6 +169,53 @@ static int acpi_memory_check_device(struct acpi_memory_device *mem_device)
-> >   	return 0;
-> >   }
-> >   
-> > +static void acpi_setup_mem_blk_links(struct acpi_memory_device *mem_device,
-> > +		struct acpi_memory_info *info, bool add_links)
-> > +{
-> > +	struct memory_block *mem_blk = NULL;
-> > +	struct mem_section *mem_sect;
-> > +	unsigned long start_pfn, end_pfn, pfn;
-> > +	unsigned long section_nr;
-> > +	int ret;
-> > +
-> > +	start_pfn = PFN_DOWN(info->start_addr);
-> > +	end_pfn = PFN_UP(info->start_addr + info->length-1);
-> > +
-> > +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-> > +		section_nr = pfn_to_section_nr(pfn);
-> > +
-> > +		if (!present_section_nr(section_nr))
-> > +			continue;
-> > +
-> > +		mem_sect = __nr_to_section(section_nr);
-> > +
-> > +		/* skip if the same memblock */
-> > +		if (mem_blk)
-> > +			if ((section_nr >= mem_blk->start_section_nr) &&
-> > +			    (section_nr <= mem_blk->end_section_nr))
-> > +				continue;
-> > +
-> 
-> > +		mem_blk = find_memory_block_hinted(mem_sect, mem_blk);
-> 
-> NULL pointer check is needed.	
+On 13-01-17 08:53 AM, J. Bruce Fields wrote:
+> On Thu, Jan 17, 2013 at 08:11:52AM -0500, Mark Lord wrote:
+>> On 13-01-14 11:17 AM, Mark Lord wrote:
+>>>
+>>> Here's the code with the BUG() at net/sunrpc/svc_xprt.c line 921:
+>>>
+>>> /*
+>>>  * Remove a dead transport
+>>>  */
+>>> static void svc_delete_xprt(struct svc_xprt *xprt)
+>>> {
+>>>         struct svc_serv *serv = xprt->xpt_server;
+>>>         struct svc_deferred_req *dr;
+>>>
+>>>         /* Only do this once */
+>>>         if (test_and_set_bit(XPT_DEAD, &xprt->xpt_flags))
+>>>                 BUG();
+>>
 
-Good point!  I will update the patch to check this condition.
-
-Thanks!
--Toshi
-
+Saw this again today on 3.7.9 -- dunno if your changes are in that kernel yet though.
 
