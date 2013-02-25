@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933013Ab3BYW1E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:27:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55239 "EHLO
+	id S933055Ab3BYW1f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:27:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55224 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932363Ab3BYWUT (ORCPT
+	with ESMTP id S932307Ab3BYWUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:19 -0500
+	Mon, 25 Feb 2013 17:20:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        MITSUNARI Shigeo <herumi@nifty.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Jeff Moyer <jmoyer@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 34/58] fs/block_dev.c: page cache wrongly left invalidated after revalidate_disk()
-Date: Mon, 25 Feb 2013 14:19:30 -0800
-Message-Id: <20130225221643.650601981@linuxfoundation.org>
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: [ 31/58] s390/kvm: Fix store status for ACRS/FPRS
+Date: Mon, 25 Feb 2013 14:19:27 -0800
+Message-Id: <20130225221642.886893316@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -29,85 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: MITSUNARI Shigeo <herumi@nifty.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit 7630b661da330b35dd57b6f5d6d62b386f2dd751 upstream.
+commit 15bc8d8457875f495c59d933b05770ba88d1eacb upstream.
 
-We found that bdev->bd_invalidated was left set once revalidate_disk()
-is called, which results in page cache flush every time that device is
-open.
+On store status we need to copy the current state of registers
+into a save area. Currently we might save stale versions:
+The sie state descriptor doesnt have fields for guest ACRS,FPRS,
+those registers are simply stored in the host registers. The host
+program must copy these away if needed. We do that in vcpu_put/load.
 
-Specifically, we found this problem in MD block device.  Once we resize
-a MD device, mdadm --monitor periodically flush all page cache for that
-device every 60 or 1000 seconds when it opens the device.
+If we now do a store status in KVM code between vcpu_put/load, the
+saved values are not up-to-date. Lets collect the ACRS/FPRS before
+saving them.
 
-This bug lies since at least 3.2.0 till the latest kernel(3.6.2).  Patch
-is attached.
+This also fixes some strange problems with hotplug and virtio-ccw,
+since the low level machine check handler (on hotplug a machine check
+will happen) will revalidate all registers with the content of the
+save area.
 
-The following steps will reproduce the problem.
-
-1. prepair a block device (eg /dev/sdb).
-
-2. create two partitions:
-
-   sudo parted /dev/sdb
-   mklabel gpt
-   mkpart primary 0% 50%
-   mkpart primary 50% 100%
-
-3. create a md device.
-
-   sudo mdadm -C /dev/md/hoge -l 1 -n 2 -e 1.2 --assume-clean --auto=md --symlink=no /dev/sdb1 /dev/sdb2
-
-4. create file system and mount it
-
-   sudo mkfs.ext3 /dev/md/hoge
-   sudo mkdir /mnt/test
-   sudo mount /dev/md/hoge /mnt/test
-
-5. try to resize the device
-
-   sudo mdadm -G /dev/md/hoge --size=max
-
-6. create a file to fill file cache.
-
-  sudo dd if=/dev/urandom of=/mnt/test/data bs=1M count=10
-
-and verify the current status of file by free command.
-
-7. mdadm monitor will open the md device every 1000 seconds and you
-   will find all file cache on the device are cleared.
-
-The timing can be reduced by the following steps.
-
-a) kill mdadm and restart it with --delay option
-
-   /sbin/mdadm --monitor --delay=30 --pid-file /var/run/mdadm/monitor.pid --daemonise --scan --syslog
-
-or open the md device directly.
-
-   sudo dd if=/dev/md/hoge of=/dev/null bs=4096 count=1
-
-Signed-off-by: MITSUNARI Shigeo <herumi@nifty.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/block_dev.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/s390/kvm/kvm-s390.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -994,6 +994,7 @@ int revalidate_disk(struct gendisk *disk
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -763,6 +763,14 @@ int kvm_s390_vcpu_store_status(struct kv
+ 	} else
+ 		prefix = 0;
  
- 	mutex_lock(&bdev->bd_mutex);
- 	check_disk_size_change(disk, bdev);
-+	bdev->bd_invalidated = 0;
- 	mutex_unlock(&bdev->bd_mutex);
- 	bdput(bdev);
- 	return ret;
++	/*
++	 * The guest FPRS and ACRS are in the host FPRS/ACRS due to the lazy
++	 * copying in vcpu load/put. Lets update our copies before we save
++	 * it into the save area
++	 */
++	save_fp_regs(&vcpu->arch.guest_fpregs);
++	save_access_regs(vcpu->run->s.regs.acrs);
++
+ 	if (__guestcopy(vcpu, addr + offsetof(struct save_area, fp_regs),
+ 			vcpu->arch.guest_fpregs.fprs, 128, prefix))
+ 		return -EFAULT;
 
 
