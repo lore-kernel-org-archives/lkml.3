@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759595Ab3BYUHh (ORCPT <rfc822;w@1wt.eu>);
+	id S1759639Ab3BYUHj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 15:07:39 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:36251 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759584Ab3BYUHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Feb 2013 15:07:37 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:51300 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753505Ab3BYUHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 15:07:35 -0500
-Message-ID: <512BC483.8010101@sgi.com>
-Date: Mon, 25 Feb 2013 14:07:31 -0600
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: <rjw@sisk.pl>, <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/2] cpufreq: Convert the cpufreq_driver_lock to use
- the rcu
-References: <51265E0F.6090209@sgi.com> <1361550275-5716-1-git-send-email-nzimmer@sgi.com> <1361550275-5716-3-git-send-email-nzimmer@sgi.com> <CAKohpom9q93cVD61qeht2WXgA=no64dwXowtMHS0wCy0k6qxXw@mail.gmail.com>
-In-Reply-To: <CAKohpom9q93cVD61qeht2WXgA=no64dwXowtMHS0wCy0k6qxXw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Message-ID: <1361822854.2724.1.camel@joe-AO722>
+Subject: Re: [PATCH 3/4] block: IBM RamSan 70/80 branding changes.
+From: Joe Perches <joe@perches.com>
+To: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com,
+        josh.h.morris@us.ibm.com
+Date: Mon, 25 Feb 2013 12:07:34 -0800
+In-Reply-To: <20130225185815.GA7974@oc6784271780.ibm.com>
+References: <20130225185815.GA7974@oc6784271780.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.180]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 09:39 PM, Viresh Kumar wrote:
-> Hi Nathan,
->
-> Sorry for pointing out this so late but i still feel we are missing something
-> really important.
->
-> On 22 February 2013 21:54, Nathan Zimmer <nzimmer@sgi.com> wrote:
->
->> -       read_lock_irqsave(&cpufreq_driver_lock, flags);
->> +       rcu_read_lock();
->> +       freqs->flags = rcu_dereference(cpufreq_driver)->flags;
->>          policy = per_cpu(cpufreq_cpu_data, freqs->cpu);
->> -       read_unlock_irqrestore(&cpufreq_driver_lock, flags);
->> +       rcu_read_unlock();
->> -       write_lock_irqsave(&cpufreq_driver_lock, flags);
->> +       spin_lock_irqsave(&cpufreq_driver_lock, flags);
->>          for_each_cpu(j, policy->cpus) {
->>                  per_cpu(cpufreq_cpu_data, j) = policy;
->>                  per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
->>          }
->> -       write_unlock_irqrestore(&cpufreq_driver_lock, flags);
->> +       spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-> Look at how we are protecting cpufreq_cpu_data here. rcu_read_[un]lock()
-> only marks the start/end of critical section. How are we sure here that
-> cpufreq_cpu_data is not read simultaneously when we are updating it?
->
-> rcu lock/unlock only works for cpufreq_driver pointer only and not for
-> this data. We still need the same locking for for cpufreq_cpu_data.
->
-> What do you say?
+On Mon, 2013-02-25 at 12:58 -0600, Philip J. Kelleher wrote:
+> From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+> 
+> This patch includes changing the hardware branding name from
+> IBM RamSan to IBM FlashSystem.
 
-That would include putting the lock around the  __cpufreq_cpu_get.
-But I do think your right.
+just a trivial comment
 
-Perhaps a better way at this point is to have one lock for 
-cpufreq_cpu_data, and a second with the rcu to protect cpufreq_driver.
+> diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/rsxx_priv.h linux-block/drivers/block/rsxx/rsxx_priv.h
+[]
+> @@ -45,16 +45,14 @@
+>  
+>  struct proc_cmd;
+>  
+> -#define PCI_VENDOR_ID_TMS_IBM		0x15B6
+> -#define PCI_DEVICE_ID_RS70_FLASH	0x0019
+> -#define PCI_DEVICE_ID_RS70D_FLASH	0x001A
+> -#define PCI_DEVICE_ID_RS80_FLASH	0x001C
+> -#define PCI_DEVICE_ID_RS81_FLASH	0x001E
+> +#define PCI_VENDOR_ID_IBM		0x1014
+
+PCI_VENDOR_ID_IBM is already #defined in pci_ids.h
 
 
