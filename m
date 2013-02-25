@@ -1,94 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759567Ab3BYKcq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 05:32:46 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:42995 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759078Ab3BYKco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 05:32:44 -0500
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/8] hid driver transport cleanup
-Date: Mon, 25 Feb 2013 11:31:42 +0100
-Message-Id: <1361788310-6048-1-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1759791Ab3BYKf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 05:35:28 -0500
+Received: from mout.gmx.net ([212.227.17.20]:56474 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759233Ab3BYKf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 05:35:26 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18Lh2YpClALQ7aGS//syzeCOCM04ooSfooBW6O/58
+	BsxdlZeJiSsk1R
+Message-ID: <1361788244.4555.194.camel@marge.simpson.net>
+Subject: Re: [patch v5 09/15] sched: add power aware scheduling in
+ fork/exec/wake
+From: Mike Galbraith <efault@gmx.de>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
+        mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
+        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
+        namhyung@kernel.org, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
+Date: Mon, 25 Feb 2013 11:30:44 +0100
+In-Reply-To: <512B3498.6030401@intel.com>
+References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
+	 <1361164062-20111-10-git-send-email-alex.shi@intel.com>
+	 <1361353360.10155.9.camel@laptop> <5124BCEB.8030606@intel.com>
+	 <1361367371.10155.32.camel@laptop> <5124DC76.2010801@intel.com>
+	 <1361453587.26780.18.camel@laptop> <512631C7.8060103@intel.com>
+	 <1361523279.26780.45.camel@laptop> <5129DD1A.8070509@intel.com>
+	 <512A5332.6040507@linux.vnet.ibm.com> <512ACB39.1010605@intel.com>
+	 <1361762585.4555.28.camel@marge.simpson.net> <512B3498.6030401@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Mon, 2013-02-25 at 17:53 +0800, Alex Shi wrote: 
+> On 02/25/2013 11:23 AM, Mike Galbraith wrote:
+> > On Mon, 2013-02-25 at 10:23 +0800, Alex Shi wrote:
+> > 
+> >> One of problem is the how to decide the criteria of the burst? If we set
+> >> 5 waking up/ms is burst, we will lose 4 waking up/ms.
+> >> another problem is the burst detection cost, we need tracking a period
+> >> history info of the waking up, better on whole group. but that give the
+> >> extra cost in burst.
+> >>
+> >> solution candidates:
+> >> https://lkml.org/lkml/2013/1/21/316
+> >> After talk with MikeG, I remove the runnable load avg in performance
+> >> load balance.
+> > 
+> > One thing you could try is to make criteria depend on avg_idle.  It will
+> > slam to 2*migration_cost when a wakeup arrives after an ~extended idle.
+> > You could perhaps extend it to cover new task wakeup as well, and use
+> > that transition to invalidate history, switch to instantaneous until
+> > fresh history can accumulate.
+> 
+> Sorry for can not get your points, would you like to goes to details?
 
-this is the v2 of the hid transport cleanup.
+If you've been idle for a bit, your history is stale.
+> And still don't understand of the idle_stamp setting, idle_stamp was set
+> in idle_balance(), if idle_balance doesn't pulled task, idle_stamp value
+> kept. then even the cpu get tasks from another balancing, like periodic
+> balance, fork/exec/wake balancing, the idle_stamp is still kept.
 
-Changes since v1:
-- gathered reviewed/acked/etc..
-- changed commit messages of patches 4-6
-- add newcomer into account (thingm)
-- incorporated the i2c-hid driver change into the series
+The thought is that you only care about the somewhat longish idles that
+bursty loads exhibits.  The time when ttwu() detects that it should
+trash idle history to kick idle_balance() back into action seems likely
+to me to be the right time to trash load history, to accommodate bursty
+loads in a dirt simple dirt cheap manner.  The idle balance throttle
+methodology may not be perfect, but it works pretty well, and is dirt
+cheap.
 
-I still did not implemented the final usb cleanup for hid-multitouch as it may
-required few comments.
+> So, when the cpu goes to next idle_balance(), it's highly possible to
+> meet the avg_idle > migration_cost condition, and start try to pull
+> tasks, nearly unconditionally.
+> 
+> Does the idle_balance was designed to this? or we still should reset
+> idle_stamp whichever we pulled a task?
 
-Cheers,
-Benjamin
+                if (pulled_task) {
+                        this_rq->idle_stamp = 0;
+                        break;
+                }
 
-Benjamin Tissoires (8):
-  HID: Extend the interface with report requests
-  HID: Extend the interface with wait io request
-  HID: Kconfig: Remove explicit transport layer dependencies
-  HID: use hid_hw_request() instead of direct call to usbhid
-  HID: use hid_hw_wait() instead of direct call to usbhid
-  HID: multitouch: remove explicit usbhid dependency
-  HID: multitouch: Copyright and note on regression tests
-  HID: i2c-hid: implement request() callback
-
- drivers/hid/Kconfig                 | 100 ++++++++++++++++++------------------
- drivers/hid/hid-apple.c             |   1 -
- drivers/hid/hid-axff.c              |   6 +--
- drivers/hid/hid-dr.c                |   8 ++-
- drivers/hid/hid-emsff.c             |   6 +--
- drivers/hid/hid-gaff.c              |  10 ++--
- drivers/hid/hid-holtekff.c          |   4 +-
- drivers/hid/hid-kye.c               |   4 +-
- drivers/hid/hid-lenovo-tpkbd.c      |   4 +-
- drivers/hid/hid-lg2ff.c             |   6 +--
- drivers/hid/hid-lg3ff.c             |   6 +--
- drivers/hid/hid-lg4ff.c             |  18 +++----
- drivers/hid/hid-lgff.c              |   8 ++-
- drivers/hid/hid-logitech-dj.c       |   3 +-
- drivers/hid/hid-magicmouse.c        |   1 -
- drivers/hid/hid-multitouch.c        |  21 ++++++--
- drivers/hid/hid-ntrig.c             |  10 ++--
- drivers/hid/hid-picolcd.h           |   4 +-
- drivers/hid/hid-picolcd_backlight.c |   4 +-
- drivers/hid/hid-picolcd_cir.c       |   2 -
- drivers/hid/hid-picolcd_core.c      |   8 ++-
- drivers/hid/hid-picolcd_debugfs.c   |   2 -
- drivers/hid/hid-picolcd_fb.c        |  12 ++---
- drivers/hid/hid-picolcd_lcd.c       |   4 +-
- drivers/hid/hid-picolcd_leds.c      |   4 +-
- drivers/hid/hid-pl.c                |   6 +--
- drivers/hid/hid-prodikeys.c         |   3 +-
- drivers/hid/hid-sensor-hub.c        |  12 ++---
- drivers/hid/hid-sjoy.c              |   6 +--
- drivers/hid/hid-speedlink.c         |   2 -
- drivers/hid/hid-steelseries.c       |   3 +-
- drivers/hid/hid-thingm.c            |   1 -
- drivers/hid/hid-tmff.c              |   6 +--
- drivers/hid/hid-zpff.c              |   6 +--
- drivers/hid/i2c-hid/i2c-hid.c       |  32 ++++++++++++
- drivers/hid/usbhid/hid-core.c       |  20 ++++++--
- drivers/hid/usbhid/hid-pidff.c      |  80 ++++++++++++++---------------
- drivers/hid/usbhid/hiddev.c         |   8 +--
- drivers/hid/usbhid/usbhid.h         |   3 --
- include/linux/hid.h                 |  34 ++++++++++++
- 40 files changed, 257 insertions(+), 221 deletions(-)
-
--- 
-1.8.1.2
+-Mike
 
