@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758437Ab3BYXEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 18:04:38 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:39789 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148Ab3BYXEh (ORCPT
+	id S1758826Ab3BYXFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 18:05:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55808 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755402Ab3BYXFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 18:04:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130225224339.GA19153@kroah.com>
-References: <1361473348-7660-1-git-send-email-milos.vyletel@sde.cz>
- <87y5ehfczy.fsf@rustcorp.com.au> <20130225221238.GA10575@kroah.com>
- <CAPXgP13M_krpPMFoBroYkXc4dUQHsZJDua-jSGby8cQ1Afy-HQ@mail.gmail.com> <20130225224339.GA19153@kroah.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Tue, 26 Feb 2013 00:04:15 +0100
-Message-ID: <CAPXgP100NjPw4JVe39gL829MwKL2YLFSKN2fvaB7skbCub-Ehg@mail.gmail.com>
-Subject: Re: [PATCH] virtio-blk: emit udev event when device is resized
-To: Greg KH <greg@kroah.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Milos Vyletel <milos.vyletel@sde.cz>, linux-kernel@vger.kernel.org,
-        linux-hotplug@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, mst@redhat.com
-Content-Type: text/plain; charset=UTF-8
+	Mon, 25 Feb 2013 18:05:40 -0500
+Date: Mon, 25 Feb 2013 15:05:34 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>, Neil Horman <nhorman@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 0/3] coredump: make it freezable (almost)
+Message-Id: <20130225150534.269bacc4.akpm@linux-foundation.org>
+In-Reply-To: <20130224173144.GA32179@redhat.com>
+References: <20130224173144.GA32179@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 11:43 PM, Greg KH <greg@kroah.com> wrote:
-> On Mon, Feb 25, 2013 at 11:39:52PM +0100, Kay Sievers wrote:
->> On Mon, Feb 25, 2013 at 11:12 PM, Greg KH <greg@kroah.com> wrote:
->>
->> > Hm, I thought we were frowning apon running binaries from udev rules
->> > these days, especially ones that might have big consequences (like
->> > resizing a disk image) like this.
->> >
->> > Kay, am I right?
->>
->> We removed most of them from the default setups, yes. But there is
->> nothing wrong if people want to ship that in some package or as custom
->> rules.
->>
->> It looks fine to me, we would just not add such things to the default
->> set of of rules these days.
->>
->> > We already emit KOBJECT_CHANGE events when block devices change, from
->> > within the block core code.  Why is the patch below needed instead of
->> > using these events that are already generated?  How are virtio block
->> > devices special?
->>
->> I think we only do that for dm and md and a couple of special cases
->> like loop and read-only settings.
->
-> What about when we repartition a block device?  I've seen the events
-> happen then.
+On Sun, 24 Feb 2013 18:31:44 +0100
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-Right, from the common block code we send events for removable media
-changes like cdroms, sd cards, when a device is switched to read-only,
-and when we re-scan a partition table like on re-partitioning. Most of
-the other events are block subsystem-specific like this one. For
-things like device-mapper they are used pretty heavily.
+> Hello.
+> 
+> On top of coredump-sanitize-the-setting-of-signal-group_exit_code.patch
+> 
+> Andrew, "almost" means we need a bit more changes, but these
+> changes should be absolutely trivial/straightforward. We need
+> to add the killable/freezeng checks in dump_write/seek. But this
+> depends on 2/3, lets discuss this series first.
 
-> Anyway, if you are ok with this, no objection from my side then Rusty.
+Thanks.  I still have these marked "for 3.10".
 
-Looks fine to me, it should not do any harm if there are not heavy
-programs hooked up -- which is nothing the kernel could fix if people
-do that. :)
+coredump-only-sigkill-should-interrupt-the-coredumping-task.patch
+coredump-ensure-that-sigkill-always-kills-the-dumping-thread.patch
+coredump-sanitize-the-setting-of-signal-group_exit_code.patch
+coredump-factor-out-the-setting-of-pf_dumpcore.patch
+freezer-do-not-send-a-fake-signal-to-a-pf_dumpcore-thread.patch
+coredump-make-wait_for_dump_helpers-freezable.patch
 
-Kay
