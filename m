@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758717Ab3BYRf0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 12:35:26 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:45204 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758411Ab3BYRfX (ORCPT
+	id S1758882Ab3BYRjO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 12:39:14 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:63358 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758651Ab3BYRjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 12:35:23 -0500
-Date: Mon, 25 Feb 2013 09:35:18 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Timo Kokkonen <timo.t.kokkonen@iki.fi>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Media: remove incorrect __exit markups
-Message-ID: <20130225173518.GA6059@core.coreip.homeip.net>
-References: <20130225032215.GA9352@core.coreip.homeip.net>
- <Pine.LNX.4.64.1302250847540.3030@axis700.grange>
+	Mon, 25 Feb 2013 12:39:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1302250847540.3030@axis700.grange>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130225160642.GA31806@redhat.com>
+References: <1361802350-9299-1-git-send-email-lucas.demarchi@profusion.mobi> <20130225160642.GA31806@redhat.com>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Mon, 25 Feb 2013 14:38:50 -0300
+Message-ID: <CAMOw1v7S07YOLQaKBBSHkCqhf1JSB1ZabMeMUJagb4E8841opQ@mail.gmail.com>
+Subject: Re: [PATCH] usermodehelper: Fix -ENOMEM return logic
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 08:49:26AM +0100, Guennadi Liakhovetski wrote:
-> Hi Dmitry
-> 
-> On Sun, 24 Feb 2013, Dmitry Torokhov wrote:
-> 
-> > Even if bus is not hot-pluggable, the devices can be unbound from the
-> > driver via sysfs, so we should not be using __exit annotations on
-> > remove() methods. The only exception is drivers registered with
-> > platform_driver_probe() which specifically disables sysfs bind/unbind
-> > attributes.
-> > 
-> > Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > ---
-> >  drivers/media/i2c/adp1653.c                      | 4 ++--
-> >  drivers/media/i2c/smiapp/smiapp-core.c           | 4 ++--
-> >  drivers/media/platform/soc_camera/omap1_camera.c | 4 ++--
-> >  drivers/media/radio/radio-si4713.c               | 4 ++--
-> >  drivers/media/rc/ir-rx51.c                       | 4 ++--
-> >  5 files changed, 10 insertions(+), 10 deletions(-)
-> 
-> [snip]
-> 
-> > diff --git a/drivers/media/platform/soc_camera/omap1_camera.c b/drivers/media/platform/soc_camera/omap1_camera.c
-> > index 39a77f0..5f548ac 100644
-> > --- a/drivers/media/platform/soc_camera/omap1_camera.c
-> > +++ b/drivers/media/platform/soc_camera/omap1_camera.c
-> > @@ -1677,7 +1677,7 @@ exit:
-> >  	return err;
-> >  }
-> >  
-> > -static int __exit omap1_cam_remove(struct platform_device *pdev)
-> > +static int omap1_cam_remove(struct platform_device *pdev)
-> >  {
-> >  	struct soc_camera_host *soc_host = to_soc_camera_host(&pdev->dev);
-> >  	struct omap1_cam_dev *pcdev = container_of(soc_host,
-> > @@ -1709,7 +1709,7 @@ static struct platform_driver omap1_cam_driver = {
-> >  		.name	= DRIVER_NAME,
-> >  	},
-> >  	.probe		= omap1_cam_probe,
-> > -	.remove		= __exit_p(omap1_cam_remove),
-> > +	.remove		= omap1_cam_remove,
-> >  };
-> >  
-> >  module_platform_driver(omap1_cam_driver);
-> 
-> This looks correct, but don't we also have to remove __init from 
-> omap1_cam_probe()? Or would that be a separate patch?
+On Mon, Feb 25, 2013 at 1:06 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 02/25, Lucas De Marchi wrote:
+>>
+>> Callers of call_usermodehelper_fns() should check the return value and
+>> free themselves the data passed if the return is -ENOMEM. This is
+>> because the subprocess_info is allocated in this function, and if the
+>> allocation fail, the cleanup function cannot be called.
+>
+> Yes, this is confusing.
+>
+>> However call_usermodehelper_exec() may also return -ENOMEM,
+>
+> Yes, and we can't distinguish this case from info == NULL case,
+>
+>> in which
+>> case the cleanup function is called. This means that if the caller
+>> checked the return code, it was risking running the cleanup twice (like
+>> kernel/sys.c:orderly_poweroff()) and if not, a leak could happen.
+>
+> In short: every user of call_usermodehelper_fns(cleanup != NULL)
+> is buggy. Thanks.
+>
+> But I am not sure I agree with the patch...
+>
+>>  static void call_usermodehelper_freeinfo(struct subprocess_info *info)
+>>  {
+>> -     if (info->cleanup)
+>> +     if (info->cleanup && info->retval != -ENOMEM)
+>>               (*info->cleanup)(info);
+>>       kfree(info);
+>>  }
+>
+> This doesn't look very clean/robust. And in general, personally I
+> dislike the fact that ENOMEM has the special meaning. IOW, I think
+> we should cleanup this logic, not to complicate it more.
+>
+> And in fact I do not think this is right, at least in UMH_NO_WAIT
+> case, shouldn't avoid ->cleanup() if, say, prepare_kernel_cred()
+> fails in ____call_usermodehelper()...
+>
+>
+> I think we should extract call_usermodehelper_setup() +
+> call_usermodehelper_setfns() into the new helper and export it.
+> And export call_usermodehelper_exec() as well.
+>
+> call_usermodehelper_setfns() as a separate function makes no sense.
+>
+> Then we can fix call_modprobe/orderly_poweroff, something like below.
+>
+> What do you think?
 
-Thanks Guennadi, I missed that one, will update the patch.
+Yep. The current interface is confusing. I agree that a separate
+setup() + exec() would make more sense.
 
--- 
-Dmitry
+>
+> Oleg.
+>
+> --- x/kernel/kmod.c
+> +++ x/kernel/kmod.c
+> @@ -98,8 +98,14 @@ static int call_modprobe(char *module_na
+>         argv[3] = module_name;  /* check free_modprobe_argv() */
+>         argv[4] = NULL;
+>
+> -       return call_usermodehelper_fns(modprobe_path, argv, envp,
+> -               wait | UMH_KILLABLE, NULL, free_modprobe_argv, NULL);
+> +       info = call_usermodehelper_setup(...); // better name, please...
+> +       if (!info)
+> +               goto free_modname;
+> +
+> +       return call_usermodehelper_exec(info, wait);
+
+I'd say that in these cases the "call_" prefix has no meaning, and we
+could just use a "usermodehelper" as the namespace.
+
+Lucas De Marchi
