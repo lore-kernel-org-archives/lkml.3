@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365Ab3BYRbN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 12:31:13 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30439 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755Ab3BYRbD convert rfc822-to-8bit (ORCPT
+	id S1758717Ab3BYRf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 12:35:26 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:45204 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758411Ab3BYRfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 12:31:03 -0500
+	Mon, 25 Feb 2013 12:35:23 -0500
+Date: Mon, 25 Feb 2013 09:35:18 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Timo Kokkonen <timo.t.kokkonen@iki.fi>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Media: remove incorrect __exit markups
+Message-ID: <20130225173518.GA6059@core.coreip.homeip.net>
+References: <20130225032215.GA9352@core.coreip.homeip.net>
+ <Pine.LNX.4.64.1302250847540.3030@axis700.grange>
 MIME-Version: 1.0
-Message-ID: <c515af54-0972-41e6-96c2-8a6df9a9df5e@default>
-Date: Mon, 25 Feb 2013 09:29:35 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Ric Mason <ric.masonn@gmail.com>
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, sjenning@linux.vnet.ibm.com,
-        minchan@kernel.org
-Subject: RE: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to
- a config option
-References: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com>
- <5126EB45.10700@gmail.com>
-In-Reply-To: <5126EB45.10700@gmail.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1302250847540.3030@axis700.grange>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Ric Mason [mailto:ric.masonn@gmail.com]
-> Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to a config option
+On Mon, Feb 25, 2013 at 08:49:26AM +0100, Guennadi Liakhovetski wrote:
+> Hi Dmitry
 > 
-> On 02/07/2013 02:27 AM, Dan Magenheimer wrote:
-> > It was observed by Andrea Arcangeli in 2011 that zcache can get "full"
-> > and there must be some way for compressed swap pages to be (uncompressed
-> > and then) sent through to the backing swap disk.  A prototype of this
-> > functionality, called "unuse", was added in 2012 as part of a major update
-> > to zcache (aka "zcache2"), but was left unfinished due to the unfortunate
-> > temporary fork of zcache.
-> >
-> > This earlier version of the code had an unresolved memory leak
-> > and was anyway dependent on not-yet-upstream frontswap and mm changes.
-> > The code was meanwhile adapted by Seth Jennings for similar
-> > functionality in zswap (which he calls "flush").  Seth also made some
-> > clever simplifications which are herein ported back to zcache.  As a
-> > result of those simplifications, the frontswap changes are no longer
-> > necessary, but a slightly different (and simpler) set of mm changes are
-> > still required [1].  The memory leak is also fixed.
-> >
-> > Due to feedback from akpm in a zswap thread, this functionality in zcache
-> > has now been renamed from "unuse" to "writeback".
-> >
-> > Although this zcache writeback code now works, there are open questions
-> > as how best to handle the policy that drives it.  As a result, this
-> > patch also ties writeback to a new config option.  And, since the
-> > code still depends on not-yet-upstreamed mm patches, to avoid build
-> > problems, the config option added by this patch temporarily depends
-> > on "BROKEN"; this config dependency can be removed in trees that
-> > contain the necessary mm patches.
-> >
-> > [1] https://lkml.org/lkml/2013/1/29/540/ https://lkml.org/lkml/2013/1/29/539/
+> On Sun, 24 Feb 2013, Dmitry Torokhov wrote:
 > 
-> This patch leads to backend interact with core mm directly,  is it core
-> mm should interact with frontend instead of backend? In addition,
-> frontswap has already have shrink funtion, should we can take advantage
-> of it?
+> > Even if bus is not hot-pluggable, the devices can be unbound from the
+> > driver via sysfs, so we should not be using __exit annotations on
+> > remove() methods. The only exception is drivers registered with
+> > platform_driver_probe() which specifically disables sysfs bind/unbind
+> > attributes.
+> > 
+> > Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > ---
+> >  drivers/media/i2c/adp1653.c                      | 4 ++--
+> >  drivers/media/i2c/smiapp/smiapp-core.c           | 4 ++--
+> >  drivers/media/platform/soc_camera/omap1_camera.c | 4 ++--
+> >  drivers/media/radio/radio-si4713.c               | 4 ++--
+> >  drivers/media/rc/ir-rx51.c                       | 4 ++--
+> >  5 files changed, 10 insertions(+), 10 deletions(-)
+> 
+> [snip]
+> 
+> > diff --git a/drivers/media/platform/soc_camera/omap1_camera.c b/drivers/media/platform/soc_camera/omap1_camera.c
+> > index 39a77f0..5f548ac 100644
+> > --- a/drivers/media/platform/soc_camera/omap1_camera.c
+> > +++ b/drivers/media/platform/soc_camera/omap1_camera.c
+> > @@ -1677,7 +1677,7 @@ exit:
+> >  	return err;
+> >  }
+> >  
+> > -static int __exit omap1_cam_remove(struct platform_device *pdev)
+> > +static int omap1_cam_remove(struct platform_device *pdev)
+> >  {
+> >  	struct soc_camera_host *soc_host = to_soc_camera_host(&pdev->dev);
+> >  	struct omap1_cam_dev *pcdev = container_of(soc_host,
+> > @@ -1709,7 +1709,7 @@ static struct platform_driver omap1_cam_driver = {
+> >  		.name	= DRIVER_NAME,
+> >  	},
+> >  	.probe		= omap1_cam_probe,
+> > -	.remove		= __exit_p(omap1_cam_remove),
+> > +	.remove		= omap1_cam_remove,
+> >  };
+> >  
+> >  module_platform_driver(omap1_cam_driver);
+> 
+> This looks correct, but don't we also have to remove __init from 
+> omap1_cam_probe()? Or would that be a separate patch?
 
-Good questions!
+Thanks Guennadi, I missed that one, will update the patch.
 
-If you have ideas (or patches) that handle the interaction with
-the frontend instead of backend, we can take a look at them.
-But for zcache (and zswap), the backend already interacts with
-the core mm, for example to allocate and free pageframes.
-
-The existing frontswap shrink function cause data pages to be sucked
-back from the backend.  The data pages are put back in the swapcache
-and they aren't marked in any way so it is possible the data page
-might soon (or immediately) be sent back to the backend.
-
-This code is used for backends that can't "callback" the frontend, such
-as the Xen tmem backend and ramster.  But I do agree that there
-might be a good use for the frontswap shrink function for zcache
-(and zswap).  Any ideas?
-
-Dan
+-- 
+Dmitry
