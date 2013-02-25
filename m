@@ -1,213 +1,573 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759647Ab3BYT2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 14:28:41 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:39474 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759503Ab3BYT2i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 14:28:38 -0500
-Message-ID: <512BBAD8.8010006@linux.vnet.ibm.com>
-Date: Tue, 26 Feb 2013 00:56:16 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1759697Ab3BYT3I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 14:29:08 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:59008 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759665Ab3BYT3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 14:29:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type; q=dns; s=
+	sasl; b=oGEaI+9UrpiOVaB/IWxE4QUKBut05keWriJhSbyMxj99gqpNEvS4Ycoe
+	gHYTcgvPom5p+Lv5SetcAE7HVb+XfmAS8IS1q1XWCO2/KxpVENwRyUVm7ags+Xmg
+	QHR6LBylnivuVg5Ie+4JV1bE5jJ5FF9w6koAX8sjIPhoxq3KXmg=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.8.2-rc1
+Date: Mon, 25 Feb 2013 11:28:57 -0800
+Message-ID: <7vehg4xkee.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Lai Jiangshan <eag0628@gmail.com>
-CC: Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
- Per-CPU Reader-Writer Locks
-References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com> <CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com> <5122551E.1080703@linux.vnet.ibm.com>	<51226B46.9080707@linux.vnet.ibm.com> <CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com> <51226F91.7000108@linux.vnet.ibm.com> <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com>
-In-Reply-To: <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022519-1618-0000-0000-00000365E528
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 9A8E13AC-7F81-11E2-B2A9-F3C82E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lai,
+The first release candidate Git v1.8.2-rc1 is now available for
+testing at the usual places.
 
-On 02/25/2013 09:23 PM, Lai Jiangshan wrote:
-> Hi, Srivatsa,
-> 
-> The target of the whole patchset is nice for me.
+The release tarballs are found at:
 
-Cool! Thanks :-)
+    http://code.google.com/p/git-core/downloads/list
 
-> A question: How did you find out the such usages of
-> "preempt_disable()" and convert them? did all are converted?
-> 
+and their SHA-1 checksums are:
 
-Well, I scanned through the source tree for usages which implicitly
-disabled CPU offline and converted them over. Its not limited to uses
-of preempt_disable() alone - even spin_locks, rwlocks, local_irq_disable()
-etc also help disable CPU offline. So I tried to dig out all such uses
-and converted them. However, since the merge window is open, a lot of
-new code is flowing into the tree. So I'll have to rescan the tree to
-see if there are any more places to convert.
+44172a71a711b83b4cfaa8e41dd24d05068b0887  git-1.8.2.rc1.tar.gz
+fd23a6fd099bf13f897675f727a91633537eaa29  git-htmldocs-1.8.2.rc1.tar.gz
+f10f04741401e273ac6a8c7e54c96e1d915f6486  git-manpages-1.8.2.rc1.tar.gz
 
-> And I think the lock is too complex and reinvent the wheel, why don't
-> you reuse the lglock?
+Also the following public repositories all have a copy of the v1.8.2-rc1
+tag and the master branch that the tag points at:
 
-lglocks? No way! ;-) See below...
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
 
-> I wrote an untested draft here.
-> 
-> Thanks,
-> Lai
-> 
-> PS: Some HA tools(I'm writing one) which takes checkpoints of
-> virtual-machines frequently, I guess this patchset can speedup the
-> tools.
-> 
-> From 01db542693a1b7fc6f9ece45d57cb529d9be5b66 Mon Sep 17 00:00:00 2001
-> From: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Date: Mon, 25 Feb 2013 23:14:27 +0800
-> Subject: [PATCH] lglock: add read-preference local-global rwlock
-> 
-> locality via lglock(trylock)
-> read-preference read-write-lock via fallback rwlock_t
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
->  include/linux/lglock.h |   31 +++++++++++++++++++++++++++++++
->  kernel/lglock.c        |   45 +++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 76 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/lglock.h b/include/linux/lglock.h
-> index 0d24e93..30fe887 100644
-> --- a/include/linux/lglock.h
-> +++ b/include/linux/lglock.h
-> @@ -67,4 +67,35 @@ void lg_local_unlock_cpu(struct lglock *lg, int cpu);
->  void lg_global_lock(struct lglock *lg);
->  void lg_global_unlock(struct lglock *lg);
-> 
-> +struct lgrwlock {
-> +	unsigned long __percpu *fallback_reader_refcnt;
-> +	struct lglock lglock;
-> +	rwlock_t fallback_rwlock;
-> +};
-> +
-> +#define DEFINE_LGRWLOCK(name)						\
-> +	static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)		\
-> +	= __ARCH_SPIN_LOCK_UNLOCKED;					\
-> +	static DEFINE_PER_CPU(unsigned long, name ## _refcnt);		\
-> +	struct lgrwlock name = {					\
-> +		.fallback_reader_refcnt = &name ## _refcnt,		\
-> +		.lglock = { .lock = &name ## _lock } }
-> +
-> +#define DEFINE_STATIC_LGRWLOCK(name)					\
-> +	static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)		\
-> +	= __ARCH_SPIN_LOCK_UNLOCKED;					\
-> +	static DEFINE_PER_CPU(unsigned long, name ## _refcnt);		\
-> +	static struct lgrwlock name = {					\
-> +		.fallback_reader_refcnt = &name ## _refcnt,		\
-> +		.lglock = { .lock = &name ## _lock } }
-> +
-> +static inline void lg_rwlock_init(struct lgrwlock *lgrw, char *name)
-> +{
-> +	lg_lock_init(&lgrw->lglock, name);
-> +}
-> +
-> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw);
-> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw);
-> +void lg_rwlock_global_write_lock(struct lgrwlock *lgrw);
-> +void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw);
->  #endif
-> diff --git a/kernel/lglock.c b/kernel/lglock.c
-> index 6535a66..463543a 100644
-> --- a/kernel/lglock.c
-> +++ b/kernel/lglock.c
-> @@ -87,3 +87,48 @@ void lg_global_unlock(struct lglock *lg)
->  	preempt_enable();
->  }
->  EXPORT_SYMBOL(lg_global_unlock);
-> +
-> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
-> +{
-> +	struct lglock *lg = &lgrw->lglock;
-> +
-> +	preempt_disable();
-> +	if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
-> +		if (likely(arch_spin_trylock(this_cpu_ptr(lg->lock)))) {
-> +			rwlock_acquire_read(&lg->lock_dep_map, 0, 0, _RET_IP_);
-> +			return;
-> +		}
-> +		read_lock(&lgrw->fallback_rwlock);
-> +	}
-> +
-> +	__this_cpu_inc(*lgrw->fallback_reader_refcnt);
-> +}
-> +EXPORT_SYMBOL(lg_rwlock_local_read_lock);
-> +
-> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
-> +{
-> +	if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
-> +		lg_local_unlock(&lgrw->lglock);
-> +		return;
-> +	}
-> +
-> +	if (!__this_cpu_dec_return(*lgrw->fallback_reader_refcnt))
-> +		read_unlock(&lgrw->fallback_rwlock);
-> +
-> +	preempt_enable();
-> +}
-> +EXPORT_SYMBOL(lg_rwlock_local_read_unlock);
-> +
+Git v1.8.2 Release Notes (draft)
+========================
 
-If I read the code above correctly, all you are doing is implementing a
-recursive reader-side primitive (ie., allowing the reader to call these
-functions recursively, without resulting in a self-deadlock).
+Backward compatibility notes
+----------------------------
 
-But the thing is, making the reader-side recursive is the least of our
-problems! Our main challenge is to make the locking extremely flexible
-and also safe-guard it against circular-locking-dependencies and deadlocks.
-Please take a look at the changelog of patch 1 - it explains the situation
-with an example.
+In the next major release Git 2.0 (not *this* one), we will change the
+behavior of the "git push" command.
 
-> +void lg_rwlock_global_write_lock(struct lgrwlock *lgrw)
-> +{
-> +	lg_global_lock(&lgrw->lglock);
+When "git push [$there]" does not say what to push, we have used the
+traditional "matching" semantics so far (all your branches were sent
+to the remote as long as there already are branches of the same name
+over there).  We will use the "simple" semantics that pushes the
+current branch to the branch with the same name, only when the current
+branch is set to integrate with that remote branch.  There is a user
+preference configuration variable "push.default" to change this.
 
-This does a for-loop on all CPUs and takes their locks one-by-one. That's
-exactly what we want to prevent, because that is the _source_ of all our
-deadlock woes in this case. In the presence of perfect lock ordering
-guarantees, this wouldn't have been a problem (that's why lglocks are
-being used successfully elsewhere in the kernel). In the stop-machine()
-removal case, the over-flexibility of preempt_disable() forces us to provide
-an equally flexible locking alternative. Hence we can't use such per-cpu
-locking schemes.
+"git push $there tag v1.2.3" used to allow replacing a tag v1.2.3
+that already exists in the repository $there, if the rewritten tag
+you are pushing points at a commit that is a descendant of a commit
+that the old tag v1.2.3 points at.  This was found to be error prone
+and starting with this release, any attempt to update an existing
+ref under refs/tags/ hierarchy will fail, without "--force".
 
-You might note that, for exactly this reason, I haven't actually used any
-per-cpu _locks_ in this synchronization scheme, though it is named as
-"per-cpu rwlocks". The only per-cpu component here are the refcounts, and
-we consciously avoid waiting/spinning on them (because then that would be
-equivalent to having per-cpu locks, which are deadlock-prone). We use
-global rwlocks to get the deadlock-safety that we need.
+When "git add -u" and "git add -A", that does not specify what paths
+to add on the command line, is run from inside a subdirectory, the
+scope of the operation has always been limited to the subdirectory.
+Many users found this counter-intuitive, given that "git commit -a"
+and other commands operate on the entire tree regardless of where you
+are. In this release, these commands give warning in such a case and
+encourage the user to say "git add -u/-A ." instead when restricting
+the scope to the current directory. At Git 2.0 (not *this* one), we
+plan to change these commands without pathspec to operate on the
+entire tree, and training your fingers to type "." will protect you
+against the future change.
 
-> +	write_lock(&lgrw->fallback_rwlock);
-> +}
-> +EXPORT_SYMBOL(lg_rwlock_global_write_lock);
-> +
-> +void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw)
-> +{
-> +	write_unlock(&lgrw->fallback_rwlock);
-> +	lg_global_unlock(&lgrw->lglock);
-> +}
-> +EXPORT_SYMBOL(lg_rwlock_global_write_unlock);
-> 
 
-Regards,
-Srivatsa S. Bhat
+Updates since v1.8.1
+--------------------
+
+UI, Workflows & Features
+
+ * Initial ports to QNX and z/OS UNIX System Services have started.
+
+ * Output from the tests is coloured using "green is okay, yellow is
+   questionable, red is bad and blue is informative" scheme.
+
+ * Mention of "GIT/Git/git" in the documentation have been updated to
+   be more uniform and consistent.  The name of the system and the
+   concept it embodies is "Git"; the command the users type is "git".
+   All-caps "GIT" was merely a way to imitate "Git" typeset in small
+   caps in our ASCII text only documentation and to be avoided.
+
+ * The completion script (in contrib/completion) used to let the
+   default completer to suggest pathnames, which gave too many
+   irrelevant choices (e.g. "git add" would not want to add an
+   unmodified path).  It learnt to use a more git-aware logic to
+   enumerate only relevant ones.
+
+ * In bare repositories, "git shortlog" and other commands now read
+   mailmap files from the tip of the history, to help running these
+   tools in server settings.
+
+ * Color specifiers, e.g. "%C(blue)Hello%C(reset)", used in the
+   "--format=" option of "git log" and friends can be disabled when
+   the output is not sent to a terminal by prefixing them with
+   "auto,", e.g. "%C(auto,blue)Hello%C(auto,reset)".
+
+ * Scripts can ask Git that wildcard patterns in pathspecs they give do
+   not have any significance, i.e. take them as literal strings.
+
+ * The patterns in .gitignore and .gitattributes files can have **/,
+   as a pattern that matches 0 or more levels of subdirectory.
+   E.g. "foo/**/bar" matches "bar" in "foo" itself or in a
+   subdirectory of "foo".
+
+ * When giving arguments without "--" disambiguation, object names
+   that come earlier on the command line must not be interpretable as
+   pathspecs and pathspecs that come later on the command line must
+   not be interpretable as object names.  This disambiguation rule has
+   been tweaked so that ":/" (no other string before or after) is
+   always interpreted as a pathspec; "git cmd -- :/" is no longer
+   needed, you can just say "git cmd :/".
+
+ * Various "hint" lines Git gives when it asks the user to edit
+   messages in the editor are commented out with '#' by default. The
+   core.commentchar configuration variable can be used to customize
+   this '#' to a different character.
+
+ * "git add -u" and "git add -A" without pathspec issues warning to
+   make users aware that they are only operating on paths inside the
+   subdirectory they are in.  Use ":/" (everything from the top) or
+   "." (everything from the $cwd) to disambiguate.
+
+ * "git blame" (and "git diff") learned the "--no-follow" option.
+
+ * "git branch" now rejects some nonsense combinations of command line
+   arguments (e.g. giving more than one branch name to rename) with
+   more case-specific error messages.
+
+ * "git check-ignore" command to help debugging .gitignore files has
+   been added.
+
+ * "git cherry-pick" can be used to replay a root commit to an unborn
+   branch.
+
+ * "git commit" can be told to use --cleanup=whitespace by setting the
+   configuration variable commit.cleanup to 'whitespace'.
+
+ * "git diff" and other Porcelain commands can be told to use a
+   non-standard algorithm by setting diff.algorithm configuration
+   variable.
+
+ * "git fetch --mirror" and fetch that uses other forms of refspec
+   with wildcard used to attempt to update a symbolic ref that match
+   the wildcard on the receiving end, which made little sense (the
+   real ref that is pointed at by the symbolic ref would be updated
+   anyway).  Symbolic refs no longer are affected by such a fetch.
+
+ * "git format-patch" now detects more cases in which a whole branch
+   is being exported, and uses the description for the branch, when
+   asked to write a cover letter for the series.
+
+ * "git format-patch" learned "-v $count" option, and prepends a
+   string "v$count-" to the names of its output files, and also
+   automatically sets the subject prefix to "PATCH v$count". This
+   allows patches from rerolled series to be stored under different
+   names and makes it easier to reuse cover letter messages.
+
+ * "git log" and friends can be told with --use-mailmap option to
+   rewrite the names and email addresses of people using the mailmap
+   mechanism.
+
+ * "git log --cc --graph" now shows the combined diff output with the
+   ancestry graph.
+
+ * "git log --grep=<pattern>" honors i18n.logoutputencoding to look
+   for the pattern after fixing the log message to the specified
+   encoding.
+
+ * "git mergetool" and "git difftool" learned to list the available
+   tool backends in a more consistent manner.
+
+ * "git mergetool" is aware of TortoiseGitMerge now and uses it over
+   TortoiseMerge when available.
+
+ * "git push" now requires "-f" to update a tag, even if it is a
+   fast-forward, as tags are meant to be fixed points.
+
+ * Error messages from "git push" when it stops to prevent remote refs
+   from getting overwritten by mistake have been improved to explain
+   various situations separately.
+
+ * "git push" will stop without doing anything if the new "pre-push"
+   hook exists and exits with a failure.
+
+ * When "git rebase" fails to generate patches to be applied (e.g. due
+   to oom), it failed to detect the failure and instead behaved as if
+   there were nothing to do.  A workaround to use a temporary file has
+   been applied, but we probably would want to revisit this later, as
+   it hurts the common case of not failing at all.
+
+ * Input and preconditions to "git reset" has been loosened where
+   appropriate.  "git reset $fromtree Makefile" requires $fromtree to
+   be any tree (it used to require it to be a commit), for example.
+   "git reset" (without options or parameters) used to error out when
+   you do not have any commits in your history, but it now gives you
+   an empty index (to match non-existent commit you are not even on).
+
+ * "git status" says what branch is being bisected or rebased when
+   able, not just "bisecting" or "rebasing".
+
+ * "git submodule" started learning a new mode to integrate with the
+   tip of the remote branch (as opposed to integrating with the commit
+   recorded in the superproject's gitlink).
+
+ * "git upload-pack" which implements the service "ls-remote" and
+   "fetch" talk to can be told to hide ref hierarchies the server
+   side internally uses (and that clients have no business learning
+   about) with transfer.hiderefs configuration.
+
+
+Foreign Interface
+
+ * "git fast-export" has been updated for its use in the context of
+   the remote helper interface.
+
+ * A new remote helper to interact with bzr has been added to contrib/.
+
+ * "git p4" got various bugfixes around its branch handling.  It is
+   also made usable with Python 2.4/2.5.  In addition, its various
+   portability issues for Cygwin have been addressed.
+
+ * The remote helper to interact with Hg in contrib/ has seen a few
+   fixes.
+
+
+Performance, Internal Implementation, etc.
+
+ * "git fsck" has been taught to be pickier about entries in tree
+   objects that should not be there, e.g. ".", ".git", and "..".
+
+ * Matching paths with common forms of pathspecs that contain wildcard
+   characters has been optimized further.
+
+ * We stopped paying attention to $GIT_CONFIG environment that points
+   at a single configuration file from any command other than "git config"
+   quite a while ago, but "git clone" internally set, exported, and
+   then unexported the variable during its operation unnecessarily.
+
+ * "git reset" internals has been reworked and should be faster in
+   general. We tried to be careful not to break any behaviour but
+   there could be corner cases, especially when running the command
+   from a conflicted state, that we may have missed.
+
+ * The implementation of "imap-send" has been updated to reuse xml
+   quoting code from http-push codepath, and lost a lot of unused
+   code.
+
+ * There is a simple-minded checker for the test scripts in t/
+   directory to catch most common mistakes (it is not enabled by
+   default).
+
+ * You can build with USE_WILDMATCH=YesPlease to use a replacement
+   implementation of pattern matching logic used for pathname-like
+   things, e.g. refnames and paths in the repository.  This new
+   implementation is not expected change the existing behaviour of Git
+   in this release, except for "git for-each-ref" where you can now
+   say "refs/**/master" and match with both refs/heads/master and
+   refs/remotes/origin/master.  We plan to use this new implementation
+   in wider places (e.g. "git ls-files '**/Makefile' may find Makefile
+   at the top-level, and "git log '**/t*.sh'" may find commits that
+   touch a shell script whose name begins with "t" at any level) in
+   future versions of Git, but we are not there yet.  By building with
+   USE_WILDMATCH, using the resulting Git daily and reporting when you
+   find breakages, you can help us get closer to that goal.
+
+ * Some reimplementations of Git do not write all the stat info back
+   to the index due to their implementation limitations (e.g. jgit).
+   A configuration option can tell Git to ignore changes to most of
+   the stat fields and only pay attention to mtime and size, which
+   these implementations can reliably update.  This can be used to
+   avoid excessive revalidation of contents.
+
+ * Some platforms ship with old version of expat where xmlparse.h
+   needs to be included instead of expat.h; the build procedure has
+   been taught about this.
+
+ * "make clean" on platforms that cannot compute header dependencies
+   on the fly did not work with implementations of "rm" that do not
+   like an empty argument list.
+
+Also contains minor documentation updates and code clean-ups.
+
+
+Fixes since v1.8.1
+------------------
+
+Unless otherwise noted, all the fixes since v1.8.1 in the maintenance
+track are contained in this release (see release notes to them for
+details).
+
+ * An element on GIT_CEILING_DIRECTORIES list that does not name the
+   real path to a directory (i.e. a symbolic link) could have caused
+   the GIT_DIR discovery logic to escape the ceiling.
+
+ * When attempting to read the XDG-style $HOME/.config/git/config and
+   finding that $HOME/.config/git is a file, we gave a wrong error
+   message, instead of treating the case as "a custom config file does
+   not exist there" and moving on.
+
+ * The behaviour visible to the end users was confusing, when they
+   attempt to kill a process spawned in the editor that was in turn
+   launched by Git with SIGINT (or SIGQUIT), as Git would catch that
+   signal and die.  We ignore these signals now.
+   (merge 0398fc34 pf/editor-ignore-sigint later to maint).
+
+ * A child process that was killed by a signal (e.g. SIGINT) was
+   reported in an inconsistent way depending on how the process was
+   spawned by us, with or without a shell in between.
+
+ * After failing to create a temporary file using mkstemp(), failing
+   pathname was not reported correctly on some platforms.
+
+ * We used to stuff "user@" and then append what we read from
+   /etc/mailname to come up with a default e-mail ident, but a bug
+   lost the "user@" part.
+
+ * The attribute mechanism didn't allow limiting attributes to be
+   applied to only a single directory itself with "path/" like the
+   exclude mechanism does.  The initial implementation of this that
+   was merged to 'maint' and 1.8.1.2 was with a severe performance
+   degradations and needs to merge a fix-up topic.
+
+ * The smart HTTP clients forgot to verify the content-type that comes
+   back from the server side to make sure that the request is being
+   handled properly.
+
+ * "git am" did not parse datestamp correctly from Hg generated patch,
+   when it is run in a locale outside C (or en).
+
+ * "git apply" misbehaved when fixing whitespace breakages by removing
+   excess trailing blank lines.
+
+ * "git apply --summary" has been taught to make sure the similarity
+   value shown in its output is sensible, even when the input had a
+   bogus value.
+
+ * A tar archive created by "git archive" recorded a directory in a
+   way that made NetBSD's implementation of "tar" sometimes unhappy.
+
+ * "git archive" did not record uncompressed size in the header when
+   streaming a zip archive, which confused some implementations of unzip.
+
+ * "git archive" did not parse configuration values in tar.* namespace
+   correctly.
+   (merge b3873c3 jk/config-parsing-cleanup later to maint).
+
+ * Attempt to "branch --edit-description" an existing branch, while
+   being on a detached HEAD, errored out.
+
+ * "git clean" showed what it was going to do, but sometimes end up
+   finding that it was not allowed to do so, which resulted in a
+   confusing output (e.g. after saying that it will remove an
+   untracked directory, it found an embedded git repository there
+   which it is not allowed to remove).  It now performs the actions
+   and then reports the outcome more faithfully.
+
+ * When "git clone --separate-git-dir=$over_there" is interrupted, it
+   failed to remove the real location of the $GIT_DIR it created.
+   This was most visible when interrupting a submodule update.
+
+ * "git cvsimport" mishandled timestamps at DST boundary.
+
+ * We used to have an arbitrary 32 limit for combined diff input,
+   resulting in incorrect number of leading colons shown when showing
+   the "--raw --cc" output.
+
+ * "git fetch --depth" was broken in at least three ways.  The
+   resulting history was deeper than specified by one commit, it was
+   unclear how to wipe the shallowness of the repository with the
+   command, and documentation was misleading.
+   (merge cfb70e1 nd/fetch-depth-is-broken later to maint).
+
+ * "git log --all -p" that walked refs/notes/textconv/ ref can later
+   try to use the textconv data incorrectly after it gets freed.
+
+ * We forgot to close the file descriptor reading from "gpg" output,
+   killing "git log --show-signature" on a long history.
+
+ * The way "git svn" asked for password using SSH_ASKPASS and
+   GIT_ASKPASS was not in line with the rest of the system.
+
+ * The --graph code fell into infinite loop when asked to do what the
+   code did not expect.
+
+ * http transport was wrong to ask for the username when the
+   authentication is done by certificate identity.
+
+ * "git pack-refs" that ran in parallel to another process that
+   created new refs had a nasty race.
+
+ * Rebasing the history of superproject with change in the submodule
+   has been broken since v1.7.12.
+
+ * After "git add -N" and then writing a tree object out of the
+   index, the cache-tree data structure got corrupted.
+
+ * "git clone" used to allow --bare and --separate-git-dir=$there
+   options at the same time, which was nonsensical.
+
+ * "git rebase --preserve-merges" lost empty merges in recent versions
+   of Git.
+
+ * "git merge --no-edit" computed who were involved in the work done
+   on the side branch, even though that information is to be discarded
+   without getting seen in the editor.
+
+ * "git merge" started calling prepare-commit-msg hook like "git
+   commit" does some time ago, but forgot to pay attention to the exit
+   status of the hook.
+
+ * A failure to push due to non-ff while on an unborn branch
+   dereferenced a NULL pointer when showing an error message.
+
+ * When users spell "cc:" in lowercase in the fake "header" in the
+   trailer part, "git send-email" failed to pick up the addresses from
+   there. As e-mail headers field names are case insensitive, this
+   script should follow suit and treat "cc:" and "Cc:" the same way.
+
+ * Output from "git status --ignored" showed an unexpected interaction
+   with "--untracked".
+
+ * "gitweb", when sorting by age to show repositories with new
+   activities first, used to sort repositories with absolutely
+   nothing in it early, which was not very useful.
+
+ * "gitweb"'s code to sanitize control characters before passing it to
+   "highlight" filter lost known-to-be-safe control characters by
+   mistake.
+
+ * "gitweb" pages served over HTTPS, when configured to show picon or
+   gravatar, referred to these external resources to be fetched via
+   HTTP, resulting in mixed contents warning in browsers.
+
+ * When a line to be wrapped has a solid run of non space characters
+   whose length exactly is the wrap width, "git shortlog -w" failed
+   to add a newline after such a line.
+
+ * Command line completion leaked an unnecessary error message while
+   looking for possible matches with paths in <tree-ish>.
+
+ * Command line completion for "tcsh" emitted an unwanted space
+   after completing a single directory name.
+
+ * Command line completion code was inadvertently made incompatible with
+   older versions of bash by using a newer array notation.
+
+ * "git push" was taught to refuse updating the branch that is
+   currently checked out long time ago, but the user manual was left
+   stale.
+   (merge 50995ed wk/man-deny-current-branch-is-default-these-days later to maint).
+
+ * Some shells do not behave correctly when IFS is unset; work it
+   around by explicitly setting it to the default value.
+
+ * Some scripted programs written in Python did not get updated when
+   PYTHON_PATH changed.
+   (cherry-pick 96a4647fca54031974cd6ad1 later to maint).
+
+ * When autoconf is used, any build on a different commit always ran
+   "config.status --recheck" even when unnecessary.
+
+ * A fix was added to the build procedure to work around buggy
+   versions of ccache broke the auto-generation of dependencies, which
+   unfortunately is still relevant because some people use ancient
+   distros.
+
+ * The autoconf subsystem passed --mandir down to generated
+   config.mak.autogen but forgot to do the same for --htmldir.
+   (merge 55d9bf0 ct/autoconf-htmldir later to maint).
+
+ * A change made on v1.8.1.x maintenance track had a nasty regression
+   to break the build when autoconf is used.
+   (merge 7f1b697 jn/less-reconfigure later to maint).
+
+ * We have been carrying a translated and long-unmaintained copy of an
+   old version of the tutorial; removed.
+
+ * t0050 had tests expecting failures from a bug that was fixed some
+   time ago.
+
+ * t4014, t9502 and t0200 tests had various portability issues that
+   broke on OpenBSD.
+
+ * t9020 and t3600 tests had various portability issues.
+
+ * t9200 runs "cvs init" on a directory that already exists, but a
+   platform can configure this fail for the current user (e.g. you
+   need to be in the cvsadmin group on NetBSD 6.0).
+
+ * t9020 and t9810 had a few non-portable shell script construct.
+
+ * Scripts to test bash completion was inherently flaky as it was
+   affected by whatever random things the user may have on $PATH.
+
+----------------------------------------------------------------
+
+Changes since v1.8.2-rc0 (preview) are as follows:
+
+Adam Spiers (1):
+      t0008: document test_expect_success_multi
+
+Greg Price (1):
+      Documentation: "advice" is uncountable
+
+Jeff King (1):
+      Makefile: avoid infinite loop on configure.ac change
+
+Jiang Xin (5):
+      l10n: Update git.pot (35 new, 14 removed messages)
+      l10n: zh_CN.po: translate 35 new messages
+      l10n: git.pot: v1.8.2 round 3 (5 new)
+      l10n: zh_CN.po: translate 5 new messages
+      Bugfix: undefined htmldir in config.mak.autogen
+
+Junio C Hamano (8):
+      doc: mention tracking for pull.default
+      user-manual: typofix (ofthe->of the)
+      RelNotes 1.8.2: push-simple will not be in effect in this release
+      imap-send: move #ifdef around
+      name-hash: allow hashing an empty string
+      Git 1.8.1.4
+      Prepare for 1.8.1.5
+      Git 1.8.2-rc1
+
+Martin Erik Werner (1):
+      shell-prompt: clean up nested if-then
+
+Matthieu Moy (1):
+      git.txt: update description of the configuration mechanism
+
+Oswald Buddenhagen (2):
+      imap-send: the subject of SSL certificate must match the host
+      imap-send: support subjectAltName as well
+
+Peter Krefting (2):
+      l10n: Update Swedish translation (2004t0f0u)
+      l10n: Update Swedish translation (2009t0f0u)
+
+Tran Ngoc Quan (2):
+      l10n: vi.po: update new strings (2004t0u0f)
+      l10n: vi.po: Updated 5 new messages (2009t0f0u)
+
+W. Trevor King (8):
+      user-manual: use 'remote add' to setup push URLs
+      user-manual: give 'git push -f' as an alternative to +master
+      user-manual: mention 'git remote add' for remote branch config
+      user-manual: use 'git config --global user.*' for setup
+      user-manual: use -o latest.tar.gz to create a gzipped tarball
+      user-manual: Reorganize the reroll sections, adding 'git rebase -i'
+      user-manual: Use request-pull to generate "please pull" text
+      user-manual: Flesh out uncommitted changes and submodule updates
 
