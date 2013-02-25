@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759596Ab3BYCNN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 21:13:13 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47138 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759527Ab3BYCNM (ORCPT
+	id S1759679Ab3BYCNU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 21:13:20 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:51947 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759527Ab3BYCNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 21:13:12 -0500
-X-AuditID: 9c93016f-b7b46ae000007f43-8b-512ac8b57bfd
-Date: Mon, 25 Feb 2013 11:13:08 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: Re: [PATCH v2] mm: remove MIGRATE_ISOLATE check in hotpath
-Message-ID: <20130225021308.GA6498@blaptop>
-References: <1358209006-18859-1-git-send-email-minchan@kernel.org>
- <20130115153625.96265439.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130115153625.96265439.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 24 Feb 2013 21:13:17 -0500
+X-AuditID: cbfee68e-b7fa46d00000627e-1d-512ac8bb12df
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <000301ce10bf$028176c0$07846440$%han@samsung.com>
+ <20130222134418.a86e78b1.akpm@linux-foundation.org>
+In-reply-to: <20130222134418.a86e78b1.akpm@linux-foundation.org>
+Subject: Re: [PATCH] lib: devres: Fix misplaced #endif
+Date: Mon, 25 Feb 2013 11:13:14 +0900
+Message-id: <01f301ce12fd$ab3fe400$01bfac00$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4RRcXXmxvP7281SiadEpnaN8lsHQBt7nnA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t8zA93dJ7QCDSYd4LW4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZ31rEC/awV2zu62JuYHzB2sXIwSEhYCLxdx5PFyMnkCkmceHe
+	erYuRi4OIYFljBLPt9xggkiYSOxd+JQZIrGIUWLflI/sEM5sJom2aSsZQarYBNQkvnw5zA4y
+	VURAX6KtRQPEZBZwkTg6TQSkQkigWOLvmuPMIGFOAQeJlb+TQcLCAmYSXw5fYAWxWQRUJea9
+	PAG2llfAVmLR5idsELagxI/J91hAbGYBLYn1O48zQdjyEpvXvGWGeEVd4tFfXZCwiICRxMqr
+	09ghSkQk9r14xwhysITAInaJ5/MPQO0SkPg2+RALRK+sxKYDzBDfSkocXHGDZQKjxCwkm2ch
+	2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSkV5yYW1yal66XnJ+7iRESUX07GG8esD7EmAy0fiKz
+	lGhyPjAi80riDY2NTcxMTE3MLU3NTUkTVhLnlb8kEygkkJ5YkpqdmlqQWhRfVJqTWnyIkYmD
+	U6qBUe0nc/vjr9yZu+d5MM1y2ppUmndxrplW8qcD5z3NJx8sr42c26PMwMxYa7orY3Vb1Iw1
+	12wvZx1yOnilkuVwZmqB9CLb+bXpvFVHF9u0p4dc4vUsXPex66ruJ0uh/drpxzKWrbDf8Nb9
+	pJ0D38LyavegnHpD09aYio3rlHYIzk572vi+bvkPJZbijERDLeai4kQAiXkQxL4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkleLIzCtJLcpLzFFi42I5/e+xgO7uE1qBBhtOclpc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjG8t4gV72Cs293UxNzC+
+	YO1i5OSQEDCR2LvwKTOELSZx4d56ti5GLg4hgUWMEvumfGSHcGYzSbRNW8kIUsUmoCbx5cth
+	oAQHh4iAvkRbiwaIySzgInF0mghIhZBAscTfNceZQcKcAg4SK38ng4SFBcwkvhy+ALaWRUBV
+	Yt7LE0wgNq+ArcSizU/YIGxBiR+T77GA2MwCWhLrdx5ngrDlJTaveQs2UkJAXeLRX12QsIiA
+	kcTKq9PYIUpEJPa9eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al
+	6yXn525iBEfsM+kdjKsaLA4xCnAwKvHwNqzUChRiTSwrrsw9xCjBwawkwqsZChTiTUmsrEot
+	yo8vKs1JLT7EmAz06ERmKdHkfGAyySuJNzQ2MTOyNDKzMDIxNydNWEmcl/HUkwAhgfTEktTs
+	1NSC1CKYLUwcnFINjEue+a+PZLz/bZ1+cSTrhvKHs4UPPN+QW3aT7+Mdhcrtt3pYdYPvCNgk
+	mZ+taJZjZPwj+VE5VP3VsVDdP8bvH/s4Xa4WMqpRuR/QEqXMdinZ9vF9jXIm9fO8d+ckh6rr
+	O7BWTZY9dUtfn2PKL31Fvwk+Qav3iAuKWFso2i577+J4f6HPhD0GSizFGYmGWsxFxYkAxiX6
+	FBwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-
-Sorry for late reply and I totally missed it. :(
-
-On Tue, Jan 15, 2013 at 03:36:25PM -0800, Andrew Morton wrote:
-> On Tue, 15 Jan 2013 09:16:46 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
+On Saturday, February 23, 2013 6:44 AM, Andrew Morton wrote:
 > 
-> > Now mm several functions test MIGRATE_ISOLATE and some of those
-> > are hotpath but MIGRATE_ISOLATE is used only if we enable
-> > CONFIG_MEMORY_ISOLATION(ie, CMA, memory-hotplug and memory-failure)
-> > which are not common config option. So let's not add unnecessary
-> > overhead and code when we don't enable CONFIG_MEMORY_ISOLATION.
+> On Fri, 22 Feb 2013 14:39:40 +0900
+> Jingoo Han <jg1.han@samsung.com> wrote:
 > 
-> ugh.  Better than nothing, I guess.
-> 
-> There remain call sites which do open-coded
-> 
-> 	get_pageblock_migratetype(page) != MIGRATE_ISOLATE
-> 
-> (undo_isolate_page_range() is one).  Wanna clean these up as well?
-
-Oops, Sure.
-
-> 
+> > A misplaced #endif causes link errors related to pcim_*() functions.
 > >
-> > ...
-> >
-> > @@ -683,7 +683,7 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
-> >  	zone->pages_scanned = 0;
-> >  
-> >  	__free_one_page(page, zone, order, migratetype);
-> > -	if (unlikely(migratetype != MIGRATE_ISOLATE))
-> > +	if (unlikely(!is_migrate_isolate(migratetype)))
-> >  		__mod_zone_freepage_state(zone, 1 << order, migratetype);
-> >  	spin_unlock(&zone->lock);
+> > --- a/lib/devres.c
+> > +++ b/lib/devres.c
+> > @@ -227,6 +227,7 @@ void devm_ioport_unmap(struct device *dev, void __iomem *addr)
+> >  			       devm_ioport_map_match, (void *)addr));
 > >  }
+> >  EXPORT_SYMBOL(devm_ioport_unmap);
+> > +#endif /* CONFIG_HAS_IOPORT */
+> >
+> >  #ifdef CONFIG_PCI
+> >  /*
+> > @@ -432,4 +433,3 @@ void pcim_iounmap_regions(struct pci_dev *pdev, int mask)
+> >  }
+> >  EXPORT_SYMBOL(pcim_iounmap_regions);
+> >  #endif /* CONFIG_PCI */
+> > -#endif /* CONFIG_HAS_IOPORT */
 > 
-> The code both before and after this patch is assuming that the
-> migratetype in free_one_page is likely to be MIGRATE_ISOLATE.  Seems
-> wrong.  If CONFIG_MEMORY_ISOLATION=n this ends up doing
-> if(unlikely(true)) which is harmless-but-amusing.
+> More details needed, please.  This code is pretty old and it's
+> surprising that errors are popping up now.
 
->From the beginning of [2139cbe627, cma: fix counting of isolated pages],
-it was wrong. We can't make sure it's very likely.
-If it is called by order-0 page free path, it is but if it is called by
-high order page free path, we can't.
-So I think it would be better to remove unlikley.
+OK, I will add more detailed commit message.
+Thank you.
 
-They are trivial patch so send it now or send it after you release
-first mmotm after finishing merge window?
+Best regards,
+Jingoo Han
 
-Andrew, Which is better?
 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
--- 
-Kind regards,
-Minchan Kim
