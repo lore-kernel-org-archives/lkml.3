@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627Ab3BYWUc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:20:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55256 "EHLO
+	id S932743Ab3BYWWj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:22:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55290 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932417Ab3BYWUW (ORCPT
+	with ESMTP id S932625Ab3BYWUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:22 -0500
+	Mon, 25 Feb 2013 17:20:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rob van der Heij <rvdheij@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 38/58] mm/fadvise.c: drain all pagevecs if POSIX_FADV_DONTNEED fails to discard all pages
-Date: Mon, 25 Feb 2013 14:19:34 -0800
-Message-Id: <20130225221644.442769166@linuxfoundation.org>
+        Mark Kettenis <mark.kettenis@xs4all.nl>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 52/58] sunvdc: Fix off-by-one in generic_request().
+Date: Mon, 25 Feb 2013 14:19:48 -0800
+Message-Id: <20130225221647.332157115@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -28,198 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
 
-commit 67d46b296a1ba1477c0df8ff3bc5e0167a0b0732 upstream.
+From: "David S. Miller" <davem@davemloft.net>
 
-Rob van der Heij reported the following (paraphrased) on private mail.
+[ Upstream commit f4d9605434c0fd4cc8639bf25cfc043418c52362 ]
 
-	The scenario is that I want to avoid backups to fill up the page
-	cache and purge stuff that is more likely to be used again (this is
-	with s390x Linux on z/VM, so I don't give it as much memory that
-	we don't care anymore). So I have something with LD_PRELOAD that
-	intercepts the close() call (from tar, in this case) and issues
-	a posix_fadvise() just before closing the file.
+The 'operations' bitmap corresponds one-for-one with the operation
+codes, no adjustment is necessary.
 
-	This mostly works, except for small files (less than 14 pages)
-	that remains in page cache after the face.
-
-Unfortunately Rob has not had a chance to test this exact patch but the
-test program below should be reproducing the problem he described.
-
-The issue is the per-cpu pagevecs for LRU additions.  If the pages are
-added by one CPU but fadvise() is called on another then the pages
-remain resident as the invalidate_mapping_pages() only drains the local
-pagevecs via its call to pagevec_release().  The user-visible effect is
-that a program that uses fadvise() properly is not obeyed.
-
-A possible fix for this is to put the necessary smarts into
-invalidate_mapping_pages() to globally drain the LRU pagevecs if a
-pagevec page could not be discarded.  The downside with this is that an
-inode cache shrink would send a global IPI and memory pressure
-potentially causing global IPI storms is very undesirable.
-
-Instead, this patch adds a check during fadvise(POSIX_FADV_DONTNEED) to
-check if invalidate_mapping_pages() discarded all the requested pages.
-If a subset of pages are discarded it drains the LRU pagevecs and tries
-again.  If the second attempt fails, it assumes it is due to the pages
-being mapped, locked or dirty and does not care.  With this patch, an
-application using fadvise() correctly will be obeyed but there is a
-downside that a malicious application can force the kernel to send
-global IPIs and increase overhead.
-
-If accepted, I would like this to be considered as a -stable candidate.
-It's not an urgent issue but it's a system call that is not working as
-advertised which is weak.
-
-The following test program demonstrates the problem.  It should never
-report that pages are still resident but will without this patch.  It
-assumes that CPU 0 and 1 exist.
-
-int main() {
-	int fd;
-	int pagesize = getpagesize();
-	ssize_t written = 0, expected;
-	char *buf;
-	unsigned char *vec;
-	int resident, i;
-	cpu_set_t set;
-
-	/* Prepare a buffer for writing */
-	expected = FILESIZE_PAGES * pagesize;
-	buf = malloc(expected + 1);
-	if (buf == NULL) {
-		printf("ENOMEM\n");
-		exit(EXIT_FAILURE);
-	}
-	buf[expected] = 0;
-	memset(buf, 'a', expected);
-
-	/* Prepare the mincore vec */
-	vec = malloc(FILESIZE_PAGES);
-	if (vec == NULL) {
-		printf("ENOMEM\n");
-		exit(EXIT_FAILURE);
-	}
-
-	/* Bind ourselves to CPU 0 */
-	CPU_ZERO(&set);
-	CPU_SET(0, &set);
-	if (sched_setaffinity(getpid(), sizeof(set), &set) == -1) {
-		perror("sched_setaffinity");
-		exit(EXIT_FAILURE);
-	}
-
-	/* open file, unlink and write buffer */
-	fd = open("fadvise-test-file", O_CREAT|O_EXCL|O_RDWR);
-	if (fd == -1) {
-		perror("open");
-		exit(EXIT_FAILURE);
-	}
-	unlink("fadvise-test-file");
-	while (written < expected) {
-		ssize_t this_write;
-		this_write = write(fd, buf + written, expected - written);
-
-		if (this_write == -1) {
-			perror("write");
-			exit(EXIT_FAILURE);
-		}
-
-		written += this_write;
-	}
-	free(buf);
-
-	/*
-	 * Force ourselves to another CPU. If fadvise only flushes the local
-	 * CPUs pagevecs then the fadvise will fail to discard all file pages
-	 */
-	CPU_ZERO(&set);
-	CPU_SET(1, &set);
-	if (sched_setaffinity(getpid(), sizeof(set), &set) == -1) {
-		perror("sched_setaffinity");
-		exit(EXIT_FAILURE);
-	}
-
-	/* sync and fadvise to discard the page cache */
-	fsync(fd);
-	if (posix_fadvise(fd, 0, expected, POSIX_FADV_DONTNEED) == -1) {
-		perror("posix_fadvise");
-		exit(EXIT_FAILURE);
-	}
-
-	/* map the file and use mincore to see which parts of it are resident */
-	buf = mmap(NULL, expected, PROT_READ, MAP_SHARED, fd, 0);
-	if (buf == NULL) {
-		perror("mmap");
-		exit(EXIT_FAILURE);
-	}
-	if (mincore(buf, expected, vec) == -1) {
-		perror("mincore");
-		exit(EXIT_FAILURE);
-	}
-
-	/* Check residency */
-	for (i = 0, resident = 0; i < FILESIZE_PAGES; i++) {
-		if (vec[i])
-			resident++;
-	}
-	if (resident != 0) {
-		printf("Nr unexpected pages resident: %d\n", resident);
-		exit(EXIT_FAILURE);
-	}
-
-	munmap(buf, expected);
-	close(fd);
-	free(vec);
-	exit(EXIT_SUCCESS);
-}
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reported-by: Rob van der Heij <rvdheij@gmail.com>
-Tested-by: Rob van der Heij <rvdheij@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Mark Kettenis <mark.kettenis@xs4all.nl>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/fadvise.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/block/sunvdc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/fadvise.c
-+++ b/mm/fadvise.c
-@@ -17,6 +17,7 @@
- #include <linux/fadvise.h>
- #include <linux/writeback.h>
- #include <linux/syscalls.h>
-+#include <linux/swap.h>
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -461,7 +461,7 @@ static int generic_request(struct vdc_po
+ 	int op_len, err;
+ 	void *req_buf;
  
- #include <asm/unistd.h>
+-	if (!(((u64)1 << ((u64)op - 1)) & port->operations))
++	if (!(((u64)1 << (u64)op) & port->operations))
+ 		return -EOPNOTSUPP;
  
-@@ -120,9 +121,22 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, lof
- 		start_index = (offset+(PAGE_CACHE_SIZE-1)) >> PAGE_CACHE_SHIFT;
- 		end_index = (endbyte >> PAGE_CACHE_SHIFT);
- 
--		if (end_index >= start_index)
--			invalidate_mapping_pages(mapping, start_index,
-+		if (end_index >= start_index) {
-+			unsigned long count = invalidate_mapping_pages(mapping,
-+						start_index, end_index);
-+
-+			/*
-+			 * If fewer pages were invalidated than expected then
-+			 * it is possible that some of the pages were on
-+			 * a per-cpu pagevec for a remote CPU. Drain all
-+			 * pagevecs and try again.
-+			 */
-+			if (count < (end_index - start_index + 1)) {
-+				lru_add_drain_all();
-+				invalidate_mapping_pages(mapping, start_index,
- 						end_index);
-+			}
-+		}
- 		break;
- 	default:
- 		ret = -EINVAL;
+ 	switch (op) {
 
 
