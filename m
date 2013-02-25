@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759914Ab3BYPpy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 10:45:54 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:57194 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757049Ab3BYPpx (ORCPT
+	id S1759922Ab3BYPqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 10:46:51 -0500
+Received: from exprod5og109.obsmtp.com ([64.18.0.188]:47208 "EHLO
+	exprod5og109.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757057Ab3BYPqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 10:45:53 -0500
-Date: Mon, 25 Feb 2013 15:45:49 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Florian Weimer <fw@deneb.enyo.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Message-ID: <20130225154549.GD13605@srcf.ucam.org>
-References: <30665.1361461678@warthog.procyon.org.uk>
- <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
- <20130221164244.GA19625@srcf.ucam.org>
- <87ppzo79in.fsf@mid.deneb.enyo.de>
+	Mon, 25 Feb 2013 10:46:50 -0500
+X-Greylist: delayed 699 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Feb 2013 10:46:49 EST
+Message-ID: <512B84A8.9040700@ge.com>
+Date: Mon, 25 Feb 2013 15:35:04 +0000
+From: Martyn Welch <martyn.welch@ge.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ppzo79in.fsf@mid.deneb.enyo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: "Emilio G. Cota" <cota@braap.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Manohar Vanga <manohar.vanga@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vme: add missing put_device() after device_register()
+ fails
+References: <1360781274-14405-1-git-send-email-cota@braap.org>
+In-Reply-To: <1360781274-14405-1-git-send-email-cota@braap.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 03:28:32PM +0100, Florian Weimer wrote:
+On 13/02/13 18:47, Emilio G. Cota wrote:
+> From: "Emilio G. Cota" <cota@braap.org>
+> 
+> put_device() must be called after device_register() fails,
+> since device_register() always initializes the refcount
+> on the device structure.
+> 
+> Signed-off-by: Emilio G. Cota <cota@braap.org>
+> ---
+>  drivers/vme/vme.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/vme/vme.c b/drivers/vme/vme.c
+> index 95a9f71..5e6c7d7 100644
+> --- a/drivers/vme/vme.c
+> +++ b/drivers/vme/vme.c
+> @@ -1366,26 +1366,27 @@ static int __vme_register_driver_bus(struct vme_driver *drv,
+>  		err = device_register(&vdev->dev);
+>  		if (err)
+>  			goto err_reg;
+>  
+>  		if (vdev->dev.platform_data) {
+>  			list_add_tail(&vdev->drv_list, &drv->devices);
+>  			list_add_tail(&vdev->bridge_list, &bridge->devices);
+>  		} else
+>  			device_unregister(&vdev->dev);
+>  	}
+>  	return 0;
+>  
+>  err_reg:
+> +	put_device(&vdev->dev);
+>  	kfree(vdev);
+>  err_devalloc:
+>  	list_for_each_entry_safe(vdev, tmp, &drv->devices, drv_list) {
+>  		list_del(&vdev->drv_list);
+>  		list_del(&vdev->bridge_list);
+>  		device_unregister(&vdev->dev);
+>  	}
+>  	return err;
+>  }
 
-> But what puzzles me most is why anyone would assume that the UEFI
-> application signing process somehow ensures that the embedded
-> certificate is non-malicious.  We cannot even track it back to the
-> submitter because the third-pary market place UEFI authority only
-> issues pseudonymous proxy certificates.  This utterly useless for any
-> purpose whatsoever, with the notable exception of avoding one
-> additional step when setting up a dual-boot machine (which will not
-> even work reliably until we switch to overwriting the Windows boot
-> loader, like in the pre-UEFI days).
+Acked-by: Martyn Welch <martyn.welch@ge.com>
 
-If your firmware trusts objects signed by Microsoft, you have to assume 
-that objects signed by Microsoft are trustworthy. There's no way to 
-build a security model otherwise. Are Microsoft trustworthy? We don't 
-know. If you don't trust Microsoft, remove their key from db.
+(Sorry it took me so long to respond)
 
-> Seriously, folks, can we go back one step and discuss what problem you
-> are trying to solve?  Is it about allowing third-party kernel modules
-> in an environment which does not allow unsigned ring 0 code execution?
+>  
+>  static int __vme_register_driver(struct vme_driver *drv, unsigned int ndevs)
+>  {
+>  	struct vme_bridge *bridge;
+> 
 
-The problem I'm trying to solve is "Don't permit Linux to be used as a 
-bootloader for backdoored versions of other operating systems". Any 
-other security benefit is a happy side effect.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
+GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
+T +44(0)1327322748                     | Manchester, M2 3AB
+E martyn.welch@ge.com                  | VAT:GB 927559189
