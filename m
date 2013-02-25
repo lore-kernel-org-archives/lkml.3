@@ -1,54 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759601Ab3BYVLK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 16:11:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40585 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753779Ab3BYVLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 16:11:07 -0500
-Date: Mon, 25 Feb 2013 13:11:03 -0800
-From: Mark Fasheh <mfasheh@suse.de>
-To: Richard Weinberger <richard@nod.at>
-Cc: ocfs2-devel@oss.oracle.com, ocfs2-user@oss.oracle.com,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        jlbec@evilplan.org, linux-fsdevel@vger.kernel.org, david@sigma-star.at
-Subject: Re: OCFS2 mainline state?
-Message-ID: <20130225211103.GA13510@wotan.suse.de>
-Reply-To: Mark Fasheh <mfasheh@suse.de>
-References: <512BCA9E.4090702@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <512BCA9E.4090702@nod.at>
-Organization: SUSE Labs
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1759078Ab3BYVNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 16:13:14 -0500
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:15839 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753779Ab3BYVNM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 16:13:12 -0500
+From: Toshi Kani <toshi.kani@hp.com>
+To: rjw@sisk.pl
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, vasilis.liaskovitis@profitbricks.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v2] ACPI: Add sysfs links from memory device to memblocks
+Date: Mon, 25 Feb 2013 14:02:10 -0700
+Message-Id: <1361826130-31062-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 09:33:34PM +0100, Richard Weinberger wrote:
-> Today I encountered the following problem on v3.8:
-> [   28.940032] general protection fault: 0000 [#1] PREEMPT SMP
-> ...
-> [   28.984953] Call Trace:
-> [   28.986628   [<ffffffffa04cb200>] ocfs2_fast_symlink_readpage+0x70/0x1b0 [ocfs2]
-> [   28.988302]  [<ffffffff8110dc49>] ? add_to_page_cache_lru+0x29/0x40
-> [   28.989942]  [<ffffffff8110ddca>] do_read_cache_page+0x7a/0x170
-> [   28.991573]  [<ffffffff8110def4>] read_cache_page_async+0x14/0x20
-> [   28.993212]  [<ffffffff8110df09>] read_cache_page+0x9/0x20
-> [   28.994827]  [<ffffffff81170ae5>] page_getlink.isra.9+0x25/0x80
-> [   28.996442]  [<ffffffff81170b61>] page_follow_link_light+0x21/0x40
-> [   28.998049]  [<ffffffff8117090d>] generic_readlink+0x3d/0xa0
-> [   28.999653]  [<ffffffff8116c0db>] sys_readlinkat+0xfb/0x130
-> [   29.001246]  [<ffffffff8116c126>] sys_readlink+0x16/0x20
-> [   29.002839]  [<ffffffff815d8dad>] system_call_fastpath+0x1a/0x1f
+In order to eject a memory device object represented as "PNP0C80:%d"
+in sysfs, its associated memblocks (system/memory/memory%d) need to
+be off-lined.  However, there is no user friendly way to correlate
+between a memory device object and its memblocks in sysfs.
 
-I've seen that patch actually and yes it should have been in mainline
-already. I didn't see whether it's in -mm (Andrew is pickup up some of the
-patches for us right now).
+This patch creates sysfs links to memblocks under a memory device
+object so that a user can easily checks and manipulates its memblocks
+in sysfs.
 
-I'll check and if it's not I'll try to send him a version of it today.
-	--Mark
+For example, when PNP0C80:05 is associated with memory8 and memory9,
+the following two links are created under PNP0C80:05.  This allows
+a user to access memory8/9 directly from PNP0C80:05.
 
---
-Mark Fasheh
+  # ll /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C80:05
+  lrwxrwxrwx. memory8 -> ../../../system/memory/memory8
+  lrwxrwxrwx. memory9 -> ../../../system/memory/memory9
+
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+---
+
+This patch applies on top of the Rafael's patch below.
+https://patchwork.kernel.org/patch/2153261/
+
+v2: Added a NULL return check for find_memory_block_hinted() as
+pointed by Yasuaki Ishimatsu.
+
+---
+ drivers/acpi/acpi_memhotplug.c |   56 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 56 insertions(+)
+
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 3b3abbc..98477a5 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -28,6 +28,7 @@
+  */
+ 
+ #include <linux/acpi.h>
++#include <linux/memory.h>
+ #include <linux/memory_hotplug.h>
+ 
+ #include "internal.h"
+@@ -168,6 +169,55 @@ static int acpi_memory_check_device(struct acpi_memory_device *mem_device)
+ 	return 0;
+ }
+ 
++static void acpi_setup_mem_blk_links(struct acpi_memory_device *mem_device,
++		struct acpi_memory_info *info, bool add_links)
++{
++	struct memory_block *mem_blk = NULL;
++	struct mem_section *mem_sect;
++	unsigned long start_pfn, end_pfn, pfn;
++	unsigned long section_nr;
++	int ret;
++
++	start_pfn = PFN_DOWN(info->start_addr);
++	end_pfn = PFN_UP(info->start_addr + info->length-1);
++
++	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
++		section_nr = pfn_to_section_nr(pfn);
++
++		if (!present_section_nr(section_nr))
++			continue;
++
++		mem_sect = __nr_to_section(section_nr);
++
++		/* skip if the same memblock */
++		if (mem_blk)
++			if ((section_nr >= mem_blk->start_section_nr) &&
++			    (section_nr <= mem_blk->end_section_nr))
++				continue;
++
++		mem_blk = find_memory_block_hinted(mem_sect, mem_blk);
++		if (!mem_blk)
++			continue;
++
++		if (add_links) {
++			ret = sysfs_create_link_nowarn(
++				&mem_device->device->dev.kobj,
++				&mem_blk->dev.kobj,
++				kobject_name(&mem_blk->dev.kobj));
++			if (ret && ret != -EEXIST)
++				dev_err(&mem_device->device->dev,
++					"Failed to create sysfs link %s\n",
++					kobject_name(&mem_blk->dev.kobj));
++		} else {
++			sysfs_remove_link(&mem_device->device->dev.kobj,
++				kobject_name(&mem_blk->dev.kobj));
++		}
++	}
++
++	if (mem_blk)
++		kobject_put(&mem_blk->dev.kobj);
++}
++
+ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+ {
+ 	int result, num_enabled = 0;
+@@ -207,6 +257,9 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+ 			continue;
+ 		}
+ 
++		/* Create sysfs links to its mem_blk devices */
++		acpi_setup_mem_blk_links(mem_device, info, true);
++
+ 		if (!result)
+ 			info->enabled = 1;
+ 		/*
+@@ -241,6 +294,9 @@ static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+ 			/* The kernel does not use this memory block */
+ 			continue;
+ 
++		/* Remove sysfs links to its mem_blk devices */
++		acpi_setup_mem_blk_links(mem_device, info, false);
++
+ 		if (!info->enabled)
+ 			/*
+ 			 * The kernel uses this memory block, but it may be not
