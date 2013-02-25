@@ -1,149 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759572Ab3BYWKE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:10:04 -0500
-Received: from mail-ye0-f202.google.com ([209.85.213.202]:43251 "EHLO
-	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab3BYWKB (ORCPT
+	id S1759760Ab3BYWK0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:10:26 -0500
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:52665 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759194Ab3BYWKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:10:01 -0500
+	Mon, 25 Feb 2013 17:10:16 -0500
 From: Simon Glass <sjg@chromium.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Samuel Ortiz <sameo@linux.intel.com>, Simon Glass <sjg@chromium.org>,
-        Rob Landley <rob@landley.net>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Che-Liang Chiou <clchiou@chromium.org>,
-        Jonathan Kliegman <kliegs@chromium.org>, linux-input@vger.kernel.org,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        Roland Stigge <stigge@antcom.de>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-doc@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Bill Pemberton <wfp5p@virginia.edu>
-Subject: [PATCH v6 0/6] Add ChromeOS Embedded Controller support
-Date: Mon, 25 Feb 2013 14:08:35 -0800
-Message-Id: <1361830121-32284-1-git-send-email-sjg@chromium.org>
+        Che-Liang Chiou <clchiou@chromium.org>
+Subject: [PATCH v6 3/6] mfd: Add ChromeOS EC I2C driver
+Date: Mon, 25 Feb 2013 14:08:38 -0800
+Message-Id: <1361830121-32284-4-git-send-email-sjg@chromium.org>
 X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1361830121-32284-1-git-send-email-sjg@chromium.org>
+References: <1361830121-32284-1-git-send-email-sjg@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ChromeOS Embedded Controller (EC) is an Open Source EC implementation
-used on ARM and Intel Chromebooks. Current implementations use a Cortex-M3
-connected on a bus (such as I2C, SPI, LPC) to the AP. A separate interrupt
-line is used to indicate when the EC needs service.
+This uses an I2C bus to talk to the ChromeOS EC. The protocol
+is defined by the EC and is fairly simple, with a length byte,
+checksum, command byte and version byte (to permit easy creation
+of new commands).
 
-Functions performed by the EC vary by platform, but typically include
-battery charging, keyboard scanning and power sequencing.
-
-This series includes support for the EC message protocol, and implements
-a matrix keyboard handler for Linux using the protocol. The EC performs
-key scanning and passes scan data in response to AP requests. This is
-used on the Samsung ARM Chromebook. No driver is available for LPC at
-present.
-
-This series can in principle operate on any hardware, but for it to actually
-work on the Samsung ARM Chromebook, it needs patches which are currently in
-progress to mainline: Exynos FDT interrupt support and I2C bus arbitration.
-
-The driver is device-tree-enabled and a suitable binding is included in
-this series. Example device tree nodes are included in the examples,
-but no device tree patch for exynos5250-snow is provided at this stage, since
-we must wait for the above-mentioned patches to land to avoid errors from
-dtc. This can be added with a follow-on patch when that work is complete.
-
+Signed-off-by: Simon Glass <sjg@chromium.org>
+Signed-off-by: Che-Liang Chiou <clchiou@chromium.org>
+---
 Changes in v6:
-- Allow cros_ec to be a module
-- Remove 'struct i2c_msg' definition
 - Use %ph instead of for loop to output packet trace
-- Fix incorrect indentation in cros_ec_keyb_process()
-- Remove unnecessary assignment to NULL in probe function
 
 Changes in v5:
-- Remove cros_ec allocation functions
-- Remove name access functions in cros_ec, using strings instead
 - Fix Kconfig help message for MFD_CROS_EC_I2C
 - Remove I2C retry logic
 - Switch cros_ec_i2c driver to use devm
 - Update cros_ec_i2c to work with new cros_ec interface
-- Switch cros_ec_spi driver to use devm
-- Update cros_ec_spi to work with new cros_ec interface
-- Fix {} style nit in cros_ec_keyb_has_ghosting
-- Correct key lookup logic which was broken in previous version
-- Switch cros_ec_keyb driver to use devm
 
-Changes in v4:
-- Fix up trvial logging comments
-- Remove messages reporting out of memory
-- Add compatible string for cros-ec-keyb
-- Remove wake notifier and let drivers use their own handlers instead
-- Add 'depends on MFD_CROS_EC' to Kconfig
-- Remove use of wake_notifier
-- Remove manual code to locate device tree node
-- Add resume handler to clear keyboard scan buffer if required
-
-Changes in v3:
-- Add stub for matrix_keypad_parse_of_params() when no CONFIG_OF
-- Put back full DT range checking in tca8418 driver
-- Remove 'select MFD_CROS_EC' from Kconfig as it isn't necessary
-- Remove old_state by using input layer's idev->key
-- Move inner loop of cros_ec_keyb_has_ghosting() into its own function and simplify
-- Add check for not finding the device tree node
-- Remove comment about leaking matrix_keypad_build_keymap()
-- Use platform_get_drvdata() where possible
-- Remove call to input_free_device() after input_unregister_device()
-
+Changes in v4: None
+Changes in v3: None
 Changes in v2:
 - Remove use of __devinit/__devexit
-- Remove use of __devinit/__devexit
-- Remove use of __devinit/__devexit
-- Add new patch to decode matrix-keypad DT binding
-- Remove use of __devinit/__devexit
-- Use function to read matrix-keypad parameters from DT
-- Remove key autorepeat parameters from DT binding and driver
-- Use unsigned int for rows/cols
 
-Simon Glass (6):
-  mfd: Add ChromeOS EC messages header
-  mfd: Add ChromeOS EC implementation
-  mfd: Add ChromeOS EC I2C driver
-  mfd: Add ChromeOS EC SPI driver
-  Input: matrix-keymap: Add function to read the new DT binding
-  Input: Add ChromeOS EC keyboard driver
-
- .../devicetree/bindings/input/cros-ec-keyb.txt     |   72 +
- Documentation/devicetree/bindings/mfd/cros-ec.txt  |   56 +
- drivers/input/keyboard/Kconfig                     |   12 +
- drivers/input/keyboard/Makefile                    |    1 +
- drivers/input/keyboard/cros_ec_keyb.c              |  334 +++++
- drivers/input/keyboard/lpc32xx-keys.c              |   11 +-
- drivers/input/keyboard/omap4-keypad.c              |   16 +-
- drivers/input/keyboard/tca8418_keypad.c            |    7 +-
- drivers/input/matrix-keymap.c                      |   19 +
- drivers/mfd/Kconfig                                |   28 +
- drivers/mfd/Makefile                               |    3 +
- drivers/mfd/cros_ec.c                              |  189 +++
- drivers/mfd/cros_ec_i2c.c                          |  206 +++
- drivers/mfd/cros_ec_spi.c                          |  375 ++++++
- include/linux/input/matrix_keypad.h                |   19 +
- include/linux/mfd/cros_ec.h                        |  170 +++
- include/linux/mfd/cros_ec_commands.h               | 1369 ++++++++++++++++++++
- 17 files changed, 2869 insertions(+), 18 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/input/cros-ec-keyb.txt
- create mode 100644 Documentation/devicetree/bindings/mfd/cros-ec.txt
- create mode 100644 drivers/input/keyboard/cros_ec_keyb.c
- create mode 100644 drivers/mfd/cros_ec.c
+ drivers/mfd/Kconfig       |  10 +++
+ drivers/mfd/Makefile      |   1 +
+ drivers/mfd/cros_ec_i2c.c | 206 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 217 insertions(+)
  create mode 100644 drivers/mfd/cros_ec_i2c.c
- create mode 100644 drivers/mfd/cros_ec_spi.c
- create mode 100644 include/linux/mfd/cros_ec.h
- create mode 100644 include/linux/mfd/cros_ec_commands.h
 
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 554dc09..6bbf162 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -29,6 +29,16 @@ config MFD_CROS_EC
+ 	  You also ned to enable the driver for the bus you are using. The
+ 	  protocol for talking to the EC is defined by the bus driver.
+ 
++config MFD_CROS_EC_I2C
++	tristate "ChromeOS Embedded Controller (I2C)"
++	depends on MFD_CROS_EC && I2C
++
++	help
++	  If you say Y here, you get support for talking to the ChromeOS
++	  EC through an I2C bus. This uses a simple byte-level protocol with
++	  a checksum. Failing accesses will be retried three times to
++	  improve reliability.
++
+ config MFD_88PM800
+ 	tristate "Support Marvell 88PM800"
+ 	depends on I2C=y && GENERIC_HARDIRQS
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index f2d8756..3323191 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_MFD_88PM805)	+= 88pm805.o 88pm80x.o
+ obj-$(CONFIG_MFD_SM501)		+= sm501.o
+ obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
+ obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
++obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
+ 
+ rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o
+ obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
+diff --git a/drivers/mfd/cros_ec_i2c.c b/drivers/mfd/cros_ec_i2c.c
+new file mode 100644
+index 0000000..a0f5f13
+--- /dev/null
++++ b/drivers/mfd/cros_ec_i2c.c
+@@ -0,0 +1,206 @@
++/*
++ * ChromeOS EC multi-function device (I2C)
++ *
++ * Copyright (C) 2012 Google, Inc
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/interrupt.h>
++#include <linux/mfd/cros_ec.h>
++#include <linux/mfd/cros_ec_commands.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++
++static inline struct cros_ec_device *to_ec_dev(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++
++	return i2c_get_clientdata(client);
++}
++
++static int cros_ec_command_xfer(struct cros_ec_device *ec_dev,
++				struct cros_ec_msg *msg)
++{
++	struct i2c_client *client = ec_dev->priv;
++	int ret = -ENOMEM;
++	int i;
++	int packet_len;
++	u8 *out_buf = NULL;
++	u8 *in_buf = NULL;
++	u8 sum;
++	struct i2c_msg i2c_msg[2];
++
++	i2c_msg[0].addr = client->addr;
++	i2c_msg[0].flags = 0;
++	i2c_msg[1].addr = client->addr;
++	i2c_msg[1].flags = I2C_M_RD;
++
++	/*
++	 * allocate larger packet (one byte for checksum, one byte for
++	 * length, and one for result code)
++	 */
++	packet_len = msg->in_len + 3;
++	in_buf = kzalloc(packet_len, GFP_KERNEL);
++	if (!in_buf)
++		goto done;
++	i2c_msg[1].len = packet_len;
++	i2c_msg[1].buf = (char *)in_buf;
++
++	/*
++	 * allocate larger packet (one byte for checksum, one for
++	 * command code, one for length, and one for command version)
++	 */
++	packet_len = msg->out_len + 4;
++	out_buf = kzalloc(packet_len, GFP_KERNEL);
++	if (!out_buf)
++		goto done;
++	i2c_msg[0].len = packet_len;
++	i2c_msg[0].buf = (char *)out_buf;
++
++	out_buf[0] = EC_CMD_VERSION0 + msg->version;
++	out_buf[1] = msg->cmd;
++	out_buf[2] = msg->out_len;
++
++	/* copy message payload and compute checksum */
++	sum = out_buf[0] + out_buf[1] + out_buf[2];
++	for (i = 0; i < msg->out_len; i++) {
++		out_buf[3 + i] = msg->out_buf[i];
++		sum += out_buf[3 + i];
++	}
++	out_buf[3 + msg->out_len] = sum;
++
++	/* send command to EC and read answer */
++	ret = i2c_transfer(client->adapter, i2c_msg, 2);
++	if (ret < 0) {
++		dev_err(ec_dev->dev, "i2c transfer failed: %d\n", ret);
++		goto done;
++	} else if (ret != 2) {
++		dev_err(ec_dev->dev, "failed to get response: %d\n", ret);
++		ret = -EIO;
++		goto done;
++	}
++
++	/* check response error code */
++	if (i2c_msg[1].buf[0]) {
++		dev_warn(ec_dev->dev, "command 0x%02x returned an error %d\n",
++			 msg->cmd, i2c_msg[1].buf[0]);
++		ret = -EINVAL;
++		goto done;
++	}
++
++	/* copy response packet payload and compute checksum */
++	sum = in_buf[0] + in_buf[1];
++	for (i = 0; i < msg->in_len; i++) {
++		msg->in_buf[i] = in_buf[2 + i];
++		sum += in_buf[2 + i];
++	}
++	dev_dbg(ec_dev->dev, "packet: %*ph, sum = %02x\n",
++		i2c_msg[1].len, in_buf, sum);
++	if (sum != in_buf[2 + msg->in_len]) {
++		dev_err(ec_dev->dev, "bad packet checksum\n");
++		ret = -EBADMSG;
++		goto done;
++	}
++
++	ret = 0;
++ done:
++	kfree(in_buf);
++	kfree(out_buf);
++	return ret;
++}
++
++static int cros_ec_probe_i2c(struct i2c_client *client,
++			     const struct i2c_device_id *dev_id)
++{
++	struct device *dev = &client->dev;
++	struct cros_ec_device *ec_dev = NULL;
++	int err;
++
++	if (dev->of_node && !of_device_is_available(dev->of_node)) {
++		dev_warn(dev, "Device disabled by device tree\n");
++		return -ENODEV;
++	}
++
++	ec_dev = devm_kzalloc(dev, sizeof(*ec_dev), GFP_KERNEL);
++	if (!ec_dev)
++		return -ENOMEM;
++
++	i2c_set_clientdata(client, ec_dev);
++	ec_dev->name = "I2C";
++	ec_dev->dev = dev;
++	ec_dev->priv = client;
++	ec_dev->irq = client->irq;
++	ec_dev->command_xfer = cros_ec_command_xfer;
++	ec_dev->ec_name = client->name;
++	ec_dev->phys_name = client->adapter->name;
++	ec_dev->parent = &client->dev;
++
++	err = cros_ec_register(ec_dev);
++	if (err) {
++		dev_err(dev, "cannot register EC\n");
++		return err;
++	}
++
++	return 0;
++}
++
++static int cros_ec_remove_i2c(struct i2c_client *client)
++{
++	struct cros_ec_device *ec_dev = i2c_get_clientdata(client);
++
++	cros_ec_remove(ec_dev);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int cros_ec_i2c_suspend(struct device *dev)
++{
++	struct cros_ec_device *ec_dev = to_ec_dev(dev);
++
++	return cros_ec_suspend(ec_dev);
++}
++
++static int cros_ec_i2c_resume(struct device *dev)
++{
++	struct cros_ec_device *ec_dev = to_ec_dev(dev);
++
++	return cros_ec_resume(ec_dev);
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(cros_ec_i2c_pm_ops, cros_ec_i2c_suspend,
++			  cros_ec_i2c_resume);
++
++static const struct i2c_device_id cros_ec_i2c_id[] = {
++	{ "cros-ec-i2c", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, cros_ec_i2c_id);
++
++static struct i2c_driver cros_ec_driver = {
++	.driver	= {
++		.name	= "cros-ec-i2c",
++		.owner	= THIS_MODULE,
++		.pm	= &cros_ec_i2c_pm_ops,
++	},
++	.probe		= cros_ec_probe_i2c,
++	.remove		= cros_ec_remove_i2c,
++	.id_table	= cros_ec_i2c_id,
++};
++
++module_i2c_driver(cros_ec_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("ChromeOS EC multi function device");
 -- 
 1.8.1.3
 
