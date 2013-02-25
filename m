@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759879Ab3BYU5C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 15:57:02 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45395 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759448Ab3BYU5A (ORCPT
+	id S1759871Ab3BYU7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 15:59:15 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:56208 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755140Ab3BYU7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 15:57:00 -0500
-Message-ID: <512BD015.5000200@wwwdotorg.org>
-Date: Mon, 25 Feb 2013 13:56:53 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: arm@kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Julian Andres Klode <jak@jak-linux.org>,
-        Marc Dietrich <marvin24@gmx.de>, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V4 2/2] MAINTAINERS: update Tegra section to capture all
- Tegra files
-References: <1360629574-23989-1-git-send-email-swarren@wwwdotorg.org> <1360629574-23989-2-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1360629574-23989-2-git-send-email-swarren@wwwdotorg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 25 Feb 2013 15:59:13 -0500
+Date: Mon, 25 Feb 2013 15:59:12 -0500 (EST)
+Message-Id: <20130225.155912.1003926244088919460.davem@davemloft.net>
+To: kapranoff@inbox.ru
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NET/PHY: Eliminate the forced speed reduction algorithm
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1361795118.3980.108.camel@kkk.nita.ru>
+References: <1361795118.3980.108.camel@kkk.nita.ru>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 25 Feb 2013 12:59:17 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2013 05:39 PM, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> The intent is to ensure that all Tegra-related patches are sent to the
-> linux-tegra@ mailing list, so people can keep up-to-date on all misc
-> driver changes.
-> 
-> Doing this with a keyword is far simpler and more compact than listing
-> all Tegra-related drivers, even if wildcards were used.
-> 
-> Words such as integrate or integrator are common. Ensure the character
-> right before "tegra" isn't a-z (case-insensitive), to make sure the
-> keyword doesn't match those.
-> 
-> The only files that the keyword doesn't match are the NVEC driver. Add
-> the linux-tegra mailing list to the NVEC entry to solve this.
+From: Kirill Kapranov <kapranoff@inbox.ru>
+Date: Mon, 25 Feb 2013 16:25:18 +0400
 
-Andrew, I see you've taken patch 1/2 into your tree. Are you planning on
-taking patch 2/2 as well? Patch 2/2 depends on patch 1/2, so they really
-should go through the same tree, or into different kernel versions or -rcs.
 
-Thanks.
+To be completely honest with you, I'm really getting tired of
+making corrections to this one simple patch submission.
+
+> From Kirill Kapranov  <kkk@nita.ru>,<kapranoff@inbox.ru>
+
+It makes no sense to mention multiple email addresses in your
+authorship line, reduce it to one.
+
+If you cannot do things like this correctly on your own, have
+automated tools (such as git) generate these patch emails for you.
+
+> NET/PHY: Eliminate the forced speed reduction algorithm.
+
+You do not need to mention the commit header line again, all
+this does is make more work for me as I have to edit it out.
+To one in the Subject line is sufficient, and you should not
+use all-CAPS, and also the subsystem indication is not correct.
+Your subject line should be something like:
+
+"[PATCH] phy: Eliminate the forced speed reduction algorithm"
+
+That is, remove the "NET/" part, leave "PHY" and make it all
+lowercase.
+
+> In case of fixed speed set up for a NIC (e.g. ethtool -s eth0 autoneg off speed 100 duplex full) with an ethernet cable plugged off, the mentioned algorithm slows down a NIC speed, so further hooking up a cable does not lead to "link" state.
+
+I also had to formate this paragraph down to 80 column lines instead
+of one long one.
+
+> Signed-off-by: Kirill Kapranov <kkk@nita.ru>,<kapranoff@inbox.ru>
+
+Again, using two email address is not correct, just use one.
+
+Please, do yourself a huge favor, look at how other people submit
+accepted patches on this list.  Learn by example rather than making
+many mistakes trying to figure things out purely on your own.
+
+> I have looked up RFC-802.3, and found, that the mentioned algorithm is neither quoted nor described. AFAIK, no one RFC describe the mentioned algorithm, so it may be a witty invention of the developer(s).
+
+At the time that autonegiation was a new or non-existing feature, this
+approach of stepping down the link parameters trying different
+settings one-by-one was an absolute necessity.  It's probably not
+needed anymore in modern times.
+
+> Tested at 2.6.38.7, applicable up to for 3.0.4. 
+
+This patch does not apply to current upstream sources at all.
