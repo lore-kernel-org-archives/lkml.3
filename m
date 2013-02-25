@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413Ab3BYWUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:20:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55200 "EHLO
+	id S932940Ab3BYW0M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:26:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55233 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758692Ab3BYWUP (ORCPT
+	with ESMTP id S932422Ab3BYWUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:15 -0500
+	Mon, 25 Feb 2013 17:20:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jerome Marchand <jmarchand@redhat.com>,
-        Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@kernel.org>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [ 27/58] zram: Fix deadlock bug in partial read/write
-Date: Mon, 25 Feb 2013 14:19:23 -0800
-Message-Id: <20130225221641.976584648@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, davej@redhat.com, keescook@chromium.org,
+        ebiederm@xmission.com
+Subject: [ 32/58] futex: Revert "futex: Mark get_robust_list as deprecated"
+Date: Mon, 25 Feb 2013 14:19:28 -0800
+Message-Id: <20130225221643.088652301@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -28,63 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Minchan Kim <minchan@kernel.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 7e5a5104c6af709a8d97d5f4711e7c917761d464 upstream.
+commit fe2b05f7ca9f906be61dced5489f63b8b4d7c770 upstream.
 
-Now zram allocates new page with GFP_KERNEL in zram I/O path
-if IO is partial. Unfortunately, It may cause deadlock with
-reclaim path like below.
+This reverts commit ec0c4274e33c0373e476b73e01995c53128f1257.
 
-write_page from fs
-fs_lock
-allocation(GFP_KERNEL)
-reclaim
-pageout
-				write_page from fs
-				fs_lock <-- deadlock
+get_robust_list() is in use and a removal would break existing user
+space. With the permission checks in place it's not longer a security
+hole. Remove the deprecation warnings.
 
-This patch fixes it by using GFP_NOIO.  In read path, we
-reorganize code flow so that kmap_atomic is called after the
-GFP_NOIO allocation.
-
-Acked-by: Jerome Marchand <jmarchand@redhat.com>
-Acked-by: Nitin Gupta <ngupta@vflare.org>
-[ penberg@kernel.org: don't use GFP_ATOMIC ]
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: akpm@linux-foundation.org
+Cc: paul.gortmaker@windriver.com
+Cc: davej@redhat.com
+Cc: keescook@chromium.org
+Cc: ebiederm@xmission.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/zram/zram_drv.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ kernel/futex.c        |    2 --
+ kernel/futex_compat.c |    2 --
+ 2 files changed, 4 deletions(-)
 
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -228,11 +228,12 @@ static int zram_bvec_read(struct zram *z
- 		return 0;
- 	}
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2471,8 +2471,6 @@ SYSCALL_DEFINE3(get_robust_list, int, pi
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
  
--	user_mem = kmap_atomic(page);
- 	if (is_partial_io(bvec))
- 		/* Use  a temporary buffer to decompress the page */
--		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
--	else
-+		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
-+
-+	user_mem = kmap_atomic(page);
-+	if (!is_partial_io(bvec))
- 		uncmem = user_mem;
+-	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
+-
+ 	rcu_read_lock();
  
- 	if (!uncmem) {
-@@ -279,7 +280,7 @@ static int zram_bvec_write(struct zram *
- 		 * This is a partial IO. We need to read the full page
- 		 * before to write the changes.
- 		 */
--		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
- 		if (!uncmem) {
- 			pr_info("Error allocating temp memory!\n");
- 			ret = -ENOMEM;
+ 	ret = -ESRCH;
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -142,8 +142,6 @@ compat_sys_get_robust_list(int pid, comp
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+ 
+-	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
+-
+ 	rcu_read_lock();
+ 
+ 	ret = -ESRCH;
 
 
