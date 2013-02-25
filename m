@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759712Ab3BYDXR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 22:23:17 -0500
-Received: from mout.gmx.net ([212.227.17.21]:55749 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757463Ab3BYDXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 22:23:16 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19eRyJ76aRehz4Ro99S1f3fwzOCvfPiDRjiT+MS66
-	c5XUPV5kPkzg1w
-Message-ID: <1361762585.4555.28.camel@marge.simpson.net>
-Subject: Re: [patch v5 09/15] sched: add power aware scheduling in
- fork/exec/wake
-From: Mike Galbraith <efault@gmx.de>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
-        mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        arjan@linux.intel.com, bp@alien8.de, pjt@google.com,
-        namhyung@kernel.org, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, morten.rasmussen@arm.com
-Date: Mon, 25 Feb 2013 04:23:05 +0100
-In-Reply-To: <512ACB39.1010605@intel.com>
-References: <1361164062-20111-1-git-send-email-alex.shi@intel.com>
-	 <1361164062-20111-10-git-send-email-alex.shi@intel.com>
-	 <1361353360.10155.9.camel@laptop> <5124BCEB.8030606@intel.com>
-	 <1361367371.10155.32.camel@laptop> <5124DC76.2010801@intel.com>
-	 <1361453587.26780.18.camel@laptop> <512631C7.8060103@intel.com>
-	 <1361523279.26780.45.camel@laptop> <5129DD1A.8070509@intel.com>
-	 <512A5332.6040507@linux.vnet.ibm.com> <512ACB39.1010605@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1759730Ab3BYD03 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 22:26:29 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:38642 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757463Ab3BYD02 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 22:26:28 -0500
+Date: Sun, 24 Feb 2013 19:26:25 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Regulator: db8500-prcmu - remove incorrect __exit markup
+Message-ID: <20130225032624.GA10547@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-25 at 10:23 +0800, Alex Shi wrote:
+Even if bus is not hot-pluggable, the devices can be unbound from the
+driver via sysfs, so we should not be using __exit annotations on
+remove() methods. The only exception is drivers registered with
+platform_driver_probe() which specifically disables sysfs bind/unbind
+attributes.
 
-> One of problem is the how to decide the criteria of the burst? If we set
-> 5 waking up/ms is burst, we will lose 4 waking up/ms.
-> another problem is the burst detection cost, we need tracking a period
-> history info of the waking up, better on whole group. but that give the
-> extra cost in burst.
-> 
-> solution candidates:
-> https://lkml.org/lkml/2013/1/21/316
-> After talk with MikeG, I remove the runnable load avg in performance
-> load balance.
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/regulator/db8500-prcmu.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-One thing you could try is to make criteria depend on avg_idle.  It will
-slam to 2*migration_cost when a wakeup arrives after an ~extended idle.
-You could perhaps extend it to cover new task wakeup as well, and use
-that transition to invalidate history, switch to instantaneous until
-fresh history can accumulate.
+diff --git a/drivers/regulator/db8500-prcmu.c b/drivers/regulator/db8500-prcmu.c
+index 219d162..a53c11a 100644
+--- a/drivers/regulator/db8500-prcmu.c
++++ b/drivers/regulator/db8500-prcmu.c
+@@ -528,7 +528,7 @@ static int db8500_regulator_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int __exit db8500_regulator_remove(struct platform_device *pdev)
++static int db8500_regulator_remove(struct platform_device *pdev)
+ {
+ 	int i;
+ 
+@@ -553,7 +553,7 @@ static struct platform_driver db8500_regulator_driver = {
+ 		.owner = THIS_MODULE,
+ 	},
+ 	.probe = db8500_regulator_probe,
+-	.remove = __exit_p(db8500_regulator_remove),
++	.remove = db8500_regulator_remove,
+ };
+ 
+ static int __init db8500_regulator_init(void)
+-- 
+1.7.11.7
 
--Mike
 
+-- 
+Dmitry
