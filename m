@@ -1,94 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759566Ab3BYO4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 09:56:38 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:59517 "EHLO bear.ext.ti.com"
+	id S1759473Ab3BYO6H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 09:58:07 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:59960 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758314Ab3BYO4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 09:56:37 -0500
-Date: Mon, 25 Feb 2013 16:56:22 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>, Felipe Balbi <balbi@ti.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>, <dri-devel@lists.freedesktop.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: i915 not working on Dell e6410
-Message-ID: <20130225145622.GI15499@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130225142411.GD15499@arwen.pp.htv.fi>
- <20130225143918.GA19874@cantiga.alporthouse.com>
- <20130225144312.GG15499@arwen.pp.htv.fi>
- <20130225144906.GB19874@cantiga.alporthouse.com>
+	id S1751661Ab3BYO6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 09:58:02 -0500
+Message-ID: <512B784E.5070002@linux.vnet.ibm.com>
+Date: Mon, 25 Feb 2013 06:42:22 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x+WOirvrtTKur1pg"
-Content-Disposition: inline
-In-Reply-To: <20130225144906.GB19874@cantiga.alporthouse.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Gleb Natapov <gleb@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 0/5] [v3] fix illegal use of __pa() in KVM code
+References: <20130122212428.8DF70119@kernel.stglabs.ibm.com> <1361741338.21499.38.camel@thor.lan>
+In-Reply-To: <1361741338.21499.38.camel@thor.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022514-9360-0000-0000-00001109284B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---x+WOirvrtTKur1pg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/24/2013 01:28 PM, Peter Hurley wrote:
+> Now that the alloc_remap() has been/is being removed, is most/all of
+> this being reverted?
 
-Hi,
+I _believe_ alloc_remap() is the only case where we actually remapped
+low memory.  However, there is still other code that does __pa()
+translations for percpu areas: per_cpu_ptr_to_phys().  I _think_ it's
+still theoretically possible to get some percpu data in the vmalloc() area.
 
-On Mon, Feb 25, 2013 at 02:49:07PM +0000, Chris Wilson wrote:
-> On Mon, Feb 25, 2013 at 04:43:12PM +0200, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > On Mon, Feb 25, 2013 at 02:39:18PM +0000, Chris Wilson wrote:
-> > > On Mon, Feb 25, 2013 at 04:24:11PM +0200, Felipe Balbi wrote:
-> > > > Hi folks,
-> > > >=20
-> > > > I have a Dell e6410 whose framebuffer gets corrupted with v3.7.9 and
-> > > > v3.8.0 but works fine with v3.6.11.
-> > > >=20
-> > > > Below you can find lspci and my .config, maybe I'm missing somethin=
-g ?
->=20
-> That looks like https://bugzilla.freedesktop.org/show_bug.cgi?id=3D60391
-> which is fixed by
->=20
-> commit da88a5f7f7d434e2cde1b3e19d952e6d84533662
-> Author: Chris Wilson <chris@chris-wilson.co.uk>
-> Date:   Wed Feb 13 09:31:53 2013 +0000
->=20
->     drm/i915: Disable WC PTE updates to w/a buggy IOMMU on ILK
->=20
-> or by passing intel_iommu=3Doff on the commandline.
+> So in short, my questions are:
+> 1) is the slow_virt_to_phys() necessary anymore?
 
-and so it does, thanks. That's going to be merged on v3.9 right ? Hope
-there's a stable tag in it, thanks
+kvm_vcpu_arch has a
 
-cheers
+        struct pvclock_vcpu_time_info hv_clock;
 
---=20
-balbi
+and I believe I mistook the two 'hv_clock's for each other.  However,
+this doesn't hurt anything, and the performance difference is probably
+horribly tiny.
 
---x+WOirvrtTKur1pg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRK3uWAAoJEIaOsuA1yqRE0oMQAINCTXKKyECUWxsiuJn+0QPt
-xXOpbJUtWzsvhjfSRmIeEYA1u+eYaJOz/rf9dLxBIChfrk4OIdtiqbTfN1pJ7VEe
-ryoFZCPZulLA3DEHDeeC1bFWV/ZR9WcGsb1muWLT66MyAfXQKX3S6KuyQNAByrcV
-nY6NF4RLJmmwHd6RMrz8uF2/1zLAASvByURAAVY/8c4u4njnM56yx28O5gxBs8JT
-XsCdY/Q0+F4FhteNZxSlEikjvbMDS11bgPYJkMIT/7RvMh6Ir3Jj0S6gBXfJs72R
-HH/83eVTBwkmivqOimc7D6PoEsppSt2Y8t+/V3AiMExwvzNUMiAqLekZxgvtQlKv
-Ul9r3RoVZNh0bWosg3+2dwyJIXwZswiPBe9iYJRmiGijIM8ysSsR/g9T8zZtNpFP
-VvDSuFnwAJE8lOcE2U2VltwXRM8O9XJf1hilJoI0E7ua9jzNM4yAKtLd5iQ5H0ml
-dHkwPv6dabDHp1bkngi7gfu8IwoxbQvWXZh5+2actFP1keRJQzbuPqGXgnAklCSV
-LHyq8Msm4vsVi6GjhEXanhQ/05hN/FEz6OEjPuQYPwxB/nyHXwwhQO42iWqxErho
-lcNefKFxANADuyTXiZwisoTz2I+vlKxIt8LLAw7vtR73TNjYXZDSt66HxeDaX4G8
-/naeWvsyUWTRo7bY7TtI
-=PhRc
------END PGP SIGNATURE-----
-
---x+WOirvrtTKur1pg--
