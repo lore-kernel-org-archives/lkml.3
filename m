@@ -1,21 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759887Ab3BYWUB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:20:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55092 "EHLO
+	id S933060Ab3BYWeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:34:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55115 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758924Ab3BYWT5 (ORCPT
+	with ESMTP id S1759873Ab3BYWUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:19:57 -0500
+	Mon, 25 Feb 2013 17:20:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 01/58] drm/nouveau/vm: fix memory corruption when pgt allocation fails
-Date: Mon, 25 Feb 2013 14:18:57 -0800
-Message-Id: <20130225221636.330542309@linuxfoundation.org>
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: [ 06/58] perf hists: Fix period symbol_conf.field_sep display
+Date: Mon, 25 Feb 2013 14:19:02 -0800
+Message-Id: <20130225221637.474565564@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -28,41 +34,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-commit cfd376b6bfccf33782a0748a9c70f7f752f8b869 upstream.
+commit c0d246b85fc7d42688d7a5d999ea671777caf65b upstream.
 
-If we return freed vm, nouveau_drm_open will happily call nouveau_cli_destroy,
-which will try to free it again.
+Currently we don't properly display hist data with symbol_conf.field_sep
+separator. We need to display either space or separator.
 
-Reported-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/n/tip-cyggwys0bz5kqdowwvfd8h72@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/subdev/vm/base.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ tools/perf/ui/hist.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
-@@ -352,7 +352,7 @@ nouveau_vm_create(struct nouveau_vmmgr *
- 	u64 mm_length = (offset + length) - mm_offset;
- 	int ret;
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -363,11 +363,15 @@ int hist_entry__period_snprintf(struct p
+ 		if (!perf_hpp__format[i].cond)
+ 			continue;
  
--	vm = *pvm = kzalloc(sizeof(*vm), GFP_KERNEL);
-+	vm = kzalloc(sizeof(*vm), GFP_KERNEL);
- 	if (!vm)
- 		return -ENOMEM;
++		/*
++		 * If there's no field_sep, we still need
++		 * to display initial '  '.
++		 */
+ 		if (!sep || !first) {
+ 			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
+ 			advance_hpp(hpp, ret);
++		} else
+ 			first = false;
+-		}
  
-@@ -376,6 +376,8 @@ nouveau_vm_create(struct nouveau_vmmgr *
- 		return ret;
- 	}
- 
-+	*pvm = vm;
-+
- 	return 0;
- }
- 
+ 		if (color && perf_hpp__format[i].color)
+ 			ret = perf_hpp__format[i].color(hpp, he);
 
 
