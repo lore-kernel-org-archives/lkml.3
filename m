@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045Ab3BYW1H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:27:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55233 "EHLO
+	id S933013Ab3BYW1E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:27:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55239 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932354Ab3BYWUT (ORCPT
+	with ESMTP id S932363Ab3BYWUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Feb 2013 17:20:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jim Somerville <Jim.Somerville@windriver.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>,
+        MITSUNARI Shigeo <herumi@nifty.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Jeff Moyer <jmoyer@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 33/58] inotify: remove broken mask checks causing unmount to be EINVAL
-Date: Mon, 25 Feb 2013 14:19:29 -0800
-Message-Id: <20130225221643.354030785@linuxfoundation.org>
+Subject: [ 34/58] fs/block_dev.c: page cache wrongly left invalidated after revalidate_disk()
+Date: Mon, 25 Feb 2013 14:19:30 -0800
+Message-Id: <20130225221643.650601981@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -32,80 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jim Somerville <Jim.Somerville@windriver.com>
+From: MITSUNARI Shigeo <herumi@nifty.com>
 
-commit 676a0675cf9200ac047fb50825f80867b3bb733b upstream.
+commit 7630b661da330b35dd57b6f5d6d62b386f2dd751 upstream.
 
-Running the command:
+We found that bdev->bd_invalidated was left set once revalidate_disk()
+is called, which results in page cache flush every time that device is
+open.
 
-	inotifywait -e unmount /mnt/disk
+Specifically, we found this problem in MD block device.  Once we resize
+a MD device, mdadm --monitor periodically flush all page cache for that
+device every 60 or 1000 seconds when it opens the device.
 
-immediately aborts with a -EINVAL return code.  This is however a valid
-parameter.  This abort occurs only if unmount is the sole event
-parameter.  If other event parameters are supplied, then the unmount
-event wait will work.
+This bug lies since at least 3.2.0 till the latest kernel(3.6.2).  Patch
+is attached.
 
-The problem was introduced by commit 44b350fc23e ("inotify: Fix mask
-checks").  In that commit, it states:
+The following steps will reproduce the problem.
 
-	The mask checks in inotify_update_existing_watch() and
-	inotify_new_watch() are useless because inotify_arg_to_mask()
-	sets FS_IN_IGNORED and FS_EVENT_ON_CHILD bits anyway.
+1. prepair a block device (eg /dev/sdb).
 
-But instead of removing the useless checks, it did this:
+2. create two partitions:
 
-	        mask = inotify_arg_to_mask(arg);
-	-       if (unlikely(!mask))
-	+       if (unlikely(!(mask & IN_ALL_EVENTS)))
-	                return -EINVAL;
+   sudo parted /dev/sdb
+   mklabel gpt
+   mkpart primary 0% 50%
+   mkpart primary 50% 100%
 
-The problem is that IN_ALL_EVENTS doesn't include IN_UNMOUNT, and other
-parts of the code keep IN_UNMOUNT separate from IN_ALL_EVENTS.  So the
-check should be:
+3. create a md device.
 
-	if (unlikely(!(mask & (IN_ALL_EVENTS | IN_UNMOUNT))))
+   sudo mdadm -C /dev/md/hoge -l 1 -n 2 -e 1.2 --assume-clean --auto=md --symlink=no /dev/sdb1 /dev/sdb2
 
-But inotify_arg_to_mask(arg) always sets the IN_UNMOUNT bit in the mask
-anyway, so the check is always going to pass and thus should simply be
-removed.  Also note that inotify_arg_to_mask completely controls what
-mask bits get set from arg, there's no way for invalid bits to get
-enabled there.
+4. create file system and mount it
 
-Lets fix it by simply removing the useless broken checks.
+   sudo mkfs.ext3 /dev/md/hoge
+   sudo mkdir /mnt/test
+   sudo mount /dev/md/hoge /mnt/test
 
-Signed-off-by: Jim Somerville <Jim.Somerville@windriver.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>
-Cc: John McCutchan <john@johnmccutchan.com>
-Cc: Robert Love <rlove@rlove.org>
-Cc: Eric Paris <eparis@parisplace.org>
+5. try to resize the device
+
+   sudo mdadm -G /dev/md/hoge --size=max
+
+6. create a file to fill file cache.
+
+  sudo dd if=/dev/urandom of=/mnt/test/data bs=1M count=10
+
+and verify the current status of file by free command.
+
+7. mdadm monitor will open the md device every 1000 seconds and you
+   will find all file cache on the device are cleared.
+
+The timing can be reduced by the following steps.
+
+a) kill mdadm and restart it with --delay option
+
+   /sbin/mdadm --monitor --delay=30 --pid-file /var/run/mdadm/monitor.pid --daemonise --scan --syslog
+
+or open the md device directly.
+
+   sudo dd if=/dev/md/hoge of=/dev/null bs=4096 count=1
+
+Signed-off-by: MITSUNARI Shigeo <herumi@nifty.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Jeff Moyer <jmoyer@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/notify/inotify/inotify_user.c |    4 ----
- 1 file changed, 4 deletions(-)
+ fs/block_dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -579,8 +579,6 @@ static int inotify_update_existing_watch
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -994,6 +994,7 @@ int revalidate_disk(struct gendisk *disk
  
- 	/* don't allow invalid bits: we don't want flags set */
- 	mask = inotify_arg_to_mask(arg);
--	if (unlikely(!(mask & IN_ALL_EVENTS)))
--		return -EINVAL;
- 
- 	fsn_mark = fsnotify_find_inode_mark(group, inode);
- 	if (!fsn_mark)
-@@ -632,8 +630,6 @@ static int inotify_new_watch(struct fsno
- 
- 	/* don't allow invalid bits: we don't want flags set */
- 	mask = inotify_arg_to_mask(arg);
--	if (unlikely(!(mask & IN_ALL_EVENTS)))
--		return -EINVAL;
- 
- 	tmp_i_mark = kmem_cache_alloc(inotify_inode_mark_cachep, GFP_KERNEL);
- 	if (unlikely(!tmp_i_mark))
+ 	mutex_lock(&bdev->bd_mutex);
+ 	check_disk_size_change(disk, bdev);
++	bdev->bd_invalidated = 0;
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	bdput(bdev);
+ 	return ret;
 
 
