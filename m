@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab3BYWUk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:20:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55293 "EHLO
+	id S932800Ab3BYWV3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:21:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55333 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932631Ab3BYWUc (ORCPT
+	with ESMTP id S932669Ab3BYWUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:32 -0500
+	Mon, 25 Feb 2013 17:20:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 53/58] sparc64: Add missing HAVE_ARCH_TRANSPARENT_HUGEPAGE.
-Date: Mon, 25 Feb 2013 14:19:49 -0800
-Message-Id: <20130225221647.508572244@linuxfoundation.org>
+        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 58/58] sparc64: Fix huge PMD to PTE translation for sun4u in TLB miss handler.
+Date: Mon, 25 Feb 2013 14:19:54 -0800
+Message-Id: <20130225221648.578322999@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -30,27 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit b9156ebb7beef015745f917f373abc137efc3400 ]
+[ Upstream commit 76968ad2eac6456270353de168b21f04f4b3d1d3 ]
 
-This got missed in the cleanups done for the S390 THP
-support.
+When we set the sun4u version of the PTE execute bit, it's:
 
-CC: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+	or	REG, _PAGE_EXEC_4U, REG
+
+_PAGE_EXEC_4U is 0x1000, unfortunately the immedate field of the
+'or' instruction is a signed 13-bit value.  So the above actually
+assembles into:
+
+	or	REG, -4096, REG
+
+completely corrupting the final PTE value.
+
+Set it with a:
+
+	sethi	%hi(_PAGE_EXEC_4U), TMP
+	or	REG, TMP, REG
+
+sequence instead.
+
+This fixes "git gc" crashes on sun4u machines.
+
+Reported-by: Meelis Roos <mroos@linux.ee>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ arch/sparc/include/asm/tsb.h |   28 +++++++++++++++++++---------
+ 1 file changed, 19 insertions(+), 9 deletions(-)
 
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -61,6 +61,7 @@ config SPARC64
- 	select HAVE_MEMBLOCK
- 	select HAVE_MEMBLOCK_NODE_MAP
- 	select HAVE_SYSCALL_WRAPPERS
-+	select HAVE_ARCH_TRANSPARENT_HUGEPAGE
- 	select HAVE_DYNAMIC_FTRACE
- 	select HAVE_FTRACE_MCOUNT_RECORD
- 	select HAVE_SYSCALL_TRACEPOINTS
+--- a/arch/sparc/include/asm/tsb.h
++++ b/arch/sparc/include/asm/tsb.h
+@@ -157,17 +157,26 @@ extern struct tsb_phys_patch_entry __tsb
+ 	andn		REG2, 0x7, REG2; \
+ 	add		REG1, REG2, REG1;
+ 
+-	/* This macro exists only to make the PMD translator below easier
+-	 * to read.  It hides the ELF section switch for the sun4v code
+-	 * patching.
++	/* These macros exists only to make the PMD translator below
++	 * easier to read.  It hides the ELF section switch for the
++	 * sun4v code patching.
+ 	 */
+-#define OR_PTE_BIT(REG, NAME)				\
++#define OR_PTE_BIT_1INSN(REG, NAME)			\
+ 661:	or		REG, _PAGE_##NAME##_4U, REG;	\
+ 	.section	.sun4v_1insn_patch, "ax";	\
+ 	.word		661b;				\
+ 	or		REG, _PAGE_##NAME##_4V, REG;	\
+ 	.previous;
+ 
++#define OR_PTE_BIT_2INSN(REG, TMP, NAME)		\
++661:	sethi		%hi(_PAGE_##NAME##_4U), TMP;	\
++	or		REG, TMP, REG;			\
++	.section	.sun4v_2insn_patch, "ax";	\
++	.word		661b;				\
++	mov		-1, TMP;			\
++	or		REG, _PAGE_##NAME##_4V, REG;	\
++	.previous;
++
+ 	/* Load into REG the PTE value for VALID, CACHE, and SZHUGE.  */
+ #define BUILD_PTE_VALID_SZHUGE_CACHE(REG)				   \
+ 661:	sethi		%uhi(_PAGE_VALID|_PAGE_SZHUGE_4U), REG;		   \
+@@ -214,12 +223,13 @@ extern struct tsb_phys_patch_entry __tsb
+ 	 andn		REG1, PMD_HUGE_PROTBITS, REG2;			      \
+ 	sllx		REG2, PMD_PADDR_SHIFT, REG2;			      \
+ 	/* REG2 now holds PFN << PAGE_SHIFT */				      \
+-	andcc		REG1, PMD_HUGE_EXEC, %g0;			      \
+-	bne,a,pt	%xcc, 1f;					      \
+-	 OR_PTE_BIT(REG2, EXEC);					      \
+-1:	andcc		REG1, PMD_HUGE_WRITE, %g0;			      \
++	andcc		REG1, PMD_HUGE_WRITE, %g0;			      \
+ 	bne,a,pt	%xcc, 1f;					      \
+-	 OR_PTE_BIT(REG2, W);						      \
++	 OR_PTE_BIT_1INSN(REG2, W);					      \
++1:	andcc		REG1, PMD_HUGE_EXEC, %g0;			      \
++	be,pt		%xcc, 1f;					      \
++	 nop;								      \
++	OR_PTE_BIT_2INSN(REG2, REG1, EXEC);				      \
+ 	/* REG1 can now be clobbered, build final PTE */		      \
+ 1:	BUILD_PTE_VALID_SZHUGE_CACHE(REG1);				      \
+ 	ba,pt		%xcc, PTE_LABEL;				      \
 
 
