@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759615Ab3BYKcs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 05:32:48 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56255 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759161Ab3BYKcp (ORCPT
+	id S932199Ab3BYKcy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 05:32:54 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:39304 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759161Ab3BYKct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 05:32:45 -0500
+	Mon, 25 Feb 2013 05:32:49 -0500
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/8] HID: Extend the interface with report requests
-Date: Mon, 25 Feb 2013 11:31:43 +0100
-Message-Id: <1361788310-6048-2-git-send-email-benjamin.tissoires@gmail.com>
+Subject: [PATCH v2 3/8] HID: Kconfig: Remove explicit transport layer dependencies
+Date: Mon, 25 Feb 2013 11:31:45 +0100
+Message-Id: <1361788310-6048-4-git-send-email-benjamin.tissoires@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1361788310-6048-1-git-send-email-benjamin.tissoires@gmail.com>
 References: <1361788310-6048-1-git-send-email-benjamin.tissoires@gmail.com>
@@ -23,96 +23,360 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Henrik Rydberg <rydberg@euromail.se>
+Most HID drivers (rightfully) only depend on the HID bus, not the
+specific transport layer. Remove such dependencies where applicable.
 
-Some drivers send reports directly to underlying device, creating an
-unwanted dependency on the underlying transport layer. This patch adds
-hid_hw_request() to the interface, thereby removing usbhid from the
-lion share of the drivers.
-
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Acked-by: Henrik Rydberg <rydberg@euromail.se>
 Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/hid/usbhid/hid-core.c | 13 +++++++++++++
- include/linux/hid.h           | 20 ++++++++++++++++++++
- 2 files changed, 33 insertions(+)
+ drivers/hid/Kconfig          | 68 ++++++++++++++++++++++----------------------
+ drivers/hid/hid-apple.c      |  1 -
+ drivers/hid/hid-magicmouse.c |  1 -
+ drivers/hid/hid-speedlink.c  |  2 --
+ drivers/hid/hid-thingm.c     |  1 -
+ 5 files changed, 34 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index 8e0c4bf94..366fd09 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -1243,6 +1243,18 @@ static int usbhid_power(struct hid_device *hid, int lvl)
- 	return r;
- }
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index f25666d..13a1c5d 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -92,7 +92,7 @@ menu "Special HID drivers"
  
-+static void usbhid_request(struct hid_device *hid, struct hid_report *rep, int reqtype)
-+{
-+	switch (reqtype) {
-+	case HID_REQ_GET_REPORT:
-+		usbhid_submit_report(hid, rep, USB_DIR_IN);
-+		break;
-+	case HID_REQ_SET_REPORT:
-+		usbhid_submit_report(hid, rep, USB_DIR_OUT);
-+		break;
-+	}
-+}
-+
- static struct hid_ll_driver usb_hid_driver = {
- 	.parse = usbhid_parse,
- 	.start = usbhid_start,
-@@ -1251,6 +1263,7 @@ static struct hid_ll_driver usb_hid_driver = {
- 	.close = usbhid_close,
- 	.power = usbhid_power,
- 	.hidinput_input_event = usb_hidinput_input_event,
-+	.request = usbhid_request,
- };
+ config HID_A4TECH
+ 	tristate "A4 tech mice" if EXPERT
+-	depends on USB_HID
++	depends on HID
+ 	default !EXPERT
+ 	---help---
+ 	Support for A4 tech X5 and WOP-35 / Trust 450L mice.
+@@ -113,7 +113,7 @@ config HID_ACRUX_FF
  
- static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *id)
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index e14b465..261c713 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -662,6 +662,7 @@ struct hid_driver {
-  * @hidinput_input_event: event input event (e.g. ff or leds)
-  * @parse: this method is called only once to parse the device data,
-  *	   shouldn't allocate anything to not leak memory
-+ * @request: send report request to device (e.g. feature report)
-  */
- struct hid_ll_driver {
- 	int (*start)(struct hid_device *hdev);
-@@ -676,6 +677,10 @@ struct hid_ll_driver {
- 			unsigned int code, int value);
+ config HID_APPLE
+ 	tristate "Apple {i,Power,Mac}Books" if EXPERT
+-	depends on (USB_HID || BT_HIDP)
++	depends on HID
+ 	default !EXPERT
+ 	---help---
+ 	Support for some Apple devices which less or more break
+@@ -124,27 +124,27 @@ config HID_APPLE
  
- 	int (*parse)(struct hid_device *hdev);
-+
-+	void (*request)(struct hid_device *hdev,
-+			struct hid_report *report, int reqtype);
-+
- };
+ config HID_AUREAL
+ 	tristate "Aureal"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for Aureal Cy se W-01RN Remote Controller and other Aureal derived remotes.
  
- #define	PM_HINT_FULLON	1<<5
-@@ -883,6 +888,21 @@ static inline int hid_hw_power(struct hid_device *hdev, int level)
- 	return hdev->ll_driver->power ? hdev->ll_driver->power(hdev, level) : 0;
- }
+ config HID_BELKIN
+ 	tristate "Belkin Flip KVM and Wireless keyboard" if EXPERT
+-	depends on USB_HID
++	depends on HID
+ 	default !EXPERT
+ 	---help---
+ 	Support for Belkin Flip KVM and Wireless keyboard.
  
-+
-+/**
-+ * hid_hw_request - send report request to device
-+ *
-+ * @hdev: hid device
-+ * @report: report to send
-+ * @reqtype: hid request type
-+ */
-+static inline void hid_hw_request(struct hid_device *hdev,
-+				  struct hid_report *report, int reqtype)
-+{
-+	if (hdev->ll_driver->request)
-+		hdev->ll_driver->request(hdev, report, reqtype);
-+}
-+
- int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
- 		int interrupt);
+ config HID_CHERRY
+ 	tristate "Cherry Cymotion keyboard" if EXPERT
+-	depends on USB_HID
++	depends on HID
+ 	default !EXPERT
+ 	---help---
+ 	Support for Cherry Cymotion keyboard.
+ 
+ config HID_CHICONY
+ 	tristate "Chicony Tactical pad" if EXPERT
+-	depends on USB_HID
++	depends on HID
+ 	default !EXPERT
+ 	---help---
+ 	Support for Chicony Tactical pad.
+@@ -166,7 +166,7 @@ config HID_PRODIKEYS
+ 
+ config HID_CYPRESS
+ 	tristate "Cypress mouse and barcode readers" if EXPERT
+-	depends on USB_HID
++	depends on HID
+ 	default !EXPERT
+ 	---help---
+ 	Support for cypress mouse and barcode readers.
+@@ -202,13 +202,13 @@ config HID_EMS_FF
+ 
+ config HID_ELECOM
+ 	tristate "ELECOM BM084 bluetooth mouse"
+-	depends on BT_HIDP
++	depends on HID
+ 	---help---
+ 	Support for the ELECOM BM084 (bluetooth mouse).
+ 
+ config HID_EZKEY
+ 	tristate "Ezkey BTC 8193 keyboard" if EXPERT
+-	depends on USB_HID
++	depends on HID
+ 	default !EXPERT
+ 	---help---
+ 	Support for Ezkey BTC 8193 keyboard.
+@@ -231,7 +231,7 @@ config HOLTEK_FF
+ 
+ config HID_KEYTOUCH
+ 	tristate "Keytouch HID devices"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for Keytouch HID devices not fully compliant with
+ 	the specification. Currently supported:
+@@ -249,25 +249,25 @@ config HID_KYE
+ 
+ config HID_UCLOGIC
+ 	tristate "UC-Logic"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for UC-Logic tablets.
+ 
+ config HID_WALTOP
+ 	tristate "Waltop"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for Waltop tablets.
+ 
+ config HID_GYRATION
+ 	tristate "Gyration remote control"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for Gyration remote control.
+ 
+ config HID_ICADE
+ 	tristate "ION iCade arcade controller"
+-	depends on BT_HIDP
++	depends on HID
+ 	---help---
+ 	Support for the ION iCade arcade controller to work as a joystick.
+ 
+@@ -276,20 +276,20 @@ config HID_ICADE
+ 
+ config HID_TWINHAN
+ 	tristate "Twinhan IR remote control"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for Twinhan IR remote control.
+ 
+ config HID_KENSINGTON
+ 	tristate "Kensington Slimblade Trackball" if EXPERT
+-	depends on USB_HID
++	depends on HID
+ 	default !EXPERT
+ 	---help---
+ 	Support for Kensington Slimblade Trackball.
+ 
+ config HID_LCPOWER
+ 	tristate "LC-Power"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for LC-Power RC1000MCE RF remote control.
+ 
+@@ -308,7 +308,7 @@ config HID_LENOVO_TPKBD
+ 
+ config HID_LOGITECH
+ 	tristate "Logitech devices" if EXPERT
+-	depends on USB_HID
++	depends on HID
+ 	default !EXPERT
+ 	---help---
+ 	Support for Logitech devices that are not fully compliant with HID standard.
+@@ -374,7 +374,7 @@ config LOGIWHEELS_FF
+ 
+ config HID_MAGICMOUSE
+ 	tristate "Apple MagicMouse multi-touch support"
+-	depends on BT_HIDP
++	depends on HID
+ 	---help---
+ 	Support for the Apple Magic Mouse multi-touch.
+ 
+@@ -383,14 +383,14 @@ config HID_MAGICMOUSE
+ 
+ config HID_MICROSOFT
+ 	tristate "Microsoft non-fully HID-compliant devices" if EXPERT
+-	depends on USB_HID
++	depends on HID
+ 	default !EXPERT
+ 	---help---
+ 	Support for Microsoft devices that are not fully compliant with HID standard.
+ 
+ config HID_MONTEREY
+ 	tristate "Monterey Genius KB29E keyboard" if EXPERT
+-	depends on USB_HID
++	depends on HID
+ 	default !EXPERT
+ 	---help---
+ 	Support for Monterey Genius KB29E.
+@@ -445,7 +445,7 @@ config HID_NTRIG
+ 
+ config HID_ORTEK
+ 	tristate "Ortek PKB-1700/WKB-2000/Skycable wireless keyboard and mouse trackpad"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	There are certain devices which have LogicalMaximum wrong in the keyboard
+ 	usage page of their report descriptor. The most prevailing ones so far
+@@ -473,7 +473,7 @@ config PANTHERLORD_FF
+ 
+ config HID_PETALYNX
+ 	tristate "Petalynx Maxter remote control"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for Petalynx Maxter remote control.
+ 
+@@ -545,14 +545,14 @@ config HID_PICOLCD_CIR
+ 
+ config HID_PRIMAX
+ 	tristate "Primax non-fully HID-compliant devices"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for Primax devices that are not fully compliant with the
+ 	HID standard.
+ 
+ config HID_PS3REMOTE
+ 	tristate "Sony PS3 BD Remote Control"
+-	depends on BT_HIDP
++	depends on HID
+ 	---help---
+ 	Support for the Sony PS3 Blue-ray Disk Remote Control and Logitech
+ 	Harmony Adapter for PS3, which connect over Bluetooth.
+@@ -569,7 +569,7 @@ config HID_ROCCAT
+ 
+ config HID_SAITEK
+ 	tristate "Saitek non-fully HID-compliant devices"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for Saitek devices that are not fully compliant with the
+ 	HID standard.
+@@ -578,7 +578,7 @@ config HID_SAITEK
+ 
+ config HID_SAMSUNG
+ 	tristate "Samsung InfraRed remote control or keyboards"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for Samsung InfraRed remote control or keyboards.
+ 
+@@ -604,7 +604,7 @@ config HID_STEELSERIES
+ 
+ config HID_SUNPLUS
+ 	tristate "Sunplus wireless desktop"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for Sunplus wireless desktop.
+ 
+@@ -650,20 +650,20 @@ config SMARTJOYPLUS_FF
+ 
+ config HID_TIVO
+ 	tristate "TiVo Slide Bluetooth remote control support"
+-	depends on (USB_HID || BT_HIDP)
++	depends on HID
+ 	---help---
+ 	Say Y if you have a TiVo Slide Bluetooth remote control.
+ 
+ config HID_TOPSEED
+ 	tristate "TopSeed Cyberlink, BTC Emprex, Conceptronic remote control support"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Say Y if you have a TopSeed Cyberlink or BTC Emprex or Conceptronic
+ 	CLLRCMCE remote control.
+ 
+ config HID_THINGM
+ 	tristate "ThingM blink(1) USB RGB LED"
+-	depends on USB_HID
++	depends on HID
+ 	depends on LEDS_CLASS
+ 	---help---
+ 	Support for the ThingM blink(1) USB RGB LED. This driver registers a
+@@ -689,7 +689,7 @@ config THRUSTMASTER_FF
+ 
+ config HID_WACOM
+ 	tristate "Wacom Bluetooth devices support"
+-	depends on BT_HIDP
++	depends on HID
+ 	depends on LEDS_CLASS
+ 	select POWER_SUPPLY
+ 	---help---
+@@ -697,7 +697,7 @@ config HID_WACOM
+ 
+ config HID_WIIMOTE
+ 	tristate "Nintendo Wii Remote support"
+-	depends on BT_HIDP
++	depends on HID
+ 	depends on LEDS_CLASS
+ 	select POWER_SUPPLY
+ 	select INPUT_FF_MEMLESS
+@@ -729,7 +729,7 @@ config ZEROPLUS_FF
+ 
+ config HID_ZYDACRON
+ 	tristate "Zydacron remote control support"
+-	depends on USB_HID
++	depends on HID
+ 	---help---
+ 	Support for Zydacron remote control.
+ 
+diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
+index 320a958..9e0c4fbb 100644
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -21,7 +21,6 @@
+ #include <linux/hid.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+-#include <linux/usb.h>
+ 
+ #include "hid-ids.h"
+ 
+diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+index f7f113b..ef89573 100644
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -19,7 +19,6 @@
+ #include <linux/input/mt.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+-#include <linux/usb.h>
+ 
+ #include "hid-ids.h"
+ 
+diff --git a/drivers/hid/hid-speedlink.c b/drivers/hid/hid-speedlink.c
+index e94371a..a2f587d 100644
+--- a/drivers/hid/hid-speedlink.c
++++ b/drivers/hid/hid-speedlink.c
+@@ -16,10 +16,8 @@
+ #include <linux/device.h>
+ #include <linux/hid.h>
+ #include <linux/module.h>
+-#include <linux/usb.h>
+ 
+ #include "hid-ids.h"
+-#include "usbhid/usbhid.h"
+ 
+ static const struct hid_device_id speedlink_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_X_TENSIONS, USB_DEVICE_ID_SPEEDLINK_VAD_CEZANNE)},
+diff --git a/drivers/hid/hid-thingm.c b/drivers/hid/hid-thingm.c
+index 2055a52..99342cf 100644
+--- a/drivers/hid/hid-thingm.c
++++ b/drivers/hid/hid-thingm.c
+@@ -12,7 +12,6 @@
+ #include <linux/hid.h>
+ #include <linux/leds.h>
+ #include <linux/module.h>
+-#include <linux/usb.h>
+ 
+ #include "hid-ids.h"
  
 -- 
 1.8.1.2
