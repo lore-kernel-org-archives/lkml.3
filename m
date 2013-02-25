@@ -1,83 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab3BYGLl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 01:11:41 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:34170 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab3BYGLk (ORCPT
+	id S1755984Ab3BYGSW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 01:18:22 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:7066 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178Ab3BYGSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 01:11:40 -0500
-Message-ID: <512B00E0.8030801@ti.com>
-Date: Mon, 25 Feb 2013 11:42:48 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 25 Feb 2013 01:18:21 -0500
+Message-ID: <512B01FA.5020506@huawei.com>
+Date: Mon, 25 Feb 2013 14:17:30 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Jason Liu <liu.h.jason@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: too many timer retries happen when do local timer swtich with
- broadcast timer
-References: <alpine.LFD.2.02.1302211436300.22263@ionos> <51263975.20906@ti.com> <alpine.LFD.2.02.1302212214020.22263@ionos> <5127436E.4040100@ti.com> <alpine.LFD.2.02.1302221122290.22263@ionos> <20130222103149.GC12140@e102568-lin.cambridge.arm.com> <51275058.7010809@ti.com> <alpine.LFD.2.02.1302221212500.22263@ionos> <20130222144829.GG12140@e102568-lin.cambridge.arm.com> <alpine.LFD.2.02.1302221558000.22263@ionos> <20130222152639.GH12140@e102568-lin.cambridge.arm.com> <alpine.LFD.2.02.1302221946070.22263@ionos>
-In-Reply-To: <alpine.LFD.2.02.1302221946070.22263@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH v3 1/3] cgroup: fix cgroup_path() vs rename() race
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 23 February 2013 12:22 AM, Thomas Gleixner wrote:
-> On Fri, 22 Feb 2013, Lorenzo Pieralisi wrote:
->> On Fri, Feb 22, 2013 at 03:03:02PM +0000, Thomas Gleixner wrote:
->>> On Fri, 22 Feb 2013, Lorenzo Pieralisi wrote:
->>>> On Fri, Feb 22, 2013 at 12:07:30PM +0000, Thomas Gleixner wrote:
->>>>> Now we could make use of that and avoid going deep idle just to come
->>>>> back right away via the IPI. Unfortunately the notification thingy has
->>>>> no return value, but we can fix that.
->>>>>
->>>>> To confirm that theory, could you please try the hack below and add
->>>>> some instrumentation (trace_printk)?
->>>>
->>>> Applied, and it looks like that's exactly why the warning triggers, at least
->>>> on the platform I am testing on which is a dual-cluster ARM testchip.
->>>>
-I too confirm that the warnings cause is same.
+rename() will change dentry->d_name. The result of this race can
+be worse than seeing partially rewritten name, but we might access
+a stale pointer because rename() will re-allocate memory to hold
+a longer name.
 
->>>> There is a still time window though where the CPU (the IPI target) can get
->>>> back to idle (tick_broadcast_pending still not set) before the CPU target of
->>>> the broadcast has a chance to run tick_handle_oneshot_broadcast (and set
->>>> tick_broadcast_pending), or am I missing something ?
->>>
->>> Well, the tick_broadcast_pending bit is uninteresting if the
->>> force_broadcast bit is set. Because if that bit is set we know for
->>> sure, that we got woken with the cpu which gets the broadcast timer
->>> and raced back to idle before the broadcast handler managed to
->>> send the IPI.
->>
->> Gah, my bad sorry, I mixed things up. I thought
->>
->> tick_check_broadcast_pending()
->>
->> was checking against the tick_broadcast_pending mask not
->>
->> tick_force_broadcast_mask
->
-> Yep, that's a misnomer. I just wanted to make sure that my theory is
-> correct. I need to think about the real solution some more.
->
-> We have two alternatives:
->
-> 1) Make the clockevents_notify function have a return value.
->
-> 2) Add something like the hack I gave you with a proper name.
->
-> The latter has the beauty, that we just need to modify the platform
-> independent idle code instead of going down to every callsite of the
-> clockevents_notify thing.
->
-I agree that 2 is better alternative to avoid multiple changes.
-Whichever alternative you choose, will be happy to test it :)
+As accessing dentry->name must be protected by dentry->d_lock or
+parent inode's i_mutex, while on the other hand cgroup-path() can
+be called with some irq-safe spinlocks held, we can't generate
+cgroup path using dentry->d_name.
 
-Regards,
-Santosh
+Alternatively we make a copy of dentry->d_name and save it in
+cgrp->name when a cgroup is created, and update cgrp->name at
+rename().
+
+v3: use kfree_rcu() instead of synchronize_rcu() in user-visible path
+v2: make cgrp->name RCU safe.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ block/blk-cgroup.h     |   2 -
+ include/linux/cgroup.h |  17 +++++++++
+ kernel/cgroup.c        | 101 ++++++++++++++++++++++++++++++++++++-------------
+ 3 files changed, 91 insertions(+), 29 deletions(-)
+
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 2459730..e2e3404 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -216,9 +216,7 @@ static inline int blkg_path(struct blkcg_gq *blkg, char *buf, int buflen)
+ {
+ 	int ret;
+ 
+-	rcu_read_lock();
+ 	ret = cgroup_path(blkg->blkcg->css.cgroup, buf, buflen);
+-	rcu_read_unlock();
+ 	if (ret)
+ 		strncpy(buf, "<unavailable>", buflen);
+ 	return ret;
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 900af59..7f21bad 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -150,6 +150,11 @@ enum {
+ 	CGRP_CPUSET_CLONE_CHILDREN,
+ };
+ 
++struct cgroup_name {
++	struct rcu_head rcu_head;
++	char name[0];
++};
++
+ struct cgroup {
+ 	unsigned long flags;		/* "unsigned long" so bitops work */
+ 
+@@ -172,6 +177,18 @@ struct cgroup {
+ 	struct cgroup *parent;		/* my parent */
+ 	struct dentry *dentry;		/* cgroup fs entry, RCU protected */
+ 
++	/*
++	 * This is a copy of dentry->d_name, and it's needed because
++	 * we can't use dentry->d_name in cgroup_path().
++	 *
++	 * You must acquire rcu_read_lock() to access cgrp->name, and
++	 * the only place that can change it is rename(), which is
++	 * protected by parent dir's i_mutex.
++	 *
++	 * The name of the root cgroup is "/", and @name == NULL.
++	 */
++	struct cgroup_name __rcu *name;
++
+ 	/* Private pointers for each registered subsystem */
+ 	struct cgroup_subsys_state *subsys[CGROUP_SUBSYS_COUNT];
+ 
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index b5c6432..eb3c280 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -860,6 +860,17 @@ static struct inode *cgroup_new_inode(umode_t mode, struct super_block *sb)
+ 	return inode;
+ }
+ 
++static struct cgroup_name *cgroup_alloc_name(struct dentry *dentry)
++{
++	struct cgroup_name *name;
++
++	name = kmalloc(sizeof(*name) + dentry->d_name.len + 1, GFP_KERNEL);
++	if (!name)
++		return NULL;
++	strcpy(name->name, dentry->d_name.name);
++	return name;
++}
++
+ static void cgroup_free_fn(struct work_struct *work)
+ {
+ 	struct cgroup *cgrp = container_of(work, struct cgroup, free_work);
+@@ -890,6 +901,7 @@ static void cgroup_free_fn(struct work_struct *work)
+ 	simple_xattrs_free(&cgrp->xattrs);
+ 
+ 	ida_simple_remove(&cgrp->root->cgroup_ida, cgrp->id);
++	kfree(rcu_dereference_raw(cgrp->name));
+ 	kfree(cgrp);
+ }
+ 
+@@ -1771,49 +1783,49 @@ static struct kobject *cgroup_kobj;
+  * @buf: the buffer to write the path into
+  * @buflen: the length of the buffer
+  *
+- * Called with cgroup_mutex held or else with an RCU-protected cgroup
+- * reference.  Writes path of cgroup into buf.  Returns 0 on success,
+- * -errno on error.
++ * Writes path of cgroup into buf.  Returns 0 on success, -errno on error.
++ *
++ * We can't generate cgroup path using dentry->d_name, as accessing
++ * dentry->name must be protected by irq-unsafe dentry->d_lock or parent
++ * inode's i_mutex, while on the other hand cgroup_path() can be called
++ * with some irq-safe spinlocks held.
+  */
+ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
+ {
+-	struct dentry *dentry = cgrp->dentry;
++	int ret = -ENAMETOOLONG;
+ 	char *start;
+ 
+-	rcu_lockdep_assert(rcu_read_lock_held() || cgroup_lock_is_held(),
+-			   "cgroup_path() called without proper locking");
+-
+-	if (cgrp == dummytop) {
+-		/*
+-		 * Inactive subsystems have no dentry for their root
+-		 * cgroup
+-		 */
++	if (!cgrp->parent) {
+ 		strcpy(buf, "/");
+ 		return 0;
+ 	}
+ 
+ 	start = buf + buflen - 1;
+-
+ 	*start = '\0';
+-	for (;;) {
+-		int len = dentry->d_name.len;
+ 
++	rcu_read_lock();
++	while (cgrp->parent) {
++		struct cgroup_name *cname = rcu_dereference(cgrp->name);
++		char *name;
++		int len;
++
++		name = cname->name;
++		len = strlen(name);
+ 		if ((start -= len) < buf)
+-			return -ENAMETOOLONG;
+-		memcpy(start, dentry->d_name.name, len);
+-		cgrp = cgrp->parent;
+-		if (!cgrp)
+-			break;
++			goto out;
++		memcpy(start, name, len);
+ 
+-		dentry = cgrp->dentry;
+-		if (!cgrp->parent)
+-			continue;
+ 		if (--start < buf)
+-			return -ENAMETOOLONG;
++			goto out;
+ 		*start = '/';
++
++		cgrp = cgrp->parent;
+ 	}
++	ret = 0;
+ 	memmove(buf, start, buf + buflen - start);
+-	return 0;
++out:
++	rcu_read_unlock();
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(cgroup_path);
+ 
+@@ -2539,13 +2551,40 @@ static int cgroup_file_release(struct inode *inode, struct file *file)
+ static int cgroup_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 			    struct inode *new_dir, struct dentry *new_dentry)
+ {
++	int ret;
++	struct cgroup_name *name, *old_name;
++	struct cgroup *cgrp;
++
++	/*
++	 * It's convinient to use parent dir's i_mutex to protected
++	 * cgrp->name.
++	 */
++	lockdep_assert_held(&old_dir->i_mutex);
++
+ 	if (!S_ISDIR(old_dentry->d_inode->i_mode))
+ 		return -ENOTDIR;
+ 	if (new_dentry->d_inode)
+ 		return -EEXIST;
+ 	if (old_dir != new_dir)
+ 		return -EIO;
+-	return simple_rename(old_dir, old_dentry, new_dir, new_dentry);
++
++	cgrp = __d_cgrp(old_dentry);
++
++	name = cgroup_alloc_name(new_dentry);
++	if (!name)
++		return -ENOMEM;
++
++	ret = simple_rename(old_dir, old_dentry, new_dir, new_dentry);
++	if (ret) {
++		kfree(name);
++		return ret;
++	}
++
++	old_name = cgrp->name;
++	rcu_assign_pointer(cgrp->name, name);
++
++	kfree_rcu(old_name, rcu_head);
++	return 0;
+ }
+ 
+ static struct simple_xattrs *__d_xattrs(struct dentry *dentry)
+@@ -4160,6 +4199,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 			     umode_t mode)
+ {
+ 	struct cgroup *cgrp;
++	struct cgroup_name *name;
+ 	struct cgroupfs_root *root = parent->root;
+ 	int err = 0;
+ 	struct cgroup_subsys *ss;
+@@ -4170,9 +4210,14 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	if (!cgrp)
+ 		return -ENOMEM;
+ 
++	name = cgroup_alloc_name(dentry);
++	if (!name)
++		goto err_free_cgrp;
++	rcu_assign_pointer(cgrp->name, name);
++
+ 	cgrp->id = ida_simple_get(&root->cgroup_ida, 1, 0, GFP_KERNEL);
+ 	if (cgrp->id < 0)
+-		goto err_free_cgrp;
++		goto err_free_name;
+ 
+ 	/*
+ 	 * Only live parents can have children.  Note that the liveliness
+@@ -4278,6 +4323,8 @@ err_free_all:
+ 	deactivate_super(sb);
+ err_free_id:
+ 	ida_simple_remove(&root->cgroup_ida, cgrp->id);
++err_free_name:
++	kfree(rcu_dereference_raw(cgrp->name));
+ err_free_cgrp:
+ 	kfree(cgrp);
+ 	return err;
+-- 
+1.8.0.2
