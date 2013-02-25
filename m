@@ -1,83 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab3BYWED (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:04:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40645 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757173Ab3BYWD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:03:59 -0500
-Date: Mon, 25 Feb 2013 20:38:51 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 1/5] perf tools: Fix -C option for record command
-Message-ID: <20130225193851.GD17149@krava.brq.redhat.com>
-References: <1361785972-7431-1-git-send-email-jolsa@redhat.com>
- <1361785972-7431-2-git-send-email-jolsa@redhat.com>
- <20130225183932.GA7352@redhat.com>
- <512BB3E6.6000904@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <512BB3E6.6000904@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759572Ab3BYWKE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:10:04 -0500
+Received: from mail-ye0-f202.google.com ([209.85.213.202]:43251 "EHLO
+	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752361Ab3BYWKB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 17:10:01 -0500
+From: Simon Glass <sjg@chromium.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Simon Glass <sjg@chromium.org>,
+        Rob Landley <rob@landley.net>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Che-Liang Chiou <clchiou@chromium.org>,
+        Jonathan Kliegman <kliegs@chromium.org>, linux-input@vger.kernel.org,
+        Sourav Poddar <sourav.poddar@ti.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Alban Bedel <alban.bedel@avionic-design.de>,
+        Roland Stigge <stigge@antcom.de>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-doc@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, Bill Pemberton <wfp5p@virginia.edu>
+Subject: [PATCH v6 0/6] Add ChromeOS Embedded Controller support
+Date: Mon, 25 Feb 2013 14:08:35 -0800
+Message-Id: <1361830121-32284-1-git-send-email-sjg@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 11:56:38AM -0700, David Ahern wrote:
-> On 2/25/13 11:39 AM, Oleg Nesterov wrote:
-> >To clarify, I am not trying to review this patch, I'd like to ask
-> >the question...
-> >
-> >On 02/25, Jiri Olsa wrote:
-> >>
-> >>Currently the -C option does not work for record command,
-> >>because of the targets mismatch when synthesizing threads.
-> >>
-> >>Fixing this by using proper target interface for the
-> >>synthesize decision.
-> >
-> >OK, but my fix had the different goal. I thought that
-> >
-> >	$ perf ... record -C0 sleep 1
-> >
-> >should attach the counter to the child process (workload) and set
-> >event->cpu = 0 (instead of -1). With this patch we create the cpu
-> 
-> If a target is given (-a, -C, -p or -t) that is what the data is
-> collected for -- all cpus, a cpu, or one or more task ids. The
-> workload in that case becomes a means for bounding the data
-> collection (start and end points).
-> 
-> If you want to collect events for a workload you just run
-> perf-record -- workload.
-> 
-> Last time I dug into it (which was 8-12 months ago) -C required -a
-> to work properly. -a (system_wide) meaning collect events for all
-> cpus and then -C meaning but only for this cpu. Perhaps Namyhung's
-> target changes may have simplified fixing that as Jiri's patch
-> suggests.
+The ChromeOS Embedded Controller (EC) is an Open Source EC implementation
+used on ARM and Intel Chromebooks. Current implementations use a Cortex-M3
+connected on a bus (such as I2C, SPI, LPC) to the AP. A separate interrupt
+line is used to indicate when the EC needs service.
 
-yes, that's what actually this patch fixies.. now you can run:
+Functions performed by the EC vary by platform, but typically include
+battery charging, keyboard scanning and power sequencing.
 
-  perf record -C 0 ls
+This series includes support for the EC message protocol, and implements
+a matrix keyboard handler for Linux using the protocol. The EC performs
+key scanning and passes scan data in response to AP requests. This is
+used on the Samsung ARM Chromebook. No driver is available for LPC at
+present.
 
-and that will attach to cpu 0 only (same as '-a -C 0' before)
+This series can in principle operate on any hardware, but for it to actually
+work on the Samsung ARM Chromebook, it needs patches which are currently in
+progress to mainline: Exynos FDT interrupt support and I2C bus arbitration.
 
+The driver is device-tree-enabled and a suitable binding is included in
+this series. Example device tree nodes are included in the examples,
+but no device tree patch for exynos5250-snow is provided at this stage, since
+we must wait for the above-mentioned patches to land to avoid errors from
+dtc. This can be added with a follow-on patch when that work is complete.
 
-maybe we could consider having:
+Changes in v6:
+- Allow cros_ec to be a module
+- Remove 'struct i2c_msg' definition
+- Use %ph instead of for loop to output packet trace
+- Fix incorrect indentation in cros_ec_keyb_process()
+- Remove unnecessary assignment to NULL in probe function
 
-  perf record -C 0 ls
-    - attaching to CPU 0 and ls workload pid
+Changes in v5:
+- Remove cros_ec allocation functions
+- Remove name access functions in cros_ec, using strings instead
+- Fix Kconfig help message for MFD_CROS_EC_I2C
+- Remove I2C retry logic
+- Switch cros_ec_i2c driver to use devm
+- Update cros_ec_i2c to work with new cros_ec interface
+- Switch cros_ec_spi driver to use devm
+- Update cros_ec_spi to work with new cros_ec interface
+- Fix {} style nit in cros_ec_keyb_has_ghosting
+- Correct key lookup logic which was broken in previous version
+- Switch cros_ec_keyb driver to use devm
 
-  perf record -a -C 0 ls
-    - attaching to CPU 0 globaly
+Changes in v4:
+- Fix up trvial logging comments
+- Remove messages reporting out of memory
+- Add compatible string for cros-ec-keyb
+- Remove wake notifier and let drivers use their own handlers instead
+- Add 'depends on MFD_CROS_EC' to Kconfig
+- Remove use of wake_notifier
+- Remove manual code to locate device tree node
+- Add resume handler to clear keyboard scan buffer if required
 
-jirka
+Changes in v3:
+- Add stub for matrix_keypad_parse_of_params() when no CONFIG_OF
+- Put back full DT range checking in tca8418 driver
+- Remove 'select MFD_CROS_EC' from Kconfig as it isn't necessary
+- Remove old_state by using input layer's idev->key
+- Move inner loop of cros_ec_keyb_has_ghosting() into its own function and simplify
+- Add check for not finding the device tree node
+- Remove comment about leaking matrix_keypad_build_keymap()
+- Use platform_get_drvdata() where possible
+- Remove call to input_free_device() after input_unregister_device()
+
+Changes in v2:
+- Remove use of __devinit/__devexit
+- Remove use of __devinit/__devexit
+- Remove use of __devinit/__devexit
+- Add new patch to decode matrix-keypad DT binding
+- Remove use of __devinit/__devexit
+- Use function to read matrix-keypad parameters from DT
+- Remove key autorepeat parameters from DT binding and driver
+- Use unsigned int for rows/cols
+
+Simon Glass (6):
+  mfd: Add ChromeOS EC messages header
+  mfd: Add ChromeOS EC implementation
+  mfd: Add ChromeOS EC I2C driver
+  mfd: Add ChromeOS EC SPI driver
+  Input: matrix-keymap: Add function to read the new DT binding
+  Input: Add ChromeOS EC keyboard driver
+
+ .../devicetree/bindings/input/cros-ec-keyb.txt     |   72 +
+ Documentation/devicetree/bindings/mfd/cros-ec.txt  |   56 +
+ drivers/input/keyboard/Kconfig                     |   12 +
+ drivers/input/keyboard/Makefile                    |    1 +
+ drivers/input/keyboard/cros_ec_keyb.c              |  334 +++++
+ drivers/input/keyboard/lpc32xx-keys.c              |   11 +-
+ drivers/input/keyboard/omap4-keypad.c              |   16 +-
+ drivers/input/keyboard/tca8418_keypad.c            |    7 +-
+ drivers/input/matrix-keymap.c                      |   19 +
+ drivers/mfd/Kconfig                                |   28 +
+ drivers/mfd/Makefile                               |    3 +
+ drivers/mfd/cros_ec.c                              |  189 +++
+ drivers/mfd/cros_ec_i2c.c                          |  206 +++
+ drivers/mfd/cros_ec_spi.c                          |  375 ++++++
+ include/linux/input/matrix_keypad.h                |   19 +
+ include/linux/mfd/cros_ec.h                        |  170 +++
+ include/linux/mfd/cros_ec_commands.h               | 1369 ++++++++++++++++++++
+ 17 files changed, 2869 insertions(+), 18 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/cros-ec-keyb.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/cros-ec.txt
+ create mode 100644 drivers/input/keyboard/cros_ec_keyb.c
+ create mode 100644 drivers/mfd/cros_ec.c
+ create mode 100644 drivers/mfd/cros_ec_i2c.c
+ create mode 100644 drivers/mfd/cros_ec_spi.c
+ create mode 100644 include/linux/mfd/cros_ec.h
+ create mode 100644 include/linux/mfd/cros_ec_commands.h
+
+-- 
+1.8.1.3
+
