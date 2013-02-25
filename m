@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759632Ab3BYVxu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 16:53:50 -0500
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:49938 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759465Ab3BYVxq (ORCPT
+	id S1759850Ab3BYV5o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 16:57:44 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:47908 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759832Ab3BYV5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 16:53:46 -0500
+	Mon, 25 Feb 2013 16:57:42 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130220181815.GB15152@core.coreip.homeip.net>
-References: <1361381079-26747-1-git-send-email-sjg@chromium.org>
-	<1361381079-26747-6-git-send-email-sjg@chromium.org>
-	<20130220181815.GB15152@core.coreip.homeip.net>
-Date: Mon, 25 Feb 2013 13:53:43 -0800
-X-Google-Sender-Auth: bT9lpI1Qdco8Q1Q14hlvCPVjFNE
-Message-ID: <CAPnjgZ0r93Pzrj5bHFmM1BjkNzKLRVJoW=TGdvOHOwpgLbjv=Q@mail.gmail.com>
-Subject: Re: [PATCH v5 5/6] Input: matrix-keymap: Add function to read the new
- DT binding
-From: Simon Glass <sjg@chromium.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        linux-input@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
+References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
+ <Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 25 Feb 2013 14:57:20 -0700
+Message-ID: <CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
+Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Artem S. Tashkinov" <t.artem@lycos.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
-
-On Wed, Feb 20, 2013 at 10:18 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Wed, Feb 20, 2013 at 09:24:38AM -0800, Simon Glass wrote:
->> We now have a binding which adds two parameters to the matrix keypad DT
->> node. This is separate from the GPIO-driven matrix keypad binding, and
->> unfortunately incompatible, since that uses row-gpios/col-gpios for the
->> row and column counts.
->>
->> So the easiest option here is to provide a function for non-GPIO drivers
->> to use to decode the binding.
->>
->> Note: We could in fact create an entirely separate structure to hold
->> these two fields, but it does not seem worth it, yet. If we have more
->> parameters then we can add this, and then refactor each driver to hold
->> such a structure.
->>
->> Signed-off-by: Simon Glass <sjg@chromium.org>
->> Tested-by: Sourav Poddar <sourav.poddar@ti.com> (v2)
+On Tue, Feb 19, 2013 at 9:22 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Tue, 12 Feb 2013, Bjorn Helgaas wrote:
 >
-> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>> [+cc linux-pci, Rafael, Alan]
+>>
+>> [https://bugzilla.kernel.org/show_bug.cgi?id=53551]
+>>
+>> On Tue, Feb 12, 2013 at 1:13 PM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
+>> > Feb 13, 2013 01:32:53 AM, Linus Torvalds wrote:
+>> > On Tue, Feb 12, 2013 at 10:29 AM, Artem S. Tashkinov wrote:
+>> >>> Feb 12, 2013 11:30:20 PM, Linus Torvalds wrote:
+>> >>>>
+>> >>>>A few things to try to pinpoint:
+>> >>>>
+>> >>>> (a) Is it *only* write performance that suffers, or is it other
+>> >>>>performance too? Networking (DMA? Perhaps only writing *to* the
+>> >>>>network?)? CPU?
+>> >>>
+>> >>> I  've tested hdpard -tT --direct and the output on boot and after suspend
+>> >>> is quite similar.
+>> >>>
+>> >>> I  've also checked my network read/write speed, and it  's the same
+>> >>> ~ 100MBit/sec (I have no 1Gbit computers on my network
+>> >>> unfortunately).
+>> >>
+>> >>Ok. So it really sounds like just USB and HD writes. Which is quite
+>> >>odd, since they have basically nothing in common I can think of
+>> >>(except the obvious block layer issues).
 >
-> I suppose the EC driver will go through MFD tree, right?
+> There's a slight chance that we might get some ideas by comparing
+> usbmon traces showing disk activity before and after the
+> problem-causing suspend.
 
-Yes I expect so.
-
-Regards,
-Simon
-
->
-> --
-> Dmitry
+Where are we at with this, Artem?  I assume it's still a problem.
