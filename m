@@ -1,84 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220Ab3BYOgn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 09:36:43 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:33620 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754120Ab3BYOgm (ORCPT
+	id S1758695Ab3BYOhH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 09:37:07 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:53352 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1757057Ab3BYOhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 09:36:42 -0500
-Date: Mon, 25 Feb 2013 06:37:30 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Dongsheng Song <dongsheng.song@gmail.com>,
-        Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Mukesh Rathor <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH] arch/x86/xen: remove depends on CONFIG_EXPERIMENTAL
-Message-ID: <20130225143730.GC14007@kroah.com>
-References: <20130223072959.GA4894@www.outflux.net>
- <CAE8XmWoX_TyHMTnGCMn6j_qiK0hptCgyrnVYpDJkfTAQfUNQPA@mail.gmail.com>
- <CAGXu5jKkaTStWRDQLOb6HxM7sGyj+1ekxxkGK8hw6rWkHRrVsQ@mail.gmail.com>
- <CAE8XmWq+dA5Pvhyoxm2Nqbt0psLpPxUdR7i5MKFhxVxubY0QtQ@mail.gmail.com>
- <20130224144017.GB1111@kroah.com>
- <alpine.DEB.2.02.1302251157210.5360@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1302251157210.5360@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Feb 2013 09:37:01 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
+        mcgrof@qca.qualcomm.com, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ath5k: cleanup channel to eprom_mode function
+Date: Mon, 25 Feb 2013 15:36:48 +0100
+Message-Id: <1361803008-18494-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 12:39:27PM +0000, Stefano Stabellini wrote:
-> On Sun, 24 Feb 2013, Greg Kroah-Hartman wrote:
-> > 
-> > You should not have unstable options in the kernel in the first place,
-> > sorry.
->  
-> With the premise that the removal of CONFIG_EXPERIMENTAL is not an issue
-> for me personally or my work, I am going to give you my 2 cents on the
-> matter, but feel free to ignore them :)
-> 
-> While I understand that CONFIG_EXPERIMENTAL has been abused, I feel that
-> rejecting everything that is not fully stable and with external
-> interfaces set in stones, might hinder the development of new features.
+Stop returning negative values from ath5k_eeprom_mode_from_channel.
+Yell loudly about that case in that function instead and return the
+default/zero/mode A. This cleans up the callers, but needs to pass ah
+down to ath5k_eeprom_mode_from_channel for ATH5K_WARN. For that
+purpose we also need the declaration to be moved to ath5k.h.
 
-It's been this way for _years_ this isn't something new (the "you have
-to get it right really quickly" problem).  See Documentation/ABI/ for
-some words about how you can try to do this.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/net/wireless/ath/ath5k/ath5k.h  |  3 ++-
+ drivers/net/wireless/ath/ath5k/eeprom.c |  6 ++++--
+ drivers/net/wireless/ath/ath5k/eeprom.h |  3 ---
+ drivers/net/wireless/ath/ath5k/phy.c    | 20 +++-----------------
+ drivers/net/wireless/ath/ath5k/reset.c  |  4 +---
+ 5 files changed, 10 insertions(+), 26 deletions(-)
 
-> After all, given how fast the kernel is moving nowadays,
+diff --git a/drivers/net/wireless/ath/ath5k/ath5k.h b/drivers/net/wireless/ath/ath5k/ath5k.h
+index 3150def..2d691b8 100644
+--- a/drivers/net/wireless/ath/ath5k/ath5k.h
++++ b/drivers/net/wireless/ath/ath5k/ath5k.h
+@@ -1523,7 +1523,8 @@ int ath5k_hw_dma_stop(struct ath5k_hw *ah);
+ /* EEPROM access functions */
+ int ath5k_eeprom_init(struct ath5k_hw *ah);
+ void ath5k_eeprom_detach(struct ath5k_hw *ah);
+-
++int ath5k_eeprom_mode_from_channel(struct ath5k_hw *ah,
++		struct ieee80211_channel *channel);
+ 
+ /* Protocol Control Unit Functions */
+ /* Helpers */
+diff --git a/drivers/net/wireless/ath/ath5k/eeprom.c b/drivers/net/wireless/ath/ath5k/eeprom.c
+index b7e0258..94d34ee 100644
+--- a/drivers/net/wireless/ath/ath5k/eeprom.c
++++ b/drivers/net/wireless/ath/ath5k/eeprom.c
+@@ -1779,7 +1779,8 @@ ath5k_eeprom_detach(struct ath5k_hw *ah)
+ }
+ 
+ int
+-ath5k_eeprom_mode_from_channel(struct ieee80211_channel *channel)
++ath5k_eeprom_mode_from_channel(struct ath5k_hw *ah,
++		struct ieee80211_channel *channel)
+ {
+ 	switch (channel->hw_value) {
+ 	case AR5K_MODE_11A:
+@@ -1789,6 +1790,7 @@ ath5k_eeprom_mode_from_channel(struct ieee80211_channel *channel)
+ 	case AR5K_MODE_11B:
+ 		return AR5K_EEPROM_MODE_11B;
+ 	default:
+-		return -1;
++		ATH5K_WARN(ah, "channel is not A/B/G!");
++		return AR5K_EEPROM_MODE_11A;
+ 	}
+ }
+diff --git a/drivers/net/wireless/ath/ath5k/eeprom.h b/drivers/net/wireless/ath/ath5k/eeprom.h
+index 94a9bbe..693296e 100644
+--- a/drivers/net/wireless/ath/ath5k/eeprom.h
++++ b/drivers/net/wireless/ath/ath5k/eeprom.h
+@@ -493,6 +493,3 @@ struct ath5k_eeprom_info {
+ 	/* Antenna raw switch tables */
+ 	u32	ee_antenna[AR5K_EEPROM_N_MODES][AR5K_ANT_MAX];
+ };
+-
+-int
+-ath5k_eeprom_mode_from_channel(struct ieee80211_channel *channel);
+diff --git a/drivers/net/wireless/ath/ath5k/phy.c b/drivers/net/wireless/ath/ath5k/phy.c
+index a78afa9..d6bc7cb 100644
+--- a/drivers/net/wireless/ath/ath5k/phy.c
++++ b/drivers/net/wireless/ath/ath5k/phy.c
+@@ -1612,11 +1612,7 @@ ath5k_hw_update_noise_floor(struct ath5k_hw *ah)
+ 
+ 	ah->ah_cal_mask |= AR5K_CALIBRATION_NF;
+ 
+-	ee_mode = ath5k_eeprom_mode_from_channel(ah->ah_current_channel);
+-	if (WARN_ON(ee_mode < 0)) {
+-		ah->ah_cal_mask &= ~AR5K_CALIBRATION_NF;
+-		return;
+-	}
++	ee_mode = ath5k_eeprom_mode_from_channel(ah, ah->ah_current_channel);
+ 
+ 	/* completed NF calibration, test threshold */
+ 	nf = ath5k_hw_read_measured_noise_floor(ah);
+@@ -2317,12 +2313,7 @@ ath5k_hw_set_antenna_mode(struct ath5k_hw *ah, u8 ant_mode)
+ 
+ 	def_ant = ah->ah_def_ant;
+ 
+-	ee_mode = ath5k_eeprom_mode_from_channel(channel);
+-	if (ee_mode < 0) {
+-		ATH5K_ERR(ah,
+-			"invalid channel: %d\n", channel->center_freq);
+-		return;
+-	}
++	ee_mode = ath5k_eeprom_mode_from_channel(ah, channel);
+ 
+ 	switch (ant_mode) {
+ 	case AR5K_ANTMODE_DEFAULT:
+@@ -3622,12 +3613,7 @@ ath5k_hw_txpower(struct ath5k_hw *ah, struct ieee80211_channel *channel,
+ 		return -EINVAL;
+ 	}
+ 
+-	ee_mode = ath5k_eeprom_mode_from_channel(channel);
+-	if (ee_mode < 0) {
+-		ATH5K_ERR(ah,
+-			"invalid channel: %d\n", channel->center_freq);
+-		return -EINVAL;
+-	}
++	ee_mode = ath5k_eeprom_mode_from_channel(ah, channel);
+ 
+ 	/* Initialize TX power table */
+ 	switch (ah->ah_radio) {
+diff --git a/drivers/net/wireless/ath/ath5k/reset.c b/drivers/net/wireless/ath/ath5k/reset.c
+index e2d8b2c..a3399c4 100644
+--- a/drivers/net/wireless/ath/ath5k/reset.c
++++ b/drivers/net/wireless/ath/ath5k/reset.c
+@@ -984,9 +984,7 @@ ath5k_hw_commit_eeprom_settings(struct ath5k_hw *ah,
+ 	if (ah->ah_version == AR5K_AR5210)
+ 		return;
+ 
+-	ee_mode = ath5k_eeprom_mode_from_channel(channel);
+-	if (WARN_ON(ee_mode < 0))
+-		return;
++	ee_mode = ath5k_eeprom_mode_from_channel(ah, channel);
+ 
+ 	/* Adjust power delta for channel 14 */
+ 	if (channel->center_freq == 2484)
+-- 
+1.8.1.4
 
-No faster than it has in the past.
 
-> maintaining a project out-of-tree until is completely ready for
-> production can be very expensive. Merging the project earlier and
-> completing the development upstream can bring better results.
-
-Yes, but don't go changing user-visable apis when you do so.  That's
-been a hard rule for a LONG time.
-
-> But in these cases one wouldn't want to "market" the feature as stable
-> yet, because it just isn't. If CONFIG_EXPERIMENTAL is going away, is
-> there anything in the kernel that can be used to tag a feature as "I
-> wouldn't use it in production if I were you"? Maybe just a comment in
-> the kconfig description?
-
-I know this is hard, I've had my own problems with it in the past.  You
-don't know if you get an api right until you have a lot of users.  See
-our previous "discussions" about this topic on lkml if you are curious
-as to the eventual outcome of threads like this:
-
-	Yes, it's hard, but that's kernel programming.
-
-Sorry,
-
-greg k-h
