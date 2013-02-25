@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759744Ab3BYCDU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 21:03:20 -0500
-Received: from mga03.intel.com ([143.182.124.21]:21536 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759564Ab3BYCB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 21:01:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,730,1355126400"; 
-   d="scan'208";a="205839805"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
-        andi@firstfloor.org, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 7/7] perf, x86: Discard zero length call entries in LBR call stack
-Date: Mon, 25 Feb 2013 10:01:27 +0800
-Message-Id: <1361757687-5415-8-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1361757687-5415-1-git-send-email-zheng.z.yan@intel.com>
-References: <1361757687-5415-1-git-send-email-zheng.z.yan@intel.com>
+	id S1759614Ab3BYCGO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 21:06:14 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:9215 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759505Ab3BYCGM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 21:06:12 -0500
+X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Feb 2013 21:06:12 EST
+MIME-version: 1.0
+Content-type: multipart/mixed; boundary="Boundary_(ID_JXxiLJQ1Nxu9LMjSAdn1Qw)"
+Date: Sun, 24 Feb 2013 20:06:09 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: =?ISO-8859-15?Q?Jean-Fran=E7ois_Moine?= <moinejf@free.fr>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] tty vt: fix character insertion overflow
+Message-id: <alpine.LFD.2.03.1302242001070.2213@syhkavp.arg>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+Content-id: <alpine.LFD.2.03.1302242005071.2213@syhkavp.arg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-"Zero length call" uses the attribute of the call instruction to push
-the immediate instruction pointer on to the stack and then pops off
-that address into a register. This is accomplished without any matching
-return instruction. It confuses the hardware and make the recorded call
-stack incorrect. Try fixing the call stack by discarding zero length
-call entries.
+--Boundary_(ID_JXxiLJQ1Nxu9LMjSAdn1Qw)
+Content-id: <alpine.LFD.2.03.1302242005072.2213@syhkavp.arg>
+Content-type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-transfer-encoding: 8BIT
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+Commit 81732c3b2f (tty vt: Fix line garbage in virtual console on
+command line edition) broke insert_char() in multiple ways.  Then
+commit b1a925f44a (tty vt: Fix a regression in command line edition)
+partially fixed it.  However, the buffer being moved is still too large
+and overflowing beyond the end of the current line, corrupting existing
+characters on the next line.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 0cebb01..4795cfc 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -94,7 +94,8 @@ enum {
- 	X86_BR_ABORT		= 1 << 12,/* transaction abort */
- 	X86_BR_INTX		= 1 << 13,/* in transaction */
- 	X86_BR_NOTX		= 1 << 14,/* not in transaction */
--	X86_BR_CALL_STACK	= 1 << 15,/* call stack */
-+	X86_BR_ZERO_CALL	= 1 << 15,/* zero length call */
-+	X86_BR_CALL_STACK	= 1 << 16,/* call stack */
- };
+Example test case:
+
+echo -e "abc\nde\x1b[A\x1b[4h \x1b[4l\x1b[B"
+
+Expected result:
+
+ab c
+de
+
+Current result:
+
+ab c
+ e
+
+Needless to say that this is very annoying when inserting words in the
+middle of paragraphs with certain text editors.
+
+Signed-off-by: Nicolas Pitre <nico@linaro.org>
+Cc: Jean-François Moine <moinejf@free.fr>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: <stable@vger.kernel.org>
+
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index 1a27280..6c4abea 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -539,7 +539,7 @@ static void insert_char(struct vc_data *vc, unsigned int nr)
+ {
+ 	unsigned short *p = (unsigned short *) vc->vc_pos;
  
- #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
-@@ -111,13 +112,15 @@ enum {
- 	 X86_BR_JMP	 |\
- 	 X86_BR_IRQ	 |\
- 	 X86_BR_ABORT	 |\
--	 X86_BR_IND_CALL)
-+	 X86_BR_IND_CALL |\
-+	 X86_BR_ZERO_CALL)
- 
- #define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
- 
- #define X86_BR_ANY_CALL		 \
- 	(X86_BR_CALL		|\
- 	 X86_BR_IND_CALL	|\
-+	 X86_BR_ZERO_CALL	|\
- 	 X86_BR_SYSCALL		|\
- 	 X86_BR_IRQ		|\
- 	 X86_BR_INT)
-@@ -647,6 +650,12 @@ static int branch_type(unsigned long from, unsigned long to, int abort)
- 		ret = X86_BR_INT;
- 		break;
- 	case 0xe8: /* call near rel */
-+		insn_get_immediate(&insn);
-+		if (insn.immediate1.value == 0) {
-+			/* zero length call */
-+			ret = X86_BR_ZERO_CALL;
-+			break;
-+		}
- 	case 0x9a: /* call far absolute */
- 		ret = X86_BR_CALL;
- 		break;
--- 
-1.7.11.7
+-	scr_memmovew(p + nr, p, (vc->vc_cols - vc->vc_x) * 2);
++	scr_memmovew(p + nr, p, (vc->vc_cols - vc->vc_x - nr) * 2);
+ 	scr_memsetw(p, vc->vc_video_erase_char, nr * 2);
+ 	vc->vc_need_wrap = 0;
+ 	if (DO_UPDATE(vc))
 
+--Boundary_(ID_JXxiLJQ1Nxu9LMjSAdn1Qw)--
