@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759275Ab3BYOwv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 09:52:51 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:63762 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758314Ab3BYOwt (ORCPT
+	id S1759501Ab3BYOzQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 09:55:16 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:64127 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756044Ab3BYOzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 09:52:49 -0500
+	Mon, 25 Feb 2013 09:55:12 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: Re: [PATCH 01/11] ARM: disable virt_to_bus/virt_to_bus almost everywhere
+Date: Mon, 25 Feb 2013 14:54:47 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        James Hogan <james.hogan@imgtec.com>,
+        Andrew Morton <akpm@linux-foundation.org>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-next@vger.kernel.org
+References: <1360849767-1463135-1-git-send-email-arnd@arndb.de> <20130222101359.0c91a7259f648a3d06221bd8@canb.auug.org.au> <512B72A7.6040307@synopsys.com>
+In-Reply-To: <512B72A7.6040307@synopsys.com>
 MIME-Version: 1.0
-In-Reply-To: <20130225135123.GA28907@opensource.wolfsonmicro.com>
-References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
-	<1360933026-30325-2-git-send-email-lee.jones@linaro.org>
-	<20130220131912.GB13049@sirena.org.uk>
-	<CAPDyKFo0MpP-d7v8v1zwB42sboR3MWT6nUmG=-L0_nayYRY7FQ@mail.gmail.com>
-	<20130222103306.GA19796@opensource.wolfsonmicro.com>
-	<CAPDyKFpJzuzB_7=eH7iNV69TLOTbdBCTx3CgqPTkianZCctKag@mail.gmail.com>
-	<20130225135123.GA28907@opensource.wolfsonmicro.com>
-Date: Mon, 25 Feb 2013 15:52:46 +0100
-Message-ID: <CAPDyKFp3RPXnwzQR4r5ubZtOxazagqOQc=0=dA6ohFe4vN65Hg@mail.gmail.com>
-Subject: Re: [PATCH 01/35] mfd: ab8500-gpadc: Implemented suspend/resume
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, sameo@linux.intel.com, arnd@arndb.de,
-        linus.walleij@stericsson.com,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302251454.47617.arnd@arndb.de>
+X-Provags-ID: V02:K0:x/e7rwKl69Et33Lfhjyxpv+GTHbc3oPD2xaaqHFzj2d
+ UYT9FfBoKtNu1oTDPq6r8GHcijU0WKWJhv3UVn1YjNiuFbKK/Z
+ R2KCKGKkTOAOzwtWHaMnZV/4LQWvCfzw8tfI5/S666D/HwEAat
+ BX5cg/2A4jVOgwKtqjSLey1BoPpmY2EOno9zK+h6K2/WWoS0ek
+ K+RR8mj4QaNPpboDh0I5Im5rahNdJpyr/CE1l30xlHkcUXeXC8
+ 9EPvQCWbNKVs/ZaAigY5ZC3vdyUrnuYUyXR/epJClzZ5188JEF
+ 1+YMxekLS1bHn7g7oTAAWr3KyNE+SQc7S3UoSuPEGHlYdsdbmk
+ Z2Lzf2etod8FfO+kjmYI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 February 2013 14:51, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Feb 25, 2013 at 10:27:36AM +0100, Ulf Hansson wrote:
->> On 22 February 2013 11:38, Mark Brown
->
->> > Are you sure this actually does what you think it does, especially when
->> > run on modern kernels?
->
->> Not sure, what you are thinking of more precisely here. Runtime pm has
->> been in the kernel for quite some time now.
->
-> Yes, thanks - I was aware of that.  The integration between runtime and
-> system PM has been an area that's had some development though.
->
->> Anyway, to make it a bit clearer, we switch the regulator on/off at
->> the runtime suspend/resume callbacks. We want to take similar actions
->> in device suspend/resume.
->> To accomplish this a pm_runtime_get_sync is done in suspend and vice
->> verse in resume, otherwise you can not safely handle the regulator.
->
-> Are you absolutely positive that with modern kernels your get actually
-> resumes the device?
+On Monday 25 February 2013, Vineet Gupta wrote:
+> Have you queued up this change via one of your trees already for 3.9-rcX ?
+> If not, I can fold it in with a bunch of Kconfig cleanups for ARC
+> (GENERIC_SIGALTSTACK, HAVE_IRQ_WORK), given that those bits are already in linus'
+> tree.
+> 
 
-Yes, runtime resume is always ok, But you can not runtime suspend the
-device, since the device suspend layer prevent this with a
-pm_runtime_get_noresume before calling the device suspend callback.
+I haven't put it in my tree yet, not. Please put it in yours.
 
-Kind regards
-Ulf Hansson
+	Arnd
