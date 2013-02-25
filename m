@@ -1,34 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759499Ab3BYJxt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 04:53:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4551 "EHLO mx1.redhat.com"
+	id S1759217Ab3BYJxW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 04:53:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18485 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759078Ab3BYJxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 04:53:23 -0500
+	id S1759078Ab3BYJxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 04:53:17 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
         Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 5/5] perf tests: Add attr stat -C cpu test
-Date: Mon, 25 Feb 2013 10:52:52 +0100
-Message-Id: <1361785972-7431-6-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1361785972-7431-1-git-send-email-jolsa@redhat.com>
-References: <1361785972-7431-1-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 0/5] perf tools: Fix -C option for record command
+Date: Mon, 25 Feb 2013 10:52:47 +0100
+Message-Id: <1361785972-7431-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding test to validate perf_event_attr data for command:
-  'stat -C 0'
+hi,
+Oleg reported the -C option in record not work properly:
+http://marc.info/?l=linux-kernel&m=136017986313315&w=2
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+The issue seems to be that the '-C X' target is considered
+as task related when it comes to synthetizing threads. Adding
+the fix plus some automated test cases.
+
+Available in:
+git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/linux.git
+perf/oleg1
+
+jirka
+
+
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -39,25 +47,20 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 ---
- tools/perf/tests/attr/test-stat-C0 | 9 +++++++++
- 1 file changed, 9 insertions(+)
+Jiri Olsa (5):
+      perf tools: Fix -C option for record command
+      perf tests: Make attr script verbose friendly
+      perf tests: Make attr script test event cpu
+      perf tests: Add attr record -C cpu test
+      perf tests: Add attr stat -C cpu test
+
+ tools/perf/builtin-record.c          |  6 ++++--
+ tools/perf/tests/attr.c              |  9 +++++++--
+ tools/perf/tests/attr.py             |  5 +++--
+ tools/perf/tests/attr/base-record    |  1 +
+ tools/perf/tests/attr/base-stat      |  1 +
+ tools/perf/tests/attr/test-record-C0 | 13 +++++++++++++
+ tools/perf/tests/attr/test-stat-C0   |  9 +++++++++
+ 7 files changed, 38 insertions(+), 6 deletions(-)
+ create mode 100644 tools/perf/tests/attr/test-record-C0
  create mode 100644 tools/perf/tests/attr/test-stat-C0
-
-diff --git a/tools/perf/tests/attr/test-stat-C0 b/tools/perf/tests/attr/test-stat-C0
-new file mode 100644
-index 0000000..aa83595
---- /dev/null
-+++ b/tools/perf/tests/attr/test-stat-C0
-@@ -0,0 +1,9 @@
-+[config]
-+command = stat
-+args    = -e cycles -C 0 kill >/dev/null 2>&1
-+ret     = 1
-+
-+[event:base-stat]
-+# events are enabled by default when attached to cpu
-+disabled=0
-+enable_on_exec=0
--- 
-1.7.11.7
-
