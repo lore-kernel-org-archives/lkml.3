@@ -1,108 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759881Ab3BYXlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 18:41:12 -0500
-Received: from mail4.sde.cz ([85.93.125.197]:52079 "EHLO zimbra.sde"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759817Ab3BYXlI convert rfc822-to-8bit (ORCPT
+	id S1759927Ab3BYXnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 18:43:18 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:37900 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759631Ab3BYXnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 18:41:08 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
-Subject: Re: [PATCH] virtio-blk: emit udev event when device is resized
-From: Milos Vyletel <milos.vyletel@sde.cz>
-In-Reply-To: <20130225221238.GA10575@kroah.com>
-Date: Mon, 25 Feb 2013 18:41:03 -0500
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, mst@redhat.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <16100EF6-6C55-47ED-9BBB-2C3CAC8FA37A@sde.cz>
-References: <1361473348-7660-1-git-send-email-milos.vyletel@sde.cz> <87y5ehfczy.fsf@rustcorp.com.au> <20130225221238.GA10575@kroah.com>
-To: Greg KH <greg@kroah.com>
-X-Mailer: Apple Mail (2.1499)
+	Mon, 25 Feb 2013 18:43:17 -0500
+Message-ID: <1361835144.12845.80.camel@misato.fc.hp.com>
+Subject: Re: [Update 4][PATCH 2/7] ACPI / scan: Introduce common code for
+ ACPI-based device hotplug
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jiang Liu <liuj97@gmail.com>
+Date: Mon, 25 Feb 2013 16:32:24 -0700
+In-Reply-To: <18666371.hyHAvqrdQ6@vostro.rjw.lan>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
+	 <1478394.ryVNRuTre2@vostro.rjw.lan>
+	 <1361815672.12845.71.camel@misato.fc.hp.com>
+	 <18666371.hyHAvqrdQ6@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-02-26 at 00:39 +0100, Rafael J. Wysocki wrote:
+> On Monday, February 25, 2013 11:07:52 AM Toshi Kani wrote:
+> > On Sat, 2013-02-23 at 22:38 +0000, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > Multiple drivers handling hotplug-capable ACPI device nodes install
+> > > notify handlers covering the same types of events in a very similar
+> > > way.  Moreover, those handlers are installed in separate namespace
+> > > walks, although that really should be done during namespace scans
+> > > carried out by acpi_bus_scan().  This leads to substantial code
+> > > duplication, unnecessary overhead and behavior that is hard to
+> > > follow.
+> > > 
+> > > For this reason, introduce common code in drivers/acpi/scan.c for
+> > > handling hotplug-related notification and carrying out device
+> > > insertion and eject operations in a generic fashion, such that it
+> > > may be used by all of the relevant drivers in the future.  To cover
+> > > the existing differences between those drivers introduce struct
+> > > acpi_hotplug_profile for representing collections of hotplug
+> > > settings associated with different ACPI scan handlers that can be
+> > > used by the drivers to make the common code reflect their current
+> > > behavior.
+> > > 
+> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > ---
+> > > 
+> > > This update causes acpi_bus_device_eject() to only emit KOBJ_OFFLINE uevent if
+> > > autoexec is unset for the given scan handler.
+> > > 
+> > > This will require the doc in patch [5/7] to be updated which I'm going to do if
+> > > everyone is OK with the $subject patch.
+> > > 
+> > > Thanks,
+> > > Rafael
+> >  :
+> > > +
+> > > +static void acpi_scan_bus_device_check(acpi_handle handle, u32 ost_source)
+> > > +{
+> > > +	struct acpi_device *device = NULL;
+> > > +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+> > > +	int error;
+> > > +
+> > > +	mutex_lock(&acpi_scan_lock);
+> > > +
+> > > +	acpi_bus_get_device(handle, &device);
+> > > +	if (device) {
+> > > +		dev_warn(&device->dev, "Attempt to re-insert\n");
+> > > +		goto out;
+> > > +	}
+> > > +	acpi_evaluate_hotplug_ost(handle, ost_source,
+> > > +				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
+> > > +	error = acpi_bus_scan(handle);
+> > > +	if (error) {
+> > > +		acpi_handle_warn(handle, "Namespace scan failure\n");
+> > > +		goto out;
+> > > +	}
+> > > +	error = acpi_bus_get_device(handle, &device);
+> > > +	if (error) {
+> > > +		acpi_handle_warn(handle, "Missing device node object\n");
+> > > +		goto out;
+> > > +	}
+> > > +	ost_code = ACPI_OST_SC_SUCCESS;
+> > > +	if (device->handler && device->handler->hotplug.uevents)
+> > > +		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
+> > 
+> > I confirmed that the uevent crash issue was solved.  Thinking further, I
+> > wonder if we need to emit KOBJ_ONLINE here.  This behavior is asymmetric
+> > since we do not emit KOBJ_OFFLINE when autoeject is set.
+> 
+> Well, I put that in there only to be able to make the container driver behave
+> in a backwards compatible way (which is to emit KOBJ_ONLINE at this point).
+> 
+> If the container driver doesn't need to emit KOBJ_ONLINE at all, I agree with
+> your suggestion.
+> 
+> > The definition of ONLINE/OFFLINE event to an ACPI device object seems also
+> > bogus since there is no online/offline operation to the ACPI device object
+> > itself.
+> > Online/offline operation is only possible to actual device, such as
+> > system/cpu/cpu% and system/memory/memory%.
+> 
+> That's correct, but I don't know what the user space expectations are
+> currently.
 
-On Feb 25, 2013, at 5:12 PM, Greg KH <greg@kroah.com> wrote:
+I see.  I agree that we should keep backward compatibility with this
+patchset.
 
-> On Fri, Feb 22, 2013 at 10:14:49AM +1030, Rusty Russell wrote:
->> Milos Vyletel <milos.vyletel@sde.cz> writes:
->> 
->>> When virtio-blk device is resized from host (using block_resize from QEMU) emit
->>> KOBJ_CHANGE uevent to notify guest about such change. This allows user to have
->>> custom udev rules which would take whatever action if such event occurs. As a
->>> proof of concept I've created simple udev rule that automatically resize
->>> filesystem on virtio-blk device.
->>> 
->>> ACTION=="change", KERNEL=="vd*", \
->>>        ENV{RESIZE}=="1", \
->>>        ENV{ID_FS_TYPE}=="ext[3-4]", \
->>>        RUN+="/sbin/resize2fs /dev/%k"
->>> ACTION=="change", KERNEL=="vd*", \
->>>        ENV{RESIZE}=="1", \
->>>        ENV{ID_FS_TYPE}=="LVM2_member", \
->>>        RUN+="/sbin/pvresize /dev/%k"
->> 
->> This looks fine to me, but I like to check with Greg before adding udev
->> callouts.... Greg?
+> > So, I'd suggest the following changes.
+> >  - Remove the "uevents" attribute.  KOBJ_ONLINE/OFFLINE are not used for
+> > ACPI device objects.
+> >  - Make the !autoeject case as an exception for now, and emit
+> > KOBJ_OFFLINE as a way to request off-lining to user.  This uevent is
+> > tied with the !autoeject case.  We can then revisit if this use-case
+> > needs to be supported going forward.  If so, we may want to consider a
+> > different event type.
 > 
-> Hm, I thought we were frowning apon running binaries from udev rules
-> these days, especially ones that might have big consequences (like
-> resizing a disk image) like this.
+> Well, what about avoiding to expose uevents and autoeject for now and
+> exposing enabled only?  Drivers would still be able to set the other flags on
+> init on init to enforce the backwards-compatible behavior.
 > 
-> Kay, am I right?
+> I agree that it would be sufficient to use one additional flag then, to start
+> with, but its meaning would be something like "keep backwards compatibility
+> with the old container driver", so perhaps "autoeject" is not a good name.
 > 
-> We already emit KOBJECT_CHANGE events when block devices change, from
-> within the block core code.  Why is the patch below needed instead of
-> using these events that are already generated?  How are virtio block
-> devices special?
-> 
->> BTW, if this is good, it's good for stable IMHO.
-> 
-> What bug does it fix?
-> 
+> What about "user_eject" (that won't be exposed to user space) instead?  Where,
+> if set, it would meand "do not autoeject and emit KOBJ_OFFLINE/ONLINE uevents
+> like the old container driver did"?
 
-It is not really a bug but it definitely is useful enhancement to have in stable too. I
-can imagine lots of people can benefit from this.
+Good idea!
 
-Milos
+Thanks,
+-Toshi
 
-> thanks,
-> 
-> greg k-h
-> 
->> Cheers,
->> Rusty.
->> 
->>> Signed-off-by: Milos Vyletel <milos.vyletel@sde.cz>
->>> ---
->>> drivers/block/virtio_blk.c |    3 +++
->>> 1 files changed, 3 insertions(+), 0 deletions(-)
->>> 
->>> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
->>> index 8ad21a2..5990382 100644
->>> --- a/drivers/block/virtio_blk.c
->>> +++ b/drivers/block/virtio_blk.c
->>> @@ -539,6 +539,8 @@ static void virtblk_config_changed_work(struct work_struct *work)
->>> 	struct virtio_device *vdev = vblk->vdev;
->>> 	struct request_queue *q = vblk->disk->queue;
->>> 	char cap_str_2[10], cap_str_10[10];
->>> +	char event[] = "RESIZE=1";
->>> +	char *envp[] = { event, NULL };
->>> 	u64 capacity, size;
->>> 
->>> 	mutex_lock(&vblk->config_lock);
->>> @@ -568,6 +570,7 @@ static void virtblk_config_changed_work(struct work_struct *work)
->>> 
->>> 	set_capacity(vblk->disk, capacity);
->>> 	revalidate_disk(vblk->disk);
->>> +	kobject_uevent_env(&disk_to_dev(vblk->disk)->kobj, KOBJ_CHANGE, envp);
->>> done:
->>> 	mutex_unlock(&vblk->config_lock);
->>> }
->>> -- 
->>> 1.7.1
 
