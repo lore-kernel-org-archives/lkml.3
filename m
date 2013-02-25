@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab3BYHo1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 02:44:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26415 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757344Ab3BYHoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 02:44:24 -0500
-Message-ID: <512B1637.5060107@redhat.com>
-Date: Mon, 25 Feb 2013 15:43:51 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1757344Ab3BYHta (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 02:49:30 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:63699 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754895Ab3BYHt2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 02:49:28 -0500
+Date: Mon, 25 Feb 2013 08:49:26 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Timo Kokkonen <timo.t.kokkonen@iki.fi>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Media: remove incorrect __exit markups
+In-Reply-To: <20130225032215.GA9352@core.coreip.homeip.net>
+Message-ID: <Pine.LNX.4.64.1302250847540.3030@axis700.grange>
+References: <20130225032215.GA9352@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: Milos Vyletel <milos.vyletel@sde.cz>
-CC: linux-kernel@vger.kernel.org, mst@redhat.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] virtio-blk: emit udev event when device is resized
-References: <1361473348-7660-1-git-send-email-milos.vyletel@sde.cz>
-In-Reply-To: <1361473348-7660-1-git-send-email-milos.vyletel@sde.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:mryrH5GYi4be58JdsfcAw49g9rO+RPElWvPwZe4qJPj
+ VkUb4QphDeKqmr+Fx70fgVQIlroxRsxCO6/nZJYPcBhawcwNJp
+ 9KroxskMkU0I2rq8hxg9aEPh06WIU4BsLIZBxI+JdN4Y4CNpOo
+ PC7HUJm0hFDWSbKav7CqixUrJmJeStgafbGy9hlCArfNlDFOTW
+ 4MIOyOgfAsMsOCBpLmAASYW8M3FGgC/X66kL4lOaKQ+7J7Q8Nr
+ YI0hvtdVIM/cuIZgCrb3Iu/7UXr0zZurRs+F3iHgJAglRxYm4z
+ ND3As/2YNsI4bQSLqKVowgD0ZI/PpthTCnNl+5bcxQRyw9o+tN
+ UU0+v2Uh4xfRUo+YPLtTU+4tqRBGZOmGx9mzDSB+QBFmnqQOsp
+ 83CzMkkz6hUvg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/22/2013 03:02 AM, Milos Vyletel wrote:
-> When virtio-blk device is resized from host (using block_resize from QEMU) emit
-> KOBJ_CHANGE uevent to notify guest about such change. This allows user to have
-> custom udev rules which would take whatever action if such event occurs. As a
-> proof of concept I've created simple udev rule that automatically resize
-> filesystem on virtio-blk device.
+Hi Dmitry
+
+On Sun, 24 Feb 2013, Dmitry Torokhov wrote:
+
+> Even if bus is not hot-pluggable, the devices can be unbound from the
+> driver via sysfs, so we should not be using __exit annotations on
+> remove() methods. The only exception is drivers registered with
+> platform_driver_probe() which specifically disables sysfs bind/unbind
+> attributes.
 > 
-> ACTION=="change", KERNEL=="vd*", \
->         ENV{RESIZE}=="1", \
->         ENV{ID_FS_TYPE}=="ext[3-4]", \
->         RUN+="/sbin/resize2fs /dev/%k"
-> ACTION=="change", KERNEL=="vd*", \
->         ENV{RESIZE}=="1", \
->         ENV{ID_FS_TYPE}=="LVM2_member", \
->         RUN+="/sbin/pvresize /dev/%k"
-> 
-> Signed-off-by: Milos Vyletel <milos.vyletel@sde.cz>
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 > ---
->  drivers/block/virtio_blk.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> index 8ad21a2..5990382 100644
-> --- a/drivers/block/virtio_blk.c
-> +++ b/drivers/block/virtio_blk.c
-> @@ -539,6 +539,8 @@ static void virtblk_config_changed_work(struct work_struct *work)
->  	struct virtio_device *vdev = vblk->vdev;
->  	struct request_queue *q = vblk->disk->queue;
->  	char cap_str_2[10], cap_str_10[10];
-> +	char event[] = "RESIZE=1";
-> +	char *envp[] = { event, NULL };
+>  drivers/media/i2c/adp1653.c                      | 4 ++--
+>  drivers/media/i2c/smiapp/smiapp-core.c           | 4 ++--
+>  drivers/media/platform/soc_camera/omap1_camera.c | 4 ++--
+>  drivers/media/radio/radio-si4713.c               | 4 ++--
+>  drivers/media/rc/ir-rx51.c                       | 4 ++--
+>  5 files changed, 10 insertions(+), 10 deletions(-)
 
-event is not used again. Why not just
+[snip]
 
-char *envp[] = { "RESIZE=1", NULL };
-
-
->  	u64 capacity, size;
->  
->  	mutex_lock(&vblk->config_lock);
-> @@ -568,6 +570,7 @@ static void virtblk_config_changed_work(struct work_struct *work)
->  
->  	set_capacity(vblk->disk, capacity);
->  	revalidate_disk(vblk->disk);
-> +	kobject_uevent_env(&disk_to_dev(vblk->disk)->kobj, KOBJ_CHANGE, envp);
->  done:
->  	mutex_unlock(&vblk->config_lock);
+> diff --git a/drivers/media/platform/soc_camera/omap1_camera.c b/drivers/media/platform/soc_camera/omap1_camera.c
+> index 39a77f0..5f548ac 100644
+> --- a/drivers/media/platform/soc_camera/omap1_camera.c
+> +++ b/drivers/media/platform/soc_camera/omap1_camera.c
+> @@ -1677,7 +1677,7 @@ exit:
+>  	return err;
 >  }
-> 
+>  
+> -static int __exit omap1_cam_remove(struct platform_device *pdev)
+> +static int omap1_cam_remove(struct platform_device *pdev)
+>  {
+>  	struct soc_camera_host *soc_host = to_soc_camera_host(&pdev->dev);
+>  	struct omap1_cam_dev *pcdev = container_of(soc_host,
+> @@ -1709,7 +1709,7 @@ static struct platform_driver omap1_cam_driver = {
+>  		.name	= DRIVER_NAME,
+>  	},
+>  	.probe		= omap1_cam_probe,
+> -	.remove		= __exit_p(omap1_cam_remove),
+> +	.remove		= omap1_cam_remove,
+>  };
+>  
+>  module_platform_driver(omap1_cam_driver);
 
-I tried the following with your automatically resize udev rules.
+This looks correct, but don't we also have to remove __init from 
+omap1_cam_probe()? Or would that be a separate patch?
 
-(qemu) block_resize vd0 500
-Check the fs size in guest, it is 500Mb
-
-(qemu) block_resize vd0 1200
-Check the fs size in guest, it is still 500Mb
-
-Can you try resizing multiple times? Does it work?
-
--- 
-Asias
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
