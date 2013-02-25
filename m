@@ -1,166 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759940Ab3BYPx2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 10:53:28 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:59333 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756871Ab3BYPxX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 10:53:23 -0500
+	id S1759954Ab3BYQIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 11:08:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12806 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759933Ab3BYQIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 11:08:11 -0500
+Date: Mon, 25 Feb 2013 17:06:42 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] usermodehelper: Fix -ENOMEM return logic
+Message-ID: <20130225160642.GA31806@redhat.com>
+References: <1361802350-9299-1-git-send-email-lucas.demarchi@profusion.mobi>
 MIME-Version: 1.0
-In-Reply-To: <51226F91.7000108@linux.vnet.ibm.com>
-References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
-	<20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com>
-	<CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com>
-	<5122551E.1080703@linux.vnet.ibm.com>
-	<51226B46.9080707@linux.vnet.ibm.com>
-	<CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com>
-	<51226F91.7000108@linux.vnet.ibm.com>
-Date: Mon, 25 Feb 2013 23:53:22 +0800
-Message-ID: <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com>
-Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
- Per-CPU Reader-Writer Locks
-From: Lai Jiangshan <eag0628@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361802350-9299-1-git-send-email-lucas.demarchi@profusion.mobi>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Srivatsa,
+On 02/25, Lucas De Marchi wrote:
+>
+> Callers of call_usermodehelper_fns() should check the return value and
+> free themselves the data passed if the return is -ENOMEM. This is
+> because the subprocess_info is allocated in this function, and if the
+> allocation fail, the cleanup function cannot be called.
 
-The target of the whole patchset is nice for me.
-A question: How did you find out the such usages of
-"preempt_disable()" and convert them? did all are converted?
+Yes, this is confusing.
 
-And I think the lock is too complex and reinvent the wheel, why don't
-you reuse the lglock?
-I wrote an untested draft here.
+> However call_usermodehelper_exec() may also return -ENOMEM,
 
-Thanks,
-Lai
+Yes, and we can't distinguish this case from info == NULL case,
 
-PS: Some HA tools(I'm writing one) which takes checkpoints of
-virtual-machines frequently, I guess this patchset can speedup the
-tools.
+> in which
+> case the cleanup function is called. This means that if the caller
+> checked the return code, it was risking running the cleanup twice (like
+> kernel/sys.c:orderly_poweroff()) and if not, a leak could happen.
 
->From 01db542693a1b7fc6f9ece45d57cb529d9be5b66 Mon Sep 17 00:00:00 2001
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date: Mon, 25 Feb 2013 23:14:27 +0800
-Subject: [PATCH] lglock: add read-preference local-global rwlock
+In short: every user of call_usermodehelper_fns(cleanup != NULL)
+is buggy. Thanks.
 
-locality via lglock(trylock)
-read-preference read-write-lock via fallback rwlock_t
+But I am not sure I agree with the patch...
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- include/linux/lglock.h |   31 +++++++++++++++++++++++++++++++
- kernel/lglock.c        |   45 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 76 insertions(+), 0 deletions(-)
+>  static void call_usermodehelper_freeinfo(struct subprocess_info *info)
+>  {
+> -	if (info->cleanup)
+> +	if (info->cleanup && info->retval != -ENOMEM)
+>  		(*info->cleanup)(info);
+>  	kfree(info);
+>  }
 
-diff --git a/include/linux/lglock.h b/include/linux/lglock.h
-index 0d24e93..30fe887 100644
---- a/include/linux/lglock.h
-+++ b/include/linux/lglock.h
-@@ -67,4 +67,35 @@ void lg_local_unlock_cpu(struct lglock *lg, int cpu);
- void lg_global_lock(struct lglock *lg);
- void lg_global_unlock(struct lglock *lg);
+This doesn't look very clean/robust. And in general, personally I
+dislike the fact that ENOMEM has the special meaning. IOW, I think
+we should cleanup this logic, not to complicate it more.
 
-+struct lgrwlock {
-+	unsigned long __percpu *fallback_reader_refcnt;
-+	struct lglock lglock;
-+	rwlock_t fallback_rwlock;
-+};
+And in fact I do not think this is right, at least in UMH_NO_WAIT
+case, shouldn't avoid ->cleanup() if, say, prepare_kernel_cred()
+fails in ____call_usermodehelper()...
+
+
+I think we should extract call_usermodehelper_setup() +
+call_usermodehelper_setfns() into the new helper and export it.
+And export call_usermodehelper_exec() as well.
+
+call_usermodehelper_setfns() as a separate function makes no sense.
+
+Then we can fix call_modprobe/orderly_poweroff, something like below.
+
+What do you think?
+
+Oleg.
+
+--- x/kernel/kmod.c
++++ x/kernel/kmod.c
+@@ -98,8 +98,14 @@ static int call_modprobe(char *module_na
+ 	argv[3] = module_name;	/* check free_modprobe_argv() */
+ 	argv[4] = NULL;
+ 
+-	return call_usermodehelper_fns(modprobe_path, argv, envp,
+-		wait | UMH_KILLABLE, NULL, free_modprobe_argv, NULL);
++	info = call_usermodehelper_setup(...); // better name, please...
++	if (!info)
++		goto free_modname;
 +
-+#define DEFINE_LGRWLOCK(name)						\
-+	static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)		\
-+	= __ARCH_SPIN_LOCK_UNLOCKED;					\
-+	static DEFINE_PER_CPU(unsigned long, name ## _refcnt);		\
-+	struct lgrwlock name = {					\
-+		.fallback_reader_refcnt = &name ## _refcnt,		\
-+		.lglock = { .lock = &name ## _lock } }
++	return call_usermodehelper_exec(info, wait);
 +
-+#define DEFINE_STATIC_LGRWLOCK(name)					\
-+	static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)		\
-+	= __ARCH_SPIN_LOCK_UNLOCKED;					\
-+	static DEFINE_PER_CPU(unsigned long, name ## _refcnt);		\
-+	static struct lgrwlock name = {					\
-+		.fallback_reader_refcnt = &name ## _refcnt,		\
-+		.lglock = { .lock = &name ## _lock } }
-+
-+static inline void lg_rwlock_init(struct lgrwlock *lgrw, char *name)
-+{
-+	lg_lock_init(&lgrw->lglock, name);
-+}
-+
-+void lg_rwlock_local_read_lock(struct lgrwlock *lgrw);
-+void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw);
-+void lg_rwlock_global_write_lock(struct lgrwlock *lgrw);
-+void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw);
- #endif
-diff --git a/kernel/lglock.c b/kernel/lglock.c
-index 6535a66..463543a 100644
---- a/kernel/lglock.c
-+++ b/kernel/lglock.c
-@@ -87,3 +87,48 @@ void lg_global_unlock(struct lglock *lg)
- 	preempt_enable();
- }
- EXPORT_SYMBOL(lg_global_unlock);
-+
-+void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
-+{
-+	struct lglock *lg = &lgrw->lglock;
-+
-+	preempt_disable();
-+	if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
-+		if (likely(arch_spin_trylock(this_cpu_ptr(lg->lock)))) {
-+			rwlock_acquire_read(&lg->lock_dep_map, 0, 0, _RET_IP_);
-+			return;
-+		}
-+		read_lock(&lgrw->fallback_rwlock);
-+	}
-+
-+	__this_cpu_inc(*lgrw->fallback_reader_refcnt);
-+}
-+EXPORT_SYMBOL(lg_rwlock_local_read_lock);
-+
-+void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
-+{
-+	if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
-+		lg_local_unlock(&lgrw->lglock);
-+		return;
-+	}
-+
-+	if (!__this_cpu_dec_return(*lgrw->fallback_reader_refcnt))
-+		read_unlock(&lgrw->fallback_rwlock);
-+
-+	preempt_enable();
-+}
-+EXPORT_SYMBOL(lg_rwlock_local_read_unlock);
-+
-+void lg_rwlock_global_write_lock(struct lgrwlock *lgrw)
-+{
-+	lg_global_lock(&lgrw->lglock);
-+	write_lock(&lgrw->fallback_rwlock);
-+}
-+EXPORT_SYMBOL(lg_rwlock_global_write_lock);
-+
-+void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw)
-+{
-+	write_unlock(&lgrw->fallback_rwlock);
-+	lg_global_unlock(&lgrw->lglock);
-+}
-+EXPORT_SYMBOL(lg_rwlock_global_write_unlock);
--- 
-1.7.7.6
++free_modname:
++	kfree(module_name);
+ free_argv:
+ 	kfree(argv);
+ out:
+
