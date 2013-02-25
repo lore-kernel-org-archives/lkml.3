@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759901Ab3BYWnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:43:43 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59829 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759674Ab3BYWnl (ORCPT
+	id S932354Ab3BYWuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:50:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55783 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932163Ab3BYWuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:43:41 -0500
-X-Sasl-enc: AE2ZOeXAd4T/ahW0yO+zFtxkhZrKWlzikDBjIXv2/WfZ 1361832220
-Date: Mon, 25 Feb 2013 14:43:39 -0800
-From: Greg KH <greg@kroah.com>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Milos Vyletel <milos.vyletel@sde.cz>, linux-kernel@vger.kernel.org,
-        linux-hotplug@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, mst@redhat.com
-Subject: Re: [PATCH] virtio-blk: emit udev event when device is resized
-Message-ID: <20130225224339.GA19153@kroah.com>
-References: <1361473348-7660-1-git-send-email-milos.vyletel@sde.cz>
- <87y5ehfczy.fsf@rustcorp.com.au>
- <20130225221238.GA10575@kroah.com>
- <CAPXgP13M_krpPMFoBroYkXc4dUQHsZJDua-jSGby8cQ1Afy-HQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPXgP13M_krpPMFoBroYkXc4dUQHsZJDua-jSGby8cQ1Afy-HQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Feb 2013 17:50:13 -0500
+Date: Mon, 25 Feb 2013 14:50:11 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH v2] mm: remove MIGRATE_ISOLATE check in hotpath
+Message-Id: <20130225145011.68e55812.akpm@linux-foundation.org>
+In-Reply-To: <20130225021308.GA6498@blaptop>
+References: <1358209006-18859-1-git-send-email-minchan@kernel.org>
+	<20130115153625.96265439.akpm@linux-foundation.org>
+	<20130225021308.GA6498@blaptop>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 11:39:52PM +0100, Kay Sievers wrote:
-> On Mon, Feb 25, 2013 at 11:12 PM, Greg KH <greg@kroah.com> wrote:
-> 
-> > Hm, I thought we were frowning apon running binaries from udev rules
-> > these days, especially ones that might have big consequences (like
-> > resizing a disk image) like this.
-> >
-> > Kay, am I right?
-> 
-> We removed most of them from the default setups, yes. But there is
-> nothing wrong if people want to ship that in some package or as custom
-> rules.
-> 
-> It looks fine to me, we would just not add such things to the default
-> set of of rules these days.
-> 
-> > We already emit KOBJECT_CHANGE events when block devices change, from
-> > within the block core code.  Why is the patch below needed instead of
-> > using these events that are already generated?  How are virtio block
-> > devices special?
-> 
-> I think we only do that for dm and md and a couple of special cases
-> like loop and read-only settings.
+On Mon, 25 Feb 2013 11:13:08 +0900
+Minchan Kim <minchan@kernel.org> wrote:
 
-What about when we repartition a block device?  I've seen the events
-happen then.
+> > 
+> > >
+> > > ...
+> > >
+> > > @@ -683,7 +683,7 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
+> > >  	zone->pages_scanned = 0;
+> > >  
+> > >  	__free_one_page(page, zone, order, migratetype);
+> > > -	if (unlikely(migratetype != MIGRATE_ISOLATE))
+> > > +	if (unlikely(!is_migrate_isolate(migratetype)))
+> > >  		__mod_zone_freepage_state(zone, 1 << order, migratetype);
+> > >  	spin_unlock(&zone->lock);
+> > >  }
+> > 
+> > The code both before and after this patch is assuming that the
+> > migratetype in free_one_page is likely to be MIGRATE_ISOLATE.  Seems
+> > wrong.  If CONFIG_MEMORY_ISOLATION=n this ends up doing
+> > if(unlikely(true)) which is harmless-but-amusing.
+> 
+> >From the beginning of [2139cbe627, cma: fix counting of isolated pages],
+> it was wrong. We can't make sure it's very likely.
+> If it is called by order-0 page free path, it is but if it is called by
+> high order page free path, we can't.
+> So I think it would be better to remove unlikley.
 
-Anyway, if you are ok with this, no objection from my side then Rusty.
+Order-0 pages surely preponderate, so I'd say that "likely" is the way
+to go.
 
-thanks,
+I don't recall anyone ever demonstrating that likely/unlikely actually
+does anything useful.  It would be interesting to have a play around,
+see if it actually does good things to the code generation.
 
-greg k-h
+I think someone (perhaps in or near Dave Jones?) once had a patch which
+added counters to likely/unlikely, so the kernel can accumulate and
+then report upon the hit/miss ratio at each site.  iirc, an alarmingly
+large number of the sites were deoptimisations!
+
+> They are trivial patch so send it now or send it after you release
+> first mmotm after finishing merge window?
+
+It's in mainline now.
