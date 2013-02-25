@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759847Ab3BYNZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 08:25:45 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:41870 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1759828Ab3BYNZo convert rfc822-to-8bit (ORCPT
+	id S1759702Ab3BYNbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 08:31:11 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:42902 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757122Ab3BYNbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 08:25:44 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Mon, 25 Feb 2013 08:31:09 -0500
+Message-ID: <512B677D.1040501@oracle.com>
+Date: Mon, 25 Feb 2013 08:30:37 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Subject: RE: Disable IPv4-mapped - enforce IPV6_V6ONLY
-Date: Mon, 25 Feb 2013 13:23:04 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7168@saturn3.aculab.com>
-In-Reply-To: <512B4EAF.2050301@linux-ipv6.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Disable IPv4-mapped - enforce IPV6_V6ONLY
-Thread-Index: Ac4TTW+Ng8WtyTieQHqkJ/112Jzd8wADGz7A
-References: <51278CF6.2060402@ahsoftware.de> <51292A2B.3000304@ahsoftware.de> <512B4EAF.2050301@linux-ipv6.org>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "YOSHIFUJI Hideaki" <yoshfuji@linux-ipv6.org>,
-        "Alexander Holler" <holler@ahsoftware.de>
-Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Hugh Dickins <hughd@google.com>, kosaki.motohiro@jp.fujitsu.com,
+        Mel Gorman <mgorman@suse.de>, Dave Jones <davej@redhat.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: mm: BUG in mempolicy's sp_insert
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > A proper solution would be to either return false if net.ipv6.bindv6only is true and optval is false
-> (which would break downward compatibility because it wouldn't just be a default and setsockopt might
-> return an error) or to introduce a new sysctl variable like net.ipv6.bindv6only_enforced_silently.
-> ("silently" because setsockopt() wouldn't return an error if net.ipv6.bindv6only is true and optval
-> (v6only in the example above) is false.)
-> >
-> > I would volunteer to write a patch which introduces something like
-> net.ipv6.bindv6only_enforced_silently if some maintainer would give me his ok.
-> >
-> > If so, the question remains if
-> >
-> > systemctl net.ipv6.bindv6only_enforced_silently = 1
-> >
-> > should set systemctl.net.ipv6.bindv6only too or if an error should be returned if
-> net.ipv6.bindv6only is false.
-> 
-> I am not convinced why you need this, and I am not in favor of
-> enfocing IPV6_V6ONLY, but... some points:
-> 
-> - We should allow system-admin to "enforce" IPV6_V6ONLY to 0 as well.
-> - CAP_NET_ADMIN users should always be able to use both modes
->   (They can do sysctl anyway.)
-> - setsockopt should fail w/ EPERM if user tries to override.
+Hi all,
 
-I can imagine that some programs will always try to clear IPV6_V6ONLY
-(maybe for portability with other OS which default to setting it
-for security reasons) and will error-exit if it fails.
-So non-silent enforcing could be a PITA.
+While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
+I've stumbled on the following BUG:
 
-OTOH there might be programs/systems where silent failure is wrong.
+[13551.830090] ------------[ cut here ]------------
+[13551.830090] kernel BUG at mm/mempolicy.c:2187!
+[13551.830090] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[13551.830090] Dumping ftrace buffer:
+[13551.830090]    (ftrace buffer empty)
+[13551.830090] Modules linked in:
+[13551.830090] CPU 5
+[13551.830090] Pid: 29310, comm: trinity Tainted: G        W    3.8.0-next-20130222-sasha-00042-gcbfe956 #995
+[13551.830090] RIP: 0010:[<ffffffff812637b3>]  [<ffffffff812637b3>] sp_insert+0x33/0xb0
+[13551.830090] RSP: 0018:ffff880087e03ca8  EFLAGS: 00010287
+[13551.830090] RAX: ffff88009a7a77d0 RBX: ffff88009a7a7c38 RCX: 0000000000000000
+[13551.830090] RDX: 0000000000000010 RSI: ffff88009a7a7c38 RDI: ffff88009a5473b0
+[13551.830090] RBP: ffff880087e03cb8 R08: 0000000000000001 R09: 0000000000000001
+[13551.830090] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88009a5473b0
+[13551.830090] R13: ffff88009a7a77d0 R14: 000000000000000f R15: 0000000000000000
+[13551.830090] FS:  00007f1b28931700(0000) GS:ffff8800baa00000(0000) knlGS:0000000000000000
+[13551.830090] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[13551.830090] CR2: 00000000001f1005 CR3: 000000009c0a3000 CR4: 00000000000406e0
+[13551.830090] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[13551.830090] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[13551.830090] Process trinity (pid: 29310, threadinfo ffff880087e02000, task ffff880018038000)
+[13551.830090] Stack:
+[13551.830090]  0000000000000001 0000000000000001 ffff880087e03d18 ffffffff812642ab
+[13551.830090]  ffff88009a547678 0000000000000000 ffff88009a5cfc20 ffff88009a5473b8
+[13551.830090]  ffff88009a5476e0 000000000000000e ffff88009551c800 ffff88009a5473b0
+[13551.830090] Call Trace:
+[13551.830090]  [<ffffffff812642ab>] shared_policy_replace+0x13b/0x210
+[13551.830090]  [<ffffffff81265436>] mpol_set_shared_policy+0x156/0x160
+[13551.830090]  [<ffffffff8124c59a>] ? __split_vma+0x17a/0x210
+[13551.830090]  [<ffffffff8122ee87>] shmem_set_policy+0x27/0x30
+[13551.830090]  [<ffffffff812663e0>] mbind_range+0x1e0/0x260
+[13551.830090]  [<ffffffff8126725a>] do_mbind+0x22a/0x330
+[13551.830090]  [<ffffffff812673e9>] sys_mbind+0x89/0xb0
+[13551.830090]  [<ffffffff84031fd0>] tracesys+0xdd/0xe2
+[13551.830090] Code: c9 53 48 89 f3 48 83 ec 08 eb 2a 48 8b 50 18 48 39 53 18 73 06 48 8d 50 10 eb 17 48 8b 50 20 48 39 53 20 76
+06 48 8d 50 08 eb 07 <0f> 0b 0f 1f 00 eb fe 48 89 c1 48 8b 02 48 85 c0 75 ce 48 89 0b
+[13551.830090] RIP  [<ffffffff812637b3>] sp_insert+0x33/0xb0
+[13551.830090]  RSP <ffff880087e03ca8>
+[13552.663006] ---[ end trace 41967793cddea94b ]---
 
-You really don't want to (globally) stop an application setting
-IPV6_V6ONLY, such a program may well be creating separate IPv4
-and IPv6 sockets.
 
-Some of this needs to be part of some application wide 'security'
-framework - that probably doesn't exist!
-
-Should there also be similar controls for the use of IPv4
-mapped addresses in actual on-the-wire IPv6 packets - eg those
-destined for a remote gateway on an IPv6 only system?
-
-	David
-
-
-
+Thanks,
+Sasha
