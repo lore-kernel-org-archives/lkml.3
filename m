@@ -1,53 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759918Ab3BYEnM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 23:43:12 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:41298 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759895Ab3BYEmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 23:42:52 -0500
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/2] ima: "remove enforce checking duplication" merge fix
-Date: Sun, 24 Feb 2013 23:42:36 -0500
-Message-Id: <1361767357-8465-2-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.rc3
-In-Reply-To: <1361767357-8465-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1361767357-8465-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022504-5806-0000-0000-0000200FD0AF
+	id S1759848Ab3BYEwM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 23:52:12 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47736 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759705Ab3BYEwK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 23:52:10 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <512AEDCE.6060509@jp.fujitsu.com>
+Date: Mon, 25 Feb 2013 13:51:26 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: <rjw@sisk.pl>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <vasilis.liaskovitis@profitbricks.com>
+Subject: Re: [PATCH] ACPI: Add sysfs links from memory device to memblocks
+References: <1361562147-30801-1-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1361562147-30801-1-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit "750943a ima: remove enforce checking duplication" combined
-the 'in IMA policy' and 'enforcing file integrity' checks.  For
-the non-file, kernel module verification, a specific check for
-'enforcing file integrity' was not added.  This patch adds the
-check.
+Hi Toshi,
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
----
- security/integrity/ima/ima_main.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+2013/02/23 4:42, Toshi Kani wrote:
+> In order to eject a memory device object represented as "PNP0C80:%d"
+> in sysfs, its associated memblocks (system/memory/memory%d) need to
+> be off-lined.  However, there is no user friendly way to correlate
+> between a memory device object and its memblocks in sysfs.
+> 
+> This patch creates sysfs links to memblocks under a memory device
+> object so that a user can easily checks and manipulates its memblocks
+> in sysfs.
+> 
+> For example, when PNP0C80:05 is associated with memory8 and memory9,
+> the following two links are created under PNP0C80:05.  This allows
+> a user to access memory8/9 directly from PNP0C80:05.
+> 
+>    # ll /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C80:05
+>    lrwxrwxrwx. memory8 -> ../../../system/memory/memory8
+>    lrwxrwxrwx. memory9 -> ../../../system/memory/memory9
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> ---
+> This patch applies on top of the Rafael's patch below.
+> https://patchwork.kernel.org/patch/2153261/
+> 
+> ---
+>   drivers/acpi/acpi_memhotplug.c |   54 ++++++++++++++++++++++++++++++++++++++++
+>   1 file changed, 54 insertions(+)
+> 
+> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> index 3b3abbc..d6226b3 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -28,6 +28,7 @@
+>    */
+>   
+>   #include <linux/acpi.h>
+> +#include <linux/memory.h>
+>   #include <linux/memory_hotplug.h>
+>   
+>   #include "internal.h"
+> @@ -168,6 +169,53 @@ static int acpi_memory_check_device(struct acpi_memory_device *mem_device)
+>   	return 0;
+>   }
+>   
+> +static void acpi_setup_mem_blk_links(struct acpi_memory_device *mem_device,
+> +		struct acpi_memory_info *info, bool add_links)
+> +{
+> +	struct memory_block *mem_blk = NULL;
+> +	struct mem_section *mem_sect;
+> +	unsigned long start_pfn, end_pfn, pfn;
+> +	unsigned long section_nr;
+> +	int ret;
+> +
+> +	start_pfn = PFN_DOWN(info->start_addr);
+> +	end_pfn = PFN_UP(info->start_addr + info->length-1);
+> +
+> +	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+> +		section_nr = pfn_to_section_nr(pfn);
+> +
+> +		if (!present_section_nr(section_nr))
+> +			continue;
+> +
+> +		mem_sect = __nr_to_section(section_nr);
+> +
+> +		/* skip if the same memblock */
+> +		if (mem_blk)
+> +			if ((section_nr >= mem_blk->start_section_nr) &&
+> +			    (section_nr <= mem_blk->end_section_nr))
+> +				continue;
+> +
 
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 5127afc..5b14a09 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -284,7 +284,8 @@ int ima_module_check(struct file *file)
- {
- 	if (!file) {
- #ifndef CONFIG_MODULE_SIG_FORCE
--		if (ima_appraise & IMA_APPRAISE_MODULES)
-+		if ((ima_appraise & IMA_APPRAISE_MODULES) &&
-+		    (ima_appraise & IMA_APPRAISE_ENFORCE))
- 			return -EACCES;	/* INTEGRITY_UNKNOWN */
- #endif
- 		return 0;	/* We rely on module signature checking */
--- 
-1.8.1.rc3
+> +		mem_blk = find_memory_block_hinted(mem_sect, mem_blk);
+
+NULL pointer check is needed.			
+
+Thank,
+Yasuaki Ishimatsu
+
+> +
+> +		if (add_links) {
+> +			ret = sysfs_create_link_nowarn(
+> +				&mem_device->device->dev.kobj,
+> +				&mem_blk->dev.kobj,
+> +				kobject_name(&mem_blk->dev.kobj));
+> +			if (ret && ret != -EEXIST)
+> +				dev_err(&mem_device->device->dev,
+> +					"Failed to create sysfs link %s\n",
+> +					kobject_name(&mem_blk->dev.kobj));
+> +		} else {
+> +			sysfs_remove_link(&mem_device->device->dev.kobj,
+> +				kobject_name(&mem_blk->dev.kobj));
+> +		}
+> +	}
+> +
+> +	if (mem_blk)
+> +		kobject_put(&mem_blk->dev.kobj);
+> +}
+> +
+>   static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+>   {
+>   	int result, num_enabled = 0;
+> @@ -207,6 +255,9 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+>   			continue;
+>   		}
+>   
+> +		/* Create sysfs links to its mem_blk devices */
+> +		acpi_setup_mem_blk_links(mem_device, info, true);
+> +
+>   		if (!result)
+>   			info->enabled = 1;
+>   		/*
+> @@ -241,6 +292,9 @@ static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+>   			/* The kernel does not use this memory block */
+>   			continue;
+>   
+> +		/* Remove sysfs links to its mem_blk devices */
+> +		acpi_setup_mem_blk_links(mem_device, info, false);
+> +
+>   		if (!info->enabled)
+>   			/*
+>   			 * The kernel uses this memory block, but it may be not
+> 
+
 
