@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083Ab3BYWfL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:35:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55100 "EHLO
+	id S1759867Ab3BYWhf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:37:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55519 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759614Ab3BYWT6 (ORCPT
+	with ESMTP id S1758924Ab3BYWhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:19:58 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [ 03/58] x86-32, mm: Remove reference to resume_map_numa_kva()
-Date: Mon, 25 Feb 2013 14:18:59 -0800
-Message-Id: <20130225221636.807768154@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
-References: <20130225221636.018756060@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Mon, 25 Feb 2013 17:37:31 -0500
+Date: Mon, 25 Feb 2013 14:37:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: mtk.manpages@gmail.com
+Cc: Andrey Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        criu@openvz.org, linux-api@vger.kernel.org,
+        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pedro Alves <palves@redhat.com>
+Subject: Re: [PATCH] ptrace: add ability to retrieve signals without
+ removing from a queue (v2)
+Message-Id: <20130225143728.3ddb88fc.akpm@linux-foundation.org>
+In-Reply-To: <CAKgNAkhoK4KQ-5PC+C=g1i+J7WQsdvOWFiJ9PiqD26EdCZW0OA@mail.gmail.com>
+References: <1361786813-14652-1-git-send-email-avagin@openvz.org>
+	<20130225141234.99b76738.akpm@linux-foundation.org>
+	<CAKgNAkhoK4KQ-5PC+C=g1i+J7WQsdvOWFiJ9PiqD26EdCZW0OA@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 25 Feb 2013 23:28:11 +0100
+"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
 
-------------------
+> > Please, document the interface *completely* so that others can review
+> > the design and can then check that the implementation matches that
+> > design.  As it stands, we're reduced to mind-reading.
+> 
+> +1.
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+I suddenly feel less lonely.
 
-commit bb112aec5ee41427e9b9726e3d57b896709598ed upstream.
+> Andrey, please don't assume that people have read past mails. Even if
+> they have, they're forgetful. Don't make people hunt down old mails to
+> try to put the pieces together. The changelog should include a full
+> description of the interface, and also the sample user-space code that
+> you showed at some point in another mail.
 
-Remove reference to removed function resume_map_numa_kva().
+If there's sample userspace code, there are all sorts of good reasons
+for putting that into tools/testing/selftests/your-name-here/
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20130131005616.1C79F411@kernel.stglabs.ibm.com
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/include/asm/mmzone_32.h |    6 ------
- arch/x86/power/hibernate_32.c    |    2 --
- 2 files changed, 8 deletions(-)
-
---- a/arch/x86/include/asm/mmzone_32.h
-+++ b/arch/x86/include/asm/mmzone_32.h
-@@ -14,12 +14,6 @@ extern struct pglist_data *node_data[];
- 
- #include <asm/numaq.h>
- 
--extern void resume_map_numa_kva(pgd_t *pgd);
--
--#else /* !CONFIG_NUMA */
--
--static inline void resume_map_numa_kva(pgd_t *pgd) {}
--
- #endif /* CONFIG_NUMA */
- 
- #ifdef CONFIG_DISCONTIGMEM
---- a/arch/x86/power/hibernate_32.c
-+++ b/arch/x86/power/hibernate_32.c
-@@ -129,8 +129,6 @@ static int resume_physical_mapping_init(
- 		}
- 	}
- 
--	resume_map_numa_kva(pgd_base);
--
- 	return 0;
- }
- 
-
+> That may help you get better
+> review, and it will certainly help make a better man page.
 
