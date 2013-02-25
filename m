@@ -1,77 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab3BYR1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 12:27:13 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:49552 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101Ab3BYR1K convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 12:27:10 -0500
+	id S1758351Ab3BYR3m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 12:29:42 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:60286 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752168Ab3BYR3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 12:29:41 -0500
+Message-ID: <512B9D8C.3090506@linux.vnet.ibm.com>
+Date: Mon, 25 Feb 2013 11:21:16 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Message-ID: <622b6670-f311-40d5-9c8d-f5dd3e03633c@default>
-Date: Mon, 25 Feb 2013 09:20:55 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Ric Mason <ric.masonn@gmail.com>
-Cc: Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: RE: Questin about swap_slot free and invalidate page
-References: <20130131051140.GB23548@blaptop>
- <alpine.LNX.2.00.1302031732520.4050@eggly.anvils>
- <20130204024950.GD2688@blaptop>
- <d6fc41b7-8448-40be-84c3-c24d0833bd85@default> <51236C11.1010208@gmail.com>
- <1f089254-3abe-4c63-a72a-c9e564ae7d0d@default> <51242F0D.4040201@gmail.com>
- <7793705b-a076-4c5a-be4d-9572d7560860@default> <5126E253.2030105@gmail.com>
-In-Reply-To: <5126E253.2030105@gmail.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCHv6 4/8] zswap: add to mm/
+References: <1361397888-14863-1-git-send-email-sjenning@linux.vnet.ibm.com> <1361397888-14863-5-git-send-email-sjenning@linux.vnet.ibm.com> <20130225043551.GA12158@lge.com>
+In-Reply-To: <20130225043551.GA12158@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022517-7182-0000-0000-0000058059FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Ric Mason [mailto:ric.masonn@gmail.com]
-> Subject: Re: Questin about swap_slot free and invalidate page
+On 02/24/2013 10:35 PM, Joonsoo Kim wrote:
+> Hello, Seth.
+> Here comes minor comments.
 > 
-> On 02/22/2013 05:42 AM, Dan Magenheimer wrote:
-> >> From: Ric Mason [mailto:ric.masonn@gmail.com]
-> >> Subject: Re: Questin about swap_slot free and invalidate page
-> >>
-> >> On 02/19/2013 11:27 PM, Dan Magenheimer wrote:
-> >>>> From: Ric Mason [mailto:ric.masonn@gmail.com]
-> >>>>> Hugh is right that handling the possibility of duplicates is
-> >>>>> part of the tmem ABI.  If there is any possibility of duplicates,
-> >>>>> the ABI defines how a backend must handle them to avoid data
-> >>>>> coherency issues.
-> >>>>>
-> >>>>> The kernel implements an in-kernel API which implements the tmem
-> >>>>> ABI.  If the frontend and backend can always agree that duplicate
-> >>>> Which ABI in zcache implement that?
-> >>> https://oss.oracle.com/projects/tmem/dist/documentation/api/tmemspec-v001.pdf
-> >>>
-> >>> The in-kernel APIs are frontswap and cleancache.  For more information about
-> >>> tmem, see http://lwn.net/Articles/454795/
-> >> But you mentioned that you have in-kernel API which can handle
-> >> duplicate.  Do you mean zcache_cleancache/frontswap_put_page? I think
-> >> they just overwrite instead of optional flush the page on the
-> >> second(duplicate) put as mentioned in your tmemspec.
-> > Maybe I am misunderstanding your question...  The spec allows
-> > overwrite (and return success) OR flush the page (and return
-> > failure).  Zcache does the latter (flush).  The code that implements
-> > it is in tmem_put.
+<snip>
+>> +static int __zswap_cpu_notifier(unsigned long action, unsigned long cpu)
+>> +{
+>> +	struct crypto_comp *tfm;
+>> +	u8 *dst;
+>> +
+>> +	switch (action) {
+>> +	case CPU_UP_PREPARE:
+>> +		tfm = crypto_alloc_comp(zswap_compressor, 0, 0);
+>> +		if (IS_ERR(tfm)) {
+>> +			pr_err("can't allocate compressor transform\n");
+>> +			return NOTIFY_BAD;
+>> +		}
+>> +		*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = tfm;
+>> +		dst = (u8 *)__get_free_pages(GFP_KERNEL, 1);
 > 
-> Thanks for your point out.  Pers pages can have duplicate put since swap
-> cache page can be reused. Can eph pages also have duplicate put? If yes,
-> when can happen?
+> Order 1 is really needed?
+> Following code uses only PAGE_SIZE, not 2 * PAGE_SIZE.
 
-Yes, I have seen it.  I am not sure of the exact circumstances
-when it happens as I am not an expert in the VFS subsystem.
-(Chris Mason wrote the VFS cleancache hooks in 2009.)
+Yes, probably should add a comment here.
 
-Dan
+Some compression modules in the kernel, notably LZO, do not guard
+against buffer overrun during compression.  In cases where LZO tries
+to compress a page with high entropy (e.g. a page containing already
+compressed data like JPEG), the compressed result can actually be
+larger than the original data.  In this case, if the compression
+buffer is only one page, we overrun.  I actually encountered this
+during development.
+
+> 
+>> +		if (!dst) {
+>> +			pr_err("can't allocate compressor buffer\n");
+>> +			crypto_free_comp(tfm);
+>> +			*per_cpu_ptr(zswap_comp_pcpu_tfms, cpu) = NULL;
+>> +			return NOTIFY_BAD;
+>> +		}
+<snip>
+>> +	buf = zs_map_object(tree->pool, handle, ZS_MM_WO);
+>> +	memcpy(buf, dst, dlen);
+>> +	zs_unmap_object(tree->pool, handle);
+>> +	put_cpu_var(zswap_dstmem);
+>> +
+>> +	/* allocate entry */
+>> +	entry = zswap_entry_cache_alloc(GFP_KERNEL);
+>> +	if (!entry) {
+>> +		zs_free(tree->pool, handle);
+>> +		zswap_reject_kmemcache_fail++;
+>> +		ret = -ENOMEM;
+>> +		goto reject;
+>> +	}
+> 
+> How about moving up zswap_entry_cache_alloc()?
+> It can save compression processing time
+> if zswap_entry_cache_alloc() is failed.
+
+Will do.
+
+> 
+>> +
+>> +	/* populate entry */
+>> +	entry->type = type;
+>> +	entry->offset = offset;
+>> +	entry->handle = handle;
+>> +	entry->length = dlen;
+>> +
+<snip>
+>> +/* invalidates all pages for the given swap type */
+>> +static void zswap_frontswap_invalidate_area(unsigned type)
+>> +{
+>> +	struct zswap_tree *tree = zswap_trees[type];
+>> +	struct rb_node *node;
+>> +	struct zswap_entry *entry;
+>> +
+>> +	if (!tree)
+>> +		return;
+>> +
+>> +	/* walk the tree and free everything */
+>> +	spin_lock(&tree->lock);
+>> +	/*
+>> +	 * TODO: Even though this code should not be executed because
+>> +	 * the try_to_unuse() in swapoff should have emptied the tree,
+>> +	 * it is very wasteful to rebalance the tree after every
+>> +	 * removal when we are freeing the whole tree.
+>> +	 *
+>> +	 * If post-order traversal code is ever added to the rbtree
+>> +	 * implementation, it should be used here.
+>> +	 */
+>> +	while ((node = rb_first(&tree->rbroot))) {
+>> +		entry = rb_entry(node, struct zswap_entry, rbnode);
+>> +		rb_erase(&entry->rbnode, &tree->rbroot);
+>> +		zs_free(tree->pool, entry->handle);
+>> +		zswap_entry_cache_free(entry);
+>> +	}
+> 
+> You should decrease zswap_stored_pages in while loop.
+
+Yes. Will do.
+
+Thanks,
+Seth
+
