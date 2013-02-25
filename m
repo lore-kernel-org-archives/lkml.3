@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759915Ab3BYWOT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:14:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34067 "EHLO
+	id S932127Ab3BYWP2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:15:28 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34098 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759830Ab3BYWON (ORCPT
+	with ESMTP id S1755387Ab3BYWPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:14:13 -0500
-Date: Mon, 25 Feb 2013 14:13:01 -0800
+	Mon, 25 Feb 2013 17:15:25 -0500
+Date: Mon, 25 Feb 2013 14:14:09 -0800
 From: tip-bot for Konrad Rzeszutek Wilk <tipbot@zytor.com>
-Message-ID: <tip-2482a92e7d17187301d7313cfe5021b13393a0b4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, stable@vger.kernel.org, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, tglx@linutronix.de, stable@vger.kernel.org,
-        hpa@linux.intel.com
-In-Reply-To: <1361825650-14031-2-git-send-email-konrad.wilk@oracle.com>
-References: <1361825650-14031-2-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <tip-a2fd6419174470f5ae6383f5037d0ee21ed9833f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, hpa@zytor.com,
+        mingo@kernel.org, konrad.wilk@oracle.com, stable@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
+        tglx@linutronix.de, stable@vger.kernel.org, hpa@linux.intel.com
+In-Reply-To: <1361825650-14031-3-git-send-email-konrad.wilk@oracle.com>
+References: <1361825650-14031-3-git-send-email-konrad.wilk@oracle.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] doc, xen: Mention 'earlyprintk=xen'
-  in the documentation.
-Git-Commit-ID: 2482a92e7d17187301d7313cfe5021b13393a0b4
+Subject: [tip:x86/urgent] doc, kernel-parameters: Document 'console=hvc<n>
+ '
+Git-Commit-ID: a2fd6419174470f5ae6383f5037d0ee21ed9833f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,53 +30,42 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 25 Feb 2013 14:13:06 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 25 Feb 2013 14:14:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2482a92e7d17187301d7313cfe5021b13393a0b4
-Gitweb:     http://git.kernel.org/tip/2482a92e7d17187301d7313cfe5021b13393a0b4
+Commit-ID:  a2fd6419174470f5ae6383f5037d0ee21ed9833f
+Gitweb:     http://git.kernel.org/tip/a2fd6419174470f5ae6383f5037d0ee21ed9833f
 Author:     Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-AuthorDate: Mon, 25 Feb 2013 15:54:08 -0500
+AuthorDate: Mon, 25 Feb 2013 15:54:09 -0500
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 25 Feb 2013 13:41:18 -0800
+CommitDate: Mon, 25 Feb 2013 13:42:15 -0800
 
-doc, xen: Mention 'earlyprintk=xen' in the documentation.
+doc, kernel-parameters: Document 'console=hvc<n>'
 
-The earlyprintk for Xen PV guests utilizes a simple hypercall
-(console_io) to provide output to Xen emergency console.
+Both the PowerPC hypervisor and Xen hypervisor can utilize the
+hvc driver.
 
-Note that the Xen hypervisor should be booted with 'loglevel=all'
-to output said information.
-
-Reported-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/1361825650-14031-2-git-send-email-konrad.wilk@oracle.com
+Link: http://lkml.kernel.org/r/1361825650-14031-3-git-send-email-konrad.wilk@oracle.com
 Cc: <stable@vger.kernel.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- Documentation/kernel-parameters.txt | 3 +++
- 1 file changed, 3 insertions(+)
+ Documentation/kernel-parameters.txt | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 6c72381..c4cc199 100644
+index c4cc199..986614d 100644
 --- a/Documentation/kernel-parameters.txt
 +++ b/Documentation/kernel-parameters.txt
-@@ -754,6 +754,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+@@ -564,6 +564,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			UART at the specified I/O port or MMIO address,
+ 			switching to the matching ttyS device later.  The
+ 			options are the same as for ttyS, above.
++		hvc<n>	Use the hypervisor console device <n>. This is for
++			both Xen and PowerPC hypervisors.
  
- 	earlyprintk=	[X86,SH,BLACKFIN]
- 			earlyprintk=vga
-+			earlyprintk=xen
- 			earlyprintk=serial[,ttySn[,baudrate]]
- 			earlyprintk=ttySn[,baudrate]
- 			earlyprintk=dbgp[debugController#]
-@@ -771,6 +772,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			The VGA output is eventually overwritten by the real
- 			console.
- 
-+			The xen output can only be used by Xen PV guests.
-+
- 	ekgdboc=	[X86,KGDB] Allow early kernel console debugging
- 			ekgdboc=kbd
- 
+                 If the device connected to the port is not a TTY but a braille
+                 device, prepend "brl," before the device type, for instance
