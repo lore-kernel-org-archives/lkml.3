@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab3BYGyM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 01:54:12 -0500
-Received: from fallback2.mail.ru ([94.100.176.87]:46269 "EHLO
-	fallback2.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab3BYGyL (ORCPT
+	id S1757451Ab3BYG7o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 01:59:44 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:60854 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363Ab3BYG7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 01:54:11 -0500
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?RG1pdHJ5IFRvcm9raG92?= <dmitry.torokhov@gmail.com>
-Cc: =?UTF-8?B?U3RlcGhlbiBXYXJyZW4=?= <swarren@wwwdotorg.org>,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?B?QXJuZCBCZXJnbWFubg==?= <arnd@arndb.de>,
-        =?UTF-8?B?RG9uZyBBaXNoZW5n?= <dong.aisheng@linaro.org>,
-        =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
-        =?UTF-8?B?TWFyayBCcm93bg==?= <broonie@opensource.wolfsonmicro.com>,
-        =?UTF-8?B?VGhpZXJyeSBSZWRpbmc=?= <thierry.reding@avionic-design.de>,
-        =?UTF-8?B?R3JlZyBLcm9haC1IYXJ0bWFu?= <gregkh@linuxfoundation.org>
-Subject: =?UTF-8?B?UmVbMl06IFtQQVRDSCB2NSAxLzNdIG1mZDogc3lzY29uOiBSZW1vdmVkIHN1?=
- =?UTF-8?B?cHBvcnQgZm9yIHVubG9hZGluZw==?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [217.119.30.118]
-Date: Mon, 25 Feb 2013 10:53:42 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1361775222.578079910@f398.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Spam: Not detected
-X-Mras: Ok
-In-Reply-To: <20130224075533.GB18844@core.coreip.homeip.net>
-References: <1361596520-19332-1-git-send-email-shc_work@mail.ru> <512955F7.1020309@wwwdotorg.org> <20130224075533.GB18844@core.coreip.homeip.net>
+	Mon, 25 Feb 2013 01:59:41 -0500
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Evgeniy Polyakov <zbr@ioremap.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ville Syrjala <syrjala@sci.fi>, Daniel Mack <zonque@gmail.com>,
+        Matt Ranostay <mranostay@gmail.com>, panto@antoniou-consulting.com,
+        koen@dominion.thruhere.net
+Subject: [PATCH 2/5] W1: w1-gpio - switch to using dev_pm_ops
+Date: Sun, 24 Feb 2013 22:59:34 -0800
+Message-Id: <1361775577-4578-2-git-send-email-dmitry.torokhov@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1361775577-4578-1-git-send-email-dmitry.torokhov@gmail.com>
+References: <1361606320-4479-1-git-send-email-dmitry.torokhov@gmail.com>
+ <1361775577-4578-1-git-send-email-dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1P6sDHZ023948
 
-> On Sat, Feb 23, 2013 at 04:51:19PM -0700, Stephen Warren wrote:
-> > On 02/22/2013 10:28 PM, Alexander Shiyan wrote:
-> > >> On 02/22/2013 10:15 PM, Alexander Shiyan wrote:
-> > >>> The driver can be used in various subsystems and therefore should not
-> > >>> be unloaded when it is defined in the kernel configuration, so remove
-> > >>> support for unloading it.
-> > >>
-> > >> Why not fix the clients to module_get() at the appropriate times; then
-> > >> you could still allow unloading, couldn't you?
-> > > 
-> > > I has explain this before.
-> > 
-> > If multiple people have asked this, perhaps it'd be a good idea to
-> > include the answer in the commit description.
-> > 
-> > > Driver defined as "bool" and loaded via postcore_initcall.
-> > 
-> > Being defined as a "bool" sounds like a reasonable reason that no
-> > remove() is required.
-> 
-> No, it is not - I can still unbind the device from driver via sysfs. Now
-> what will happen is resources are leaked and won't be available when
-> trying to bin (via sysfs) again.
-> 
-> This patch is broken.
-
-I will try to resolve the dispute.
-Initially, the first part of the patch (this) was an attempt to prevent the unloading
-(unregister) of the driver (not the device), ie remove module_exit call.
-The patch also removes the code to remove the device. Inclusion in this patch
-of the code was a mistake. Because of this, people are confused about the terms,
-including me.
-Code, relating to the removal of the device should be moved to the third patch.
-Since all moved to using the managed resources, it should not have any questions.
-
-About uloading (unregister) driver: As far i understand "__exit" section is
-completely discarded when kernel compiled without module support.
-But where is this call (module_exit) is placing in case "bool" driver and
-kernel is compiled with module support? Fixme please.
-
-Thanks.
-
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ drivers/w1/masters/w1-gpio.c | 20 ++++++++------------
+ 1 file changed, 8 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
+index 799dafd..c45b9ae 100644
+--- a/drivers/w1/masters/w1-gpio.c
++++ b/drivers/w1/masters/w1-gpio.c
+@@ -176,11 +176,10 @@ static int w1_gpio_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
+-
+-static int w1_gpio_suspend(struct platform_device *pdev, pm_message_t state)
++#ifdef CONFIG_PM_SLEEP
++static int w1_gpio_suspend(struct device *dev)
+ {
+-	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
++	const struct w1_gpio_platform_data *pdata = dev_get_platdata(dev);
+ 
+ 	if (pdata->enable_external_pullup)
+ 		pdata->enable_external_pullup(0);
+@@ -188,31 +187,28 @@ static int w1_gpio_suspend(struct platform_device *pdev, pm_message_t state)
+ 	return 0;
+ }
+ 
+-static int w1_gpio_resume(struct platform_device *pdev)
++static int w1_gpio_resume(struct device *dev)
+ {
+-	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
++	const struct w1_gpio_platform_data *pdata = dev_get_platdata(dev);
+ 
+ 	if (pdata->enable_external_pullup)
+ 		pdata->enable_external_pullup(1);
+ 
+ 	return 0;
+ }
+-
+-#else
+-#define w1_gpio_suspend	NULL
+-#define w1_gpio_resume	NULL
+ #endif
+ 
++static SIMPLE_DEV_PM_OPS(w1_gpio_pm_ops, w1_gpio_suspend, w1_gpio_resume);
++
+ static struct platform_driver w1_gpio_driver = {
+ 	.driver = {
+ 		.name	= "w1-gpio",
+ 		.owner	= THIS_MODULE,
++		.pm	= &w1_gpio_pm_ops,
+ 		.of_match_table = of_match_ptr(w1_gpio_dt_ids),
+ 	},
+ 	.probe = w1_gpio_probe,
+ 	.remove = w1_gpio_remove,
+-	.suspend = w1_gpio_suspend,
+-	.resume = w1_gpio_resume,
+ };
+ 
+ module_platform_driver(w1_gpio_driver);
+-- 
+1.7.11.7
+
