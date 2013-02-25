@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab3BYWuQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:50:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55783 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932163Ab3BYWuN (ORCPT
+	id S932479Ab3BYWub (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:50:31 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:59636 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932163Ab3BYWuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:50:13 -0500
-Date: Mon, 25 Feb 2013 14:50:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: Re: [PATCH v2] mm: remove MIGRATE_ISOLATE check in hotpath
-Message-Id: <20130225145011.68e55812.akpm@linux-foundation.org>
-In-Reply-To: <20130225021308.GA6498@blaptop>
-References: <1358209006-18859-1-git-send-email-minchan@kernel.org>
-	<20130115153625.96265439.akpm@linux-foundation.org>
-	<20130225021308.GA6498@blaptop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Feb 2013 17:50:24 -0500
+Message-ID: <512BEAAF.1070500@linaro.org>
+Date: Mon, 25 Feb 2013 23:50:23 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+CC: tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, santosh.shilimkar@ti.com,
+        linux-pm@vger.kernel.org, fweisbec@gmail.com, john.stultz@linaro.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH 2/2][RFC] time : set broadcast irq affinity
+References: <5123C299.3080005@linaro.org> <1361484083-5906-1-git-send-email-daniel.lezcano@linaro.org> <1361484083-5906-2-git-send-email-daniel.lezcano@linaro.org> <20130222095530.377fd218@chromoly>
+In-Reply-To: <20130222095530.377fd218@chromoly>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Feb 2013 11:13:08 +0900
-Minchan Kim <minchan@kernel.org> wrote:
-
-> > 
-> > >
-> > > ...
-> > >
-> > > @@ -683,7 +683,7 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
-> > >  	zone->pages_scanned = 0;
-> > >  
-> > >  	__free_one_page(page, zone, order, migratetype);
-> > > -	if (unlikely(migratetype != MIGRATE_ISOLATE))
-> > > +	if (unlikely(!is_migrate_isolate(migratetype)))
-> > >  		__mod_zone_freepage_state(zone, 1 << order, migratetype);
-> > >  	spin_unlock(&zone->lock);
-> > >  }
-> > 
-> > The code both before and after this patch is assuming that the
-> > migratetype in free_one_page is likely to be MIGRATE_ISOLATE.  Seems
-> > wrong.  If CONFIG_MEMORY_ISOLATION=n this ends up doing
-> > if(unlikely(true)) which is harmless-but-amusing.
+On 02/22/2013 06:55 PM, Jacob Pan wrote:
+> On Thu, 21 Feb 2013 23:01:23 +0100
+> Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
 > 
-> >From the beginning of [2139cbe627, cma: fix counting of isolated pages],
-> it was wrong. We can't make sure it's very likely.
-> If it is called by order-0 page free path, it is but if it is called by
-> high order page free path, we can't.
-> So I think it would be better to remove unlikley.
+>> +/*
+>> + * Set broadcast interrupt affinity
+>> + */
+>> +static void tick_broadcast_set_affinity(struct clock_event_device
+>> *bc, int cpu) +{
+>> +	struct cpumask cpumask;
+>> +
+>> +	if (!(bc->features & CLOCK_EVT_FEAT_DYNIRQ))
+>> +		return;
+>> +
+>> +	cpumask_clear(&cpumask);
+>> +	cpumask_set_cpu(cpu, &cpumask);
+>> +	irq_set_affinity(bc->irq, &cpumask);
+> would it be more efficient to keep track of the current bc->irq affinity
+> via cpumask then set it only if it is different?
 
-Order-0 pages surely preponderate, so I'd say that "likely" is the way
-to go.
+Do you mean a cpumask static variable ? and something like:
 
-I don't recall anyone ever demonstrating that likely/unlikely actually
-does anything useful.  It would be interesting to have a play around,
-see if it actually does good things to the code generation.
+if (!cpumask_test_cpu(cpu, &affinitymask)) {
+	cpumask_set_cpu(cpu, &affinitymask);
+	irq_set_affinity(bc->irq, &affinitymask)
+}
 
-I think someone (perhaps in or near Dave Jones?) once had a patch which
-added counters to likely/unlikely, so the kernel can accumulate and
-then report upon the hit/miss ratio at each site.  iirc, an alarmingly
-large number of the sites were deoptimisations!
 
-> They are trivial patch so send it now or send it after you release
-> first mmotm after finishing merge window?
 
-It's in mainline now.
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
