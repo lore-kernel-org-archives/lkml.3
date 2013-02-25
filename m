@@ -1,100 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758882Ab3BYRjO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 12:39:14 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:63358 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758651Ab3BYRjL (ORCPT
+	id S1759003Ab3BYRjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 12:39:25 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:46600 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758907Ab3BYRjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 12:39:11 -0500
+	Mon, 25 Feb 2013 12:39:19 -0500
+Message-ID: <512BA147.2090308@linux.vnet.ibm.com>
+Date: Mon, 25 Feb 2013 11:37:11 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130225160642.GA31806@redhat.com>
-References: <1361802350-9299-1-git-send-email-lucas.demarchi@profusion.mobi> <20130225160642.GA31806@redhat.com>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Mon, 25 Feb 2013 14:38:50 -0300
-Message-ID: <CAMOw1v7S07YOLQaKBBSHkCqhf1JSB1ZabMeMUJagb4E8841opQ@mail.gmail.com>
-Subject: Re: [PATCH] usermodehelper: Fix -ENOMEM return logic
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv5 7/8] zswap: add swap page writeback support
+References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com> <1360780731-11708-8-git-send-email-sjenning@linux.vnet.ibm.com> <20130225025403.GB6498@blaptop>
+In-Reply-To: <20130225025403.GB6498@blaptop>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022517-2876-0000-0000-000005B45100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 1:06 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 02/25, Lucas De Marchi wrote:
+On 02/24/2013 08:54 PM, Minchan Kim wrote:
+> Hi Seth,
+> 
+> On Wed, Feb 13, 2013 at 12:38:50PM -0600, Seth Jennings wrote:
+>> This patch adds support for evicting swap pages that are currently
+>> compressed in zswap to the swap device.  This functionality is very
+>> important and make zswap a true cache in that, once the cache is full
+>> or can't grow due to memory pressure, the oldest pages can be moved
+>> out of zswap to the swap device so newer pages can be compressed and
+>> stored in zswap.
 >>
->> Callers of call_usermodehelper_fns() should check the return value and
->> free themselves the data passed if the return is -ENOMEM. This is
->> because the subprocess_info is allocated in this function, and if the
->> allocation fail, the cleanup function cannot be called.
->
-> Yes, this is confusing.
->
->> However call_usermodehelper_exec() may also return -ENOMEM,
->
-> Yes, and we can't distinguish this case from info == NULL case,
->
->> in which
->> case the cleanup function is called. This means that if the caller
->> checked the return code, it was risking running the cleanup twice (like
->> kernel/sys.c:orderly_poweroff()) and if not, a leak could happen.
->
-> In short: every user of call_usermodehelper_fns(cleanup != NULL)
-> is buggy. Thanks.
->
-> But I am not sure I agree with the patch...
->
->>  static void call_usermodehelper_freeinfo(struct subprocess_info *info)
->>  {
->> -     if (info->cleanup)
->> +     if (info->cleanup && info->retval != -ENOMEM)
->>               (*info->cleanup)(info);
->>       kfree(info);
->>  }
->
-> This doesn't look very clean/robust. And in general, personally I
-> dislike the fact that ENOMEM has the special meaning. IOW, I think
-> we should cleanup this logic, not to complicate it more.
->
-> And in fact I do not think this is right, at least in UMH_NO_WAIT
-> case, shouldn't avoid ->cleanup() if, say, prepare_kernel_cred()
-> fails in ____call_usermodehelper()...
->
->
-> I think we should extract call_usermodehelper_setup() +
-> call_usermodehelper_setfns() into the new helper and export it.
-> And export call_usermodehelper_exec() as well.
->
-> call_usermodehelper_setfns() as a separate function makes no sense.
->
-> Then we can fix call_modprobe/orderly_poweroff, something like below.
->
-> What do you think?
+>> This introduces a good amount of new code to guarantee coherency.
+>> Most notably, and LRU list is added to the zswap_tree structure,
+>> and refcounts are added to each entry to ensure that one code path
+>> doesn't free then entry while another code path is operating on it.
+>>
+>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> 
+> In this time, I didn't review the code in detail yet but it seems
+> resolve of all review point in previous interation. Thanks!
+> But unfortunately, I couldn't find anything related to tmppage handling
+> so I'd like to ask.
+> 
+> The reason of tmppage is temporal buffer to keep compressed data during
+> writeback to avoid unnecessary compressing again when we retry?
 
-Yep. The current interface is confusing. I agree that a separate
-setup() + exec() would make more sense.
+Yes.
 
->
-> Oleg.
->
-> --- x/kernel/kmod.c
-> +++ x/kernel/kmod.c
-> @@ -98,8 +98,14 @@ static int call_modprobe(char *module_na
->         argv[3] = module_name;  /* check free_modprobe_argv() */
->         argv[4] = NULL;
->
-> -       return call_usermodehelper_fns(modprobe_path, argv, envp,
-> -               wait | UMH_KILLABLE, NULL, free_modprobe_argv, NULL);
-> +       info = call_usermodehelper_setup(...); // better name, please...
-> +       if (!info)
-> +               goto free_modname;
-> +
-> +       return call_usermodehelper_exec(info, wait);
+> Is it really critical about performance?
 
-I'd say that in these cases the "call_" prefix has no meaning, and we
-could just use a "usermodehelper" as the namespace.
+It's hard to measure.  There is no guarantee that
+zswap_flush_entries() has made room for the allocation so if we fail
+again, we've compressed the page twice and still fail
 
-Lucas De Marchi
+So my motivation was to prevent the second compression.  It does add
+significant complexity though without a completely clear (i.e.
+measurable) benefit.
+
+
+What's the wrong if we remove
+> tmppage handling?
+> 
+> zswap_frontswap_store
+> retry:
+>         get_cpu_var(zswap_dstmem);
+>         zswap_com_op(COMPRESS)
+>         zs_malloc()
+>         if (!handle) {
+>                 put_cpu_var(zswap_dstmem);
+>                 if (retry > MAX_RETRY)
+>                         goto error_nomem;
+>                 zswap_flush_entries()
+>                 goto retry;
+>         }
+
+I dislike "jump up" labels, but yes, something like this could be done.
+
+Thanks,
+Seth
+
