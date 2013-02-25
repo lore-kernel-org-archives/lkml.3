@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759570Ab3BYBRp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 20:17:45 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:37431 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759552Ab3BYBRo (ORCPT
+	id S1759583Ab3BYBet (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 20:34:49 -0500
+Received: from prdiron-2.llnl.gov ([128.15.143.172]:43901 "EHLO
+	prdiron-2.llnl.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759514Ab3BYBes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 20:17:44 -0500
-Date: Mon, 25 Feb 2013 12:17:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: linux-next: manual merge of the watchdog tree with Linus' tree
-Message-Id: <20130225121732.29aad0f57349a5dce64ffd47@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Sun, 24 Feb 2013 20:34:48 -0500
+X-Attachments: 
+Date: Sun, 24 Feb 2013 17:34:47 -0800
+From: Ira Weiny <weiny2@llnl.gov>
+To: "Husam Kahalah" <HKahalah@asaltech.com>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] infiniband-diags/saquery.c: switchinfo support added
+Message-Id: <20130224173447.08f0201f24e97ea4c62a5a60@llnl.gov>
+In-Reply-To: <WC20130224082247.780048@asaltech.com>
+References: <WC20130221094946.530170@asaltech.com>
+	<20130221100900.87b509d834fc0adc21b6f68b@llnl.gov>
+	<20130221103344.57aeda4abc1ac4915a6a0a06@llnl.gov>
+	<WC20130224082247.780048@asaltech.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__25_Feb_2013_12_17_32_+1100_7QGgLUEoyJ/0XADm"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Feb_2013_12_17_32_+1100_7QGgLUEoyJ/0XADm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 24 Feb 2013 10:22:47 +0200
+"Husam Kahalah" <HKahalah@asaltech.com> wrote:
 
-Hi Wim,
+> Thank you for your time, I have the following notes:
+> I plan to add support for more records other than switchInfoRecord like 
+> smInfo, multipath, nodeInfo
 
-Today's linux-next merge of the watchdog tree got a conflict in
-drivers/rtc/rtc-stmp3xxx.c between commit c8a6046e1e0b ("drivers/rtc: use
-of_match_ptr() macro") from Linus' tree and commit e02f5cf6b648 ("rtc:
-stmp3xxx: add wdt-accessor function") from the watchdog tree.
+That would be great!
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> I plan also to add component filter to those records attributes in the same 
+> way that pathInfo and MCR were implemented, this is the reason why I started 
+> adding attributes to query_params structure 
+> I'am not talking about RID(record identifier) attributes only, but also 
+> about other attributes that may differ between records.
+> If it is available to add to query_params structure in that way let me know 
+> , otherwise I will add just RID attributes in the suggested way.
+> 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I am not against adding fields to query_params.  However, we have a standard way to specify the RID components like LID which should be followed.
 
-diff --cc drivers/rtc/rtc-stmp3xxx.c
-index b2a8ed9,cc9a9b6..0000000
---- a/drivers/rtc/rtc-stmp3xxx.c
-+++ b/drivers/rtc/rtc-stmp3xxx.c
-@@@ -26,7 -26,8 +26,9 @@@
-  #include <linux/rtc.h>
-  #include <linux/slab.h>
-  #include <linux/of_device.h>
- +#include <linux/of.h>
-+ #include <linux/stmp_device.h>
-+ #include <linux/stmp3xxx_rtc_wdt.h>
- =20
-  #include <mach/common.h>
- =20
+If you need new components to be specified for new attributes it is fine to add them to query_params.  That said, any components which already have options should be overloaded; for example MultiPathRecord.SL should use the --sl option.
 
---Signature=_Mon__25_Feb_2013_12_17_32_+1100_7QGgLUEoyJ/0XADm
-Content-Type: application/pgp-signature
+Does this make sense?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Thanks,
+Ira
 
-iQIcBAEBCAAGBQJRKrusAAoJEECxmPOUX5FE7sEP+wTXTefo4R1H/AiGyA0SwmAh
-BQENwVo9Aph3YqQn4PFvHL1HSNufXcCXOQ/pOr4wAnBW5XlelQRKsLrC3Tcz/4BJ
-w5bvdYCdJ7jyvfgZBrCeITX46A2Mg1Xi6jQ5tgpU6RzpXLWcRHzgzFBr02CpnBxU
-fIzODr1CaiuSEb+vDKFWl/YvwVlTwmBwWHG3GjiwFfIJZY0mKIertoNFESdkQkjR
-BVF8QNdmXqyKkw17SLEkV1nGadX+6eINwV8SJ6tAHpQFWWhE0SoABBH/p5UrNlYG
-Vt9g+TC6vBf93CdFLeCFsrZ2kPZ2uFsY2ePLlRrWWaw0cFwKPoQlB1EHOCB8Zngn
-A1UBzOYBNncXMCvXJOhmrFsjTZp1PfflOwTVAZaLS8/4fRhRiFLzvlJJyi1NMfVV
-tG3yOe1yOiK4PlPs27MEc181x+547J45TpDIq+fMtel0ZbISbOCTzOuvG2stIcum
-nWuJpy5a0rNtP6pdsXpjttYKggdo0/E0lR1kucWRCI52DX2F4xMGQrgAP2JLh72g
-2BdLLpLQ/eql0/I2nM9wQGZ7x8f3EyGmpU8SVjhwuaD3lL/PeVTIc8WDQLtiPMB6
-mtyoXbFFh5XJRA0N+ZPaNEmyt9JZqyVd/TAaTokMHhU6RzG6RIVB5u8IKrfWDqnN
-AoaJvc05lqh35E8qvvz6
-=OMXI
------END PGP SIGNATURE-----
+> 
+> -----Original Message-----
+> From: Ira Weiny <weiny2@llnl.gov>
+> To: Ira Weiny <weiny2@llnl.gov>
+> Cc: "Husam Kahalah" <HKahalah@asaltech.com>, linux-rdma@vger.kernel.org, 
+> linux-kernel@vger.kernel.org
+> Date: Thu, 21 Feb 2013 10:33:44 -0800
+> Subject: Re: [PATCH] infiniband-diags/saquery.c: switchinfo support added
+> 
+> On Thu, 21 Feb 2013 10:09:00 -0800
+> Ira Weiny <weiny2@llnl.gov> wrote:
+> 
+> [snip]
+> 
+> > > + ib_net16_t swir_lid;
+> >
+> > We don't need this field or lid option.  Other records simply have an 
+> optional parameter to specify the lid.
+> >
+> > The usage should be:
+> >
+> > SwitchRecord [lid]
+> >
+> 
+> Sorry I meant "SwitchInfoRecord" or SWIR.
+> 
+> Ira
+> 
+> [snip]
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
---Signature=_Mon__25_Feb_2013_12_17_32_+1100_7QGgLUEoyJ/0XADm--
+
+-- 
+Ira Weiny
+Member of Technical Staff
+Lawrence Livermore National Lab
+925-423-8008
+weiny2@llnl.gov
