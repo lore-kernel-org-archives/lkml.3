@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab3BYWUO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:20:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55154 "EHLO
+	id S933116Ab3BYW2P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:28:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55205 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759800Ab3BYWUF (ORCPT
+	with ESMTP id S932255Ab3BYWUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:05 -0500
+	Mon, 25 Feb 2013 17:20:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Denis Efremov <yefremov.denis@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 14/58] ALSA: ali5451: remove irq enabling in pointer callback
-Date: Mon, 25 Feb 2013 14:19:10 -0800
-Message-Id: <20130225221639.129883033@linuxfoundation.org>
+        Joonsoo Kim <js1304@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 28/58] Driver core: treat unregistered bus_types as having no devices
+Date: Mon, 25 Feb 2013 14:19:24 -0800
+Message-Id: <20130225221642.211424778@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -26,34 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denis Efremov <yefremov.denis@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit dacae5a19b4cbe1b5e3a86de23ea74cbe9ec9652 upstream.
+commit 4fa3e78be7e985ca814ce2aa0c09cbee404efcf7 upstream.
 
-snd_ali_pointer function is called with local
-interrupts disabled. However it seems very strange to
-reenable them in such way.
+A bus_type has a list of devices (klist_devices), but the list and the
+subsys_private structure that contains it are not initialized until the
+bus_type is registered with bus_register().
 
-Found by Linux Driver Verification project (linuxtesting.org).
+The panic/reboot path has fixups that look up devices in pci_bus_type.  If
+we panic before registering pci_bus_type, the bus_type exists but the list
+does not, so mach_reboot_fixups() trips over a null pointer and panics
+again:
 
-Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+    mach_reboot_fixups
+      pci_get_device
+        ..
+          bus_find_device(&pci_bus_type, ...)
+            bus->p is NULL
+
+Joonsoo reported a problem when panicking before PCI was initialized.
+I think this patch should be sufficient to replace the patch he posted
+here: https://lkml.org/lkml/2012/12/28/75 ("[PATCH] x86, reboot: skip
+reboot_fixups in early boot phase")
+
+Reported-by: Joonsoo Kim <js1304@gmail.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/ali5451/ali5451.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/bus.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/ali5451/ali5451.c
-+++ b/sound/pci/ali5451/ali5451.c
-@@ -1435,7 +1435,7 @@ static snd_pcm_uframes_t snd_ali_pointer
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -293,7 +293,7 @@ int bus_for_each_dev(struct bus_type *bu
+ 	struct device *dev;
+ 	int error = 0;
  
- 	spin_lock(&codec->reg_lock);
- 	if (!pvoice->running) {
--		spin_unlock_irq(&codec->reg_lock);
-+		spin_unlock(&codec->reg_lock);
- 		return 0;
- 	}
- 	outb(pvoice->number, ALI_REG(codec, ALI_GC_CIR));
+-	if (!bus)
++	if (!bus || !bus->p)
+ 		return -EINVAL;
+ 
+ 	klist_iter_init_node(&bus->p->klist_devices, &i,
+@@ -327,7 +327,7 @@ struct device *bus_find_device(struct bu
+ 	struct klist_iter i;
+ 	struct device *dev;
+ 
+-	if (!bus)
++	if (!bus || !bus->p)
+ 		return NULL;
+ 
+ 	klist_iter_init_node(&bus->p->klist_devices, &i,
 
 
