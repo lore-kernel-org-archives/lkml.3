@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759480Ab3BYAtq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 19:49:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55494 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752336Ab3BYAtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 19:49:45 -0500
-Message-ID: <1361753381.2532.13.camel@bling.home>
-Subject: [GIT PULL] VFIO updates for v3.9-rc1
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        keescook@chromium.org
-Date: Sun, 24 Feb 2013 17:49:41 -0700
-Content-Type: text/plain; charset="UTF-8"
+	id S1759570Ab3BYBRp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 20:17:45 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:37431 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759552Ab3BYBRo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 20:17:44 -0500
+Date: Mon, 25 Feb 2013 12:17:32 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: linux-next: manual merge of the watchdog tree with Linus' tree
+Message-Id: <20130225121732.29aad0f57349a5dce64ffd47@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__25_Feb_2013_12_17_32_+1100_7QGgLUEoyJ/0XADm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Mon__25_Feb_2013_12_17_32_+1100_7QGgLUEoyJ/0XADm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please pull for v3.9-rc1.  Thanks,
+Hi Wim,
 
-Alex
+Today's linux-next merge of the watchdog tree got a conflict in
+drivers/rtc/rtc-stmp3xxx.c between commit c8a6046e1e0b ("drivers/rtc: use
+of_match_ptr() macro") from Linus' tree and commit e02f5cf6b648 ("rtc:
+stmp3xxx: add wdt-accessor function") from the watchdog tree.
 
-The following changes since commit 323a72d83c9b2963bd1e46c8e6963e468d4658d7:
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2013-02-13 12:21:07 -0800)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-are available in the git repository at:
+diff --cc drivers/rtc/rtc-stmp3xxx.c
+index b2a8ed9,cc9a9b6..0000000
+--- a/drivers/rtc/rtc-stmp3xxx.c
++++ b/drivers/rtc/rtc-stmp3xxx.c
+@@@ -26,7 -26,8 +26,9 @@@
+  #include <linux/rtc.h>
+  #include <linux/slab.h>
+  #include <linux/of_device.h>
+ +#include <linux/of.h>
++ #include <linux/stmp_device.h>
++ #include <linux/stmp3xxx_rtc_wdt.h>
+ =20
+  #include <mach/common.h>
+ =20
 
+--Signature=_Mon__25_Feb_2013_12_17_32_+1100_7QGgLUEoyJ/0XADm
+Content-Type: application/pgp-signature
 
-  git://github.com/awilliam/linux-vfio.git tags/vfio-v3.9-rc1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-for you to fetch changes up to d65530fbc799e4036d4d3da4ab6e9fa6d8c4a447:
+iQIcBAEBCAAGBQJRKrusAAoJEECxmPOUX5FE7sEP+wTXTefo4R1H/AiGyA0SwmAh
+BQENwVo9Aph3YqQn4PFvHL1HSNufXcCXOQ/pOr4wAnBW5XlelQRKsLrC3Tcz/4BJ
+w5bvdYCdJ7jyvfgZBrCeITX46A2Mg1Xi6jQ5tgpU6RzpXLWcRHzgzFBr02CpnBxU
+fIzODr1CaiuSEb+vDKFWl/YvwVlTwmBwWHG3GjiwFfIJZY0mKIertoNFESdkQkjR
+BVF8QNdmXqyKkw17SLEkV1nGadX+6eINwV8SJ6tAHpQFWWhE0SoABBH/p5UrNlYG
+Vt9g+TC6vBf93CdFLeCFsrZ2kPZ2uFsY2ePLlRrWWaw0cFwKPoQlB1EHOCB8Zngn
+A1UBzOYBNncXMCvXJOhmrFsjTZp1PfflOwTVAZaLS8/4fRhRiFLzvlJJyi1NMfVV
+tG3yOe1yOiK4PlPs27MEc181x+547J45TpDIq+fMtel0ZbISbOCTzOuvG2stIcum
+nWuJpy5a0rNtP6pdsXpjttYKggdo0/E0lR1kucWRCI52DX2F4xMGQrgAP2JLh72g
+2BdLLpLQ/eql0/I2nM9wQGZ7x8f3EyGmpU8SVjhwuaD3lL/PeVTIc8WDQLtiPMB6
+mtyoXbFFh5XJRA0N+ZPaNEmyt9JZqyVd/TAaTokMHhU6RzG6RIVB5u8IKrfWDqnN
+AoaJvc05lqh35E8qvvz6
+=OMXI
+-----END PGP SIGNATURE-----
 
-  drivers/vfio: remove depends on CONFIG_EXPERIMENTAL (2013-02-24 09:59:44 -0700)
-
-----------------------------------------------------------------
-VFIO for 3.9-rc1
-
-- Fixes PCIe v1 extended capability support
-- Cleans up read/write access functions
-- Fix Removal test to properly wait until devices are unused
-- Enable pcieport driver usage for non-accessible devices w/in groups
-- Extensions for PCI VGA support
-
-----------------------------------------------------------------
-Alex Williamson (7):
-      vfio-pci: Enable PCIe extended capabilities on v1
-      vfio-pci: Cleanup read/write functions
-      vfio-pci: Cleanup BAR access
-      vfio: Protect vfio_dev_present against device_del
-      vfio: whitelist pcieport
-      vfio-pci: Manage user power state transitions
-      vfio-pci: Add support for VGA region access
-
-Kees Cook (1):
-      drivers/vfio: remove depends on CONFIG_EXPERIMENTAL
-
- drivers/vfio/pci/Kconfig            |  10 ++
- drivers/vfio/pci/vfio_pci.c         |  75 ++++++----
- drivers/vfio/pci/vfio_pci_config.c  |  52 +++++--
- drivers/vfio/pci/vfio_pci_private.h |  19 +--
- drivers/vfio/pci/vfio_pci_rdwr.c    | 281 ++++++++++++++++--------------------
- drivers/vfio/vfio.c                 |  35 ++---
- include/uapi/linux/vfio.h           |   9 ++
- 7 files changed, 254 insertions(+), 227 deletions(-)
-
-
+--Signature=_Mon__25_Feb_2013_12_17_32_+1100_7QGgLUEoyJ/0XADm--
