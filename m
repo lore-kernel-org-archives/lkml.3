@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214Ab3BYHAk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 02:00:40 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:51732 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757286Ab3BYG7n (ORCPT
+	id S1756921Ab3BYG7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 01:59:42 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:36533 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178Ab3BYG7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 01:59:43 -0500
+	Mon, 25 Feb 2013 01:59:41 -0500
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Evgeniy Polyakov <zbr@ioremap.net>,
@@ -14,62 +14,60 @@ Cc: Evgeniy Polyakov <zbr@ioremap.net>,
         Ville Syrjala <syrjala@sci.fi>, Daniel Mack <zonque@gmail.com>,
         Matt Ranostay <mranostay@gmail.com>, panto@antoniou-consulting.com,
         koen@dominion.thruhere.net
-Subject: [PATCH 3/5] W1: w1-gpio - guard DT IDs with CONFIG_OF
-Date: Sun, 24 Feb 2013 22:59:35 -0800
-Message-Id: <1361775577-4578-3-git-send-email-dmitry.torokhov@gmail.com>
+Subject: [PATCH v2 1/5] W1: w1-gpio - fix incorrect __init/__exit markups
+Date: Sun, 24 Feb 2013 22:59:33 -0800
+Message-Id: <1361775577-4578-1-git-send-email-dmitry.torokhov@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1361775577-4578-1-git-send-email-dmitry.torokhov@gmail.com>
+In-Reply-To: <1361606320-4479-1-git-send-email-dmitry.torokhov@gmail.com>
 References: <1361606320-4479-1-git-send-email-dmitry.torokhov@gmail.com>
- <1361775577-4578-1-git-send-email-dmitry.torokhov@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following warning:
-
-  CC      drivers/w1/masters/w1-gpio.o
-drivers/w1/masters/w1-gpio.c:50:28: warning: ‘w1_gpio_dt_ids’ defined but not used [-Wunused-variable]
-
-Also provide stub for w1_gpio_probe_dt() if device tree support is
-disabled.
+We should not be using __init/__exit markups on probe() and remove()
+methods unless platform_device_probe() is used, because other methods
+allow unbinding device through sysfs and these methods should not be
+discarded.
 
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- drivers/w1/masters/w1-gpio.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+
+Paatch #4 was adjusted according to Ville's comments.
+
+ drivers/w1/masters/w1-gpio.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/w1/masters/w1-gpio.c b/drivers/w1/masters/w1-gpio.c
-index c45b9ae..aa97a96 100644
+index 85b363a..799dafd 100644
 --- a/drivers/w1/masters/w1-gpio.c
 +++ b/drivers/w1/masters/w1-gpio.c
-@@ -47,6 +47,8 @@ static u8 w1_gpio_read_bit(void *data)
- 	return gpio_get_value(pdata->pin) ? 1 : 0;
- }
- 
-+#ifdef CONFIG_OF
-+
- static struct of_device_id w1_gpio_dt_ids[] = {
- 	{ .compatible = "w1-gpio" },
- 	{}
-@@ -72,6 +74,15 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
+@@ -72,7 +72,7 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
  	return 0;
  }
  
-+#else
-+
-+static inline int w1_gpio_probe_dt(struct platform_device *pdev)
-+{
-+	return -ENOSYS;
-+}
-+
-+#endif
-+
- static int w1_gpio_probe(struct platform_device *pdev)
+-static int __init w1_gpio_probe(struct platform_device *pdev)
++static int w1_gpio_probe(struct platform_device *pdev)
  {
  	struct w1_bus_master *master;
+ 	struct w1_gpio_platform_data *pdata;
+@@ -158,7 +158,7 @@ static int __init w1_gpio_probe(struct platform_device *pdev)
+ 	return err;
+ }
+ 
+-static int __exit w1_gpio_remove(struct platform_device *pdev)
++static int w1_gpio_remove(struct platform_device *pdev)
+ {
+ 	struct w1_bus_master *master = platform_get_drvdata(pdev);
+ 	struct w1_gpio_platform_data *pdata = pdev->dev.platform_data;
+@@ -210,7 +210,7 @@ static struct platform_driver w1_gpio_driver = {
+ 		.of_match_table = of_match_ptr(w1_gpio_dt_ids),
+ 	},
+ 	.probe = w1_gpio_probe,
+-	.remove	= __exit_p(w1_gpio_remove),
++	.remove = w1_gpio_remove,
+ 	.suspend = w1_gpio_suspend,
+ 	.resume = w1_gpio_resume,
+ };
 -- 
 1.7.11.7
 
