@@ -1,182 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214Ab3BYWaA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:30:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54468 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab3BYW34 (ORCPT
+	id S933222Ab3BYWaP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:30:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55450 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932301Ab3BYW37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:29:56 -0500
-From: Dave Chiluk <chiluk@canonical.com>
-To: Steve French <sfrench@samba.org>
-Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] CIFS: Decrease reconnection delay when switching nics
-Date: Mon, 25 Feb 2013 16:28:30 -0600
-Message-Id: <1361831310-24260-1-git-send-email-chiluk@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 25 Feb 2013 17:29:59 -0500
+Date: Mon, 25 Feb 2013 14:29:57 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: linux-kernel@vger.kernel.org, "'Tejun Heo'" <tj@kernel.org>,
+        "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH] rtc: add devm_rtc_device_{register,unregister}()
+Message-Id: <20130225142957.8e4aca8a.akpm@linux-foundation.org>
+In-Reply-To: <000e01ce132a$be08b940$3a1a2bc0$%han@samsung.com>
+References: <000e01ce132a$be08b940$3a1a2bc0$%han@samsung.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When messages are currently in queue awaiting a response, decrease amount of
-time before attempting cifs_reconnect to SMB_MAX_RTT = 10 seconds. The current
-wait time before attempting to reconnect is currently 2*SMB_ECHO_INTERVAL(120
-seconds) since the last response was recieved.  This does not take into account
-the fact that messages waiting for a response should be serviced within a
-reasonable round trip time.
+On Mon, 25 Feb 2013 16:35:53 +0900
+Jingoo Han <jg1.han@samsung.com> wrote:
 
-This fixes the issue where user moves from wired to wireless or vice versa
-causing the mount to hang for 120 seconds, when it could reconnect considerably
-faster.  After this fix it will take SMB_MAX_RTT (10 seconds) from the last
-time the user attempted to access the volume or SMB_MAX_RTT after the last
-echo.  The worst case of the latter scenario being
-2*SMB_ECHO_INTERVAL+SMB_MAX_RTT+small scheduling delay (about 130 seconds).
-Statistically speaking it would normally reconnect sooner.  However in the best
-case where the user changes nics, and immediately tries to access the cifs
-share it will take SMB_MAX_RTT=10 seconds.
+> These functios allows the driver core to automatically clean up
+> any allocation made by rtc drivers. Thus, it simplifies the error
+> paths.
+> 
+> ...
+>
+> @@ -259,6 +259,78 @@ void rtc_device_unregister(struct rtc_device *rtc)
+>  }
+>  EXPORT_SYMBOL_GPL(rtc_device_unregister);
+>  
+> +static void devm_rtc_device_release(struct device *dev, void *res)
+> +{
+> +	struct rtc_device *rtc = *(struct rtc_device **)res;
+> +
+> +	rtc_device_unregister(rtc);
+> +}
+> +
+> +static int devm_rtc_device_match(struct device *dev, void *res, void *data)
+> +{
+> +	struct rtc **r = res;
+> +	if (!r || !*r) {
+> +		WARN_ON(!r || !*r);
+> +		return 0;
+> +	}
 
-BugLink: http://bugs.launchpad.net/bugs/1017622
+Use
 
-Signed-off-by: Dave Chiluk <chiluk@canonical.com>
----
- fs/cifs/cifsglob.h |   15 +++++++------
- fs/cifs/connect.c  |   61 +++++++++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 59 insertions(+), 17 deletions(-)
+	if (WARN_ON(!r || !*r))
+		return 0;
 
-diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-index e6899ce..138c8cf 100644
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -80,6 +80,8 @@
- 
- /* SMB echo "timeout" -- FIXME: tunable? */
- #define SMB_ECHO_INTERVAL (60 * HZ)
-+/* Maximum acceptable round trip time to server */
-+#define SMB_MAX_RTT (10 * HZ)
- 
- #include "cifspdu.h"
- 
-@@ -1141,8 +1143,8 @@ struct mid_q_entry {
- 	__u32 pid;		/* process id */
- 	__u32 sequence_number;  /* for CIFS signing */
- 	unsigned long when_alloc;  /* when mid was created */
--#ifdef CONFIG_CIFS_STATS2
- 	unsigned long when_sent; /* time when smb send finished */
-+#ifdef CONFIG_CIFS_STATS2
- 	unsigned long when_received; /* when demux complete (taken off wire) */
- #endif
- 	mid_receive_t *receive; /* call receive callback */
-@@ -1179,11 +1181,6 @@ static inline void cifs_num_waiters_dec(struct TCP_Server_Info *server)
- {
- 	atomic_dec(&server->num_waiters);
- }
--
--static inline void cifs_save_when_sent(struct mid_q_entry *mid)
--{
--	mid->when_sent = jiffies;
--}
- #else
- static inline void cifs_in_send_inc(struct TCP_Server_Info *server)
- {
-@@ -1199,11 +1196,15 @@ static inline void cifs_num_waiters_inc(struct TCP_Server_Info *server)
- static inline void cifs_num_waiters_dec(struct TCP_Server_Info *server)
- {
- }
-+#endif
- 
-+/* We always need to know when a mid was sent in order to determine if
-+ * the server is not responding.
-+ */
- static inline void cifs_save_when_sent(struct mid_q_entry *mid)
- {
-+	mid->when_sent = jiffies;
- }
--#endif
- 
- /* for pending dnotify requests */
- struct dir_notify_req {
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index 12b3da3..57c78b3 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -456,25 +456,66 @@ allocate_buffers(struct TCP_Server_Info *server)
- 	return true;
- }
- 
-+/* Takes struct *TCP_Server_Info and returns the when_sent jiffy of the
-+ * oldest unanswered mid in the pending queue or the newest response.
-+ * Whichever is newer.
-+ */
-+static unsigned long
-+oldest_req_or_newest_resp(struct TCP_Server_Info *server)
-+{
-+	struct mid_q_entry *mid;
-+	unsigned long oldest_jiffy = jiffies;
-+
-+	spin_lock(&GlobalMid_Lock);
-+	list_for_each_entry(mid, &server->pending_mid_q, qhead) {
-+		if (mid->mid_state == MID_REQUEST_SUBMITTED) {
-+			if (time_before(mid->when_sent, oldest_jiffy))
-+				oldest_jiffy = mid->when_sent;
-+		}
-+	}
-+	spin_unlock(&GlobalMid_Lock);
-+
-+	/* Check to see if the last response is newer than the oldest request
-+	 * This could mean that the server is just responding very slowly,
-+	 * possibly even longer than SMB_MAX_RTT.  In which * case we don't
-+	 * want to cause a reconnect.
-+	 */
-+	if (time_after(server->lstrp , oldest_jiffy))
-+		return server->lstrp;
-+	else
-+		return oldest_jiffy;
-+}
-+
- static bool
- server_unresponsive(struct TCP_Server_Info *server)
- {
-+	unsigned long oldest;
-+
- 	/*
--	 * We need to wait 2 echo intervals to make sure we handle such
--	 * situations right:
-+	 * When no messages are in flight max wait is
-+	 * 2*SMB_ECHO_INTERVAL + SMB_MAX_RTT + scheduling delay
-+	 *
-+	 * 1s   client sends a normal SMB request
-+	 * 2s   client gets a response
-+	 * 61s  echo workqueue job pops, and decides we got a response < 60
-+	 *      seconds ago and don't need to send another
-+	 * 121s kernel_recvmsg times out, and we see that we haven't gotten
-+	 *      a response in >60s. Send echo causing in_flight() to return
-+	 *      true
-+	 * 131s echo hasn't returned run cifs_reconnect
-+	 *
-+	 * Situation 2 where non-echo messages are in_flight
- 	 * 1s  client sends a normal SMB request
- 	 * 2s  client gets a response
--	 * 30s echo workqueue job pops, and decides we got a response recently
--	 *     and don't need to send another
--	 * ...
--	 * 65s kernel_recvmsg times out, and we see that we haven't gotten
--	 *     a response in >60s.
-+	 * 3s  client sends a normal SMB request
-+	 * 13s client still has not received SMB response run cifs_reconnect
- 	 */
- 	if (server->tcpStatus == CifsGood &&
--	    time_after(jiffies, server->lstrp + 2 * SMB_ECHO_INTERVAL)) {
--		cERROR(1, "Server %s has not responded in %d seconds. "
-+	    (in_flight(server) > 0 && time_after(jiffies,
-+		  oldest = oldest_req_or_newest_resp(server) + SMB_MAX_RTT))) {
-+		cERROR(1, "Server %s has not responded in %lu seconds. "
- 			  "Reconnecting...", server->hostname,
--			  (2 * SMB_ECHO_INTERVAL) / HZ);
-+			  ((jiffies - oldest) / HZ));
- 		cifs_reconnect(server);
- 		wake_up(&server->response_q);
- 		return true;
--- 
-1.7.9.5
+However, if anyone ever reports this warning you will be sad because
+you won't know which condition triggered it.  So a more useful approach
+is
 
+	if (WARN_ON(!r))
+		return 0;
+	if (WARN_ON(!*r))
+		return 0;
+
+> +	return *r == data;
+> +}
+> +
+> +/**
+> + * devm_rtc_device_register - resource managed rtc_device_register()
+> + * @name: the name of the device
+> + * @dev: the device to register
+> + * @ops: the rtc operations structure
+> + * @owner: the module owner
+> + *
+> + * Managed rtc_device_register(). The rtc_device returned from this function
+> + * are automatically freed on driver detach. See rtc_device_register()
+> + * for more information.
+> + */
+
+I think the name is inappropriate.  devm functions start with "devm"
+and rtc functions start with "rtc" and this code is a part of rtc core,
+not a part of devm core.  Hence it should be something like
+"rtc_devm_device_register".
+
+> +struct rtc_device *devm_rtc_device_register(const char *name,
+> +					struct device *dev,
+> +					const struct rtc_class_ops *ops,
+> +					struct module *owner)
+> +{
+> +	struct rtc_device **ptr, *rtc;
+> +
+> +	ptr = devres_alloc(devm_rtc_device_release, sizeof(*ptr), GFP_KERNEL);
+> +	if (!ptr)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	rtc = rtc_device_register(name, dev, ops, owner);
+> +	if (!IS_ERR(rtc)) {
+> +		*ptr = rtc;
+> +		devres_add(dev, ptr);
+> +	} else {
+> +		devres_free(ptr);
+> +	}
+> +
+> +	return rtc;
+> +}
+> +EXPORT_SYMBOL_GPL(devm_rtc_device_register);
+
+So this function will return an ERR_PTR on error.  Please add a
+description of the return value into the kerneldoc.
+
+
+> +/**
+> + * devm_rtc_device_unregister - resource managed devm_rtc_device_unregister()
+> + * @dev: the device to unregister
+> + * @rtc: the RTC class device to unregister
+> + *
+> + * Deallocated a rtc allocated with devm_rtc_device_register(). Normally this
+> + * function will not need to be called and the resource management code will
+> + * ensure that the resource is freed.
+> + */
+> +void devm_rtc_device_unregister(struct device *dev, struct rtc_device *rtc)
+> +{
+> +	int rc;
+> +
+> +	rc = devres_release(dev, devm_rtc_device_release,
+> +				devm_rtc_device_match, rtc);
+> +	if (rc != 0)
+> +		WARN_ON(rc);
+
+	WARN_ON(!rc);
+
+> +}
+> +EXPORT_SYMBOL_GPL(devm_rtc_device_unregister);
+> +
+>
+> ...
+>
