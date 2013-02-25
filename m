@@ -1,165 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758979Ab3BYSaJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 13:30:09 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:48820 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347Ab3BYSaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 13:30:04 -0500
-Date: Mon, 25 Feb 2013 12:27:46 -0600
-From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com,
-        josh.h.morris@us.ibm.com
-Subject: [PATCH 1/4] block: IBM RamSan 70/80 trivial changes.
-Message-ID: <20130225182746.GA7415@oc6784271780.ibm.com>
+	id S1759257Ab3BYSaa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 13:30:30 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41277 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754529Ab3BYSa2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 13:30:28 -0500
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: linux-kbuild@vger.kernel.org, jlec@gentoo.org
+Subject: Re: [PATCH] Use config scripts to detect ncurses libs for, menuconfig/nconfig dialogs
+Date: Mon, 25 Feb 2013 19:30:21 +0100
+User-Agent: KMail/1.13.5 (Linux/3.8.0-treguer; KDE/4.4.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <512A36BB.9070309@gentoo.org>
+In-Reply-To: <512A36BB.9070309@gentoo.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022518-5806-0000-0000-000020136C44
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302251930.22293.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+Justin, All,
 
-This patch includes trivial changes that were recommended by
-different members of the Linux Community.
+On Sunday 24 February 2013 Justin wrote:
+> when ncurses is build with --with-termlib several symbols are moved to a
+> seperate terminfo library (libtinfo.so). Current Kernel buildsystem
+> results in a build error with menuconfig and nconfig dialogs.
 
-Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
--------------------------------------------------------------------------------
-This was built from Jen's for-next branch.
+Do you know of a distribution where this is the case, so I can test?
 
-Changes include:
-o Removing the redundant wmb().
-o Formatting
-o Various other little things.
+[--SNIP--]
+> Attached patch uses ncurses5-config and pkg-config to detect the libs to
+> link with. Please include this to fix the build error.
 
+Next time, please include the patch directly in the mail body, it is easier
+to review and comment. Using 'git send-email' does that automatically for
+you.
 
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/config.c linux-block/drivers/block/rsxx/config.c
---- linux-block-vanilla/drivers/block/rsxx/config.c	2013-02-25 11:53:40.891299171 -0600
-+++ linux-block/drivers/block/rsxx/config.c	2013-02-25 11:57:32.944194401 -0600
-@@ -29,10 +29,8 @@
- #include "rsxx_priv.h"
- #include "rsxx_cfg.h"
- 
--static void initialize_config(void *config)
-+static void initialize_config(struct rsxx_card_cfg *cfg)
- {
--	struct rsxx_card_cfg *cfg = config;
--
- 	cfg->hdr.version = RSXX_CFG_VERSION;
- 
- 	cfg->data.block_size        = RSXX_HW_BLK_SIZE;
-@@ -181,7 +179,7 @@ int rsxx_load_config(struct rsxx_cardinf
- 	} else {
- 		dev_info(CARD_TO_DEV(card),
- 			"Initializing card configuration.\n");
--		initialize_config(card);
-+		initialize_config(&card->config);
- 		st = rsxx_save_config(card);
- 		if (st)
- 			return st;
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/core.c linux-block/drivers/block/rsxx/core.c
---- linux-block-vanilla/drivers/block/rsxx/core.c	2013-02-25 11:53:40.896495173 -0600
-+++ linux-block/drivers/block/rsxx/core.c	2013-02-25 12:05:13.567185446 -0600
-@@ -161,9 +161,9 @@ static irqreturn_t rsxx_isr(int irq, voi
- }
- 
- /*----------------- Card Event Handler -------------------*/
--static char *rsxx_card_state_to_str(unsigned int state)
-+static const char * const rsxx_card_state_to_str(unsigned int state)
- {
--	static char *state_strings[] = {
-+	static const char * const state_strings[] = {
- 		"Unknown", "Shutdown", "Starting", "Formatting",
- 		"Uninitialized", "Good", "Shutting Down",
- 		"Fault", "Read Only Fault", "dStroying"
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/cregs.c linux-block/drivers/block/rsxx/cregs.c
---- linux-block-vanilla/drivers/block/rsxx/cregs.c	2013-02-25 11:53:40.901473091 -0600
-+++ linux-block/drivers/block/rsxx/cregs.c	2013-02-25 11:57:32.958184534 -0600
-@@ -126,13 +126,6 @@ static void creg_issue_cmd(struct rsxx_c
- 					  cmd->buf, cmd->stream);
- 	}
- 
--	/*
--	 * Data copy must complete before initiating the command. This is
--	 * needed for weakly ordered processors (i.e. PowerPC), so that all
--	 * neccessary registers are written before we kick the hardware.
--	 */
--	wmb();
--
- 	/* Setting the valid bit will kick off the command. */
- 	iowrite32(cmd->op, card->regmap + CREG_CMD);
- }
-@@ -399,12 +392,12 @@ static int __issue_creg_rw(struct rsxx_c
- 		return st;
- 
- 	/*
--	 * This timeout is neccessary for unresponsive hardware. The additional
-+	 * This timeout is necessary for unresponsive hardware. The additional
- 	 * 20 seconds to used to guarantee that each cregs requests has time to
- 	 * complete.
- 	 */
--	timeout = msecs_to_jiffies((CREG_TIMEOUT_MSEC *
--				card->creg_ctrl.q_depth) + 20000);
-+	timeout = msecs_to_jiffies(CREG_TIMEOUT_MSEC *
-+				   card->creg_ctrl.q_depth + 20000);
- 
- 	/*
- 	 * The creg interface is guaranteed to complete. It has a timeout
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/dma.c linux-block/drivers/block/rsxx/dma.c
---- linux-block-vanilla/drivers/block/rsxx/dma.c	2013-02-25 11:53:40.906245893 -0600
-+++ linux-block/drivers/block/rsxx/dma.c	2013-02-25 11:57:32.964183930 -0600
-@@ -432,16 +432,6 @@ static void rsxx_issue_dmas(struct work_
- 
- 	/* Let HW know we've queued commands. */
- 	if (cmds_pending) {
--		/*
--		 * We must guarantee that the CPU writes to 'ctrl->cmd.buf'
--		 * (which is in PCI-consistent system-memory) from the loop
--		 * above make it into the coherency domain before the
--		 * following PIO "trigger" updating the cmd.idx.  A WMB is
--		 * sufficient. We need not explicitly CPU cache-flush since
--		 * the memory is a PCI-consistent (ie; coherent) mapping.
--		 */
--		wmb();
--
- 		atomic_add(cmds_pending, &ctrl->stats.hw_q_depth);
- 		mod_timer(&ctrl->activity_timer,
- 			  jiffies + DMA_ACTIVITY_TIMEOUT);
-@@ -798,8 +788,6 @@ static int rsxx_dma_ctrl_init(struct pci
- 	iowrite32(ctrl->cmd.idx, ctrl->regmap + HW_CMD_IDX);
- 	iowrite32(ctrl->cmd.idx, ctrl->regmap + SW_CMD_IDX);
- 
--	wmb();
--
- 	return 0;
- }
- 
-diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/rsxx.h linux-block/drivers/block/rsxx/rsxx.h
---- linux-block-vanilla/drivers/block/rsxx/rsxx.h	2013-02-25 11:53:40.911245445 -0600
-+++ linux-block/drivers/block/rsxx/rsxx.h	2013-02-25 11:57:32.970182625 -0600
-@@ -27,15 +27,17 @@
- 
- /*----------------- IOCTL Definitions -------------------*/
- 
-+#define RSXX_MAX_DATA 8
-+
- struct rsxx_reg_access {
- 	__u32 addr;
- 	__u32 cnt;
- 	__u32 stat;
- 	__u32 stream;
--	__u32 data[8];
-+	__u32 data[RSXX_MAX_DATA];
- };
- 
--#define RSXX_MAX_REG_CNT	(8 * (sizeof(__u32)))
-+#define RSXX_MAX_REG_CNT	(RSXX_MAX_DATA * (sizeof(__u32)))
- 
- #define RSXX_IOC_MAGIC 'r'
- 
+> Subject: [PATCH] Use config scripts to detect ncurses libs for
+>  menuconfig/nconfig dialogs
+> 
+> When building ncurses with --with-termlib several symbols get moved from
+> libncurses.so to libtinfo.so. Thus when linking with libncurses.so, one
+> additionally needs to link with libtinfo.so.
+> 
+> Ncurses provides a config script (ncurses5-config) and an interface with
+> pkg-config. This patch makes use of those to detect the necessary libs
+> for linking of the ncurses menuconfig and nconfig dialogs.
 
+I think I would prefer spearate patches, one for mconf, one for nconf.
+
+> Signed-off-by: Justin Lecher <jlec@gentoo.org>
+> ---
+> 
+>  scripts/kconfig/Makefile                   |  2 +-
+>  scripts/kconfig/lxdialog/check-lxdialog.sh | 22 ++++++++++++++--------
+>  2 files changed, 15 insertions(+), 9 deletions(-)
+> 
+> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+> index 3091794..7649047 100644
+> --- a/scripts/kconfig/Makefile
+> +++ b/scripts/kconfig/Makefile
+> @@ -216,7 +216,7 @@ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0
+> gmodule-2.0 libglade-2.0` \
+> 
+>  HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags
+>  $(HOSTCC))
+> 
+> -HOSTLOADLIBES_nconf	= -lmenu -lpanel -lncurses
+> +HOSTLOADLIBES_nconf	= `pkg-config --libs menu panel ncurses`
+
+On my distro (Debian stable) ncurses has no pkg-config file installed, so
+this fails.
+
+>  $(obj)/qconf.o: $(obj)/.tmp_qtcheck
+>  
+>  ifeq ($(qconf-target),1)
+> 
+> diff --git a/scripts/kconfig/lxdialog/check-lxdialog.sh
+> b/scripts/kconfig/lxdialog/check-lxdialog.sh index c8e8a71..4699c1b 100644
+> --- a/scripts/kconfig/lxdialog/check-lxdialog.sh
+> +++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
+> @@ -4,15 +4,21 @@
+> 
+>  # What library to link
+>  ldflags()
+>  {
+> 
+> -	for ext in so a dll.a dylib ; do
+> -		for lib in ncursesw ncurses curses ; do
+> -			$cc -print-file-name=lib${lib}.${ext} | grep -q /
+> -			if [ $? -eq 0 ]; then
+> -				echo "-l${lib}"
+> -				exit
+> -			fi
+> +	if type -p ncurses5-config &> /dev/null ; then
+                                   ^^
+This is a bashism, and will not work on purely POSIX shells.
+Please use: >/dev/null 2>&1
+
+> +		ncurses5-config --libs
+
+I'd write:
+    if ! ncurses5-config --libs 2>/dev/null; then
+        old-code goes here
+    fi
+
+> +		exit 0
+
+(nit-picking) I'd prefer you be consistent with existing code which just
+calls 'exit' without a number.
+
+Regards,
+Yann E. MORIN.
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
