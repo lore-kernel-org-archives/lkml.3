@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758786Ab3BYOsR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 09:48:17 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:52851 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148Ab3BYOsO (ORCPT
+	id S1758913Ab3BYOtM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 09:49:12 -0500
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:39451 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757549Ab3BYOtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 09:48:14 -0500
-Message-ID: <512B799F.6080009@ahsoftware.de>
-Date: Mon, 25 Feb 2013 15:47:59 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Mon, 25 Feb 2013 09:49:11 -0500
+Date: Mon, 25 Feb 2013 14:49:04 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, linus.walleij@stericsson.com
+Subject: Re: [PATCH 24/35] mfd: ab8500: Remove unnecessary 'struct device'
+ declaration
+Message-ID: <20130225144904.GM4417@gmail.com>
+References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
+ <1360933026-30325-25-git-send-email-lee.jones@linaro.org>
+ <201302251433.36121.arnd@arndb.de>
 MIME-Version: 1.0
-To: David Laight <David.Laight@ACULAB.COM>
-CC: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Disable IPv4-mapped - enforce IPV6_V6ONLY
-References: <51278CF6.2060402@ahsoftware.de> <51292A2B.3000304@ahsoftware.de> <512B4EAF.2050301@linux-ipv6.org> <AE90C24D6B3A694183C094C60CF0A2F6026B7168@saturn3.aculab.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7168@saturn3.aculab.com>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201302251433.36121.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 25.02.2013 14:23, schrieb David Laight:
->>> A proper solution would be to either return false if net.ipv6.bindv6only is true and optval is false
->> (which would break downward compatibility because it wouldn't just be a default and setsockopt might
->> return an error) or to introduce a new sysctl variable like net.ipv6.bindv6only_enforced_silently.
->> ("silently" because setsockopt() wouldn't return an error if net.ipv6.bindv6only is true and optval
->> (v6only in the example above) is false.)
->>>
->>> I would volunteer to write a patch which introduces something like
->> net.ipv6.bindv6only_enforced_silently if some maintainer would give me his ok.
->>>
->>> If so, the question remains if
->>>
->>> systemctl net.ipv6.bindv6only_enforced_silently = 1
->>>
->>> should set systemctl.net.ipv6.bindv6only too or if an error should be returned if
->> net.ipv6.bindv6only is false.
->>
->> I am not convinced why you need this, and I am not in favor of
->> enfocing IPV6_V6ONLY, but... some points:
+On Mon, 25 Feb 2013, Arnd Bergmann wrote:
 
-It's some kind of security feature I want to have. I just don't want to 
-search for applications which are listening on IPv4 ports (too) even 
-when only IPv6 was configured. There exists several of them.
+> On Friday 15 February 2013, Lee Jones wrote:
+> > A recent patch saw the device.h include being removed from some other
+> > include files and replaced with a 'struct device' declaration instead.
+> > However, neither the include nor the declaration is actually required.
+> > 
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  include/linux/mfd/abx500.h |    2 --
+> >  1 file changed, 2 deletions(-)
+> 
+> In my copy of the file, we the declaration
+> 
+> 
+> int ab8500_bm_of_probe(struct device *dev,
+>                        struct device_node *np,
+>                        struct abx500_bm_data *bm);
+> 
+> 
+> 
+> and others that use 'struct device'. C99 requires that a struct is declared
+> in advance  before you use it in a function declaration.
 
->>
->> - We should allow system-admin to "enforce" IPV6_V6ONLY to 0 as well.
->> - CAP_NET_ADMIN users should always be able to use both modes
->>    (They can do sysctl anyway.)
->> - setsockopt should fail w/ EPERM if user tries to override.
->
-> I can imagine that some programs will always try to clear IPV6_V6ONLY
-> (maybe for portability with other OS which default to setting it
-> for security reasons) and will error-exit if it fails.
-> So non-silent enforcing could be a PITA.
+Hmm... I wonder why it doesn't complain then?
 
-Exactly.
+I'll remove the patch.
 
-> You really don't want to (globally) stop an application setting
-> IPV6_V6ONLY, such a program may well be creating separate IPv4
-> and IPv6 sockets.
-
-Agreed. Applications which are setting IPV6_V6ONLY to true usually do 
-know what they are doing. But some braindead (configured) applications 
-are disabling it (and would bail out if setsockopt() would return an error).
-
->
-> Some of this needs to be part of some application wide 'security'
-> framework - that probably doesn't exist!
->
-> Should there also be similar controls for the use of IPv4
-> mapped addresses in actual on-the-wire IPv6 packets - eg those
-> destined for a remote gateway on an IPv6 only system?
-
-I think that can be handled by iptables by just blocking e.g. 
-::ffff:0:0/96 and  ::0/96.
-
-But it's a pain to find and take care of apps which are ignoring the 
-default (net.ipv6.bindv6only) and are disabling IPV6_V6ONLY explicit for 
-whatever reason.
-
-Therefor I would like to have that 
-net.ipv6.bindv6only_enforced_silently. Disabling IPv4 in general is not 
-what I want.
-
-Regards,
-
-Alexander
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
