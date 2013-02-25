@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932800Ab3BYWV3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:21:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55333 "EHLO
+	id S932771Ab3BYWVZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:21:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932669Ab3BYWUg (ORCPT
+	with ESMTP id S932421Ab3BYWUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:36 -0500
+	Mon, 25 Feb 2013 17:20:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 58/58] sparc64: Fix huge PMD to PTE translation for sun4u in TLB miss handler.
-Date: Mon, 25 Feb 2013 14:19:54 -0800
-Message-Id: <20130225221648.578322999@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 56/58] sparc64: Handle hugepage TSB being NULL.
+Date: Mon, 25 Feb 2013 14:19:52 -0800
+Message-Id: <20130225221648.317896578@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -29,87 +29,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 76968ad2eac6456270353de168b21f04f4b3d1d3 ]
+[ Upstream commit bcd896bae0166b4443503482a26ecf84d9ba60ab ]
 
-When we set the sun4u version of the PTE execute bit, it's:
+Accomodate the possibility that the TSB might be NULL at
+the point that update_mmu_cache() is invoked.  This is
+necessary because we will sometimes need to defer the TSB
+allocation to the first fault that happens in the 'mm'.
 
-	or	REG, _PAGE_EXEC_4U, REG
+Seperate out the hugepage PTE test into a seperate function
+so that the logic is clearer.
 
-_PAGE_EXEC_4U is 0x1000, unfortunately the immedate field of the
-'or' instruction is a signed 13-bit value.  So the above actually
-assembles into:
-
-	or	REG, -4096, REG
-
-completely corrupting the final PTE value.
-
-Set it with a:
-
-	sethi	%hi(_PAGE_EXEC_4U), TMP
-	or	REG, TMP, REG
-
-sequence instead.
-
-This fixes "git gc" crashes on sun4u machines.
-
-Reported-by: Meelis Roos <mroos@linux.ee>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/tsb.h |   28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
+ arch/sparc/mm/init_64.c |   38 ++++++++++++++++++++++----------------
+ 1 file changed, 22 insertions(+), 16 deletions(-)
 
---- a/arch/sparc/include/asm/tsb.h
-+++ b/arch/sparc/include/asm/tsb.h
-@@ -157,17 +157,26 @@ extern struct tsb_phys_patch_entry __tsb
- 	andn		REG2, 0x7, REG2; \
- 	add		REG1, REG2, REG1;
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -314,16 +314,31 @@ static void __update_mmu_tsb_insert(stru
+ 	struct tsb *tsb = mm->context.tsb_block[tsb_index].tsb;
+ 	unsigned long tag;
  
--	/* This macro exists only to make the PMD translator below easier
--	 * to read.  It hides the ELF section switch for the sun4v code
--	 * patching.
-+	/* These macros exists only to make the PMD translator below
-+	 * easier to read.  It hides the ELF section switch for the
-+	 * sun4v code patching.
- 	 */
--#define OR_PTE_BIT(REG, NAME)				\
-+#define OR_PTE_BIT_1INSN(REG, NAME)			\
- 661:	or		REG, _PAGE_##NAME##_4U, REG;	\
- 	.section	.sun4v_1insn_patch, "ax";	\
- 	.word		661b;				\
- 	or		REG, _PAGE_##NAME##_4V, REG;	\
- 	.previous;
- 
-+#define OR_PTE_BIT_2INSN(REG, TMP, NAME)		\
-+661:	sethi		%hi(_PAGE_##NAME##_4U), TMP;	\
-+	or		REG, TMP, REG;			\
-+	.section	.sun4v_2insn_patch, "ax";	\
-+	.word		661b;				\
-+	mov		-1, TMP;			\
-+	or		REG, _PAGE_##NAME##_4V, REG;	\
-+	.previous;
++	if (unlikely(!tsb))
++		return;
 +
- 	/* Load into REG the PTE value for VALID, CACHE, and SZHUGE.  */
- #define BUILD_PTE_VALID_SZHUGE_CACHE(REG)				   \
- 661:	sethi		%uhi(_PAGE_VALID|_PAGE_SZHUGE_4U), REG;		   \
-@@ -214,12 +223,13 @@ extern struct tsb_phys_patch_entry __tsb
- 	 andn		REG1, PMD_HUGE_PROTBITS, REG2;			      \
- 	sllx		REG2, PMD_PADDR_SHIFT, REG2;			      \
- 	/* REG2 now holds PFN << PAGE_SHIFT */				      \
--	andcc		REG1, PMD_HUGE_EXEC, %g0;			      \
--	bne,a,pt	%xcc, 1f;					      \
--	 OR_PTE_BIT(REG2, EXEC);					      \
--1:	andcc		REG1, PMD_HUGE_WRITE, %g0;			      \
-+	andcc		REG1, PMD_HUGE_WRITE, %g0;			      \
- 	bne,a,pt	%xcc, 1f;					      \
--	 OR_PTE_BIT(REG2, W);						      \
-+	 OR_PTE_BIT_1INSN(REG2, W);					      \
-+1:	andcc		REG1, PMD_HUGE_EXEC, %g0;			      \
-+	be,pt		%xcc, 1f;					      \
-+	 nop;								      \
-+	OR_PTE_BIT_2INSN(REG2, REG1, EXEC);				      \
- 	/* REG1 can now be clobbered, build final PTE */		      \
- 1:	BUILD_PTE_VALID_SZHUGE_CACHE(REG1);				      \
- 	ba,pt		%xcc, PTE_LABEL;				      \
+ 	tsb += ((address >> tsb_hash_shift) &
+ 		(mm->context.tsb_block[tsb_index].tsb_nentries - 1UL));
+ 	tag = (address >> 22UL);
+ 	tsb_insert(tsb, tag, tte);
+ }
+ 
++#if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
++static inline bool is_hugetlb_pte(pte_t pte)
++{
++	if ((tlb_type == hypervisor &&
++	     (pte_val(pte) & _PAGE_SZALL_4V) == _PAGE_SZHUGE_4V) ||
++	    (tlb_type != hypervisor &&
++	     (pte_val(pte) & _PAGE_SZALL_4U) == _PAGE_SZHUGE_4U))
++		return true;
++	return false;
++}
++#endif
++
+ void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *ptep)
+ {
+-	unsigned long tsb_index, tsb_hash_shift, flags;
+ 	struct mm_struct *mm;
++	unsigned long flags;
+ 	pte_t pte = *ptep;
+ 
+ 	if (tlb_type != hypervisor) {
+@@ -335,25 +350,16 @@ void update_mmu_cache(struct vm_area_str
+ 
+ 	mm = vma->vm_mm;
+ 
+-	tsb_index = MM_TSB_BASE;
+-	tsb_hash_shift = PAGE_SHIFT;
+-
+ 	spin_lock_irqsave(&mm->context.lock, flags);
+ 
+ #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
+-	if (mm->context.tsb_block[MM_TSB_HUGE].tsb != NULL) {
+-		if ((tlb_type == hypervisor &&
+-		     (pte_val(pte) & _PAGE_SZALL_4V) == _PAGE_SZHUGE_4V) ||
+-		    (tlb_type != hypervisor &&
+-		     (pte_val(pte) & _PAGE_SZALL_4U) == _PAGE_SZHUGE_4U)) {
+-			tsb_index = MM_TSB_HUGE;
+-			tsb_hash_shift = HPAGE_SHIFT;
+-		}
+-	}
++	if (mm->context.huge_pte_count && is_hugetlb_pte(pte))
++		__update_mmu_tsb_insert(mm, MM_TSB_HUGE, HPAGE_SHIFT,
++					address, pte_val(pte));
++	else
+ #endif
+-
+-	__update_mmu_tsb_insert(mm, tsb_index, tsb_hash_shift,
+-				address, pte_val(pte));
++		__update_mmu_tsb_insert(mm, MM_TSB_BASE, PAGE_SHIFT,
++					address, pte_val(pte));
+ 
+ 	spin_unlock_irqrestore(&mm->context.lock, flags);
+ }
 
 
