@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759102Ab3BYKTD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 05:19:03 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:65337 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab3BYKTA (ORCPT
+	id S1759207Ab3BYKUK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 05:20:10 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:44427 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757188Ab3BYKUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 05:19:00 -0500
+	Mon, 25 Feb 2013 05:20:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130220202531.GA1413@polaris.bitmath.org>
+In-Reply-To: <20130220203140.GA1425@polaris.bitmath.org>
 References: <1360334256-22127-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1360334256-22127-7-git-send-email-benjamin.tissoires@gmail.com>
-	<20130220202531.GA1413@polaris.bitmath.org>
-Date: Mon, 25 Feb 2013 11:18:58 +0100
-Message-ID: <CAN+gG=G5QpJxiVRBaU1Z9UeSAoTiezcPyCrvC2jyzopzhFnXqA@mail.gmail.com>
-Subject: Re: [PATCH 6/7] HID: multitouch: remove usbhid dependency
+	<20130220203140.GA1425@polaris.bitmath.org>
+Date: Mon, 25 Feb 2013 11:20:06 +0100
+Message-ID: <CAN+gG=FobTpFUuLi9gbUV3uuJ9MeJBwFdL5fDw+9bjw2EkrS+g@mail.gmail.com>
+Subject: Re: [PATCH 0/7] hid driver transport cleanup
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: Henrik Rydberg <rydberg@euromail.se>
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
@@ -27,56 +26,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Henrik,
 
-On Wed, Feb 20, 2013 at 9:25 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+On Wed, Feb 20, 2013 at 9:31 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
 > Hi Benjamin,
 >
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
->> ---
->>  drivers/hid/hid-multitouch.c | 3 +--
->>  1 file changed, 1 insertion(+), 2 deletions(-)
+>> so, here is the hid drivers cleanup. The aim is to remove as much as possible
+>> direct calls to usbhid for hid drivers. Thus, other transport layers can use
+>> the existing hid drivers (like I2C or uhid).
+>>
+>> Henrik, patches 1 to 5 are yours. I just rebased and double-checked them. Please
+>> add you Signed-off-by if you are happy with the rebase.
 >
-> Since removing the transport layer dependency has a rationale, it
-> might be good to mention that here.
+> I wanted to Ack 4-6 as well, but I think they warrant a bit more
+> elaborate commit messages. Other than that, it looks all good to me.
 
-Ok, will do.
-
->
-> Also, what about the explicit usb dependency, was that going to be
-> moved to a usbhid quirk?
-
-Currently, the USB dependency is protected by a check on the BUS.
-The problem is that the BUS can be faked (by uhid). So yes, I'll add a
-quirk under usbhid for those devices.
+Thanks for the review. I'll push a v2 today with the requested changes.
 
 Cheers,
 Benjamin
-
->
->>
->> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
->> index 32258ba..184ac0a 100644
->> --- a/drivers/hid/hid-multitouch.c
->> +++ b/drivers/hid/hid-multitouch.c
->> @@ -32,7 +32,6 @@
->>  #include <linux/slab.h>
->>  #include <linux/usb.h>
->>  #include <linux/input/mt.h>
->> -#include "usbhid/usbhid.h"
->>
->>
->>  MODULE_AUTHOR("Stephane Chatty <chatty@enac.fr>");
->> @@ -907,7 +906,7 @@ static int mt_resume(struct hid_device *hdev)
->>
->>       intf = to_usb_interface(hdev->dev.parent);
->>       interface = intf->cur_altsetting;
->> -     dev = hid_to_usb_dev(hdev);
->> +     dev = interface_to_usbdev(intf);
->>
->>       /* Some Elan legacy devices require SET_IDLE to be set on resume.
->>        * It should be safe to send it to other devices too.
->> --
->> 1.8.1
->>
->
-> Thanks,
-> Henrik
