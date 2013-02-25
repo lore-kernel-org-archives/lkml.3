@@ -1,104 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab3BYGTe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 01:19:34 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:7753 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447Ab3BYGTc (ORCPT
+	id S1755706Ab3BYGVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 01:21:43 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:48644 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab3BYGVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 01:19:32 -0500
-Message-ID: <512B024A.7080702@huawei.com>
-Date: Mon, 25 Feb 2013 14:18:50 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Mon, 25 Feb 2013 01:21:42 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 3/3] cpuset: use cgroup_name() in cpuset_print_task_mems_allowed()
-References: <512B01FA.5020506@huawei.com>
-In-Reply-To: <512B01FA.5020506@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <CAPM=9tw_vfESbbH4dD9z8mAYVYcwmVs=n4BrRz4XBj1Rw1qrkw@mail.gmail.com>
+References: <20130225055218.GA1205@kroah.com>
+	<CAPM=9tw_vfESbbH4dD9z8mAYVYcwmVs=n4BrRz4XBj1Rw1qrkw@mail.gmail.com>
+Date: Mon, 25 Feb 2013 16:21:40 +1000
+Message-ID: <CAPM=9txjG5rohsNbme=myrX+-Z5eucpEXYQMWqPQqN=5dNze8g@mail.gmail.com>
+Subject: Re: resume fails to light display on Macbook Pro Retina on 3.8-rc1
+From: Dave Airlie <airlied@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
+        Martin Peres <martin.peres@labri.fr>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use cgroup_name() instead of cgrp->dentry->name. This makes the code
-simpler.
+On Mon, Feb 25, 2013 at 4:06 PM, Dave Airlie <airlied@gmail.com> wrote:
+> On Mon, Feb 25, 2013 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> Hi Ben,
+>>
+>> My Macbook Pro Retina fails to resume properly on 3.8.  I tracked this
+>> down to commit 6c5a04249d7afeea3e0ed971e7813f84e29a1706 (drm/nvd0/disp:
+>> move link training helpers into core as display methods)
+>>
+>> Anything I can try to help solve this?
+>>
+>> Note, I'm using the Intel driver as the main controller for this laptop,
+>> well, I think I am, my xorg log is attached.
+>
+> No you are using the nvidia, the efi always boots nvidia enabled now.
+>
+> Cool, might have to lend Ben my retina to see if he can reproduce.
 
-While at it, remove cpuset_name and make cpuset_nodelist a local variable
-to cpuset_print_task_mems_allowed().
+btw I just tested my drm-next tree on mine and it resumed the display
+fine, something oopsed a few seconds later that I haven't tracked down
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cpuset.c | 32 +++++++++-----------------------
- 1 file changed, 9 insertions(+), 23 deletions(-)
+git://git.freedesktop.org/~airlied/linux drm-next
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 4f9dfe4..ace5bfc 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -265,17 +265,6 @@ static DEFINE_MUTEX(cpuset_mutex);
- static DEFINE_MUTEX(callback_mutex);
- 
- /*
-- * cpuset_buffer_lock protects both the cpuset_name and cpuset_nodelist
-- * buffers.  They are statically allocated to prevent using excess stack
-- * when calling cpuset_print_task_mems_allowed().
-- */
--#define CPUSET_NAME_LEN		(128)
--#define	CPUSET_NODELIST_LEN	(256)
--static char cpuset_name[CPUSET_NAME_LEN];
--static char cpuset_nodelist[CPUSET_NODELIST_LEN];
--static DEFINE_SPINLOCK(cpuset_buffer_lock);
--
--/*
-  * CPU / memory hotplug is handled asynchronously.
-  */
- static struct workqueue_struct *cpuset_propagate_hotplug_wq;
-@@ -2592,6 +2581,8 @@ int cpuset_mems_allowed_intersects(const struct task_struct *tsk1,
- 	return nodes_intersects(tsk1->mems_allowed, tsk2->mems_allowed);
- }
- 
-+#define CPUSET_NODELIST_LEN	(256)
-+
- /**
-  * cpuset_print_task_mems_allowed - prints task's cpuset and mems_allowed
-  * @task: pointer to task_struct of some task.
-@@ -2602,24 +2593,19 @@ int cpuset_mems_allowed_intersects(const struct task_struct *tsk1,
-  */
- void cpuset_print_task_mems_allowed(struct task_struct *tsk)
- {
--	struct dentry *dentry;
-+	 /* Statically allocated to prevent using excess stack. */
-+	static char cpuset_nodelist[CPUSET_NODELIST_LEN];
-+	static DEFINE_SPINLOCK(cpuset_buffer_lock);
- 
--	dentry = task_cs(tsk)->css.cgroup->dentry;
--	spin_lock(&cpuset_buffer_lock);
-+	struct cgroup *cgrp = task_cs(tsk)->css.cgroup;
- 
--	if (!dentry) {
--		strcpy(cpuset_name, "/");
--	} else {
--		spin_lock(&dentry->d_lock);
--		strlcpy(cpuset_name, (const char *)dentry->d_name.name,
--			CPUSET_NAME_LEN);
--		spin_unlock(&dentry->d_lock);
--	}
-+	spin_lock(&cpuset_buffer_lock);
- 
- 	nodelist_scnprintf(cpuset_nodelist, CPUSET_NODELIST_LEN,
- 			   tsk->mems_allowed);
- 	printk(KERN_INFO "%s cpuset=%s mems_allowed=%s\n",
--	       tsk->comm, cpuset_name, cpuset_nodelist);
-+	       tsk->comm, cgroup_name(cgrp), cpuset_nodelist);
-+
- 	spin_unlock(&cpuset_buffer_lock);
- }
- 
--- 
-1.8.0.2
+I'll be sending it to Linus this evening or tomorrow morning, once I
+fix my tree.
+
+Dave.
