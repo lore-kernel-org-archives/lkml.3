@@ -1,113 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759629Ab3BYMzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 07:55:39 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24076 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756092Ab3BYMzi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 07:55:38 -0500
-Date: Mon, 25 Feb 2013 07:55:12 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dongsheng Song <dongsheng.song@gmail.com>,
-        Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Mukesh Rathor <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH] arch/x86/xen: remove depends on CONFIG_EXPERIMENTAL
-Message-ID: <20130225125512.GA3135@phenom.dumpdata.com>
-References: <20130223072959.GA4894@www.outflux.net>
- <CAE8XmWoX_TyHMTnGCMn6j_qiK0hptCgyrnVYpDJkfTAQfUNQPA@mail.gmail.com>
- <CAGXu5jKkaTStWRDQLOb6HxM7sGyj+1ekxxkGK8hw6rWkHRrVsQ@mail.gmail.com>
- <CAE8XmWq+dA5Pvhyoxm2Nqbt0psLpPxUdR7i5MKFhxVxubY0QtQ@mail.gmail.com>
- <20130224144017.GB1111@kroah.com>
- <alpine.DEB.2.02.1302251157210.5360@kaball.uk.xensource.com>
+	id S1759665Ab3BYM4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 07:56:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46728 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757122Ab3BYM4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 07:56:44 -0500
+Message-ID: <512B5F8A.1060705@suse.cz>
+Date: Mon, 25 Feb 2013 13:56:42 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1302251157210.5360@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: sfr@canb.auug.org.au
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        m.grzeschik@pengutronix.de
+Subject: Re: [PATCH] kbuild: Fix reading of .config in link-vmlinux.sh
+References: <20130225215845.c0ec14a467aa6fe8e788e80e@canb.auug.org.au> <1361796898-19642-1-git-send-email-mmarek@suse.cz>
+In-Reply-To: <1361796898-19642-1-git-send-email-mmarek@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 12:39:27PM +0000, Stefano Stabellini wrote:
-> On Sun, 24 Feb 2013, Greg Kroah-Hartman wrote:
-> > On Sun, Feb 24, 2013 at 05:51:44PM +0800, Dongsheng Song wrote:
-> > > On Sun, Feb 24, 2013 at 1:03 AM, Kees Cook <keescook@chromium.org> wrote:
-> > > > On Sat, Feb 23, 2013 at 3:59 AM, Dongsheng Song
-> > > > <dongsheng.song@gmail.com> wrote:
-> > > >> On Sat, Feb 23, 2013 at 3:29 PM, Kees Cook <keescook@chromium.org> wrote:
-> > > >>>
-> > > >>> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
-> > > >>> while now and is almost always enabled by default. As agreed during the
-> > > >>> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
-> > > >>>
-> > > >>> Signed-off-by: Kees Cook <keescook@chromium.org>
-> > > >>> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > >>> Cc: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > > >>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > >>> ---
-> > > >>>  arch/x86/xen/Kconfig |    2 +-
-> > > >>>  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > >>>
-> > > >>> diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-> > > >>> index 93ff4e1..8cada4c 100644
-> > > >>> --- a/arch/x86/xen/Kconfig
-> > > >>> +++ b/arch/x86/xen/Kconfig
-> > > >>> @@ -53,7 +53,7 @@ config XEN_DEBUG_FS
-> > > >>>
-> > > >>>  config XEN_X86_PVH
-> > > >>>         bool "Support for running as a PVH guest (EXPERIMENTAL)"
-> > > >>
-> > > >> Why not remove this 'EXPERIMENTAL' too ?
-> > > >
-> > > > It was unclear to me if the feature was actually considered unstable.
-> > > > I can resend with the text removed from the title too, if that's the
-> > > > correct action here?
-> > > >
-> > > > -Kees
-> > > >
-> > > 
-> > > If such a feature was considered unstable, it should depends on EXPERIMENTAL.
-> > 
-> > CONFIG_EXPERIMENTAL is going away.
-> > 
-> > > We should not surprised users.
-> > 
-> > You should not have unstable options in the kernel in the first place,
-> > sorry.
-
-Just to clarify - this 'unstable' part is that the hypercall interface has
-not been nailed down. As such the patchseries ('PVH') is not going in
-Linus's tree until that is nailed down. However, the 'PVH' is going in
-in 3.10 merge window (barring again delays).
-
-Initially it was scheduled to be in v3.8, hence the reason it has
-been lingering in #linux-next.
-
->  
-> With the premise that the removal of CONFIG_EXPERIMENTAL is not an issue
-> for me personally or my work, I am going to give you my 2 cents on the
-> matter, but feel free to ignore them :)
+On 25.2.2013 13:54, Michal Marek wrote:
+> The shell '.' command is not required to search the current directory as
+> a fallback and in fact newer versions of bash in sh-mode do not do this.
+> Force reading the file from the current directory if $KCONFIG_CONFIG
+> contains no '/'.
 > 
-> While I understand that CONFIG_EXPERIMENTAL has been abused, I feel that
-> rejecting everything that is not fully stable and with external
-> interfaces set in stones, might hinder the development of new features.
-> 
-> After all, given how fast the kernel is moving nowadays, maintaining a
-> project out-of-tree until is completely ready for production can be
-> very expensive. Merging the project earlier and completing the
-> development upstream can bring better results. But in these cases one
-> wouldn't want to "market" the feature as stable yet, because it just
-> isn't. If CONFIG_EXPERIMENTAL is going away, is there anything in the
-> kernel that can be used to tag a feature as "I wouldn't use it in
-> production if I were you"? Maybe just a comment in the kconfig
-> description?
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> ---
+>  scripts/link-vmlinux.sh |    9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
+
+I was able to reproduce the failure and this patch fixed it. So I am
+going to push this in a couple of hours, so that tomorrow's linux-next
+can include the latest kbuild changes.
+
+Michal
