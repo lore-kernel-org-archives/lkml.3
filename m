@@ -1,106 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3BYNeL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 08:34:11 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:59395 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab3BYNeJ convert rfc822-to-8bit (ORCPT
+	id S1757420Ab3BYNlG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 08:41:06 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42170 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756452Ab3BYNlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 08:34:09 -0500
-Date: Mon, 25 Feb 2013 13:34:03 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Jason Liu <liu.h.jason@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+	Mon, 25 Feb 2013 08:41:04 -0500
+Date: Mon, 25 Feb 2013 13:40:41 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: too many timer retries happen when do local timer swtich with
- broadcast timer
-Message-ID: <20130225133402.GA13045@e102568-lin.cambridge.arm.com>
-References: <alpine.LFD.2.02.1302212214020.22263@ionos>
- <5127436E.4040100@ti.com>
- <alpine.LFD.2.02.1302221122290.22263@ionos>
- <20130222103149.GC12140@e102568-lin.cambridge.arm.com>
- <51275058.7010809@ti.com>
- <alpine.LFD.2.02.1302221212500.22263@ionos>
- <20130222144829.GG12140@e102568-lin.cambridge.arm.com>
- <alpine.LFD.2.02.1302221558000.22263@ionos>
- <20130222152639.GH12140@e102568-lin.cambridge.arm.com>
- <alpine.LFD.2.02.1302221946070.22263@ionos>
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/8] ARM: smp: Remove local timer API
+Message-ID: <20130225134041.GA22785@e106331-lin.cambridge.arm.com>
+References: <1361518039-16663-1-git-send-email-sboyd@codeaurora.org>
+ <1361518039-16663-9-git-send-email-sboyd@codeaurora.org>
+ <20130222111545.GA15020@e106331-lin.cambridge.arm.com>
+ <20130222162458.GA19670@linux-sh.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1302221946070.22263@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 25 Feb 2013 13:34:06.0373 (UTC) FILETIME=[C8994550:01CE135C]
-X-MC-Unique: 113022513340703201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130222162458.GA19670@linux-sh.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 06:52:14PM +0000, Thomas Gleixner wrote:
-> On Fri, 22 Feb 2013, Lorenzo Pieralisi wrote:
-> > On Fri, Feb 22, 2013 at 03:03:02PM +0000, Thomas Gleixner wrote:
-> > > On Fri, 22 Feb 2013, Lorenzo Pieralisi wrote:
-> > > > On Fri, Feb 22, 2013 at 12:07:30PM +0000, Thomas Gleixner wrote:
-> > > > > Now we could make use of that and avoid going deep idle just to come
-> > > > > back right away via the IPI. Unfortunately the notification thingy has
-> > > > > no return value, but we can fix that.
-> > > > > 
-> > > > > To confirm that theory, could you please try the hack below and add
-> > > > > some instrumentation (trace_printk)?
-> > > > 
-> > > > Applied, and it looks like that's exactly why the warning triggers, at least
-> > > > on the platform I am testing on which is a dual-cluster ARM testchip.
-> > > > 
-> > > > There is a still time window though where the CPU (the IPI target) can get
-> > > > back to idle (tick_broadcast_pending still not set) before the CPU target of
-> > > > the broadcast has a chance to run tick_handle_oneshot_broadcast (and set
-> > > > tick_broadcast_pending), or am I missing something ?
-> > > 
-> > > Well, the tick_broadcast_pending bit is uninteresting if the
-> > > force_broadcast bit is set. Because if that bit is set we know for
-> > > sure, that we got woken with the cpu which gets the broadcast timer
-> > > and raced back to idle before the broadcast handler managed to
-> > > send the IPI.
+On Fri, Feb 22, 2013 at 04:25:00PM +0000, Paul Mundt wrote:
+> On Fri, Feb 22, 2013 at 11:15:45AM +0000, Mark Rutland wrote:
+> > One thing that struck me when I was fiddling with the broadcast mechanism was
+> > that it should be possible to have a generic dummy timer implementation. As
+> > long as the architecture calls notifiers at the appropriate times, it should
+> > look like any other timer driver (apart from not touching any hardware). It just
+> > needs to depend on ARCH_HAS_TICK_BROADCAST.
 > > 
-> > Gah, my bad sorry, I mixed things up. I thought
+> > I believe it shouldn't be too difficult to implement, though I may be blind to
+> > some problems.
 > > 
-> > tick_check_broadcast_pending()
-> > 
-> > was checking against the tick_broadcast_pending mask not
-> > 
-> > tick_force_broadcast_mask
+> It would be nice to have a generic dummy timer driver, quite a few
+> architectures could use it directly already. If no one beats me to it,
+> I'll give it a go as I convert the SH stuff over to using
+> ARCH_HAS_TICK_BROADCAST and killing off the local timer API there.
 > 
-> Yep, that's a misnomer. I just wanted to make sure that my theory is
-> correct. I need to think about the real solution some more.
-> 
-> We have two alternatives:
-> 
-> 1) Make the clockevents_notify function have a return value.
-> 
-> 2) Add something like the hack I gave you with a proper name.
-> 
-> The latter has the beauty, that we just need to modify the platform
-> independent idle code instead of going down to every callsite of the
-> clockevents_notify thing.
 
-Thank you.
+I've had a quick go at writing a generic timer driver. I've not had a chance to
+test it, and there are a couple of things that are up for discussion (e.g. what
+should the rating be) but I think we want something very close to this.
 
-I am not sure (1) would buy us anything compared to (2) and as you said we
-would end up patching all callsites so (2) is preferred.
+Thanks,
+Mark.
 
-As I mentioned, we can even just apply your fixes and leave platform specific
-code deal with this optimization, at the end of the day idle driver has
-just to check pending IRQs/wake-up sources (which would cover all IRQs not
-just TIMER IPI) if and when it has to start time consuming operations like
-cache cleaning to enter deep idle. If it goes into a shallow C-state so be it.
+---->8----
 
-On x86 I think it is HW/FW that prevents C-state entering if IRQs are pending,
-and on ARM it is likely to happen too, so I am just saying you should not
-bother if you think the code becomes too hairy to justify this change.
+>From 1ca7fdf68fbb9b026237803db8c55a34b4f2cfa2 Mon Sep 17 00:00:00 2001
+From: Mark Rutland <mark.rutland@arm.com>
+Date: Sun, 24 Feb 2013 22:31:24 +0000
+Subject: [PATCH] clocksource: add generic dummy timer driver
 
-Thank you very much for the fixes and your help,
-Lorenzo
+Several architectures have a dummy timer driver tightly coupled with
+their broadcast code to support machines without cpu-local timers (or
+where there is a lack of driver support).
+
+Since 12ad100046: "clockevents: Add generic timer broadcast function"
+it's been possible to write broadcast-capable timer drivers decoupled
+from the broadcast mechanism. We can use this functionality to implement
+a generic dummy timer driver that can be shared by all architectures
+with generic tick broadcast (ARCH_HAS_TICK_BROADCAST).
+
+This patch implements a generic dummy timer using this facility.
+
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+---
+ drivers/clocksource/Makefile      |  1 +
+ drivers/clocksource/dummy_timer.c | 67 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 68 insertions(+)
+ create mode 100644 drivers/clocksource/dummy_timer.c
+
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 7d671b8..8f2b13f 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -21,3 +21,4 @@ obj-$(CONFIG_ARCH_TEGRA)	+= tegra20_timer.o
+ obj-$(CONFIG_VT8500_TIMER)	+= vt8500_timer.o
+ 
+ obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
++obj-$(CONFIG_ARCH_HAS_TICK_BROADCAST)	+= dummy_timer.o
+diff --git a/drivers/clocksource/dummy_timer.c b/drivers/clocksource/dummy_timer.c
+new file mode 100644
+index 0000000..bdaba34
+--- /dev/null
++++ b/drivers/clocksource/dummy_timer.c
+@@ -0,0 +1,67 @@
++/*
++ *  linux/drivers/clocksource/dummy_timer.c
++ *
++ *  Copyright (C) 2013 ARM Ltd.
++ *  All Rights Reserved
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/clockchips.h>
++#include <linux/cpu.h>
++#include <linux/init.h>
++#include <linux/percpu.h>
++
++DEFINE_PER_CPU(struct clock_event_device, dummy_evt);
++
++static void dummy_set_mode(enum clock_event_mode mode,
++			   struct clock_event_device *evt)
++{
++	/*
++	 * Core clockevents code will call this when exchanging timer devices.
++	 * We don't need to do anything here.
++	 */
++}
++
++static void __cpuinit dummy_setup(void)
++{
++	int cpu = smp_processor_id();
++	struct clock_event_device *evt = &per_cpu(dummy_evt, cpu);
++
++	evt->name	= "dummy timer";
++	evt->features	= CLOCK_EVT_FEAT_PERIODIC |
++			  CLOCK_EVT_FEAT_ONESHOT |
++			  CLOCK_EVT_FEAT_DUMMY;
++	evt->rating	= 100;
++	evt->set_mode	= dummy_set_mode;
++	evt->cpumask	= cpumask_of(cpu);
++
++	clockevents_register_device(evt);
++}
++
++static int __cpuinit dummy_cpu_notify(struct notifier_block *self,
++				      unsigned long action, void *hcpu)
++{
++	if ((action & ~CPU_TASKS_FROZEN) == CPU_STARTING)
++		dummy_setup();
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block dummy_cpu_nb __cpuinitdata = {
++	.notifier_call = dummy_cpu_notify,
++};
++
++static int __init dummy_register(void)
++{
++	int err = register_cpu_notifier(&dummy_cpu_nb);
++	if (err)
++		return err;
++
++	/* We won't get a call on the boot CPU, so register immediately */
++	dummy_setup();
++
++	return 0;
++}
++device_initcall(dummy_register);
+-- 
+1.8.1.1
 
