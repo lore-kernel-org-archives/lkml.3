@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759244Ab3BYSlo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 13:41:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7417 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753565Ab3BYSlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 13:41:42 -0500
-Date: Mon, 25 Feb 2013 19:39:32 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/5] perf tools: Fix -C option for record command
-Message-ID: <20130225183932.GA7352@redhat.com>
-References: <1361785972-7431-1-git-send-email-jolsa@redhat.com> <1361785972-7431-2-git-send-email-jolsa@redhat.com>
+	id S1759321Ab3BYSmz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 13:42:55 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:65220 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754529Ab3BYSmv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 13:42:51 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361785972-7431-2-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8BIT
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <CAOh2x=n-G0BwhjH+VXgy=+nbsaH0+5FqWHhDoyU=xWp-EH9Zdg@mail.gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <Pine.LNX.4.64.1302251227140.3030@axis700.grange>
+ <CAOh2x=n-G0BwhjH+VXgy=+nbsaH0+5FqWHhDoyU=xWp-EH9Zdg@mail.gmail.com>
+Message-ID: <20130225184245.14870.87335@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH] cpufreq: fix sign check of an unsigned variable in cpufreq-cpu0
+Date: Mon, 25 Feb 2013 10:42:45 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To clarify, I am not trying to review this patch, I'd like to ask
-the question...
+Quoting Viresh Kumar (2013-02-25 04:09:47)
+> On Mon, Feb 25, 2013 at 5:02 PM, Guennadi Liakhovetski
+> <g.liakhovetski@gmx.de> wrote:
+> > A "< 0" test for an unsigned variable is meaningless, change the variable
+> > to signed.
+> >
+> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > ---
+> >
+> > stable?
+> >
+> >  drivers/cpufreq/cpufreq-cpu0.c |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+> > index 52bf36d..e7bad3c 100644
+> > --- a/drivers/cpufreq/cpufreq-cpu0.c
+> > +++ b/drivers/cpufreq/cpufreq-cpu0.c
+> > @@ -44,7 +44,8 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+> >  {
+> >         struct cpufreq_freqs freqs;
+> >         struct opp *opp;
+> > -       unsigned long freq_Hz, volt = 0, volt_old = 0, tol = 0;
+> > +       unsigned long volt = 0, volt_old = 0, tol = 0;
+> > +       long freq_Hz;
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> 
+> The disease is spread across a bigger region though.
+> 
+> @Mike: clk_round_rate returns long and __clk_round_rate returns unsigned long
+> and clk_ops->round_rate returns long again.. Don't you see something
+> strange here?
 
-On 02/25, Jiri Olsa wrote:
->
-> Currently the -C option does not work for record command,
-> because of the targets mismatch when synthesizing threads.
->
-> Fixing this by using proper target interface for the
-> synthesize decision.
+Yes, this is in my todo list.  I have a branch with some relevant
+changes but I haven't posted it yet.
 
-OK, but my fix had the different goal. I thought that
-
-	$ perf ... record -C0 sleep 1
-
-should attach the counter to the child process (workload) and set
-event->cpu = 0 (instead of -1). With this patch we create the cpu
-counter and event->task == NULL (thanks for your private explanations
-btw ;).
-
-But note that (iirc, I didn't even try to read this code again)
-
-	$ perf ... record -a sleep 1
-
-attaches the counter to the task, and I think that -a/C should be
-consistent.
-
-
-However,
-
-> @@ -573,13 +573,15 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
->  					 perf_event__synthesize_guest_os, tool);
->  	}
->
-> -	if (!opts->target.system_wide)
-> +	if (perf_target__has_task(&opts->target))
->  		err = perf_event__synthesize_thread_map(tool, evsel_list->threads,
->  						  process_synthesized_event,
->  						  machine);
-> -	else
-> +	else if (perf_target__has_cpu(&opts->target))
->  		err = perf_event__synthesize_threads(tool, process_synthesized_event,
-
-I do agree, this should be changed too, because "-a sleep 1"
-sets ->target.system_wide.
-
-Oleg.
-
+Regards,
+Mike
