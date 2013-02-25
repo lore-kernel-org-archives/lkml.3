@@ -1,121 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758916Ab3BYJTs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 04:19:48 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:41302 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758250Ab3BYJTq (ORCPT
+	id S1758924Ab3BYJZZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 04:25:25 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:35211 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758381Ab3BYJZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 04:19:46 -0500
-Date: Mon, 25 Feb 2013 11:19:35 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-CC: <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <kishon@ti.com>
-Subject: Re: [PATCH RFC] usb: dwc3: Set GCTL.PrtCapDir based on selected mode.
-Message-ID: <20130225091935.GF25749@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1360071958-20797-1-git-send-email-gautam.vivek@samsung.com>
- <20130225081723.GD25749@arwen.pp.htv.fi>
- <CAFp+6iHaP96F0OF9_C1DTsfmkPNZMVC78tj7m0YGdV=d_znWrA@mail.gmail.com>
+	Mon, 25 Feb 2013 04:25:24 -0500
+X-IronPort-AV: E=Sophos;i="4.84,733,1355097600"; 
+   d="scan'208";a="1829961"
+Message-ID: <1361784321.26546.162.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH] arch/x86/xen: remove depends on
+ CONFIG_EXPERIMENTAL
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Kees Cook <keescook@chromium.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dongsheng Song <dongsheng.song@gmail.com>
+Date: Mon, 25 Feb 2013 09:25:21 +0000
+In-Reply-To: <alpine.DEB.2.02.1302232045320.5360@kaball.uk.xensource.com>
+References: <20130223072959.GA4894@www.outflux.net>
+	 <CAE8XmWoX_TyHMTnGCMn6j_qiK0hptCgyrnVYpDJkfTAQfUNQPA@mail.gmail.com>
+	 <CAGXu5jKkaTStWRDQLOb6HxM7sGyj+1ekxxkGK8hw6rWkHRrVsQ@mail.gmail.com>
+	 <20130223191104.GA12606@konrad-lan.dumpdata.com>
+	 <alpine.DEB.2.02.1302232045320.5360@kaball.uk.xensource.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SxgehGEc6vB0cZwN"
-Content-Disposition: inline
-In-Reply-To: <CAFp+6iHaP96F0OF9_C1DTsfmkPNZMVC78tj7m0YGdV=d_znWrA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---SxgehGEc6vB0cZwN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 2013-02-23 at 20:47 +0000, Stefano Stabellini wrote:
+> On Sat, 23 Feb 2013, Konrad Rzeszutek Wilk wrote:
+> > On Sat, Feb 23, 2013 at 09:03:20AM -0800, Kees Cook wrote:
+> > > On Sat, Feb 23, 2013 at 3:59 AM, Dongsheng Song
+> > > <dongsheng.song@gmail.com> wrote:
+> > > > On Sat, Feb 23, 2013 at 3:29 PM, Kees Cook <keescook@chromium.org> wrote:
+> > > >>
+> > > >> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
+> > > >> while now and is almost always enabled by default. As agreed during the
+> > > >> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
+> > > >>
+> > > >> Signed-off-by: Kees Cook <keescook@chromium.org>
+> > > >> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > >> Cc: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > >> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > >> ---
+> > > >>  arch/x86/xen/Kconfig |    2 +-
+> > > >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > >>
+> > > >> diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+> > > >> index 93ff4e1..8cada4c 100644
+> > > >> --- a/arch/x86/xen/Kconfig
+> > > >> +++ b/arch/x86/xen/Kconfig
+> > > >> @@ -53,7 +53,7 @@ config XEN_DEBUG_FS
+> > > >>
+> > > >>  config XEN_X86_PVH
+> > > >>         bool "Support for running as a PVH guest (EXPERIMENTAL)"
+> > > >
+> > > > Why not remove this 'EXPERIMENTAL' too ?
+> > > 
+> > > It was unclear to me if the feature was actually considered unstable.
+> > > I can resend with the text removed from the title too, if that's the
+> > > correct action here?
+> > 
+> > It certainly is unstable right now (which is why it was unstaged from
+> > the v3.9 train). I hope that by v3.10 it won't be - at which
+> > point this patch (and the EXPERIMENTAL) makes sense.
+> > 
+> > So could you respin it please with the text removed as well - and I will
+> > queue it up in the branch that carries the PVH feature?
+> 
+> We also have the same flag on Xen ARM, and the reason is that the ABI is
+> not stable yet. As soon as it is (I think soon now), I'll send a patch
+> to remove EXPERIMENTAL from there too.
 
-Hi,
+In the meantime if the depends EXPERIMENTAL is going away perhaps we
+should explain the EXPERIMENTAL in the title:
 
-On Mon, Feb 25, 2013 at 02:21:46PM +0530, Vivek Gautam wrote:
-> >> @@ -514,6 +511,14 @@ static int dwc3_probe(struct platform_device *pde=
-v)
-> >>       }
-> >>       dwc->mode =3D mode;
-> >>
-> >> +#if IS_ENABLED(CONFIG_USB_DWC3_HOST)
-> >> +     dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_HOST);
-> >> +#elif IS_ENABLED(CONFIG_USB_DWC3_GADGET)
-> >> +     dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_DEVICE);
-> >> +#else
-> >> +     dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_OTG);
-> >> +#endif
-> >
-> > you can actually use:
-> >
-> > if (IS_ENABLED(CONFIG_USB_DWC3_HOST))
-> >         dwc3_set_mode(dwc...
-> > else if (IS_ENABLED( ...
-> >         ...
-> > else
-> >         ...
-> >
->=20
-> I am actually hoping to change this to something like below (after
-> of course changing the preprocessor conditionals) :
->=20
-> commit 9a62ed948dcb6ac5d78aff41f5355c0a5ea86475
-> Author: Vivek Gautam <gautam.vivek@samsung.com>
-> Date:   Thu Jan 24 11:58:05 2013 +0530
->=20
->     usb: dwc3: Set GCTL.PrtCapDir based on selected mode.
->=20
->     Now that machines may select the mode of working of DWC3,
->     we can set the Port capability direction based on selected mode.
->=20
->     Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->=20
-> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> index 79f335f..9444fbe 100644
-> --- a/drivers/usb/dwc3/core.c
-> +++ b/drivers/usb/dwc3/core.c
-> @@ -478,7 +478,13 @@ static int dwc3_probe(struct platform_device *pdev)
->                 goto err1;
->         }
->=20
-> -       mode =3D DWC3_MODE(dwc->hwparams.hwparams0);
-> +#if IS_ENABLED(CONFIG_USB_DWC3_HOST)
-> +       mode =3D DWC3_MODE_HOST;
-> +#elif IS_ENABLED(CONFIG_USB_DWC3_GADGET)
-> +       mode =3D DWC3_MODE_DEVICE;
-> +#else
-> +       mode =3D DWC3_MODE_DRD;
+8<----------------------------------------------------
 
-looks alright.
+>From bc22bd0f7b20296c449a05d82be950922042bc92 Mon Sep 17 00:00:00 2001
+From: Ian Campbell <ian.campbell@citrix.com>
+Date: Thu, 4 Oct 2012 09:12:51 +0100
+Subject: [PATCH] arm: xen: explain the EXPERIMENTAL dependency in the Kconfig help
 
---=20
-balbi
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ arch/arm/Kconfig |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
---SxgehGEc6vB0cZwN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 67874b8..ef14873 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1865,6 +1865,14 @@ config XEN
+ 	help
+ 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
+ 
++
++	  This option is EXPERIMENTAL because the hypervisor
++	  interfaces which it uses are not yet considered stable
++	  therefore backwards and forwards compatibility is not yet
++	  guaranteed.
++
++	  If unsure, say N.
++
+ endmenu
+ 
+ menu "Boot options"
+-- 
+1.7.2.5
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRKyynAAoJEIaOsuA1yqREVsAP/3OcdifeAWcDTdq7i9e4hYlT
-0nKazxAvZ8zvylNHpoNASTUS4p0XAkE6ZZmfi16nhyb4cL8TR8jRWyPVqFouwXHQ
-k+GbVuPeSs2L2wEu2m6a+l+pPMB/bfV7c7HZzGIjBDSwjL6Axhin7wBgcAEvP9fH
-QamO2wuKIkUaEL7TqqtCOId6/2/rxT1i1rmt9oFo9UenDU1u5K/ZRuvxw16CcIeZ
-CrIBPfkCqLDPcnDk7NQdbeiL55wjaUeK9MUIokvb58KfuK1yKFa3YGRcySo/9045
-URvEG4+kwQGtBmOy4Hk/HuKCm6TEbU63qVAXbAZKAbnmK7fMFbkE5BIk4ndLus2r
-1bz/6z8BtvZ83pq9tb4KQM1vxRQyliIWYQ1J448w6qbXvmK/DBZzG12gc5RCGtRn
-s9AXBWaDTtUxg5bCQEF55HUH+zw0OaHL0eM43n1Gn7nUgiGVk/6B0Gz26mvAd9AA
-nuhTX5KTaYDvsROqbHNV9nFRRor1vrmlqfyGO8BT6qQUaSbEcDb8M+KNCx39OGrc
-jSYvHbQdF0QHHj7/YNZo1ZjJerYiIpRIGaNB+AjXjqRJbwU4xSbcF50hkKsfDVxt
-Zigq9dFrjO6kJlnA7k5FFyUBcxCcJZmYhdYZUpBOTn2LTqAaxKSJmSRQOM6fc7Ld
-+yPXGdmBqcbc6YGzgEfs
-=xHQ1
------END PGP SIGNATURE-----
 
---SxgehGEc6vB0cZwN--
