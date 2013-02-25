@@ -1,128 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759622Ab3BYMZu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 07:25:50 -0500
-Received: from fallback8.mail.ru ([94.100.176.136]:48684 "EHLO
-	fallback8.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756348Ab3BYMZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 07:25:49 -0500
-Subject: [PATCH] NET/PHY: Eliminate the forced speed reduction algorithm
-From: Kirill Kapranov <kapranoff@inbox.ru>
-Reply-To: kapranoff@inbox.ru
-To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="KOI8-R"
-Organization: NITA, LLC
-Date: Mon, 25 Feb 2013 16:25:18 +0400
-Message-ID: <1361795118.3980.108.camel@kkk.nita.ru>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Spam: Not detected
-X-Mras: Ok
+	id S1759182Ab3BYM3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 07:29:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45726 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754621Ab3BYM3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 07:29:47 -0500
+Date: Mon, 25 Feb 2013 13:29:40 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Stephane Chatty <chatty@enac.fr>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/8] hid driver transport cleanup
+In-Reply-To: <1361788310-6048-1-git-send-email-benjamin.tissoires@gmail.com>
+Message-ID: <alpine.LNX.2.00.1302251328070.2128@pobox.suse.cz>
+References: <1361788310-6048-1-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From Kirill Kapranov  <kkk@nita.ru>,<kapranoff@inbox.ru>
+On Mon, 25 Feb 2013, Benjamin Tissoires wrote:
 
-NET/PHY: Eliminate the forced speed reduction algorithm.
-In case of fixed speed set up for a NIC (e.g. ethtool -s eth0 autoneg off speed 100 duplex full) with an ethernet cable plugged off, the mentioned algorithm slows down a NIC speed, so further hooking up a cable does not lead to "link" state.
-Signed-off-by: Kirill Kapranov <kkk@nita.ru>,<kapranoff@inbox.ru>
----
-The purpose of the introduced patch is deletion of the forced speed reduction algorithm realization from the driver module "phy".
-The above mentioned algorithm works in the following way: if the PHY detected unlink line state (connector plugged off), NIC speed is decreased step-by-step in the sequence:
-100 full duplex
-100 half duplex
-10 full duplex
-10 half duplex
-with the latency circa 10 s per step, and stops at 10-HD value.
-I have looked up RFC-802.3, and found, that the mentioned algorithm is neither quoted nor described. AFAIK, no one RFC describe the mentioned algorithm, so it may be a witty invention of the developer(s).
+> Hi guys,
+> 
+> this is the v2 of the hid transport cleanup.
+> 
+> Changes since v1:
+> - gathered reviewed/acked/etc..
+> - changed commit messages of patches 4-6
+> - add newcomer into account (thingm)
+> - incorporated the i2c-hid driver change into the series
+> 
+> I still did not implemented the final usb cleanup for hid-multitouch as it may
+> required few comments.
 
-In the case of the fixed speed and duplex set, with the autonegotiation off, for a NIC (e.g. # ethtool -s eth0 autoneg off speed 100 duplex full) with ethernet cable plugged off, mentioned algorithm slows down NIC speed, so when ethernet connector is plugged in, connection will be inoperative: an ethernet switch will try to connect with 100/full (e.g.), a NIC will stay at 10/half.
-Thus, this algorithm is destructive for the fixed speed/duplex mode (with autonegotiation off).
+I have now taken the series. Thanks Benjamin, thanks Henrik.
 
-In the AUTO mode, the mentioned algorithm is inessential. The autonegotiation procedure works fine regardless an speed/duplex settings at the moment of connector hooking up.
-Thus, there is no point in using of this algorithm in driver.
-
-Tested at 2.6.38.7, applicable up to for 3.0.4. 
-
---- linux/drivers/net/phy/phy.c.orig	2011-05-22 02:13:59.000000000 +0400
-+++ linux/drivers/net/phy/phy.c	2012-04-28 12:49:37.000000000 +0400
-@@ -457,34 +457,6 @@ void phy_stop_machine(struct phy_device
- }
- 
- /**
-- * phy_force_reduction - reduce PHY speed/duplex settings by one step
-- * @phydev: target phy_device struct
-- *
-- * Description: Reduces the speed/duplex settings by one notch,
-- *   in this order--
-- *   1000/FULL, 1000/HALF, 100/FULL, 100/HALF, 10/FULL, 10/HALF.
-- *   The function bottoms out at 10/HALF.
-- */
--static void phy_force_reduction(struct phy_device *phydev)
--{
--	int idx;
--
--	idx = phy_find_setting(phydev->speed, phydev->duplex);
--	
--	idx++;
--
--	idx = phy_find_valid(idx, phydev->supported);
--
--	phydev->speed = settings[idx].speed;
--	phydev->duplex = settings[idx].duplex;
--
--	pr_info("Trying %d/%s\n", phydev->speed,
--			DUPLEX_FULL == phydev->duplex ?
--			"FULL" : "HALF");
--}
--
--
--/**
-  * phy_error - enter HALTED state for this PHY device
-  * @phydev: target phy_device struct
-  *
-@@ -814,30 +786,12 @@ void phy_state_machine(struct work_struc
- 				phydev->adjust_link(phydev->attached_dev);
- 
- 			} else if (0 == phydev->link_timeout--) {
--				int idx;
- 
- 				needs_aneg = 1;
- 				/* If we have the magic_aneg bit,
- 				 * we try again */
- 				if (phydev->drv->flags & PHY_HAS_MAGICANEG)
- 					break;
--
--				/* The timer expired, and we still
--				 * don't have a setting, so we try
--				 * forcing it until we find one that
--				 * works, starting from the fastest speed,
--				 * and working our way down */
--				idx = phy_find_valid(0, phydev->supported);
--
--				phydev->speed = settings[idx].speed;
--				phydev->duplex = settings[idx].duplex;
--
--				phydev->autoneg = AUTONEG_DISABLE;
--
--				pr_info("Trying %d/%s\n", phydev->speed,
--						DUPLEX_FULL ==
--						phydev->duplex ?
--						"FULL" : "HALF");
- 			}
- 			break;
- 		case PHY_NOLINK:
-@@ -863,7 +817,6 @@ void phy_state_machine(struct work_struc
- 				netif_carrier_on(phydev->attached_dev);
- 			} else {
- 				if (0 == phydev->link_timeout--) {
--					phy_force_reduction(phydev);
- 					needs_aneg = 1;
- 				}
- 			}
-
-
+-- 
+Jiri Kosina
+SUSE Labs
