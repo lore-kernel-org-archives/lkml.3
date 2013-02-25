@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759614Ab3BYCGO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 21:06:14 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:9215 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759505Ab3BYCGM (ORCPT
+	id S1759596Ab3BYCNN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 21:13:13 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47138 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759527Ab3BYCNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 21:06:12 -0500
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Feb 2013 21:06:12 EST
-MIME-version: 1.0
-Content-type: multipart/mixed; boundary="Boundary_(ID_JXxiLJQ1Nxu9LMjSAdn1Qw)"
-Date: Sun, 24 Feb 2013 20:06:09 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: =?ISO-8859-15?Q?Jean-Fran=E7ois_Moine?= <moinejf@free.fr>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] tty vt: fix character insertion overflow
-Message-id: <alpine.LFD.2.03.1302242001070.2213@syhkavp.arg>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
-Content-id: <alpine.LFD.2.03.1302242005071.2213@syhkavp.arg>
+	Sun, 24 Feb 2013 21:13:12 -0500
+X-AuditID: 9c93016f-b7b46ae000007f43-8b-512ac8b57bfd
+Date: Mon, 25 Feb 2013 11:13:08 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH v2] mm: remove MIGRATE_ISOLATE check in hotpath
+Message-ID: <20130225021308.GA6498@blaptop>
+References: <1358209006-18859-1-git-send-email-minchan@kernel.org>
+ <20130115153625.96265439.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130115153625.96265439.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Andrew,
 
---Boundary_(ID_JXxiLJQ1Nxu9LMjSAdn1Qw)
-Content-id: <alpine.LFD.2.03.1302242005072.2213@syhkavp.arg>
-Content-type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-transfer-encoding: 8BIT
+Sorry for late reply and I totally missed it. :(
 
-Commit 81732c3b2f (tty vt: Fix line garbage in virtual console on
-command line edition) broke insert_char() in multiple ways.  Then
-commit b1a925f44a (tty vt: Fix a regression in command line edition)
-partially fixed it.  However, the buffer being moved is still too large
-and overflowing beyond the end of the current line, corrupting existing
-characters on the next line.
+On Tue, Jan 15, 2013 at 03:36:25PM -0800, Andrew Morton wrote:
+> On Tue, 15 Jan 2013 09:16:46 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
+> 
+> > Now mm several functions test MIGRATE_ISOLATE and some of those
+> > are hotpath but MIGRATE_ISOLATE is used only if we enable
+> > CONFIG_MEMORY_ISOLATION(ie, CMA, memory-hotplug and memory-failure)
+> > which are not common config option. So let's not add unnecessary
+> > overhead and code when we don't enable CONFIG_MEMORY_ISOLATION.
+> 
+> ugh.  Better than nothing, I guess.
+> 
+> There remain call sites which do open-coded
+> 
+> 	get_pageblock_migratetype(page) != MIGRATE_ISOLATE
+> 
+> (undo_isolate_page_range() is one).  Wanna clean these up as well?
 
-Example test case:
+Oops, Sure.
 
-echo -e "abc\nde\x1b[A\x1b[4h \x1b[4l\x1b[B"
+> 
+> >
+> > ...
+> >
+> > @@ -683,7 +683,7 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
+> >  	zone->pages_scanned = 0;
+> >  
+> >  	__free_one_page(page, zone, order, migratetype);
+> > -	if (unlikely(migratetype != MIGRATE_ISOLATE))
+> > +	if (unlikely(!is_migrate_isolate(migratetype)))
+> >  		__mod_zone_freepage_state(zone, 1 << order, migratetype);
+> >  	spin_unlock(&zone->lock);
+> >  }
+> 
+> The code both before and after this patch is assuming that the
+> migratetype in free_one_page is likely to be MIGRATE_ISOLATE.  Seems
+> wrong.  If CONFIG_MEMORY_ISOLATION=n this ends up doing
+> if(unlikely(true)) which is harmless-but-amusing.
 
-Expected result:
+>From the beginning of [2139cbe627, cma: fix counting of isolated pages],
+it was wrong. We can't make sure it's very likely.
+If it is called by order-0 page free path, it is but if it is called by
+high order page free path, we can't.
+So I think it would be better to remove unlikley.
 
-ab c
-de
+They are trivial patch so send it now or send it after you release
+first mmotm after finishing merge window?
 
-Current result:
+Andrew, Which is better?
 
-ab c
- e
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Needless to say that this is very annoying when inserting words in the
-middle of paragraphs with certain text editors.
-
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
-Cc: Jean-François Moine <moinejf@free.fr>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: <stable@vger.kernel.org>
-
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 1a27280..6c4abea 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -539,7 +539,7 @@ static void insert_char(struct vc_data *vc, unsigned int nr)
- {
- 	unsigned short *p = (unsigned short *) vc->vc_pos;
- 
--	scr_memmovew(p + nr, p, (vc->vc_cols - vc->vc_x) * 2);
-+	scr_memmovew(p + nr, p, (vc->vc_cols - vc->vc_x - nr) * 2);
- 	scr_memsetw(p, vc->vc_video_erase_char, nr * 2);
- 	vc->vc_need_wrap = 0;
- 	if (DO_UPDATE(vc))
-
---Boundary_(ID_JXxiLJQ1Nxu9LMjSAdn1Qw)--
+-- 
+Kind regards,
+Minchan Kim
