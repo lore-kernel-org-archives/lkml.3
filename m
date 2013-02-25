@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759620Ab3BYJyt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 04:54:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38542 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759572Ab3BYJys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 04:54:48 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 4/5] perf tests: Add attr record -C cpu test
-Date: Mon, 25 Feb 2013 10:52:51 +0100
-Message-Id: <1361785972-7431-5-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1361785972-7431-1-git-send-email-jolsa@redhat.com>
-References: <1361785972-7431-1-git-send-email-jolsa@redhat.com>
+	id S932280Ab3BYJzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 04:55:11 -0500
+Received: from smtp-out-129.synserver.de ([212.40.185.129]:1066 "EHLO
+	smtp-out-124.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757188Ab3BYJzJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 04:55:09 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 13594
+Message-ID: <512B355D.1000107@metafoo.de>
+Date: Mon, 25 Feb 2013 10:56:45 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+MIME-Version: 1.0
+To: Jonathan Cameron <jic23@kernel.org>
+CC: Guenter Roeck <linux@roeck-us.net>,
+        Jonathan Cameron <jic23@jic23.retrosnub.co.uk>,
+        linux-iio@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH v5] iio: Add OF support
+References: <1360256940-19438-1-git-send-email-linux@roeck-us.net> <5114B7B8.2080607@jic23.retrosnub.co.uk> <20130220165359.GA3424@roeck-us.net> <6d3189b1-69ee-4db2-9dcc-2a6c59ca6dc7@email.android.com>
+In-Reply-To: <6d3189b1-69ee-4db2-9dcc-2a6c59ca6dc7@email.android.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding test to validate perf_event_attr data for command:
-  'record -C 0'
+On 02/20/2013 06:17 PM, Jonathan Cameron wrote:
+> 
+> 
+> Guenter Roeck <linux@roeck-us.net> wrote:
+> 
+>> On Fri, Feb 08, 2013 at 08:30:48AM +0000, Jonathan Cameron wrote:
+>>> On 07/02/13 17:09, Guenter Roeck wrote:
+>>>> Provide bindings and parse OF data during initialization.
+>>>>
+>>>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>>> Looks fine to me.  Will give it a few more days to see what others
+>>> have to say.
+>>>
+>> Hi Jonathan,
+>>
+>> Any further feedback on this ? If there is anything else I need to do
+>> to get it accepted, please let me know.
+> Was kind of hoping for a few ack/ reviewed by comments! Missed current merge window so I will pick it up for start of next cycle and assume silence means everyone else is happy!
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- tools/perf/tests/attr/test-record-C0 | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
- create mode 100644 tools/perf/tests/attr/test-record-C0
-
-diff --git a/tools/perf/tests/attr/test-record-C0 b/tools/perf/tests/attr/test-record-C0
-new file mode 100644
-index 0000000..d6a7e43
---- /dev/null
-+++ b/tools/perf/tests/attr/test-record-C0
-@@ -0,0 +1,13 @@
-+[config]
-+command = record
-+args    = -C 0 kill >/dev/null 2>&1
-+
-+[event:base-record]
-+cpu=0
-+
-+# no enable on exec for CPU attached
-+enable_on_exec=0
-+
-+# PERF_SAMPLE_IP | PERF_SAMPLE_TID PERF_SAMPLE_TIME | # PERF_SAMPLE_PERIOD
-+# + PERF_SAMPLE_CPU added by -C 0
-+sample_type=391
--- 
-1.7.11.7
-
+The latest version looked good to me, you can add my:
+Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
