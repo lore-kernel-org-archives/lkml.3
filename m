@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab3BYXFn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 18:05:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55808 "EHLO
+	id S1759216Ab3BYXQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 18:16:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55911 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755402Ab3BYXFk (ORCPT
+	with ESMTP id S1754148Ab3BYXQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 18:05:40 -0500
-Date: Mon, 25 Feb 2013 15:05:34 -0800
+	Mon, 25 Feb 2013 18:16:40 -0500
+Date: Mon, 25 Feb 2013 15:16:38 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>, Neil Horman <nhorman@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 0/3] coredump: make it freezable (almost)
-Message-Id: <20130225150534.269bacc4.akpm@linux-foundation.org>
-In-Reply-To: <20130224173144.GA32179@redhat.com>
-References: <20130224173144.GA32179@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, David Rientjes <rientjes@google.com>,
+        James Morris <jmorris@namei.org>, axboe <axboe@kernel.dk>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: fix part_pack_uuid() build error
+Message-Id: <20130225151638.bd40807c.akpm@linux-foundation.org>
+In-Reply-To: <1361718944.2908.49.camel@falcor1.watson.ibm.com>
+References: <1361718944.2908.49.camel@falcor1.watson.ibm.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -25,24 +28,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Feb 2013 18:31:44 +0100
-Oleg Nesterov <oleg@redhat.com> wrote:
+On Sun, 24 Feb 2013 10:15:44 -0500
+Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
-> Hello.
+> Fix a build error when CONFIG_BLOCK is not enabled, by defining
+> a wrapper called blk_part_pack_uuid().  The wrapper returns
+> -EINVAL, when CONFIG_BLOCK is not defined.
 > 
-> On top of coredump-sanitize-the-setting-of-signal-group_exit_code.patch
+> security/integrity/ima/ima_policy.c:538:4: error: implicit declaration
+> of function 'part_pack_uuid' [-Werror=implicit-function-declaration]
 > 
-> Andrew, "almost" means we need a bit more changes, but these
-> changes should be absolutely trivial/straightforward. We need
-> to add the killable/freezeng checks in dump_write/seek. But this
-> depends on 2/3, lets discuss this series first.
+> ...
+>
+> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+> index b27535a..399433a 100644
+> --- a/security/integrity/ima/ima_policy.c
+> +++ b/security/integrity/ima/ima_policy.c
+>  			ima_log_string(ab, "fsuuid", args[0].from);
+>  
+>  			if (memchr_inv(entry->fsuuid, 0x00,
+> -			    sizeof(entry->fsuuid))) {
+> +				       sizeof(entry->fsuuid))) {
+>  				result = -EINVAL;
+>  				break;
+>  			}
+>  
+> -			part_pack_uuid(args[0].from, entry->fsuuid);
+> -			entry->flags |= IMA_FSUUID;
+> -			result = 0;
+> +			result = blk_part_pack_uuid(args[0].from,
+> +						    entry->fsuuid);
+> +			if (!result)
+> +				entry->flags |= IMA_FSUUID;
 
-Thanks.  I still have these marked "for 3.10".
+This will cause ima_parse_rule() to newly return -EINVAL if the fsuuid=
+option is used when CONFIG_BLOCK=n.
 
-coredump-only-sigkill-should-interrupt-the-coredumping-task.patch
-coredump-ensure-that-sigkill-always-kills-the-dumping-thread.patch
-coredump-sanitize-the-setting-of-signal-group_exit_code.patch
-coredump-factor-out-the-setting-of-pf_dumpcore.patch
-freezer-do-not-send-a-fake-signal-to-a-pf_dumpcore-thread.patch
-coredump-make-wait_for_dump_helpers-freezable.patch
+This functional change was not changelogged, forcing me to ask: was it
+deliberate or was it accidental?
 
+And it is a non-back-compatible change, introducing some potential to
+break existing userspace code.  Is the risk considered acceptable?  If
+so, why?
