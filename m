@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759649Ab3BYCnQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Feb 2013 21:43:16 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:39335 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759464Ab3BYCmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Feb 2013 21:42:55 -0500
-X-IronPort-AV: E=Sophos;i="4.84,731,1355068800"; 
-   d="scan'208";a="6760671"
-From: liguang <lig.fnst@cn.fujitsu.com>
-To: tglx@linutronix.de, hpa@zytor.com, pavel@ucw.cz, rjw@sisk.pl,
-        lv.zheng@intel.com, jarkko.sakkinen@intel.com, dave@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        x86@kernel.org
-Cc: liguang <lig.fnst@cn.fujitsu.com>
-Subject: [rebased-again][PATCH 0/4] acpi: do some changes for numa info
-Date: Mon, 25 Feb 2013 10:38:33 +0800
-Message-Id: <1361759917-5195-1-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.2.5
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/25 10:38:46,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/25 10:38:50,
-	Serialize complete at 2013/02/25 10:38:50
+	id S1759774Ab3BYCyI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Feb 2013 21:54:08 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48396 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759581Ab3BYCyG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Feb 2013 21:54:06 -0500
+X-AuditID: 9c930179-b7b61ae000004061-64-512ad24ccd13
+Date: Mon, 25 Feb 2013 11:54:03 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCHv5 7/8] zswap: add swap page writeback support
+Message-ID: <20130225025403.GB6498@blaptop>
+References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1360780731-11708-8-git-send-email-sjenning@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1360780731-11708-8-git-send-email-sjenning@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-just do some trivial changes to make acpi's numa info
-operation more cleaner.
+Hi Seth,
 
-ChangeLog
+On Wed, Feb 13, 2013 at 12:38:50PM -0600, Seth Jennings wrote:
+> This patch adds support for evicting swap pages that are currently
+> compressed in zswap to the swap device.  This functionality is very
+> important and make zswap a true cache in that, once the cache is full
+> or can't grow due to memory pressure, the oldest pages can be moved
+> out of zswap to the swap device so newer pages can be compressed and
+> stored in zswap.
+> 
+> This introduces a good amount of new code to guarantee coherency.
+> Most notably, and LRU list is added to the zswap_tree structure,
+> and refcounts are added to each entry to ensure that one code path
+> doesn't free then entry while another code path is operating on it.
+> 
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-v3->v4
- 1.fix srat_disabled function
- spotted by Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+In this time, I didn't review the code in detail yet but it seems
+resolve of all review point in previous interation. Thanks!
+But unfortunately, I couldn't find anything related to tmppage handling
+so I'd like to ask.
 
-v2->v3
- 1. rebase on linux-next
- 2. bring back lost Makefile changes
- spotted by David Rientjes <rientjes@google.com>
- spotted by Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+The reason of tmppage is temporal buffer to keep compressed data during
+writeback to avoid unnecessary compressing again when we retry?
+Is it really critical about performance? What's the wrong if we remove
+tmppage handling?
 
-v1->v2
- 1. fix-up several coding issues
- 2. finish srat.c change
- spotted by David Rientjes <rientjes@google.com>
+zswap_frontswap_store
+retry:
+        get_cpu_var(zswap_dstmem);
+        zswap_com_op(COMPRESS)
+        zs_malloc()
+        if (!handle) {
+                put_cpu_var(zswap_dstmem);
+                if (retry > MAX_RETRY)
+                        goto error_nomem;
+                zswap_flush_entries()
+                goto retry;
+        }
 
-Li Guang (4)
-	 acpi: move x86/mm/srat.c to x86/kernel/acpi/srat.c
-	 numa: avoid export acpi_numa variable
-	 acpi: add clock_domain field to acpi_srat_cpu_affinity
-	 remove include asm/acpi.h in process_driver.c
 
-arch/x86/include/asm/acpi.h     | 2 +-
-arch/x86/kernel/acpi/Makefile   | 1 +
-arch/x86/kernel/acpi/srat.c     | 299 +++++++++++++++++++++++++++++++++++++++++
-arch/x86/mm/Makefile            | 1 -
-arch/x86/mm/numa.c              | 2 +-
-arch/x86/mm/srat.c              | 278 -----------------------------------------
-arch/x86/xen/enlighten.c        | 2 +-
-drivers/acpi/processor_driver.c | 1 -
-include/acpi/actbl1.h           | 2 +-
-9 files changed, 296 insertions(+), 292 deletions(-)
- create mode 100644 arch/x86/kernel/acpi/srat.c
- delete mode 100644 arch/x86/mm/srat.c
- 
+-- 
+Kind regards,
+Minchan Kim
