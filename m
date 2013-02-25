@@ -1,196 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab3BYIRg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 03:17:36 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37779 "EHLO arroyo.ext.ti.com"
+	id S932159Ab3BYIat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 03:30:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37561 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932093Ab3BYIRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 03:17:34 -0500
-Date: Mon, 25 Feb 2013 10:17:23 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <balbi@ti.com>, <kishon@ti.com>
-Subject: Re: [PATCH RFC] usb: dwc3: Set GCTL.PrtCapDir based on selected mode.
-Message-ID: <20130225081723.GD25749@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1360071958-20797-1-git-send-email-gautam.vivek@samsung.com>
+	id S1754959Ab3BYIaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 03:30:46 -0500
+Date: Mon, 25 Feb 2013 10:30:39 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 0/5] [v3] fix illegal use of __pa() in KVM code
+Message-ID: <20130225083039.GB21422@redhat.com>
+References: <20130122212428.8DF70119@kernel.stglabs.ibm.com>
+ <1361741338.21499.38.camel@thor.lan>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fOHHtNG4YXGJ0yqR"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1360071958-20797-1-git-send-email-gautam.vivek@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1361741338.21499.38.camel@thor.lan>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---fOHHtNG4YXGJ0yqR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Feb 24, 2013 at 04:28:58PM -0500, Peter Hurley wrote:
+> 
+> On Tue, 2013-01-22 at 13:24 -0800, Dave Hansen wrote:
+> > This series fixes a hard-to-debug early boot hang on 32-bit
+> > NUMA systems.  It adds coverage to the debugging code,
+> > adds some helpers, and eventually fixes the original bug I
+> > was hitting.
+> 
+> Hi Dave,
+> 
+> Now that the alloc_remap() has been/is being removed, is most/all of
+> this being reverted?
+> 
+> I ask because I was fixing a different bug in KVM's para-virt clock and
+> saw part of this series (from [PATCH 5/5] fix kvm's use of __pa() on
+> percpu areas):
+> 
+> diff -puN arch/x86/kernel/kvmclock.c~fix-kvm-__pa-use-on-percpu-areas arch/x86/kernel/kvmclock.c
+> --- linux-2.6.git/arch/x86/kernel/kvmclock.c~fix-kvm-__pa-use-on-percpu-areas   2013-01-22 13:17:16.428317508 -0800
+> +++ linux-2.6.git-dave/arch/x86/kernel/kvmclock.c       2013-01-22 13:17:16.432317541 -0800
+> @@ -162,8 +162,8 @@ int kvm_register_clock(char *txt)
+>         int low, high, ret;
+>         struct pvclock_vcpu_time_info *src = &hv_clock[cpu].pvti;
+>  
+> -       low = (int)__pa(src) | 1;
+> -       high = ((u64)__pa(src) >> 32);
+> +       low = (int)slow_virt_to_phys(src) | 1;
+> +       high = ((u64)slow_virt_to_phys(src) >> 32);
+>         ret = native_write_msr_safe(msr_kvm_system_time, low, high);
+>         printk(KERN_INFO "kvm-clock: cpu %d, msr %x:%x, %s\n",
+>                cpu, high, low, txt);
+> 
+I think this hunk was converted by mistake since the code does not use
+per cpu allocations, but since __pa() and slow_virt_to_phys() should
+return the same thing here it does not matter much.
 
-Hi,
+> which confused me because hv_clock is the __va of allocated physical
+> memory, not a per-cpu variable.
+> 
+> 	mem = memblock_alloc(size, PAGE_SIZE);
+> 	if (!mem)
+> 		return;
+> 	hv_clock = __va(mem);
+> 
+> So in short, my questions are:
+> 1) is the slow_virt_to_phys() necessary anymore?
+> 2) if yes, does it apply to the code above?
+> 3) if yes, would you explain in more detail what the 32-bit NUMA mm is
+> doing, esp. wrt. when __va(__pa) is not identical across all cpus?
+> 
+> Regards,
+> Peter Hurley
+> 
 
-On Tue, Feb 05, 2013 at 07:15:58PM +0530, Vivek Gautam wrote:
-> Now that machines may select the mode of working of DWC3,
-> we can set the Port capability direction based on selected mode.
->=20
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->  drivers/usb/dwc3/core.c |   11 ++++++++---
->  1 files changed, 8 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> index 177f4c6..f4c47f7 100644
-> --- a/drivers/usb/dwc3/core.c
-> +++ b/drivers/usb/dwc3/core.c
-> @@ -479,7 +479,6 @@ static int dwc3_probe(struct platform_device *pdev)
-> =20
->  	switch (mode) {
->  	case DWC3_MODE_DEVICE:
-> -		dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_DEVICE);
->  		ret =3D dwc3_gadget_init(dwc);
->  		if (ret) {
->  			dev_err(dev, "failed to initialize gadget\n");
-> @@ -487,7 +486,6 @@ static int dwc3_probe(struct platform_device *pdev)
->  		}
->  		break;
->  	case DWC3_MODE_HOST:
-> -		dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_HOST);
->  		ret =3D dwc3_host_init(dwc);
->  		if (ret) {
->  			dev_err(dev, "failed to initialize host\n");
-> @@ -495,7 +493,6 @@ static int dwc3_probe(struct platform_device *pdev)
->  		}
->  		break;
->  	case DWC3_MODE_DRD:
-> -		dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_OTG);
->  		ret =3D dwc3_host_init(dwc);
->  		if (ret) {
->  			dev_err(dev, "failed to initialize host\n");
-> @@ -514,6 +511,14 @@ static int dwc3_probe(struct platform_device *pdev)
->  	}
->  	dwc->mode =3D mode;
-> =20
-> +#if IS_ENABLED(CONFIG_USB_DWC3_HOST)
-> +	dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_HOST);
-> +#elif IS_ENABLED(CONFIG_USB_DWC3_GADGET)
-> +	dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_DEVICE);
-> +#else
-> +	dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_OTG);
-> +#endif
-
-you can actually use:
-
-if (IS_ENABLED(CONFIG_USB_DWC3_HOST))
-	dwc3_set_mode(dwc...
-else if (IS_ENABLED( ...
-	...
-else
-	...
-
-instead of pre-processor conditionals. In fact, I have recently written
-a patch converting #if IS_ENABLED() to if (IS_ENABLED()) but I haven't
-posted yet:
-
-commit 42dbbbc272bc941ec2b0cac51342609e61e13a01
-Author: Felipe Balbi <balbi@ti.com>
-Date:   Fri Feb 22 16:24:49 2013 +0200
-
-    usb: dwc3: debugfs: improve debugfs file creation
-   =20
-    when commit 388e5c5 (usb: dwc3: remove dwc3
-    dependency on host AND gadget.) changed the
-    way debugfs files are created, it failed to
-    note that 'mode' is necessary in Dual Role
-    mode only while 'testmode' and 'link_state'
-    are valid in Dual Role and Peripheral-only
-    builds. Fix this while also converting pre-
-    processor conditional to C conditionals.
-   =20
-    Signed-off-by: Felipe Balbi <balbi@ti.com>
-
-diff --git a/drivers/usb/dwc3/debugfs.c b/drivers/usb/dwc3/debugfs.c
-index a1bac9a..8b23d045 100644
---- a/drivers/usb/dwc3/debugfs.c
-+++ b/drivers/usb/dwc3/debugfs.c
-@@ -667,28 +667,31 @@ int dwc3_debugfs_init(struct dwc3 *dwc)
- 		goto err1;
- 	}
-=20
--#if IS_ENABLED(CONFIG_USB_DWC3_GADGET)
--	file =3D debugfs_create_file("mode", S_IRUGO | S_IWUSR, root,
--			dwc, &dwc3_mode_fops);
--	if (!file) {
--		ret =3D -ENOMEM;
--		goto err1;
-+	if (IS_ENABLED(CONFIG_USB_DWC3_DUAL_ROLE)) {
-+		file =3D debugfs_create_file("mode", S_IRUGO | S_IWUSR, root,
-+				dwc, &dwc3_mode_fops);
-+		if (!file) {
-+			ret =3D -ENOMEM;
-+			goto err1;
-+		}
- 	}
-=20
--	file =3D debugfs_create_file("testmode", S_IRUGO | S_IWUSR, root,
--			dwc, &dwc3_testmode_fops);
--	if (!file) {
--		ret =3D -ENOMEM;
--		goto err1;
--	}
--
--	file =3D debugfs_create_file("link_state", S_IRUGO | S_IWUSR, root,
--			dwc, &dwc3_link_state_fops);
--	if (!file) {
--		ret =3D -ENOMEM;
--		goto err1;
-+	if (IS_ENABLED(CONFIG_USB_DWC3_DUAL_ROLE) ||
-+			IS_ENABLED(CONFIG_USB_DWC3_GADGET)) {
-+		file =3D debugfs_create_file("testmode", S_IRUGO | S_IWUSR, root,
-+				dwc, &dwc3_testmode_fops);
-+		if (!file) {
-+			ret =3D -ENOMEM;
-+			goto err1;
-+		}
-+
-+		file =3D debugfs_create_file("link_state", S_IRUGO | S_IWUSR, root,
-+				dwc, &dwc3_link_state_fops);
-+		if (!file) {
-+			ret =3D -ENOMEM;
-+			goto err1;
-+		}
- 	}
--#endif
-=20
- 	return 0;
-=20
-
---=20
-balbi
-
---fOHHtNG4YXGJ0yqR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRKx4TAAoJEIaOsuA1yqREu9cP/jP6kpdzJQ5Ow65s3pfiEL+t
-AdGH2p1jiR1PZx5yR9VsJ3tv1AK4in12dIx0m5BSWn9kzFWERBlPLBzJqavR86e0
-4/JirtAwxSAQxmNFZ8lQS0AOixMNPtGS+0XFn6lcDU0mSkejRVSEqItgzGQDGFTP
-xHyM8qKXBTOIimM3flnGyY4iLfJNizkerNHPJ8Kskj5qub0fz6hZu4nBB11uqkwN
-fKvE7UbPFOhFSgk/H/xLDY2vHY+7VoVRm6Zti6hjIprAo2VBiGujXEyTiAMd3mp/
-v/wu9oFT/R8JCbQd0WsqeoVNmi9+nfF3DcjNVmYQ6NyDgVmppwTDYiJSIjzWewAj
-vHaxkREpKOkQVegKvPm+fXTtVALLqPXoP9SP8/PssO6jHlsogs3vqqcUIiUE+lrB
-hnspK97zEr0YfhYxayZbORsOLhEI8dHCKsvaqbikg2RqjlUpN6CoePuLrba+GB3U
-0iNsWcWhwvHZC61ov2TDbscNCMN8ROg+90zdVjT89J8jI20Ip4vLiW1ozKsNiBuB
-MlAZXno+53HcwlraXQIY22kGy899H1cWDhrTAKb9x/v0+pk90w66SfV7BOIyYob0
-sqQP4PSC3Y6XpLZ6dHff2nDUCxDhpKutjHWfLBvN3rJE+x1tKHTyq1wzzXiiIfy5
-3gRRKaieLXDoTEUUGOtc
-=Ir6p
------END PGP SIGNATURE-----
-
---fOHHtNG4YXGJ0yqR--
+--
+			Gleb.
