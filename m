@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452Ab3BYKd2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 05:33:28 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:50197 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932273Ab3BYKc7 (ORCPT
+	id S1759280Ab3BYKdu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 05:33:50 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:44595 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932269Ab3BYKc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 05:32:59 -0500
+	Mon, 25 Feb 2013 05:32:57 -0500
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 8/8] HID: i2c-hid: implement request() callback
-Date: Mon, 25 Feb 2013 11:31:50 +0100
-Message-Id: <1361788310-6048-9-git-send-email-benjamin.tissoires@gmail.com>
+Subject: [PATCH v2 7/8] HID: multitouch: Copyright and note on regression tests
+Date: Mon, 25 Feb 2013 11:31:49 +0100
+Message-Id: <1361788310-6048-8-git-send-email-benjamin.tissoires@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1361788310-6048-1-git-send-email-benjamin.tissoires@gmail.com>
 References: <1361788310-6048-1-git-send-email-benjamin.tissoires@gmail.com>
@@ -23,65 +23,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows HID drivers to also get/set reports through hid_hw_request().
+This reflects my new company and officialize the regression tests I'm
+conducting between each change.
 
-Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Henrik Rydberg <rydberg@euromail.se>
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/hid/i2c-hid/i2c-hid.c | 32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
+ drivers/hid/hid-multitouch.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index ec79302..935f387 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -563,6 +563,37 @@ static int i2c_hid_output_raw_report(struct hid_device *hid, __u8 *buf,
- 	return ret;
- }
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 184ac0a..3af9efdd 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -2,8 +2,9 @@
+  *  HID driver for multitouch panels
+  *
+  *  Copyright (c) 2010-2012 Stephane Chatty <chatty@enac.fr>
+- *  Copyright (c) 2010-2012 Benjamin Tissoires <benjamin.tissoires@gmail.com>
++ *  Copyright (c) 2010-2013 Benjamin Tissoires <benjamin.tissoires@gmail.com>
+  *  Copyright (c) 2010-2012 Ecole Nationale de l'Aviation Civile, France
++ *  Copyright (c) 2012-2013 Red Hat, Inc
+  *
+  *  This code is partly based on hid-egalax.c:
+  *
+@@ -26,6 +27,17 @@
+  * any later version.
+  */
  
-+static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
-+		int reqtype)
-+{
-+	struct i2c_client *client = hid->driver_data;
-+	struct i2c_hid *ihid = i2c_get_clientdata(client);
-+	char *buf;
-+	int ret;
++/*
++ * This driver is regularly tested thanks to the tool hid-test[1].
++ * This tool relies on hid-replay[2] and a database of hid devices[3].
++ * Please run these regression tests before patching this module so that
++ * your patch won't break existing known devices.
++ *
++ * [1] https://github.com/bentiss/hid-test
++ * [2] https://github.com/bentiss/hid-replay
++ * [3] https://github.com/bentiss/hid-devices
++ */
 +
-+	buf = kzalloc(ihid->bufsize, GFP_KERNEL);
-+	if (!buf)
-+		return;
-+
-+	switch (reqtype) {
-+	case HID_REQ_GET_REPORT:
-+		ret = i2c_hid_get_raw_report(hid, rep->id, buf, ihid->bufsize,
-+					     rep->type);
-+		if (ret < 0)
-+			dev_err(&client->dev, "%s: unable to get report: %d\n",
-+				__func__, ret);
-+		else
-+			hid_input_report(hid, rep->type, buf, ret, 0);
-+		break;
-+	case HID_REQ_SET_REPORT:
-+		hid_output_report(rep, buf);
-+		i2c_hid_output_raw_report(hid, buf, ihid->bufsize, rep->type);
-+		break;
-+	}
-+
-+	kfree(buf);
-+}
-+
- static int i2c_hid_parse(struct hid_device *hid)
- {
- 	struct i2c_client *client = hid->driver_data;
-@@ -742,6 +773,7 @@ static struct hid_ll_driver i2c_hid_ll_driver = {
- 	.open = i2c_hid_open,
- 	.close = i2c_hid_close,
- 	.power = i2c_hid_power,
-+	.request = i2c_hid_request,
- 	.hidinput_input_event = i2c_hid_hidinput_input_event,
- };
- 
+ #include <linux/device.h>
+ #include <linux/hid.h>
+ #include <linux/module.h>
 -- 
 1.8.1.2
 
