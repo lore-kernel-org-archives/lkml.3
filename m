@@ -1,193 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759511Ab3BYWP4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:15:56 -0500
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:49915 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab3BYWPy (ORCPT
+	id S1759777Ab3BYWQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:16:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34107 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434Ab3BYWQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:15:54 -0500
-From: Simon Glass <sjg@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Simon Glass <sjg@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        linux-input@vger.kernel.org
-Subject: [PATCH v6 5/6] Input: matrix-keymap: Add function to read the new DT binding
-Date: Mon, 25 Feb 2013 14:08:40 -0800
-Message-Id: <1361830121-32284-6-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1361830121-32284-1-git-send-email-sjg@chromium.org>
-References: <1361830121-32284-1-git-send-email-sjg@chromium.org>
+	Mon, 25 Feb 2013 17:16:31 -0500
+Date: Mon, 25 Feb 2013 14:15:18 -0800
+From: tip-bot for Konrad Rzeszutek Wilk <tipbot@zytor.com>
+Message-ID: <tip-1256276c98dbcfb009ac8e0687df9a1e291fd149@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        konrad.wilk@oracle.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1361825650-14031-4-git-send-email-konrad.wilk@oracle.com>
+References: <1361825650-14031-4-git-send-email-konrad.wilk@oracle.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, doc:
+  Fix incorrect comment about 64-bit code segment descriptors
+Git-Commit-ID: 1256276c98dbcfb009ac8e0687df9a1e291fd149
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 25 Feb 2013 14:15:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We now have a binding which adds two parameters to the matrix keypad DT
-node. This is separate from the GPIO-driven matrix keypad binding, and
-unfortunately incompatible, since that uses row-gpios/col-gpios for the
-row and column counts.
+Commit-ID:  1256276c98dbcfb009ac8e0687df9a1e291fd149
+Gitweb:     http://git.kernel.org/tip/1256276c98dbcfb009ac8e0687df9a1e291fd149
+Author:     Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+AuthorDate: Mon, 25 Feb 2013 15:54:10 -0500
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 25 Feb 2013 13:42:37 -0800
 
-So the easiest option here is to provide a function for non-GPIO drivers
-to use to decode the binding.
+x86, doc: Fix incorrect comment about 64-bit code segment descriptors
 
-Note: We could in fact create an entirely separate structure to hold
-these two fields, but it does not seem worth it, yet. If we have more
-parameters then we can add this, and then refactor each driver to hold
-such a structure.
+The AMD64 Architecture Programmer's Manual Volume 2, on page
+89 mentions: "If the processor is running in 64-bit mode (L=1),
+the only valid setting of the D bit is 0." This matches
+with what the code does.
 
-Signed-off-by: Simon Glass <sjg@chromium.org>
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Tested-by: Sourav Poddar <sourav.poddar@ti.com> (v2)
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Link: http://lkml.kernel.org/r/1361825650-14031-4-git-send-email-konrad.wilk@oracle.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3:
-- Add stub for matrix_keypad_parse_of_params() when no CONFIG_OF
-- Put back full DT range checking in tca8418 driver
+ arch/x86/kernel/head_64.S | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Changes in v2:
-- Add new patch to decode matrix-keypad DT binding
-
- drivers/input/keyboard/lpc32xx-keys.c   | 11 ++++++-----
- drivers/input/keyboard/omap4-keypad.c   | 16 +++++-----------
- drivers/input/keyboard/tca8418_keypad.c |  7 +++++--
- drivers/input/matrix-keymap.c           | 19 +++++++++++++++++++
- include/linux/input/matrix_keypad.h     | 19 +++++++++++++++++++
- 5 files changed, 54 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/input/keyboard/lpc32xx-keys.c b/drivers/input/keyboard/lpc32xx-keys.c
-index 1b8add6..4218143 100644
---- a/drivers/input/keyboard/lpc32xx-keys.c
-+++ b/drivers/input/keyboard/lpc32xx-keys.c
-@@ -144,12 +144,13 @@ static int lpc32xx_parse_dt(struct device *dev,
- {
- 	struct device_node *np = dev->of_node;
- 	u32 rows = 0, columns = 0;
-+	int err;
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 980053c..37f5304 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -49,7 +49,7 @@ L3_START_KERNEL = pud_index(__START_KERNEL_map)
+ startup_64:
  
--	of_property_read_u32(np, "keypad,num-rows", &rows);
--	of_property_read_u32(np, "keypad,num-columns", &columns);
--	if (!rows || rows != columns) {
--		dev_err(dev,
--			"rows and columns must be specified and be equal!\n");
-+	err = matrix_keypad_parse_of_params(dev, &rows, &columns);
-+	if (err)
-+		return err;
-+	if (rows != columns) {
-+		dev_err(dev, "rows and columns must be equal!\n");
- 		return -EINVAL;
- 	}
- 
-diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
-index e25b022..1b28909 100644
---- a/drivers/input/keyboard/omap4-keypad.c
-+++ b/drivers/input/keyboard/omap4-keypad.c
-@@ -215,18 +215,12 @@ static int omap4_keypad_parse_dt(struct device *dev,
- 				 struct omap4_keypad *keypad_data)
- {
- 	struct device_node *np = dev->of_node;
-+	int err;
- 
--	if (!np) {
--		dev_err(dev, "missing DT data");
--		return -EINVAL;
--	}
--
--	of_property_read_u32(np, "keypad,num-rows", &keypad_data->rows);
--	of_property_read_u32(np, "keypad,num-columns", &keypad_data->cols);
--	if (!keypad_data->rows || !keypad_data->cols) {
--		dev_err(dev, "number of keypad rows/columns not specified\n");
--		return -EINVAL;
--	}
-+	err = matrix_keypad_parse_of_params(dev, &keypad_data->rows,
-+					    &keypad_data->cols);
-+	if (err)
-+		return err;
- 
- 	if (of_get_property(np, "linux,input-no-autorepeat", NULL))
- 		keypad_data->no_autorepeat = true;
-diff --git a/drivers/input/keyboard/tca8418_keypad.c b/drivers/input/keyboard/tca8418_keypad.c
-index a34cc67..55c1530 100644
---- a/drivers/input/keyboard/tca8418_keypad.c
-+++ b/drivers/input/keyboard/tca8418_keypad.c
-@@ -288,8 +288,11 @@ static int tca8418_keypad_probe(struct i2c_client *client,
- 		irq_is_gpio = pdata->irq_is_gpio;
- 	} else {
- 		struct device_node *np = dev->of_node;
--		of_property_read_u32(np, "keypad,num-rows", &rows);
--		of_property_read_u32(np, "keypad,num-columns", &cols);
-+		int err;
-+
-+		err = matrix_keypad_parse_of_params(dev, &rows, &cols);
-+		if (err)
-+			return err;
- 		rep = of_property_read_bool(np, "keypad,autorepeat");
- 	}
- 
-diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
-index 3ae496e..619b382 100644
---- a/drivers/input/matrix-keymap.c
-+++ b/drivers/input/matrix-keymap.c
-@@ -50,6 +50,25 @@ static bool matrix_keypad_map_key(struct input_dev *input_dev,
- }
- 
- #ifdef CONFIG_OF
-+int matrix_keypad_parse_of_params(struct device *dev,
-+				  unsigned int *rows, unsigned int *cols)
-+{
-+	struct device_node *np = dev->of_node;
-+
-+	if (!np) {
-+		dev_err(dev, "missing DT data");
-+		return -EINVAL;
-+	}
-+	of_property_read_u32(np, "keypad,num-rows", rows);
-+	of_property_read_u32(np, "keypad,num-columns", cols);
-+	if (!*rows || !*cols) {
-+		dev_err(dev, "number of keypad rows/columns not specified\n");
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int matrix_keypad_parse_of_keymap(const char *propname,
- 					 unsigned int rows, unsigned int cols,
- 					 struct input_dev *input_dev)
-diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h
-index 5f3aa6b..27e06ac 100644
---- a/include/linux/input/matrix_keypad.h
-+++ b/include/linux/input/matrix_keypad.h
-@@ -81,4 +81,23 @@ int matrix_keypad_build_keymap(const struct matrix_keymap_data *keymap_data,
- 			       unsigned short *keymap,
- 			       struct input_dev *input_dev);
- 
-+#ifdef CONFIG_OF
-+/**
-+ * matrix_keypad_parse_of_params() - Read parameters from matrix-keypad node
-+ *
-+ * @dev: Device containing of_node
-+ * @rows: Returns number of matrix rows
-+ * @cols: Returns number of matrix columns
-+ * @return 0 if OK, <0 on error
-+ */
-+int matrix_keypad_parse_of_params(struct device *dev,
-+				  unsigned int *rows, unsigned int *cols);
-+#else
-+static inline int matrix_keypad_parse_of_params(struct device *dev,
-+				  unsigned int *rows, unsigned int *cols)
-+{
-+	return -ENOSYS;
-+}
-+#endif /* CONFIG_OF */
-+
- #endif /* _MATRIX_KEYPAD_H */
--- 
-1.8.1.3
-
+ 	/*
+-	 * At this point the CPU runs in 64bit mode CS.L = 1 CS.D = 1,
++	 * At this point the CPU runs in 64bit mode CS.L = 1 CS.D = 0,
+ 	 * and someone has loaded an identity mapped page table
+ 	 * for us.  These identity mapped page tables map all of the
+ 	 * kernel pages and possibly all of memory.
+@@ -146,7 +146,7 @@ ident_complete:
+ 	jmp secondary_startup_64
+ ENTRY(secondary_startup_64)
+ 	/*
+-	 * At this point the CPU runs in 64bit mode CS.L = 1 CS.D = 1,
++	 * At this point the CPU runs in 64bit mode CS.L = 1 CS.D = 0,
+ 	 * and someone has loaded a mapped page table.
+ 	 *
+ 	 * %esi holds a physical pointer to real_mode_data.
