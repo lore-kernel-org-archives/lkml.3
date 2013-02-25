@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759064Ab3BYV2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 16:28:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41244 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754479Ab3BYV22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 16:28:28 -0500
-Date: Mon, 25 Feb 2013 13:28:27 -0800
-From: Mark Fasheh <mfasheh@suse.de>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Richard Weinberger <richard@nod.at>, ocfs2-devel@oss.oracle.com,
-        ocfs2-user@oss.oracle.com, linux-kernel@vger.kernel.org,
-        jlbec@evilplan.org, linux-fsdevel@vger.kernel.org, david@sigma-star.at
-Subject: Re: OCFS2 mainline state?
-Message-ID: <20130225212827.GC13510@wotan.suse.de>
-Reply-To: Mark Fasheh <mfasheh@suse.de>
-References: <512BCA9E.4090702@nod.at> <20130225211103.GA13510@wotan.suse.de> <20130225211617.GF4503@ZenIV.linux.org.uk>
+	id S1758953Ab3BYV3R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 16:29:17 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:48106 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755140Ab3BYV3Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 16:29:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130225211617.GF4503@ZenIV.linux.org.uk>
-Organization: SUSE Labs
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1360623637.2950.63.camel@lorien2>
+References: <1360623637.2950.63.camel@lorien2>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 25 Feb 2013 14:28:55 -0700
+Message-ID: <CAErSpo5sqUgvRRsVCZVMihaHo68WMmGTkdjf5zQp_3QuR7zD0A@mail.gmail.com>
+Subject: Re: [PATCH 1/4] pci: Add PCI_BUS() and PCI_DEVID() interfaces to
+ return bus number and device id
+To: shuah.khan@hp.com
+Cc: Joerg Roedel <joro@8bytes.org>, paulmck@linux.vnet.ibm.com,
+        linasvepstas@gmail.com, dhowells@redhat.com, davej@redhat.com,
+        tglx@linutronix.de, mtk.manpages@gmail.com,
+        iommu@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org, shemminger@vyatta.com, jiang.liu@huawei.com,
+        wangyijing@huawei.com, shuahkhan@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 09:16:18PM +0000, Al Viro wrote:
-> On Mon, Feb 25, 2013 at 01:11:03PM -0800, Mark Fasheh wrote:
-> 
-> > I've seen that patch actually and yes it should have been in mainline
-> > already. I didn't see whether it's in -mm (Andrew is pickup up some of the
-> > patches for us right now).
-> > 
-> > I'll check and if it's not I'll try to send him a version of it today.
-> 
-> Normally filesystem trees are fed to Linus...  Or I can pick that patch via
-> VFS tree (and send it to Linus tomorrow).  There also had been Jan's ocfs2
-> patch a while ago; I picked only the VFS part of that series, ext* and
-> IIRC xfs ones went to corresponding filesystem trees.  Should I just pick
-> the ocfs2 stuff from now on?
+On Mon, Feb 11, 2013 at 4:00 PM, Shuah Khan <shuah.khan@hp.com> wrote:
+> pci defines PCI_DEVFN(), PCI_SLOT(), and PCI_FUNC() interfaces, however,
+> it doesn't have interfaces to return PCI bus and PCI device id. Drivers
+> (AMD IOMMU, and AER) implement module specific definitions for PCI_BUS()
+> and AMD_IOMMU driver also has a module specific interface to calculate PCI
+> device id from bus number and devfn.
+>
+> Add PCI_BUS and PCI_DEVID interfaces to return PCI bus number and PCI device
+> id respectively to avoid the need for duplicate definitions in other modules.
+> AER driver code and AMD IOMMU driver define PCI_BUS. AMD IOMMU driver defines
+> an interface to calculate device id from bus number, and devfn pair.
+>
+> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> ---
+>  include/uapi/linux/pci.h |    4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> diff --git a/include/uapi/linux/pci.h b/include/uapi/linux/pci.h
+> index 3c292bc0..6b2c8b3 100644
+> --- a/include/uapi/linux/pci.h
+> +++ b/include/uapi/linux/pci.h
+> @@ -30,6 +30,10 @@
+>  #define PCI_DEVFN(slot, func)  ((((slot) & 0x1f) << 3) | ((func) & 0x07))
+>  #define PCI_SLOT(devfn)                (((devfn) >> 3) & 0x1f)
+>  #define PCI_FUNC(devfn)                ((devfn) & 0x07)
+> +#define PCI_DEVID(bus, devfn)  ((((u16)bus) << 8) | devfn)
+> +
+> +/* return bus from PCI devid = ((u16)bus_number) << 8) | devfn */
+> +#define PCI_BUS(x) (((x) >> 8) & 0xff)
 
-I personally would absolutely be fine (and grateful) with you picking up the
-Ocfs2 stuff.
-	--Mark
+BTW, in the next round, maybe we should call this PCI_BUS_NR() or
+similar to avoid confusion with "struct pci_bus"?
+
+Bjorn
