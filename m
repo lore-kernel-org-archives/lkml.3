@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759740Ab3BYO6U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 09:58:20 -0500
-Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:41478 "EHLO
-	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751661Ab3BYO6R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 09:58:17 -0500
-Date: Mon, 25 Feb 2013 15:58:12 +0100
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-Subject: Re: [RFE PATCH 2/2] rtc, add write functionality to sysfs
-Message-ID: <20130225155812.0758e093@linux.lan.towertech.it>
-In-Reply-To: <512A47C5.3010500@redhat.com>
-References: <1360861375-24131-1-git-send-email-prarit@redhat.com>
-	<1360861375-24131-3-git-send-email-prarit@redhat.com>
-	<5127D884.6020701@linaro.org>
-	<5127DB2B.3030700@redhat.com>
-	<5127DDAF.2000403@linaro.org>
-	<B22B05C4-B8D2-44B9-971B-37913DE59EF6@towertech.it>
-	<512A47C5.3010500@redhat.com>
-Organization: Tower Technologies
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759724Ab3BYO7X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 09:59:23 -0500
+Received: from mga11.intel.com ([192.55.52.93]:41581 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751661Ab3BYO7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 09:59:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,735,1355126400"; 
+   d="scan'208";a="295561756"
+Date: Mon, 25 Feb 2013 14:59:02 +0000
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: i915 not working on Dell e6410
+Message-ID: <20130225145902.GA20532@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Felipe Balbi <balbi@ti.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org
+References: <20130225142411.GD15499@arwen.pp.htv.fi>
+ <20130225143918.GA19874@cantiga.alporthouse.com>
+ <20130225144312.GG15499@arwen.pp.htv.fi>
+ <20130225144906.GB19874@cantiga.alporthouse.com>
+ <20130225145622.GI15499@arwen.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130225145622.GI15499@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Feb 2013 12:03:01 -0500
-Prarit Bhargava <prarit@redhat.com> wrote:
-
+On Mon, Feb 25, 2013 at 04:56:22PM +0200, Felipe Balbi wrote:
+> Hi,
 > 
-> AFAICT there is no way for me to "test" or use the write from userspace.
-> hwclock uses the SET_TIME ioctl, which is a different code path AFAICT.
+> On Mon, Feb 25, 2013 at 02:49:07PM +0000, Chris Wilson wrote:
+> > That looks like https://bugzilla.freedesktop.org/show_bug.cgi?id=60391
+> > which is fixed by
+> > 
+> > commit da88a5f7f7d434e2cde1b3e19d952e6d84533662
+> > Author: Chris Wilson <chris@chris-wilson.co.uk>
+> > Date:   Wed Feb 13 09:31:53 2013 +0000
+> > 
+> >     drm/i915: Disable WC PTE updates to w/a buggy IOMMU on ILK
+> > 
+> > or by passing intel_iommu=off on the commandline.
 > 
-> I'd like to be at least able to test this stuff when we make changes to it so I
-> think having write functionality for date & time is worthwhile.
-> 
-> For me, I'm using these to heavily test ntp and ntpdate over system reboots.
+> and so it does, thanks. That's going to be merged on v3.9 right ? Hope
+> there's a stable tag in it, thanks
 
- the point is: who will benefit from this patch? users? distributions?
- embedded distributions? if it's useful, then just go for it.
-
-
-> OOC, Alessandro, why is the date & time split into two fields?
-
- because date and time are two different things and we expect
- sysfs to preferably have one value for each entry.
+Yes, it is in the queue of fixes for v3.9.
+-Chris
 
 -- 
-
- Best regards,
-
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
-
-  http://www.towertech.it
-
+Chris Wilson, Intel Open Source Technology Centre
