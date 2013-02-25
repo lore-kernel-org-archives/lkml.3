@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759099Ab3BYSJq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 13:09:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15380 "EHLO mx1.redhat.com"
+	id S1759263Ab3BYSLw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 13:11:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54721 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754529Ab3BYSJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 13:09:42 -0500
-Date: Mon, 25 Feb 2013 20:09:40 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [GIT PULL] KVM ARM compilation fixes for the 3.9 merge window
-Message-ID: <20130225180940.GA24877@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1759078Ab3BYSLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 13:11:49 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, gong.chen@linux.intel.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] HWPOISON: check dirty flag to match against clean page
+Date: Mon, 25 Feb 2013 13:10:52 -0500
+Message-Id: <1361815852-23891-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently page_action() does not check dirty flag to determine whether
+the error page is "clean mlocked/unevictable LRU" page.
+This doesn't cause any misjudgement because we do matching against
+"dirty mlocked/unevictable LRU" just before the check.
+But in order to make code consistent and/or to avoid potential regression,
+we had better check dirty flag explicitly.
 
-Linus,
+Dependency:
+  This patch depends on the patch "HWPOISON: change order of
+  error_states[]'s elements" which perhaps will be merged in v3.9-rc1.
 
-Please pull from
+Suggested-by: Chen Gong <gong.chen@linux.intel.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ mm/memory-failure.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
+diff --git v3.8.orig/mm/memory-failure.c v3.8/mm/memory-failure.c
+index 01e4676..d99cd79 100644
+--- v3.8.orig/mm/memory-failure.c
++++ v3.8/mm/memory-failure.c
+@@ -785,10 +785,10 @@ static struct page_state {
+ 	{ sc|dirty,	sc,		"clean swapcache",	me_swapcache_clean },
+ 
+ 	{ mlock|dirty,	mlock|dirty,	"dirty mlocked LRU",	me_pagecache_dirty },
+-	{ mlock,	mlock,		"clean mlocked LRU",	me_pagecache_clean },
++	{ mlock|dirty,	mlock,		"clean mlocked LRU",	me_pagecache_clean },
+ 
+ 	{ unevict|dirty, unevict|dirty,	"dirty unevictable LRU", me_pagecache_dirty },
+-	{ unevict,	unevict,	"clean unevictable LRU", me_pagecache_clean },
++	{ unevict|dirty, unevict,	"clean unevictable LRU", me_pagecache_clean },
+ 
+ 	{ lru|dirty,	lru|dirty,	"dirty LRU",	me_pagecache_dirty },
+ 	{ lru|dirty,	lru,		"clean LRU",	me_pagecache_clean },
+-- 
+1.7.11.7
 
-To receive the following KVM bug fixes. They fix ARM KVM compilation breakage
-due to changes from kvm.git.
-
-
-Marc Zyngier (3):
-      ARM: KVM: fix kvm_arch_{prepare,commit}_memory_region
-      ARM: KVM: Rename KVM_MEMORY_SLOTS -> KVM_USER_MEM_SLOTS
-      ARM: KVM: fix compilation after removal of user_alloc from struct kvm_memory_slot
-
- arch/arm/include/asm/kvm_host.h |    2 +-
- arch/arm/kvm/arm.c              |    4 ++--
- arch/arm/kvm/mmu.c              |    5 -----
- 3 files changed, 3 insertions(+), 8 deletions(-)
-
---
-			Gleb.
