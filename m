@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214Ab3BYRW7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 12:22:59 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:39744 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754288Ab3BYRW5 (ORCPT
+	id S1758032Ab3BYRYE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 12:24:04 -0500
+Received: from na3sys010aog114.obsmtp.com ([74.125.245.96]:41285 "HELO
+	na3sys010aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754288Ab3BYRYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 12:22:57 -0500
+	Mon, 25 Feb 2013 12:24:01 -0500
 MIME-Version: 1.0
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Mon, 25 Feb 2013 12:22:35 -0500
-Message-ID: <CAOPLpQcs5GgVRqXhnxF0Ui0k-39-xX5N2nYWYY4DhVWMYCMQ7w@mail.gmail.com>
-Subject: sendfile and EAGAIN
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAL1RGDWVAYCTNOOA+s_n5Pu7JgrR-6K+krcbSuARtEhgze_nqw@mail.gmail.com>
+References: <1348836538.3626.21.camel@x61.thuisdomein> <511B9A1C.6000402@acm.org>
+ <1361437377.1341.33.camel@x61.thuisdomein> <201302241434.17586.jackm@dev.mellanox.co.il>
+ <CAL1RGDWVAYCTNOOA+s_n5Pu7JgrR-6K+krcbSuARtEhgze_nqw@mail.gmail.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Mon, 25 Feb 2013 09:23:37 -0800
+X-Google-Sender-Auth: Ls7Evb6-aXhuhHHfzFSeT-WUWgk
+Message-ID: <CAL1RGDWt2cgcwec-iQ9f8-YvC8fO2AncGBfQ2VUgPi3W49bKxg@mail.gmail.com>
+Subject: Re: [PATCH v2] IB/mlx4: silence GCC warning
+To: Jack Morgenstein <jackm@dev.mellanox.co.il>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Bart Van Assche <bvanassche@acm.org>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using sendfile with a non-blocking output file descriptor for a
-socket the operation can cause a partial write because of capacity
-issues.  This is nothing critical and the operation could resume after
-the output queue is cleared.  The problem is: there is no way to
-determine where to resume.
+On Mon, Feb 25, 2013 at 8:54 AM, Roland Dreier <roland@kernel.org> wrote:
+> I'm finally noticing that this is in the build_mlx_header() function,
+> which is pretty much a slow path.  Certainly another compare isn't
+> going to change performance given all the other stuff we do there.
+>
+> Let me look at the patches that have gone by and see what the cleanest
+> way to handle this is.
 
-The system call just returns -EAGAIN without any further indication.
-The caller doesn't know what to resend.
+OK, after playing around a bit, I see that just initializing vlan
+doesn't really change the generated code (my gcc at least was already
+if effect setting vlan in the generated assembly code), so I'll just
+merge that.
 
-And this even though the interface of sendfile would be capable of
-communicating this information and the man page (I know, it's not
-authoritive) describes this behavior as well.
-
-The problem is probably in a few places, here is one (fs/splice.c):
-
-static ssize_t default_file_splice_write(struct pipe_inode_info *pipe,
-                                         struct file *out, loff_t *ppos,
-                                         size_t len, unsigned int flags)
-{
-        ssize_t ret;
-
-        ret = splice_from_pipe(pipe, out, ppos, len, flags, write_pipe_buf);
-        if (ret > 0)
-                *ppos += ret;
-
-        return ret;
-}
-
-Note that *ppos is only updated if the call doesn't fail.  We could
-also update the position if ret == -EAGAIN.  This would require
-re-architecting the system a bit to either update *ppos in
-splice_from_pipe etc or to communicate number of the bytes which are
-written from the splice_from_pipe call.  In any case, the result would
-be that the caller knows where to resume the operation.
-
-I would argue that this doesn't break the ABI.  In case existing
-programs today just resend packages today from the beginning they will
-have send an unpredictable number of bytes in the previous sendfile()
-call, making the state of the communication unpredictable.
-
-Opinions?  I think as is sendfile() isn't useful with O_NONBLOCK.
+ - R.
