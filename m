@@ -1,151 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757010Ab3BYGml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 01:42:41 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:40192 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755436Ab3BYGmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 01:42:39 -0500
-Message-ID: <512B07AC.5090809@ti.com>
-Date: Mon, 25 Feb 2013 12:11:48 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1756212Ab3BYGxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 01:53:05 -0500
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:43101 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab3BYGxC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 01:53:02 -0500
+Date: Mon, 25 Feb 2013 07:52:57 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Syam Sidhardhan <syamsidhardh@gmail.com>
+Cc: schwidefsky@de.ibm.com, linux390@de.ibm.com, borntraeger@de.ibm.com,
+        jang@linux.vnet.ibm.com, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] s390/dis: Fix invalid array size
+Message-ID: <20130225065257.GA4040@osiris>
+References: <1361744145-28112-1-git-send-email-s.syam@samsung.com>
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        <akpm@linux-foundation.org>, <mchehab@redhat.com>, <cesarb@cesarb.net>,
-        <davem@davemloft.net>, <arnd@arndb.de>, <santosh.shilimkar@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH v2 1/5] drivers: phy: add generic PHY framework
-References: <1361659480.11282.15@driftwood>
-In-Reply-To: <1361659480.11282.15@driftwood>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361744145-28112-1-git-send-email-s.syam@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022506-1948-0000-0000-00000463DDB4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Feb 25, 2013 at 03:45:45AM +0530, Syam Sidhardhan wrote:
+> We are using sizeof operator for an array given as function argument,
+> which is incorrect.
+> 
+> Signed-off-by: Syam Sidhardhan <s.syam@samsung.com>
+> ---
+>  arch/s390/kernel/dis.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/s390/kernel/dis.c b/arch/s390/kernel/dis.c
+> index c50665f..3ad5e95 100644
+> --- a/arch/s390/kernel/dis.c
+> +++ b/arch/s390/kernel/dis.c
+> @@ -1711,10 +1711,10 @@ int insn_to_mnemonic(unsigned char *instruction, char buf[8])
+>  	if (!insn)
+>  		return -ENOENT;
+>  	if (insn->name[0] == '\0')
+> -		snprintf(buf, sizeof(buf), "%s",
+> +		snprintf(buf, 8, "%s",
+>  			 long_insn_name[(int) insn->name[1]]);
 
-On Sunday 24 February 2013 04:14 AM, Rob Landley wrote:
-> On 02/18/2013 11:53:14 PM, Kishon Vijay Abraham I wrote:
->> The PHY framework provides a set of APIs for the PHY drivers to
->> create/destroy a PHY and APIs for the PHY users to obtain a reference
->> to the
->> PHY with or without using phandle. To obtain a reference to the PHY
->> without
->> using phandle, the platform specfic intialization code (say from board
->> file)
->> should have already called phy_bind with the binding information. The
->> binding
->> information consists of phy's device name, phy user device name and an
->> index.
->> The index is used when the same phy user binds to mulitple phys.
->
-> Given that this has a separately selectable config option, I'm guessing
-> that it's useful all by itself even in the absence of a driver using
+Thanks, applied.
 
-Not really. It has to be thought of like a bridge that connects the 
-device (can be USB/SATA/..) and the PHY. The PHY driver will register 
-the PHY in this framework and the device controller driver can obtain a 
-reference to this PHY from this framework.
-> this phy? (Or it gives user visibility to the phy buried in an E1000 or
-> SATA drive or some such?)
-
-The PHY and the device are generally independent entities and there has 
-to be a way to bind them in-order for the device controller to use the 
-PHY. For e.g., MUSB in OMAP4 uses a PHY which is different from PHY in 
-OMAP3 and it's going to be different from a PHY used in other SoCs. So 
-in-order for MUSB to use the correct PHY, there has to be a framework 
-that maintains the list of PHY and returns the correct PHY when a device 
-controller driver requests for it. So whenever the PHY driver gets 
-probed, it registers itself with this framework and then the MUSB can 
-get the reference to the PHY from this framework. The use of this 
-framework is more prevalent when there are multiple MUSB controllers 
-each using a different PHY in a single SoC.
-
-This holds true for other device controllers as well.
->
->> +1. Introduction
->> +
->> +*PHY* is the abbreviation for physical layer. It is used to connect a
->> device
->> +to the physical medium e.g., the USB controller has a PHY to provide
->> functions
->> +such as serialization, de-serialization, encoding, decoding and is
->> responsible
->> +for obtaining the required data transmission rate. Note that some USB
->> +controller has PHY functionality embedded into it and others use an
->> external
->> +PHY. Other peripherals that uses a PHY include Wireless LAN, Ethernet,
->> +SATA etc.
->
-> I've usually heard the word "transciever" used to describe these.
-
-hmm.. IMO there is a thin line differentiating "transceiver" and "PHY" 
-and can be used interchangeably. Since it's been referred as "PHY" in 
-data sheets and TRMs, I preferred to call it PHY.
->
->> +The intention of creating this framework is to bring the phy drivers
->> spread
->> +all over the Linux kernel to drivers/phy to increase code re-use and to
->> +increase code maintainability.
->> +
->> +This framework will be of use only to devices that uses external PHY
->> (PHY
->> +functionality is not embedded within the controller).
->> +
->> +2. Creating the PHY
->> +
->> +The PHY driver should create the PHY in order for other peripheral
->> controllers
->> +to make use of it. The PHY framework provides 2 APIs to create the PHY.
->
-> Given that a PHY is a chip (random example
-> http://ark.intel.com/products/47620/Intel-82579LM-Gigabit-Ethernet-PHY),
-> you seem to be saying that software should manifest a piece of hardware
-> out of thin air through sheer willpower. I'm pretty sure I've
-> misunderstood this phrasing.
->
->> +struct phy *phy_create(struct device *dev, struct phy_descriptor *desc);
->> +struct phy *devm_phy_create(struct device *dev, struct phy_descriptor
->> *desc);
->> +
->> +The PHY drivers can use one of the above 2 APIs to create the PHY by
->> passing
->
-> Um, the driver should _bind_ to the phy, maybe? Allocate? Initialize?
-
-There is actually difference between allocating/initializing and 
-binding. Binding is to bind the device controller with the PHY. My 
-previous explanation might help to clarify it.
->
->> +6. Destroying the PHY
->
-> I've run drivers like that. I try not to, though.
->
->> +7. Current Status
->> +
->> +Currently only USB in OMAP is made to use this framework. However
->> using the
->> +USB PHY library cannot be completely removed because it is
->> intertwined with
->> +OTG. Once we move OTG out of PHY completely, using the old PHY
->> library can be
->> +completely removed. SATA in OMAP will also more likely use this new
->> framework
->> +and we should have a patch for it soon.
->
-> Does this paragraph belong in the documentation? (Git commit, sure, but
-> I've seen a lot of stale paragraphs like these hang around a
-> surprisingly long time.)
-
-hmm.. there are a few others who raised concern on having this 
-paragraph. I've planned to remove it in my next version.
-
-Thanks
-Kishon
