@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab3BYJzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 04:55:11 -0500
-Received: from smtp-out-129.synserver.de ([212.40.185.129]:1066 "EHLO
-	smtp-out-124.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757188Ab3BYJzJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 04:55:09 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 13594
-Message-ID: <512B355D.1000107@metafoo.de>
-Date: Mon, 25 Feb 2013 10:56:45 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S932286Ab3BYJ7A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 04:59:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30500 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758491Ab3BYJ67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 04:58:59 -0500
+Date: Mon, 25 Feb 2013 10:58:39 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Anton Arapov <anton@redhat.com>,
+        Frank Eigler <fche@redhat.com>, Josh Stone <jistone@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] perf/tools: Fix "perf record -C... workload"
+ behaviour
+Message-ID: <20130225095839.GC1041@krava.brq.redhat.com>
+References: <20130204190225.GA10840@redhat.com>
+ <20130206181044.GA3752@redhat.com>
+ <20130206194218.GA11998@redhat.com>
+ <20130206194258.GB11998@redhat.com>
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@kernel.org>
-CC: Guenter Roeck <linux@roeck-us.net>,
-        Jonathan Cameron <jic23@jic23.retrosnub.co.uk>,
-        linux-iio@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH v5] iio: Add OF support
-References: <1360256940-19438-1-git-send-email-linux@roeck-us.net> <5114B7B8.2080607@jic23.retrosnub.co.uk> <20130220165359.GA3424@roeck-us.net> <6d3189b1-69ee-4db2-9dcc-2a6c59ca6dc7@email.android.com>
-In-Reply-To: <6d3189b1-69ee-4db2-9dcc-2a6c59ca6dc7@email.android.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130206194258.GB11998@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/20/2013 06:17 PM, Jonathan Cameron wrote:
+On Wed, Feb 06, 2013 at 08:42:58PM +0100, Oleg Nesterov wrote:
+> Test-case:
 > 
+> 	# perf record -e probe_libc:syscall -C0 true
+> 	true: Terminated
 > 
-> Guenter Roeck <linux@roeck-us.net> wrote:
-> 
->> On Fri, Feb 08, 2013 at 08:30:48AM +0000, Jonathan Cameron wrote:
->>> On 07/02/13 17:09, Guenter Roeck wrote:
->>>> Provide bindings and parse OF data during initialization.
->>>>
->>>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>> Looks fine to me.  Will give it a few more days to see what others
->>> have to say.
->>>
->> Hi Jonathan,
->>
->> Any further feedback on this ? If there is anything else I need to do
->> to get it accepted, please let me know.
-> Was kind of hoping for a few ack/ reviewed by comments! Missed current merge window so I will pick it up for start of next cycle and assume silence means everyone else is happy!
+> The child process is killed by perf_record__sig_exit(). This is because
+> perf_evlist__prepare_workload() doesn't initialize threads->map[] and
+> then perf_event__synthesize_mmap_events() (silently!) fails. This patch
 
-The latest version looked good to me, you can add my:
-Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+hi,
+sorry for late reply..
+
+I think the reason it fails is that it actually got inside
+perf_event__synthesize_mmap_events while there's cpu list
+specified.
+
+I sent possible fix:
+http://marc.info/?l=linux-kernel&m=136178604718144&w=2
+
+
+> seems to fix the problem, but perhaps we should also move
+> 'pr_err("Couldn't run the workload!\n")' down to 'out_delete_session:',
+
+I'll check ;-)
+
+thanks,
+jirka
