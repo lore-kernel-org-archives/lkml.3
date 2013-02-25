@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab3BYWUL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:20:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55149 "EHLO
+	id S1759919Ab3BYWUE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:20:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55097 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759922Ab3BYWUF (ORCPT
+	with ESMTP id S1759685Ab3BYWT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:05 -0500
+	Mon, 25 Feb 2013 17:19:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: [ 13/58] workqueue: un-GPL function delayed_work_timer_fn()
-Date: Mon, 25 Feb 2013 14:19:09 -0800
-Message-Id: <20130225221638.964918329@linuxfoundation.org>
+        Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: [ 04/58] x86-32, mm: Remove reference to alloc_remap()
+Date: Mon, 25 Feb 2013 14:19:00 -0800
+Message-Id: <20130225221637.133964988@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -27,34 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 1438ade5670b56d5386c220e1ad4b5a824a1e585 upstream.
+commit 07f4207a305c834f528d08428df4531744e25678 upstream.
 
-commit d8e794dfd51c368ed3f686b7f4172830b60ae47b ("workqueue: set
-delayed_work->timer function on initialization") exports function
-delayed_work_timer_fn() only for GPL modules. This makes delayed-works
-unusable for non-GPL modules, because initialization macro now requires
-GPL symbol. For example schedule_delayed_work() available for non-GPL.
+We have removed the remap allocator for x86-32, and x86-64 never had
+it (and doesn't need it).  Remove residual reference to it.
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/CAE9FiQVn6_QZi3fNQ-JHYiR-7jeDJ5hT0SyT_%2BzVvfOj=PzF3w@mail.gmail.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/mm/numa.c |   29 +++++++++++------------------
+ 1 file changed, 11 insertions(+), 18 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1350,7 +1350,7 @@ void delayed_work_timer_fn(unsigned long
- 	/* should have been called from irqsafe timer with irq already off */
- 	__queue_work(dwork->cpu, cwq->wq, &dwork->work);
- }
--EXPORT_SYMBOL_GPL(delayed_work_timer_fn);
-+EXPORT_SYMBOL(delayed_work_timer_fn);
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -193,7 +193,6 @@ int __init numa_add_memblk(int nid, u64
+ static void __init setup_node_data(int nid, u64 start, u64 end)
+ {
+ 	const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
+-	bool remapped = false;
+ 	u64 nd_pa;
+ 	void *nd;
+ 	int tnid;
+@@ -211,28 +210,22 @@ static void __init setup_node_data(int n
+ 	       nid, start, end - 1);
  
- static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
- 				struct delayed_work *dwork, unsigned long delay)
+ 	/*
+-	 * Allocate node data.  Try remap allocator first, node-local
+-	 * memory and then any node.  Never allocate in DMA zone.
++	 * Allocate node data.  Try node-local memory and then any node.
++	 * Never allocate in DMA zone.
+ 	 */
+-	nd = alloc_remap(nid, nd_size);
+-	if (nd) {
+-		nd_pa = __pa(nd);
+-		remapped = true;
+-	} else {
+-		nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
+-		if (!nd_pa) {
+-			pr_err("Cannot find %zu bytes in node %d\n",
+-			       nd_size, nid);
+-			return;
+-		}
+-		nd = __va(nd_pa);
++	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
++	if (!nd_pa) {
++		pr_err("Cannot find %zu bytes in node %d\n",
++		       nd_size, nid);
++		return;
+ 	}
++	nd = __va(nd_pa);
+ 
+ 	/* report and initialize */
+-	printk(KERN_INFO "  NODE_DATA [mem %#010Lx-%#010Lx]%s\n",
+-	       nd_pa, nd_pa + nd_size - 1, remapped ? " (remapped)" : "");
++	printk(KERN_INFO "  NODE_DATA [mem %#010Lx-%#010Lx]\n",
++	       nd_pa, nd_pa + nd_size - 1);
+ 	tnid = early_pfn_to_nid(nd_pa >> PAGE_SHIFT);
+-	if (!remapped && tnid != nid)
++	if (tnid != nid)
+ 		printk(KERN_INFO "    NODE_DATA(%d) on node %d\n", nid, tnid);
+ 
+ 	node_data[nid] = nd;
 
 
