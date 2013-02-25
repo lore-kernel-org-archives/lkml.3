@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759781Ab3BYLeP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 06:34:15 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:59828 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759194Ab3BYLeO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 06:34:14 -0500
-Date: Mon, 25 Feb 2013 12:34:09 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] regulator: tps6586x: (cosmetic) simplify a conditional
-Message-ID: <Pine.LNX.4.64.1302251232260.3030@axis700.grange>
+	id S1759869Ab3BYLgj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 06:36:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43714 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759799Ab3BYLgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 06:36:38 -0500
+Message-ID: <512B4CC2.80008@suse.cz>
+Date: Mon, 25 Feb 2013 12:36:34 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:57JQqzh081YZZXPGfhBRPqJKw5M76CBESua3tmULn/z
- dZQQRWPQl0s0vhYxXCrGQLe198boyF6DEUHgs3ioDAr9poNkjT
- dOb/IvZ3pf/+mQTJkTbWogw9rmWCTkZFiC593Hab9tV7xUDYsv
- naoCa7rQxFI17dNspwIJaWduDkT8E0OGLFVXPsBtW7KOmPhE1V
- gUHDFpqjVwTr6Zd1ch2wSwUHY+UiUK7HLVRE+fskSYYKVAamlq
- unkxEXjt0q7u+w1Dd41v+oJnZ0nVG49zU20QFpweVIIOY29NUf
- 7A4CE54YCpWMqXV6YOTBD6B2Kl/wJ9e1MK5aPaZoRkpdsMD7vJ
- R8jOq72zOaqpU1iDZeeArnwvy/GPpw1ZtE615P1RCT5BPZ0xsB
- uogqHUU5lleZQ==
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Grzeschik <m.grzeschik@pengutronix.de>
+Subject: Re: linux-next: build failure after merge of the kbuild tree
+References: <20130225105650.6b89477b11c895ba99a666fe@canb.auug.org.au> <512B3CD8.5070802@suse.cz> <20130225215845.c0ec14a467aa6fe8e788e80e@canb.auug.org.au>
+In-Reply-To: <20130225215845.c0ec14a467aa6fe8e788e80e@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_node_put() is called on either branch of a conditional, simplify the
-code by only calling it once.
+On 25.2.2013 11:58, Stephen Rothwell wrote:
+> ----------------------------------------------------------------------
+> $ ls -l /bin/sh
+> lrwxrwxrwx 1 root root 4 Jul  7  2010 /bin/sh -> bash
+> $ bash --version
+> GNU bash, version 4.2.20(1)-release (x86_64-pc-linux-gnu)
+[...]
+> But bash in sh mode does not work:
+> 
+> $ cat xtst.sh
+> #!/bin/sh
+> 
+> cd /scratch/sfr/powerpc_ppc64_defconfig
+> 
+> . .config
+> 
+> exit 0
+> $ ./xtst.sh
+> ./xtst.sh: line 5: .: .config: file not found
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
----
- drivers/regulator/tps6586x-regulator.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+Ah, so it's a too new bash that causes this. I can also reproduce it now.
 
-diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
-index f86da67..1471ead 100644
---- a/drivers/regulator/tps6586x-regulator.c
-+++ b/drivers/regulator/tps6586x-regulator.c
-@@ -338,14 +338,12 @@ static struct tps6586x_platform_data *tps6586x_parse_regulator_dt(
- 	}
- 
- 	err = of_regulator_match(&pdev->dev, regs, tps6586x_matches, num);
-+	of_node_put(regs);
- 	if (err < 0) {
- 		dev_err(&pdev->dev, "Regulator match failed, e %d\n", err);
--		of_node_put(regs);
- 		return NULL;
- 	}
- 
--	of_node_put(regs);
--
- 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
- 	if (!pdata) {
- 		dev_err(&pdev->dev, "Memory alloction failed\n");
--- 
-1.7.2.5
-
+Michal
