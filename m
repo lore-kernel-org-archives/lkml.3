@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933148Ab3BYWbs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 17:31:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55165 "EHLO
+	id S933005Ab3BYWcK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 17:32:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55163 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759930Ab3BYWUI (ORCPT
+	with ESMTP id S1759832Ab3BYWUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 17:20:08 -0500
+	Mon, 25 Feb 2013 17:20:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Rakus <rrakus@redhat.com>, Lingzhu Xiang <lxiang@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [ 17/58] tty: set_termios/set_termiox should not return -EINTR
-Date: Mon, 25 Feb 2013 14:19:13 -0800
-Message-Id: <20130225221639.701366903@linuxfoundation.org>
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [ 08/58] timeconst.pl: Eliminate Perl warning
+Date: Mon, 25 Feb 2013 14:19:04 -0800
+Message-Id: <20130225221637.888445098@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
 References: <20130225221636.018756060@linuxfoundation.org>
@@ -27,77 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 183d95cdd834381c594d3aa801c1f9f9c0c54fa9 upstream.
+commit 63a3f603413ffe82ad775f2d62a5afff87fd94a0 upstream.
 
-See https://bugzilla.redhat.com/show_bug.cgi?id=904907
-read command causes bash to abort with double free or corruption (out).
+defined(@array) is deprecated in Perl and gives off a warning.
+Restructure the code to remove that warning.
 
-A simple test-case from Roman:
+[ hpa: it would be interesting to revert to the timeconst.bc script.
+  It appears that the failures reported by akpm during testing of
+  that script was due to a known broken version of make, not a problem
+  with bc.  The Makefile rules could probably be restructured to avoid
+  the make bug, or it is probably old enough that it doesn't matter. ]
 
-	// Compile the reproducer and send sigchld ti that process.
-	// EINTR occurs even if SA_RESTART flag is set.
-
-	void handler(int sig)
-	{
-	}
-
-	main()
-	{
-	  struct sigaction act;
-	  act.sa_handler = handler;
-	  act.sa_flags = SA_RESTART;
-	  sigaction (SIGCHLD, &act, 0);
-	  struct termio ttp;
-	  ioctl(0, TCGETA, &ttp);
-	  while(1)
-	  {
-	    if (ioctl(0, TCSETAW, ttp) < 0)
-	      {
-		if (errno == EINTR)
-		{
-		  fprintf(stderr, "BUG!"); return(1);
-		}
-	      }
-	  }
-	}
-
-Change set_termios/set_termiox to return -ERESTARTSYS to fix this
-particular problem.
-
-I didn't dare to change other EINTR's in drivers/tty/, but they look
-equally wrong.
-
-Reported-by: Roman Rakus <rrakus@redhat.com>
-Reported-by: Lingzhu Xiang <lxiang@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Jiri Slaby <jslaby@suse.cz>
+Reported-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_ioctl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/timeconst.pl |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/tty/tty_ioctl.c
-+++ b/drivers/tty/tty_ioctl.c
-@@ -617,7 +617,7 @@ static int set_termios(struct tty_struct
- 	if (opt & TERMIOS_WAIT) {
- 		tty_wait_until_sent(tty, 0);
- 		if (signal_pending(current))
--			return -EINTR;
-+			return -ERESTARTSYS;
+--- a/kernel/timeconst.pl
++++ b/kernel/timeconst.pl
+@@ -369,10 +369,8 @@ if ($hz eq '--can') {
+ 		die "Usage: $0 HZ\n";
  	}
  
- 	tty_set_termios(tty, &tmp_termios);
-@@ -684,7 +684,7 @@ static int set_termiox(struct tty_struct
- 	if (opt & TERMIOS_WAIT) {
- 		tty_wait_until_sent(tty, 0);
- 		if (signal_pending(current))
--			return -EINTR;
-+			return -ERESTARTSYS;
- 	}
- 
- 	mutex_lock(&tty->termios_mutex);
+-	@val = @{$canned_values{$hz}};
+-	if (!defined(@val)) {
+-		@val = compute_values($hz);
+-	}
++	$cv = $canned_values{$hz};
++	@val = defined($cv) ? @$cv : compute_values($hz);
+ 	output($hz, @val);
+ }
+ exit 0;
 
 
