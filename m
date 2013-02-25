@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947Ab3BYXAs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 18:00:48 -0500
-Received: from mga01.intel.com ([192.55.52.88]:33535 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753518Ab3BYXAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 18:00:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,736,1355126400"; 
-   d="scan'208";a="291683936"
-Date: Mon, 25 Feb 2013 15:00:35 -0800
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, santosh.shilimkar@ti.com,
-        linux-pm@vger.kernel.org, fweisbec@gmail.com, john.stultz@linaro.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 2/2][RFC] time : set broadcast irq affinity
-Message-ID: <20130225150035.7ddf6643@chromoly>
-In-Reply-To: <512BEAAF.1070500@linaro.org>
-References: <5123C299.3080005@linaro.org>
-	<1361484083-5906-1-git-send-email-daniel.lezcano@linaro.org>
-	<1361484083-5906-2-git-send-email-daniel.lezcano@linaro.org>
-	<20130222095530.377fd218@chromoly>
-	<512BEAAF.1070500@linaro.org>
-Organization: OTC
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758437Ab3BYXEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 18:04:38 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:39789 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754148Ab3BYXEh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 18:04:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130225224339.GA19153@kroah.com>
+References: <1361473348-7660-1-git-send-email-milos.vyletel@sde.cz>
+ <87y5ehfczy.fsf@rustcorp.com.au> <20130225221238.GA10575@kroah.com>
+ <CAPXgP13M_krpPMFoBroYkXc4dUQHsZJDua-jSGby8cQ1Afy-HQ@mail.gmail.com> <20130225224339.GA19153@kroah.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Tue, 26 Feb 2013 00:04:15 +0100
+Message-ID: <CAPXgP100NjPw4JVe39gL829MwKL2YLFSKN2fvaB7skbCub-Ehg@mail.gmail.com>
+Subject: Re: [PATCH] virtio-blk: emit udev event when device is resized
+To: Greg KH <greg@kroah.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Milos Vyletel <milos.vyletel@sde.cz>, linux-kernel@vger.kernel.org,
+        linux-hotplug@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, mst@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Feb 2013 23:50:23 +0100
-Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
+On Mon, Feb 25, 2013 at 11:43 PM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Feb 25, 2013 at 11:39:52PM +0100, Kay Sievers wrote:
+>> On Mon, Feb 25, 2013 at 11:12 PM, Greg KH <greg@kroah.com> wrote:
+>>
+>> > Hm, I thought we were frowning apon running binaries from udev rules
+>> > these days, especially ones that might have big consequences (like
+>> > resizing a disk image) like this.
+>> >
+>> > Kay, am I right?
+>>
+>> We removed most of them from the default setups, yes. But there is
+>> nothing wrong if people want to ship that in some package or as custom
+>> rules.
+>>
+>> It looks fine to me, we would just not add such things to the default
+>> set of of rules these days.
+>>
+>> > We already emit KOBJECT_CHANGE events when block devices change, from
+>> > within the block core code.  Why is the patch below needed instead of
+>> > using these events that are already generated?  How are virtio block
+>> > devices special?
+>>
+>> I think we only do that for dm and md and a couple of special cases
+>> like loop and read-only settings.
+>
+> What about when we repartition a block device?  I've seen the events
+> happen then.
 
-> Do you mean a cpumask static variable ? and something like:
-> 
-> if (!cpumask_test_cpu(cpu, &affinitymask)) {
-> 	cpumask_set_cpu(cpu, &affinitymask);
-> 	irq_set_affinity(bc->irq, &affinitymask)
-> }
-yeah. but i think you can use the cpumask in struct clock_event_device.
+Right, from the common block code we send events for removable media
+changes like cdroms, sd cards, when a device is switched to read-only,
+and when we re-scan a partition table like on re-partitioning. Most of
+the other events are block subsystem-specific like this one. For
+things like device-mapper they are used pretty heavily.
 
--- 
-Thanks,
+> Anyway, if you are ok with this, no objection from my side then Rusty.
 
-Jacob
+Looks fine to me, it should not do any harm if there are not heavy
+programs hooked up -- which is nothing the kernel could fix if people
+do that. :)
+
+Kay
