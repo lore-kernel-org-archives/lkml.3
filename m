@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab3BYJ7A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 04:59:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30500 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758491Ab3BYJ67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 04:58:59 -0500
-Date: Mon, 25 Feb 2013 10:58:39 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Anton Arapov <anton@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Josh Stone <jistone@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] perf/tools: Fix "perf record -C... workload"
- behaviour
-Message-ID: <20130225095839.GC1041@krava.brq.redhat.com>
-References: <20130204190225.GA10840@redhat.com>
- <20130206181044.GA3752@redhat.com>
- <20130206194218.GA11998@redhat.com>
- <20130206194258.GB11998@redhat.com>
+	id S932405Ab3BYKHq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 05:07:46 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:51741 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932306Ab3BYKHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 05:07:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130206194258.GB11998@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1361778224.4555.163.camel@marge.simpson.net>
+References: <CABQ2P6FJBSeuGjQbOEuek6QXkRzRbQMHvsApq4g2-0OGykjKZw@mail.gmail.com>
+	<CABQ2P6FVZHWCUogV=xmxv8g-y7RWV_tQqxRMJyxTQK_ixnySjw@mail.gmail.com>
+	<1361778224.4555.163.camel@marge.simpson.net>
+Date: Mon, 25 Feb 2013 11:07:44 +0100
+Message-ID: <CABQ2P6GDQjJPZ-r=OmJxRfwQDjMW63k6AX+_pQFAHvn-xf-7Aw@mail.gmail.com>
+Subject: Re: Fwd: Cpu hotplug causes stutter on AMD platform, how can I
+ disable it?
+From: Mario Giammarco <mgiammarco@gmail.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 06, 2013 at 08:42:58PM +0100, Oleg Nesterov wrote:
-> Test-case:
-> 
-> 	# perf record -e probe_libc:syscall -C0 true
-> 	true: Terminated
-> 
-> The child process is killed by perf_record__sig_exit(). This is because
-> perf_evlist__prepare_workload() doesn't initialize threads->map[] and
-> then perf_event__synthesize_mmap_events() (silently!) fails. This patch
+Since ACPI I do not understand anymore who takes decision in my PC. So
+you are saying that is not linux kernel but the bios that choose to
+powerdown cpus.
+Anyway I hope that linux kernel can overtake the bios because
+obviously it can take better decisions.
+BTW I am seeing in internet that the problem is very very big; I mean
+that almost all amd platforms may have this problem. I am suprised
+that noone before me informed kernel developers about it.
 
-hi,
-sorry for late reply..
+Thanks again,
+Mario
 
-I think the reason it fails is that it actually got inside
-perf_event__synthesize_mmap_events while there's cpu list
-specified.
-
-I sent possible fix:
-http://marc.info/?l=linux-kernel&m=136178604718144&w=2
-
-
-> seems to fix the problem, but perhaps we should also move
-> 'pr_err("Couldn't run the workload!\n")' down to 'out_delete_session:',
-
-I'll check ;-)
-
-thanks,
-jirka
+2013/2/25 Mike Galbraith <bitbucket@online.de>:
+> On Sun, 2013-02-24 at 22:59 +0100, Mario Giammarco wrote:
+>
+>> I have searched on internet and I see that is a problem common to
+>> several AMD platforms.
+>> Even in Microsoft Windows several people have the same problem and
+>> they solved it disabling cool&quiet on bios. It seems that some amd
+>> cpus on power saving cut off also HT bus blocking data from pcie bus
+>> (!?!)
+>> I have tried too and infact disabling cool&quiet improves a lot the problem.
+>> But I would like to find a better solution, can I disable cpu hotplug?
+>> Have you heard of this bug before?
+>
+> I haven't, but likely others have.  Hm.. if BIOS is shutting down your
+> CPUs, I suspect that trying to ignore that in the kernel would be the
+> mother of all bad ideas :)
+>
+> -Mike
+>
