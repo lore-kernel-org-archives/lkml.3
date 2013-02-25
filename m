@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797Ab3BYRWq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 12:22:46 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:57222 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424Ab3BYRWn (ORCPT
+	id S1758214Ab3BYRW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 12:22:59 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:39744 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754288Ab3BYRW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 12:22:43 -0500
-Date: Mon, 25 Feb 2013 18:22:37 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] cpufreq: cpufreq-cpu0: use the exact frequency for clk_set_rate()
-Message-ID: <Pine.LNX.4.64.1302251820431.3030@axis700.grange>
+	Mon, 25 Feb 2013 12:22:57 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:2+7LZOC+kV7SlNR+P9Mhxx5cYfJ9n6j8TdUAnaGSneO
- 0AcwV/I8Zg4BTQveNlbvdLBVyk6y/Y7Vl95UlJxb0hP/WwfpGy
- fcsec00nEj+hVa6CEZdYzQ90ifUry/ALAGv6VRTHUYdOjzD0UQ
- mDduLRLYPwK4rAr2V9tXrkMtw6D2tL7sBDD6xBgpVc4XXs3pxY
- p8/tpTgiQ3pR07CVeunJKGK/xFjBejQ2wHGJifUz3w89KT6JRg
- pwXZyTw6zGxoJvXHLb3VlTeWKLNvq6cOgTdG4bKqXitcdKtGZ7
- i/rkOyLXCg5oJt3wMNyGxbKBqfo1teUIIDWmZBfmDeYAldmYqg
- 0/Ls2KqAz3BdXS26ttR0XQ3xIzvxQ0dWK8E4QDk1IYiTgUD1hz
- 8o4TqqJXbjmaw==
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Mon, 25 Feb 2013 12:22:35 -0500
+Message-ID: <CAOPLpQcs5GgVRqXhnxF0Ui0k-39-xX5N2nYWYY4DhVWMYCMQ7w@mail.gmail.com>
+Subject: sendfile and EAGAIN
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clk_set_rate() isn't supposed to accept approximate frequencies, instead
-a supported frequency should be obtained from clk_round_rate() and then
-used to set the clock.
+When using sendfile with a non-blocking output file descriptor for a
+socket the operation can cause a partial write because of capacity
+issues.  This is nothing critical and the operation could resume after
+the output queue is cleared.  The problem is: there is no way to
+determine where to resume.
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
----
+The system call just returns -EAGAIN without any further indication.
+The caller doesn't know what to resend.
 
-Applies on top of my previous patch to fix unsigned freq_Hz "cpufreq: fix 
-sign check of an unsigned variable in cpufreq-cpu0"
+And this even though the interface of sendfile would be capable of
+communicating this information and the man page (I know, it's not
+authoritive) describes this behavior as well.
 
- drivers/cpufreq/cpufreq-cpu0.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+The problem is probably in a few places, here is one (fs/splice.c):
 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index e7bad3c..6ce9b51 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -45,7 +45,7 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
- 	struct cpufreq_freqs freqs;
- 	struct opp *opp;
- 	unsigned long volt = 0, volt_old = 0, tol = 0;
--	long freq_Hz;
-+	long freq_Hz, freq_exact;
- 	unsigned int index, cpu;
- 	int ret;
- 
-@@ -60,6 +60,7 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
- 	freq_Hz = clk_round_rate(cpu_clk, freq_table[index].frequency * 1000);
- 	if (freq_Hz < 0)
- 		freq_Hz = freq_table[index].frequency * 1000;
-+	freq_exact = freq_Hz;
- 	freqs.new = freq_Hz / 1000;
- 	freqs.old = clk_get_rate(cpu_clk) / 1000;
- 
-@@ -96,7 +97,7 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
- 		}
- 	}
- 
--	ret = clk_set_rate(cpu_clk, freqs.new * 1000);
-+	ret = clk_set_rate(cpu_clk, freq_exact);
- 	if (ret) {
- 		pr_err("failed to set clock rate: %d\n", ret);
- 		if (cpu_reg)
--- 
-1.7.2.5
+static ssize_t default_file_splice_write(struct pipe_inode_info *pipe,
+                                         struct file *out, loff_t *ppos,
+                                         size_t len, unsigned int flags)
+{
+        ssize_t ret;
 
+        ret = splice_from_pipe(pipe, out, ppos, len, flags, write_pipe_buf);
+        if (ret > 0)
+                *ppos += ret;
+
+        return ret;
+}
+
+Note that *ppos is only updated if the call doesn't fail.  We could
+also update the position if ret == -EAGAIN.  This would require
+re-architecting the system a bit to either update *ppos in
+splice_from_pipe etc or to communicate number of the bytes which are
+written from the splice_from_pipe call.  In any case, the result would
+be that the caller knows where to resume the operation.
+
+I would argue that this doesn't break the ABI.  In case existing
+programs today just resend packages today from the beginning they will
+have send an unpredictable number of bytes in the previous sendfile()
+call, making the state of the communication unpredictable.
+
+Opinions?  I think as is sendfile() isn't useful with O_NONBLOCK.
