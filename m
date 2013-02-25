@@ -1,145 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759217Ab3BYVxa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 16:53:30 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:45389 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab3BYVx2 (ORCPT
+	id S1759632Ab3BYVxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 16:53:50 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:49938 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759465Ab3BYVxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 16:53:28 -0500
-Message-ID: <1361829202.2958.3.camel@lorien2>
-Subject: Re: [PATCH 1/4] pci: Add PCI_BUS() and PCI_DEVID() interfaces to
- return bus number and device id
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: dhowells@redhat.com, Joerg Roedel <joro@8bytes.org>,
-        paulmck@linux.vnet.ibm.com, linasvepstas@gmail.com, davej@redhat.com,
-        tglx@linutronix.de, mtk.manpages@gmail.com,
-        iommu@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org, shemminger@vyatta.com, jiang.liu@huawei.com,
-        wangyijing@huawei.com, shuahkhan@gmail.com
-Date: Mon, 25 Feb 2013 14:53:22 -0700
-In-Reply-To: <CAErSpo7u+vos73jTR1ASzv3XRwcMX1XwptP41mUWekz7Tv249w@mail.gmail.com>
-References: <1360623637.2950.63.camel@lorien2>
-	 <CAErSpo6jY1bX9G59uz8Zt_pDJ4OoR=kJkGjNLYYRTrKVXM8+eg@mail.gmail.com>
-	 <1361810245.2975.14.camel@lorien2>
-	 <CAErSpo7u+vos73jTR1ASzv3XRwcMX1XwptP41mUWekz7Tv249w@mail.gmail.com>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 25 Feb 2013 16:53:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130220181815.GB15152@core.coreip.homeip.net>
+References: <1361381079-26747-1-git-send-email-sjg@chromium.org>
+	<1361381079-26747-6-git-send-email-sjg@chromium.org>
+	<20130220181815.GB15152@core.coreip.homeip.net>
+Date: Mon, 25 Feb 2013 13:53:43 -0800
+X-Google-Sender-Auth: bT9lpI1Qdco8Q1Q14hlvCPVjFNE
+Message-ID: <CAPnjgZ0r93Pzrj5bHFmM1BjkNzKLRVJoW=TGdvOHOwpgLbjv=Q@mail.gmail.com>
+Subject: Re: [PATCH v5 5/6] Input: matrix-keymap: Add function to read the new
+ DT binding
+From: Simon Glass <sjg@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Sourav Poddar <sourav.poddar@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Alban Bedel <alban.bedel@avionic-design.de>,
+        linux-input@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-25 at 14:23 -0700, Bjorn Helgaas wrote:
-> On Mon, Feb 25, 2013 at 9:37 AM, Shuah Khan <shuah.khan@hp.com> wrote:
-> > On Wed, 2013-02-20 at 18:19 -0700, Bjorn Helgaas wrote:
-> >> On Mon, Feb 11, 2013 at 4:00 PM, Shuah Khan <shuah.khan@hp.com> wrote:
-> >> > pci defines PCI_DEVFN(), PCI_SLOT(), and PCI_FUNC() interfaces, however,
-> >> > it doesn't have interfaces to return PCI bus and PCI device id. Drivers
-> >> > (AMD IOMMU, and AER) implement module specific definitions for PCI_BUS()
-> >> > and AMD_IOMMU driver also has a module specific interface to calculate PCI
-> >> > device id from bus number and devfn.
-> >> >
-> >> > Add PCI_BUS and PCI_DEVID interfaces to return PCI bus number and PCI device
-> >> > id respectively to avoid the need for duplicate definitions in other modules.
-> >> > AER driver code and AMD IOMMU driver define PCI_BUS. AMD IOMMU driver defines
-> >> > an interface to calculate device id from bus number, and devfn pair.
-> >> >
-> >> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-> >> > ---
-> >> >  include/uapi/linux/pci.h |    4 ++++
-> >> >  1 file changed, 4 insertions(+)
-> >> >
-> >> > diff --git a/include/uapi/linux/pci.h b/include/uapi/linux/pci.h
-> >> > index 3c292bc0..6b2c8b3 100644
-> >> > --- a/include/uapi/linux/pci.h
-> >> > +++ b/include/uapi/linux/pci.h
-> >> > @@ -30,6 +30,10 @@
-> >> >  #define PCI_DEVFN(slot, func)  ((((slot) & 0x1f) << 3) | ((func) & 0x07))
-> >> >  #define PCI_SLOT(devfn)                (((devfn) >> 3) & 0x1f)
-> >> >  #define PCI_FUNC(devfn)                ((devfn) & 0x07)
-> >> > +#define PCI_DEVID(bus, devfn)  ((((u16)bus) << 8) | devfn)
-> >> > +
-> >> > +/* return bus from PCI devid = ((u16)bus_number) << 8) | devfn */
-> >> > +#define PCI_BUS(x) (((x) >> 8) & 0xff)
-> >> >
-> >> >  /* Ioctls for /proc/bus/pci/X/Y nodes. */
-> >> >  #define PCIIOC_BASE            ('P' << 24 | 'C' << 16 | 'I' << 8)
-> >>
-> >> David, can you point me at a description of include/uapi ... what is
-> >> there and why, and how we should decide what new things go in
-> >> include/uapi/linux/pci.h as opposed to include/linux/pci.h?  Maybe
-> >> there should be something in Documentation/?
-> >>
-> >> I'm guessing it's something to do with being exported to userland, but
-> >> I'm not sure the things in this patch (PCI_DEV_ID, PCI_BUS) are really
-> >> exportable in the sense of being used for syscalls, etc.
-> >>
-> >
-> > Bjorn,David,
-> >
-> > Looks like the following thread answers some of the questions about when
-> > this uapi export was done on the existing defines.
-> >
-> > https://lkml.org/lkml/2011/7/28/198
-> >
-> > Sounds like the concern is that the older defines PCI_DEVFN, PCI_SLOT,
-> > PCI_FUNC,  and PCI_DEVID could be exported, but not the new ones I
-> > added. I could find any discussion on whether these four older defines
-> > are exportable or the reasons for the export in the above thread.
-> 
-> I think David's disintegration script took include/linux/pci.h, left
-> the #ifdef __KERNEL__ parts there, and moved everything else (which
-> wasn't much) to include/uapi/linux/pci.h.
-> 
-> It's obvious that the PCIIOC_ #defines need to be exported to
-> user-space for ioctls.  It's not obvious to me why PCI_DEVFN,
-> PCI_SLOT, and PCI_FUNC need to be exported to user-space.  But I can
-> imagine user-space using functionality like that, even if it's not
-> connected to a kernel interface.  I assume the intent of the
-> disintegration is that only include/uapi would be exposed to
-> user-space, so keeping those definitions in include/linux/pci.h would
-> break any user programs that used them.
-> 
-> > So the question is if uapi/linux.pci.h isn't the right place, do you
-> > have a recommendation on where they belong. The only alternative I can
-> > think of is include/linux/pci.h. It makes functional and logical sense
-> > to add the new defines to where the existing ones are defines. At least,
-> > not knowing the details of the change that moved PCI_DEVFN etc. to
-> > uapi/pci.h, that is my conclusion.
-> 
-> Using the linux-fullhist tree, I found these:
-> 
-> 059d367 Import 2.1.82 -- moved PCI_DEVFN outside #ifdef __KERNEL__
-> b039547 Import 2.1.76 -- PCI_DEVFN was inside #ifdef __KERNEL__
-> f6d9739 Import 2.1.68pre1 -- added #ifdef __KERNEL__ (enclosing PCI_DEVFN)
-> 940649f Import 1.3.0 -- added PCI_DEVFN
-> 
-> There's no indication of *why* PCI_DEVFN was exported, of course.
-> 
-> Bottom line, I think it's reasonable to keep PCI_DEVFN, et al., in
-> uapi/linux/pci.h to keep from breaking user-programs, even though if
-> we were adding them today we would probably put them in the
-> kernel-only linux/pci.h.  For the new ones you're adding, I'd propose
-> putting them in the kernel-only linux/pci.h because we know no user
-> programs use them.
+Hi Dmitry,
 
-Yeah. These have been in uapi long enough to continue to keep them
-there. :)
+On Wed, Feb 20, 2013 at 10:18 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Wed, Feb 20, 2013 at 09:24:38AM -0800, Simon Glass wrote:
+>> We now have a binding which adds two parameters to the matrix keypad DT
+>> node. This is separate from the GPIO-driven matrix keypad binding, and
+>> unfortunately incompatible, since that uses row-gpios/col-gpios for the
+>> row and column counts.
+>>
+>> So the easiest option here is to provide a function for non-GPIO drivers
+>> to use to decode the binding.
+>>
+>> Note: We could in fact create an entirely separate structure to hold
+>> these two fields, but it does not seem worth it, yet. If we have more
+>> parameters then we can add this, and then refactor each driver to hold
+>> such a structure.
+>>
+>> Signed-off-by: Simon Glass <sjg@chromium.org>
+>> Tested-by: Sourav Poddar <sourav.poddar@ti.com> (v2)
+>
+> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>
+> I suppose the EC driver will go through MFD tree, right?
 
-> 
-> It's not nice and consistent, but it does follow the simple rule of
-> "don't expose things to user-space unnecessarily."  We might want to
-> add a comment to keep somebody from cleaning it up later.
+Yes I expect so.
 
-ok. Will resend patches adding the new defines to linux/pci.h and
-renaming PCI_BUS() to PCI_BUS_NR() or PCI_BUS_NUM() like you suggested.
+Regards,
+Simon
 
-Thanks,
--- Shuah
-
-
+>
+> --
+> Dmitry
