@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759387Ab3BYOtg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 09:49:36 -0500
-Received: from mga11.intel.com ([192.55.52.93]:51086 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758772Ab3BYOtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 09:49:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,735,1355126400"; 
-   d="scan'208";a="291466334"
-Date: Mon, 25 Feb 2013 14:49:07 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: i915 not working on Dell e6410
-Message-ID: <20130225144906.GB19874@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Felipe Balbi <balbi@ti.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-	David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <20130225142411.GD15499@arwen.pp.htv.fi>
- <20130225143918.GA19874@cantiga.alporthouse.com>
- <20130225144312.GG15499@arwen.pp.htv.fi>
+	id S1759275Ab3BYOwv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 09:52:51 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:63762 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758314Ab3BYOwt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 09:52:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130225144312.GG15499@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130225135123.GA28907@opensource.wolfsonmicro.com>
+References: <1360933026-30325-1-git-send-email-lee.jones@linaro.org>
+	<1360933026-30325-2-git-send-email-lee.jones@linaro.org>
+	<20130220131912.GB13049@sirena.org.uk>
+	<CAPDyKFo0MpP-d7v8v1zwB42sboR3MWT6nUmG=-L0_nayYRY7FQ@mail.gmail.com>
+	<20130222103306.GA19796@opensource.wolfsonmicro.com>
+	<CAPDyKFpJzuzB_7=eH7iNV69TLOTbdBCTx3CgqPTkianZCctKag@mail.gmail.com>
+	<20130225135123.GA28907@opensource.wolfsonmicro.com>
+Date: Mon, 25 Feb 2013 15:52:46 +0100
+Message-ID: <CAPDyKFp3RPXnwzQR4r5ubZtOxazagqOQc=0=dA6ohFe4vN65Hg@mail.gmail.com>
+Subject: Re: [PATCH 01/35] mfd: ab8500-gpadc: Implemented suspend/resume
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, sameo@linux.intel.com, arnd@arndb.de,
+        linus.walleij@stericsson.com,
+        Daniel WILLERUD <daniel.willerud@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 04:43:12PM +0200, Felipe Balbi wrote:
-> Hi,
-> 
-> On Mon, Feb 25, 2013 at 02:39:18PM +0000, Chris Wilson wrote:
-> > On Mon, Feb 25, 2013 at 04:24:11PM +0200, Felipe Balbi wrote:
-> > > Hi folks,
-> > > 
-> > > I have a Dell e6410 whose framebuffer gets corrupted with v3.7.9 and
-> > > v3.8.0 but works fine with v3.6.11.
-> > > 
-> > > Below you can find lspci and my .config, maybe I'm missing something ?
+On 25 February 2013 14:51, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Mon, Feb 25, 2013 at 10:27:36AM +0100, Ulf Hansson wrote:
+>> On 22 February 2013 11:38, Mark Brown
+>
+>> > Are you sure this actually does what you think it does, especially when
+>> > run on modern kernels?
+>
+>> Not sure, what you are thinking of more precisely here. Runtime pm has
+>> been in the kernel for quite some time now.
+>
+> Yes, thanks - I was aware of that.  The integration between runtime and
+> system PM has been an area that's had some development though.
+>
+>> Anyway, to make it a bit clearer, we switch the regulator on/off at
+>> the runtime suspend/resume callbacks. We want to take similar actions
+>> in device suspend/resume.
+>> To accomplish this a pm_runtime_get_sync is done in suspend and vice
+>> verse in resume, otherwise you can not safely handle the regulator.
+>
+> Are you absolutely positive that with modern kernels your get actually
+> resumes the device?
 
-That looks like https://bugzilla.freedesktop.org/show_bug.cgi?id=60391
-which is fixed by
+Yes, runtime resume is always ok, But you can not runtime suspend the
+device, since the device suspend layer prevent this with a
+pm_runtime_get_noresume before calling the device suspend callback.
 
-commit da88a5f7f7d434e2cde1b3e19d952e6d84533662
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Wed Feb 13 09:31:53 2013 +0000
-
-    drm/i915: Disable WC PTE updates to w/a buggy IOMMU on ILK
-
-or by passing intel_iommu=off on the commandline.
--Chris
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Kind regards
+Ulf Hansson
