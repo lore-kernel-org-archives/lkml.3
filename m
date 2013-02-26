@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758113Ab3BZRe3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 12:34:29 -0500
-Received: from mail.tpi.com ([70.99.223.143]:1925 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752275Ab3BZRe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 12:34:28 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 3.9-rc1] clk: vt8500: Fix variable name '*prate' compile error
-Date: Tue, 26 Feb 2013 10:34:12 -0700
-Message-Id: <1361900052-66917-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1757421Ab3BZRfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 12:35:19 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:59586 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847Ab3BZRfR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 12:35:17 -0500
+Date: Tue, 26 Feb 2013 09:35:14 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
+        Martin Peres <martin.peres@labri.fr>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: resume fails to light display on Macbook Pro Retina on 3.8-rc1
+Message-ID: <20130226173514.GA24136@kroah.com>
+References: <CAPM=9txjG5rohsNbme=myrX+-Z5eucpEXYQMWqPQqN=5dNze8g@mail.gmail.com>
+ <CAPM=9tw_vfESbbH4dD9z8mAYVYcwmVs=n4BrRz4XBj1Rw1qrkw@mail.gmail.com>
+ <20130225223243.GA18744@kroah.com>
+ <20130226034545.GA1089@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130226034545.GA1089@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 72480014b86c8b51fb51c5c6a0525876055c37c7 (clk: vt8500: Fix device clock
-divisor calculations) introduced a compile error in the naming of a variable in
-vt8500_dclk_set_rate(). It looks like a simple cut and paste error.
+On Mon, Feb 25, 2013 at 07:45:45PM -0800, Greg KH wrote:
+> On Mon, Feb 25, 2013 at 02:32:43PM -0800, Greg KH wrote:
+> > On Mon, Feb 25, 2013 at 04:06:02PM +1000, Dave Airlie wrote:
+> > > On Mon, Feb 25, 2013 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > > > Hi Ben,
+> > > >
+> > > > My Macbook Pro Retina fails to resume properly on 3.8.  I tracked this
+> > > > down to commit 6c5a04249d7afeea3e0ed971e7813f84e29a1706 (drm/nvd0/disp:
+> > > > move link training helpers into core as display methods)
+> > > >
+> > > > Anything I can try to help solve this?
+> > > >
+> > > > Note, I'm using the Intel driver as the main controller for this laptop,
+> > > > well, I think I am, my xorg log is attached.
+> > > 
+> > > No you are using the nvidia, the efi always boots nvidia enabled now.
+> > 
+> > Really?  When did that change?  I thought I wanted to be using the Intel
+> > chip to save battery life.
+> > 
+> > > btw I just tested my drm-next tree on mine and it resumed the display
+> > > fine, something oopsed a few seconds later that I haven't tracked down
+> > > 
+> > > git://git.freedesktop.org/~airlied/linux drm-next
+> > > 
+> > > I'll be sending it to Linus this evening or tomorrow morning, once I
+> > > fix my tree.
+> > 
+> > Ok, I'll test again when it hits Linus's tree, and if that works, it
+> > would be good to try to work out what patch fixes it to get them into
+> > the 3.8-stable series so that others don't run into the same problem.
+> 
+> I've tested Linus's tree now (I'm guessing it has all of your changes in
+> it), and it works!
+> 
+> I see a bunch of patches marked for the stable branch, so I'll try those
+> out and see if they fix the problem.  If not, I'll let you and Ben know.
 
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/clk/clk-vt8500.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I've applied the radeon patches tagged for -stable and tested that on
+3.8.0, but that doesn't solve the resume problem.  Any ideas of anything
+else I can do to test this?  Doing a "backwards" git-bisect is a pain,
+but I guess I can do that to try to track down what patch fixed this, if
+that's the only idea people have...
 
-diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
-index b5538bb..09c6331 100644
---- a/drivers/clk/clk-vt8500.c
-+++ b/drivers/clk/clk-vt8500.c
-@@ -157,7 +157,7 @@ static int vt8500_dclk_set_rate(struct clk_hw *hw, unsigned long rate,
- 	divisor =  parent_rate / rate;
- 
- 	/* If prate / rate would be decimal, incr the divisor */
--	if (rate * divisor < *prate)
-+	if (rate * divisor < parent_rate)
- 		divisor++;
- 
- 	if (divisor == cdev->div_mask + 1)
--- 
-1.7.9.5
+thanks,
 
+greg k-h
