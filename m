@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760024Ab3BZBzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 20:55:20 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21054 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635Ab3BZBzR (ORCPT
+	id S1760038Ab3BZB7S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 20:59:18 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:32983 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab3BZB7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 20:55:17 -0500
-Message-ID: <512C15F0.6030907@oracle.com>
-Date: Mon, 25 Feb 2013 20:54:56 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130113 Thunderbird/17.0.2
+	Mon, 25 Feb 2013 20:59:15 -0500
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Dave Jones <davej@redhat.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: mm: BUG in mempolicy's sp_insert
-References: <512B677D.1040501@oracle.com> <CAHGf_=rur29gFs9R9AYeDwnbVBm3b3cOfAn2xyi=mQ+ZbgzEDA@mail.gmail.com>
-In-Reply-To: <CAHGf_=rur29gFs9R9AYeDwnbVBm3b3cOfAn2xyi=mQ+ZbgzEDA@mail.gmail.com>
+In-Reply-To: <CA+55aFxGfRpYAn8BqTV=akmsvmDbJoefb+UMMo6FB7M6RPa82A@mail.gmail.com>
+References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
+	<CA+55aFxGfRpYAn8BqTV=akmsvmDbJoefb+UMMo6FB7M6RPa82A@mail.gmail.com>
+Date: Tue, 26 Feb 2013 11:59:13 +1000
+Message-ID: <CAPM=9tyY4_wN_XyHu09BXZAewq3DU8t2RTMq4zbr5URLnFSJbw@mail.gmail.com>
+Subject: Re: [git pull] drm merge for 3.9-rc1
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/2013 08:52 PM, KOSAKI Motohiro wrote:
-> On Mon, Feb 25, 2013 at 8:30 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> Hi all,
->>
->> While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
->> I've stumbled on the following BUG:
->>
->> [13551.830090] ------------[ cut here ]------------
->> [13551.830090] kernel BUG at mm/mempolicy.c:2187!
->> [13551.830090] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> 
-> Unfortunately, I didn't reproduce this. I'll try it tonight.
+>
+> I did the fun conflict resolution, so my tree doesn't have the ordering changes.
+>
+> I also did some things slightly differently from you - you had left
+> some direct ib[] accesses that I spotted (see for example "case 0x48"
+> (aka "Copy L2T Frame to Field"), and yours apparently has a few cases
+> where you use "idx_value" instead of my mindless conflict resolution
+> that just re-did the brute-force "repace direct ib[] read accesses
+> with the radeon_get_ib_value() helper function". But you don't do it
+> for *all* the radeon_get_ib_value(p, idx+2) users, so whatever.
 
-I've actually managed to reproduce it again since then, so it's not a one time
-fluke (which is a good sign a I guess).
+Yeah the rules for radeon_get_ib_value are that they are meant to be sequential,
+but it actually doesn't matter as long as the values are within a page
+of each other,
+I was just avoiding multiple calls to get the same value with the idx_value, but
+I think Alex or Jerome can clean this up a bit further anyways.
 
-It did require about an hour of fuzzing just mm with trinity.
+> Anyway - my conflict resolution isn't exactly the same as yours, and
+> maybe I screwed something up. But it's damn close, and the differences
+> _seem_ be all be benign.
+>
+> Btw, why is it ok that some functions still read the ib[] array
+> directly (eg evergreen_vm_packet3_check() or evergreen_cs_check_reg()
+> etc)?
 
+The semantics for that function are a bit underdocumented, and I thought
+the other developers understood them after I explained them, but I found
+out that they hadn't quite grasped the true extent of pain. So yes there
+are other places that need to be cleaned up, but most of the time direct
+ib access will work fine, until you have a buffer that straddles a
+page boundary.
 
-Thanks,
-Sasha
+> Whatever. I prefer doing my own resolutions just so that I know what's
+> going on, and it all seems to build and looks reasonable, but it's
+> always good to get a second opinion. Particularly since I can't
+> actually test the radeon stuff, so just eyeballing it and saying
+> "looks semantically identical to Dave's resolution" may not be 100%
+> sufficient..
 
+Yup I've reviewed it and it looks fine, any cleanup is just going to be
+an optimisation.
+
+So I'll work with Alex/Jerome to clean up anything else out-of-band
+and hopefully
+we can avoid any big conflicts in future!
+
+Dave.
