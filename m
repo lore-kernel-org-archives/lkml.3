@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760689Ab3B0BCv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:02:51 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:31683 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760242Ab3B0BCg (ORCPT
+	id S933428Ab3B0BDZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:03:25 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24632 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760226Ab3BZX5s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 20:02:36 -0500
-Message-ID: <1361926300.12845.102.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2, 0/7] ACPI / hotplug: Common code for ACPI-based
- hotplug
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jiang Liu <liuj97@gmail.com>
-Date: Tue, 26 Feb 2013 17:51:40 -0700
-In-Reply-To: <3171747.TOMjvVkWL1@vostro.rjw.lan>
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
-	 <3171747.TOMjvVkWL1@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Feb 2013 18:57:48 -0500
+MIME-Version: 1.0
+Message-ID: <91983d94-7b7d-4a0b-9470-e7cd823ba139@default>
+Date: Tue, 26 Feb 2013 15:57:35 -0800 (PST)
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+To: <hpa@zytor.com>
+Cc: <mingo@redhat.com>, <konrad.wilk@oracle.com>, <tglx@linutronix.de>,
+        <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/x86: Flush lazy MMU when DEBUG_PAGEALLOC is set
+X-Mailer: Zimbra on Oracle Beehive
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-26 at 23:41 +0100, Rafael J. Wysocki wrote:
-> On Sunday, February 17, 2013 04:18:31 PM Rafael J. Wysocki wrote:
-> > Hi All,
+
+----- hpa@zytor.com wrote:
+
+> On 02/26/2013 02:56 PM, Boris Ostrovsky wrote:
+> > When CONFIG_DEBUG_PAGEALLOC is set page table updates made by
+> > kernel_map_pages() are not made visible (via TLB flush) immediately
+> if lazy
+> > MMU is on. In environments that support lazy MMU (e.g. Xen) this may
+> lead to
+> > fatal page faults, for example, when zap_pte_range() needs to
+> allocate pages
+> > in __tlb_remove_page() -> tlb_next_batch().
 > > 
-> > The following patches introduce common code for ACPI-based hotplug for non-PCI
-> > devices and modify the container and memory hotplug ACPI drivers to use the new
-> > code.
+> > Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> > ---
+> >  arch/x86/mm/pageattr.c | 2 ++
+> >  1 file changed, 2 insertions(+)
 > > 
-> > This is based on linux-pm.git/master and regarded as v3.10 material.
+> > diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+> > index ca1f1c2..7b3216e 100644
+> > --- a/arch/x86/mm/pageattr.c
+> > +++ b/arch/x86/mm/pageattr.c
+> > @@ -1369,6 +1369,8 @@ void kernel_map_pages(struct page *page, int
+> numpages, int enable)
+> >  	 * but that can deadlock->flush only current cpu:
+> >  	 */
+> >  	__flush_tlb_all();
+> > +
+> > +	arch_flush_lazy_mmu_mode();
+> >  }
+> >  
+> >  #ifdef CONFIG_HIBERNATION
 > > 
-> > [1/7] Introduce acpi_scan_match_handler() that will be useful going forward.
-> > [2/7] Introduce common code for ACPI-base device hotplug.
-> > [3/7] Use the new commot hotplug code in the container driver.
-> > [4/7] Introduce acpi_scan_handler_matching() that will be useful subsequently.
-> > [5/7] Introduce user space interface for hotplug profiles.
-> > [6/7] Make the container driver use the hotplug profiles user space interface.
-> > [7/7] Make the memory hotplug driver use struct acpi_scan_handler along with
-> >       the hotplug profiles user space interface.
 > 
-> Following is the second iteration.  It takes all of the updates of patch [2/7]
-> and the discussion of them into account and fixes the issue with 'enabled'
-> working inversely in [5/7] spotted by Toshi Kani.
+> This sounds like a critical fix, i.e. a -stable candidate.  Am I
+> correct?
 
-Thanks for all the updates.  Things look good now.  For the series:
+I considered copying stable but then I decided that this is a debugging feature
+--- kernel_map_pages() is only defined if CONFIG_DEBUG_PAGEALLOC is set and my
+thinking was that stable kernels usually don't do this.
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-Tested-by: Toshi Kani <toshi.kani@hp.com>
 
--Toshi
-
+-boris
