@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119Ab3B0Aok (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:44:40 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:24400 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933168Ab3B0Aoh (ORCPT
+	id S933017Ab3BZX63 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:58:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42192 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932905Ab3BZX6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:44:37 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
-        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
-        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH Resend v5 06/16] spi/spi-atmel: status information passed through controller data
-Date: Wed, 27 Feb 2013 08:42:11 +0800
-Message-ID: <1361925731-12246-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 26 Feb 2013 18:58:21 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Balaji T K <balajitk@ti.com>, Chris Ball <cjb@laptop.org>
+Subject: [ 120/150] mmc: core: expose RPMB partition only for CMD23 capable hosts
+Date: Tue, 26 Feb 2013 15:56:17 -0800
+Message-Id: <20130226235536.574936583@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
+References: <20130226235523.930663721@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-The status of transfer is stored in controller data structure
-so that it can be used not only by atmel_spi_msg_done() function.
-This will be useful for upcoming dmaengine enabled driver.
+------------------
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: spi-devel-general@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-[wenyou.yang@atmel.com: submit the patch]
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+From: Balaji T K <balajitk@ti.com>
+
+commit d0123ccac55088811bde4f76c4a3fdbd39c3cfba upstream.
+
+SET_BLOCK_COUNT CMD23 is needed for all access to RPMB partition.  If
+block count is not set by CMD23, all subsequent read/write commands fail
+as per eMMC specification. So, If the host does not support CMD23, do not
+expose RPMB partition.
+
+Accessing RPMB partition can cause hang / huge delay for hosts which do
+not support CMD23.
+
+Signed-off-by: Balaji T K <balajitk@ti.com>
+Reported-and-Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/spi/spi-atmel.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/mmc/core/mmc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 6ea41a7..136ed8f 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -210,6 +210,7 @@ struct atmel_spi {
- 	unsigned long		current_remaining_bytes;
- 	struct spi_transfer	*next_transfer;
- 	unsigned long		next_remaining_bytes;
-+	int			done_status;
- 
- 	void			*buffer;
- 	dma_addr_t		buffer_dma;
-@@ -555,15 +556,15 @@ static void atmel_spi_dma_unmap_xfer(struct spi_master *master,
- 
- static void
- atmel_spi_msg_done(struct spi_master *master, struct atmel_spi *as,
--		struct spi_message *msg, int status, int stay)
-+		struct spi_message *msg, int stay)
- {
--	if (!stay || status < 0)
-+	if (!stay || as->done_status < 0)
- 		cs_deactivate(as, msg->spi);
- 	else
- 		as->stay = msg->spi;
- 
- 	list_del(&msg->queue);
--	msg->status = status;
-+	msg->status = as->done_status;
- 
- 	dev_dbg(master->dev.parent,
- 		"xfer complete: %u bytes transferred\n",
-@@ -575,6 +576,7 @@ atmel_spi_msg_done(struct spi_master *master, struct atmel_spi *as,
- 
- 	as->current_transfer = NULL;
- 	as->next_transfer = NULL;
-+	as->done_status = 0;
- 
- 	/* continue if needed */
- 	if (list_empty(&as->queue) || as->stopping)
-@@ -652,7 +654,8 @@ atmel_spi_interrupt(int irq, void *dev_id)
- 		/* Clear any overrun happening while cleaning up */
- 		spi_readl(as, SR);
- 
--		atmel_spi_msg_done(master, as, msg, -EIO, 0);
-+		as->done_status = -EIO;
-+		atmel_spi_msg_done(master, as, msg, 0);
- 	} else if (pending & (SPI_BIT(RXBUFF) | SPI_BIT(ENDRX))) {
- 		ret = IRQ_HANDLED;
- 
-@@ -670,7 +673,7 @@ atmel_spi_interrupt(int irq, void *dev_id)
- 
- 			if (atmel_spi_xfer_is_last(msg, xfer)) {
- 				/* report completed message */
--				atmel_spi_msg_done(master, as, msg, 0,
-+				atmel_spi_msg_done(master, as, msg,
- 						xfer->cs_change);
- 			} else {
- 				if (xfer->cs_change) {
--- 
-1.7.9.5
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -496,7 +496,7 @@ static int mmc_read_ext_csd(struct mmc_c
+ 		 * RPMB regions are defined in multiples of 128K.
+ 		 */
+ 		card->ext_csd.raw_rpmb_size_mult = ext_csd[EXT_CSD_RPMB_MULT];
+-		if (ext_csd[EXT_CSD_RPMB_MULT]) {
++		if (ext_csd[EXT_CSD_RPMB_MULT] && mmc_host_cmd23(card->host)) {
+ 			mmc_part_add(card, ext_csd[EXT_CSD_RPMB_MULT] << 17,
+ 				EXT_CSD_PART_CONFIG_ACC_RPMB,
+ 				"rpmb", 0, false,
+
 
