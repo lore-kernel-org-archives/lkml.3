@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760626Ab3B0BAu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:00:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42008 "EHLO
+	id S1760573Ab3B0BB0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:01:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41983 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760253Ab3BZX5x (ORCPT
+	with ESMTP id S1760248Ab3BZX5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:53 -0500
+	Tue, 26 Feb 2013 18:57:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Damien Lespiau <damien.lespiau@intel.com>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "Sankaran, Rajesh" <rajesh.sankaran@intel.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 080/150] drm/i915: Preserve the DDI link reversal configuration
-Date: Tue, 26 Feb 2013 15:55:37 -0800
-Message-Id: <20130226235532.423052631@linuxfoundation.org>
+Subject: [ 078/150] intel/iommu: force writebuffer-flush quirk on Gen 4 Chipsets
+Date: Tue, 26 Feb 2013 15:55:35 -0800
+Message-Id: <20130226235532.242235182@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -28,115 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Damien Lespiau <damien.lespiau@intel.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 876a8cdf92b23d268275cdce4397df0c37dac3fe upstream.
+commit 210561ffd72d00eccf12c0131b8024d5436bae95 upstream.
 
-Similarly to:
+We already have the quirk entry for the mobile platform, but also
+reports on some desktop versions. So be paranoid and set it
+everywhere.
 
-  commit 6a0d1df3d3a0d2370541164eb0595fe35dcd6de3
-  Author: Damien Lespiau <damien.lespiau@intel.com>
-  Date:   Tue Dec 11 15:18:28 2012 +0000
-
-      drm/i915: Preserve the FDI line reversal override bit on CPT
-
-DDI port support lane reversal to easy the PCB layouting work. Let's
-preserve the bit configured by the BIOS (until we find how to correctly
-retrieve the information from the VBT, but this does sound more fragile
-then just relying on the BIOS that has, hopefully, been validated
-already.
-
-Signed-off-by: Damien Lespiau <damien.lespiau@intel.com>
-Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+References: http://www.mail-archive.com/dri-devel@lists.freedesktop.org/msg33138.html
+Reported-and-tested-by: Mihai Moldovan <ionic@ionic.de>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: "Sankaran, Rajesh" <rajesh.sankaran@intel.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h  |    1 +
- drivers/gpu/drm/i915/intel_ddi.c |   19 ++++++++++++++++---
- drivers/gpu/drm/i915/intel_drv.h |    1 +
- 3 files changed, 18 insertions(+), 3 deletions(-)
+ drivers/iommu/intel-iommu.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -4524,6 +4524,7 @@
- #define  DDI_BUF_EMP_800MV_0DB_HSW		(7<<24)   /* Sel7 */
- #define  DDI_BUF_EMP_800MV_3_5DB_HSW		(8<<24)   /* Sel8 */
- #define  DDI_BUF_EMP_MASK			(0xf<<24)
-+#define  DDI_BUF_PORT_REVERSAL			(1<<16)
- #define  DDI_BUF_IS_IDLE			(1<<7)
- #define  DDI_A_4_LANES				(1<<4)
- #define  DDI_PORT_WIDTH_X1			(0<<1)
---- a/drivers/gpu/drm/i915/intel_ddi.c
-+++ b/drivers/gpu/drm/i915/intel_ddi.c
-@@ -203,7 +203,10 @@ void hsw_fdi_link_train(struct drm_crtc
- 					DP_TP_CTL_LINK_TRAIN_PAT1 |
- 					DP_TP_CTL_ENABLE);
- 
--		/* Configure and enable DDI_BUF_CTL for DDI E with next voltage */
-+		/* Configure and enable DDI_BUF_CTL for DDI E with next voltage.
-+		 * DDI E does not support port reversal, the functionality is
-+		 * achieved on the PCH side in FDI_RX_CTL, so no need to set the
-+		 * port reversal bit */
- 		I915_WRITE(DDI_BUF_CTL(PORT_E),
- 			   DDI_BUF_CTL_ENABLE |
- 			   ((intel_crtc->fdi_lanes - 1) << 1) |
-@@ -677,8 +680,11 @@ static void intel_ddi_mode_set(struct dr
- 
- 	if (type == INTEL_OUTPUT_DISPLAYPORT || type == INTEL_OUTPUT_EDP) {
- 		struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
-+		struct intel_digital_port *intel_dig_port =
-+			enc_to_dig_port(encoder);
- 
--		intel_dp->DP = DDI_BUF_CTL_ENABLE | DDI_BUF_EMP_400MV_0DB_HSW;
-+		intel_dp->DP = intel_dig_port->port_reversal |
-+			       DDI_BUF_CTL_ENABLE | DDI_BUF_EMP_400MV_0DB_HSW;
- 		switch (intel_dp->lane_count) {
- 		case 1:
- 			intel_dp->DP |= DDI_PORT_WIDTH_X1;
-@@ -1291,11 +1297,15 @@ static void intel_enable_ddi(struct inte
- 	int type = intel_encoder->type;
- 
- 	if (type == INTEL_OUTPUT_HDMI) {
-+		struct intel_digital_port *intel_dig_port =
-+			enc_to_dig_port(encoder);
-+
- 		/* In HDMI/DVI mode, the port width, and swing/emphasis values
- 		 * are ignored so nothing special needs to be done besides
- 		 * enabling the port.
- 		 */
--		I915_WRITE(DDI_BUF_CTL(port), DDI_BUF_CTL_ENABLE);
-+		I915_WRITE(DDI_BUF_CTL(port),
-+			   intel_dig_port->port_reversal | DDI_BUF_CTL_ENABLE);
- 	} else if (type == INTEL_OUTPUT_EDP) {
- 		struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
- 
-@@ -1457,6 +1467,7 @@ static const struct drm_encoder_helper_f
- 
- void intel_ddi_init(struct drm_device *dev, enum port port)
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -4253,13 +4253,19 @@ static void quirk_iommu_rwbf(struct pci_
  {
-+	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct intel_digital_port *intel_dig_port;
- 	struct intel_encoder *intel_encoder;
- 	struct drm_encoder *encoder;
-@@ -1497,6 +1508,8 @@ void intel_ddi_init(struct drm_device *d
- 	intel_encoder->get_hw_state = intel_ddi_get_hw_state;
+ 	/*
+ 	 * Mobile 4 Series Chipset neglects to set RWBF capability,
+-	 * but needs it:
++	 * but needs it. Same seems to hold for the desktop versions.
+ 	 */
+ 	printk(KERN_INFO "DMAR: Forcing write-buffer flush capability\n");
+ 	rwbf_quirk = 1;
+ }
  
- 	intel_dig_port->port = port;
-+	intel_dig_port->port_reversal = I915_READ(DDI_BUF_CTL(port)) &
-+					DDI_BUF_PORT_REVERSAL;
- 	if (hdmi_connector)
- 		intel_dig_port->hdmi.sdvox_reg = DDI_BUF_CTL(port);
- 	else
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -377,6 +377,7 @@ struct intel_dp {
- struct intel_digital_port {
- 	struct intel_encoder base;
- 	enum port port;
-+	u32 port_reversal;
- 	struct intel_dp dp;
- 	struct intel_hdmi hdmi;
- };
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2a40, quirk_iommu_rwbf);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e00, quirk_iommu_rwbf);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e10, quirk_iommu_rwbf);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e20, quirk_iommu_rwbf);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e30, quirk_iommu_rwbf);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e40, quirk_iommu_rwbf);
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e90, quirk_iommu_rwbf);
+ 
+ #define GGC 0x52
+ #define GGC_MEMORY_SIZE_MASK	(0xf << 8)
 
 
