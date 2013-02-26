@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933844Ab3B0Ajd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:39:33 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:65415 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933167Ab3B0Aj3 (ORCPT
+	id S933282Ab3B0AjR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:39:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42315 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932999Ab3BZX6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:39:29 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
-        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
-        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH Resend v5 01/16] spi/spi-atmel: fix master->num_chipselect wrongly set.
-Date: Wed, 27 Feb 2013 08:37:14 +0800
-Message-ID: <1361925434-11929-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 26 Feb 2013 18:58:40 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Carsten S." <carsteniq@yahoo.com>, Josh Boyer <jwboyer@redhat.com>
+Subject: [ 147/150] USB: usb-storage: unusual_devs update for Super TOP SATA bridge
+Date: Tue, 26 Feb 2013 15:56:44 -0800
+Message-Id: <20130226235539.822417363@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
+References: <20130226235523.930663721@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if the spi property "cs-gpios" is set as below:
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-	cs-gpios = <0>, <&pioC 11 0>, <0>, <0>;
+------------------
 
-the master->num_chipselect will wrongly be set to 0,
-and the spi fail to probe.
+From: Josh Boyer <jwboyer@redhat.com>
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: spi-devel-general@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
+commit 18e03310b5caa6d11c1a8c61b982c37047693fba upstream.
+
+The current entry in unusual_cypress.h for the Super TOP SATA bridge devices
+seems to be causing corruption on newer revisions of this device.  This has
+been reported in Arch Linux and Fedora.  The original patch was tested on
+devices with bcdDevice of 1.60, whereas the newer devices report bcdDevice
+as 2.20.  Limit the UNUSUAL_DEV entry to devices less than 2.20.
+
+This fixes https://bugzilla.redhat.com/show_bug.cgi?id=909591
+
+The Arch Forum post on this is here:
+	https://bbs.archlinux.org/viewtopic.php?id=152011
+
+Reported-by: Carsten S. <carsteniq@yahoo.com>
+Tested-by: Carsten S. <carsteniq@yahoo.com>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/spi/spi-atmel.c |    2 +-
- drivers/spi/spi.c       |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/storage/unusual_cypress.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index ab34497..5bf3786 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -944,7 +944,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
+--- a/drivers/usb/storage/unusual_cypress.h
++++ b/drivers/usb/storage/unusual_cypress.h
+@@ -31,7 +31,7 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x
+ 		"Cypress ISD-300LP",
+ 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
  
- 	master->dev.of_node = pdev->dev.of_node;
- 	master->bus_num = pdev->id;
--	master->num_chipselect = master->dev.of_node ? 0 : 4;
-+	master->num_chipselect = 4;
- 	master->setup = atmel_spi_setup;
- 	master->transfer = atmel_spi_transfer;
- 	master->cleanup = atmel_spi_cleanup;
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 19ee901..d88cbef 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1070,7 +1070,7 @@ static int of_spi_register_master(struct spi_master *master)
- 	master->num_chipselect = max(nb, master->num_chipselect);
- 
- 	if (nb < 1)
--		return 0;
-+		nb = master->num_chipselect;
- 
- 	cs = devm_kzalloc(&master->dev,
- 			  sizeof(int) * master->num_chipselect,
--- 
-1.7.9.5
+-UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x9999,
++UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x0219,
+ 		"Super Top",
+ 		"USB 2.0  SATA BRIDGE",
+ 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
+
 
