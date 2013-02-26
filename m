@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760117Ab3B0BPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:15:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41808 "EHLO
+	id S1760099Ab3B0BPl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:15:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41802 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760044Ab3BZX5S (ORCPT
+	with ESMTP id S1760042Ab3BZX5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 18:57:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jerome Marchand <jmarchand@redhat.com>,
-        Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@kernel.org>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [ 030/150] zram: Fix deadlock bug in partial read/write
-Date: Tue, 26 Feb 2013 15:54:47 -0800
-Message-Id: <20130226235527.355720207@linuxfoundation.org>
+        George Spelvin <linux@horizon.com>,
+        Rodolfo Giometti <giometti@enneenne.com>
+Subject: [ 029/150] pps: Fix a use-after free bug when unregistering a source.
+Date: Tue, 26 Feb 2013 15:54:46 -0800
+Message-Id: <20130226235527.261015941@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -28,63 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Minchan Kim <minchan@kernel.org>
+From: George Spelvin <linux@horizon.com>
 
-commit 7e5a5104c6af709a8d97d5f4711e7c917761d464 upstream.
+commit d953e0e837e65ecc1ddaa4f9560f7925878a0de6 upstream.
 
-Now zram allocates new page with GFP_KERNEL in zram I/O path
-if IO is partial. Unfortunately, It may cause deadlock with
-reclaim path like below.
+Remove the cdev from the system (with cdev_del) *before* deallocating it
+(in pps_device_destruct, called via kobject_put from device_destroy).
 
-write_page from fs
-fs_lock
-allocation(GFP_KERNEL)
-reclaim
-pageout
-				write_page from fs
-				fs_lock <-- deadlock
+Also prevent deallocating a device with open file handles.
 
-This patch fixes it by using GFP_NOIO.  In read path, we
-reorganize code flow so that kmap_atomic is called after the
-GFP_NOIO allocation.
+A better long-term fix is probably to remove the cdev from the pps_device
+entirely, and instead have all devices reference one global cdev.  Then
+the deallocation ordering becomes simpler.
 
-Acked-by: Jerome Marchand <jmarchand@redhat.com>
-Acked-by: Nitin Gupta <ngupta@vflare.org>
-[ penberg@kernel.org: don't use GFP_ATOMIC ]
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
+But that's more complex and invasive change, so we leave that
+for later.
+
+Signed-off-by: George Spelvin <linux@horizon.com>
+Acked-by: Rodolfo Giometti <giometti@enneenne.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/zram/zram_drv.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/pps/pps.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -228,11 +228,12 @@ static int zram_bvec_read(struct zram *z
- 		return 0;
+--- a/drivers/pps/pps.c
++++ b/drivers/pps/pps.c
+@@ -247,12 +247,15 @@ static int pps_cdev_open(struct inode *i
+ 	struct pps_device *pps = container_of(inode->i_cdev,
+ 						struct pps_device, cdev);
+ 	file->private_data = pps;
+-
++	kobject_get(&pps->dev->kobj);
+ 	return 0;
+ }
+ 
+ static int pps_cdev_release(struct inode *inode, struct file *file)
+ {
++	struct pps_device *pps = container_of(inode->i_cdev,
++						struct pps_device, cdev);
++	kobject_put(&pps->dev->kobj);
+ 	return 0;
+ }
+ 
+@@ -274,8 +277,10 @@ static void pps_device_destruct(struct d
+ {
+ 	struct pps_device *pps = dev_get_drvdata(dev);
+ 
+-	/* release id here to protect others from using it while it's
+-	 * still in use */
++	cdev_del(&pps->cdev);
++
++	/* Now we can release the ID for re-use */
++	pr_debug("deallocating pps%d\n", pps->id);
+ 	mutex_lock(&pps_idr_lock);
+ 	idr_remove(&pps_idr, pps->id);
+ 	mutex_unlock(&pps_idr_lock);
+@@ -332,6 +337,7 @@ int pps_register_cdev(struct pps_device
+ 		goto del_cdev;
  	}
  
--	user_mem = kmap_atomic(page);
- 	if (is_partial_io(bvec))
- 		/* Use  a temporary buffer to decompress the page */
--		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
--	else
-+		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
-+
-+	user_mem = kmap_atomic(page);
-+	if (!is_partial_io(bvec))
- 		uncmem = user_mem;
++	/* Override the release function with our own */
+ 	pps->dev->release = pps_device_destruct;
  
- 	if (!uncmem) {
-@@ -279,7 +280,7 @@ static int zram_bvec_write(struct zram *
- 		 * This is a partial IO. We need to read the full page
- 		 * before to write the changes.
- 		 */
--		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
- 		if (!uncmem) {
- 			pr_info("Error allocating temp memory!\n");
- 			ret = -ENOMEM;
+ 	pr_debug("source %s got cdev (%d:%d)\n", pps->info.name,
+@@ -352,9 +358,9 @@ free_idr:
+ 
+ void pps_unregister_cdev(struct pps_device *pps)
+ {
++	pr_debug("unregistering pps%d\n", pps->id);
+ 	pps->lookup_cookie = NULL;
+ 	device_destroy(pps_class, pps->dev->devt);
+-	cdev_del(&pps->cdev);
+ }
+ 
+ /*
 
 
