@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab3BZGg1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 01:36:27 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:58701 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab3BZGg0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 01:36:26 -0500
-Message-ID: <1361860582.11403.2.camel@edumazet-glaptop>
-Subject: Re: Regression found in loopback.c patch (0cf833a)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: salstrom@paintedocean.com
-Cc: edumazet@google.com, davem@davemloft.net, linux-kernel@vger.kernel.org
-Date: Mon, 25 Feb 2013 22:36:22 -0800
-In-Reply-To: <512C567D.6010602@paintedocean.com>
-References: <512C567D.6010602@paintedocean.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758386Ab3BZGiZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 01:38:25 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:49999 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756077Ab3BZGiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 01:38:24 -0500
+Date: Tue, 26 Feb 2013 01:38:13 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Airlie <airlied@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Message-ID: <20130226063813.GA17317@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Airlie <airlied@gmail.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	David Howells <dhowells@redhat.com>,
+	Florian Weimer <fw@deneb.enyo.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
+	Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+	keyrings@linux-nfs.org,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20130226031338.GA29784@srcf.ucam.org>
+ <20130226033156.GA24999@kroah.com>
+ <20130226033803.GA30285@srcf.ucam.org>
+ <20130226035416.GA1128@kroah.com>
+ <20130226040456.GA30717@srcf.ucam.org>
+ <20130226041324.GA7241@kroah.com>
+ <CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com>
+ <20130226044521.GC12906@thunk.org>
+ <CAPM=9tygczL81L_t=uJs3bAae_h96iGkxWK-qYfcWkcCzOjsXw@mail.gmail.com>
+ <20130226060428.GD12906@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130226060428.GD12906@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-25 at 22:30 -0800, Neil Salstrom wrote:
-> Hello,
-> 
-> I believe I have found a regression in drivers/net/loopback.c which was
-> introduced starting with the v3.7 kernel series (and also affects
-> v3.8).  Oddly enough, it affects DVD playback (both physical disk and
-> .iso files) in MythTV (I'm using v0.26 and compile from source).  I
-> don't know if MythTV mounts a .iso or DVD over a loopback device but for
-> whatever reason there is a problem.
-> 
-> When playing a DVD there is a constant stuttering of the video and
-> corresponding audio dropouts.  This is continual with mythfrontend logs
-> showing "Waiting for video buffers."
-> 
-> I found that any kernel before v3.7 did not cause this issue so I did a
-> git bisect between v3.6 and v3.7.  The resulting bisection was to commit
-> 0cf833a (net: loopback: set default mtu to 64K).
-> 
-> I downloaded the source to v3.7.9 and reverted the line:
-> 
-> dev->mtu = 64 * 1024;
-> 
-> back to:
-> 
-> dev->mtu = (16 * 1024) + 20 + 20 + 12;
-> 
-> 
-> The resulting kernel did not cause the playback stuttering.  I have also
-> compiled v3.8.0 using (16 * 1024) + 20 + 20 + 12; and again had no problems.
-> 
-> Please let me know if you have any questions.
-> 
-> Thank you,
-> 
-> Neil Salstrom
-> 
+Dave,
 
-Hmm, I suspect an application bug.
+Here's a further thought, extending on the analogy with closed
+graphics hardware which requires proprietary drivers.  We _could_ have
+made life easier for users who had the misfortune of purchasing closed
+hardware.  We could have tied ourselves in knots and promulgated a
+stable kernel ABI, so that Nvidia and ATI/AMD could more easly inflict
+proprietary binary blob drivers just like they do for Windows.  We
+chose not to screw ourselves over that way, even though it meant that
+some users had a harder time of it.
 
-Try to find what particular mtu value makes the application going bad,
-doing a dichotomy ?
+Remember, before Intel came out with their graphics chips, for a while
+it seemed that there were very grahpics options with decent
+performance available that didn't require propietary drivers.  There
+was a while when things looked pretty bleak.  Yet we didn't cave, and
+eventually, life got better and more open options came on the scene.
 
-No need to recompile the kernel :
+Yet in the case of Secure Boot, everyone is assuming that Windows 8
+will be a success, and that Microsoft will continue to dominate x86
+client machines, and there will be no significant numbers of machines
+that won't be locked down to Microsoft whims.  And so, we should run
+up the white flag of surrender, and do everything that Microsoft
+_might_ possibly require lest they capriciously and arbitrary decide
+to revoke Linux distro's keys.
 
-ifconfig lo mtu XXXXX
+Linux distributions can do whatever they want, including locking down
+kernel ABI's like they did for enterprise kernels (and I don't need to
+tell people how painful that was for Linux distros).  But we didn't do
+that for upstream kernels; instead, we pushed for open source device
+drivers, and open hardware.  It took years, and we're still not 100%
+successful, but we've made incredible progress, to the point where
+we're no longer stressed out about device drivers any more; we just
+avoid the proprietary crap, and it's not so hard to do that.
 
+Maybe there's a lesson to be drawn from that which can be applied to
+the Secure Boot mess.
 
+Regards,
 
+						- Ted
