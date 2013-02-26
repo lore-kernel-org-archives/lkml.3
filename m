@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759943Ab3BZArX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 19:47:23 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39407 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab3BZArW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 19:47:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
-References: <20130225221636.018756060@linuxfoundation.org>
-Date: Mon, 25 Feb 2013 17:47:20 -0700
-Message-ID: <CAKocOONFH1QfY2SW9wiqkdm1yLTipVKU_ggWPm7N1mvZiriDhQ@mail.gmail.com>
-Subject: Re: [ 00/58] 3.7.10-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759552Ab3BZAvp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 19:51:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31877 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751535Ab3BZAvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 19:51:42 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAErSpo6jY1bX9G59uz8Zt_pDJ4OoR=kJkGjNLYYRTrKVXM8+eg@mail.gmail.com>
+References: <CAErSpo6jY1bX9G59uz8Zt_pDJ4OoR=kJkGjNLYYRTrKVXM8+eg@mail.gmail.com> <1360623637.2950.63.camel@lorien2>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: dhowells@redhat.com, shuah.khan@hp.com, Joerg Roedel <joro@8bytes.org>,
+        paulmck@linux.vnet.ibm.com, linasvepstas@gmail.com, davej@redhat.com,
+        tglx@linutronix.de, mtk.manpages@gmail.com,
+        iommu@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org, shemminger@vyatta.com, jiang.liu@huawei.com,
+        wangyijing@huawei.com, shuahkhan@gmail.com
+Subject: Re: [PATCH 1/4] pci: Add PCI_BUS() and PCI_DEVID() interfaces to return bus number and device id
+Date: Tue, 26 Feb 2013 00:45:40 +0000
+Message-ID: <19586.1361839540@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 3:18 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> ----------------------------------------------------------------
-> NOTE:
->         This is going to be the LAST 3.7.x kernel release.  After this,
->         the 3.7 series is end-of-life, please start moving to 3.8 or
->         newer at this point in time.
-> ----------------------------------------------------------------
->
-> This is the start of the stable review cycle for the 3.7.10 release.
-> There are 58 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Wed Feb 27 22:14:28 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.7.10-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+Bjorn Helgaas <bhelgaas@google.com> wrote:
 
-3.7.10-rc1 patch applied cleanlt to 3.7.9
-Compiled and booted on the following systems:
-HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+> David, can you point me at a description of include/uapi ... what is
+> there and why, and how we should decide what new things go in
+> include/uapi/linux/pci.h as opposed to include/linux/pci.h?  Maybe
+> there should be something in Documentation/?
 
-dmesg looked good on both systems.
+Probably in CodingStyle, Submitting* or somewhere similar.
 
-Cross-compile tests results:
+> I'm guessing it's something to do with being exported to userland, but
+> I'm not sure the things in this patch (PCI_DEV_ID, PCI_BUS) are really
+> exportable in the sense of being used for syscalls, etc.
 
-alpha: defconfig passed
-arm: defconfig passed
-arm64: defconfig passed
-c6x: defconfig passed
-mips: defconfig passed
-mipsel: defconfig passed
-powerpc: wii_defconfig passed
-sh: defconfig passed
-sparc: defconfig passed
-tile: tilegx_defconfig passed
+As a rule, if it's in uapi/ then it's exported to userspace; if it's not, then
+it isn't.  The old headers where disintegrated along the lines of __KERNEL__
+delimited sections by my scripts.
 
--- Shuah
+David
