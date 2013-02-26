@@ -1,182 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759922Ab3BZJDv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 04:03:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60068 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755624Ab3BZJDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 04:03:44 -0500
-Message-ID: <512C7A6C.4040103@suse.cz>
-Date: Tue, 26 Feb 2013 10:03:40 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1759896Ab3BZJFO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 04:05:14 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:47604 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759687Ab3BZJFE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 04:05:04 -0500
+Message-ID: <512C7A38.8060906@linux.vnet.ibm.com>
+Date: Tue, 26 Feb 2013 14:32:48 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Gary Lowell <gary.lowell@inktank.com>
-Cc: linux-kbuild@vger.kernel.org, Sage Weil <sage@inktank.com>,
-        linux-kernel@vger.kernel.org, maximilian attems <max@stro.at>
-Subject: Re: [PATCH 1/1] scripts/package/builddeb:  build perftools package.
-References: <1361842218-1768-1-git-send-email-gary.lowell@inktank.com>
-In-Reply-To: <1361842218-1768-1-git-send-email-gary.lowell@inktank.com>
-Content-Type: text/plain; charset=ISO-8859-2
+To: Lai Jiangshan <eag0628@gmail.com>
+CC: Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
+        vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com> <CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com> <5122551E.1080703@linux.vnet.ibm.com>	<51226B46.9080707@linux.vnet.ibm.com> <CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com> <51226F91.7000108@linux.vnet.ibm.com> <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com> <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com>
+In-Reply-To: <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022609-5816-0000-0000-000006D59B0E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added Maximilian to CC.
-
-Michal
-
-On 26.2.2013 02:30, Gary Lowell wrote:
-> This will build a linux-tools-$version package for each build that includes
-> perf.  We've been using this for internal builds and other folks might find
-> it helpful.
+On 02/26/2013 05:47 AM, Lai Jiangshan wrote:
+> On Tue, Feb 26, 2013 at 3:26 AM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> Hi Lai,
+>>
+>> On 02/25/2013 09:23 PM, Lai Jiangshan wrote:
+>>> Hi, Srivatsa,
+>>>
+>>> The target of the whole patchset is nice for me.
+>>
+>> Cool! Thanks :-)
+>>
+[...]
+>>> I wrote an untested draft here.
+>>>
+>>> Thanks,
+>>> Lai
+>>>
+>>> PS: Some HA tools(I'm writing one) which takes checkpoints of
+>>> virtual-machines frequently, I guess this patchset can speedup the
+>>> tools.
+>>>
+>>> From 01db542693a1b7fc6f9ece45d57cb529d9be5b66 Mon Sep 17 00:00:00 2001
+>>> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+>>> Date: Mon, 25 Feb 2013 23:14:27 +0800
+>>> Subject: [PATCH] lglock: add read-preference local-global rwlock
+>>>
+>>> locality via lglock(trylock)
+>>> read-preference read-write-lock via fallback rwlock_t
+>>>
+>>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>>> ---
+>>>  include/linux/lglock.h |   31 +++++++++++++++++++++++++++++++
+>>>  kernel/lglock.c        |   45 +++++++++++++++++++++++++++++++++++++++++++++
+>>>  2 files changed, 76 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/include/linux/lglock.h b/include/linux/lglock.h
+>>> index 0d24e93..30fe887 100644
+>>> --- a/include/linux/lglock.h
+>>> +++ b/include/linux/lglock.h
+>>> @@ -67,4 +67,35 @@ void lg_local_unlock_cpu(struct lglock *lg, int cpu);
+>>>  void lg_global_lock(struct lglock *lg);
+>>>  void lg_global_unlock(struct lglock *lg);
+>>>
+>>> +struct lgrwlock {
+>>> +     unsigned long __percpu *fallback_reader_refcnt;
+>>> +     struct lglock lglock;
+>>> +     rwlock_t fallback_rwlock;
+>>> +};
+>>> +
+>>> +#define DEFINE_LGRWLOCK(name)                                                \
+>>> +     static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)           \
+>>> +     = __ARCH_SPIN_LOCK_UNLOCKED;                                    \
+>>> +     static DEFINE_PER_CPU(unsigned long, name ## _refcnt);          \
+>>> +     struct lgrwlock name = {                                        \
+>>> +             .fallback_reader_refcnt = &name ## _refcnt,             \
+>>> +             .lglock = { .lock = &name ## _lock } }
+>>> +
+>>> +#define DEFINE_STATIC_LGRWLOCK(name)                                 \
+>>> +     static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)           \
+>>> +     = __ARCH_SPIN_LOCK_UNLOCKED;                                    \
+>>> +     static DEFINE_PER_CPU(unsigned long, name ## _refcnt);          \
+>>> +     static struct lgrwlock name = {                                 \
+>>> +             .fallback_reader_refcnt = &name ## _refcnt,             \
+>>> +             .lglock = { .lock = &name ## _lock } }
+>>> +
+>>> +static inline void lg_rwlock_init(struct lgrwlock *lgrw, char *name)
+>>> +{
+>>> +     lg_lock_init(&lgrw->lglock, name);
+>>> +}
+>>> +
+>>> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw);
+>>> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw);
+>>> +void lg_rwlock_global_write_lock(struct lgrwlock *lgrw);
+>>> +void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw);
+>>>  #endif
+>>> diff --git a/kernel/lglock.c b/kernel/lglock.c
+>>> index 6535a66..463543a 100644
+>>> --- a/kernel/lglock.c
+>>> +++ b/kernel/lglock.c
+>>> @@ -87,3 +87,48 @@ void lg_global_unlock(struct lglock *lg)
+>>>       preempt_enable();
+>>>  }
+>>>  EXPORT_SYMBOL(lg_global_unlock);
+>>> +
+>>> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
+>>> +{
+>>> +     struct lglock *lg = &lgrw->lglock;
+>>> +
+>>> +     preempt_disable();
+>>> +     if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
+>>> +             if (likely(arch_spin_trylock(this_cpu_ptr(lg->lock)))) {
+>>> +                     rwlock_acquire_read(&lg->lock_dep_map, 0, 0, _RET_IP_);
+>>> +                     return;
+>>> +             }
+>>> +             read_lock(&lgrw->fallback_rwlock);
+>>> +     }
+>>> +
+>>> +     __this_cpu_inc(*lgrw->fallback_reader_refcnt);
+>>> +}
+>>> +EXPORT_SYMBOL(lg_rwlock_local_read_lock);
+>>> +
+>>> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
+>>> +{
+>>> +     if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
+>>> +             lg_local_unlock(&lgrw->lglock);
+>>> +             return;
+>>> +     }
+>>> +
+>>> +     if (!__this_cpu_dec_return(*lgrw->fallback_reader_refcnt))
+>>> +             read_unlock(&lgrw->fallback_rwlock);
+>>> +
+>>> +     preempt_enable();
+>>> +}
+>>> +EXPORT_SYMBOL(lg_rwlock_local_read_unlock);
+>>> +
+>>
+>> If I read the code above correctly, all you are doing is implementing a
+>> recursive reader-side primitive (ie., allowing the reader to call these
+>> functions recursively, without resulting in a self-deadlock).
+>>
+>> But the thing is, making the reader-side recursive is the least of our
+>> problems! Our main challenge is to make the locking extremely flexible
+>> and also safe-guard it against circular-locking-dependencies and deadlocks.
+>> Please take a look at the changelog of patch 1 - it explains the situation
+>> with an example.
 > 
-> Signed-off-by: Gary Lowell <gary.lowell@inktank.com>
-> ---
->  scripts/package/builddeb |   95 +++++++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 94 insertions(+), 1 deletion(-)
 > 
-> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-> index acb8650..f57d33c 100644
-> --- a/scripts/package/builddeb
-> +++ b/scripts/package/builddeb
-> @@ -78,17 +78,20 @@ tmpdir="$objtree/debian/tmp"
->  fwdir="$objtree/debian/fwtmp"
->  kernel_headers_dir="$objtree/debian/hdrtmp"
->  libc_headers_dir="$objtree/debian/headertmp"
-> +tools_dir="$objtree/debian/toolstmp"
-> +tmp_build_dir="$objtree/debian/toolsbuild"
->  packagename=linux-image-$version
->  fwpackagename=linux-firmware-image
->  kernel_headers_packagename=linux-headers-$version
->  libc_headers_packagename=linux-libc-dev
-> +tools_packagename=linux-tools-$version
->  
->  if [ "$ARCH" = "um" ] ; then
->  	packagename=user-mode-linux-$version
->  fi
->  
->  # Setup the directory structure
-> -rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir"
-> +rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir" "$tools_dir" "$tmp_build_dir"
->  mkdir -m 755 -p "$tmpdir/DEBIAN"
->  mkdir -p  "$tmpdir/lib" "$tmpdir/boot" "$tmpdir/usr/share/doc/$packagename"
->  mkdir -m 755 -p "$fwdir/DEBIAN"
-> @@ -98,6 +101,10 @@ mkdir -p "$libc_headers_dir/usr/share/doc/$libc_headers_packagename"
->  mkdir -m 755 -p "$kernel_headers_dir/DEBIAN"
->  mkdir -p "$kernel_headers_dir/usr/share/doc/$kernel_headers_packagename"
->  mkdir -p "$kernel_headers_dir/lib/modules/$version/"
-> +mkdir -m 755 -p "$tools_dir/DEBIAN"
-> +mkdir -p "$tools_dir/usr/share/doc/$tools_packagename"
-> +mkdir -p "$tools_dir/usr/bin/"
-> +mkdir -p "$tmp_build_dir"
->  if [ "$ARCH" = "um" ] ; then
->  	mkdir -p "$tmpdir/usr/lib/uml/modules/$version" "$tmpdir/usr/bin"
->  fi
-> @@ -120,6 +127,77 @@ else
->  	fi
->  fi
->  
-> +# Build the tools
-> +num_tools="0"
-> +tools_flavour_abi=${version#*-}
-> +tools_flavour=${tools_flavour_abi#*-}
-> +tools_version=${version%-$tools_flavour}
-> +debian_tools_version="${version%%-*}"
-> +debian_tools_version="${version%.*}"
-> +if grep -q '^CONFIG_PERF_EVENTS=y' .config ; then
-> +	# Build and install perf
-> +	(
-> +	 unset MAKEFLAGS
-> +	 unset MFLAGS
-> +	 unset MAKEOVERRIDES
-> +
-> +	 mkdir -p $objtree/tools/perf
-> +	 cd "$srctree/tools/perf"
-> +	 $MAKE DESTDIR="$tools_dir/usr/" LDFLAGS= O=$objtree/tools/perf/ install
-> +	 mv "$tools_dir/usr/bin/perf" "$tools_dir/usr/bin/perf_$debian_tools_version"
-> +	 ln -s "/usr/bin/perf_$debian_tools_version" "$tools_dir/usr/bin/perf_$tools_version"
-> +	 mv "$tools_dir/usr/libexec/perf-core" "$tools_dir/usr/share/perf_$debian_tools_version-core"
-> +	 rmdir "$tools_dir/usr/libexec"
-> +
-> +	 # Documentation can't be built out-of-tree so copy source
-> +	 # over to objtree and build man pages there
-> +	 mkdir -p $tmp_build_dir/perf
-> +	 cp -a "$srctree/tools/perf/Documentation" "$tmp_build_dir/perf/"
-> +	 cp -a "$srctree/tools/perf/config" "$tmp_build_dir/perf/"
-> +	 cd "$tmp_build_dir/perf/Documentation"
-> +	 $MAKE man
-> +	 $MAKE DESTDIR="$tools_dir/usr/" install
-> +	 for manpage in `find $tools_dir/usr/share/man/ -type f`; do
-> +		mv $manpage ${manpage/perf/perf_$debian_tools_version}
-> +		gzip -9 ${manpage/perf/perf_$debian_tools_version}
-> +	 done
-> +	)
-> +	num_tools=$(($num_tools+1))
-> +fi
-> +
-> +if [[ "$ARCH" = "i386" || "$ARCH" = "x86_64" ]]; then
-> +	# Build turbostat
-> +	(
-> +	 cp -a $srctree/tools/power/x86/turbostat "$tmp_build_dir"
-> +	 ln -s $srctree/arch "$tmp_build_dir/../../../arch"
-> +	 cd "$tmp_build_dir/turbostat/"
-> +	 unset MAKEFLAGS
-> +	 unset MFLAGS
-> +	 unset MAKEOVERRIDES
-> +	 $MAKE LDFLAGS=
-> +	 cp turbostat "$tools_dir/usr/bin/turbostat_$debian_tools_version"
-> +	 ln -s "/usr/bin/turbostat_$debian_tools_version" "$tools_dir/usr/bin/turbostat_$tools_version"
-> +	 mkdir -p "$tools_dir/usr/share/man/man8"
-> +	 cp turbostat.8 "$tools_dir/usr/share/man/man8/turbotstat_${debian_tools_version}.8"
-> +	 gzip -9 "$tools_dir/usr/share/man/man8/turbotstat_${debian_tools_version}.8"
-> +	)
-> +
-> +	# Build x86_energy_perf_policy
-> +	(
-> +	 cp -a $srctree/tools/power/x86/x86_energy_perf_policy "$tmp_build_dir"
-> +	 cd "$tmp_build_dir/x86_energy_perf_policy"
-> +	 unset MAKEFLAGS
-> +	 unset MFLAGS
-> +	 unset MAKEOVERRIDES
-> +	 $MAKE LDFLAGS=
-> +	 cp x86_energy_perf_policy "$tools_dir/usr/bin/x86_energy_perf_policy_$debian_tools_version"
-> +	 ln -s "/usr/bin/x86_energy_perf_policy_$debian_tools_version" "$tools_dir/usr/bin/x86_energy_perf_policy_$tools_version"
-> +	 cp x86_energy_perf_policy.8 "$tools_dir/usr/share/man/man8/x86_energy_perf_policy_${debian_tools_version}.8"
-> +	 gzip -9 "$tools_dir/usr/share/man/man8/x86_energy_perf_policy_${debian_tools_version}.8"
-> +	)
-> +	num_tools=$(($num_tools+2))
-> +fi
-> +
->  if grep -q '^CONFIG_MODULES=y' .config ; then
->  	INSTALL_MOD_PATH="$tmpdir" $MAKE KBUILD_SRC= modules_install
->  	rm -f "$tmpdir/lib/modules/$version/build"
-> @@ -292,9 +370,24 @@ Description: Linux support headers for userspace development
->   are used by the installed headers for GNU glibc and other system libraries.
->  EOF
->  
-> +cat <<EOF >> debian/control
-> +
-> +Package: $tools_packagename
-> +Section: devel
-> +Architecture: $arch
-> +Depends: \${shlibs:Depends}
-> +Description: Linux kernel tools for version $version
-> + This package provides the architecture dependant parts for kernel
-> + version locked tools for version $version
-> +EOF
-> +
->  if [ "$ARCH" != "um" ]; then
->  	create_package "$kernel_headers_packagename" "$kernel_headers_dir"
->  	create_package "$libc_headers_packagename" "$libc_headers_dir"
-> +	if [ "$num_tools" > "0" ]; then
-> +		dpkg-shlibdeps $tools_dir/usr/bin/*
-> +		create_package "$tools_packagename" "$tools_dir"
-> +	fi
->  fi
->  
->  create_package "$packagename" "$tmpdir"
+> My lock fixes your requirements(I read patch 1-6 before I sent). In
+> readsite, lglock 's lock is token via trylock, the lglock doesn't
+> contribute to deadlocks, we can consider it doesn't exist when we find
+> deadlock from it. And global fallback rwlock doesn't result to
+> deadlocks because it is read-preference(you need to inc the
+> fallback_reader_refcnt inside the cpu-hotplug write-side, I don't do
+> it in generic lgrwlock)
+>
+
+Ah, since you hadn't mentioned the increment at the writer-side in your
+previous email, I had missed the bigger picture of what you were trying
+to achieve.
+ 
+> 
+> If lg_rwlock_local_read_lock() spins, which means
+> lg_rwlock_local_read_lock() spins on fallback_rwlock, and which means
+> lg_rwlock_global_write_lock() took the lgrwlock successfully and
+> return, and which means lg_rwlock_local_read_lock() will stop spinning
+> when the write side finished.
 > 
 
+Unfortunately, I see quite a few issues with the code above. IIUC, the
+writer and the reader both increment the same counters. So how will the
+unlock() code in the reader path know when to unlock which of the locks?
+(The counter-dropping-to-zero logic is not safe, since it can be updated
+due to different reasons). And now that I look at it again, in the absence
+of the writer, the reader is allowed to be recursive at the heavy cost of
+taking the global rwlock for read, every 2nd time you nest (because the
+spinlock is non-recursive). Also, this lg_rwlock implementation uses 3
+different data-structures - a per-cpu spinlock, a global rwlock and
+a per-cpu refcnt, and its not immediately apparent why you need those many
+or even those many varieties. Also I see that this doesn't handle the
+case of interrupt-handlers also being readers.
+
+IMHO, the per-cpu rwlock scheme that I have implemented in this patchset
+has a clean, understandable design and just enough data-structures/locks
+to achieve its goal and has several optimizations (like reducing the
+interrupts-disabled time etc) included - all in a very straight-forward
+manner. Since this is non-trivial, IMHO, starting from a clean slate is
+actually better than trying to retrofit the logic into some locking scheme
+which we actively want to avoid (and hence effectively we aren't even
+borrowing anything from!).
+
+To summarize, if you are just pointing out that we can implement the same
+logic by altering lglocks, then sure, I acknowledge the possibility.
+However, I don't think doing that actually makes it better; it either
+convolutes the logic unnecessarily, or ends up looking _very_ similar to
+the implementation in this patchset, from what I can see.
+
+Regards,
+Srivatsa S. Bhat
 
