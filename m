@@ -1,143 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758646Ab3BZGZk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 01:25:40 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59225 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758100Ab3BZGYy (ORCPT
+	id S1756904Ab3BZGaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 01:30:25 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:62289 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015Ab3BZGaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 01:24:54 -0500
-X-AuditID: 9c93016f-b7b46ae000007f43-44-512c553329cd
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org
-Cc: Nicolas Pitre <nico@fluxnic.net>, Nitin Gupta <nitingupta910@gmail.com>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
-        raphael.andy.lee@gmail.com, Kyungsik Lee <kyungsik.lee@lge.com>
-Subject: [RFC PATCH v2 3/4] arm: Add support for LZ4-compressed kernel
-Date: Tue, 26 Feb 2013 15:24:29 +0900
-Message-Id: <1361859870-15751-4-git-send-email-kyungsik.lee@lge.com>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
-References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 26 Feb 2013 01:30:24 -0500
+Message-ID: <512C567D.6010602@paintedocean.com>
+Date: Mon, 25 Feb 2013 22:30:21 -0800
+From: Neil Salstrom <salstrom@paintedocean.com>
+Reply-To: salstrom@paintedocean.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:21.0) Gecko/20100101 Thunderbird/21.0a2
+MIME-Version: 1.0
+To: edumazet@google.com, davem@davemloft.net
+CC: linux-kernel@vger.kernel.org
+Subject: Regression found in loopback.c patch (0cf833a)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch integrates the LZ4 decompression code to the arm pre-boot code.
-And it depends on two patchs below
+Hello,
 
-lib: Add support for LZ4-compressed kernel
-decompressor: Add LZ4 decompressor module
+I believe I have found a regression in drivers/net/loopback.c which was
+introduced starting with the v3.7 kernel series (and also affects
+v3.8).  Oddly enough, it affects DVD playback (both physical disk and
+.iso files) in MythTV (I'm using v0.26 and compile from source).  I
+don't know if MythTV mounts a .iso or DVD over a loopback device but for
+whatever reason there is a problem.
 
-Signed-off-by: Kyungsik Lee <kyungsik.lee@lge.com>
+When playing a DVD there is a constant stuttering of the video and
+corresponding audio dropouts.  This is continual with mythfrontend logs
+showing "Waiting for video buffers."
 
-v2:
-- Apply CFLAGS, -Os to decompress.o to improve decompress
-  performance during boot-up process
----
- arch/arm/Kconfig                      | 1 +
- arch/arm/boot/compressed/.gitignore   | 1 +
- arch/arm/boot/compressed/Makefile     | 6 +++++-
- arch/arm/boot/compressed/decompress.c | 4 ++++
- arch/arm/boot/compressed/piggy.lz4.S  | 6 ++++++
- 5 files changed, 17 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/compressed/piggy.lz4.S
+I found that any kernel before v3.7 did not cause this issue so I did a
+git bisect between v3.6 and v3.7.  The resulting bisection was to commit
+0cf833a (net: loopback: set default mtu to 64K).
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 67874b8..0f9b363 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -38,6 +38,7 @@ config ARM
- 	select HAVE_IDE if PCI || ISA || PCMCIA
- 	select HAVE_IRQ_WORK
- 	select HAVE_KERNEL_GZIP
-+	select HAVE_KERNEL_LZ4
- 	select HAVE_KERNEL_LZMA
- 	select HAVE_KERNEL_LZO
- 	select HAVE_KERNEL_XZ
-diff --git a/arch/arm/boot/compressed/.gitignore b/arch/arm/boot/compressed/.gitignore
-index f79a08e..47279aa 100644
---- a/arch/arm/boot/compressed/.gitignore
-+++ b/arch/arm/boot/compressed/.gitignore
-@@ -6,6 +6,7 @@ piggy.gzip
- piggy.lzo
- piggy.lzma
- piggy.xzkern
-+piggy.lz4
- vmlinux
- vmlinux.lds
- 
-diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-index 5cad8a6..2249d52 100644
---- a/arch/arm/boot/compressed/Makefile
-+++ b/arch/arm/boot/compressed/Makefile
-@@ -24,6 +24,9 @@ endif
- AFLAGS_head.o += -DTEXT_OFFSET=$(TEXT_OFFSET)
- HEAD	= head.o
- OBJS	+= misc.o decompress.o
-+ifeq ($(CONFIG_KERNEL_LZ4),y)
-+CFLAGS_decompress.o := -Os
-+endif
- FONTC	= $(srctree)/drivers/video/console/font_acorn_8x8.c
- 
- # string library code (-Os is enforced to keep it much smaller)
-@@ -88,6 +91,7 @@ suffix_$(CONFIG_KERNEL_GZIP) = gzip
- suffix_$(CONFIG_KERNEL_LZO)  = lzo
- suffix_$(CONFIG_KERNEL_LZMA) = lzma
- suffix_$(CONFIG_KERNEL_XZ)   = xzkern
-+suffix_$(CONFIG_KERNEL_LZ4)  = lz4
- 
- # Borrowed libfdt files for the ATAG compatibility mode
- 
-@@ -112,7 +116,7 @@ targets       := vmlinux vmlinux.lds \
- 		 font.o font.c head.o misc.o $(OBJS)
- 
- # Make sure files are removed during clean
--extra-y       += piggy.gzip piggy.lzo piggy.lzma piggy.xzkern \
-+extra-y       += piggy.gzip piggy.lzo piggy.lzma piggy.xzkern piggy.lz4 \
- 		 lib1funcs.S ashldi3.S $(libfdt) $(libfdt_hdrs)
- 
- ifeq ($(CONFIG_FUNCTION_TRACER),y)
-diff --git a/arch/arm/boot/compressed/decompress.c b/arch/arm/boot/compressed/decompress.c
-index 9deb56a..a95f071 100644
---- a/arch/arm/boot/compressed/decompress.c
-+++ b/arch/arm/boot/compressed/decompress.c
-@@ -53,6 +53,10 @@ extern char * strstr(const char * s1, const char *s2);
- #include "../../../../lib/decompress_unxz.c"
- #endif
- 
-+#ifdef CONFIG_KERNEL_LZ4
-+#include "../../../../lib/decompress_unlz4.c"
-+#endif
-+
- int do_decompress(u8 *input, int len, u8 *output, void (*error)(char *x))
- {
- 	return decompress(input, len, NULL, NULL, output, NULL, error);
-diff --git a/arch/arm/boot/compressed/piggy.lz4.S b/arch/arm/boot/compressed/piggy.lz4.S
-new file mode 100644
-index 0000000..3d9a575
---- /dev/null
-+++ b/arch/arm/boot/compressed/piggy.lz4.S
-@@ -0,0 +1,6 @@
-+	.section .piggydata,#alloc
-+	.globl	input_data
-+input_data:
-+	.incbin	"arch/arm/boot/compressed/piggy.lz4"
-+	.globl	input_data_end
-+input_data_end:
--- 
-1.8.1.1
+I downloaded the source to v3.7.9 and reverted the line:
+
+dev->mtu = 64 * 1024;
+
+back to:
+
+dev->mtu = (16 * 1024) + 20 + 20 + 12;
+
+
+The resulting kernel did not cause the playback stuttering.  I have also
+compiled v3.8.0 using (16 * 1024) + 20 + 20 + 12; and again had no problems.
+
+Please let me know if you have any questions.
+
+Thank you,
+
+Neil Salstrom
+
 
