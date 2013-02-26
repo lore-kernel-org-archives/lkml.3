@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176Ab3B0AnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:43:03 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:24201 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933072Ab3B0AnA (ORCPT
+	id S933200Ab3B0Amp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:42:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42278 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933065Ab3BZX6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:43:00 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
-        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
-        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH Resend v5 04/16] spi/spi-atmel: add physical base address
-Date: Wed, 27 Feb 2013 08:40:21 +0800
-Message-ID: <1361925621-12081-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 26 Feb 2013 18:58:34 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Roger Quadros <rogerq@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 138/150] USB: ehci-omap: Dont free gpios that we didnt request
+Date: Tue, 26 Feb 2013 15:56:35 -0800
+Message-Id: <20130226235538.720310860@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
+References: <20130226235523.930663721@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Needed for future use with dmaengine enabled driver.
+------------------
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: spi-devel-general@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-[wenyou.yang@atmel.com: submit the patch]
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+From: Roger Quadros <rogerq@ti.com>
+
+commit 428525f97153505e83983460a8d08a3210aa6b8a upstream.
+
+This driver does not request any gpios so don't free them.
+Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
+with ehci-omap in use.
+
+Without this patch, EHCI will break on repeated insmod/rmmod
+of ehci_hcd for all OMAP2+ platforms that use EHCI and
+set 'phy_reset = true' in usbhs_omap_board_data.
+i.e.
+
+board-3430sdp.c:	.phy_reset  = true,
+board-3630sdp.c:	.phy_reset  = true,
+board-am3517crane.c:	.phy_reset  = true,
+board-am3517evm.c:	.phy_reset  = true,
+board-cm-t3517.c:	.phy_reset  = true,
+board-cm-t35.c:	.phy_reset  = true,
+board-devkit8000.c:	.phy_reset  = true,
+board-igep0020.c:	.phy_reset = true,
+board-igep0020.c:	.phy_reset = true,
+board-omap3beagle.c:	.phy_reset  = true,
+board-omap3evm.c:	.phy_reset  = true,
+board-omap3pandora.c:	.phy_reset  = true,
+board-omap3stalker.c:	.phy_reset = true,
+board-omap3touchbook.c:	.phy_reset  = true,
+board-omap4panda.c:	.phy_reset  = false,
+board-overo.c:	.phy_reset  = true,
+board-zoom.c:	.phy_reset		= true,
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/spi/spi-atmel.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/host/ehci-omap.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 9c8f2d5..c70142e 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -197,6 +197,7 @@ struct atmel_spi_caps {
- struct atmel_spi {
- 	spinlock_t		lock;
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -288,7 +288,6 @@ static int ehci_hcd_omap_remove(struct p
+ {
+ 	struct device *dev				= &pdev->dev;
+ 	struct usb_hcd *hcd				= dev_get_drvdata(dev);
+-	struct ehci_hcd_omap_platform_data *pdata	= dev->platform_data;
  
-+	resource_size_t		phybase;
- 	void __iomem		*regs;
- 	int			irq;
- 	struct clk		*clk;
-@@ -1003,6 +1004,7 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 	as->regs = ioremap(regs->start, resource_size(regs));
- 	if (!as->regs)
- 		goto out_free_buffer;
-+	as->phybase = regs->start;
- 	as->irq = irq;
- 	as->clk = clk;
+ 	usb_remove_hcd(hcd);
+ 	disable_put_regulator(dev->platform_data);
+@@ -298,13 +297,6 @@ static int ehci_hcd_omap_remove(struct p
+ 	pm_runtime_put_sync(dev);
+ 	pm_runtime_disable(dev);
  
--- 
-1.7.9.5
+-	if (pdata->phy_reset) {
+-		if (gpio_is_valid(pdata->reset_gpio_port[0]))
+-			gpio_free(pdata->reset_gpio_port[0]);
+-
+-		if (gpio_is_valid(pdata->reset_gpio_port[1]))
+-			gpio_free(pdata->reset_gpio_port[1]);
+-	}
+ 	return 0;
+ }
+ 
+
 
