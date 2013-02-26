@@ -1,143 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759361Ab3BZG4t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 01:56:49 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:24340 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753379Ab3BZG4s (ORCPT
+	id S1759531Ab3BZG5k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 01:57:40 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:47959 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379Ab3BZG5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 01:56:48 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
-        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
-        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v5 07/16] spi/spi-atmel: add flag to controller data for lock operations
-Date: Tue, 26 Feb 2013 14:48:00 +0800
-Message-ID: <1361861289-30332-8-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361861289-30332-1-git-send-email-wenyou.yang@atmel.com>
-References: <1361861289-30332-1-git-send-email-wenyou.yang@atmel.com>
+	Tue, 26 Feb 2013 01:57:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <512C51B0.1000605@cn.fujitsu.com>
+References: <512B7D10.4060304@tpi.com>
+	<512B8407.2090807@canonical.com>
+	<512BD753.4080001@hp.com>
+	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
+	<CAE9FiQXs3MyUW+hJhupJgL-t9sYmT5GdeStWD2vMjsJG+6qCrQ@mail.gmail.com>
+	<CAE9FiQXHNm+E+PchPsReOykVPNkRrC8ttjDpWWs=njANT+Wf1Q@mail.gmail.com>
+	<CAJErZ53dadbU3oM4Prhi3n_R+Lsbp3TG=FP1=whTK5uPMpj90A@mail.gmail.com>
+	<CAE9FiQWx=FdQSH_H_PoVxUksY6rFnN6yDfwmK3w8OTbCPLM1+w@mail.gmail.com>
+	<CAJErZ53AWMP688OV+J0qiJii2y=qzEjLq=WshAQbMhEdyx33cQ@mail.gmail.com>
+	<512C51B0.1000605@cn.fujitsu.com>
+Date: Mon, 25 Feb 2013 22:57:38 -0800
+X-Google-Sender-Auth: KMuClCc_Ulm6PN-PzTcJlM-_LgM
+Message-ID: <CAE9FiQVsmt4jhR=+Uyg+Cbh2AEF9-gAdoPiJrM8itaLCsAOKcA@mail.gmail.com>
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Martin Bligh <mbligh@mbligh.org>, Ingo Molnar <mingo@elte.hu>,
+        Don Morris <don.morris@hp.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        a.p.zijlstra@chello.nl, jarkko.sakkinen@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+On Mon, Feb 25, 2013 at 10:09 PM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
+> On 02/26/2013 12:51 PM, Martin Bligh wrote:
+>>>
+>>> Do you mean we can remove numaq x86 32bit code now?
+>>
+>>
+>> Wouldn't bother me at all. The machine is from 1995, end of life c. 2000?
+>> Was useful in the early days of getting NUMA up and running on Linux,
+>> but is now too old to be a museum piece, really.
+>>
+>> M.
+>>
+>
+> Hi Martin, Yinghai,
+>
+> It was me that I failed to make numa_init() fall back path working, and
+> forgot
+> to call early_parse_srat in ia64. Sorry for the breaking of other platform.
+> :)
+>
+> So now, is Yinghai's patch enough for this problem ?
+> Or we can encapsulate the following clear up work into one function ?
+>
+>
+> +               for (i = 0; i < MAX_LOCAL_APIC; i++)
+> +                       set_apicid_to_node(i, NUMA_NO_NODE);
+> +               nodes_clear(numa_nodes_parsed);
+> +               memset(&numa_meminfo, 0, sizeof(numa_meminfo));
+>
+>
 
-Will allow to drop the lock during DMA operations.
+That is temporary workaround and your patch and this workaround make
+x86 acpi numa init too messy.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: spi-devel-general@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
-[wenyou.yang@atmel.com: submit the patch]
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
- drivers/spi/spi-atmel.c |   31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+I don't see the point to hack SRAT to make memory hotplug working.
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 136ed8f..1c2933a 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -196,6 +196,7 @@ struct atmel_spi_caps {
-  */
- struct atmel_spi {
- 	spinlock_t		lock;
-+	unsigned long		flags;
- 
- 	resource_size_t		phybase;
- 	void __iomem		*regs;
-@@ -334,6 +335,16 @@ static void cs_deactivate(struct atmel_spi *as, struct spi_device *spi)
- 		gpio_set_value(asd->npcs_pin, !active);
- }
- 
-+static void atmel_spi_lock(struct atmel_spi *as)
-+{
-+		spin_lock_irqsave(&as->lock, as->flags);
-+}
-+
-+static void atmel_spi_unlock(struct atmel_spi *as)
-+{
-+		spin_unlock_irqrestore(&as->lock, as->flags);
-+}
-+
- static inline int atmel_spi_xfer_is_last(struct spi_message *msg,
- 					struct spi_transfer *xfer)
- {
-@@ -570,9 +581,9 @@ atmel_spi_msg_done(struct spi_master *master, struct atmel_spi *as,
- 		"xfer complete: %u bytes transferred\n",
- 		msg->actual_length);
- 
--	spin_unlock(&as->lock);
-+	atmel_spi_unlock(as);
- 	msg->complete(msg->context);
--	spin_lock(&as->lock);
-+	atmel_spi_lock(as);
- 
- 	as->current_transfer = NULL;
- 	as->next_transfer = NULL;
-@@ -803,13 +814,11 @@ static int atmel_spi_setup(struct spi_device *spi)
- 		spi->controller_state = asd;
- 		gpio_direction_output(npcs_pin, !(spi->mode & SPI_CS_HIGH));
- 	} else {
--		unsigned long		flags;
--
--		spin_lock_irqsave(&as->lock, flags);
-+		atmel_spi_lock(as);
- 		if (as->stay == spi)
- 			as->stay = NULL;
- 		cs_deactivate(as, spi);
--		spin_unlock_irqrestore(&as->lock, flags);
-+		atmel_spi_unlock(as);
- 	}
- 
- 	asd->csr = csr;
-@@ -828,7 +837,6 @@ static int atmel_spi_transfer(struct spi_device *spi, struct spi_message *msg)
- {
- 	struct atmel_spi	*as;
- 	struct spi_transfer	*xfer;
--	unsigned long		flags;
- 	struct device		*controller = spi->master->dev.parent;
- 	u8			bits;
- 	struct atmel_spi_device	*asd;
-@@ -893,11 +901,11 @@ static int atmel_spi_transfer(struct spi_device *spi, struct spi_message *msg)
- 	msg->status = -EINPROGRESS;
- 	msg->actual_length = 0;
- 
--	spin_lock_irqsave(&as->lock, flags);
-+	atmel_spi_lock(as);
- 	list_add_tail(&msg->queue, &as->queue);
- 	if (!as->current_transfer)
- 		atmel_spi_next_message(spi->master);
--	spin_unlock_irqrestore(&as->lock, flags);
-+	atmel_spi_unlock(as);
- 
- 	return 0;
- }
-@@ -907,17 +915,16 @@ static void atmel_spi_cleanup(struct spi_device *spi)
- 	struct atmel_spi	*as = spi_master_get_devdata(spi->master);
- 	struct atmel_spi_device	*asd = spi->controller_state;
- 	unsigned		gpio = (unsigned) spi->controller_data;
--	unsigned long		flags;
- 
- 	if (!asd)
- 		return;
- 
--	spin_lock_irqsave(&as->lock, flags);
-+	atmel_spi_lock(as);
- 	if (as->stay == spi) {
- 		as->stay = NULL;
- 		cs_deactivate(as, spi);
- 	}
--	spin_unlock_irqrestore(&as->lock, flags);
-+	atmel_spi_unlock(as);
- 
- 	spi->controller_state = NULL;
- 	gpio_free(gpio);
--- 
-1.7.9.5
+Do you guys check and use PMTT in ACPI spec instead?
 
+Yinghai
