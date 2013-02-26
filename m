@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760336Ab3B0AEI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:04:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42522 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933004Ab3BZX7K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933533Ab3BZX7K (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Feb 2013 18:59:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42480 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933004Ab3BZX7E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 18:59:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 33/53] staging: comedi: disallow COMEDI_DEVCONFIG on non-board minors
-Date: Tue, 26 Feb 2013 15:58:02 -0800
-Message-Id: <20130226235623.274106947@linuxfoundation.org>
+        Clemens Ladisch <clemens@ladisch.de>
+Subject: [ 25/53] ALSA: usb-audio: fix Roland A-PRO support
+Date: Tue, 26 Feb 2013 15:57:54 -0800
+Message-Id: <20130226235622.455466851@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -26,51 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 754ab5c0e55dd118273ca2c217c4d95e9fbc8259 upstream.
+commit 7da58046482fceb17c4a0d4afefd9507ec56de7f upstream.
 
-Comedi has two sorts of minor devices:
-(a) normal board minor devices in the range 0 to
-COMEDI_NUM_BOARD_MINORS-1 inclusive; and
-(b) special subdevice minor devices in the range COMEDI_NUM_BOARD_MINORS
-upwards that are used to open the same underlying comedi device as the
-normal board minor devices, but with non-default read and write
-subdevices for asynchronous commands.
+The quirk for the Roland/Cakewalk A-PRO keyboards accidentally used the
+wrong interface number, which prevented the driver from attaching to the
+device.
 
-The special subdevice minor devices get created when a board supporting
-asynchronous commands is attached to a normal board minor device, and
-destroyed when the board is detached from the normal board minor device.
-One way to attach or detach a board is by using the COMEDI_DEVCONFIG
-ioctl.  This should only be used on normal board minors as the special
-subdevice minors are too ephemeral.  In particular, the change
-introduced in commit 7d3135af399e92cf4c9bbc5f86b6c140aab3b88c ("staging:
-comedi: prevent auto-unconfig of manually configured devices") breaks
-horribly for special subdevice minor devices.
-
-Since there's no legitimate use for the COMEDI_DEVCONFIG ioctl on a
-special subdevice minor device node, disallow it and return -ENOTTY.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ sound/usb/quirks-table.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -136,6 +136,11 @@ static long comedi_unlocked_ioctl(struct
- 	/* Device config is special, because it must work on
- 	 * an unconfigured device. */
- 	if (cmd == COMEDI_DEVCONFIG) {
-+		if (minor >= COMEDI_NUM_BOARD_MINORS) {
-+			/* Device config not appropriate on non-board minors. */
-+			rc = -ENOTTY;
-+			goto done;
-+		}
- 		rc = do_devconfig_ioctl(dev,
- 					(struct comedi_devconfig __user *)arg);
- 		if (rc == 0)
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -1613,7 +1613,7 @@ YAMAHA_DEVICE(0x7010, "UB99"),
+ 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
+ 		/* .vendor_name = "Roland", */
+ 		/* .product_name = "A-PRO", */
+-		.ifnum = 1,
++		.ifnum = 0,
+ 		.type = QUIRK_MIDI_FIXED_ENDPOINT,
+ 		.data = & (const struct snd_usb_midi_endpoint_info) {
+ 			.out_cables = 0x0003,
 
 
