@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933279Ab3BZX6s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42352 "EHLO
+	id S1760639Ab3B0AfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:35:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42388 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932918Ab3BZX6p (ORCPT
+	with ESMTP id S932918Ab3BZX6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:45 -0500
+	Tue, 26 Feb 2013 18:58:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.co.il>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Haggai Eran <haggaie@mellanox.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 13/53] mm: mmu_notifier: have mmu_notifiers use a global SRCU so they may safely schedule
-Date: Tue, 26 Feb 2013 15:57:42 -0800
-Message-Id: <20130226235621.212198523@linuxfoundation.org>
+        Edward Donovan <edward.donovan@numble.net>,
+        "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 04/53] genirq: Avoid deadlock in spurious handling
+Date: Tue, 26 Feb 2013 15:57:33 -0800
+Message-Id: <20130226235620.299020989@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -32,288 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.co.il>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 21a92735f660eaecf69a6f2e777f18463760ec32 upstream.
+commit e716efde75267eab919cdb2bef5b2cb77f305326 upstream.
 
-With an RCU based mmu_notifier implementation, any callout to
-mmu_notifier_invalidate_range_{start,end}() or
-mmu_notifier_invalidate_page() would not be allowed to call schedule()
-as that could potentially allow a modification to the mmu_notifier
-structure while it is currently being used.
+commit 52553ddf(genirq: fix regression in irqfixup, irqpoll)
+introduced a potential deadlock by calling the action handler with the
+irq descriptor lock held.
 
-Since srcu allocs 4 machine words per instance per cpu, we may end up
-with memory exhaustion if we use srcu per mm.  So all mms share a global
-srcu.  Note that during large mmu_notifier activity exit & unregister
-paths might hang for longer periods, but it is tolerable for current
-mmu_notifier clients.
+Remove the call and let the handling code run even for an interrupt
+where only a single action is registered. That matches the goal of
+the above commit and avoids the deadlock.
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.co.il>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Haggai Eran <haggaie@mellanox.com>
-Cc: "Paul E. McKenney" <paulmck@us.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Document the confusing action = desc->action reload in the handling
+loop while at it.
+
+Reported-and-tested-by: "Wang, Warner" <warner.wang@hp.com>
+Tested-by: Edward Donovan <edward.donovan@numble.net>
+Cc: "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/mmu_notifier.h |    1 
- mm/mmu_notifier.c            |   73 ++++++++++++++++++++++++++++---------------
- 2 files changed, 49 insertions(+), 25 deletions(-)
+ kernel/irq/spurious.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/include/linux/mmu_notifier.h
-+++ b/include/linux/mmu_notifier.h
-@@ -4,6 +4,7 @@
- #include <linux/list.h>
- #include <linux/spinlock.h>
- #include <linux/mm_types.h>
-+#include <linux/srcu.h>
- 
- struct mmu_notifier;
- struct mmu_notifier_ops;
---- a/mm/mmu_notifier.c
-+++ b/mm/mmu_notifier.c
-@@ -14,10 +14,14 @@
- #include <linux/module.h>
- #include <linux/mm.h>
- #include <linux/err.h>
-+#include <linux/srcu.h>
- #include <linux/rcupdate.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
- 
-+/* global SRCU for all MMs */
-+struct srcu_struct srcu;
-+
- /*
-  * This function can't run concurrently against mmu_notifier_register
-  * because mm->mm_users > 0 during mmu_notifier_register and exit_mmap
-@@ -25,8 +29,8 @@
-  * in parallel despite there being no task using this mm any more,
-  * through the vmas outside of the exit_mmap context, such as with
-  * vmtruncate. This serializes against mmu_notifier_unregister with
-- * the mmu_notifier_mm->lock in addition to RCU and it serializes
-- * against the other mmu notifiers with RCU. struct mmu_notifier_mm
-+ * the mmu_notifier_mm->lock in addition to SRCU and it serializes
-+ * against the other mmu notifiers with SRCU. struct mmu_notifier_mm
-  * can't go away from under us as exit_mmap holds an mm_count pin
-  * itself.
-  */
-@@ -34,12 +38,13 @@ void __mmu_notifier_release(struct mm_st
- {
- 	struct mmu_notifier *mn;
- 	struct hlist_node *n;
-+	int id;
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -80,13 +80,11 @@ static int try_one_irq(int irq, struct i
  
  	/*
- 	 * RCU here will block mmu_notifier_unregister until
- 	 * ->release returns.
+ 	 * All handlers must agree on IRQF_SHARED, so we test just the
+-	 * first. Check for action->next as well.
++	 * first.
  	 */
--	rcu_read_lock();
-+	id = srcu_read_lock(&srcu);
- 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist)
- 		/*
- 		 * if ->release runs before mmu_notifier_unregister it
-@@ -50,7 +55,7 @@ void __mmu_notifier_release(struct mm_st
- 		 */
- 		if (mn->ops->release)
- 			mn->ops->release(mn, mm);
--	rcu_read_unlock();
-+	srcu_read_unlock(&srcu, id);
+ 	action = desc->action;
+ 	if (!action || !(action->flags & IRQF_SHARED) ||
+-	    (action->flags & __IRQF_TIMER) ||
+-	    (action->handler(irq, action->dev_id) == IRQ_HANDLED) ||
+-	    !action->next)
++	    (action->flags & __IRQF_TIMER))
+ 		goto out;
  
- 	spin_lock(&mm->mmu_notifier_mm->lock);
- 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
-@@ -68,7 +73,7 @@ void __mmu_notifier_release(struct mm_st
- 	spin_unlock(&mm->mmu_notifier_mm->lock);
- 
- 	/*
--	 * synchronize_rcu here prevents mmu_notifier_release to
-+	 * synchronize_srcu here prevents mmu_notifier_release to
- 	 * return to exit_mmap (which would proceed freeing all pages
- 	 * in the mm) until the ->release method returns, if it was
- 	 * invoked by mmu_notifier_unregister.
-@@ -76,7 +81,7 @@ void __mmu_notifier_release(struct mm_st
- 	 * The mmu_notifier_mm can't go away from under us because one
- 	 * mm_count is hold by exit_mmap.
- 	 */
--	synchronize_rcu();
-+	synchronize_srcu(&srcu);
- }
- 
- /*
-@@ -89,14 +94,14 @@ int __mmu_notifier_clear_flush_young(str
- {
- 	struct mmu_notifier *mn;
- 	struct hlist_node *n;
--	int young = 0;
-+	int young = 0, id;
- 
--	rcu_read_lock();
-+	id = srcu_read_lock(&srcu);
- 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
- 		if (mn->ops->clear_flush_young)
- 			young |= mn->ops->clear_flush_young(mn, mm, address);
- 	}
--	rcu_read_unlock();
-+	srcu_read_unlock(&srcu, id);
- 
- 	return young;
- }
-@@ -106,9 +111,9 @@ int __mmu_notifier_test_young(struct mm_
- {
- 	struct mmu_notifier *mn;
- 	struct hlist_node *n;
--	int young = 0;
-+	int young = 0, id;
- 
--	rcu_read_lock();
-+	id = srcu_read_lock(&srcu);
- 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
- 		if (mn->ops->test_young) {
- 			young = mn->ops->test_young(mn, mm, address);
-@@ -116,7 +121,7 @@ int __mmu_notifier_test_young(struct mm_
- 				break;
- 		}
- 	}
--	rcu_read_unlock();
-+	srcu_read_unlock(&srcu, id);
- 
- 	return young;
- }
-@@ -126,8 +131,9 @@ void __mmu_notifier_change_pte(struct mm
- {
- 	struct mmu_notifier *mn;
- 	struct hlist_node *n;
-+	int id;
- 
--	rcu_read_lock();
-+	id = srcu_read_lock(&srcu);
- 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
- 		if (mn->ops->change_pte)
- 			mn->ops->change_pte(mn, mm, address, pte);
-@@ -138,7 +144,7 @@ void __mmu_notifier_change_pte(struct mm
- 		else if (mn->ops->invalidate_page)
- 			mn->ops->invalidate_page(mn, mm, address);
- 	}
--	rcu_read_unlock();
-+	srcu_read_unlock(&srcu, id);
- }
- 
- void __mmu_notifier_invalidate_page(struct mm_struct *mm,
-@@ -146,13 +152,14 @@ void __mmu_notifier_invalidate_page(stru
- {
- 	struct mmu_notifier *mn;
- 	struct hlist_node *n;
-+	int id;
- 
--	rcu_read_lock();
-+	id = srcu_read_lock(&srcu);
- 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
- 		if (mn->ops->invalidate_page)
- 			mn->ops->invalidate_page(mn, mm, address);
- 	}
--	rcu_read_unlock();
-+	srcu_read_unlock(&srcu, id);
- }
- 
- void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
-@@ -160,13 +167,14 @@ void __mmu_notifier_invalidate_range_sta
- {
- 	struct mmu_notifier *mn;
- 	struct hlist_node *n;
-+	int id;
- 
--	rcu_read_lock();
-+	id = srcu_read_lock(&srcu);
- 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
- 		if (mn->ops->invalidate_range_start)
- 			mn->ops->invalidate_range_start(mn, mm, start, end);
- 	}
--	rcu_read_unlock();
-+	srcu_read_unlock(&srcu, id);
- }
- 
- void __mmu_notifier_invalidate_range_end(struct mm_struct *mm,
-@@ -174,13 +182,14 @@ void __mmu_notifier_invalidate_range_end
- {
- 	struct mmu_notifier *mn;
- 	struct hlist_node *n;
-+	int id;
- 
--	rcu_read_lock();
-+	id = srcu_read_lock(&srcu);
- 	hlist_for_each_entry_rcu(mn, n, &mm->mmu_notifier_mm->list, hlist) {
- 		if (mn->ops->invalidate_range_end)
- 			mn->ops->invalidate_range_end(mn, mm, start, end);
- 	}
--	rcu_read_unlock();
-+	srcu_read_unlock(&srcu, id);
- }
- 
- static int do_mmu_notifier_register(struct mmu_notifier *mn,
-@@ -192,6 +201,12 @@ static int do_mmu_notifier_register(stru
- 
- 	BUG_ON(atomic_read(&mm->mm_users) <= 0);
- 
-+	/*
-+	* Verify that mmu_notifier_init() already run and the global srcu is
-+	* initialized.
-+	*/
-+	BUG_ON(!srcu.per_cpu_ref);
-+
- 	ret = -ENOMEM;
- 	mmu_notifier_mm = kmalloc(sizeof(struct mmu_notifier_mm), GFP_KERNEL);
- 	if (unlikely(!mmu_notifier_mm))
-@@ -274,8 +289,8 @@ void __mmu_notifier_mm_destroy(struct mm
- /*
-  * This releases the mm_count pin automatically and frees the mm
-  * structure if it was the last user of it. It serializes against
-- * running mmu notifiers with RCU and against mmu_notifier_unregister
-- * with the unregister lock + RCU. All sptes must be dropped before
-+ * running mmu notifiers with SRCU and against mmu_notifier_unregister
-+ * with the unregister lock + SRCU. All sptes must be dropped before
-  * calling mmu_notifier_unregister. ->release or any other notifier
-  * method may be invoked concurrently with mmu_notifier_unregister,
-  * and only after mmu_notifier_unregister returned we're guaranteed
-@@ -290,8 +305,9 @@ void mmu_notifier_unregister(struct mmu_
- 		 * RCU here will force exit_mmap to wait ->release to finish
- 		 * before freeing the pages.
- 		 */
--		rcu_read_lock();
-+		int id;
- 
-+		id = srcu_read_lock(&srcu);
- 		/*
- 		 * exit_mmap will block in mmu_notifier_release to
- 		 * guarantee ->release is called before freeing the
-@@ -299,7 +315,7 @@ void mmu_notifier_unregister(struct mmu_
- 		 */
- 		if (mn->ops->release)
- 			mn->ops->release(mn, mm);
--		rcu_read_unlock();
-+		srcu_read_unlock(&srcu, id);
- 
- 		spin_lock(&mm->mmu_notifier_mm->lock);
- 		hlist_del_rcu(&mn->hlist);
-@@ -310,10 +326,17 @@ void mmu_notifier_unregister(struct mmu_
- 	 * Wait any running method to finish, of course including
- 	 * ->release if it was run by mmu_notifier_relase instead of us.
- 	 */
--	synchronize_rcu();
-+	synchronize_srcu(&srcu);
- 
- 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
- 
- 	mmdrop(mm);
- }
- EXPORT_SYMBOL_GPL(mmu_notifier_unregister);
-+
-+static int __init mmu_notifier_init(void)
-+{
-+	return init_srcu_struct(&srcu);
-+}
-+
-+module_init(mmu_notifier_init);
+ 	/* Already running on another processor */
+@@ -104,6 +102,7 @@ static int try_one_irq(int irq, struct i
+ 	do {
+ 		if (handle_irq_event(desc) == IRQ_HANDLED)
+ 			ret = IRQ_HANDLED;
++		/* Make sure that there is still a valid action */
+ 		action = desc->action;
+ 	} while ((desc->istate & IRQS_PENDING) && action);
+ 	desc->istate &= ~IRQS_POLL_INPROGRESS;
 
 
