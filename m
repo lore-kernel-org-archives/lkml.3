@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934157Ab3B0BSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:18:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41778 "EHLO
+	id S934167Ab3B0BSk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:18:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41771 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759858Ab3BZX5O (ORCPT
+	with ESMTP id S1759997Ab3BZX5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:14 -0500
+	Tue, 26 Feb 2013 18:57:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 021/150] rtlwifi: rtl8192cu: Fix NULL dereference BUG when using new_id
-Date: Tue, 26 Feb 2013 15:54:38 -0800
-Message-Id: <20130226235526.449396890@linuxfoundation.org>
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Stephen Hurd <shurd@broadcom.com>, Michael Chan <mchan@broadcom.com>
+Subject: [ 019/150] serial_core: Fix type definition for PORT_BRCM_TRUMANAGE.
+Date: Tue, 26 Feb 2013 15:54:36 -0800
+Message-Id: <20130226235526.246172467@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,76 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Michael Chan <mchan@broadcom.com>
 
-commit 957f4aca5fa0db69635271bc4621cc0b65b2d590 upstream.
+commit 85f024401bf80746ae08b7fd5809a9b16accf0b1 upstream.
 
-When the new_id entry in /sysfs is used for a foreign USB device, rtlwifi
-BUGS with a NULL pointer dereference because the per-driver configuration
-data is not available. The probe function has been restructured as
-suggested by Ben Hutchings <bhutchings@solarflare.com>.
+It was mistakenly defined to be 24 instead of the next higher number 25.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Stephen Hurd <shurd@broadcom.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    8 +++++++-
- drivers/net/wireless/rtlwifi/usb.c          |    5 +++--
- drivers/net/wireless/rtlwifi/usb.h          |    3 ++-
- 3 files changed, 12 insertions(+), 4 deletions(-)
+ include/uapi/linux/serial_core.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -363,9 +363,15 @@ static struct usb_device_id rtl8192c_usb
+--- a/include/uapi/linux/serial_core.h
++++ b/include/uapi/linux/serial_core.h
+@@ -50,7 +50,7 @@
+ #define PORT_LPC3220	22	/* NXP LPC32xx SoC "Standard" UART */
+ #define PORT_8250_CIR	23	/* CIR infrared port, has its own driver */
+ #define PORT_XR17V35X	24	/* Exar XR17V35x UARTs */
+-#define PORT_BRCM_TRUMANAGE	24
++#define PORT_BRCM_TRUMANAGE	25
+ #define PORT_MAX_8250	25	/* max port ID */
  
- MODULE_DEVICE_TABLE(usb, rtl8192c_usb_ids);
- 
-+static int rtl8192cu_probe(struct usb_interface *intf,
-+			   const struct usb_device_id *id)
-+{
-+	return rtl_usb_probe(intf, id, &rtl92cu_hal_cfg);
-+}
-+
- static struct usb_driver rtl8192cu_driver = {
- 	.name = "rtl8192cu",
--	.probe = rtl_usb_probe,
-+	.probe = rtl8192cu_probe,
- 	.disconnect = rtl_usb_disconnect,
- 	.id_table = rtl8192c_usb_ids,
- 
---- a/drivers/net/wireless/rtlwifi/usb.c
-+++ b/drivers/net/wireless/rtlwifi/usb.c
-@@ -941,7 +941,8 @@ static struct rtl_intf_ops rtl_usb_ops =
- };
- 
- int rtl_usb_probe(struct usb_interface *intf,
--			const struct usb_device_id *id)
-+		  const struct usb_device_id *id,
-+		  struct rtl_hal_cfg *rtl_hal_cfg)
- {
- 	int err;
- 	struct ieee80211_hw *hw = NULL;
-@@ -976,7 +977,7 @@ int rtl_usb_probe(struct usb_interface *
- 	usb_set_intfdata(intf, hw);
- 	/* init cfg & intf_ops */
- 	rtlpriv->rtlhal.interface = INTF_USB;
--	rtlpriv->cfg = (struct rtl_hal_cfg *)(id->driver_info);
-+	rtlpriv->cfg = rtl_hal_cfg;
- 	rtlpriv->intf_ops = &rtl_usb_ops;
- 	rtl_dbgp_flag_init(hw);
- 	/* Init IO handler */
---- a/drivers/net/wireless/rtlwifi/usb.h
-+++ b/drivers/net/wireless/rtlwifi/usb.h
-@@ -157,7 +157,8 @@ struct rtl_usb_priv {
- 
- 
- int rtl_usb_probe(struct usb_interface *intf,
--			    const struct usb_device_id *id);
-+		  const struct usb_device_id *id,
-+		  struct rtl_hal_cfg *rtl92cu_hal_cfg);
- void rtl_usb_disconnect(struct usb_interface *intf);
- int rtl_usb_suspend(struct usb_interface *pusb_intf, pm_message_t message);
- int rtl_usb_resume(struct usb_interface *pusb_intf);
+ /*
 
 
