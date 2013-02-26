@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab3BZX6J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42086 "EHLO
+	id S932645Ab3B0Aze (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:55:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42103 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760313Ab3BZX6F (ORCPT
+	with ESMTP id S932164Ab3BZX6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:05 -0500
+	Tue, 26 Feb 2013 18:58:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 096/150] staging: vt6656: revert : 64 bit- Correctly address void structure.
-Date: Tue, 26 Feb 2013 15:55:53 -0800
-Message-Id: <20130226235534.029780812@linuxfoundation.org>
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [ 101/150] ARM: 7635/1: versatile: fix the PCI IRQ regression
+Date: Tue, 26 Feb 2013 15:55:58 -0800
+Message-Id: <20130226235534.570311613@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,36 +29,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit d61ac98a4bd86b3217f0c6e058bd0b3a3282899b upstream.
+commit e3e92a7be6936dff1de80e66b0b683d54e9e02d8 upstream.
 
-The patch is wrong and is partially reverted.
+The PCI IRQs were regressing due to two things:
 
-The NULL check of pTransmitKey->pvKeyTable is kept.
+- The PCI glue layer was using an hard-coded IRQ 27 offset.
+  This caused the immediate regression.
 
-The problem was ultimately fixed by upstream commit.
-1ee4c55fc9620451b2a825d793042a7e0775391b
-staging: vt6656: Fix inconsistent structure packing
+- The SIC IRQ mask was inverted (i.e. a bit was indeed set to
+  one for each valid IRQ on the SIC, but accidentally inverted
+  in the init call). This has been around forever, but we have
+  been saved by some other forgiving code that would reserve
+  IRQ descriptors in this range, as the versatile is
+  non-sparse.
 
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+When the IRQs were bumped up 32 steps so as to avoid using IRQ
+zero and avoid touching the 16 legacy IRQs, things broke.
+
+Introduce an explicit valid mask for the IRQs that are active
+on the PIC/SIC, and pass that. Use the BIT() macro from
+<linux/bitops.h> to make sure we hit the right bits, readily
+defined in <mach/platform.h>.
+
+Reported-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/rxtx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-versatile/core.c |   15 ++++++++++++++-
+ arch/arm/mach-versatile/pci.c  |   11 ++++++-----
+ 2 files changed, 20 insertions(+), 6 deletions(-)
 
---- a/drivers/staging/vt6656/rxtx.c
-+++ b/drivers/staging/vt6656/rxtx.c
-@@ -1454,7 +1454,7 @@ s_bPacketToWirelessUsb(
+--- a/arch/arm/mach-versatile/core.c
++++ b/arch/arm/mach-versatile/core.c
+@@ -36,6 +36,7 @@
+ #include <linux/gfp.h>
+ #include <linux/clkdev.h>
+ #include <linux/mtd/physmap.h>
++#include <linux/bitops.h>
  
-     pvRrvTime = pMICHDR = pvRTS = pvCTS = pvTxDataHd = NULL;
- 	if (bNeedEncryption && pTransmitKey->pvKeyTable) {
--		if (((PSKeyTable)&pTransmitKey->pvKeyTable)->bSoftWEP == TRUE)
-+		if (((PSKeyTable)pTransmitKey->pvKeyTable)->bSoftWEP == TRUE)
- 			bSoftWEP = TRUE; /* WEP 256 */
- 	}
+ #include <asm/irq.h>
+ #include <asm/hardware/arm_timer.h>
+@@ -65,16 +66,28 @@
+ #define VA_VIC_BASE		__io_address(VERSATILE_VIC_BASE)
+ #define VA_SIC_BASE		__io_address(VERSATILE_SIC_BASE)
  
++/* These PIC IRQs are valid in each configuration */
++#define PIC_VALID_ALL	BIT(SIC_INT_KMI0) | BIT(SIC_INT_KMI1) | \
++			BIT(SIC_INT_SCI3) | BIT(SIC_INT_UART3) | \
++			BIT(SIC_INT_CLCD) | BIT(SIC_INT_TOUCH) | \
++			BIT(SIC_INT_KEYPAD) | BIT(SIC_INT_DoC) | \
++			BIT(SIC_INT_USB) | BIT(SIC_INT_PCI0) | \
++			BIT(SIC_INT_PCI1) | BIT(SIC_INT_PCI2) | \
++			BIT(SIC_INT_PCI3)
+ #if 1
+ #define IRQ_MMCI0A	IRQ_VICSOURCE22
+ #define IRQ_AACI	IRQ_VICSOURCE24
+ #define IRQ_ETH		IRQ_VICSOURCE25
+ #define PIC_MASK	0xFFD00000
++#define PIC_VALID	PIC_VALID_ALL
+ #else
+ #define IRQ_MMCI0A	IRQ_SIC_MMCI0A
+ #define IRQ_AACI	IRQ_SIC_AACI
+ #define IRQ_ETH		IRQ_SIC_ETH
+ #define PIC_MASK	0
++#define PIC_VALID	PIC_VALID_ALL | BIT(SIC_INT_MMCI0A) | \
++			BIT(SIC_INT_MMCI1A) | BIT(SIC_INT_AACI) | \
++			BIT(SIC_INT_ETH)
+ #endif
+ 
+ /* Lookup table for finding a DT node that represents the vic instance */
+@@ -102,7 +115,7 @@ void __init versatile_init_irq(void)
+ 					      VERSATILE_SIC_BASE);
+ 
+ 	fpga_irq_init(VA_SIC_BASE, "SIC", IRQ_SIC_START,
+-		IRQ_VICSOURCE31, ~PIC_MASK, np);
++		IRQ_VICSOURCE31, PIC_VALID, np);
+ 
+ 	/*
+ 	 * Interrupts on secondary controller from 0 to 8 are routed to
+--- a/arch/arm/mach-versatile/pci.c
++++ b/arch/arm/mach-versatile/pci.c
+@@ -23,6 +23,7 @@
+ #include <linux/io.h>
+ 
+ #include <mach/hardware.h>
++#include <mach/irqs.h>
+ #include <asm/irq.h>
+ #include <asm/mach/pci.h>
+ 
+@@ -327,12 +328,12 @@ static int __init versatile_map_irq(cons
+ 	int irq;
+ 
+ 	/* slot,  pin,	irq
+-	 *  24     1     27
+-	 *  25     1     28
+-	 *  26     1     29
+-	 *  27     1     30
++	 *  24     1     IRQ_SIC_PCI0
++	 *  25     1     IRQ_SIC_PCI1
++	 *  26     1     IRQ_SIC_PCI2
++	 *  27     1     IRQ_SIC_PCI3
+ 	 */
+-	irq = 27 + ((slot - 24 + pin - 1) & 3);
++	irq = IRQ_SIC_PCI0 + ((slot - 24 + pin - 1) & 3);
+ 
+ 	return irq;
+ }
 
 
