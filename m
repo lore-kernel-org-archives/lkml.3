@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933663Ab3BZX7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:59:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42471 "EHLO
+	id S1759680Ab3B0ABb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:01:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933442Ab3BZX7D (ORCPT
+	with ESMTP id S933664Ab3BZX7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:59:03 -0500
+	Tue, 26 Feb 2013 18:59:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wangyuan Zhang <Wangyuan.Zhang@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 23/53] NLM: Ensure that we resend all pending blocking locks after a reclaim
-Date: Tue, 26 Feb 2013 15:57:52 -0800
-Message-Id: <20130226235622.231791477@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Jiri Kosina <jkosina@suse.cz>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 41/53] fb: Yet another band-aid for fixing lockdep mess
+Date: Tue, 26 Feb 2013 15:58:10 -0800
+Message-Id: <20130226235624.121629953@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -27,36 +30,202 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 666b3d803a511fbc9bc5e5ea8ce66010cf03ea13 upstream.
+commit e93a9a868792ad71cdd09d75e5a02d8067473c4e upstream.
 
-Currently, nlmclnt_lock will break out of the for(;;) loop when
-the reclaimer wakes up the blocking lock thread by setting
-nlm_lck_denied_grace_period. This causes the lock request to fail
-with an ENOLCK error.
-The intention was always to ensure that we resend the lock request
-after the grace period has expired.
+I've still got lockdep warnings even after Alan's patch, and it seems that
+yet more band aids are required to paper over similar paths for
+unbind_con_driver() and unregister_con_driver().  After this hack, lockdep
+warnings are finally gone.
 
-Reported-by: Wangyuan Zhang <Wangyuan.Zhang@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/clntproc.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/tty/vt/vt.c           |   43 +++++++++++++++++++++++++++---------------
+ drivers/video/console/fbcon.c |    4 +--
+ drivers/video/fbmem.c         |    4 +++
+ include/linux/console.h       |    1 
+ include/linux/vt_kern.h       |    2 +
+ 5 files changed, 37 insertions(+), 17 deletions(-)
 
---- a/fs/lockd/clntproc.c
-+++ b/fs/lockd/clntproc.c
-@@ -550,6 +550,9 @@ again:
- 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
- 		if (status < 0)
- 			break;
-+		/* Resend the blocking lock request after a server reboot */
-+		if (resp->status ==  nlm_lck_denied_grace_period)
-+			continue;
- 		if (resp->status != nlm_lck_blocked)
- 			break;
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -3164,6 +3164,18 @@ static int con_is_graphics(const struct
+  */
+ int unbind_con_driver(const struct consw *csw, int first, int last, int deflt)
+ {
++	int retval;
++
++	console_lock();
++	retval = do_unbind_con_driver(csw, first, last, deflt);
++	console_unlock();
++	return retval;
++}
++EXPORT_SYMBOL(unbind_con_driver);
++
++/* unlocked version of unbind_con_driver() */
++int do_unbind_con_driver(const struct consw *csw, int first, int last, int deflt)
++{
+ 	struct module *owner = csw->owner;
+ 	const struct consw *defcsw = NULL;
+ 	struct con_driver *con_driver = NULL, *con_back = NULL;
+@@ -3172,7 +3184,7 @@ int unbind_con_driver(const struct consw
+ 	if (!try_module_get(owner))
+ 		return -ENODEV;
+ 
+-	console_lock();
++	WARN_CONSOLE_UNLOCKED();
+ 
+ 	/* check if driver is registered and if it is unbindable */
+ 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+@@ -3185,10 +3197,8 @@ int unbind_con_driver(const struct consw
+ 		}
  	}
+ 
+-	if (retval) {
+-		console_unlock();
++	if (retval)
+ 		goto err;
+-	}
+ 
+ 	retval = -ENODEV;
+ 
+@@ -3204,15 +3214,11 @@ int unbind_con_driver(const struct consw
+ 		}
+ 	}
+ 
+-	if (retval) {
+-		console_unlock();
++	if (retval)
+ 		goto err;
+-	}
+ 
+-	if (!con_is_bound(csw)) {
+-		console_unlock();
++	if (!con_is_bound(csw))
+ 		goto err;
+-	}
+ 
+ 	first = max(first, con_driver->first);
+ 	last = min(last, con_driver->last);
+@@ -3241,13 +3247,12 @@ int unbind_con_driver(const struct consw
+ 
+ 	/* ignore return value, binding should not fail */
+ 	do_bind_con_driver(defcsw, first, last, deflt);
+-	console_unlock();
+ err:
+ 	module_put(owner);
+ 	return retval;
+ 
+ }
+-EXPORT_SYMBOL(unbind_con_driver);
++EXPORT_SYMBOL_GPL(do_unbind_con_driver);
+ 
+ static int vt_bind(struct con_driver *con)
+ {
+@@ -3621,9 +3626,18 @@ EXPORT_SYMBOL(register_con_driver);
+  */
+ int unregister_con_driver(const struct consw *csw)
+ {
+-	int i, retval = -ENODEV;
++	int retval;
+ 
+ 	console_lock();
++	retval = do_unregister_con_driver(csw);
++	console_unlock();
++	return retval;
++}
++EXPORT_SYMBOL(unregister_con_driver);
++
++int do_unregister_con_driver(const struct consw *csw)
++{
++	int i, retval = -ENODEV;
+ 
+ 	/* cannot unregister a bound driver */
+ 	if (con_is_bound(csw))
+@@ -3649,10 +3663,9 @@ int unregister_con_driver(const struct c
+ 		}
+ 	}
+ err:
+-	console_unlock();
+ 	return retval;
+ }
+-EXPORT_SYMBOL(unregister_con_driver);
++EXPORT_SYMBOL_GPL(do_unregister_con_driver);
+ 
+ /*
+  *	If we support more console drivers, this function is used
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -3011,7 +3011,7 @@ static int fbcon_unbind(void)
+ {
+ 	int ret;
+ 
+-	ret = unbind_con_driver(&fb_con, first_fb_vc, last_fb_vc,
++	ret = do_unbind_con_driver(&fb_con, first_fb_vc, last_fb_vc,
+ 				fbcon_is_default);
+ 
+ 	if (!ret)
+@@ -3084,7 +3084,7 @@ static int fbcon_fb_unregistered(struct
+ 		primary_device = -1;
+ 
+ 	if (!num_registered_fb)
+-		unregister_con_driver(&fb_con);
++		do_unregister_con_driver(&fb_con);
+ 
+ 	return 0;
+ }
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1646,8 +1646,10 @@ static int do_unregister_framebuffer(str
+ 
+ 	if (!lock_fb_info(fb_info))
+ 		return -ENODEV;
++	console_lock();
+ 	event.info = fb_info;
+ 	ret = fb_notifier_call_chain(FB_EVENT_FB_UNBIND, &event);
++	console_unlock();
+ 	unlock_fb_info(fb_info);
+ 
+ 	if (ret)
+@@ -1662,7 +1664,9 @@ static int do_unregister_framebuffer(str
+ 	num_registered_fb--;
+ 	fb_cleanup_device(fb_info);
+ 	event.info = fb_info;
++	console_lock();
+ 	fb_notifier_call_chain(FB_EVENT_FB_UNREGISTERED, &event);
++	console_unlock();
+ 
+ 	/* this may free fb info */
+ 	put_fb_info(fb_info);
+--- a/include/linux/console.h
++++ b/include/linux/console.h
+@@ -77,6 +77,7 @@ extern const struct consw prom_con;	/* S
+ int con_is_bound(const struct consw *csw);
+ int register_con_driver(const struct consw *csw, int first, int last);
+ int unregister_con_driver(const struct consw *csw);
++int do_unregister_con_driver(const struct consw *csw);
+ int take_over_console(const struct consw *sw, int first, int last, int deflt);
+ int do_take_over_console(const struct consw *sw, int first, int last, int deflt);
+ void give_up_console(const struct consw *sw);
+--- a/include/linux/vt_kern.h
++++ b/include/linux/vt_kern.h
+@@ -131,6 +131,8 @@ void vt_event_post(unsigned int event, u
+ int vt_waitactive(int n);
+ void change_console(struct vc_data *new_vc);
+ void reset_vc(struct vc_data *vc);
++extern int do_unbind_con_driver(const struct consw *csw, int first, int last,
++			     int deflt);
+ extern int unbind_con_driver(const struct consw *csw, int first, int last,
+ 			     int deflt);
+ int vty_init(const struct file_operations *console_fops);
 
 
