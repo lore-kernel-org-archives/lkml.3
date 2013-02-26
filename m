@@ -1,173 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760002Ab3BZB3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 20:29:14 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:46294 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758346Ab3BZB3M (ORCPT
+	id S1760021Ab3BZBaG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 20:30:06 -0500
+Received: from mail-da0-f45.google.com ([209.85.210.45]:48786 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab3BZBaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 20:29:12 -0500
-From: Gary Lowell <gary.lowell@inktank.com>
-To: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Cc: Sage Weil <sage@inktank.com>, linux-kernel@vger.kernel.org,
-        Gary Lowell <gary.lowell@inktank.com>
-Subject: [PATCH 1/1] scripts/package/builddeb:  build perftools package.
-Date: Mon, 25 Feb 2013 17:30:18 -0800
-Message-Id: <1361842218-1768-1-git-send-email-gary.lowell@inktank.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 25 Feb 2013 20:30:04 -0500
+Date: Mon, 25 Feb 2013 17:30:00 -0800
+From: "'Tejun Heo'" <tj@kernel.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "'Greg KH'" <greg@kroah.com>,
+        "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH V2] rtc: add devm_rtc_device_{register,unregister}()
+Message-ID: <20130226013000.GG2679@htj.dyndns.org>
+References: <008c01ce13bf$8d2cd550$a7867ff0$%han@samsung.com>
+ <20130226012317.GF2679@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130226012317.GF2679@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will build a linux-tools-$version package for each build that includes
-perf.  We've been using this for internal builds and other folks might find
-it helpful.
+On Mon, Feb 25, 2013 at 05:23:17PM -0800, 'Tejun Heo' wrote:
+> again, why do we need the WARN_ON() at all given that other
+> devm_*_match() don't do that and the only way to get NULL there would
+> be bug in devm_rtc*() code itself rather than its users?
 
-Signed-off-by: Gary Lowell <gary.lowell@inktank.com>
----
- scripts/package/builddeb |   95 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 94 insertions(+), 1 deletion(-)
+Ughh... I see that you probably copied the chunk from clk / regulator
+implementation.  Let's please not copy those.  Input validation via
+WARN_ON()s is nice when the interface is taking input from outside or
+the code in question is complex / fragile.  Here, the code involved is
+like 20 lines and self-contained.
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index acb8650..f57d33c 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -78,17 +78,20 @@ tmpdir="$objtree/debian/tmp"
- fwdir="$objtree/debian/fwtmp"
- kernel_headers_dir="$objtree/debian/hdrtmp"
- libc_headers_dir="$objtree/debian/headertmp"
-+tools_dir="$objtree/debian/toolstmp"
-+tmp_build_dir="$objtree/debian/toolsbuild"
- packagename=linux-image-$version
- fwpackagename=linux-firmware-image
- kernel_headers_packagename=linux-headers-$version
- libc_headers_packagename=linux-libc-dev
-+tools_packagename=linux-tools-$version
- 
- if [ "$ARCH" = "um" ] ; then
- 	packagename=user-mode-linux-$version
- fi
- 
- # Setup the directory structure
--rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir"
-+rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir" "$tools_dir" "$tmp_build_dir"
- mkdir -m 755 -p "$tmpdir/DEBIAN"
- mkdir -p  "$tmpdir/lib" "$tmpdir/boot" "$tmpdir/usr/share/doc/$packagename"
- mkdir -m 755 -p "$fwdir/DEBIAN"
-@@ -98,6 +101,10 @@ mkdir -p "$libc_headers_dir/usr/share/doc/$libc_headers_packagename"
- mkdir -m 755 -p "$kernel_headers_dir/DEBIAN"
- mkdir -p "$kernel_headers_dir/usr/share/doc/$kernel_headers_packagename"
- mkdir -p "$kernel_headers_dir/lib/modules/$version/"
-+mkdir -m 755 -p "$tools_dir/DEBIAN"
-+mkdir -p "$tools_dir/usr/share/doc/$tools_packagename"
-+mkdir -p "$tools_dir/usr/bin/"
-+mkdir -p "$tmp_build_dir"
- if [ "$ARCH" = "um" ] ; then
- 	mkdir -p "$tmpdir/usr/lib/uml/modules/$version" "$tmpdir/usr/bin"
- fi
-@@ -120,6 +127,77 @@ else
- 	fi
- fi
- 
-+# Build the tools
-+num_tools="0"
-+tools_flavour_abi=${version#*-}
-+tools_flavour=${tools_flavour_abi#*-}
-+tools_version=${version%-$tools_flavour}
-+debian_tools_version="${version%%-*}"
-+debian_tools_version="${version%.*}"
-+if grep -q '^CONFIG_PERF_EVENTS=y' .config ; then
-+	# Build and install perf
-+	(
-+	 unset MAKEFLAGS
-+	 unset MFLAGS
-+	 unset MAKEOVERRIDES
-+
-+	 mkdir -p $objtree/tools/perf
-+	 cd "$srctree/tools/perf"
-+	 $MAKE DESTDIR="$tools_dir/usr/" LDFLAGS= O=$objtree/tools/perf/ install
-+	 mv "$tools_dir/usr/bin/perf" "$tools_dir/usr/bin/perf_$debian_tools_version"
-+	 ln -s "/usr/bin/perf_$debian_tools_version" "$tools_dir/usr/bin/perf_$tools_version"
-+	 mv "$tools_dir/usr/libexec/perf-core" "$tools_dir/usr/share/perf_$debian_tools_version-core"
-+	 rmdir "$tools_dir/usr/libexec"
-+
-+	 # Documentation can't be built out-of-tree so copy source
-+	 # over to objtree and build man pages there
-+	 mkdir -p $tmp_build_dir/perf
-+	 cp -a "$srctree/tools/perf/Documentation" "$tmp_build_dir/perf/"
-+	 cp -a "$srctree/tools/perf/config" "$tmp_build_dir/perf/"
-+	 cd "$tmp_build_dir/perf/Documentation"
-+	 $MAKE man
-+	 $MAKE DESTDIR="$tools_dir/usr/" install
-+	 for manpage in `find $tools_dir/usr/share/man/ -type f`; do
-+		mv $manpage ${manpage/perf/perf_$debian_tools_version}
-+		gzip -9 ${manpage/perf/perf_$debian_tools_version}
-+	 done
-+	)
-+	num_tools=$(($num_tools+1))
-+fi
-+
-+if [[ "$ARCH" = "i386" || "$ARCH" = "x86_64" ]]; then
-+	# Build turbostat
-+	(
-+	 cp -a $srctree/tools/power/x86/turbostat "$tmp_build_dir"
-+	 ln -s $srctree/arch "$tmp_build_dir/../../../arch"
-+	 cd "$tmp_build_dir/turbostat/"
-+	 unset MAKEFLAGS
-+	 unset MFLAGS
-+	 unset MAKEOVERRIDES
-+	 $MAKE LDFLAGS=
-+	 cp turbostat "$tools_dir/usr/bin/turbostat_$debian_tools_version"
-+	 ln -s "/usr/bin/turbostat_$debian_tools_version" "$tools_dir/usr/bin/turbostat_$tools_version"
-+	 mkdir -p "$tools_dir/usr/share/man/man8"
-+	 cp turbostat.8 "$tools_dir/usr/share/man/man8/turbotstat_${debian_tools_version}.8"
-+	 gzip -9 "$tools_dir/usr/share/man/man8/turbotstat_${debian_tools_version}.8"
-+	)
-+
-+	# Build x86_energy_perf_policy
-+	(
-+	 cp -a $srctree/tools/power/x86/x86_energy_perf_policy "$tmp_build_dir"
-+	 cd "$tmp_build_dir/x86_energy_perf_policy"
-+	 unset MAKEFLAGS
-+	 unset MFLAGS
-+	 unset MAKEOVERRIDES
-+	 $MAKE LDFLAGS=
-+	 cp x86_energy_perf_policy "$tools_dir/usr/bin/x86_energy_perf_policy_$debian_tools_version"
-+	 ln -s "/usr/bin/x86_energy_perf_policy_$debian_tools_version" "$tools_dir/usr/bin/x86_energy_perf_policy_$tools_version"
-+	 cp x86_energy_perf_policy.8 "$tools_dir/usr/share/man/man8/x86_energy_perf_policy_${debian_tools_version}.8"
-+	 gzip -9 "$tools_dir/usr/share/man/man8/x86_energy_perf_policy_${debian_tools_version}.8"
-+	)
-+	num_tools=$(($num_tools+2))
-+fi
-+
- if grep -q '^CONFIG_MODULES=y' .config ; then
- 	INSTALL_MOD_PATH="$tmpdir" $MAKE KBUILD_SRC= modules_install
- 	rm -f "$tmpdir/lib/modules/$version/build"
-@@ -292,9 +370,24 @@ Description: Linux support headers for userspace development
-  are used by the installed headers for GNU glibc and other system libraries.
- EOF
- 
-+cat <<EOF >> debian/control
-+
-+Package: $tools_packagename
-+Section: devel
-+Architecture: $arch
-+Depends: \${shlibs:Depends}
-+Description: Linux kernel tools for version $version
-+ This package provides the architecture dependant parts for kernel
-+ version locked tools for version $version
-+EOF
-+
- if [ "$ARCH" != "um" ]; then
- 	create_package "$kernel_headers_packagename" "$kernel_headers_dir"
- 	create_package "$libc_headers_packagename" "$libc_headers_dir"
-+	if [ "$num_tools" > "0" ]; then
-+		dpkg-shlibdeps $tools_dir/usr/bin/*
-+		create_package "$tools_packagename" "$tools_dir"
-+	fi
- fi
- 
- create_package "$packagename" "$tmpdir"
+Thanks.
+
 -- 
-1.7.9.5
-
+tejun
