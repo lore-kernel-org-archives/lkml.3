@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934153Ab3B0BIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:08:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41922 "EHLO
+	id S1760188Ab3B0BIR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:08:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41919 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759998Ab3BZX5h (ORCPT
+	with ESMTP id S1760009Ab3BZX5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:37 -0500
+	Tue, 26 Feb 2013 18:57:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 046/150] NFSv4.1: Fix an ABBA locking issue with session and state serialisation
-Date: Tue, 26 Feb 2013 15:55:03 -0800
-Message-Id: <20130226235528.970177654@linuxfoundation.org>
+        Staffan Lindberg <pike@xbmc.org>, Anssi Hannula <anssi.hannula@iki.fi>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 055/150] ALSA: hda - Fix default multichannel HDMI mapping regression
+Date: Tue, 26 Feb 2013 15:55:12 -0800
+Message-Id: <20130226235529.860710660@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,125 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-commit c8da19b9866ea84e9ad1c369393ea95d54ee7845 upstream.
+commit 20608731f479d48be6bcb88e727f360ddf98ddaf upstream.
 
-Ensure that if nfs_wait_on_sequence() causes our rpc task to wait for
-an NFSv4 state serialisation lock, then we also drop the session slot.
+Commit d45e6889ee69456a4d5b1bbb32252f460cd48fa9 ("ALSA: hda - Provide
+the proper channel mapping for generic HDMI driver") added support for
+custom channel maps in the HDA HDMI driver. Due to a mistake in an
+'if' condition the custom map is always used even when no such map has
+been set. This causes incorrect channel mapping for multichannel audio
+by default.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Pass per_pin->chmap_set to hdmi_setup_channel_mapping() as a parameter
+so that it can use it for detecting if a custom map has been set instead
+of checking if map is NULL (which is never the case).
+
+Reported-by: Staffan Lindberg <pike@xbmc.org>
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |   32 ++++++++++++++++++++------------
- 1 file changed, 20 insertions(+), 12 deletions(-)
+ sound/pci/hda/patch_hdmi.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1463,7 +1463,7 @@ static void nfs4_open_prepare(struct rpc
- 	struct nfs4_state_owner *sp = data->owner;
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -714,9 +714,10 @@ static void hdmi_setup_fake_chmap(unsign
  
- 	if (nfs_wait_on_sequence(data->o_arg.seqid, task) != 0)
--		return;
-+		goto out_wait;
- 	/*
- 	 * Check if we still need to send an OPEN call, or if we can use
- 	 * a delegation instead.
-@@ -1498,6 +1498,7 @@ unlock_no_action:
- 	rcu_read_unlock();
- out_no_action:
- 	task->tk_action = NULL;
-+out_wait:
- 	nfs4_sequence_done(task, &data->o_res.seq_res);
- }
- 
-@@ -2150,7 +2151,7 @@ static void nfs4_close_prepare(struct rp
- 
- 	dprintk("%s: begin!\n", __func__);
- 	if (nfs_wait_on_sequence(calldata->arg.seqid, task) != 0)
--		return;
-+		goto out_wait;
- 
- 	task->tk_msg.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_OPEN_DOWNGRADE];
- 	calldata->arg.fmode = FMODE_READ|FMODE_WRITE;
-@@ -2172,16 +2173,14 @@ static void nfs4_close_prepare(struct rp
- 
- 	if (!call_close) {
- 		/* Note: exit _without_ calling nfs4_close_done */
--		task->tk_action = NULL;
--		nfs4_sequence_done(task, &calldata->res.seq_res);
--		goto out;
-+		goto out_no_action;
+ static void hdmi_setup_channel_mapping(struct hda_codec *codec,
+ 				       hda_nid_t pin_nid, bool non_pcm, int ca,
+-				       int channels, unsigned char *map)
++				       int channels, unsigned char *map,
++				       bool chmap_set)
+ {
+-	if (!non_pcm && map) {
++	if (!non_pcm && chmap_set) {
+ 		hdmi_manual_setup_channel_mapping(codec, pin_nid,
+ 						  channels, map);
+ 	} else {
+@@ -905,7 +906,8 @@ static void hdmi_setup_audio_infoframe(s
+ 			    pin_nid,
+ 			    channels);
+ 		hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
+-					   channels, per_pin->chmap);
++					   channels, per_pin->chmap,
++					   per_pin->chmap_set);
+ 		hdmi_stop_infoframe_trans(codec, pin_nid);
+ 		hdmi_fill_audio_infoframe(codec, pin_nid,
+ 					    ai.bytes, sizeof(ai));
+@@ -915,7 +917,8 @@ static void hdmi_setup_audio_infoframe(s
+ 		 * accordingly */
+ 		if (per_pin->non_pcm != non_pcm)
+ 			hdmi_setup_channel_mapping(codec, pin_nid, non_pcm, ca,
+-						   channels, per_pin->chmap);
++						   channels, per_pin->chmap,
++						   per_pin->chmap_set);
  	}
  
- 	if (calldata->arg.fmode == 0) {
- 		task->tk_msg.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_CLOSE];
- 		if (calldata->roc &&
- 		    pnfs_roc_drain(inode, &calldata->roc_barrier, task))
--			goto out;
-+			goto out_wait;
- 	}
- 
- 	nfs_fattr_init(calldata->res.fattr);
-@@ -2191,8 +2190,12 @@ static void nfs4_close_prepare(struct rp
- 				&calldata->res.seq_res,
- 				task) != 0)
- 		nfs_release_seqid(calldata->arg.seqid);
--out:
- 	dprintk("%s: done!\n", __func__);
-+	return;
-+out_no_action:
-+	task->tk_action = NULL;
-+out_wait:
-+	nfs4_sequence_done(task, &calldata->res.seq_res);
- }
- 
- static const struct rpc_call_ops nfs4_close_ops = {
-@@ -4423,12 +4426,10 @@ static void nfs4_locku_prepare(struct rp
- 	struct nfs4_unlockdata *calldata = data;
- 
- 	if (nfs_wait_on_sequence(calldata->arg.seqid, task) != 0)
--		return;
-+		goto out_wait;
- 	if (test_bit(NFS_LOCK_INITIALIZED, &calldata->lsp->ls_flags) == 0) {
- 		/* Note: exit _without_ running nfs4_locku_done */
--		task->tk_action = NULL;
--		nfs4_sequence_done(task, &calldata->res.seq_res);
--		return;
-+		goto out_no_action;
- 	}
- 	calldata->timestamp = jiffies;
- 	if (nfs4_setup_sequence(calldata->server,
-@@ -4436,6 +4437,11 @@ static void nfs4_locku_prepare(struct rp
- 				&calldata->res.seq_res,
- 				task) != 0)
- 		nfs_release_seqid(calldata->arg.seqid);
-+	return;
-+out_no_action:
-+	task->tk_action = NULL;
-+out_wait:
-+	nfs4_sequence_done(task, &calldata->res.seq_res);
- }
- 
- static const struct rpc_call_ops nfs4_locku_ops = {
-@@ -4576,7 +4582,7 @@ static void nfs4_lock_prepare(struct rpc
- 
- 	dprintk("%s: begin!\n", __func__);
- 	if (nfs_wait_on_sequence(data->arg.lock_seqid, task) != 0)
--		return;
-+		goto out_wait;
- 	/* Do we need to do an open_to_lock_owner? */
- 	if (!(data->arg.lock_seqid->sequence->flags & NFS_SEQID_CONFIRMED)) {
- 		if (nfs_wait_on_sequence(data->arg.open_seqid, task) != 0) {
-@@ -4596,6 +4602,8 @@ static void nfs4_lock_prepare(struct rpc
- 	nfs_release_seqid(data->arg.open_seqid);
- out_release_lock_seqid:
- 	nfs_release_seqid(data->arg.lock_seqid);
-+out_wait:
-+	nfs4_sequence_done(task, &data->res.seq_res);
- 	dprintk("%s: done!, ret = %d\n", __func__, data->rpc_status);
- }
- 
+ 	per_pin->non_pcm = non_pcm;
 
 
