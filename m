@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759786Ab3BZPbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 10:31:09 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:43375 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759647Ab3BZPbG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 10:31:06 -0500
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J . Wysocki" <rjw@sisk.pl>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH v8 04/13] ACPI/acpiphp: replace local macros with standard ACPI macros
-Date: Tue, 26 Feb 2013 23:25:44 +0800
-Message-Id: <1361892353-14786-5-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361892353-14786-1-git-send-email-jiang.liu@huawei.com>
-References: <1361892353-14786-1-git-send-email-jiang.liu@huawei.com>
+	id S1759799Ab3BZPeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 10:34:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10329 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759746Ab3BZPem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 10:34:42 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH] perf: Fix vmalloc ring buffer free function
+Date: Tue, 26 Feb 2013 16:34:21 +0100
+Message-Id: <1361892861-11070-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace local defined macros (ACPI_STA_xxx) with standard ACPI macros
-(ACPI_STA_DEVICE_xxx).
+If we allocate perf ring buffer with the size of single page,
+we will get memory corruption when releasing it. It's caused
+by rb_free_work function (the CONFIG_PERF_USE_VMALLOC option
+variant).
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+For single page sized ring buffer the page_order is -1 (because
+nr_pages is 0). This needs to be recognized in the rb_free_work
+function and set 'nr' to 0 in this case, so only the user page
+gets freed.
+
+Reported-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/pci/hotplug/acpiphp.h      |    4 ----
- drivers/pci/hotplug/acpiphp_glue.c |    4 ++--
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ kernel/events/ring_buffer.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pci/hotplug/acpiphp.h b/drivers/pci/hotplug/acpiphp.h
-index b70ac00..1b311f9 100644
---- a/drivers/pci/hotplug/acpiphp.h
-+++ b/drivers/pci/hotplug/acpiphp.h
-@@ -146,10 +146,6 @@ struct acpiphp_attention_info
- #define ACPI_PCI_HOST_HID		"PNP0A03"
+diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
+index 23cb34f..21159fb 100644
+--- a/kernel/events/ring_buffer.c
++++ b/kernel/events/ring_buffer.c
+@@ -336,7 +336,8 @@ static void rb_free_work(struct work_struct *work)
+ 	int i, nr;
  
- /* ACPI _STA method value (ignore bit 4; battery present) */
--#define ACPI_STA_PRESENT		(0x00000001)
--#define ACPI_STA_ENABLED		(0x00000002)
--#define ACPI_STA_SHOW_IN_UI		(0x00000004)
--#define ACPI_STA_FUNCTIONING		(0x00000008)
- #define ACPI_STA_ALL			(0x0000000f)
+ 	rb = container_of(work, struct ring_buffer, work);
+-	nr = 1 << page_order(rb);
++	/* -1 if there's only user page */
++	nr = page_order(rb) == -1 ? 0 : 1 << page_order(rb);
  
- /* bridge flags */
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 4101c15..89e0c36 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -487,7 +487,7 @@ static int add_bridge(struct acpi_pci_root *root)
- 			dbg("%s: _STA evaluation failure\n", __func__);
- 			return 0;
- 		}
--		if ((tmp & ACPI_STA_FUNCTIONING) == 0)
-+		if ((tmp & ACPI_STA_DEVICE_FUNCTIONING) == 0)
- 			/* don't register this object */
- 			return 0;
- 	}
-@@ -1387,7 +1387,7 @@ u8 acpiphp_get_latch_status(struct acpiphp_slot *slot)
- 
- 	sta = get_slot_status(slot);
- 
--	return (sta & ACPI_STA_SHOW_IN_UI) ? 0 : 1;
-+	return (sta & ACPI_STA_DEVICE_UI) ? 0 : 1;
- }
- 
- 
+ 	base = rb->user_page;
+ 	for (i = 0; i < nr + 1; i++)
 -- 
-1.7.9.5
+1.7.11.7
 
