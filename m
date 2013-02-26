@@ -1,261 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759940Ab3BZJHp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 04:07:45 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:61040 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755657Ab3BZJHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 04:07:42 -0500
-X-IronPort-AV: E=Sophos;i="4.84,740,1355068800"; 
-   d="scan'208";a="6771855"
-Message-ID: <512C7C13.9050602@cn.fujitsu.com>
-Date: Tue, 26 Feb 2013 17:10:43 +0800
-From: Lin Feng <linfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: akpm@linux-foundation.org, mgorman@suse.de
-CC: Lin Feng <linfeng@cn.fujitsu.com>, bcrl@kvack.org, viro@zeniv.linux.org.uk,
-        khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, minchan@kernel.org, riel@redhat.com,
-        rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, laijs@cn.fujitsu.com, tangchen@cn.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
-        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 1/2] mm: hotplug: implement non-movable version of
- get_user_pages() called get_user_pages_non_movable()
-References: <1361444504-31888-1-git-send-email-linfeng@cn.fujitsu.com> <1361444504-31888-2-git-send-email-linfeng@cn.fujitsu.com>
-In-Reply-To: <1361444504-31888-2-git-send-email-linfeng@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/26 17:06:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/26 17:06:49,
-	Serialize complete at 2013/02/26 17:06:49
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1759950Ab3BZJNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 04:13:01 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:61596 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759832Ab3BZJM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 04:12:59 -0500
+X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Feb 2013 04:12:58 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjEFAMZ5LFFbdWOb/2dsb2JhbABFhgi7WH8Wc4JNUoE+E4gXrzCQAo03gVODRwOWPYlihwWDCIFo
+X-IPAS-Result: AjEFAMZ5LFFbdWOb/2dsb2JhbABFhgi7WH8Wc4JNUoE+E4gXrzCQAo03gVODRwOWPYlihwWDCIFo
+From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jens Taprogge <jens.taprogge@taprogge.org>,
+        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+Subject: [PATCH] ipack: add missing put_device() after device_register() failed
+Date: Tue, 26 Feb 2013 10:03:15 +0100
+Message-Id: <1361869395-23110-1-git-send-email-siglesias@igalia.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew, Mel and other guys,
+put_device() must be called after device_register() fails,
+since device_register() always initializes the refcount
+on the device structure to one.
 
-How about this V3 patch, any comments?
+dev->id is free'd inside of ipack_device_release function.
+So, it's not needed to do it here.
 
-thanks,
-linfeng
+Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+---
+ drivers/ipack/ipack.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On 02/21/2013 07:01 PM, Lin Feng wrote:
-> get_user_pages() always tries to allocate pages from movable zone, which is not
->  reliable to memory hotremove framework in some case.
-> 
-> This patch introduces a new library function called get_user_pages_non_movable()
->  to pin pages only from zone non-movable in memory.
-> It's a wrapper of get_user_pages() but it makes sure that all pages come from
-> non-movable zone via additional page migration. But if migration fails it
-> will at least keep the base functionality of get_user_pages().
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Cc: Jeff Moyer <jmoyer@redhat.com>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Zach Brown <zab@redhat.com>
-> Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
-> ---
->  include/linux/mm.h     |   14 ++++++
->  include/linux/mmzone.h |    4 ++
->  mm/memory.c            |  103 ++++++++++++++++++++++++++++++++++++++++++++++++
->  mm/page_isolation.c    |    8 ++++
->  4 files changed, 129 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 5625c1c..737dc39 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1025,6 +1025,20 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
->  		    struct vm_area_struct **vmas);
->  int get_user_pages_fast(unsigned long start, int nr_pages, int write,
->  			struct page **pages);
-> +#ifdef CONFIG_MEMORY_HOTREMOVE
-> +int get_user_pages_non_movable(struct task_struct *tsk, struct mm_struct *mm,
-> +		unsigned long start, int nr_pages, int write, int force,
-> +		struct page **pages, struct vm_area_struct **vmas);
-> +#else
-> +static inline
-> +int get_user_pages_non_movable(struct task_struct *tsk, struct mm_struct *mm,
-> +		unsigned long start, int nr_pages, int write, int force,
-> +		struct page **pages, struct vm_area_struct **vmas)
-> +{
-> +	return get_user_pages(tsk, mm, start, nr_pages, write, force, pages,
-> +				vmas);
-> +}
-> +#endif
->  struct kvec;
->  int get_kernel_pages(const struct kvec *iov, int nr_pages, int write,
->  			struct page **pages);
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index ab20a60..c31007e 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -851,6 +851,10 @@ static inline int is_normal_idx(enum zone_type idx)
->  	return (idx == ZONE_NORMAL);
->  }
->  
-> +static inline int zone_is_movable(struct zone *zone)
-> +{
-> +	return zone_idx(zone) == ZONE_MOVABLE;
-> +}
->  /**
->   * is_highmem - helper function to quickly check if a struct zone is a 
->   *              highmem zone or not.  This is an attempt to keep references
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 16ca5d0..83db7dd 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -58,6 +58,8 @@
->  #include <linux/elf.h>
->  #include <linux/gfp.h>
->  #include <linux/migrate.h>
-> +#include <linux/page-isolation.h>
-> +#include <linux/mm_inline.h>
->  #include <linux/string.h>
->  
->  #include <asm/io.h>
-> @@ -2014,6 +2016,107 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
->  }
->  EXPORT_SYMBOL(get_user_pages);
->  
-> +#ifdef CONFIG_MEMORY_HOTREMOVE
-> +/**
-> + * It's a wrapper of get_user_pages() but it makes sure that all pages come from
-> + * non-movable zone via additional page migration. It's designed for memory
-> + * hotremove framework.
-> + *
-> + * Currently get_user_pages() always tries to allocate pages from movable zone,
-> + * in some case users of get_user_pages() is easy to pin user pages for a long
-> + * time(for now we found that pages pinned as aio ring pages is such case),
-> + * which is fatal for memory hotremove framework.
-> + *
-> + * This function first calls get_user_pages() to get the candidate pages, and
-> + * then check to ensure all pages are from non movable zone. Otherwise migrate
-> + * them to non movable zone, then retry. It will at most retry once. If
-> + * migration fails, it will keep the base functionality of get_user_pages()
-> + * and issue WARN message for memory hot-remove people.
-> + *
-> + * Fixme: now we don't support non movable version of GUP for hugepage.
-> + */
-> +int get_user_pages_non_movable(struct task_struct *tsk, struct mm_struct *mm,
-> +		unsigned long start, int nr_pages, int write, int force,
-> +		struct page **pages, struct vm_area_struct **vmas)
-> +{
-> +	int ret, i, tried = 0;
-> +	bool isolate_err, migrate_prepped;
-> +	LIST_HEAD(pagelist);
-> +
-> +retry:
-> +	BUG_ON(tried == 2);
-> +	ret = get_user_pages(tsk, mm, start, nr_pages, write, force, pages,
-> +				vmas);
-> +	/* No ZONE_MOVABLE populated, all pages are from non movable zone */
-> +	if (movable_zone == ZONE_MOVABLE || ret <= 0)
-> +		return ret;
-> +
-> +	isolate_err = false;
-> +	migrate_prepped = false;
-> +
-> +	for (i = 0; i < ret; i++) {
-> +		if (zone_is_movable(page_zone(pages[i]))) {
-> +			/* Fixme: improve for hugepage non movable support */
-> +			if (PageHuge(pages[i])) {
-> +				WARN_ONCE(1, "Non movable GUP for hugepages "
-> +					"haven't been implemented yet, it may "
-> +					"lead to memory hot-remove failure.\n");
-> +				continue;
-> +			}
-> +
-> +			/* Hugepage or THP's head page has covered tail pages */
-> +			if (PageTail(pages[i]) && (page_count(pages[i]) == 1))
-> +				continue;
-> +
-> +			if (!migrate_prepped) {
-> +				BUG_ON(migrate_prep());
-> +				migrate_prepped = true;
-> +			}
-> +
-> +			/* Fixme: isolate_lru_page() takes the LRU lock every
-> +			 * time, batching the lock could avoid potential lock
-> +			 * contention problems. -Mel Gorman
-> +			 */
-> +			if (!isolate_lru_page(pages[i])) {
-> +				inc_zone_page_state(pages[i], NR_ISOLATED_ANON +
-> +						 page_is_file_cache(pages[i]));
-> +				list_add(&pages[i]->lru, &pagelist);
-> +			} else {
-> +				isolate_err = true;
-> +				break;
-> +			}
-> +		}
-> +	}
-> +
-> +	/* All pages are non movable, we are done :) */
-> +	if (i == ret && list_empty(&pagelist))
-> +		return ret;
-> +
-> +	/* Undo the effects of former get_user_pages(), ready for another try */
-> +	release_pages(pages, ret, 1);
-> +
-> +	if (!isolate_err) {
-> +		ret = migrate_pages(&pagelist, alloc_migrate_target, 1,
-> +					MIGRATE_SYNC, MR_SYSCALL);
-> +		/* Steal pages from non-movable zone successfully? */
-> +		if (!ret) {
-> +			tried++;
-> +			goto retry;
-> +		}
-> +	}
-> +
-> +	putback_lru_pages(&pagelist);
-> +	/* Migration failed, in order to keep at least the base functionality of
-> +	 * get_user_pages(), we pin pages again but give WARN info to remind
-> +	 * memory hot-remove people, which is a trade-off.
-> +	 */
-> +	WARN_ONCE(1, "Non movable zone migration failed, "
-> +		"it may lead to memroy hot-remove failure.\n");
-> +	return get_user_pages(tsk, mm, start, nr_pages, write, force, pages,
-> +				vmas);
-> +}
-> +EXPORT_SYMBOL(get_user_pages_non_movable);
-> +#endif
->  /**
->   * get_dump_page() - pin user page in memory while writing it to core dump
->   * @addr: user address
-> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
-> index 383bdbb..7823ea5 100644
-> --- a/mm/page_isolation.c
-> +++ b/mm/page_isolation.c
-> @@ -247,6 +247,9 @@ int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn,
->  	return ret ? 0 : -EBUSY;
->  }
->  
-> +/**
-> + * @private: 0 means page can be alloced from movable zone, otherwise forbidden
-> + */
->  struct page *alloc_migrate_target(struct page *page, unsigned long private,
->  				  int **resultp)
->  {
-> @@ -254,6 +257,11 @@ struct page *alloc_migrate_target(struct page *page, unsigned long private,
->  
->  	if (PageHighMem(page))
->  		gfp_mask |= __GFP_HIGHMEM;
-> +#if defined(CONFIG_MEMORY_HOTREMOVE) && defined(CONFIG_HIGHMEM)
-> +	BUILD_BUG_ON(1);
-> +#endif
-> +	if (unlikely(private != 0))
-> +		gfp_mask &= ~__GFP_HIGHMEM;
->  
->  	return alloc_page(gfp_mask);
->  }
-> 
+diff --git a/drivers/ipack/ipack.c b/drivers/ipack/ipack.c
+index 7ec6b20..3588ccf 100644
+--- a/drivers/ipack/ipack.c
++++ b/drivers/ipack/ipack.c
+@@ -449,7 +449,7 @@ int ipack_device_register(struct ipack_device *dev)
+ 
+ 	ret = device_register(&dev->dev);
+ 	if (ret < 0)
+-		kfree(dev->id);
++		put_device(&dev->dev);
+ 
+ 	return ret;
+ }
+-- 
+1.7.10.4
+
