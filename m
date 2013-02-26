@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933017Ab3BZX63 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42192 "EHLO
+	id S933192Ab3B0ApP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:45:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42241 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932905Ab3BZX6V (ORCPT
+	with ESMTP id S933009Ab3BZX62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:21 -0500
+	Tue, 26 Feb 2013 18:58:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Balaji T K <balajitk@ti.com>, Chris Ball <cjb@laptop.org>
-Subject: [ 120/150] mmc: core: expose RPMB partition only for CMD23 capable hosts
-Date: Tue, 26 Feb 2013 15:56:17 -0800
-Message-Id: <20130226235536.574936583@linuxfoundation.org>
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Gao Feng <gaofeng@cn.fujitsu.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "Steinar H. Gunderson" <sesse@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 128/150] ipv6: fix race condition regarding dst->expires and dst->from.
+Date: Tue, 26 Feb 2013 15:56:25 -0800
+Message-Id: <20130226235537.466394657@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,37 +31,186 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Balaji T K <balajitk@ti.com>
 
-commit d0123ccac55088811bde4f76c4a3fdbd39c3cfba upstream.
+From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 
-SET_BLOCK_COUNT CMD23 is needed for all access to RPMB partition.  If
-block count is not set by CMD23, all subsequent read/write commands fail
-as per eMMC specification. So, If the host does not support CMD23, do not
-expose RPMB partition.
+[ Upstream commit ecd9883724b78cc72ed92c98bcb1a46c764fff21 ]
 
-Accessing RPMB partition can cause hang / huge delay for hosts which do
-not support CMD23.
+Eric Dumazet wrote:
+| Some strange crashes happen in rt6_check_expired(), with access
+| to random addresses.
+|
+| At first glance, it looks like the RTF_EXPIRES and
+| stuff added in commit 1716a96101c49186b
+| (ipv6: fix problem with expired dst cache)
+| are racy : same dst could be manipulated at the same time
+| on different cpus.
+|
+| At some point, our stack believes rt->dst.from contains a dst pointer,
+| while its really a jiffie value (as rt->dst.expires shares the same area
+| of memory)
+|
+| rt6_update_expires() should be fixed, or am I missing something ?
+|
+| CC Neil because of https://bugzilla.redhat.com/show_bug.cgi?id=892060
 
-Signed-off-by: Balaji T K <balajitk@ti.com>
-Reported-and-Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Because we do not have any locks for dst_entry, we cannot change
+essential structure in the entry; e.g., we cannot change reference
+to other entity.
+
+To fix this issue, split 'from' and 'expires' field in dst_entry
+out of union.  Once it is 'from' is assigned in the constructor,
+keep the reference until the very last stage of the life time of
+the object.
+
+Of course, it is unsafe to change 'from', so make rt6_set_from simple
+just for fresh entries.
+
+Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
+Reported-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Gao Feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Reviewed-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Steinar H. Gunderson <sesse@google.com>
+Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/mmc/core/mmc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/dst.h     |    8 ++------
+ include/net/ip6_fib.h |   37 +++++++++++--------------------------
+ net/core/dst.c        |    1 +
+ net/ipv6/route.c      |    8 +++-----
+ 4 files changed, 17 insertions(+), 37 deletions(-)
 
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -496,7 +496,7 @@ static int mmc_read_ext_csd(struct mmc_c
- 		 * RPMB regions are defined in multiples of 128K.
- 		 */
- 		card->ext_csd.raw_rpmb_size_mult = ext_csd[EXT_CSD_RPMB_MULT];
--		if (ext_csd[EXT_CSD_RPMB_MULT]) {
-+		if (ext_csd[EXT_CSD_RPMB_MULT] && mmc_host_cmd23(card->host)) {
- 			mmc_part_add(card, ext_csd[EXT_CSD_RPMB_MULT] << 17,
- 				EXT_CSD_PART_CONFIG_ACC_RPMB,
- 				"rpmb", 0, false,
+--- a/include/net/dst.h
++++ b/include/net/dst.h
+@@ -36,13 +36,9 @@ struct dst_entry {
+ 	struct net_device       *dev;
+ 	struct  dst_ops	        *ops;
+ 	unsigned long		_metrics;
+-	union {
+-		unsigned long           expires;
+-		/* point to where the dst_entry copied from */
+-		struct dst_entry        *from;
+-	};
++	unsigned long           expires;
+ 	struct dst_entry	*path;
+-	void			*__pad0;
++	struct dst_entry	*from;
+ #ifdef CONFIG_XFRM
+ 	struct xfrm_state	*xfrm;
+ #else
+--- a/include/net/ip6_fib.h
++++ b/include/net/ip6_fib.h
+@@ -166,50 +166,35 @@ static inline struct inet6_dev *ip6_dst_
+ 
+ static inline void rt6_clean_expires(struct rt6_info *rt)
+ {
+-	if (!(rt->rt6i_flags & RTF_EXPIRES) && rt->dst.from)
+-		dst_release(rt->dst.from);
+-
+ 	rt->rt6i_flags &= ~RTF_EXPIRES;
+-	rt->dst.from = NULL;
+ }
+ 
+ static inline void rt6_set_expires(struct rt6_info *rt, unsigned long expires)
+ {
+-	if (!(rt->rt6i_flags & RTF_EXPIRES) && rt->dst.from)
+-		dst_release(rt->dst.from);
+-
+-	rt->rt6i_flags |= RTF_EXPIRES;
+ 	rt->dst.expires = expires;
++	rt->rt6i_flags |= RTF_EXPIRES;
+ }
+ 
+-static inline void rt6_update_expires(struct rt6_info *rt, int timeout)
++static inline void rt6_update_expires(struct rt6_info *rt0, int timeout)
+ {
+-	if (!(rt->rt6i_flags & RTF_EXPIRES)) {
+-		if (rt->dst.from)
+-			dst_release(rt->dst.from);
+-		/* dst_set_expires relies on expires == 0 
+-		 * if it has not been set previously.
+-		 */
+-		rt->dst.expires = 0;
+-	}
++	struct rt6_info *rt;
+ 
+-	dst_set_expires(&rt->dst, timeout);
+-	rt->rt6i_flags |= RTF_EXPIRES;
++	for (rt = rt0; rt && !(rt->rt6i_flags & RTF_EXPIRES);
++	     rt = (struct rt6_info *)rt->dst.from);
++	if (rt && rt != rt0)
++		rt0->dst.expires = rt->dst.expires;
++
++	dst_set_expires(&rt0->dst, timeout);
++	rt0->rt6i_flags |= RTF_EXPIRES;
+ }
+ 
+ static inline void rt6_set_from(struct rt6_info *rt, struct rt6_info *from)
+ {
+ 	struct dst_entry *new = (struct dst_entry *) from;
+ 
+-	if (!(rt->rt6i_flags & RTF_EXPIRES) && rt->dst.from) {
+-		if (new == rt->dst.from)
+-			return;
+-		dst_release(rt->dst.from);
+-	}
+-
+ 	rt->rt6i_flags &= ~RTF_EXPIRES;
+-	rt->dst.from = new;
+ 	dst_hold(new);
++	rt->dst.from = new;
+ }
+ 
+ static inline void ip6_rt_put(struct rt6_info *rt)
+--- a/net/core/dst.c
++++ b/net/core/dst.c
+@@ -179,6 +179,7 @@ void *dst_alloc(struct dst_ops *ops, str
+ 	dst_init_metrics(dst, dst_default_metrics, true);
+ 	dst->expires = 0UL;
+ 	dst->path = dst;
++	dst->from = NULL;
+ #ifdef CONFIG_XFRM
+ 	dst->xfrm = NULL;
+ #endif
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -300,6 +300,7 @@ static void ip6_dst_destroy(struct dst_e
+ {
+ 	struct rt6_info *rt = (struct rt6_info *)dst;
+ 	struct inet6_dev *idev = rt->rt6i_idev;
++	struct dst_entry *from = dst->from;
+ 
+ 	if (rt->n)
+ 		neigh_release(rt->n);
+@@ -312,8 +313,8 @@ static void ip6_dst_destroy(struct dst_e
+ 		in6_dev_put(idev);
+ 	}
+ 
+-	if (!(rt->rt6i_flags & RTF_EXPIRES) && dst->from)
+-		dst_release(dst->from);
++	dst->from = NULL;
++	dst_release(from);
+ 
+ 	if (rt6_has_peer(rt)) {
+ 		struct inet_peer *peer = rt6_peer_ptr(rt);
+@@ -1054,7 +1055,6 @@ struct dst_entry *ip6_blackhole_route(st
+ 
+ 		rt->rt6i_gateway = ort->rt6i_gateway;
+ 		rt->rt6i_flags = ort->rt6i_flags;
+-		rt6_clean_expires(rt);
+ 		rt->rt6i_metric = 0;
+ 
+ 		memcpy(&rt->rt6i_dst, &ort->rt6i_dst, sizeof(struct rt6key));
+@@ -1859,8 +1859,6 @@ static struct rt6_info *ip6_rt_copy(stru
+ 		if ((ort->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF)) ==
+ 		    (RTF_DEFAULT | RTF_ADDRCONF))
+ 			rt6_set_from(rt, ort);
+-		else
+-			rt6_clean_expires(rt);
+ 		rt->rt6i_metric = 0;
+ 
+ #ifdef CONFIG_IPV6_SUBTREES
 
 
