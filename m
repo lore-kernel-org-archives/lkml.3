@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab3BZNRG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 08:17:06 -0500
-Received: from slimlogic.co.uk ([89.16.172.20]:48909 "EHLO slimlogic.co.uk"
+	id S1758636Ab3BZNUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 08:20:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41882 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758113Ab3BZNRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 08:17:04 -0500
-From: Ian Lartey <ian@slimlogic.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org, ldewangan@nvidia.com,
-        sameo@linux.intel.com, Ian Lartey <ian@slimlogic.co.uk>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: [PATCH] mfd: palmas: is_palmas_charger needed by multiple drivers
-Date: Tue, 26 Feb 2013 13:16:12 +0000
-Message-Id: <1361884572-27606-1-git-send-email-ian@slimlogic.co.uk>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756759Ab3BZNUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 08:20:33 -0500
+Date: Tue, 26 Feb 2013 14:20:30 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Hannes Reinecke <hare@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2o: remove compile-time warnings
+In-Reply-To: <1361366690-62274-1-git-send-email-hare@suse.de>
+Message-ID: <alpine.LNX.2.00.1302261419000.2128@pobox.suse.cz>
+References: <1361366690-62274-1-git-send-email-hare@suse.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-is_palmas_charger checks for the presence of charging
-functionality in the device
+On Wed, 20 Feb 2013, Hannes Reinecke wrote:
 
-Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
----
- include/linux/mfd/palmas.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+> The compiler complains about invalid cast for i2o_config.
+> However, the ioctl passes us an 32-bit address, which we
+> have to assume is a valid 64-bit kernel address.
 
-diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-index 3129f9a..98c0567 100644
---- a/include/linux/mfd/palmas.h
-+++ b/include/linux/mfd/palmas.h
-@@ -26,6 +26,11 @@
- /* The ID_REVISION NUMBERS */
- #define PALMAS_CHIP_OLD_ID		0x0000
- #define PALMAS_CHIP_ID			0xC035
-+#define PALMAS_CHIP_CHARGER_ID		0xC036
-+
-+#define is_palmas(a)	(((a) == PALMAS_CHIP_OLD_ID) || \
-+			((a) == PALMAS_CHIP_ID))
-+#define is_palmas_charger(a) ((a) == PALMAS_CHIP_CHARGER_ID)
- 
- struct palmas_pmic;
- struct palmas_gpadc;
+Umm, I find this explanation rather confusing, could you please formulate 
+it in a more verbose way?
+
+Also, looking at the code, all the 'TODO 64bit fix' scattered all over the 
+place (and the comments being there since the beginning of time), makes me 
+really wonder whether this whole thing doesn't require a much more 
+thorough review of the user <-> kernel interface.
+
+> So we should cast this to 'unsigned long' before casting
+> it to a pointer.
+> Minimal fix, doesn't break anything which wasn't broken
+> before.
+> 
+> Cc: Jiri Kosina <jkosina@suse.cz>
+> Signed-off-by: Hannes Reinecke <hare@suse.de>
+> 
+> diff --git a/drivers/message/i2o/i2o_config.c b/drivers/message/i2o/i2o_config.c
+> index 5451bef..5b95dc1 100644
+> --- a/drivers/message/i2o/i2o_config.c
+> +++ b/drivers/message/i2o/i2o_config.c
+> @@ -883,10 +883,9 @@ static int i2o_cfg_passthru(unsigned long arg)
+>  			/* Copy in the user's SG buffer if necessary */
+>  			if (sg[i].
+>  			    flag_count & 0x04000000 /*I2O_SGL_FLAGS_DIR */ ) {
+> -				// TODO 64bit fix
+> -				if (copy_from_user
+> -				    (p->virt, (void __user *)sg[i].addr_bus,
+> -				     sg_size)) {
+> +				void __user *sg_addr = (void __user *)
+> +					(unsigned long)sg[i].addr_bus;
+> +				if (copy_from_user(p->virt, sg_addr, sg_size)) {
+>  					printk(KERN_DEBUG
+>  					       "%s: Could not copy SG buf %d FROM user\n",
+>  					       c->name, i);
+> @@ -937,11 +936,12 @@ static int i2o_cfg_passthru(unsigned long arg)
+>  			if (!
+>  			    (sg[j].
+>  			     flag_count & 0x4000000 /*I2O_SGL_FLAGS_DIR */ )) {
+> +				void __user *sg_addr = (void __user *)
+> +					(unsigned long)sg[j].addr_bus;
+> +
+>  				sg_size = sg[j].flag_count & 0xffffff;
+> -				// TODO 64bit fix
+> -				if (copy_to_user
+> -				    ((void __user *)sg[j].addr_bus, sg_list[j].virt,
+> -				     sg_size)) {
+> +				if (copy_to_user(sg_addr, sg_list[j].virt,
+> +						 sg_size)) {
+>  					printk(KERN_WARNING
+>  					       "%s: Could not copy %p TO user %x\n",
+>  					       c->name, sg_list[j].virt,
+> 
+
 -- 
-1.7.0.4
-
+Jiri Kosina
+SUSE Labs
