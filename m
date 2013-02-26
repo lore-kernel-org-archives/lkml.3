@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759697Ab3BZQ0d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 11:26:33 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:59989 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759217Ab3BZQ0b (ORCPT
+	id S1759816Ab3BZQ1c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 11:27:32 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:50153 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757904Ab3BZQ1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 11:26:31 -0500
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH v2 1/2] mm: Allow arch code to control the user page table ceiling
-Date: Tue, 26 Feb 2013 16:26:07 +0000
-Message-Id: <1361895968-17066-2-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.12.3
-In-Reply-To: <1361895968-17066-1-git-send-email-catalin.marinas@arm.com>
-References: <1361895968-17066-1-git-send-email-catalin.marinas@arm.com>
+	Tue, 26 Feb 2013 11:27:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1302261614060.22263@ionos>
+References: <1361496971-16939-1-git-send-email-fweisbec@gmail.com>
+	<1361496971-16939-3-git-send-email-fweisbec@gmail.com>
+	<alpine.LFD.2.02.1302221528470.22263@ionos>
+	<20130222150444.GD18149@somewhere.redhat.com>
+	<alpine.LFD.2.02.1302221605520.22263@ionos>
+	<CA+55aFxOreKQ-uzfMtXEb6XH4D8By2i=qOxfDLJnchSYsa34PQ@mail.gmail.com>
+	<alpine.LFD.2.02.1302261308550.22263@ionos>
+	<CAFTL4hyYRO3MGBy9SgCvB+jhBTtW=RH3Pb4cXGpYMQJfCa3M5g@mail.gmail.com>
+	<alpine.LFD.2.02.1302261614060.22263@ionos>
+Date: Tue, 26 Feb 2013 17:27:30 +0100
+Message-ID: <CAFTL4hx5GNX44gJHxtkVrZ40-UcSt-ZHEdoYGf=yOWox3sF07A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] irq: Cleanup context state transitions in irq_exit()
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hugh Dickins <hughd@google.com>
+2013/2/26 Thomas Gleixner <tglx@linutronix.de>:
+>
+> On Tue, 26 Feb 2013, Frederic Weisbecker wrote:
+>
+>> 2013/2/26 Thomas Gleixner <tglx@linutronix.de>:
+>> > On Fri, 22 Feb 2013, Linus Torvalds wrote:
+>> >> On Fri, Feb 22, 2013 at 7:06 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> >> >>
+>> >> >> I prefer to let you guys have the final word on this patch. Whether you
+>> >> >> apply it or not, I fear I'll never be entirely happy either way :)
+>> >> >> That's the sad fate of dealing with circular dependencies...
+>> >> >
+>> >> > plus the butt ugly softirq semantics or the lack thereof ...
+>> >>
+>> >> The softirq semantics are perfectly fine. Don't blame softirq for the
+>> >> fact that irq_exit() has had shit-for-brains for a long time.
+>> >>
+>> >> Just move the whole "invoke_softirq()" thing down to *after* the
+>> >> tick_nohz_irq_exit() stuff.
+>> >
+>> > We can't move tick_nohz_irq_exit() before invoke_softirq() simply
+>> > because we need to take the timers into account for NOHZ and those can
+>> > change when the softirq code runs.
+>> >
+>> > So no, we need an extra check after invoke_softirq() and the same is
+>> > true for RCU.
+>>
+>> And what do you think about Linus's idea to move tick_nohz_irq_exit()
+>> to do_softirq()?
+>> This sounds feasible and a right place to do this, I hope that won't
+>> uglify do_softirq() though.
+>> I can try something.
+>
+> Yeah, looks doable. the rcu stuff needs to go there as well, right?
 
-On architectures where a pgd entry may be shared between user and kernel
-(e.g. ARM+LPAE), freeing page tables needs a ceiling other than 0. This
-patch introduces a generic USER_PGTABLES_CEILING that arch code can
-override. It is the responsibility of the arch code setting the ceiling
-to ensure the complete freeing of the page tables (usually in
-pgd_free()).
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-[catalin.marinas@arm.com: commit log; shift_arg_pages(), asm-generic/pgtables.h changes]
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: <stable@vger.kernel.org> # 3.3+
----
- fs/exec.c                     |  4 ++--
- include/asm-generic/pgtable.h | 10 ++++++++++
- mm/mmap.c                     |  4 ++--
- 3 files changed, 14 insertions(+), 4 deletions(-)
-
-diff --git a/fs/exec.c b/fs/exec.c
-index 20df02c..547eaaa 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -613,7 +613,7 @@ static int shift_arg_pages(struct vm_area_struct *vma, unsigned long shift)
- 		 * when the old and new regions overlap clear from new_end.
- 		 */
- 		free_pgd_range(&tlb, new_end, old_end, new_end,
--			vma->vm_next ? vma->vm_next->vm_start : 0);
-+			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
- 	} else {
- 		/*
- 		 * otherwise, clean from old_start; this is done to not touch
-@@ -622,7 +622,7 @@ static int shift_arg_pages(struct vm_area_struct *vma, unsigned long shift)
- 		 * for the others its just a little faster.
- 		 */
- 		free_pgd_range(&tlb, old_start, old_end, new_end,
--			vma->vm_next ? vma->vm_next->vm_start : 0);
-+			vma->vm_next ? vma->vm_next->vm_start : USER_PGTABLES_CEILING);
- 	}
- 	tlb_finish_mmu(&tlb, new_end, old_end);
- 
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 5cf680a..f50a87d 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -7,6 +7,16 @@
- #include <linux/mm_types.h>
- #include <linux/bug.h>
- 
-+/*
-+ * On almost all architectures and configurations, 0 can be used as the
-+ * upper ceiling to free_pgtables(): on many architectures it has the same
-+ * effect as using TASK_SIZE.  However, there is one configuration which
-+ * must impose a more careful limit, to avoid freeing kernel pgtables.
-+ */
-+#ifndef USER_PGTABLES_CEILING
-+#define USER_PGTABLES_CEILING	0UL
-+#endif
-+
- #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
- extern int ptep_set_access_flags(struct vm_area_struct *vma,
- 				 unsigned long address, pte_t *ptep,
-diff --git a/mm/mmap.c b/mm/mmap.c
-index d1e4124..e262710 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2262,7 +2262,7 @@ static void unmap_region(struct mm_struct *mm,
- 	update_hiwater_rss(mm);
- 	unmap_vmas(&tlb, vma, start, end);
- 	free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
--				 next ? next->vm_start : 0);
-+				 next ? next->vm_start : USER_PGTABLES_CEILING);
- 	tlb_finish_mmu(&tlb, start, end);
- }
- 
-@@ -2640,7 +2640,7 @@ void exit_mmap(struct mm_struct *mm)
- 	/* Use -1 here to ensure all VMAs in the mm are unmapped */
- 	unmap_vmas(&tlb, vma, 0, -1);
- 
--	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, 0);
-+	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, USER_PGTABLES_CEILING);
- 	tlb_finish_mmu(&tlb, 0, -1);
- 
- 	/*
+Probably. I'll try something.
