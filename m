@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933428Ab3B0BDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:03:25 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24632 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760226Ab3BZX5s convert rfc822-to-8bit (ORCPT
+	id S932277Ab3B0BDX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:03:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41983 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760232Ab3BZX5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 18:57:48 -0500
-MIME-Version: 1.0
-Message-ID: <91983d94-7b7d-4a0b-9470-e7cd823ba139@default>
-Date: Tue, 26 Feb 2013 15:57:35 -0800 (PST)
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: <hpa@zytor.com>
-Cc: <mingo@redhat.com>, <konrad.wilk@oracle.com>, <tglx@linutronix.de>,
-        <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/x86: Flush lazy MMU when DEBUG_PAGEALLOC is set
-X-Mailer: Zimbra on Oracle Beehive
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 073/150] drm: shut up invalid edid messages
+Date: Tue, 26 Feb 2013 15:55:30 -0800
+Message-Id: <20130226235531.760245302@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
+References: <20130226235523.930663721@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
------ hpa@zytor.com wrote:
+------------------
 
-> On 02/26/2013 02:56 PM, Boris Ostrovsky wrote:
-> > When CONFIG_DEBUG_PAGEALLOC is set page table updates made by
-> > kernel_map_pages() are not made visible (via TLB flush) immediately
-> if lazy
-> > MMU is on. In environments that support lazy MMU (e.g. Xen) this may
-> lead to
-> > fatal page faults, for example, when zap_pte_range() needs to
-> allocate pages
-> > in __tlb_remove_page() -> tlb_next_batch().
-> > 
-> > Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> > ---
-> >  arch/x86/mm/pageattr.c | 2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-> > index ca1f1c2..7b3216e 100644
-> > --- a/arch/x86/mm/pageattr.c
-> > +++ b/arch/x86/mm/pageattr.c
-> > @@ -1369,6 +1369,8 @@ void kernel_map_pages(struct page *page, int
-> numpages, int enable)
-> >  	 * but that can deadlock->flush only current cpu:
-> >  	 */
-> >  	__flush_tlb_all();
-> > +
-> > +	arch_flush_lazy_mmu_mode();
-> >  }
-> >  
-> >  #ifdef CONFIG_HIBERNATION
-> > 
-> 
-> This sounds like a critical fix, i.e. a -stable candidate.  Am I
-> correct?
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-I considered copying stable but then I decided that this is a debugging feature
---- kernel_map_pages() is only defined if CONFIG_DEBUG_PAGEALLOC is set and my
-thinking was that stable kernels usually don't do this.
+commit f934ec8c34b9dcefb5a4f35b0bda33bca289cbe6 upstream.
+
+My cheapo monitor has an invalid block 1, resulting in a lot of dmesg spam every few seconds.
+
+I get it the first time that the entire block is all 0xff..
+
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/drm_edid.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -357,10 +357,14 @@ drm_do_get_edid(struct drm_connector *co
+ 				break;
+ 			}
+ 		}
+-		if (i == 4)
++
++		if (i == 4 && print_bad_edid) {
+ 			dev_warn(connector->dev->dev,
+ 			 "%s: Ignoring invalid EDID block %d.\n",
+ 			 drm_get_connector_name(connector), j);
++
++			connector->bad_edid_counter++;
++		}
+ 	}
+ 
+ 	if (valid_extensions != block[0x7e]) {
 
 
--boris
