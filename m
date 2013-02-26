@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab3BZF0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 00:26:53 -0500
-Received: from ozlabs.org ([203.10.76.45]:52738 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751117Ab3BZF0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 00:26:49 -0500
-Date: Tue, 26 Feb 2013 16:26:46 +1100
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        robert.richter@amd.com, Anton Blanchard <anton@au1.ibm.com>,
-        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        linuxppc-dev@ozlabs.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, benh@kernel.crashing.org
-Subject: Re: [PATCH 5/6][v4]: perf: Create a sysfs entry for Power event
- format
-Message-ID: <20130226052646.GB21553@concordia>
-References: <20130123062201.GA13720@us.ibm.com>
- <20130123062613.GF13720@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130123062613.GF13720@us.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754025Ab3BZFaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 00:30:19 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:56463 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab3BZFaR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 00:30:17 -0500
+Date: Tue, 26 Feb 2013 16:30:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: sedat.dilek@gmail.com
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Feb 24
+Message-Id: <20130226163008.2f32ece867f8c421097a7933@canb.auug.org.au>
+In-Reply-To: <CA+icZUXDSdRQqtqOBG04ROWeM+v7q8TX0LSwnBQoG867FRM5MQ@mail.gmail.com>
+References: <20130226141629.94789be6d093636a736e05dd@canb.auug.org.au>
+	<CA+icZUXDSdRQqtqOBG04ROWeM+v7q8TX0LSwnBQoG867FRM5MQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__26_Feb_2013_16_30_08_+1100_hxQfzufMQu4+kpV+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 22, 2013 at 10:26:13PM -0800, Sukadev Bhattiprolu wrote:
-> 
-> [PATCH 5/6][v4]: perf: Create a sysfs entry for Power event format
-> 
-> Create a sysfs entry, '/sys/bus/event_source/devices/cpu/format/event'
-> which describes the format of a POWER cpu.
+--Signature=_Tue__26_Feb_2013_16_30_08_+1100_hxQfzufMQu4+kpV+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Did this patch go upstream? I don't see it.
+Hi,
 
-If not, please don't merge it.
+On Tue, 26 Feb 2013 06:00:24 +0100 Sedat Dilek <sedat.dilek@gmail.com> wrot=
+e:
+>
+> February 26th...
 
-> The format of the event is the same for all POWER cpus at least in
-> (Power6, Power7), so bulk of this change is common in the code common
-> to POWER cpus.
+Yeah  :-(
 
-No. The event format is different on most POWER cpus, in particular it
-is different on Power6 and Power7, and will be different again on
-Power8.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-cheers
+--Signature=_Tue__26_Feb_2013_16_30_08_+1100_hxQfzufMQu4+kpV+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRLEhgAAoJEECxmPOUX5FEfW0P/0gg1TorPmbp08+A1difhJUq
+dl71VWk/omDLU31/X9dRV0haOkRd6WGsG6qErtsnZUBGFZNOcX2apJVQ3m2/qyl0
+tLrEv2Dd0amUjnKx051/4IMoFz7ITctGZ9P4NPjbSsejZLFyBI+YViaWaz9+RY7R
+KXojSaNWXvLkhjAEey4VB9XubDKsT44loIcUdIbPjIWE2fOaUrThbSDD9boElmJS
+N/bYEVGk9xgpseYVZPsvZLrkcXyGKLNH0VXwOcwvWiCl0nHIDAFbohrP6x6q6p09
+LRTWO3KCG69kWGZzYg05BWt3a/a593fq9CmKneRjwhyHaxUmD8WitGwyJgpILWfx
+PbbIcqzdCRajFi9iquc+7Q4ymTzGFiDk6pMDrXPrEahNoevwmMYnerQMMq/vanG0
+gMBBlIwkyUfjfEzp4a9eh+p2iAL+JDvYgW1HF0AZwqp66nPpLM2g0eK6Pe4EAdah
+2noi8QBYbk2MAPPKxPfnZXowctiYVXyDMpRvopVcTVzpmf017G8fJbvF5eQ8nJgr
+WNpwHRIyMGg9INFCvtJEjyNCp4ISvINyJUqF5VlzCvEqiMNc96BINEAbYf2fngMS
+jrCqJKS3tpFEium/l6kYIohx9y9l5AbrHBUQ5q6M4GXGOLxrZSXi5xKP66ArqXfv
+IxQ806Co864k/3calYwp
+=caEe
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__26_Feb_2013_16_30_08_+1100_hxQfzufMQu4+kpV+--
