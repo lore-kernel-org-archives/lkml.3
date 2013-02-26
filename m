@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932590Ab3B0A5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:57:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42064 "EHLO
+	id S1760474Ab3B0A5h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:57:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42077 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760283Ab3BZX6E (ORCPT
+	with ESMTP id S1759877Ab3BZX6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:04 -0500
+	Tue, 26 Feb 2013 18:58:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 095/150] staging: comedi: ni_labpc: correct differential channel sequence for AI commands
-Date: Tue, 26 Feb 2013 15:55:52 -0800
-Message-Id: <20130226235533.937535450@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 085/150] drm/i915: write backlight harder
+Date: Tue, 26 Feb 2013 15:55:42 -0800
+Message-Id: <20130226235532.934910414@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,50 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 4c4bc25d0fa6beaf054c0b4c3b324487f266c820 upstream.
+commit cf0a6584aa6d382f802f2c3cacac23ccbccde0cd upstream.
 
-Tuomas <tvainikk _at_ gmail _dot_ com> reported problems getting
-meaningful output from a Lab-PC+ in differential mode for AI cmds, but
-AI insn reads gave correct readings.  He tracked it down to two
-problems, one of which is addressed by this patch.
+770c12312ad617172b1a65b911d3e6564fc5aca8 is the first bad commit
+commit 770c12312ad617172b1a65b911d3e6564fc5aca8
+Author: Takashi Iwai <tiwai@suse.de>
+Date:   Sat Aug 11 08:56:42 2012 +0200
 
-It seems the setting of the channel bits for particular scanning modes
-was incorrect for differential mode.  (Only half the number of channels
-are available in differential mode; comedi refers to them as channels 0,
-1, 2 and 3, but the hardware documentation refers to them as channels 0,
-2, 4 and 6.)  In differential mode, the setting of the channel enable
-bits in the command1 register should depend on whether the scan enable
-bit is set.  Effectively, we need to double the comedi channel number
-when the scan enable bit is not set in differential mode.  The scan
-enable bit gets set when the AI scan mode is `MODE_MULT_CHAN_UP` or
-`MODE_MULT_CHAN_DOWN`, and gets cleared when the AI scan mode is
-`MODE_SINGLE_CHAN` or `MODE_SINGLE_CHAN_INTERVAL`.  The existing test
-for whether the comedi channel number needs to be doubled in
-differential mode is incorrect in `labpc_ai_cmd()`.  This patch corrects
-the test.
+    drm/i915: Fix blank panel at reopening lid
 
-Thanks to Tuomas for suggesting the fix.
+changed the register write sequence for restoring the backlight, which
+helped prevent non-working backlights on some machines. Turns out that
+the original sequence was the right thing to do for a different set of
+machines. Worse, setting the backlight level _after_ enabling it seems
+to reset it somehow. So we need to make that one conditional upon the
+backlight having been reset to zero, and add the old one back.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Cargo-culting at it's best, but it seems to work.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47941
+Cc: Takashi Iwai <tiwai@suse.de>
+Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+Acked-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/ni_labpc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_panel.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -1202,7 +1202,8 @@ static int labpc_ai_cmd(struct comedi_de
- 	else
- 		channel = CR_CHAN(cmd->chanlist[0]);
- 	/* munge channel bits for differential / scan disabled mode */
--	if (mode != MODE_SINGLE_CHAN && aref == AREF_DIFF)
-+	if ((mode == MODE_SINGLE_CHAN || mode == MODE_SINGLE_CHAN_INTERVAL) &&
-+	    aref == AREF_DIFF)
- 		channel *= 2;
- 	devpriv->command1_bits |= ADC_CHAN_BITS(channel);
- 	devpriv->command1_bits |= thisboard->ai_range_code[range];
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -321,6 +321,9 @@ void intel_panel_enable_backlight(struct
+ 	if (dev_priv->backlight_level == 0)
+ 		dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
+ 
++	dev_priv->backlight_enabled = true;
++	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
++
+ 	if (INTEL_INFO(dev)->gen >= 4) {
+ 		uint32_t reg, tmp;
+ 
+@@ -356,12 +359,12 @@ void intel_panel_enable_backlight(struct
+ 	}
+ 
+ set_level:
+-	/* Call below after setting BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1.
+-	 * BLC_PWM_CPU_CTL may be cleared to zero automatically when these
+-	 * registers are set.
++	/* Check the current backlight level and try to set again if it's zero.
++	 * On some machines, BLC_PWM_CPU_CTL is cleared to zero automatically
++	 * when BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1 are written.
+ 	 */
+-	dev_priv->backlight_enabled = true;
+-	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
++	if (!intel_panel_get_backlight(dev))
++		intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
+ }
+ 
+ static void intel_panel_init_backlight(struct drm_device *dev)
 
 
