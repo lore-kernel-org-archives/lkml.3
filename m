@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760660Ab3B0BKA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:10:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41899 "EHLO
+	id S1760205Ab3B0BJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:09:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41880 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760137Ab3BZX5b (ORCPT
+	with ESMTP id S1760142Ab3BZX5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 18:57:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Weston Andros Adamson <dros@netapp.com>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 047/150] NFSv4.1: Fix bulk recall and destroy of layouts
-Date: Tue, 26 Feb 2013 15:55:04 -0800
-Message-Id: <20130226235529.079826748@linuxfoundation.org>
+Subject: [ 048/150] NFSv4.1: Dont decode skipped layoutgets
+Date: Tue, 26 Feb 2013 15:55:05 -0800
+Message-Id: <20130226235529.171040384@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,304 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Weston Andros Adamson <dros@netapp.com>
 
-commit fd9a8d7160937f94aad36ac80d7255b4988740ac upstream.
+commit 085b7a45c63d3da5be155faab9249a5cab224561 upstream.
 
-The current code in pnfs_destroy_all_layouts() assumes that removing
-the layout from the server->layouts list is sufficient to make it
-invisible to other processes. This ignores the fact that most
-users access the layout through the nfs_inode->layout...
-There is further breakage due to lack of reference counting of the
-layouts, meaning that the whole thing Oopses at the drop of a hat.
+layoutget's prepare hook can call rpc_exit with status = NFS4_OK (0).
+Because of this, nfs4_proc_layoutget can't depend on a 0 status to mean
+that the RPC was successfully sent, received and parsed.
 
-The code in initiate_bulk_draining() is almost correct, and can be
-used as a model for pnfs_destroy_all_layouts(), so move that
-code to pnfs.c, and refactor the code to allow us to choose between
-a single filesystem bulk recall, and a recall of all layouts.
-Also note that initiate_bulk_draining() currently calls iput() while
-holding locks. Fix that too.
+To fix this, use the result's len member to see if parsing took place.
 
+This fixes the following OOPS -- calling xdr_init_decode() with a buffer length
+0 doesn't set the stream's 'p' member and ends up using uninitialized memory
+in filelayout_decode_layout.
+
+BUG: unable to handle kernel paging request at 0000000000008050
+IP: [<ffffffff81282e78>] memcpy+0x18/0x120
+PGD 0
+Oops: 0000 [#1] SMP
+last sysfs file: /sys/devices/pci0000:00/0000:00:11.0/0000:02:01.0/irq
+CPU 1
+Modules linked in: nfs_layout_nfsv41_files nfs lockd fscache auth_rpcgss nfs_acl autofs4 sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_mod ppdev parport_pc parport snd_ens1371 snd_rawmidi snd_ac97_codec ac97_bus snd_seq snd_seq_device snd_pcm snd_timer snd soundcore snd_page_alloc e1000 microcode vmware_balloon i2c_piix4 i2c_core sg shpchp ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif pata_acpi ata_generic ata_piix mptspi mptscsih mptbase scsi_transport_spi [last unloaded: speedstep_lib]
+
+Pid: 1665, comm: flush-0:22 Not tainted 2.6.32-356-test-2 #2 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
+RIP: 0010:[<ffffffff81282e78>]  [<ffffffff81282e78>] memcpy+0x18/0x120
+RSP: 0018:ffff88003dfab588  EFLAGS: 00010206
+RAX: ffff88003dc42000 RBX: ffff88003dfab610 RCX: 0000000000000009
+RDX: 000000003f807ff0 RSI: 0000000000008050 RDI: ffff88003dc42000
+RBP: ffff88003dfab5b0 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000080 R12: 0000000000000024
+R13: ffff88003dc42000 R14: ffff88003f808030 R15: ffff88003dfab6a0
+FS:  0000000000000000(0000) GS:ffff880003420000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
+CR2: 0000000000008050 CR3: 000000003bc92000 CR4: 00000000001407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process flush-0:22 (pid: 1665, threadinfo ffff88003dfaa000, task ffff880037f77540)
+Stack:
+ffffffffa0398ac1 ffff8800397c5940 ffff88003dfab610 ffff88003dfab6a0
+<d> ffff88003dfab5d0 ffff88003dfab680 ffffffffa01c150b ffffea0000d82e70
+<d> 000000508116713b 0000000000000000 0000000000000000 0000000000000000
+Call Trace:
+[<ffffffffa0398ac1>] ? xdr_inline_decode+0xb1/0x120 [sunrpc]
+[<ffffffffa01c150b>] filelayout_decode_layout+0xeb/0x350 [nfs_layout_nfsv41_files]
+[<ffffffffa01c17fc>] filelayout_alloc_lseg+0x8c/0x3c0 [nfs_layout_nfsv41_files]
+[<ffffffff8150e6ce>] ? __wait_on_bit+0x7e/0x90
+
+Signed-off-by: Weston Andros Adamson <dros@netapp.com>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/callback_proc.c |   61 ++-----------------
- fs/nfs/pnfs.c          |  150 ++++++++++++++++++++++++++++++++++++++++++-------
- fs/nfs/pnfs.h          |    7 +-
- 3 files changed, 144 insertions(+), 74 deletions(-)
+ fs/nfs/nfs4proc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/callback_proc.c
-+++ b/fs/nfs/callback_proc.c
-@@ -183,60 +183,15 @@ static u32 initiate_file_draining(struct
- static u32 initiate_bulk_draining(struct nfs_client *clp,
- 				  struct cb_layoutrecallargs *args)
- {
--	struct nfs_server *server;
--	struct pnfs_layout_hdr *lo;
--	struct inode *ino;
--	u32 rv = NFS4ERR_NOMATCHING_LAYOUT;
--	struct pnfs_layout_hdr *tmp;
--	LIST_HEAD(recall_list);
--	LIST_HEAD(free_me_list);
--	struct pnfs_layout_range range = {
--		.iomode = IOMODE_ANY,
--		.offset = 0,
--		.length = NFS4_MAX_UINT64,
--	};
-+	int stat;
- 
--	spin_lock(&clp->cl_lock);
--	rcu_read_lock();
--	list_for_each_entry_rcu(server, &clp->cl_superblocks, client_link) {
--		if ((args->cbl_recall_type == RETURN_FSID) &&
--		    memcmp(&server->fsid, &args->cbl_fsid,
--			   sizeof(struct nfs_fsid)))
--			continue;
--
--		list_for_each_entry(lo, &server->layouts, plh_layouts) {
--			ino = igrab(lo->plh_inode);
--			if (!ino)
--				continue;
--			spin_lock(&ino->i_lock);
--			/* Is this layout in the process of being freed? */
--			if (NFS_I(ino)->layout != lo) {
--				spin_unlock(&ino->i_lock);
--				iput(ino);
--				continue;
--			}
--			pnfs_get_layout_hdr(lo);
--			spin_unlock(&ino->i_lock);
--			list_add(&lo->plh_bulk_recall, &recall_list);
--		}
--	}
--	rcu_read_unlock();
--	spin_unlock(&clp->cl_lock);
--
--	list_for_each_entry_safe(lo, tmp,
--				 &recall_list, plh_bulk_recall) {
--		ino = lo->plh_inode;
--		spin_lock(&ino->i_lock);
--		set_bit(NFS_LAYOUT_BULK_RECALL, &lo->plh_flags);
--		if (pnfs_mark_matching_lsegs_invalid(lo, &free_me_list, &range))
--			rv = NFS4ERR_DELAY;
--		list_del_init(&lo->plh_bulk_recall);
--		spin_unlock(&ino->i_lock);
--		pnfs_free_lseg_list(&free_me_list);
--		pnfs_put_layout_hdr(lo);
--		iput(ino);
--	}
--	return rv;
-+	if (args->cbl_recall_type == RETURN_FSID)
-+		stat = pnfs_destroy_layouts_byfsid(clp, &args->cbl_fsid, true);
-+	else
-+		stat = pnfs_destroy_layouts_byclid(clp, true);
-+	if (stat != 0)
-+		return NFS4ERR_DELAY;
-+	return NFS4ERR_NOMATCHING_LAYOUT;
- }
- 
- static u32 do_callback_layoutrecall(struct nfs_client *clp,
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -505,37 +505,147 @@ pnfs_destroy_layout(struct nfs_inode *nf
- }
- EXPORT_SYMBOL_GPL(pnfs_destroy_layout);
- 
--/*
-- * Called by the state manger to remove all layouts established under an
-- * expired lease.
-- */
--void
--pnfs_destroy_all_layouts(struct nfs_client *clp)
-+static bool
-+pnfs_layout_add_bulk_destroy_list(struct inode *inode,
-+		struct list_head *layout_list)
- {
--	struct nfs_server *server;
- 	struct pnfs_layout_hdr *lo;
--	LIST_HEAD(tmp_list);
-+	bool ret = false;
- 
--	nfs4_deviceid_mark_client_invalid(clp);
--	nfs4_deviceid_purge_client(clp);
-+	spin_lock(&inode->i_lock);
-+	lo = NFS_I(inode)->layout;
-+	if (lo != NULL && list_empty(&lo->plh_bulk_destroy)) {
-+		pnfs_get_layout_hdr(lo);
-+		list_add(&lo->plh_bulk_destroy, layout_list);
-+		ret = true;
-+	}
-+	spin_unlock(&inode->i_lock);
-+	return ret;
-+}
-+
-+/* Caller must hold rcu_read_lock and clp->cl_lock */
-+static int
-+pnfs_layout_bulk_destroy_byserver_locked(struct nfs_client *clp,
-+		struct nfs_server *server,
-+		struct list_head *layout_list)
-+{
-+	struct pnfs_layout_hdr *lo, *next;
-+	struct inode *inode;
-+
-+	list_for_each_entry_safe(lo, next, &server->layouts, plh_layouts) {
-+		inode = igrab(lo->plh_inode);
-+		if (inode == NULL)
-+			continue;
-+		list_del_init(&lo->plh_layouts);
-+		if (pnfs_layout_add_bulk_destroy_list(inode, layout_list))
-+			continue;
-+		rcu_read_unlock();
-+		spin_unlock(&clp->cl_lock);
-+		iput(inode);
-+		spin_lock(&clp->cl_lock);
-+		rcu_read_lock();
-+		return -EAGAIN;
-+	}
-+	return 0;
-+}
-+
-+static int
-+pnfs_layout_free_bulk_destroy_list(struct list_head *layout_list,
-+		bool is_bulk_recall)
-+{
-+	struct pnfs_layout_hdr *lo;
-+	struct inode *inode;
-+	struct pnfs_layout_range range = {
-+		.iomode = IOMODE_ANY,
-+		.offset = 0,
-+		.length = NFS4_MAX_UINT64,
-+	};
-+	LIST_HEAD(lseg_list);
-+	int ret = 0;
-+
-+	while (!list_empty(layout_list)) {
-+		lo = list_entry(layout_list->next, struct pnfs_layout_hdr,
-+				plh_bulk_destroy);
-+		dprintk("%s freeing layout for inode %lu\n", __func__,
-+			lo->plh_inode->i_ino);
-+		inode = lo->plh_inode;
-+		spin_lock(&inode->i_lock);
-+		list_del_init(&lo->plh_bulk_destroy);
-+		lo->plh_block_lgets++; /* permanently block new LAYOUTGETs */
-+		if (is_bulk_recall)
-+			set_bit(NFS_LAYOUT_BULK_RECALL, &lo->plh_flags);
-+		if (pnfs_mark_matching_lsegs_invalid(lo, &lseg_list, &range))
-+			ret = -EAGAIN;
-+		spin_unlock(&inode->i_lock);
-+		pnfs_free_lseg_list(&lseg_list);
-+		pnfs_put_layout_hdr(lo);
-+		iput(inode);
-+	}
-+	return ret;
-+}
-+
-+int
-+pnfs_destroy_layouts_byfsid(struct nfs_client *clp,
-+		struct nfs_fsid *fsid,
-+		bool is_recall)
-+{
-+	struct nfs_server *server;
-+	LIST_HEAD(layout_list);
- 
- 	spin_lock(&clp->cl_lock);
- 	rcu_read_lock();
-+restart:
- 	list_for_each_entry_rcu(server, &clp->cl_superblocks, client_link) {
--		if (!list_empty(&server->layouts))
--			list_splice_init(&server->layouts, &tmp_list);
-+		if (memcmp(&server->fsid, fsid, sizeof(*fsid)) != 0)
-+			continue;
-+		if (pnfs_layout_bulk_destroy_byserver_locked(clp,
-+				server,
-+				&layout_list) != 0)
-+			goto restart;
- 	}
- 	rcu_read_unlock();
- 	spin_unlock(&clp->cl_lock);
- 
--	while (!list_empty(&tmp_list)) {
--		lo = list_entry(tmp_list.next, struct pnfs_layout_hdr,
--				plh_layouts);
--		dprintk("%s freeing layout for inode %lu\n", __func__,
--			lo->plh_inode->i_ino);
--		list_del_init(&lo->plh_layouts);
--		pnfs_destroy_layout(NFS_I(lo->plh_inode));
-+	if (list_empty(&layout_list))
-+		return 0;
-+	return pnfs_layout_free_bulk_destroy_list(&layout_list, is_recall);
-+}
-+
-+int
-+pnfs_destroy_layouts_byclid(struct nfs_client *clp,
-+		bool is_recall)
-+{
-+	struct nfs_server *server;
-+	LIST_HEAD(layout_list);
-+
-+	spin_lock(&clp->cl_lock);
-+	rcu_read_lock();
-+restart:
-+	list_for_each_entry_rcu(server, &clp->cl_superblocks, client_link) {
-+		if (pnfs_layout_bulk_destroy_byserver_locked(clp,
-+					server,
-+					&layout_list) != 0)
-+			goto restart;
- 	}
-+	rcu_read_unlock();
-+	spin_unlock(&clp->cl_lock);
-+
-+	if (list_empty(&layout_list))
-+		return 0;
-+	return pnfs_layout_free_bulk_destroy_list(&layout_list, is_recall);
-+}
-+
-+/*
-+ * Called by the state manger to remove all layouts established under an
-+ * expired lease.
-+ */
-+void
-+pnfs_destroy_all_layouts(struct nfs_client *clp)
-+{
-+	nfs4_deviceid_mark_client_invalid(clp);
-+	nfs4_deviceid_purge_client(clp);
-+
-+	pnfs_destroy_layouts_byclid(clp, false);
- }
- 
- /*
-@@ -888,7 +998,7 @@ alloc_init_layout_hdr(struct inode *ino,
- 	atomic_set(&lo->plh_refcount, 1);
- 	INIT_LIST_HEAD(&lo->plh_layouts);
- 	INIT_LIST_HEAD(&lo->plh_segs);
--	INIT_LIST_HEAD(&lo->plh_bulk_recall);
-+	INIT_LIST_HEAD(&lo->plh_bulk_destroy);
- 	lo->plh_inode = ino;
- 	lo->plh_lc_cred = get_rpccred(ctx->state->owner->so_cred);
- 	return lo;
---- a/fs/nfs/pnfs.h
-+++ b/fs/nfs/pnfs.h
-@@ -132,7 +132,7 @@ struct pnfs_layoutdriver_type {
- struct pnfs_layout_hdr {
- 	atomic_t		plh_refcount;
- 	struct list_head	plh_layouts;   /* other client layouts */
--	struct list_head	plh_bulk_recall; /* clnt list of bulk recalls */
-+	struct list_head	plh_bulk_destroy;
- 	struct list_head	plh_segs;      /* layout segments list */
- 	nfs4_stateid		plh_stateid;
- 	atomic_t		plh_outstanding; /* number of RPCs out */
-@@ -196,6 +196,11 @@ struct pnfs_layout_segment *pnfs_layout_
- void pnfs_free_lseg_list(struct list_head *tmp_list);
- void pnfs_destroy_layout(struct nfs_inode *);
- void pnfs_destroy_all_layouts(struct nfs_client *);
-+int pnfs_destroy_layouts_byfsid(struct nfs_client *clp,
-+		struct nfs_fsid *fsid,
-+		bool is_recall);
-+int pnfs_destroy_layouts_byclid(struct nfs_client *clp,
-+		bool is_recall);
- void pnfs_put_layout_hdr(struct pnfs_layout_hdr *lo);
- void pnfs_set_layout_stateid(struct pnfs_layout_hdr *lo,
- 			     const nfs4_stateid *new,
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -6142,7 +6142,8 @@ nfs4_proc_layoutget(struct nfs4_layoutge
+ 	status = nfs4_wait_for_completion_rpc_task(task);
+ 	if (status == 0)
+ 		status = task->tk_status;
+-	if (status == 0)
++	/* if layoutp->len is 0, nfs4_layoutget_prepare called rpc_exit */
++	if (status == 0 && lgp->res.layoutp->len)
+ 		lseg = pnfs_layout_process(lgp);
+ 	rpc_put_task(task);
+ 	dprintk("<-- %s status=%d\n", __func__, status);
 
 
