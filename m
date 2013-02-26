@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760677Ab3B0BAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:00:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41997 "EHLO
+	id S1760626Ab3B0BAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:00:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42008 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760249Ab3BZX5x (ORCPT
+	with ESMTP id S1760253Ab3BZX5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 18:57:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 079/150] get rid of unprotected dereferencing of mnt->mnt_ns
-Date: Tue, 26 Feb 2013 15:55:36 -0800
-Message-Id: <20130226235532.334251020@linuxfoundation.org>
+        Damien Lespiau <damien.lespiau@intel.com>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 080/150] drm/i915: Preserve the DDI link reversal configuration
+Date: Tue, 26 Feb 2013 15:55:37 -0800
+Message-Id: <20130226235532.423052631@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,114 +28,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Damien Lespiau <damien.lespiau@intel.com>
 
-commit 9b40bc90abd126bcc5da5658059b8e72e285e559 upstream.
+commit 876a8cdf92b23d268275cdce4397df0c37dac3fe upstream.
 
-It's safe only under namespace_sem or vfsmount_lock; all places
-in fs/namespace.c that want mnt->mnt_ns->user_ns actually want to use
-current->nsproxy->mnt_ns->user_ns (note the calls of check_mnt() in
-there).
+Similarly to:
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+  commit 6a0d1df3d3a0d2370541164eb0595fe35dcd6de3
+  Author: Damien Lespiau <damien.lespiau@intel.com>
+  Date:   Tue Dec 11 15:18:28 2012 +0000
+
+      drm/i915: Preserve the FDI line reversal override bit on CPT
+
+DDI port support lane reversal to easy the PCB layouting work. Let's
+preserve the bit configured by the BIOS (until we find how to correctly
+retrieve the information from the VBT, but this does sound more fragile
+then just relying on the BIOS that has, hopefully, been validated
+already.
+
+Signed-off-by: Damien Lespiau <damien.lespiau@intel.com>
+Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namespace.c |   29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h  |    1 +
+ drivers/gpu/drm/i915/intel_ddi.c |   19 ++++++++++++++++---
+ drivers/gpu/drm/i915/intel_drv.h |    1 +
+ 3 files changed, 18 insertions(+), 3 deletions(-)
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1237,6 +1237,14 @@ static int do_umount(struct mount *mnt,
- 	return retval;
- }
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -4524,6 +4524,7 @@
+ #define  DDI_BUF_EMP_800MV_0DB_HSW		(7<<24)   /* Sel7 */
+ #define  DDI_BUF_EMP_800MV_3_5DB_HSW		(8<<24)   /* Sel8 */
+ #define  DDI_BUF_EMP_MASK			(0xf<<24)
++#define  DDI_BUF_PORT_REVERSAL			(1<<16)
+ #define  DDI_BUF_IS_IDLE			(1<<7)
+ #define  DDI_A_4_LANES				(1<<4)
+ #define  DDI_PORT_WIDTH_X1			(0<<1)
+--- a/drivers/gpu/drm/i915/intel_ddi.c
++++ b/drivers/gpu/drm/i915/intel_ddi.c
+@@ -203,7 +203,10 @@ void hsw_fdi_link_train(struct drm_crtc
+ 					DP_TP_CTL_LINK_TRAIN_PAT1 |
+ 					DP_TP_CTL_ENABLE);
  
-+/*
-+ * Is the caller allowed to modify his namespace?
-+ */
-+static inline bool may_mount(void)
-+{
-+	return ns_capable(current->nsproxy->mnt_ns->user_ns, CAP_SYS_ADMIN);
-+}
+-		/* Configure and enable DDI_BUF_CTL for DDI E with next voltage */
++		/* Configure and enable DDI_BUF_CTL for DDI E with next voltage.
++		 * DDI E does not support port reversal, the functionality is
++		 * achieved on the PCH side in FDI_RX_CTL, so no need to set the
++		 * port reversal bit */
+ 		I915_WRITE(DDI_BUF_CTL(PORT_E),
+ 			   DDI_BUF_CTL_ENABLE |
+ 			   ((intel_crtc->fdi_lanes - 1) << 1) |
+@@ -677,8 +680,11 @@ static void intel_ddi_mode_set(struct dr
+ 
+ 	if (type == INTEL_OUTPUT_DISPLAYPORT || type == INTEL_OUTPUT_EDP) {
+ 		struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
++		struct intel_digital_port *intel_dig_port =
++			enc_to_dig_port(encoder);
+ 
+-		intel_dp->DP = DDI_BUF_CTL_ENABLE | DDI_BUF_EMP_400MV_0DB_HSW;
++		intel_dp->DP = intel_dig_port->port_reversal |
++			       DDI_BUF_CTL_ENABLE | DDI_BUF_EMP_400MV_0DB_HSW;
+ 		switch (intel_dp->lane_count) {
+ 		case 1:
+ 			intel_dp->DP |= DDI_PORT_WIDTH_X1;
+@@ -1291,11 +1297,15 @@ static void intel_enable_ddi(struct inte
+ 	int type = intel_encoder->type;
+ 
+ 	if (type == INTEL_OUTPUT_HDMI) {
++		struct intel_digital_port *intel_dig_port =
++			enc_to_dig_port(encoder);
 +
- /*
-  * Now umount can handle mount points as well as block devices.
-  * This is important for filesystems which use unnamed block devices.
-@@ -1255,6 +1263,9 @@ SYSCALL_DEFINE2(umount, char __user *, n
- 	if (flags & ~(MNT_FORCE | MNT_DETACH | MNT_EXPIRE | UMOUNT_NOFOLLOW))
- 		return -EINVAL;
+ 		/* In HDMI/DVI mode, the port width, and swing/emphasis values
+ 		 * are ignored so nothing special needs to be done besides
+ 		 * enabling the port.
+ 		 */
+-		I915_WRITE(DDI_BUF_CTL(port), DDI_BUF_CTL_ENABLE);
++		I915_WRITE(DDI_BUF_CTL(port),
++			   intel_dig_port->port_reversal | DDI_BUF_CTL_ENABLE);
+ 	} else if (type == INTEL_OUTPUT_EDP) {
+ 		struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
  
-+	if (!may_mount())
-+		return -EPERM;
-+
- 	if (!(flags & UMOUNT_NOFOLLOW))
- 		lookup_flags |= LOOKUP_FOLLOW;
+@@ -1457,6 +1467,7 @@ static const struct drm_encoder_helper_f
  
-@@ -1268,10 +1279,6 @@ SYSCALL_DEFINE2(umount, char __user *, n
- 	if (!check_mnt(mnt))
- 		goto dput_and_out;
- 
--	retval = -EPERM;
--	if (!ns_capable(mnt->mnt_ns->user_ns, CAP_SYS_ADMIN))
--		goto dput_and_out;
--
- 	retval = do_umount(mnt, flags);
- dput_and_out:
- 	/* we mustn't call path_put() as that would clear mnt_expiry_mark */
-@@ -1295,7 +1302,7 @@ SYSCALL_DEFINE1(oldumount, char __user *
- 
- static int mount_is_safe(struct path *path)
+ void intel_ddi_init(struct drm_device *dev, enum port port)
  {
--	if (ns_capable(real_mount(path->mnt)->mnt_ns->user_ns, CAP_SYS_ADMIN))
-+	if (may_mount())
- 		return 0;
- 	return -EPERM;
- #ifdef notyet
-@@ -1633,7 +1640,7 @@ static int do_change_type(struct path *p
- 	int type;
- 	int err = 0;
++	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct intel_digital_port *intel_dig_port;
+ 	struct intel_encoder *intel_encoder;
+ 	struct drm_encoder *encoder;
+@@ -1497,6 +1508,8 @@ void intel_ddi_init(struct drm_device *d
+ 	intel_encoder->get_hw_state = intel_ddi_get_hw_state;
  
--	if (!ns_capable(mnt->mnt_ns->user_ns, CAP_SYS_ADMIN))
-+	if (!may_mount())
- 		return -EPERM;
- 
- 	if (path->dentry != path->mnt->mnt_root)
-@@ -1797,7 +1804,7 @@ static int do_move_mount(struct path *pa
- 	struct mount *p;
- 	struct mount *old;
- 	int err = 0;
--	if (!ns_capable(real_mount(path->mnt)->mnt_ns->user_ns, CAP_SYS_ADMIN))
-+	if (!may_mount())
- 		return -EPERM;
- 	if (!old_name || !*old_name)
- 		return -EINVAL;
-@@ -1933,16 +1940,14 @@ static int do_new_mount(struct path *pat
- 			int mnt_flags, const char *name, void *data)
- {
- 	struct file_system_type *type;
--	struct user_namespace *user_ns;
-+	struct user_namespace *user_ns = current->nsproxy->mnt_ns->user_ns;
- 	struct vfsmount *mnt;
- 	int err;
- 
- 	if (!fstype)
- 		return -EINVAL;
- 
--	/* we need capabilities... */
--	user_ns = real_mount(path->mnt)->mnt_ns->user_ns;
--	if (!ns_capable(user_ns, CAP_SYS_ADMIN))
-+	if (!may_mount())
- 		return -EPERM;
- 
- 	type = get_fs_type(fstype);
-@@ -2567,7 +2572,7 @@ SYSCALL_DEFINE2(pivot_root, const char _
- 	struct mount *new_mnt, *root_mnt;
- 	int error;
- 
--	if (!ns_capable(current->nsproxy->mnt_ns->user_ns, CAP_SYS_ADMIN))
-+	if (!may_mount())
- 		return -EPERM;
- 
- 	error = user_path_dir(new_root, &new);
+ 	intel_dig_port->port = port;
++	intel_dig_port->port_reversal = I915_READ(DDI_BUF_CTL(port)) &
++					DDI_BUF_PORT_REVERSAL;
+ 	if (hdmi_connector)
+ 		intel_dig_port->hdmi.sdvox_reg = DDI_BUF_CTL(port);
+ 	else
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -377,6 +377,7 @@ struct intel_dp {
+ struct intel_digital_port {
+ 	struct intel_encoder base;
+ 	enum port port;
++	u32 port_reversal;
+ 	struct intel_dp dp;
+ 	struct intel_hdmi hdmi;
+ };
 
 
