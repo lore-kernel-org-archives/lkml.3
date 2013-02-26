@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab3BZFqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 00:46:20 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56910 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab3BZFqR (ORCPT
+	id S1756292Ab3BZFrq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 00:47:46 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:33639 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab3BZFrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 00:46:17 -0500
-X-AuditID: 9c930179-b7b61ae000004061-46-512c4c272b8e
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        jolsa@redhat.com, peterz@infradead.org, mingo@elte.hu
-Subject: Re: [PATCH] perf report: fix handling of memory sampling sort orders
-References: <20130222142838.GA2847@quad>
-	<20130222184322.GF16956@infradead.org>
-Date: Tue, 26 Feb 2013 14:46:14 +0900
-In-Reply-To: <20130222184322.GF16956@infradead.org> (Arnaldo Carvalho de
-	Melo's message of "Fri, 22 Feb 2013 15:43:22 -0300")
-Message-ID: <8738wjtyop.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 26 Feb 2013 00:47:42 -0500
+Date: Tue, 26 Feb 2013 09:47:38 +0400
+From: Artem Savkov <artem.savkov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: ibm-acpi-devel@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
+        ibm-acpi@hmh.eng.br, matthew.garrett@nebula.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] thinkpad_acpi: moved hotkey_thread_mutex lock after
+ set_freezable()
+Message-ID: <20130226054738.GA4191@thinkpad.lan>
+References: <1361697722-4575-1-git-send-email-artem.savkov@gmail.com>
+ <20130225155445.d3eef1ad.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130225155445.d3eef1ad.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Feb 25, 2013 at 03:54:45PM -0800, Andrew Morton wrote:
+> On Sun, 24 Feb 2013 13:22:02 +0400
+> Artem Savkov <artem.savkov@gmail.com> wrote:
+> 
+> > set_freezable() checks freezing during which no locks should be held.
+> > hotkey_thread_mutex lock should be moved closer to where it is actually needed.
+> > 
+> 
+> Thanks.
+> 
+> When fixing a bug, we always like to see a full description of that bug
+> so we can better work out which kernel versions need the fix.
+Sorry, will do thah in future.
 
-On Fri, 22 Feb 2013 15:43:22 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Feb 22, 2013 at 03:28:38PM +0100, Stephane Eranian escreveu:
->> 
->> When the memory sampling sort orders were used on perf.data
->> files without memory sampling data, it would crash perf. This
->> patch fixes this by  handling the lack of memory information
->> gracefully, printing N/A and formatting columns correctly
->> whenever necessary.
+> Did you actually hit a lockup because of this?  Or was it just from
+> code inspection?  Or ...  ?
+I didn't hit an actual lockup, but I did hit a warning during boot. The
+warning was added by "lockdep: check that no locks held at freeze time"
+patch (2f2ff7b8979c50491b3cbce622d7bea4d44a8682 in linux-next.git)
 
-It'd be great if we could detect the perf.data contains memory sampling
-data and then warn user about it and exit like I did for branch
-sampling.  What do you think?
 
-Thanks,
-Namhyung
+-- 
+Kind regards,
+Artem
