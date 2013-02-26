@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933346Ab3BZX6x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42380 "EHLO
+	id S933795Ab3BZX7Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:59:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42602 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933276Ab3BZX6s (ORCPT
+	with ESMTP id S933714Ab3BZX7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:48 -0500
+	Tue, 26 Feb 2013 18:59:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 02/53] mm: fix pageblock bitmap allocation
-Date: Tue, 26 Feb 2013 15:57:31 -0800
-Message-Id: <20130226235620.097202014@linuxfoundation.org>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 49/53] USB: option: add Yota / Megafon M100-1 4g modem
+Date: Tue, 26 Feb 2013 15:58:18 -0800
+Message-Id: <20130226235624.945981173@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,83 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 7c45512df987c5619db041b5c9b80d281e26d3db upstream.
+commit cd565279e51bedee1b2988e84f9b3bef485adeb6 upstream.
 
-Commit c060f943d092 ("mm: use aligned zone start for pfn_to_bitidx
-calculation") fixed out calculation of the index into the pageblock
-bitmap when a !SPARSEMEM zome was not aligned to pageblock_nr_pages.
+Interface layout:
 
-However, the _allocation_ of that bitmap had never taken this alignment
-requirement into accout, so depending on the exact size and alignment of
-the zone, the use of that index could then access past the allocation,
-resulting in some very subtle memory corruption.
+ 00 CD-ROM
+ 01 debug COM port
+ 02 AP control port
+ 03 modem
+ 04 usb-ethernet
 
-This was reported (and bisected) by Ingo Molnar: one of his random
-config builds would hang with certain very specific kernel command line
-options.
+Bus=01 Lev=02 Prnt=02 Port=01 Cnt=02 Dev#=  4 Spd=480  MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+P:  Vendor=0408 ProdID=ea42 Rev= 0.00
+S:  Manufacturer=Qualcomm, Incorporated
+S:  Product=Qualcomm CDMA Technologies MSM
+S:  SerialNumber=353568051xxxxxx
+C:* #Ifs= 5 Cfg#= 1 Atr=e0 MxPwr=500mA
+I:* If#= 0 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
+E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 3 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=84(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
+E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 4 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=86(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
+E:  Ad=87(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
 
-In the meantime, commit c060f943d092 has been marked for stable, so this
-fix needs to be back-ported to the stable kernels that backported the
-commit to use the right alignment.
-
-Bisected-and-tested-by: Ingo Molnar <mingo@kernel.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4264,10 +4264,11 @@ static void __meminit calculate_node_tot
-  * round what is now in bits to nearest long in bits, then return it in
-  * bytes.
-  */
--static unsigned long __init usemap_size(unsigned long zonesize)
-+static unsigned long __init usemap_size(unsigned long zone_start_pfn, unsigned long zonesize)
- {
- 	unsigned long usemapsize;
- 
-+	zonesize += zone_start_pfn & (pageblock_nr_pages-1);
- 	usemapsize = roundup(zonesize, pageblock_nr_pages);
- 	usemapsize = usemapsize >> pageblock_order;
- 	usemapsize *= NR_PAGEBLOCK_BITS;
-@@ -4277,17 +4278,19 @@ static unsigned long __init usemap_size(
- }
- 
- static void __init setup_usemap(struct pglist_data *pgdat,
--				struct zone *zone, unsigned long zonesize)
-+				struct zone *zone,
-+				unsigned long zone_start_pfn,
-+				unsigned long zonesize)
- {
--	unsigned long usemapsize = usemap_size(zonesize);
-+	unsigned long usemapsize = usemap_size(zone_start_pfn, zonesize);
- 	zone->pageblock_flags = NULL;
- 	if (usemapsize)
- 		zone->pageblock_flags = alloc_bootmem_node_nopanic(pgdat,
- 								   usemapsize);
- }
- #else
--static inline void setup_usemap(struct pglist_data *pgdat,
--				struct zone *zone, unsigned long zonesize) {}
-+static inline void setup_usemap(struct pglist_data *pgdat, struct zone *zone,
-+				unsigned long zone_start_pfn, unsigned long zonesize) {}
- #endif /* CONFIG_SPARSEMEM */
- 
- #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
-@@ -4415,7 +4418,7 @@ static void __paginginit free_area_init_
- 			continue;
- 
- 		set_pageblock_order(pageblock_default_order());
--		setup_usemap(pgdat, zone, size);
-+		setup_usemap(pgdat, zone, zone_start_pfn, size);
- 		ret = init_currently_empty_zone(zone, zone_start_pfn,
- 						size, MEMMAP_EARLY);
- 		BUG_ON(ret);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -576,6 +576,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLX) },
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GKE) },
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
++	{ USB_DEVICE(QUANTA_VENDOR_ID, 0xea42),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
 
 
