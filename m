@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760070Ab3B0BS7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:18:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41767 "EHLO
+	id S933593Ab3B0BTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:19:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755666Ab3BZX5L (ORCPT
+	with ESMTP id S1759983Ab3BZX5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 18:57:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 018/150] serial: imx: Fix recursive locking bug
-Date: Tue, 26 Feb 2013 15:54:35 -0800
-Message-Id: <20130226235526.126335588@linuxfoundation.org>
+        Chris Ruehl <chris.ruehl@gtsys.com.hk>,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 017/150] USB: serial: fix null-pointer dereferences on disconnect
+Date: Tue, 26 Feb 2013 15:54:34 -0800
+Message-Id: <20130226235526.015935706@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,118 +27,238 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 677fe555cbfb188af58cce105f4dae9505e58c31 upstream.
+commit b2ca699076573c94fee9a73cb0d8645383b602a0 upstream.
 
-commit 9ec1882df2 (tty: serial: imx: console write routing is unsafe
-on SMP) introduced a recursive locking bug in imx_console_write().
+Make sure serial-driver dtr_rts is called with disc_mutex held after
+checking the disconnected flag.
 
-The callchain is:
+Due to a bug in the tty layer, dtr_rts may get called after a device has
+been disconnected and the tty-device unregistered. Some drivers have had
+individual checks for disconnect to make sure the disconnected interface
+was not accessed, but this should really be handled in usb-serial core
+(at least until the long-standing tty-bug has been fixed).
 
-imx_rxint()
-  spin_lock_irqsave(&sport->port.lock,flags);
-  ...
-  uart_handle_sysrq_char();
-    sysrq_function();
-      printk();
-        imx_console_write();
-          spin_lock_irqsave(&sport->port.lock,flags); <--- DEAD
+Note that the problem has been made more acute with commit 0998d0631001
+("device-core: Ensure drvdata = NULL when no driver is bound") as the
+port data is now also NULL when dtr_rts is called resulting in further
+oopses.
 
-The bad news is that the kernel debugging facilities can dectect the
-problem, but the printks never surface on the serial console for
-obvious reasons.
-
-There is a similar issue with oops_in_progress. If the kernel crashes
-we really don't want to be stuck on the lock and unable to tell what
-happened.
-
-In general most UP originated drivers miss these checks and nobody
-ever notices because CONFIG_PROVE_LOCKING seems to be still ignored by
-a large number of developers.
-
-The solution is to avoid locking in the sysrq case and trylock in the
-oops_in_progress case.
-
-This scheme is used in other drivers as well and it would be nice if
-we could move this to a common place, so the usual copy/paste/modify
-bugs can be avoided.
-
-Now there is another issue with this scheme:
-
-CPU0 	    	     	 CPU1
-printk()
-			 rxint()
-			   sysrq_detection() -> sets port->sysrq
-			 return from interrupt
-  console_write()
-     if (port->sysrq)
-     	avoid locking
-
-port->sysrq is reset with the next receive character. So as long as
-the port->sysrq is not reset and this can take an endless amount of
-time if after the break no futher receive character follows, all
-console writes happen unlocked.
-
-While the current writer is protected against other console writers by
-the console sem, it's unprotected against open/close or other
-operations which fiddle with the port. That's what the above mentioned
-commit tried to solve.
-
-That's an issue in all drivers which use that scheme and unfortunately
-there is no easy workaround. The only solution is to have a separate
-indicator port->sysrq_cpu. uart_handle_sysrq_char() then sets it to
-smp_processor_id() before calling into handle_sysrq() and resets it to
--1 after that. Then change the locking check to:
-
-     if (port->sysrq_cpu == smp_processor_id())
-     	 locked = 0;
-     else if (oops_in_progress)
-         locked = spin_trylock_irqsave(port->lock, flags);
-     else
-  	 spin_lock_irqsave(port->lock, flags);
-
-That would force all other cpus into the spin_lock path. Problem
-solved, but that's way beyond the scope of this fix and really wants
-to be implemented in a common function which calls the uart specific
-write function to avoid another gazillion of hard to debug
-copy/paste/modify bugs.
-
-Reported-and-tested-by: Tim Sander <tim@krieglstein.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/imx.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c   |   20 +++++++++-----------
+ drivers/usb/serial/mct_u232.c   |   22 +++++++++-------------
+ drivers/usb/serial/quatech2.c   |   18 ++++++++----------
+ drivers/usb/serial/sierra.c     |    8 +-------
+ drivers/usb/serial/ssu100.c     |   19 ++++++++-----------
+ drivers/usb/serial/usb-serial.c |   14 ++++++++++++--
+ drivers/usb/serial/usb_wwan.c   |    8 +++-----
+ 7 files changed, 50 insertions(+), 59 deletions(-)
 
---- a/drivers/tty/serial/imx.c
-+++ b/drivers/tty/serial/imx.c
-@@ -1213,8 +1213,14 @@ imx_console_write(struct console *co, co
- 	struct imx_port_ucrs old_ucr;
- 	unsigned int ucr1;
- 	unsigned long flags;
-+	int locked = 1;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -1886,24 +1886,22 @@ static void ftdi_dtr_rts(struct usb_seri
+ {
+ 	struct ftdi_private *priv = usb_get_serial_port_data(port);
  
--	spin_lock_irqsave(&sport->port.lock, flags);
-+	if (sport->port.sysrq)
-+		locked = 0;
-+	else if (oops_in_progress)
-+		locked = spin_trylock_irqsave(&sport->port.lock, flags);
+-	mutex_lock(&port->serial->disc_mutex);
+-	if (!port->serial->disconnected) {
+-		/* Disable flow control */
+-		if (!on && usb_control_msg(port->serial->dev,
++	/* Disable flow control */
++	if (!on) {
++		if (usb_control_msg(port->serial->dev,
+ 			    usb_sndctrlpipe(port->serial->dev, 0),
+ 			    FTDI_SIO_SET_FLOW_CTRL_REQUEST,
+ 			    FTDI_SIO_SET_FLOW_CTRL_REQUEST_TYPE,
+ 			    0, priv->interface, NULL, 0,
+ 			    WDR_TIMEOUT) < 0) {
+-			    dev_err(&port->dev, "error from flowcontrol urb\n");
++			dev_err(&port->dev, "error from flowcontrol urb\n");
+ 		}
+-		/* drop RTS and DTR */
+-		if (on)
+-			set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+-		else
+-			clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	}
+-	mutex_unlock(&port->serial->disc_mutex);
++	/* drop RTS and DTR */
++	if (on)
++		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
 +	else
-+		spin_lock_irqsave(&sport->port.lock, flags);
- 
- 	/*
- 	 *	First, save UCR1/2/3 and then disable interrupts
-@@ -1241,7 +1247,8 @@ imx_console_write(struct console *co, co
- 
- 	imx_port_ucrs_restore(&sport->port, &old_ucr);
- 
--	spin_unlock_irqrestore(&sport->port.lock, flags);
-+	if (locked)
-+		spin_unlock_irqrestore(&sport->port.lock, flags);
++		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
  }
  
  /*
+--- a/drivers/usb/serial/mct_u232.c
++++ b/drivers/usb/serial/mct_u232.c
+@@ -499,19 +499,15 @@ static void mct_u232_dtr_rts(struct usb_
+ 	unsigned int control_state;
+ 	struct mct_u232_private *priv = usb_get_serial_port_data(port);
+ 
+-	mutex_lock(&port->serial->disc_mutex);
+-	if (!port->serial->disconnected) {
+-		/* drop DTR and RTS */
+-		spin_lock_irq(&priv->lock);
+-		if (on)
+-			priv->control_state |= TIOCM_DTR | TIOCM_RTS;
+-		else
+-			priv->control_state &= ~(TIOCM_DTR | TIOCM_RTS);
+-		control_state = priv->control_state;
+-		spin_unlock_irq(&priv->lock);
+-		mct_u232_set_modem_ctrl(port, control_state);
+-	}
+-	mutex_unlock(&port->serial->disc_mutex);
++	spin_lock_irq(&priv->lock);
++	if (on)
++		priv->control_state |= TIOCM_DTR | TIOCM_RTS;
++	else
++		priv->control_state &= ~(TIOCM_DTR | TIOCM_RTS);
++	control_state = priv->control_state;
++	spin_unlock_irq(&priv->lock);
++
++	mct_u232_set_modem_ctrl(port, control_state);
+ }
+ 
+ static void mct_u232_close(struct usb_serial_port *port)
+--- a/drivers/usb/serial/quatech2.c
++++ b/drivers/usb/serial/quatech2.c
+@@ -945,19 +945,17 @@ static void qt2_dtr_rts(struct usb_seria
+ 	struct usb_device *dev = port->serial->dev;
+ 	struct qt2_port_private *port_priv = usb_get_serial_port_data(port);
+ 
+-	mutex_lock(&port->serial->disc_mutex);
+-	if (!port->serial->disconnected) {
+-		/* Disable flow control */
+-		if (!on && qt2_setregister(dev, port_priv->device_port,
++	/* Disable flow control */
++	if (!on) {
++		if (qt2_setregister(dev, port_priv->device_port,
+ 					   UART_MCR, 0) < 0)
+ 			dev_warn(&port->dev, "error from flowcontrol urb\n");
+-		/* drop RTS and DTR */
+-		if (on)
+-			update_mctrl(port_priv, TIOCM_DTR | TIOCM_RTS, 0);
+-		else
+-			update_mctrl(port_priv, 0, TIOCM_DTR | TIOCM_RTS);
+ 	}
+-	mutex_unlock(&port->serial->disc_mutex);
++	/* drop RTS and DTR */
++	if (on)
++		update_mctrl(port_priv, TIOCM_DTR | TIOCM_RTS, 0);
++	else
++		update_mctrl(port_priv, 0, TIOCM_DTR | TIOCM_RTS);
+ }
+ 
+ static void qt2_update_msr(struct usb_serial_port *port, unsigned char *ch)
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -861,19 +861,13 @@ static int sierra_open(struct tty_struct
+ 
+ static void sierra_dtr_rts(struct usb_serial_port *port, int on)
+ {
+-	struct usb_serial *serial = port->serial;
+ 	struct sierra_port_private *portdata;
+ 
+ 	portdata = usb_get_serial_port_data(port);
+ 	portdata->rts_state = on;
+ 	portdata->dtr_state = on;
+ 
+-	if (serial->dev) {
+-		mutex_lock(&serial->disc_mutex);
+-		if (!serial->disconnected)
+-			sierra_send_setup(port);
+-		mutex_unlock(&serial->disc_mutex);
+-	}
++	sierra_send_setup(port);
+ }
+ 
+ static int sierra_startup(struct usb_serial *serial)
+--- a/drivers/usb/serial/ssu100.c
++++ b/drivers/usb/serial/ssu100.c
+@@ -506,19 +506,16 @@ static void ssu100_dtr_rts(struct usb_se
+ {
+ 	struct usb_device *dev = port->serial->dev;
+ 
+-	mutex_lock(&port->serial->disc_mutex);
+-	if (!port->serial->disconnected) {
+-		/* Disable flow control */
+-		if (!on &&
+-		    ssu100_setregister(dev, 0, UART_MCR, 0) < 0)
++	/* Disable flow control */
++	if (!on) {
++		if (ssu100_setregister(dev, 0, UART_MCR, 0) < 0)
+ 			dev_err(&port->dev, "error from flowcontrol urb\n");
+-		/* drop RTS and DTR */
+-		if (on)
+-			set_mctrl(dev, TIOCM_DTR | TIOCM_RTS);
+-		else
+-			clear_mctrl(dev, TIOCM_DTR | TIOCM_RTS);
+ 	}
+-	mutex_unlock(&port->serial->disc_mutex);
++	/* drop RTS and DTR */
++	if (on)
++		set_mctrl(dev, TIOCM_DTR | TIOCM_RTS);
++	else
++		clear_mctrl(dev, TIOCM_DTR | TIOCM_RTS);
+ }
+ 
+ static void ssu100_update_msr(struct usb_serial_port *port, u8 msr)
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -688,10 +688,20 @@ static int serial_carrier_raised(struct
+ static void serial_dtr_rts(struct tty_port *port, int on)
+ {
+ 	struct usb_serial_port *p = container_of(port, struct usb_serial_port, port);
+-	struct usb_serial_driver *drv = p->serial->type;
++	struct usb_serial *serial = p->serial;
++	struct usb_serial_driver *drv = serial->type;
+ 
+-	if (drv->dtr_rts)
++	if (!drv->dtr_rts)
++		return;
++	/*
++	 * Work-around bug in the tty-layer which can result in dtr_rts
++	 * being called after a disconnect (and tty_unregister_device
++	 * has returned). Remove once bug has been squashed.
++	 */
++	mutex_lock(&serial->disc_mutex);
++	if (!serial->disconnected)
+ 		drv->dtr_rts(p, on);
++	mutex_unlock(&serial->disc_mutex);
+ }
+ 
+ static const struct tty_port_operations serial_port_ops = {
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -38,7 +38,6 @@
+ 
+ void usb_wwan_dtr_rts(struct usb_serial_port *port, int on)
+ {
+-	struct usb_serial *serial = port->serial;
+ 	struct usb_wwan_port_private *portdata;
+ 	struct usb_wwan_intf_private *intfdata;
+ 
+@@ -48,12 +47,11 @@ void usb_wwan_dtr_rts(struct usb_serial_
+ 		return;
+ 
+ 	portdata = usb_get_serial_port_data(port);
+-	mutex_lock(&serial->disc_mutex);
++	/* FIXME: locking */
+ 	portdata->rts_state = on;
+ 	portdata->dtr_state = on;
+-	if (serial->dev)
+-		intfdata->send_setup(port);
+-	mutex_unlock(&serial->disc_mutex);
++
++	intfdata->send_setup(port);
+ }
+ EXPORT_SYMBOL(usb_wwan_dtr_rts);
+ 
 
 
