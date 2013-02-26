@@ -1,340 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760087Ab3BZJWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 04:22:17 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:62803 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760025Ab3BZJWN (ORCPT
+	id S1760020Ab3BZJUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 04:20:45 -0500
+Received: from mail.windriver.com ([147.11.1.11]:40367 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab3BZJUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 04:22:13 -0500
-From: chenggang <chenggang.qin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 4/4] Add fork and exit callback functions into top->perf_tool
-Date: Tue, 26 Feb 2013 17:20:51 +0800
-Message-Id: <1361870452-6143-5-git-send-email-chenggang.qin@gmail.com>
+	Tue, 26 Feb 2013 04:20:00 -0500
+From: Tiejun Chen <tiejun.chen@windriver.com>
+To: <benh@kernel.crashing.org>, <galak@kernel.crashing.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: [v1][PATCH 4/7] book3e/kexec/kdump: introduce a kexec kernel flag
+Date: Tue, 26 Feb 2013 17:19:39 +0800
+Message-ID: <1361870382-743-5-git-send-email-tiejun.chen@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361870452-6143-1-git-send-email-chenggang.qin@gmail.com>
-References: <1361870452-6143-1-git-send-email-chenggang.qin@gmail.com>
+In-Reply-To: <1361870382-743-1-git-send-email-tiejun.chen@windriver.com>
+References: <1361870382-743-1-git-send-email-tiejun.chen@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: chenggang <chenggang.qcg@taobao.com>
+We need to introduce a flag to indicate we're already running
+a kexec kernel then we can go proper path. For example, We
+shouldn't access spin_table from the bootloader to up any secondary
+cpu for kexec kernel, and kexec kernel already know how to jump to
+generic_secondary_smp_init.
 
-Many applications will fork threads on-the-fly, these threads could exit before
-the main thread exit. The perf top tool should perceive the new forked threads
-while we profile a special application.
-If the target process fork a thread or a thread exit, we will get a PERF_RECORD_FORK
- or PERF_RECORD_EXIT events. The following callback functions can process these events.
-1) perf_top__process_event_fork()
-   Open a new fd for the new forked, and expend the related data structures.
-2) perf_top__process_event_exit()
-   Close the fd of exit threadsd, and destroy the nodes in the related data structures.
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Yanmin Zhang <yanmin.zhang@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
-
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
 ---
- tools/perf/builtin-top.c     |  100 +++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/evlist.c     |   30 ++++++-------
- tools/perf/util/evsel.c      |   13 +++---
- tools/perf/util/thread_map.c |   13 ++++++
- tools/perf/util/thread_map.h |    3 --
- 5 files changed, 133 insertions(+), 26 deletions(-)
+ arch/powerpc/include/asm/smp.h    |    3 +++
+ arch/powerpc/kernel/head_64.S     |   12 ++++++++++++
+ arch/powerpc/kernel/misc_64.S     |    6 ++++++
+ arch/powerpc/platforms/85xx/smp.c |   14 ++++++++++++++
+ 4 files changed, 35 insertions(+)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 72f6eb7..94aab11 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -806,7 +806,7 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
- 	struct perf_evsel *evsel;
- 	struct perf_session *session = top->session;
- 	union perf_event *event;
--	struct machine *machine;
-+	struct machine *machine = NULL;
- 	u8 origin;
- 	int ret;
+diff --git a/arch/powerpc/include/asm/smp.h b/arch/powerpc/include/asm/smp.h
+index 195ce2a..161a5912 100644
+--- a/arch/powerpc/include/asm/smp.h
++++ b/arch/powerpc/include/asm/smp.h
+@@ -198,6 +198,9 @@ extern void generic_secondary_thread_init(void);
+ extern unsigned long __secondary_hold_spinloop;
+ extern unsigned long __secondary_hold_acknowledge;
+ extern char __secondary_hold;
++#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
++extern unsigned long __run_at_kexec;
++#endif
  
-@@ -825,6 +825,20 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
- 		if (event->header.type == PERF_RECORD_SAMPLE)
- 			++top->samples;
+ extern void __early_start(void);
+ #endif /* __ASSEMBLY__ */
+diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
+index a93ca67..038e81d 100644
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -89,6 +89,12 @@ __secondary_hold_spinloop:
+ __secondary_hold_acknowledge:
+ 	.llong	0x0
  
-+		if (cpu_map__all(top->evlist->cpus) &&
-+		    event->header.type == PERF_RECORD_FORK)
-+			(&top->tool)->fork(&top->tool, event, &sample, machine);
++#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
++	.globl	__run_at_kexec
++__run_at_kexec:
++	.llong	0x0	/* Flag for the secondary kernel from kexec. */
++#endif
 +
-+		if (cpu_map__all(top->evlist->cpus) &&
-+		    event->header.type == PERF_RECORD_EXIT) {
-+			int tidx;
+ #ifdef CONFIG_RELOCATABLE
+ 	/* This flag is set to 1 by a loader if the kernel should run
+ 	 * at the loaded address instead of the linked address.  This
+@@ -417,6 +423,12 @@ _STATIC(__after_prom_start)
+ #if defined(CONFIG_PPC_BOOK3E)
+ 	tovirt(r26,r26)			/* on booke, we already run at PAGE_OFFSET */
+ #endif
++#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
++	/* If relocated we need to restore this flag on that relocated address. */
++	ld	r7,__run_at_kexec-_stext(r26)
++	std	r7,__run_at_kexec-_stext(r26)
++#endif
 +
-+			tidx = (&top->tool)->exit(&top->tool, event,
-+				&sample, machine);
-+			if (tidx == idx)
-+				break;
-+		}
-+
- 		switch (origin) {
- 		case PERF_RECORD_MISC_USER:
- 			++top->us_samples;
-@@ -1024,11 +1038,95 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
- 	return record_parse_callchain_opt(opt, arg, unset);
- }
+ 	lwz	r7,__run_at_load-_stext(r26)
+ #if defined(CONFIG_PPC_BOOK3E)
+ 	tophys(r26,r26)			/* Restore for the remains. */
+diff --git a/arch/powerpc/kernel/misc_64.S b/arch/powerpc/kernel/misc_64.S
+index ffe6043..b81f8ac 100644
+--- a/arch/powerpc/kernel/misc_64.S
++++ b/arch/powerpc/kernel/misc_64.S
+@@ -608,6 +608,12 @@ _GLOBAL(kexec_sequence)
+ 	bl	.copy_and_flush	/* (dest, src, copy limit, start offset) */
+ 1:	/* assume normal blr return */
  
-+static int perf_top__append_thread(struct perf_top *top, int tidx)
-+{
-+	struct perf_evsel *counter;
-+	struct perf_evlist *evlist = top->evlist;
-+	struct cpu_map *cpus = evlist->cpus;
++	/* notify we're going into kexec kernel for SMP. */
++	LOAD_REG_ADDR(r3,__run_at_kexec)
++	li	r4,1
++	std	r4,0(r3)
++	sync
 +
-+	list_for_each_entry(counter, &evlist->entries, node)
-+		if (perf_evsel__open_thread(counter, cpus, evlist->threads, tidx) < 0) {
-+			printf("errno: %d\n", errno);
-+			return -1;
-+		}
-+
-+	if (perf_evlist__mmap_thread(evlist, false, tidx) < 0)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+static int perf_top__process_event_fork(struct perf_tool *tool __maybe_unused,
-+					union perf_event *event __maybe_unused,
-+					struct perf_sample *sample __maybe_unused,
-+					struct machine *machine __maybe_unused)
-+{
-+	pid_t tid = event->fork.tid;
-+	pid_t ptid = event->fork.ptid;
-+	struct perf_top *top = container_of(tool, struct perf_top, tool);
-+	struct thread_map *threads = top->evlist->threads;
-+	struct perf_evsel *evsel;
-+	int i, ret;
-+
-+	if (!cpu_map__all(top->evlist->cpus))
-+		return -1;
-+
-+	ret = thread_map__append(threads, tid);
-+	if (ret == 1)
-+		return ret;
-+	if (ret == -1)
-+		return ret;
-+
-+	for(i = 0; i < threads->nr; i++) {
-+		if (ptid == thread_map__get_pid(threads, i)) {
-+			if (perf_top__append_thread(top, threads->nr - 1) < 0)
-+				goto free_new_thread;
-+			break;
-+		}
+ 	/* release other cpus to the new kernel secondary start at 0x60 */
+ 	mflr	r5
+ 	li	r6,1
+diff --git a/arch/powerpc/platforms/85xx/smp.c b/arch/powerpc/platforms/85xx/smp.c
+index 148c2f2..8beef93 100644
+--- a/arch/powerpc/platforms/85xx/smp.c
++++ b/arch/powerpc/platforms/85xx/smp.c
+@@ -150,6 +150,9 @@ static int __cpuinit smp_85xx_kick_cpu(int nr)
+ 	int hw_cpu = get_hard_smp_processor_id(nr);
+ 	int ioremappable;
+ 	int ret = 0;
++#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
++	unsigned long *ptr;
++#endif
+ 
+ 	WARN_ON(nr < 0 || nr >= NR_CPUS);
+ 	WARN_ON(hw_cpu < 0 || hw_cpu >= NR_CPUS);
+@@ -238,11 +241,22 @@ out:
+ #else
+ 	smp_generic_kick_cpu(nr);
+ 
++#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
++	ptr  = (unsigned long *)((unsigned long)&__run_at_kexec);
++	/* We shouldn't access spin_table from the bootloader to up any
++	 * secondary cpu for kexec kernel, and kexec kernel already
++	 * know how to jump to generic_secondary_smp_init.
++	 */
++	if (!*ptr) {
++#endif
+ 	flush_spin_table(spin_table);
+ 	out_be32(&spin_table->pir, hw_cpu);
+ 	out_be64((u64 *)(&spin_table->addr_h),
+ 	  __pa((u64)*((unsigned long long *)generic_secondary_smp_init)));
+ 	flush_spin_table(spin_table);
++#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
 +	}
-+
-+	return 0;
-+
-+free_new_thread:
-+	list_for_each_entry(evsel, &top->evlist->entries, node)
-+		perf_evsel__close_thread(evsel, top->evlist->cpus->nr, threads->nr - 1);
-+	thread_map__remove(threads, threads->nr - 1);
-+	return -1;
-+}
-+
-+static int perf_top__process_event_exit(struct perf_tool *tool __maybe_unused,
-+					union perf_event *event __maybe_unused,
-+					struct perf_sample *sample __maybe_unused,
-+					struct machine *machine __maybe_unused)
-+{
-+	pid_t tid = event->fork.tid;
-+	struct perf_top *top = container_of(tool, struct perf_top, tool);
-+	struct perf_evsel *evsel;
-+	struct thread_map *threads = top->evlist->threads;
-+	int tidx = thread_map__get_idx_by_pid(threads, tid);
-+
-+	if (!cpu_map__all(top->evlist->cpus) || tidx < 0) //ignore
-+		return -1;
-+
-+	perf_evlist__munmap_thread(top->evlist, tidx);
-+
-+	list_for_each_entry(evsel, &top->evlist->entries, node)
-+		perf_evsel__close_thread(evsel, top->evlist->cpus->nr, tidx);
-+
-+	thread_map__remove(threads, tidx);
-+
-+	return tidx;
-+}
-+
- int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	int status;
- 	char errbuf[BUFSIZ];
- 	struct perf_top top = {
-+		.tool = {
-+			.fork           = perf_top__process_event_fork,
-+			.exit           = perf_top__process_event_exit,
-+		},
- 		.count_filter	     = 5,
- 		.delay_secs	     = 2,
- 		.record_opts = {
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 90cfbb6..eb07dbb 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -264,24 +264,24 @@ void perf_evlist__enable(struct perf_evlist *evlist)
-  */
- static int perf_evlist__append_pollfd_thread(struct perf_evlist *evlist)
- {
--        int new_nfds;
-+	int new_nfds;
++#endif
+ #endif
  
--        if (cpu_map__all(evlist->cpus)) {
--                struct pollfd *pfd;
-+	if (cpu_map__all(evlist->cpus)) {
-+		struct pollfd *pfd;
- 
--                new_nfds = evlist->threads->nr * evlist->nr_entries;
--                pfd = zalloc(sizeof(struct pollfd) * new_nfds); //FIXME
-+		new_nfds = evlist->threads->nr * evlist->nr_entries;
-+		pfd = zalloc(sizeof(struct pollfd) * new_nfds);
- 
--                if (!pfd)
--                        return -1;
-+		if (!pfd)
-+			return -1;
- 
--                memcpy(pfd, evlist->pollfd, (evlist->threads->nr - 1) * evlist->nr_entries);
-+		memcpy(pfd, evlist->pollfd, (evlist->threads->nr - 1) * evlist->nr_entries);
- 
--                evlist->pollfd = pfd;
--                return 0;
--        }
-+		evlist->pollfd = pfd;
-+		return 0;
-+	}
- 
--        return 1;
-+	return 1;
- }
- 
- static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
-@@ -448,7 +448,7 @@ static int perf_evlist__append_mmap_thread(struct perf_evlist *evlist)
- 		return -1;
- 	evlist->nr_mmaps++;
- 
--	return 1;
-+	return 0;
- }
- 
- static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
-@@ -573,8 +573,7 @@ int perf_evlist__mmap_thread(struct perf_evlist *evlist, bool overwrite, int tid
- 		goto free_append_mmap;
- 
- 	list_for_each_entry(evsel, &evlist->entries, node)
--		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
--		    evsel->sample_id == NULL)
-+		if (evsel->attr.read_format & PERF_FORMAT_ID)
- 			if (perf_evsel__append_id_thread(evsel, tidx) < 0)
- 				goto free_append_pollfd;
- 
-@@ -633,6 +632,7 @@ void perf_evlist__munmap_thread(struct perf_evlist *evlist, int tidx)
- 
- 	list_for_each_entry(evsel, &evlist->entries, node) {
- 		xyarray__remove(evsel->id, tidx);
-+		evsel->ids--;
- 		xyarray__remove(evsel->sample_id, tidx);
- 	}
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index c439027..68b2813 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -851,10 +851,9 @@ int perf_evsel__open_thread(struct perf_evsel *evsel, struct cpu_map *cpus,
- 	int cpu;
- 	int pid = -1;
- 	unsigned long flags = 0;
--	int err;
- 
- 	if (perf_evsel__append_fd(evsel, tidx) < 0)
--		return 1;
-+		return -1;
- 
- 	if (evsel->cgrp) {
- 		flags = PERF_FLAG_PID_CGROUP;
-@@ -868,15 +867,15 @@ int perf_evsel__open_thread(struct perf_evsel *evsel, struct cpu_map *cpus,
- 			pid = tid;
- 
- 		group_fd = get_group_fd(evsel, cpu, tidx);
-+		evsel->attr.disabled = 0;
- 		FD(evsel, cpu, tidx) = sys_perf_event_open(&evsel->attr,
- 							   pid,
- 							   cpus->map[cpu],
- 							   group_fd, flags);
--		if (FD(evsel, cpu, tidx) < 0) {
--			printf("error: cannot open counter for: %d\n", tid);
--			err = -errno;
--			printf("errno: %d\n", errno);
--			return err;
-+		if (FD(evsel, cpu, tidx) < 0) {
-+			pr_warning("error: cannot open counter for: %d\n", tid);
-+			pr_warning("errno: %d\n", errno);
-+			return -errno;
- 		}
- 	}
- 
-diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
-index 5f96fdf..0d3ec3f 100644
---- a/tools/perf/util/thread_map.c
-+++ b/tools/perf/util/thread_map.c
-@@ -322,6 +322,19 @@ struct thread_map *thread_map__new_str(const char *pid, const char *tid,
- 	return thread_map__new_by_tid_str(tid);
- }
- 
-+int thread_map__get_idx_by_pid(struct thread_map *threads, pid_t pid)
-+{
-+	struct thread_pid *tp;
-+	int count = 0;
-+
-+	list_for_each_entry(tp, &threads->head, next) {
-+		if (tp->pid == pid)
-+			return count;
-+		count++;
-+	}
-+	return -1;
-+}
-+
- struct thread_map *thread_map__empty_thread_map(void)
- {
- 	struct thread_map *empty_thread_map = NULL;
-diff --git a/tools/perf/util/thread_map.h b/tools/perf/util/thread_map.h
-index e5a3013..cfe586b 100644
---- a/tools/perf/util/thread_map.h
-+++ b/tools/perf/util/thread_map.h
-@@ -27,10 +27,7 @@ struct thread_map *thread_map__new_str(const char *pid,
- 		const char *tid, uid_t uid);
- 
- int thread_map__append(struct thread_map *threads, pid_t pid);
--int thread_map__remove_by_pid(struct thread_map *threads, pid_t pid);
- int thread_map__remove(struct thread_map *threads, int idx);
--int thread_map__set_xy_pid(struct xyarray *xy, struct thread_map *threads);
--int thread_map__set_pid(struct thread_map *threads, int index, pid_t pid);
- int thread_map__get_pid(struct thread_map *threads, int index);
- int thread_map__get_idx_by_pid(struct thread_map *threads, pid_t pid);
- 
+ 	local_irq_restore(flags);
 -- 
 1.7.9.5
 
