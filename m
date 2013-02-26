@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476Ab3B0Az5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:55:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42098 "EHLO
+	id S932127Ab3BZX6G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:58:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42049 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932146Ab3BZX6H (ORCPT
+	with ESMTP id S1760284Ab3BZX57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:07 -0500
+	Tue, 26 Feb 2013 18:57:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ryo Tsutsui <ryo.tsutsui@wolfsonmicro.com>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 100/150] ASoC: arizona: Fixed a bug in FLL fractional calculation
-Date: Tue, 26 Feb 2013 15:55:57 -0800
-Message-Id: <20130226235534.430497486@linuxfoundation.org>
+        Jani Nikula <jani.nikula@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 088/150] drm/i915: add missing \n to UTS_RELEASE in the error_state
+Date: Tue, 26 Feb 2013 15:55:45 -0800
+Message-Id: <20130226235533.233374763@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -28,52 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ryo Tsutsui <ryo.tsutsui@wolfsonmicro.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 01f58153aefc158fd690b337d29ad140e963959d upstream.
+commit fdfa175d0a9cfa2082ce24e67e284e5acbba452a upstream.
 
-Previously arizona_calc_fll() was checking if the target frequency is
-exactly divisible by reference frequency, but should have been product
-of the ratio and the reference frequency.
+Amending
+commit 4518f611ba21ba165ea3714055938a8984a44ff9
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Wed Jan 23 16:16:35 2013 +0100
 
-Also scale down the Lamba and Theta coefficients be under 16-bits in
-order to match the registers.
+    drm/i915: dump UTS_RELEASE into the error_state
 
-Signed-off-by: Ryo Tsutsui <ryo.tsutsui@wolfsonmicro.com>
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/arizona.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_debugfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/arizona.c
-+++ b/sound/soc/codecs/arizona.c
-@@ -910,7 +910,7 @@ static int arizona_calc_fll(struct arizo
+--- a/drivers/gpu/drm/i915/i915_debugfs.c
++++ b/drivers/gpu/drm/i915/i915_debugfs.c
+@@ -691,7 +691,7 @@ static int i915_error_state(struct seq_f
  
- 	cfg->n = target / (ratio * Fref);
- 
--	if (target % Fref) {
-+	if (target % (ratio * Fref)) {
- 		gcd_fll = gcd(target, ratio * Fref);
- 		arizona_fll_dbg(fll, "GCD=%u\n", gcd_fll);
- 
-@@ -922,6 +922,15 @@ static int arizona_calc_fll(struct arizo
- 		cfg->lambda = 0;
- 	}
- 
-+	/* Round down to 16bit range with cost of accuracy lost.
-+	 * Denominator must be bigger than numerator so we only
-+	 * take care of it.
-+	 */
-+	while (cfg->lambda >= (1 << 16)) {
-+		cfg->theta >>= 1;
-+		cfg->lambda >>= 1;
-+	}
-+
- 	arizona_fll_dbg(fll, "N=%x THETA=%x LAMBDA=%x\n",
- 			cfg->n, cfg->theta, cfg->lambda);
- 	arizona_fll_dbg(fll, "FRATIO=%x(%d) OUTDIV=%x REFCLK_DIV=%x\n",
+ 	seq_printf(m, "Time: %ld s %ld us\n", error->time.tv_sec,
+ 		   error->time.tv_usec);
+-	seq_printf(m, "Kernel: " UTS_RELEASE);
++	seq_printf(m, "Kernel: " UTS_RELEASE "\n");
+ 	seq_printf(m, "PCI ID: 0x%04x\n", dev->pci_device);
+ 	seq_printf(m, "EIR: 0x%08x\n", error->eir);
+ 	seq_printf(m, "IER: 0x%08x\n", error->ier);
 
 
