@@ -1,55 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146Ab3BZRnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 12:43:11 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:40122 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756155Ab3BZRnK (ORCPT
+	id S1758129Ab3BZRoi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 12:44:38 -0500
+Received: from www.linutronix.de ([62.245.132.108]:50369 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752852Ab3BZRoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 12:43:10 -0500
+	Tue, 26 Feb 2013 12:44:37 -0500
+Date: Tue, 26 Feb 2013 18:44:33 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Regression introduced with 14e568e78f6f80ca1e27256641ddf524c7dbdc51
+ (stop_machine: Use smpboot threads)
+In-Reply-To: <894977724.20130226140702@eikelenboom.it>
+Message-ID: <alpine.LFD.2.02.1302261843240.22263@ionos>
+References: <20130223011800.GA2465@phenom.dumpdata.com> <alpine.LFD.2.02.1302261320120.22263@ionos> <894977724.20130226140702@eikelenboom.it>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAKfTPtAq4GWoc8oOaUt17ZePfa4PMq7NvPEZYrqo2cvDpGwsWQ@mail.gmail.com>
-References: <1361435356-28466-1-git-send-email-vincent.guittot@linaro.org>
-	<20130222123213.GA17948@somewhere.redhat.com>
-	<CAKfTPtBgEsEJUD+C55Tad8xi3areARQ4GV8WjTaCjncj8hONEA@mail.gmail.com>
-	<CAFTL4hz5OzFGfhsj2bNR+76VrpXCxyDtN6fqC1cYF3zpJpjOTg@mail.gmail.com>
-	<CAKfTPtAq4GWoc8oOaUt17ZePfa4PMq7NvPEZYrqo2cvDpGwsWQ@mail.gmail.com>
-Date: Tue, 26 Feb 2013 18:43:07 +0100
-Message-ID: <CAFTL4hx6BGEotYH4yBH8UYDJYyxLAa56KT0ahAtke97rMKaw=A@mail.gmail.com>
-Subject: Re: [PATCH v4] sched: fix init NOHZ_IDLE flag
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, rostedt@goodmis.org,
-        efault@gmx.de
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/26 Vincent Guittot <vincent.guittot@linaro.org>:
-> On 26 February 2013 14:16, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> 2013/2/22 Vincent Guittot <vincent.guittot@linaro.org>:
->>> I wanted to avoid having to use the sd pointer for testing NOHZ_IDLE
->>> flag because it occurs each time we go into idle but it seems to be
->>> not easily feasible.
->>> Another solution could be to add a synchronization step between
->>> rcu_assign_pointer(dom 1, NULL) and create new domain to ensure that
->>> all pending access to old sd values, has finished but this will imply
->>> a potential delay in the rebuild  of sched_domain and i'm not sure
->>> that it's acceptable
+On Tue, 26 Feb 2013, Sander Eikelenboom wrote:
+> Tuesday, February 26, 2013, 1:36:36 PM, you wrote:
+> > On Fri, 22 Feb 2013, Konrad Rzeszutek Wilk wrote:
+> >> 
+> >> I don't know if this is b/c the Xen code is missing something or
+> >> expects something that never happend. I hadn't looked at your
+> >> patch in any detail (was going to do that on Monday).
+> >> 
+> >> Either way, if I boot a HVM guest with PV extensions (aka PVHVM)
+> 
+> Hmm i'm seeing this booting on baremetal as well.
+> (see http://lkml.indiana.edu/hypermail/linux/kernel/1302.3/00836.html)
 
-Ah I see what you meant there. Making a synchronize_rcu() after
-setting the dom to NULL, on top of which we could work on preventing
-from any concurrent nohz_flag modification. But cpu hotplug seem to
-become a bit of a performance sensitive path this day.
+Ok. I decoded it with the help of Konrad. Does the patch below work
+for you as well?
 
-Ok I don't like having a per cpu state in struct sched domain but for
-now I can't find anything better. So my suggestion is that we do this
-and describe well the race, define the issue in the changelog and code
-comments and explain how we are solving it. This way at least the
-issue is identified and known. Then later, on review or after the
-patch is upstream, if somebody with some good taste comes with a
-better idea, we consider it.
+Thanks,
 
-What do you think?
+	tglx
+
+Index: linux-2.6/include/linux/smpboot.h
+===================================================================
+--- linux-2.6.orig/include/linux/smpboot.h
++++ linux-2.6/include/linux/smpboot.h
+@@ -24,6 +24,9 @@ struct smpboot_thread_data;
+  *			parked (cpu offline)
+  * @unpark:		Optional unpark function, called when the thread is
+  *			unparked (cpu online)
++ * @pre_unpark:		Optional unpark function, called before the thread is
++ *			unparked (cpu online). This is not guaranteed to be
++ *			called on the target cpu of the thread. Careful!
+  * @selfparking:	Thread is not parked by the park function.
+  * @thread_comm:	The base name of the thread
+  */
+@@ -37,6 +40,7 @@ struct smp_hotplug_thread {
+ 	void				(*cleanup)(unsigned int cpu, bool online);
+ 	void				(*park)(unsigned int cpu);
+ 	void				(*unpark)(unsigned int cpu);
++	void				(*pre_unpark)(unsigned int cpu);
+ 	bool				selfparking;
+ 	const char			*thread_comm;
+ };
+Index: linux-2.6/kernel/smpboot.c
+===================================================================
+--- linux-2.6.orig/kernel/smpboot.c
++++ linux-2.6/kernel/smpboot.c
+@@ -209,6 +209,8 @@ static void smpboot_unpark_thread(struct
+ {
+ 	struct task_struct *tsk = *per_cpu_ptr(ht->store, cpu);
+ 
++	if (ht->pre_unpark)
++		ht->pre_unpark(cpu);
+ 	kthread_unpark(tsk);
+ }
+ 
+Index: linux-2.6/kernel/stop_machine.c
+===================================================================
+--- linux-2.6.orig/kernel/stop_machine.c
++++ linux-2.6/kernel/stop_machine.c
+@@ -336,7 +336,7 @@ static struct smp_hotplug_thread cpu_sto
+ 	.create			= cpu_stop_create,
+ 	.setup			= cpu_stop_unpark,
+ 	.park			= cpu_stop_park,
+-	.unpark			= cpu_stop_unpark,
++	.pre_unpark		= cpu_stop_unpark,
+ 	.selfparking		= true,
+ };
+ 
