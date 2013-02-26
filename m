@@ -1,85 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758636Ab3BZNUe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 08:20:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41882 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756759Ab3BZNUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 08:20:33 -0500
-Date: Tue, 26 Feb 2013 14:20:30 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Hannes Reinecke <hare@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2o: remove compile-time warnings
-In-Reply-To: <1361366690-62274-1-git-send-email-hare@suse.de>
-Message-ID: <alpine.LNX.2.00.1302261419000.2128@pobox.suse.cz>
-References: <1361366690-62274-1-git-send-email-hare@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758913Ab3BZNUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 08:20:45 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:61289 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758699Ab3BZNUm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 08:20:42 -0500
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: grant.likely@secretlab.ca, Magnus Damm <magnus.damm@gmail.com>,
+        horms@verge.net.au, linus.walleij@linaro.org, linux-sh@vger.kernel.org
+Date: Tue, 26 Feb 2013 22:26:23 +0900
+Message-Id: <20130226132623.18365.36583.sendpatchset@w520>
+Subject: [PATCH] gpio: em: Add Device Tree support
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Feb 2013, Hannes Reinecke wrote:
+From: Magnus Damm <damm@opensource.se>
 
-> The compiler complains about invalid cast for i2o_config.
-> However, the ioctl passes us an 32-bit address, which we
-> have to assume is a valid 64-bit kernel address.
+Update the Emma Mobile GPIO driver to add DT support.
 
-Umm, I find this explanation rather confusing, could you please formulate 
-it in a more verbose way?
+The patch simply adds a two-cell xlate function and
+updates the probe code to allow configuration via DT
+using the "ngpios" property plus OF id in the same
+style as gpio-mvebu.c. The code is also adjusted to
+use postcore_initcall() to force early setup.
 
-Also, looking at the code, all the 'TODO 64bit fix' scattered all over the 
-place (and the comments being there since the beginning of time), makes me 
-really wonder whether this whole thing doesn't require a much more 
-thorough review of the user <-> kernel interface.
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
 
-> So we should cast this to 'unsigned long' before casting
-> it to a pointer.
-> Minimal fix, doesn't break anything which wasn't broken
-> before.
-> 
-> Cc: Jiri Kosina <jkosina@suse.cz>
-> Signed-off-by: Hannes Reinecke <hare@suse.de>
-> 
-> diff --git a/drivers/message/i2o/i2o_config.c b/drivers/message/i2o/i2o_config.c
-> index 5451bef..5b95dc1 100644
-> --- a/drivers/message/i2o/i2o_config.c
-> +++ b/drivers/message/i2o/i2o_config.c
-> @@ -883,10 +883,9 @@ static int i2o_cfg_passthru(unsigned long arg)
->  			/* Copy in the user's SG buffer if necessary */
->  			if (sg[i].
->  			    flag_count & 0x04000000 /*I2O_SGL_FLAGS_DIR */ ) {
-> -				// TODO 64bit fix
-> -				if (copy_from_user
-> -				    (p->virt, (void __user *)sg[i].addr_bus,
-> -				     sg_size)) {
-> +				void __user *sg_addr = (void __user *)
-> +					(unsigned long)sg[i].addr_bus;
-> +				if (copy_from_user(p->virt, sg_addr, sg_size)) {
->  					printk(KERN_DEBUG
->  					       "%s: Could not copy SG buf %d FROM user\n",
->  					       c->name, i);
-> @@ -937,11 +936,12 @@ static int i2o_cfg_passthru(unsigned long arg)
->  			if (!
->  			    (sg[j].
->  			     flag_count & 0x4000000 /*I2O_SGL_FLAGS_DIR */ )) {
-> +				void __user *sg_addr = (void __user *)
-> +					(unsigned long)sg[j].addr_bus;
-> +
->  				sg_size = sg[j].flag_count & 0xffffff;
-> -				// TODO 64bit fix
-> -				if (copy_to_user
-> -				    ((void __user *)sg[j].addr_bus, sg_list[j].virt,
-> -				     sg_size)) {
-> +				if (copy_to_user(sg_addr, sg_list[j].virt,
-> +						 sg_size)) {
->  					printk(KERN_WARNING
->  					       "%s: Could not copy %p TO user %x\n",
->  					       c->name, sg_list[j].virt,
-> 
+ Written on top of:
+ [PATCH] gpio: em: Use irq_domain_add_simple() to fix runtime error
 
--- 
-Jiri Kosina
-SUSE Labs
+ drivers/gpio/gpio-em.c |   45 ++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 42 insertions(+), 3 deletions(-)
+
+--- 0010/drivers/gpio/gpio-em.c
++++ work/drivers/gpio/gpio-em.c	2013-02-26 22:11:58.000000000 +0900
+@@ -231,10 +231,12 @@ static int em_gio_irq_domain_map(struct
+ 
+ static struct irq_domain_ops em_gio_irq_domain_ops = {
+ 	.map	= em_gio_irq_domain_map,
++	.xlate	= irq_domain_xlate_twocell,
+ };
+ 
+ static int em_gio_probe(struct platform_device *pdev)
+ {
++	struct gpio_em_config pdata_dt;
+ 	struct gpio_em_config *pdata = pdev->dev.platform_data;
+ 	struct em_gio_priv *p;
+ 	struct resource *io[2], *irq[2];
+@@ -259,8 +261,8 @@ static int em_gio_probe(struct platform_
+ 	irq[0] = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	irq[1] = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
+ 
+-	if (!io[0] || !io[1] || !irq[0] || !irq[1] || !pdata) {
+-		dev_err(&pdev->dev, "missing IRQ, IOMEM or configuration\n");
++	if (!io[0] || !io[1] || !irq[0] || !irq[1]) {
++		dev_err(&pdev->dev, "missing IRQ or IOMEM\n");
+ 		ret = -EINVAL;
+ 		goto err1;
+ 	}
+@@ -279,6 +281,25 @@ static int em_gio_probe(struct platform_
+ 		goto err2;
+ 	}
+ 
++	if (!pdata) {
++		memset(&pdata_dt, 0, sizeof(pdata_dt));
++		pdata = &pdata_dt;
++
++		if (of_property_read_u32(pdev->dev.of_node, "ngpios",
++					 &pdata->number_of_pins)) {
++			dev_err(&pdev->dev, "Missing ngpios OF property\n");
++			ret = -EINVAL;
++			goto err3;
++		}
++
++		ret = of_alias_get_id(pdev->dev.of_node, "gpio");
++		if (ret < 0) {
++			dev_err(&pdev->dev, "Couldn't get OF id\n");
++			goto err3;
++		}
++		pdata->gpio_base = ret * 32; /* 32 GPIOs per instance */
++	}
++
+ 	gpio_chip = &p->gpio_chip;
+ 	gpio_chip->direction_input = em_gio_direction_input;
+ 	gpio_chip->get = em_gio_get;
+@@ -366,15 +387,33 @@ static int em_gio_remove(struct platform
+ 	return 0;
+ }
+ 
++static const struct of_device_id em_gio_dt_ids[] = {
++	{ .compatible = "renesas,em-gio", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, em_gio_dt_ids);
++
+ static struct platform_driver em_gio_device_driver = {
+ 	.probe		= em_gio_probe,
+ 	.remove		= em_gio_remove,
+ 	.driver		= {
+ 		.name	= "em_gio",
++		.of_match_table = em_gio_dt_ids,
++		.owner		= THIS_MODULE,
+ 	}
+ };
+ 
+-module_platform_driver(em_gio_device_driver);
++static int __init em_gio_init(void)
++{
++	return platform_driver_register(&em_gio_device_driver);
++}
++postcore_initcall(em_gio_init);
++
++static void __exit em_gio_exit(void)
++{
++	platform_driver_unregister(&em_gio_device_driver);
++}
++module_exit(em_gio_exit);
+ 
+ MODULE_AUTHOR("Magnus Damm");
+ MODULE_DESCRIPTION("Renesas Emma Mobile GIO Driver");
