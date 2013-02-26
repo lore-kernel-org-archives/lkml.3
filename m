@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab3BZLaa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 06:30:30 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:43397 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755589Ab3BZLa3 (ORCPT
+	id S1756693Ab3BZLbq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 06:31:46 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:58781 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754751Ab3BZLbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 06:30:29 -0500
-Message-ID: <512C9CD4.50808@linaro.org>
-Date: Tue, 26 Feb 2013 12:30:28 +0100
+	Tue, 26 Feb 2013 06:31:44 -0500
+Message-ID: <512C9D20.8020309@linaro.org>
+Date: Tue, 26 Feb 2013 12:31:44 +0100
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
@@ -40,7 +40,11 @@ On 02/26/2013 09:45 AM, Viresh Kumar wrote:
 > 
 > Tested-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Thanks Viresh for testing.
+Oh, by the way, could send me the patch to set the flag to the timer
+device ? I will include it to the patchset.
+
+Thanks
+  -- Daniel
 
 -- 
  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
