@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab3BZQUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 11:20:30 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47903 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759155Ab3BZQU2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 11:20:28 -0500
-Date: Tue, 26 Feb 2013 16:20:24 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ima: prevent dead lock when a file is opened for direct
- io
-Message-ID: <20130226162024.GI4503@ZenIV.linux.org.uk>
-References: <1361395671.29360.26.camel@falcor1>
+	id S932367Ab3BZQUk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 11:20:40 -0500
+Received: from mga11.intel.com ([192.55.52.93]:30316 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758953Ab3BZQUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 11:20:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,742,1355126400"; 
+   d="scan'208";a="296136788"
+Subject: [PATCH] ioatdma: allow all channels to have irq coalescing support
+To: djbw@fb.com
+From: Dave Jiang <dave.jiang@intel.com>
+Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org
+Date: Tue, 26 Feb 2013 09:20:36 -0700
+Message-ID: <20130226162036.4996.78263.stgit@djiang5-linux2.ch.intel.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361395671.29360.26.camel@falcor1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 20, 2013 at 04:27:51PM -0500, Mimi Zohar wrote:
-> Hi Al,
-> 
-> Are there any negative repercussions to temporarily removing the
-> o_direct flag in order to calculate the file hash?
-> 
-> thanks,
-> 
-> Mimi
-> -----
-> 
-> Files are measured or appraised based on the IMA policy.  When a file
-> in policy is opened for read with the O_DIRECT flag set, a deadlock
-> occurs due to do_blockdev_direct_IO() taking i_mutex before calling
-> filemap_write_and_wait_range(). The i_mutex was previously taken in
-> process_measurement().  This patch temporarily removes the O_DIRECT
-> flag in order to calculate the hash and restores it once completed.
+Looks like only the RAID channels are allowed to have irq coalescing support
+in the existing code. Fixing that. The ioat3 cleanup code can handle memcpy
+ops anyways
 
-	Why does process_measurement() hold ->i_mutex across that?
-It really sounds like "we kinda hope no ->read() will take ->i_mutex,
-oops, at least one case does, umm... let's kludge around a bit and
-hope no other case shows up".  
+Signed-off-by: Dave Jiang <dave.jiang@intel.com>
+---
+ drivers/dma/ioat/dma_v3.c |   12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-Locking rules should be documented and they should make sense.  You are
-introducing a new one and it's really convoluted - "no ->read() instance
-for a regular file shall take ->i_mutex unless it's an O_DIRECT open".
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index 47588dc..368a184 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -1268,15 +1268,9 @@ int __devinit ioat3_dma_probe(struct ioatdma_device *device, int dca)
+ 	}
+ 
+ 
+-	if (is_raid_device) {
+-		dma->device_tx_status = ioat3_tx_status;
+-		device->cleanup_fn = ioat3_cleanup_event;
+-		device->timer_fn = ioat3_timer_event;
+-	} else {
+-		dma->device_tx_status = ioat_dma_tx_status;
+-		device->cleanup_fn = ioat2_cleanup_event;
+-		device->timer_fn = ioat2_timer_event;
+-	}
++	dma->device_tx_status = ioat3_tx_status;
++	device->cleanup_fn = ioat3_cleanup_event;
++	device->timer_fn = ioat3_timer_event;
+ 
+ 	#ifdef CONFIG_ASYNC_TX_DISABLE_PQ_VAL_DMA
+ 	dma_cap_clear(DMA_PQ_VAL, dma->cap_mask);
+
