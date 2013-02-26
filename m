@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933130Ab3BZX6h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42274 "EHLO
+	id S933346Ab3BZX6x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:58:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42380 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933062Ab3BZX6d (ORCPT
+	with ESMTP id S933276Ab3BZX6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:33 -0500
+	Tue, 26 Feb 2013 18:58:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "stable@vger.kernel.org, jan.brummer@tabos.org, Johannes Berg" 
-	<johannes.berg@intel.com>,
-        Jan-Michael Brummer <jan.brummer@tabos.org>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 137/150] mac80211: always unblock CSA queue stop when disconnecting
-Date: Tue, 26 Feb 2013 15:56:34 -0800
-Message-Id: <20130226235538.583063292@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 02/53] mm: fix pageblock bitmap allocation
+Date: Tue, 26 Feb 2013 15:57:31 -0800
+Message-Id: <20130226235620.097202014@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
-References: <20130226235523.930663721@linuxfoundation.org>
+In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
+References: <20130226235619.844721947@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-From: Johannes Berg <johannes.berg@intel.com>
+commit 7c45512df987c5619db041b5c9b80d281e26d3db upstream.
 
-Commit 5b36ebd8249f403c7edf7cf68d68e9a0d0f55243 upstream.
+Commit c060f943d092 ("mm: use aligned zone start for pfn_to_bitidx
+calculation") fixed out calculation of the index into the pageblock
+bitmap when a !SPARSEMEM zome was not aligned to pageblock_nr_pages.
 
-In some cases when disconnecting after (or during?) CSA
-the queues might not recover, and then the only way to
-recover is reloading the module.
+However, the _allocation_ of that bitmap had never taken this alignment
+requirement into accout, so depending on the exact size and alignment of
+the zone, the use of that index could then access past the allocation,
+resulting in some very subtle memory corruption.
 
-Fix this by always unblocking the queue CSA reason when
+This was reported (and bisected) by Ingo Molnar: one of his random
+config builds would hang with certain very specific kernel command line
+options.
 
-disconnecting.
+In the meantime, commit c060f943d092 has been marked for stable, so this
+fix needs to be back-ported to the stable kernels that backported the
+commit to use the right alignment.
 
-Reported-by: Jan-Michael Brummer <jan.brummer@tabos.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Bisected-and-tested-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mlme.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/page_alloc.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -1812,6 +1812,8 @@ static void __ieee80211_disconnect(struc
- 			       WLAN_REASON_DISASSOC_DUE_TO_INACTIVITY,
- 			       transmit_frame, frame_buf);
- 	ifmgd->flags &= ~IEEE80211_STA_CSA_RECEIVED;
-+	ieee80211_wake_queues_by_reason(&sdata->local->hw,
-+					IEEE80211_QUEUE_STOP_REASON_CSA);
- 	mutex_unlock(&ifmgd->mtx);
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4264,10 +4264,11 @@ static void __meminit calculate_node_tot
+  * round what is now in bits to nearest long in bits, then return it in
+  * bytes.
+  */
+-static unsigned long __init usemap_size(unsigned long zonesize)
++static unsigned long __init usemap_size(unsigned long zone_start_pfn, unsigned long zonesize)
+ {
+ 	unsigned long usemapsize;
  
- 	/*
-@@ -1856,8 +1858,6 @@ static void ieee80211_csa_connection_dro
- 		container_of(work, struct ieee80211_sub_if_data,
- 			     u.mgd.csa_connection_drop_work);
- 
--	ieee80211_wake_queues_by_reason(&sdata->local->hw,
--					IEEE80211_QUEUE_STOP_REASON_CSA);
- 	__ieee80211_disconnect(sdata, true);
++	zonesize += zone_start_pfn & (pageblock_nr_pages-1);
+ 	usemapsize = roundup(zonesize, pageblock_nr_pages);
+ 	usemapsize = usemapsize >> pageblock_order;
+ 	usemapsize *= NR_PAGEBLOCK_BITS;
+@@ -4277,17 +4278,19 @@ static unsigned long __init usemap_size(
  }
  
+ static void __init setup_usemap(struct pglist_data *pgdat,
+-				struct zone *zone, unsigned long zonesize)
++				struct zone *zone,
++				unsigned long zone_start_pfn,
++				unsigned long zonesize)
+ {
+-	unsigned long usemapsize = usemap_size(zonesize);
++	unsigned long usemapsize = usemap_size(zone_start_pfn, zonesize);
+ 	zone->pageblock_flags = NULL;
+ 	if (usemapsize)
+ 		zone->pageblock_flags = alloc_bootmem_node_nopanic(pgdat,
+ 								   usemapsize);
+ }
+ #else
+-static inline void setup_usemap(struct pglist_data *pgdat,
+-				struct zone *zone, unsigned long zonesize) {}
++static inline void setup_usemap(struct pglist_data *pgdat, struct zone *zone,
++				unsigned long zone_start_pfn, unsigned long zonesize) {}
+ #endif /* CONFIG_SPARSEMEM */
+ 
+ #ifdef CONFIG_HUGETLB_PAGE_SIZE_VARIABLE
+@@ -4415,7 +4418,7 @@ static void __paginginit free_area_init_
+ 			continue;
+ 
+ 		set_pageblock_order(pageblock_default_order());
+-		setup_usemap(pgdat, zone, size);
++		setup_usemap(pgdat, zone, zone_start_pfn, size);
+ 		ret = init_currently_empty_zone(zone, zone_start_pfn,
+ 						size, MEMMAP_EARLY);
+ 		BUG_ON(ret);
 
 
