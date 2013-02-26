@@ -1,84 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760039Ab3BZJUr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 04:20:47 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:60752 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261Ab3BZJUA (ORCPT
+	id S1759872Ab3BZJVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 04:21:21 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:40800 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758511Ab3BZJVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 04:20:00 -0500
-From: Tiejun Chen <tiejun.chen@windriver.com>
-To: <benh@kernel.crashing.org>, <galak@kernel.crashing.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: [v1][PATCH 5/7] book3e/kexec/kdump: implement ppc64 kexec specfic
-Date: Tue, 26 Feb 2013 17:19:40 +0800
-Message-ID: <1361870382-743-6-git-send-email-tiejun.chen@windriver.com>
+	Tue, 26 Feb 2013 04:21:13 -0500
+From: chenggang <chenggang.qin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: chenggang.qcg@taobao.com, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v2 0/4] perf: Make the 'perf top -p $pid' can perceive the new forked threads.
+Date: Tue, 26 Feb 2013 17:20:47 +0800
+Message-Id: <1361870452-6143-1-git-send-email-chenggang.qin@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361870382-743-1-git-send-email-tiejun.chen@windriver.com>
-References: <1361870382-743-1-git-send-email-tiejun.chen@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ppc64 kexec mechanism has a different implementation with ppc32.
+From: chenggang.qcg@taobao.com
 
-Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
----
- arch/powerpc/platforms/85xx/smp.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+This patch set add a function that make the 'perf top -p $pid' is able to perceive
+the new threads that is forked by target processes. 'perf top{record} -p $pid' can
+perceive the threads are forked before we execute perf, but it cannot perceive the
+new threads are forked after we started perf. This is perf's important defect, because
+the applications who will fork new threads on-the-fly are very much.
+For performance reasons, the event inherit mechanism is forbidden while we use per-task
+counters. Some internal data structures, such as, thread_map, evlist->mmap, evsel->fd,
+evsel->id, evsel->sample_id are implemented as arrays at the initialization phase.
+Their size is fixed, and they cannot be extended or shrinked easily while we want to
+adjust them for new forked threads and exit threads.
 
-diff --git a/arch/powerpc/platforms/85xx/smp.c b/arch/powerpc/platforms/85xx/smp.c
-index 8beef93..af2a7e8 100644
---- a/arch/powerpc/platforms/85xx/smp.c
-+++ b/arch/powerpc/platforms/85xx/smp.c
-@@ -280,6 +280,7 @@ struct smp_ops_t smp_85xx_ops = {
- };
- 
- #ifdef CONFIG_KEXEC
-+#ifdef CONFIG_PPC32
- atomic_t kexec_down_cpus = ATOMIC_INIT(0);
- 
- void mpc85xx_smp_kexec_cpu_down(int crash_shutdown, int secondary)
-@@ -298,6 +299,14 @@ static void mpc85xx_smp_kexec_down(void *arg)
- 	if (ppc_md.kexec_cpu_down)
- 		ppc_md.kexec_cpu_down(0,1);
- }
-+#else
-+void mpc85xx_smp_kexec_cpu_down(int crash_shutdown, int secondary)
-+{
-+	local_irq_disable();
-+	hard_irq_disable();
-+	mpic_teardown_this_cpu(secondary);
-+}
-+#endif
- 
- static void map_and_flush(unsigned long paddr)
- {
-@@ -349,11 +358,14 @@ static void mpc85xx_smp_flush_dcache_kexec(struct kimage *image)
- 
- static void mpc85xx_smp_machine_kexec(struct kimage *image)
- {
-+#ifdef CONFIG_PPC32
- 	int timeout = INT_MAX;
- 	int i, num_cpus = num_present_cpus();
-+#endif
- 
- 	mpc85xx_smp_flush_dcache_kexec(image);
- 
-+#ifdef CONFIG_PPC32
- 	if (image->type == KEXEC_TYPE_DEFAULT)
- 		smp_call_function(mpc85xx_smp_kexec_down, NULL, 0);
- 
-@@ -371,6 +383,7 @@ static void mpc85xx_smp_machine_kexec(struct kimage *image)
- 		if ( i == smp_processor_id() ) continue;
- 		mpic_reset_core(i);
- 	}
-+#endif
- 
- 	default_machine_kexec(image);
- }
+So, we have done the following work:
+1) Transformed xyarray to linked list.
+   Implementd the interfaces to extand and shrink a exist xyarray.
+   The xyarray is a 2-dimensional structure. The row is still a array (because the
+   number of CPU is fixed forever), the columns are linked list. 
+2) Transformed evlist->mmap, evsel->fd, evsel->id and evsel->sample_id to list with the
+   new xyarray.
+   Implemented interfaces to expand and shrink these structures.
+   The nodes in these structures can be referenced by some predefined macros, such as
+   FD(cpu, thread), MMAP(cpu, thread), ID(cpu, thread), etc.
+3) Transformed thread_map to linked list.
+   Implemented the interfaces to extand and shrink a exist thread_map.
+4) Added 2 callback functions to top->perf_tool, they are called while the PERF_RECORD_FORK
+   & PERF_RECORD_EXIT events are got.
+   While a PERF_RECORD_FORK event is got, all related data structures are expanded, a new
+   fd and mmap are opened.
+   While a PERF_RECORD_EXIT event is got, all nodes in the related data structures are
+   removed, the fd and mmap are closed.
+
+The linked list is flexible, list_add & list_del can be used easily. Additional, performance
+penalty (especially the CPU utilization) is low.
+
+This function has been already implemented for 'perf top -p $pid' in the patch
+[4/4] of this patch set. Next step, the 'perf record -p $pid' should be modified
+with the same method.
+
+Thanks for David Ahern's suggestion.
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Yanmin Zhang <yanmin.zhang@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
+
+chenggang (4):
+  Transform xyarray to linked list.
+  Transform thread_map to linked list.
+  Transform mmap and other related structures to list with new xyarray.
+  Add fork and exit callback functions into top->perf_tool.
+
+ tools/perf/builtin-record.c               |    6 +-
+ tools/perf/builtin-stat.c                 |    2 +-
+ tools/perf/builtin-top.c                  |  100 ++++++++++++-
+ tools/perf/tests/open-syscall-tp-fields.c |    2 +-
+ tools/perf/util/event.c                   |   10 +-
+ tools/perf/util/evlist.c                  |  171 +++++++++++++++++++---
+ tools/perf/util/evlist.h                  |    6 +-
+ tools/perf/util/evsel.c                   |   98 +++++++++++--
+ tools/perf/util/evsel.h                   |    8 +-
+ tools/perf/util/header.c                  |   31 ++--
+ tools/perf/util/header.h                  |    3 +-
+ tools/perf/util/python.c                  |    2 +-
+ tools/perf/util/thread_map.c              |  223 +++++++++++++++++++----------
+ tools/perf/util/thread_map.h              |   16 ++-
+ tools/perf/util/xyarray.c                 |   85 ++++++++++-
+ tools/perf/util/xyarray.h                 |   25 +++-
+ 16 files changed, 641 insertions(+), 147 deletions(-)
+
 -- 
 1.7.9.5
 
