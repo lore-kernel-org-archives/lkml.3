@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933744Ab3B0AA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:00:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42599 "EHLO
+	id S933695Ab3BZX7S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:59:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42541 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933315Ab3BZX7U (ORCPT
+	with ESMTP id S933618Ab3BZX7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:59:20 -0500
+	Tue, 26 Feb 2013 18:59:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Carsten S." <carsteniq@yahoo.com>, Josh Boyer <jwboyer@redhat.com>
-Subject: [ 53/53] USB: usb-storage: unusual_devs update for Super TOP SATA bridge
-Date: Tue, 26 Feb 2013 15:58:22 -0800
-Message-Id: <20130226235625.358125397@linuxfoundation.org>
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 38/53] pcmcia/vrc4171: Add missing spinlock init
+Date: Tue, 26 Feb 2013 15:58:07 -0800
+Message-Id: <20130226235623.810530753@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -26,40 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 18e03310b5caa6d11c1a8c61b982c37047693fba upstream.
+commit 811af9723859884f2f771f3174f3ddedab7c53b5 upstream.
 
-The current entry in unusual_cypress.h for the Super TOP SATA bridge devices
-seems to be causing corruption on newer revisions of this device.  This has
-been reported in Arch Linux and Fedora.  The original patch was tested on
-devices with bcdDevice of 1.60, whereas the newer devices report bcdDevice
-as 2.20.  Limit the UNUSUAL_DEV entry to devices less than 2.20.
+It doesn't seem this spinlock was properly initialized. This bug was
+introduced by commit 7a410e8d4d97457c8c381e2de9cdc7bd3306badc.
 
-This fixes https://bugzilla.redhat.com/show_bug.cgi?id=909591
-
-The Arch Forum post on this is here:
-	https://bbs.archlinux.org/viewtopic.php?id=152011
-
-Reported-by: Carsten S. <carsteniq@yahoo.com>
-Tested-by: Carsten S. <carsteniq@yahoo.com>
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_cypress.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pcmcia/vrc4171_card.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/storage/unusual_cypress.h
-+++ b/drivers/usb/storage/unusual_cypress.h
-@@ -31,7 +31,7 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x
- 		"Cypress ISD-300LP",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
+--- a/drivers/pcmcia/vrc4171_card.c
++++ b/drivers/pcmcia/vrc4171_card.c
+@@ -246,6 +246,7 @@ static int pccard_init(struct pcmcia_soc
+ 	socket = &vrc4171_sockets[slot];
+ 	socket->csc_irq = search_nonuse_irq();
+ 	socket->io_irq = search_nonuse_irq();
++	spin_lock_init(&socket->lock);
  
--UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x9999,
-+UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x0219,
- 		"Super Top",
- 		"USB 2.0  SATA BRIDGE",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
+ 	return 0;
+ }
 
 
