@@ -1,194 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933241Ab3BZX6p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42325 "EHLO
+	id S933379Ab3B0AgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:36:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42361 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933053Ab3BZX6l (ORCPT
+	with ESMTP id S933053Ab3BZX6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:41 -0500
+	Tue, 26 Feb 2013 18:58:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Ming Lei <ming.lei@canonical.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 149/150] usb: musb: fix dependency on transceiver driver
-Date: Tue, 26 Feb 2013 15:56:46 -0800
-Message-Id: <20130226235540.047549255@linuxfoundation.org>
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Haggai Eran <haggaie@mellanox.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 14/53] mm: mmu_notifier: make the mmu_notifier srcu static
+Date: Tue, 26 Feb 2013 15:57:43 -0800
+Message-Id: <20130226235621.306947086@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
-References: <20130226235523.930663721@linuxfoundation.org>
+In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
+References: <20130226235619.844721947@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 25736e0c8269e9613aa6036fbc591818daa30d14 upstream.
+commit 70400303ce0c4ced3139499c676d5c79636b0c72 upstream.
 
-This patch let glue driver return -EPROBE_DEFER if the transceiver
-is not readly, so we can support defer probe on musb to fix the
-below error on 3.7-rc5 if transceiver drivers are built as module:
+The variable must be static especially given the variable name.
 
-[   19.052490] unable to find transceiver of type USB2 PHY
-[   19.072052] HS USB OTG: no transceiver configured
-[   19.076995] musb-hdrc musb-hdrc.0.auto: musb_init_controller failed with status -19
-[   19.089355] musb-hdrc: probe of musb-hdrc.0.auto rejects match -19
-[   19.096771] driver: 'musb-omap2430': driver_bound: bound to device 'musb-omap2430'
-[   19.105194] bus: 'platform': really_probe: bound device musb-omap2430 to driver musb-omap2430
-[   19.174407] bus: 'platform': add driver twl4030_usb
-[   19.179656] bus: 'platform': driver_probe_device: matched device twl4030_usb with driver twl4030_usb
-[   19.202270] bus: 'platform': really_probe: probing driver twl4030_usb with device twl4030_usb
-[   19.214172] twl4030_usb twl4030_usb: HW_CONDITIONS 0xc0/192; link 3
-[   19.239624] musb-omap2430 musb-omap2430: musb core is not yet ready
-[   19.246765] twl4030_usb twl4030_usb: Initialized TWL4030 USB module
-[   19.254516] driver: 'twl4030_usb': driver_bound: bound to device 'twl4030_usb'
-[   19.263580] bus: 'platform': really_probe: bound device twl4030_usb to driver twl4030_usb
+s/RCU/SRCU/ over a few comments.
 
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Sagi Grimberg <sagig@mellanox.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Haggai Eran <haggaie@mellanox.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/am35x.c     |    2 +-
- drivers/usb/musb/blackfin.c  |    2 +-
- drivers/usb/musb/da8xx.c     |    7 +++++--
- drivers/usb/musb/davinci.c   |    7 +++++--
- drivers/usb/musb/musb_dsps.c |    2 +-
- drivers/usb/musb/omap2430.c  |    2 +-
- drivers/usb/musb/tusb6010.c  |    2 +-
- drivers/usb/musb/ux500.c     |    2 +-
- 8 files changed, 16 insertions(+), 10 deletions(-)
+ mm/mmu_notifier.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/musb/am35x.c
-+++ b/drivers/usb/musb/am35x.c
-@@ -365,7 +365,7 @@ static int am35x_musb_init(struct musb *
- 	usb_nop_xceiv_register();
- 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
- 	if (IS_ERR_OR_NULL(musb->xceiv))
--		return -ENODEV;
-+		return -EPROBE_DEFER;
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -20,7 +20,7 @@
+ #include <linux/slab.h>
  
- 	setup_timer(&otg_workaround, otg_timer, (unsigned long) musb);
+ /* global SRCU for all MMs */
+-struct srcu_struct srcu;
++static struct srcu_struct srcu;
  
---- a/drivers/usb/musb/blackfin.c
-+++ b/drivers/usb/musb/blackfin.c
-@@ -406,7 +406,7 @@ static int bfin_musb_init(struct musb *m
- 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
- 	if (IS_ERR_OR_NULL(musb->xceiv)) {
- 		gpio_free(musb->config->gpio_vrsel);
--		return -ENODEV;
-+		return -EPROBE_DEFER;
- 	}
+ /*
+  * This function can't run concurrently against mmu_notifier_register
+@@ -41,7 +41,7 @@ void __mmu_notifier_release(struct mm_st
+ 	int id;
  
- 	bfin_musb_reg_init(musb);
---- a/drivers/usb/musb/da8xx.c
-+++ b/drivers/usb/musb/da8xx.c
-@@ -410,6 +410,7 @@ static int da8xx_musb_init(struct musb *
- {
- 	void __iomem *reg_base = musb->ctrl_base;
- 	u32 rev;
-+	int ret = -ENODEV;
+ 	/*
+-	 * RCU here will block mmu_notifier_unregister until
++	 * SRCU here will block mmu_notifier_unregister until
+ 	 * ->release returns.
+ 	 */
+ 	id = srcu_read_lock(&srcu);
+@@ -302,7 +302,7 @@ void mmu_notifier_unregister(struct mmu_
  
- 	musb->mregs += DA8XX_MENTOR_CORE_OFFSET;
- 
-@@ -420,8 +421,10 @@ static int da8xx_musb_init(struct musb *
- 
- 	usb_nop_xceiv_register();
- 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
--	if (IS_ERR_OR_NULL(musb->xceiv))
-+	if (IS_ERR_OR_NULL(musb->xceiv)) {
-+		ret = -EPROBE_DEFER;
- 		goto fail;
-+	}
- 
- 	setup_timer(&otg_workaround, otg_timer, (unsigned long)musb);
- 
-@@ -441,7 +444,7 @@ static int da8xx_musb_init(struct musb *
- 	musb->isr = da8xx_musb_interrupt;
- 	return 0;
- fail:
--	return -ENODEV;
-+	return ret;
- }
- 
- static int da8xx_musb_exit(struct musb *musb)
---- a/drivers/usb/musb/davinci.c
-+++ b/drivers/usb/musb/davinci.c
-@@ -380,11 +380,14 @@ static int davinci_musb_init(struct musb
- {
- 	void __iomem	*tibase = musb->ctrl_base;
- 	u32		revision;
-+	int 		ret = -ENODEV;
- 
- 	usb_nop_xceiv_register();
- 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
--	if (IS_ERR_OR_NULL(musb->xceiv))
-+	if (IS_ERR_OR_NULL(musb->xceiv)) {
-+		ret = -EPROBE_DEFER;
- 		goto unregister;
-+	}
- 
- 	musb->mregs += DAVINCI_BASE_OFFSET;
- 
-@@ -438,7 +441,7 @@ fail:
- 	usb_put_phy(musb->xceiv);
- unregister:
- 	usb_nop_xceiv_unregister();
--	return -ENODEV;
-+	return ret;
- }
- 
- static int davinci_musb_exit(struct musb *musb)
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -419,7 +419,7 @@ static int dsps_musb_init(struct musb *m
- 	usb_nop_xceiv_register();
- 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
- 	if (IS_ERR_OR_NULL(musb->xceiv))
--		return -ENODEV;
-+		return -EPROBE_DEFER;
- 
- 	/* Returns zero if e.g. not clocked */
- 	rev = dsps_readl(reg_base, wrp->revision);
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -369,7 +369,7 @@ static int omap2430_musb_init(struct mus
- 	musb->xceiv = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
- 	if (IS_ERR_OR_NULL(musb->xceiv)) {
- 		pr_err("HS USB OTG: no transceiver configured\n");
--		return -ENODEV;
-+		return -EPROBE_DEFER;
- 	}
- 
- 	musb->isr = omap2430_musb_interrupt;
---- a/drivers/usb/musb/tusb6010.c
-+++ b/drivers/usb/musb/tusb6010.c
-@@ -1069,7 +1069,7 @@ static int tusb_musb_init(struct musb *m
- 	usb_nop_xceiv_register();
- 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
- 	if (IS_ERR_OR_NULL(musb->xceiv))
--		return -ENODEV;
-+		return -EPROBE_DEFER;
- 
- 	pdev = to_platform_device(musb->controller);
- 
---- a/drivers/usb/musb/ux500.c
-+++ b/drivers/usb/musb/ux500.c
-@@ -61,7 +61,7 @@ static int ux500_musb_init(struct musb *
- 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
- 	if (IS_ERR_OR_NULL(musb->xceiv)) {
- 		pr_err("HS USB OTG: no transceiver configured\n");
--		return -ENODEV;
-+		return -EPROBE_DEFER;
- 	}
- 
- 	musb->isr = ux500_musb_interrupt;
+ 	if (!hlist_unhashed(&mn->hlist)) {
+ 		/*
+-		 * RCU here will force exit_mmap to wait ->release to finish
++		 * SRCU here will force exit_mmap to wait ->release to finish
+ 		 * before freeing the pages.
+ 		 */
+ 		int id;
 
 
