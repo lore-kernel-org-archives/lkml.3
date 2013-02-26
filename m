@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759727Ab3BZQ26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 11:28:58 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:35427 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758046Ab3BZQ25 (ORCPT
+	id S1759688Ab3BZQb6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 11:31:58 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:44740 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757904Ab3BZQb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 11:28:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFy24fp+9zXiDmAgvsz6YvWQh2L0BAJ2hAhF7cNSdyMd8w@mail.gmail.com>
-References: <1663657.ypAtqGpGAq@vostro.rjw.lan>
-	<1781256.mPQbtiUPYR@vostro.rjw.lan>
-	<CA+55aFyzjN_wMH+2RCEA+aNLY0Z7fn4YU7VOtTALbgngn1+vCw@mail.gmail.com>
-	<2223198.XmyRLgb3Gv@vostro.rjw.lan>
-	<20130226161049.GA9303@kahuna>
-	<CA+55aFy24fp+9zXiDmAgvsz6YvWQh2L0BAJ2hAhF7cNSdyMd8w@mail.gmail.com>
-Date: Tue, 26 Feb 2013 08:28:56 -0800
-X-Google-Sender-Auth: CEo4RlNb_OfJDiEWsSmrBHNHub8
-Message-ID: <CA+55aFyu5woJsH2y3y=w4UFneOG8hKz_cLXgZQbJzn5asn8=hQ@mail.gmail.com>
-Subject: Re: [GIT PULL] ACPI and power management fixes for v3.9-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Nishanth Menon <nm@ti.com>, Aaron Lu <aaron.lu@intel.com>,
-        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 26 Feb 2013 11:31:57 -0500
+From: Andrey Smirnov <andrew.smirnov@gmail.com>
+To: andrew.smirnov@gmail.com
+Cc: hverkuil@xs4all.nl, mchehab@redhat.com, sameo@linux.intel.com,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v6 0/9] Driver for Si476x series of chips
+Date: Tue, 26 Feb 2013 08:31:26 -0800
+Message-Id: <1361896295-26138-1-git-send-email-andrew.smirnov@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ugh. Forgot to actually add the ODD people to the list...
+This is a fourth version of the patchset originaly posted here:
+https://lkml.org/lkml/2012/9/13/590
 
-             Linus
+Second version of the patch was posted here:
+https://lkml.org/lkml/2012/10/5/598
 
-On Tue, Feb 26, 2013 at 8:27 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Feb 26, 2013 at 8:10 AM, Nishanth Menon <nm@ti.com> wrote:
->> On 16:55-20130226, Rafael J. Wysocki wrote:
->>>
->>> It says that in "Introduction", but it would be clearer if the title of the
->>> doc was something like "Operating Performance Points (OPP) Library".  Nishanth?
->>
->> Yes indeed. Will the following help? I can post it as an official patch
->> if the direction is proper
->
-> Yes, this will definitely help. I didn't even find it in the
-> introduction (Rafael is correct that it is indeed there), because it's
-> hard to see when you don't know what to scan for and it's in a big
-> block of text.
->
-> I am also happy to note that it is in the Kconfig help and single-line
-> description. Which wasn't true for the new SATA_ZPODD ("Zero Power
-> ODD" - what the heck is ODD?) which was another new entry I wondered
-> about.
->
-> It turns out that ODD is an odd TLA for "Optical Disk Drive". I'm sure
-> it makes perfect sense if you are a SATA person, but it sure doesn't
-> for any normal human being, even otherwise highly technical ones.
->
-> Aaron, Tejun, Jeff, can I ask you to also not use specialized TLA's
-> without explaining them? Especially in help text and "documentation",
-> it's very unhelpful to have TLA's that aren't common.
->
-> We don't have to explain *all* TLA's, since there's a lot that really
-> are rather widespread. But there's a big difference between something
-> like CPU or TLB that have been in generic literature for decades, wrt
-> OPP and ODD that are specialized terms used inside a very particular
-> group and haven't been around for very long either.
->
->               Linus
+Third version of the patch was posted here:
+https://lkml.org/lkml/2012/10/23/510
+
+Fourth version of the patch was posted here:
+https://lkml.org/lkml/2013/2/18/572
+
+Fifth version of the patch was posted here:
+https://lkml.org/lkml/2013/2/26/45
+
+To save everyone's time I'll repost the original description of it:
+
+This patchset contains a driver for a Silicon Laboratories 476x series
+of radio tuners. The driver itself is implemented as an MFD devices
+comprised of three parts: 
+ 1. Core device that provides all the other devices with basic
+functionality and locking scheme.
+ 2. Radio device that translates between V4L2 subsystem requests into
+Core device commands.
+ 3. Codec device that does similar to the earlier described task, but
+for ALSA SoC subsystem.
+
+v6 of this driver has following changes:
+   - Minor corrections
+
+
+Andrey Smirnov (9):
+  mfd: Add header files and Kbuild plumbing for SI476x MFD core
+  mfd: Add commands abstraction layer for SI476X MFD
+  mfd: Add the main bulk of core driver for SI476x code
+  mfd: Add chip properties handling code for SI476X MFD
+  v4l2: Fix the type of V4L2_CID_TUNE_PREEMPHASIS in the documentation
+  v4l2: Add standard controls for FM receivers
+  v4l2: Add documentation for the FM RX controls
+  v4l2: Add private controls base for SI476X
+  v4l2: Add a V4L2 driver for SI476X MFD
+
+ Documentation/DocBook/media/v4l/compat.xml         |    3 +
+ Documentation/DocBook/media/v4l/controls.xml       |   74 +-
+ .../DocBook/media/v4l/vidioc-g-ext-ctrls.xml       |    9 +
+ Documentation/video4linux/si476x.txt               |  187 +++
+ drivers/media/radio/Kconfig                        |   17 +
+ drivers/media/radio/Makefile                       |    1 +
+ drivers/media/radio/radio-si476x.c                 | 1574 ++++++++++++++++++++
+ drivers/media/v4l2-core/v4l2-ctrls.c               |   14 +-
+ drivers/mfd/Kconfig                                |   13 +
+ drivers/mfd/Makefile                               |    4 +
+ drivers/mfd/si476x-cmd.c                           | 1553 +++++++++++++++++++
+ drivers/mfd/si476x-i2c.c                           |  878 +++++++++++
+ drivers/mfd/si476x-prop.c                          |  234 +++
+ include/linux/mfd/si476x-core.h                    |  525 +++++++
+ include/media/si476x.h                             |  426 ++++++
+ include/uapi/linux/v4l2-controls.h                 |   17 +
+ 16 files changed, 5525 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/video4linux/si476x.txt
+ create mode 100644 drivers/media/radio/radio-si476x.c
+ create mode 100644 drivers/mfd/si476x-cmd.c
+ create mode 100644 drivers/mfd/si476x-i2c.c
+ create mode 100644 drivers/mfd/si476x-prop.c
+ create mode 100644 include/linux/mfd/si476x-core.h
+ create mode 100644 include/media/si476x.h
+
+-- 
+1.7.10.4
+
