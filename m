@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758440Ab3BZONw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 09:13:52 -0500
-Received: from slimlogic.co.uk ([89.16.172.20]:47715 "EHLO slimlogic.co.uk"
+	id S1758700Ab3BZOQa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 09:16:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8980 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757122Ab3BZONv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 09:13:51 -0500
-Message-ID: <512CC31D.6070602@slimlogic.co.uk>
-Date: Tue, 26 Feb 2013 14:13:49 +0000
-From: Ian Lartey <ian@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1757122Ab3BZOQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 09:16:28 -0500
+Date: Tue, 26 Feb 2013 15:14:56 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Lianwei Wang <lianwei.wang@gmail.com>, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: PATCH: freezer: add fake signal clearing back when thaw task
+Message-ID: <20130226141456.GB28940@redhat.com>
+References: <CAJFUiJhxqWeQ9PiinpRYCUF8U_3dpaAdvsEKHW2i-QqZ=vkYsQ@mail.gmail.com> <20130225235313.GE2679@htj.dyndns.org>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: [PATCH] gpio: palmas: add in GPIO support for palmas charger
-References: <1361884868-27783-1-git-send-email-ian@slimlogic.co.uk> <512CBF75.9000103@nvidia.com>
-In-Reply-To: <512CBF75.9000103@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130225235313.GE2679@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/02/13 13:58, Laxman Dewangan wrote:
-> On Tuesday 26 February 2013 06:51 PM, Ian Lartey wrote:
->> this patch depenfs on [PATCH] mfd: palmas: is_palmas_charger needed by
->> multiple drivers
->>
->> Palmas charger has 16 GPIOs
->> add palmas_gpio_[read|write|update] api to take account
->> second bank of GPIOs
->>
->> Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
->> Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
->> ---
+On 02/25, Tejun Heo wrote:
 >
->> +    /* palmas charger has 16 gpios */
->> +    if (is_palmas_charger(palmas->product_id))
->> +        palmas_gpio->gpio_chip.ngpio = 16;
->> +
-> what happen if it is not palma charger?
-> palmas_gpio->gpio_chip.ngpio = 8; is missing or it will overwrite
-> somewhere.
+> (cc'ing Rafael and Oleg and quoting whole body)
 >
+> On Thu, Feb 21, 2013 at 02:19:21PM +0800, Lianwei Wang wrote:
+> > Hi Tejun Heo and all,
+> >
+> > The commit of "34b087e freezer: kill unused
+> > set_freezable_with_signal()" remove recalc_sigpending*() calls in
+> > freezer, so the user tasks get TIF_SIGPENDING fake signal that is set
+> > when freezing userspace process. It left the fake signal to userspcae
+> > which cause the userspace task that wait_event_freezable and friends
+> > return a wrong ERESTARTSYS. This is not good because it waste cpu time
+> > to handle the fake signal.
+>
+> Is this even measureable?  Freeze / thaw isn't exactly a hot path and
+> I'm having difficult time believing -ERESTARTSYS would have a
+> noticeable impact on anything.  Can you please explain why this is a
+> problem?
 
-the non palmas charger value of ngpio remains where it was  -
-but you have shown up an error in the ordering - Thanks
+For example, wait_for_dump_helpers() can fail because it checks
+signal_pending(). And we can sleep in TASK_KILLABLE because pipe_release()
+does wake_up_interruptible(). But this is minor, wait_for_dump_helpers()
+could be fixed without this change.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The real problem is dump_write-like code. Say, pipe_write() can fail if
+signal_pending() == T. I am not saying this is unsolvable, in fact I was
+going to add the freeze + recalc_sigpending + retry logic initially, but
+this looks soooo ugly.
+
+Also. Rightly or not, but I came to conclusion that this change is right
+even if we forget about killable/freezable problems in coredump. The
+coredumping thread is no longer a "real" user-space process. It can never
+handle the signals, it doesn't return to user-mode, but it does a lot of
+work in kernel space. So I think it should look as PF_KTHREAD to freezer.
+
+> > Can we just call the recalc_sigpending to clear the fake signal for
+> > userspace tasks? as below patch do:
+> >
+> > +static void fake_signal_clear(struct task_struct *p)
+> > +{
+> > + unsigned long flags;
+> > +
+> > + if (lock_task_sighand(p, &flags)) {
+> > +     recalc_sigpending();
+> > +     unlock_task_sighand(p, &flags);
+> > + }
+
+You know, _perhaps_ we have another reason for this change. Otherwise
+wait_event_freezable() doesn't look right. Or we should clarify that
+it is only for PF_KTHREAD but than we can simplify wait_event_freezable().
+And in this case I do not think we should reintroduce recalc_sigpending()
+removed by 34b087e48 "freezer: kill unused set_freezable_with_signal()".
+
+I'll write another email about this, nobody actually need
+wait_event_freezable().
+
+But. The change above can't help the coredumping thread. It still
+needs to do
+
+	spin_lock_irq(current->siglock);
+	if (!__fatal_signal_pending(current))
+		clear_thread_flag(TIF_SIGPENDING);
+	spin_unlock_irq(current->siglock);
+
+or we should change recalc_sigpending() to check PF_KTHREAD.
+
+Oleg.
 
