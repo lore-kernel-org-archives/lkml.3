@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759701Ab3BZWqM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 17:46:12 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:45662 "EHLO hydra.sisk.pl"
+	id S1757745Ab3BZWyM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 17:54:12 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50892 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758602Ab3BZWoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 17:44:17 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [PATCH v2, 4/7] ACPI / scan: Introduce acpi_scan_handler_matching()
-Date: Tue, 26 Feb 2013 23:47:58 +0100
-Message-ID: <1779230.yDM7NrbqCq@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <3171747.TOMjvVkWL1@vostro.rjw.lan>
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <3171747.TOMjvVkWL1@vostro.rjw.lan>
+	id S1754265Ab3BZWyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 17:54:10 -0500
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <gregkh@linuxfoundation.org>
+CC: <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH 00/15] staging: omap-thermal fixes and ports
+Date: Tue, 26 Feb 2013 18:53:23 -0400
+Message-ID: <1361919218-9788-1-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hello Greg,
 
-Introduce new helper routine acpi_scan_handler_matching() for
-checking if the given ACPI scan handler matches a given device ID
-and rework acpi_scan_match_handler() to use the new routine (that
-routine will also be useful for other purposes in the future).
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
----
- drivers/acpi/scan.c |   30 ++++++++++++++++++++----------
- 1 file changed, 20 insertions(+), 10 deletions(-)
+Several compilation fixes and a couple of debugging prints
+added. This time I am also preparing the driver to receive
+fixes and patches from omapzoom. So, this series starts to
+port patches from omapzoom to staging area. Most of this
+changes are related to OMAP5 support.
 
-Index: test/drivers/acpi/scan.c
-===================================================================
---- test.orig/drivers/acpi/scan.c
-+++ test/drivers/acpi/scan.c
-@@ -1673,22 +1673,32 @@ static int acpi_bus_type_and_status(acpi
- 	return 0;
- }
- 
-+static bool acpi_scan_handler_matching(struct acpi_scan_handler *handler,
-+				       char *idstr,
-+				       const struct acpi_device_id **matchid)
-+{
-+	const struct acpi_device_id *devid;
-+
-+	for (devid = handler->ids; devid->id[0]; devid++)
-+		if (!strcmp((char *)devid->id, idstr)) {
-+			if (matchid)
-+				*matchid = devid;
-+
-+			return true;
-+		}
-+
-+	return false;
-+}
-+
- static struct acpi_scan_handler *acpi_scan_match_handler(char *idstr,
- 					const struct acpi_device_id **matchid)
- {
- 	struct acpi_scan_handler *handler;
- 
--	list_for_each_entry(handler, &acpi_scan_handlers_list, list_node) {
--		const struct acpi_device_id *devid;
-+	list_for_each_entry(handler, &acpi_scan_handlers_list, list_node)
-+		if (acpi_scan_handler_matching(handler, idstr, matchid))
-+			return handler;
- 
--		for (devid = handler->ids; devid->id[0]; devid++)
--			if (!strcmp((char *)devid->id, idstr)) {
--				if (matchid)
--					*matchid = devid;
--
--				return handler;
--			}
--	}
- 	return NULL;
- }
- 
+All these are based on linux-2.6/master.
+
+Patches are also available here:
+
+git@gitorious.org:thermal-framework/thermal-framework.git thermal_work/omap/omap-thermal-fixes
+https://git.gitorious.org/thermal-framework/thermal-framework.git thermal_work/omap/omap-thermal-fixes
+
+Cheers,
+
+Eduardo Valentin (12):
+  staging: omap-thermal: standardize register nomenclature to use 'GPU'
+  staging: omap-thermal: remove from register map soc and mode on OMAP5
+  staging: omap-thermal: introduce new features of OMAP54xx
+  staging: omap-thermal: update OMAP54xx clock sources
+  staging: omap-thermal: update feature bitfield for OMAP54xx
+  staging: omap-thermal: remove dedicated counter register for OMAP5
+  staging: omap-thermal: introduze FREEZE_BIT feature
+  staging: omap-thermal: update DT entry documentation
+  staging: omap-thermal: add DT example for OMAP54xx devices
+  staging: omap-thermal: Remove double conv_table reference
+  staging: omap-thermal: name data files accordingly
+  staging: omap-thermal: update clock prepare count
+
+Radhesh Fadnis (2):
+  staging: omap-thermal: introduce clock feature flag
+  staging: omap-thermal: update OMAP54xx conv_table
+
+Ruslan Ruslichenko (1):
+  staging: omap-thermal: Add print when TSHUT temperature reached
+
+ drivers/staging/omap-thermal/Makefile             |    4 +-
+ drivers/staging/omap-thermal/omap-bandgap.c       |   89 ++++--
+ drivers/staging/omap-thermal/omap-bandgap.h       |   94 +++++-
+ drivers/staging/omap-thermal/omap4-thermal-data.c |  262 +++++++++++++++
+ drivers/staging/omap-thermal/omap4-thermal.c      |  259 ---------------
+ drivers/staging/omap-thermal/omap5-thermal-data.c |  357 +++++++++++++++++++++
+ drivers/staging/omap-thermal/omap5-thermal.c      |  297 -----------------
+ drivers/staging/omap-thermal/omap_bandgap.txt     |   36 ++-
+ 8 files changed, 794 insertions(+), 604 deletions(-)
+ create mode 100644 drivers/staging/omap-thermal/omap4-thermal-data.c
+ delete mode 100644 drivers/staging/omap-thermal/omap4-thermal.c
+ create mode 100644 drivers/staging/omap-thermal/omap5-thermal-data.c
+ delete mode 100644 drivers/staging/omap-thermal/omap5-thermal.c
+
+-- 
+1.7.7.1.488.ge8e1c
 
