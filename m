@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760598Ab3B0Acn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:32:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42430 "EHLO
+	id S1760616Ab3B0Ac7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:32:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42427 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933370Ab3BZX65 (ORCPT
+	with ESMTP id S933354Ab3BZX64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:57 -0500
+	Tue, 26 Feb 2013 18:58:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Kettenis <mark.kettenis@xs4all.nl>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 29/53] sunvdc: Fix off-by-one in generic_request().
-Date: Tue, 26 Feb 2013 15:57:58 -0800
-Message-Id: <20130226235622.876953094@linuxfoundation.org>
+        Dan Carpenter <error27@gmail.com>, "Theodore Tso" <tytso@mit.edu>,
+        Jeff Mahoney <jeffm@suse.com>
+Subject: [ 28/53] ext4: add missing kfree() on error return path in add_new_gdb()
+Date: Tue, 26 Feb 2013 15:57:57 -0800
+Message-Id: <20130226235622.760294630@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -27,31 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Dan Carpenter <error27@gmail.com>
 
-From: "David S. Miller" <davem@davemloft.net>
+commit c49bafa3842751b8955a962859f42d307673d75d upstream.
 
-[ Upstream commit f4d9605434c0fd4cc8639bf25cfc043418c52362 ]
+We added some more error handling in b40971426a "ext4: add error
+checking to calls to ext4_handle_dirty_metadata()".  But we need to
+call kfree() as well to avoid a memory leak.
 
-The 'operations' bitmap corresponds one-for-one with the operation
-codes, no adjustment is necessary.
-
-Reported-by: Mark Kettenis <mark.kettenis@xs4all.nl>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/block/sunvdc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -461,7 +461,7 @@ static int generic_request(struct vdc_po
- 	int op_len, err;
- 	void *req_buf;
+
+---
+ fs/ext4/resize.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -499,6 +499,7 @@ static int add_new_gdb(handle_t *handle,
+ 	return err;
  
--	if (!(((u64)1 << ((u64)op - 1)) & port->operations))
-+	if (!(((u64)1 << (u64)op) & port->operations))
- 		return -EOPNOTSUPP;
- 
- 	switch (op) {
+ exit_inode:
++	kfree(n_group_desc);
+ 	/* ext4_handle_release_buffer(handle, iloc.bh); */
+ 	brelse(iloc.bh);
+ exit_dindj:
 
 
