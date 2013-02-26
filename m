@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759927Ab3BZX5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:57:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41711 "EHLO
+	id S934085Ab3B0BVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:21:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41734 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756969Ab3BZX5C (ORCPT
+	with ESMTP id S1759920Ab3BZX5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:02 -0500
+	Tue, 26 Feb 2013 18:57:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Edward Donovan <edward.donovan@numble.net>,
-        "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 007/150] genirq: Avoid deadlock in spurious handling
-Date: Tue, 26 Feb 2013 15:54:24 -0800
-Message-Id: <20130226235524.805893386@linuxfoundation.org>
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 011/150] workqueue: un-GPL function delayed_work_timer_fn()
+Date: Tue, 26 Feb 2013 15:54:28 -0800
+Message-Id: <20130226235525.302908536@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -28,56 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-commit e716efde75267eab919cdb2bef5b2cb77f305326 upstream.
+commit 1438ade5670b56d5386c220e1ad4b5a824a1e585 upstream.
 
-commit 52553ddf(genirq: fix regression in irqfixup, irqpoll)
-introduced a potential deadlock by calling the action handler with the
-irq descriptor lock held.
+commit d8e794dfd51c368ed3f686b7f4172830b60ae47b ("workqueue: set
+delayed_work->timer function on initialization") exports function
+delayed_work_timer_fn() only for GPL modules. This makes delayed-works
+unusable for non-GPL modules, because initialization macro now requires
+GPL symbol. For example schedule_delayed_work() available for non-GPL.
 
-Remove the call and let the handling code run even for an interrupt
-where only a single action is registered. That matches the goal of
-the above commit and avoids the deadlock.
-
-Document the confusing action = desc->action reload in the handling
-loop while at it.
-
-Reported-and-tested-by: "Wang, Warner" <warner.wang@hp.com>
-Tested-by: Edward Donovan <edward.donovan@numble.net>
-Cc: "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/spurious.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ kernel/workqueue.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -80,13 +80,11 @@ static int try_one_irq(int irq, struct i
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1352,7 +1352,7 @@ void delayed_work_timer_fn(unsigned long
+ 	/* should have been called from irqsafe timer with irq already off */
+ 	__queue_work(dwork->cpu, cwq->wq, &dwork->work);
+ }
+-EXPORT_SYMBOL_GPL(delayed_work_timer_fn);
++EXPORT_SYMBOL(delayed_work_timer_fn);
  
- 	/*
- 	 * All handlers must agree on IRQF_SHARED, so we test just the
--	 * first. Check for action->next as well.
-+	 * first.
- 	 */
- 	action = desc->action;
- 	if (!action || !(action->flags & IRQF_SHARED) ||
--	    (action->flags & __IRQF_TIMER) ||
--	    (action->handler(irq, action->dev_id) == IRQ_HANDLED) ||
--	    !action->next)
-+	    (action->flags & __IRQF_TIMER))
- 		goto out;
- 
- 	/* Already running on another processor */
-@@ -104,6 +102,7 @@ static int try_one_irq(int irq, struct i
- 	do {
- 		if (handle_irq_event(desc) == IRQ_HANDLED)
- 			ret = IRQ_HANDLED;
-+		/* Make sure that there is still a valid action */
- 		action = desc->action;
- 	} while ((desc->istate & IRQS_PENDING) && action);
- 	desc->istate &= ~IRQS_POLL_INPROGRESS;
+ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
+ 				struct delayed_work *dwork, unsigned long delay)
 
 
