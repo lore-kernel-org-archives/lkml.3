@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933695Ab3BZX7S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:59:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42541 "EHLO
+	id S933756Ab3B0AAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:00:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42589 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933618Ab3BZX7O (ORCPT
+	with ESMTP id S933682Ab3BZX7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:59:14 -0500
+	Tue, 26 Feb 2013 18:59:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 38/53] pcmcia/vrc4171: Add missing spinlock init
-Date: Tue, 26 Feb 2013 15:58:07 -0800
-Message-Id: <20130226235623.810530753@linuxfoundation.org>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 50/53] USB: option: add Huawei "ACM" devices using protocol = vendor
+Date: Tue, 26 Feb 2013 15:58:19 -0800
+Message-Id: <20130226235625.041463445@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,29 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 811af9723859884f2f771f3174f3ddedab7c53b5 upstream.
+commit 1f3f687722fd9b29a0c2a85b4844e3b2a3585c63 upstream.
 
-It doesn't seem this spinlock was properly initialized. This bug was
-introduced by commit 7a410e8d4d97457c8c381e2de9cdc7bd3306badc.
+The USB device descriptor of one identity presented by a few
+Huawei morphing devices have serial functions with class codes
+02/02/ff, indicating CDC ACM with a vendor specific protocol. This
+combination is often used for MSFT RNDIS functions, and the CDC
+ACM class driver will therefore ignore such functions.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+The CDC ACM class driver cannot support functions with only 2
+endpoints.  The underlying serial functions of these modems are
+also believed to be the same as for alternate device identities
+already supported by the option driver. Letting the same driver
+handle these functions independently of the current identity
+ensures consistent handling and user experience.
+
+There is no need to blacklist these devices in the rndis_host
+driver. Huawei serial functions will either have only 2 endpoints
+or a CDC ACM functional descriptor with bmCapabilities != 0, making
+them correctly ignored as "non RNDIS" by that driver.
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pcmcia/vrc4171_card.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/option.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/pcmcia/vrc4171_card.c
-+++ b/drivers/pcmcia/vrc4171_card.c
-@@ -246,6 +246,7 @@ static int pccard_init(struct pcmcia_soc
- 	socket = &vrc4171_sockets[slot];
- 	socket->csc_irq = search_nonuse_irq();
- 	socket->io_irq = search_nonuse_irq();
-+	spin_lock_init(&socket->lock);
- 
- 	return 0;
- }
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -578,8 +578,12 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, 0xea42),
+ 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c05, USB_CLASS_COMM, 0x02, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1442, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
 
 
