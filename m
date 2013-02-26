@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760089Ab3BZCHh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 21:07:37 -0500
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:35902 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753388Ab3BZCHf (ORCPT
+	id S1759977Ab3BZCIm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 21:08:42 -0500
+Received: from mga03.intel.com ([143.182.124.21]:55921 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751366Ab3BZCIj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 21:07:35 -0500
-Message-ID: <1361844450.8053.2.camel@thor.lan>
-Subject: Re: [PATCH] idr: Don't WARN in idr_find
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Date: Mon, 25 Feb 2013 21:07:30 -0500
-In-Reply-To: <20130226014810.GI2679@htj.dyndns.org>
-References: <1361842632-29689-1-git-send-email-peter@hurleysoftware.com>
-	 <20130226014027.GH2679@htj.dyndns.org> <1361843171.8053.1.camel@thor.lan>
-	 <20130226014810.GI2679@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Mon, 25 Feb 2013 21:08:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,736,1355126400"; 
+   d="scan'208";a="261365358"
+From: "Heasley, Seth" <seth.heasley@intel.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: Wolfram Sang <wsa@the-dreams.de>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ralston, James D" <james.d.ralston@intel.com>
+Subject: RE: [PATCH 1/1] i2c: iSMT SMBus patch for Intel Avoton DeviceIDs
+Thread-Topic: [PATCH 1/1] i2c: iSMT SMBus patch for Intel Avoton DeviceIDs
+Thread-Index: AQHOEHsi+AZRAVxuOE6I7EZlYEh9dZiFXF8A//+FJuCAAJlQgIAF8Cew
+Date: Tue, 26 Feb 2013 02:08:35 +0000
+Message-ID: <DEC3922D1904474A8862C7BFF516EA9A7115EA33@ORSMSX101.amr.corp.intel.com>
+References: <1361485843-13560-1-git-send-email-seth.heasley@intel.com>
+ <20130221213714.GB32764@hmsreliant.think-freely.org>
+ <DEC3922D1904474A8862C7BFF516EA9A7115E094@ORSMSX101.amr.corp.intel.com>
+ <20130221232615.GA3046@neilslaptop.think-freely.org>
+In-Reply-To: <20130221232615.GA3046@neilslaptop.think-freely.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-25 at 17:48 -0800, Tejun Heo wrote:
-> On Mon, Feb 25, 2013 at 08:46:11PM -0500, Peter Hurley wrote:
-> > On Mon, 2013-02-25 at 17:40 -0800, Tejun Heo wrote:
-> > > On Mon, Feb 25, 2013 at 08:37:12PM -0500, Peter Hurley wrote:
-> > > > Since idr is used for syscall apis (to associate 'handles' with
-> > > > internal structures), don't WARN with invalid input.
-> > > > 
-> > > > For example, POSIX timers are identified by timer_t id. These
-> > > > ids are idr values. If userspace passes a representable timer_t id
-> > > > value (eg, id < 0) but which was not previous allocated (since the
-> > > > current idr api does not return negative idr values), then the
-> > > > syscall properly returns an error; a WARN is unnecessary and
-> > > > undesirable.
-> > > 
-> > > WARN_ON() on negative was intentional.  Because the previous
-> > > implmentation silently dropped the msb, we at least wanna know who has
-> > > been passing in negative indices.  Patch for the lock_timer is already
-> > > in -mm.
-> > 
-> > Thanks. Can you share the patch title? It's not in next-20130225.
-> 
-> It's this one.
-> 
->  http://thread.gmane.org/gmane.linux.kernel/1444883/focus=1445094
+>> The difference here is that the S1200 name is already publicly released,
+>whereas the naming for Avoton hasn't been announced.
+>>
+>Do you know when the announcement will be?  Is it sufficiently soon that we
+>can just wait for it?
 
-Thanks and sorry; not sure how I missed that thread.
+I don't, and actually couldn't tell you if I did.  The codename usage is consistent with how we deal with all products since the patches have to go in well in advance of product launch.
 
-
+-Seth
