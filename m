@@ -1,73 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760038Ab3BZB7S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 20:59:18 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:32983 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635Ab3BZB7P (ORCPT
+	id S1760069Ab3BZCD0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 21:03:26 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47989 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758612Ab3BZCDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 20:59:15 -0500
+	Mon, 25 Feb 2013 21:03:24 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <512C17D0.8080102@jp.fujitsu.com>
+Date: Tue, 26 Feb 2013 11:02:56 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxGfRpYAn8BqTV=akmsvmDbJoefb+UMMo6FB7M6RPa82A@mail.gmail.com>
-References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
-	<CA+55aFxGfRpYAn8BqTV=akmsvmDbJoefb+UMMo6FB7M6RPa82A@mail.gmail.com>
-Date: Tue, 26 Feb 2013 11:59:13 +1000
-Message-ID: <CAPM=9tyY4_wN_XyHu09BXZAewq3DU8t2RTMq4zbr5URLnFSJbw@mail.gmail.com>
-Subject: Re: [git pull] drm merge for 3.9-rc1
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Airlie <airlied@linux.ie>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Toshi Kani <toshi.kani@hp.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [Update 4][PATCH 2/7] ACPI / scan: Introduce common code for
+ ACPI-based device hotplug
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan>  <1478394.ryVNRuTre2@vostro.rjw.lan>  <1361815672.12845.71.camel@misato.fc.hp.com>  <18666371.hyHAvqrdQ6@vostro.rjw.lan> <512C046E.8050501@jp.fujitsu.com> <1361840942.12845.84.camel@misato.fc.hp.com>
+In-Reply-To: <1361840942.12845.84.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2013/02/26 10:09, Toshi Kani wrote:
+> On Tue, 2013-02-26 at 09:40 +0900, Yasuaki Ishimatsu wrote:
+>> 2013/02/26 8:39, Rafael J. Wysocki wrote:
+>>> On Monday, February 25, 2013 11:07:52 AM Toshi Kani wrote:
+>>>> On Sat, 2013-02-23 at 22:38 +0000, Rafael J. Wysocki wrote:
+>>>>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>>>>
+>>>>> Multiple drivers handling hotplug-capable ACPI device nodes install
+>>>>> notify handlers covering the same types of events in a very similar
+>>>>> way.  Moreover, those handlers are installed in separate namespace
+>>>>> walks, although that really should be done during namespace scans
+>>>>> carried out by acpi_bus_scan().  This leads to substantial code
+>>>>> duplication, unnecessary overhead and behavior that is hard to
+>>>>> follow.
+>>>>>
+>>>>> For this reason, introduce common code in drivers/acpi/scan.c for
+>>>>> handling hotplug-related notification and carrying out device
+>>>>> insertion and eject operations in a generic fashion, such that it
+>>>>> may be used by all of the relevant drivers in the future.  To cover
+>>>>> the existing differences between those drivers introduce struct
+>>>>> acpi_hotplug_profile for representing collections of hotplug
+>>>>> settings associated with different ACPI scan handlers that can be
+>>>>> used by the drivers to make the common code reflect their current
+>>>>> behavior.
+>>>>>
+>>>>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>>>> ---
+>>>>>
+>>>>> This update causes acpi_bus_device_eject() to only emit KOBJ_OFFLINE uevent if
+>>>>> autoexec is unset for the given scan handler.
+>>>>>
+>>>>> This will require the doc in patch [5/7] to be updated which I'm going to do if
+>>>>> everyone is OK with the $subject patch.
+>>>>>
+>>>>> Thanks,
+>>>>> Rafael
+>>>>    :
+>>>>> +
+>>>>> +static void acpi_scan_bus_device_check(acpi_handle handle, u32 ost_source)
+>>>>> +{
+>>>>> +	struct acpi_device *device = NULL;
+>>>>> +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+>>>>> +	int error;
+>>>>> +
+>>>>> +	mutex_lock(&acpi_scan_lock);
+>>>>> +
+>>>>> +	acpi_bus_get_device(handle, &device);
+>>>>> +	if (device) {
+>>>>> +		dev_warn(&device->dev, "Attempt to re-insert\n");
+>>>>> +		goto out;
+>>>>> +	}
+>>>>> +	acpi_evaluate_hotplug_ost(handle, ost_source,
+>>>>> +				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
+>>>>> +	error = acpi_bus_scan(handle);
+>>>>> +	if (error) {
+>>>>> +		acpi_handle_warn(handle, "Namespace scan failure\n");
+>>>>> +		goto out;
+>>>>> +	}
+>>>>> +	error = acpi_bus_get_device(handle, &device);
+>>>>> +	if (error) {
+>>>>> +		acpi_handle_warn(handle, "Missing device node object\n");
+>>>>> +		goto out;
+>>>>> +	}
+>>>>> +	ost_code = ACPI_OST_SC_SUCCESS;
+>>>>> +	if (device->handler && device->handler->hotplug.uevents)
+>>>>> +		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
+>>>>
+>>
+>>>> I confirmed that the uevent crash issue was solved.  Thinking further, I
+>>>> wonder if we need to emit KOBJ_ONLINE here.  This behavior is asymmetric
+>>>> since we do not emit KOBJ_OFFLINE when autoeject is set.
+>>>
+>>> Well, I put that in there only to be able to make the container driver behave
+>>> in a backwards compatible way (which is to emit KOBJ_ONLINE at this point).
+>>>
+>>> If the container driver doesn't need to emit KOBJ_ONLINE at all, I agree with
+>>> your suggestion.
+>>>
+>>>> The definition of ONLINE/OFFLINE event to an ACPI device object seems also
+>>>> bogus since there is no online/offline operation to the ACPI device object
+>>>> itself.
+>>>> Online/offline operation is only possible to actual device, such as
+>>>> system/cpu/cpu% and system/memory/memory%.
+>>>
+>>> That's correct, but I don't know what the user space expectations are
+>>> currently.
+>>
+>> My system expects this event to be notified when hot adding container device.
+>> My container device has cpu and memory. As Toshi said, these devices are
+>> offline when hot adding container device. So in my system, when notifying
+>> container device's KOBJ_ONLINE event, my application runs for onlining these
+>> devices. If this event is not notified to user land, we cannot online these
+>> devices  automatically.
 >
-> I did the fun conflict resolution, so my tree doesn't have the ordering changes.
+
+> Thanks for the info.  Can your application listen KOBJ_ADD to a
+> container device, instead of KOBJ_ONLINE?  IOW, does it distinguish
+> between ADD and ONLINE events to a container device?
+
+My application does not distinguish between ADD and ONLINE events
+currently. But if the event is changed from ONLINE to ADD, I will
+change my application.
+
+Thanks,
+Yasuaki Ishimatsu
+
 >
-> I also did some things slightly differently from you - you had left
-> some direct ib[] accesses that I spotted (see for example "case 0x48"
-> (aka "Copy L2T Frame to Field"), and yours apparently has a few cases
-> where you use "idx_value" instead of my mindless conflict resolution
-> that just re-did the brute-force "repace direct ib[] read accesses
-> with the radeon_get_ib_value() helper function". But you don't do it
-> for *all* the radeon_get_ib_value(p, idx+2) users, so whatever.
-
-Yeah the rules for radeon_get_ib_value are that they are meant to be sequential,
-but it actually doesn't matter as long as the values are within a page
-of each other,
-I was just avoiding multiple calls to get the same value with the idx_value, but
-I think Alex or Jerome can clean this up a bit further anyways.
-
-> Anyway - my conflict resolution isn't exactly the same as yours, and
-> maybe I screwed something up. But it's damn close, and the differences
-> _seem_ be all be benign.
+> -Toshi
 >
-> Btw, why is it ok that some functions still read the ib[] array
-> directly (eg evergreen_vm_packet3_check() or evergreen_cs_check_reg()
-> etc)?
+>
 
-The semantics for that function are a bit underdocumented, and I thought
-the other developers understood them after I explained them, but I found
-out that they hadn't quite grasped the true extent of pain. So yes there
-are other places that need to be cleaned up, but most of the time direct
-ib access will work fine, until you have a buffer that straddles a
-page boundary.
 
-> Whatever. I prefer doing my own resolutions just so that I know what's
-> going on, and it all seems to build and looks reasonable, but it's
-> always good to get a second opinion. Particularly since I can't
-> actually test the radeon stuff, so just eyeballing it and saying
-> "looks semantically identical to Dave's resolution" may not be 100%
-> sufficient..
-
-Yup I've reviewed it and it looks fine, any cleanup is just going to be
-an optimisation.
-
-So I'll work with Alex/Jerome to clean up anything else out-of-band
-and hopefully
-we can avoid any big conflicts in future!
-
-Dave.
