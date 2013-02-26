@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758867Ab3BZEpe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 23:45:34 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:60568 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab3BZEpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759275Ab3BZEph (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 23:45:37 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:49962 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754288Ab3BZEpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Feb 2013 23:45:32 -0500
-Date: Mon, 25 Feb 2013 23:45:29 -0500 (EST)
-Message-Id: <20130225.234529.1601978289377551611.davem@davemloft.net>
-To: gregkh@linuxfoundation.org
-Cc: gdt@gdt.id.au, linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb/net/asix_devices: Add USBNET HG20F9 ethernet dongle
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130226042343.GA27766@kroah.com>
-References: <1361852232.23197.4.camel@andromache.adelaide.aarnet.edu.au>
-	<20130226042343.GA27766@kroah.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 25 Feb 2013 20:45:36 -0800 (PST)
+Date: Mon, 25 Feb 2013 23:45:21 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Message-ID: <20130226044521.GC12906@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Airlie <airlied@gmail.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	David Howells <dhowells@redhat.com>,
+	Florian Weimer <fw@deneb.enyo.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
+	Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+	keyrings@linux-nfs.org,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20130226005955.GA19686@kroah.com>
+ <20130226023332.GA29282@srcf.ucam.org>
+ <20130226030249.GB23834@kroah.com>
+ <20130226031338.GA29784@srcf.ucam.org>
+ <20130226033156.GA24999@kroah.com>
+ <20130226033803.GA30285@srcf.ucam.org>
+ <20130226035416.GA1128@kroah.com>
+ <20130226040456.GA30717@srcf.ucam.org>
+ <20130226041324.GA7241@kroah.com>
+ <CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Mon, 25 Feb 2013 20:23:43 -0800
-
-> On Tue, Feb 26, 2013 at 02:47:12PM +1030, Glen Turner wrote:
->> This USB ethernet adapter was purchased in anodyne packaging
->> marked "USB2.0 to LAN" from the computer store adjacent to
->> linux.conf.au 2013 in Canberra (Australia). A web search
->> shows other recent purchasers in Lancaster (UK) and Seattle
->> (USA). Just like an emergent virus, our age of e-commerce and
->> airmail allows underdocumented hardware to spread around the
->> world instantly using the vector of ridiculously low prices.
->> 
->> Paige Thompson, infected via eBay, discovered that the HG20F9
->> is a copy of the Asix 88772B; many viruses copy the RNA of
->> other viruses. See Paige's work at
->> <https://github.com/paigeadele/HG20F9>.
->> This patch uses her discovery to update the restructured Asix
->> driver in the current kernel.
->> 
->> The spread of viruses is often accompanied by rumours. It is
->> rumoured that the HG20F9 has extensions to to provide gigabit
->> ethernet. This patch does not chase that chimera.
->> 
->> Just as some viruses inhabit seemingly-healthy cells, the
->> HG20F9 uses the Vendor ID 0x066b assigned to Linksys Inc.
->> For the present there is no clash of Product ID 0x20f9.
->> 
->> Signed-off-by: Glen Turner <gdt@gdt.id.au>
+On Tue, Feb 26, 2013 at 02:25:55PM +1000, Dave Airlie wrote:
 > 
-> That is the best "add a new device id" changelog entry I have _ever_
-> seen.  Wonderful job:
-> 
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Its a simple argument, MS can revoke our keys for whatever reason,
+> reducing the surface area of reasons for them to do so seems like a
+> good idea. Unless someone can read the mind of the MS guy that
+> arbitrarily decides this in 5 years time, or has some sort of signed
+> agreement, I tend towards protecting the users from having their Linux
+> not work anymore, because we were scared of a PE loader in the kernel.
 
-Was this patch really submitted properly to netdev?  I can't
-find it in patchwork at all.
+If Microsoft will revoke keys for whatever reason they want, without
+any regard to the potential PR and legal consequences to Microsoft,
+there's absolutely **nothing** you can do, short of choosing to use
+more open hardware (for example, like the Chromebook Pixel).
+
+If you're that terrified of the completely arbitrary and capricious
+Microsoft guy having us by the short hairs, why aid and abet Microsoft
+control-freak model?
+
+						- Ted
