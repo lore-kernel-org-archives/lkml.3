@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759857Ab3BZX5B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:57:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41683 "EHLO
+	id S1760101Ab3B0BVm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:21:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755666Ab3BZX4z (ORCPT
+	with ESMTP id S1759879Ab3BZX5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:56:55 -0500
+	Tue, 26 Feb 2013 18:57:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Olaf Hering <olaf@aepfle.de>, "K. Y. Srinivasan" <kys@microsoft.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 001/150] x86-32, mm: Rip out x86_32 NUMA remapping code
-Date: Tue, 26 Feb 2013 15:54:18 -0800
-Message-Id: <20130226235524.130942579@linuxfoundation.org>
+Subject: [ 010/150] x86: Hyper-V: register clocksource only if its advertised
+Date: Tue, 26 Feb 2013 15:54:27 -0800
+Message-Id: <20130226235525.185835105@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,265 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Hansen <dave@linux.vnet.ibm.com>
+From: Olaf Hering <[mailto:olaf@aepfle.de]>
 
-commit f03574f2d5b2d6229dcdf2d322848065f72953c7 upstream.
+commit 32068f6527b8f1822a30671dedaf59c567325026 upstream.
 
-This code was an optimization for 32-bit NUMA systems.
+Enable hyperv_clocksource only if its advertised as a feature.
+XenServer 6 returns the signature which is checked in
+ms_hyperv_platform(), but it does not offer all features. Currently the
+clocksource is enabled unconditionally in ms_hyperv_init_platform(), and
+the result is a hanging guest.
 
-It has probably been the cause of a number of subtle bugs over
-the years, although the conditions to excite them would have
-been hard to trigger.  Essentially, we remap part of the kernel
-linear mapping area, and then sometimes part of that area gets
-freed back in to the bootmem allocator.  If those pages get
-used by kernel data structures (say mem_map[] or a dentry),
-there's no big deal.  But, if anyone ever tried to use the
-linear mapping for these pages _and_ cared about their physical
-address, bad things happen.
+Hyper-V spec Bit 1 indicates the availability of Partition Reference
+Counter.  Register the clocksource only if this bit is set.
 
-For instance, say you passed __GFP_ZERO to the page allocator
-and then happened to get handed one of these pages, it zero the
-remapped page, but it would make a pte to the _old_ page.
-There are probably a hundred other ways that it could screw
-with things.
+The guest in question prints this in dmesg:
+ [    0.000000] Hypervisor detected: Microsoft HyperV
+ [    0.000000] HyperV: features 0x70, hints 0x0
 
-We don't need to hang on to performance optimizations for
-these old boxes any more.  All my 32-bit NUMA systems are long
-dead and buried, and I probably had access to more than most
-people.
+This bug can be reproduced easily be setting 'viridian=1' in a HVM domU
+.cfg file. A workaround without this patch is to boot the HVM guest with
+'clocksource=jiffies'.
 
-This code is causing real things to break today:
-
-	https://lkml.org/lkml/2013/1/9/376
-
-I looked in to actually fixing this, but it requires surgery
-to way too much brittle code, as well as stuff like
-per_cpu_ptr_to_phys().
-
-[ hpa: Cc: this for -stable, since it is a memory corruption issue.
-  However, an alternative is to simply mark NUMA as depends BROKEN
-  rather than EXPERIMENTAL in the X86_32 subclause... ]
-
-Link: http://lkml.kernel.org/r/20130131005616.1C79F411@kernel.stglabs.ibm.com
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Link: http://lkml.kernel.org/r/1359940959-32168-1-git-send-email-kys@microsoft.com
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/Kconfig            |    4 -
- arch/x86/mm/numa.c          |    3 
- arch/x86/mm/numa_32.c       |  161 --------------------------------------------
- arch/x86/mm/numa_internal.h |    6 -
- 4 files changed, 174 deletions(-)
+ arch/x86/kernel/cpu/mshyperv.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1253,10 +1253,6 @@ config NODES_SHIFT
- 	  Specify the maximum number of NUMA Nodes available on the target
- 	  system.  Increases memory reserved to accommodate various tables.
+--- a/arch/x86/kernel/cpu/mshyperv.c
++++ b/arch/x86/kernel/cpu/mshyperv.c
+@@ -68,7 +68,8 @@ static void __init ms_hyperv_init_platfo
+ 	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
+ 	       ms_hyperv.features, ms_hyperv.hints);
  
--config HAVE_ARCH_ALLOC_REMAP
--	def_bool y
--	depends on X86_32 && NUMA
--
- config ARCH_HAVE_MEMORY_PRESENT
- 	def_bool y
- 	depends on X86_32 && DISCONTIGMEM
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -205,9 +205,6 @@ static void __init setup_node_data(int n
- 	if (end && (end - start) < NODE_MIN_SIZE)
- 		return;
+-	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
++	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
++		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+ }
  
--	/* initialize remap allocator before aligning to ZONE_ALIGN */
--	init_alloc_remap(nid, start, end);
--
- 	start = roundup(start, ZONE_ALIGN);
- 
- 	printk(KERN_INFO "Initmem setup node %d [mem %#010Lx-%#010Lx]\n",
---- a/arch/x86/mm/numa_32.c
-+++ b/arch/x86/mm/numa_32.c
-@@ -73,167 +73,6 @@ unsigned long node_memmap_size_bytes(int
- 
- extern unsigned long highend_pfn, highstart_pfn;
- 
--#define LARGE_PAGE_BYTES (PTRS_PER_PTE * PAGE_SIZE)
--
--static void *node_remap_start_vaddr[MAX_NUMNODES];
--void set_pmd_pfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags);
--
--/*
-- * Remap memory allocator
-- */
--static unsigned long node_remap_start_pfn[MAX_NUMNODES];
--static void *node_remap_end_vaddr[MAX_NUMNODES];
--static void *node_remap_alloc_vaddr[MAX_NUMNODES];
--
--/**
-- * alloc_remap - Allocate remapped memory
-- * @nid: NUMA node to allocate memory from
-- * @size: The size of allocation
-- *
-- * Allocate @size bytes from the remap area of NUMA node @nid.  The
-- * size of the remap area is predetermined by init_alloc_remap() and
-- * only the callers considered there should call this function.  For
-- * more info, please read the comment on top of init_alloc_remap().
-- *
-- * The caller must be ready to handle allocation failure from this
-- * function and fall back to regular memory allocator in such cases.
-- *
-- * CONTEXT:
-- * Single CPU early boot context.
-- *
-- * RETURNS:
-- * Pointer to the allocated memory on success, %NULL on failure.
-- */
--void *alloc_remap(int nid, unsigned long size)
--{
--	void *allocation = node_remap_alloc_vaddr[nid];
--
--	size = ALIGN(size, L1_CACHE_BYTES);
--
--	if (!allocation || (allocation + size) > node_remap_end_vaddr[nid])
--		return NULL;
--
--	node_remap_alloc_vaddr[nid] += size;
--	memset(allocation, 0, size);
--
--	return allocation;
--}
--
--#ifdef CONFIG_HIBERNATION
--/**
-- * resume_map_numa_kva - add KVA mapping to the temporary page tables created
-- *                       during resume from hibernation
-- * @pgd_base - temporary resume page directory
-- */
--void resume_map_numa_kva(pgd_t *pgd_base)
--{
--	int node;
--
--	for_each_online_node(node) {
--		unsigned long start_va, start_pfn, nr_pages, pfn;
--
--		start_va = (unsigned long)node_remap_start_vaddr[node];
--		start_pfn = node_remap_start_pfn[node];
--		nr_pages = (node_remap_end_vaddr[node] -
--			    node_remap_start_vaddr[node]) >> PAGE_SHIFT;
--
--		printk(KERN_DEBUG "%s: node %d\n", __func__, node);
--
--		for (pfn = 0; pfn < nr_pages; pfn += PTRS_PER_PTE) {
--			unsigned long vaddr = start_va + (pfn << PAGE_SHIFT);
--			pgd_t *pgd = pgd_base + pgd_index(vaddr);
--			pud_t *pud = pud_offset(pgd, vaddr);
--			pmd_t *pmd = pmd_offset(pud, vaddr);
--
--			set_pmd(pmd, pfn_pmd(start_pfn + pfn,
--						PAGE_KERNEL_LARGE_EXEC));
--
--			printk(KERN_DEBUG "%s: %08lx -> pfn %08lx\n",
--				__func__, vaddr, start_pfn + pfn);
--		}
--	}
--}
--#endif
--
--/**
-- * init_alloc_remap - Initialize remap allocator for a NUMA node
-- * @nid: NUMA node to initizlie remap allocator for
-- *
-- * NUMA nodes may end up without any lowmem.  As allocating pgdat and
-- * memmap on a different node with lowmem is inefficient, a special
-- * remap allocator is implemented which can be used by alloc_remap().
-- *
-- * For each node, the amount of memory which will be necessary for
-- * pgdat and memmap is calculated and two memory areas of the size are
-- * allocated - one in the node and the other in lowmem; then, the area
-- * in the node is remapped to the lowmem area.
-- *
-- * As pgdat and memmap must be allocated in lowmem anyway, this
-- * doesn't waste lowmem address space; however, the actual lowmem
-- * which gets remapped over is wasted.  The amount shouldn't be
-- * problematic on machines this feature will be used.
-- *
-- * Initialization failure isn't fatal.  alloc_remap() is used
-- * opportunistically and the callers will fall back to other memory
-- * allocation mechanisms on failure.
-- */
--void __init init_alloc_remap(int nid, u64 start, u64 end)
--{
--	unsigned long start_pfn = start >> PAGE_SHIFT;
--	unsigned long end_pfn = end >> PAGE_SHIFT;
--	unsigned long size, pfn;
--	u64 node_pa, remap_pa;
--	void *remap_va;
--
--	/*
--	 * The acpi/srat node info can show hot-add memroy zones where
--	 * memory could be added but not currently present.
--	 */
--	printk(KERN_DEBUG "node %d pfn: [%lx - %lx]\n",
--	       nid, start_pfn, end_pfn);
--
--	/* calculate the necessary space aligned to large page size */
--	size = node_memmap_size_bytes(nid, start_pfn, end_pfn);
--	size += ALIGN(sizeof(pg_data_t), PAGE_SIZE);
--	size = ALIGN(size, LARGE_PAGE_BYTES);
--
--	/* allocate node memory and the lowmem remap area */
--	node_pa = memblock_find_in_range(start, end, size, LARGE_PAGE_BYTES);
--	if (!node_pa) {
--		pr_warning("remap_alloc: failed to allocate %lu bytes for node %d\n",
--			   size, nid);
--		return;
--	}
--	memblock_reserve(node_pa, size);
--
--	remap_pa = memblock_find_in_range(min_low_pfn << PAGE_SHIFT,
--					  max_low_pfn << PAGE_SHIFT,
--					  size, LARGE_PAGE_BYTES);
--	if (!remap_pa) {
--		pr_warning("remap_alloc: failed to allocate %lu bytes remap area for node %d\n",
--			   size, nid);
--		memblock_free(node_pa, size);
--		return;
--	}
--	memblock_reserve(remap_pa, size);
--	remap_va = phys_to_virt(remap_pa);
--
--	/* perform actual remap */
--	for (pfn = 0; pfn < size >> PAGE_SHIFT; pfn += PTRS_PER_PTE)
--		set_pmd_pfn((unsigned long)remap_va + (pfn << PAGE_SHIFT),
--			    (node_pa >> PAGE_SHIFT) + pfn,
--			    PAGE_KERNEL_LARGE);
--
--	/* initialize remap allocator parameters */
--	node_remap_start_pfn[nid] = node_pa >> PAGE_SHIFT;
--	node_remap_start_vaddr[nid] = remap_va;
--	node_remap_end_vaddr[nid] = remap_va + size;
--	node_remap_alloc_vaddr[nid] = remap_va;
--
--	printk(KERN_DEBUG "remap_alloc: node %d [%08llx-%08llx) -> [%p-%p)\n",
--	       nid, node_pa, node_pa + size, remap_va, remap_va + size);
--}
--
- void __init initmem_init(void)
- {
- 	x86_numa_init();
---- a/arch/x86/mm/numa_internal.h
-+++ b/arch/x86/mm/numa_internal.h
-@@ -21,12 +21,6 @@ void __init numa_reset_distance(void);
- 
- void __init x86_numa_init(void);
- 
--#ifdef CONFIG_X86_64
--static inline void init_alloc_remap(int nid, u64 start, u64 end)	{ }
--#else
--void __init init_alloc_remap(int nid, u64 start, u64 end);
--#endif
--
- #ifdef CONFIG_NUMA_EMU
- void __init numa_emulation(struct numa_meminfo *numa_meminfo,
- 			   int numa_dist_cnt);
+ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
 
 
