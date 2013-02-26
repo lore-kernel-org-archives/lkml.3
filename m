@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760125Ab3BZX52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:57:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41865 "EHLO
+	id S1760207Ab3B0BLg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:11:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41880 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760104Ab3BZX5Z (ORCPT
+	with ESMTP id S1760114Ab3BZX52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:25 -0500
+	Tue, 26 Feb 2013 18:57:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 040/150] KEYS: Revert one application of "Fix unreachable code" patch
-Date: Tue, 26 Feb 2013 15:54:57 -0800
-Message-Id: <20130226235528.366051213@linuxfoundation.org>
+Subject: [ 043/150] drivercore: Fix ordering between deferred_probe and exiting initcalls
+Date: Tue, 26 Feb 2013 15:55:00 -0800
+Message-Id: <20130226235528.652996213@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -28,48 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Grant Likely <grant.likely@secretlab.ca>
 
-commit fe9453a1dcb5fb146f9653267e78f4a558066f6f upstream.
+commit d72cca1eee5b26e313da2a380d4862924e271031 upstream.
 
-A patch to fix some unreachable code in search_my_process_keyrings() got
-applied twice by two different routes upstream as commits e67eab39bee2
-and b010520ab3d2 (both "fix unreachable code").
+One of the side effects of deferred probe is that some drivers which
+used to be probed before initcalls completed are now happening slightly
+later. This causes two problems.
+- If a console driver gets deferred, then it may not be ready when
+  userspace starts. For example, if a uart depends on pinctrl, then the
+  uart will get deferred and /dev/console will not be available
+- __init sections will be discarded before built-in drivers are probed.
+  Strictly speaking, __init functions should not be called in a drivers
+  __probe path, but there are a lot of drivers (console stuff again)
+  that do anyway. In the past it was perfectly safe to do so because all
+  built-in drivers got probed before the end of initcalls.
 
-Unfortunately, the second application removed something it shouldn't
-have and this wasn't detected by GIT.  This is due to the patch not
-having sufficient lines of context to distinguish the two places of
-application.
+This patch fixes the problem by forcing the first pass of the deferred
+list to complete at late_initcall time. This is late enough to catch the
+drivers that are known to have the above issues.
 
-The effect of this is relatively minor: inside the kernel, the keyring
-search routines may search multiple keyrings and then prioritise the
-errors if no keys or negative keys are found in any of them.  With the
-extra deletion, the presence of a negative key in the thread keyring
-(causing ENOKEY) is incorrectly overridden by an error searching the
-process keyring.
-
-So revert the second application of the patch.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Tested-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/keys/process_keys.c |    2 ++
+ drivers/base/dd.c |    2 ++
  1 file changed, 2 insertions(+)
 
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -367,6 +367,8 @@ key_ref_t search_my_process_keyrings(str
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -172,6 +172,8 @@ static int deferred_probe_initcall(void)
  
- 		switch (PTR_ERR(key_ref)) {
- 		case -EAGAIN: /* no key */
-+			if (ret)
-+				break;
- 		case -ENOKEY: /* negative key */
- 			ret = key_ref;
- 			break;
+ 	driver_deferred_probe_enable = true;
+ 	driver_deferred_probe_trigger();
++	/* Sort as many dependencies as possible before exiting initcalls */
++	flush_workqueue(deferred_wq);
+ 	return 0;
+ }
+ late_initcall(deferred_probe_initcall);
 
 
