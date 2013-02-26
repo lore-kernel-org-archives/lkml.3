@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760329Ab3B0AG3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:06:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42490 "EHLO
+	id S933527Ab3B0AGu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:06:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42462 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933464Ab3BZX7G (ORCPT
+	with ESMTP id S933429Ab3BZX7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:59:06 -0500
+	Tue, 26 Feb 2013 18:59:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 42/53] bridge: set priority of STP packets
-Date: Tue, 26 Feb 2013 15:58:11 -0800
-Message-Id: <20130226235624.244246928@linuxfoundation.org>
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 21/53] tmpfs: fix use-after-free of mempolicy object
+Date: Tue, 26 Feb 2013 15:57:50 -0800
+Message-Id: <20130226235622.030328166@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -27,41 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Greg Thelen <gthelen@google.com>
 
-From: Stephen Hemminger <stephen@networkplumber.org>
+commit 5f00110f7273f9ff04ac69a5f85bb535a4fd0987 upstream.
 
-[ Upstream commit 547b4e718115eea74087e28d7fa70aec619200db ]
+The tmpfs remount logic preserves filesystem mempolicy if the mpol=M
+option is not specified in the remount request.  A new policy can be
+specified if mpol=M is given.
 
-Spanning Tree Protocol packets should have always been marked as
-control packets, this causes them to get queued in the high prirority
-FIFO. As Radia Perlman mentioned in her LCA talk, STP dies if bridge
-gets overloaded and can't communicate. This is a long-standing bug back
-to the first versions of Linux bridge.
+Before this patch remounting an mpol bound tmpfs without specifying
+mpol= mount option in the remount request would set the filesystem's
+mempolicy object to a freed mempolicy object.
 
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+To reproduce the problem boot a DEBUG_PAGEALLOC kernel and run:
+    # mkdir /tmp/x
+
+    # mount -t tmpfs -o size=100M,mpol=interleave nodev /tmp/x
+
+    # grep /tmp/x /proc/mounts
+    nodev /tmp/x tmpfs rw,relatime,size=102400k,mpol=interleave:0-3 0 0
+
+    # mount -o remount,size=200M nodev /tmp/x
+
+    # grep /tmp/x /proc/mounts
+    nodev /tmp/x tmpfs rw,relatime,size=204800k,mpol=??? 0 0
+        # note ? garbage in mpol=... output above
+
+    # dd if=/dev/zero of=/tmp/x/f count=1
+        # panic here
+
+Panic:
+    BUG: unable to handle kernel NULL pointer dereference at           (null)
+    IP: [<          (null)>]           (null)
+    [...]
+    Oops: 0010 [#1] SMP DEBUG_PAGEALLOC
+    Call Trace:
+      mpol_shared_policy_init+0xa5/0x160
+      shmem_get_inode+0x209/0x270
+      shmem_mknod+0x3e/0xf0
+      shmem_create+0x18/0x20
+      vfs_create+0xb5/0x130
+      do_last+0x9a1/0xea0
+      path_openat+0xb3/0x4d0
+      do_filp_open+0x42/0xa0
+      do_sys_open+0xfe/0x1e0
+      compat_sys_open+0x1b/0x20
+      cstar_dispatch+0x7/0x1f
+
+Non-debug kernels will not crash immediately because referencing the
+dangling mpol will not cause a fault.  Instead the filesystem will
+reference a freed mempolicy object, which will cause unpredictable
+behavior.
+
+The problem boils down to a dropped mpol reference below if
+shmem_parse_options() does not allocate a new mpol:
+
+    config = *sbinfo
+    shmem_parse_options(data, &config, true)
+    mpol_put(sbinfo->mpol)
+    sbinfo->mpol = config.mpol  /* BUG: saves unreferenced mpol */
+
+This patch avoids the crash by not releasing the mempolicy if
+shmem_parse_options() doesn't create a new mpol.
+
+How far back does this issue go? I see it in both 2.6.36 and 3.3.  I did
+not look back further.
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/bridge/br_stp_bpdu.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/net/bridge/br_stp_bpdu.c
-+++ b/net/bridge/br_stp_bpdu.c
-@@ -16,6 +16,7 @@
- #include <linux/etherdevice.h>
- #include <linux/llc.h>
- #include <linux/slab.h>
-+#include <linux/pkt_sched.h>
- #include <net/net_namespace.h>
- #include <net/llc.h>
- #include <net/llc_pdu.h>
-@@ -40,6 +41,7 @@ static void br_send_bpdu(struct net_brid
+---
+ mm/shmem.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2505,6 +2505,7 @@ static int shmem_remount_fs(struct super
+ 	unsigned long inodes;
+ 	int error = -EINVAL;
  
- 	skb->dev = p->dev;
- 	skb->protocol = htons(ETH_P_802_2);
-+	skb->priority = TC_PRIO_CONTROL;
++	config.mpol = NULL;
+ 	if (shmem_parse_options(data, &config, true))
+ 		return error;
  
- 	skb_reserve(skb, LLC_RESERVE);
- 	memcpy(__skb_put(skb, length), data, length);
+@@ -2530,8 +2531,13 @@ static int shmem_remount_fs(struct super
+ 	sbinfo->max_inodes  = config.max_inodes;
+ 	sbinfo->free_inodes = config.max_inodes - inodes;
+ 
+-	mpol_put(sbinfo->mpol);
+-	sbinfo->mpol        = config.mpol;	/* transfers initial ref */
++	/*
++	 * Preserve previous mempolicy unless mpol remount option was specified.
++	 */
++	if (config.mpol) {
++		mpol_put(sbinfo->mpol);
++		sbinfo->mpol = config.mpol;	/* transfers initial ref */
++	}
+ out:
+ 	spin_unlock(&sbinfo->stat_lock);
+ 	return error;
 
 
