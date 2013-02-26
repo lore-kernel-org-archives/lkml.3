@@ -1,90 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759406Ab3BZGjX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 01:39:23 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:45905 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758627Ab3BZGjR (ORCPT
+	id S1759596Ab3BZGkk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 01:40:40 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:45008 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759110Ab3BZGjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 01:39:17 -0500
+	Tue, 26 Feb 2013 01:39:21 -0500
 From: Andrey Smirnov <andrew.smirnov@gmail.com>
 To: andrew.smirnov@gmail.com
 Cc: hverkuil@xs4all.nl, mchehab@redhat.com, sameo@linux.intel.com,
         perex@perex.cz, tiwai@suse.de, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v5 0/8] Driver for Si476x series of chips
-Date: Mon, 25 Feb 2013 22:38:46 -0800
-Message-Id: <1361860734-21666-1-git-send-email-andrew.smirnov@gmail.com>
+Subject: [PATCH v5 5/8] v4l2: Add standard controls for FM receivers
+Date: Mon, 25 Feb 2013 22:38:51 -0800
+Message-Id: <1361860734-21666-6-git-send-email-andrew.smirnov@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1361860734-21666-1-git-send-email-andrew.smirnov@gmail.com>
+References: <1361860734-21666-1-git-send-email-andrew.smirnov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a fourth version of the patchset originaly posted here:
-https://lkml.org/lkml/2012/9/13/590
+This commit introduces new class of standard controls
+V4L2_CTRL_CLASS_FM_RX. This class is intended to all controls
+pertaining to FM receiver chips. Also, two controls belonging to said
+class are added as a part of this commit: V4L2_CID_TUNE_DEEMPHASIS and
+V4L2_CID_RDS_RECEPTION.
 
-Second version of the patch was posted here:
-https://lkml.org/lkml/2012/10/5/598
+Signed-off-by: Andrey Smirnov <andrew.smirnov@gmail.com>
+---
+ drivers/media/v4l2-core/v4l2-ctrls.c |   14 +++++++++++---
+ include/uapi/linux/v4l2-controls.h   |   13 ++++++++++++-
+ 2 files changed, 23 insertions(+), 4 deletions(-)
 
-Third version of the patch was posted here:
-https://lkml.org/lkml/2012/10/23/510
-
-Fourth version of the patch was posted here:
-https://lkml.org/lkml/2013/2/18/572
-
-To save everyone's time I'll repost the original description of it:
-
-This patchset contains a driver for a Silicon Laboratories 476x series
-of radio tuners. The driver itself is implemented as an MFD devices
-comprised of three parts: 
- 1. Core device that provides all the other devices with basic
-functionality and locking scheme.
- 2. Radio device that translates between V4L2 subsystem requests into
-Core device commands.
- 3. Codec device that does similar to the earlier described task, but
-for ALSA SoC subsystem.
-
-v5 of this driver has following changes:
-- Generic controls are converted to standard ones
-- Custom controls use a differend offest as base
-- Added documentation with controls description
-
-
-Andrey Smirnov (8):
-  mfd: Add header files and Kbuild plumbing for SI476x MFD core
-  mfd: Add commands abstraction layer for SI476X MFD
-  mfd: Add the main bulk of core driver for SI476x code
-  mfd: Add chip properties handling code for SI476X MFD
-  v4l2: Add standard controls for FM receivers
-  v4l2: Add documentation for the FM RX controls
-  v4l2: Add private controls base for SI476X
-  v4l2: Add a V4L2 driver for SI476X MFD
-
- Documentation/DocBook/media/v4l/compat.xml         |    3 +
- Documentation/DocBook/media/v4l/controls.xml       |   72 +
- .../DocBook/media/v4l/vidioc-g-ext-ctrls.xml       |   11 +-
- Documentation/video4linux/si476x.txt               |  187 +++
- drivers/media/radio/Kconfig                        |   17 +
- drivers/media/radio/Makefile                       |    1 +
- drivers/media/radio/radio-si476x.c                 | 1581 ++++++++++++++++++++
- drivers/media/v4l2-core/v4l2-ctrls.c               |   14 +-
- drivers/mfd/Kconfig                                |   13 +
- drivers/mfd/Makefile                               |    4 +
- drivers/mfd/si476x-cmd.c                           | 1553 +++++++++++++++++++
- drivers/mfd/si476x-i2c.c                           |  878 +++++++++++
- drivers/mfd/si476x-prop.c                          |  234 +++
- include/linux/mfd/si476x-core.h                    |  525 +++++++
- include/media/si476x.h                             |  426 ++++++
- include/uapi/linux/v4l2-controls.h                 |   17 +-
- 16 files changed, 5531 insertions(+), 5 deletions(-)
- create mode 100644 Documentation/video4linux/si476x.txt
- create mode 100644 drivers/media/radio/radio-si476x.c
- create mode 100644 drivers/mfd/si476x-cmd.c
- create mode 100644 drivers/mfd/si476x-i2c.c
- create mode 100644 drivers/mfd/si476x-prop.c
- create mode 100644 include/linux/mfd/si476x-core.h
- create mode 100644 include/media/si476x.h
-
+diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+index 6b28b58..8b89fb8 100644
+--- a/drivers/media/v4l2-core/v4l2-ctrls.c
++++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+@@ -297,8 +297,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+ 		"Text",
+ 		NULL
+ 	};
+-	static const char * const tune_preemphasis[] = {
+-		"No Preemphasis",
++	static const char * const tune_emphasis[] = {
++		"None",
+ 		"50 Microseconds",
+ 		"75 Microseconds",
+ 		NULL,
+@@ -508,7 +508,9 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
+ 	case V4L2_CID_SCENE_MODE:
+ 		return scene_mode;
+ 	case V4L2_CID_TUNE_PREEMPHASIS:
+-		return tune_preemphasis;
++		return tune_emphasis;
++	case V4L2_CID_TUNE_DEEMPHASIS:
++		return tune_emphasis;
+ 	case V4L2_CID_FLASH_LED_MODE:
+ 		return flash_led_mode;
+ 	case V4L2_CID_FLASH_STROBE_SOURCE:
+@@ -799,6 +801,9 @@ const char *v4l2_ctrl_get_name(u32 id)
+ 	case V4L2_CID_DV_RX_POWER_PRESENT:	return "Power Present";
+ 	case V4L2_CID_DV_RX_RGB_RANGE:		return "Rx RGB Quantization Range";
+ 
++	case V4L2_CID_FM_RX_CLASS:		return "FM Radio Receiver Controls";
++	case V4L2_CID_TUNE_DEEMPHASIS:		return "De-Emphasis";
++	case V4L2_CID_RDS_RECEPTION:		return "RDS Reception";
+ 	default:
+ 		return NULL;
+ 	}
+@@ -846,6 +851,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
+ 	case V4L2_CID_MPEG_VIDEO_MPEG4_QPEL:
+ 	case V4L2_CID_WIDE_DYNAMIC_RANGE:
+ 	case V4L2_CID_IMAGE_STABILIZATION:
++	case V4L2_CID_RDS_RECEPTION:
+ 		*type = V4L2_CTRL_TYPE_BOOLEAN;
+ 		*min = 0;
+ 		*max = *step = 1;
+@@ -904,6 +910,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
+ 	case V4L2_CID_DV_TX_RGB_RANGE:
+ 	case V4L2_CID_DV_RX_RGB_RANGE:
+ 	case V4L2_CID_TEST_PATTERN:
++	case V4L2_CID_TUNE_DEEMPHASIS:
+ 		*type = V4L2_CTRL_TYPE_MENU;
+ 		break;
+ 	case V4L2_CID_LINK_FREQ:
+@@ -926,6 +933,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
+ 	case V4L2_CID_IMAGE_SOURCE_CLASS:
+ 	case V4L2_CID_IMAGE_PROC_CLASS:
+ 	case V4L2_CID_DV_CLASS:
++	case V4L2_CID_FM_RX_CLASS:
+ 		*type = V4L2_CTRL_TYPE_CTRL_CLASS;
+ 		/* You can neither read not write these */
+ 		*flags |= V4L2_CTRL_FLAG_READ_ONLY | V4L2_CTRL_FLAG_WRITE_ONLY;
+diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
+index dcd6374..296d20e 100644
+--- a/include/uapi/linux/v4l2-controls.h
++++ b/include/uapi/linux/v4l2-controls.h
+@@ -59,6 +59,7 @@
+ #define V4L2_CTRL_CLASS_IMAGE_SOURCE	0x009e0000	/* Image source controls */
+ #define V4L2_CTRL_CLASS_IMAGE_PROC	0x009f0000	/* Image processing controls */
+ #define V4L2_CTRL_CLASS_DV		0x00a00000	/* Digital Video controls */
++#define V4L2_CTRL_CLASS_FM_RX		0x00a10000	/* Digital Video controls */
+ 
+ /* User-class control IDs */
+ 
+@@ -711,10 +712,14 @@ enum v4l2_auto_focus_range {
+ #define V4L2_CID_PILOT_TONE_FREQUENCY		(V4L2_CID_FM_TX_CLASS_BASE + 98)
+ 
+ #define V4L2_CID_TUNE_PREEMPHASIS		(V4L2_CID_FM_TX_CLASS_BASE + 112)
+-enum v4l2_preemphasis {
++enum v4l2_xemphasis {
+ 	V4L2_PREEMPHASIS_DISABLED	= 0,
+ 	V4L2_PREEMPHASIS_50_uS		= 1,
+ 	V4L2_PREEMPHASIS_75_uS		= 2,
++	V4L2_DEEMPHASIS_DISABLED	= V4L2_PREEMPHASIS_DISABLED,
++	V4L2_DEEMPHASIS_50_uS		= V4L2_PREEMPHASIS_50_uS,
++	V4L2_DEEMPHASIS_75_uS		= V4L2_PREEMPHASIS_75_uS,
++
+ };
+ #define V4L2_CID_TUNE_POWER_LEVEL		(V4L2_CID_FM_TX_CLASS_BASE + 113)
+ #define V4L2_CID_TUNE_ANTENNA_CAPACITOR		(V4L2_CID_FM_TX_CLASS_BASE + 114)
+@@ -825,4 +830,10 @@ enum v4l2_dv_rgb_range {
+ #define	V4L2_CID_DV_RX_POWER_PRESENT		(V4L2_CID_DV_CLASS_BASE + 100)
+ #define V4L2_CID_DV_RX_RGB_RANGE		(V4L2_CID_DV_CLASS_BASE + 101)
+ 
++#define V4L2_CID_FM_RX_CLASS_BASE		(V4L2_CTRL_CLASS_FM_RX | 0x900)
++#define V4L2_CID_FM_RX_CLASS			(V4L2_CTRL_CLASS_FM_RX | 1)
++
++#define V4L2_CID_TUNE_DEEMPHASIS		(V4L2_CID_FM_RX_CLASS_BASE + 1)
++#define V4L2_CID_RDS_RECEPTION			(V4L2_CID_FM_RX_CLASS_BASE + 2)
++
+ #endif
 -- 
 1.7.10.4
 
