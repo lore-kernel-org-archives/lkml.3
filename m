@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760215Ab3BZX5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:57:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41930 "EHLO
+	id S1760237Ab3B0BEr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:04:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41965 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760179Ab3BZX5i (ORCPT
+	with ESMTP id S1759917Ab3BZX5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:38 -0500
+	Tue, 26 Feb 2013 18:57:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephan Raue <stephan@openelec.tv>,
-        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 057/150] ALSA: hda - Fix broken workaround for HDMI/SPDIF conflicts
-Date: Tue, 26 Feb 2013 15:55:14 -0800
-Message-Id: <20130226235530.113499269@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 068/150] drm/udl: make usage as a console safer
+Date: Tue, 26 Feb 2013 15:55:25 -0800
+Message-Id: <20130226235531.264961114@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,137 +26,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Dave Airlie <airlied@redhat.com>
 
-commit ea9b43addc4d90ca5b029f47f85ca152320a1e8d upstream.
+commit bcb39af4486be07e896fc374a2336bad3104ae0a upstream.
 
-The commit [dcda58061: ALSA: hda - Add workaround for conflicting
-IEC958 controls] introduced a workaround for cards that have both
-SPDIF and HDMI devices for giving device=1 to SPDIF control elements.
-It turned out, however, that this workaround doesn't work well -
+Okay you don't really want to use udl devices as your console, but if
+you are unlucky enough to do so, you run into a lot of schedule while atomic
+due to printk being called from all sorts of funky places. So check if we
+are in an atomic context, and queue the damage for later, the next printk
+should cause it to appear. This isn't ideal, but it is simple, and seems to
+work okay in my testing here.
 
-- The workaround checks only conflicts in a single codec, but SPDIF
-  and HDMI are provided by multiple codecs in many cases, and
+(dirty area idea came from xenfb)
 
-- ALSA mixer abstraction doesn't care about the device number in ctl
-  elements, thus you'll get errors from amixer such as
-  % amixer scontrols -c 0
-  ALSA lib simple_none.c:1551:(simple_add1) helem (MIXER,'IEC958
-  Playback Switch',0,1,0) appears twice or more
-  amixer: Mixer hw:0 load error: Invalid argument
+fixes a bunch of sleeping while atomic issues running fbcon on udl devices.
 
-This patch fixes the previous broken workaround.  Instead of changing
-the device number of SPDIF ctl elements, shift the element indices of
-such controls up to 16.  Also, the conflict check is performed over
-all codecs found on the bus.
-
-HDMI devices will be put to dev=0,index=0 as before.  Only the
-conflicting SPDIF device is moved to a different place.  The new place
-of SPDIF device is supposed by the updated alsa-lib HDA-Intel.conf,
-respectively.
-
-Reported-by: Stephan Raue <stephan@openelec.tv>
-Reported-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_codec.c |   43 +++++++++++++++++++++----------------------
- sound/pci/hda/hda_codec.h |    3 ++-
- 2 files changed, 23 insertions(+), 23 deletions(-)
+ drivers/gpu/drm/udl/udl_drv.h |    2 +
+ drivers/gpu/drm/udl/udl_fb.c  |   44 ++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 42 insertions(+), 4 deletions(-)
 
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -2160,11 +2160,12 @@ struct snd_kcontrol *snd_hda_find_mixer_
- EXPORT_SYMBOL_HDA(snd_hda_find_mixer_ctl);
- 
- static int find_empty_mixer_ctl_idx(struct hda_codec *codec, const char *name,
--				    int dev)
-+				    int start_idx)
- {
--	int idx;
--	for (idx = 0; idx < 16; idx++) { /* 16 ctlrs should be large enough */
--		if (!find_mixer_ctl(codec, name, dev, idx))
-+	int i, idx;
-+	/* 16 ctlrs should be large enough */
-+	for (i = 0, idx = start_idx; i < 16; i++, idx++) {
-+		if (!find_mixer_ctl(codec, name, 0, idx))
- 			return idx;
- 	}
- 	return -EBUSY;
-@@ -3132,30 +3133,29 @@ int snd_hda_create_dig_out_ctls(struct h
- 	int err;
- 	struct snd_kcontrol *kctl;
- 	struct snd_kcontrol_new *dig_mix;
--	int idx, dev = 0;
--	const int spdif_pcm_dev = 1;
-+	int idx = 0;
-+	const int spdif_index = 16;
- 	struct hda_spdif_out *spdif;
-+	struct hda_bus *bus = codec->bus;
- 
--	if (codec->primary_dig_out_type == HDA_PCM_TYPE_HDMI &&
-+	if (bus->primary_dig_out_type == HDA_PCM_TYPE_HDMI &&
- 	    type == HDA_PCM_TYPE_SPDIF) {
--		dev = spdif_pcm_dev;
--	} else if (codec->primary_dig_out_type == HDA_PCM_TYPE_SPDIF &&
-+		idx = spdif_index;
-+	} else if (bus->primary_dig_out_type == HDA_PCM_TYPE_SPDIF &&
- 		   type == HDA_PCM_TYPE_HDMI) {
--		for (idx = 0; idx < codec->spdif_out.used; idx++) {
--			spdif = snd_array_elem(&codec->spdif_out, idx);
--			for (dig_mix = dig_mixes; dig_mix->name; dig_mix++) {
--				kctl = find_mixer_ctl(codec, dig_mix->name, 0, idx);
--				if (!kctl)
--					break;
--				kctl->id.device = spdif_pcm_dev;
--			}
-+		/* suppose a single SPDIF device */
-+		for (dig_mix = dig_mixes; dig_mix->name; dig_mix++) {
-+			kctl = find_mixer_ctl(codec, dig_mix->name, 0, 0);
-+			if (!kctl)
-+				break;
-+			kctl->id.index = spdif_index;
- 		}
--		codec->primary_dig_out_type = HDA_PCM_TYPE_HDMI;
-+		bus->primary_dig_out_type = HDA_PCM_TYPE_HDMI;
- 	}
--	if (!codec->primary_dig_out_type)
--		codec->primary_dig_out_type = type;
-+	if (!bus->primary_dig_out_type)
-+		bus->primary_dig_out_type = type;
- 
--	idx = find_empty_mixer_ctl_idx(codec, "IEC958 Playback Switch", dev);
-+	idx = find_empty_mixer_ctl_idx(codec, "IEC958 Playback Switch", idx);
- 	if (idx < 0) {
- 		printk(KERN_ERR "hda_codec: too many IEC958 outputs\n");
- 		return -EBUSY;
-@@ -3165,7 +3165,6 @@ int snd_hda_create_dig_out_ctls(struct h
- 		kctl = snd_ctl_new1(dig_mix, codec);
- 		if (!kctl)
- 			return -ENOMEM;
--		kctl->id.device = dev;
- 		kctl->id.index = idx;
- 		kctl->private_value = codec->spdif_out.used - 1;
- 		err = snd_hda_ctl_add(codec, associated_nid, kctl);
---- a/sound/pci/hda/hda_codec.h
-+++ b/sound/pci/hda/hda_codec.h
-@@ -671,6 +671,8 @@ struct hda_bus {
- 	unsigned int response_reset:1;	/* controller was reset */
- 	unsigned int in_reset:1;	/* during reset operation */
- 	unsigned int power_keep_link_on:1; /* don't power off HDA link */
-+
-+	int primary_dig_out_type;	/* primary digital out PCM type */
+--- a/drivers/gpu/drm/udl/udl_drv.h
++++ b/drivers/gpu/drm/udl/udl_drv.h
+@@ -75,6 +75,8 @@ struct udl_framebuffer {
+ 	struct drm_framebuffer base;
+ 	struct udl_gem_object *obj;
+ 	bool active_16; /* active on the 16-bit channel */
++	int x1, y1, x2, y2; /* dirty rect */
++	spinlock_t dirty_lock;
  };
  
- /*
-@@ -837,7 +839,6 @@ struct hda_codec {
- 	struct mutex hash_mutex;
- 	struct snd_array spdif_out;
- 	unsigned int spdif_in_enable;	/* SPDIF input enable? */
--	int primary_dig_out_type;	/* primary digital out PCM type */
- 	const hda_nid_t *slave_dig_outs; /* optional digital out slave widgets */
- 	struct snd_array init_pins;	/* initial (BIOS) pin configurations */
- 	struct snd_array driver_pins;	/* pin configs set by codec parser */
+ #define to_udl_fb(x) container_of(x, struct udl_framebuffer, base)
+--- a/drivers/gpu/drm/udl/udl_fb.c
++++ b/drivers/gpu/drm/udl/udl_fb.c
+@@ -153,6 +153,9 @@ int udl_handle_damage(struct udl_framebu
+ 	struct urb *urb;
+ 	int aligned_x;
+ 	int bpp = (fb->base.bits_per_pixel / 8);
++	int x2, y2;
++	bool store_for_later = false;
++	unsigned long flags;
+ 
+ 	if (!fb->active_16)
+ 		return 0;
+@@ -169,8 +172,6 @@ int udl_handle_damage(struct udl_framebu
+ 		}
+ 	}
+ 
+-	start_cycles = get_cycles();
+-
+ 	aligned_x = DL_ALIGN_DOWN(x, sizeof(unsigned long));
+ 	width = DL_ALIGN_UP(width + (x-aligned_x), sizeof(unsigned long));
+ 	x = aligned_x;
+@@ -180,19 +181,53 @@ int udl_handle_damage(struct udl_framebu
+ 	    (y + height > fb->base.height))
+ 		return -EINVAL;
+ 
++	/* if we are in atomic just store the info
++	   can't test inside spin lock */
++	if (in_atomic())
++		store_for_later = true;
++
++	x2 = x + width - 1;
++	y2 = y + height - 1;
++
++	spin_lock_irqsave(&fb->dirty_lock, flags);
++
++	if (fb->y1 < y)
++		y = fb->y1;
++	if (fb->y2 > y2)
++		y2 = fb->y2;
++	if (fb->x1 < x)
++		x = fb->x1;
++	if (fb->x2 > x2)
++		x2 = fb->x2;
++
++	if (store_for_later) {
++		fb->x1 = x;
++		fb->x2 = x2;
++		fb->y1 = y;
++		fb->y2 = y2;
++		spin_unlock_irqrestore(&fb->dirty_lock, flags);
++		return 0;
++	}
++
++	fb->x1 = fb->y1 = INT_MAX;
++	fb->x2 = fb->y2 = 0;
++
++	spin_unlock_irqrestore(&fb->dirty_lock, flags);
++	start_cycles = get_cycles();
++
+ 	urb = udl_get_urb(dev);
+ 	if (!urb)
+ 		return 0;
+ 	cmd = urb->transfer_buffer;
+ 
+-	for (i = y; i < y + height ; i++) {
++	for (i = y; i <= y2 ; i++) {
+ 		const int line_offset = fb->base.pitches[0] * i;
+ 		const int byte_offset = line_offset + (x * bpp);
+ 		const int dev_byte_offset = (fb->base.width * bpp * i) + (x * bpp);
+ 		if (udl_render_hline(dev, bpp, &urb,
+ 				     (char *) fb->obj->vmapping,
+ 				     &cmd, byte_offset, dev_byte_offset,
+-				     width * bpp,
++				     (x2 - x + 1) * bpp,
+ 				     &bytes_identical, &bytes_sent))
+ 			goto error;
+ 	}
+@@ -434,6 +469,7 @@ udl_framebuffer_init(struct drm_device *
+ {
+ 	int ret;
+ 
++	spin_lock_init(&ufb->dirty_lock);
+ 	ufb->obj = obj;
+ 	ret = drm_framebuffer_init(dev, &ufb->base, &udlfb_funcs);
+ 	drm_helper_mode_fill_fb_struct(&ufb->base, mode_cmd);
 
 
