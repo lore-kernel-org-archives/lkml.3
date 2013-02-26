@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760210Ab3B0BIh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:08:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41905 "EHLO
+	id S1760223Ab3B0BIw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:08:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41880 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760162Ab3BZX5e (ORCPT
+	with ESMTP id S1760156Ab3BZX5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 18:57:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 053/150] ALSA: hda - Disable runtime PM for Intel 5 Series/3400
-Date: Tue, 26 Feb 2013 15:55:10 -0800
-Message-Id: <20130226235529.665984912@linuxfoundation.org>
+        Pawel Moll <mail@pawelmoll.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 052/150] ALSA: usb: Fix Processing Unit Descriptor parsers
+Date: Tue, 26 Feb 2013 15:55:09 -0800
+Message-Id: <20130226235529.571532004@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,32 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Pawel Moll <mail@pawelmoll.com>
 
-commit 2c1350fdeaefefe1a149d3b083383409f43f0daa upstream.
+commit b531f81b0d70ffbe8d70500512483227cc532608 upstream.
 
-We've got a regression report wrt the IRQ issue related with the
-power-save on a Dell machine, and disabling runtime PM works around.
+Commit 99fc86450c439039d2ef88d06b222fd51a779176 "ALSA: usb-mixer:
+parse descriptors with structs" introduced a set of useful parsers
+for descriptors. Unfortunately the parses for the Processing Unit
+Descriptor came with a very subtle bug...
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=53441
+Functions uac_processing_unit_iProcessing() and
+uac_processing_unit_specific() were indexing the baSourceID array
+forgetting the fields before the iProcessing and process-specific
+descriptors.
 
+The problem was observed with Sound Blaster Extigy mixer,
+where nNrModes in Up/Down-mix Processing Unit Descriptor
+was accessed at offset 10 of the descriptor (value 0)
+instead of offset 15 (value 7). In result the resulting
+control had interesting limit values:
+
+Simple mixer control 'Channel Routing Mode Select',0
+  Capabilities: volume volume-joined penum
+  Playback channels: Mono
+  Capture channels: Mono
+  Limits: 0 - -1
+  Mono: -1 [100%]
+
+Fixed by starting from the bmControls, which was calculated
+correctly, instead of baSourceID.
+
+Now the mentioned control is fine:
+
+Simple mixer control 'Channel Routing Mode Select',0
+  Capabilities: volume volume-joined penum
+  Playback channels: Mono
+  Capture channels: Mono
+  Limits: 0 - 6
+  Mono: 0 [0%]
+
+Signed-off-by: Pawel Moll <mail@pawelmoll.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_intel.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/uapi/linux/usb/audio.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -3624,7 +3624,7 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids)
- 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_INTEL_PCH },
- 	/* 5 Series/3400 */
- 	{ PCI_DEVICE(0x8086, 0x3b56),
--	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_INTEL_PCH },
-+	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_INTEL_PCH_NOPM },
- 	/* Poulsbo */
- 	{ PCI_DEVICE(0x8086, 0x811b),
- 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_INTEL_PCH_NOPM },
+--- a/include/uapi/linux/usb/audio.h
++++ b/include/uapi/linux/usb/audio.h
+@@ -384,14 +384,16 @@ static inline __u8 uac_processing_unit_i
+ 						   int protocol)
+ {
+ 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
+-	return desc->baSourceID[desc->bNrInPins + control_size];
++	return *(uac_processing_unit_bmControls(desc, protocol)
++			+ control_size);
+ }
+ 
+ static inline __u8 *uac_processing_unit_specific(struct uac_processing_unit_descriptor *desc,
+ 						 int protocol)
+ {
+ 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
+-	return &desc->baSourceID[desc->bNrInPins + control_size + 1];
++	return uac_processing_unit_bmControls(desc, protocol)
++			+ control_size + 1;
+ }
+ 
+ /* 4.5.2 Class-Specific AS Interface Descriptor */
 
 
