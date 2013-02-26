@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933956Ab3B0Aqz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:46:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42227 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932992Ab3BZX60 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932994Ab3BZX60 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Feb 2013 18:58:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42183 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932668Ab3BZX6U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 18:58:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ying Xue <ying.xue@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 125/150] net: fix a compile error when SOCK_REFCNT_DEBUG is enabled
-Date: Tue, 26 Feb 2013 15:56:22 -0800
-Message-Id: <20130226235537.119976218@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Jiri Kosina <jkosina@suse.cz>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 118/150] fb: Yet another band-aid for fixing lockdep mess
+Date: Tue, 26 Feb 2013 15:56:15 -0800
+Message-Id: <20130226235536.351961139@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,42 +30,202 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Takashi Iwai <tiwai@suse.de>
 
-From: Ying Xue <ying.xue@windriver.com>
+commit e93a9a868792ad71cdd09d75e5a02d8067473c4e upstream.
 
-[ Upstream commit dec34fb0f5b7873de45132a84a3af29e61084a6b ]
+I've still got lockdep warnings even after Alan's patch, and it seems that
+yet more band aids are required to paper over similar paths for
+unbind_con_driver() and unregister_con_driver().  After this hack, lockdep
+warnings are finally gone.
 
-When SOCK_REFCNT_DEBUG is enabled, below build error is met:
-
-kernel/sysctl_binary.o: In function `sk_refcnt_debug_release':
-include/net/sock.h:1025: multiple definition of `sk_refcnt_debug_release'
-kernel/sysctl.o:include/net/sock.h:1025: first defined here
-kernel/audit.o: In function `sk_refcnt_debug_release':
-include/net/sock.h:1025: multiple definition of `sk_refcnt_debug_release'
-kernel/sysctl.o:include/net/sock.h:1025: first defined here
-make[1]: *** [kernel/built-in.o] Error 1
-make: *** [kernel] Error 2
-
-So we decide to make sk_refcnt_debug_release static to eliminate
-the error.
-
-Signed-off-by: Ying Xue <ying.xue@windriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/sock.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1037,7 +1037,7 @@ static inline void sk_refcnt_debug_dec(s
- 	       sk->sk_prot->name, sk, atomic_read(&sk->sk_prot->socks));
- }
- 
--inline void sk_refcnt_debug_release(const struct sock *sk)
-+static inline void sk_refcnt_debug_release(const struct sock *sk)
+---
+ drivers/tty/vt/vt.c           |   43 +++++++++++++++++++++++++++---------------
+ drivers/video/console/fbcon.c |    4 +--
+ drivers/video/fbmem.c         |    4 +++
+ include/linux/console.h       |    1 
+ include/linux/vt_kern.h       |    2 +
+ 5 files changed, 37 insertions(+), 17 deletions(-)
+
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -3135,6 +3135,18 @@ static int con_is_graphics(const struct
+  */
+ int unbind_con_driver(const struct consw *csw, int first, int last, int deflt)
  {
- 	if (atomic_read(&sk->sk_refcnt) != 1)
- 		printk(KERN_DEBUG "Destruction of the %s socket %p delayed, refcnt=%d\n",
++	int retval;
++
++	console_lock();
++	retval = do_unbind_con_driver(csw, first, last, deflt);
++	console_unlock();
++	return retval;
++}
++EXPORT_SYMBOL(unbind_con_driver);
++
++/* unlocked version of unbind_con_driver() */
++int do_unbind_con_driver(const struct consw *csw, int first, int last, int deflt)
++{
+ 	struct module *owner = csw->owner;
+ 	const struct consw *defcsw = NULL;
+ 	struct con_driver *con_driver = NULL, *con_back = NULL;
+@@ -3143,7 +3155,7 @@ int unbind_con_driver(const struct consw
+ 	if (!try_module_get(owner))
+ 		return -ENODEV;
+ 
+-	console_lock();
++	WARN_CONSOLE_UNLOCKED();
+ 
+ 	/* check if driver is registered and if it is unbindable */
+ 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+@@ -3156,10 +3168,8 @@ int unbind_con_driver(const struct consw
+ 		}
+ 	}
+ 
+-	if (retval) {
+-		console_unlock();
++	if (retval)
+ 		goto err;
+-	}
+ 
+ 	retval = -ENODEV;
+ 
+@@ -3175,15 +3185,11 @@ int unbind_con_driver(const struct consw
+ 		}
+ 	}
+ 
+-	if (retval) {
+-		console_unlock();
++	if (retval)
+ 		goto err;
+-	}
+ 
+-	if (!con_is_bound(csw)) {
+-		console_unlock();
++	if (!con_is_bound(csw))
+ 		goto err;
+-	}
+ 
+ 	first = max(first, con_driver->first);
+ 	last = min(last, con_driver->last);
+@@ -3212,13 +3218,12 @@ int unbind_con_driver(const struct consw
+ 
+ 	/* ignore return value, binding should not fail */
+ 	do_bind_con_driver(defcsw, first, last, deflt);
+-	console_unlock();
+ err:
+ 	module_put(owner);
+ 	return retval;
+ 
+ }
+-EXPORT_SYMBOL(unbind_con_driver);
++EXPORT_SYMBOL_GPL(do_unbind_con_driver);
+ 
+ static int vt_bind(struct con_driver *con)
+ {
+@@ -3605,9 +3610,18 @@ EXPORT_SYMBOL(register_con_driver);
+  */
+ int unregister_con_driver(const struct consw *csw)
+ {
+-	int i, retval = -ENODEV;
++	int retval;
+ 
+ 	console_lock();
++	retval = do_unregister_con_driver(csw);
++	console_unlock();
++	return retval;
++}
++EXPORT_SYMBOL(unregister_con_driver);
++
++int do_unregister_con_driver(const struct consw *csw)
++{
++	int i, retval = -ENODEV;
+ 
+ 	/* cannot unregister a bound driver */
+ 	if (con_is_bound(csw))
+@@ -3633,10 +3647,9 @@ int unregister_con_driver(const struct c
+ 		}
+ 	}
+ err:
+-	console_unlock();
+ 	return retval;
+ }
+-EXPORT_SYMBOL(unregister_con_driver);
++EXPORT_SYMBOL_GPL(do_unregister_con_driver);
+ 
+ /*
+  *	If we support more console drivers, this function is used
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -3010,7 +3010,7 @@ static int fbcon_unbind(void)
+ {
+ 	int ret;
+ 
+-	ret = unbind_con_driver(&fb_con, first_fb_vc, last_fb_vc,
++	ret = do_unbind_con_driver(&fb_con, first_fb_vc, last_fb_vc,
+ 				fbcon_is_default);
+ 
+ 	if (!ret)
+@@ -3083,7 +3083,7 @@ static int fbcon_fb_unregistered(struct
+ 		primary_device = -1;
+ 
+ 	if (!num_registered_fb)
+-		unregister_con_driver(&fb_con);
++		do_unregister_con_driver(&fb_con);
+ 
+ 	return 0;
+ }
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1668,8 +1668,10 @@ static int do_unregister_framebuffer(str
+ 
+ 	if (!lock_fb_info(fb_info))
+ 		return -ENODEV;
++	console_lock();
+ 	event.info = fb_info;
+ 	ret = fb_notifier_call_chain(FB_EVENT_FB_UNBIND, &event);
++	console_unlock();
+ 	unlock_fb_info(fb_info);
+ 
+ 	if (ret)
+@@ -1684,7 +1686,9 @@ static int do_unregister_framebuffer(str
+ 	num_registered_fb--;
+ 	fb_cleanup_device(fb_info);
+ 	event.info = fb_info;
++	console_lock();
+ 	fb_notifier_call_chain(FB_EVENT_FB_UNREGISTERED, &event);
++	console_unlock();
+ 
+ 	/* this may free fb info */
+ 	put_fb_info(fb_info);
+--- a/include/linux/console.h
++++ b/include/linux/console.h
+@@ -77,6 +77,7 @@ extern const struct consw prom_con;	/* S
+ int con_is_bound(const struct consw *csw);
+ int register_con_driver(const struct consw *csw, int first, int last);
+ int unregister_con_driver(const struct consw *csw);
++int do_unregister_con_driver(const struct consw *csw);
+ int take_over_console(const struct consw *sw, int first, int last, int deflt);
+ int do_take_over_console(const struct consw *sw, int first, int last, int deflt);
+ void give_up_console(const struct consw *sw);
+--- a/include/linux/vt_kern.h
++++ b/include/linux/vt_kern.h
+@@ -131,6 +131,8 @@ void vt_event_post(unsigned int event, u
+ int vt_waitactive(int n);
+ void change_console(struct vc_data *new_vc);
+ void reset_vc(struct vc_data *vc);
++extern int do_unbind_con_driver(const struct consw *csw, int first, int last,
++			     int deflt);
+ extern int unbind_con_driver(const struct consw *csw, int first, int last,
+ 			     int deflt);
+ int vty_init(const struct file_operations *console_fops);
 
 
