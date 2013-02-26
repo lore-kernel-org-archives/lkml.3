@@ -1,103 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab3BZKqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 05:46:36 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:16405 "HELO
-	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751117Ab3BZKqf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 05:46:35 -0500
-Message-ID: <512C9287.6000100@gaisler.com>
-Date: Tue, 26 Feb 2013 11:46:31 +0100
-From: Andreas Larsson <andreas@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1753724Ab3BZKrn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 05:47:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35801 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751962Ab3BZKrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 05:47:41 -0500
+Date: Tue, 26 Feb 2013 10:47:31 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: dormando <dormando@rydia.net>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "hughd@google.com" <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] add extra free kbytes tunable
+Message-ID: <20130226104731.GB22498@suse.de>
+References: <alpine.DEB.2.02.1302111734090.13090@dflat>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D414A98EBF@USINDEM103.corp.hds.com>
+ <511EB5CB.2060602@redhat.com>
+ <alpine.DEB.2.02.1302171546120.10836@dflat>
+ <20130219152936.f079c971.akpm@linux-foundation.org>
+ <alpine.DEB.2.02.1302192100100.23162@dflat>
+ <20130222175634.GA4824@cmpxchg.org>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, software@gaisler.com
-Subject: Re: [PATCH 1/2] gpio: gpio-generic: Fix bug in big endian bit conversion
-References: <1360060383-16880-1-git-send-email-andreas@gaisler.com> <1360060383-16880-2-git-send-email-andreas@gaisler.com> <20130209145855.D517E3E328E@localhost> <20130226075228.A963F3E0AEF@localhost>
-In-Reply-To: <20130226075228.A963F3E0AEF@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130222175634.GA4824@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-02-26 08:52, Grant Likely wrote:
-> On Sat, 09 Feb 2013 14:58:55 +0000, Grant Likely <grant.likely@secretlab.ca> wrote:
->> On Tue,  5 Feb 2013 11:33:02 +0100, Andreas Larsson <andreas@gaisler.com> wrote:
->>> The swap to convert LE to BE in bgpio_pin2mask_be should be on byte level, not
->>> on bit level.
->>>
->>> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
->>> ---
->>>   drivers/gpio/gpio-generic.c |    5 ++++-
->>>   1 files changed, 4 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
->>> index 05fcc0f..7f11537 100644
->>> --- a/drivers/gpio/gpio-generic.c
->>> +++ b/drivers/gpio/gpio-generic.c
->>> @@ -112,7 +112,10 @@ static unsigned long bgpio_pin2mask(struct bgpio_chip *bgc, unsigned int pin)
->>>   static unsigned long bgpio_pin2mask_be(struct bgpio_chip *bgc,
->>>   				       unsigned int pin)
->>>   {
->>> -	return 1 << (bgc->bits - 1 - pin);
->>> +	unsigned int bit = pin & 0x7; /* Bit number within byte */
->>> +	unsigned int base = pin - bit; /* Pin that is bit 0 within byte */
->>> +
->>> +	return 1 << ((bgc->bits - base - 8) + bit); /* shifted base + bit */
->>
->> Ah, sorry for my previous reply. I see you have seen gpio-generic.  :-)
->>
->> No, the original calculation is correct. BE and LE bit numbering are
->> opposite, bit Linux always uses LE numbers as far as bit masks are
->> concerned. Therefore pin 0 is the most significant bit, and
->> pin (nr_bits-1) is the least significant bit.
->
-> Hi Andreas,
->
-> Actually I'm wrong here (at least partially) after looking closer at the
-> generic gpio driver. The problem is that things get messed up on 16 or
-> 32 bit access depending on how the hardware expects to be accessed.
-> bgpio always uses iowrite/ioread for register access which is inherently
-> little endian, but if the hardware is wired up as a big-endian device
-> then you have to do the fiddly bit you did above to get the bit
-> positions to line up where you what then. So, there could potentially be
-> 4 different ways to count bits on a value ioread() from a gpio register:
->
-> little-endian, LSB = 0 (sane)
-> little-endian, MSB = 0 (odd)
-> big-endian (bytes swapped), MSB = 0 (common on BE platforms)
-> big-endian (bytes swapped), LSB = 0 (why are you making my life hard?)
+On Fri, Feb 22, 2013 at 12:56:34PM -0500, Johannes Weiner wrote:
+> > > <SNIP>
+> > >
+> > > : We have a server workload wherein machines with 100G+ of "free" memory
+> > > : (used by page cache), scattered but frequent random io reads from 12+
+> > > : SSD's, and 5gbps+ of internet traffic, will frequently hit direct reclaim
+> > > : in a few different ways.
+> > > :
+> > > : 1) It'll run into small amounts of reclaim randomly (a few hundred
+> > > : thousand).
+> > > :
+> > > : 2) A burst of reads or traffic can cause extra pressure, which kswapd
+> > > : occasionally responds to by freeing up 40g+ of the pagecache all at once
+> > > : (!) while pausing the system (Argh).
+> > > :
+> > > : 3) A blip in an upstream provider or failover from a peer causes the
+> > > : kernel to allocate massive amounts of memory for retransmission
+> > > : queues/etc, potentially along with buffered IO reads and (some, but not
+> > > : often a ton) of new allocations from an application. This paired with 2)
+> > > : can cause the box to stall for 15+ seconds.
+> > >
+> > > Can we prioritise these?  2) looks just awful - kswapd shouldn't just
+> > > go off and free 40G of pagecache.  Do you know what's actually in that
+> > > pagecache?  Large number of small files or small number of (very) large
+> > > files?
+> > 
+> > We have a handful of huge files (6-12ish 200g+) that are mmap'ed and
+> > accessed via address. occasionally madvise (WILLNEED) applied to the
+> > address ranges before attempting to use them. There're a mix of other
+> > files but nothing significant. The mmap's are READONLY and writes are done
+> > via pwrite-ish functions.
+> > 
+> > I could use some guidance on inspecting/tracing the problem. I've been
+> > trying to reproduce it in a lab, and respecting to 2)'s issue I've found:
+> > 
+> > - The amount of memory freed back up is either a percentage of total
+> > memory or a percentage of free memory. (a machine with 48G of ram will
+> > "only" free up an extra 4-7g)
+> > 
+> > - It's most likely to happen after a fresh boot, or if "3 > drop_caches"
+> > is applied with the application down. As it fills it seems to get itself
+> > into trouble, but becomes more stable after that. Unfortunately 1) and 3)
+> > still apply to a stable instance.
+> > 
+> > - Protecting the DMA32 zone with something like "1 1 32" into
+> > lowmem_reserve_ratio makes the mass-reclaiming less likely to happen.
+> > 
+> > - While watching "sar -B 1" I'll see kswapd wake up, and scan up to a few
+> > hundred thousand pages before finding anything it actually wants to
+> > reclaim (low vmeff). I've only been able to reproduce this from a clean
+> > start. It can take up to 3 seconds before kswapd starts actually
+> > reclaiming pages.
+> > 
+> > - So far as I can tell we're almost exclusively using 0 order allocations.
+> > THP is disabled.
+> > 
+> > There's not much dirty memory involved. It's not flushing out writes while
+> > reclaiming, it just kills off massive amount of cached memory.
+> 
+> Mapped file pages have to get scanned twice before they are reclaimed
+> because we don't have enough usage information after the first scan.
+> 
+> In your case, when you start this workload after a fresh boot or
+> dropping the caches, there will be 48G of mapped file pages that have
+> never been scanned before and that need to be looked at twice.
+> 
+> Unfortunately, if kswapd does not make progress (and it won't for some
+> time at first), it will scan more and more aggressively with
+> increasing scan priority.  And when the 48G of pages are finally
+> cycled, kswapd's scan window is a large percentage of your machine's
+> memory, and it will free every single page in it.
+> 
+> I think we should think about capping kswapd zone reclaim cycles just
+> as we do for direct reclaim.  It's a little ridiculous that it can run
+> unbounded and reclaim every page in a zone without ever checking back
+> against the watermark.  We still increase the scan window evenly when
+> we don't make forward progress, but we are more carefully inching zone
+> levels back toward the watermarks.
+> 
 
-Yes, in v4 of my patch I solved it using custom accessors set outside of 
-gpio-generic internally using ioread32be/iowrite32be instead of adding a 
-whole set of be variants in gpio-generic.
+While on the surface I think this will appear to work, I worry that it
+will cause kswapds priorities to continually reset even when it's under
+real pressure as opposed to "failing to reclaim because of use-once".
+With nr_to_reclaim always at SWAP_CLUSTER_MAX, we'll hit this check and
+reset after each zone scan.
 
+                if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
+                        break;
 
-> We /could/ have a ioread32be/write32be mode in the driver, but I don't
-> think that is the right approach. It means we need yet another set of
-> accessors for register except using the 'be' variants. Blech. What I'd
-> actually like to do is add a bitmask field to the gpio_desc which can be
-> calculated ahead of time to whatever madness is required from the way
-> the device is wired. Then the access routines don't need to even care.
-> they just apply the bitmask to ioread/iowrite and it doesn't even need
-> to know what the bit number actually is. The new support for gpio_desc
-> in the core code makes this feasable.
+It'll fail the watermark check and restart of course but it does mean we
+would call shrink_slab() for every SWAP_CLUSTER_MAX*nr_unbalaced_zones
+pages scanned which will have other consequences. It'll behave differently
+but not necessarily better.
 
-I am not sure I understand what you mean here or what new support for 
-gpio_desc you are referring to (looking in gpio/next at 
-git://git.secretlab.ca/git/linux-2.6).
+In general, IO causing anonymous workloads to stall has gotten a lot worse
+during the last few kernels without us properly realising it other than
+interactivity in the presence of IO has gone down the crapper again. Late
+last week I fixed up an mmtests that runs memcachetest as the primary
+workload while doing varying amounts of IO in the background and found this
 
-Do you mean to add something like an 'unsigned long bitmask[64]' bitmap 
-array with one bitmap for each gpio line to struct gpio_desc and use 
-this primarily by gpio-generic.c, populated in bgpio_init? Is gpio_desc 
-now available outside of gpiolib.c in some repository/branch that I 
-might be unaware of?
+http://www.csn.ul.ie/~mel/postings/reclaim-20130221/global-dhp__parallelio-memcachetest-ext4/hydra/report.html
 
-Cheers,
-Andreas
+Snippet looks like this;
+                                            3.0.56                      3.6.10                       3.7.4                   3.8.0-rc4
+                                          mainline                    mainline                    mainline                    mainline
+Ops memcachetest-0M             10125.00 (  0.00%)          10091.00 ( -0.34%)          11038.00 (  9.02%)          10864.00 (  7.30%)
+Ops memcachetest-749M           10097.00 (  0.00%)           8546.00 (-15.36%)           8770.00 (-13.14%)           4872.00 (-51.75%)
+Ops memcachetest-1623M          10161.00 (  0.00%)           3149.00 (-69.01%)           3645.00 (-64.13%)           2760.00 (-72.84%)
+Ops memcachetest-2498M           8095.00 (  0.00%)           2527.00 (-68.78%)           2461.00 (-69.60%)           2282.00 (-71.81%)
+Ops memcachetest-3372M           7814.00 (  0.00%)           2369.00 (-69.68%)           2396.00 (-69.34%)           2323.00 (-70.27%)
+Ops memcachetest-4247M           3818.00 (  0.00%)           2366.00 (-38.03%)           2391.00 (-37.38%)           2274.00 (-40.44%)
+Ops memcachetest-5121M           3852.00 (  0.00%)           2335.00 (-39.38%)           2384.00 (-38.11%)           2233.00 (-42.03%)
 
+This is showing transactions/second -- more the better. 3.0.56 was pretty
+bad in itself because a large amount of IO in the background wrecked the
+throughput. It's gotten a lot worse since then. 3.8 results have
+completed but a quick check tells me the results are no better which is
+not surprising as there were no relevant commits since 3.8-rc4.
+
+Ops swapin-0M                       0.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
+Ops swapin-749M                     0.00 (  0.00%)          36002.00 (-99.00%)          50499.00 (-99.00%)         155135.00 (-99.00%)
+Ops swapin-1623M                    8.00 (  0.00%)         176816.00 (-2210100.00%)         172010.00 (-2150025.00%)         206212.00 (-2577550.00%)
+Ops swapin-2498M                26291.00 (  0.00%)         195448.00 (-643.40%)         200911.00 (-664.18%)         209180.00 (-695.63%)
+Ops swapin-3372M                27787.00 (  0.00%)         179221.00 (-544.98%)         183509.00 (-560.41%)         182371.00 (-556.32%)
+Ops swapin-4247M               105081.00 (  0.00%)         157617.00 (-50.00%)         158054.00 (-50.41%)         167478.00 (-59.38%)
+Ops swapin-5121M                89589.00 (  0.00%)         148095.00 (-65.30%)         151012.00 (-68.56%)         159079.00 (-77.57%)
+
+This is indicating that we are making the wrong reclaim decisions
+because of the amount of swapins.
+
+Ops majorfaults-0M                  1.00 (  0.00%)              1.00 (  0.00%)              9.00 (-800.00%)              0.00 (  0.00%)
+Ops majorfaults-749M                2.00 (  0.00%)           5356.00 (-267700.00%)           7872.00 (-393500.00%)          22472.00 (-1123500.00%)
+Ops majorfaults-1623M              30.00 (  0.00%)          26950.00 (-89733.33%)          25074.00 (-83480.00%)          28815.00 (-95950.00%)
+Ops majorfaults-2498M            6459.00 (  0.00%)          27719.00 (-329.15%)          27904.00 (-332.02%)          29001.00 (-349.00%)
+Ops majorfaults-3372M            5133.00 (  0.00%)          25565.00 (-398.05%)          26444.00 (-415.18%)          25789.00 (-402.42%)
+Ops majorfaults-4247M           19822.00 (  0.00%)          22767.00 (-14.86%)          22936.00 (-15.71%)          23475.00 (-18.43%)
+Ops majorfaults-5121M           17689.00 (  0.00%)          21292.00 (-20.37%)          21820.00 (-23.35%)          22234.00 (-25.69%)
+
+Major faults are also high.
+
+I have not had enough time to investigate this because other bugs cropped
+up. I can tell you that it's not bisectable as there are multiple root
+causes and it's not always reliably reproducible (with this test at least).
+
+Unfortunately I'm also dropping offline today for a week and then I'll
+have to play catchup again when I get back. It's going to be close to 2
+weeks before I can start figuring out what went wrong here but I plan to
+start with 3.0 and work forward and see how I get on.
+
+-- 
+Mel Gorman
+SUSE Labs
