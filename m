@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759826Ab3BZQHc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 11:07:32 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:39803 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759744Ab3BZQHb (ORCPT
+	id S1758612Ab3BZQIR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 11:08:17 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:59606 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756230Ab3BZQIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 11:07:31 -0500
-Date: Tue, 26 Feb 2013 11:07:30 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Daniel J Blueman <daniel@numascale-asia.com>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [PATCH] Prevent USB hub remove oops
-In-Reply-To: <1361890685-12247-1-git-send-email-daniel@numascale-asia.com>
-Message-ID: <Pine.LNX.4.44L0.1302261100210.1832-100000@iolanthe.rowland.org>
+	Tue, 26 Feb 2013 11:08:16 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CA+55aFycXwZi-U2uJWWusLGeaV3=BMEBdgcxGN9Lo0QcHHUrDA@mail.gmail.com>
+References: <20130226045424.GA3576@osiris>
+	<CA+55aFx8pUSHPhC_-ob2i5BbvBkEC4BVYtAbNkf3+FE+=3AmgA@mail.gmail.com>
+	<20130226125739.GA3924@osiris>
+	<CA+55aFycXwZi-U2uJWWusLGeaV3=BMEBdgcxGN9Lo0QcHHUrDA@mail.gmail.com>
+Date: Tue, 26 Feb 2013 08:08:15 -0800
+X-Google-Sender-Auth: kRn_F27yQn7JxIhGsLnVZQLbjhM
+Message-ID: <CA+55aFzCU3jKDssYj9sDJU-VkugCfy_Cv5+VhMv9renZ94jRdQ@mail.gmail.com>
+Subject: Re: bug in generic strncpy_from_user
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Content-Type: multipart/mixed; boundary=bcaec5171ebf7ac6bb04d6a2ddbf
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Feb 2013, Daniel J Blueman wrote:
+--bcaec5171ebf7ac6bb04d6a2ddbf
+Content-Type: text/plain; charset=UTF-8
 
-> When initialisation of one or more USB hub ports fails, we can hit a null
-> pointer dereference when dropping the hub. Analysis shows there's a false
-> assumption about the ports being setup, so address this.
+On Tue, Feb 26, 2013 at 7:51 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I think the problem is that we add the guard page *after* we do the
+> normal "let's try to expand" logic.
+>
+> I'll take a look.
 
-> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
-> ---
->  drivers/usb/core/hub.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index cbf7168..a7abc57 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -1263,7 +1263,7 @@ static void hub_quiesce(struct usb_hub *hub, enum hub_quiescing_type type)
->  	if (type != HUB_SUSPEND) {
->  		/* Disconnect all the children */
->  		for (i = 0; i < hdev->maxchild; ++i) {
-> -			if (hub->ports[i]->child)
-> +			if (hub->ports[i] && hub->ports[i]->child)
->  				usb_disconnect(&hub->ports[i]->child);
->  		}
->  	}
+Ahh, no. The guard page logic happens later at the fault time. We do
+this in two phases - first "find_extend_vma()" does what the name
+claims, and then check_stack_guard_page() is done for the last-page
+case from within do_anonymous_page() when we actually touch the last
+page itself.
 
-You missed a case.  What happens if hub->ports is NULL?
+But that's actually fine. We can simply make "find_extend_vma()" do
+the obvious "refuse to extend the vma all the way", because we will
+later allow the guard page to extend downwards to "touch" the mapping,
+but that uses separate logic. So the attached trivial patch seems to
+make perfect sense:
 
-Also, what about this code in hub_disconnect?
+It is totally untested, though.  Does it work for you (and we should
+do the same thing for the grows-up case, obviously)?
 
-	for (i = 0; i < hdev->maxchild; i++)
-		usb_hub_remove_port_device(hub, i + 1);
+         Linus
 
-All of these problems can be fixed in hub_configure by setting
-hub->maxchild to the total number of allocated ports (or 0 if hub_ports
-can't be allocated).
+--bcaec5171ebf7ac6bb04d6a2ddbf
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hdn91xni0
 
-Alan Stern
-
+IG1tL21tYXAuYyB8IDIgKysKIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2VydGlvbnMoKykKCmRpZmYg
+LS1naXQgYS9tbS9tbWFwLmMgYi9tbS9tbWFwLmMKaW5kZXggMzE4ZTEyMWFmZmRhLi5hZTQ3YzE2
+MDlkOTkgMTAwNjQ0Ci0tLSBhL21tL21tYXAuYworKysgYi9tbS9tbWFwLmMKQEAgLTIyMjYsNiAr
+MjIyNiw4IEBAIGZpbmRfZXh0ZW5kX3ZtYShzdHJ1Y3QgbW1fc3RydWN0ICogbW0sIHVuc2lnbmVk
+IGxvbmcgYWRkcikKIAkJcmV0dXJuIHZtYTsKIAlpZiAoISh2bWEtPnZtX2ZsYWdzICYgVk1fR1JP
+V1NET1dOKSkKIAkJcmV0dXJuIE5VTEw7CisJaWYgKHZtYS0+dm1fcHJldiAmJiB2bWEtPnZtX3By
+ZXYtPnZtX2VuZCA9PSBhZGRyKQorCQlyZXR1cm4gTlVMTDsKIAlzdGFydCA9IHZtYS0+dm1fc3Rh
+cnQ7CiAJaWYgKGV4cGFuZF9zdGFjayh2bWEsIGFkZHIpKQogCQlyZXR1cm4gTlVMTDsK
+--bcaec5171ebf7ac6bb04d6a2ddbf--
