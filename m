@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932938Ab3B0AxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:53:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42139 "EHLO
+	id S932305Ab3BZX6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:58:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42113 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384Ab3BZX6O (ORCPT
+	with ESMTP id S932259Ab3BZX6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:14 -0500
+	Tue, 26 Feb 2013 18:58:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@ozlabs.org
-Subject: [ 110/150] uprobes/powerpc: Add dependency on single step emulation
-Date: Tue, 26 Feb 2013 15:56:07 -0800
-Message-Id: <20130226235535.522339983@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 094/150] staging: comedi: ni_labpc: set up command4 register *after* command3
+Date: Tue, 26 Feb 2013 15:55:51 -0800
+Message-Id: <20130226235533.841414371@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -29,52 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 5e249d4528528c9a77da051a89ec7f99d31b83eb upstream.
+commit 22056e2b46246d97ff0f7c6e21a77b8daa07f02c upstream.
 
-Uprobes uses emulate_step in sstep.c, but we haven't explicitly specified
-the dependency. On pseries HAVE_HW_BREAKPOINT protects us, but 44x has no
-such luxury.
+Tuomas <tvainikk _at_ gmail _dot_ com> reported problems getting
+meaningful output from a Lab-PC+ in differential mode for AI cmds, but
+AI insn reads gave correct readings.  He tracked it down to two
+problems, one of which is addressed by this patch.
 
-Consolidate other users that depend on sstep and create a new config option.
+It seems that writing to the command3 register after writing to the
+command4 register in `labpc_ai_cmd()` messes up the differential
+reference bit setting in the command4 register.  Set up the command4
+register after the command3 register (as in `labpc_ai_rinsn()`) to avoid
+the problem.
 
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
-Cc: linuxppc-dev@ozlabs.org
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Thanks to Tuomas for suggesting the fix.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/Kconfig      |    4 ++++
- arch/powerpc/lib/Makefile |    4 +---
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/staging/comedi/drivers/ni_labpc.c |   31 +++++++++++++++---------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
 
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -275,6 +275,10 @@ config PPC_ADV_DEBUG_DAC_RANGE
- 	depends on PPC_ADV_DEBUG_REGS && 44x
- 	default y
+--- a/drivers/staging/comedi/drivers/ni_labpc.c
++++ b/drivers/staging/comedi/drivers/ni_labpc.c
+@@ -1217,21 +1217,6 @@ static int labpc_ai_cmd(struct comedi_de
+ 		devpriv->write_byte(devpriv->command1_bits,
+ 				    dev->iobase + COMMAND1_REG);
+ 	}
+-	/*  setup any external triggering/pacing (command4 register) */
+-	devpriv->command4_bits = 0;
+-	if (cmd->convert_src != TRIG_EXT)
+-		devpriv->command4_bits |= EXT_CONVERT_DISABLE_BIT;
+-	/* XXX should discard first scan when using interval scanning
+-	 * since manual says it is not synced with scan clock */
+-	if (labpc_use_continuous_mode(cmd, mode) == 0) {
+-		devpriv->command4_bits |= INTERVAL_SCAN_EN_BIT;
+-		if (cmd->scan_begin_src == TRIG_EXT)
+-			devpriv->command4_bits |= EXT_SCAN_EN_BIT;
+-	}
+-	/*  single-ended/differential */
+-	if (aref == AREF_DIFF)
+-		devpriv->command4_bits |= ADC_DIFF_BIT;
+-	devpriv->write_byte(devpriv->command4_bits, dev->iobase + COMMAND4_REG);
  
-+config PPC_EMULATE_SSTEP
-+	bool
-+	default y if KPROBES || UPROBES || XMON || HAVE_HW_BREAKPOINT
+ 	devpriv->write_byte(cmd->chanlist_len,
+ 			    dev->iobase + INTERVAL_COUNT_REG);
+@@ -1311,6 +1296,22 @@ static int labpc_ai_cmd(struct comedi_de
+ 		devpriv->command3_bits &= ~ADC_FNE_INTR_EN_BIT;
+ 	devpriv->write_byte(devpriv->command3_bits, dev->iobase + COMMAND3_REG);
+ 
++	/*  setup any external triggering/pacing (command4 register) */
++	devpriv->command4_bits = 0;
++	if (cmd->convert_src != TRIG_EXT)
++		devpriv->command4_bits |= EXT_CONVERT_DISABLE_BIT;
++	/* XXX should discard first scan when using interval scanning
++	 * since manual says it is not synced with scan clock */
++	if (labpc_use_continuous_mode(cmd, mode) == 0) {
++		devpriv->command4_bits |= INTERVAL_SCAN_EN_BIT;
++		if (cmd->scan_begin_src == TRIG_EXT)
++			devpriv->command4_bits |= EXT_SCAN_EN_BIT;
++	}
++	/*  single-ended/differential */
++	if (aref == AREF_DIFF)
++		devpriv->command4_bits |= ADC_DIFF_BIT;
++	devpriv->write_byte(devpriv->command4_bits, dev->iobase + COMMAND4_REG);
 +
- source "init/Kconfig"
+ 	/*  startup acquisition */
  
- source "kernel/Kconfig.freezer"
---- a/arch/powerpc/lib/Makefile
-+++ b/arch/powerpc/lib/Makefile
-@@ -19,9 +19,7 @@ obj-$(CONFIG_PPC64)	+= copypage_64.o cop
- 			   checksum_wrappers_64.o hweight_64.o \
- 			   copyuser_power7.o string_64.o copypage_power7.o \
- 			   memcpy_power7.o
--obj-$(CONFIG_XMON)	+= sstep.o ldstfp.o
--obj-$(CONFIG_KPROBES)	+= sstep.o ldstfp.o
--obj-$(CONFIG_HAVE_HW_BREAKPOINT)	+= sstep.o ldstfp.o
-+obj-$(CONFIG_PPC_EMULATE_SSTEP)	+= sstep.o ldstfp.o
- 
- ifeq ($(CONFIG_PPC64),y)
- obj-$(CONFIG_SMP)	+= locks.o
+ 	/*  command2 reg */
 
 
