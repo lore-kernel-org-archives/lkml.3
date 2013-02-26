@@ -1,157 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759878Ab3BZAlj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 19:41:39 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39321 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010Ab3BZAlh (ORCPT
+	id S1759951Ab3BZApV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 19:45:21 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:42634 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab3BZApS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 19:41:37 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <512C046E.8050501@jp.fujitsu.com>
-Date: Tue, 26 Feb 2013 09:40:14 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Toshi Kani <toshi.kani@hp.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [Update 4][PATCH 2/7] ACPI / scan: Introduce common code for
- ACPI-based device hotplug
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <1478394.ryVNRuTre2@vostro.rjw.lan> <1361815672.12845.71.camel@misato.fc.hp.com> <18666371.hyHAvqrdQ6@vostro.rjw.lan>
-In-Reply-To: <18666371.hyHAvqrdQ6@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Feb 2013 19:45:18 -0500
+Date: Tue, 26 Feb 2013 11:45:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hadar Hen Zion <hadarh@mellanox.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Shani Michaeli <shanim@mellanox.com>,
+        Haggai Eran <haggaie@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>
+Subject: linux-next: manual merge of the infiniband tree with Linus' tree
+Message-Id: <20130226114508.0f8d1101156f9f4a309579f6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__26_Feb_2013_11_45_08_+1100_5VQ.Sey5M+0YYHMR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/02/26 8:39, Rafael J. Wysocki wrote:
-> On Monday, February 25, 2013 11:07:52 AM Toshi Kani wrote:
->> On Sat, 2013-02-23 at 22:38 +0000, Rafael J. Wysocki wrote:
->>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>
->>> Multiple drivers handling hotplug-capable ACPI device nodes install
->>> notify handlers covering the same types of events in a very similar
->>> way.  Moreover, those handlers are installed in separate namespace
->>> walks, although that really should be done during namespace scans
->>> carried out by acpi_bus_scan().  This leads to substantial code
->>> duplication, unnecessary overhead and behavior that is hard to
->>> follow.
->>>
->>> For this reason, introduce common code in drivers/acpi/scan.c for
->>> handling hotplug-related notification and carrying out device
->>> insertion and eject operations in a generic fashion, such that it
->>> may be used by all of the relevant drivers in the future.  To cover
->>> the existing differences between those drivers introduce struct
->>> acpi_hotplug_profile for representing collections of hotplug
->>> settings associated with different ACPI scan handlers that can be
->>> used by the drivers to make the common code reflect their current
->>> behavior.
->>>
->>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>> ---
->>>
->>> This update causes acpi_bus_device_eject() to only emit KOBJ_OFFLINE uevent if
->>> autoexec is unset for the given scan handler.
->>>
->>> This will require the doc in patch [5/7] to be updated which I'm going to do if
->>> everyone is OK with the $subject patch.
->>>
->>> Thanks,
->>> Rafael
->>   :
->>> +
->>> +static void acpi_scan_bus_device_check(acpi_handle handle, u32 ost_source)
->>> +{
->>> +	struct acpi_device *device = NULL;
->>> +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
->>> +	int error;
->>> +
->>> +	mutex_lock(&acpi_scan_lock);
->>> +
->>> +	acpi_bus_get_device(handle, &device);
->>> +	if (device) {
->>> +		dev_warn(&device->dev, "Attempt to re-insert\n");
->>> +		goto out;
->>> +	}
->>> +	acpi_evaluate_hotplug_ost(handle, ost_source,
->>> +				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
->>> +	error = acpi_bus_scan(handle);
->>> +	if (error) {
->>> +		acpi_handle_warn(handle, "Namespace scan failure\n");
->>> +		goto out;
->>> +	}
->>> +	error = acpi_bus_get_device(handle, &device);
->>> +	if (error) {
->>> +		acpi_handle_warn(handle, "Missing device node object\n");
->>> +		goto out;
->>> +	}
->>> +	ost_code = ACPI_OST_SC_SUCCESS;
->>> +	if (device->handler && device->handler->hotplug.uevents)
->>> +		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
->>
+--Signature=_Tue__26_Feb_2013_11_45_08_+1100_5VQ.Sey5M+0YYHMR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> I confirmed that the uevent crash issue was solved.  Thinking further, I
->> wonder if we need to emit KOBJ_ONLINE here.  This behavior is asymmetric
->> since we do not emit KOBJ_OFFLINE when autoeject is set.
->
-> Well, I put that in there only to be able to make the container driver behave
-> in a backwards compatible way (which is to emit KOBJ_ONLINE at this point).
->
-> If the container driver doesn't need to emit KOBJ_ONLINE at all, I agree with
-> your suggestion.
->
->> The definition of ONLINE/OFFLINE event to an ACPI device object seems also
->> bogus since there is no online/offline operation to the ACPI device object
->> itself.
->> Online/offline operation is only possible to actual device, such as
->> system/cpu/cpu% and system/memory/memory%.
->
-> That's correct, but I don't know what the user space expectations are
-> currently.
+Hi all,
 
-My system expects this event to be notified when hot adding container device.
-My container device has cpu and memory. As Toshi said, these devices are
-offline when hot adding container device. So in my system, when notifying
-container device's KOBJ_ONLINE event, my application runs for onlining these
-devices. If this event is not notified to user land, we cannot online these
-devices  automatically.
+Today's linux-next merge of the infiniband tree got a conflict in
+drivers/net/ethernet/mellanox/mlx4/mlx4.h between commit 23537b732f5d
+("net/mlx4_core: Use firmware driven flow steering hash mode") from
+Linus' tree and commit e448834e3545 ("mlx4_core: Enable memory windows in
+{INIT, QUERY}_HCA") from the infiniband tree.
 
->
->> So, I'd suggest the following changes.
->>   - Remove the "uevents" attribute.  KOBJ_ONLINE/OFFLINE are not used for
->> ACPI device objects.
->>   - Make the !autoeject case as an exception for now, and emit
->> KOBJ_OFFLINE as a way to request off-lining to user.  This uevent is
->> tied with the !autoeject case.  We can then revisit if this use-case
->> needs to be supported going forward.  If so, we may want to consider a
->> different event type.
->
-> Well, what about avoiding to expose uevents and autoeject for now and
-> exposing enabled only?  Drivers would still be able to set the other flags on
-> init on init to enforce the backwards-compatible behavior.
->
-> I agree that it would be sufficient to use one additional flag then, to start
-> with, but its meaning would be something like "keep backwards compatibility
-> with the old container driver", so perhaps "autoeject" is not a good name.
->
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> What about "user_eject" (that won't be exposed to user space) instead?  Where,
-> if set, it would meand "do not autoeject and emit KOBJ_OFFLINE/ONLINE uevents
-> like the old container driver did"?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-It's good idea.
+diff --cc drivers/net/ethernet/mellanox/mlx4/mlx4.h
+index ed4a695,8b75d5e..0000000
+--- a/drivers/net/ethernet/mellanox/mlx4/mlx4.h
++++ b/drivers/net/ethernet/mellanox/mlx4/mlx4.h
+@@@ -60,6 -60,13 +60,8 @@@
+  #define MLX4_FS_MGM_LOG_ENTRY_SIZE	7
+  #define MLX4_FS_NUM_MCG			(1 << 17)
+ =20
++ #define INIT_HCA_TPT_MW_ENABLE          (1 << 7)
++=20
+ -enum {
+ -	MLX4_FS_L2_HASH =3D 0,
+ -	MLX4_FS_L2_L3_L4_HASH,
+ -};
+ -
+  #define MLX4_NUM_UP		8
+  #define MLX4_NUM_TC		8
+  #define MLX4_RATELIMIT_UNITS 3 /* 100 Mbps */
 
-Thanks,
-Yasuaki Ishimatsu
+--Signature=_Tue__26_Feb_2013_11_45_08_+1100_5VQ.Sey5M+0YYHMR
+Content-Type: application/pgp-signature
 
->
-> Rafael
->
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJRLAWUAAoJEECxmPOUX5FEWXoP/ipAtcUnrZtBgk0zBNCOXBZs
+PBEZbRhdyqLIVOwGkYDk53hyK4EzkvQw/3zpUXud85LEzl433sjFqLu1EVYowjzn
+cYuXa8vYi8C3ehi/PImceRQttLjn5zIoFUoVTO54ks04m96+QQKnrfjBzRNIMcvV
+ct6EpiqgaiQHFlxM9Wy1ai452uap2X2EYnGfOUAvStsxAry1FwmJKRb9lobWeDHD
+GveG+n5oArmkDgntLN/fS//yXdkEihdWMBwyonmu7+RwMbRdqeiN4tDhsb/z35tF
+b/68zE+eIrqbj8Ngcwpt77V5Ql3DlbiECO6e/jVyiWCcuW9t4D6fM1rS/et+ZhlF
+iv/MHmPVBd2XWrH6EmCVpRQOvq6eeiEoIW8lnRuUHq5kJzzaycvs83PJHMPE4TGt
+2sYmAB8G7vk9mEyqyjt/baPD4iDfk+Fl4ZAnlZ3SVACfV2RuUj3nrL12ZZXEumkr
+JsodduCYAxv/kL4AWCeuSn3GdjuwOOICSvpAfxJOvTanr6JK/iODxNWH0ypnHnAB
+ENMD1B3ctABIwilPPYyIEkZpUW4mh9vyubG9RwjllDK4UDyq2xrbh11WhtHL4Tmd
+gg0ymFPsJul/KVtFqkYezkIcVPOjqofiojotHzbcXskcq7gjQdkpdNSrCDkzd7VC
+iv0C5w77WdYfA7YZ3zVo
+=YK2k
+-----END PGP SIGNATURE-----
 
+--Signature=_Tue__26_Feb_2013_11_45_08_+1100_5VQ.Sey5M+0YYHMR--
