@@ -1,33 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759280Ab3BZDtp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 22:49:45 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:49945 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754265Ab3BZDto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 22:49:44 -0500
-Date: Mon, 25 Feb 2013 22:49:35 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
+	id S1759651Ab3BZDyX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 22:54:23 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:50166 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758352Ab3BZDyU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 22:54:20 -0500
+Date: Mon, 25 Feb 2013 19:54:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
 To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, David Howells <dhowells@redhat.com>,
-        Florian Weimer <fw@deneb.enyo.de>,
+Cc: David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
         Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
         keyrings@linux-nfs.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Message-ID: <20130226034935.GB12906@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Matthew Garrett <mjg59@srcf.ucam.org>,
-	Greg KH <gregkh@linuxfoundation.org>,
-	David Howells <dhowells@redhat.com>,
-	Florian Weimer <fw@deneb.enyo.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
-	Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
-	keyrings@linux-nfs.org,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20130226035416.GA1128@kroah.com>
 References: <30665.1361461678@warthog.procyon.org.uk>
  <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
  <20130221164244.GA19625@srcf.ucam.org>
@@ -36,66 +26,88 @@ References: <30665.1361461678@warthog.procyon.org.uk>
  <20130226023332.GA29282@srcf.ucam.org>
  <20130226030249.GB23834@kroah.com>
  <20130226031338.GA29784@srcf.ucam.org>
- <20130226032508.GA12906@thunk.org>
- <20130226032839.GA30164@srcf.ucam.org>
+ <20130226033156.GA24999@kroah.com>
+ <20130226033803.GA30285@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130226032839.GA30164@srcf.ucam.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130226033803.GA30285@srcf.ucam.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 03:28:39AM +0000, Matthew Garrett wrote:
-> You're happy advising Linux vendors that they don't need to worry about 
-> module signing because it's "not obvious" that Microsoft would actually 
-> enforce the security model they've spent significant money developing 
-> and advertising?
+On Tue, Feb 26, 2013 at 03:38:04AM +0000, Matthew Garrett wrote:
+> On Mon, Feb 25, 2013 at 07:31:56PM -0800, Greg KH wrote:
+> > On Tue, Feb 26, 2013 at 03:13:38AM +0000, Matthew Garrett wrote:
+> > > Because Microsoft have indicated that they'd be taking a reactive 
+> > > approach to blacklisting and because, so far, nobody has decided to 
+> > > write the trivial proof of concept that demonstrates the problem.
+> > 
+> > So, once that proof is written, suddenly all of the working Linux
+> > distros's keys will be revoked?  That will be fun to watch happen, and
+> > odds are, it will not.  Imagine the PR fun that will cause :)
+> 
+> No. Why would they be?
 
-My advice was to Linus and those who are willing to listen to me, not
-to Red Hat.  Red Hat has not generally been receptive to my advice in
-the past; not that they have any obligation to listen to me, of
-course.  After all, I'm not on Red Hat's payroll.  :-)
+Because they are using the "public" shim that you provided them, or the
+Linux Foundation's shim.  Almost no distro, other than the "main" 3-4
+will end up getting their own shim signed, the rest will just use the
+one you so helpfully provided them :)
 
-Speaking more generally, though, (a) revoking the Linux's key is not
-zero-cost to Microsoft, (b) it's also not an instant death sentence to
-Linux distributions.  Users can always either disable secure boot
-mode, or they can install another signing key.  Yes, that is not the
-best user experience, but it's something which is doable.
+> > > "In addition, in the case of Microsoft’s digital signatures of UEFI 
+> > > Code, Microsoft may remove a Compatible Product from the Microsoft 
+> > > Compatibility Lists and/or revoke the digital signature upon 30 days’ 
+> > > notice to Company in the event Microsoft determines in its sole judgment 
+> > > that the security of the UEFI Code is compromised."
+> > > 
+> > > The ability to use the signed code to boot an untrusted copy of the 
+> > > Windows kernel is a clear breach of the trust model.
+> > 
+> > I don't buy it.  Yes, I understand this is your position, and has been
+> > all along, and _maybe_ you can extend it to "we should sign our kernel
+> > modules", but to take it farther than that, like the list David has
+> > described, is not required by anyone here.
+> 
+> Failing to take it to that extent is dangerously naive. If you can do it 
+> with kernel modules, you can do it with kexec. If you can do it with 
+> kexec, you can do it with arbitrary mmio access to PCI devices.
 
-The other thing to consider is that it's not clear in the long run how
-much of a lock Microsoft and Windows 8 will have hardware
-manufacturers.  There's already been people discussing how to install
-Linux on the Chromebook Pixel.  Other traditional PC manufacturers,
-including HP and Lenovo, have started creating non-Windows-8 x86
-systems using ChromeOS, which can easily have a stock Linux distro
-installed on it, and they come at a variety of different price points.
-(Heck, the recent ChromeOS boxes, such as Pixel, come with an open
-source BIOS which you can reflash.)
+Yes you can.  There are all sorts of fun ways you can do this, I can
+think of a few more at the moment as well.  So, where does it stop?
+And why stop it at all?  Why not just forbid root users at all?
 
-Finally note that secure boot is not an issue on server platforms,
-which is where most of the traditional Linux vendors have made their
-money.  And those who are making money with pre-installed Linux
-systems (i.e., like Ubuntu, or Google with ChromeOS) for consumers are
-generally doing so in cooperation with hardware OEM partners, where
-there's no reason to kowtow to Microsoft's policies.  So there really
-isn't a good reason for Linux vendors to cower in fear of Microsoft.
+> > Yes, they are all "nice" things to have, but I fail to see how Microsoft
+> > should be dictating how Linux, or any other operating system, works,
+> > especially when they aren't even signing the kernel, they are merely
+> > signing a bootloader shim and saying "do your best for keeping the rest
+> > of the system secure please."
+> 
+> Microsoft aren't dictating anything here. We're free not to use their 
+> signatures. However, if we do use their signatures, we agree to play by 
+> their rules. Nobody seems to have come up with a viable alternative, so 
+> here we are.
 
-Much of Microsoft power comes from people letting them have power over
-them.  You don't have to do it.  Sometimes it's better to let them
-carry through on their threat, and while it will be inconvenient, it
-is highly likely they will also take damage from their taking action.
-Consider what happened the last time the Republicans carried through
-on their threat to shut down the US Federal Government.  Sometimes
-it's better to let the blackmailers carry through on their threat, and
-then steps from there.  Cowering in fear and paying Danegled rarely
-gets rid of the Dane.
+Ok, I keep hearing people say, "why doesn't someone else create a
+signing authority!" all the time.  And it comes down to one big thing,
+money.
 
-Regards,
+The money required to put up a bond to allow a root key to be placed
+into the BIOS for just one major OEM is larger than pretty much all of
+the Linux companies combined at this moment in time.
 
-						- Ted
+The money required to staff up, and put into place the proper
+infrastructure to be a signing authority is, I'm pretty sure, larger
+than the operating budget of the Linux Foundation at this point in time.
+And again, remember the bond requirement of the OEMs.
 
+So that's why the LF, or anyone else, including the UEFI group
+themselves, are NOT getting into the key signing business.  Money.
+
+Oh, and the fact that it's just not worth it in the end, but that's a
+different topic :)
+
+thanks,
+
+greg k-h
