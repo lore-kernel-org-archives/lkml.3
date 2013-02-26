@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760140Ab3B0BMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:12:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41859 "EHLO
+	id S1760226Ab3B0BMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:12:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41852 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760092Ab3BZX5Z (ORCPT
+	with ESMTP id S1760091Ab3BZX5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:25 -0500
+	Tue, 26 Feb 2013 18:57:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michael Hennerich <michael.hennerich@analog.com>,
+        Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 039/150] drivers/video/backlight/adp88?0_bl.c: fix resume
-Date: Tue, 26 Feb 2013 15:54:56 -0800
-Message-Id: <20130226235528.267489043@linuxfoundation.org>
+Subject: [ 038/150] ocfs2: unlock super lock if lockres refresh failed
+Date: Tue, 26 Feb 2013 15:54:55 -0800
+Message-Id: <20130226235528.165129352@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -29,46 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit 5eb02c01bd1f3ef195989ab05e835e2b0711b5a9 upstream.
+commit 3278bb748d2437eb1464765f36429e5d6aa91c38 upstream.
 
-Clearing the NSTBY bit in the control register also automatically clears
-the BLEN bit.  So we need to make sure to set it again during resume,
-otherwise the backlight will stay off.
+If lockres refresh failed, the super lock will never be released which
+will cause some processes on other cluster nodes hung forever.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/backlight/adp8860_bl.c |    2 +-
- drivers/video/backlight/adp8870_bl.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/ocfs2/dlmglue.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/video/backlight/adp8860_bl.c
-+++ b/drivers/video/backlight/adp8860_bl.c
-@@ -783,7 +783,7 @@ static int adp8860_i2c_suspend(struct i2
+--- a/fs/ocfs2/dlmglue.c
++++ b/fs/ocfs2/dlmglue.c
+@@ -2545,6 +2545,7 @@ int ocfs2_super_lock(struct ocfs2_super
+ 	 * everything is up to the caller :) */
+ 	status = ocfs2_should_refresh_lock_res(lockres);
+ 	if (status < 0) {
++		ocfs2_cluster_unlock(osb, lockres, level);
+ 		mlog_errno(status);
+ 		goto bail;
+ 	}
+@@ -2553,8 +2554,10 @@ int ocfs2_super_lock(struct ocfs2_super
  
- static int adp8860_i2c_resume(struct i2c_client *client)
- {
--	adp8860_set_bits(client, ADP8860_MDCR, NSTBY);
-+	adp8860_set_bits(client, ADP8860_MDCR, NSTBY | BLEN);
+ 		ocfs2_complete_lock_res_refresh(lockres, status);
  
- 	return 0;
- }
---- a/drivers/video/backlight/adp8870_bl.c
-+++ b/drivers/video/backlight/adp8870_bl.c
-@@ -957,7 +957,7 @@ static int adp8870_i2c_suspend(struct i2
- 
- static int adp8870_i2c_resume(struct i2c_client *client)
- {
--	adp8870_set_bits(client, ADP8870_MDCR, NSTBY);
-+	adp8870_set_bits(client, ADP8870_MDCR, NSTBY | BLEN);
- 
- 	return 0;
- }
+-		if (status < 0)
++		if (status < 0) {
++			ocfs2_cluster_unlock(osb, lockres, level);
+ 			mlog_errno(status);
++		}
+ 		ocfs2_track_lock_refresh(lockres);
+ 	}
+ bail:
 
 
