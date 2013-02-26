@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760039Ab3BZX5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:57:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41694 "EHLO
+	id S1760143Ab3B0BPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:15:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41799 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759833Ab3BZX5B (ORCPT
+	with ESMTP id S1760033Ab3BZX5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:01 -0500
+	Tue, 26 Feb 2013 18:57:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [ 003/150] x86-32, mm: Remove reference to alloc_remap()
-Date: Tue, 26 Feb 2013 15:54:20 -0800
-Message-Id: <20130226235524.351159148@linuxfoundation.org>
+        George Spelvin <linux@horizon.com>,
+        Rodolfo Giometti <giometti@enneenne.com>
+Subject: [ 028/150] pps: Use pps_lookup_dev to reduce ldisc coupling
+Date: Tue, 26 Feb 2013 15:54:45 -0800
+Message-Id: <20130226235527.151182391@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -28,72 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: George Spelvin <linux@horizon.com>
 
-commit 07f4207a305c834f528d08428df4531744e25678 upstream.
+commit 03a7ffe4e542310838bac70ef85acc17536b6d7c upstream.
 
-We have removed the remap allocator for x86-32, and x86-64 never had
-it (and doesn't need it).  Remove residual reference to it.
+Now that N_TTY uses tty->disc_data for its private data,
+'subclass' ldiscs cannot use ->disc_data for their own private data.
+(This is a regression is v3.8-rc1)
 
-Reported-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/CAE9FiQVn6_QZi3fNQ-JHYiR-7jeDJ5hT0SyT_%2BzVvfOj=PzF3w@mail.gmail.com
+Use pps_lookup_dev to associate the tty with the pps source instead.
+
+This fixes a crashing regression in 3.8-rc1.
+
+Signed-off-by: George Spelvin <linux@horizon.com>
+Acked-by: Rodolfo Giometti <giometti@enneenne.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/numa.c |   29 +++++++++++------------------
- 1 file changed, 11 insertions(+), 18 deletions(-)
+ drivers/pps/clients/pps-ldisc.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -193,7 +193,6 @@ int __init numa_add_memblk(int nid, u64
- static void __init setup_node_data(int nid, u64 start, u64 end)
+--- a/drivers/pps/clients/pps-ldisc.c
++++ b/drivers/pps/clients/pps-ldisc.c
+@@ -31,7 +31,7 @@
+ static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status,
+ 				struct pps_event_time *ts)
  {
- 	const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
--	bool remapped = false;
- 	u64 nd_pa;
- 	void *nd;
- 	int tnid;
-@@ -211,28 +210,22 @@ static void __init setup_node_data(int n
- 	       nid, start, end - 1);
+-	struct pps_device *pps = (struct pps_device *)tty->disc_data;
++	struct pps_device *pps = pps_lookup_dev(tty);
  
- 	/*
--	 * Allocate node data.  Try remap allocator first, node-local
--	 * memory and then any node.  Never allocate in DMA zone.
-+	 * Allocate node data.  Try node-local memory and then any node.
-+	 * Never allocate in DMA zone.
- 	 */
--	nd = alloc_remap(nid, nd_size);
--	if (nd) {
--		nd_pa = __pa(nd);
--		remapped = true;
--	} else {
--		nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
--		if (!nd_pa) {
--			pr_err("Cannot find %zu bytes in node %d\n",
--			       nd_size, nid);
--			return;
--		}
--		nd = __va(nd_pa);
-+	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
-+	if (!nd_pa) {
-+		pr_err("Cannot find %zu bytes in node %d\n",
-+		       nd_size, nid);
-+		return;
+ 	BUG_ON(pps == NULL);
+ 
+@@ -67,9 +67,9 @@ static int pps_tty_open(struct tty_struc
+ 		pr_err("cannot register PPS source \"%s\"\n", info.path);
+ 		return -ENOMEM;
  	}
-+	nd = __va(nd_pa);
+-	tty->disc_data = pps;
++	pps->lookup_cookie = tty;
  
- 	/* report and initialize */
--	printk(KERN_INFO "  NODE_DATA [mem %#010Lx-%#010Lx]%s\n",
--	       nd_pa, nd_pa + nd_size - 1, remapped ? " (remapped)" : "");
-+	printk(KERN_INFO "  NODE_DATA [mem %#010Lx-%#010Lx]\n",
-+	       nd_pa, nd_pa + nd_size - 1);
- 	tnid = early_pfn_to_nid(nd_pa >> PAGE_SHIFT);
--	if (!remapped && tnid != nid)
-+	if (tnid != nid)
- 		printk(KERN_INFO "    NODE_DATA(%d) on node %d\n", nid, tnid);
+-	/* Should open N_TTY ldisc too */
++	/* Now open the base class N_TTY ldisc */
+ 	ret = alias_n_tty_open(tty);
+ 	if (ret < 0) {
+ 		pr_err("cannot open tty ldisc \"%s\"\n", info.path);
+@@ -81,7 +81,6 @@ static int pps_tty_open(struct tty_struc
+ 	return 0;
  
- 	node_data[nid] = nd;
+ err_unregister:
+-	tty->disc_data = NULL;
+ 	pps_unregister_source(pps);
+ 	return ret;
+ }
+@@ -90,11 +89,10 @@ static void (*alias_n_tty_close)(struct
+ 
+ static void pps_tty_close(struct tty_struct *tty)
+ {
+-	struct pps_device *pps = (struct pps_device *)tty->disc_data;
++	struct pps_device *pps = pps_lookup_dev(tty);
+ 
+ 	alias_n_tty_close(tty);
+ 
+-	tty->disc_data = NULL;
+ 	dev_info(pps->dev, "removed\n");
+ 	pps_unregister_source(pps);
+ }
 
 
