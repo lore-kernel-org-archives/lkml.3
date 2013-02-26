@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933200Ab3B0Amp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:42:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42278 "EHLO
+	id S933054Ab3BZX6b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:58:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42231 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933065Ab3BZX6e (ORCPT
+	with ESMTP id S932999Ab3BZX61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:34 -0500
+	Tue, 26 Feb 2013 18:58:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 138/150] USB: ehci-omap: Dont free gpios that we didnt request
-Date: Tue, 26 Feb 2013 15:56:35 -0800
-Message-Id: <20130226235538.720310860@linuxfoundation.org>
+        Romain Kuntz <r.kuntz@ipflavors.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 126/150] xfrm: release neighbor upon dst destruction
+Date: Tue, 26 Feb 2013 15:56:23 -0800
+Message-Id: <20130226235537.228929650@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,69 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
 
-commit 428525f97153505e83983460a8d08a3210aa6b8a upstream.
+From: Romain KUNTZ <r.kuntz@ipflavors.com>
 
-This driver does not request any gpios so don't free them.
-Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
-with ehci-omap in use.
+[ Upstream commit 18cf0d0784b4a634472ed24d0d7ca1c721d93e90 ]
 
-Without this patch, EHCI will break on repeated insmod/rmmod
-of ehci_hcd for all OMAP2+ platforms that use EHCI and
-set 'phy_reset = true' in usbhs_omap_board_data.
-i.e.
+Neighbor is cloned in xfrm6_fill_dst but seems to never be released.
+Neighbor entry should be released when XFRM6 dst entry is destroyed
+in xfrm6_dst_destroy, otherwise references may be kept forever on
+the device pointed by the neighbor entry.
 
-board-3430sdp.c:	.phy_reset  = true,
-board-3630sdp.c:	.phy_reset  = true,
-board-am3517crane.c:	.phy_reset  = true,
-board-am3517evm.c:	.phy_reset  = true,
-board-cm-t3517.c:	.phy_reset  = true,
-board-cm-t35.c:	.phy_reset  = true,
-board-devkit8000.c:	.phy_reset  = true,
-board-igep0020.c:	.phy_reset = true,
-board-igep0020.c:	.phy_reset = true,
-board-omap3beagle.c:	.phy_reset  = true,
-board-omap3evm.c:	.phy_reset  = true,
-board-omap3pandora.c:	.phy_reset  = true,
-board-omap3stalker.c:	.phy_reset = true,
-board-omap3touchbook.c:	.phy_reset  = true,
-board-omap4panda.c:	.phy_reset  = false,
-board-overo.c:	.phy_reset  = true,
-board-zoom.c:	.phy_reset		= true,
+I may not have understood all the subtleties of XFRM & dst so I would
+be happy to receive comments on this patch.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Romain Kuntz <r.kuntz@ipflavors.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/host/ehci-omap.c |    8 --------
- 1 file changed, 8 deletions(-)
+ net/ipv6/xfrm6_policy.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/host/ehci-omap.c
-+++ b/drivers/usb/host/ehci-omap.c
-@@ -288,7 +288,6 @@ static int ehci_hcd_omap_remove(struct p
+--- a/net/ipv6/xfrm6_policy.c
++++ b/net/ipv6/xfrm6_policy.c
+@@ -236,6 +236,8 @@ static void xfrm6_dst_destroy(struct dst
  {
- 	struct device *dev				= &pdev->dev;
- 	struct usb_hcd *hcd				= dev_get_drvdata(dev);
--	struct ehci_hcd_omap_platform_data *pdata	= dev->platform_data;
+ 	struct xfrm_dst *xdst = (struct xfrm_dst *)dst;
  
- 	usb_remove_hcd(hcd);
- 	disable_put_regulator(dev->platform_data);
-@@ -298,13 +297,6 @@ static int ehci_hcd_omap_remove(struct p
- 	pm_runtime_put_sync(dev);
- 	pm_runtime_disable(dev);
- 
--	if (pdata->phy_reset) {
--		if (gpio_is_valid(pdata->reset_gpio_port[0]))
--			gpio_free(pdata->reset_gpio_port[0]);
--
--		if (gpio_is_valid(pdata->reset_gpio_port[1]))
--			gpio_free(pdata->reset_gpio_port[1]);
--	}
- 	return 0;
- }
- 
++	if (likely(xdst->u.rt6.n))
++		neigh_release(xdst->u.rt6.n);
+ 	if (likely(xdst->u.rt6.rt6i_idev))
+ 		in6_dev_put(xdst->u.rt6.rt6i_idev);
+ 	dst_destroy_metrics_generic(dst);
 
 
