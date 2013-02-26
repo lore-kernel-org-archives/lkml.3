@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933395Ab3BZX65 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42419 "EHLO
+	id S1760468Ab3B0AcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:32:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42437 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933120Ab3BZX6z (ORCPT
+	with ESMTP id S933393Ab3BZX66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:55 -0500
+	Tue, 26 Feb 2013 18:58:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [ 01/53] x86-32, mm: Remove reference to resume_map_numa_kva()
-Date: Tue, 26 Feb 2013 15:57:30 -0800
-Message-Id: <20130226235619.994508422@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 30/53] drm/usb: bind driver to correct device
+Date: Tue, 26 Feb 2013 15:57:59 -0800
+Message-Id: <20130226235622.968926194@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -27,47 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit bb112aec5ee41427e9b9726e3d57b896709598ed upstream.
+commit 9f23de52b64f7fb801fd76f3dd8651a0dc89187b upstream.
 
-Remove reference to removed function resume_map_numa_kva().
+While looking at plymouth on udl I noticed that plymouth was trying
+to use its fb plugin not its drm one, it was trying to drmOpen a driver called
+usb not udl, noticed that we actually had out driver pointing at the wrong
+device.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20130131005616.1C79F411@kernel.stglabs.ibm.com
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/mmzone_32.h |    6 ------
- arch/x86/power/hibernate_32.c    |    2 --
- 2 files changed, 8 deletions(-)
+ drivers/gpu/drm/drm_usb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/mmzone_32.h
-+++ b/arch/x86/include/asm/mmzone_32.h
-@@ -14,12 +14,6 @@ extern struct pglist_data *node_data[];
+--- a/drivers/gpu/drm/drm_usb.c
++++ b/drivers/gpu/drm/drm_usb.c
+@@ -18,7 +18,7 @@ int drm_get_usb_dev(struct usb_interface
  
- #include <asm/numaq.h>
+ 	usbdev = interface_to_usbdev(interface);
+ 	dev->usbdev = usbdev;
+-	dev->dev = &usbdev->dev;
++	dev->dev = &interface->dev;
  
--extern void resume_map_numa_kva(pgd_t *pgd);
--
--#else /* !CONFIG_NUMA */
--
--static inline void resume_map_numa_kva(pgd_t *pgd) {}
--
- #endif /* CONFIG_NUMA */
- 
- #ifdef CONFIG_DISCONTIGMEM
---- a/arch/x86/power/hibernate_32.c
-+++ b/arch/x86/power/hibernate_32.c
-@@ -130,8 +130,6 @@ static int resume_physical_mapping_init(
- 		}
- 	}
- 
--	resume_map_numa_kva(pgd_base);
--
- 	return 0;
- }
+ 	mutex_lock(&drm_global_mutex);
  
 
 
