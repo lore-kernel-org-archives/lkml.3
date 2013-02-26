@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758440Ab3BZFUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 00:20:22 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:38349 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758100Ab3BZFUL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 00:20:11 -0500
-Date: Mon, 25 Feb 2013 21:20:08 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: gdt@gdt.id.au, linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb/net/asix_devices: Add USBNET HG20F9 ethernet dongle
-Message-ID: <20130226052008.GA25217@kroah.com>
-References: <20130226042343.GA27766@kroah.com>
- <20130225.234529.1601978289377551611.davem@davemloft.net>
- <20130226050311.GB21390@kroah.com>
- <20130226.001022.1341620780921182778.davem@davemloft.net>
+	id S1757085Ab3BZF0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 00:26:35 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:10511 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751117Ab3BZF0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 00:26:30 -0500
+X-IronPort-AV: E=Sophos;i="4.84,738,1355068800"; 
+   d="scan'208";a="6769798"
+Message-ID: <512C44E4.70907@cn.fujitsu.com>
+Date: Tue, 26 Feb 2013 13:15:16 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130226.001022.1341620780921182778.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Simon Horman <horms@verge.net.au>
+CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 1/2] kexec: fix wrong types of some local variables
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/26 13:16:07,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/26 13:16:10,
+	Serialize complete at 2013/02/26 13:16:10
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 12:10:22AM -0500, David Miller wrote:
-> From: Greg KH <gregkh@linuxfoundation.org>
-> Date: Mon, 25 Feb 2013 21:03:11 -0800
-> 
-> > On Mon, Feb 25, 2013 at 11:45:29PM -0500, David Miller wrote:
-> >> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >> Date: Mon, 25 Feb 2013 20:23:43 -0800
-> >> 
-> >> > On Tue, Feb 26, 2013 at 02:47:12PM +1030, Glen Turner wrote:
-> >> >> This USB ethernet adapter was purchased in anodyne packaging
-> >> >> marked "USB2.0 to LAN" from the computer store adjacent to
-> >> >> linux.conf.au 2013 in Canberra (Australia). A web search
-> >> >> shows other recent purchasers in Lancaster (UK) and Seattle
-> >> >> (USA). Just like an emergent virus, our age of e-commerce and
-> >> >> airmail allows underdocumented hardware to spread around the
-> >> >> world instantly using the vector of ridiculously low prices.
-> >> >> 
-> >> >> Paige Thompson, infected via eBay, discovered that the HG20F9
-> >> >> is a copy of the Asix 88772B; many viruses copy the RNA of
-> >> >> other viruses. See Paige's work at
-> >> >> <https://github.com/paigeadele/HG20F9>.
-> >> >> This patch uses her discovery to update the restructured Asix
-> >> >> driver in the current kernel.
-> >> >> 
-> >> >> The spread of viruses is often accompanied by rumours. It is
-> >> >> rumoured that the HG20F9 has extensions to to provide gigabit
-> >> >> ethernet. This patch does not chase that chimera.
-> >> >> 
-> >> >> Just as some viruses inhabit seemingly-healthy cells, the
-> >> >> HG20F9 uses the Vendor ID 0x066b assigned to Linksys Inc.
-> >> >> For the present there is no clash of Product ID 0x20f9.
-> >> >> 
-> >> >> Signed-off-by: Glen Turner <gdt@gdt.id.au>
-> >> > 
-> >> > That is the best "add a new device id" changelog entry I have _ever_
-> >> > seen.  Wonderful job:
-> >> > 
-> >> > Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >> 
-> >> Was this patch really submitted properly to netdev?  I can't
-> >> find it in patchwork at all.
-> > 
-> > It was Cc: netdev@vger.kernel.org with Message-ID:
-> > <1361852232.23197.4.camel@andromache.adelaide.aarnet.edu.au> so it
-> > should have gone through there somehow.
-> 
-> Nope:
-> 
-> http://marc.info/?t=136185267100001&r=1&w=2
-> 
-> It didn't make it to any of the lists, that's why you are the
-> only person who saw the original patch.
+The types of the following local variables:
+  - ubytes/mbytes in kimage_load_crash_segment()/kimage_load_normal_segment()
+  - r in vmcoreinfo_append_str()
+are wrong, so fix them.
 
-Odd, I've now bounced it to the mailing lists, hopefully it gets there
-that way.  If not, I can resend it from me directly.
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Simon Horman <horms@verge.net.au>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ kernel/kexec.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-I'll wait till the morning to see if the messages make it through the
-lists.
-
-thanks,
-
-greg k-h
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 2436ffc..3cbfcc7 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -789,7 +789,7 @@ static int kimage_load_normal_segment(struct kimage *image,
+ 					 struct kexec_segment *segment)
+ {
+ 	unsigned long maddr;
+-	unsigned long ubytes, mbytes;
++	size_t ubytes, mbytes;
+ 	int result;
+ 	unsigned char __user *buf;
+ 
+@@ -853,7 +853,7 @@ static int kimage_load_crash_segment(struct kimage *image,
+ 	 * We do things a page at a time for the sake of kmap.
+ 	 */
+ 	unsigned long maddr;
+-	unsigned long ubytes, mbytes;
++	size_t ubytes, mbytes;
+ 	int result;
+ 	unsigned char __user *buf;
+ 
+@@ -1455,7 +1455,7 @@ void vmcoreinfo_append_str(const char *fmt, ...)
+ {
+ 	va_list args;
+ 	char buf[0x50];
+-	int r;
++	size_t r;
+ 
+ 	va_start(args, fmt);
+ 	r = vsnprintf(buf, sizeof(buf), fmt, args);
+-- 
+1.7.1
