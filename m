@@ -1,293 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758636Ab3BZHCo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 02:02:44 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:49325 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379Ab3BZHCn (ORCPT
+	id S1759575Ab3BZHDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 02:03:00 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:33821 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758887Ab3BZHCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 02:02:43 -0500
-Message-ID: <512C5E0E.5040305@redhat.com>
-Date: Tue, 26 Feb 2013 08:02:38 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 26 Feb 2013 02:02:52 -0500
+Date: Tue, 26 Feb 2013 08:02:47 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20130226070247.GA14094@gmail.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 02/16] virtio_ring: virtqueue_add_sgs, to add multiple
- sgs.
-References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au> <1361260594-601-3-git-send-email-rusty@rustcorp.com.au> <20130224221255.GA5300@redhat.com>
-In-Reply-To: <20130224221255.GA5300@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 24/02/2013 23:12, Michael S. Tsirkin ha scritto:
-> On Tue, Feb 19, 2013 at 06:26:20PM +1030, Rusty Russell wrote:
->> virtio_scsi can really use this, to avoid the current hack of copying
->> the whole sg array.  Some other things get slightly neater, too.
->>
->> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> 
-> Hmm, this makes add_buf a bit slower. virtio_test results
-> (I'll send a patch to update the test shortly):
-> 
-> Before:
-> 0.09user 0.01system 0:00.12elapsed 91%CPU (0avgtext+0avgdata 480maxresident)k
-> 0inputs+0outputs (0major+145minor)pagefaults 0swaps
-> 
-> After:
-> 0.11user 0.01system 0:00.13elapsed 90%CPU (0avgtext+0avgdata 480maxresident)k
-> 0inputs+0outputs (0major+145minor)pagefaults 0swaps
+Linus,
 
-Not unexpected at all... :(
+Please pull the latest perf-urgent-for-linus git tree from:
 
-Some of it can be recovered, but if it's 20% I doubt all of it.  So my
-patches were not premature optimization; you really can take just two
-among speed, flexibility, and having a nice API.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
 
-Paolo
+   HEAD: ff1fb5f6b4925a536ffb8171e5f2dbd01ccfeb97 Merge branch 'tip/perf/core' of git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace into perf/urgent
 
-> 
-> 
-> 
->> ---
->>  drivers/virtio/virtio_ring.c |  144 ++++++++++++++++++++++++++++++------------
->>  include/linux/virtio.h       |    7 ++
->>  2 files changed, 109 insertions(+), 42 deletions(-)
->>
->> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
->> index 245177c..27e31d3 100644
->> --- a/drivers/virtio/virtio_ring.c
->> +++ b/drivers/virtio/virtio_ring.c
->> @@ -100,14 +100,16 @@ struct vring_virtqueue
->>  
->>  /* Set up an indirect table of descriptors and add it to the queue. */
->>  static int vring_add_indirect(struct vring_virtqueue *vq,
->> -			      struct scatterlist sg[],
->> -			      unsigned int out,
->> -			      unsigned int in,
->> +			      struct scatterlist *sgs[],
->> +			      unsigned int total_sg,
->> +			      unsigned int out_sgs,
->> +			      unsigned int in_sgs,
->>  			      gfp_t gfp)
->>  {
->>  	struct vring_desc *desc;
->>  	unsigned head;
->> -	int i;
->> +	struct scatterlist *sg;
->> +	int i, n;
->>  
->>  	/*
->>  	 * We require lowmem mappings for the descriptors because
->> @@ -116,25 +118,31 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
->>  	 */
->>  	gfp &= ~(__GFP_HIGHMEM | __GFP_HIGH);
->>  
->> -	desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
->> +	desc = kmalloc(total_sg * sizeof(struct vring_desc), gfp);
->>  	if (!desc)
->>  		return -ENOMEM;
->>  
->> -	/* Transfer entries from the sg list into the indirect page */
->> -	for (i = 0; i < out; i++) {
->> -		desc[i].flags = VRING_DESC_F_NEXT;
->> -		desc[i].addr = sg_phys(sg);
->> -		desc[i].len = sg->length;
->> -		desc[i].next = i+1;
->> -		sg++;
->> +	/* Transfer entries from the sg lists into the indirect page */
->> +	i = 0;
->> +	for (n = 0; n < out_sgs; n++) {
->> +		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
->> +			desc[i].flags = VRING_DESC_F_NEXT;
->> +			desc[i].addr = sg_phys(sg);
->> +			desc[i].len = sg->length;
->> +			desc[i].next = i+1;
->> +			i++;
->> +		}
->>  	}
->> -	for (; i < (out + in); i++) {
->> -		desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
->> -		desc[i].addr = sg_phys(sg);
->> -		desc[i].len = sg->length;
->> -		desc[i].next = i+1;
->> -		sg++;
->> +	for (; n < (out_sgs + in_sgs); n++) {
->> +		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
->> +			desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
->> +			desc[i].addr = sg_phys(sg);
->> +			desc[i].len = sg->length;
->> +			desc[i].next = i+1;
->> +			i++;
->> +		}
->>  	}
->> +	BUG_ON(i != total_sg);
->>  
->>  	/* Last one doesn't continue. */
->>  	desc[i-1].flags &= ~VRING_DESC_F_NEXT;
->> @@ -176,8 +184,48 @@ int virtqueue_add_buf(struct virtqueue *_vq,
->>  		      void *data,
->>  		      gfp_t gfp)
->>  {
->> +	struct scatterlist *sgs[2];
->> +	unsigned int i;
->> +
->> +	sgs[0] = sg;
->> +	sgs[1] = sg + out;
->> +
->> +	/* Workaround until callers pass well-formed sgs. */
->> +	for (i = 0; i < out + in; i++)
->> +		sg_unmark_end(sg + i);
->> +
->> +	sg_mark_end(sg + out + in - 1);
->> +	if (out && in)
->> +		sg_mark_end(sg + out - 1);
->> +
->> +	return virtqueue_add_sgs(_vq, sgs, out ? 1 : 0, in ? 1 : 0, data, gfp);
->> +}
->> +EXPORT_SYMBOL_GPL(virtqueue_add_buf);
->> +
->> +/**
->> + * virtqueue_add_sgs - expose buffers to other end
->> + * @vq: the struct virtqueue we're talking about.
->> + * @sgs: array of terminated scatterlists.
->> + * @out_num: the number of scatterlists readable by other side
->> + * @in_num: the number of scatterlists which are writable (after readable ones)
->> + * @data: the token identifying the buffer.
->> + * @gfp: how to do memory allocations (if necessary).
->> + *
->> + * Caller must ensure we don't call this with other virtqueue operations
->> + * at the same time (except where noted).
->> + *
->> + * Returns zero or a negative error (ie. ENOSPC, ENOMEM).
->> + */
->> +int virtqueue_add_sgs(struct virtqueue *_vq,
->> +		      struct scatterlist *sgs[],
->> +		      unsigned int out_sgs,
->> +		      unsigned int in_sgs,
->> +		      void *data,
->> +		      gfp_t gfp)
->> +{
->>  	struct vring_virtqueue *vq = to_vvq(_vq);
->> -	unsigned int i, avail, uninitialized_var(prev);
->> +	struct scatterlist *sg;
->> +	unsigned int i, n, avail, uninitialized_var(prev), total_sg;
->>  	int head;
->>  
->>  	START_USE(vq);
->> @@ -197,46 +245,58 @@ int virtqueue_add_buf(struct virtqueue *_vq,
->>  	}
->>  #endif
->>  
->> +	/* Count them first. */
->> +	for (i = total_sg = 0; i < out_sgs + in_sgs; i++) {
->> +		struct scatterlist *sg;
->> +		for (sg = sgs[i]; sg; sg = sg_next(sg))
->> +			total_sg++;
->> +	}
->> +
->>  	/* If the host supports indirect descriptor tables, and we have multiple
->>  	 * buffers, then go indirect. FIXME: tune this threshold */
->> -	if (vq->indirect && (out + in) > 1 && vq->vq.num_free) {
->> -		head = vring_add_indirect(vq, sg, out, in, gfp);
->> +	if (vq->indirect && total_sg > 1 && vq->vq.num_free) {
->> +		head = vring_add_indirect(vq, sgs, total_sg, out_sgs, in_sgs,
->> +					  gfp);
->>  		if (likely(head >= 0))
->>  			goto add_head;
->>  	}
->>  
->> -	BUG_ON(out + in > vq->vring.num);
->> -	BUG_ON(out + in == 0);
->> +	BUG_ON(total_sg > vq->vring.num);
->> +	BUG_ON(total_sg == 0);
->>  
->> -	if (vq->vq.num_free < out + in) {
->> +	if (vq->vq.num_free < total_sg) {
->>  		pr_debug("Can't add buf len %i - avail = %i\n",
->> -			 out + in, vq->vq.num_free);
->> +			 total_sg, vq->vq.num_free);
->>  		/* FIXME: for historical reasons, we force a notify here if
->>  		 * there are outgoing parts to the buffer.  Presumably the
->>  		 * host should service the ring ASAP. */
->> -		if (out)
->> +		if (out_sgs)
->>  			vq->notify(&vq->vq);
->>  		END_USE(vq);
->>  		return -ENOSPC;
->>  	}
->>  
->>  	/* We're about to use some buffers from the free list. */
->> -	vq->vq.num_free -= out + in;
->> -
->> -	head = vq->free_head;
->> -	for (i = vq->free_head; out; i = vq->vring.desc[i].next, out--) {
->> -		vq->vring.desc[i].flags = VRING_DESC_F_NEXT;
->> -		vq->vring.desc[i].addr = sg_phys(sg);
->> -		vq->vring.desc[i].len = sg->length;
->> -		prev = i;
->> -		sg++;
->> +	vq->vq.num_free -= total_sg;
->> +
->> +	head = i = vq->free_head;
->> +	for (n = 0; n < out_sgs; n++) {
->> +		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
->> +			vq->vring.desc[i].flags = VRING_DESC_F_NEXT;
->> +			vq->vring.desc[i].addr = sg_phys(sg);
->> +			vq->vring.desc[i].len = sg->length;
->> +			prev = i;
->> +			i = vq->vring.desc[i].next;
->> +		}
->>  	}
->> -	for (; in; i = vq->vring.desc[i].next, in--) {
->> -		vq->vring.desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
->> -		vq->vring.desc[i].addr = sg_phys(sg);
->> -		vq->vring.desc[i].len = sg->length;
->> -		prev = i;
->> -		sg++;
->> +	for (; n < (out_sgs + in_sgs); n++) {
->> +		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
->> +			vq->vring.desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
->> +			vq->vring.desc[i].addr = sg_phys(sg);
->> +			vq->vring.desc[i].len = sg->length;
->> +			prev = i;
->> +			i = vq->vring.desc[i].next;
->> +		}
->>  	}
->>  	/* Last one doesn't continue. */
->>  	vq->vring.desc[prev].flags &= ~VRING_DESC_F_NEXT;
->> @@ -269,7 +329,7 @@ add_head:
->>  
->>  	return 0;
->>  }
->> -EXPORT_SYMBOL_GPL(virtqueue_add_buf);
->> +EXPORT_SYMBOL_GPL(virtqueue_add_sgs);
->>  
->>  /**
->>   * virtqueue_kick_prepare - first half of split virtqueue_kick call.
->> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
->> index ff6714e..6eff15b 100644
->> --- a/include/linux/virtio.h
->> +++ b/include/linux/virtio.h
->> @@ -40,6 +40,13 @@ int virtqueue_add_buf(struct virtqueue *vq,
->>  		      void *data,
->>  		      gfp_t gfp);
->>  
->> +int virtqueue_add_sgs(struct virtqueue *vq,
->> +		      struct scatterlist *sgs[],
->> +		      unsigned int out_sgs,
->> +		      unsigned int in_sgs,
->> +		      void *data,
->> +		      gfp_t gfp);
->> +
->>  void virtqueue_kick(struct virtqueue *vq);
->>  
->>  bool virtqueue_kick_prepare(struct virtqueue *vq);
->> -- 
->> 1.7.10.4
+ Thanks,
 
+	Ingo
+
+------------------>
+Stephane Eranian (1):
+      perf/x86: Add Intel IvyBridge event scheduling constraints
+
+Steven Rostedt (1):
+      tracing/syscalls: Allow archs to ignore tracing compat syscalls
+
+Steven Rostedt (Red Hat) (1):
+      ftrace: Call ftrace cleanup module notifier after all other notifiers
+
+
+ arch/x86/include/asm/ftrace.h          | 24 ++++++++++++++++++
+ arch/x86/include/asm/thread_info.h     |  1 -
+ arch/x86/kernel/cpu/perf_event_intel.c | 23 ++++++++++++++++-
+ kernel/trace/ftrace.c                  | 46 +++++++++++++++++++++++-----------
+ kernel/trace/trace_syscalls.c          | 43 +++++++++++++++++++++++++++----
+ 5 files changed, 116 insertions(+), 21 deletions(-)
+
+diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+index 86cb51e..0525a8b 100644
+--- a/arch/x86/include/asm/ftrace.h
++++ b/arch/x86/include/asm/ftrace.h
+@@ -72,4 +72,28 @@ int ftrace_int3_handler(struct pt_regs *regs);
+ #endif /* __ASSEMBLY__ */
+ #endif /* CONFIG_FUNCTION_TRACER */
+ 
++
++#if !defined(__ASSEMBLY__) && !defined(COMPILE_OFFSETS)
++
++#if defined(CONFIG_FTRACE_SYSCALLS) && defined(CONFIG_IA32_EMULATION)
++#include <asm/compat.h>
++
++/*
++ * Because ia32 syscalls do not map to x86_64 syscall numbers
++ * this screws up the trace output when tracing a ia32 task.
++ * Instead of reporting bogus syscalls, just do not trace them.
++ *
++ * If the user realy wants these, then they should use the
++ * raw syscall tracepoints with filtering.
++ */
++#define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS 1
++static inline bool arch_trace_is_compat_syscall(struct pt_regs *regs)
++{
++	if (is_compat_task())
++		return true;
++	return false;
++}
++#endif /* CONFIG_FTRACE_SYSCALLS && CONFIG_IA32_EMULATION */
++#endif /* !__ASSEMBLY__  && !COMPILE_OFFSETS */
++
+ #endif /* _ASM_X86_FTRACE_H */
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index 2d946e6..2cd056e 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -20,7 +20,6 @@
+ struct task_struct;
+ struct exec_domain;
+ #include <asm/processor.h>
+-#include <asm/ftrace.h>
+ #include <linux/atomic.h>
+ 
+ struct thread_info {
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 4914e94..529c893 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -107,6 +107,27 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
+ 	EVENT_CONSTRAINT_END
+ };
+ 
++static struct event_constraint intel_ivb_event_constraints[] __read_mostly =
++{
++	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
++	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
++	FIXED_EVENT_CONSTRAINT(0x0300, 2), /* CPU_CLK_UNHALTED.REF */
++	INTEL_UEVENT_CONSTRAINT(0x0148, 0x4), /* L1D_PEND_MISS.PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x0279, 0xf), /* IDQ.EMTPY */
++	INTEL_UEVENT_CONSTRAINT(0x019c, 0xf), /* IDQ_UOPS_NOT_DELIVERED.CORE */
++	INTEL_UEVENT_CONSTRAINT(0x04a3, 0xf), /* CYCLE_ACTIVITY.CYCLES_NO_EXECUTE */
++	INTEL_UEVENT_CONSTRAINT(0x05a3, 0xf), /* CYCLE_ACTIVITY.STALLS_L2_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x06a3, 0xf), /* CYCLE_ACTIVITY.STALLS_LDM_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x08a3, 0x4), /* CYCLE_ACTIVITY.CYCLES_L1D_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x0ca3, 0x4), /* CYCLE_ACTIVITY.STALLS_L1D_PENDING */
++	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
++	INTEL_EVENT_CONSTRAINT(0xd0, 0xf), /* MEM_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd1, 0xf), /* MEM_LOAD_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd3, 0xf), /*  MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
++	EVENT_CONSTRAINT_END
++};
++
+ static struct extra_reg intel_westmere_extra_regs[] __read_mostly =
+ {
+ 	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0xffff, RSP_0),
+@@ -2095,7 +2116,7 @@ __init int intel_pmu_init(void)
+ 
+ 		intel_pmu_lbr_init_snb();
+ 
+-		x86_pmu.event_constraints = intel_snb_event_constraints;
++		x86_pmu.event_constraints = intel_ivb_event_constraints;
+ 		x86_pmu.pebs_constraints = intel_ivb_pebs_event_constraints;
+ 		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+ 		x86_pmu.extra_regs = intel_snb_extra_regs;
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index ce8c3d6..98ca94a 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3996,37 +3996,51 @@ static void ftrace_init_module(struct module *mod,
+ 	ftrace_process_locs(mod, start, end);
+ }
+ 
+-static int ftrace_module_notify(struct notifier_block *self,
+-				unsigned long val, void *data)
++static int ftrace_module_notify_enter(struct notifier_block *self,
++				      unsigned long val, void *data)
+ {
+ 	struct module *mod = data;
+ 
+-	switch (val) {
+-	case MODULE_STATE_COMING:
++	if (val == MODULE_STATE_COMING)
+ 		ftrace_init_module(mod, mod->ftrace_callsites,
+ 				   mod->ftrace_callsites +
+ 				   mod->num_ftrace_callsites);
+-		break;
+-	case MODULE_STATE_GOING:
++	return 0;
++}
++
++static int ftrace_module_notify_exit(struct notifier_block *self,
++				     unsigned long val, void *data)
++{
++	struct module *mod = data;
++
++	if (val == MODULE_STATE_GOING)
+ 		ftrace_release_mod(mod);
+-		break;
+-	}
+ 
+ 	return 0;
+ }
+ #else
+-static int ftrace_module_notify(struct notifier_block *self,
+-				unsigned long val, void *data)
++static int ftrace_module_notify_enter(struct notifier_block *self,
++				      unsigned long val, void *data)
++{
++	return 0;
++}
++static int ftrace_module_notify_exit(struct notifier_block *self,
++				     unsigned long val, void *data)
+ {
+ 	return 0;
+ }
+ #endif /* CONFIG_MODULES */
+ 
+-struct notifier_block ftrace_module_nb = {
+-	.notifier_call = ftrace_module_notify,
++struct notifier_block ftrace_module_enter_nb = {
++	.notifier_call = ftrace_module_notify_enter,
+ 	.priority = INT_MAX,	/* Run before anything that can use kprobes */
+ };
+ 
++struct notifier_block ftrace_module_exit_nb = {
++	.notifier_call = ftrace_module_notify_exit,
++	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
++};
++
+ extern unsigned long __start_mcount_loc[];
+ extern unsigned long __stop_mcount_loc[];
+ 
+@@ -4058,9 +4072,13 @@ void __init ftrace_init(void)
+ 				  __start_mcount_loc,
+ 				  __stop_mcount_loc);
+ 
+-	ret = register_module_notifier(&ftrace_module_nb);
++	ret = register_module_notifier(&ftrace_module_enter_nb);
++	if (ret)
++		pr_warning("Failed to register trace ftrace module enter notifier\n");
++
++	ret = register_module_notifier(&ftrace_module_exit_nb);
+ 	if (ret)
+-		pr_warning("Failed to register trace ftrace module notifier\n");
++		pr_warning("Failed to register trace ftrace module exit notifier\n");
+ 
+ 	set_ftrace_early_filters();
+ 
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 5329e13e..7a809e3 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -1,5 +1,6 @@
+ #include <trace/syscall.h>
+ #include <trace/events/syscalls.h>
++#include <linux/syscalls.h>
+ #include <linux/slab.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>	/* for MODULE_NAME_LEN via KSYM_SYMBOL_LEN */
+@@ -47,6 +48,38 @@ static inline bool arch_syscall_match_sym_name(const char *sym, const char *name
+ }
+ #endif
+ 
++#ifdef ARCH_TRACE_IGNORE_COMPAT_SYSCALLS
++/*
++ * Some architectures that allow for 32bit applications
++ * to run on a 64bit kernel, do not map the syscalls for
++ * the 32bit tasks the same as they do for 64bit tasks.
++ *
++ *     *cough*x86*cough*
++ *
++ * In such a case, instead of reporting the wrong syscalls,
++ * simply ignore them.
++ *
++ * For an arch to ignore the compat syscalls it needs to
++ * define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS as well as
++ * define the function arch_trace_is_compat_syscall() to let
++ * the tracing system know that it should ignore it.
++ */
++static int
++trace_get_syscall_nr(struct task_struct *task, struct pt_regs *regs)
++{
++	if (unlikely(arch_trace_is_compat_syscall(regs)))
++		return -1;
++
++	return syscall_get_nr(task, regs);
++}
++#else
++static inline int
++trace_get_syscall_nr(struct task_struct *task, struct pt_regs *regs)
++{
++	return syscall_get_nr(task, regs);
++}
++#endif /* ARCH_TRACE_IGNORE_COMPAT_SYSCALLS */
++
+ static __init struct syscall_metadata *
+ find_syscall_meta(unsigned long syscall)
+ {
+@@ -276,10 +309,10 @@ static void ftrace_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+ 	struct syscall_metadata *sys_data;
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
+-	int size;
+ 	int syscall_nr;
++	int size;
+ 
+-	syscall_nr = syscall_get_nr(current, regs);
++	syscall_nr = trace_get_syscall_nr(current, regs);
+ 	if (syscall_nr < 0)
+ 		return;
+ 	if (!test_bit(syscall_nr, enabled_enter_syscalls))
+@@ -313,7 +346,7 @@ static void ftrace_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
+ 	struct ring_buffer *buffer;
+ 	int syscall_nr;
+ 
+-	syscall_nr = syscall_get_nr(current, regs);
++	syscall_nr = trace_get_syscall_nr(current, regs);
+ 	if (syscall_nr < 0)
+ 		return;
+ 	if (!test_bit(syscall_nr, enabled_exit_syscalls))
+@@ -502,7 +535,7 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+ 	int rctx;
+ 	int size;
+ 
+-	syscall_nr = syscall_get_nr(current, regs);
++	syscall_nr = trace_get_syscall_nr(current, regs);
+ 	if (syscall_nr < 0)
+ 		return;
+ 	if (!test_bit(syscall_nr, enabled_perf_enter_syscalls))
+@@ -578,7 +611,7 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
+ 	int rctx;
+ 	int size;
+ 
+-	syscall_nr = syscall_get_nr(current, regs);
++	syscall_nr = trace_get_syscall_nr(current, regs);
+ 	if (syscall_nr < 0)
+ 		return;
+ 	if (!test_bit(syscall_nr, enabled_perf_exit_syscalls))
