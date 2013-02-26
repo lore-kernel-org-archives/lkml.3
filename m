@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934114Ab3B0BGx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:06:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41941 "EHLO
+	id S1760180Ab3BZX5i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:57:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41917 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754961Ab3BZX5k (ORCPT
+	with ESMTP id S1760130Ab3BZX5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:40 -0500
+	Tue, 26 Feb 2013 18:57:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 060/150] sparc64: Fix gfp_flags setting in tsb_grow().
-Date: Tue, 26 Feb 2013 15:55:17 -0800
-Message-Id: <20130226235530.427349995@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 054/150] ALSA: hda - Release assigned pin/cvt at error path of hdmi_pcm_open()
+Date: Tue, 26 Feb 2013 15:55:11 -0800
+Message-Id: <20130226235529.761068209@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,31 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Takashi Iwai <tiwai@suse.de>
 
-From: "David S. Miller" <davem@davemloft.net>
+commit 2ad779b7329d6894a80df94e693e72eaa0d56790 upstream.
 
-[ Upstream commit a55ee1ff751f88252207160087d8197bb7538d4c ]
+If the driver detects and invalid ELD, it gives an open error.
+But it forgot to release the assigned pin, converter and spdif ctls
+before returning.
 
-We should "|= more_flags" rather than "= more_flags".
-
-Reported-by: David Rientjes <rientjes@google.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/mm/tsb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/mm/tsb.c
-+++ b/arch/sparc/mm/tsb.c
-@@ -314,7 +314,7 @@ void tsb_grow(struct mm_struct *mm, unsi
- retry_tsb_alloc:
- 	gfp_flags = GFP_KERNEL;
- 	if (new_size > (PAGE_SIZE * 2))
--		gfp_flags = __GFP_NOWARN | __GFP_NORETRY;
-+		gfp_flags |= __GFP_NOWARN | __GFP_NORETRY;
+---
+ sound/pci/hda/patch_hdmi.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1100,8 +1100,12 @@ static int hdmi_pcm_open(struct hda_pcm_
+ 	if (!static_hdmi_pcm && eld->eld_valid) {
+ 		snd_hdmi_eld_update_pcm_info(eld, hinfo);
+ 		if (hinfo->channels_min > hinfo->channels_max ||
+-		    !hinfo->rates || !hinfo->formats)
++		    !hinfo->rates || !hinfo->formats) {
++			per_cvt->assigned = 0;
++			hinfo->nid = 0;
++			snd_hda_spdif_ctls_unassign(codec, pin_idx);
+ 			return -ENODEV;
++		}
+ 	}
  
- 	new_tsb = kmem_cache_alloc_node(tsb_caches[new_cache_index],
- 					gfp_flags, numa_node_id());
+ 	/* Store the updated parameters */
 
 
