@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760223Ab3B0BIw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:08:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41880 "EHLO
+	id S1760246Ab3B0BJL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:09:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41911 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760156Ab3BZX5e (ORCPT
+	with ESMTP id S1760154Ab3BZX5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:34 -0500
+	Tue, 26 Feb 2013 18:57:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pawel Moll <mail@pawelmoll.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 052/150] ALSA: usb: Fix Processing Unit Descriptor parsers
-Date: Tue, 26 Feb 2013 15:55:09 -0800
-Message-Id: <20130226235529.571532004@linuxfoundation.org>
+        Jiri Slaby <jslaby@suse.cz>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 051/150] ALSA: usb/quirks, fix out-of-bounds access
+Date: Tue, 26 Feb 2013 15:55:08 -0800
+Message-Id: <20130226235529.470214340@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,73 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pawel Moll <mail@pawelmoll.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit b531f81b0d70ffbe8d70500512483227cc532608 upstream.
+commit 4909a0caabb8b4352efcea223e58b86f8bc1f98b upstream.
 
-Commit 99fc86450c439039d2ef88d06b222fd51a779176 "ALSA: usb-mixer:
-parse descriptors with structs" introduced a set of useful parsers
-for descriptors. Unfortunately the parses for the Processing Unit
-Descriptor came with a very subtle bug...
+bootresponse in snd_usb_mbox2_boot_quirk is only 12 (decimal) u8's
+long, but i9s passed to snd_usb_ctl_msg as it would be 0x12 (hexa)
+long. Fix that by having proper size of the array, i.e. 0x12.
 
-Functions uac_processing_unit_iProcessing() and
-uac_processing_unit_specific() were indexing the baSourceID array
-forgetting the fields before the iProcessing and process-specific
-descriptors.
-
-The problem was observed with Sound Blaster Extigy mixer,
-where nNrModes in Up/Down-mix Processing Unit Descriptor
-was accessed at offset 10 of the descriptor (value 0)
-instead of offset 15 (value 7). In result the resulting
-control had interesting limit values:
-
-Simple mixer control 'Channel Routing Mode Select',0
-  Capabilities: volume volume-joined penum
-  Playback channels: Mono
-  Capture channels: Mono
-  Limits: 0 - -1
-  Mono: -1 [100%]
-
-Fixed by starting from the bmControls, which was calculated
-correctly, instead of baSourceID.
-
-Now the mentioned control is fine:
-
-Simple mixer control 'Channel Routing Mode Select',0
-  Capabilities: volume volume-joined penum
-  Playback channels: Mono
-  Capture channels: Mono
-  Limits: 0 - 6
-  Mono: 0 [0%]
-
-Signed-off-by: Pawel Moll <mail@pawelmoll.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/uapi/linux/usb/audio.h |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sound/usb/quirks.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/uapi/linux/usb/audio.h
-+++ b/include/uapi/linux/usb/audio.h
-@@ -384,14 +384,16 @@ static inline __u8 uac_processing_unit_i
- 						   int protocol)
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -533,7 +533,7 @@ static int snd_usb_mbox2_boot_quirk(stru
  {
- 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
--	return desc->baSourceID[desc->bNrInPins + control_size];
-+	return *(uac_processing_unit_bmControls(desc, protocol)
-+			+ control_size);
- }
+ 	struct usb_host_config *config = dev->actconfig;
+ 	int err;
+-	u8 bootresponse[12];
++	u8 bootresponse[0x12];
+ 	int fwsize;
+ 	int count;
  
- static inline __u8 *uac_processing_unit_specific(struct uac_processing_unit_descriptor *desc,
- 						 int protocol)
- {
- 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
--	return &desc->baSourceID[desc->bNrInPins + control_size + 1];
-+	return uac_processing_unit_bmControls(desc, protocol)
-+			+ control_size + 1;
- }
- 
- /* 4.5.2 Class-Specific AS Interface Descriptor */
 
 
