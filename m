@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452Ab3BZX6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42133 "EHLO
+	id S932955Ab3B0Awp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:52:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42145 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760284Ab3BZX6N (ORCPT
+	with ESMTP id S932417Ab3BZX6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:13 -0500
+	Tue, 26 Feb 2013 18:58:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 108/150] ARM: 7643/1: sched: correct update_sched_clock()
-Date: Tue, 26 Feb 2013 15:56:05 -0800
-Message-Id: <20130226235535.328593306@linuxfoundation.org>
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 111/150] powerpc/eeh: Fix crash when adding a device in a slot with DDW
+Date: Tue, 26 Feb 2013 15:56:08 -0800
+Message-Id: <20130226235535.621435556@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,72 +28,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonsoo Kim <js1304@gmail.com>
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-commit 7c4e9ced424be4d36df6a3e3825763e97ee97607 upstream.
+commit 6a040ce72598159a74969a2d01ab0ba5ee6536b3 upstream.
 
-If we want load epoch_cyc and epoch_ns atomically,
-we should update epoch_cyc_copy first of all.
-This notify reader that updating is in progress.
+The DDW code uses a eeh_dev struct from the pci_dev. However, this is
+not set until eeh_add_device_late is called.
 
-If we update epoch_cyc first like as current implementation,
-there is subtle error case.
-Look at the below example.
+Since pci_bus_add_devices is called before eeh_add_device_late, the PCI
+devices are added to the bus, making drivers' probe hooks to be called.
+These will call set_dma_mask, which will call the DDW code, which will
+require the eeh_dev struct from pci_dev. This would result in a crash,
+due to a NULL dereference.
 
-<Initial Condition>
-cyc = 9
-ns = 900
-cyc_copy = 9
+Calling eeh_add_device_late after pci_bus_add_devices would make the
+system BUG, because device files shouldn't be added to devices there
+were not added to the system. So, a new function is needed to add such
+files only after pci_bus_add_devices have been called.
 
-== CASE 1 ==
-<CPU A = reader>           <CPU B = updater>
-                           write cyc = 10
-read cyc = 10
-read ns = 900
-                           write ns = 1000
-                           write cyc_copy = 10
-read cyc_copy = 10
-
-output = (10, 900)
-
-== CASE 2 ==
-<CPU A = reader>           <CPU B = updater>
-read cyc = 9
-                           write cyc = 10
-                           write ns = 1000
-read ns = 1000
-read cyc_copy = 9
-                           write cyc_copy = 10
-output = (9, 1000)
-
-If atomic read is ensured, output should be (9, 900) or (10, 1000).
-But, output in example case are not.
-
-So, change updating sequence in order to correct this problem.
-
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Acked-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/sched_clock.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/include/asm/eeh.h       |    3 +++
+ arch/powerpc/kernel/of_platform.c    |    3 +++
+ arch/powerpc/kernel/pci-common.c     |    7 +++++--
+ arch/powerpc/platforms/pseries/eeh.c |   24 +++++++++++++++++++++++-
+ 4 files changed, 34 insertions(+), 3 deletions(-)
 
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -93,11 +93,11 @@ static void notrace update_sched_clock(v
- 	 * detectable in cyc_to_fixed_sched_clock().
- 	 */
- 	raw_local_irq_save(flags);
--	cd.epoch_cyc = cyc;
-+	cd.epoch_cyc_copy = cyc;
- 	smp_wmb();
- 	cd.epoch_ns = ns;
- 	smp_wmb();
--	cd.epoch_cyc_copy = cyc;
-+	cd.epoch_cyc = cyc;
- 	raw_local_irq_restore(flags);
+--- a/arch/powerpc/include/asm/eeh.h
++++ b/arch/powerpc/include/asm/eeh.h
+@@ -201,6 +201,7 @@ int eeh_dev_check_failure(struct eeh_dev
+ void __init eeh_addr_cache_build(void);
+ void eeh_add_device_tree_early(struct device_node *);
+ void eeh_add_device_tree_late(struct pci_bus *);
++void eeh_add_sysfs_files(struct pci_bus *);
+ void eeh_remove_bus_device(struct pci_dev *, int);
+ 
+ /**
+@@ -240,6 +241,8 @@ static inline void eeh_add_device_tree_e
+ 
+ static inline void eeh_add_device_tree_late(struct pci_bus *bus) { }
+ 
++static inline void eeh_add_sysfs_files(struct pci_bus *bus) { }
++
+ static inline void eeh_remove_bus_device(struct pci_dev *dev, int purge_pe) { }
+ 
+ static inline void eeh_lock(void) { }
+--- a/arch/powerpc/kernel/of_platform.c
++++ b/arch/powerpc/kernel/of_platform.c
+@@ -95,6 +95,9 @@ static int of_pci_phb_probe(struct platf
+ 	/* Add probed PCI devices to the device model */
+ 	pci_bus_add_devices(phb->bus);
+ 
++	/* sysfs files should only be added after devices are added */
++	eeh_add_sysfs_files(phb->bus);
++
+ 	return 0;
  }
  
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -1477,11 +1477,14 @@ void pcibios_finish_adding_to_bus(struct
+ 	pcibios_allocate_bus_resources(bus);
+ 	pcibios_claim_one_bus(bus);
+ 
++	/* Fixup EEH */
++	eeh_add_device_tree_late(bus);
++
+ 	/* Add new devices to global lists.  Register in proc, sysfs. */
+ 	pci_bus_add_devices(bus);
+ 
+-	/* Fixup EEH */
+-	eeh_add_device_tree_late(bus);
++	/* sysfs files should only be added after devices are added */
++	eeh_add_sysfs_files(bus);
+ }
+ EXPORT_SYMBOL_GPL(pcibios_finish_adding_to_bus);
+ 
+--- a/arch/powerpc/platforms/pseries/eeh.c
++++ b/arch/powerpc/platforms/pseries/eeh.c
+@@ -788,7 +788,6 @@ static void eeh_add_device_late(struct p
+ 	dev->dev.archdata.edev = edev;
+ 
+ 	eeh_addr_cache_insert_dev(dev);
+-	eeh_sysfs_add_device(dev);
+ }
+ 
+ /**
+@@ -815,6 +814,29 @@ void eeh_add_device_tree_late(struct pci
+ EXPORT_SYMBOL_GPL(eeh_add_device_tree_late);
+ 
+ /**
++ * eeh_add_sysfs_files - Add EEH sysfs files for the indicated PCI bus
++ * @bus: PCI bus
++ *
++ * This routine must be used to add EEH sysfs files for PCI
++ * devices which are attached to the indicated PCI bus. The PCI bus
++ * is added after system boot through hotplug or dlpar.
++ */
++void eeh_add_sysfs_files(struct pci_bus *bus)
++{
++	struct pci_dev *dev;
++
++	list_for_each_entry(dev, &bus->devices, bus_list) {
++		eeh_sysfs_add_device(dev);
++		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE) {
++			struct pci_bus *subbus = dev->subordinate;
++			if (subbus)
++				eeh_add_sysfs_files(subbus);
++		}
++	}
++}
++EXPORT_SYMBOL_GPL(eeh_add_sysfs_files);
++
++/**
+  * eeh_remove_device - Undo EEH setup for the indicated pci device
+  * @dev: pci device to be removed
+  * @purge_pe: remove the PE or not
 
 
