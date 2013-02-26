@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760207Ab3BZJn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 04:43:29 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:45116 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760080Ab3BZJnZ (ORCPT
+	id S1760215Ab3BZJnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 04:43:50 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:59657 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760058Ab3BZJns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 04:43:25 -0500
+	Tue, 26 Feb 2013 04:43:48 -0500
 From: chenggang <chenggang.qin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
+Cc: chenggang.qcg@taobao.com, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -18,9 +18,9 @@ Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
         Yanmin Zhang <yanmin.zhang@intel.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 1/4] Transform xyarray to linked list
-Date: Tue, 26 Feb 2013 17:41:49 +0800
-Message-Id: <1361871710-6251-4-git-send-email-chenggang.qin@gmail.com>
+Subject: [PATCH v2 0/4] perf: Make the 'perf top -p $pid' can perceive the new forked threads.
+Date: Tue, 26 Feb 2013 17:41:50 +0800
+Message-Id: <1361871710-6251-5-git-send-email-chenggang.qin@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361871710-6251-1-git-send-email-chenggang.qin@gmail.com>
 References: <1361871710-6251-1-git-send-email-chenggang.qin@gmail.com>
@@ -28,17 +28,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: chenggang <chenggang.qcg@taobao.com>
+From: chenggang.qcg@taobao.com
 
-The 2-dimensional array cannot expand and shrink easily while we want to
-response the thread's fork and exit events on-the-fly.
-We transform xyarray to a 2-demesional linked list. The row is still a array,
-but column is implemented as a list. The number of nodes in every row are same.
-The interface to append and shrink a exist xyarray is provided.
-1) xyarray__append()
-   append a column for all rows.
-2) xyarray__remove()
-   remove a column for all rows.
+This patch set add a function that make the 'perf top -p $pid' is able to perceive
+the new threads that is forked by target processes. 'perf top{record} -p $pid' can
+perceive the threads are forked before we execute perf, but it cannot perceive the
+new threads are forked after we started perf. This is perf's important defect, because
+the applications who will fork new threads on-the-fly are very much.
+For performance reasons, the event inherit mechanism is forbidden while we use per-task
+counters. Some internal data structures, such as, thread_map, evlist->mmap, evsel->fd,
+evsel->id, evsel->sample_id are implemented as arrays at the initialization phase.
+Their size is fixed, and they cannot be extended or shrinked easily while we want to
+adjust them for new forked threads and exit threads.
+
+So, we have done the following work:
+1) Transformed xyarray to linked list.
+   Implementd the interfaces to extand and shrink a exist xyarray.
+   The xyarray is a 2-dimensional structure. The row is still a array (because the
+   number of CPU is fixed forever), the columns are linked list. 
+2) Transformed evlist->mmap, evsel->fd, evsel->id and evsel->sample_id to list with the
+   new xyarray.
+   Implemented interfaces to expand and shrink these structures.
+   The nodes in these structures can be referenced by some predefined macros, such as
+   FD(cpu, thread), MMAP(cpu, thread), ID(cpu, thread), etc.
+3) Transformed thread_map to linked list.
+   Implemented the interfaces to extand and shrink a exist thread_map.
+4) Added 2 callback functions to top->perf_tool, they are called while the PERF_RECORD_FORK
+   & PERF_RECORD_EXIT events are got.
+   While a PERF_RECORD_FORK event is got, all related data structures are expanded, a new
+   fd and mmap are opened.
+   While a PERF_RECORD_EXIT event is got, all nodes in the related data structures are
+   removed, the fd and mmap are closed.
+
+The linked list is flexible, list_add & list_del can be used easily. Additional, performance
+penalty (especially the CPU utilization) is low.
+
+This function has been already implemented for 'perf top -p $pid' in the patch
+[4/4] of this patch set. Next step, the 'perf record -p $pid' should be modified
+with the same method.
+
+Thanks for David Ahern's suggestion.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -54,161 +83,30 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel <linux-kernel@vger.kernel.org>
 Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
----
- tools/perf/util/xyarray.c |   85 +++++++++++++++++++++++++++++++++++++++++----
- tools/perf/util/xyarray.h |   25 +++++++++++--
- 2 files changed, 101 insertions(+), 9 deletions(-)
+chenggang (4):
+  Transform xyarray to linked list.
+  Transform thread_map to linked list.
+  Transform mmap and other related structures to list with new xyarray.
+  Add fork and exit callback functions into top->perf_tool.
 
-diff --git a/tools/perf/util/xyarray.c b/tools/perf/util/xyarray.c
-index 22afbf6..fc48bda 100644
---- a/tools/perf/util/xyarray.c
-+++ b/tools/perf/util/xyarray.c
-@@ -1,20 +1,93 @@
- #include "xyarray.h"
- #include "util.h"
- 
--struct xyarray *xyarray__new(int xlen, int ylen, size_t entry_size)
-+/*
-+ * Add a column for all rows;
-+ */
-+int xyarray__append(struct xyarray *xy)
- {
--	size_t row_size = ylen * entry_size;
--	struct xyarray *xy = zalloc(sizeof(*xy) + xlen * row_size);
-+	struct xyentry *new_entry;
-+	unsigned int x;
-+
-+	for (x = 0; x < xy->row_count; x++) {
-+		new_entry = zalloc(sizeof(*new_entry));
-+		if (new_entry == NULL)
-+			return -1;
-+
-+		new_entry->contents = zalloc(xy->entry_size);
-+		if (new_entry->contents == NULL)
-+			return -1;
- 
--	if (xy != NULL) {
--		xy->entry_size = entry_size;
--		xy->row_size   = row_size;
-+		list_add_tail(&new_entry->next, &xy->rows[x].head);
- 	}
- 
-+	return 0;
-+}
-+
-+struct xyarray *xyarray__new(int xlen, int ylen, size_t entry_size)
-+{
-+	struct xyarray *xy = zalloc(sizeof(*xy) + xlen * sizeof(struct row));
-+	int i;
-+
-+	if (xy == NULL)
-+		return NULL;
-+
-+	xy->row_count = xlen;
-+	xy->entry_size = entry_size;
-+
-+	for (i = 0; i < xlen; i++)
-+		INIT_LIST_HEAD(&xy->rows[i].head);
-+
-+	for (i = 0; i < ylen; i++)
-+		if (xyarray__append(xy) < 0) {
-+			xyarray__delete(xy);
-+			return NULL;
-+		}
-+
- 	return xy;
- }
- 
-+/*
-+ * remove a column for all rows;
-+ */
-+int xyarray__remove(struct xyarray *xy, int y)
-+{
-+	struct xyentry *entry;
-+	unsigned int x;
-+	int count;
-+
-+	if (!xy)
-+		return 0;
-+
-+	for (x = 0; x < xy->row_count; x++) {
-+		count = 0;
-+		list_for_each_entry(entry, &xy->rows[x].head, next)
-+			if (count++ == y) {
-+				list_del(&entry->next);
-+				free(entry);
-+				return 0;
-+			}
-+	}
-+
-+	return -1;
-+}
-+
-+/*
-+ * All nodes in every rows should be deleted before delete @xy.
-+ */
- void xyarray__delete(struct xyarray *xy)
- {
-+	unsigned int i;
-+	struct xyentry *entry;
-+
-+	if (!xy)
-+		return;
-+
-+	for (i = 0; i < xy->row_count; i++)
-+		list_for_each_entry(entry, &xy->rows[i].head, next) {
-+			list_del(&entry->next);
-+			free(entry);
-+		}
-+
- 	free(xy);
- }
-diff --git a/tools/perf/util/xyarray.h b/tools/perf/util/xyarray.h
-index c488a07..07fa370 100644
---- a/tools/perf/util/xyarray.h
-+++ b/tools/perf/util/xyarray.h
-@@ -2,19 +2,38 @@
- #define _PERF_XYARRAY_H_ 1
- 
- #include <sys/types.h>
-+#include <linux/list.h>
-+
-+struct row {
-+	struct list_head head;
-+};
-+
-+struct xyentry {
-+	struct list_head next;
-+	char *contents;
-+};
- 
- struct xyarray {
--	size_t row_size;
-+	size_t row_count;
- 	size_t entry_size;
--	char contents[];
-+	struct row rows[];
- };
- 
- struct xyarray *xyarray__new(int xlen, int ylen, size_t entry_size);
- void xyarray__delete(struct xyarray *xy);
-+int xyarray__append(struct xyarray *xy);
-+int xyarray__remove(struct xyarray *xy, int y);
- 
- static inline void *xyarray__entry(struct xyarray *xy, int x, int y)
- {
--	return &xy->contents[x * xy->row_size + y * xy->entry_size];
-+	struct xyentry *entry;
-+	int columns = 0;
-+
-+	list_for_each_entry(entry, &xy->rows[x].head, next)
-+		if (columns++ == y)
-+			return entry->contents;
-+
-+	return NULL;
- }
- 
- #endif /* _PERF_XYARRAY_H_ */
+ tools/perf/builtin-record.c               |    6 +-
+ tools/perf/builtin-stat.c                 |    2 +-
+ tools/perf/builtin-top.c                  |  100 ++++++++++++-
+ tools/perf/tests/open-syscall-tp-fields.c |    2 +-
+ tools/perf/util/event.c                   |   10 +-
+ tools/perf/util/evlist.c                  |  171 +++++++++++++++++++---
+ tools/perf/util/evlist.h                  |    6 +-
+ tools/perf/util/evsel.c                   |   98 +++++++++++--
+ tools/perf/util/evsel.h                   |    8 +-
+ tools/perf/util/header.c                  |   31 ++--
+ tools/perf/util/header.h                  |    3 +-
+ tools/perf/util/python.c                  |    2 +-
+ tools/perf/util/thread_map.c              |  223 +++++++++++++++++++----------
+ tools/perf/util/thread_map.h              |   16 ++-
+ tools/perf/util/xyarray.c                 |   85 ++++++++++-
+ tools/perf/util/xyarray.h                 |   25 +++-
+ 16 files changed, 641 insertions(+), 147 deletions(-)
+
 -- 
 1.7.9.5
 
