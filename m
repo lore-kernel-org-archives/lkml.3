@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277Ab3B0BDX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:03:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41983 "EHLO
+	id S933713Ab3B0BDy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:03:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41965 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760232Ab3BZX5s (ORCPT
+	with ESMTP id S1760082Ab3BZX5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 18:57:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Adam Jackson <ajax@redhat.com>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
         Dave Airlie <airlied@redhat.com>
-Subject: [ 073/150] drm: shut up invalid edid messages
-Date: Tue, 26 Feb 2013 15:55:30 -0800
-Message-Id: <20130226235531.760245302@linuxfoundation.org>
+Subject: [ 072/150] drm: dont add inferred modes for monitors that dont support them
+Date: Tue, 26 Feb 2013 15:55:29 -0800
+Message-Id: <20130226235531.663384042@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,39 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-commit f934ec8c34b9dcefb5a4f35b0bda33bca289cbe6 upstream.
+commit 196e077dc165a307efbd9e7569f81bbdbcf18f65 upstream.
 
-My cheapo monitor has an invalid block 1, resulting in a lot of dmesg spam every few seconds.
+If bit 0 of the features byte (0x18) is set to 0, then, according to
+the EDID spec, "the display is non-continuous frequency (multi-mode)
+and is only specified to accept the video timing formats that are
+listed in Base EDID and certain Extension Blocks".
 
-I get it the first time that the entire block is all 0xff..
+For more information, please see the EDID spec, check the notes of the
+table that explains the "Feature Support" byte (18h) and also the
+notes on the tables of the section that explains "Display Range Limits
+& Additional Timing Description Definition (tag #FDh)".
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=45729
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_edid.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/drm_edid.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 --- a/drivers/gpu/drm/drm_edid.c
 +++ b/drivers/gpu/drm/drm_edid.c
-@@ -357,10 +357,14 @@ drm_do_get_edid(struct drm_connector *co
- 				break;
- 			}
- 		}
--		if (i == 4)
-+
-+		if (i == 4 && print_bad_edid) {
- 			dev_warn(connector->dev->dev,
- 			 "%s: Ignoring invalid EDID block %d.\n",
- 			 drm_get_connector_name(connector), j);
-+
-+			connector->bad_edid_counter++;
-+		}
- 	}
+@@ -2020,7 +2020,8 @@ int drm_add_edid_modes(struct drm_connec
+ 	num_modes += add_cvt_modes(connector, edid);
+ 	num_modes += add_standard_modes(connector, edid);
+ 	num_modes += add_established_modes(connector, edid);
+-	num_modes += add_inferred_modes(connector, edid);
++	if (edid->features & DRM_EDID_FEATURE_DEFAULT_GTF)
++		num_modes += add_inferred_modes(connector, edid);
+ 	num_modes += add_cea_modes(connector, edid);
  
- 	if (valid_extensions != block[0x7e]) {
+ 	if (quirks & (EDID_QUIRK_PREFER_LARGE_60 | EDID_QUIRK_PREFER_LARGE_75))
 
 
