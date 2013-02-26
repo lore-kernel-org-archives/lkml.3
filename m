@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760233Ab3BZX5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:57:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41956 "EHLO
+	id S933130Ab3BZX6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:58:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760204Ab3BZX5o (ORCPT
+	with ESMTP id S933062Ab3BZX6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:44 -0500
+	Tue, 26 Feb 2013 18:58:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 065/150] drm/radeon: fix multi-head power profile stability on BTC+ asics
-Date: Tue, 26 Feb 2013 15:55:22 -0800
-Message-Id: <20130226235530.975237116@linuxfoundation.org>
+        "stable@vger.kernel.org, jan.brummer@tabos.org, Johannes Berg" 
+	<johannes.berg@intel.com>,
+        Jan-Michael Brummer <jan.brummer@tabos.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 137/150] mac80211: always unblock CSA queue stop when disconnecting
+Date: Tue, 26 Feb 2013 15:56:34 -0800
+Message-Id: <20130226235538.583063292@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,52 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 7ae764b11ed63279e9dcf25be972ff4ca21a9875 upstream.
+From: Johannes Berg <johannes.berg@intel.com>
 
-vddci needs to track mclk for multi-head.
+Commit 5b36ebd8249f403c7edf7cf68d68e9a0d0f55243 upstream.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+In some cases when disconnecting after (or during?) CSA
+the queues might not recover, and then the only way to
+recover is reloading the module.
+
+Fix this by always unblocking the queue CSA reason when
+
+disconnecting.
+
+Reported-by: Jan-Michael Brummer <jan.brummer@tabos.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |   13 +++++++++++++
- drivers/gpu/drm/radeon/radeon_pm.c |    2 +-
- 2 files changed, 14 insertions(+), 1 deletion(-)
+ net/mac80211/mlme.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -403,6 +403,19 @@ void evergreen_pm_misc(struct radeon_dev
- 			rdev->pm.current_vddc = voltage->voltage;
- 			DRM_DEBUG("Setting: vddc: %d\n", voltage->voltage);
- 		}
-+
-+		/* starting with BTC, there is one state that is used for both
-+		 * MH and SH.  Difference is that we always use the high clock index for
-+		 * mclk and vddci.
-+		 */
-+		if ((rdev->pm.pm_method == PM_METHOD_PROFILE) &&
-+		    (rdev->family >= CHIP_BARTS) &&
-+		    rdev->pm.active_crtc_count &&
-+		    ((rdev->pm.profile_index == PM_PROFILE_MID_MH_IDX) ||
-+		     (rdev->pm.profile_index == PM_PROFILE_LOW_MH_IDX)))
-+			voltage = &rdev->pm.power_state[req_ps_idx].
-+				clock_info[rdev->pm.profiles[PM_PROFILE_HIGH_MH_IDX].dpms_on_cm_idx].voltage;
-+
- 		/* 0xff01 is a flag rather then an actual voltage */
- 		if (voltage->vddci == 0xff01)
- 			return;
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -169,7 +169,7 @@ static void radeon_set_power_state(struc
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -1812,6 +1812,8 @@ static void __ieee80211_disconnect(struc
+ 			       WLAN_REASON_DISASSOC_DUE_TO_INACTIVITY,
+ 			       transmit_frame, frame_buf);
+ 	ifmgd->flags &= ~IEEE80211_STA_CSA_RECEIVED;
++	ieee80211_wake_queues_by_reason(&sdata->local->hw,
++					IEEE80211_QUEUE_STOP_REASON_CSA);
+ 	mutex_unlock(&ifmgd->mtx);
  
- 		/* starting with BTC, there is one state that is used for both
- 		 * MH and SH.  Difference is that we always use the high clock index for
--		 * mclk.
-+		 * mclk and vddci.
- 		 */
- 		if ((rdev->pm.pm_method == PM_METHOD_PROFILE) &&
- 		    (rdev->family >= CHIP_BARTS) &&
+ 	/*
+@@ -1856,8 +1858,6 @@ static void ieee80211_csa_connection_dro
+ 		container_of(work, struct ieee80211_sub_if_data,
+ 			     u.mgd.csa_connection_drop_work);
+ 
+-	ieee80211_wake_queues_by_reason(&sdata->local->hw,
+-					IEEE80211_QUEUE_STOP_REASON_CSA);
+ 	__ieee80211_disconnect(sdata, true);
+ }
+ 
 
 
