@@ -1,65 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759803Ab3BZPbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 10:31:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8180 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759639Ab3BZPbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 10:31:04 -0500
-Date: Tue, 26 Feb 2013 10:30:45 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
-        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
-        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Message-ID: <20130226153045.GA10535@redhat.com>
-References: <20130226030249.GB23834@kroah.com>
- <20130226031338.GA29784@srcf.ucam.org>
- <20130226032508.GA12906@thunk.org>
- <20130226032839.GA30164@srcf.ucam.org>
- <CA+55aFyVShz4T65VJ-1=V=OGwNNriyYf-aaomhDSMHOU7ZZqbA@mail.gmail.com>
- <20130226034250.GB30285@srcf.ucam.org>
- <CA+55aFzn4KGKtn6cXN-jh9jgF+U1zJUnCmk6tRxmW8BZP7_Jnw@mail.gmail.com>
- <20130226034842.GD30285@srcf.ucam.org>
- <CA+55aFyAfgqmxGnh+WpZjgR5qKd+CLr1S7gKnXihqJXB346DqQ@mail.gmail.com>
- <20130226045747.GA31181@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130226045747.GA31181@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759836Ab3BZPbX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 10:31:23 -0500
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:62493 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759810Ab3BZPbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 10:31:20 -0500
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J . Wysocki" <rjw@sisk.pl>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-ia64@vger.kernel.org,
+        x86@kernel.org
+Subject: [PATCH v8 05/13] PCI: introduce platform dependent hooks for creating/destroying PCI busses
+Date: Tue, 26 Feb 2013 23:25:45 +0800
+Message-Id: <1361892353-14786-6-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361892353-14786-1-git-send-email-jiang.liu@huawei.com>
+References: <1361892353-14786-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 04:57:47AM +0000, Matthew Garrett wrote:
+On ACPI based platforms, the pci_slot driver creates PCI slot devices
+according to information from ACPI tables by registering an ACPI PCI
+subdriver. The ACPI PCI subdriver will only be called when creating/
+destroying PCI root buses, and it won't be called when hot-plugging
+P2P bridges. It may cause stale PCI slot devices after hot-removing
+a P2P bridge if that bridge has associated PCI slots. And the acpiphp
+driver has the same issue too.
 
-[..]
-> >  - encourage things like per-host random keys - with the stupid UEFI
-> > checks disabled entirely if required. They are almost certainly going
-> > to be *more* secure than depending on some crazy root of trust based
-> > on a big company, with key signing authorities that trust anybody with
-> > a credit card. Try to teach people about things like that instead.
-> > Encourage people to do their own (random) keys, and adding those to
-> > their UEFI setups (or not: the whole UEFI thing is more about control
-> > than security), and strive to do things like one-time signing with the
-> > private key thrown out entirely. IOW try to encourage *that* kind of
-> > "we made sure to ask the user very explicitly with big warnings and
-> > create his own key for that particular module" security. Real
-> > security, not "we control the user" security.
-> 
-> Yes, ideally people will engage in self-signing and distributions will 
-> have mechanisms for dealing with that.
+This patch introduces two hook points into the PCI core, which will
+be invoked when creating/destroying PCI busses for PCI host and P2P
+bridges. They could be used to setup/destroy platform dependent staffs
+in a unified way, both at boot time and for PCI hotplug operations.
 
-So even if a user installs its own keys in UEFI to boot self signed
-shim, kernel and modules, I am assuming that we will still need to
-make sure kexec does not load and run an unsigned kernel? (Otherwise
-there is no point in installing user keys in UEFI and there is an
-easy way to bypass it). 
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Myron Stowe <myron.stowe@redhat.com>
+Cc: linux-pci@vger.kernel.org
+Cc: linux-ia64@vger.kernel.org
+Cc: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/pci/probe.c  |   12 ++++++++++++
+ drivers/pci/remove.c |    1 +
+ include/linux/pci.h  |    2 ++
+ 3 files changed, 15 insertions(+)
 
-Thanks
-Vivek
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 45c93b3..43ece5d 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -673,6 +673,8 @@ add_dev:
+ 	ret = device_register(&child->dev);
+ 	WARN_ON(ret < 0);
+ 
++	pcibios_add_bus(child);
++
+ 	/* Create legacy_io and legacy_mem files for this bus */
+ 	pci_create_legacy_files(child);
+ 
+@@ -1660,6 +1662,14 @@ int __weak pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
+ 	return 0;
+ }
+ 
++void __weak pcibios_add_bus(struct pci_bus *bus)
++{
++}
++
++void __weak pcibios_remove_bus(struct pci_bus *bus)
++{
++}
++
+ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 		struct pci_ops *ops, void *sysdata, struct list_head *resources)
+ {
+@@ -1714,6 +1724,8 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	if (error)
+ 		goto class_dev_reg_err;
+ 
++	pcibios_add_bus(b);
++
+ 	/* Create legacy_io and legacy_mem files for this bus */
+ 	pci_create_legacy_files(b);
+ 
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index 66967e5..6ae6480 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -49,6 +49,7 @@ void pci_remove_bus(struct pci_bus *bus)
+ 	pci_bus_release_busn_res(bus);
+ 	up_write(&pci_bus_sem);
+ 	pci_remove_legacy_files(bus);
++	pcibios_remove_bus(bus);
+ 	device_unregister(&bus->dev);
+ }
+ EXPORT_SYMBOL(pci_remove_bus);
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 7e87b1e..00d6ba7 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -678,6 +678,8 @@ extern struct list_head pci_root_buses;	/* list of all known PCI buses */
+ extern int no_pci_devices(void);
+ 
+ void pcibios_resource_survey_bus(struct pci_bus *bus);
++void pcibios_add_bus(struct pci_bus *bus);
++void pcibios_remove_bus(struct pci_bus *bus);
+ void pcibios_fixup_bus(struct pci_bus *);
+ int __must_check pcibios_enable_device(struct pci_dev *, int mask);
+ /* Architecture specific versions may override this (weak) */
+-- 
+1.7.9.5
+
