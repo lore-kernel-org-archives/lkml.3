@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933481Ab3B0AHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:07:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42452 "EHLO
+	id S1760316Ab3B0AIN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:08:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42444 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933414Ab3BZX7A (ORCPT
+	with ESMTP id S933401Ab3BZX67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:59:00 -0500
+	Tue, 26 Feb 2013 18:58:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        Mark Fasheh <mfasheh@suse.com>,
+        Jim Somerville <Jim.Somerville@windriver.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 19/53] ocfs2: unlock super lock if lockres refresh failed
-Date: Tue, 26 Feb 2013 15:57:48 -0800
-Message-Id: <20130226235621.834415204@linuxfoundation.org>
+Subject: [ 18/53] inotify: remove broken mask checks causing unmount to be EINVAL
+Date: Tue, 26 Feb 2013 15:57:47 -0800
+Message-Id: <20130226235621.730804930@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -29,45 +32,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Jim Somerville <Jim.Somerville@windriver.com>
 
-commit 3278bb748d2437eb1464765f36429e5d6aa91c38 upstream.
+commit 676a0675cf9200ac047fb50825f80867b3bb733b upstream.
 
-If lockres refresh failed, the super lock will never be released which
-will cause some processes on other cluster nodes hung forever.
+Running the command:
 
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
+	inotifywait -e unmount /mnt/disk
+
+immediately aborts with a -EINVAL return code.  This is however a valid
+parameter.  This abort occurs only if unmount is the sole event
+parameter.  If other event parameters are supplied, then the unmount
+event wait will work.
+
+The problem was introduced by commit 44b350fc23e ("inotify: Fix mask
+checks").  In that commit, it states:
+
+	The mask checks in inotify_update_existing_watch() and
+	inotify_new_watch() are useless because inotify_arg_to_mask()
+	sets FS_IN_IGNORED and FS_EVENT_ON_CHILD bits anyway.
+
+But instead of removing the useless checks, it did this:
+
+	        mask = inotify_arg_to_mask(arg);
+	-       if (unlikely(!mask))
+	+       if (unlikely(!(mask & IN_ALL_EVENTS)))
+	                return -EINVAL;
+
+The problem is that IN_ALL_EVENTS doesn't include IN_UNMOUNT, and other
+parts of the code keep IN_UNMOUNT separate from IN_ALL_EVENTS.  So the
+check should be:
+
+	if (unlikely(!(mask & (IN_ALL_EVENTS | IN_UNMOUNT))))
+
+But inotify_arg_to_mask(arg) always sets the IN_UNMOUNT bit in the mask
+anyway, so the check is always going to pass and thus should simply be
+removed.  Also note that inotify_arg_to_mask completely controls what
+mask bits get set from arg, there's no way for invalid bits to get
+enabled there.
+
+Lets fix it by simply removing the useless broken checks.
+
+Signed-off-by: Jim Somerville <Jim.Somerville@windriver.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>
+Cc: John McCutchan <john@johnmccutchan.com>
+Cc: Robert Love <rlove@rlove.org>
+Cc: Eric Paris <eparis@parisplace.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/dlmglue.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/notify/inotify/inotify_user.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/fs/ocfs2/dlmglue.c
-+++ b/fs/ocfs2/dlmglue.c
-@@ -2539,6 +2539,7 @@ int ocfs2_super_lock(struct ocfs2_super
- 	 * everything is up to the caller :) */
- 	status = ocfs2_should_refresh_lock_res(lockres);
- 	if (status < 0) {
-+		ocfs2_cluster_unlock(osb, lockres, level);
- 		mlog_errno(status);
- 		goto bail;
- 	}
-@@ -2547,8 +2548,10 @@ int ocfs2_super_lock(struct ocfs2_super
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -579,8 +579,6 @@ static int inotify_update_existing_watch
  
- 		ocfs2_complete_lock_res_refresh(lockres, status);
+ 	/* don't allow invalid bits: we don't want flags set */
+ 	mask = inotify_arg_to_mask(arg);
+-	if (unlikely(!(mask & IN_ALL_EVENTS)))
+-		return -EINVAL;
  
--		if (status < 0)
-+		if (status < 0) {
-+			ocfs2_cluster_unlock(osb, lockres, level);
- 			mlog_errno(status);
-+		}
- 		ocfs2_track_lock_refresh(lockres);
- 	}
- bail:
+ 	fsn_mark = fsnotify_find_inode_mark(group, inode);
+ 	if (!fsn_mark)
+@@ -632,8 +630,6 @@ static int inotify_new_watch(struct fsno
+ 
+ 	/* don't allow invalid bits: we don't want flags set */
+ 	mask = inotify_arg_to_mask(arg);
+-	if (unlikely(!(mask & IN_ALL_EVENTS)))
+-		return -EINVAL;
+ 
+ 	tmp_i_mark = kmem_cache_alloc(inotify_inode_mark_cachep, GFP_KERNEL);
+ 	if (unlikely(!tmp_i_mark))
 
 
