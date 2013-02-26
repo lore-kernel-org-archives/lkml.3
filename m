@@ -1,43 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759279Ab3BZOR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 09:17:27 -0500
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:38469 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759186Ab3BZORZ (ORCPT
+	id S1758955Ab3BZOYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 09:24:25 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:57983 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753297Ab3BZOYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 09:17:25 -0500
+	Tue, 26 Feb 2013 09:24:22 -0500
+Message-ID: <512CC509.1050000@linux.vnet.ibm.com>
+Date: Tue, 26 Feb 2013 19:52:01 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1302261427020.14180@twin.jikos.cz>
-References: <87ppzo79in.fsf@mid.deneb.enyo.de> <30665.1361461678@warthog.procyon.org.uk>
- <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
- <20130221164244.GA19625@srcf.ucam.org> <18738.1361836265@warthog.procyon.org.uk>
- <alpine.LRH.2.00.1302261427020.14180@twin.jikos.cz>
-From: Raymond Jennings <shentino@gmail.com>
-Date: Tue, 26 Feb 2013 06:16:44 -0800
-Message-ID: <CAGDaZ_q_8GN96ZgQrO1TMEen=_q=HW8HUAv3GMinBbv87XDzaQ@mail.gmail.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
-        keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Lai Jiangshan <eag0628@gmail.com>
+CC: Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
+        vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com> <CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com> <5122551E.1080703@linux.vnet.ibm.com>	<51226B46.9080707@linux.vnet.ibm.com> <CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com> <51226F91.7000108@linux.vnet.ibm.com> <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com> <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com> <512C7A38.8060906@linux.vnet.ibm.com> <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com>
+In-Reply-To: <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022614-5140-0000-0000-000002D0650A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My two cents on this subject btw is that anything to do with
-Microsoft's intentions or plans is an issue of policy that belongs
-entirely in userspace.
 
-"mechanism, not policy"
+Hi Lai,
 
-Besides, what do modules have to do with this if we're talking about
-UEFI?  Doesn't the kernel have to be loaded before modules are even an
-issue?
+I'm really not convinced that piggy-backing on lglocks would help
+us in any way. But still, let me try to address some of the points
+you raised...
 
-Pardon me for being lost, just tyring to follow this.
+On 02/26/2013 06:29 PM, Lai Jiangshan wrote:
+> On Tue, Feb 26, 2013 at 5:02 PM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> On 02/26/2013 05:47 AM, Lai Jiangshan wrote:
+>>> On Tue, Feb 26, 2013 at 3:26 AM, Srivatsa S. Bhat
+>>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>>> Hi Lai,
+>>>>
+>>>> On 02/25/2013 09:23 PM, Lai Jiangshan wrote:
+>>>>> Hi, Srivatsa,
+>>>>>
+>>>>> The target of the whole patchset is nice for me.
+>>>>
+>>>> Cool! Thanks :-)
+>>>>
+>> [...]
+>>
+>> Unfortunately, I see quite a few issues with the code above. IIUC, the
+>> writer and the reader both increment the same counters. So how will the
+>> unlock() code in the reader path know when to unlock which of the locks?
+> 
+> The same as your code, the reader(which nested in write C.S.) just dec
+> the counters.
+
+And that works fine in my case because the writer and the reader update
+_two_ _different_ counters. If both of them update the same counter, there
+will be a semantic clash - an increment of the counter can either mean that
+a new writer became active, or it can also indicate a nested reader. A decrement
+can also similarly have 2 meanings. And thus it will be difficult to decide
+the right action to take, based on the value of the counter.
+
+> 
+>> (The counter-dropping-to-zero logic is not safe, since it can be updated
+>> due to different reasons). And now that I look at it again, in the absence
+>> of the writer, the reader is allowed to be recursive at the heavy cost of
+>> taking the global rwlock for read, every 2nd time you nest (because the
+>> spinlock is non-recursive).
+> 
+> (I did not understand your comments of this part)
+> nested reader is considered seldom.
+
+No, nested readers can be _quite_ frequent. Because, potentially all users
+of preempt_disable() are readers - and its well-known how frequently we
+nest preempt_disable(). As a simple example, any atomic reader who calls
+smp_call_function() will become a nested reader, because smp_call_function()
+itself is a reader. So reader nesting is expected to be quite frequent.
+
+> But if N(>=2) nested readers happen,
+> the overhead is:
+>     1 spin_try_lock() + 1 read_lock() + (N-1) __this_cpu_inc()
+> 
+
+In my patch, its just this_cpu_inc(). Note that these are _very_ hot paths.
+So every bit of optimization that you can add is worthwhile.
+
+And your read_lock() is a _global_ lock - thus, it can lead to a lot of
+cache-line bouncing. That's *exactly* why I have used per-cpu refcounts in
+my synchronization scheme, to avoid taking the global rwlock as much as possible.
+
+Another important point to note is that, the overhead we are talking about
+here, exists even when _not_ performing hotplug. And its the replacement to
+the super-fast preempt_disable(). So its extremely important to consciously
+minimize this overhead - else we'll end up slowing down the system significantly.
+
+>> Also, this lg_rwlock implementation uses 3
+>> different data-structures - a per-cpu spinlock, a global rwlock and
+>> a per-cpu refcnt, and its not immediately apparent why you need those many
+>> or even those many varieties.
+> 
+> data-structures is the same as yours.
+> fallback_reader_refcnt <--> reader_refcnt
+
+This has semantic problems, as noted above.
+
+> per-cpu spinlock <--> write_signal
+
+Acquire/release of (spin) lock is costlier than inc/dec of a counter, IIUC.
+
+> fallback_rwlock  <---> global_rwlock
+> 
+>> Also I see that this doesn't handle the
+>> case of interrupt-handlers also being readers.
+> 
+> handled. nested reader will see the ref or take the fallback_rwlock
+>
+
+I'm not referring to simple nested readers here, but interrupt handlers who
+can act as readers. For starters, the arch_spin_trylock() is not safe when
+interrupt handlers can also run the same code, right? You'll need to save
+and restore interrupts at critical points in the code. Also, the __foo()
+variants used to read/update the counters are not interrupt-safe. And,
+the unlock() code in the reader path is again going to be confused about
+what to do when interrupt handlers interrupt regular readers, due to the
+messed up refcount.
+ 
+>>
+>> IMHO, the per-cpu rwlock scheme that I have implemented in this patchset
+>> has a clean, understandable design and just enough data-structures/locks
+>> to achieve its goal and has several optimizations (like reducing the
+>> interrupts-disabled time etc) included - all in a very straight-forward
+>> manner. Since this is non-trivial, IMHO, starting from a clean slate is
+>> actually better than trying to retrofit the logic into some locking scheme
+>> which we actively want to avoid (and hence effectively we aren't even
+>> borrowing anything from!).
+>>
+>> To summarize, if you are just pointing out that we can implement the same
+>> logic by altering lglocks, then sure, I acknowledge the possibility.
+>> However, I don't think doing that actually makes it better; it either
+>> convolutes the logic unnecessarily, or ends up looking _very_ similar to
+>> the implementation in this patchset, from what I can see.
+>>
+
+ 
+Regards,
+Srivatsa S. Bhat
+
