@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759279Ab3BZGzx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 01:55:53 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:24012 "EHLO
+	id S1759361Ab3BZG4t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 01:56:49 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:24340 "EHLO
 	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753379Ab3BZGzw (ORCPT
+	with ESMTP id S1753379Ab3BZG4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 01:55:52 -0500
+	Tue, 26 Feb 2013 01:56:48 -0500
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <linux-arm-kernel@lists.infradead.org>
 CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
@@ -14,9 +14,9 @@ CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
         <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
         <spi-devel-general@lists.sourceforge.net>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v5 06/16] spi/spi-atmel: status information passed through controller data
-Date: Tue, 26 Feb 2013 14:47:59 +0800
-Message-ID: <1361861289-30332-7-git-send-email-wenyou.yang@atmel.com>
+Subject: [PATCH v5 07/16] spi/spi-atmel: add flag to controller data for lock operations
+Date: Tue, 26 Feb 2013 14:48:00 +0800
+Message-ID: <1361861289-30332-8-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361861289-30332-1-git-send-email-wenyou.yang@atmel.com>
 References: <1361861289-30332-1-git-send-email-wenyou.yang@atmel.com>
@@ -28,9 +28,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-The status of transfer is stored in controller data structure
-so that it can be used not only by atmel_spi_msg_done() function.
-This will be useful for upcoming dmaengine enabled driver.
+Will allow to drop the lock during DMA operations.
 
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: spi-devel-general@lists.sourceforge.net
@@ -38,67 +36,108 @@ Cc: linux-kernel@vger.kernel.org
 [wenyou.yang@atmel.com: submit the patch]
 Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 ---
- drivers/spi/spi-atmel.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/spi/spi-atmel.c |   31 +++++++++++++++++++------------
+ 1 file changed, 19 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 6ea41a7..136ed8f 100644
+index 136ed8f..1c2933a 100644
 --- a/drivers/spi/spi-atmel.c
 +++ b/drivers/spi/spi-atmel.c
-@@ -210,6 +210,7 @@ struct atmel_spi {
- 	unsigned long		current_remaining_bytes;
- 	struct spi_transfer	*next_transfer;
- 	unsigned long		next_remaining_bytes;
-+	int			done_status;
+@@ -196,6 +196,7 @@ struct atmel_spi_caps {
+  */
+ struct atmel_spi {
+ 	spinlock_t		lock;
++	unsigned long		flags;
  
- 	void			*buffer;
- 	dma_addr_t		buffer_dma;
-@@ -555,15 +556,15 @@ static void atmel_spi_dma_unmap_xfer(struct spi_master *master,
+ 	resource_size_t		phybase;
+ 	void __iomem		*regs;
+@@ -334,6 +335,16 @@ static void cs_deactivate(struct atmel_spi *as, struct spi_device *spi)
+ 		gpio_set_value(asd->npcs_pin, !active);
+ }
  
- static void
- atmel_spi_msg_done(struct spi_master *master, struct atmel_spi *as,
--		struct spi_message *msg, int status, int stay)
-+		struct spi_message *msg, int stay)
++static void atmel_spi_lock(struct atmel_spi *as)
++{
++		spin_lock_irqsave(&as->lock, as->flags);
++}
++
++static void atmel_spi_unlock(struct atmel_spi *as)
++{
++		spin_unlock_irqrestore(&as->lock, as->flags);
++}
++
+ static inline int atmel_spi_xfer_is_last(struct spi_message *msg,
+ 					struct spi_transfer *xfer)
  {
--	if (!stay || status < 0)
-+	if (!stay || as->done_status < 0)
- 		cs_deactivate(as, msg->spi);
- 	else
- 		as->stay = msg->spi;
- 
- 	list_del(&msg->queue);
--	msg->status = status;
-+	msg->status = as->done_status;
- 
- 	dev_dbg(master->dev.parent,
+@@ -570,9 +581,9 @@ atmel_spi_msg_done(struct spi_master *master, struct atmel_spi *as,
  		"xfer complete: %u bytes transferred\n",
-@@ -575,6 +576,7 @@ atmel_spi_msg_done(struct spi_master *master, struct atmel_spi *as,
+ 		msg->actual_length);
+ 
+-	spin_unlock(&as->lock);
++	atmel_spi_unlock(as);
+ 	msg->complete(msg->context);
+-	spin_lock(&as->lock);
++	atmel_spi_lock(as);
  
  	as->current_transfer = NULL;
  	as->next_transfer = NULL;
-+	as->done_status = 0;
+@@ -803,13 +814,11 @@ static int atmel_spi_setup(struct spi_device *spi)
+ 		spi->controller_state = asd;
+ 		gpio_direction_output(npcs_pin, !(spi->mode & SPI_CS_HIGH));
+ 	} else {
+-		unsigned long		flags;
+-
+-		spin_lock_irqsave(&as->lock, flags);
++		atmel_spi_lock(as);
+ 		if (as->stay == spi)
+ 			as->stay = NULL;
+ 		cs_deactivate(as, spi);
+-		spin_unlock_irqrestore(&as->lock, flags);
++		atmel_spi_unlock(as);
+ 	}
  
- 	/* continue if needed */
- 	if (list_empty(&as->queue) || as->stopping)
-@@ -652,7 +654,8 @@ atmel_spi_interrupt(int irq, void *dev_id)
- 		/* Clear any overrun happening while cleaning up */
- 		spi_readl(as, SR);
+ 	asd->csr = csr;
+@@ -828,7 +837,6 @@ static int atmel_spi_transfer(struct spi_device *spi, struct spi_message *msg)
+ {
+ 	struct atmel_spi	*as;
+ 	struct spi_transfer	*xfer;
+-	unsigned long		flags;
+ 	struct device		*controller = spi->master->dev.parent;
+ 	u8			bits;
+ 	struct atmel_spi_device	*asd;
+@@ -893,11 +901,11 @@ static int atmel_spi_transfer(struct spi_device *spi, struct spi_message *msg)
+ 	msg->status = -EINPROGRESS;
+ 	msg->actual_length = 0;
  
--		atmel_spi_msg_done(master, as, msg, -EIO, 0);
-+		as->done_status = -EIO;
-+		atmel_spi_msg_done(master, as, msg, 0);
- 	} else if (pending & (SPI_BIT(RXBUFF) | SPI_BIT(ENDRX))) {
- 		ret = IRQ_HANDLED;
+-	spin_lock_irqsave(&as->lock, flags);
++	atmel_spi_lock(as);
+ 	list_add_tail(&msg->queue, &as->queue);
+ 	if (!as->current_transfer)
+ 		atmel_spi_next_message(spi->master);
+-	spin_unlock_irqrestore(&as->lock, flags);
++	atmel_spi_unlock(as);
  
-@@ -670,7 +673,7 @@ atmel_spi_interrupt(int irq, void *dev_id)
+ 	return 0;
+ }
+@@ -907,17 +915,16 @@ static void atmel_spi_cleanup(struct spi_device *spi)
+ 	struct atmel_spi	*as = spi_master_get_devdata(spi->master);
+ 	struct atmel_spi_device	*asd = spi->controller_state;
+ 	unsigned		gpio = (unsigned) spi->controller_data;
+-	unsigned long		flags;
  
- 			if (atmel_spi_xfer_is_last(msg, xfer)) {
- 				/* report completed message */
--				atmel_spi_msg_done(master, as, msg, 0,
-+				atmel_spi_msg_done(master, as, msg,
- 						xfer->cs_change);
- 			} else {
- 				if (xfer->cs_change) {
+ 	if (!asd)
+ 		return;
+ 
+-	spin_lock_irqsave(&as->lock, flags);
++	atmel_spi_lock(as);
+ 	if (as->stay == spi) {
+ 		as->stay = NULL;
+ 		cs_deactivate(as, spi);
+ 	}
+-	spin_unlock_irqrestore(&as->lock, flags);
++	atmel_spi_unlock(as);
+ 
+ 	spi->controller_state = NULL;
+ 	gpio_free(gpio);
 -- 
 1.7.9.5
 
