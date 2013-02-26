@@ -1,106 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758329Ab3BZM6W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 07:58:22 -0500
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:41448 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab3BZM6V (ORCPT
+	id S1758491Ab3BZNAA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 08:00:00 -0500
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:50038 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab3BZM74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 07:58:21 -0500
-Date: Tue, 26 Feb 2013 13:57:39 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: bug in generic strncpy_from_user
-Message-ID: <20130226125739.GA3924@osiris>
-References: <20130226045424.GA3576@osiris>
- <CA+55aFx8pUSHPhC_-ob2i5BbvBkEC4BVYtAbNkf3+FE+=3AmgA@mail.gmail.com>
+	Tue, 26 Feb 2013 07:59:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx8pUSHPhC_-ob2i5BbvBkEC4BVYtAbNkf3+FE+=3AmgA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022612-6892-0000-0000-0000046F77CD
+In-Reply-To: <512C7A38.8060906@linux.vnet.ibm.com>
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
+	<20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com>
+	<CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com>
+	<5122551E.1080703@linux.vnet.ibm.com>
+	<51226B46.9080707@linux.vnet.ibm.com>
+	<CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com>
+	<51226F91.7000108@linux.vnet.ibm.com>
+	<CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com>
+	<512BBAD8.8010006@linux.vnet.ibm.com>
+	<CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com>
+	<512C7A38.8060906@linux.vnet.ibm.com>
+Date: Tue, 26 Feb 2013 20:59:54 +0800
+Message-ID: <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com>
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+From: Lai Jiangshan <eag0628@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
+        vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 09:24:31PM -0800, Linus Torvalds wrote:
-> On Mon, Feb 25, 2013 at 8:54 PM, Heiko Carstens
-> <heiko.carstens@de.ibm.com> wrote:
-> > FWIW, I think the generic strncpy_from_user() implemention has the same
-> > bug as the s390 variant:
-> >
-> > Following example:
-> >
-> > If there is a NUL terminated string "a\0" starting at e.g. 0xfffe this
-> > will cause an (invalid) page fault for the subsequent page at 0x10000
-> > in case of CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS for e.g. this invocation:
-> >
-> > strncpy_from_user(kname, 0xfffe, 4096);
-> >
-> > If the user space page that contained the string was the last within a
-> > VMA this may cause a -EFAULT return value for the __get_user() invocation
-> > in strncpy_from_user() and byte-at-a-time processing will happen.
-> >
-> > This is true and works fine unless the next VMA is the stack.
-> >
-> > With "ulimit -s unlimited" it will just grow downwards to where the page
-> > fault happened instead that -EFAULT will be returned.
-> 
-> This should _never_ be the case.
+On Tue, Feb 26, 2013 at 5:02 PM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> On 02/26/2013 05:47 AM, Lai Jiangshan wrote:
+>> On Tue, Feb 26, 2013 at 3:26 AM, Srivatsa S. Bhat
+>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>> Hi Lai,
+>>>
+>>> On 02/25/2013 09:23 PM, Lai Jiangshan wrote:
+>>>> Hi, Srivatsa,
+>>>>
+>>>> The target of the whole patchset is nice for me.
+>>>
+>>> Cool! Thanks :-)
+>>>
+> [...]
+>>>> I wrote an untested draft here.
+>>>>
+>>>> Thanks,
+>>>> Lai
+>>>>
+>>>> PS: Some HA tools(I'm writing one) which takes checkpoints of
+>>>> virtual-machines frequently, I guess this patchset can speedup the
+>>>> tools.
+>>>>
+>>>> From 01db542693a1b7fc6f9ece45d57cb529d9be5b66 Mon Sep 17 00:00:00 2001
+>>>> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+>>>> Date: Mon, 25 Feb 2013 23:14:27 +0800
+>>>> Subject: [PATCH] lglock: add read-preference local-global rwlock
+>>>>
+>>>> locality via lglock(trylock)
+>>>> read-preference read-write-lock via fallback rwlock_t
+>>>>
+>>>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>>>> ---
+>>>>  include/linux/lglock.h |   31 +++++++++++++++++++++++++++++++
+>>>>  kernel/lglock.c        |   45 +++++++++++++++++++++++++++++++++++++++++++++
+>>>>  2 files changed, 76 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/include/linux/lglock.h b/include/linux/lglock.h
+>>>> index 0d24e93..30fe887 100644
+>>>> --- a/include/linux/lglock.h
+>>>> +++ b/include/linux/lglock.h
+>>>> @@ -67,4 +67,35 @@ void lg_local_unlock_cpu(struct lglock *lg, int cpu);
+>>>>  void lg_global_lock(struct lglock *lg);
+>>>>  void lg_global_unlock(struct lglock *lg);
+>>>>
+>>>> +struct lgrwlock {
+>>>> +     unsigned long __percpu *fallback_reader_refcnt;
+>>>> +     struct lglock lglock;
+>>>> +     rwlock_t fallback_rwlock;
+>>>> +};
+>>>> +
+>>>> +#define DEFINE_LGRWLOCK(name)                                                \
+>>>> +     static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)           \
+>>>> +     = __ARCH_SPIN_LOCK_UNLOCKED;                                    \
+>>>> +     static DEFINE_PER_CPU(unsigned long, name ## _refcnt);          \
+>>>> +     struct lgrwlock name = {                                        \
+>>>> +             .fallback_reader_refcnt = &name ## _refcnt,             \
+>>>> +             .lglock = { .lock = &name ## _lock } }
+>>>> +
+>>>> +#define DEFINE_STATIC_LGRWLOCK(name)                                 \
+>>>> +     static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)           \
+>>>> +     = __ARCH_SPIN_LOCK_UNLOCKED;                                    \
+>>>> +     static DEFINE_PER_CPU(unsigned long, name ## _refcnt);          \
+>>>> +     static struct lgrwlock name = {                                 \
+>>>> +             .fallback_reader_refcnt = &name ## _refcnt,             \
+>>>> +             .lglock = { .lock = &name ## _lock } }
+>>>> +
+>>>> +static inline void lg_rwlock_init(struct lgrwlock *lgrw, char *name)
+>>>> +{
+>>>> +     lg_lock_init(&lgrw->lglock, name);
+>>>> +}
+>>>> +
+>>>> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw);
+>>>> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw);
+>>>> +void lg_rwlock_global_write_lock(struct lgrwlock *lgrw);
+>>>> +void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw);
+>>>>  #endif
+>>>> diff --git a/kernel/lglock.c b/kernel/lglock.c
+>>>> index 6535a66..463543a 100644
+>>>> --- a/kernel/lglock.c
+>>>> +++ b/kernel/lglock.c
+>>>> @@ -87,3 +87,48 @@ void lg_global_unlock(struct lglock *lg)
+>>>>       preempt_enable();
+>>>>  }
+>>>>  EXPORT_SYMBOL(lg_global_unlock);
+>>>> +
+>>>> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
+>>>> +{
+>>>> +     struct lglock *lg = &lgrw->lglock;
+>>>> +
+>>>> +     preempt_disable();
+>>>> +     if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
+>>>> +             if (likely(arch_spin_trylock(this_cpu_ptr(lg->lock)))) {
+>>>> +                     rwlock_acquire_read(&lg->lock_dep_map, 0, 0, _RET_IP_);
+>>>> +                     return;
+>>>> +             }
+>>>> +             read_lock(&lgrw->fallback_rwlock);
+>>>> +     }
+>>>> +
+>>>> +     __this_cpu_inc(*lgrw->fallback_reader_refcnt);
+>>>> +}
+>>>> +EXPORT_SYMBOL(lg_rwlock_local_read_lock);
+>>>> +
+>>>> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
+>>>> +{
+>>>> +     if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
+>>>> +             lg_local_unlock(&lgrw->lglock);
+>>>> +             return;
+>>>> +     }
+>>>> +
+>>>> +     if (!__this_cpu_dec_return(*lgrw->fallback_reader_refcnt))
+>>>> +             read_unlock(&lgrw->fallback_rwlock);
+>>>> +
+>>>> +     preempt_enable();
+>>>> +}
+>>>> +EXPORT_SYMBOL(lg_rwlock_local_read_unlock);
+>>>> +
+>>>
+>>> If I read the code above correctly, all you are doing is implementing a
+>>> recursive reader-side primitive (ie., allowing the reader to call these
+>>> functions recursively, without resulting in a self-deadlock).
+>>>
+>>> But the thing is, making the reader-side recursive is the least of our
+>>> problems! Our main challenge is to make the locking extremely flexible
+>>> and also safe-guard it against circular-locking-dependencies and deadlocks.
+>>> Please take a look at the changelog of patch 1 - it explains the situation
+>>> with an example.
+>>
+>>
+>> My lock fixes your requirements(I read patch 1-6 before I sent). In
+>> readsite, lglock 's lock is token via trylock, the lglock doesn't
+>> contribute to deadlocks, we can consider it doesn't exist when we find
+>> deadlock from it. And global fallback rwlock doesn't result to
+>> deadlocks because it is read-preference(you need to inc the
+>> fallback_reader_refcnt inside the cpu-hotplug write-side, I don't do
+>> it in generic lgrwlock)
+>>
+>
+> Ah, since you hadn't mentioned the increment at the writer-side in your
+> previous email, I had missed the bigger picture of what you were trying
+> to achieve.
+>
+>>
+>> If lg_rwlock_local_read_lock() spins, which means
+>> lg_rwlock_local_read_lock() spins on fallback_rwlock, and which means
+>> lg_rwlock_global_write_lock() took the lgrwlock successfully and
+>> return, and which means lg_rwlock_local_read_lock() will stop spinning
+>> when the write side finished.
+>>
+>
+> Unfortunately, I see quite a few issues with the code above. IIUC, the
+> writer and the reader both increment the same counters. So how will the
+> unlock() code in the reader path know when to unlock which of the locks?
 
-I was wrong. -EFAULT will be returned, however the vma will grow nevertheless.
-Which in turn will cause trouble.
+The same as your code, the reader(which nested in write C.S.) just dec
+the counters.
 
-> Our stack-down growing handling requires the whole guard page, and
-> should never grow down to touch the previous vma.
-> 
-> If it does, that's a bug in our stack growing, not in
-> strncpy_from_user(). Which could definitely be the case, of course.
-> But we should fix it there, not change the strncpy.
+> (The counter-dropping-to-zero logic is not safe, since it can be updated
+> due to different reasons). And now that I look at it again, in the absence
+> of the writer, the reader is allowed to be recursive at the heavy cost of
+> taking the global rwlock for read, every 2nd time you nest (because the
+> spinlock is non-recursive).
 
-After all expand_stack() simply expands the stack to the requested address,
-since the guard page is considered to be not included it will just grow
-exactly down to the previous mapping.
-Only in handle_mm_fault() afterwards there is a check if the access happened
-within the guard page which then will make the access fault.
-However the stack vma has already grown and user space is broken afterwards.
+(I did not understand your comments of this part)
+nested reader is considered seldom. But if N(>=2) nested readers happen,
+the overhead is:
+    1 spin_try_lock() + 1 read_lock() + (N-1) __this_cpu_inc()
 
-Here an example: this is before the kernel accesses memory right behind the
-ld.so.cache mapping:
+> Also, this lg_rwlock implementation uses 3
+> different data-structures - a per-cpu spinlock, a global rwlock and
+> a per-cpu refcnt, and its not immediately apparent why you need those many
+> or even those many varieties.
 
-[root@p2345007 ~]# cat /proc/2285/maps
-00400000-00401000 r-xp 00000000 5e:01 148858                             /root/a.out
-00401000-00402000 rw-p 00000000 5e:01 148858                             /root/a.out
-40000000-4001c000 r-xp 00000000 5e:01 260585                             /lib/ld-2.14.1.so
-4001c000-4001e000 rw-p 0001b000 5e:01 260585                             /lib/ld-2.14.1.so
-4001e000-40020000 r-xp 00000000 00:00 0                                  [vdso]
-40020000-40023000 rw-p 00000000 00:00 0
-40023000-4002c000 r--p 00000000 5e:01 39                                 /etc/ld.so.cache
-7ffdf000-80000000 rw-p 00000000 00:00 0                                  [stack]
+data-structures is the same as yours.
+fallback_reader_refcnt <--> reader_refcnt
+per-cpu spinlock <--> write_signal
+fallback_rwlock  <---> global_rwlock
 
-Then an "open" system call to the file  "/lib/libc.so.6" happens. The string is
-null terminated and completely fits into the 0x4002b000 user space page. However
-when copying from user space with strncpy_from_user() the kernel also reads from
-the 0x4002c000 page.
-This generates a fault and grows the stack vma downwards to 0x4002c000:
+> Also I see that this doesn't handle the
+> case of interrupt-handlers also being readers.
 
-[root@p2345007 ~]# cat /proc/2285/maps
-00400000-00401000 r-xp 00000000 5e:01 148858                             /root/a.out
-00401000-00402000 rw-p 00000000 5e:01 148858                             /root/a.out
-40000000-4001c000 r-xp 00000000 5e:01 260585                             /lib/ld-2.14.1.so
-4001c000-4001e000 rw-p 0001b000 5e:01 260585                             /lib/ld-2.14.1.so
-4001e000-40020000 r-xp 00000000 00:00 0                                  [vdso]
-40020000-40023000 rw-p 00000000 00:00 0
-40023000-4002c000 r--p 00000000 5e:01 39                                 /etc/ld.so.cache
-4002d000-80000000 rw-p 00000000 00:00 0                                  [stack]
+handled. nested reader will see the ref or take the fallback_rwlock
 
-/proc/maps explicitly excludes the guard page, so the vma of the stack indeed
-starts at 0x4002c000. Only every access to the guard page will still fault.
-
+>
+> IMHO, the per-cpu rwlock scheme that I have implemented in this patchset
+> has a clean, understandable design and just enough data-structures/locks
+> to achieve its goal and has several optimizations (like reducing the
+> interrupts-disabled time etc) included - all in a very straight-forward
+> manner. Since this is non-trivial, IMHO, starting from a clean slate is
+> actually better than trying to retrofit the logic into some locking scheme
+> which we actively want to avoid (and hence effectively we aren't even
+> borrowing anything from!).
+>
+> To summarize, if you are just pointing out that we can implement the same
+> logic by altering lglocks, then sure, I acknowledge the possibility.
+> However, I don't think doing that actually makes it better; it either
+> convolutes the logic unnecessarily, or ends up looking _very_ similar to
+> the implementation in this patchset, from what I can see.
+>
+> Regards,
+> Srivatsa S. Bhat
+>
