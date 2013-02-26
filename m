@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760516Ab3B0Aee (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:34:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42399 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933309Ab3BZX6v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933310Ab3BZX6v (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Feb 2013 18:58:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42384 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933283Ab3BZX6t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 18:58:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Leonid Shatz <leonid.shatz@ravellosystems.com>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 06/53] hrtimer: Prevent hrtimer_enqueue_reprogram race
-Date: Tue, 26 Feb 2013 15:57:35 -0800
-Message-Id: <20130226235620.501738562@linuxfoundation.org>
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [ 03/53] timeconst.pl: Eliminate Perl warning
+Date: Tue, 26 Feb 2013 15:57:32 -0800
+Message-Id: <20130226235620.192151489@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -29,94 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Leonid Shatz <leonid.shatz@ravellosystems.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit b22affe0aef429d657bc6505aacb1c569340ddd2 upstream.
+commit 63a3f603413ffe82ad775f2d62a5afff87fd94a0 upstream.
 
-hrtimer_enqueue_reprogram contains a race which could result in
-timer.base switch during unlock/lock sequence.
+defined(@array) is deprecated in Perl and gives off a warning.
+Restructure the code to remove that warning.
 
-hrtimer_enqueue_reprogram is releasing the lock protecting the timer
-base for calling raise_softirq_irqsoff() due to a lock ordering issue
-versus rq->lock.
+[ hpa: it would be interesting to revert to the timeconst.bc script.
+  It appears that the failures reported by akpm during testing of
+  that script was due to a known broken version of make, not a problem
+  with bc.  The Makefile rules could probably be restructured to avoid
+  the make bug, or it is probably old enough that it doesn't matter. ]
 
-If during that time another CPU calls __hrtimer_start_range_ns() on
-the same hrtimer, the timer base might switch, before the current CPU
-can lock base->lock again and therefor the unlock_timer_base() call
-will unlock the wrong lock.
-
-[ tglx: Added comment and massaged changelog ]
-
-Signed-off-by: Leonid Shatz <leonid.shatz@ravellosystems.com>
-Signed-off-by: Izik Eidus <izik.eidus@ravellosystems.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Link: http://lkml.kernel.org/r/1359981217-389-1-git-send-email-izik.eidus@ravellosystems.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |   36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ kernel/timeconst.pl |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -640,21 +640,9 @@ static inline void hrtimer_init_hres(str
-  * and expiry check is done in the hrtimer_interrupt or in the softirq.
-  */
- static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
--					    struct hrtimer_clock_base *base,
--					    int wakeup)
-+					    struct hrtimer_clock_base *base)
- {
--	if (base->cpu_base->hres_active && hrtimer_reprogram(timer, base)) {
--		if (wakeup) {
--			raw_spin_unlock(&base->cpu_base->lock);
--			raise_softirq_irqoff(HRTIMER_SOFTIRQ);
--			raw_spin_lock(&base->cpu_base->lock);
--		} else
--			__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
--
--		return 1;
+--- a/kernel/timeconst.pl
++++ b/kernel/timeconst.pl
+@@ -369,10 +369,8 @@ if ($hz eq '--can') {
+ 		die "Usage: $0 HZ\n";
+ 	}
+ 
+-	@val = @{$canned_values{$hz}};
+-	if (!defined(@val)) {
+-		@val = compute_values($hz);
 -	}
--
--	return 0;
-+	return base->cpu_base->hres_active && hrtimer_reprogram(timer, base);
++	$cv = $canned_values{$hz};
++	@val = defined($cv) ? @$cv : compute_values($hz);
+ 	output($hz, @val);
  }
- 
- static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
-@@ -735,8 +723,7 @@ static inline int hrtimer_switch_to_hres
- static inline void
- hrtimer_force_reprogram(struct hrtimer_cpu_base *base, int skip_equal) { }
- static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
--					    struct hrtimer_clock_base *base,
--					    int wakeup)
-+					    struct hrtimer_clock_base *base)
- {
- 	return 0;
- }
-@@ -995,8 +982,21 @@ int __hrtimer_start_range_ns(struct hrti
- 	 *
- 	 * XXX send_remote_softirq() ?
- 	 */
--	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases))
--		hrtimer_enqueue_reprogram(timer, new_base, wakeup);
-+	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
-+		&& hrtimer_enqueue_reprogram(timer, new_base)) {
-+		if (wakeup) {
-+			/*
-+			 * We need to drop cpu_base->lock to avoid a
-+			 * lock ordering issue vs. rq->lock.
-+			 */
-+			raw_spin_unlock(&new_base->cpu_base->lock);
-+			raise_softirq_irqoff(HRTIMER_SOFTIRQ);
-+			local_irq_restore(flags);
-+			return ret;
-+		} else {
-+			__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
-+		}
-+	}
- 
- 	unlock_hrtimer_base(timer, &flags);
- 
+ exit 0;
 
 
