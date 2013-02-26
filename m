@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760325Ab3B0ADL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:03:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42529 "EHLO
+	id S1759930Ab3B0ADK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:03:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42534 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933459Ab3BZX7M (ORCPT
+	with ESMTP id S933577Ab3BZX7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:59:12 -0500
+	Tue, 26 Feb 2013 18:59:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Igor Grinberg <grinberg@compulab.co.il>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [ 35/53] ARM: PXA3xx: program the CSMSADRCFG register
-Date: Tue, 26 Feb 2013 15:58:04 -0800
-Message-Id: <20130226235623.502043360@linuxfoundation.org>
+        Phileas Fogg <phileas-fogg@mail.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 36/53] powerpc/kexec: Disable hard IRQ before kexec
+Date: Tue, 26 Feb 2013 15:58:05 -0800
+Message-Id: <20130226235623.619788442@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -28,70 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Igor Grinberg <grinberg@compulab.co.il>
+From: Phileas Fogg <phileas-fogg@mail.ru>
 
-commit d107a204154ddd79339203c2deeb7433f0cf6777 upstream.
+commit 8520e443aa56cc157b015205ea53e7b9fc831291 upstream.
 
-The Chip Select Configuration Register must be programmed to 0x2 in
-order to achieve the correct behavior of the Static Memory Controller.
+Disable hard IRQ before kexec a new kernel image.
+Not doing it can result in corrupted data in the memory segments
+reserved for the new kernel.
 
-Without this patch devices wired to DFI and accessed through SMC cannot
-be accessed after resume from S2.
-
-Do not rely on the boot loader to program the CSMSADRCFG register by
-programming it in the kernel smemc module.
-
-Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
-Acked-by: Eric Miao <eric.y.miao@gmail.com>
-Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Signed-off-by: Phileas Fogg <phileas-fogg@mail.ru>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-pxa/include/mach/smemc.h |    1 +
- arch/arm/mach-pxa/smemc.c              |   15 ++++++++++++++-
- 2 files changed, 15 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/machine_kexec_64.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/arm/mach-pxa/include/mach/smemc.h
-+++ b/arch/arm/mach-pxa/include/mach/smemc.h
-@@ -37,6 +37,7 @@
- #define CSADRCFG1	(SMEMC_VIRT + 0x84)  /* Address Configuration Register for CS1 */
- #define CSADRCFG2	(SMEMC_VIRT + 0x88)  /* Address Configuration Register for CS2 */
- #define CSADRCFG3	(SMEMC_VIRT + 0x8C)  /* Address Configuration Register for CS3 */
-+#define CSMSADRCFG	(SMEMC_VIRT + 0xA0)  /* Chip Select Configuration Register */
- 
- /*
-  * More handy macros for PCMCIA
---- a/arch/arm/mach-pxa/smemc.c
-+++ b/arch/arm/mach-pxa/smemc.c
-@@ -40,6 +40,8 @@ static void pxa3xx_smemc_resume(void)
- 	__raw_writel(csadrcfg[1], CSADRCFG1);
- 	__raw_writel(csadrcfg[2], CSADRCFG2);
- 	__raw_writel(csadrcfg[3], CSADRCFG3);
-+	/* CSMSADRCFG wakes up in its default state (0), so we need to set it */
-+	__raw_writel(0x2, CSMSADRCFG);
- }
- 
- static struct syscore_ops smemc_syscore_ops = {
-@@ -49,8 +51,19 @@ static struct syscore_ops smemc_syscore_
- 
- static int __init smemc_init(void)
+--- a/arch/powerpc/kernel/machine_kexec_64.c
++++ b/arch/powerpc/kernel/machine_kexec_64.c
+@@ -163,6 +163,8 @@ static int kexec_all_irq_disabled = 0;
+ static void kexec_smp_down(void *arg)
  {
--	if (cpu_is_pxa3xx())
-+	if (cpu_is_pxa3xx()) {
-+		/*
-+		 * The only documentation we have on the
-+		 * Chip Select Configuration Register (CSMSADRCFG) is that
-+		 * it must be programmed to 0x2.
-+		 * Moreover, in the bit definitions, the second bit
-+		 * (CSMSADRCFG[1]) is called "SETALWAYS".
-+		 * Other bits are reserved in this register.
-+		 */
-+		__raw_writel(0x2, CSMSADRCFG);
+ 	local_irq_disable();
++	hard_irq_disable();
 +
- 		register_syscore_ops(&smemc_syscore_ops);
-+	}
+ 	mb(); /* make sure our irqs are disabled before we say they are */
+ 	get_paca()->kexec_state = KEXEC_STATE_IRQS_OFF;
+ 	while(kexec_all_irq_disabled == 0)
+@@ -245,6 +247,8 @@ static void kexec_prepare_cpus(void)
+ 	wake_offline_cpus();
+ 	smp_call_function(kexec_smp_down, NULL, /* wait */0);
+ 	local_irq_disable();
++	hard_irq_disable();
++
+ 	mb(); /* make sure IRQs are disabled before we say they are */
+ 	get_paca()->kexec_state = KEXEC_STATE_IRQS_OFF;
  
- 	return 0;
+@@ -282,6 +286,7 @@ static void kexec_prepare_cpus(void)
+ 	if (ppc_md.kexec_cpu_down)
+ 		ppc_md.kexec_cpu_down(0, 0);
+ 	local_irq_disable();
++	hard_irq_disable();
  }
+ 
+ #endif /* SMP */
 
 
