@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933095Ab3BZX6f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42271 "EHLO
+	id S933227Ab3B0AmZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:42:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42283 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933059Ab3BZX6c (ORCPT
+	with ESMTP id S933080Ab3BZX6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:32 -0500
+	Tue, 26 Feb 2013 18:58:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cong Wang <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Jesse Gross <jesse@nicira.com>
-Subject: [ 136/150] vlan: adjust vlan_set_encap_proto() for its callers
-Date: Tue, 26 Feb 2013 15:56:33 -0800
-Message-Id: <20130226235538.457554484@linuxfoundation.org>
+        Magnus Damm <damm@opensource.se>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [ 139/150] gpio: em: Use irq_domain_add_simple() to fix runtime error
+Date: Tue, 26 Feb 2013 15:56:36 -0800
+Message-Id: <20130226235538.838847247@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,69 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Magnus Damm <damm@opensource.se>
 
-From: Cong Wang <amwang@redhat.com>
+commit c7886b18273b07042e25e8d3ba5c983837b84123 upstream.
 
-[ Upstream commit da8c87241c26aac81a64c7e4d21d438a33018f4e ]
+Adjust the gpio-em.c driver to reconsider the pdata->irq_base
+variable. Non-DT board code like for instance board-kzm9d.c
+needs to operate of a static IRQ range for platform devices.
 
-There are two places to call vlan_set_encap_proto():
-vlan_untag() and __pop_vlan_tci().
+So this patch is updating the code to make use of the function
+irq_domain_add_simple() instead of irq_domain_add_linear().
 
-vlan_untag() assumes skb->data points after mac addr, otherwise
-the following code
+Fixes a EMEV2 / KZM9D runtime error caused by the following commit:
+7385500 gpio/em: convert to linear IRQ domain
 
-        vhdr = (struct vlan_hdr *) skb->data;
-        vlan_tci = ntohs(vhdr->h_vlan_TCI);
-        __vlan_hwaccel_put_tag(skb, vlan_tci);
-
-        skb_pull_rcsum(skb, VLAN_HLEN);
-
-won't be correct. But __pop_vlan_tci() assumes points _before_
-mac addr.
-
-In vlan_set_encap_proto(), it looks for some magic L2 value
-after mac addr:
-
-        rawp = skb->data;
-        if (*(unsigned short *) rawp == 0xFFFF)
-	...
-
-Therefore __pop_vlan_tci() is obviously wrong.
-
-A quick fix is avoiding using skb->data in vlan_set_encap_proto(),
-use 'vhdr+1' is always correct in both cases.
-
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Jesse Gross <jesse@nicira.com>
-Acked-by: Jesse Gross <jesse@nicira.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Magnus Damm <damm@opensource.se>
+Tested-by: Simon Horman <horms+renesas@verge.net.au>
+Reported-by: Simon Horman <horms+renesas@verge.net.au>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/if_vlan.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/include/linux/if_vlan.h
-+++ b/include/linux/if_vlan.h
-@@ -331,7 +331,7 @@ static inline void vlan_set_encap_proto(
- 					struct vlan_hdr *vhdr)
- {
- 	__be16 proto;
--	unsigned char *rawp;
-+	unsigned short *rawp;
+---
+ drivers/gpio/gpio-em.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/gpio/gpio-em.c
++++ b/drivers/gpio/gpio-em.c
+@@ -299,8 +299,9 @@ static int em_gio_probe(struct platform_
+ 	irq_chip->irq_set_type = em_gio_irq_set_type;
+ 	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
  
- 	/*
- 	 * Was a VLAN packet, grab the encapsulated protocol, which the layer
-@@ -344,8 +344,8 @@ static inline void vlan_set_encap_proto(
- 		return;
- 	}
- 
--	rawp = skb->data;
--	if (*(unsigned short *) rawp == 0xFFFF)
-+	rawp = (unsigned short *)(vhdr + 1);
-+	if (*rawp == 0xFFFF)
- 		/*
- 		 * This is a magic hack to spot IPX packets. Older Novell
- 		 * breaks the protocol design and runs IPX over 802.3 without
+-	p->irq_domain = irq_domain_add_linear(pdev->dev.of_node,
++	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
+ 					      pdata->number_of_pins,
++					      pdata->irq_base,
+ 					      &em_gio_irq_domain_ops, p);
+ 	if (!p->irq_domain) {
+ 		ret = -ENXIO;
 
 
