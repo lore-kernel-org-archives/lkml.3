@@ -1,97 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758772Ab3BZO3k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 09:29:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48664 "EHLO mx1.redhat.com"
+	id S1759491Ab3BZOd6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 09:33:58 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56638 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753297Ab3BZO3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 09:29:39 -0500
-Date: Tue, 26 Feb 2013 15:28:04 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Lianwei Wang <lianwei.wang@gmail.com>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: PATCH: freezer: add fake signal clearing back when thaw task
-Message-ID: <20130226142804.GC28940@redhat.com>
-References: <CAJFUiJhxqWeQ9PiinpRYCUF8U_3dpaAdvsEKHW2i-QqZ=vkYsQ@mail.gmail.com> <20130225235313.GE2679@htj.dyndns.org>
+	id S1758578Ab3BZOdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 09:33:53 -0500
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <balbi@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <gregkh@linuxfoundation.org>, <kishon@ti.com>
+Subject: [PATCH 1/3] usb: dwc3-omap: Minor fixes to get dt working
+Date: Tue, 26 Feb 2013 20:03:27 +0530
+Message-ID: <1361889210-12875-1-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130225235313.GE2679@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ah, I just noticed that the changelog mentions wait_event_freezable() too,
+Includes few minor fixes in dwc3-omap like populating the compatible
+string in a correct way, extracting the utmi-mode property properly and
+changing the index of get_irq since irq of core is removed from hwmod
+entry.
+Also updated the documentation with dwc3-omap device tree binding
+information.
 
-On 02/25, Tejun Heo wrote:
->
-> > Subject: [PATCH] freezer: add fake signal clearing back when thaw task
-> >
-> > The fake TIF_SIGPENDING is set during freeze userspace process, but it
-> > is not cleared when thaw tasks after below commit:
-> >   34b087e freezer: kill unused set_freezable_with_signal()
-> >
-> > This will cause the userspace task that wait_event_freezable
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ Documentation/devicetree/bindings/usb/omap-usb.txt |   28 ++++++++++++
+ drivers/usb/dwc3/dwc3-omap.c                       |   45 +++++++++-----------
+ 2 files changed, 49 insertions(+), 24 deletions(-)
 
-But there is no userspace users?
-
-I guess wait_event_freezable() is only used to avoid the contribution
-to load_avg. So we can simplify it, __wait_event_freezable() can simply
-do freezable_schedule() or wait_event_freezable() can do
-freezer_do_not_count + wait_event_interruptible. Or we are going to add
-more users?
-
-As for current users, I think they do not need this interface. Something
-like below. I was going to try to convert khugepaged/ksm_scan_thread
-yesterday but I was distracted, will try to do tomorrow.
-
-Oleg.
-
---- x/mm/huge_memory.c
-+++ x/mm/huge_memory.c
-@@ -2616,7 +2616,7 @@ static int khugepaged_has_work(void)
- static int khugepaged_wait_event(void)
- {
- 	return !list_empty(&khugepaged_scan.mm_head) ||
--		kthread_should_stop();
-+		kthread_should_stop_or_freeze();
- }
+diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
+index 1ef0ce7..1b9f55f 100644
+--- a/Documentation/devicetree/bindings/usb/omap-usb.txt
++++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
+@@ -41,6 +41,34 @@ Board specific device node entry
+ 	power = <50>;
+ };
  
- static void khugepaged_do_scan(void)
-@@ -2655,20 +2655,18 @@ static void khugepaged_do_scan(void)
++OMAP DWC3 GLUE
++ - compatible : Should be "ti,dwc3"
++ - ti,hwmods : Should be "usb_otg_ss"
++ - reg : Address and length of the register set for the device.
++ - interrupts : The irq number of this device that is used to interrupt the
++   MPU
++ - #address-cells, #size-cells : Must be present if the device has sub-nodes
++ - utmi-mode : controls the source of UTMI/PIPE status for VBUS and OTG ID.
++   It should be set to "1" for HW mode and "2" for SW mode.
++ - ranges: the child address space are mapped 1:1 onto the parent address space
++
++Sub-nodes:
++The dwc3 core should be added as subnode to omap dwc3 glue.
++- dwc3 :
++   The binding details of dwc3 can be found in:
++   Documentation/devicetree/bindings/usb/dwc3.txt
++
++omap_dwc3 {
++	compatible = "ti,dwc3";
++	ti,hwmods = "usb_otg_ss";
++	reg = <0x4a020000 0x1ff>;
++	interrupts = <0 93 4>;
++	#address-cells = <1>;
++	#size-cells = <1>;
++	utmi-mode = <2>;
++	ranges;
++};
++
+ OMAP CONTROL USB
  
- static void khugepaged_wait_work(void)
- {
--	try_to_freeze();
--
- 	if (khugepaged_has_work()) {
- 		if (!khugepaged_scan_sleep_millisecs)
- 			return;
+ Required properties:
+diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
+index 22f337f..bafff68 100644
+--- a/drivers/usb/dwc3/dwc3-omap.c
++++ b/drivers/usb/dwc3/dwc3-omap.c
+@@ -318,11 +318,11 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 	struct resource		*res;
+ 	struct device		*dev = &pdev->dev;
  
--		wait_event_freezable_timeout(khugepaged_wait,
--					     kthread_should_stop(),
-+		wait_event_interruptible_timeout(khugepaged_wait,
-+					     kthread_should_stop_or_freeze(),
- 			msecs_to_jiffies(khugepaged_scan_sleep_millisecs));
- 		return;
+-	int			size;
+ 	int			ret = -ENOMEM;
+ 	int			irq;
+ 
+-	const u32		*utmi_mode;
++	int			utmi_mode;
++
+ 	u32			reg;
+ 
+ 	void __iomem		*base;
+@@ -336,13 +336,13 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, omap);
+ 
+-	irq = platform_get_irq(pdev, 1);
++	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0) {
+ 		dev_err(dev, "missing IRQ resource\n");
+ 		return -EINVAL;
  	}
  
- 	if (khugepaged_enabled())
--		wait_event_freezable(khugepaged_wait, khugepaged_wait_event());
-+		wait_event_interruptible(khugepaged_wait, khugepaged_wait_event());
- }
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(dev, "missing memory base resource\n");
+ 		return -EINVAL;
+@@ -389,25 +389,22 @@ static int dwc3_omap_probe(struct platform_device *pdev)
  
- static int khugepaged(void *none)
-@@ -2678,7 +2676,7 @@ static int khugepaged(void *none)
- 	set_freezable();
- 	set_user_nice(current, 19);
+ 	reg = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
  
--	while (!kthread_should_stop()) {
-+	while (!kthread_freezable_should_stop(NULL)) {
- 		khugepaged_do_scan();
- 		khugepaged_wait_work();
+-	utmi_mode = of_get_property(node, "utmi-mode", &size);
+-	if (utmi_mode && size == sizeof(*utmi_mode)) {
+-		reg |= *utmi_mode;
+-	} else {
+-		if (!pdata) {
+-			dev_dbg(dev, "missing platform data\n");
+-		} else {
+-			switch (pdata->utmi_mode) {
+-			case DWC3_OMAP_UTMI_MODE_SW:
+-				reg |= USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
+-				break;
+-			case DWC3_OMAP_UTMI_MODE_HW:
+-				reg &= ~USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
+-				break;
+-			default:
+-				dev_dbg(dev, "UNKNOWN utmi mode %d\n",
+-						pdata->utmi_mode);
+-			}
+-		}
++	if (node)
++		of_property_read_u32(node, "utmi-mode", &utmi_mode);
++	else if (pdata)
++		utmi_mode = pdata->utmi_mode;
++	else
++		dev_dbg(dev, "missing platform data\n");
++
++	switch (utmi_mode) {
++	case DWC3_OMAP_UTMI_MODE_SW:
++		reg |= USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
++		break;
++	case DWC3_OMAP_UTMI_MODE_HW:
++		reg &= ~USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
++		break;
++	default:
++		dev_dbg(dev, "UNKNOWN utmi mode %d\n", utmi_mode);
  	}
+ 
+ 	dwc3_omap_writel(omap->base, USBOTGSS_UTMI_OTG_STATUS, reg);
+@@ -467,7 +464,7 @@ static int dwc3_omap_remove(struct platform_device *pdev)
+ 
+ static const struct of_device_id of_dwc3_matach[] = {
+ 	{
+-		"ti,dwc3",
++		.compatible =	"ti,dwc3"
+ 	},
+ 	{ },
+ };
+-- 
+1.7.10.4
 
