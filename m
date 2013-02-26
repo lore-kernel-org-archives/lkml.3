@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab3BZKdH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 05:33:07 -0500
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:64751 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754434Ab3BZKdF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 05:33:05 -0500
-Date: Tue, 26 Feb 2013 10:32:58 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com, sameo@linux.intel.com
-Subject: Re: [PATCH 3/3] ARM: ux500: Add Snowball pin configuration for user
- LED
-Message-ID: <20130226103258.GG16685@gmail.com>
-References: <1357725965-27342-1-git-send-email-lee.jones@linaro.org>
- <1357725965-27342-3-git-send-email-lee.jones@linaro.org>
- <CACRpkdbgQP1ahFjHtCFeAcQzxHY3LvVidJFL0FfbwOOAZU5fAA@mail.gmail.com>
+	id S1753371Ab3BZKo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 05:44:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35643 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751117Ab3BZKo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 05:44:26 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com
+Subject: Re: [RFC] cpufreq: governor: Set MIN_LATENCY_MULTIPLIER to 20
+Date: Tue, 26 Feb 2013 11:44:19 +0100
+Message-ID: <1993068.XZh8f6yGqe@skinner.arch.suse.de>
+Organization: SUSE Products GmbH
+User-Agent: KMail/4.10 (Linux/3.7.7-1.2-desktop; KDE/4.10.0; x86_64; ; )
+In-Reply-To: <472e2bac1fc4a2589651beddbfaf6da53500d12e.1361871582.git.viresh.kumar@linaro.org>
+References: <472e2bac1fc4a2589651beddbfaf6da53500d12e.1361871582.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbgQP1ahFjHtCFeAcQzxHY3LvVidJFL0FfbwOOAZU5fAA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Jan 2013, Linus Walleij wrote:
-
-> On Wed, Jan 9, 2013 at 11:06 AM, Lee Jones <lee.jones@linaro.org> wrote:
+On Tuesday, February 26, 2013 03:13:32 PM Viresh Kumar wrote:
+> Currently MIN_LATENCY_MULTIPLIER is set defined as 100 and so on a system
+> with transition latency of 1 ms, the minimum sampling time comes to be
+> around 100 ms. That is quite big if you want to get better performance for
+> your system.
 > 
-> > Here we setup the GPIO pin responsible for illuminating the user
-> > LED on the Snowball low-cost development board.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Patch applied to my ux500 tree, branch ux500-pinctrl.
+> Redefine MIN_LATENCY_MULTIPLIER to 20 so that we can support 20ms sampling
+> rate for such platforms.
 
-Perhaps you can apply this to the for-next branch you pulled from me?
+Redefining MIN_LATENCY_MULTIPLIER shouldn't hurt that much, but this looks
+like a workaround.
+It only modifies the minimal sampling rate that userspace can set.
+You would still need to set something from userspace to get the perfect 
+sampling rate for this platform.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I wonder where the cpufreq driver does get the 1ms latency from?
+Is this value valid?
+The driver should return the correct latency, then there is no need for
+workarounds like this.
+
+      Thomas
