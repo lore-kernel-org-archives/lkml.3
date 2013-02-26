@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760079Ab3B0BT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:19:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41749 "EHLO
+	id S1759958Ab3BZX5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:57:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759963Ab3BZX5J (ORCPT
+	with ESMTP id S1759859Ab3BZX5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:09 -0500
+	Tue, 26 Feb 2013 18:57:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 025/150] xen: Send spinlock IPI to all waiters
-Date: Tue, 26 Feb 2013 15:54:42 -0800
-Message-Id: <20130226235526.846331743@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>, Dave Jones <davej@redhat.com>,
+        John Stultz <john.stultz@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 008/150] posix-cpu-timers: Fix nanosleep task_struct leak
+Date: Tue, 26 Feb 2013 15:54:25 -0800
+Message-Id: <20130226235524.924367630@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -28,63 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Bader <stefan.bader@canonical.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 76eaca031f0af2bb303e405986f637811956a422 upstream.
+commit e6c42c295e071dd74a66b5a9fcf4f44049888ed8 upstream.
 
-There is a loophole between Xen's current implementation of
-pv-spinlocks and the scheduler. This was triggerable through
-a testcase until v3.6 changed the TLB flushing code. The
-problem potentially is still there just not observable in the
-same way.
+The trinity fuzzer triggered a task_struct reference leak via
+clock_nanosleep with CPU_TIMERs. do_cpu_nanosleep() calls
+posic_cpu_timer_create(), but misses a corresponding
+posix_cpu_timer_del() which leads to the task_struct reference leak.
 
-What could happen was (is):
-
-1. CPU n tries to schedule task x away and goes into a slow
-   wait for the runq lock of CPU n-# (must be one with a lower
-   number).
-2. CPU n-#, while processing softirqs, tries to balance domains
-   and goes into a slow wait for its own runq lock (for updating
-   some records). Since this is a spin_lock_irqsave in softirq
-   context, interrupts will be re-enabled for the duration of
-   the poll_irq hypercall used by Xen.
-3. Before the runq lock of CPU n-# is unlocked, CPU n-1 receives
-   an interrupt (e.g. endio) and when processing the interrupt,
-   tries to wake up task x. But that is in schedule and still
-   on_cpu, so try_to_wake_up goes into a tight loop.
-4. The runq lock of CPU n-# gets unlocked, but the message only
-   gets sent to the first waiter, which is CPU n-# and that is
-   busily stuck.
-5. CPU n-# never returns from the nested interruption to take and
-   release the lock because the scheduler uses a busy wait.
-   And CPU n never finishes the task migration because the unlock
-   notification only went to CPU n-#.
-
-To avoid this and since the unlocking code has no real sense of
-which waiter is best suited to grab the lock, just send the IPI
-to all of them. This causes the waiters to return from the hyper-
-call (those not interrupted at least) and do active spinlocking.
-
-BugLink: http://bugs.launchpad.net/bugs/1011792
-
-Acked-by: Jan Beulich <JBeulich@suse.com>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20130215100810.GF4392@redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/xen/spinlock.c |    1 -
- 1 file changed, 1 deletion(-)
+ kernel/posix-cpu-timers.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -328,7 +328,6 @@ static noinline void xen_spin_unlock_slo
- 		if (per_cpu(lock_spinners, cpu) == xl) {
- 			ADD_STATS(released_slow_kicked, 1);
- 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
--			break;
- 		}
- 	}
- }
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -1401,8 +1401,10 @@ static int do_cpu_nanosleep(const clocki
+ 		while (!signal_pending(current)) {
+ 			if (timer.it.cpu.expires.sched == 0) {
+ 				/*
+-				 * Our timer fired and was reset.
++				 * Our timer fired and was reset, below
++				 * deletion can not fail.
+ 				 */
++				posix_cpu_timer_del(&timer);
+ 				spin_unlock_irq(&timer.it_lock);
+ 				return 0;
+ 			}
+@@ -1420,9 +1422,26 @@ static int do_cpu_nanosleep(const clocki
+ 		 * We were interrupted by a signal.
+ 		 */
+ 		sample_to_timespec(which_clock, timer.it.cpu.expires, rqtp);
+-		posix_cpu_timer_set(&timer, 0, &zero_it, it);
++		error = posix_cpu_timer_set(&timer, 0, &zero_it, it);
++		if (!error) {
++			/*
++			 * Timer is now unarmed, deletion can not fail.
++			 */
++			posix_cpu_timer_del(&timer);
++		}
+ 		spin_unlock_irq(&timer.it_lock);
+ 
++		while (error == TIMER_RETRY) {
++			/*
++			 * We need to handle case when timer was or is in the
++			 * middle of firing. In other cases we already freed
++			 * resources.
++			 */
++			spin_lock_irq(&timer.it_lock);
++			error = posix_cpu_timer_del(&timer);
++			spin_unlock_irq(&timer.it_lock);
++		}
++
+ 		if ((it->it_value.tv_sec | it->it_value.tv_nsec) == 0) {
+ 			/*
+ 			 * It actually did fire already.
 
 
