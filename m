@@ -1,88 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab3BZAMX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 19:12:23 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:50757 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758884Ab3BZAMU (ORCPT
+	id S1760016Ab3BZARe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 19:17:34 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:46118 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758884Ab3BZARa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 19:12:20 -0500
-Message-ID: <512BFDDD.1050903@gmail.com>
-Date: Tue, 26 Feb 2013 08:12:13 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 25 Feb 2013 19:17:30 -0500
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-mm@kvack.org, ngupta@vflare.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, sjenning@linux.vnet.ibm.com,
-        minchan@kernel.org
-Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie
- to a config option
-References: <1360175261-13287-1-git-send-email-dan.magenheimer@oracle.com> <5126EB45.10700@gmail.com> <c515af54-0972-41e6-96c2-8a6df9a9df5e@default>
-In-Reply-To: <c515af54-0972-41e6-96c2-8a6df9a9df5e@default>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <512BBAD8.8010006@linux.vnet.ibm.com>
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
+	<20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com>
+	<CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com>
+	<5122551E.1080703@linux.vnet.ibm.com>
+	<51226B46.9080707@linux.vnet.ibm.com>
+	<CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com>
+	<51226F91.7000108@linux.vnet.ibm.com>
+	<CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com>
+	<512BBAD8.8010006@linux.vnet.ibm.com>
+Date: Tue, 26 Feb 2013 08:17:29 +0800
+Message-ID: <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com>
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+From: Lai Jiangshan <eag0628@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
+        vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2013 01:29 AM, Dan Magenheimer wrote:
->> From: Ric Mason [mailto:ric.masonn@gmail.com]
->> Subject: Re: [PATCH] staging/zcache: Fix/improve zcache writeback code, tie to a config option
+On Tue, Feb 26, 2013 at 3:26 AM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> Hi Lai,
+>
+> On 02/25/2013 09:23 PM, Lai Jiangshan wrote:
+>> Hi, Srivatsa,
 >>
->> On 02/07/2013 02:27 AM, Dan Magenheimer wrote:
->>> It was observed by Andrea Arcangeli in 2011 that zcache can get "full"
->>> and there must be some way for compressed swap pages to be (uncompressed
->>> and then) sent through to the backing swap disk.  A prototype of this
->>> functionality, called "unuse", was added in 2012 as part of a major update
->>> to zcache (aka "zcache2"), but was left unfinished due to the unfortunate
->>> temporary fork of zcache.
->>>
->>> This earlier version of the code had an unresolved memory leak
->>> and was anyway dependent on not-yet-upstream frontswap and mm changes.
->>> The code was meanwhile adapted by Seth Jennings for similar
->>> functionality in zswap (which he calls "flush").  Seth also made some
->>> clever simplifications which are herein ported back to zcache.  As a
->>> result of those simplifications, the frontswap changes are no longer
->>> necessary, but a slightly different (and simpler) set of mm changes are
->>> still required [1].  The memory leak is also fixed.
->>>
->>> Due to feedback from akpm in a zswap thread, this functionality in zcache
->>> has now been renamed from "unuse" to "writeback".
->>>
->>> Although this zcache writeback code now works, there are open questions
->>> as how best to handle the policy that drives it.  As a result, this
->>> patch also ties writeback to a new config option.  And, since the
->>> code still depends on not-yet-upstreamed mm patches, to avoid build
->>> problems, the config option added by this patch temporarily depends
->>> on "BROKEN"; this config dependency can be removed in trees that
->>> contain the necessary mm patches.
->>>
->>> [1] https://lkml.org/lkml/2013/1/29/540/ https://lkml.org/lkml/2013/1/29/539/
->> This patch leads to backend interact with core mm directly,  is it core
->> mm should interact with frontend instead of backend? In addition,
->> frontswap has already have shrink funtion, should we can take advantage
->> of it?
-> Good questions!
+>> The target of the whole patchset is nice for me.
 >
-> If you have ideas (or patches) that handle the interaction with
-> the frontend instead of backend, we can take a look at them.
-> But for zcache (and zswap), the backend already interacts with
-> the core mm, for example to allocate and free pageframes.
+> Cool! Thanks :-)
 >
-> The existing frontswap shrink function cause data pages to be sucked
-> back from the backend.  The data pages are put back in the swapcache
-> and they aren't marked in any way so it is possible the data page
-> might soon (or immediately) be sent back to the backend.
+>> A question: How did you find out the such usages of
+>> "preempt_disable()" and convert them? did all are converted?
+>>
+>
+> Well, I scanned through the source tree for usages which implicitly
+> disabled CPU offline and converted them over. Its not limited to uses
+> of preempt_disable() alone - even spin_locks, rwlocks, local_irq_disable()
+> etc also help disable CPU offline. So I tried to dig out all such uses
+> and converted them. However, since the merge window is open, a lot of
+> new code is flowing into the tree. So I'll have to rescan the tree to
+> see if there are any more places to convert.
+>
+>> And I think the lock is too complex and reinvent the wheel, why don't
+>> you reuse the lglock?
+>
+> lglocks? No way! ;-) See below...
+>
+>> I wrote an untested draft here.
+>>
+>> Thanks,
+>> Lai
+>>
+>> PS: Some HA tools(I'm writing one) which takes checkpoints of
+>> virtual-machines frequently, I guess this patchset can speedup the
+>> tools.
+>>
+>> From 01db542693a1b7fc6f9ece45d57cb529d9be5b66 Mon Sep 17 00:00:00 2001
+>> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+>> Date: Mon, 25 Feb 2013 23:14:27 +0800
+>> Subject: [PATCH] lglock: add read-preference local-global rwlock
+>>
+>> locality via lglock(trylock)
+>> read-preference read-write-lock via fallback rwlock_t
+>>
+>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>> ---
+>>  include/linux/lglock.h |   31 +++++++++++++++++++++++++++++++
+>>  kernel/lglock.c        |   45 +++++++++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 76 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/lglock.h b/include/linux/lglock.h
+>> index 0d24e93..30fe887 100644
+>> --- a/include/linux/lglock.h
+>> +++ b/include/linux/lglock.h
+>> @@ -67,4 +67,35 @@ void lg_local_unlock_cpu(struct lglock *lg, int cpu);
+>>  void lg_global_lock(struct lglock *lg);
+>>  void lg_global_unlock(struct lglock *lg);
+>>
+>> +struct lgrwlock {
+>> +     unsigned long __percpu *fallback_reader_refcnt;
+>> +     struct lglock lglock;
+>> +     rwlock_t fallback_rwlock;
+>> +};
+>> +
+>> +#define DEFINE_LGRWLOCK(name)                                                \
+>> +     static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)           \
+>> +     = __ARCH_SPIN_LOCK_UNLOCKED;                                    \
+>> +     static DEFINE_PER_CPU(unsigned long, name ## _refcnt);          \
+>> +     struct lgrwlock name = {                                        \
+>> +             .fallback_reader_refcnt = &name ## _refcnt,             \
+>> +             .lglock = { .lock = &name ## _lock } }
+>> +
+>> +#define DEFINE_STATIC_LGRWLOCK(name)                                 \
+>> +     static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)           \
+>> +     = __ARCH_SPIN_LOCK_UNLOCKED;                                    \
+>> +     static DEFINE_PER_CPU(unsigned long, name ## _refcnt);          \
+>> +     static struct lgrwlock name = {                                 \
+>> +             .fallback_reader_refcnt = &name ## _refcnt,             \
+>> +             .lglock = { .lock = &name ## _lock } }
+>> +
+>> +static inline void lg_rwlock_init(struct lgrwlock *lgrw, char *name)
+>> +{
+>> +     lg_lock_init(&lgrw->lglock, name);
+>> +}
+>> +
+>> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw);
+>> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw);
+>> +void lg_rwlock_global_write_lock(struct lgrwlock *lgrw);
+>> +void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw);
+>>  #endif
+>> diff --git a/kernel/lglock.c b/kernel/lglock.c
+>> index 6535a66..463543a 100644
+>> --- a/kernel/lglock.c
+>> +++ b/kernel/lglock.c
+>> @@ -87,3 +87,48 @@ void lg_global_unlock(struct lglock *lg)
+>>       preempt_enable();
+>>  }
+>>  EXPORT_SYMBOL(lg_global_unlock);
+>> +
+>> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
+>> +{
+>> +     struct lglock *lg = &lgrw->lglock;
+>> +
+>> +     preempt_disable();
+>> +     if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
+>> +             if (likely(arch_spin_trylock(this_cpu_ptr(lg->lock)))) {
+>> +                     rwlock_acquire_read(&lg->lock_dep_map, 0, 0, _RET_IP_);
+>> +                     return;
+>> +             }
+>> +             read_lock(&lgrw->fallback_rwlock);
+>> +     }
+>> +
+>> +     __this_cpu_inc(*lgrw->fallback_reader_refcnt);
+>> +}
+>> +EXPORT_SYMBOL(lg_rwlock_local_read_lock);
+>> +
+>> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
+>> +{
+>> +     if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
+>> +             lg_local_unlock(&lgrw->lglock);
+>> +             return;
+>> +     }
+>> +
+>> +     if (!__this_cpu_dec_return(*lgrw->fallback_reader_refcnt))
+>> +             read_unlock(&lgrw->fallback_rwlock);
+>> +
+>> +     preempt_enable();
+>> +}
+>> +EXPORT_SYMBOL(lg_rwlock_local_read_unlock);
+>> +
+>
+> If I read the code above correctly, all you are doing is implementing a
+> recursive reader-side primitive (ie., allowing the reader to call these
+> functions recursively, without resulting in a self-deadlock).
+>
+> But the thing is, making the reader-side recursive is the least of our
+> problems! Our main challenge is to make the locking extremely flexible
+> and also safe-guard it against circular-locking-dependencies and deadlocks.
+> Please take a look at the changelog of patch 1 - it explains the situation
+> with an example.
 
-Then can frontswap shrink work well?
+
+My lock fixes your requirements(I read patch 1-6 before I sent). In
+readsite, lglock 's lock is token via trylock, the lglock doesn't
+contribute to deadlocks, we can consider it doesn't exist when we find
+deadlock from it. And global fallback rwlock doesn't result to
+deadlocks because it is read-preference(you need to inc the
+fallback_reader_refcnt inside the cpu-hotplug write-side, I don't do
+it in generic lgrwlock)
+
+
+If lg_rwlock_local_read_lock() spins, which means
+lg_rwlock_local_read_lock() spins on fallback_rwlock, and which means
+lg_rwlock_global_write_lock() took the lgrwlock successfully and
+return, and which means lg_rwlock_local_read_lock() will stop spinning
+when the write side finished.
+
 
 >
-> This code is used for backends that can't "callback" the frontend, such
-> as the Xen tmem backend and ramster.  But I do agree that there
-> might be a good use for the frontswap shrink function for zcache
-> (and zswap).  Any ideas?
+>> +void lg_rwlock_global_write_lock(struct lgrwlock *lgrw)
+>> +{
+>> +     lg_global_lock(&lgrw->lglock);
 >
-> Dan
-
+> This does a for-loop on all CPUs and takes their locks one-by-one. That's
+> exactly what we want to prevent, because that is the _source_ of all our
+> deadlock woes in this case. In the presence of perfect lock ordering
+> guarantees, this wouldn't have been a problem (that's why lglocks are
+> being used successfully elsewhere in the kernel). In the stop-machine()
+> removal case, the over-flexibility of preempt_disable() forces us to provide
+> an equally flexible locking alternative. Hence we can't use such per-cpu
+> locking schemes.
+>
+> You might note that, for exactly this reason, I haven't actually used any
+> per-cpu _locks_ in this synchronization scheme, though it is named as
+> "per-cpu rwlocks". The only per-cpu component here are the refcounts, and
+> we consciously avoid waiting/spinning on them (because then that would be
+> equivalent to having per-cpu locks, which are deadlock-prone). We use
+> global rwlocks to get the deadlock-safety that we need.
+>
+>> +     write_lock(&lgrw->fallback_rwlock);
+>> +}
+>> +EXPORT_SYMBOL(lg_rwlock_global_write_lock);
+>> +
+>> +void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw)
+>> +{
+>> +     write_unlock(&lgrw->fallback_rwlock);
+>> +     lg_global_unlock(&lgrw->lglock);
+>> +}
+>> +EXPORT_SYMBOL(lg_rwlock_global_write_unlock);
+>>
+>
+> Regards,
+> Srivatsa S. Bhat
+>
