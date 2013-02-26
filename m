@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab3BZO2h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 09:28:37 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:49408 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297Ab3BZO2g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 09:28:36 -0500
+	id S1758772Ab3BZO3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 09:29:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48664 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753297Ab3BZO3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 09:29:39 -0500
+Date: Tue, 26 Feb 2013 15:28:04 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Lianwei Wang <lianwei.wang@gmail.com>, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: PATCH: freezer: add fake signal clearing back when thaw task
+Message-ID: <20130226142804.GC28940@redhat.com>
+References: <CAJFUiJhxqWeQ9PiinpRYCUF8U_3dpaAdvsEKHW2i-QqZ=vkYsQ@mail.gmail.com> <20130225235313.GE2679@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1302261308550.22263@ionos>
-References: <1361496971-16939-1-git-send-email-fweisbec@gmail.com>
-	<1361496971-16939-3-git-send-email-fweisbec@gmail.com>
-	<alpine.LFD.2.02.1302221528470.22263@ionos>
-	<20130222150444.GD18149@somewhere.redhat.com>
-	<alpine.LFD.2.02.1302221605520.22263@ionos>
-	<CA+55aFxOreKQ-uzfMtXEb6XH4D8By2i=qOxfDLJnchSYsa34PQ@mail.gmail.com>
-	<alpine.LFD.2.02.1302261308550.22263@ionos>
-Date: Tue, 26 Feb 2013 15:28:34 +0100
-Message-ID: <CAFTL4hyYRO3MGBy9SgCvB+jhBTtW=RH3Pb4cXGpYMQJfCa3M5g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] irq: Cleanup context state transitions in irq_exit()
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130225235313.GE2679@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/26 Thomas Gleixner <tglx@linutronix.de>:
-> On Fri, 22 Feb 2013, Linus Torvalds wrote:
->> On Fri, Feb 22, 2013 at 7:06 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> >>
->> >> I prefer to let you guys have the final word on this patch. Whether you
->> >> apply it or not, I fear I'll never be entirely happy either way :)
->> >> That's the sad fate of dealing with circular dependencies...
->> >
->> > plus the butt ugly softirq semantics or the lack thereof ...
->>
->> The softirq semantics are perfectly fine. Don't blame softirq for the
->> fact that irq_exit() has had shit-for-brains for a long time.
->>
->> Just move the whole "invoke_softirq()" thing down to *after* the
->> tick_nohz_irq_exit() stuff.
->
-> We can't move tick_nohz_irq_exit() before invoke_softirq() simply
-> because we need to take the timers into account for NOHZ and those can
-> change when the softirq code runs.
->
-> So no, we need an extra check after invoke_softirq() and the same is
-> true for RCU.
+Ah, I just noticed that the changelog mentions wait_event_freezable() too,
 
-And what do you think about Linus's idea to move tick_nohz_irq_exit()
-to do_softirq()?
-This sounds feasible and a right place to do this, I hope that won't
-uglify do_softirq() though.
-I can try something.
+On 02/25, Tejun Heo wrote:
+>
+> > Subject: [PATCH] freezer: add fake signal clearing back when thaw task
+> >
+> > The fake TIF_SIGPENDING is set during freeze userspace process, but it
+> > is not cleared when thaw tasks after below commit:
+> >   34b087e freezer: kill unused set_freezable_with_signal()
+> >
+> > This will cause the userspace task that wait_event_freezable
+
+But there is no userspace users?
+
+I guess wait_event_freezable() is only used to avoid the contribution
+to load_avg. So we can simplify it, __wait_event_freezable() can simply
+do freezable_schedule() or wait_event_freezable() can do
+freezer_do_not_count + wait_event_interruptible. Or we are going to add
+more users?
+
+As for current users, I think they do not need this interface. Something
+like below. I was going to try to convert khugepaged/ksm_scan_thread
+yesterday but I was distracted, will try to do tomorrow.
+
+Oleg.
+
+--- x/mm/huge_memory.c
++++ x/mm/huge_memory.c
+@@ -2616,7 +2616,7 @@ static int khugepaged_has_work(void)
+ static int khugepaged_wait_event(void)
+ {
+ 	return !list_empty(&khugepaged_scan.mm_head) ||
+-		kthread_should_stop();
++		kthread_should_stop_or_freeze();
+ }
+ 
+ static void khugepaged_do_scan(void)
+@@ -2655,20 +2655,18 @@ static void khugepaged_do_scan(void)
+ 
+ static void khugepaged_wait_work(void)
+ {
+-	try_to_freeze();
+-
+ 	if (khugepaged_has_work()) {
+ 		if (!khugepaged_scan_sleep_millisecs)
+ 			return;
+ 
+-		wait_event_freezable_timeout(khugepaged_wait,
+-					     kthread_should_stop(),
++		wait_event_interruptible_timeout(khugepaged_wait,
++					     kthread_should_stop_or_freeze(),
+ 			msecs_to_jiffies(khugepaged_scan_sleep_millisecs));
+ 		return;
+ 	}
+ 
+ 	if (khugepaged_enabled())
+-		wait_event_freezable(khugepaged_wait, khugepaged_wait_event());
++		wait_event_interruptible(khugepaged_wait, khugepaged_wait_event());
+ }
+ 
+ static int khugepaged(void *none)
+@@ -2678,7 +2676,7 @@ static int khugepaged(void *none)
+ 	set_freezable();
+ 	set_user_nice(current, 19);
+ 
+-	while (!kthread_should_stop()) {
++	while (!kthread_freezable_should_stop(NULL)) {
+ 		khugepaged_do_scan();
+ 		khugepaged_wait_work();
+ 	}
+
