@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759836Ab3BZU6a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 15:58:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62733 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757815Ab3BZU63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 15:58:29 -0500
-From: Paul Moore <pmoore@redhat.com>
-To: x86@kernel.org, hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org, coreyb@linux.vnet.ibm.com, wad@chromium.org
-Subject: Re: [PATCH] x86: remove the x32 syscall bitmask from syscall_get_nr()
-Date: Tue, 26 Feb 2013 15:58:23 -0500
-Message-ID: <2012624.RMfkAO316Z@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.10 (Linux/3.7.3-gentoo; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <20130215172143.12549.10292.stgit@localhost>
-References: <20130215172143.12549.10292.stgit@localhost>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1759874Ab3BZU7U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 15:59:20 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:48669 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759497Ab3BZU7T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 15:59:19 -0500
+From: Bing Zhao <bzhao@marvell.com>
+To: Lubomir Rintel <lkundrak@v3.sk>, Dan Williams <dcbw@redhat.com>,
+        Harro Haan <hrhaan@gmail.com>
+Cc: libertas-dev@lists.infradead.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org, Daniel Drake <dsd@laptop.org>,
+        Bing Zhao <bzhao@marvell.com>
+Subject: [PATCH 3.9] libertas: fix crash for SD8688
+Date: Tue, 26 Feb 2013 12:58:35 -0800
+Message-Id: <1361912315-26024-1-git-send-email-bzhao@marvell.com>
+X-Mailer: git-send-email 1.7.0.2
+X-OriginalArrivalTime: 26 Feb 2013 20:58:39.0142 (UTC) FILETIME=[0D389460:01CE1464]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, February 15, 2013 12:21:43 PM Paul Moore wrote:
-> Commit fca460f95e928bae373daa8295877b6905bc62b8 simplified the x32
-> implementation by creating a syscall bitmask, equal to 0x40000000, that
-> could be applied to x32 syscalls such that the masked syscall number
-> would be the same as a x86_64 syscall.  While that patch was a nice
-> way to simplify the code, it went a bit too far by adding the mask to
-> syscall_get_nr(); returning the masked syscall numbers can cause
-> confusion with callers that expect syscall numbers matching the x32
-> ABI, e.g. unmasked syscall numbers.
-> 
-> This patch fixes this by simply removing the mask from syscall_get_nr()
-> while preserving the other changes from the original commit.  While
-> there are several syscall_get_nr() callers in the kernel, most simply
-> check that the syscall number is greater than zero, in this case this
-> patch will have no effect.  Of those remaining callers, they appear
-> to be few, seccomp and ftrace, and from my testing of seccomp without
-> this patch the original commit definitely breaks things; the seccomp
-> filter does not correctly filter the syscalls due to the difference in
-> syscall numbers in the BPF filter and the value from syscall_get_nr().
-> Applying this patch restores the seccomp BPF filter functionality on
-> x32.
-> 
-> I've tested this patch with the seccomp BPF filters as well as ftrace
-> and everything looks reasonable to me; needless to say general usage
-> seemed fine as well.
+For SD8688, FUNC_INIT command is queued before fw_ready flag is
+set. This causes the following crash as lbs_thread blocks any
+command if fw_ready is not set.
 
-I just wanted to check and see where things stood with this patch.  I'm not 
-overly concerned about how this problem is solved, just that it is solved.  If 
-someone else has a better approach that is fine with me; I'll even make the 
-offer to do additional testing if needed.
+[  209.338953] [<c0502248>] (__schedule+0x610/0x764) from [<bf20ae24>] (__lbs_cmd+0xb8/0x130 [libertas])
+[  209.348340] [<bf20ae24>] (__lbs_cmd+0xb8/0x130 [libertas]) from [<bf222474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio])
+[  209.360136] [<bf222474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio]) from [<bf2226c4>] (if_sdio_power_on+0x18c/0x20c [libertas_sdio])
+[  209.373052] [<bf2226c4>] (if_sdio_power_on+0x18c/0x20c [libertas_sdio]) from [<bf222944>] (if_sdio_probe+0x200/0x31c [libertas_sdio])
+[  209.385316] [<bf222944>] (if_sdio_probe+0x200/0x31c [libertas_sdio]) from [<bf01d820>] (sdio_bus_probe+0x94/0xfc [mmc_core])
+[  209.396748] [<bf01d820>] (sdio_bus_probe+0x94/0xfc [mmc_core]) from [<c02e729c>] (driver_probe_device+0x12c/0x348)
+[  209.407214] [<c02e729c>] (driver_probe_device+0x12c/0x348) from [<c02e7530>] (__driver_attach+0x78/0x9c)
+[  209.416798] [<c02e7530>] (__driver_attach+0x78/0x9c) from [<c02e5658>] (bus_for_each_dev+0x50/0x88)
+[  209.425946] [<c02e5658>] (bus_for_each_dev+0x50/0x88) from [<c02e6810>] (bus_add_driver+0x108/0x268)
+[  209.435180] [<c02e6810>] (bus_add_driver+0x108/0x268) from [<c02e782c>] (driver_register+0xa4/0x134)
+[  209.444426] [<c02e782c>] (driver_register+0xa4/0x134) from [<bf22601c>] (if_sdio_init_module+0x1c/0x3c [libertas_sdio])
+[  209.455339] [<bf22601c>] (if_sdio_init_module+0x1c/0x3c [libertas_sdio]) from [<c00085b8>] (do_one_initcall+0x98/0x174)
+[  209.466236] [<c00085b8>] (do_one_initcall+0x98/0x174) from [<c0076504>] (load_module+0x1c5c/0x1f80)
+[  209.475390] [<c0076504>] (load_module+0x1c5c/0x1f80) from [<c007692c>] (sys_init_module+0x104/0x128)
+[  209.484632] [<c007692c>] (sys_init_module+0x104/0x128) from [<c0008c40>] (ret_fast_syscall+0x0/0x38)
 
--Paul
+Fix it by setting fw_ready flag prior to queuing FUNC_INIT command.
 
-> Signed-off-by: Paul Moore <pmoore@redhat.com>
-> Cc: stable@vger.kernel.org
-> Cc: Will Drewry <wad@chromium.org>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> ---
->  arch/x86/include/asm/syscall.h |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
-> index 1ace47b..2e188d6 100644
-> --- a/arch/x86/include/asm/syscall.h
-> +++ b/arch/x86/include/asm/syscall.h
-> @@ -29,13 +29,13 @@ extern const unsigned long sys_call_table[];
->   */
->  static inline int syscall_get_nr(struct task_struct *task, struct pt_regs
-> *regs) {
-> -	return regs->orig_ax & __SYSCALL_MASK;
-> +	return regs->orig_ax;
->  }
-> 
->  static inline void syscall_rollback(struct task_struct *task,
->  				    struct pt_regs *regs)
->  {
-> -	regs->ax = regs->orig_ax & __SYSCALL_MASK;
-> +	regs->ax = regs->orig_ax;
->  }
-> 
->  static inline long syscall_get_error(struct task_struct *task,
+Cc: <stable@vger.kernel.org> # 3.5+
+Reported-by: Lubomir Rintel <lkundrak@v3.sk>
+Tested-by: Lubomir Rintel <lkundrak@v3.sk>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+---
+ drivers/net/wireless/libertas/if_sdio.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
+index 739309e..4557833 100644
+--- a/drivers/net/wireless/libertas/if_sdio.c
++++ b/drivers/net/wireless/libertas/if_sdio.c
+@@ -825,6 +825,11 @@ static void if_sdio_finish_power_on(struct if_sdio_card *card)
+ 
+ 	sdio_release_host(func);
+ 
++	/* Set fw_ready before queuing any commands so that
++	 * lbs_thread won't block from sending them to firmware.
++	 */
++	priv->fw_ready = 1;
++
+ 	/*
+ 	 * FUNC_INIT is required for SD8688 WLAN/BT multiple functions
+ 	 */
+@@ -839,7 +844,6 @@ static void if_sdio_finish_power_on(struct if_sdio_card *card)
+ 			netdev_alert(priv->dev, "CMD_FUNC_INIT cmd failed\n");
+ 	}
+ 
+-	priv->fw_ready = 1;
+ 	wake_up(&card->pwron_waitq);
+ 
+ 	if (!card->started) {
 -- 
-paul moore
-security and virtualization @ redhat
+1.7.0.2
 
