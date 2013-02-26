@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934110Ab3B0BFy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:05:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41945 "EHLO
+	id S934117Ab3B0BGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:06:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41948 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760197Ab3BZX5m (ORCPT
+	with ESMTP id S1760192Ab3BZX5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 18:57:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 063/150] sparc64: Fix huge PMD to PTE translation for sun4u in TLB miss handler.
-Date: Tue, 26 Feb 2013 15:55:20 -0800
-Message-Id: <20130226235530.745628251@linuxfoundation.org>
+        Meelis Roos <mroos@ut.ee>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 062/150] sparc64: Fix tsb_grow() in atomic context.
+Date: Tue, 26 Feb 2013 15:55:19 -0800
+Message-Id: <20130226235530.644880719@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -29,87 +29,190 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 76968ad2eac6456270353de168b21f04f4b3d1d3 ]
+[ Upstream commit 0fbebed682ff2788dee58e8d7f7dda46e33aa10b ]
 
-When we set the sun4u version of the PTE execute bit, it's:
+If our first THP installation for an MM is via the set_pmd_at() done
+during khugepaged's collapsing we'll end up in tsb_grow() trying to do
+a GFP_KERNEL allocation with several locks held.
 
-	or	REG, _PAGE_EXEC_4U, REG
+Simply using GFP_ATOMIC in this situation is not the best option
+because we really can't have this fail, so we'd really like to keep
+this an order 0 GFP_KERNEL allocation if possible.
 
-_PAGE_EXEC_4U is 0x1000, unfortunately the immedate field of the
-'or' instruction is a signed 13-bit value.  So the above actually
-assembles into:
+Also, doing the TSB allocation from khugepaged is a really bad idea
+because we'll allocate it potentially from the wrong NUMA node in that
+context.
 
-	or	REG, -4096, REG
+So what we do is defer the hugepage TSB allocation until the first TLB
+miss we take on a hugepage.  This is slightly tricky because we have
+to handle two unusual cases:
 
-completely corrupting the final PTE value.
+1) Taking the first hugepage TLB miss in the window trap handler.
+   We'll call the winfix_trampoline when that is detected.
 
-Set it with a:
+2) An initial TSB allocation via TLB miss races with a hugetlb
+   fault on another cpu running the same MM.  We handle this by
+   unconditionally loading the TSB we see into the current cpu
+   even if it's non-NULL at hugetlb_setup time.
 
-	sethi	%hi(_PAGE_EXEC_4U), TMP
-	or	REG, TMP, REG
-
-sequence instead.
-
-This fixes "git gc" crashes on sun4u machines.
-
-Reported-by: Meelis Roos <mroos@linux.ee>
+Reported-by: Meelis Roos <mroos@ut.ee>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/tsb.h |   28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
+ arch/sparc/include/asm/hugetlb.h |    1 -
+ arch/sparc/include/asm/page_64.h |    4 ++--
+ arch/sparc/kernel/tsb.S          |   39 +++++++++++++++++++++++++++++++++++----
+ arch/sparc/mm/fault_64.c         |    9 +++++++--
+ arch/sparc/mm/init_64.c          |   24 +++++++++++++++++++-----
+ arch/sparc/mm/tlb.c              |   11 +++++++++--
+ 6 files changed, 72 insertions(+), 16 deletions(-)
 
---- a/arch/sparc/include/asm/tsb.h
-+++ b/arch/sparc/include/asm/tsb.h
-@@ -157,17 +157,26 @@ extern struct tsb_phys_patch_entry __tsb
- 	andn		REG2, 0x7, REG2; \
- 	add		REG1, REG2, REG1;
+--- a/arch/sparc/include/asm/hugetlb.h
++++ b/arch/sparc/include/asm/hugetlb.h
+@@ -12,7 +12,6 @@ pte_t huge_ptep_get_and_clear(struct mm_
  
--	/* This macro exists only to make the PMD translator below easier
--	 * to read.  It hides the ELF section switch for the sun4v code
--	 * patching.
-+	/* These macros exists only to make the PMD translator below
-+	 * easier to read.  It hides the ELF section switch for the
-+	 * sun4v code patching.
+ static inline void hugetlb_prefault_arch_hook(struct mm_struct *mm)
+ {
+-	hugetlb_setup(mm);
+ }
+ 
+ static inline int is_hugepage_only_range(struct mm_struct *mm,
+--- a/arch/sparc/include/asm/page_64.h
++++ b/arch/sparc/include/asm/page_64.h
+@@ -27,8 +27,8 @@
+ #ifndef __ASSEMBLY__
+ 
+ #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
+-struct mm_struct;
+-extern void hugetlb_setup(struct mm_struct *mm);
++struct pt_regs;
++extern void hugetlb_setup(struct pt_regs *regs);
+ #endif
+ 
+ #define WANT_PAGE_VIRTUAL
+--- a/arch/sparc/kernel/tsb.S
++++ b/arch/sparc/kernel/tsb.S
+@@ -136,12 +136,43 @@ tsb_miss_page_table_walk_sun4v_fastpath:
+ 	 nop
+ 
+ 	/* It is a huge page, use huge page TSB entry address we
+-	 * calculated above.
++	 * calculated above.  If the huge page TSB has not been
++	 * allocated, setup a trap stack and call hugetlb_setup()
++	 * to do so, then return from the trap to replay the TLB
++	 * miss.
++	 *
++	 * This is necessary to handle the case of transparent huge
++	 * pages where we don't really have a non-atomic context
++	 * in which to allocate the hugepage TSB hash table.  When
++	 * the 'mm' faults in the hugepage for the first time, we
++	 * thus handle it here.  This also makes sure that we can
++	 * allocate the TSB hash table on the correct NUMA node.
  	 */
--#define OR_PTE_BIT(REG, NAME)				\
-+#define OR_PTE_BIT_1INSN(REG, NAME)			\
- 661:	or		REG, _PAGE_##NAME##_4U, REG;	\
- 	.section	.sun4v_1insn_patch, "ax";	\
- 	.word		661b;				\
- 	or		REG, _PAGE_##NAME##_4V, REG;	\
- 	.previous;
- 
-+#define OR_PTE_BIT_2INSN(REG, TMP, NAME)		\
-+661:	sethi		%hi(_PAGE_##NAME##_4U), TMP;	\
-+	or		REG, TMP, REG;			\
-+	.section	.sun4v_2insn_patch, "ax";	\
-+	.word		661b;				\
-+	mov		-1, TMP;			\
-+	or		REG, _PAGE_##NAME##_4V, REG;	\
-+	.previous;
+ 	TRAP_LOAD_TRAP_BLOCK(%g7, %g2)
+-	ldx		[%g7 + TRAP_PER_CPU_TSB_HUGE_TEMP], %g2
+-	cmp		%g2, -1
+-	movne		%xcc, %g2, %g1
++	ldx		[%g7 + TRAP_PER_CPU_TSB_HUGE_TEMP], %g1
++	cmp		%g1, -1
++	bne,pt		%xcc, 60f
++	 nop
 +
- 	/* Load into REG the PTE value for VALID, CACHE, and SZHUGE.  */
- #define BUILD_PTE_VALID_SZHUGE_CACHE(REG)				   \
- 661:	sethi		%uhi(_PAGE_VALID|_PAGE_SZHUGE_4U), REG;		   \
-@@ -214,12 +223,13 @@ extern struct tsb_phys_patch_entry __tsb
- 	 andn		REG1, PMD_HUGE_PROTBITS, REG2;			      \
- 	sllx		REG2, PMD_PADDR_SHIFT, REG2;			      \
- 	/* REG2 now holds PFN << PAGE_SHIFT */				      \
--	andcc		REG1, PMD_HUGE_EXEC, %g0;			      \
--	bne,a,pt	%xcc, 1f;					      \
--	 OR_PTE_BIT(REG2, EXEC);					      \
--1:	andcc		REG1, PMD_HUGE_WRITE, %g0;			      \
-+	andcc		REG1, PMD_HUGE_WRITE, %g0;			      \
- 	bne,a,pt	%xcc, 1f;					      \
--	 OR_PTE_BIT(REG2, W);						      \
-+	 OR_PTE_BIT_1INSN(REG2, W);					      \
-+1:	andcc		REG1, PMD_HUGE_EXEC, %g0;			      \
-+	be,pt		%xcc, 1f;					      \
-+	 nop;								      \
-+	OR_PTE_BIT_2INSN(REG2, REG1, EXEC);				      \
- 	/* REG1 can now be clobbered, build final PTE */		      \
- 1:	BUILD_PTE_VALID_SZHUGE_CACHE(REG1);				      \
- 	ba,pt		%xcc, PTE_LABEL;				      \
++661:	rdpr		%pstate, %g5
++	wrpr		%g5, PSTATE_AG | PSTATE_MG, %pstate
++	.section	.sun4v_2insn_patch, "ax"
++	.word		661b
++	SET_GL(1)
++	nop
++	.previous
++
++	rdpr	%tl, %g3
++	cmp	%g3, 1
++	bne,pn	%xcc, winfix_trampoline
++	 nop
++	ba,pt	%xcc, etrap
++	 rd	%pc, %g7
++	call	hugetlb_setup
++	 add	%sp, PTREGS_OFF, %o0
++	ba,pt	%xcc, rtrap
++	 nop
++
+ 60:
+ #endif
+ 
+--- a/arch/sparc/mm/fault_64.c
++++ b/arch/sparc/mm/fault_64.c
+@@ -472,8 +472,13 @@ good_area:
+ #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
+ 	mm_rss = mm->context.huge_pte_count;
+ 	if (unlikely(mm_rss >
+-		     mm->context.tsb_block[MM_TSB_HUGE].tsb_rss_limit))
+-		tsb_grow(mm, MM_TSB_HUGE, mm_rss);
++		     mm->context.tsb_block[MM_TSB_HUGE].tsb_rss_limit)) {
++		if (mm->context.tsb_block[MM_TSB_HUGE].tsb)
++			tsb_grow(mm, MM_TSB_HUGE, mm_rss);
++		else
++			hugetlb_setup(regs);
++
++	}
+ #endif
+ 	return;
+ 
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2718,14 +2718,28 @@ static void context_reload(void *__data)
+ 		load_secondary_context(mm);
+ }
+ 
+-void hugetlb_setup(struct mm_struct *mm)
++void hugetlb_setup(struct pt_regs *regs)
+ {
+-	struct tsb_config *tp = &mm->context.tsb_block[MM_TSB_HUGE];
++	struct mm_struct *mm = current->mm;
++	struct tsb_config *tp;
+ 
+-	if (likely(tp->tsb != NULL))
+-		return;
++	if (in_atomic() || !mm) {
++		const struct exception_table_entry *entry;
++
++		entry = search_exception_tables(regs->tpc);
++		if (entry) {
++			regs->tpc = entry->fixup;
++			regs->tnpc = regs->tpc + 4;
++			return;
++		}
++		pr_alert("Unexpected HugeTLB setup in atomic context.\n");
++		die_if_kernel("HugeTSB in atomic", regs);
++	}
++
++	tp = &mm->context.tsb_block[MM_TSB_HUGE];
++	if (likely(tp->tsb == NULL))
++		tsb_grow(mm, MM_TSB_HUGE, 0);
+ 
+-	tsb_grow(mm, MM_TSB_HUGE, 0);
+ 	tsb_context_switch(mm);
+ 	smp_tsb_sync(mm);
+ 
+--- a/arch/sparc/mm/tlb.c
++++ b/arch/sparc/mm/tlb.c
+@@ -135,8 +135,15 @@ void set_pmd_at(struct mm_struct *mm, un
+ 			mm->context.huge_pte_count++;
+ 		else
+ 			mm->context.huge_pte_count--;
+-		if (mm->context.huge_pte_count == 1)
+-			hugetlb_setup(mm);
++
++		/* Do not try to allocate the TSB hash table if we
++		 * don't have one already.  We have various locks held
++		 * and thus we'll end up doing a GFP_KERNEL allocation
++		 * in an atomic context.
++		 *
++		 * Instead, we let the first TLB miss on a hugepage
++		 * take care of this.
++		 */
+ 	}
+ 
+ 	if (!pmd_none(orig)) {
 
 
