@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815Ab3BZSrE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 13:47:04 -0500
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:47434 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404Ab3BZSrC (ORCPT
+	id S1757936Ab3BZSvK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 13:51:10 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:4115 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752761Ab3BZSvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 13:47:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <337833384.57445.1361860509194.JavaMail.mail@webmail08>
-References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
-	<Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
-	<CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
-	<337833384.57445.1361860509194.JavaMail.mail@webmail08>
-Date: Tue, 26 Feb 2013 11:46:59 -0700
-Message-ID: <CAErSpo6CbO5KYXiErv6J_Dnm1u694C5fQPP2_cZL8VKDEnZa9A@mail.gmail.com>
-Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: stern@rowland.harvard.edu, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org, rjw@sisk.pl
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 26 Feb 2013 13:51:08 -0500
+Date: Tue, 26 Feb 2013 19:50:59 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Problem with commit "USB: EHCI: remove ASS/PSS polling timeout"
+Message-ID: <20130226195059.7f763ca5@endymion.delvare>
+In-Reply-To: <Pine.LNX.4.44L0.1302261316450.1832-100000@iolanthe.rowland.org>
+References: <20130226182409.046bdecd@endymion.delvare>
+	<Pine.LNX.4.44L0.1302261316450.1832-100000@iolanthe.rowland.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 11:35 PM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
-> Feb 26, 2013 03:57:52 AM, Bjorn Helgaas wrote:
->>
->>Where are we at with this, Artem?  I assume it's still a problem.
->>
->
-> Yes, it is, Bjorn.
->
-> In order to eliminate this problem I switched back to MBR yesterday, because
-> so far I haven't received any instructions or guidance as to how I can debug
-> it further. I'm absolutely sure USB write speed is just another manifestation of
-> it so I decided not to debug USB specifically (it just doesn't make too much
-> sense).
->
-> What I see is that something terribly wrong is going on but if Linus has no ideas
-> I, as an average Joe, don't have a slightest clue as to what I can do.
->
-> The bug report with necessary, but seemingly useless information, can be
-> found here: https://bugzilla.kernel.org/show_bug.cgi?id=53551
->
-> If anyone comes up with new ideas I can quickly try UEFI again now that I
-> have two HDDs at my disposal (the old one is formatted as GPT, the new one is
-> MBR).
+Hi Alan,
 
-The ideas I saw are:
+On Tue, 26 Feb 2013 13:21:30 -0500 (EST), Alan Stern wrote:
+> On Tue, 26 Feb 2013, Jean Delvare wrote:
+> > Since kernel 3.7.7, my Hauppauge Nova-T 500 Dual DVB-T TV card stopped
+> > working reliably. Half of the boots it will work, the other half it
+> > won't, with different error messages. For example
+> 
+> Yes, I know.  Other people have already reported the same problem -- 
+> but only for EHCI controllers made by VIA.  Do you also have a VIA EHCI 
+> controller?
 
-1) Figure out whether it ever worked.  If an older kernel worked
-correctly and a newer one is broken, bisection is at least a
-possibility.  You mentioned that it did work before (Feb 12), but in
-the past you never suspended twice in one boot session, whereas maybe
-you did when seeing the problem?
+Yes, VIA VT6212L:
 
-2) Try the "setpci" to set the MSI address back to the original value
-to see if it makes a difference (see my Feb 12 message).
+01:04.0 USB Controller [0c03]: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 Controller [1106:3038] (rev 62)
+01:04.1 USB Controller [0c03]: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 Controller [1106:3038] (rev 62)
+01:04.2 USB Controller [0c03]: VIA Technologies, Inc. USB 2.0 [1106:3104] (rev 65)
 
-3) Collect "lspci -vvv -xxxx" output to investigate the XHCI
-Unsupported Request errors.
+> > So please revert this commit upstream as well as in 3.8 and 3.7 stable
+> > kernel series.
+> 
+> I intend to as soon as the current merge window closes.
+> 
+> Or should I do it sooner?  Greg, if I send in a reversion patch now, 
+> will it get pushed to Linus within the merge window?
 
-4) Use usbmon to collect traces before and after the suspend.
+I see no reason to delay it. The merge window is when more patches are
+allowed to go in, not fewer. When a commit caused a regression in a
+stable kernel series, the right time to get it fixed is "as soon as
+possible."
 
-I googled around a bit looking for similar reports.  I found lots of
-suspend issues, mostly with Windows, but no leads yet.  It looks like
-the board has been around for a while, so you would think we'd have
-some other reports of a problem this bad.  But maybe it really is
-related to UEFI and nobody really uses that yet?
-
-Bjorn
+Thanks,
+-- 
+Jean Delvare
