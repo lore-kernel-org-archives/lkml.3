@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab3BZNQl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 08:16:41 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:41733 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757852Ab3BZNQk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 08:16:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAKfTPtBgEsEJUD+C55Tad8xi3areARQ4GV8WjTaCjncj8hONEA@mail.gmail.com>
-References: <1361435356-28466-1-git-send-email-vincent.guittot@linaro.org>
-	<20130222123213.GA17948@somewhere.redhat.com>
-	<CAKfTPtBgEsEJUD+C55Tad8xi3areARQ4GV8WjTaCjncj8hONEA@mail.gmail.com>
-Date: Tue, 26 Feb 2013 14:16:38 +0100
-Message-ID: <CAFTL4hz5OzFGfhsj2bNR+76VrpXCxyDtN6fqC1cYF3zpJpjOTg@mail.gmail.com>
-Subject: Re: [PATCH v4] sched: fix init NOHZ_IDLE flag
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org, rostedt@goodmis.org,
-        efault@gmx.de
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758826Ab3BZNRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 08:17:06 -0500
+Received: from slimlogic.co.uk ([89.16.172.20]:48909 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758113Ab3BZNRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 08:17:04 -0500
+From: Ian Lartey <ian@slimlogic.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org, ldewangan@nvidia.com,
+        sameo@linux.intel.com, Ian Lartey <ian@slimlogic.co.uk>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: [PATCH] mfd: palmas: is_palmas_charger needed by multiple drivers
+Date: Tue, 26 Feb 2013 13:16:12 +0000
+Message-Id: <1361884572-27606-1-git-send-email-ian@slimlogic.co.uk>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/22 Vincent Guittot <vincent.guittot@linaro.org>:
-> I wanted to avoid having to use the sd pointer for testing NOHZ_IDLE
-> flag because it occurs each time we go into idle but it seems to be
-> not easily feasible.
-> Another solution could be to add a synchronization step between
-> rcu_assign_pointer(dom 1, NULL) and create new domain to ensure that
-> all pending access to old sd values, has finished but this will imply
-> a potential delay in the rebuild  of sched_domain and i'm not sure
-> that it's acceptable
+is_palmas_charger checks for the presence of charging
+functionality in the device
 
-The other issue is that we'll need to abuse the fact that struct
-sched_domain is per cpu in order to store a per cpu state there.
-That's a bit ugly but at least safer.
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+---
+ include/linux/mfd/palmas.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Also, are struct sched_group and struct sched_group_power shared among
-several CPUs or are they per CPUs allocated as well? I guess they
-aren't otherwise nr_cpus_busy would be pointless.
+diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+index 3129f9a..98c0567 100644
+--- a/include/linux/mfd/palmas.h
++++ b/include/linux/mfd/palmas.h
+@@ -26,6 +26,11 @@
+ /* The ID_REVISION NUMBERS */
+ #define PALMAS_CHIP_OLD_ID		0x0000
+ #define PALMAS_CHIP_ID			0xC035
++#define PALMAS_CHIP_CHARGER_ID		0xC036
++
++#define is_palmas(a)	(((a) == PALMAS_CHIP_OLD_ID) || \
++			((a) == PALMAS_CHIP_ID))
++#define is_palmas_charger(a) ((a) == PALMAS_CHIP_CHARGER_ID)
+ 
+ struct palmas_pmic;
+ struct palmas_gpadc;
+-- 
+1.7.0.4
+
