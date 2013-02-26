@@ -1,192 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933958Ab3B0Aux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:50:53 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:11120 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932156Ab3B0Auv (ORCPT
+	id S933168Ab3B0AvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:51:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42173 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932663Ab3BZX6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:50:51 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
-        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
-        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH Resend v5 14/16] ARM: dts: add spi nodes for atmel SoC
-Date: Wed, 27 Feb 2013 08:48:37 +0800
-Message-ID: <1361926117-12604-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+	Tue, 26 Feb 2013 18:58:19 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Jiri Kosina <jkosina@suse.cz>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 117/150] fb: rework locking to fix lock ordering on takeover
+Date: Tue, 26 Feb 2013 15:56:14 -0800
+Message-Id: <20130226235536.241270386@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
+References: <20130226235523.930663721@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Genoud <richard.genoud@gmail.com>
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-[wenyou.yang@atmel.com: add spi nodes for sam9260, sam9263, sam9g45 and sam9n12]
-[wenyou.yang@atmel.com: remove spi property "cs-gpios" to the board dts files]
-[wenyou.yang@atmel.com: submit the patch]
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org
+------------------
+
+From: Alan Cox <alan@linux.intel.com>
+
+commit 50e244cc793d511b86adea24972f3a7264cae114 upstream.
+
+Adjust the console layer to allow a take over call where the caller
+already holds the locks.  Make the fb layer lock in order.
+
+This is partly a band aid, the fb layer is terminally confused about the
+locking rules it uses for its notifiers it seems.
+
+[akpm@linux-foundation.org: remove stray non-ascii char, tidy comment]
+[akpm@linux-foundation.org: export do_take_over_console()]
+[airlied: cleanup another non-ascii char]
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/arm/boot/dts/at91sam9260.dtsi |   18 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9263.dtsi |   18 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9g45.dtsi |   18 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9n12.dtsi |   18 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9x5.dtsi  |   18 ++++++++++++++++++
- 5 files changed, 90 insertions(+)
+ drivers/tty/vt/vt.c           |   93 +++++++++++++++++++++++++++++++-----------
+ drivers/video/console/fbcon.c |   29 ++++++++++++-
+ drivers/video/fbmem.c         |    5 --
+ drivers/video/fbsysfs.c       |    3 +
+ include/linux/console.h       |    1 
+ 5 files changed, 104 insertions(+), 27 deletions(-)
 
-diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
-index cb7bcc5..6e31dc8 100644
---- a/arch/arm/boot/dts/at91sam9260.dtsi
-+++ b/arch/arm/boot/dts/at91sam9260.dtsi
-@@ -471,6 +471,24 @@
- 				status = "disabled";
- 			};
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -2987,7 +2987,7 @@ int __init vty_init(const struct file_op
  
-+			spi0: spi@fffc8000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xfffc8000 0x200>;
-+				interrupts = <12 4 3>;
-+				status = "disabled";
-+			};
-+
-+			spi1: spi@fffcc000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xfffcc000 0x200>;
-+				interrupts = <13 4 3>;
-+				status = "disabled";
-+			};
-+
- 			adc0: adc@fffe0000 {
- 				compatible = "atmel,at91sam9260-adc";
- 				reg = <0xfffe0000 0x100>;
-diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
-index 271d4de..6c6d9ae 100644
---- a/arch/arm/boot/dts/at91sam9263.dtsi
-+++ b/arch/arm/boot/dts/at91sam9263.dtsi
-@@ -462,6 +462,24 @@
- 				reg = <0xfffffd40 0x10>;
- 				status = "disabled";
- 			};
-+
-+			spi0: spi@fffa4000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xfffa4000 0x200>;
-+				interrupts = <14 4 3>;
-+				status = "disabled";
-+			};
-+
-+			spi1: spi@fffa8000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xfffa8000 0x200>;
-+				interrupts = <15 4 3>;
-+				status = "disabled";
-+			};
- 		};
+ static struct class *vtconsole_class;
  
- 		nand0: nand@40000000 {
-diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
-index 6b1d4ca..e085b8a 100644
---- a/arch/arm/boot/dts/at91sam9g45.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g45.dtsi
-@@ -531,6 +531,24 @@
- 				reg = <0xfffffd40 0x10>;
- 				status = "disabled";
- 			};
-+
-+			spi0: spi@fffa4000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xfffa4000 0x200>;
-+				interrupts = <14 4 3>;
-+				status = "disabled";
-+			};
-+
-+			spi1: spi@fffa8000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xfffa8000 0x200>;
-+				interrupts = <15 4 3>;
-+				status = "disabled";
-+			};
- 		};
+-static int bind_con_driver(const struct consw *csw, int first, int last,
++static int do_bind_con_driver(const struct consw *csw, int first, int last,
+ 			   int deflt)
+ {
+ 	struct module *owner = csw->owner;
+@@ -2998,7 +2998,7 @@ static int bind_con_driver(const struct
+ 	if (!try_module_get(owner))
+ 		return -ENODEV;
  
- 		nand0: nand@40000000 {
-diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
-index 80e29c6..9f839a9 100644
---- a/arch/arm/boot/dts/at91sam9n12.dtsi
-+++ b/arch/arm/boot/dts/at91sam9n12.dtsi
-@@ -381,6 +381,24 @@
- 				#size-cells = <0>;
- 				status = "disabled";
- 			};
-+
-+			spi0: spi@f0000000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xf0000000 0x100>;
-+				interrupts = <13 4 3>;
-+				status = "disabled";
-+			};
-+
-+			spi1: spi@f0004000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xf0004000 0x100>;
-+				interrupts = <14 4 3>;
-+				status = "disabled";
-+			};
- 		};
+-	console_lock();
++	WARN_CONSOLE_UNLOCKED();
  
- 		nand0: nand@40000000 {
-diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-index 8ecca69..bc98e5a 100644
---- a/arch/arm/boot/dts/at91sam9x5.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-@@ -511,6 +511,24 @@
- 					trigger-value = <0x6>;
- 				};
- 			};
-+
-+			spi0: spi@f0000000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xf0000000 0x100>;
-+				interrupts = <13 4 3>;
-+				status = "disabled";
-+			};
-+
-+			spi1: spi@f0004000 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "atmel,at91rm9200-spi";
-+				reg = <0xf0004000 0x100>;
-+				interrupts = <14 4 3>;
-+				status = "disabled";
-+			};
- 		};
+ 	/* check if driver is registered */
+ 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+@@ -3083,11 +3083,22 @@ static int bind_con_driver(const struct
  
- 		nand0: nand@40000000 {
--- 
-1.7.9.5
+ 	retval = 0;
+ err:
+-	console_unlock();
+ 	module_put(owner);
+ 	return retval;
+ };
+ 
++
++static int bind_con_driver(const struct consw *csw, int first, int last,
++			   int deflt)
++{
++	int ret;
++
++	console_lock();
++	ret = do_bind_con_driver(csw, first, last, deflt);
++	console_unlock();
++	return ret;
++}
++
+ #ifdef CONFIG_VT_HW_CONSOLE_BINDING
+ static int con_is_graphics(const struct consw *csw, int first, int last)
+ {
+@@ -3199,9 +3210,9 @@ int unbind_con_driver(const struct consw
+ 	if (!con_is_bound(csw))
+ 		con_driver->flag &= ~CON_DRIVER_FLAG_INIT;
+ 
+-	console_unlock();
+ 	/* ignore return value, binding should not fail */
+-	bind_con_driver(defcsw, first, last, deflt);
++	do_bind_con_driver(defcsw, first, last, deflt);
++	console_unlock();
+ err:
+ 	module_put(owner);
+ 	return retval;
+@@ -3492,28 +3503,18 @@ int con_debug_leave(void)
+ }
+ EXPORT_SYMBOL_GPL(con_debug_leave);
+ 
+-/**
+- * register_con_driver - register console driver to console layer
+- * @csw: console driver
+- * @first: the first console to take over, minimum value is 0
+- * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
+- *
+- * DESCRIPTION: This function registers a console driver which can later
+- * bind to a range of consoles specified by @first and @last. It will
+- * also initialize the console driver by calling con_startup().
+- */
+-int register_con_driver(const struct consw *csw, int first, int last)
++static int do_register_con_driver(const struct consw *csw, int first, int last)
+ {
+ 	struct module *owner = csw->owner;
+ 	struct con_driver *con_driver;
+ 	const char *desc;
+ 	int i, retval = 0;
+ 
++	WARN_CONSOLE_UNLOCKED();
++
+ 	if (!try_module_get(owner))
+ 		return -ENODEV;
+ 
+-	console_lock();
+-
+ 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+ 		con_driver = &registered_con_driver[i];
+ 
+@@ -3566,10 +3567,29 @@ int register_con_driver(const struct con
+ 	}
+ 
+ err:
+-	console_unlock();
+ 	module_put(owner);
+ 	return retval;
+ }
++
++/**
++ * register_con_driver - register console driver to console layer
++ * @csw: console driver
++ * @first: the first console to take over, minimum value is 0
++ * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
++ *
++ * DESCRIPTION: This function registers a console driver which can later
++ * bind to a range of consoles specified by @first and @last. It will
++ * also initialize the console driver by calling con_startup().
++ */
++int register_con_driver(const struct consw *csw, int first, int last)
++{
++	int retval;
++
++	console_lock();
++	retval = do_register_con_driver(csw, first, last);
++	console_unlock();
++	return retval;
++}
+ EXPORT_SYMBOL(register_con_driver);
+ 
+ /**
+@@ -3623,17 +3643,44 @@ EXPORT_SYMBOL(unregister_con_driver);
+  *	when a driver wants to take over some existing consoles
+  *	and become default driver for newly opened ones.
+  *
+- *      take_over_console is basically a register followed by unbind
++ *	take_over_console is basically a register followed by unbind
++ */
++int do_take_over_console(const struct consw *csw, int first, int last, int deflt)
++{
++	int err;
++
++	err = do_register_con_driver(csw, first, last);
++	/*
++	 * If we get an busy error we still want to bind the console driver
++	 * and return success, as we may have unbound the console driver
++	 * but not unregistered it.
++	 */
++	if (err == -EBUSY)
++		err = 0;
++	if (!err)
++		do_bind_con_driver(csw, first, last, deflt);
++
++	return err;
++}
++EXPORT_SYMBOL_GPL(do_take_over_console);
++
++/*
++ *	If we support more console drivers, this function is used
++ *	when a driver wants to take over some existing consoles
++ *	and become default driver for newly opened ones.
++ *
++ *	take_over_console is basically a register followed by unbind
+  */
+ int take_over_console(const struct consw *csw, int first, int last, int deflt)
+ {
+ 	int err;
+ 
+ 	err = register_con_driver(csw, first, last);
+-	/* if we get an busy error we still want to bind the console driver
++	/*
++	 * If we get an busy error we still want to bind the console driver
+ 	 * and return success, as we may have unbound the console driver
+-	 * but not unregistered it.
+-	*/
++	 * but not unregistered it.
++	 */
+ 	if (err == -EBUSY)
+ 		err = 0;
+ 	if (!err)
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -529,6 +529,33 @@ static int search_for_mapped_con(void)
+ 	return retval;
+ }
+ 
++static int do_fbcon_takeover(int show_logo)
++{
++	int err, i;
++
++	if (!num_registered_fb)
++		return -ENODEV;
++
++	if (!show_logo)
++		logo_shown = FBCON_LOGO_DONTSHOW;
++
++	for (i = first_fb_vc; i <= last_fb_vc; i++)
++		con2fb_map[i] = info_idx;
++
++	err = do_take_over_console(&fb_con, first_fb_vc, last_fb_vc,
++				fbcon_is_default);
++
++	if (err) {
++		for (i = first_fb_vc; i <= last_fb_vc; i++)
++			con2fb_map[i] = -1;
++		info_idx = -1;
++	} else {
++		fbcon_has_console_bind = 1;
++	}
++
++	return err;
++}
++
+ static int fbcon_takeover(int show_logo)
+ {
+ 	int err, i;
+@@ -3121,7 +3148,7 @@ static int fbcon_fb_registered(struct fb
+ 		}
+ 
+ 		if (info_idx != -1)
+-			ret = fbcon_takeover(1);
++			ret = do_fbcon_takeover(1);
+ 	} else {
+ 		for (i = first_fb_vc; i <= last_fb_vc; i++) {
+ 			if (con2fb_map_boot[i] == idx)
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1650,7 +1650,9 @@ static int do_register_framebuffer(struc
+ 	event.info = fb_info;
+ 	if (!lock_fb_info(fb_info))
+ 		return -ENODEV;
++	console_lock();
+ 	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
++	console_unlock();
+ 	unlock_fb_info(fb_info);
+ 	return 0;
+ }
+@@ -1853,11 +1855,8 @@ int fb_new_modelist(struct fb_info *info
+ 	err = 1;
+ 
+ 	if (!list_empty(&info->modelist)) {
+-		if (!lock_fb_info(info))
+-			return -ENODEV;
+ 		event.info = info;
+ 		err = fb_notifier_call_chain(FB_EVENT_NEW_MODELIST, &event);
+-		unlock_fb_info(info);
+ 	}
+ 
+ 	return err;
+--- a/drivers/video/fbsysfs.c
++++ b/drivers/video/fbsysfs.c
+@@ -177,6 +177,8 @@ static ssize_t store_modes(struct device
+ 	if (i * sizeof(struct fb_videomode) != count)
+ 		return -EINVAL;
+ 
++	if (!lock_fb_info(fb_info))
++		return -ENODEV;
+ 	console_lock();
+ 	list_splice(&fb_info->modelist, &old_list);
+ 	fb_videomode_to_modelist((const struct fb_videomode *)buf, i,
+@@ -188,6 +190,7 @@ static ssize_t store_modes(struct device
+ 		fb_destroy_modelist(&old_list);
+ 
+ 	console_unlock();
++	unlock_fb_info(fb_info);
+ 
+ 	return 0;
+ }
+--- a/include/linux/console.h
++++ b/include/linux/console.h
+@@ -78,6 +78,7 @@ int con_is_bound(const struct consw *csw
+ int register_con_driver(const struct consw *csw, int first, int last);
+ int unregister_con_driver(const struct consw *csw);
+ int take_over_console(const struct consw *sw, int first, int last, int deflt);
++int do_take_over_console(const struct consw *sw, int first, int last, int deflt);
+ void give_up_console(const struct consw *sw);
+ #ifdef CONFIG_HW_CONSOLE
+ int con_debug_enter(struct vc_data *vc);
+
 
