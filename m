@@ -1,174 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146Ab3BZTHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 14:07:39 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:49886 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754791Ab3BZTHg (ORCPT
+	id S932683Ab3BZTOx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 14:14:53 -0500
+Received: from smtprelay0057.b.hostedemail.com ([64.98.42.57]:53153 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932631Ab3BZTOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 14:07:36 -0500
+	Tue, 26 Feb 2013 14:14:50 -0500
+X-Panda: scanned!
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::::::::::,RULES_HIT:152:355:379:582:599:601:967:973:974:988:989:1152:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1543:1593:1594:1605:1711:1730:1747:1777:1792:2194:2198:2199:2200:2393:2525:2553:2560:2563:2682:2685:2692:2693:2731:2859:2892:2896:2933:2937:2939:2942:2945:2947:2951:2954:3022:3027:3138:3139:3140:3141:3142:3421:3622:3865:3866:3867:3868:3869:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4361:5007:6117:6119:6261:7679:7808:7903:8700:9025:9036:9108:10004:10400:10848:11658:11914:12043:12050:12517:12519:12555:12698:12737:12740:13091:13095,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,omf02|3849570048|6143F38
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Filterd-Recvd-Size: 4215
+Date: Tue, 26 Feb 2013 19:14:48 +0000 (UTC)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: bhelgaas@google.com
+Cc: stern@rowland.harvard.edu, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org, rjw@sisk.pl
+Message-ID: <569718148.80620.1361906088301.JavaMail.mail@webmail13>
+References: <CAErSpo7qj2SNR7BfuBsfF-saZXvgcqqLtgoP5Hyb5u99qR4Ncg@mail.gmail.com>
+ <Pine.LNX.4.44L0.1302191119270.2215-100000@iolanthe.rowland.org>
+ <CAErSpo7NZoOQZyW76HEoOTVgdqL2CgbVScAeF6HGLAVaNCq0=w@mail.gmail.com>
+ <337833384.57445.1361860509194.JavaMail.mail@webmail08><CAErSpo6CbO5KYXiErv6J_Dnm1u694C5fQPP2_cZL8VKDEnZa9A@mail.gmail.com>
+Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
 MIME-Version: 1.0
-In-Reply-To: <1361892353-14786-14-git-send-email-jiang.liu@huawei.com>
-References: <1361892353-14786-1-git-send-email-jiang.liu@huawei.com>
-	<1361892353-14786-14-git-send-email-jiang.liu@huawei.com>
-Date: Tue, 26 Feb 2013 11:07:36 -0800
-X-Google-Sender-Auth: EfBX2_rWFohqFnYc2uSfIGh9WaQ
-Message-ID: <CAE9FiQV_hv3fD166LuZYhTKGxeKKKCw-Dak+8UYou7tRa-4hYw@mail.gmail.com>
-Subject: Re: [PATCH v8 13/13] PCI, ACPI: remove support of ACPI PCI subdrivers
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <jiang.liu@huawei.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.146.151.24]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 7:25 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> From: Myron Stowe <myron.stowe@redhat.com>
+Feb 27, 2013 12:47:01 AM, Bjorn Helgaas wrote:
+On Mon, Feb 25, 2013 at 11:35 PM, Artem S. Tashkinov wrote:
+>> Feb 26, 2013 03:57:52 AM, Bjorn Helgaas wrote:
+>>>
+>>>Where are we at with this, Artem?  I assume it's still a problem.
+>>>
+>>
+>> Yes, it is, Bjorn.
+>>
+>> In order to eliminate this problem I switched back to MBR yesterday, because
+>> so far I haven't received any instructions or guidance as to how I can debug
+>> it further. I'm absolutely sure USB write speed is just another manifestation of
+>> it so I decided not to debug USB specifically (it just doesn't make too much
+>> sense).
+>>
+>> What I see is that something terribly wrong is going on but if Linus has no ideas
+>> I, as an average Joe, don't have a slightest clue as to what I can do.
+>>
+>> The bug report with necessary, but seemingly useless information, can be
+>> found here: https://bugzilla.kernel.org/show_bug.cgi?id=53551
+>>
+>> If anyone comes up with new ideas I can quickly try UEFI again now that I
+>> have two HDDs at my disposal (the old one is formatted as GPT, the new one is
+>> MBR).
 >
-> Both sub-drivers of the "PCI Root Bridge ("pci_bridge")" driver, "acpiphp"
-> and "pci_slot", have been converted to hook directly into the PCI core.
+>The ideas I saw are:
 >
-> With the conversions there are no remaining usages of the 'struct
-> acpi_pci_driver' list based infrastructure.  This patch removes it.
->
-> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-> Cc: Toshi Kani <toshi.kani@hp.com>
-> Cc: linux-pci@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
+>1) Figure out whether it ever worked.  If an older kernel worked
+>correctly and a newer one is broken, bisection is at least a
+>possibility.  You mentioned that it did work before (Feb 12), but in
+>the past you never suspended twice in one boot session, whereas maybe
+>you did when seeing the problem?
 
-Nice cleanup!
+This is difficult to say since the first kernel I tried to run in EUFI mode was
+3.7.x, so I've no idea if any previous ones ever worked.
 
-for 1-13,
-Reviewed-by: Yinghai Lu <yinghai@kernel.org>
+>
+>2) Try the "setpci" to set the MSI address back to the original value
+>to see if it makes a difference (see my Feb 12 message).
 
-Thanks
+I will try it soon and report back to you.
 
-Yinghai
+>
+>3) Collect "lspci -vvv -xxxx" output to investigate the XHCI
+>Unsupported Request errors.
+>
+>4) Use usbmon to collect traces before and after the suspend.
 
-> ---
->  drivers/acpi/pci_root.c |   48 +----------------------------------------------
->  include/linux/acpi.h    |    9 ---------
->  2 files changed, 1 insertion(+), 56 deletions(-)
+Likewise. Still I don't quite understand why you are persistent in your
+desire to investigate USB controllers specifically - my problem affects
+all storage devices that I have.
+
 >
-> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> index 8b5a73b..2ef0c91 100644
-> --- a/drivers/acpi/pci_root.c
-> +++ b/drivers/acpi/pci_root.c
-> @@ -69,44 +69,12 @@ static struct acpi_driver acpi_pci_root_driver = {
->                 },
->  };
->
-> -/* Lock to protect both acpi_pci_roots and acpi_pci_drivers lists */
-> +/* Lock to protect both acpi_pci_roots lists */
->  static DEFINE_MUTEX(acpi_pci_root_lock);
->  static LIST_HEAD(acpi_pci_roots);
-> -static LIST_HEAD(acpi_pci_drivers);
->
->  static DEFINE_MUTEX(osc_lock);
->
-> -int acpi_pci_register_driver(struct acpi_pci_driver *driver)
-> -{
-> -       int n = 0;
-> -       struct acpi_pci_root *root;
-> -
-> -       mutex_lock(&acpi_pci_root_lock);
-> -       list_add_tail(&driver->node, &acpi_pci_drivers);
-> -       if (driver->add)
-> -               list_for_each_entry(root, &acpi_pci_roots, node) {
-> -                       driver->add(root);
-> -                       n++;
-> -               }
-> -       mutex_unlock(&acpi_pci_root_lock);
-> -
-> -       return n;
-> -}
-> -EXPORT_SYMBOL(acpi_pci_register_driver);
-> -
-> -void acpi_pci_unregister_driver(struct acpi_pci_driver *driver)
-> -{
-> -       struct acpi_pci_root *root;
-> -
-> -       mutex_lock(&acpi_pci_root_lock);
-> -       list_del(&driver->node);
-> -       if (driver->remove)
-> -               list_for_each_entry(root, &acpi_pci_roots, node)
-> -                       driver->remove(root);
-> -       mutex_unlock(&acpi_pci_root_lock);
-> -}
-> -EXPORT_SYMBOL(acpi_pci_unregister_driver);
-> -
->  /**
->   * acpi_is_root_bridge - determine whether an ACPI CA node is a PCI root bridge
->   * @handle - the ACPI CA node in question.
-> @@ -416,7 +384,6 @@ static int acpi_pci_root_add(struct acpi_device *device)
->         acpi_status status;
->         int result;
->         struct acpi_pci_root *root;
-> -       struct acpi_pci_driver *driver;
->         u32 flags, base_flags;
->         bool is_osc_granted = false;
->
-> @@ -576,12 +543,6 @@ static int acpi_pci_root_add(struct acpi_device *device)
->                 pci_assign_unassigned_bus_resources(root->bus);
->         }
->
-> -       mutex_lock(&acpi_pci_root_lock);
-> -       list_for_each_entry(driver, &acpi_pci_drivers, node)
-> -               if (driver->add)
-> -                       driver->add(root);
-> -       mutex_unlock(&acpi_pci_root_lock);
-> -
->         /* need to after hot-added ioapic is registered */
->         if (system_state != SYSTEM_BOOTING)
->                 pci_enable_bridges(root->bus);
-> @@ -602,16 +563,9 @@ end:
->  static int acpi_pci_root_remove(struct acpi_device *device, int type)
->  {
->         struct acpi_pci_root *root = acpi_driver_data(device);
-> -       struct acpi_pci_driver *driver;
->
->         pci_stop_root_bus(root->bus);
->
-> -       mutex_lock(&acpi_pci_root_lock);
-> -       list_for_each_entry_reverse(driver, &acpi_pci_drivers, node)
-> -               if (driver->remove)
-> -                       driver->remove(root);
-> -       mutex_unlock(&acpi_pci_root_lock);
-> -
->         device_set_run_wake(root->bus->bridge, false);
->         pci_acpi_remove_bus_pm_notifier(device);
->
-> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> index 8c1d6f2..eeb5600 100644
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -147,15 +147,6 @@ void acpi_penalize_isa_irq(int irq, int active);
->
->  void acpi_pci_irq_disable (struct pci_dev *dev);
->
-> -struct acpi_pci_driver {
-> -       struct list_head node;
-> -       int (*add)(struct acpi_pci_root *root);
-> -       void (*remove)(struct acpi_pci_root *root);
-> -};
-> -
-> -int acpi_pci_register_driver(struct acpi_pci_driver *driver);
-> -void acpi_pci_unregister_driver(struct acpi_pci_driver *driver);
-> -
->  extern int ec_read(u8 addr, u8 *val);
->  extern int ec_write(u8 addr, u8 val);
->  extern int ec_transaction(u8 command,
-> --
-> 1.7.9.5
->
+>I googled around a bit looking for similar reports.  I found lots of
+>suspend issues, mostly with Windows, but no leads yet.  It looks like
+>the board has been around for a while, so you would think we'd have
+>some other reports of a problem this bad.  But maybe it really is
+>related to UEFI and nobody really uses that yet?
+
+99% of people around me don't use UEFI, and the ones who use it do
+it because they want to run Hacintosh (it's quite complicated to run
+a EUFI OS from a non UEFI BIOS).
+
+That's the main reason you don't see similar reports. EUFI so far hasn't
+proven its supremacy and efficiency over BIOS. When 3TB and larger
+HDD's become more widespread people will have to use UEFI. They will
+simply have no choice (unless of course you have two HDDs, where one
+is BIOS formatted to boot your system, and another one is GPT
+partitioned in order to support > 2,2TB space).
+
+Best regards,
+
+Artem
