@@ -1,99 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab3BZFQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 00:16:10 -0500
-Received: from eth6445.sa.adsl.internode.on.net ([150.101.30.44]:33456 "EHLO
-	aix.gdt.id.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750877Ab3BZFQG (ORCPT
+	id S1752828Ab3BZFTy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 00:19:54 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:49278 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab3BZFTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 00:16:06 -0500
-X-Greylist: delayed 3524 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Feb 2013 00:16:06 EST
-Message-ID: <1361852232.23197.4.camel@andromache.adelaide.aarnet.edu.au>
-Subject: [PATCH] usb/net/asix_devices: Add USBNET HG20F9 ethernet dongle
-From: Glen Turner <gdt@gdt.id.au>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 26 Feb 2013 14:47:12 +1030
-Organization: http://www.gdt.id.au/~gdt/
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Feb 2013 00:19:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQWDktthNN3aCq-+tqWJU+Cz+PjN57E=pHzBBErCsZ8B7Q@mail.gmail.com>
+References: <20130223212120.GA4593@google.com>
+	<CAE9FiQWDktthNN3aCq-+tqWJU+Cz+PjN57E=pHzBBErCsZ8B7Q@mail.gmail.com>
+Date: Mon, 25 Feb 2013 21:19:50 -0800
+X-Google-Sender-Auth: ituMyDyNBoL6MYoJ3Q9oRJ_zMzU
+Message-ID: <CA+55aFx7jq7ruTN+pnp-4hPHnkr1G-1WAiAJSQYTPr7GOJjExw@mail.gmail.com>
+Subject: Re: [GIT PULL] PCI changes for v3.9
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This USB ethernet adapter was purchased in anodyne packaging
-marked "USB2.0 to LAN" from the computer store adjacent to
-linux.conf.au 2013 in Canberra (Australia). A web search
-shows other recent purchasers in Lancaster (UK) and Seattle
-(USA). Just like an emergent virus, our age of e-commerce and
-airmail allows underdocumented hardware to spread around the
-world instantly using the vector of ridiculously low prices.
+On Sat, Feb 23, 2013 at 6:49 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>
+> Please check if attached diff is right, and hope it could save Linus some time.
 
-Paige Thompson, infected via eBay, discovered that the HG20F9
-is a copy of the Asix 88772B; many viruses copy the RNA of
-other viruses. See Paige's work at
-<https://github.com/paigeadele/HG20F9>.
-This patch uses her discovery to update the restructured Asix
-driver in the current kernel.
+Hmm. I did things a bit differently, moving things around more in
+drivers/acpi/internal.h.
 
-The spread of viruses is often accompanied by rumours. It is
-rumoured that the HG20F9 has extensions to to provide gigabit
-ethernet. This patch does not chase that chimera.
+Also, my *gut* feel is that the new _handle_hotplug_event_root()
+function should do that whole dance with
+acpi_scan_lock_acquire()/acpi_scan_lock_release(), but I didn't really
+know if it's required or appropriate, so I left it alone. Could you
+take a look?
 
-Just as some viruses inhabit seemingly-healthy cells, the
-HG20F9 uses the Vendor ID 0x066b assigned to Linksys Inc.
-For the present there is no clash of Product ID 0x20f9.
-
-Signed-off-by: Glen Turner <gdt@gdt.id.au>
----
- drivers/net/usb/asix_devices.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
-
-diff --git a/drivers/net/usb/asix_devices.c b/drivers/net/usb/asix_devices.c
-index 7a6e758..649025d 100644
---- a/drivers/net/usb/asix_devices.c
-+++ b/drivers/net/usb/asix_devices.c
-@@ -883,6 +883,24 @@ static const struct driver_info ax88178_info = {
- 	.tx_fixup = asix_tx_fixup,
- };
- 
-+// USBLINK 20F9 "USB 2.0 LAN" USB ethernet adapter, typically found in
-+// no-name packaging.
-+// USB device strings are:
-+//   1: Manufacturer: USBLINK
-+//   2: Product: HG20F9 USB2.0
-+//   3: Serial: 000003
-+// Appears to be compatible with Asix 88772B.
-+static const struct driver_info hg20f9_info = {
-+	.description = "HG20F9 USB 2.0 Ethernet",
-+	.bind = ax88772_bind,
-+	.status = asix_status,
-+	.link_reset = ax88772_link_reset,
-+	.reset = ax88772_reset,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR | FLAG_MULTI_PACKET,
-+	.rx_fixup = asix_rx_fixup,
-+	.tx_fixup = asix_tx_fixup,
-+};
-+
- extern const struct driver_info ax88172a_info;
- 
- static const struct usb_device_id	products [] = {
-@@ -1022,6 +1040,12 @@ static const struct usb_device_id	products [] = {
- 	/* ASIX 88172a demo board */
- 	USB_DEVICE(0x0b95, 0x172a),
- 	.driver_info = (unsigned long) &ax88172a_info,
-+}, {
-+	// USBLINK HG20F9 "USB 2.0 LAN"
-+	// Appears to have gazumped Linksys's manufacturer ID but
-+	// doesn't (yet) conflict with any known Linksys product.
-+	USB_DEVICE(0x066b, 0x20f9),
-+	.driver_info = (unsigned long) &hg20f9_info,
- },
- 	{ },		// END
- };
--- 
-1.7.10.4
-
+            Linus
