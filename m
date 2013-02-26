@@ -1,85 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab3BZWJz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 17:09:55 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:61878 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503Ab3BZWJw (ORCPT
+	id S1754265Ab3BZWNL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 17:13:11 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:44330 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab3BZWNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 17:09:52 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Tue, 26 Feb 2013 17:09:51 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Peter Korsgaard <jacmet@sunsite.dk>
-Cc: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        Kyungsik Lee <kyungsik.lee@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
-        raphael.andy.lee@gmail.com
-Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
-In-reply-to: <87fw0i7n6d.fsf@dell.be.48ers.dk>
-Message-id: <alpine.LFD.2.03.1302261708120.1254@syhkavp.arg>
-References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
- <512D1C12.4080109@oberhumer.com>
- <alpine.LFD.2.03.1302261557220.1254@syhkavp.arg>
- <87fw0i7n6d.fsf@dell.be.48ers.dk>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Tue, 26 Feb 2013 17:13:09 -0500
+Subject: Re: [RFC/PATCH 1/5] context tracking: conditionalize guest support
+ based on CONFIG_KVM
+From: Namhyung Kim <namhyung@kernel.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Mats Liljegren <mats.liljegren@enea.com>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <87fw0izxe4.fsf@linaro.org>
+References: <1361389302-11968-1-git-send-email-khilman@linaro.org>
+	 <1361389302-11968-2-git-send-email-khilman@linaro.org>
+	 <20130222132750.GE17948@somewhere.redhat.com>  <87fw0izxe4.fsf@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Feb 2013 07:13:02 +0900
+Message-ID: <1361916782.1740.2.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Feb 2013, Peter Korsgaard wrote:
+2013-02-26 (화), 11:29 -0800, Kevin Hilman:
+> Frederic Weisbecker <fweisbec@gmail.com> writes:
+> 
+> > On Wed, Feb 20, 2013 at 11:41:38AM -0800, Kevin Hilman wrote:
+> >> So that it can build on !KVM systems too.
+> >> 
+> >> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> >> ---
+> >>  kernel/context_tracking.c | 4 ++++
+> >>  1 file changed, 4 insertions(+)
+> >> 
+> >> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> >> index 74f68f4..6fe96b1 100644
+> >> --- a/kernel/context_tracking.c
+> >> +++ b/kernel/context_tracking.c
+> >> @@ -1,5 +1,7 @@
+> >>  #include <linux/context_tracking.h>
+> >> +#ifdef CONFIG_KVM
+> >>  #include <linux/kvm_host.h>
+> >> +#endif
+> >
+> > The header should take care of the off-case, no need to ifdef its inclusion.
+> 
+> In their current form, the headers will not build on platforms without
+> KVM support.  For example, these platforms (like ARM) don't even have
+> <asm/kvm.h> or <asm/kvm_host.h>.
+> 
+> >>  #include <linux/rcupdate.h>
+> >>  #include <linux/sched.h>
+> >>  #include <linux/hardirq.h>
+> >> @@ -62,6 +64,7 @@ void user_exit(void)
+> >>  	local_irq_restore(flags);
+> >>  }
+> >>  
+> >> +#ifdef CONFIG_KVM
+> >>  void guest_enter(void)
+> >>  {
+> >>  	if (vtime_accounting_enabled())
+> >> @@ -79,6 +82,7 @@ void guest_exit(void)
+> >>  		__guest_exit();
+> >>  }
+> >>  EXPORT_SYMBOL_GPL(guest_exit);
+> >> +#endif
+> >
+> > Kvm might be built as a module so we can't actually do this unfortunately.
+> 
+> Ah, right.  How bout using 
+> 
+> #if defined(CONFIG_KVM) || defined(CONFIG_KVM_MODULE)
+> 
+> for both conditionals above?  Updated patch below.
 
-> >>>>> "Nicolas" == Nicolas Pitre <nico@fluxnic.net> writes:
-> 
-> Hi,
-> 
->  >> Did you actually *try* the new LZO version and the patch (which is attached
->  >> once again) as explained in https://lkml.org/lkml/2013/2/3/367 ?
->  >> 
->  >> Because the new LZO version is faster than LZ4 in my testing, at least
->  >> when comparing apples with apples and enabling unaligned access in
->  >> BOTH versions:
->  >> 
->  >> armv7 (Cortex-A9), Linaro gcc-4.6 -O3, Silesia test corpus, 256 kB block-size:
->  >> 
->  >> compression speed   decompression speed
->  >> 
->  >> LZO-2012    :          44 MB/sec          117 MB/sec     no unaligned access
->  >> LZO-2013-UA :          47 MB/sec          167 MB/sec     Unaligned Access
->  >> LZ4 r88  UA :          46 MB/sec          154 MB/sec     Unaligned Access
-> 
->  Nicolas> To be fair, you should also take into account the compressed
->  Nicolas> size of a typical ARM kernel.  Sometimes a slightly slower
->  Nicolas> decompressor may be faster overall if the compressed image to
->  Nicolas> work on is smaller.
-> 
-> Yes, but notice that lzo compressed BETTER than lz4 - E.G. from the
-> introduction mail:
-> 
-> 1. ARMv7, 1.5GHz based board
->    Kernel: linux 3.4
->    Uncompressed Kernel Size: 14MB
->         Compressed Size  Decompression Speed
->    LZO  6.7MB            21.1MB/s
->    LZ4  7.3MB            29.1MB/s, 45.6MB/s(UA)
+This is what IS_ENABLED(CONFIG_KVM) is for.
 
-OK.  If LZO is now faster than LZ4 while still compressing more then I 
-have no argument.
+Thanks,
+Namhyung
+
+> 
+> Kevin
+> 
+> 
+> From 4444ce39eea21a5fc63b04a711addab2a5c63243 Mon Sep 17 00:00:00 2001
+> From: Kevin Hilman <khilman@linaro.org>
+> Date: Thu, 14 Feb 2013 10:17:37 -0800
+> Subject: [PATCH] context tracking: conditionalize guest support based on
+>  CONFIG_KVM
+> 
+> So that it can build on !KVM systems too.
+> 
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
+>  kernel/context_tracking.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> index 74f68f4..d9c98dd 100644
+> --- a/kernel/context_tracking.c
+> +++ b/kernel/context_tracking.c
+> @@ -1,5 +1,7 @@
+>  #include <linux/context_tracking.h>
+> +#if defined(CONFIG_KVM) || defined(CONFIG_KVM_MODULE)
+>  #include <linux/kvm_host.h>
+> +#endif
+>  #include <linux/rcupdate.h>
+>  #include <linux/sched.h>
+>  #include <linux/hardirq.h>
+> @@ -62,6 +64,7 @@ void user_exit(void)
+>  	local_irq_restore(flags);
+>  }
+>  
+> +#if defined(CONFIG_KVM) || defined(CONFIG_KVM_MODULE)
+>  void guest_enter(void)
+>  {
+>  	if (vtime_accounting_enabled())
+> @@ -79,6 +82,7 @@ void guest_exit(void)
+>  		__guest_exit();
+>  }
+>  EXPORT_SYMBOL_GPL(guest_exit);
+> +#endif
+>  
+>  void context_tracking_task_switch(struct task_struct *prev,
+>  			     struct task_struct *next)
 
 
-Nicolas
+
