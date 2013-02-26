@@ -1,27 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759986Ab3BZX5L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:57:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41708 "EHLO
+	id S1760035Ab3B0BTl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:19:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41759 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755666Ab3BZX5C (ORCPT
+	with ESMTP id S1759968Ab3BZX5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:02 -0500
+	Tue, 26 Feb 2013 18:57:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [ 005/150] perf hists: Fix period symbol_conf.field_sep display
-Date: Tue, 26 Feb 2013 15:54:22 -0800
-Message-Id: <20130226235524.580303704@linuxfoundation.org>
+        Roman Rakus <rrakus@redhat.com>, Lingzhu Xiang <lxiang@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [ 016/150] tty: set_termios/set_termiox should not return -EINTR
+Date: Tue, 26 Feb 2013 15:54:33 -0800
+Message-Id: <20130226235525.898490833@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -34,48 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit c0d246b85fc7d42688d7a5d999ea671777caf65b upstream.
+commit 183d95cdd834381c594d3aa801c1f9f9c0c54fa9 upstream.
 
-Currently we don't properly display hist data with symbol_conf.field_sep
-separator. We need to display either space or separator.
+See https://bugzilla.redhat.com/show_bug.cgi?id=904907
+read command causes bash to abort with double free or corruption (out).
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/n/tip-cyggwys0bz5kqdowwvfd8h72@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
+A simple test-case from Roman:
+
+	// Compile the reproducer and send sigchld ti that process.
+	// EINTR occurs even if SA_RESTART flag is set.
+
+	void handler(int sig)
+	{
+	}
+
+	main()
+	{
+	  struct sigaction act;
+	  act.sa_handler = handler;
+	  act.sa_flags = SA_RESTART;
+	  sigaction (SIGCHLD, &act, 0);
+	  struct termio ttp;
+	  ioctl(0, TCGETA, &ttp);
+	  while(1)
+	  {
+	    if (ioctl(0, TCSETAW, ttp) < 0)
+	      {
+		if (errno == EINTR)
+		{
+		  fprintf(stderr, "BUG!"); return(1);
+		}
+	      }
+	  }
+	}
+
+Change set_termios/set_termiox to return -ERESTARTSYS to fix this
+particular problem.
+
+I didn't dare to change other EINTR's in drivers/tty/, but they look
+equally wrong.
+
+Reported-by: Roman Rakus <rrakus@redhat.com>
+Reported-by: Lingzhu Xiang <lxiang@redhat.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/ui/hist.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/tty/tty_ioctl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -463,11 +463,15 @@ int hist_entry__period_snprintf(struct p
- 		if (!perf_hpp__format[i].cond)
- 			continue;
+--- a/drivers/tty/tty_ioctl.c
++++ b/drivers/tty/tty_ioctl.c
+@@ -617,7 +617,7 @@ static int set_termios(struct tty_struct
+ 	if (opt & TERMIOS_WAIT) {
+ 		tty_wait_until_sent(tty, 0);
+ 		if (signal_pending(current))
+-			return -EINTR;
++			return -ERESTARTSYS;
+ 	}
  
-+		/*
-+		 * If there's no field_sep, we still need
-+		 * to display initial '  '.
-+		 */
- 		if (!sep || !first) {
- 			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
- 			advance_hpp(hpp, ret);
-+		} else
- 			first = false;
--		}
+ 	tty_set_termios(tty, &tmp_termios);
+@@ -684,7 +684,7 @@ static int set_termiox(struct tty_struct
+ 	if (opt & TERMIOS_WAIT) {
+ 		tty_wait_until_sent(tty, 0);
+ 		if (signal_pending(current))
+-			return -EINTR;
++			return -ERESTARTSYS;
+ 	}
  
- 		if (color && perf_hpp__format[i].color)
- 			ret = perf_hpp__format[i].color(hpp, he);
+ 	mutex_lock(&tty->termios_mutex);
 
 
