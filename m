@@ -1,101 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759497Ab3BZOj3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 09:39:29 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:39905 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759162Ab3BZOj0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 09:39:26 -0500
-Message-ID: <512CC899.4060908@linux.vnet.ibm.com>
-Date: Tue, 26 Feb 2013 20:07:13 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1759321Ab3BZOpf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 09:45:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19198 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758179Ab3BZOpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 09:45:34 -0500
+Date: Tue, 26 Feb 2013 15:38:38 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 1/5] perf tools: Fix -C option for record command
+Message-ID: <20130226143838.GA31165@redhat.com>
+References: <1361785972-7431-1-git-send-email-jolsa@redhat.com> <1361785972-7431-2-git-send-email-jolsa@redhat.com> <20130225183932.GA7352@redhat.com> <512BB3E6.6000904@gmail.com> <20130225193851.GD17149@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Lai Jiangshan <eag0628@gmail.com>
-CC: linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, walken@google.com, mingo@kernel.org,
-        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
-        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rostedt@goodmis.org,
-        rjw@sisk.pl, namhyung@kernel.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        oleg@redhat.com, vincent.guittot@linaro.org, sbw@mit.edu,
-        tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
- Per-CPU Reader-Writer Locks
-References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com> <CACvQF529c72xLuosD44CPd_y_0zJBc-tjgNQpBiD0UhbzS8XDg@mail.gmail.com>
-In-Reply-To: <CACvQF529c72xLuosD44CPd_y_0zJBc-tjgNQpBiD0UhbzS8XDg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022614-4790-0000-0000-00000716E93C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130225193851.GD17149@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2013 07:47 PM, Lai Jiangshan wrote:
-> On Mon, Feb 18, 2013 at 8:38 PM, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> Using global rwlocks as the backend for per-CPU rwlocks helps us avoid many
->> lock-ordering related problems (unlike per-cpu locks). However, global
->> rwlocks lead to unnecessary cache-line bouncing even when there are no
->> writers present, which can slow down the system needlessly.
-> 
-> per-CPU rwlocks(yours and mine) are the exactly same as rwlock_t in
-> the view of lock dependency(except reader-C.S. can be nested in
-> writer-C.S.)
-> so they can deadlock in this order:
-> 
-> spin_lock(some_lock);				percpu_write_lock_irqsave()
-> 						case CPU_DYING
-> percpu_read_lock_irqsafe();	<---deadlock--->	spin_lock(some_lock);
-> 
-
-Yes, of course! But this is the most straight-forward of cases to fix,
-because there are a well-defined number of CPU_DYING notifiers, and the fix
-is to make the lock ordering same at both sides.
-
-The real challenge is with cases like below:
-
-spin_lock(some_lock)			percpu_read_lock_irqsafe()
-
-percpu_read_lock_irqsafe()		spin_lock(some_lock)
-
-The locking primitives (percpu_read_lock/unlock_irqsafe) have been explicitly
-designed to keep cases like the above deadlock-free. Because, they ease
-conversions from preempt_disable() to the new locking primitive without
-lock-ordering headache.
-
-> The lockdep can find out such dependency, but we must try our best to
-> find out them before merge the patchset to mainline. We can  review
-> all the code of cpu_disable() and CPU_DYING and fix this kinds of lock
-> dependency, but it is not easy thing, it may be a long term project.
-> 
-
-:-)
-
-That's exactly what I have done in this patchset, and that's why there
-are 46 patches in this series! :-) I have run this patchset with lockdep
-turned on, and verified that there are no locking problems due to the
-conversion. I even posted out performance numbers from this patchset
-(ie., in comparison to stop_machine), if you are curious...
-http://article.gmane.org/gmane.linux.kernel/1435249
-
-But yes, I'll have to re-verify this because of the new code that went in
-during this merge window.
-
-> ======
-> And if there is any CPU_DYING code takes no locks and do some
-> works(because they know they are called via stop_machine()) we need to
-> add that locking code back if there is such code.(I don't know whether
-> such code exist or not)
+On 02/25, Jiri Olsa wrote:
 >
+> On Mon, Feb 25, 2013 at 11:56:38AM -0700, David Ahern wrote:
+>
+> > If a target is given (-a, -C, -p or -t) that is what the data is
+> > collected for -- all cpus, a cpu, or one or more task ids. The
+> > workload in that case becomes a means for bounding the data
+> > collection (start and end points).
 
-Yes, I explicitly verified this too. (I had mentioned this in the cover letter).
+OK, so I misunderstood the intent and misread the code. Thanks
+David.
 
-Regards,
-Srivatsa S. Bhat
+> yes, that's what actually this patch fixies.. now you can run:
+>
+>   perf record -C 0 ls
+>
+> and that will attach to cpu 0 only (same as '-a -C 0' before)
+
+Yes, and thus this is consistent with -a and correct. Thanks and
+sorry for noise.
+
+
+But,
+
+> maybe we could consider having:
+>
+>   perf record -C 0 ls
+>     - attaching to CPU 0 and ls workload pid
+>
+>   perf record -a -C 0 ls
+>     - attaching to CPU 0 globaly
+
+Can't really comment since I am not a perf user, but imho looks good.
+
+And useful. And least this behaviour was useful to me when I tried
+to test the perf/uprobe changes.
+
+Oleg.
 
