@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760101Ab3B0BVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:21:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41728 "EHLO
+	id S1759987Ab3B0BVk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:21:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759879Ab3BZX5E (ORCPT
+	with ESMTP id S1759886Ab3BZX5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:04 -0500
+	Tue, 26 Feb 2013 18:57:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olaf Hering <olaf@aepfle.de>, "K. Y. Srinivasan" <kys@microsoft.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 010/150] x86: Hyper-V: register clocksource only if its advertised
-Date: Tue, 26 Feb 2013 15:54:27 -0800
-Message-Id: <20130226235525.185835105@linuxfoundation.org>
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [ 006/150] timeconst.pl: Eliminate Perl warning
+Date: Tue, 26 Feb 2013 15:54:23 -0800
+Message-Id: <20130226235524.689029517@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,48 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olaf Hering <[mailto:olaf@aepfle.de]>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 32068f6527b8f1822a30671dedaf59c567325026 upstream.
+commit 63a3f603413ffe82ad775f2d62a5afff87fd94a0 upstream.
 
-Enable hyperv_clocksource only if its advertised as a feature.
-XenServer 6 returns the signature which is checked in
-ms_hyperv_platform(), but it does not offer all features. Currently the
-clocksource is enabled unconditionally in ms_hyperv_init_platform(), and
-the result is a hanging guest.
+defined(@array) is deprecated in Perl and gives off a warning.
+Restructure the code to remove that warning.
 
-Hyper-V spec Bit 1 indicates the availability of Partition Reference
-Counter.  Register the clocksource only if this bit is set.
+[ hpa: it would be interesting to revert to the timeconst.bc script.
+  It appears that the failures reported by akpm during testing of
+  that script was due to a known broken version of make, not a problem
+  with bc.  The Makefile rules could probably be restructured to avoid
+  the make bug, or it is probably old enough that it doesn't matter. ]
 
-The guest in question prints this in dmesg:
- [    0.000000] Hypervisor detected: Microsoft HyperV
- [    0.000000] HyperV: features 0x70, hints 0x0
-
-This bug can be reproduced easily be setting 'viridian=1' in a HVM domU
-.cfg file. A workaround without this patch is to boot the HVM guest with
-'clocksource=jiffies'.
-
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Link: http://lkml.kernel.org/r/1359940959-32168-1-git-send-email-kys@microsoft.com
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reported-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/mshyperv.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/timeconst.pl |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -68,7 +68,8 @@ static void __init ms_hyperv_init_platfo
- 	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
- 	       ms_hyperv.features, ms_hyperv.hints);
+--- a/kernel/timeconst.pl
++++ b/kernel/timeconst.pl
+@@ -369,10 +369,8 @@ if ($hz eq '--can') {
+ 		die "Usage: $0 HZ\n";
+ 	}
  
--	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
-+	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
-+		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+-	@val = @{$canned_values{$hz}};
+-	if (!defined(@val)) {
+-		@val = compute_values($hz);
+-	}
++	$cv = $canned_values{$hz};
++	@val = defined($cv) ? @$cv : compute_values($hz);
+ 	output($hz, @val);
  }
- 
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+ exit 0;
 
 
