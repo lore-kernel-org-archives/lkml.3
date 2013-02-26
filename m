@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760035Ab3B0BTl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:19:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41759 "EHLO
+	id S1760079Ab3B0BT6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:19:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759968Ab3BZX5K (ORCPT
+	with ESMTP id S1759963Ab3BZX5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:10 -0500
+	Tue, 26 Feb 2013 18:57:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Rakus <rrakus@redhat.com>, Lingzhu Xiang <lxiang@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [ 016/150] tty: set_termios/set_termiox should not return -EINTR
-Date: Tue, 26 Feb 2013 15:54:33 -0800
-Message-Id: <20130226235525.898490833@linuxfoundation.org>
+        Jan Beulich <JBeulich@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 025/150] xen: Send spinlock IPI to all waiters
+Date: Tue, 26 Feb 2013 15:54:42 -0800
+Message-Id: <20130226235526.846331743@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,77 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Stefan Bader <stefan.bader@canonical.com>
 
-commit 183d95cdd834381c594d3aa801c1f9f9c0c54fa9 upstream.
+commit 76eaca031f0af2bb303e405986f637811956a422 upstream.
 
-See https://bugzilla.redhat.com/show_bug.cgi?id=904907
-read command causes bash to abort with double free or corruption (out).
+There is a loophole between Xen's current implementation of
+pv-spinlocks and the scheduler. This was triggerable through
+a testcase until v3.6 changed the TLB flushing code. The
+problem potentially is still there just not observable in the
+same way.
 
-A simple test-case from Roman:
+What could happen was (is):
 
-	// Compile the reproducer and send sigchld ti that process.
-	// EINTR occurs even if SA_RESTART flag is set.
+1. CPU n tries to schedule task x away and goes into a slow
+   wait for the runq lock of CPU n-# (must be one with a lower
+   number).
+2. CPU n-#, while processing softirqs, tries to balance domains
+   and goes into a slow wait for its own runq lock (for updating
+   some records). Since this is a spin_lock_irqsave in softirq
+   context, interrupts will be re-enabled for the duration of
+   the poll_irq hypercall used by Xen.
+3. Before the runq lock of CPU n-# is unlocked, CPU n-1 receives
+   an interrupt (e.g. endio) and when processing the interrupt,
+   tries to wake up task x. But that is in schedule and still
+   on_cpu, so try_to_wake_up goes into a tight loop.
+4. The runq lock of CPU n-# gets unlocked, but the message only
+   gets sent to the first waiter, which is CPU n-# and that is
+   busily stuck.
+5. CPU n-# never returns from the nested interruption to take and
+   release the lock because the scheduler uses a busy wait.
+   And CPU n never finishes the task migration because the unlock
+   notification only went to CPU n-#.
 
-	void handler(int sig)
-	{
-	}
+To avoid this and since the unlocking code has no real sense of
+which waiter is best suited to grab the lock, just send the IPI
+to all of them. This causes the waiters to return from the hyper-
+call (those not interrupted at least) and do active spinlocking.
 
-	main()
-	{
-	  struct sigaction act;
-	  act.sa_handler = handler;
-	  act.sa_flags = SA_RESTART;
-	  sigaction (SIGCHLD, &act, 0);
-	  struct termio ttp;
-	  ioctl(0, TCGETA, &ttp);
-	  while(1)
-	  {
-	    if (ioctl(0, TCSETAW, ttp) < 0)
-	      {
-		if (errno == EINTR)
-		{
-		  fprintf(stderr, "BUG!"); return(1);
-		}
-	      }
-	  }
-	}
+BugLink: http://bugs.launchpad.net/bugs/1011792
 
-Change set_termios/set_termiox to return -ERESTARTSYS to fix this
-particular problem.
-
-I didn't dare to change other EINTR's in drivers/tty/, but they look
-equally wrong.
-
-Reported-by: Roman Rakus <rrakus@redhat.com>
-Reported-by: Lingzhu Xiang <lxiang@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Jiri Slaby <jslaby@suse.cz>
+Acked-by: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_ioctl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/xen/spinlock.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/tty/tty_ioctl.c
-+++ b/drivers/tty/tty_ioctl.c
-@@ -617,7 +617,7 @@ static int set_termios(struct tty_struct
- 	if (opt & TERMIOS_WAIT) {
- 		tty_wait_until_sent(tty, 0);
- 		if (signal_pending(current))
--			return -EINTR;
-+			return -ERESTARTSYS;
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -328,7 +328,6 @@ static noinline void xen_spin_unlock_slo
+ 		if (per_cpu(lock_spinners, cpu) == xl) {
+ 			ADD_STATS(released_slow_kicked, 1);
+ 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
+-			break;
+ 		}
  	}
- 
- 	tty_set_termios(tty, &tmp_termios);
-@@ -684,7 +684,7 @@ static int set_termiox(struct tty_struct
- 	if (opt & TERMIOS_WAIT) {
- 		tty_wait_until_sent(tty, 0);
- 		if (signal_pending(current))
--			return -EINTR;
-+			return -ERESTARTSYS;
- 	}
- 
- 	mutex_lock(&tty->termios_mutex);
+ }
 
 
