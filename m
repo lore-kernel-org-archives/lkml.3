@@ -1,64 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759416Ab3BZDm6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 22:42:58 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:50780 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab3BZDmz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 22:42:55 -0500
-Date: Tue, 26 Feb 2013 03:42:50 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
-        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
-        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
-        keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Message-ID: <20130226034250.GB30285@srcf.ucam.org>
-References: <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
- <20130221164244.GA19625@srcf.ucam.org>
- <18738.1361836265@warthog.procyon.org.uk>
- <20130226005955.GA19686@kroah.com>
- <20130226023332.GA29282@srcf.ucam.org>
- <20130226030249.GB23834@kroah.com>
- <20130226031338.GA29784@srcf.ucam.org>
- <20130226032508.GA12906@thunk.org>
- <20130226032839.GA30164@srcf.ucam.org>
- <CA+55aFyVShz4T65VJ-1=V=OGwNNriyYf-aaomhDSMHOU7ZZqbA@mail.gmail.com>
+	id S1759545Ab3BZDnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 22:43:50 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:44628 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752181Ab3BZDnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 22:43:49 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [Update 4][PATCH 2/7] ACPI / scan: Introduce common code for ACPI-based device hotplug
+Date: Tue, 26 Feb 2013 04:50:31 +0100
+Message-ID: <2421338.h6e5tIe738@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <512C2EA6.40805@jp.fujitsu.com>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <1776709.RhhH5Yin4x@vostro.rjw.lan> <512C2EA6.40805@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyVShz4T65VJ-1=V=OGwNNriyYf-aaomhDSMHOU7ZZqbA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 07:32:04PM -0800, Linus Torvalds wrote:
-> On Mon, Feb 25, 2013 at 7:28 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+On Tuesday, February 26, 2013 12:40:22 PM Yasuaki Ishimatsu wrote:
+> 2013/02/26 12:11, Rafael J. Wysocki wrote:
+> > On Tuesday, February 26, 2013 11:02:56 AM Yasuaki Ishimatsu wrote:
+> >> 2013/02/26 10:09, Toshi Kani wrote:
+> >>> On Tue, 2013-02-26 at 09:40 +0900, Yasuaki Ishimatsu wrote:
+> >>>> 2013/02/26 8:39, Rafael J. Wysocki wrote:
+> >>>>> On Monday, February 25, 2013 11:07:52 AM Toshi Kani wrote:
+> >>>>>> On Sat, 2013-02-23 at 22:38 +0000, Rafael J. Wysocki wrote:
+> >>>>>>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >>>>>>>
+> >>>>>>> Multiple drivers handling hotplug-capable ACPI device nodes install
+> >>>>>>> notify handlers covering the same types of events in a very similar
+> >>>>>>> way.  Moreover, those handlers are installed in separate namespace
+> >>>>>>> walks, although that really should be done during namespace scans
+> >>>>>>> carried out by acpi_bus_scan().  This leads to substantial code
+> >>>>>>> duplication, unnecessary overhead and behavior that is hard to
+> >>>>>>> follow.
+> >>>>>>>
+> >>>>>>> For this reason, introduce common code in drivers/acpi/scan.c for
+> >>>>>>> handling hotplug-related notification and carrying out device
+> >>>>>>> insertion and eject operations in a generic fashion, such that it
+> >>>>>>> may be used by all of the relevant drivers in the future.  To cover
+> >>>>>>> the existing differences between those drivers introduce struct
+> >>>>>>> acpi_hotplug_profile for representing collections of hotplug
+> >>>>>>> settings associated with different ACPI scan handlers that can be
+> >>>>>>> used by the drivers to make the common code reflect their current
+> >>>>>>> behavior.
+> >>>>>>>
+> >>>>>>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >>>>>>> ---
+> >>>>>>>
+> >>>>>>> This update causes acpi_bus_device_eject() to only emit KOBJ_OFFLINE uevent if
+> >>>>>>> autoexec is unset for the given scan handler.
+> >>>>>>>
+> >>>>>>> This will require the doc in patch [5/7] to be updated which I'm going to do if
+> >>>>>>> everyone is OK with the $subject patch.
+> >>>>>>>
+> >>>>>>> Thanks,
+> >>>>>>> Rafael
+> >>>>>>     :
+> >>>>>>> +
+> >>>>>>> +static void acpi_scan_bus_device_check(acpi_handle handle, u32 ost_source)
+> >>>>>>> +{
+> >>>>>>> +	struct acpi_device *device = NULL;
+> >>>>>>> +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE;
+> >>>>>>> +	int error;
+> >>>>>>> +
+> >>>>>>> +	mutex_lock(&acpi_scan_lock);
+> >>>>>>> +
+> >>>>>>> +	acpi_bus_get_device(handle, &device);
+> >>>>>>> +	if (device) {
+> >>>>>>> +		dev_warn(&device->dev, "Attempt to re-insert\n");
+> >>>>>>> +		goto out;
+> >>>>>>> +	}
+> >>>>>>> +	acpi_evaluate_hotplug_ost(handle, ost_source,
+> >>>>>>> +				  ACPI_OST_SC_INSERT_IN_PROGRESS, NULL);
+> >>>>>>> +	error = acpi_bus_scan(handle);
+> >>>>>>> +	if (error) {
+> >>>>>>> +		acpi_handle_warn(handle, "Namespace scan failure\n");
+> >>>>>>> +		goto out;
+> >>>>>>> +	}
+> >>>>>>> +	error = acpi_bus_get_device(handle, &device);
+> >>>>>>> +	if (error) {
+> >>>>>>> +		acpi_handle_warn(handle, "Missing device node object\n");
+> >>>>>>> +		goto out;
+> >>>>>>> +	}
+> >>>>>>> +	ost_code = ACPI_OST_SC_SUCCESS;
+> >>>>>>> +	if (device->handler && device->handler->hotplug.uevents)
+> >>>>>>> +		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
+> >>>>>>
+> >>>>
+> >>>>>> I confirmed that the uevent crash issue was solved.  Thinking further, I
+> >>>>>> wonder if we need to emit KOBJ_ONLINE here.  This behavior is asymmetric
+> >>>>>> since we do not emit KOBJ_OFFLINE when autoeject is set.
+> >>>>>
+> >>>>> Well, I put that in there only to be able to make the container driver behave
+> >>>>> in a backwards compatible way (which is to emit KOBJ_ONLINE at this point).
+> >>>>>
+> >>>>> If the container driver doesn't need to emit KOBJ_ONLINE at all, I agree with
+> >>>>> your suggestion.
+> >>>>>
+> >>>>>> The definition of ONLINE/OFFLINE event to an ACPI device object seems also
+> >>>>>> bogus since there is no online/offline operation to the ACPI device object
+> >>>>>> itself.
+> >>>>>> Online/offline operation is only possible to actual device, such as
+> >>>>>> system/cpu/cpu% and system/memory/memory%.
+> >>>>>
+> >>>>> That's correct, but I don't know what the user space expectations are
+> >>>>> currently.
+> >>>>
+> >>>> My system expects this event to be notified when hot adding container device.
+> >>>> My container device has cpu and memory. As Toshi said, these devices are
+> >>>> offline when hot adding container device. So in my system, when notifying
+> >>>> container device's KOBJ_ONLINE event, my application runs for onlining these
+> >>>> devices. If this event is not notified to user land, we cannot online these
+> >>>> devices  automatically.
+> >>>
+> >>
+> >>> Thanks for the info.  Can your application listen KOBJ_ADD to a
+> >>> container device, instead of KOBJ_ONLINE?  IOW, does it distinguish
+> >>> between ADD and ONLINE events to a container device?
+> >>
+> >> My application does not distinguish between ADD and ONLINE events
+> >> currently. But if the event is changed from ONLINE to ADD, I will
+> >> change my application.
 > >
-> > You're happy advising Linux vendors that they don't need to worry about
-> > module signing because it's "not obvious" that Microsoft would actually
-> > enforce the security model they've spent significant money developing
-> > and advertising?
+> > KOBJ_ADD is emitted for every struct acpi_device being registered, including
+> > container devices, by acpi_device_add_finalize().  Can your application listen
+> > to those events?
 > 
-> And you're happy shilling for a broken model?
->
-> The fact is, the only valid user for the whole security model is to
-> PROTECT THE USER.
+> Ah O.K. I understood. Even if the ONLINE event disappers, my application can get
+> ADD event from acpi_device_add_finalize(). Of course, I need to change my
+> application.
+> If the ADD event of container device is notified after hot adding devices which
+> are contained into container device, there is no reason to leave ONLINE event.
 
-The user Microsoft care about isn't running Linux. The user is running 
-Windows, and someone's merely using Linux as a vector to launch their 
-backdoored Windows kernel. How do Microsoft protect that user? They 
-blacklist the signature used by that Linux bootloader. If we want to 
-protect the user's ability to boot Linux, we need to protect the 
-Windows users from having Linux used against them.
+If they are located below the container device in the namespace, then the
+container's ADD will happen before they are added, so if the ONLINE event is
+supposed to mean that all devices under the container have been added, we need
+to keep it as is.
+
+Thanks,
+Rafael
+
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
