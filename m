@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934134Ab3B0BGg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:06:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41945 "EHLO
+	id S934114Ab3B0BGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:06:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41941 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754525Ab3BZX5l (ORCPT
+	with ESMTP id S1754961Ab3BZX5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:41 -0500
+	Tue, 26 Feb 2013 18:57:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Rientjes <rientjes@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 061/150] sparc64: Handle hugepage TSB being NULL.
-Date: Tue, 26 Feb 2013 15:55:18 -0800
-Message-Id: <20130226235530.540680540@linuxfoundation.org>
+Subject: [ 060/150] sparc64: Fix gfp_flags setting in tsb_grow().
+Date: Tue, 26 Feb 2013 15:55:17 -0800
+Message-Id: <20130226235530.427349995@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -29,88 +30,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit bcd896bae0166b4443503482a26ecf84d9ba60ab ]
+[ Upstream commit a55ee1ff751f88252207160087d8197bb7538d4c ]
 
-Accomodate the possibility that the TSB might be NULL at
-the point that update_mmu_cache() is invoked.  This is
-necessary because we will sometimes need to defer the TSB
-allocation to the first fault that happens in the 'mm'.
+We should "|= more_flags" rather than "= more_flags".
 
-Seperate out the hugepage PTE test into a seperate function
-so that the logic is clearer.
-
+Reported-by: David Rientjes <rientjes@google.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/mm/init_64.c |   38 ++++++++++++++++++++++----------------
- 1 file changed, 22 insertions(+), 16 deletions(-)
+ arch/sparc/mm/tsb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -314,16 +314,31 @@ static void __update_mmu_tsb_insert(stru
- 	struct tsb *tsb = mm->context.tsb_block[tsb_index].tsb;
- 	unsigned long tag;
+--- a/arch/sparc/mm/tsb.c
++++ b/arch/sparc/mm/tsb.c
+@@ -314,7 +314,7 @@ void tsb_grow(struct mm_struct *mm, unsi
+ retry_tsb_alloc:
+ 	gfp_flags = GFP_KERNEL;
+ 	if (new_size > (PAGE_SIZE * 2))
+-		gfp_flags = __GFP_NOWARN | __GFP_NORETRY;
++		gfp_flags |= __GFP_NOWARN | __GFP_NORETRY;
  
-+	if (unlikely(!tsb))
-+		return;
-+
- 	tsb += ((address >> tsb_hash_shift) &
- 		(mm->context.tsb_block[tsb_index].tsb_nentries - 1UL));
- 	tag = (address >> 22UL);
- 	tsb_insert(tsb, tag, tte);
- }
- 
-+#if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
-+static inline bool is_hugetlb_pte(pte_t pte)
-+{
-+	if ((tlb_type == hypervisor &&
-+	     (pte_val(pte) & _PAGE_SZALL_4V) == _PAGE_SZHUGE_4V) ||
-+	    (tlb_type != hypervisor &&
-+	     (pte_val(pte) & _PAGE_SZALL_4U) == _PAGE_SZHUGE_4U))
-+		return true;
-+	return false;
-+}
-+#endif
-+
- void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *ptep)
- {
--	unsigned long tsb_index, tsb_hash_shift, flags;
- 	struct mm_struct *mm;
-+	unsigned long flags;
- 	pte_t pte = *ptep;
- 
- 	if (tlb_type != hypervisor) {
-@@ -335,25 +350,16 @@ void update_mmu_cache(struct vm_area_str
- 
- 	mm = vma->vm_mm;
- 
--	tsb_index = MM_TSB_BASE;
--	tsb_hash_shift = PAGE_SHIFT;
--
- 	spin_lock_irqsave(&mm->context.lock, flags);
- 
- #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
--	if (mm->context.tsb_block[MM_TSB_HUGE].tsb != NULL) {
--		if ((tlb_type == hypervisor &&
--		     (pte_val(pte) & _PAGE_SZALL_4V) == _PAGE_SZHUGE_4V) ||
--		    (tlb_type != hypervisor &&
--		     (pte_val(pte) & _PAGE_SZALL_4U) == _PAGE_SZHUGE_4U)) {
--			tsb_index = MM_TSB_HUGE;
--			tsb_hash_shift = HPAGE_SHIFT;
--		}
--	}
-+	if (mm->context.huge_pte_count && is_hugetlb_pte(pte))
-+		__update_mmu_tsb_insert(mm, MM_TSB_HUGE, HPAGE_SHIFT,
-+					address, pte_val(pte));
-+	else
- #endif
--
--	__update_mmu_tsb_insert(mm, tsb_index, tsb_hash_shift,
--				address, pte_val(pte));
-+		__update_mmu_tsb_insert(mm, MM_TSB_BASE, PAGE_SHIFT,
-+					address, pte_val(pte));
- 
- 	spin_unlock_irqrestore(&mm->context.lock, flags);
- }
+ 	new_tsb = kmem_cache_alloc_node(tsb_caches[new_cache_index],
+ 					gfp_flags, numa_node_id());
 
 
