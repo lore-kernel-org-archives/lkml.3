@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933567Ab3B0Agv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:36:51 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:61784 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933237Ab3B0Agt convert rfc822-to-8bit (ORCPT
+	id S933300Ab3B0AhT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:37:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42341 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933222Ab3BZX6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:36:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <1361921882.31428.10.camel@kjgkr>
-References: <1361857068-31613-1-git-send-email-jaegeuk.kim@samsung.com>
-	<CAKYAXd-KYnxmFmaUdgB6Tv3tR=OjNGwdhjsUW0mcH7QufXunvQ@mail.gmail.com>
-	<1361921882.31428.10.camel@kjgkr>
-Date: Wed, 27 Feb 2013 09:36:48 +0900
-Message-ID: <CAKYAXd9_A3Wo+fy3JqVsQZ44AZ8x+DmDu5asnCzZrOXODH+v=w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] f2fs: read with READ_SYNC when getting dnode page
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Feb 2013 18:58:44 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jan Beulich <JBeulich@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 11/53] xen: Send spinlock IPI to all waiters
+Date: Tue, 26 Feb 2013 15:57:40 -0800
+Message-Id: <20130226235621.019981036@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
+References: <20130226235619.844721947@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/27, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> Hi,
->
-> 2013-02-26 (화), 18:35 +0900, Namjae Jeon:
->> 2013/2/26, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
->> > It must be set READ_SYNC not READA.
->> Hi Jaegeuk.
->> Could you please elaborate more?
->> Why we need to change READA to READ_SYNC over here, when the purpose
->> was to read the node page in READ ahead mode.
->
-> That point was a reason for me to make this bug before.
-> This is get_node_page_ra, not ra_node_page, which means that
-> ra_node_page does actual readahead for another node pages.
->
-> In summary, get_node_page_ra tries to:
-> 1. grab or read a target node page for the given nid,
-> 2. then, call ra_node_page to read other adjacent node pages in advance.
->
-> So, when we try to read a target node page by #1, we should submit bio
-> with READ_SYNC instead of READA.
->
-> I'll add this to the description.
-> Thanks,
-okay, Clear :)
-Reviewed-by: Namjae Jeon <namjae.jeon@samsung.com>
-Thanks for explanation!
->
->>
->> Thanks.
->> >
->> > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
->> > ---
->> >  fs/f2fs/node.c | 2 +-
->> >  1 file changed, 1 insertion(+), 1 deletion(-)
->> >
->> > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
->> > index e275218..185454f 100644
->> > --- a/fs/f2fs/node.c
->> > +++ b/fs/f2fs/node.c
->> > @@ -930,7 +930,7 @@ repeat:
->> >  	if (!page)
->> >  		return ERR_PTR(-ENOMEM);
->> >
->> > -	err = read_node_page(page, READA);
->> > +	err = read_node_page(page, READ_SYNC);
->> >  	if (err) {
->> >  		f2fs_put_page(page, 1);
->> >  		return ERR_PTR(err);
->> > --
->> > 1.8.1.3.566.gaa39828
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel"
->> > in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> >
->
-> --
-> Jaegeuk Kim
-> Samsung
->
+3.0-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Stefan Bader <stefan.bader@canonical.com>
+
+commit 76eaca031f0af2bb303e405986f637811956a422 upstream.
+
+There is a loophole between Xen's current implementation of
+pv-spinlocks and the scheduler. This was triggerable through
+a testcase until v3.6 changed the TLB flushing code. The
+problem potentially is still there just not observable in the
+same way.
+
+What could happen was (is):
+
+1. CPU n tries to schedule task x away and goes into a slow
+   wait for the runq lock of CPU n-# (must be one with a lower
+   number).
+2. CPU n-#, while processing softirqs, tries to balance domains
+   and goes into a slow wait for its own runq lock (for updating
+   some records). Since this is a spin_lock_irqsave in softirq
+   context, interrupts will be re-enabled for the duration of
+   the poll_irq hypercall used by Xen.
+3. Before the runq lock of CPU n-# is unlocked, CPU n-1 receives
+   an interrupt (e.g. endio) and when processing the interrupt,
+   tries to wake up task x. But that is in schedule and still
+   on_cpu, so try_to_wake_up goes into a tight loop.
+4. The runq lock of CPU n-# gets unlocked, but the message only
+   gets sent to the first waiter, which is CPU n-# and that is
+   busily stuck.
+5. CPU n-# never returns from the nested interruption to take and
+   release the lock because the scheduler uses a busy wait.
+   And CPU n never finishes the task migration because the unlock
+   notification only went to CPU n-#.
+
+To avoid this and since the unlocking code has no real sense of
+which waiter is best suited to grab the lock, just send the IPI
+to all of them. This causes the waiters to return from the hyper-
+call (those not interrupted at least) and do active spinlocking.
+
+BugLink: http://bugs.launchpad.net/bugs/1011792
+
+Acked-by: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/xen/spinlock.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -313,7 +313,6 @@ static noinline void xen_spin_unlock_slo
+ 		if (per_cpu(lock_spinners, cpu) == xl) {
+ 			ADD_STATS(released_slow_kicked, 1);
+ 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
+-			break;
+ 		}
+ 	}
+ }
+
+
