@@ -1,103 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab3BZFcb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 00:32:31 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:47234 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751620Ab3BZFc3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 00:32:29 -0500
-X-IronPort-AV: E=Sophos;i="4.84,738,1355068800"; 
-   d="scan'208";a="6769882"
-Message-ID: <512C4881.90409@cn.fujitsu.com>
-Date: Tue, 26 Feb 2013 13:30:41 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	id S1756759Ab3BZFgb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 00:36:31 -0500
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:57883 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab3BZFga (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 00:36:30 -0500
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Simon Horman <horms@verge.net.au>
-CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 2/2] kexec: Use min_t to simplify logic
-References: <512C44E4.70907@cn.fujitsu.com>
-In-Reply-To: <512C44E4.70907@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/26 13:31:32,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/26 13:31:33,
-	Serialize complete at 2013/02/26 13:31:33
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130226035538.GB1128@kroah.com>
+References: <CAGsJ_4yxQK05hHUivYEnLD9=cAE4t5jNV7+6KJGu+LsVsSk1oQ@mail.gmail.com>
+ <20130226033524.GA25067@kroah.com> <CAGsJ_4za4tPZN6F=VG6A81OXZsU-d0S6YzwG2NT43E-kb8y52g@mail.gmail.com>
+ <20130226035538.GB1128@kroah.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Tue, 26 Feb 2013 13:36:09 +0800
+Message-ID: <CAGsJ_4xxdcLPbKsOHXaADYzKRNeWq=n-jgoHYRMOXAqGPuyQ0w@mail.gmail.com>
+Subject: Re: what's the next LTSI kernel version for long-term support
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Binghua Duan <Binghua.Duan@csr.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just a tweak: using min_t to simplify logic of variable
-assignments.
+Hi Greg,
 
-v3:
-- cast type of (PAGE_SIZE - (maddr & ~PAGE_MASK)) into size_t.
+2013/2/26 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
+> On Tue, Feb 26, 2013 at 11:46:04AM +0800, Barry Song wrote:
+>> 2013/2/26 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
+>> > On Tue, Feb 26, 2013 at 11:06:56AM +0800, Barry Song wrote:
+>> >> Hi Greg/All,
+>> >> we have seen 3.4 was announced to be an LTSI in Aug, 2012. I'd like to
+>> >> know what is the next LTSI version since we might want to align our
+>> >> next release with LTSI.
+>> >
+>> > Who is "we" here?
+>> >
+>> people.
+>
+> I don't take anonymous "we want this" requests serious at all, sorry.
+> Please provide details as you are asking me to do work for you, right?
+>
 
-v2:
-- Rewrite patch description as Simon suggested.
-- Fix an inappropriate if test introduced by v1. Thanks Simon.
+i just want to get some generic information not specific to any SoC
+vendor at all :-)
 
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Reviewed-by: Simon Horman <horms@verge.net.au>
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- kernel/kexec.c |   24 ++++++++----------------
- 1 files changed, 8 insertions(+), 16 deletions(-)
+> greg k-h
 
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 3cbfcc7..b6b16f9 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -822,13 +822,9 @@ static int kimage_load_normal_segment(struct kimage *image,
- 		/* Start with a clear page */
- 		clear_page(ptr);
- 		ptr += maddr & ~PAGE_MASK;
--		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
--		if (mchunk > mbytes)
--			mchunk = mbytes;
--
--		uchunk = mchunk;
--		if (uchunk > ubytes)
--			uchunk = ubytes;
-+		mchunk = min_t(size_t, mbytes,
-+			       (size_t)(PAGE_SIZE - (maddr & ~PAGE_MASK)));
-+		uchunk = min_t(size_t, ubytes, mchunk);
- 
- 		result = copy_from_user(ptr, buf, uchunk);
- 		kunmap(page);
-@@ -874,13 +870,10 @@ static int kimage_load_crash_segment(struct kimage *image,
- 		}
- 		ptr = kmap(page);
- 		ptr += maddr & ~PAGE_MASK;
--		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
--		if (mchunk > mbytes)
--			mchunk = mbytes;
--
--		uchunk = mchunk;
--		if (uchunk > ubytes) {
--			uchunk = ubytes;
-+		mchunk = min_t(size_t, mbytes,
-+			       (size_t)(PAGE_SIZE - (maddr & ~PAGE_MASK)));
-+		uchunk = min_t(size_t, ubytes, mchunk);
-+		if (mchunk > uchunk) {
- 			/* Zero the trailing part of the page */
- 			memset(ptr + uchunk, 0, mchunk - uchunk);
- 		}
-@@ -1461,8 +1454,7 @@ void vmcoreinfo_append_str(const char *fmt, ...)
- 	r = vsnprintf(buf, sizeof(buf), fmt, args);
- 	va_end(args);
- 
--	if (r + vmcoreinfo_size > vmcoreinfo_max_size)
--		r = vmcoreinfo_max_size - vmcoreinfo_size;
-+	r = min_t(size_t, r, vmcoreinfo_max_size - vmcoreinfo_size);
- 
- 	memcpy(&vmcoreinfo_data[vmcoreinfo_size], buf, r);
- 
--- 
-1.7.1
+-barry
