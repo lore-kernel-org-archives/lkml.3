@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760138Ab3BZJm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 04:42:58 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:49757 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759185Ab3BZJm4 (ORCPT
+	id S1760193Ab3BZJnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 04:43:15 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:33835 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759185Ab3BZJnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 04:42:56 -0500
+	Tue, 26 Feb 2013 04:43:10 -0500
 From: chenggang <chenggang.qin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: chenggang <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
         Yanmin Zhang <yanmin.zhang@intel.com>,
         Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 3/4] Transform mmap and other related structures to list with new xyarray
-Date: Tue, 26 Feb 2013 17:41:47 +0800
-Message-Id: <1361871710-6251-2-git-send-email-chenggang.qin@gmail.com>
+Subject: [PATCH v2 2/4] Transform thread_map to linked list
+Date: Tue, 26 Feb 2013 17:41:48 +0800
+Message-Id: <1361871710-6251-3-git-send-email-chenggang.qin@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361871710-6251-1-git-send-email-chenggang.qin@gmail.com>
 References: <1361871710-6251-1-git-send-email-chenggang.qin@gmail.com>
@@ -30,37 +30,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: chenggang <chenggang.qcg@taobao.com>
 
-evlist->mmap, evsel->id, evsel->sample_id are arrays. They cannot be expended or
-shrinked easily for the forked and exited threads while we get the fork and exit
-events.
-We transfromed them to linked list with the new xyarray.
-xyarray is a 2-dimensional structure. The row is a array still, and a row represents a cpu.
-The column is a linked list, and a column represents a thread.
-
-Some functions are implemented to expand and shrink the mmap, id and sample_id too.
-1) perf_evsel__append_id_thread()
-   Append a id for a evsel while a new thread is perceived.
-2) perf_evsel__append_fd_thread()
-   Append a fd for a evsel while a new thread is perceived.
-3) perf_evlist__append_mmap_thread()
-   Append a new node into evlist->mmap while a new thread is perceived.
-3) perf_evsel__open_thread()
-   Open the fd for the new thread with sys_perf_event_open.
-4) perf_evsel__close_thread()
-   Close the fd while a thread exit.
-5) perf_evlist__mmap_thread()
-   mmap a new thread's fd.
-6) perf_evlist__munmap_thread()
-   unmmap a exit thread's fd.
-
-The following macros can be used to reference a special fd, id, mmap, sample_id etc.
-1) FD(cpu, thread)
-2) SID(cpu, thread)
-3) ID(cpu, thread)
-4) MMAP(cpu, thread)
-
-evlist->pollfd is the parameter of syscall poll(), it must be a array. But we
-implement a function (perf_evlist__append_pollfd_thread) to expand and shrink it.
+The size of thread_map is fixed at initialized phase according to the
+files in /proc/{$pid}. It cannot be expanded and shrinked easily while we
+want to response the thread fork and exit events.
+We transform the thread_map structure to a linked list, and implement some
+interfaces to expend and shrink it. In order to improve compatibility with
+the existing code, we can get a thread by its index in the thread_map also.
+1) thread_map__append()
+   Append a new thread into thread_map according to new thread's pid.
+2) thread_map__remove()
+   Remove a exist thread from thread_map according to the index of the
+   thread in thread_map.
+3) thread_map__init()
+   Allocate a thread_map, and initialize it. But the thread_map is empty after
+   we called this function. We should call thread_map__append() to insert
+   threads.
+4) thread_map__delete()
+   Delete a exist thread_map.
+5) thread_map__get_pid()
+   Got a thread's pid by its index in the thread_map.
+6) thread_map__get_idx_by_pid()
+   Got a thread's index in the thread_map according to its pid.
+   While we got a PERF_RECORD_EXIT event, we only know the pid of the exited thread.
+7) thread_map__empty_thread_map()
+   Return a empty thread_map, there is only a dumb thread in it.
+   This function is used to instead of the global varible empty_thread_map.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -77,603 +71,571 @@ Cc: linux-kernel <linux-kernel@vger.kernel.org>
 Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
 
 ---
- tools/perf/builtin-record.c |    6 +-
- tools/perf/util/evlist.c    |  169 ++++++++++++++++++++++++++++++++++++++-----
- tools/perf/util/evlist.h    |    6 +-
- tools/perf/util/evsel.c     |   83 ++++++++++++++++++++-
- tools/perf/util/evsel.h     |    8 +-
- tools/perf/util/header.c    |   31 ++++----
- tools/perf/util/header.h    |    3 +-
- 7 files changed, 263 insertions(+), 43 deletions(-)
+ tools/perf/builtin-stat.c                 |    2 +-
+ tools/perf/tests/open-syscall-tp-fields.c |    2 +-
+ tools/perf/util/event.c                   |   10 +-
+ tools/perf/util/evlist.c                  |    2 +-
+ tools/perf/util/evsel.c                   |   16 +--
+ tools/perf/util/python.c                  |    2 +-
+ tools/perf/util/thread_map.c              |  210 +++++++++++++++++++----------
+ tools/perf/util/thread_map.h              |   19 ++-
+ tools/perf/util/xyarray.c                 |    4 +-
+ 9 files changed, 171 insertions(+), 96 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 774c907..13112c6 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -31,6 +31,8 @@
- #include <sched.h>
- #include <sys/mman.h>
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 9984876..f5fe0da 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -401,7 +401,7 @@ static int __run_perf_stat(int argc __maybe_unused, const char **argv)
+ 		}
  
-+#define MMAP(e, y) (*(struct perf_mmap *)xyarray__entry(e->mmap, 0, y))
-+
- #ifndef HAVE_ON_EXIT
- #ifndef ATEXIT_MAX
- #define ATEXIT_MAX 32
-@@ -367,8 +369,8 @@ static int perf_record__mmap_read_all(struct perf_record *rec)
- 	int rc = 0;
+ 		if (perf_target__none(&target))
+-			evsel_list->threads->map[0] = child_pid;
++			thread_map__append(evsel_list->threads, child_pid);
  
- 	for (i = 0; i < rec->evlist->nr_mmaps; i++) {
--		if (rec->evlist->mmap[i].base) {
--			if (perf_record__mmap_read(rec, &rec->evlist->mmap[i]) != 0) {
-+		if (MMAP(rec->evlist, i).base) {
-+			if (perf_record__mmap_read(rec, &MMAP(rec->evlist, i)) != 0) {
- 				rc = -1;
- 				goto out;
- 			}
+ 		/*
+ 		 * Wait for the child to be ready to exec.
+diff --git a/tools/perf/tests/open-syscall-tp-fields.c b/tools/perf/tests/open-syscall-tp-fields.c
+index 1c52fdc..39eb770 100644
+--- a/tools/perf/tests/open-syscall-tp-fields.c
++++ b/tools/perf/tests/open-syscall-tp-fields.c
+@@ -43,7 +43,7 @@ int test__syscall_open_tp_fields(void)
+ 
+ 	perf_evsel__config(evsel, &opts);
+ 
+-	evlist->threads->map[0] = getpid();
++	thread_map__append(evlist->threads, getpid());
+ 
+ 	err = perf_evlist__open(evlist);
+ 	if (err < 0) {
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 5cd13d7..91d2848 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -327,8 +327,8 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 	err = 0;
+ 	for (thread = 0; thread < threads->nr; ++thread) {
+ 		if (__event__synthesize_thread(comm_event, mmap_event,
+-					       threads->map[thread], 0,
+-					       process, tool, machine)) {
++					       thread_map__get_pid(threads,
++					       thread), 0, process, tool,
++					       machine)) {
+ 			err = -1;
+ 			break;
+ 		}
+@@ -337,12 +337,14 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 		 * comm.pid is set to thread group id by
+ 		 * perf_event__synthesize_comm
+ 		 */
+-		if ((int) comm_event->comm.pid != threads->map[thread]) {
++		if ((int) comm_event->comm.pid
++		    != thread_map__get_pid(threads, thread)) {
+ 			bool need_leader = true;
+ 
+ 			/* is thread group leader in thread_map? */
+ 			for (j = 0; j < threads->nr; ++j) {
+-				if ((int) comm_event->comm.pid == threads->map[j]) {
++				if ((int) comm_event->comm.pid
++				    == thread_map__get_pid(threads, thread)) {
+ 					need_leader = false;
+ 					break;
+ 				}
 diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index d5063d6..90cfbb6 100644
+index bc4ad79..d5063d6 100644
 --- a/tools/perf/util/evlist.c
 +++ b/tools/perf/util/evlist.c
-@@ -25,6 +25,8 @@
- 
- #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
- #define SID(e, x, y) xyarray__entry(e->sample_id, x, y)
-+#define ID(e, y) (*(u64 *)xyarray__entry(e->id, 0, y))
-+#define MMAP(e, y) (*(struct perf_mmap *)xyarray__entry(e->mmap, 0, y))
- 
- void perf_evlist__init(struct perf_evlist *evlist, struct cpu_map *cpus,
- 		       struct thread_map *threads)
-@@ -85,7 +87,7 @@ static void perf_evlist__purge(struct perf_evlist *evlist)
- 
- void perf_evlist__exit(struct perf_evlist *evlist)
- {
--	free(evlist->mmap);
-+	xyarray__delete(evlist->mmap);
- 	free(evlist->pollfd);
- 	evlist->mmap = NULL;
- 	evlist->pollfd = NULL;
-@@ -256,6 +258,32 @@ void perf_evlist__enable(struct perf_evlist *evlist)
+@@ -793,7 +793,7 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
  	}
+ 
+ 	if (perf_target__none(&opts->target))
+-		evlist->threads->map[0] = evlist->workload.pid;
++		thread_map__append(evlist->threads, evlist->workload.pid);
+ 
+ 	close(child_ready_pipe[1]);
+ 	close(go_pipe[0]);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 9c82f98f..57c569d 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -835,7 +835,7 @@ retry_sample_id:
+ 			int group_fd;
+ 
+ 			if (!evsel->cgrp)
+-				pid = threads->map[thread];
++				pid = thread_map__get_pid(threads, thread);
+ 
+ 			group_fd = get_group_fd(evsel, cpu, thread);
+ 
+@@ -894,14 +894,6 @@ static struct {
+ 	.cpus	= { -1, },
+ };
+ 
+-static struct {
+-	struct thread_map map;
+-	int threads[1];
+-} empty_thread_map = {
+-	.map.nr	 = 1,
+-	.threads = { -1, },
+-};
+-
+ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 		     struct thread_map *threads)
+ {
+@@ -911,7 +903,7 @@ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 	}
+ 
+ 	if (threads == NULL)
+-		threads = &empty_thread_map.map;
++		threads = thread_map__empty_thread_map();
+ 
+ 	return __perf_evsel__open(evsel, cpus, threads);
+ }
+@@ -919,7 +911,9 @@ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
+ 			     struct cpu_map *cpus)
+ {
+-	return __perf_evsel__open(evsel, cpus, &empty_thread_map.map);
++	struct thread_map *empty_thread_map = thread_map__empty_thread_map();
++
++	return __perf_evsel__open(evsel, cpus, empty_thread_map);
  }
  
-+/*
-+ * If threads->nr > 1, the cpu_map__nr() must be 1.
-+ * If the cpu_map__nr() > 1, we should not append pollfd.
-+ */
-+static int perf_evlist__append_pollfd_thread(struct perf_evlist *evlist)
-+{
-+	int new_nfds;
+ int perf_evsel__open_per_thread(struct perf_evsel *evsel,
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index 925e0c3..e3f3f1b 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -458,7 +458,7 @@ static PyObject *pyrf_thread_map__item(PyObject *obj, Py_ssize_t i)
+ 	if (i >= pthreads->threads->nr)
+ 		return NULL;
+ 
+-	return Py_BuildValue("i", pthreads->threads->map[i]);
++	return Py_BuildValue("i", thread_map__get_pid(pthreads->threads, i));
+ }
+ 
+ static PySequenceMethods pyrf_thread_map__sequence_methods = {
+diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+index 9b5f856..5f96fdf 100644
+--- a/tools/perf/util/thread_map.c
++++ b/tools/perf/util/thread_map.c
+@@ -19,9 +19,72 @@ static int filter(const struct dirent *dir)
+ 		return 1;
+ }
+ 
+-struct thread_map *thread_map__new_by_pid(pid_t pid)
++struct thread_map *thread_map__init(void)
+ {
+ 	struct thread_map *threads;
 +
-+	if (cpu_map__all(evlist->cpus)) {
-+		struct pollfd *pfd;
++	threads = malloc(sizeof(*threads));
++	if (threads == NULL)
++		return NULL;
 +
-+		new_nfds = evlist->threads->nr * evlist->nr_entries;
-+		pfd = zalloc(sizeof(struct pollfd) * new_nfds);
-+
-+		if (!pfd)
-+			return -1;
-+
-+		memcpy(pfd, evlist->pollfd, (evlist->threads->nr - 1) * evlist->nr_entries);
-+
-+		evlist->pollfd = pfd;
-+		return 0;
-+	}
-+
-+	return 1;
++	threads->nr = 0;
++	INIT_LIST_HEAD(&threads->head);
++	return threads;
 +}
 +
- static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
- {
- 	int nfds = cpu_map__nr(evlist->cpus) * evlist->threads->nr * evlist->nr_entries;
-@@ -288,7 +316,7 @@ void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
- 			 int cpu, int thread, u64 id)
- {
- 	perf_evlist__id_hash(evlist, evsel, cpu, thread, id);
--	evsel->id[evsel->ids++] = id;
-+	ID(evsel, evsel->ids++) = id;
- }
- 
- static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
-@@ -336,7 +364,7 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
- 
- union perf_event *perf_evlist__mmap_read(struct perf_evlist *evlist, int idx)
- {
--	struct perf_mmap *md = &evlist->mmap[idx];
-+	struct perf_mmap *md = &MMAP(evlist, idx);
- 	unsigned int head = perf_mmap__read_head(md);
- 	unsigned int old = md->prev;
- 	unsigned char *data = md->base + page_size;
-@@ -404,9 +432,9 @@ void perf_evlist__munmap(struct perf_evlist *evlist)
- 	int i;
- 
- 	for (i = 0; i < evlist->nr_mmaps; i++) {
--		if (evlist->mmap[i].base != NULL) {
--			munmap(evlist->mmap[i].base, evlist->mmap_len);
--			evlist->mmap[i].base = NULL;
-+		if (MMAP(evlist, i).base != NULL) {
-+			munmap(MMAP(evlist, i).base, evlist->mmap_len);
-+			MMAP(evlist, i).base = NULL;
- 		}
- 	}
- 
-@@ -414,27 +442,35 @@ void perf_evlist__munmap(struct perf_evlist *evlist)
- 	evlist->mmap = NULL;
- }
- 
-+static int perf_evlist__append_mmap_thread(struct perf_evlist *evlist)
++void thread_map__delete(struct thread_map *threads)
 +{
-+	if (xyarray__append(evlist->mmap) < 0)
++	struct thread_pid *tp, *tmp;
++
++	list_for_each_entry_safe(tp, tmp, &threads->head, next) {
++		list_del(&tp->next);
++		free(tp);
++	}
++
++	free(threads);
++}
++
++int thread_map__append(struct thread_map *threads, pid_t pid)
++{
++	struct thread_pid *tp;
++
++	if (threads == NULL)
 +		return -1;
-+	evlist->nr_mmaps++;
 +
-+	return 1;
++	list_for_each_entry(tp, &threads->head, next)
++		if (tp->pid == pid) /*The thread is exist*/
++			return 1;
++
++	tp = malloc(sizeof(*tp));
++	if (tp == NULL)
++		return -1;
++
++	tp->pid = pid;
++	list_add_tail(&tp->next, &threads->head);
++	threads->nr++;
++
++	return 0; /*success*/
 +}
 +
- static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
- {
- 	evlist->nr_mmaps = cpu_map__nr(evlist->cpus);
- 	if (cpu_map__all(evlist->cpus))
- 		evlist->nr_mmaps = evlist->threads->nr;
--	evlist->mmap = zalloc(evlist->nr_mmaps * sizeof(struct perf_mmap));
-+	evlist->mmap = xyarray__new(1, evlist->nr_mmaps, sizeof(struct perf_mmap));
- 	return evlist->mmap != NULL ? 0 : -ENOMEM;
- }
- 
- static int __perf_evlist__mmap(struct perf_evlist *evlist,
- 			       int idx, int prot, int mask, int fd)
- {
--	evlist->mmap[idx].prev = 0;
--	evlist->mmap[idx].mask = mask;
--	evlist->mmap[idx].base = mmap(NULL, evlist->mmap_len, prot,
-+	MMAP(evlist, idx).prev = 0;
-+	MMAP(evlist, idx).mask = mask;
-+	MMAP(evlist, idx).base = mmap(NULL, evlist->mmap_len, prot,
- 				      MAP_SHARED, fd, 0);
--	if (evlist->mmap[idx].base == MAP_FAILED) {
--		evlist->mmap[idx].base = NULL;
-+	if (MMAP(evlist, idx).base == MAP_FAILED) {
-+		MMAP(evlist, idx).base = NULL;
- 		return -1;
- 	}
--
- 	perf_evlist__add_pollfd(evlist, fd);
- 	return 0;
- }
-@@ -460,7 +496,6 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
- 					if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, output) != 0)
- 						goto out_unmap;
- 				}
--
- 				if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
- 				    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
- 					goto out_unmap;
-@@ -472,9 +507,9 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
- 
- out_unmap:
- 	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
--		if (evlist->mmap[cpu].base != NULL) {
--			munmap(evlist->mmap[cpu].base, evlist->mmap_len);
--			evlist->mmap[cpu].base = NULL;
-+		if (MMAP(evlist, cpu).base != NULL) {
-+			munmap(MMAP(evlist, cpu).base, evlist->mmap_len);
-+			MMAP(evlist, cpu).base = NULL;
- 		}
- 	}
- 	return -1;
-@@ -511,14 +546,108 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
- 
- out_unmap:
- 	for (thread = 0; thread < evlist->threads->nr; thread++) {
--		if (evlist->mmap[thread].base != NULL) {
--			munmap(evlist->mmap[thread].base, evlist->mmap_len);
--			evlist->mmap[thread].base = NULL;
-+		if (MMAP(evlist, thread).base != NULL) {
-+			munmap(MMAP(evlist, thread).base, evlist->mmap_len);
-+			MMAP(evlist, thread).base = NULL;
++int thread_map__remove(struct thread_map *threads, int idx)
++{
++	struct thread_pid *tp;
++	int count = 0;
++
++	list_for_each_entry(tp, &threads->head, next)
++		if (count++ == idx) {
++			list_del(&tp->next);
++			free(tp);
++			threads->nr--;
++			return 0;
 +		}
-+	}
++
 +	return -1;
 +}
 +
-+
-+int perf_evlist__mmap_thread(struct perf_evlist *evlist, bool overwrite, int tidx)
++struct thread_map *thread_map__new_by_pid(pid_t pid)
 +{
-+	struct perf_evsel *evsel;
-+	int prot = PROT_READ | (overwrite ? 0 : PROT_WRITE);
-+	int mask = evlist->mmap_len - page_size - 1;
-+	int output = -1;
-+	struct pollfd *old_pollfd = evlist->pollfd;
++	struct thread_map *threads = NULL;
+ 	char name[256];
+ 	int items;
+ 	struct dirent **namelist = NULL;
+@@ -32,40 +95,49 @@ struct thread_map *thread_map__new_by_pid(pid_t pid)
+ 	if (items <= 0)
+ 		return NULL;
+ 
+-	threads = malloc(sizeof(*threads) + sizeof(pid_t) * items);
+-	if (threads != NULL) {
++	threads = thread_map__init();
++	if (threads != NULL)
+ 		for (i = 0; i < items; i++)
+-			threads->map[i] = atoi(namelist[i]->d_name);
+-		threads->nr = items;
+-	}
++			if (thread_map__append(threads,
++			    atoi(namelist[i]->d_name)) == -1)
++				goto out_free_threads;
+ 
+ 	for (i=0; i<items; i++)
+ 		free(namelist[i]);
+ 	free(namelist);
+ 
+ 	return threads;
 +
-+	if (!cpu_map__all(evlist->cpus))
-+		return 1;
++out_free_threads:
++	thread_map__delete(threads);
++	return NULL;
+ }
+ 
+ struct thread_map *thread_map__new_by_tid(pid_t tid)
+ {
+-	struct thread_map *threads = malloc(sizeof(*threads) + sizeof(pid_t));
++	struct thread_map *threads = NULL;
+ 
+-	if (threads != NULL) {
+-		threads->map[0] = tid;
+-		threads->nr	= 1;
+-	}
++	threads = thread_map__init();
++	if (threads != NULL)
++		if (thread_map__append(threads, tid) == -1)
++			goto out_free_threads;
+ 
+ 	return threads;
 +
-+	if (perf_evlist__append_mmap_thread(evlist) < 0)
-+		return -ENOMEM;
++out_free_threads:
++	thread_map__delete(threads);
++	return NULL;
+ }
+ 
+ struct thread_map *thread_map__new_by_uid(uid_t uid)
+ {
+ 	DIR *proc;
+-	int max_threads = 32, items, i;
++	int items, i;
+ 	char path[256];
+ 	struct dirent dirent, *next, **namelist = NULL;
+-	struct thread_map *threads = malloc(sizeof(*threads) +
+-					    max_threads * sizeof(pid_t));
++	struct thread_map *threads = NULL;
 +
-+	if (perf_evlist__append_pollfd_thread(evlist) < 0)
-+		goto free_append_mmap;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node)
-+		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
-+		    evsel->sample_id == NULL)
-+			if (perf_evsel__append_id_thread(evsel, tidx) < 0)
-+				goto free_append_pollfd;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		int fd = FD(evsel, 0, tidx);
-+
-+		if (output == -1) {
-+			output = fd;
-+			if (__perf_evlist__mmap(evlist, tidx, prot, mask, output) < 0)
-+				goto out_unmap;
-+		} else {
-+			if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, output) != 0)
-+				goto out_unmap;
- 		}
-+
-+		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
-+		    perf_evlist__id_add_fd(evlist, evsel, 0, tidx, fd) < 0)
-+			goto out_unmap;
-+	}
-+
-+	free(old_pollfd);
-+	return 0;
-+out_unmap:
-+	if (MMAP(evlist, tidx).base != NULL) {
-+		munmap(MMAP(evlist, tidx).base, evlist->mmap_len);
-+		MMAP(evlist, tidx).base = NULL;
-+	}
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		xyarray__remove(evsel->id, tidx);
-+		xyarray__remove(evsel->sample_id, tidx);
++	threads = thread_map__init();
+ 	if (threads == NULL)
+ 		goto out;
+ 
+@@ -73,11 +145,8 @@ struct thread_map *thread_map__new_by_uid(uid_t uid)
+ 	if (proc == NULL)
+ 		goto out_free_threads;
+ 
+-	threads->nr = 0;
+-
+ 	while (!readdir_r(proc, &dirent, &next) && next) {
+ 		char *end;
+-		bool grow = false;
+ 		struct stat st;
+ 		pid_t pid = strtol(dirent.d_name, &end, 10);
+ 
+@@ -97,30 +166,13 @@ struct thread_map *thread_map__new_by_uid(uid_t uid)
+ 		if (items <= 0)
+ 			goto out_free_closedir;
+ 
+-		while (threads->nr + items >= max_threads) {
+-			max_threads *= 2;
+-			grow = true;
+-		}
+-
+-		if (grow) {
+-			struct thread_map *tmp;
+-
+-			tmp = realloc(threads, (sizeof(*threads) +
+-						max_threads * sizeof(pid_t)));
+-			if (tmp == NULL)
+-				goto out_free_namelist;
+-
+-			threads = tmp;
+-		}
+-
+ 		for (i = 0; i < items; i++)
+-			threads->map[threads->nr + i] = atoi(namelist[i]->d_name);
++			if (thread_map__append(threads, atoi(namelist[i]->d_name) < 0))
++				goto out_free_namelist;
+ 
+ 		for (i = 0; i < items; i++)
+ 			free(namelist[i]);
+ 		free(namelist);
+-
+-		threads->nr += items;
  	}
-+
-+free_append_pollfd:
-+	free(evlist->pollfd);
-+	evlist->pollfd = old_pollfd;
-+
-+free_append_mmap:
-+	xyarray__remove(evlist->mmap, tidx);
- 	return -1;
+ 
+ out_closedir:
+@@ -129,7 +181,7 @@ out:
+ 	return threads;
+ 
+ out_free_threads:
+-	free(threads);
++	thread_map__delete(threads);
+ 	return NULL;
+ 
+ out_free_namelist:
+@@ -138,7 +190,7 @@ out_free_namelist:
+ 	free(namelist);
+ 
+ out_free_closedir:
+-	free(threads);
++	thread_map__delete(threads);
+ 	threads = NULL;
+ 	goto out_closedir;
  }
+@@ -156,11 +208,11 @@ struct thread_map *thread_map__new(pid_t pid, pid_t tid, uid_t uid)
  
-+void perf_evlist__munmap_thread(struct perf_evlist *evlist, int tidx)
-+{
-+	struct perf_evsel *evsel;
-+	struct pollfd *pfd;
-+	int old_nfds = evlist->threads->nr * evlist->nr_entries;
-+	int new_nfds = (evlist->threads->nr - 1) * evlist->nr_entries;
-+
-+	if (MMAP(evlist, tidx).base != NULL) {
-+		munmap(MMAP(evlist, tidx).base, evlist->mmap_len);
-+		evlist->nr_mmaps--;
-+		MMAP(evlist, tidx).base = NULL;
-+		xyarray__remove(evlist->mmap, tidx);
-+	}
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		xyarray__remove(evsel->id, tidx);
-+		xyarray__remove(evsel->sample_id, tidx);
-+	}
-+
-+	pfd = zalloc(new_nfds * sizeof(struct pollfd));
-+	memcpy(pfd, evlist->pollfd, tidx * evlist->nr_entries * sizeof(struct pollfd));
-+	memcpy(pfd + (tidx * evlist->nr_entries),
-+	       evlist->pollfd + (tidx + 1) * evlist->nr_entries,
-+	       old_nfds - (tidx + 1) * evlist->nr_entries);
-+
-+	evlist->nr_fds--;
-+
-+	free(evlist->pollfd);
-+	evlist->pollfd = pfd;
-+}
-+
- /** perf_evlist__mmap - Create per cpu maps to receive events
-  *
-  * @evlist - list of events
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 2dd07bd..5bf04cf 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -7,6 +7,7 @@
- #include "event.h"
- #include "evsel.h"
- #include "util.h"
-+#include "xyarray.h"
- #include <unistd.h>
- 
- struct pollfd;
-@@ -37,7 +38,7 @@ struct perf_evlist {
- 		pid_t	pid;
- 	} workload;
- 	bool		 overwrite;
--	struct perf_mmap *mmap;
-+	struct xyarray   *mmap;
- 	struct pollfd	 *pollfd;
- 	struct thread_map *threads;
- 	struct cpu_map	  *cpus;
-@@ -131,6 +132,9 @@ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
- 				   struct list_head *list,
- 				   int nr_entries);
- 
-+int perf_evlist__mmap_thread(struct perf_evlist *evlist, bool overwrite, int tidx);
-+void perf_evlist__munmap_thread(struct perf_evlist *evlist, int tidx);
-+
- static inline struct perf_evsel *perf_evlist__first(struct perf_evlist *evlist)
+ static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
  {
- 	return list_entry(evlist->entries.next, struct perf_evsel, node);
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 57c569d..c439027 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -583,6 +583,20 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 		attr->enable_on_exec = 1;
+-	struct thread_map *threads = NULL, *nt;
++	struct thread_map *threads = NULL;
+ 	char name[256];
+-	int items, total_tasks = 0;
++	int items;
+ 	struct dirent **namelist = NULL;
+-	int i, j = 0;
++	int i;
+ 	pid_t pid, prev_pid = INT_MAX;
+ 	char *end_ptr;
+ 	struct str_node *pos;
+@@ -169,6 +221,10 @@ static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
+ 	if (!slist)
+ 		return NULL;
+ 
++	threads = thread_map__init();
++	if (threads == NULL)
++		return NULL;
++
+ 	strlist__for_each(pos, slist) {
+ 		pid = strtol(pos->s, &end_ptr, 10);
+ 
+@@ -184,19 +240,12 @@ static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
+ 		if (items <= 0)
+ 			goto out_free_threads;
+ 
+-		total_tasks += items;
+-		nt = realloc(threads, (sizeof(*threads) +
+-				       sizeof(pid_t) * total_tasks));
+-		if (nt == NULL)
+-			goto out_free_namelist;
+-
+-		threads = nt;
++		for (i = 0; i < items; i++)
++			if (thread_map__append(threads, atoi(namelist[i]->d_name)) < 0)
++				goto out_free_namelist;
+ 
+-		for (i = 0; i < items; i++) {
+-			threads->map[j++] = atoi(namelist[i]->d_name);
++		for (i = 0; i < items; i++)
+ 			free(namelist[i]);
+-		}
+-		threads->nr = total_tasks;
+ 		free(namelist);
+ 	}
+ 
+@@ -210,15 +259,14 @@ out_free_namelist:
+ 	free(namelist);
+ 
+ out_free_threads:
+-	free(threads);
++	thread_map__delete(threads);
+ 	threads = NULL;
+ 	goto out;
  }
  
-+int perf_evsel__append_fd_thread(struct perf_evsel *evsel, int tidx)
-+{
-+	int cpu_nr = evsel->fd->row_count;
-+	int cpu;
-+
-+	if (xyarray__append(evsel->fd) < 0)
-+		return -1;
-+
-+	for (cpu = 0; cpu < cpu_nr; cpu++)
-+		FD(evsel, cpu, tidx) = -1;
-+
-+	return 0;
-+}
-+
- int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
+ static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
  {
- 	int cpu, thread;
-@@ -617,13 +631,26 @@ int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
- 	return 0;
- }
+-	struct thread_map *threads = NULL, *nt;
+-	int ntasks = 0;
++	struct thread_map *threads = NULL;
+ 	pid_t tid, prev_tid = INT_MAX;
+ 	char *end_ptr;
+ 	struct str_node *pos;
+@@ -226,14 +274,16 @@ static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
  
-+int perf_evsel__append_id_thread(struct perf_evsel *evsel, int tidx)
-+{
-+	if (xyarray__append(evsel->sample_id) < 0)
-+		return -ENOMEM;
-+
-+	if (xyarray__append(evsel->id) < 0) {
-+		xyarray__remove(evsel->sample_id, tidx);
-+		return -ENOMEM;
-+	}
-+
-+	return 0;
-+}
-+
- int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
- {
- 	evsel->sample_id = xyarray__new(ncpus, nthreads, sizeof(struct perf_sample_id));
- 	if (evsel->sample_id == NULL)
- 		return -ENOMEM;
+ 	/* perf-stat expects threads to be generated even if tid not given */
+ 	if (!tid_str) {
+-		threads = malloc(sizeof(*threads) + sizeof(pid_t));
+-		if (threads != NULL) {
+-			threads->map[0] = -1;
+-			threads->nr	= 1;
+-		}
++		threads = thread_map__init();
++		if (threads != NULL)
++			thread_map__append(threads, -1);
+ 		return threads;
+ 	}
  
--	evsel->id = zalloc(ncpus * nthreads * sizeof(u64));
-+	evsel->id = xyarray__new(1, ncpus * nthreads, sizeof(u64));
- 	if (evsel->id == NULL) {
- 		xyarray__delete(evsel->sample_id);
- 		evsel->sample_id = NULL;
-@@ -650,7 +677,7 @@ void perf_evsel__free_id(struct perf_evsel *evsel)
- {
- 	xyarray__delete(evsel->sample_id);
- 	evsel->sample_id = NULL;
--	free(evsel->id);
-+	xyarray__delete(evsel->id);
- 	evsel->id = NULL;
- }
- 
-@@ -675,7 +702,7 @@ void perf_evsel__exit(struct perf_evsel *evsel)
- 	assert(list_empty(&evsel->node));
- 	xyarray__delete(evsel->fd);
- 	xyarray__delete(evsel->sample_id);
--	free(evsel->id);
-+	xyarray__delete(evsel->id);
- }
- 
- void perf_evsel__delete(struct perf_evsel *evsel)
-@@ -806,6 +833,56 @@ static int get_group_fd(struct perf_evsel *evsel, int cpu, int thread)
- 	return fd;
- }
- 
-+void perf_evsel__close_thread(struct perf_evsel *evsel, int cpu_nr, int tidx)
-+{
-+	int cpu;
++	threads = thread_map__init();
++	if (!threads)
++		goto out;
 +
-+	for (cpu = 0; cpu < cpu_nr; cpu++)
-+		if (FD(evsel, cpu, tidx) >= 0)
-+			close(FD(evsel, cpu, tidx));
-+
-+	xyarray__remove(evsel->fd, tidx);
-+}
-+
-+int perf_evsel__open_thread(struct perf_evsel *evsel, struct cpu_map *cpus,
-+			     struct thread_map *threads, int tidx)
-+{
-+	int tid = thread_map__get_pid(threads, tidx);
-+	int cpu;
-+	int pid = -1;
-+	unsigned long flags = 0;
-+	int err;
-+
-+	if (perf_evsel__append_fd_thread(evsel, tidx) < 0)
-+		return 1;
-+
-+	if (evsel->cgrp) {
-+		flags = PERF_FLAG_PID_CGROUP;
-+		pid = evsel->cgrp->fd;
-+	}
-+
-+	for (cpu = 0; cpu < cpus->nr; cpu++) {
-+		int group_fd;
-+
-+		if (!evsel->cgrp)
-+			pid = tid;
-+
-+		group_fd = get_group_fd(evsel, cpu, tidx);
-+		FD(evsel, cpu, tidx) = sys_perf_event_open(&evsel->attr,
-+							   pid,
-+							   cpus->map[cpu],
-+							   group_fd, flags);
-+		if (FD(evsel, cpu, tidx) < 0) {
-+			printf("error: cannot open counter for: %d\n", tid);
-+			err = -errno;
-+			printf("errno: %d\n", errno);
-+			return err;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 			      struct thread_map *threads)
- {
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 52021c3..37b56ba 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -51,7 +51,7 @@ struct perf_evsel {
- 	char			*filter;
- 	struct xyarray		*fd;
- 	struct xyarray		*sample_id;
--	u64			*id;
-+	struct xyarray          *id;
- 	struct perf_counts	*counts;
- 	struct perf_counts	*prev_raw_counts;
- 	int			idx;
-@@ -271,6 +271,12 @@ static inline int perf_evsel__group_idx(struct perf_evsel *evsel)
- 	return evsel->idx - evsel->leader->idx;
- }
- 
-+int perf_evsel__append_id_thread(struct perf_evsel *evsel, int tidx);
-+int perf_evsel__append_fd_thread(struct perf_evsel *evsel, int tidx);
-+void perf_evsel__close_thread(struct perf_evsel *evsel, int cpu_nr, int tidx);
-+int perf_evsel__open_thread(struct perf_evsel *evsel, struct cpu_map *cpus,
-+			    struct thread_map *threads, int tidx);
-+
- #define for_each_group_member(_evsel, _leader) 					\
- for ((_evsel) = list_entry((_leader)->node.next, struct perf_evsel, node); 	\
-      (_evsel) && (_evsel)->leader == (_leader);					\
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index f4bfd79..51a52d4 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -25,6 +25,8 @@
- #include "strbuf.h"
- #include "build-id.h"
- 
-+#define ID(e, y) (*(u64 *)xyarray__entry(e->id, 0, y))
-+
- static bool no_buildid_cache = false;
- 
- static int trace_event_count;
-@@ -1260,7 +1262,6 @@ static struct perf_evsel *
- read_event_desc(struct perf_header *ph, int fd)
- {
- 	struct perf_evsel *evsel, *events = NULL;
--	u64 *id;
- 	void *buf = NULL;
- 	u32 nre, sz, nr, i, j;
- 	ssize_t ret;
-@@ -1325,19 +1326,17 @@ read_event_desc(struct perf_header *ph, int fd)
- 		if (!nr)
+ 	slist = strlist__new(false, tid_str);
+ 	if (!slist)
+ 		return NULL;
+@@ -248,21 +298,14 @@ static struct thread_map *thread_map__new_by_tid_str(const char *tid_str)
+ 		if (tid == prev_tid)
  			continue;
  
--		id = calloc(nr, sizeof(*id));
--		if (!id)
--			goto error;
- 		evsel->ids = nr;
--		evsel->id = id;
-+		evsel->id = xyarray__new(1, nr, sizeof(u64));
-+		if (!evsel->id)
-+			goto error;
- 
- 		for (j = 0 ; j < nr; j++) {
--			ret = readn(fd, id, sizeof(*id));
--			if (ret != (ssize_t)sizeof(*id))
-+			ret = readn(fd, &ID(evsel, j), sizeof(u64));
-+			if (ret != (ssize_t)sizeof(u64))
- 				goto error;
- 			if (ph->needs_swap)
--				*id = bswap_64(*id);
--			id++;
-+				ID(evsel, j) = bswap_64(ID(evsel, j));
- 		}
+-		ntasks++;
+-		nt = realloc(threads, sizeof(*threads) + sizeof(pid_t) * ntasks);
+-
+-		if (nt == NULL)
++		if (thread_map__append(threads, tid) == -1)
+ 			goto out_free_threads;
+-
+-		threads = nt;
+-		threads->map[ntasks - 1] = tid;
+-		threads->nr		 = ntasks;
  	}
  out:
-@@ -1355,7 +1354,6 @@ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
- {
- 	struct perf_evsel *evsel, *events = read_event_desc(ph, fd);
- 	u32 j;
--	u64 *id;
+ 	return threads;
  
- 	if (!events) {
- 		fprintf(fp, "# event desc: not available or unable to read\n");
-@@ -1384,10 +1382,10 @@ static void print_event_desc(struct perf_header *ph, int fd, FILE *fp)
- 
- 		if (evsel->ids) {
- 			fprintf(fp, ", id = {");
--			for (j = 0, id = evsel->id; j < evsel->ids; j++, id++) {
-+			for (j = 0; j < evsel->ids; j++) {
- 				if (j)
- 					fputc(',', fp);
--				fprintf(fp, " %"PRIu64, *id);
-+				fprintf(fp, " %"PRIu64, ID(evsel, j));
- 			}
- 			fprintf(fp, " }");
- 		}
-@@ -2880,12 +2878,14 @@ out_delete_evlist:
+ out_free_threads:
+-	free(threads);
++	thread_map__delete(threads);
+ 	threads = NULL;
+ 	goto out;
+ }
+@@ -279,18 +322,37 @@ struct thread_map *thread_map__new_str(const char *pid, const char *tid,
+ 	return thread_map__new_by_tid_str(tid);
  }
  
- int perf_event__synthesize_attr(struct perf_tool *tool,
--				struct perf_event_attr *attr, u32 ids, u64 *id,
-+				struct perf_event_attr *attr, u32 ids,
-+				struct perf_evsel *evsel,
- 				perf_event__handler_t process)
+-void thread_map__delete(struct thread_map *threads)
++struct thread_map *thread_map__empty_thread_map(void)
  {
- 	union perf_event *ev;
- 	size_t size;
- 	int err;
-+	u32 i;
+-	free(threads);
++	struct thread_map *empty_thread_map = NULL;
++
++	empty_thread_map = thread_map__init();
++	if (empty_thread_map)
++		thread_map__append(empty_thread_map, -1);
++
++	return empty_thread_map;
++}
++
++int thread_map__get_pid(struct thread_map *threads, int idx)
++{
++	struct thread_pid *tp;
++	int count = 0;
++
++	list_for_each_entry(tp, &threads->head, next)
++		if (count++ == idx)
++			return tp->pid;
++
++	return -1;
+ }
  
- 	size = sizeof(struct perf_event_attr);
- 	size = PERF_ALIGN(size, sizeof(u64));
-@@ -2898,7 +2898,8 @@ int perf_event__synthesize_attr(struct perf_tool *tool,
- 		return -ENOMEM;
+ size_t thread_map__fprintf(struct thread_map *threads, FILE *fp)
+ {
+-	int i;
++	int i = 0;
++	struct thread_pid *tp;
+ 	size_t printed = fprintf(fp, "%d thread%s: ",
+ 				 threads->nr, threads->nr > 1 ? "s" : "");
+-	for (i = 0; i < threads->nr; ++i)
+-		printed += fprintf(fp, "%s%d", i ? ", " : "", threads->map[i]);
++	list_for_each_entry(tp, &threads->head, next)
++		printed += fprintf(fp, "%s%d", i++ ? ", " : "", tp->pid);
  
- 	ev->attr.attr = *attr;
--	memcpy(ev->attr.id, id, ids * sizeof(u64));
-+	for (i = 0; i < ids; i++)
-+		ev->attr.id[i] = ID(evsel, i);
+ 	return printed + fprintf(fp, "\n");
+ }
+diff --git a/tools/perf/util/thread_map.h b/tools/perf/util/thread_map.h
+index f718df8..e5a3013 100644
+--- a/tools/perf/util/thread_map.h
++++ b/tools/perf/util/thread_map.h
+@@ -3,20 +3,37 @@
  
- 	ev->attr.header.type = PERF_RECORD_HEADER_ATTR;
- 	ev->attr.header.size = (u16)size;
-@@ -2922,7 +2923,7 @@ int perf_event__synthesize_attrs(struct perf_tool *tool,
+ #include <sys/types.h>
+ #include <stdio.h>
++#include <linux/list.h>
++#include "xyarray.h"
++
++struct thread_pid {
++	struct list_head next;
++	pid_t pid;
++};
  
- 	list_for_each_entry(evsel, &session->evlist->entries, node) {
- 		err = perf_event__synthesize_attr(tool, &evsel->attr, evsel->ids,
--						  evsel->id, process);
-+						  evsel, process);
- 		if (err) {
- 			pr_debug("failed to create perf header attribute\n");
- 			return err;
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index c9fc55c..1852816 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -126,7 +126,8 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
- int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir);
+ struct thread_map {
+ 	int nr;
+-	pid_t map[];
++	struct list_head head;
+ };
  
- int perf_event__synthesize_attr(struct perf_tool *tool,
--				struct perf_event_attr *attr, u32 ids, u64 *id,
-+				struct perf_event_attr *attr, u32 ids,
-+				struct perf_evsel *evsel,
- 				perf_event__handler_t process);
- int perf_event__synthesize_attrs(struct perf_tool *tool,
- 				 struct perf_session *session,
++struct thread_map *thread_map__init(void);
+ struct thread_map *thread_map__new_by_pid(pid_t pid);
+ struct thread_map *thread_map__new_by_tid(pid_t tid);
+ struct thread_map *thread_map__new_by_uid(uid_t uid);
+ struct thread_map *thread_map__new(pid_t pid, pid_t tid, uid_t uid);
++struct thread_map *thread_map__empty_thread_map(void);
+ 
+ struct thread_map *thread_map__new_str(const char *pid,
+ 		const char *tid, uid_t uid);
+ 
++int thread_map__append(struct thread_map *threads, pid_t pid);
++int thread_map__remove(struct thread_map *threads, int idx);
++int thread_map__get_pid(struct thread_map *threads, int index);
++int thread_map__get_idx_by_pid(struct thread_map *threads, pid_t pid);
++
+ void thread_map__delete(struct thread_map *threads);
+ 
+ size_t thread_map__fprintf(struct thread_map *threads, FILE *fp);
+diff --git a/tools/perf/util/xyarray.c b/tools/perf/util/xyarray.c
+index fc48bda..5777bc2 100644
+--- a/tools/perf/util/xyarray.c
++++ b/tools/perf/util/xyarray.c
+@@ -78,13 +78,13 @@ int xyarray__remove(struct xyarray *xy, int y)
+ void xyarray__delete(struct xyarray *xy)
+ {
+ 	unsigned int i;
+-	struct xyentry *entry;
++	struct xyentry *entry, *tmp;
+ 
+ 	if (!xy)
+ 		return;
+ 
+ 	for (i = 0; i < xy->row_count; i++)
+-		list_for_each_entry(entry, &xy->rows[i].head, next) {
++		list_for_each_entry_safe(entry, tmp, &xy->rows[i].head, next) {
+ 			list_del(&entry->next);
+ 			free(entry);
+ 		}
 -- 
 1.7.9.5
 
