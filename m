@@ -1,159 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932659Ab3BZPct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 10:32:49 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:54002 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759465Ab3BZPcp (ORCPT
+	id S932686Ab3BZPdR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 10:33:17 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:35948 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932114Ab3BZPdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 10:32:45 -0500
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J . Wysocki" <rjw@sisk.pl>
-Cc: Myron Stowe <myron.stowe@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <jiang.liu@huawei.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH v8 13/13] PCI, ACPI: remove support of ACPI PCI subdrivers
-Date: Tue, 26 Feb 2013 23:25:53 +0800
-Message-Id: <1361892353-14786-14-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361892353-14786-1-git-send-email-jiang.liu@huawei.com>
-References: <1361892353-14786-1-git-send-email-jiang.liu@huawei.com>
+	Tue, 26 Feb 2013 10:33:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <477F20668A386D41ADCC57781B1F70430D9D7F8FF0@SC-VEXCH1.marvell.com>
+References: <1358493883-28433-1-git-send-email-lkundrak@v3.sk>
+	<477F20668A386D41ADCC57781B1F70430D140B07DE@SC-VEXCH1.marvell.com>
+	<1361249203.14137.27.camel@unicorn.kokotovo>
+	<477F20668A386D41ADCC57781B1F70430D9D6CEA08@SC-VEXCH1.marvell.com>
+	<1361730693.31709.1.camel@unicorn.kokotovo>
+	<477F20668A386D41ADCC57781B1F70430D9D7F8FF0@SC-VEXCH1.marvell.com>
+Date: Tue, 26 Feb 2013 09:33:12 -0600
+X-Google-Sender-Auth: jqGbvpOQqbC2FqZMhUdycvlf5Iw
+Message-ID: <CAMLZHHTnRUT0pbpKR7=wVSDkOxo65tnA_JWYGtq9rejsVy2scQ@mail.gmail.com>
+Subject: Re: [PATCH] libertas sdio: remove CMD_FUNC_INIT call
+From: Daniel Drake <dsd@laptop.org>
+To: Bing Zhao <bzhao@marvell.com>
+Cc: Lubomir Rintel <lkundrak@v3.sk>, Harro Haan <hrhaan@gmail.com>,
+        Dan Williams <dcbw@redhat.com>,
+        "libertas-dev@lists.infradead.org" <libertas-dev@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Myron Stowe <myron.stowe@redhat.com>
+On Mon, Feb 25, 2013 at 5:21 PM, Bing Zhao <bzhao@marvell.com> wrote:
+> Do you have any concern for OLPC platforms with above change? If it doesn't seem to break OLPC I will send a patch to the list.
 
-Both sub-drivers of the "PCI Root Bridge ("pci_bridge")" driver, "acpiphp"
-and "pci_slot", have been converted to hook directly into the PCI core.
+Looks fine to me. Thanks for investigating.
 
-With the conversions there are no remaining usages of the 'struct
-acpi_pci_driver' list based infrastructure.  This patch removes it.
-
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/acpi/pci_root.c |   48 +----------------------------------------------
- include/linux/acpi.h    |    9 ---------
- 2 files changed, 1 insertion(+), 56 deletions(-)
-
-diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index 8b5a73b..2ef0c91 100644
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -69,44 +69,12 @@ static struct acpi_driver acpi_pci_root_driver = {
- 		},
- };
- 
--/* Lock to protect both acpi_pci_roots and acpi_pci_drivers lists */
-+/* Lock to protect both acpi_pci_roots lists */
- static DEFINE_MUTEX(acpi_pci_root_lock);
- static LIST_HEAD(acpi_pci_roots);
--static LIST_HEAD(acpi_pci_drivers);
- 
- static DEFINE_MUTEX(osc_lock);
- 
--int acpi_pci_register_driver(struct acpi_pci_driver *driver)
--{
--	int n = 0;
--	struct acpi_pci_root *root;
--
--	mutex_lock(&acpi_pci_root_lock);
--	list_add_tail(&driver->node, &acpi_pci_drivers);
--	if (driver->add)
--		list_for_each_entry(root, &acpi_pci_roots, node) {
--			driver->add(root);
--			n++;
--		}
--	mutex_unlock(&acpi_pci_root_lock);
--
--	return n;
--}
--EXPORT_SYMBOL(acpi_pci_register_driver);
--
--void acpi_pci_unregister_driver(struct acpi_pci_driver *driver)
--{
--	struct acpi_pci_root *root;
--
--	mutex_lock(&acpi_pci_root_lock);
--	list_del(&driver->node);
--	if (driver->remove)
--		list_for_each_entry(root, &acpi_pci_roots, node)
--			driver->remove(root);
--	mutex_unlock(&acpi_pci_root_lock);
--}
--EXPORT_SYMBOL(acpi_pci_unregister_driver);
--
- /**
-  * acpi_is_root_bridge - determine whether an ACPI CA node is a PCI root bridge
-  * @handle - the ACPI CA node in question.
-@@ -416,7 +384,6 @@ static int acpi_pci_root_add(struct acpi_device *device)
- 	acpi_status status;
- 	int result;
- 	struct acpi_pci_root *root;
--	struct acpi_pci_driver *driver;
- 	u32 flags, base_flags;
- 	bool is_osc_granted = false;
- 
-@@ -576,12 +543,6 @@ static int acpi_pci_root_add(struct acpi_device *device)
- 		pci_assign_unassigned_bus_resources(root->bus);
- 	}
- 
--	mutex_lock(&acpi_pci_root_lock);
--	list_for_each_entry(driver, &acpi_pci_drivers, node)
--		if (driver->add)
--			driver->add(root);
--	mutex_unlock(&acpi_pci_root_lock);
--
- 	/* need to after hot-added ioapic is registered */
- 	if (system_state != SYSTEM_BOOTING)
- 		pci_enable_bridges(root->bus);
-@@ -602,16 +563,9 @@ end:
- static int acpi_pci_root_remove(struct acpi_device *device, int type)
- {
- 	struct acpi_pci_root *root = acpi_driver_data(device);
--	struct acpi_pci_driver *driver;
- 
- 	pci_stop_root_bus(root->bus);
- 
--	mutex_lock(&acpi_pci_root_lock);
--	list_for_each_entry_reverse(driver, &acpi_pci_drivers, node)
--		if (driver->remove)
--			driver->remove(root);
--	mutex_unlock(&acpi_pci_root_lock);
--
- 	device_set_run_wake(root->bus->bridge, false);
- 	pci_acpi_remove_bus_pm_notifier(device);
- 
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 8c1d6f2..eeb5600 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -147,15 +147,6 @@ void acpi_penalize_isa_irq(int irq, int active);
- 
- void acpi_pci_irq_disable (struct pci_dev *dev);
- 
--struct acpi_pci_driver {
--	struct list_head node;
--	int (*add)(struct acpi_pci_root *root);
--	void (*remove)(struct acpi_pci_root *root);
--};
--
--int acpi_pci_register_driver(struct acpi_pci_driver *driver);
--void acpi_pci_unregister_driver(struct acpi_pci_driver *driver);
--
- extern int ec_read(u8 addr, u8 *val);
- extern int ec_write(u8 addr, u8 val);
- extern int ec_transaction(u8 command,
--- 
-1.7.9.5
-
+Daniel
