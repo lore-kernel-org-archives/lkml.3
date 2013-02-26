@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950Ab3BZX6Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42157 "EHLO
+	id S933998Ab3B0Aso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:48:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42203 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932549Ab3BZX6R (ORCPT
+	with ESMTP id S932940Ab3BZX6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:17 -0500
+	Tue, 26 Feb 2013 18:58:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anatolij Gustschin <agust@denx.de>, Timur Tabi <timur@tabi.org>,
-        Timur Tabi <timur@freescale.com>
-Subject: [ 114/150] drivers/video: fsl-diu-fb: fix pixel formats for 24 and 16 bpp
-Date: Tue, 26 Feb 2013 15:56:11 -0800
-Message-Id: <20130226235535.921979927@linuxfoundation.org>
+        Yuchung Cheng <ycheng@google.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 132/150] tcp: fix SYN-data space mis-accounting
+Date: Tue, 26 Feb 2013 15:56:29 -0800
+Message-Id: <20130226235537.920210317@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,51 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatolij Gustschin <agust@denx.de>
 
-commit 5d3cc311a76073f6e0a27c0752f7e41f69e95ea7 upstream.
+From: Yuchung Cheng <ycheng@google.com>
 
-Framebuffer colors for 24 and 16 bpp are currently wrong. The order
-of the color component arguments in the MAKE_PF() is not natural
-and causes some confusion. The generated pixel format values for 24
-and 16 bpp depths do not much the values in the comments.
+[ Upstream commit 1b63edd6ecc55c3a61b40297b49e2323783bddfd ]
 
-Fix the macro arguments to be in the natural RGB order and adjust
-the arguments for all depths to generate correct pixel format values
-(equal to the values mentioned in the comments).
+In fast open the sender unncessarily reduces the space available
+for data in SYN by 12 bytes.  This is because in the sender
+incorrectly reserves space for TS option twice in tcp_send_syn_data():
+tcp_mtu_to_mss() already accounts for TS option space. But it further
+reserves MAX_TCP_OPTION_SPACE when computing the payload space.
 
-Signed-off-by: Anatolij Gustschin <agust@denx.de>
-Cc: Timur Tabi <timur@tabi.org>
-Acked-by: Timur Tabi <timur@freescale.com>
+Signed-off-by: Yuchung Cheng <ycheng@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/video/fsl-diu-fb.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/ipv4/tcp_output.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
---- a/drivers/video/fsl-diu-fb.c
-+++ b/drivers/video/fsl-diu-fb.c
-@@ -944,7 +944,7 @@ static u32 fsl_diu_get_pixel_format(unsi
- #define PF_COMP_0_MASK		0x0000000F
- #define PF_COMP_0_SHIFT		0
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -1351,8 +1351,8 @@ int tcp_trim_head(struct sock *sk, struc
+ 	return 0;
+ }
  
--#define MAKE_PF(alpha, red, blue, green, size, c0, c1, c2, c3) \
-+#define MAKE_PF(alpha, red, green, blue, size, c0, c1, c2, c3) \
- 	cpu_to_le32(PF_BYTE_F | (alpha << PF_ALPHA_C_SHIFT) | \
- 	(blue << PF_BLUE_C_SHIFT) | (green << PF_GREEN_C_SHIFT) | \
- 	(red << PF_RED_C_SHIFT) | (c3 << PF_COMP_3_SHIFT) | \
-@@ -954,10 +954,10 @@ static u32 fsl_diu_get_pixel_format(unsi
- 	switch (bits_per_pixel) {
- 	case 32:
- 		/* 0x88883316 */
--		return MAKE_PF(3, 2, 0, 1, 3, 8, 8, 8, 8);
-+		return MAKE_PF(3, 2, 1, 0, 3, 8, 8, 8, 8);
- 	case 24:
- 		/* 0x88082219 */
--		return MAKE_PF(4, 0, 1, 2, 2, 0, 8, 8, 8);
-+		return MAKE_PF(4, 0, 1, 2, 2, 8, 8, 8, 0);
- 	case 16:
- 		/* 0x65053118 */
- 		return MAKE_PF(4, 2, 1, 0, 1, 5, 6, 5, 0);
+-/* Calculate MSS. Not accounting for SACKs here.  */
+-int tcp_mtu_to_mss(struct sock *sk, int pmtu)
++/* Calculate MSS not accounting any TCP options.  */
++static inline int __tcp_mtu_to_mss(struct sock *sk, int pmtu)
+ {
+ 	const struct tcp_sock *tp = tcp_sk(sk);
+ 	const struct inet_connection_sock *icsk = inet_csk(sk);
+@@ -1381,13 +1381,17 @@ int tcp_mtu_to_mss(struct sock *sk, int
+ 	/* Then reserve room for full set of TCP options and 8 bytes of data */
+ 	if (mss_now < 48)
+ 		mss_now = 48;
+-
+-	/* Now subtract TCP options size, not including SACKs */
+-	mss_now -= tp->tcp_header_len - sizeof(struct tcphdr);
+-
+ 	return mss_now;
+ }
+ 
++/* Calculate MSS. Not accounting for SACKs here.  */
++int tcp_mtu_to_mss(struct sock *sk, int pmtu)
++{
++	/* Subtract TCP options size, not including SACKs */
++	return __tcp_mtu_to_mss(sk, pmtu) -
++	       (tcp_sk(sk)->tcp_header_len - sizeof(struct tcphdr));
++}
++
+ /* Inverse of above */
+ int tcp_mss_to_mtu(struct sock *sk, int mss)
+ {
+@@ -2930,7 +2934,7 @@ static int tcp_send_syn_data(struct sock
+ 	 */
+ 	if (tp->rx_opt.user_mss && tp->rx_opt.user_mss < tp->rx_opt.mss_clamp)
+ 		tp->rx_opt.mss_clamp = tp->rx_opt.user_mss;
+-	space = tcp_mtu_to_mss(sk, inet_csk(sk)->icsk_pmtu_cookie) -
++	space = __tcp_mtu_to_mss(sk, inet_csk(sk)->icsk_pmtu_cookie) -
+ 		MAX_TCP_OPTION_SPACE;
+ 
+ 	syn_data = skb_copy_expand(syn, skb_headroom(syn), space,
 
 
