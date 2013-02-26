@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933830Ab3B0A4z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:56:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42089 "EHLO
+	id S1760312Ab3BZX6E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:58:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42036 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760182Ab3BZX6F (ORCPT
+	with ESMTP id S1760279Ab3BZX55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:05 -0500
+	Tue, 26 Feb 2013 18:57:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Subject: [ 097/150] staging: vt6656: Revert: 64bit fixes: dpc.c incorrect addressing of void structure.
-Date: Tue, 26 Feb 2013 15:55:54 -0800
-Message-Id: <20130226235534.134163248@linuxfoundation.org>
+        Mika Kuoppala <mika.kuoppala@intel.com>,
+        Andreas Sturmlechner <andreas.sturmlechner@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 086/150] drm/i915: disable shared panel fitter for pipe
+Date: Tue, 26 Feb 2013 15:55:43 -0800
+Message-Id: <20130226235533.048341183@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,43 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Mika Kuoppala <mika.kuoppala@linux.intel.com>
 
-commit 392c6ff87f568d573239b763855160d1f06114de upstream.
+commit 24a1f16de97c4cf0029d9acd04be06db32208726 upstream.
 
-The patch was totally wrong and is reverted.
+If encoder is switched off by BIOS, but the panel fitter is left on,
+we never try to turn off the panel fitter and leave it still attached
+to the pipe - which can cause blurry output elsewhere.
 
-The problem was ultimately fixed by upstream commit.
-1ee4c55fc9620451b2a825d793042a7e0775391b
-staging: vt6656: Fix inconsistent structure packing
+Based on work by Chris Wilson <chris@chris-wilson.co.uk>
 
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=58867
+Signed-off-by: Mika Kuoppala <mika.kuoppala@intel.com>
+Tested-by: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+[danvet: Remove the redundant HAS_PCH_SPLIT check and add a tiny
+comment.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/vt6656/dpc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/staging/vt6656/dpc.c
-+++ b/drivers/staging/vt6656/dpc.c
-@@ -1190,7 +1190,7 @@ static BOOL s_bHandleRxEncryption (
-     if (byDecMode == KEY_CTL_WEP) {
-         // handle WEP
-         if ((pDevice->byLocalID <= REV_ID_VT3253_A1) ||
--		(((PSKeyTable)(&pKey->pvKeyTable))->bSoftWEP == TRUE)) {
-+		(((PSKeyTable)(pKey->pvKeyTable))->bSoftWEP == TRUE)) {
-             // Software WEP
-             // 1. 3253A
-             // 2. WEP 256
-@@ -1299,7 +1299,7 @@ static BOOL s_bHostWepRxEncryption (
-         // handle WEP
- 	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"byDecMode == KEY_CTL_WEP\n");
-         if ((pDevice->byLocalID <= REV_ID_VT3253_A1) ||
--		(((PSKeyTable)(&pKey->pvKeyTable))->bSoftWEP == TRUE) ||
-+		(((PSKeyTable)(pKey->pvKeyTable))->bSoftWEP == TRUE) ||
-             (bOnFly == FALSE)) {
-             // Software WEP
-             // 1. 3253A
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -3686,6 +3686,7 @@ static void i9xx_crtc_disable(struct drm
+ 	struct intel_encoder *encoder;
+ 	int pipe = intel_crtc->pipe;
+ 	int plane = intel_crtc->plane;
++	u32 pctl;
+ 
+ 
+ 	if (!intel_crtc->active)
+@@ -3705,6 +3706,13 @@ static void i9xx_crtc_disable(struct drm
+ 
+ 	intel_disable_plane(dev_priv, plane, pipe);
+ 	intel_disable_pipe(dev_priv, pipe);
++
++	/* Disable pannel fitter if it is on this pipe. */
++	pctl = I915_READ(PFIT_CONTROL);
++	if ((pctl & PFIT_ENABLE) &&
++	    ((pctl & PFIT_PIPE_MASK) >> PFIT_PIPE_SHIFT) == pipe)
++		I915_WRITE(PFIT_CONTROL, 0);
++
+ 	intel_disable_pll(dev_priv, pipe);
+ 
+ 	intel_crtc->active = false;
 
 
