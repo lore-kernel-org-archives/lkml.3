@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab3BZWIt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 17:08:49 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:56840 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751644Ab3BZWIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 17:08:48 -0500
-Date: Tue, 26 Feb 2013 09:24:41 -0800
-From: Matt Helsley <matthltc@linux.vnet.ibm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Evgeniy Polyakov <zbr@ioremap.net>,
-        netdev@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>
-Subject: Re: [PATCH] proc connector: reject unprivileged listener bumps
-Message-ID: <20130226172441.GA6312@us.ibm.com>
-References: <20130226073225.GA15489@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130226073225.GA15489@www.outflux.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022622-9360-0000-0000-000011136C60
+	id S1755608Ab3BZWJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 17:09:55 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:61878 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab3BZWJw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 17:09:52 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Tue, 26 Feb 2013 17:09:51 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Peter Korsgaard <jacmet@sunsite.dk>
+Cc: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        Kyungsik Lee <kyungsik.lee@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
+        raphael.andy.lee@gmail.com
+Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
+In-reply-to: <87fw0i7n6d.fsf@dell.be.48ers.dk>
+Message-id: <alpine.LFD.2.03.1302261708120.1254@syhkavp.arg>
+References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
+ <512D1C12.4080109@oberhumer.com>
+ <alpine.LFD.2.03.1302261557220.1254@syhkavp.arg>
+ <87fw0i7n6d.fsf@dell.be.48ers.dk>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 11:32:25PM -0800, Kees Cook wrote:
-> While PROC_CN_MCAST_LISTEN/IGNORE is entirely advisory, it was possible
-> for an unprivileged user to turn off notifications for all listeners by
-> sending PROC_CN_MCAST_IGNORE. Instead, require the same privileges as
-> required for a multicast bind.
+On Tue, 26 Feb 2013, Peter Korsgaard wrote:
+
+> >>>>> "Nicolas" == Nicolas Pitre <nico@fluxnic.net> writes:
 > 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: Evgeniy Polyakov <zbr@ioremap.net>
-> Cc: Matt Helsley <matthltc@us.ibm.com>
-> Cc: stable@vger.kernel.org
-> ---
->  drivers/connector/cn_proc.c |    8 ++++++++
->  1 file changed, 8 insertions(+)
+> Hi,
 > 
-> diff --git a/drivers/connector/cn_proc.c b/drivers/connector/cn_proc.c
-> index fce2000..1110478 100644
-> --- a/drivers/connector/cn_proc.c
-> +++ b/drivers/connector/cn_proc.c
-> @@ -313,6 +313,12 @@ static void cn_proc_mcast_ctl(struct cn_msg *msg,
->  	    (task_active_pid_ns(current) != &init_pid_ns))
->  		return;
+>  >> Did you actually *try* the new LZO version and the patch (which is attached
+>  >> once again) as explained in https://lkml.org/lkml/2013/2/3/367 ?
+>  >> 
+>  >> Because the new LZO version is faster than LZ4 in my testing, at least
+>  >> when comparing apples with apples and enabling unaligned access in
+>  >> BOTH versions:
+>  >> 
+>  >> armv7 (Cortex-A9), Linaro gcc-4.6 -O3, Silesia test corpus, 256 kB block-size:
+>  >> 
+>  >> compression speed   decompression speed
+>  >> 
+>  >> LZO-2012    :          44 MB/sec          117 MB/sec     no unaligned access
+>  >> LZO-2013-UA :          47 MB/sec          167 MB/sec     Unaligned Access
+>  >> LZ4 r88  UA :          46 MB/sec          154 MB/sec     Unaligned Access
 > 
-> +	/* Can only change if privileged. */
+>  Nicolas> To be fair, you should also take into account the compressed
+>  Nicolas> size of a typical ARM kernel.  Sometimes a slightly slower
+>  Nicolas> decompressor may be faster overall if the compressed image to
+>  Nicolas> work on is smaller.
+> 
+> Yes, but notice that lzo compressed BETTER than lz4 - E.G. from the
+> introduction mail:
+> 
+> 1. ARMv7, 1.5GHz based board
+>    Kernel: linux 3.4
+>    Uncompressed Kernel Size: 14MB
+>         Compressed Size  Decompression Speed
+>    LZO  6.7MB            21.1MB/s
+>    LZ4  7.3MB            29.1MB/s, 45.6MB/s(UA)
 
-I think this comment doesn't tell us anything above and beyond the
-what capability check already tells us. I think you could improve it
-by noting that since the connector is multicast and not namespace-safe
-it's not yet appropriate to use ns_capable() here.
+OK.  If LZO is now faster than LZ4 while still compressing more then I 
+have no argument.
 
-Acked-by: Matt Helsley <matthltc@us.ibm.com>
 
-> +	if (!capable(CAP_NET_ADMIN)) {
-> +		err = EPERM;
-> +		goto out;
-> +	}
-
+Nicolas
