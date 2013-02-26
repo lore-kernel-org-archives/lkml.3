@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754884Ab3BZW0U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 17:26:20 -0500
-Received: from longford.logfs.org ([213.229.74.203]:58513 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab3BZW0T (ORCPT
+	id S1755334Ab3BZW25 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 17:28:57 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:44677 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752163Ab3BZW24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 17:26:19 -0500
-Date: Tue, 26 Feb 2013 16:02:32 -0500
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Zach Brown <zab@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chris L. Mason" <clmason@fusionio.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
-        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
-Subject: Re: New copyfile system call - discuss before LSF?
-Message-ID: <20130226210232.GA19510@logfs.org>
-References: <512606DF.5050706@redhat.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com>
- <512635D2.4090207@redhat.com>
- <51267CEB.8070805@redhat.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com>
- <20130221222449.GY22221@lenny.home.zabbo.net>
- <512BD44C.40907@amacapital.net>
+	Tue, 26 Feb 2013 17:28:56 -0500
+Date: Tue, 26 Feb 2013 14:28:42 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jens Taprogge <jens.taprogge@taprogge.org>,
+        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipack: add missing put_device() after device_register()
+ failed
+Message-ID: <20130226222842.GA20670@core.coreip.homeip.net>
+References: <1361869395-23110-1-git-send-email-siglesias@igalia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <512BD44C.40907@amacapital.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1361869395-23110-1-git-send-email-siglesias@igalia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 February 2013 13:14:52 -0800, Andy Lutomirski wrote:
+On Tue, Feb 26, 2013 at 10:03:15AM +0100, Samuel Iglesias Gonsalvez wrote:
+> put_device() must be called after device_register() fails,
+> since device_register() always initializes the refcount
+> on the device structure to one.
 > 
-> I thought the first thing people would ask for is to atomically create a
-> new file and copy the old file into it (at least on local file systems).
->  The idea is that nothing should see an empty destination file, either
-> by race or by crash.  (This feature would perhaps be described as a
-> pony, but it should be implementable.)
+> dev->id is free'd inside of ipack_device_release function.
+> So, it's not needed to do it here.
+> 
+> Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+> ---
+>  drivers/ipack/ipack.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/ipack/ipack.c b/drivers/ipack/ipack.c
+> index 7ec6b20..3588ccf 100644
+> --- a/drivers/ipack/ipack.c
+> +++ b/drivers/ipack/ipack.c
+> @@ -449,7 +449,7 @@ int ipack_device_register(struct ipack_device *dev)
+>  
+>  	ret = device_register(&dev->dev);
+>  	if (ret < 0)
+> -		kfree(dev->id);
+> +		put_device(&dev->dev);
 
-Having already wasted many week trying to implement your pony, I would
-consider it about as possible as winning the lottery three times in a
-row.  It clearly is in theory and yet,...
+Now callers have no idea if they have to free (put_device) it in case of
+failure or it is already done for them, because a few lines earlier, if
+pack_device_read_id() fails, it simply returns error code.
 
-If you take a filesystem like ext[34] you are out of luck.  In those
-filesystems it may not even be theoretically possible to get the
-cleanup right for pathological cases.  And if you ignore pathological
-cases and depend on userspace to do the cleanup for you, you have to
-do ABI extentions that I don't want to mention with Al on Cc:.  My
-personal notebook ran such a kernel for several years until hardware
-improved to a point that I no longer wanted to forward-port the
-patches.  It worked but it was far from pretty.
+IMO if a function did not allocate object it should not try to free it,
+callers should dispose of the device as they see fit.
 
-If you have a filesystem where you can simply bumb a reference count
-to copy the file content, implementation is fairly straightforward.
-But having a system call that is effectively limited to btrfs means
-pretty much noone will use it - beside the people looking for
-potential kernel exploits.
+What is missing, however, is dev->id = NULL assignment so that if caller
+does put_device() kit won't double-free the memory. Also it would make
+sense to split device_register into device_init() and device_add() so
+that device_init() is very first thing you do and in case of all
+failures callers should use put_device().
 
-So my vote clearly goes to some variant of sendfile or splice.
+Also tpci200.c need to learn to clean up after itself and I also not
+sure why it tries to provide its own release function.
 
-Jörn
+Thanks.
 
---
-Man darf nicht das, was uns unwahrscheinlich und unnatürlich erscheint,
-mit dem verwechseln, was absolut unmöglich ist.
--- Carl Friedrich Gauß
+-- 
+Dmitry
