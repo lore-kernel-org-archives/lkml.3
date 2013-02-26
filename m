@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933490Ab3BZX7H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:59:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42484 "EHLO
+	id S933520Ab3B0AFu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:05:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42502 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933342Ab3BZX7E (ORCPT
+	with ESMTP id S933489Ab3BZX7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:59:04 -0500
+	Tue, 26 Feb 2013 18:59:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pawel Moll <mail@pawelmoll.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 26/53] ALSA: usb: Fix Processing Unit Descriptor parsers
-Date: Tue, 26 Feb 2013 15:57:55 -0800
-Message-Id: <20130226235622.562489408@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "Christopher S. Aker" <caker@theshore.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 44/53] xen-netback: cancel the credit timer when taking the vif down
+Date: Tue, 26 Feb 2013 15:58:13 -0800
+Message-Id: <20130226235624.434440273@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -26,73 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pawel Moll <mail@pawelmoll.com>
 
-commit b531f81b0d70ffbe8d70500512483227cc532608 upstream.
+From: David Vrabel <david.vrabel@citrix.com>
 
-Commit 99fc86450c439039d2ef88d06b222fd51a779176 "ALSA: usb-mixer:
-parse descriptors with structs" introduced a set of useful parsers
-for descriptors. Unfortunately the parses for the Processing Unit
-Descriptor came with a very subtle bug...
+[ Upstream commit 3e55f8b306cf305832a4ac78aa82e1b40e818ece ]
 
-Functions uac_processing_unit_iProcessing() and
-uac_processing_unit_specific() were indexing the baSourceID array
-forgetting the fields before the iProcessing and process-specific
-descriptors.
+If the credit timer is left armed after calling
+xen_netbk_remove_xenvif(), then it may fire and attempt to schedule
+the vif which will then oops as vif->netbk == NULL.
 
-The problem was observed with Sound Blaster Extigy mixer,
-where nNrModes in Up/Down-mix Processing Unit Descriptor
-was accessed at offset 10 of the descriptor (value 0)
-instead of offset 15 (value 7). In result the resulting
-control had interesting limit values:
+This may happen both in the fatal error path and during normal
+disconnection from the front end.
 
-Simple mixer control 'Channel Routing Mode Select',0
-  Capabilities: volume volume-joined penum
-  Playback channels: Mono
-  Capture channels: Mono
-  Limits: 0 - -1
-  Mono: -1 [100%]
+The sequencing during shutdown is critical to ensure that: a)
+vif->netbk doesn't become unexpectedly NULL; and b) the net device/vif
+is not freed.
 
-Fixed by starting from the bmControls, which was calculated
-correctly, instead of baSourceID.
+1. Mark as unschedulable (netif_carrier_off()).
+2. Synchronously cancel the timer.
+3. Remove the vif from the schedule list.
+4. Remove it from it netback thread group.
+5. Wait for vif->refcnt to become 0.
 
-Now the mentioned control is fine:
-
-Simple mixer control 'Channel Routing Mode Select',0
-  Capabilities: volume volume-joined penum
-  Playback channels: Mono
-  Capture channels: Mono
-  Limits: 0 - 6
-  Mono: 0 [0%]
-
-Signed-off-by: Pawel Moll <mail@pawelmoll.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Reported-by: Christopher S. Aker <caker@theshore.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/linux/usb/audio.h |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/xen-netback/interface.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/include/linux/usb/audio.h
-+++ b/include/linux/usb/audio.h
-@@ -384,14 +384,16 @@ static inline __u8 uac_processing_unit_i
- 						   int protocol)
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -132,6 +132,7 @@ static void xenvif_up(struct xenvif *vif
+ static void xenvif_down(struct xenvif *vif)
  {
- 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
--	return desc->baSourceID[desc->bNrInPins + control_size];
-+	return *(uac_processing_unit_bmControls(desc, protocol)
-+			+ control_size);
+ 	disable_irq(vif->irq);
++	del_timer_sync(&vif->credit_timeout);
+ 	xen_netbk_deschedule_xenvif(vif);
+ 	xen_netbk_remove_xenvif(vif);
  }
+@@ -362,8 +363,6 @@ void xenvif_disconnect(struct xenvif *vi
+ 	atomic_dec(&vif->refcnt);
+ 	wait_event(vif->waiting_to_free, atomic_read(&vif->refcnt) == 0);
  
- static inline __u8 *uac_processing_unit_specific(struct uac_processing_unit_descriptor *desc,
- 						 int protocol)
- {
- 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
--	return &desc->baSourceID[desc->bNrInPins + control_size + 1];
-+	return uac_processing_unit_bmControls(desc, protocol)
-+			+ control_size + 1;
- }
+-	del_timer_sync(&vif->credit_timeout);
+-
+ 	if (vif->irq)
+ 		unbind_from_irqhandler(vif->irq, vif);
  
- /* 4.5.2 Class-Specific AS Interface Descriptor */
 
 
