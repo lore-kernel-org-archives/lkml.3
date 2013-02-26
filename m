@@ -1,244 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759619Ab3BZQZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 11:25:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50694 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757904Ab3BZQZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 11:25:31 -0500
-Date: Tue, 26 Feb 2013 16:25:20 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: dormando <dormando@rydia.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "lwoodman@redhat.com" <lwoodman@redhat.com>,
-        "hughd@google.com" <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] add extra free kbytes tunable
-Message-ID: <20130226162520.GD22498@suse.de>
-References: <alpine.DEB.2.02.1302111734090.13090@dflat>
- <A5ED84D3BB3A384992CBB9C77DEDA4D414A98EBF@USINDEM103.corp.hds.com>
- <511EB5CB.2060602@redhat.com>
- <alpine.DEB.2.02.1302171546120.10836@dflat>
- <20130219152936.f079c971.akpm@linux-foundation.org>
- <alpine.DEB.2.02.1302192100100.23162@dflat>
- <20130222175634.GA4824@cmpxchg.org>
- <20130226104731.GB22498@suse.de>
- <20130226151315.GG24384@cmpxchg.org>
+	id S1759721Ab3BZQZi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 11:25:38 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:51069 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757904Ab3BZQZe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 11:25:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130226151315.GG24384@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <512CC509.1050000@linux.vnet.ibm.com>
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
+	<20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com>
+	<CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com>
+	<5122551E.1080703@linux.vnet.ibm.com>
+	<51226B46.9080707@linux.vnet.ibm.com>
+	<CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com>
+	<51226F91.7000108@linux.vnet.ibm.com>
+	<CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com>
+	<512BBAD8.8010006@linux.vnet.ibm.com>
+	<CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com>
+	<512C7A38.8060906@linux.vnet.ibm.com>
+	<CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com>
+	<512CC509.1050000@linux.vnet.ibm.com>
+Date: Wed, 27 Feb 2013 00:25:33 +0800
+Message-ID: <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com>
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+From: Lai Jiangshan <eag0628@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
+        vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 10:13:15AM -0500, Johannes Weiner wrote:
-> > > <SNIP>
-> > > I think we should think about capping kswapd zone reclaim cycles just
-> > > as we do for direct reclaim.  It's a little ridiculous that it can run
-> > > unbounded and reclaim every page in a zone without ever checking back
-> > > against the watermark.  We still increase the scan window evenly when
-> > > we don't make forward progress, but we are more carefully inching zone
-> > > levels back toward the watermarks.
-> > > 
-> > 
-> > While on the surface I think this will appear to work, I worry that it
-> > will cause kswapds priorities to continually reset even when it's under
-> > real pressure as opposed to "failing to reclaim because of use-once".
-> > With nr_to_reclaim always at SWAP_CLUSTER_MAX, we'll hit this check and
-> > reset after each zone scan.
-> > 
-> >                 if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
-> >                         break;
-> 
-> But we hit that check now as well...? 
+On Tue, Feb 26, 2013 at 10:22 PM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>
+> Hi Lai,
+>
+> I'm really not convinced that piggy-backing on lglocks would help
+> us in any way. But still, let me try to address some of the points
+> you raised...
+>
+> On 02/26/2013 06:29 PM, Lai Jiangshan wrote:
+>> On Tue, Feb 26, 2013 at 5:02 PM, Srivatsa S. Bhat
+>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>> On 02/26/2013 05:47 AM, Lai Jiangshan wrote:
+>>>> On Tue, Feb 26, 2013 at 3:26 AM, Srivatsa S. Bhat
+>>>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>>>> Hi Lai,
+>>>>>
+>>>>> On 02/25/2013 09:23 PM, Lai Jiangshan wrote:
+>>>>>> Hi, Srivatsa,
+>>>>>>
+>>>>>> The target of the whole patchset is nice for me.
+>>>>>
+>>>>> Cool! Thanks :-)
+>>>>>
+>>> [...]
+>>>
+>>> Unfortunately, I see quite a few issues with the code above. IIUC, the
+>>> writer and the reader both increment the same counters. So how will the
+>>> unlock() code in the reader path know when to unlock which of the locks?
+>>
+>> The same as your code, the reader(which nested in write C.S.) just dec
+>> the counters.
+>
+> And that works fine in my case because the writer and the reader update
+> _two_ _different_ counters.
 
-Eventually yes.
+I can't find any magic in your code, they are the same counter.
 
-> I.e. unless there is a hard to
-> reclaim batch and kswapd is unable to make forward progress, priority
-> levels will always get reset after we scanned all zones and reclaimed
-> SWAP_CLUSTER_MAX or more in the process.
-> 
+        /*
+         * It is desirable to allow the writer to acquire the percpu-rwlock
+         * for read (if necessary), without deadlocking or getting complaints
+         * from lockdep. To achieve that, just increment the reader_refcnt of
+         * this CPU - that way, any attempt by the writer to acquire the
+         * percpu-rwlock for read, will get treated as a case of nested percpu
+         * reader, which is safe, from a locking perspective.
+         */
+        this_cpu_inc(pcpu_rwlock->rw_state->reader_refcnt);
 
-The reset happens after it has reclaimed a lot of pages. I agree with
-you that this is likely the wrong thing to do. I'm just pointing out
-that this simple patch changes behaviour in a big way.
 
-> All I'm arguing is that, if we hit a hard to reclaim batch we should
-> continue to increase the number of pages to scan, but still bail out
-> if we reclaimed a batch successfully.  It does make sense to me to
-> look at more pages if we encounter unreclaimable ones.  It makes less
-> sense to me, however, to increase the reclaim goal as well in that
-> case.
-> 
+> If both of them update the same counter, there
+> will be a semantic clash - an increment of the counter can either mean that
+> a new writer became active, or it can also indicate a nested reader. A decrement
+> can also similarly have 2 meanings. And thus it will be difficult to decide
+> the right action to take, based on the value of the counter.
+>
+>>
+>>> (The counter-dropping-to-zero logic is not safe, since it can be updated
+>>> due to different reasons). And now that I look at it again, in the absence
+>>> of the writer, the reader is allowed to be recursive at the heavy cost of
+>>> taking the global rwlock for read, every 2nd time you nest (because the
+>>> spinlock is non-recursive).
+>>
+>> (I did not understand your comments of this part)
+>> nested reader is considered seldom.
+>
+> No, nested readers can be _quite_ frequent. Because, potentially all users
+> of preempt_disable() are readers - and its well-known how frequently we
+> nest preempt_disable(). As a simple example, any atomic reader who calls
+> smp_call_function() will become a nested reader, because smp_call_function()
+> itself is a reader. So reader nesting is expected to be quite frequent.
+>
+>> But if N(>=2) nested readers happen,
+>> the overhead is:
+>>     1 spin_try_lock() + 1 read_lock() + (N-1) __this_cpu_inc()
+>>
+>
+> In my patch, its just this_cpu_inc(). Note that these are _very_ hot paths.
+> So every bit of optimization that you can add is worthwhile.
+>
+> And your read_lock() is a _global_ lock - thus, it can lead to a lot of
+> cache-line bouncing. That's *exactly* why I have used per-cpu refcounts in
+> my synchronization scheme, to avoid taking the global rwlock as much as possible.
+>
+> Another important point to note is that, the overhead we are talking about
+> here, exists even when _not_ performing hotplug. And its the replacement to
+> the super-fast preempt_disable(). So its extremely important to consciously
+> minimize this overhead - else we'll end up slowing down the system significantly.
+>
 
-Bail out from the reclaim maybe but care should be taken to ensure we do
-not hammer slab on each "bail" or reset the scanning priorities if the
-watermark was not met by that batch of SWAP_CLUSTER_MAX reclaims.
+All I was considered is "nested reader is seldom", so I always
+fallback to rwlock when nested.
+If you like, I can add 6 lines of code, the overhead is
+1 spin_try_lock()(fast path)  + N  __this_cpu_inc()
 
-We also have to think about what it means for pressure being applied
-equally to each zone. We will still apply equal scanning pressure but
-not necessarily reclaim pressure. Does that matter? I don't know.
+The overhead of your code is
+2 smp_mb() + N __this_cpu_inc()
 
-> > It'll fail the watermark check and restart of course but it does mean we
-> > would call shrink_slab() for every SWAP_CLUSTER_MAX*nr_unbalaced_zones
-> > pages scanned which will have other consequences. It'll behave differently
-> > but not necessarily better.
-> 
-> Right, I wasn't proposing to merge the patch as is.  But I do think
-> it's not okay that a batch of immediately unreclaimable pages can
-> cause kswapd to grow its reclaim target exponentially and we should
-> probably think about capping it one way or another.
-> 
+I don't see how much different.
 
-I agree with you. MMtest results I looked at over the weekend showed
-that kswapd tends to be extremely spiky. Doing nothing following by
-reclaiming an excessive amount of memory and going back to doing
-nothing. This partially explains it.
+>>> Also, this lg_rwlock implementation uses 3
+>>> different data-structures - a per-cpu spinlock, a global rwlock and
+>>> a per-cpu refcnt, and its not immediately apparent why you need those many
+>>> or even those many varieties.
+>>
+>> data-structures is the same as yours.
+>> fallback_reader_refcnt <--> reader_refcnt
+>
+> This has semantic problems, as noted above.
+>
+>> per-cpu spinlock <--> write_signal
+>
+> Acquire/release of (spin) lock is costlier than inc/dec of a counter, IIUC.
+>
+>> fallback_rwlock  <---> global_rwlock
+>>
+>>> Also I see that this doesn't handle the
+>>> case of interrupt-handlers also being readers.
+>>
+>> handled. nested reader will see the ref or take the fallback_rwlock
+>>
 
-> shrink_slab()'s action is already based on the ratio between the
-> number of scanned pages and the number of lru pages, so I don't see
-> this as a fundamental issue, although it may require some tweaking.
-> 
-> > In general, IO causing anonymous workloads to stall has gotten a lot worse
-> > during the last few kernels without us properly realising it other than
-> > interactivity in the presence of IO has gone down the crapper again. Late
-> > last week I fixed up an mmtests that runs memcachetest as the primary
-> > workload while doing varying amounts of IO in the background and found this
-> > 
-> > http://www.csn.ul.ie/~mel/postings/reclaim-20130221/global-dhp__parallelio-memcachetest-ext4/hydra/report.html
-> > 
-> > Snippet looks like this;
-> >                                             3.0.56                      3.6.10                       3.7.4                   3.8.0-rc4
-> >                                           mainline                    mainline                    mainline                    mainline
-> > Ops memcachetest-0M             10125.00 (  0.00%)          10091.00 ( -0.34%)          11038.00 (  9.02%)          10864.00 (  7.30%)
-> > Ops memcachetest-749M           10097.00 (  0.00%)           8546.00 (-15.36%)           8770.00 (-13.14%)           4872.00 (-51.75%)
-> > Ops memcachetest-1623M          10161.00 (  0.00%)           3149.00 (-69.01%)           3645.00 (-64.13%)           2760.00 (-72.84%)
-> > Ops memcachetest-2498M           8095.00 (  0.00%)           2527.00 (-68.78%)           2461.00 (-69.60%)           2282.00 (-71.81%)
-> > Ops memcachetest-3372M           7814.00 (  0.00%)           2369.00 (-69.68%)           2396.00 (-69.34%)           2323.00 (-70.27%)
-> > Ops memcachetest-4247M           3818.00 (  0.00%)           2366.00 (-38.03%)           2391.00 (-37.38%)           2274.00 (-40.44%)
-> > Ops memcachetest-5121M           3852.00 (  0.00%)           2335.00 (-39.38%)           2384.00 (-38.11%)           2233.00 (-42.03%)
-> > 
-> > This is showing transactions/second -- more the better. 3.0.56 was pretty
-> > bad in itself because a large amount of IO in the background wrecked the
-> > throughput. It's gotten a lot worse since then. 3.8 results have
-> > completed but a quick check tells me the results are no better which is
-> > not surprising as there were no relevant commits since 3.8-rc4.
-> 
-> That does look horrible.  What kind of background IO is that?
+Sorry, _reentrance_ read_lock() will see the ref or take the fallback_rwlock
 
-dd to a large file conv=fdatasync
+>
+> I'm not referring to simple nested readers here, but interrupt handlers who
+> can act as readers. For starters, the arch_spin_trylock() is not safe when
+> interrupt handlers can also run the same code, right? You'll need to save
+> and restore interrupts at critical points in the code. Also, the __foo()
+> variants used to read/update the counters are not interrupt-safe.
 
-> Mapped/unmapped? 
+I must missed something.
 
-unmapped.
+Could you elaborate more why arch_spin_trylock() is not safe when
+interrupt handlers can also run the same code?
 
-> Read/write? 
+Could you elaborate more why __this_cpu_op variants is not
+interrupt-safe since they are always called paired.
 
-write
 
-> Linear or clustered? 
+> And,
+> the unlock() code in the reader path is again going to be confused about
+> what to do when interrupt handlers interrupt regular readers, due to the
+> messed up refcount.
 
-Not sure what you mean by "clusters". It's a linear write rather than a
-random write.
+I still can't understand.
 
-The objective of the test was to detect one aspect of situations like
-"during backup my main application performance goes to hell". It would be
-possible to generate other types of background IO as there are elements
-of the config-global-dhp__io-largeread-starvation test that can be broken
-out and reused.
-
-> I'm guessing some
-> of it is write at least as there are more page writes than swap outs.
-> 
-> > Ops swapin-0M                       0.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)              0.00 (  0.00%)
-> > Ops swapin-749M                     0.00 (  0.00%)          36002.00 (-99.00%)          50499.00 (-99.00%)         155135.00 (-99.00%)
-> > Ops swapin-1623M                    8.00 (  0.00%)         176816.00 (-2210100.00%)         172010.00 (-2150025.00%)         206212.00 (-2577550.00%)
-> > Ops swapin-2498M                26291.00 (  0.00%)         195448.00 (-643.40%)         200911.00 (-664.18%)         209180.00 (-695.63%)
-> > Ops swapin-3372M                27787.00 (  0.00%)         179221.00 (-544.98%)         183509.00 (-560.41%)         182371.00 (-556.32%)
-> > Ops swapin-4247M               105081.00 (  0.00%)         157617.00 (-50.00%)         158054.00 (-50.41%)         167478.00 (-59.38%)
-> > Ops swapin-5121M                89589.00 (  0.00%)         148095.00 (-65.30%)         151012.00 (-68.56%)         159079.00 (-77.57%)
-> > 
-> > This is indicating that we are making the wrong reclaim decisions
-> > because of the amount of swapins.
-> 
-> I would have expected e986850 "mm,vmscan: only evict file pages when
-> we have plenty" to make some difference.  But depending on the IO
-> pattern, the file pages may all just sit on the active list.
-> 
-
-Maybe it did help and what we're seeing is a side-ffect of cda73a10 (mm:
-do not sleep in balance_pgdat if there's no i/o congestion) that is keeping
-kswapd awake and reclaiming for longer. It would not be the first time we
-removed a congestion_wait() to find that we depended on that sledge hammer.
-
-> > Ops majorfaults-0M                  1.00 (  0.00%)              1.00 (  0.00%)              9.00 (-800.00%)              0.00 (  0.00%)
-> > Ops majorfaults-749M                2.00 (  0.00%)           5356.00 (-267700.00%)           7872.00 (-393500.00%)          22472.00 (-1123500.00%)
-> > Ops majorfaults-1623M              30.00 (  0.00%)          26950.00 (-89733.33%)          25074.00 (-83480.00%)          28815.00 (-95950.00%)
-> > Ops majorfaults-2498M            6459.00 (  0.00%)          27719.00 (-329.15%)          27904.00 (-332.02%)          29001.00 (-349.00%)
-> > Ops majorfaults-3372M            5133.00 (  0.00%)          25565.00 (-398.05%)          26444.00 (-415.18%)          25789.00 (-402.42%)
-> > Ops majorfaults-4247M           19822.00 (  0.00%)          22767.00 (-14.86%)          22936.00 (-15.71%)          23475.00 (-18.43%)
-> > Ops majorfaults-5121M           17689.00 (  0.00%)          21292.00 (-20.37%)          21820.00 (-23.35%)          22234.00 (-25.69%)
-> > 
-> > Major faults are also high.
-> > 
-> > I have not had enough time to investigate this because other bugs cropped
-> > up. I can tell you that it's not bisectable as there are multiple root
-> > causes and it's not always reliably reproducible (with this test at least).
-> > 
-> > Unfortunately I'm also dropping offline today for a week and then I'll
-> > have to play catchup again when I get back. It's going to be close to 2
-> > weeks before I can start figuring out what went wrong here but I plan to
-> > start with 3.0 and work forward and see how I get on.
-> 
-> Would you have that mmtest configuration available somewhere by any
-> chance?  I can't see it in mmtests.git.
-
-Of course. It's configs/config-global-dhp__parallelio-memcachetest. That
-does not create a filesystem but the difference between what's in mmtests
-and what I used is below.
-
-Current released mmtests also does not have a module that can compare
-parallelio tests but I've pushed the support to git. If you git pull then
-something like this should report something sensible
-
-cp configs/config-global-dhp__parallelio-memcachetest config
-./run-mmtests vanilla
-(build boot new kernel)
-./run-mmtests patched
-
-To get a report do either this
-./bin/compare-kernel.sh -d work/log -b parallelio -n vanilla,patched
-
-or
-
-cd work/log
-../../compare-kernel.sh
-
-This is the config file diff
-
-@@ -43,10 +43,10 @@
- #export TESTDISK_RAID_OFFSET=63
- #export TESTDISK_RAID_SIZE=250019532
- #export TESTDISK_RAID_TYPE=raid0
--#export TESTDISK_PARTITION=/dev/sda6
--#export TESTDISK_FILESYSTEM=ext3
--#export TESTDISK_MKFS_PARAM="-f -d agcount=8"
--#export TESTDISK_MOUNT_ARGS=""
-+export TESTDISK_PARTITION=/dev/sda6
-+export TESTDISK_FILESYSTEM=ext4
-+export TESTDISK_MKFS_PARAM=
-+export TESTDISK_MOUNT_ARGS=
- #
- # Test NFS disk to setup (optional)
- #export TESTDISK_NFS_MOUNT=192.168.10.7:/exports/`hostname`
-
--- 
-Mel Gorman
-SUSE Labs
+>
+>>>
+>>> IMHO, the per-cpu rwlock scheme that I have implemented in this patchset
+>>> has a clean, understandable design and just enough data-structures/locks
+>>> to achieve its goal and has several optimizations (like reducing the
+>>> interrupts-disabled time etc) included - all in a very straight-forward
+>>> manner. Since this is non-trivial, IMHO, starting from a clean slate is
+>>> actually better than trying to retrofit the logic into some locking scheme
+>>> which we actively want to avoid (and hence effectively we aren't even
+>>> borrowing anything from!).
+>>>
+>>> To summarize, if you are just pointing out that we can implement the same
+>>> logic by altering lglocks, then sure, I acknowledge the possibility.
+>>> However, I don't think doing that actually makes it better; it either
+>>> convolutes the logic unnecessarily, or ends up looking _very_ similar to
+>>> the implementation in this patchset, from what I can see.
+>>>
+>
