@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab3BZPUL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 10:20:11 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:40086 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759497Ab3BZPUI (ORCPT
+	id S1759607Ab3BZPV7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 10:21:59 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:64223 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759516Ab3BZPV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 10:20:08 -0500
-Message-ID: <512CD20A.3020100@linux.vnet.ibm.com>
-Date: Tue, 26 Feb 2013 20:47:30 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 26 Feb 2013 10:21:58 -0500
 MIME-Version: 1.0
-To: Lai Jiangshan <eag0628@gmail.com>
-CC: linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        mingo@kernel.org, linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
-        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rostedt@goodmis.org,
-        rjw@sisk.pl, namhyung@kernel.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, netdev@vger.kernel.org,
-        oleg@redhat.com, vincent.guittot@linaro.org, sbw@mit.edu,
-        tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
- Per-CPU Reader-Writer Locks
-References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com> <CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com> <5122551E.1080703@linux.vnet.ibm.com> <51226B46.9080707@linux.vnet.ibm.com> <CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com> <51226F91.7000108@linux.vnet.ibm.com> <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com> <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF53gcuEfgM=L8-mPTt4W3GFMte-w6eyO0iv2CobAN68SNw@mail.gmail.com>
-In-Reply-To: <CACvQF53gcuEfgM=L8-mPTt4W3GFMte-w6eyO0iv2CobAN68SNw@mail.gmail.com>
+In-Reply-To: <87621lo4ly.fsf@linaro.org>
+References: <1361389302-11968-1-git-send-email-khilman@linaro.org>
+	<1361389302-11968-5-git-send-email-khilman@linaro.org>
+	<20130221175857.GB14256@danjae.linux.parc55>
+	<87621lo4ly.fsf@linaro.org>
+Date: Tue, 26 Feb 2013 16:21:56 +0100
+Message-ID: <CAFTL4hxtCUs86uy7d5EWam9Usz4BjLFciy0faStQH=uhFQjYVw@mail.gmail.com>
+Subject: Re: [RFC/PATCH 4/5] cputime: use do_div() for nsec resolution
+ conversion helpers
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Mats Liljegren <mats.liljegren@enea.com>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022615-9574-0000-0000-000006C1EE21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2013 07:04 PM, Lai Jiangshan wrote:
-> On Tue, Feb 26, 2013 at 3:26 AM, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> Hi Lai,
->>
->> On 02/25/2013 09:23 PM, Lai Jiangshan wrote:
->>> Hi, Srivatsa,
->>>
->>> The target of the whole patchset is nice for me.
->>
->> Cool! Thanks :-)
->>
->>> A question: How did you find out the such usages of
->>> "preempt_disable()" and convert them? did all are converted?
->>>
->>
->> Well, I scanned through the source tree for usages which implicitly
->> disabled CPU offline and converted them over.
-> 
-> How do you scan? could you show the way you scan the source tree.
-> I can follow your instructions for double checking.
-> 
+2013/2/21 Kevin Hilman <khilman@linaro.org>:
+> From a8a0a8b8b12512a7f862ade459cd88d2b48e2bf3 Mon Sep 17 00:00:00 2001
+> From: Kevin Hilman <khilman@linaro.org>
+> Date: Thu, 14 Feb 2013 11:27:36 -0800
+> Subject: [PATCH 4/5] cputime: use do_div() for nsec resolution conversion
+>  helpers
+>
+> For the nsec resolution conversions to be useful on non 64-bit
+> architectures, do_div() needs to be used for the 64-bit divisions.
+>
+> Special thanks to Namhyung Kim for pointing out omissions of the
+> __force attribute in an earlier version.
+>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
+>  include/asm-generic/cputime_nsecs.h | 51 +++++++++++++++++++++++++++----------
+>  1 file changed, 37 insertions(+), 14 deletions(-)
+>
+> diff --git a/include/asm-generic/cputime_nsecs.h b/include/asm-generic/cputime_nsecs.h
+> index b6485ca..d4944c9 100644
+> --- a/include/asm-generic/cputime_nsecs.h
+> +++ b/include/asm-generic/cputime_nsecs.h
+> @@ -24,13 +24,17 @@ typedef u64 __nocast cputime64_t;
+>  /*
+>   * Convert cputime <-> jiffies (HZ)
+>   */
+> -#define cputime_to_jiffies(__ct)       \
+> -       ((__force u64)(__ct) / (NSEC_PER_SEC / HZ))
+> +static inline u64 cputime_to_jiffies(const cputime_t ct)
+> +{
+> +       u64 __ct = (__force u64) ct;
+> +
+> +       do_div(__ct, NSEC_PER_SEC / HZ);
 
-Its nothing special. I grepped the source tree for anything dealing with
-cpu_online_mask or its derivatives and also for functions/constructs that
-rely on the cpumasks internally (eg: smp_call_function). Then I audited all
-such call-sites and converted them (if needed) accordingly.
+So, when you don't need the remainder, could you please rather use
+div_u64() ? It defaults to use do_div() anyway if the arch doesn't
+override it. And none does apparently yet. But at least it paves the
+way for further optimizations. And you can directly return the result.
 
->> Its not limited to uses
->> of preempt_disable() alone - even spin_locks, rwlocks, local_irq_disable()
->> etc also help disable CPU offline. So I tried to dig out all such uses
->> and converted them. However, since the merge window is open, a lot of
->> new code is flowing into the tree. So I'll have to rescan the tree to
->> see if there are any more places to convert.
-> 
-> I remember some code has such assumption:
->     preempt_disable() (or something else)
->     //the code assume that the cpu_online_map can't be changed.
->     preempt_enable()
-> 
-> It is very hard to find out all such kinds of assumptions and fixes them.
-> (I notice your code mainly fixes code around send_xxxx())
-> 
+Also, how about:
 
-The conversion can be carried out using the method I mentioned above.
+#define cputime_div(cputime, divisor)  div_u64((__force u64)cputime, divisor)
 
-Regards,
-Srivatsa S. Bhat
-
+Thanks.
