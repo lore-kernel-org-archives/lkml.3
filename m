@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760105Ab3BZX5Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:57:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41829 "EHLO
+	id S1760140Ab3B0BMT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:12:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41859 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760067Ab3BZX5V (ORCPT
+	with ESMTP id S1760092Ab3BZX5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:21 -0500
+	Tue, 26 Feb 2013 18:57:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: [ 034/150] s390/kvm: Fix store status for ACRS/FPRS
-Date: Tue, 26 Feb 2013 15:54:51 -0800
-Message-Id: <20130226235527.728894036@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 039/150] drivers/video/backlight/adp88?0_bl.c: fix resume
+Date: Tue, 26 Feb 2013 15:54:56 -0800
+Message-Id: <20130226235528.267489043@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,49 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 15bc8d8457875f495c59d933b05770ba88d1eacb upstream.
+commit 5eb02c01bd1f3ef195989ab05e835e2b0711b5a9 upstream.
 
-On store status we need to copy the current state of registers
-into a save area. Currently we might save stale versions:
-The sie state descriptor doesnt have fields for guest ACRS,FPRS,
-those registers are simply stored in the host registers. The host
-program must copy these away if needed. We do that in vcpu_put/load.
+Clearing the NSTBY bit in the control register also automatically clears
+the BLEN bit.  So we need to make sure to set it again during resume,
+otherwise the backlight will stay off.
 
-If we now do a store status in KVM code between vcpu_put/load, the
-saved values are not up-to-date. Lets collect the ACRS/FPRS before
-saving them.
-
-This also fixes some strange problems with hotplug and virtio-ccw,
-since the low level machine check handler (on hotplug a machine check
-will happen) will revalidate all registers with the content of the
-save area.
-
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kvm/kvm-s390.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/video/backlight/adp8860_bl.c |    2 +-
+ drivers/video/backlight/adp8870_bl.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -766,6 +766,14 @@ int kvm_s390_vcpu_store_status(struct kv
- 	} else
- 		prefix = 0;
+--- a/drivers/video/backlight/adp8860_bl.c
++++ b/drivers/video/backlight/adp8860_bl.c
+@@ -783,7 +783,7 @@ static int adp8860_i2c_suspend(struct i2
  
-+	/*
-+	 * The guest FPRS and ACRS are in the host FPRS/ACRS due to the lazy
-+	 * copying in vcpu load/put. Lets update our copies before we save
-+	 * it into the save area
-+	 */
-+	save_fp_regs(&vcpu->arch.guest_fpregs);
-+	save_access_regs(vcpu->run->s.regs.acrs);
-+
- 	if (__guestcopy(vcpu, addr + offsetof(struct save_area, fp_regs),
- 			vcpu->arch.guest_fpregs.fprs, 128, prefix))
- 		return -EFAULT;
+ static int adp8860_i2c_resume(struct i2c_client *client)
+ {
+-	adp8860_set_bits(client, ADP8860_MDCR, NSTBY);
++	adp8860_set_bits(client, ADP8860_MDCR, NSTBY | BLEN);
+ 
+ 	return 0;
+ }
+--- a/drivers/video/backlight/adp8870_bl.c
++++ b/drivers/video/backlight/adp8870_bl.c
+@@ -957,7 +957,7 @@ static int adp8870_i2c_suspend(struct i2
+ 
+ static int adp8870_i2c_resume(struct i2c_client *client)
+ {
+-	adp8870_set_bits(client, ADP8870_MDCR, NSTBY);
++	adp8870_set_bits(client, ADP8870_MDCR, NSTBY | BLEN);
+ 
+ 	return 0;
+ }
 
 
