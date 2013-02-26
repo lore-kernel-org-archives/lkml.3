@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab3BZJUB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 04:20:01 -0500
-Received: from mail.windriver.com ([147.11.1.11]:40362 "EHLO
+	id S1759564Ab3BZJUP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 04:20:15 -0500
+Received: from mail.windriver.com ([147.11.1.11]:40449 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab3BZJT6 (ORCPT
+	with ESMTP id S1750973Ab3BZJUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 04:19:58 -0500
+	Tue, 26 Feb 2013 04:20:02 -0500
 From: Tiejun Chen <tiejun.chen@windriver.com>
 To: <benh@kernel.crashing.org>, <galak@kernel.crashing.org>
 CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: [v1][PATCH 0/7] powerpc/book3e: support kexec and kdump
-Date: Tue, 26 Feb 2013 17:19:35 +0800
-Message-ID: <1361870382-743-1-git-send-email-tiejun.chen@windriver.com>
+Subject: [v1][PATCH 6/7] book3e/kexec/kdump: redefine VIRT_PHYS_OFFSET
+Date: Tue, 26 Feb 2013 17:19:41 +0800
+Message-ID: <1361870382-743-7-git-send-email-tiejun.chen@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361870382-743-1-git-send-email-tiejun.chen@windriver.com>
+References: <1361870382-743-1-git-send-email-tiejun.chen@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset is used to support kexec and kdump on book3e.
+Book3e is always aligned 1GB to create TLB so we should
+use (KERNELBASE - MEMORY_START) as VIRT_PHYS_OFFSET to
+get __pa/__va properly while boot kdump.
 
-Tested on fsl-p5040 DS.
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+---
+ arch/powerpc/include/asm/page.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-v1:
-------
-* improve some patch head
-* rebase on next branch with patch 7
+diff --git a/arch/powerpc/include/asm/page.h b/arch/powerpc/include/asm/page.h
+index f072e97..2cba08a 100644
+--- a/arch/powerpc/include/asm/page.h
++++ b/arch/powerpc/include/asm/page.h
+@@ -112,6 +112,8 @@ extern long long virt_phys_offset;
+ /* See Description below for VIRT_PHYS_OFFSET */
+ #ifdef CONFIG_RELOCATABLE_PPC32
+ #define VIRT_PHYS_OFFSET virt_phys_offset
++#elif defined(CONFIG_PPC_BOOK3E_64)
++#define VIRT_PHYS_OFFSET (KERNELBASE - MEMORY_START)
+ #else
+ #define VIRT_PHYS_OFFSET (KERNELBASE - PHYSICAL_START)
+ #endif
+-- 
+1.7.9.5
 
-Tiejun Chen (7):
-      powerpc/book3e: support CONFIG_RELOCATABLE
-      book3e/kexec/kdump: enable kexec for kernel
-      book3e/kexec/kdump: create a 1:1 TLB mapping
-      book3e/kexec/kdump: introduce a kexec kernel flag
-      book3e/kexec/kdump: implement ppc64 kexec specfic
-      book3e/kexec/kdump: redefine VIRT_PHYS_OFFSET
-      book3e/kexec/kdump: recover "r4 = 0" to create the initial TLB
-
- arch/powerpc/Kconfig                     |    2 +-
- arch/powerpc/include/asm/exception-64e.h |    8 ++++
- arch/powerpc/include/asm/page.h          |    2 +
- arch/powerpc/include/asm/smp.h           |    3 ++
- arch/powerpc/kernel/exceptions-64e.S     |   15 ++++++-
- arch/powerpc/kernel/head_64.S            |   47 +++++++++++++++++++--
- arch/powerpc/kernel/machine_kexec_64.c   |    6 +++
- arch/powerpc/kernel/misc_64.S            |   67 +++++++++++++++++++++++++++++-
- arch/powerpc/lib/feature-fixups.c        |    7 ++++
- arch/powerpc/platforms/85xx/smp.c        |   27 ++++++++++++
- 10 files changed, 178 insertions(+), 6 deletions(-)
-
-Thanks
-Tiejun
