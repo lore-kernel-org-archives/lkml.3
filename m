@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760363Ab3B0AEr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:04:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42515 "EHLO
+	id S933522Ab3B0AFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:05:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42508 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933511Ab3BZX7J (ORCPT
+	with ESMTP id S933499Ab3BZX7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:59:09 -0500
+	Tue, 26 Feb 2013 18:59:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiang Liu <jiang.liu@huawei.com>, Gaohuai Han <hangaohuai@huawei.com>,
-        Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        Dan Williams <djbw@fb.com>
-Subject: [ 47/53] dca: check against empty dca_domains list before unregister provider
-Date: Tue, 26 Feb 2013 15:58:16 -0800
-Message-Id: <20130226235624.751198592@linuxfoundation.org>
+        Li Wei <lw@cn.fujitsu.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 45/53] ipv4: fix a bug in ping_err().
+Date: Tue, 26 Feb 2013 15:58:14 -0800
+Message-Id: <20130226235624.549770531@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -28,37 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maciej Sosnowski <maciej.sosnowski@intel.com>
 
-commit c419fcfd071cf34ba00f9f65282583772d2655e7 upstream.
+From: Li Wei <lw@cn.fujitsu.com>
 
-When providers get blocked unregister_dca_providers() is called ending up
-with dca_providers and dca_domain lists emptied. Dca should be prevented from
-trying to unregister any provider if dca_domain list is found empty.
+[ Upstream commit b531ed61a2a2a77eeb2f7c88b49aa5ec7d9880d8 ]
 
-Reported-by: Jiang Liu <jiang.liu@huawei.com>
-Tested-by: Gaohuai Han <hangaohuai@huawei.com>
-Signed-off-by: Maciej Sosnowski <maciej.sosnowski@intel.com>
-Signed-off-by: Dan Williams <djbw@fb.com>
+We should get 'type' and 'code' from the outer ICMP header.
+
+Signed-off-by: Li Wei <lw@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/dca/dca-core.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/ipv4/ping.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/dca/dca-core.c
-+++ b/drivers/dca/dca-core.c
-@@ -409,6 +409,11 @@ void unregister_dca_provider(struct dca_
- 
- 	spin_lock_irqsave(&dca_lock, flags);
- 
-+	if (list_empty(&dca_domains)) {
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
-+		return;
-+	}
-+
- 	list_del(&dca->node);
- 
- 	pci_rc = dca_pci_rc_from_dev(dev);
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -320,8 +320,8 @@ void ping_err(struct sk_buff *skb, u32 i
+ 	struct iphdr *iph = (struct iphdr *)skb->data;
+ 	struct icmphdr *icmph = (struct icmphdr *)(skb->data+(iph->ihl<<2));
+ 	struct inet_sock *inet_sock;
+-	int type = icmph->type;
+-	int code = icmph->code;
++	int type = icmp_hdr(skb)->type;
++	int code = icmp_hdr(skb)->code;
+ 	struct net *net = dev_net(skb->dev);
+ 	struct sock *sk;
+ 	int harderr;
 
 
