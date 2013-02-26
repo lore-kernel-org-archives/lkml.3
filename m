@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933185Ab3BZX6l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42260 "EHLO
+	id S933276Ab3B0Aiw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:38:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42320 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933053Ab3BZX6b (ORCPT
+	with ESMTP id S933173Ab3BZX6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:31 -0500
+	Tue, 26 Feb 2013 18:58:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>,
-        Amir Vadai <amirv@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 134/150] mlx4_en: fix allocation of CPU affinity reverse-map
-Date: Tue, 26 Feb 2013 15:56:31 -0800
-Message-Id: <20130226235538.152295835@linuxfoundation.org>
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Ming Lei <ming.lei@canonical.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 148/150] usb: musb: core: fix failure path
+Date: Tue, 26 Feb 2013 15:56:45 -0800
+Message-Id: <20130226235539.924029307@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -28,39 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Ming Lei <ming.lei@canonical.com>
 
-From: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+commit 681d1e8761ca773967bce9bd1bb2896f07279551 upstream.
 
-[ Upstream commit 3770699675dd1b8fc1e86ff369eb3cce44e10082 ]
+In the fail1~fail5 failure path, pm_runtime_disable() should
+be called to avoid 'Unbalanced pm_runtime_enable' error in
+next probe() which may be triggered by defer probe or next
+'modprobe musb_hdrc'.
 
-The mlx4_en driver allocates the number of objects for the CPU affinity
-reverse-map based on the number of rx rings of the device. However,
-mlx4_assign_eq() calls irq_cpu_rmap_add() as many times as IRQ's are
-assigned to EQ's, which can be as large as mlx4_dev->caps.comp_pool. If
-caps.comp_pool is larger than rx_ring_num we will eventually hit the
-BUG_ON() in cpu_rmap_add().
-
-Fix this problem by allocating space for the maximum number of CPU
-affinity reverse-map objects we might want to add.
-
-Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
-Acked-by: Amir Vadai <amirv@mellanox.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-@@ -1434,7 +1434,7 @@ int mlx4_en_alloc_resources(struct mlx4_
- 	}
+---
+ drivers/usb/musb/musb_core.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1993,6 +1993,7 @@ fail2:
+ 	musb_platform_exit(musb);
  
- #ifdef CONFIG_RFS_ACCEL
--	priv->dev->rx_cpu_rmap = alloc_irq_cpu_rmap(priv->rx_ring_num);
-+	priv->dev->rx_cpu_rmap = alloc_irq_cpu_rmap(priv->mdev->dev->caps.comp_pool);
- 	if (!priv->dev->rx_cpu_rmap)
- 		goto err;
+ fail1:
++	pm_runtime_disable(musb->controller);
+ 	dev_err(musb->controller,
+ 		"musb_init_controller failed with status %d\n", status);
  
 
 
