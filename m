@@ -1,242 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422Ab3BZATY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 19:19:24 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:44836 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754498Ab3BZATU (ORCPT
+	id S1759169Ab3BZAXx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 19:23:53 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30659 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab3BZAXv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 19:19:20 -0500
+	Mon, 25 Feb 2013 19:23:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com>
-References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
-	<20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com>
-	<CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com>
-	<5122551E.1080703@linux.vnet.ibm.com>
-	<51226B46.9080707@linux.vnet.ibm.com>
-	<CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com>
-	<51226F91.7000108@linux.vnet.ibm.com>
-	<CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com>
-	<512BBAD8.8010006@linux.vnet.ibm.com>
-	<CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com>
-Date: Tue, 26 Feb 2013 08:19:19 +0800
-Message-ID: <CACvQF50-ZqE3=baerh5oVk6q+TxmNt53pp-vHkK=QfM1rtPEuw@mail.gmail.com>
-Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
- Per-CPU Reader-Writer Locks
-From: Lai Jiangshan <eag0628@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <413ecbbe-cc87-4f9e-a938-aad32e8fe7a9@default>
+Date: Mon, 25 Feb 2013 16:20:03 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Minchan Kim <minchan@kernel.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: RE: [PATCHv5 1/8] zsmalloc: add to mm/
+References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <1360780731-11708-2-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130219091804.GA13989@lge.com> <5123BC4D.1010404@linux.vnet.ibm.com>
+ <20130219233733.GA16950@blaptop> <20130222092420.GA8077@lge.com>
+ <5127CF34.9040302@linux.vnet.ibm.com>
+ <69936094-e2fc-44bd-b179-f567e8681bec@default>
+ <512BB825.7070304@linux.vnet.ibm.com>
+In-Reply-To: <512BB825.7070304@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6665.5003 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 8:17 AM, Lai Jiangshan <eag0628@gmail.com> wrote:
-> On Tue, Feb 26, 2013 at 3:26 AM, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> Hi Lai,
->>
->> On 02/25/2013 09:23 PM, Lai Jiangshan wrote:
->>> Hi, Srivatsa,
->>>
->>> The target of the whole patchset is nice for me.
->>
->> Cool! Thanks :-)
->>
->>> A question: How did you find out the such usages of
->>> "preempt_disable()" and convert them? did all are converted?
->>>
->>
->> Well, I scanned through the source tree for usages which implicitly
->> disabled CPU offline and converted them over. Its not limited to uses
->> of preempt_disable() alone - even spin_locks, rwlocks, local_irq_disable()
->> etc also help disable CPU offline. So I tried to dig out all such uses
->> and converted them. However, since the merge window is open, a lot of
->> new code is flowing into the tree. So I'll have to rescan the tree to
->> see if there are any more places to convert.
->>
->>> And I think the lock is too complex and reinvent the wheel, why don't
->>> you reuse the lglock?
->>
->> lglocks? No way! ;-) See below...
->>
->>> I wrote an untested draft here.
->>>
->>> Thanks,
->>> Lai
->>>
->>> PS: Some HA tools(I'm writing one) which takes checkpoints of
->>> virtual-machines frequently, I guess this patchset can speedup the
->>> tools.
->>>
->>> From 01db542693a1b7fc6f9ece45d57cb529d9be5b66 Mon Sep 17 00:00:00 2001
->>> From: Lai Jiangshan <laijs@cn.fujitsu.com>
->>> Date: Mon, 25 Feb 2013 23:14:27 +0800
->>> Subject: [PATCH] lglock: add read-preference local-global rwlock
->>>
->>> locality via lglock(trylock)
->>> read-preference read-write-lock via fallback rwlock_t
->>>
->>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
->>> ---
->>>  include/linux/lglock.h |   31 +++++++++++++++++++++++++++++++
->>>  kernel/lglock.c        |   45 +++++++++++++++++++++++++++++++++++++++++++++
->>>  2 files changed, 76 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/include/linux/lglock.h b/include/linux/lglock.h
->>> index 0d24e93..30fe887 100644
->>> --- a/include/linux/lglock.h
->>> +++ b/include/linux/lglock.h
->>> @@ -67,4 +67,35 @@ void lg_local_unlock_cpu(struct lglock *lg, int cpu);
->>>  void lg_global_lock(struct lglock *lg);
->>>  void lg_global_unlock(struct lglock *lg);
->>>
->>> +struct lgrwlock {
->>> +     unsigned long __percpu *fallback_reader_refcnt;
->>> +     struct lglock lglock;
->>> +     rwlock_t fallback_rwlock;
->>> +};
->>> +
->>> +#define DEFINE_LGRWLOCK(name)                                                \
->>> +     static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)           \
->>> +     = __ARCH_SPIN_LOCK_UNLOCKED;                                    \
->>> +     static DEFINE_PER_CPU(unsigned long, name ## _refcnt);          \
->>> +     struct lgrwlock name = {                                        \
->>> +             .fallback_reader_refcnt = &name ## _refcnt,             \
->>> +             .lglock = { .lock = &name ## _lock } }
->>> +
->>> +#define DEFINE_STATIC_LGRWLOCK(name)                                 \
->>> +     static DEFINE_PER_CPU(arch_spinlock_t, name ## _lock)           \
->>> +     = __ARCH_SPIN_LOCK_UNLOCKED;                                    \
->>> +     static DEFINE_PER_CPU(unsigned long, name ## _refcnt);          \
->>> +     static struct lgrwlock name = {                                 \
->>> +             .fallback_reader_refcnt = &name ## _refcnt,             \
->>> +             .lglock = { .lock = &name ## _lock } }
->>> +
->>> +static inline void lg_rwlock_init(struct lgrwlock *lgrw, char *name)
->>> +{
->>> +     lg_lock_init(&lgrw->lglock, name);
->>> +}
->>> +
->>> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw);
->>> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw);
->>> +void lg_rwlock_global_write_lock(struct lgrwlock *lgrw);
->>> +void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw);
->>>  #endif
->>> diff --git a/kernel/lglock.c b/kernel/lglock.c
->>> index 6535a66..463543a 100644
->>> --- a/kernel/lglock.c
->>> +++ b/kernel/lglock.c
->>> @@ -87,3 +87,48 @@ void lg_global_unlock(struct lglock *lg)
->>>       preempt_enable();
->>>  }
->>>  EXPORT_SYMBOL(lg_global_unlock);
->>> +
->>> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
->>> +{
->>> +     struct lglock *lg = &lgrw->lglock;
->>> +
->>> +     preempt_disable();
->>> +     if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
->>> +             if (likely(arch_spin_trylock(this_cpu_ptr(lg->lock)))) {
->>> +                     rwlock_acquire_read(&lg->lock_dep_map, 0, 0, _RET_IP_);
->>> +                     return;
->>> +             }
->>> +             read_lock(&lgrw->fallback_rwlock);
->>> +     }
->>> +
->>> +     __this_cpu_inc(*lgrw->fallback_reader_refcnt);
->>> +}
->>> +EXPORT_SYMBOL(lg_rwlock_local_read_lock);
->>> +
->>> +void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
->>> +{
->>> +     if (likely(!__this_cpu_read(*lgrw->fallback_reader_refcnt))) {
->>> +             lg_local_unlock(&lgrw->lglock);
->>> +             return;
->>> +     }
->>> +
->>> +     if (!__this_cpu_dec_return(*lgrw->fallback_reader_refcnt))
->>> +             read_unlock(&lgrw->fallback_rwlock);
->>> +
->>> +     preempt_enable();
->>> +}
->>> +EXPORT_SYMBOL(lg_rwlock_local_read_unlock);
->>> +
->>
->> If I read the code above correctly, all you are doing is implementing a
->> recursive reader-side primitive (ie., allowing the reader to call these
->> functions recursively, without resulting in a self-deadlock).
->>
->> But the thing is, making the reader-side recursive is the least of our
->> problems! Our main challenge is to make the locking extremely flexible
->> and also safe-guard it against circular-locking-dependencies and deadlocks.
->> Please take a look at the changelog of patch 1 - it explains the situation
->> with an example.
->
->
-> My lock fixes your requirements(I read patch 1-6 before I sent). In
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: Re: [PATCHv5 1/8] zsmalloc: add to mm/
+> 
+> On 02/25/2013 11:05 AM, Dan Magenheimer wrote:
+> >> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> >> Sent: Friday, February 22, 2013 1:04 PM
+> >> To: Joonsoo Kim
+> >> Subject: Re: [PATCHv5 1/8] zsmalloc: add to mm/
+> >>
+> >> On 02/22/2013 03:24 AM, Joonsoo Kim wrote:
+> >>>
+> >>> It's my quick thought. So there is no concrete idea.
+> >>> As Seth said, with a FULL list, zsmalloc always access all zspage.
+> >>> So, if we want to know what pages are for zsmalloc, we can know it.
+> >>> The EMPTY list can be used for pool of zsmalloc itself. With it, we don't
+> >>> need to free zspage directly, we can keep zspages, so can reduce
+> >>> alloc/free overhead. But, I'm not sure whether it is useful.
+> >>
+> >> I think it's a good idea.  zswap actually does this "keeping some free
+> >> pages around for later allocations" outside zsmalloc in a mempool that
+> >> zswap manages.  Minchan once mentioned bringing that inside zsmalloc
+> >> and this would be a way we could do it.
+> >
+> > I think it's a very bad idea.  If I understand, the suggestion will
+> > hide away some quantity (possibly a very large quantity) of pages
+> > for the sole purpose of zswap, in case zswap gets around to using them
+> > sometime in the future.  In the meantime, those pages are not available
+> > for use by any other kernel subsystems or by userland processes.
+> > An idle page is a wasted page.
+> >
+> > While you might defend the mempool use for a handful of pages,
+> > frontswap writes/reads thousands of pages in a bursty way,
+> > and then can go idle for a very long time.  This may not be
+> > readily apparent with artificially-created memory pressure
+> > from kernbench with -jN (high N).  Leaving thousands
+> > of pages in zswap's personal free list may cause memory pressure
+> > that would otherwise never have existed.
+> 
+> I experimentally determined that this pool increased allocation
+> success rate and, therefore, reduced the number of pages going to the
+> swap device.
 
-s/fixes/fits/
+Of course it does.  But you can't experimentally determine how
+pre-allocating pages will impact overall performance, especially
+over a wide range of workloads that may or may not even swap.
 
-> readsite, lglock 's lock is token via trylock, the lglock doesn't
-> contribute to deadlocks, we can consider it doesn't exist when we find
-> deadlock from it. And global fallback rwlock doesn't result to
-> deadlocks because it is read-preference(you need to inc the
-> fallback_reader_refcnt inside the cpu-hotplug write-side, I don't do
-> it in generic lgrwlock)
->
->
-> If lg_rwlock_local_read_lock() spins, which means
-> lg_rwlock_local_read_lock() spins on fallback_rwlock, and which means
-> lg_rwlock_global_write_lock() took the lgrwlock successfully and
-> return, and which means lg_rwlock_local_read_lock() will stop spinning
-> when the write side finished.
->
->
->>
->>> +void lg_rwlock_global_write_lock(struct lgrwlock *lgrw)
->>> +{
->>> +     lg_global_lock(&lgrw->lglock);
->>
->> This does a for-loop on all CPUs and takes their locks one-by-one. That's
->> exactly what we want to prevent, because that is the _source_ of all our
->> deadlock woes in this case. In the presence of perfect lock ordering
->> guarantees, this wouldn't have been a problem (that's why lglocks are
->> being used successfully elsewhere in the kernel). In the stop-machine()
->> removal case, the over-flexibility of preempt_disable() forces us to provide
->> an equally flexible locking alternative. Hence we can't use such per-cpu
->> locking schemes.
->>
->> You might note that, for exactly this reason, I haven't actually used any
->> per-cpu _locks_ in this synchronization scheme, though it is named as
->> "per-cpu rwlocks". The only per-cpu component here are the refcounts, and
->> we consciously avoid waiting/spinning on them (because then that would be
->> equivalent to having per-cpu locks, which are deadlock-prone). We use
->> global rwlocks to get the deadlock-safety that we need.
->>
->>> +     write_lock(&lgrw->fallback_rwlock);
->>> +}
->>> +EXPORT_SYMBOL(lg_rwlock_global_write_lock);
->>> +
->>> +void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw)
->>> +{
->>> +     write_unlock(&lgrw->fallback_rwlock);
->>> +     lg_global_unlock(&lgrw->lglock);
->>> +}
->>> +EXPORT_SYMBOL(lg_rwlock_global_write_unlock);
->>>
->>
->> Regards,
->> Srivatsa S. Bhat
->>
+> The zswap mempool has a target size of 256 pages.  This places an
+> upper bound on the number of pages held in reserve for zswap.  So we
+> aren't talking about "thousands of pages".
+
+I used "thousands of pages" in reference to Joonsoo's idea about
+releasing pages to the EMPTY list, not about mempool.  I wasn't
+aware that mempool has a target size of 256 pages, but even
+that smaller amount seems wrong to me, especially if the
+mempool user (zswap) will blithely use many thousands of pages
+in a burst.
+ 
+> And yes, the pool does remove up to 1MB of memory (on a 4k PAGE_SIZE)
+> from general use, which causes the reclaim to start very slightly earlier.
+> 
+> >
+> >> Just want to be clear that I'd be in favor of looking at this after
+> >> the merge.
+> >
+> > I disagree... I think this is exactly the kind of fundamental
+> > MM interaction that should be well understood and resolved
+> > BEFORE anything gets merged.
+> 
+> While there is discussion to be had here, I don't agree that it's
+> "fundamental" and should not block merging.
+> 
+> The mempool does serve a purpose and adds measurable benefit. However,
+> if it is determined at some future time that having a reserved pool of
+> any size in zswap is bad practice, it can be removed trivially.
+
+We had this argument last summer... Sure, _any_ cache can be shown
+to add some measurable benefit under the right circumstances.
+Any cacheing solution also has some often subtle side effects
+on some workloads, that can have more costs than benefits.
+Our cache (zcache and/or zswap and/or zram) is not just a cache
+but it is also stealing capacity from its backing store (total
+kernel RAM), so is even more likely to have side effects.
+
+While I firmly believe -- intuitively -- that compression should
+eventually be a feature of the MM subsystem, I don't think we
+have enough understanding yet of the interactions or the
+policies needed to control those interactions or the impact
+of those policies on the underlying zram/zcache/zswap design choices.
+For example, zswap completely ignores the pagecache... is that
+a good thing or a bad thing, and why?
+
+Seth, I'm not trying to piss you off, but last summer you seemed
+hell-bent on promoting zcache out of staging, and it didn't
+happen so you hacked off the part of zcache you were most interested
+in, forked it and rewrote it, and are now trying to merge that
+fork into MM ASAP.  Why?  Why can't we work together on solving
+the hard problems instead of infighting and reimplementing the wheel?
+
+Dan "shakes head"
