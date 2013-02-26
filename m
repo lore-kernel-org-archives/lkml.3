@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759685Ab3BZPi4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 10:38:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15330 "EHLO mx1.redhat.com"
+	id S932328Ab3BZPtJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 10:49:09 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:45244 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759546Ab3BZPiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 10:38:55 -0500
-Date: Tue, 26 Feb 2013 10:38:46 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
-        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
-        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Message-ID: <20130226153846.GA16094@redhat.com>
-References: <20130226031338.GA29784@srcf.ucam.org>
- <20130226032508.GA12906@thunk.org>
- <20130226032839.GA30164@srcf.ucam.org>
- <CA+55aFyVShz4T65VJ-1=V=OGwNNriyYf-aaomhDSMHOU7ZZqbA@mail.gmail.com>
- <20130226034250.GB30285@srcf.ucam.org>
- <CA+55aFzn4KGKtn6cXN-jh9jgF+U1zJUnCmk6tRxmW8BZP7_Jnw@mail.gmail.com>
- <20130226034842.GD30285@srcf.ucam.org>
- <CA+55aFyAfgqmxGnh+WpZjgR5qKd+CLr1S7gKnXihqJXB346DqQ@mail.gmail.com>
- <20130226045747.GA31181@srcf.ucam.org>
- <20130226153045.GA10535@redhat.com>
+	id S1759651Ab3BZPtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 10:49:07 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>, Nishanth Menon <nm@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [GIT PULL] ACPI and power management fixes for v3.9-rc1
+Date: Tue, 26 Feb 2013 16:55:51 +0100
+Message-ID: <2223198.XmyRLgb3Gv@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CA+55aFyzjN_wMH+2RCEA+aNLY0Z7fn4YU7VOtTALbgngn1+vCw@mail.gmail.com>
+References: <1663657.ypAtqGpGAq@vostro.rjw.lan> <1781256.mPQbtiUPYR@vostro.rjw.lan> <CA+55aFyzjN_wMH+2RCEA+aNLY0Z7fn4YU7VOtTALbgngn1+vCw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130226153045.GA10535@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 10:30:45AM -0500, Vivek Goyal wrote:
-> On Tue, Feb 26, 2013 at 04:57:47AM +0000, Matthew Garrett wrote:
+On Monday, February 25, 2013 09:31:45 PM Linus Torvalds wrote:
+> On Mon, Feb 25, 2013 at 7:17 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >
+> > I wonder if this went unnoticed or there's anything wrong with it or it just
+> > needs to wait for some more time?
 > 
-> [..]
-> > >  - encourage things like per-host random keys - with the stupid UEFI
-> > > checks disabled entirely if required. They are almost certainly going
-> > > to be *more* secure than depending on some crazy root of trust based
-> > > on a big company, with key signing authorities that trust anybody with
-> > > a credit card. Try to teach people about things like that instead.
-> > > Encourage people to do their own (random) keys, and adding those to
-> > > their UEFI setups (or not: the whole UEFI thing is more about control
-> > > than security), and strive to do things like one-time signing with the
-> > > private key thrown out entirely. IOW try to encourage *that* kind of
-> > > "we made sure to ask the user very explicitly with big warnings and
-> > > create his own key for that particular module" security. Real
-> > > security, not "we control the user" security.
-> > 
-> > Yes, ideally people will engage in self-signing and distributions will 
-> > have mechanisms for dealing with that.
-> 
-> So even if a user installs its own keys in UEFI to boot self signed
-> shim, kernel and modules, I am assuming that we will still need to
-> make sure kexec does not load and run an unsigned kernel? (Otherwise
-> there is no point in installing user keys in UEFI and there is an
-> easy way to bypass it). 
+> Just going through things slowly. It's merged in my tree now.
 
-As I am kind of lost in the long mail thread, so I will ask. If a user
-installs its own keys in UEFI database and boots self signed linux
-kernel, will we still make sure that no unsigned code can be run at
-ring 0 (without explicitly asking user on console).
+Thanks!
 
-Thanks
-Vivek
+> Oh, and a request: _please_ don't use unknown TLA's like OPP.
+
+Sure, sorry about that.
+
+> This has become a huge problem, to the point that we have a
+> "Documentation/power/opp.txt" file THAT NEVER CLEARLY STATES WHAT THE
+> F*CK OPP ACTUALLY MEANS! What nice "documentation".
+
+It says that in "Introduction", but it would be clearer if the title of the
+doc was something like "Operating Performance Points (OPP) Library".  Nishanth?
+
+> Ok, I can look up things like this and find that it is "Operating
+> Performance Points". At least in this context. But no, it's not some
+> kind of generic standard, and no, it's not something people should be
+> expected to know in general. Please stop doing "explanations" of
+> things that use TLA's like this. And people shouldn't have to even
+> wonder.
+
+I agree.
+
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
