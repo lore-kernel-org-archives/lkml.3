@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933795Ab3B0BMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:12:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41849 "EHLO
+	id S934123Ab3B0BNS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:13:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41842 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760083Ab3BZX5X (ORCPT
+	with ESMTP id S1759874Ab3BZX5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 18:57:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        MITSUNARI Shigeo <herumi@nifty.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Jeff Moyer <jmoyer@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 037/150] fs/block_dev.c: page cache wrongly left invalidated after revalidate_disk()
-Date: Tue, 26 Feb 2013 15:54:54 -0800
-Message-Id: <20130226235528.043762529@linuxfoundation.org>
+        George Spelvin <linux@horizon.com>,
+        Rodolfo Giometti <giometti@enneenne.com>
+Subject: [ 027/150] pps: Add pps_lookup_dev() function
+Date: Tue, 26 Feb 2013 15:54:44 -0800
+Message-Id: <20130226235527.040492309@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -29,85 +27,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: MITSUNARI Shigeo <herumi@nifty.com>
+From: George Spelvin <linux@horizon.com>
 
-commit 7630b661da330b35dd57b6f5d6d62b386f2dd751 upstream.
+commit 513b032c98b4b9414aa4e9b4a315cb1bf0380101 upstream.
 
-We found that bdev->bd_invalidated was left set once revalidate_disk()
-is called, which results in page cache flush every time that device is
-open.
+The PPS serial line discipline wants to attach a PPS device to a tty
+without changing the tty code to add a struct pps_device * pointer.
 
-Specifically, we found this problem in MD block device.  Once we resize
-a MD device, mdadm --monitor periodically flush all page cache for that
-device every 60 or 1000 seconds when it opens the device.
+Since the number of PPS devices in a typical system is generally very low
+(n=1 is by far the most common), it's practical to search the entire list
+of allocated pps devices.  (We capture the timestamp before the lookup,
+so the timing isn't affected.)
 
-This bug lies since at least 3.2.0 till the latest kernel(3.6.2).  Patch
-is attached.
+It is a bit ugly that this function, which is part of the in-kernel
+PPS API, has to be in pps.c as opposed to kapi,c, but that's not
+something that affects users.
 
-The following steps will reproduce the problem.
-
-1. prepair a block device (eg /dev/sdb).
-
-2. create two partitions:
-
-   sudo parted /dev/sdb
-   mklabel gpt
-   mkpart primary 0% 50%
-   mkpart primary 50% 100%
-
-3. create a md device.
-
-   sudo mdadm -C /dev/md/hoge -l 1 -n 2 -e 1.2 --assume-clean --auto=md --symlink=no /dev/sdb1 /dev/sdb2
-
-4. create file system and mount it
-
-   sudo mkfs.ext3 /dev/md/hoge
-   sudo mkdir /mnt/test
-   sudo mount /dev/md/hoge /mnt/test
-
-5. try to resize the device
-
-   sudo mdadm -G /dev/md/hoge --size=max
-
-6. create a file to fill file cache.
-
-  sudo dd if=/dev/urandom of=/mnt/test/data bs=1M count=10
-
-and verify the current status of file by free command.
-
-7. mdadm monitor will open the md device every 1000 seconds and you
-   will find all file cache on the device are cleared.
-
-The timing can be reduced by the following steps.
-
-a) kill mdadm and restart it with --delay option
-
-   /sbin/mdadm --monitor --delay=30 --pid-file /var/run/mdadm/monitor.pid --daemonise --scan --syslog
-
-or open the md device directly.
-
-   sudo dd if=/dev/md/hoge of=/dev/null bs=4096 count=1
-
-Signed-off-by: MITSUNARI Shigeo <herumi@nifty.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: George Spelvin <linux@horizon.com>
+Acked-by: Rodolfo Giometti <giometti@enneenne.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/block_dev.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/pps/pps.c          |   33 +++++++++++++++++++++++++++++++++
+ include/linux/pps_kernel.h |   17 ++++++++++++++---
+ 2 files changed, 47 insertions(+), 3 deletions(-)
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -994,6 +994,7 @@ int revalidate_disk(struct gendisk *disk
+--- a/drivers/pps/pps.c
++++ b/drivers/pps/pps.c
+@@ -352,11 +352,44 @@ free_idr:
  
- 	mutex_lock(&bdev->bd_mutex);
- 	check_disk_size_change(disk, bdev);
-+	bdev->bd_invalidated = 0;
- 	mutex_unlock(&bdev->bd_mutex);
- 	bdput(bdev);
- 	return ret;
+ void pps_unregister_cdev(struct pps_device *pps)
+ {
++	pps->lookup_cookie = NULL;
+ 	device_destroy(pps_class, pps->dev->devt);
+ 	cdev_del(&pps->cdev);
+ }
+ 
+ /*
++ * Look up a pps device by magic cookie.
++ * The cookie is usually a pointer to some enclosing device, but this
++ * code doesn't care; you should never be dereferencing it.
++ *
++ * This is a bit of a kludge that is currently used only by the PPS
++ * serial line discipline.  It may need to be tweaked when a second user
++ * is found.
++ *
++ * There is no function interface for setting the lookup_cookie field.
++ * It's initialized to NULL when the pps device is created, and if a
++ * client wants to use it, just fill it in afterward.
++ *
++ * The cookie is automatically set to NULL in pps_unregister_source()
++ * so that it will not be used again, even if the pps device cannot
++ * be removed from the idr due to pending references holding the minor
++ * number in use.
++ */
++struct pps_device *pps_lookup_dev(void const *cookie)
++{
++	struct pps_device *pps;
++	unsigned id;
++
++	rcu_read_lock();
++	idr_for_each_entry(&pps_idr, pps, id)
++		if (cookie == pps->lookup_cookie)
++			break;
++	rcu_read_unlock();
++	return pps;
++}
++EXPORT_SYMBOL(pps_lookup_dev);
++
++/*
+  * Module stuff
+  */
+ 
+--- a/include/linux/pps_kernel.h
++++ b/include/linux/pps_kernel.h
+@@ -43,7 +43,7 @@ struct pps_source_info {
+ 			int event, void *data);	/* PPS echo function */
+ 
+ 	struct module *owner;
+-	struct device *dev;
++	struct device *dev;		/* Parent device for device_create */
+ };
+ 
+ struct pps_event_time {
+@@ -69,6 +69,7 @@ struct pps_device {
+ 	wait_queue_head_t queue;		/* PPS event queue */
+ 
+ 	unsigned int id;			/* PPS source unique ID */
++	void const *lookup_cookie;		/* pps_lookup_dev only */
+ 	struct cdev cdev;
+ 	struct device *dev;
+ 	struct fasync_struct *async_queue;	/* fasync method */
+@@ -82,16 +83,26 @@ struct pps_device {
+ extern struct device_attribute pps_attrs[];
+ 
+ /*
++ * Internal functions.
++ *
++ * These are not actually part of the exported API, but this is a
++ * convenient header file to put them in.
++ */
++
++extern int pps_register_cdev(struct pps_device *pps);
++extern void pps_unregister_cdev(struct pps_device *pps);
++
++/*
+  * Exported functions
+  */
+ 
+ extern struct pps_device *pps_register_source(
+ 		struct pps_source_info *info, int default_params);
+ extern void pps_unregister_source(struct pps_device *pps);
+-extern int pps_register_cdev(struct pps_device *pps);
+-extern void pps_unregister_cdev(struct pps_device *pps);
+ extern void pps_event(struct pps_device *pps,
+ 		struct pps_event_time *ts, int event, void *data);
++/* Look up a pps device by magic cookie */
++struct pps_device *pps_lookup_dev(void const *cookie);
+ 
+ static inline void timespec_to_pps_ktime(struct pps_ktime *kt,
+ 		struct timespec ts)
 
 
