@@ -1,713 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759468Ab3BZA6A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 19:58:00 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:23121 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751366Ab3BZA57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 19:57:59 -0500
-X-IronPort-AV: E=Sophos;i="4.84,737,1355068800"; 
-   d="scan'208";a="6767447"
-From: liguang <lig.fnst@cn.fujitsu.com>
-To: pavel@ucw.cz, rjw@sisk.pl, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org, len.brown@intel.com
-Cc: liguang <lig.fnst@cn.fujitsu.com>
-Subject: [rebased-again-again][PATCH 1/4] acpi: move x86/mm/srat.c to x86/kernel/acpi/srat.c
-Date: Tue, 26 Feb 2013 08:56:49 +0800
-Message-Id: <1361840209-21504-1-git-send-email-lig.fnst@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.2.5
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/26 08:57:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/26 08:57:07,
-	Serialize complete at 2013/02/26 08:57:07
+	id S1759954Ab3BZBAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 20:00:06 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:55245 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753276Ab3BZA77 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 19:59:59 -0500
+Date: Mon, 25 Feb 2013 16:59:55 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Florian Weimer <fw@deneb.enyo.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Message-ID: <20130226005955.GA19686@kroah.com>
+References: <87ppzo79in.fsf@mid.deneb.enyo.de>
+ <30665.1361461678@warthog.procyon.org.uk>
+ <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
+ <20130221164244.GA19625@srcf.ucam.org>
+ <18738.1361836265@warthog.procyon.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <18738.1361836265@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-srat table should present only on acpi domain,
-seems mm/ is not the right place for it.
+On Mon, Feb 25, 2013 at 11:51:05PM +0000, David Howells wrote:
+> 
+> Florian Weimer <fw@deneb.enyo.de> wrote:
+> 
+> > Seriously, folks, can we go back one step and discuss what problem you
+> > are trying to solve?  Is it about allowing third-party kernel modules
+> > in an environment which does not allow unsigned ring 0 code execution?
+> 
+> Let me try and lay things out:
+> 
+>  (1) Like it or not, the reality is that machines exist that have UEFI secure
+>      boot.  We want it to be possible for people to be able to install and run
+>      Linux on these.
+> 
+>  (2) Unless secure boot is completely disabled, the operating system boot
+>      loader must be signed by a key that's in the UEFI key database.
+> 
+>  (3) We don't want to stop people from being able to dual boot Windows (and
+>      other OS's - but Windows is the problematic one), therefore we will need
+>      to be able to operate with secure mode enabled.
+> 
+>  (4) Machines are shipped with a Microsoft root key.  They are not shipped
+>      with a Microsoft-independent root key from Red Hat or, say, the Linux
+>      Foundation.
+> 
+>  (5) Unless we get the administrator to add a key prior to Linux installation,
+>      Linux cannot be booted on a secure UEFI machine - unless the boot loader
+>      is signed by Microsoft's key.
+> 
+>  (6) To maintain secure boot mode, the kernel must be signed and the boot
+>      loader must check the signature on it.  The key must be either compiled
+>      into the bootloader (and thus validated by the bootloader signature) or
+>      must reside in the UEFI database.
+> 
+>      [*] Note: This step is simplified a bit.
 
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: liguang <lig.fnst@cn.fujitsu.com>
----
- arch/x86/kernel/acpi/Makefile |    1 +
- arch/x86/kernel/acpi/srat.c   |  317 +++++++++++++++++++++++++++++++++++++++++
- arch/x86/mm/Makefile          |    1 -
- arch/x86/mm/srat.c            |  317 -----------------------------------------
- 4 files changed, 318 insertions(+), 318 deletions(-)
- create mode 100644 arch/x86/kernel/acpi/srat.c
- delete mode 100644 arch/x86/mm/srat.c
+That's all fine, and now your machine can boot both Linux and Windows
+wonderfully.  Distros have shipped code doing this for a short while now
+thanks to Matthew's and other developer's effort in writing a UEFI
+bootloader / shim that Microsoft has signed.
 
-diff --git a/arch/x86/kernel/acpi/Makefile b/arch/x86/kernel/acpi/Makefile
-index 163b225..98cea92 100644
---- a/arch/x86/kernel/acpi/Makefile
-+++ b/arch/x86/kernel/acpi/Makefile
-@@ -1,5 +1,6 @@
- obj-$(CONFIG_ACPI)		+= boot.o
- obj-$(CONFIG_ACPI_SLEEP)	+= sleep.o wakeup_$(BITS).o
-+obj-$(CONFIG_ACPI_NUMA)	+= srat.o
- 
- ifneq ($(CONFIG_ACPI_PROCESSOR),)
- obj-y				+= cstate.o
-diff --git a/arch/x86/kernel/acpi/srat.c b/arch/x86/kernel/acpi/srat.c
-new file mode 100644
-index 0000000..79836d0
---- /dev/null
-+++ b/arch/x86/kernel/acpi/srat.c
-@@ -0,0 +1,317 @@
-+/*
-+ * ACPI 3.0 based NUMA setup
-+ * Copyright 2004 Andi Kleen, SuSE Labs.
-+ *
-+ * Reads the ACPI SRAT table to figure out what memory belongs to which CPUs.
-+ *
-+ * Called from acpi_numa_init while reading the SRAT and SLIT tables.
-+ * Assumes all memory regions belonging to a single proximity domain
-+ * are in one chunk. Holes between them will be included in the node.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/acpi.h>
-+#include <linux/mmzone.h>
-+#include <linux/bitmap.h>
-+#include <linux/module.h>
-+#include <linux/topology.h>
-+#include <linux/bootmem.h>
-+#include <linux/memblock.h>
-+#include <linux/mm.h>
-+#include <asm/proto.h>
-+#include <asm/numa.h>
-+#include <asm/e820.h>
-+#include <asm/apic.h>
-+#include <asm/uv/uv.h>
-+
-+int acpi_numa __initdata;
-+
-+static __init int setup_node(int pxm)
-+{
-+	return acpi_map_pxm_to_node(pxm);
-+}
-+
-+static __init void bad_srat(void)
-+{
-+	printk(KERN_ERR "SRAT: SRAT not used.\n");
-+	acpi_numa = -1;
-+}
-+
-+static __init inline int srat_disabled(void)
-+{
-+	return acpi_numa < 0;
-+}
-+
-+/* Callback for SLIT parsing */
-+void __init acpi_numa_slit_init(struct acpi_table_slit *slit)
-+{
-+	int i, j;
-+
-+	for (i = 0; i < slit->locality_count; i++)
-+		for (j = 0; j < slit->locality_count; j++)
-+			numa_set_distance(pxm_to_node(i), pxm_to_node(j),
-+				slit->entry[slit->locality_count * i + j]);
-+}
-+
-+/* Callback for Proximity Domain -> x2APIC mapping */
-+void __init
-+acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
-+{
-+	int pxm, node;
-+	int apic_id;
-+
-+	if (srat_disabled())
-+		return;
-+	if (pa->header.length < sizeof(struct acpi_srat_x2apic_cpu_affinity)) {
-+		bad_srat();
-+		return;
-+	}
-+	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
-+		return;
-+	pxm = pa->proximity_domain;
-+	apic_id = pa->apic_id;
-+	if (!apic->apic_id_valid(apic_id)) {
-+		printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
-+			 pxm, apic_id);
-+		return;
-+	}
-+	node = setup_node(pxm);
-+	if (node < 0) {
-+		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
-+		bad_srat();
-+		return;
-+	}
-+
-+	if (apic_id >= MAX_LOCAL_APIC) {
-+		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
-+		return;
-+	}
-+	set_apicid_to_node(apic_id, node);
-+	node_set(node, numa_nodes_parsed);
-+	acpi_numa = 1;
-+	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
-+	       pxm, apic_id, node);
-+}
-+
-+/* Callback for Proximity Domain -> LAPIC mapping */
-+void __init
-+acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
-+{
-+	int pxm, node;
-+	int apic_id;
-+
-+	if (srat_disabled())
-+		return;
-+	if (pa->header.length != sizeof(struct acpi_srat_cpu_affinity)) {
-+		bad_srat();
-+		return;
-+	}
-+	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
-+		return;
-+	pxm = pa->proximity_domain_lo;
-+	if (acpi_srat_revision >= 2)
-+		pxm |= *((unsigned int*)pa->proximity_domain_hi) << 8;
-+	node = setup_node(pxm);
-+	if (node < 0) {
-+		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
-+		bad_srat();
-+		return;
-+	}
-+
-+	if (get_uv_system_type() >= UV_X2APIC)
-+		apic_id = (pa->apic_id << 8) | pa->local_sapic_eid;
-+	else
-+		apic_id = pa->apic_id;
-+
-+	if (apic_id >= MAX_LOCAL_APIC) {
-+		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
-+		return;
-+	}
-+
-+	set_apicid_to_node(apic_id, node);
-+	node_set(node, numa_nodes_parsed);
-+	acpi_numa = 1;
-+	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
-+	       pxm, apic_id, node);
-+}
-+
-+#ifdef CONFIG_MEMORY_HOTPLUG
-+static inline int save_add_info(void) {return 1;}
-+#else
-+static inline int save_add_info(void) {return 0;}
-+#endif
-+
-+#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-+static void __init
-+handle_movablemem(int node, u64 start, u64 end, u32 hotpluggable)
-+{
-+	int overlap, i;
-+	unsigned long start_pfn, end_pfn;
-+
-+	start_pfn = PFN_DOWN(start);
-+	end_pfn = PFN_UP(end);
-+
-+	/*
-+	 * For movablemem_map=acpi:
-+	 *
-+	 * SRAT:		|_____| |_____| |_________| |_________| ......
-+	 * node id:                0       1         1           2
-+	 * hotpluggable:	   n       y         y           n
-+	 * movablemem_map:	        |_____| |_________|
-+	 *
-+	 * Using movablemem_map, we can prevent memblock from allocating memory
-+	 * on ZONE_MOVABLE at boot time.
-+	 *
-+	 * Before parsing SRAT, memblock has already reserve some memory ranges
-+	 * for other purposes, such as for kernel image. We cannot prevent
-+	 * kernel from using these memory, so we need to exclude these memory
-+	 * even if it is hotpluggable.
-+	 * Furthermore, to ensure the kernel has enough memory to boot, we make
-+	 * all the memory on the node which the kernel resides in
-+	 * un-hotpluggable.
-+	 */
-+	if (hotpluggable && movablemem_map.acpi) {
-+		/* Exclude ranges reserved by memblock. */
-+		struct memblock_type *rgn = &memblock.reserved;
-+
-+		for (i = 0; i < rgn->cnt; i++) {
-+			if (end <= rgn->regions[i].base ||
-+			    start >= rgn->regions[i].base +
-+			    rgn->regions[i].size)
-+				continue;
-+
-+			/*
-+			 * If the memory range overlaps the memory reserved by
-+			 * memblock, then the kernel resides in this node.
-+			 */
-+			node_set(node, movablemem_map.numa_nodes_kernel);
-+
-+			goto out;
-+		}
-+
-+		/*
-+		 * If the kernel resides in this node, then the whole node
-+		 * should not be hotpluggable.
-+		 */
-+		if (node_isset(node, movablemem_map.numa_nodes_kernel))
-+			goto out;
-+
-+		insert_movablemem_map(start_pfn, end_pfn);
-+
-+		/*
-+		 * numa_nodes_hotplug nodemask represents which nodes are put
-+		 * into movablemem_map.map[].
-+		 */
-+		node_set(node, movablemem_map.numa_nodes_hotplug);
-+		goto out;
-+	}
-+
-+	/*
-+	 * For movablemem_map=nn[KMG]@ss[KMG]:
-+	 *
-+	 * SRAT:		|_____| |_____| |_________| |_________| ......
-+	 * node id:		   0       1         1           2
-+	 * user specified:	          |__|                 |___|
-+	 * movablemem_map:		  |___| |_________|    |______| ......
-+	 *
-+	 * Using movablemem_map, we can prevent memblock from allocating memory
-+	 * on ZONE_MOVABLE at boot time.
-+	 *
-+	 * NOTE: In this case, SRAT info will be ingored.
-+	 */
-+	overlap = movablemem_map_overlap(start_pfn, end_pfn);
-+	if (overlap >= 0) {
-+		/*
-+		 * If part of this range is in movablemem_map, we need to
-+		 * add the range after it to extend the range to the end
-+		 * of the node, because from the min address specified to
-+		 * the end of the node will be ZONE_MOVABLE.
-+		 */
-+		start_pfn = max(start_pfn,
-+			    movablemem_map.map[overlap].start_pfn);
-+		insert_movablemem_map(start_pfn, end_pfn);
-+
-+		/*
-+		 * Set the nodemask, so that if the address range on one node
-+		 * is not continuse, we can add the subsequent ranges on the
-+		 * same node into movablemem_map.
-+		 */
-+		node_set(node, movablemem_map.numa_nodes_hotplug);
-+	} else {
-+		if (node_isset(node, movablemem_map.numa_nodes_hotplug))
-+			/*
-+			 * Insert the range if we already have movable ranges
-+			 * on the same node.
-+			 */
-+			insert_movablemem_map(start_pfn, end_pfn);
-+	}
-+out:
-+	return;
-+}
-+#else		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
-+static inline void
-+handle_movablemem(int node, u64 start, u64 end, u32 hotpluggable)
-+{
-+}
-+#endif		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
-+
-+/* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
-+int __init
-+acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
-+{
-+	u64 start, end;
-+	u32 hotpluggable;
-+	int node, pxm;
-+
-+	if (srat_disabled())
-+		goto out_err;
-+	if (ma->header.length != sizeof(struct acpi_srat_mem_affinity))
-+		goto out_err_bad_srat;
-+	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
-+		goto out_err;
-+	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
-+	if (hotpluggable && !save_add_info())
-+		goto out_err;
-+
-+	start = ma->base_address;
-+	end = start + ma->length;
-+	pxm = ma->proximity_domain;
-+	if (acpi_srat_revision <= 1)
-+		pxm &= 0xff;
-+
-+	node = setup_node(pxm);
-+	if (node < 0) {
-+		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
-+		goto out_err_bad_srat;
-+	}
-+
-+	if (numa_add_memblk(node, start, end) < 0)
-+		goto out_err_bad_srat;
-+
-+	node_set(node, numa_nodes_parsed);
-+
-+	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
-+	       node, pxm,
-+	       (unsigned long long) start, (unsigned long long) end - 1,
-+	       hotpluggable ? "Hot Pluggable": "");
-+
-+	handle_movablemem(node, start, end, hotpluggable);
-+
-+	return 0;
-+out_err_bad_srat:
-+	bad_srat();
-+out_err:
-+	return -1;
-+}
-+
-+void __init acpi_numa_arch_fixup(void) {}
-+
-+int __init x86_acpi_numa_init(void)
-+{
-+	int ret;
-+
-+	ret = acpi_numa_init();
-+	if (ret < 0)
-+		return ret;
-+	return srat_disabled() ? -EINVAL : 0;
-+}
-diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
-index 23d8e5f..d6f3692 100644
---- a/arch/x86/mm/Makefile
-+++ b/arch/x86/mm/Makefile
-@@ -24,7 +24,6 @@ obj-$(CONFIG_MMIOTRACE_TEST)	+= testmmiotrace.o
- 
- obj-$(CONFIG_NUMA)		+= numa.o numa_$(BITS).o
- obj-$(CONFIG_AMD_NUMA)		+= amdtopology.o
--obj-$(CONFIG_ACPI_NUMA)		+= srat.o
- obj-$(CONFIG_NUMA_EMU)		+= numa_emulation.o
- 
- obj-$(CONFIG_MEMTEST)		+= memtest.o
-diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-deleted file mode 100644
-index 79836d0..0000000
---- a/arch/x86/mm/srat.c
-+++ /dev/null
-@@ -1,317 +0,0 @@
--/*
-- * ACPI 3.0 based NUMA setup
-- * Copyright 2004 Andi Kleen, SuSE Labs.
-- *
-- * Reads the ACPI SRAT table to figure out what memory belongs to which CPUs.
-- *
-- * Called from acpi_numa_init while reading the SRAT and SLIT tables.
-- * Assumes all memory regions belonging to a single proximity domain
-- * are in one chunk. Holes between them will be included in the node.
-- */
--
--#include <linux/kernel.h>
--#include <linux/acpi.h>
--#include <linux/mmzone.h>
--#include <linux/bitmap.h>
--#include <linux/module.h>
--#include <linux/topology.h>
--#include <linux/bootmem.h>
--#include <linux/memblock.h>
--#include <linux/mm.h>
--#include <asm/proto.h>
--#include <asm/numa.h>
--#include <asm/e820.h>
--#include <asm/apic.h>
--#include <asm/uv/uv.h>
--
--int acpi_numa __initdata;
--
--static __init int setup_node(int pxm)
--{
--	return acpi_map_pxm_to_node(pxm);
--}
--
--static __init void bad_srat(void)
--{
--	printk(KERN_ERR "SRAT: SRAT not used.\n");
--	acpi_numa = -1;
--}
--
--static __init inline int srat_disabled(void)
--{
--	return acpi_numa < 0;
--}
--
--/* Callback for SLIT parsing */
--void __init acpi_numa_slit_init(struct acpi_table_slit *slit)
--{
--	int i, j;
--
--	for (i = 0; i < slit->locality_count; i++)
--		for (j = 0; j < slit->locality_count; j++)
--			numa_set_distance(pxm_to_node(i), pxm_to_node(j),
--				slit->entry[slit->locality_count * i + j]);
--}
--
--/* Callback for Proximity Domain -> x2APIC mapping */
--void __init
--acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
--{
--	int pxm, node;
--	int apic_id;
--
--	if (srat_disabled())
--		return;
--	if (pa->header.length < sizeof(struct acpi_srat_x2apic_cpu_affinity)) {
--		bad_srat();
--		return;
--	}
--	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
--		return;
--	pxm = pa->proximity_domain;
--	apic_id = pa->apic_id;
--	if (!apic->apic_id_valid(apic_id)) {
--		printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
--			 pxm, apic_id);
--		return;
--	}
--	node = setup_node(pxm);
--	if (node < 0) {
--		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
--		bad_srat();
--		return;
--	}
--
--	if (apic_id >= MAX_LOCAL_APIC) {
--		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
--		return;
--	}
--	set_apicid_to_node(apic_id, node);
--	node_set(node, numa_nodes_parsed);
--	acpi_numa = 1;
--	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
--	       pxm, apic_id, node);
--}
--
--/* Callback for Proximity Domain -> LAPIC mapping */
--void __init
--acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
--{
--	int pxm, node;
--	int apic_id;
--
--	if (srat_disabled())
--		return;
--	if (pa->header.length != sizeof(struct acpi_srat_cpu_affinity)) {
--		bad_srat();
--		return;
--	}
--	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
--		return;
--	pxm = pa->proximity_domain_lo;
--	if (acpi_srat_revision >= 2)
--		pxm |= *((unsigned int*)pa->proximity_domain_hi) << 8;
--	node = setup_node(pxm);
--	if (node < 0) {
--		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
--		bad_srat();
--		return;
--	}
--
--	if (get_uv_system_type() >= UV_X2APIC)
--		apic_id = (pa->apic_id << 8) | pa->local_sapic_eid;
--	else
--		apic_id = pa->apic_id;
--
--	if (apic_id >= MAX_LOCAL_APIC) {
--		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
--		return;
--	}
--
--	set_apicid_to_node(apic_id, node);
--	node_set(node, numa_nodes_parsed);
--	acpi_numa = 1;
--	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
--	       pxm, apic_id, node);
--}
--
--#ifdef CONFIG_MEMORY_HOTPLUG
--static inline int save_add_info(void) {return 1;}
--#else
--static inline int save_add_info(void) {return 0;}
--#endif
--
--#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
--static void __init
--handle_movablemem(int node, u64 start, u64 end, u32 hotpluggable)
--{
--	int overlap, i;
--	unsigned long start_pfn, end_pfn;
--
--	start_pfn = PFN_DOWN(start);
--	end_pfn = PFN_UP(end);
--
--	/*
--	 * For movablemem_map=acpi:
--	 *
--	 * SRAT:		|_____| |_____| |_________| |_________| ......
--	 * node id:                0       1         1           2
--	 * hotpluggable:	   n       y         y           n
--	 * movablemem_map:	        |_____| |_________|
--	 *
--	 * Using movablemem_map, we can prevent memblock from allocating memory
--	 * on ZONE_MOVABLE at boot time.
--	 *
--	 * Before parsing SRAT, memblock has already reserve some memory ranges
--	 * for other purposes, such as for kernel image. We cannot prevent
--	 * kernel from using these memory, so we need to exclude these memory
--	 * even if it is hotpluggable.
--	 * Furthermore, to ensure the kernel has enough memory to boot, we make
--	 * all the memory on the node which the kernel resides in
--	 * un-hotpluggable.
--	 */
--	if (hotpluggable && movablemem_map.acpi) {
--		/* Exclude ranges reserved by memblock. */
--		struct memblock_type *rgn = &memblock.reserved;
--
--		for (i = 0; i < rgn->cnt; i++) {
--			if (end <= rgn->regions[i].base ||
--			    start >= rgn->regions[i].base +
--			    rgn->regions[i].size)
--				continue;
--
--			/*
--			 * If the memory range overlaps the memory reserved by
--			 * memblock, then the kernel resides in this node.
--			 */
--			node_set(node, movablemem_map.numa_nodes_kernel);
--
--			goto out;
--		}
--
--		/*
--		 * If the kernel resides in this node, then the whole node
--		 * should not be hotpluggable.
--		 */
--		if (node_isset(node, movablemem_map.numa_nodes_kernel))
--			goto out;
--
--		insert_movablemem_map(start_pfn, end_pfn);
--
--		/*
--		 * numa_nodes_hotplug nodemask represents which nodes are put
--		 * into movablemem_map.map[].
--		 */
--		node_set(node, movablemem_map.numa_nodes_hotplug);
--		goto out;
--	}
--
--	/*
--	 * For movablemem_map=nn[KMG]@ss[KMG]:
--	 *
--	 * SRAT:		|_____| |_____| |_________| |_________| ......
--	 * node id:		   0       1         1           2
--	 * user specified:	          |__|                 |___|
--	 * movablemem_map:		  |___| |_________|    |______| ......
--	 *
--	 * Using movablemem_map, we can prevent memblock from allocating memory
--	 * on ZONE_MOVABLE at boot time.
--	 *
--	 * NOTE: In this case, SRAT info will be ingored.
--	 */
--	overlap = movablemem_map_overlap(start_pfn, end_pfn);
--	if (overlap >= 0) {
--		/*
--		 * If part of this range is in movablemem_map, we need to
--		 * add the range after it to extend the range to the end
--		 * of the node, because from the min address specified to
--		 * the end of the node will be ZONE_MOVABLE.
--		 */
--		start_pfn = max(start_pfn,
--			    movablemem_map.map[overlap].start_pfn);
--		insert_movablemem_map(start_pfn, end_pfn);
--
--		/*
--		 * Set the nodemask, so that if the address range on one node
--		 * is not continuse, we can add the subsequent ranges on the
--		 * same node into movablemem_map.
--		 */
--		node_set(node, movablemem_map.numa_nodes_hotplug);
--	} else {
--		if (node_isset(node, movablemem_map.numa_nodes_hotplug))
--			/*
--			 * Insert the range if we already have movable ranges
--			 * on the same node.
--			 */
--			insert_movablemem_map(start_pfn, end_pfn);
--	}
--out:
--	return;
--}
--#else		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
--static inline void
--handle_movablemem(int node, u64 start, u64 end, u32 hotpluggable)
--{
--}
--#endif		/* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
--
--/* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
--int __init
--acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
--{
--	u64 start, end;
--	u32 hotpluggable;
--	int node, pxm;
--
--	if (srat_disabled())
--		goto out_err;
--	if (ma->header.length != sizeof(struct acpi_srat_mem_affinity))
--		goto out_err_bad_srat;
--	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
--		goto out_err;
--	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
--	if (hotpluggable && !save_add_info())
--		goto out_err;
--
--	start = ma->base_address;
--	end = start + ma->length;
--	pxm = ma->proximity_domain;
--	if (acpi_srat_revision <= 1)
--		pxm &= 0xff;
--
--	node = setup_node(pxm);
--	if (node < 0) {
--		printk(KERN_ERR "SRAT: Too many proximity domains.\n");
--		goto out_err_bad_srat;
--	}
--
--	if (numa_add_memblk(node, start, end) < 0)
--		goto out_err_bad_srat;
--
--	node_set(node, numa_nodes_parsed);
--
--	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
--	       node, pxm,
--	       (unsigned long long) start, (unsigned long long) end - 1,
--	       hotpluggable ? "Hot Pluggable": "");
--
--	handle_movablemem(node, start, end, hotpluggable);
--
--	return 0;
--out_err_bad_srat:
--	bad_srat();
--out_err:
--	return -1;
--}
--
--void __init acpi_numa_arch_fixup(void) {}
--
--int __init x86_acpi_numa_init(void)
--{
--	int ret;
--
--	ret = acpi_numa_init();
--	if (ret < 0)
--		return ret;
--	return srat_disabled() ? -EINVAL : 0;
--}
--- 
-1.7.2.5
+>  (7) To maintain secure boot mode, the kernel modules must be signed and the
+>      kernel must check the signature on them.  The key must be compiled into
+>      the kernel or the bootloader or must reside in the UEFI database.
 
+Wait right here.  This is NOT mandated by UEFI, nor by anyone else.  It
+might be a nice thing that some people and companies want to implement,
+but please don't think that some external entity is requiring that Linux
+implement this, that is not true.
+
+> At this point, you have the kernel booted in secure boot mode.  Now, there are
+> several issues we have to deal with going on from here if we want to *stay* in
+> secure boot mode:
+
+Well, it's all how you define "secure boot mode", isn't it.  This seems
+to be some random thing that people are making up as they go along ("We
+must sign firmware!")
+
+>  (A) Unsigned modules.  These may not be loaded in secure boot mode.  At all.
+
+Why not?  Who says so?  See, now you really don't have an argument
+besides "the policy I am deciding to make up says so," right?
+
+Same for your other "requirements", these are all self-inflicted, no one
+that I can determine is mandating any of these, who is deciding that
+Linux MUST follow this policy?  I'm not saying that they are not nice
+things to have, personally, I want some of these things for my own
+machines just to make things more secure, but again, these are "I want
+to have", not "Someone else is saying Linux MUST have."
+
+thanks,
+
+greg k-h
