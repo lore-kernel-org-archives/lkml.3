@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759985Ab3BZVZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 16:25:36 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:47591 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab3BZVZf (ORCPT
+	id S1759990Ab3BZVa7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 16:30:59 -0500
+Received: from ka.mail.enyo.de ([87.106.162.201]:42512 "EHLO ka.mail.enyo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759658Ab3BZVa6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 16:25:35 -0500
-Message-ID: <512D284B.8070802@lwfinger.net>
-Date: Tue, 26 Feb 2013 15:25:31 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	Tue, 26 Feb 2013 16:30:58 -0500
+From: Florian Weimer <fw@deneb.enyo.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        Peter Jones <pjones@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+References: <18738.1361836265@warthog.procyon.org.uk>
+	<20130226005955.GA19686@kroah.com>
+	<20130226023332.GA29282@srcf.ucam.org>
+	<20130226030249.GB23834@kroah.com>
+	<20130226031338.GA29784@srcf.ucam.org>
+	<20130226032508.GA12906@thunk.org>
+	<20130226032839.GA30164@srcf.ucam.org>
+	<CA+55aFyVShz4T65VJ-1=V=OGwNNriyYf-aaomhDSMHOU7ZZqbA@mail.gmail.com>
+	<20130226034250.GB30285@srcf.ucam.org>
+	<CA+55aFzn4KGKtn6cXN-jh9jgF+U1zJUnCmk6tRxmW8BZP7_Jnw@mail.gmail.com>
+	<20130226034842.GD30285@srcf.ucam.org>
+	<CA+55aFyAfgqmxGnh+WpZjgR5qKd+CLr1S7gKnXihqJXB346DqQ@mail.gmail.com>
+Date: Tue, 26 Feb 2013 22:30:46 +0100
+In-Reply-To: <CA+55aFyAfgqmxGnh+WpZjgR5qKd+CLr1S7gKnXihqJXB346DqQ@mail.gmail.com>
+	(Linus Torvalds's message of "Mon, 25 Feb 2013 20:31:08 -0800")
+Message-ID: <87bob6pxtl.fsf@mid.deneb.enyo.de>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: WARNING from tty driver in 3.9-rc0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+* Linus Torvalds:
 
-With v3.8-8693-gbf722a0 from the mainline repo, I get the following warning 
-because the pointer for tty is NULL:
+> So here's what I would suggest, and it is based on REAL SECURITY and
+> on PUTTING THE USER FIRST instead of your continual "let's please
+> microsoft by doing idiotic crap" approach.
 
-[   34.956862] WARNING: at drivers/tty/tty_buffer.c:428 flush_to_ldisc+0x1bb/0x1c0()
-[   34.956865] Hardware name: HP Pavilion dv2700 Notebook PC
-[   34.956867] tty is NULL
-[   34.956869] Modules linked in: arc4 b43 mac80211 cfg80211 
-snd_hda_codec_conexant snd_hda_intel rfkill snd_hda_codec ipv6 snd_pcm kvm_amd 
-snd_seq kvm bcma rng_core snd_timer snd_seq_device ssb mmc_core snd pcmcia 
-sr_mod cdrom sg soundcore forcedeth pcmcia_core snd_page_alloc i2c_nforce2 
-i2c_core k8temp hwmon ehci_pci battery ac serio_raw joydev video wmi button 
-autofs4 ext4 mbcache jbd2 crc16 ohci_hcd ehci_hcd usbcore usb_common thermal 
-processor scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh 
-ata_generic pata_acpi pata_amd
-[   34.956936] Pid: 270, comm: kworker/1:1 Not tainted 3.8.0+ #92
-[   34.956939] Call Trace:
-[   34.956944]  [<ffffffff812acc00>] ? flush_to_ldisc+0x120/0x1c0
-[   34.956951]  [<ffffffff81040a4a>] warn_slowpath_common+0x7a/0xc0
-[   34.956955]  [<ffffffff81040b31>] warn_slowpath_fmt+0x41/0x50
-[   34.956959]  [<ffffffff812acc9b>] flush_to_ldisc+0x1bb/0x1c0
-[   34.956964]  [<ffffffff810640f1>] process_one_work+0x1f1/0x660
-[   34.956968]  [<ffffffff81064085>] ? process_one_work+0x185/0x660
-[   34.956972]  [<ffffffff81064900>] worker_thread+0x110/0x380
-[   34.956978]  [<ffffffff810a5b7d>] ? trace_hardirqs_on+0xd/0x10
-[   34.956982]  [<ffffffff810647f0>] ? rescuer_thread+0x250/0x250
-[   34.956987]  [<ffffffff81069e96>] kthread+0xd6/0xe0
-[   34.956992]  [<ffffffff81424c9b>] ? _raw_spin_unlock_irq+0x2b/0x50
-[   34.956997]  [<ffffffff81069dc0>] ? __init_kthread_worker+0x70/0x70
-[   34.957002]  [<ffffffff81425a7c>] ret_from_fork+0x7c/0xb0
-[   34.957006]  [<ffffffff81069dc0>] ? __init_kthread_worker+0x70/0x70
-[   34.957009] ---[ end trace f467d4f2302660c1 ]---
-[   35.585060] forcedeth 0000:00:0a.0: irq 42 for MSI/MSI-X
-[   35.585182] forcedeth 0000:00:0a.0 eth0: MSI enabled
-[   36.140711] ------------[ cut here ]------------
+I think the real question is this one: Is there *any* device out there
+which comes with Microsoft Secure Boot enabled, but doesn't have a
+copy of Windows 8 on it?
 
+I guess there isn't.  So Secure Boot support is only required for
+supporting dual-booting Windows 8, while still retaining the automated
+recovery capabilities (which might well remove the Linux installation
+on the same box).
 
-I have not yet bisected this problem yet; however, I can if requested. Being 
-lazy, I hope that someone already has a patch, or can see the problem by 
-inspection. :)
+Without dual-booting, there is currently no reason whatsoever to
+enable UEFI Secure Boot (or the Microsoft variant).  Not providing a
+signed boot loader forces the user to configure the device in a way
+that ensures long-term supportability and feature stability (i.e.,
+they don't suffer when someone decides to introduce further
+restrictions under CAP_COMPROMISE_KERNEL).
 
-Thanks.
+Unfortuantely, almost all people I talked to *want* secure boot,
+presumably because security is good.  Many of them hate the Microsoft
+key (but wouldn't want to own the key, either), but the proposed
+alternatives, such as distro-specific keys, are impractical.  Do we
+really want systems on which you cannot install Fedora once you have
+installed Debian?
 
-Larry
+> So instead of pleasing microsoft, try to see how we can add real security:
+>
+>  - a distro should sign its own modules AND NOTHING ELSE by default.
+
+I strongly agree with that (but obviously not the wording, *ahem*).
+Actually, we already sign our own kernel modules (and all the software
+we ship) in one way or the other.  Some of us even sign a lot of
+third-party software which we haven't built from source.
+
+>  - before loading any third-party module, you'd better make sure you
+> ask the user for permission. On the console. Not using keys. Nothing
+> like that. Keys will be compromised. Try to limit the damage, but more
+> importantly, let the user be in control.
+
+This needs a trusted input/output path to the user.  Currently, this
+seems difficult to provide once arbitrary userspace code has run as
+root.  Hence the round-trip through the UEFI pre-boot environment.
+
+One thing that would be neat is an assurance that if you boot some
+image over PXE, it doesn't do any harm to your system.  This isn't
+something Microsoft Secure Boot promises at the moment because a
+signed boot loader can easily lead to an initrd which wipes your hard
+disk.  It's really hard to get there, but at least it would be
+something useful.  Similarly, server firmware in a datacenter could
+validate the recovery image before executing.  (Actually, I view boot
+path validation mainly as a server technology—for clients, you just
+save $1 for the known-good, read-only recovery medium.)
