@@ -1,112 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760215Ab3BZJnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 04:43:50 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:59657 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760058Ab3BZJns (ORCPT
+	id S932665Ab3BZJoX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 04:44:23 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:49255 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760187Ab3BZJoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 04:43:48 -0500
-From: chenggang <chenggang.qin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: chenggang.qcg@taobao.com, David Ahern <dsahern@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2 0/4] perf: Make the 'perf top -p $pid' can perceive the new forked threads.
-Date: Tue, 26 Feb 2013 17:41:50 +0800
-Message-Id: <1361871710-6251-5-git-send-email-chenggang.qin@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361871710-6251-1-git-send-email-chenggang.qin@gmail.com>
-References: <1361871710-6251-1-git-send-email-chenggang.qin@gmail.com>
+	Tue, 26 Feb 2013 04:44:18 -0500
+Date: Tue, 26 Feb 2013 09:44:12 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH 05/73] ARM: ux500: Vsmps3 controlled by SysClkReq1
+Message-ID: <20130226094412.GD16685@gmail.com>
+References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
+ <1359978868-28736-6-git-send-email-lee.jones@linaro.org>
+ <20130204193737.GU4720@opensource.wolfsonmicro.com>
+ <CACRpkdYWZOa=bbJYpG7owxVJXxPq5sx7jHmo5UpRe8pmPGYKMQ@mail.gmail.com>
+ <20130205120134.GY4720@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130205120134.GY4720@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: chenggang.qcg@taobao.com
+On Tue, 05 Feb 2013, Mark Brown wrote:
 
-This patch set add a function that make the 'perf top -p $pid' is able to perceive
-the new threads that is forked by target processes. 'perf top{record} -p $pid' can
-perceive the threads are forked before we execute perf, but it cannot perceive the
-new threads are forked after we started perf. This is perf's important defect, because
-the applications who will fork new threads on-the-fly are very much.
-For performance reasons, the event inherit mechanism is forbidden while we use per-task
-counters. Some internal data structures, such as, thread_map, evlist->mmap, evsel->fd,
-evsel->id, evsel->sample_id are implemented as arrays at the initialization phase.
-Their size is fixed, and they cannot be extended or shrinked easily while we want to
-adjust them for new forked threads and exit threads.
+> On Mon, Feb 04, 2013 at 10:21:36PM +0100, Linus Walleij wrote:
+> 
+> > What is needed is some way to model that
+> > electronic relationship into both the regulator
+> > and clock subsystems (Ulf Hansson is working on
+> > the ABx500 clocks as we speak.)
+> 
+> > Maybe the actual place to have it would be
+> > somewhere like drivers/mfd/ab8500-core.c.
+> 
+> > Have you seen similar stuff in other PMICs?
+> 
+> Yes, it's fairly common to at least have hardware enable signals.  If
+> what was going on was actually understood by the driver in some way it
+> might be better but right now...  Especially in a series like this it's
+> really bad to just see loads of patches which boil down to "change the
+> semi-documented magic value" - this just makes the series depressing to
+> read.
 
-So, we have done the following work:
-1) Transformed xyarray to linked list.
-   Implementd the interfaces to extand and shrink a exist xyarray.
-   The xyarray is a 2-dimensional structure. The row is still a array (because the
-   number of CPU is fixed forever), the columns are linked list. 
-2) Transformed evlist->mmap, evsel->fd, evsel->id and evsel->sample_id to list with the
-   new xyarray.
-   Implemented interfaces to expand and shrink these structures.
-   The nodes in these structures can be referenced by some predefined macros, such as
-   FD(cpu, thread), MMAP(cpu, thread), ID(cpu, thread), etc.
-3) Transformed thread_map to linked list.
-   Implemented the interfaces to extand and shrink a exist thread_map.
-4) Added 2 callback functions to top->perf_tool, they are called while the PERF_RECORD_FORK
-   & PERF_RECORD_EXIT events are got.
-   While a PERF_RECORD_FORK event is got, all related data structures are expanded, a new
-   fd and mmap are opened.
-   While a PERF_RECORD_EXIT event is got, all nodes in the related data structures are
-   removed, the fd and mmap are closed.
+Okay, I've just re-read this thread and it appears you're both talking
+about different things.
 
-The linked list is flexible, list_add & list_del can be used easily. Additional, performance
-penalty (especially the CPU utilization) is low.
+Linus is talking about a discussion with Bengt regarding how these
+strange sysclkreq thingies work. When I first read the code they
+appear to be equivalent to GPIO regulators, but in actual fact the
+hardware logic is different on enable/disable. So they probably don't
+belong in regulator code at all.
 
-This function has been already implemented for 'perf top -p $pid' in the patch
-[4/4] of this patch set. Next step, the 'perf record -p $pid' should be modified
-with the same method.
+Where as, Mark is complaining about how the regulators are initialised
+by lots of magic register writes during init. Although, comments are
+inserted for each of the values, they're by no means exhaustive and
+aren't really even helpful if you don't have the uber-s3cr3t design
+specification. What he would like to see is that most of this stuff
+being handled by the framework. Some of this stuff is clearly only
+setting voltages and power-states and the like.
 
-Thanks for David Ahern's suggestion.
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Yanmin Zhang <yanmin.zhang@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
-
-chenggang (4):
-  Transform xyarray to linked list.
-  Transform thread_map to linked list.
-  Transform mmap and other related structures to list with new xyarray.
-  Add fork and exit callback functions into top->perf_tool.
-
- tools/perf/builtin-record.c               |    6 +-
- tools/perf/builtin-stat.c                 |    2 +-
- tools/perf/builtin-top.c                  |  100 ++++++++++++-
- tools/perf/tests/open-syscall-tp-fields.c |    2 +-
- tools/perf/util/event.c                   |   10 +-
- tools/perf/util/evlist.c                  |  171 +++++++++++++++++++---
- tools/perf/util/evlist.h                  |    6 +-
- tools/perf/util/evsel.c                   |   98 +++++++++++--
- tools/perf/util/evsel.h                   |    8 +-
- tools/perf/util/header.c                  |   31 ++--
- tools/perf/util/header.h                  |    3 +-
- tools/perf/util/python.c                  |    2 +-
- tools/perf/util/thread_map.c              |  223 +++++++++++++++++++----------
- tools/perf/util/thread_map.h              |   16 ++-
- tools/perf/util/xyarray.c                 |   85 ++++++++++-
- tools/perf/util/xyarray.h                 |   25 +++-
- 16 files changed, 641 insertions(+), 147 deletions(-)
+I'd certainly be up for taking this on, but I think an in-depth
+knowledge of the AB8500 regulator subsystem would be required.
 
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
