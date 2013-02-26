@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759000Ab3BZEvc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 23:51:32 -0500
-Received: from mail-ia0-f169.google.com ([209.85.210.169]:39454 "EHLO
-	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754288Ab3BZEva (ORCPT
+	id S1759232Ab3BZEzf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 23:55:35 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:46153 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754288Ab3BZEze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 23:51:30 -0500
+	Mon, 25 Feb 2013 23:55:34 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWx=FdQSH_H_PoVxUksY6rFnN6yDfwmK3w8OTbCPLM1+w@mail.gmail.com>
-References: <512B7D10.4060304@tpi.com>
-	<512B8407.2090807@canonical.com>
-	<512BD753.4080001@hp.com>
-	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
-	<CAE9FiQXs3MyUW+hJhupJgL-t9sYmT5GdeStWD2vMjsJG+6qCrQ@mail.gmail.com>
-	<CAE9FiQXHNm+E+PchPsReOykVPNkRrC8ttjDpWWs=njANT+Wf1Q@mail.gmail.com>
-	<CAJErZ53dadbU3oM4Prhi3n_R+Lsbp3TG=FP1=whTK5uPMpj90A@mail.gmail.com>
-	<CAE9FiQWx=FdQSH_H_PoVxUksY6rFnN6yDfwmK3w8OTbCPLM1+w@mail.gmail.com>
-Date: Mon, 25 Feb 2013 23:51:29 -0500
-Message-ID: <CAJErZ53AWMP688OV+J0qiJii2y=qzEjLq=WshAQbMhEdyx33cQ@mail.gmail.com>
-Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
-From: Martin Bligh <mbligh@mbligh.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Don Morris <don.morris@hp.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
+In-Reply-To: <20130226044521.GC12906@thunk.org>
+References: <20130226005955.GA19686@kroah.com>
+	<20130226023332.GA29282@srcf.ucam.org>
+	<20130226030249.GB23834@kroah.com>
+	<20130226031338.GA29784@srcf.ucam.org>
+	<20130226033156.GA24999@kroah.com>
+	<20130226033803.GA30285@srcf.ucam.org>
+	<20130226035416.GA1128@kroah.com>
+	<20130226040456.GA30717@srcf.ucam.org>
+	<20130226041324.GA7241@kroah.com>
+	<CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com>
+	<20130226044521.GC12906@thunk.org>
+Date: Tue, 26 Feb 2013 14:55:32 +1000
+Message-ID: <CAPM=9tygczL81L_t=uJs3bAae_h96iGkxWK-qYfcWkcCzOjsXw@mail.gmail.com>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+From: Dave Airlie <airlied@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Dave Airlie <airlied@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        a.p.zijlstra@chello.nl, jarkko.sakkinen@intel.com,
-        tangchen@cn.fujitsu.com
+        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Do you mean we can remove numaq x86 32bit code now?
+On Tue, Feb 26, 2013 at 2:45 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Tue, Feb 26, 2013 at 02:25:55PM +1000, Dave Airlie wrote:
+>>
+>> Its a simple argument, MS can revoke our keys for whatever reason,
+>> reducing the surface area of reasons for them to do so seems like a
+>> good idea. Unless someone can read the mind of the MS guy that
+>> arbitrarily decides this in 5 years time, or has some sort of signed
+>> agreement, I tend towards protecting the users from having their Linux
+>> not work anymore, because we were scared of a PE loader in the kernel.
+>
+> If Microsoft will revoke keys for whatever reason they want, without
+> any regard to the potential PR and legal consequences to Microsoft,
+> there's absolutely **nothing** you can do, short of choosing to use
+> more open hardware (for example, like the Chromebook Pixel).
+>
+> If you're that terrified of the completely arbitrary and capricious
+> Microsoft guy having us by the short hairs, why aid and abet Microsoft
+> control-freak model?
+>
 
-Wouldn't bother me at all. The machine is from 1995, end of life c. 2000?
-Was useful in the early days of getting NUMA up and running on Linux,
-but is now too old to be a museum piece, really.
+No what I said if you read it, was nobody knows, you don't, Greg
+doesn't, Matthew doesn't.
 
-M.
+That's the problem you are all arguing like you know shit that none of you know.
+
+So you all have opinions on what Microsoft would do if faced with the
+compromise Matthew reports, and really if you think MS are going to
+leave a secureboot bypass via Linux live, then you wonder why they are
+expending all this money on secureboot at all, since the first person
+to write a Linux based exploit is safe because of a PR backlash? At
+this point we'd be best served by writing the PoC exploit I suppose
+and then seeing what MS do up front!
+
+So it would be nice if LF could undertake to go and talk to Microsoft,
+and get vague opinions turned into something real.
+
+Ted you might be at liberty to get a chromebook pixel from google, but
+that isn't going to help the other X% of users who have a PC they want
+to use Linux on, and maybe boot Windows to do their taxes.
+
+Dave.
