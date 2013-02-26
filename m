@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759941Ab3BZSZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 13:25:10 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:63034 "EHLO
+	id S1759918Ab3BZSX7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 13:23:59 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:57560 "EHLO
 	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759923Ab3BZSYA (ORCPT
+	with ESMTP id S1759814Ab3BZSXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 13:24:00 -0500
+	Tue, 26 Feb 2013 13:23:55 -0500
 X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Tue, 26 Feb 2013 12:23:57 -0600
+  Tue, 26 Feb 2013 12:23:53 -0600
 X-Originating-IP: 108.223.40.66
 From: Guenter Roeck <linux@roeck-us.net>
 To: Jean Delvare <khali@linux-fr.org>
 Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v5 11/12] hwmon: (nct6775) Detect and report additional temperature sources
-Date: Tue, 26 Feb 2013 10:23:39 -0800
-Message-Id: <1361903020-18526-12-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v5 06/12] hwmon: (nct6775) Add support for fan debounce module parameter
+Date: Tue, 26 Feb 2013 10:23:34 -0800
+Message-Id: <1361903020-18526-7-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
 In-Reply-To: <1361903020-18526-1-git-send-email-linux@roeck-us.net>
 References: <1361903020-18526-1-git-send-email-linux@roeck-us.net>
@@ -24,65 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scan all temperature sources used for fan control and report if additional
-monitoring registers are available.
+If set, fan debounce is enabled when loading the driver.
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/hwmon/nct6775.c |   33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
+ drivers/hwmon/nct6775.c |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
 diff --git a/drivers/hwmon/nct6775.c b/drivers/hwmon/nct6775.c
-index 50e38c6..a4b076a 100644
+index 828ed47..ac8be97 100644
 --- a/drivers/hwmon/nct6775.c
 +++ b/drivers/hwmon/nct6775.c
-@@ -3361,6 +3361,32 @@ nct6775_check_fan_inputs(const struct nct6775_sio_data *sio_data,
- 	return 0;
- }
+@@ -72,6 +72,10 @@ static unsigned short force_id;
+ module_param(force_id, ushort, 0);
+ MODULE_PARM_DESC(force_id, "Override the detected device ID");
  
-+static void add_temp_sensors(struct nct6775_data *data, const u16 *regp,
-+			     int *available, int *mask)
-+{
-+	int i;
-+	u8 src;
++static unsigned short fan_debounce;
++module_param(fan_debounce, ushort, 0);
++MODULE_PARM_DESC(fan_debounce, "Enable debouncing for fan RPM signal");
 +
-+	for (i = 0; i < data->pwm_num && *available; i++) {
-+		int index;
+ #define DRVNAME "nct6775"
+ 
+ /*
+@@ -183,6 +187,8 @@ static const u16 NCT6775_REG_IN[] = {
+ #define NCT6775_REG_FANDIV1		0x506
+ #define NCT6775_REG_FANDIV2		0x507
+ 
++#define NCT6775_REG_CR_FAN_DEBOUNCE	0xf0
 +
-+		if (!regp[i])
-+			continue;
-+		src = nct6775_read_value(data, regp[i]);
-+		src &= 0x1f;
-+		if (!src || (*mask & (1 << src)))
-+			continue;
-+		if (src >= data->temp_label_num ||
-+		    !strlen(data->temp_label[src]))
-+			continue;
+ static const u16 NCT6775_REG_ALARM[NUM_REG_ALARM] = { 0x459, 0x45A, 0x45B };
+ 
+ /* 0..15 voltages, 16..23 fans, 24..31 temperatures */
+@@ -2107,6 +2113,28 @@ static int nct6775_probe(struct platform_device *pdev)
+ 	 */
+ 	superio_select(sio_data->sioreg, NCT6775_LD_VID);
+ 	data->vid = superio_inb(sio_data->sioreg, 0xe3);
 +
-+		index = __ffs(*available);
-+		nct6775_write_value(data, data->REG_TEMP_SOURCE[index], src);
-+		*available &= ~(1 << index);
-+		*mask |= 1 << src;
++	if (fan_debounce) {
++		u8 tmp;
++
++		superio_select(sio_data->sioreg, NCT6775_LD_HWM);
++		tmp = superio_inb(sio_data->sioreg,
++				  NCT6775_REG_CR_FAN_DEBOUNCE);
++		switch (data->kind) {
++		case nct6775:
++			tmp |= 0x1e;
++			break;
++		case nct6776:
++		case nct6779:
++			tmp |= 0x3e;
++			break;
++		}
++		superio_outb(sio_data->sioreg, NCT6775_REG_CR_FAN_DEBOUNCE,
++			     tmp);
++		dev_info(&pdev->dev, "Enabled fan debounce for chip %s\n",
++			 data->name);
 +	}
-+}
 +
- static int nct6775_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
-@@ -3611,6 +3637,13 @@ static int nct6775_probe(struct platform_device *pdev)
- 		mask |= 1 << src;
- 	}
+ 	superio_exit(sio_data->sioreg);
  
-+	/*
-+	 * Now find unmonitored temperature registers and enable monitoring
-+	 * if additional monitoring registers are available.
-+	 */
-+	add_temp_sensors(data, data->REG_TEMP_SEL, &available, &mask);
-+	add_temp_sensors(data, data->REG_WEIGHT_TEMP_SEL, &available, &mask);
-+
- 	mask = 0;
- 	s = NUM_TEMP_FIXED;	/* First dynamic temperature attribute */
- 	for (i = 0; i < num_reg_temp; i++) {
+ 	err = device_create_file(dev, &dev_attr_cpu0_vid);
 -- 
 1.7.9.7
 
