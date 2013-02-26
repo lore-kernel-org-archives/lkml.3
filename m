@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab3BZWfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 17:35:37 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:44327 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab3BZWff convert rfc822-to-8bit (ORCPT
+	id S1758088Ab3BZWgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 17:36:08 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52501 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828Ab3BZWgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 17:35:35 -0500
+	Tue, 26 Feb 2013 17:36:07 -0500
+Date: Tue, 26 Feb 2013 22:35:55 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Peter Jones <pjones@redhat.com>
+Cc: Florian Weimer <fw@deneb.enyo.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Message-ID: <20130226223555.GK4503@ZenIV.linux.org.uk>
+References: <20130226031338.GA29784@srcf.ucam.org>
+ <20130226032508.GA12906@thunk.org>
+ <20130226032839.GA30164@srcf.ucam.org>
+ <CA+55aFyVShz4T65VJ-1=V=OGwNNriyYf-aaomhDSMHOU7ZZqbA@mail.gmail.com>
+ <20130226034250.GB30285@srcf.ucam.org>
+ <CA+55aFzn4KGKtn6cXN-jh9jgF+U1zJUnCmk6tRxmW8BZP7_Jnw@mail.gmail.com>
+ <20130226034842.GD30285@srcf.ucam.org>
+ <CA+55aFyAfgqmxGnh+WpZjgR5qKd+CLr1S7gKnXihqJXB346DqQ@mail.gmail.com>
+ <87bob6pxtl.fsf@mid.deneb.enyo.de>
+ <20130226214052.GJ32160@fenchurch.internal.datastacks.com>
 MIME-Version: 1.0
-In-Reply-To: <20130226210232.GA19510@logfs.org>
-References: <512606DF.5050706@redhat.com> <4FA345DA4F4AE44899BD2B03EEEC2FA9235D998C@SACEXCMBX04-PRD.hq.netapp.com>
- <512635D2.4090207@redhat.com> <51267CEB.8070805@redhat.com>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9235DAA99@SACEXCMBX04-PRD.hq.netapp.com>
- <20130221222449.GY22221@lenny.home.zabbo.net> <512BD44C.40907@amacapital.net> <20130226210232.GA19510@logfs.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 26 Feb 2013 14:35:14 -0800
-Message-ID: <CALCETrWiEphKS71sKwukTjAg802sezQCZ4h2sT9JcJBJg5=gHA@mail.gmail.com>
-Subject: Re: New copyfile system call - discuss before LSF?
-To: =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>
-Cc: Zach Brown <zab@redhat.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chris L. Mason" <clmason@fusionio.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Alexander Viro <aviro@redhat.com>, "Martin K. Petersen" <mkp@mkp.net>,
-        Hannes Reinecke <hare@suse.de>, Joel Becker <jlbec@evilplan.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130226214052.GJ32160@fenchurch.internal.datastacks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 1:02 PM, Jörn Engel <joern@logfs.org> wrote:
-> On Mon, 25 February 2013 13:14:52 -0800, Andy Lutomirski wrote:
->>
->> I thought the first thing people would ask for is to atomically create a
->> new file and copy the old file into it (at least on local file systems).
->>  The idea is that nothing should see an empty destination file, either
->> by race or by crash.  (This feature would perhaps be described as a
->> pony, but it should be implementable.)
->
-> Having already wasted many week trying to implement your pony, I would
-> consider it about as possible as winning the lottery three times in a
-> row.  It clearly is in theory and yet,...
->
-> If you take a filesystem like ext[34] you are out of luck.  In those
-> filesystems it may not even be theoretically possible to get the
-> cleanup right for pathological cases.  And if you ignore pathological
-> cases and depend on userspace to do the cleanup for you, you have to
-> do ABI extentions that I don't want to mention with Al on Cc:.  My
-> personal notebook ran such a kernel for several years until hardware
-> improved to a point that I no longer wanted to forward-port the
-> patches.  It worked but it was far from pretty.
->
-> If you have a filesystem where you can simply bumb a reference count
-> to copy the file content, implementation is fairly straightforward.
-> But having a system call that is effectively limited to btrfs means
-> pretty much noone will use it - beside the people looking for
-> potential kernel exploits.
+On Tue, Feb 26, 2013 at 04:40:53PM -0500, Peter Jones wrote:
 
-:)
+> It prevents a form of malware which exists in the wild.  I think that's
+> enough reason to want *something*, though SB isn't necessarily what
+> we'd have dreamed of.  Nevertheless, SB is what we've got, and as such
+> is why we've been working on how to use it meaningfully.
 
->
-> So my vote clearly goes to some variant of sendfile or splice.
+*snerk*
 
-Don't get me wrong -- the vpsendfile (or whatever it's called) idea
-sounds extremely useful too.
-
---Andy
+"We need to do something.  This is something.  Let's do it"
