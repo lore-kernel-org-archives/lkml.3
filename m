@@ -1,136 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759969Ab3BZBhk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 20:37:40 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:54990 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab3BZBhi (ORCPT
+	id S1759638Ab3BZBie (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 20:38:34 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:34129 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab3BZBid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 20:37:38 -0500
-Subject: [GIT PULL] target updates for v3.9-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Asias He <asias@redhat.com>,
-        Roland Dreier <roland@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Feb 2013 17:37:29 -0800
-Message-ID: <1361842649.16778.67.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Feb 2013 20:38:33 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH] idr: Don't WARN in idr_find
+Date: Mon, 25 Feb 2013 20:37:12 -0500
+Message-Id: <1361842632-29689-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Since idr is used for syscall apis (to associate 'handles' with
+internal structures), don't WARN with invalid input.
 
-Here are the target pending updates for v3.9-rc1 code.  Please go ahead
-and pull from:
+For example, POSIX timers are identified by timer_t id. These
+ids are idr values. If userspace passes a representable timer_t id
+value (eg, id < 0) but which was not previous allocated (since the
+current idr api does not return negative idr values), then the
+syscall properly returns an error; a WARN is unnecessary and
+undesirable.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
+[  188.957053] WARNING: at /home/peter/src/kernels/next/lib/idr.c:669 idr_find_slowpath+0x151/0x170()
+[  188.957055] Hardware name: Bochs
+[  188.957105] Modules linked in: nfnetlink scsi_transport_iscsi can_raw ipt_ULOG
+<...snip...>
+[  188.957109] Pid: 2682, comm: trinity-child2 Not tainted 3.9.0-next-20130220+ldsem-xeon+lockdep #20130220+ldsem
+[  188.957112] Call Trace:
+[  188.957124]  [<ffffffff8105ecdf>] warn_slowpath_common+0x7f/0xc0
+[  188.957126]  [<ffffffff8105ed3a>] warn_slowpath_null+0x1a/0x20
+[  188.957129]  [<ffffffff813a8691>] idr_find_slowpath+0x151/0x170
+[  188.957139]  [<ffffffff8108d787>] __lock_timer+0x97/0x2b0
+[  188.957142]  [<ffffffff8108d6f5>] ? __lock_timer+0x5/0x2b0
+[  188.957145]  [<ffffffff8108e0b7>] sys_timer_getoverrun+0x17/0x50
+[  188.957152]  [<ffffffff817aeb99>] system_call_fastpath+0x16/0x1b
+[  188.957156] ---[ end trace 25fe46b21eb9d42d ]---
 
-The highlights in this series include:
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ lib/idr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-- Improve sg_table lookup scalability in RAMDISK_MCP (martin)
-- Add device attribute to expose config name for INQUIRY model (tregaron)
-- Convert tcm_vhost to use lock-less list for cmd completion (asias)
-- Add tcm_vhost support for multiple target's per endpoint (asias)
-- Add tcm_vhost support for multiple queues per vhost (asias)
-- Add missing mapped_lun bounds checking during make_mappedlun
-  setup in generic fabric configfs code (jan engelhardt + nab)
-- Enforce individual iscsi-target network portal export once per
-  TargetName endpoint (grover + nab)
-- Add WRITE_SAME w/ UNMAP=0 emulation to FILEIO backend (nab)
-
-Things have been mostly quiet this round, with majority of the work
-being done on the iser-target WIP driver + associated iscsi-target
-refactoring patches currently in flight for v3.10 code.
-
-At this point there is one patch series left outstanding from Asias to
-add support for UNMAP + WRITE_SAME w/ UNMAP=1 to FILEIO awaiting
-feedback from hch & Co, that will likely be included in a post v3.9-rc1
-PULL request if there are no objections.
-
-Also, there is a regression bug recently reported off-list that seems to
-be effecting v3.5 and v3.6 kernels with MSFT iSCSI initiators that is
-still being tracked down.  No word if this effects >= v3.7 just yet, but
-if so there will likely another PULL request coming your way..
-
-Thank you,
-
---nab
-
-Asias He (6):
-  tcm_vhost: Use llist for cmd completion list
-  tcm_vhost: Introduce iov_num_pages
-  tcm_vhost: Use iov_num_pages to calculate sgl_count
-  tcm_vhost: Optimize gup in vhost_scsi_map_to_sgl
-  tcm_vhost: Multi-target support
-  tcm_vhost: Multi-queue support
-
-Dan Carpenter (4):
-  target: change sprintf to snprintf in transport_dump_vpd_ident
-  iscsi-target: make some temporary buffers larger
-  target: don't always say "ipv6" as address type
-  target: don't truncate the fail intr address
-
-Hannes Reinecke (2):
-  target: Export SPC inquiry emulation
-  target_core_rd: break out unterminated loop during copy
-
-Martin Svec (1):
-  target/rd: improve sg_table lookup scalability
-
-Nicholas Bellinger (6):
-  target/iblock: Use backend REQ_FLUSH hint for WriteCacheEnabled
-    status
-  target: Fix lookup of dynamic NodeACLs during cached demo-mode
-    operation
-  target: Add missing mapped_lun bounds checking during make_mappedlun
-    setup
-  iscsi-target: Refactor iscsit_get_np sockaddr matching into
-    iscsit_check_np_match
-  iscsi-target: Enforce individual network portal export once per
-    TargetName
-  target/file: Add WRITE_SAME w/ UNMAP=0 emulation support
-
-Roland Dreier (6):
-  target: Remove useless if statement
-  target: Remove never-used TMR_FABRIC_TMR enum value
-  target: Fix sense data for out-of-bounds IO operations
-  target: Fix error checking for UNMAP commands
-  target: Fix parameter list length checking in MODE SELECT
-  target: Rename spc_get_write_same_sectors ->
-    sbc_get_write_same_sectors
-
-Tregaron Bayly (1):
-  target: Add device attribute to expose config_item_name for INQUIRY
-    model
-
- drivers/target/iscsi/iscsi_target.c            |   65 ++++---
- drivers/target/iscsi/iscsi_target.h            |    2 +
- drivers/target/iscsi/iscsi_target_parameters.c |    8 +-
- drivers/target/iscsi/iscsi_target_stat.c       |   25 ++-
- drivers/target/iscsi/iscsi_target_tpg.c        |   39 ++++
- drivers/target/target_core_configfs.c          |    4 +
- drivers/target/target_core_device.c            |   58 ++++-
- drivers/target/target_core_fabric_configfs.c   |   12 +-
- drivers/target/target_core_file.c              |  114 ++++++++++
- drivers/target/target_core_iblock.c            |   46 +++-
- drivers/target/target_core_internal.h          |    3 +-
- drivers/target/target_core_rd.c                |   18 ++-
- drivers/target/target_core_sbc.c               |    8 +-
- drivers/target/target_core_spc.c               |   42 +++-
- drivers/target/target_core_tmr.c               |   12 -
- drivers/target/target_core_tpg.c               |   10 +-
- drivers/target/target_core_transport.c         |   19 ++-
- drivers/vhost/tcm_vhost.c                      |  287 +++++++++++++-----------
- drivers/vhost/tcm_vhost.h                      |    8 +-
- include/target/target_core_backend.h           |    5 +-
- include/target/target_core_base.h              |    7 +-
- 21 files changed, 563 insertions(+), 229 deletions(-)
-
+diff --git a/lib/idr.c b/lib/idr.c
+index 1a30272..8e9b1ac 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -666,7 +666,7 @@ void *idr_find_slowpath(struct idr *idp, int id)
+ 	int n;
+ 	struct idr_layer *p;
+ 
+-	if (WARN_ON_ONCE(id < 0))
++	if (id < 0)
+ 		return NULL;
+ 
+ 	p = rcu_dereference_raw(idp->top);
+-- 
+1.8.1.2
 
