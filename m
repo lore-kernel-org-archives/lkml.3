@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214Ab3B0Alt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:41:49 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:24094 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933097Ab3B0Alq (ORCPT
+	id S933284Ab3B0AmE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:42:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42288 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933091Ab3BZX6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:41:46 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
-        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
-        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH Resend v5 03/16] spi/spi-atmel: add support transfer on CS1,2,3, not only on CS0
-Date: Wed, 27 Feb 2013 08:39:34 +0800
-Message-ID: <1361925574-12023-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 26 Feb 2013 18:58:35 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Vinod Koul <vinod.koul@linux.intel.com>
+Subject: [ 140/150] dma: sh: Dont use ENODEV for failing slave lookup
+Date: Tue, 26 Feb 2013 15:56:37 -0800
+Message-Id: <20130226235538.966994059@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
+References: <20130226235523.930663721@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: spi-devel-general@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
----
- drivers/spi/spi-atmel.c |   25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index a8e091b..9c8f2d5 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -256,11 +256,6 @@ static bool atmel_spi_is_v2(struct atmel_spi *as)
-  * Master on Chip Select 0.")  No workaround exists for that ... so for
-  * nCS0 on that chip, we (a) don't use the GPIO, (b) can't support CS_HIGH,
-  * and (c) will trigger that first erratum in some cases.
-- *
-- * TODO: Test if the atmel_spi_is_v2() branch below works on
-- * AT91RM9200 if we use some other register than CSR0. However, don't
-- * do this unconditionally since AP7000 has an errata where the BITS
-- * field in CSR0 overrides all other CSRs.
-  */
+------------------
+
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+
+commit 7c1119bdd650fa58dad8157bc75c5fcf6ed97843 upstream.
+
+If dmaengine driver's .device_alloc_chan_resources() method returns -ENODEV,
+dma_request_channel() will decide, that the driver has been removed and will
+remove the device from its list. To prevent this use ENXIO if a slave lookup
+fails.
+
+Reported-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/dma/sh/shdma.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/dma/sh/shdma.c
++++ b/drivers/dma/sh/shdma.c
+@@ -326,7 +326,7 @@ static int sh_dmae_set_slave(struct shdm
+ 						    shdma_chan);
+ 	const struct sh_dmae_slave_config *cfg = dmae_find_slave(sh_chan, slave_id);
+ 	if (!cfg)
+-		return -ENODEV;
++		return -ENXIO;
  
- static void cs_activate(struct atmel_spi *as, struct spi_device *spi)
-@@ -270,18 +265,22 @@ static void cs_activate(struct atmel_spi *as, struct spi_device *spi)
- 	u32 mr;
- 
- 	if (atmel_spi_is_v2(as)) {
--		/*
--		 * Always use CSR0. This ensures that the clock
--		 * switches to the correct idle polarity before we
--		 * toggle the CS.
-+		spi_writel(as, CSR0 + 4 * spi->chip_select, asd->csr);
-+		/* For the low SPI version, there is a issue that PDC transfer
-+		 * on CS1,2,3 needs SPI_CSR0.BITS config as SPI_CSR1,2,3.BITS
- 		 */
- 		spi_writel(as, CSR0, asd->csr);
- 		if (as->caps.has_wdrbt) {
--			spi_writel(as, MR, SPI_BF(PCS, 0x0e) | SPI_BIT(WDRBT)
--				| SPI_BIT(MODFDIS) | SPI_BIT(MSTR));
-+			spi_writel(as, MR,
-+					SPI_BF(PCS, ~(0x01 << spi->chip_select))
-+					| SPI_BIT(WDRBT)
-+					| SPI_BIT(MODFDIS)
-+					| SPI_BIT(MSTR));
- 		} else {
--			spi_writel(as, MR, SPI_BF(PCS, 0x0e) | SPI_BIT(MODFDIS)
--				| SPI_BIT(MSTR));
-+			spi_writel(as, MR,
-+					SPI_BF(PCS, ~(0x01 << spi->chip_select))
-+					| SPI_BIT(MODFDIS)
-+					| SPI_BIT(MSTR));
- 		}
- 		mr = spi_readl(as, MR);
- 		gpio_set_value(asd->npcs_pin, active);
--- 
-1.7.9.5
+ 	if (!try)
+ 		sh_chan->config = cfg;
+
 
