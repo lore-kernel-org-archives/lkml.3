@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759874Ab3BZW5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 17:57:04 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:33229 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754265Ab3BZW5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 17:57:01 -0500
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-To: <gregkh@linuxfoundation.org>
-CC: <devel@driverdev.osuosl.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: [PATCH 08/15] staging: omap-thermal: update feature bitfield for OMAP54xx
-Date: Tue, 26 Feb 2013 18:53:31 -0400
-Message-ID: <1361919218-9788-9-git-send-email-eduardo.valentin@ti.com>
-X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
-In-Reply-To: <1361919218-9788-1-git-send-email-eduardo.valentin@ti.com>
-References: <1361919218-9788-1-git-send-email-eduardo.valentin@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1759891Ab3BZW5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 17:57:07 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37771 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754265Ab3BZW5F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 17:57:05 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
+Cc: konrad.wilk@oracle.com, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: [PATCH] mm/x86: Flush lazy MMU when DEBUG_PAGEALLOC is set
+Date: Tue, 26 Feb 2013 17:56:10 -0500
+Message-Id: <1361919370-18058-1-git-send-email-boris.ostrovsky@oracle.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes from OMAP54xx the features:
-. CLK_CTRL
-. COUNTER
-. MODE_CONFIG
+When CONFIG_DEBUG_PAGEALLOC is set page table updates made by
+kernel_map_pages() are not made visible (via TLB flush) immediately if lazy
+MMU is on. In environments that support lazy MMU (e.g. Xen) this may lead to
+fatal page faults, for example, when zap_pte_range() needs to allocate pages
+in __tlb_remove_page() -> tlb_next_batch().
 
-Because these features are not present in OMAP54xx ES2.0
-
-Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 ---
- drivers/staging/omap-thermal/omap5-thermal.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ arch/x86/mm/pageattr.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/staging/omap-thermal/omap5-thermal.c b/drivers/staging/omap-thermal/omap5-thermal.c
-index c8c3e6e..6306360 100644
---- a/drivers/staging/omap-thermal/omap5-thermal.c
-+++ b/drivers/staging/omap-thermal/omap5-thermal.c
-@@ -319,10 +319,7 @@ omap5430_adc_to_temp[
- /* TODO : Need to update the slope/constant for ES2.0 silicon */
- const struct omap_bandgap_data omap5430_data = {
- 	.features = OMAP_BANDGAP_FEATURE_TSHUT_CONFIG |
--			OMAP_BANDGAP_FEATURE_TALERT |
--			OMAP_BANDGAP_FEATURE_MODE_CONFIG |
--			OMAP_BANDGAP_FEATURE_COUNTER |
--			OMAP_BANDGAP_FEATURE_CLK_CTRL,
-+			OMAP_BANDGAP_FEATURE_TALERT,
- 	.fclock_name = "l3instr_ts_gclk_div",
- 	.div_ck_name = "l3instr_ts_gclk_div",
- 	.conv_table = omap5430_adc_to_temp,
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index ca1f1c2..7b3216e 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -1369,6 +1369,8 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
+ 	 * but that can deadlock->flush only current cpu:
+ 	 */
+ 	__flush_tlb_all();
++
++	arch_flush_lazy_mmu_mode();
+ }
+ 
+ #ifdef CONFIG_HIBERNATION
 -- 
-1.7.7.1.488.ge8e1c
+1.8.1.2
 
