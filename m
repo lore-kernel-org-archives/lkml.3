@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759733Ab3BZQyS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 11:54:18 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:38184 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755188Ab3BZQyR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 11:54:17 -0500
-Date: Tue, 26 Feb 2013 08:39:11 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+	id S932599Ab3BZQzM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 11:55:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11449 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932242Ab3BZQzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 11:55:10 -0500
+Date: Tue, 26 Feb 2013 11:54:51 -0500
+From: Peter Jones <pjones@redhat.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Dave Airlie <airlied@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/2] irq: Cleanup context state transitions in irq_exit()
-Message-ID: <20130226163911.GA3309@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1361496971-16939-1-git-send-email-fweisbec@gmail.com>
- <1361496971-16939-3-git-send-email-fweisbec@gmail.com>
- <alpine.LFD.2.02.1302221528470.22263@ionos>
- <20130222150444.GD18149@somewhere.redhat.com>
- <alpine.LFD.2.02.1302221605520.22263@ionos>
- <CA+55aFxOreKQ-uzfMtXEb6XH4D8By2i=qOxfDLJnchSYsa34PQ@mail.gmail.com>
- <alpine.LFD.2.02.1302261308550.22263@ionos>
- <CAFTL4hyYRO3MGBy9SgCvB+jhBTtW=RH3Pb4cXGpYMQJfCa3M5g@mail.gmail.com>
- <alpine.LFD.2.02.1302261614060.22263@ionos>
+        Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Message-ID: <20130226165451.GE32160@fenchurch.internal.datastacks.com>
+References: <20130226023332.GA29282@srcf.ucam.org>
+ <20130226030249.GB23834@kroah.com>
+ <20130226031338.GA29784@srcf.ucam.org>
+ <20130226033156.GA24999@kroah.com>
+ <20130226033803.GA30285@srcf.ucam.org>
+ <20130226035416.GA1128@kroah.com>
+ <20130226040456.GA30717@srcf.ucam.org>
+ <20130226041324.GA7241@kroah.com>
+ <CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com>
+ <20130226044521.GC12906@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1302261614060.22263@ionos>
+In-Reply-To: <20130226044521.GC12906@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022616-7282-0000-0000-000014A0AC83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 04:14:43PM +0100, Thomas Gleixner wrote:
-> 
-> On Tue, 26 Feb 2013, Frederic Weisbecker wrote:
-> 
-> > 2013/2/26 Thomas Gleixner <tglx@linutronix.de>:
-> > > On Fri, 22 Feb 2013, Linus Torvalds wrote:
-> > >> On Fri, Feb 22, 2013 at 7:06 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > >> >>
-> > >> >> I prefer to let you guys have the final word on this patch. Whether you
-> > >> >> apply it or not, I fear I'll never be entirely happy either way :)
-> > >> >> That's the sad fate of dealing with circular dependencies...
-> > >> >
-> > >> > plus the butt ugly softirq semantics or the lack thereof ...
-> > >>
-> > >> The softirq semantics are perfectly fine. Don't blame softirq for the
-> > >> fact that irq_exit() has had shit-for-brains for a long time.
-> > >>
-> > >> Just move the whole "invoke_softirq()" thing down to *after* the
-> > >> tick_nohz_irq_exit() stuff.
-> > >
-> > > We can't move tick_nohz_irq_exit() before invoke_softirq() simply
-> > > because we need to take the timers into account for NOHZ and those can
-> > > change when the softirq code runs.
-> > >
-> > > So no, we need an extra check after invoke_softirq() and the same is
-> > > true for RCU.
+On Mon, Feb 25, 2013 at 11:45:21PM -0500, Theodore Ts'o wrote:
+> On Tue, Feb 26, 2013 at 02:25:55PM +1000, Dave Airlie wrote:
 > > 
-> > And what do you think about Linus's idea to move tick_nohz_irq_exit()
-> > to do_softirq()?
-> > This sounds feasible and a right place to do this, I hope that won't
-> > uglify do_softirq() though.
-> > I can try something.
+> > Its a simple argument, MS can revoke our keys for whatever reason,
+> > reducing the surface area of reasons for them to do so seems like a
+> > good idea. Unless someone can read the mind of the MS guy that
+> > arbitrarily decides this in 5 years time, or has some sort of signed
+> > agreement, I tend towards protecting the users from having their Linux
+> > not work anymore, because we were scared of a PE loader in the kernel.
 > 
-> Yeah, looks doable. the rcu stuff needs to go there as well, right?
+> If Microsoft will revoke keys for whatever reason they want, without
+> any regard to the potential PR and legal consequences to Microsoft,
+> there's absolutely **nothing** you can do, short of choosing to use
+> more open hardware (for example, like the Chromebook Pixel).
 
-If it does, it needs to do so in such a way that rcu_irq_enter() and
-rcu_irq_exit() nest properly.  One area of concern is the force_irqthreads
-case, skips calling do_softirq().  Another area of concern is the
-__ARCH_IRQ_EXIT_IRQS_DISABLED case, which calls __do_softirq() rather
-than do_softirq().
+No, no, no.  Quit saying nobody knows.  We've got a pretty good idea -
+we've got a contract with them, and it says they provide the signing
+service, and under circumstances where the thing being signed is found
+to enable malware that circumvents Secure Boot, we'll fix it so it can't
+be, and we've got a certain amount of time to do so, and processes for
+working with them, and then at that time blacklists will be issued.
+This is not the precise language from that contract, and I'm not going to
+go into specifics here.
 
-Or am I missing some adjustment that is to be made when moving rcu_irq_exit()
-to do_softirq()?
+So in our eyes, we've got a choice between excluding unsigned modules from
+the start, or waiting until there's a very quickly approaching deadline.
+Obviously, for the distributions that Matthew, David, and I work on,
+we've chosen protecting them from the start, and some other distributions
+have chosen differently.  One might guess that those who have chosen not
+to do so are expecting that we'll have come up with a solution before their
+deadline day happens.
 
-							Thanx, Paul
+So that's where we're coming from, in terms of requiring signatures on
+modules at all.  We're also in a position where some of our customers and
+hardware partners see a need to load binary-only modules, and we don't want
+any part in signing or distributing those, for a variety of reasons.  So
+we're looking for a mechanism to allow that, and this is what we've come
+up with as a technical solution.
 
+Would I like to see the user in control?  Yes, that's why I've put time
+and effort into toolchains for users doing their own signing from SB on
+down.  I completely agree that any degree to which users can be
+convinced to manage their security would be a good thing.  But I don't
+think I can convince all that many of my users to do so, and I think a
+lot of them are still going to see a need for loading modules like this.
+
+> If you're that terrified of the completely arbitrary and capricious
+> Microsoft guy having us by the short hairs, why aid and abet Microsoft
+> control-freak model?
+
+That description entirely misrepresents our concern.
+
+-- 
+        Peter
