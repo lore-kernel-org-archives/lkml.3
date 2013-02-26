@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760108Ab3B0BNf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:13:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41834 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760075Ab3BZX5W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760071Ab3BZX5W (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Feb 2013 18:57:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41755 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759874Ab3BZX5J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 18:57:09 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org,
-        paul.gortmaker@windriver.com, davej@redhat.com, keescook@chromium.org,
-        ebiederm@xmission.com
-Subject: [ 035/150] futex: Revert "futex: Mark get_robust_list as deprecated"
-Date: Tue, 26 Feb 2013 15:54:52 -0800
-Message-Id: <20130226235527.833967337@linuxfoundation.org>
+        Wei Liu <wei.liu2@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 026/150] xen: close evtchn port if binding to irq fails
+Date: Tue, 26 Feb 2013 15:54:43 -0800
+Message-Id: <20130226235526.941905590@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -30,52 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Wei Liu <wei.liu2@citrix.com>
 
-commit fe2b05f7ca9f906be61dced5489f63b8b4d7c770 upstream.
+commit e7e44e444876478d50630f57b0c31d29f6725020 upstream.
 
-This reverts commit ec0c4274e33c0373e476b73e01995c53128f1257.
-
-get_robust_list() is in use and a removal would break existing user
-space. With the permission checks in place it's not longer a security
-hole. Remove the deprecation warnings.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: akpm@linux-foundation.org
-Cc: paul.gortmaker@windriver.com
-Cc: davej@redhat.com
-Cc: keescook@chromium.org
-Cc: ebiederm@xmission.com
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/futex.c        |    2 --
- kernel/futex_compat.c |    2 --
- 2 files changed, 4 deletions(-)
+ drivers/xen/evtchn.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2471,8 +2471,6 @@ SYSCALL_DEFINE3(get_robust_list, int, pi
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
+--- a/drivers/xen/evtchn.c
++++ b/drivers/xen/evtchn.c
+@@ -269,6 +269,14 @@ static int evtchn_bind_to_user(struct pe
+ 				       u->name, (void *)(unsigned long)port);
+ 	if (rc >= 0)
+ 		rc = evtchn_make_refcounted(port);
++	else {
++		/* bind failed, should close the port now */
++		struct evtchn_close close;
++		close.port = port;
++		if (HYPERVISOR_event_channel_op(EVTCHNOP_close, &close) != 0)
++			BUG();
++		set_port_user(port, NULL);
++	}
  
--	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
--
- 	rcu_read_lock();
+ 	return rc;
+ }
+@@ -277,6 +285,8 @@ static void evtchn_unbind_from_user(stru
+ {
+ 	int irq = irq_from_evtchn(port);
  
- 	ret = -ESRCH;
---- a/kernel/futex_compat.c
-+++ b/kernel/futex_compat.c
-@@ -142,8 +142,6 @@ compat_sys_get_robust_list(int pid, comp
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
++	BUG_ON(irq < 0);
++
+ 	unbind_from_irqhandler(irq, (void *)(unsigned long)port);
  
--	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
--
- 	rcu_read_lock();
- 
- 	ret = -ESRCH;
+ 	set_port_user(port, NULL);
 
 
