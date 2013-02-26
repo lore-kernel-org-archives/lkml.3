@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab3BZWGe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 17:06:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18190 "EHLO mx1.redhat.com"
+	id S1754849Ab3BZWIt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 17:08:49 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:56840 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751503Ab3BZWGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 17:06:33 -0500
-Date: Tue, 26 Feb 2013 17:06:19 -0500
-From: Peter Jones <pjones@redhat.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
-        Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Message-ID: <20130226220618.GK32160@fenchurch.internal.datastacks.com>
-References: <20130226030249.GB23834@kroah.com>
- <20130226031338.GA29784@srcf.ucam.org>
- <20130226033156.GA24999@kroah.com>
- <20130226033803.GA30285@srcf.ucam.org>
- <20130226035416.GA1128@kroah.com>
- <20130226040456.GA30717@srcf.ucam.org>
- <20130226041324.GA7241@kroah.com>
- <20130226042338.GA30944@srcf.ucam.org>
- <CA+55aFx9HkRGfMx6pfR2xsTf0vof_yyrT4ks5TzMKoEpS7w=5g@mail.gmail.com>
- <CAMuHMdV4DbX_i6Ye5v7ObR0no-eDhBzqYrsqVtR5PAXQTVSmVQ@mail.gmail.com>
+	id S1751644Ab3BZWIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 17:08:48 -0500
+Date: Tue, 26 Feb 2013 09:24:41 -0800
+From: Matt Helsley <matthltc@linux.vnet.ibm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Evgeniy Polyakov <zbr@ioremap.net>,
+        netdev@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>
+Subject: Re: [PATCH] proc connector: reject unprivileged listener bumps
+Message-ID: <20130226172441.GA6312@us.ibm.com>
+References: <20130226073225.GA15489@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdV4DbX_i6Ye5v7ObR0no-eDhBzqYrsqVtR5PAXQTVSmVQ@mail.gmail.com>
+In-Reply-To: <20130226073225.GA15489@www.outflux.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022622-9360-0000-0000-000011136C60
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 10:57:38PM +0100, Geert Uytterhoeven wrote:
+On Mon, Feb 25, 2013 at 11:32:25PM -0800, Kees Cook wrote:
+> While PROC_CN_MCAST_LISTEN/IGNORE is entirely advisory, it was possible
+> for an unprivileged user to turn off notifications for all listeners by
+> sending PROC_CN_MCAST_IGNORE. Instead, require the same privileges as
+> required for a multicast bind.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Cc: Evgeniy Polyakov <zbr@ioremap.net>
+> Cc: Matt Helsley <matthltc@us.ibm.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/connector/cn_proc.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/drivers/connector/cn_proc.c b/drivers/connector/cn_proc.c
+> index fce2000..1110478 100644
+> --- a/drivers/connector/cn_proc.c
+> +++ b/drivers/connector/cn_proc.c
+> @@ -313,6 +313,12 @@ static void cn_proc_mcast_ctl(struct cn_msg *msg,
+>  	    (task_active_pid_ns(current) != &init_pid_ns))
+>  		return;
+> 
+> +	/* Can only change if privileged. */
 
-> BTW, I assume UEFI checks itself if enrolled hashes have been revoked,
-> so it must phone home to some server? That must be disabled as well.
+I think this comment doesn't tell us anything above and beyond the
+what capability check already tells us. I think you could improve it
+by noting that since the connector is multicast and not namespace-safe
+it's not yet appropriate to use ns_capable() here.
 
-No.  Quit fearmongering.
+Acked-by: Matt Helsley <matthltc@us.ibm.com>
 
---
-	Peter
+> +	if (!capable(CAP_NET_ADMIN)) {
+> +		err = EPERM;
+> +		goto out;
+> +	}
+
