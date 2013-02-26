@@ -1,182 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758251Ab3BZNGL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 08:06:11 -0500
-Received: from mail4.sde.cz ([85.93.125.197]:37379 "EHLO zimbra.sde"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750918Ab3BZNGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 08:06:09 -0500
-Date: Tue, 26 Feb 2013 14:05:47 +0100 (CET)
-From: Milos Vyletel <milos.vyletel@sde.cz>
-To: Asias He <asias@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mst@redhat.com,
-        virtualization@lists.linux-foundation.org
-Message-ID: <889063304.44189.1361883947511.JavaMail.root@sde.cz>
-In-Reply-To: <512C2774.9090307@redhat.com>
-References: <1361473348-7660-1-git-send-email-milos.vyletel@sde.cz> <512B1637.5060107@redhat.com> <2042715078.26369.1361804096841.JavaMail.root@sde.cz> <512C2774.9090307@redhat.com>
-Subject: Re: [PATCH] virtio-blk: emit udev event when device is resized
+	id S1758351Ab3BZNHJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 08:07:09 -0500
+Received: from [84.200.39.61] ([84.200.39.61]:41911 "EHLO smtp.eikelenboom.it"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756234Ab3BZNHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 08:07:08 -0500
+Date: Tue, 26 Feb 2013 14:07:02 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <894977724.20130226140702@eikelenboom.it>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] Regression introduced with 14e568e78f6f80ca1e27256641ddf524c7dbdc51 (stop_machine: Use smpboot threads)
+In-Reply-To: <alpine.LFD.2.02.1302261320120.22263@ionos>
+References: <20130223011800.GA2465@phenom.dumpdata.com> <alpine.LFD.2.02.1302261320120.22263@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [199.72.20.10]
-X-Mailer: Zimbra 8.0.2_GA_5569 (ZimbraWebClient - FF16 (Win)/8.0.2_GA_5569)
-Thread-Topic: virtio-blk: emit udev event when device is resized
-Thread-Index: rviN21D6+wRKwBWu+zAsaZ85W/iINA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> On 02/25/2013 10:54 PM, Milos Vyletel wrote:
-> > ----- Original Message -----
-> >> On 02/22/2013 03:02 AM, Milos Vyletel wrote:
-> >>> When virtio-blk device is resized from host (using block_resize from
-> >>> QEMU)
-> >>> emit
-> >>> KOBJ_CHANGE uevent to notify guest about such change. This allows user to
-> >>> have
-> >>> custom udev rules which would take whatever action if such event occurs.
-> >>> As
-> >>> a
-> >>> proof of concept I've created simple udev rule that automatically resize
-> >>> filesystem on virtio-blk device.
-> >>>
-> >>> ACTION=="change", KERNEL=="vd*", \
-> >>>         ENV{RESIZE}=="1", \
-> >>>         ENV{ID_FS_TYPE}=="ext[3-4]", \
-> >>>         RUN+="/sbin/resize2fs /dev/%k"
-> >>> ACTION=="change", KERNEL=="vd*", \
-> >>>         ENV{RESIZE}=="1", \
-> >>>         ENV{ID_FS_TYPE}=="LVM2_member", \
-> >>>         RUN+="/sbin/pvresize /dev/%k"
-> >>>
-> >>> Signed-off-by: Milos Vyletel <milos.vyletel@sde.cz>
-> >>> ---
-> >>>  drivers/block/virtio_blk.c |    3 +++
-> >>>  1 files changed, 3 insertions(+), 0 deletions(-)
-> >>>
-> >>> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> >>> index 8ad21a2..5990382 100644
-> >>> --- a/drivers/block/virtio_blk.c
-> >>> +++ b/drivers/block/virtio_blk.c
-> >>> @@ -539,6 +539,8 @@ static void virtblk_config_changed_work(struct
-> >>> work_struct *work)
-> >>>  	struct virtio_device *vdev = vblk->vdev;
-> >>>  	struct request_queue *q = vblk->disk->queue;
-> >>>  	char cap_str_2[10], cap_str_10[10];
-> >>> +	char event[] = "RESIZE=1";
-> >>> +	char *envp[] = { event, NULL };
-> >>
-> >> event is not used again. Why not just
-> >>
-> >> char *envp[] = { "RESIZE=1", NULL };
-> >>
-> > 
-> > You're right. This works too. I was looking at other modules in kernel
-> > how they do it and this was commonly used. Take a look at block/genhd.c
-> > media_change_notify_thread() function which does similar thing.
-> 
-> Well, which kernel version are you looking at.
-> media_change_notify_thread() is gone back in 2010. See commit: dddd9dc340.
->
 
-Oh, you're right. I was looking at the rhel 6.3 kernel (2.6.32-279.19.1.el6)
-before I switched to upstream branch and did the changes. Sorry about the
-confusion.
+Tuesday, February 26, 2013, 1:36:36 PM, you wrote:
 
-Milos
- 
-> >>
-> >>>  	u64 capacity, size;
-> >>>  
-> >>>  	mutex_lock(&vblk->config_lock);
-> >>> @@ -568,6 +570,7 @@ static void virtblk_config_changed_work(struct
-> >>> work_struct *work)
-> >>>  
-> >>>  	set_capacity(vblk->disk, capacity);
-> >>>  	revalidate_disk(vblk->disk);
-> >>> +	kobject_uevent_env(&disk_to_dev(vblk->disk)->kobj, KOBJ_CHANGE, envp);
-> >>>  done:
-> >>>  	mutex_unlock(&vblk->config_lock);
-> >>>  }
-> >>>
-> >>
-> >> I tried the following with your automatically resize udev rules.
-> >>
-> >> (qemu) block_resize vd0 500
-> >> Check the fs size in guest, it is 500Mb
-> >>
-> >> (qemu) block_resize vd0 1200
-> >> Check the fs size in guest, it is still 500Mb
-> >>
-> >> Can you try resizing multiple times? Does it work?
-> > 
-> > Yep, works for me. After each block_resize call I get udev event. I
-> > was running udevadm monitor at that time. I've also tried running
-> > udevd in debug mode and even if I try to bump size twice in a row
-> > I get two separate udev events and resize2fs is triggered.
-> 
-> Turned on the debug info and looked into it again. It works for me now
-> and the udev event is seen.
-> 
-> Tested-by: Asias He <asias@redhat.com>
-> 
-> > [root@host ~]# lvresize -f -L +100M /dev/vgguests/evd2 && \
-> > virsh blockresize resize vdb 1 && \
-> > lvresize -f -L +100M /dev/vgguests/evd2 && \
-> > virsh blockresize resize vdb 1
-> >   Rounding size to boundary between physical extents: 128.00 MiB
-> >   Extending logical volume evd2 to 31.38 GiB
-> >   Logical volume evd2 successfully resized
-> > Block device 'vdb' is resized
-> >   Rounding size to boundary between physical extents: 128.00 MiB
-> >   Extending logical volume evd2 to 31.50 GiB
-> >   Logical volume evd2 successfully resized
-> > Block device 'vdb' is resized
-> > 
-> > On guest I get this (from udevd --debug)
-> > ...
-> > 1361804003.724025 [4438] util_run_program: '/sbin/resize2fs /dev/vdb'
-> > started
-> > 1361804003.725215 [4438] util_run_program: '/sbin/resize2fs' (stderr)
-> > 'resize2fs 1.41.12 (17-May-2010)'
-> > 1361804004.129329 [4437] event_queue_insert: seq 2073 queued, 'change'
-> > 'block'
-> > 1361804006.577235 [4438] util_run_program: '/sbin/resize2fs' (stdout)
-> > 'Filesystem at /dev/vdb is mounted on /mnt/backup; on-line resizing
-> > required'
-> > 1361804006.577251 [4438] util_run_program: '/sbin/resize2fs' (stdout) 'old
-> > desc_blocks = 2, new_desc_blocks = 2'
-> > 1361804006.577254 [4438] util_run_program: '/sbin/resize2fs' (stdout)
-> > 'Performing an on-line resize of /dev/vdb to 8224768 (4k) blocks.'
-> > 1361804006.577257 [4438] util_run_program: '/sbin/resize2fs' (stdout) 'The
-> > filesystem on /dev/vdb is now 8224768 blocks long.'
-> > 1361804006.577260 [4438] util_run_program: '/sbin/resize2fs' (stdout) ''
-> > 1361804006.577544 [4438] util_run_program: '/sbin/resize2fs /dev/vdb'
-> > returned with exitcode 0
-> > ...
-> > 1361804006.702659 [4438] util_run_program: '/sbin/resize2fs /dev/vdb'
-> > started
-> > 1361804006.703841 [4438] util_run_program: '/sbin/resize2fs' (stderr)
-> > 'resize2fs 1.41.12 (17-May-2010)'
-> > 1361804009.343332 [4438] util_run_program: '/sbin/resize2fs' (stdout)
-> > 'Filesystem at /dev/vdb is mounted on /mnt/backup; on-line resizing
-> > required'
-> > 1361804009.343351 [4438] util_run_program: '/sbin/resize2fs' (stdout) 'old
-> > desc_blocks = 2, new_desc_blocks = 2'
-> > 1361804009.343356 [4438] util_run_program: '/sbin/resize2fs' (stdout)
-> > 'Performing an on-line resize of /dev/vdb to 8257536 (4k) blocks.'
-> > 1361804009.343362 [4438] util_run_program: '/sbin/resize2fs' (stdout) 'The
-> > filesystem on /dev/vdb is now 8257536 blocks long.'
-> > 1361804009.343367 [4438] util_run_program: '/sbin/resize2fs' (stdout) ''
-> > 1361804009.343727 [4438] util_run_program: '/sbin/resize2fs /dev/vdb'
-> > returned with exitcode 0
-> > 1361804009.343740 [4438] udev_watch_begin: adding watch on '/dev/vdb'
-> > 
-> > Milos
-> > 
-> 
-> 
-> --
-> Asias
-> 
+> On Fri, 22 Feb 2013, Konrad Rzeszutek Wilk wrote:
+>> 
+>> I don't know if this is b/c the Xen code is missing something or
+>> expects something that never happend. I hadn't looked at your
+>> patch in any detail (was going to do that on Monday).
+>> 
+>> Either way, if I boot a HVM guest with PV extensions (aka PVHVM)
+
+Hmm i'm seeing this booting on baremetal as well.
+(see http://lkml.indiana.edu/hypermail/linux/kernel/1302.3/00836.html)
+
+>> this is I what get:
+>> [    0.133081] cpu 1 spinlock event irq 71
+>> [    0.134049] smpboot: Booting Node   0, Processors  #1[    0.008000] installing Xen timer for CPU 1
+>> [    0.205154] Brought up 2 CPUs
+>> [    0.205156] smpboot: Total of 2 processors activated (16021.74 BogoMIPS)
+>> 
+>> [   28.134000] BUG: soft lockup - CPU#0 stuck for 23s! [migration/0:8]
+>> [   28.134000] Modules linked in:
+>> [   28.134000] CPU 0 
+>> [   28.134000] Pid: 8, comm: migration/0 Tainted: G        W    3.8.0upstream-06472-g6661875-dirty #1 Xen HVM domU
+>> [   28.134000] RIP: 0010:[<ffffffff8110711b>]  [<ffffffff8110711b>] stop_machine_cpu_stop+0x7b/0xf0
+
+> So the migration thread loops in stop_machine_cpu_stop(). Now the
+> interesting question is what work was scheduled for that cpu.
+
+> The main difference between the old code and the new one, is that the
+> thread is created earlier and not detroyed on cpu offline.
+
+> Could you add some instrumentation, so we can see what kind of cpu
+> stop work is scheduled and from where?
+
+> Thanks,
+
+>         tglx
+
+
+
