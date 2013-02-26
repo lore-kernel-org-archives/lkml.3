@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760613Ab3B0A5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:57:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42074 "EHLO
+	id S1760649Ab3B0A6J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:58:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42064 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760305Ab3BZX6D (ORCPT
+	with ESMTP id S1760299Ab3BZX6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:03 -0500
+	Tue, 26 Feb 2013 18:58:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 093/150] staging: comedi: disallow COMEDI_DEVCONFIG on non-board minors
-Date: Tue, 26 Feb 2013 15:55:50 -0800
-Message-Id: <20130226235533.745356622@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>
+Subject: [ 091/150] drm/i915: Handle untiled planes when computing their offsets
+Date: Tue, 26 Feb 2013 15:55:48 -0800
+Message-Id: <20130226235533.532290526@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,51 +32,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 754ab5c0e55dd118273ca2c217c4d95e9fbc8259 upstream.
+commit bc752862170c135d6c09fb22d79eeb451023568e upstream.
 
-Comedi has two sorts of minor devices:
-(a) normal board minor devices in the range 0 to
-COMEDI_NUM_BOARD_MINORS-1 inclusive; and
-(b) special subdevice minor devices in the range COMEDI_NUM_BOARD_MINORS
-upwards that are used to open the same underlying comedi device as the
-normal board minor devices, but with non-default read and write
-subdevices for asynchronous commands.
+We trim the fb to fit the CRTC by computing the offset of that CRTC to
+its nearest tile_row origin. This allows us to use framebuffers that are
+larger than the CRTC limits without additional work.
 
-The special subdevice minor devices get created when a board supporting
-asynchronous commands is attached to a normal board minor device, and
-destroyed when the board is detached from the normal board minor device.
-One way to attach or detach a board is by using the COMEDI_DEVCONFIG
-ioctl.  This should only be used on normal board minors as the special
-subdevice minors are too ephemeral.  In particular, the change
-introduced in commit 7d3135af399e92cf4c9bbc5f86b6c140aab3b88c ("staging:
-comedi: prevent auto-unconfig of manually configured devices") breaks
-horribly for special subdevice minor devices.
+However, we failed to compute the offset for a linear framebuffer
+correctly as we treated its x-advance in whole tiles (instead of the
+linear increment expected), leaving the CRTC misaligned with its
+contents.
 
-Since there's no legitimate use for the COMEDI_DEVCONFIG ioctl on a
-special subdevice minor device node, disallow it and return -ENOTTY.
+Fixes regression from commit c2c75131244507c93f812862fdbd4f3a37139401
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Thu Jul 5 12:17:30 2012 +0200
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+    drm/i915: adjust framebuffer base address on gen4+
+
+v2: Adjust relative x-coordinate after linear alignment (vsyrjala)
+v3: Repaint with pokadots (vsyrjala)
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=61152
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/i915/intel_display.c |   41 ++++++++++++++++++++++-------------
+ drivers/gpu/drm/i915/intel_drv.h     |    7 +++--
+ drivers/gpu/drm/i915/intel_sprite.c  |    8 +++---
+ 3 files changed, 34 insertions(+), 22 deletions(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1547,6 +1547,11 @@ static long comedi_unlocked_ioctl(struct
- 	/* Device config is special, because it must work on
- 	 * an unconfigured device. */
- 	if (cmd == COMEDI_DEVCONFIG) {
-+		if (minor >= COMEDI_NUM_BOARD_MINORS) {
-+			/* Device config not appropriate on non-board minors. */
-+			rc = -ENOTTY;
-+			goto done;
-+		}
- 		rc = do_devconfig_ioctl(dev,
- 					(struct comedi_devconfig __user *)arg);
- 		if (rc == 0)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2017,18 +2017,29 @@ void intel_unpin_fb_obj(struct drm_i915_
+ 
+ /* Computes the linear offset to the base tile and adjusts x, y. bytes per pixel
+  * is assumed to be a power-of-two. */
+-unsigned long intel_gen4_compute_offset_xtiled(int *x, int *y,
+-					       unsigned int bpp,
+-					       unsigned int pitch)
++unsigned long intel_gen4_compute_page_offset(int *x, int *y,
++					     unsigned int tiling_mode,
++					     unsigned int cpp,
++					     unsigned int pitch)
+ {
+-	int tile_rows, tiles;
++	if (tiling_mode != I915_TILING_NONE) {
++		unsigned int tile_rows, tiles;
+ 
+-	tile_rows = *y / 8;
+-	*y %= 8;
+-	tiles = *x / (512/bpp);
+-	*x %= 512/bpp;
++		tile_rows = *y / 8;
++		*y %= 8;
+ 
+-	return tile_rows * pitch * 8 + tiles * 4096;
++		tiles = *x / (512/cpp);
++		*x %= 512/cpp;
++
++		return tile_rows * pitch * 8 + tiles * 4096;
++	} else {
++		unsigned int offset;
++
++		offset = *y * pitch + *x * cpp;
++		*y = 0;
++		*x = (offset & 4095) / cpp;
++		return offset & -4096;
++	}
+ }
+ 
+ static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
+@@ -2105,9 +2116,9 @@ static int i9xx_update_plane(struct drm_
+ 
+ 	if (INTEL_INFO(dev)->gen >= 4) {
+ 		intel_crtc->dspaddr_offset =
+-			intel_gen4_compute_offset_xtiled(&x, &y,
+-							 fb->bits_per_pixel / 8,
+-							 fb->pitches[0]);
++			intel_gen4_compute_page_offset(&x, &y, obj->tiling_mode,
++						       fb->bits_per_pixel / 8,
++						       fb->pitches[0]);
+ 		linear_offset -= intel_crtc->dspaddr_offset;
+ 	} else {
+ 		intel_crtc->dspaddr_offset = linear_offset;
+@@ -2198,9 +2209,9 @@ static int ironlake_update_plane(struct
+ 
+ 	linear_offset = y * fb->pitches[0] + x * (fb->bits_per_pixel / 8);
+ 	intel_crtc->dspaddr_offset =
+-		intel_gen4_compute_offset_xtiled(&x, &y,
+-						 fb->bits_per_pixel / 8,
+-						 fb->pitches[0]);
++		intel_gen4_compute_page_offset(&x, &y, obj->tiling_mode,
++					       fb->bits_per_pixel / 8,
++					       fb->pitches[0]);
+ 	linear_offset -= intel_crtc->dspaddr_offset;
+ 
+ 	DRM_DEBUG_KMS("Writing base %08X %08lX %d %d %d\n",
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -627,9 +627,10 @@ extern void intel_update_sprite_watermar
+ extern void intel_update_linetime_watermarks(struct drm_device *dev, int pipe,
+ 			 struct drm_display_mode *mode);
+ 
+-extern unsigned long intel_gen4_compute_offset_xtiled(int *x, int *y,
+-						      unsigned int bpp,
+-						      unsigned int pitch);
++extern unsigned long intel_gen4_compute_page_offset(int *x, int *y,
++						    unsigned int tiling_mode,
++						    unsigned int bpp,
++						    unsigned int pitch);
+ 
+ extern int intel_sprite_set_colorkey(struct drm_device *dev, void *data,
+ 				     struct drm_file *file_priv);
+--- a/drivers/gpu/drm/i915/intel_sprite.c
++++ b/drivers/gpu/drm/i915/intel_sprite.c
+@@ -122,8 +122,8 @@ ivb_update_plane(struct drm_plane *plane
+ 
+ 	linear_offset = y * fb->pitches[0] + x * pixel_size;
+ 	sprsurf_offset =
+-		intel_gen4_compute_offset_xtiled(&x, &y,
+-						 pixel_size, fb->pitches[0]);
++		intel_gen4_compute_page_offset(&x, &y, obj->tiling_mode,
++					       pixel_size, fb->pitches[0]);
+ 	linear_offset -= sprsurf_offset;
+ 
+ 	/* HSW consolidates SPRTILEOFF and SPRLINOFF into a single SPROFFSET
+@@ -287,8 +287,8 @@ ilk_update_plane(struct drm_plane *plane
+ 
+ 	linear_offset = y * fb->pitches[0] + x * pixel_size;
+ 	dvssurf_offset =
+-		intel_gen4_compute_offset_xtiled(&x, &y,
+-						 pixel_size, fb->pitches[0]);
++		intel_gen4_compute_page_offset(&x, &y, obj->tiling_mode,
++					       pixel_size, fb->pitches[0]);
+ 	linear_offset -= dvssurf_offset;
+ 
+ 	if (obj->tiling_mode != I915_TILING_NONE)
 
 
