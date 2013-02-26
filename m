@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760275Ab3B0BAB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:00:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42019 "EHLO
+	id S1760260Ab3BZX5y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:57:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41945 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760264Ab3BZX5z (ORCPT
+	with ESMTP id S1755909Ab3BZX5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:55 -0500
+	Tue, 26 Feb 2013 18:57:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kenneth Graunke <kenneth@whitecape.org>,
-        Paulo Zanoni <przanoni@gmail.com>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Ben Widawsky <ben@bwidawsk.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 083/150] drm/i915: Fix CAGF for HSW
-Date: Tue, 26 Feb 2013 15:55:40 -0800
-Message-Id: <20130226235532.723990068@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 069/150] drm/udl: disable fb_defio by default
+Date: Tue, 26 Feb 2013 15:55:26 -0800
+Message-Id: <20130226235531.367510894@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -30,69 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Widawsky <ben@bwidawsk.net>
+From: Dave Airlie <airlied@redhat.com>
 
-commit f82855d342b6c8483c56e6d2e200a71731509a39 upstream.
+commit 677d23b70bf949f75746c80cbae92c233c6b5e2a upstream.
 
-The shift changed, hurray.
+There seems to be a bad interaction between gem/shmem and defio on top,
+I get list corruption on the page lru in the shmem code.
 
-Reported-by: Kenneth Graunke <kenneth@whitecape.org>
-Cc: Paulo Zanoni <przanoni@gmail.com>
-Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Tested-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Turn it off for now until we get some more digging done.
+
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_debugfs.c |   10 +++++++---
- drivers/gpu/drm/i915/i915_reg.h     |    2 ++
- 2 files changed, 9 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/udl/udl_fb.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_debugfs.c
-+++ b/drivers/gpu/drm/i915/i915_debugfs.c
-@@ -888,7 +888,7 @@ static int i915_cur_delayinfo(struct seq
- 		u32 gt_perf_status = I915_READ(GEN6_GT_PERF_STATUS);
- 		u32 rp_state_limits = I915_READ(GEN6_RP_STATE_LIMITS);
- 		u32 rp_state_cap = I915_READ(GEN6_RP_STATE_CAP);
--		u32 rpstat;
-+		u32 rpstat, cagf;
- 		u32 rpupei, rpcurup, rpprevup;
- 		u32 rpdownei, rpcurdown, rpprevdown;
- 		int max_freq;
-@@ -907,6 +907,11 @@ static int i915_cur_delayinfo(struct seq
- 		rpdownei = I915_READ(GEN6_RP_CUR_DOWN_EI);
- 		rpcurdown = I915_READ(GEN6_RP_CUR_DOWN);
- 		rpprevdown = I915_READ(GEN6_RP_PREV_DOWN);
-+		if (IS_HASWELL(dev))
-+			cagf = (rpstat & HSW_CAGF_MASK) >> HSW_CAGF_SHIFT;
-+		else
-+			cagf = (rpstat & GEN6_CAGF_MASK) >> GEN6_CAGF_SHIFT;
-+		cagf *= GT_FREQUENCY_MULTIPLIER;
+--- a/drivers/gpu/drm/udl/udl_fb.c
++++ b/drivers/gpu/drm/udl/udl_fb.c
+@@ -22,9 +22,9 @@
  
- 		gen6_gt_force_wake_put(dev_priv);
- 		mutex_unlock(&dev->struct_mutex);
-@@ -919,8 +924,7 @@ static int i915_cur_delayinfo(struct seq
- 			   gt_perf_status & 0xff);
- 		seq_printf(m, "Render p-state limit: %d\n",
- 			   rp_state_limits & 0xff);
--		seq_printf(m, "CAGF: %dMHz\n", ((rpstat & GEN6_CAGF_MASK) >>
--						GEN6_CAGF_SHIFT) * GT_FREQUENCY_MULTIPLIER);
-+		seq_printf(m, "CAGF: %dMHz\n", cagf);
- 		seq_printf(m, "RP CUR UP EI: %dus\n", rpupei &
- 			   GEN6_CURICONT_MASK);
- 		seq_printf(m, "RP CUR UP: %dus\n", rpcurup &
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -4211,7 +4211,9 @@
- #define GEN6_RP_INTERRUPT_LIMITS		0xA014
- #define GEN6_RPSTAT1				0xA01C
- #define   GEN6_CAGF_SHIFT			8
-+#define   HSW_CAGF_SHIFT			7
- #define   GEN6_CAGF_MASK			(0x7f << GEN6_CAGF_SHIFT)
-+#define   HSW_CAGF_MASK				(0x7f << HSW_CAGF_SHIFT)
- #define GEN6_RP_CONTROL				0xA024
- #define   GEN6_RP_MEDIA_TURBO			(1<<11)
- #define   GEN6_RP_MEDIA_MODE_MASK		(3<<9)
+ #include <drm/drm_fb_helper.h>
+ 
+-#define DL_DEFIO_WRITE_DELAY    5 /* fb_deferred_io.delay in jiffies */
++#define DL_DEFIO_WRITE_DELAY    (HZ/20) /* fb_deferred_io.delay in jiffies */
+ 
+-static int fb_defio = 1;  /* Optionally enable experimental fb_defio mmap support */
++static int fb_defio = 0;  /* Optionally enable experimental fb_defio mmap support */
+ static int fb_bpp = 16;
+ 
+ module_param(fb_bpp, int, S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
 
 
