@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760143Ab3B0BPz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:15:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41799 "EHLO
+	id S1760176Ab3B0BQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:16:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41796 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760033Ab3BZX5R (ORCPT
+	with ESMTP id S1760025Ab3BZX5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:17 -0500
+	Tue, 26 Feb 2013 18:57:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        George Spelvin <linux@horizon.com>,
-        Rodolfo Giometti <giometti@enneenne.com>
-Subject: [ 028/150] pps: Use pps_lookup_dev to reduce ldisc coupling
-Date: Tue, 26 Feb 2013 15:54:45 -0800
-Message-Id: <20130226235527.151182391@linuxfoundation.org>
+        Dirkjan Bussink <dirkjan.bussink@nedap.com>
+Subject: [ 015/150] tty: Prevent deadlock in n_gsm driver
+Date: Tue, 26 Feb 2013 15:54:32 -0800
+Message-Id: <20130226235525.783803640@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,69 +26,195 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George Spelvin <linux@horizon.com>
+From: Dirkjan Bussink <d.bussink@gmail.com>
 
-commit 03a7ffe4e542310838bac70ef85acc17536b6d7c upstream.
+commit 4d9b109060f690f5c835130ff54165ae157b3087 upstream.
 
-Now that N_TTY uses tty->disc_data for its private data,
-'subclass' ldiscs cannot use ->disc_data for their own private data.
-(This is a regression is v3.8-rc1)
+This change fixes a deadlock when the multiplexer is closed while there
+are still client side ports open.
 
-Use pps_lookup_dev to associate the tty with the pps source instead.
+When the multiplexer is closed and there are active tty's it tries to
+close them with tty_vhangup. This has a problem though, because
+tty_vhangup needs the tty_lock. This patch changes it to unlock the
+tty_lock before attempting the hangup and relocks afterwards. The
+additional call to tty_port_tty_set is needed because otherwise the
+port stays active because of the reference counter.
 
-This fixes a crashing regression in 3.8-rc1.
+This change also exposed another problem that other code paths don't
+expect that the multiplexer could have been closed. This patch also adds
+checks for these cases in the gsmtty_ class of function that could be
+called.
 
-Signed-off-by: George Spelvin <linux@horizon.com>
-Acked-by: Rodolfo Giometti <giometti@enneenne.com>
+The documentation explicitly states that "first close all virtual ports
+before closing the physical port" but we've found this to not always
+reality in our field situations. The GPRS / UTMS modem sometimes crashes
+and needs a power cycle in that case which means cleanly shutting down
+everything is not always possible. This change makes it much more robust
+for our situation where at least the system is recoverable with this patch
+and doesn't hang in a deadlock situation inside the kernel.
+
+The patch is against the long term support kernel (3.4.27) and should
+apply cleanly to more recent branches. Tested with a Telit GE864-QUADV2
+and Telit HE910 modem.
+
+Signed-off-by: Dirkjan Bussink <dirkjan.bussink@nedap.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pps/clients/pps-ldisc.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/tty/n_gsm.c |   42 +++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 41 insertions(+), 1 deletion(-)
 
---- a/drivers/pps/clients/pps-ldisc.c
-+++ b/drivers/pps/clients/pps-ldisc.c
-@@ -31,7 +31,7 @@
- static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status,
- 				struct pps_event_time *ts)
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -1689,6 +1689,8 @@ static inline void dlci_put(struct gsm_d
+ 	tty_port_put(&dlci->port);
+ }
+ 
++static void gsm_destroy_network(struct gsm_dlci *dlci);
++
+ /**
+  *	gsm_dlci_release		-	release DLCI
+  *	@dlci: DLCI to destroy
+@@ -1702,9 +1704,19 @@ static void gsm_dlci_release(struct gsm_
  {
--	struct pps_device *pps = (struct pps_device *)tty->disc_data;
-+	struct pps_device *pps = pps_lookup_dev(tty);
- 
- 	BUG_ON(pps == NULL);
- 
-@@ -67,9 +67,9 @@ static int pps_tty_open(struct tty_struc
- 		pr_err("cannot register PPS source \"%s\"\n", info.path);
- 		return -ENOMEM;
+ 	struct tty_struct *tty = tty_port_tty_get(&dlci->port);
+ 	if (tty) {
++		mutex_lock(&dlci->mutex);
++		gsm_destroy_network(dlci);
++		mutex_unlock(&dlci->mutex);
++
++		/* tty_vhangup needs the tty_lock, so unlock and
++		   relock after doing the hangup. */
++		tty_unlock(tty);
+ 		tty_vhangup(tty);
++		tty_lock(tty);
++		tty_port_tty_set(&dlci->port, NULL);
+ 		tty_kref_put(tty);
  	}
--	tty->disc_data = pps;
-+	pps->lookup_cookie = tty;
- 
--	/* Should open N_TTY ldisc too */
-+	/* Now open the base class N_TTY ldisc */
- 	ret = alias_n_tty_open(tty);
- 	if (ret < 0) {
- 		pr_err("cannot open tty ldisc \"%s\"\n", info.path);
-@@ -81,7 +81,6 @@ static int pps_tty_open(struct tty_struc
- 	return 0;
- 
- err_unregister:
--	tty->disc_data = NULL;
- 	pps_unregister_source(pps);
- 	return ret;
++	dlci->state = DLCI_CLOSED;
+ 	dlci_put(dlci);
  }
-@@ -90,11 +89,10 @@ static void (*alias_n_tty_close)(struct
  
- static void pps_tty_close(struct tty_struct *tty)
+@@ -2947,6 +2959,8 @@ static void gsmtty_close(struct tty_stru
+ 
+ 	if (dlci == NULL)
+ 		return;
++	if (dlci->state == DLCI_CLOSED)
++		return;
+ 	mutex_lock(&dlci->mutex);
+ 	gsm_destroy_network(dlci);
+ 	mutex_unlock(&dlci->mutex);
+@@ -2965,6 +2979,8 @@ out:
+ static void gsmtty_hangup(struct tty_struct *tty)
  {
--	struct pps_device *pps = (struct pps_device *)tty->disc_data;
-+	struct pps_device *pps = pps_lookup_dev(tty);
- 
- 	alias_n_tty_close(tty);
- 
--	tty->disc_data = NULL;
- 	dev_info(pps->dev, "removed\n");
- 	pps_unregister_source(pps);
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return;
+ 	tty_port_hangup(&dlci->port);
+ 	gsm_dlci_begin_close(dlci);
  }
+@@ -2972,9 +2988,12 @@ static void gsmtty_hangup(struct tty_str
+ static int gsmtty_write(struct tty_struct *tty, const unsigned char *buf,
+ 								    int len)
+ {
++	int sent;
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 	/* Stuff the bytes into the fifo queue */
+-	int sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
++	sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
+ 	/* Need to kick the channel */
+ 	gsm_dlci_data_kick(dlci);
+ 	return sent;
+@@ -2983,18 +3002,24 @@ static int gsmtty_write(struct tty_struc
+ static int gsmtty_write_room(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 	return TX_SIZE - kfifo_len(dlci->fifo);
+ }
+ 
+ static int gsmtty_chars_in_buffer(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 	return kfifo_len(dlci->fifo);
+ }
+ 
+ static void gsmtty_flush_buffer(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return;
+ 	/* Caution needed: If we implement reliable transport classes
+ 	   then the data being transmitted can't simply be junked once
+ 	   it has first hit the stack. Until then we can just blow it
+@@ -3013,6 +3038,8 @@ static void gsmtty_wait_until_sent(struc
+ static int gsmtty_tiocmget(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 	return dlci->modem_rx;
+ }
+ 
+@@ -3022,6 +3049,8 @@ static int gsmtty_tiocmset(struct tty_st
+ 	struct gsm_dlci *dlci = tty->driver_data;
+ 	unsigned int modem_tx = dlci->modem_tx;
+ 
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 	modem_tx &= ~clear;
+ 	modem_tx |= set;
+ 
+@@ -3040,6 +3069,8 @@ static int gsmtty_ioctl(struct tty_struc
+ 	struct gsm_netconfig nc;
+ 	int index;
+ 
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 	switch (cmd) {
+ 	case GSMIOC_ENABLE_NET:
+ 		if (copy_from_user(&nc, (void __user *)arg, sizeof(nc)))
+@@ -3066,6 +3097,9 @@ static int gsmtty_ioctl(struct tty_struc
+ 
+ static void gsmtty_set_termios(struct tty_struct *tty, struct ktermios *old)
+ {
++	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return;
+ 	/* For the moment its fixed. In actual fact the speed information
+ 	   for the virtual channel can be propogated in both directions by
+ 	   the RPN control message. This however rapidly gets nasty as we
+@@ -3077,6 +3111,8 @@ static void gsmtty_set_termios(struct tt
+ static void gsmtty_throttle(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return;
+ 	if (tty->termios.c_cflag & CRTSCTS)
+ 		dlci->modem_tx &= ~TIOCM_DTR;
+ 	dlci->throttled = 1;
+@@ -3087,6 +3123,8 @@ static void gsmtty_throttle(struct tty_s
+ static void gsmtty_unthrottle(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return;
+ 	if (tty->termios.c_cflag & CRTSCTS)
+ 		dlci->modem_tx |= TIOCM_DTR;
+ 	dlci->throttled = 0;
+@@ -3098,6 +3136,8 @@ static int gsmtty_break_ctl(struct tty_s
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
+ 	int encode = 0;	/* Off */
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 
+ 	if (state == -1)	/* "On indefinitely" - we can't encode this
+ 				    properly */
 
 
