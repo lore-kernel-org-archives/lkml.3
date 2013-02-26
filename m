@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933349Ab3B0AiE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:38:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42332 "EHLO
+	id S933389Ab3B0Ai0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:38:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42328 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933205Ab3BZX6n (ORCPT
+	with ESMTP id S933188Ab3BZX6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:43 -0500
+	Tue, 26 Feb 2013 18:58:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiang Liu <jiang.liu@huawei.com>, Gaohuai Han <hangaohuai@huawei.com>,
-        Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        Dan Williams <djbw@fb.com>
-Subject: [ 141/150] dca: check against empty dca_domains list before unregister provider
-Date: Tue, 26 Feb 2013 15:56:38 -0800
-Message-Id: <20130226235539.087258623@linuxfoundation.org>
+        Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>
+Subject: [ 150/150] usb: musb: ux500: use clk_prepare_enable and clk_disable_unprepare
+Date: Tue, 26 Feb 2013 15:56:47 -0800
+Message-Id: <20130226235540.178907541@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -28,37 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maciej Sosnowski <maciej.sosnowski@intel.com>
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
 
-commit c419fcfd071cf34ba00f9f65282583772d2655e7 upstream.
+commit 99d17cfa3bbc6f4edb175f819af59c6b9e245e82 upstream.
 
-When providers get blocked unregister_dca_providers() is called ending up
-with dca_providers and dca_domain lists emptied. Dca should be prevented from
-trying to unregister any provider if dca_domain list is found empty.
+This patch converts the module to use clk_prepare_enable and
+clk_disable_unprepare variants as required by common clock framework.
 
-Reported-by: Jiang Liu <jiang.liu@huawei.com>
-Tested-by: Gaohuai Han <hangaohuai@huawei.com>
-Signed-off-by: Maciej Sosnowski <maciej.sosnowski@intel.com>
-Signed-off-by: Dan Williams <djbw@fb.com>
+Without this the system crash during probe function.
+
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dca/dca-core.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/musb/ux500.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/dca/dca-core.c
-+++ b/drivers/dca/dca-core.c
-@@ -420,6 +420,11 @@ void unregister_dca_provider(struct dca_
+--- a/drivers/usb/musb/ux500.c
++++ b/drivers/usb/musb/ux500.c
+@@ -108,7 +108,7 @@ static int ux500_probe(struct platform_d
+ 		goto err3;
+ 	}
  
- 	raw_spin_lock_irqsave(&dca_lock, flags);
+-	ret = clk_enable(clk);
++	ret = clk_prepare_enable(clk);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to enable clock\n");
+ 		goto err4;
+@@ -148,7 +148,7 @@ static int ux500_probe(struct platform_d
+ 	return 0;
  
-+	if (list_empty(&dca_domains)) {
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
-+		return;
-+	}
-+
- 	list_del(&dca->node);
+ err5:
+-	clk_disable(clk);
++	clk_disable_unprepare(clk);
  
- 	pci_rc = dca_pci_rc_from_dev(dev);
+ err4:
+ 	clk_put(clk);
+@@ -168,7 +168,7 @@ static int ux500_remove(struct platform_
+ 	struct ux500_glue	*glue = platform_get_drvdata(pdev);
+ 
+ 	platform_device_unregister(glue->musb);
+-	clk_disable(glue->clk);
++	clk_disable_unprepare(glue->clk);
+ 	clk_put(glue->clk);
+ 	kfree(glue);
+ 
+@@ -182,7 +182,7 @@ static int ux500_suspend(struct device *
+ 	struct musb		*musb = glue_to_musb(glue);
+ 
+ 	usb_phy_set_suspend(musb->xceiv, 1);
+-	clk_disable(glue->clk);
++	clk_disable_unprepare(glue->clk);
+ 
+ 	return 0;
+ }
+@@ -193,7 +193,7 @@ static int ux500_resume(struct device *d
+ 	struct musb		*musb = glue_to_musb(glue);
+ 	int			ret;
+ 
+-	ret = clk_enable(glue->clk);
++	ret = clk_prepare_enable(glue->clk);
+ 	if (ret) {
+ 		dev_err(dev, "failed to enable clock\n");
+ 		return ret;
 
 
