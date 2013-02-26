@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760198Ab3BZX5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:57:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41934 "EHLO
+	id S1760233Ab3BZX5s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:57:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41956 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760130Ab3BZX5j (ORCPT
+	with ESMTP id S1760204Ab3BZX5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:39 -0500
+	Tue, 26 Feb 2013 18:57:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 058/150] ALSA: hda - hdmi: ELD shouldnt be valid after unplug
-Date: Tue, 26 Feb 2013 15:55:15 -0800
-Message-Id: <20130226235530.216866261@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 065/150] drm/radeon: fix multi-head power profile stability on BTC+ asics
+Date: Tue, 26 Feb 2013 15:55:22 -0800
+Message-Id: <20130226235530.975237116@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,31 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit bbfd8a19b6913f50a362457c34d49bfafe5e456e upstream.
+commit 7ae764b11ed63279e9dcf25be972ff4ca21a9875 upstream.
 
-Currently, eld_valid is never set to false, except at kernel module
-load time. This patch makes sure that eld is no longer valid when
-the cable is (hot-)unplugged.
+vddci needs to track mclk for multi-head.
 
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/evergreen.c |   13 +++++++++++++
+ drivers/gpu/drm/radeon/radeon_pm.c |    2 +-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1172,6 +1172,7 @@ static void hdmi_present_sense(struct hd
- 		"HDMI status: Codec=%d Pin=%d Presence_Detect=%d ELD_Valid=%d\n",
- 		codec->addr, pin_nid, eld->monitor_present, eld_valid);
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -403,6 +403,19 @@ void evergreen_pm_misc(struct radeon_dev
+ 			rdev->pm.current_vddc = voltage->voltage;
+ 			DRM_DEBUG("Setting: vddc: %d\n", voltage->voltage);
+ 		}
++
++		/* starting with BTC, there is one state that is used for both
++		 * MH and SH.  Difference is that we always use the high clock index for
++		 * mclk and vddci.
++		 */
++		if ((rdev->pm.pm_method == PM_METHOD_PROFILE) &&
++		    (rdev->family >= CHIP_BARTS) &&
++		    rdev->pm.active_crtc_count &&
++		    ((rdev->pm.profile_index == PM_PROFILE_MID_MH_IDX) ||
++		     (rdev->pm.profile_index == PM_PROFILE_LOW_MH_IDX)))
++			voltage = &rdev->pm.power_state[req_ps_idx].
++				clock_info[rdev->pm.profiles[PM_PROFILE_HIGH_MH_IDX].dpms_on_cm_idx].voltage;
++
+ 		/* 0xff01 is a flag rather then an actual voltage */
+ 		if (voltage->vddci == 0xff01)
+ 			return;
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -169,7 +169,7 @@ static void radeon_set_power_state(struc
  
-+	eld->eld_valid = false;
- 	if (eld_valid) {
- 		if (!snd_hdmi_get_eld(eld, codec, pin_nid))
- 			snd_hdmi_show_eld(eld);
+ 		/* starting with BTC, there is one state that is used for both
+ 		 * MH and SH.  Difference is that we always use the high clock index for
+-		 * mclk.
++		 * mclk and vddci.
+ 		 */
+ 		if ((rdev->pm.pm_method == PM_METHOD_PROFILE) &&
+ 		    (rdev->family >= CHIP_BARTS) &&
 
 
