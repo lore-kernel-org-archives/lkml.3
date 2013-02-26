@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759885Ab3BZI5z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 03:57:55 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:4996 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759842Ab3BZI5x convert rfc822-to-8bit (ORCPT
+	id S1759830Ab3BZJCt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 04:02:49 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52868 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758719Ab3BZJCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 03:57:53 -0500
-X-IronPort-AV: E=Sophos;i="4.84,740,1355068800"; 
-   d="scan'208";a="6771528"
-Message-ID: <512C789D.1090404@cn.fujitsu.com>
-Date: Tue, 26 Feb 2013 16:55:57 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	Tue, 26 Feb 2013 04:02:46 -0500
+X-AuditID: 9c93016f-b7b46ae000007f43-95-512c7a339678
+From: Namhyung Kim <namhyung@kernel.org>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: acme@infradead.org, <linux-kernel@vger.kernel.org>, feng.tang@intel.com,
+        namhyung.kim@lge.com
+Subject: Re: [PATCH 1/2] perf annotate: Fix build with NO_NEWT=1
+References: <1361854923-1814-1-git-send-email-michael@ellerman.id.au>
+Date: Tue, 26 Feb 2013 18:02:43 +0900
+In-Reply-To: <1361854923-1814-1-git-send-email-michael@ellerman.id.au>
+	(Michael Ellerman's message of "Tue, 26 Feb 2013 16:02:02 +1100")
+Message-ID: <87y5ebsb0s.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Joe Perches <joe@perches.com>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Simon Horman <horms@verge.net.au>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/2] kexec: Use min_t to simplify logic
-References: <512C44E4.70907@cn.fujitsu.com> <512C4881.90409@cn.fujitsu.com> <1361867881.2023.16.camel@joe-AO722> <512C76FE.4070109@cn.fujitsu.com> <20130226005328.e2d31a97.akpm@linux-foundation.org>
-In-Reply-To: <20130226005328.e2d31a97.akpm@linux-foundation.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/26 16:56:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/26 16:56:48
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年02月26日 16:53, Andrew Morton 写道:
-> On Tue, 26 Feb 2013 16:49:02 +0800 Zhang Yanfei <zhangyanfei@cn.fujitsu.com> wrote:
-> 
->>>> diff --git a/kernel/kexec.c b/kernel/kexec.c
->>> []
->>>> @@ -822,13 +822,9 @@ static int kimage_load_normal_segment(struct kimage *image,
->>> []
->>>> +		mchunk = min_t(size_t, mbytes,
->>>> +			       (size_t)(PAGE_SIZE - (maddr & ~PAGE_MASK)));
->>>
->>> #define min_t(type, x, y) ({			\
->>> 	type __min1 = (x);			\
->>> 	type __min2 = (y);			\
->>> 	__min1 < __min2 ? __min1: __min2; })
->>>
->>>
->>>
->>
->> Hmm, from the definition, the cast is redundant.
->>
->> Maybe I misunderstood what Andrew meant in the mail related to v2:
->>
->> "The types of PAGE_SIZE and PAGE_MASK are vague - iirc they once had
->> different types on different architectures, so some form of casting is
->> unavoidable here."
->>
->> Andrew, could you please explain the casting you meant above?
-> 
-> I mean that a cast (or min_t, which is a cast) will be needed. 
-> The code you have here casts the same thing two times, which isn't
-> necessary.
-> 
-> 
+Hi Michael,
 
-Thanks.
+On Tue, 26 Feb 2013 16:02:02 +1100, Michael Ellerman wrote:
+> Commit 18c9e5c "Make it to be able to skip unannotatable symbols" broke
+> the build with NO_NEWT=1:
+>
+>    CC builtin-annotate.o
+> builtin-annotate.c: In function 'hists__find_annotations':
+> builtin-annotate.c:161:4: error: duplicate case value
+> builtin-annotate.c:154:4: error: previously used here
+> make: *** [builtin-annotate.o] Error 1
+>
+> This is because without NEWT support K_LEFT is #defined to -1 in
+> utils/hist.h
+>
+> Fix it by shifting the K_LEFT/K_RIGHT #defines out of the likely range
+> of error values.
 
-Should I resend the patch again? After removing this redundant cast,
-it is the same with v2.
+Argh, didn't check NO_NEWT build on this, sorry.
 
-Zhang
+The hist_entry__tui_annotate() - hence, symbol__tui_annotate() - returns
+either key code or error code.  This is not good IMHO but not sure it's
+worth refactoring.  Maybe we can move the error check to under default
+case so that possible future error checks to be done?
+
+Thanks,
+Namhyung
