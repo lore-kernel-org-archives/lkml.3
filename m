@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab3BZX6G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42049 "EHLO
+	id S932409Ab3B0A4l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:56:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42074 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760284Ab3BZX57 (ORCPT
+	with ESMTP id S1760319Ab3BZX6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:59 -0500
+	Tue, 26 Feb 2013 18:58:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jani Nikula <jani.nikula@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 088/150] drm/i915: add missing \n to UTS_RELEASE in the error_state
-Date: Tue, 26 Feb 2013 15:55:45 -0800
-Message-Id: <20130226235533.233374763@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>
+Subject: [ 098/150] staging: vt6656: Fix URB submitted while active warning.
+Date: Tue, 26 Feb 2013 15:55:55 -0800
+Message-Id: <20130226235534.228640684@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -28,36 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit fdfa175d0a9cfa2082ce24e67e284e5acbba452a upstream.
+commit ae5943de8c8c4438cbac5cda599ff0b88c224468 upstream.
 
-Amending
-commit 4518f611ba21ba165ea3714055938a8984a44ff9
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Wed Jan 23 16:16:35 2013 +0100
+This error happens because PIPEnsControlOut and PIPEnsControlIn unlock the
+spin lock for delay, letting in another thread.
 
-    drm/i915: dump UTS_RELEASE into the error_state
+The patch moves the current MP_SET_FLAG to before filling
+of sUsbCtlRequest for pControlURB and clears it in event of failing.
 
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Any thread calling either function while fMP_CONTROL_READS or fMP_CONTROL_WRITES
+flags set will return STATUS_FAILURE.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_debugfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/vt6656/usbpipe.c |   28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_debugfs.c
-+++ b/drivers/gpu/drm/i915/i915_debugfs.c
-@@ -691,7 +691,7 @@ static int i915_error_state(struct seq_f
+--- a/drivers/staging/vt6656/usbpipe.c
++++ b/drivers/staging/vt6656/usbpipe.c
+@@ -165,6 +165,11 @@ int PIPEnsControlOut(
+     if (pDevice->Flags & fMP_CONTROL_WRITES)
+         return STATUS_FAILURE;
  
- 	seq_printf(m, "Time: %ld s %ld us\n", error->time.tv_sec,
- 		   error->time.tv_usec);
--	seq_printf(m, "Kernel: " UTS_RELEASE);
-+	seq_printf(m, "Kernel: " UTS_RELEASE "\n");
- 	seq_printf(m, "PCI ID: 0x%04x\n", dev->pci_device);
- 	seq_printf(m, "EIR: 0x%08x\n", error->eir);
- 	seq_printf(m, "IER: 0x%08x\n", error->ier);
++	if (pDevice->Flags & fMP_CONTROL_READS)
++		return STATUS_FAILURE;
++
++	MP_SET_FLAG(pDevice, fMP_CONTROL_WRITES);
++
+ 	pDevice->sUsbCtlRequest.bRequestType = 0x40;
+ 	pDevice->sUsbCtlRequest.bRequest = byRequest;
+ 	pDevice->sUsbCtlRequest.wValue = cpu_to_le16p(&wValue);
+@@ -179,12 +184,13 @@ int PIPEnsControlOut(
+ 
+ 	ntStatus = usb_submit_urb(pDevice->pControlURB, GFP_ATOMIC);
+ 	if (ntStatus != 0) {
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"control send request submission failed: %d\n", ntStatus);
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
++			"control send request submission failed: %d\n",
++				ntStatus);
++		MP_CLEAR_FLAG(pDevice, fMP_CONTROL_WRITES);
+ 		return STATUS_FAILURE;
+ 	}
+-	else {
+-	    MP_SET_FLAG(pDevice, fMP_CONTROL_WRITES);
+-	}
++
+ 	spin_unlock_irq(&pDevice->lock);
+     for (ii = 0; ii <= USB_CTL_WAIT; ii ++) {
+ 
+@@ -224,6 +230,11 @@ int PIPEnsControlIn(
+     if (pDevice->Flags & fMP_CONTROL_READS)
+ 	return STATUS_FAILURE;
+ 
++	if (pDevice->Flags & fMP_CONTROL_WRITES)
++		return STATUS_FAILURE;
++
++	MP_SET_FLAG(pDevice, fMP_CONTROL_READS);
++
+ 	pDevice->sUsbCtlRequest.bRequestType = 0xC0;
+ 	pDevice->sUsbCtlRequest.bRequest = byRequest;
+ 	pDevice->sUsbCtlRequest.wValue = cpu_to_le16p(&wValue);
+@@ -237,10 +248,11 @@ int PIPEnsControlIn(
+ 
+ 	ntStatus = usb_submit_urb(pDevice->pControlURB, GFP_ATOMIC);
+ 	if (ntStatus != 0) {
+-		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"control request submission failed: %d\n", ntStatus);
+-	}else {
+-		MP_SET_FLAG(pDevice, fMP_CONTROL_READS);
+-    }
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
++			"control request submission failed: %d\n", ntStatus);
++		MP_CLEAR_FLAG(pDevice, fMP_CONTROL_READS);
++		return STATUS_FAILURE;
++	}
+ 
+ 	spin_unlock_irq(&pDevice->lock);
+     for (ii = 0; ii <= USB_CTL_WAIT; ii ++) {
 
 
