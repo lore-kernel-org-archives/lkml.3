@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760176Ab3B0BQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:16:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41796 "EHLO
+	id S1760683Ab3B0BQl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:16:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41787 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760025Ab3BZX5Q (ORCPT
+	with ESMTP id S1760020Ab3BZX5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:16 -0500
+	Tue, 26 Feb 2013 18:57:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirkjan Bussink <dirkjan.bussink@nedap.com>
-Subject: [ 015/150] tty: Prevent deadlock in n_gsm driver
-Date: Tue, 26 Feb 2013 15:54:32 -0800
-Message-Id: <20130226235525.783803640@linuxfoundation.org>
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 023/150] rtlwifi: usb: allocate URB control message setup_packet and data buffer separately
+Date: Tue, 26 Feb 2013 15:54:40 -0800
+Message-Id: <20130226235526.638966235@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,195 +27,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirkjan Bussink <d.bussink@gmail.com>
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
 
-commit 4d9b109060f690f5c835130ff54165ae157b3087 upstream.
+commit bc6b89237acb3dee6af6e64e51a18255fef89cc2 upstream.
 
-This change fixes a deadlock when the multiplexer is closed while there
-are still client side ports open.
+rtlwifi allocates both setup_packet and data buffer of control message urb,
+using shared kmalloc in _usbctrl_vendorreq_async_write. Structure used for
+allocating is:
+	struct {
+		u8 data[254];
+		struct usb_ctrlrequest dr;
+	};
 
-When the multiplexer is closed and there are active tty's it tries to
-close them with tty_vhangup. This has a problem though, because
-tty_vhangup needs the tty_lock. This patch changes it to unlock the
-tty_lock before attempting the hangup and relocks afterwards. The
-additional call to tty_port_tty_set is needed because otherwise the
-port stays active because of the reference counter.
+Because 'struct usb_ctrlrequest' is __packed, setup packet is unaligned and
+DMA mapping of both 'data' and 'dr' confuses ARM/sunxi, leading to memory
+corruptions and freezes.
 
-This change also exposed another problem that other code paths don't
-expect that the multiplexer could have been closed. This patch also adds
-checks for these cases in the gsmtty_ class of function that could be
-called.
+Patch changes setup packet to be allocated separately.
 
-The documentation explicitly states that "first close all virtual ports
-before closing the physical port" but we've found this to not always
-reality in our field situations. The GPRS / UTMS modem sometimes crashes
-and needs a power cycle in that case which means cleanly shutting down
-everything is not always possible. This change makes it much more robust
-for our situation where at least the system is recoverable with this patch
-and doesn't hang in a deadlock situation inside the kernel.
+[v2]:
+ - Use WARN_ON_ONCE instead of WARN_ON
 
-The patch is against the long term support kernel (3.4.27) and should
-apply cleanly to more recent branches. Tested with a Telit GE864-QUADV2
-and Telit HE910 modem.
-
-Signed-off-by: Dirkjan Bussink <dirkjan.bussink@nedap.com>
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |   42 +++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 41 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/usb.c |   44 +++++++++++++++++++++++--------------
+ 1 file changed, 28 insertions(+), 16 deletions(-)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1689,6 +1689,8 @@ static inline void dlci_put(struct gsm_d
- 	tty_port_put(&dlci->port);
+--- a/drivers/net/wireless/rtlwifi/usb.c
++++ b/drivers/net/wireless/rtlwifi/usb.c
+@@ -42,8 +42,12 @@
+ 
+ static void usbctrl_async_callback(struct urb *urb)
+ {
+-	if (urb)
+-		kfree(urb->context);
++	if (urb) {
++		/* free dr */
++		kfree(urb->setup_packet);
++		/* free databuf */
++		kfree(urb->transfer_buffer);
++	}
  }
  
-+static void gsm_destroy_network(struct gsm_dlci *dlci);
+ static int _usbctrl_vendorreq_async_write(struct usb_device *udev, u8 request,
+@@ -55,39 +59,47 @@ static int _usbctrl_vendorreq_async_writ
+ 	u8 reqtype;
+ 	struct usb_ctrlrequest *dr;
+ 	struct urb *urb;
+-	struct rtl819x_async_write_data {
+-		u8 data[REALTEK_USB_VENQT_MAX_BUF_SIZE];
+-		struct usb_ctrlrequest dr;
+-	} *buf;
++	const u16 databuf_maxlen = REALTEK_USB_VENQT_MAX_BUF_SIZE;
++	u8 *databuf;
 +
- /**
-  *	gsm_dlci_release		-	release DLCI
-  *	@dlci: DLCI to destroy
-@@ -1702,9 +1704,19 @@ static void gsm_dlci_release(struct gsm_
- {
- 	struct tty_struct *tty = tty_port_tty_get(&dlci->port);
- 	if (tty) {
-+		mutex_lock(&dlci->mutex);
-+		gsm_destroy_network(dlci);
-+		mutex_unlock(&dlci->mutex);
++	if (WARN_ON_ONCE(len > databuf_maxlen))
++		len = databuf_maxlen;
+ 
+ 	pipe = usb_sndctrlpipe(udev, 0); /* write_out */
+ 	reqtype =  REALTEK_USB_VENQT_WRITE;
+ 
+-	buf = kmalloc(sizeof(*buf), GFP_ATOMIC);
+-	if (!buf)
++	dr = kmalloc(sizeof(*dr), GFP_ATOMIC);
++	if (!dr)
+ 		return -ENOMEM;
+ 
++	databuf = kmalloc(databuf_maxlen, GFP_ATOMIC);
++	if (!databuf) {
++		kfree(dr);
++		return -ENOMEM;
++	}
 +
-+		/* tty_vhangup needs the tty_lock, so unlock and
-+		   relock after doing the hangup. */
-+		tty_unlock(tty);
- 		tty_vhangup(tty);
-+		tty_lock(tty);
-+		tty_port_tty_set(&dlci->port, NULL);
- 		tty_kref_put(tty);
+ 	urb = usb_alloc_urb(0, GFP_ATOMIC);
+ 	if (!urb) {
+-		kfree(buf);
++		kfree(databuf);
++		kfree(dr);
+ 		return -ENOMEM;
  	}
-+	dlci->state = DLCI_CLOSED;
- 	dlci_put(dlci);
+ 
+-	dr = &buf->dr;
+-
+ 	dr->bRequestType = reqtype;
+ 	dr->bRequest = request;
+ 	dr->wValue = cpu_to_le16(value);
+ 	dr->wIndex = cpu_to_le16(index);
+ 	dr->wLength = cpu_to_le16(len);
+ 	/* data are already in little-endian order */
+-	memcpy(buf, pdata, len);
++	memcpy(databuf, pdata, len);
+ 	usb_fill_control_urb(urb, udev, pipe,
+-			     (unsigned char *)dr, buf, len,
+-			     usbctrl_async_callback, buf);
++			     (unsigned char *)dr, databuf, len,
++			     usbctrl_async_callback, NULL);
+ 	rc = usb_submit_urb(urb, GFP_ATOMIC);
+-	if (rc < 0)
+-		kfree(buf);
++	if (rc < 0) {
++		kfree(databuf);
++		kfree(dr);
++	}
+ 	usb_free_urb(urb);
+ 	return rc;
  }
- 
-@@ -2947,6 +2959,8 @@ static void gsmtty_close(struct tty_stru
- 
- 	if (dlci == NULL)
- 		return;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	mutex_lock(&dlci->mutex);
- 	gsm_destroy_network(dlci);
- 	mutex_unlock(&dlci->mutex);
-@@ -2965,6 +2979,8 @@ out:
- static void gsmtty_hangup(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	tty_port_hangup(&dlci->port);
- 	gsm_dlci_begin_close(dlci);
- }
-@@ -2972,9 +2988,12 @@ static void gsmtty_hangup(struct tty_str
- static int gsmtty_write(struct tty_struct *tty, const unsigned char *buf,
- 								    int len)
- {
-+	int sent;
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	/* Stuff the bytes into the fifo queue */
--	int sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
-+	sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
- 	/* Need to kick the channel */
- 	gsm_dlci_data_kick(dlci);
- 	return sent;
-@@ -2983,18 +3002,24 @@ static int gsmtty_write(struct tty_struc
- static int gsmtty_write_room(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	return TX_SIZE - kfifo_len(dlci->fifo);
- }
- 
- static int gsmtty_chars_in_buffer(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	return kfifo_len(dlci->fifo);
- }
- 
- static void gsmtty_flush_buffer(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	/* Caution needed: If we implement reliable transport classes
- 	   then the data being transmitted can't simply be junked once
- 	   it has first hit the stack. Until then we can just blow it
-@@ -3013,6 +3038,8 @@ static void gsmtty_wait_until_sent(struc
- static int gsmtty_tiocmget(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	return dlci->modem_rx;
- }
- 
-@@ -3022,6 +3049,8 @@ static int gsmtty_tiocmset(struct tty_st
- 	struct gsm_dlci *dlci = tty->driver_data;
- 	unsigned int modem_tx = dlci->modem_tx;
- 
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	modem_tx &= ~clear;
- 	modem_tx |= set;
- 
-@@ -3040,6 +3069,8 @@ static int gsmtty_ioctl(struct tty_struc
- 	struct gsm_netconfig nc;
- 	int index;
- 
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	switch (cmd) {
- 	case GSMIOC_ENABLE_NET:
- 		if (copy_from_user(&nc, (void __user *)arg, sizeof(nc)))
-@@ -3066,6 +3097,9 @@ static int gsmtty_ioctl(struct tty_struc
- 
- static void gsmtty_set_termios(struct tty_struct *tty, struct ktermios *old)
- {
-+	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	/* For the moment its fixed. In actual fact the speed information
- 	   for the virtual channel can be propogated in both directions by
- 	   the RPN control message. This however rapidly gets nasty as we
-@@ -3077,6 +3111,8 @@ static void gsmtty_set_termios(struct tt
- static void gsmtty_throttle(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	if (tty->termios.c_cflag & CRTSCTS)
- 		dlci->modem_tx &= ~TIOCM_DTR;
- 	dlci->throttled = 1;
-@@ -3087,6 +3123,8 @@ static void gsmtty_throttle(struct tty_s
- static void gsmtty_unthrottle(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	if (tty->termios.c_cflag & CRTSCTS)
- 		dlci->modem_tx |= TIOCM_DTR;
- 	dlci->throttled = 0;
-@@ -3098,6 +3136,8 @@ static int gsmtty_break_ctl(struct tty_s
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
- 	int encode = 0;	/* Off */
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 
- 	if (state == -1)	/* "On indefinitely" - we can't encode this
- 				    properly */
 
 
