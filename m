@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759754Ab3BZEUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 23:20:21 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:51951 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759712Ab3BZEUU (ORCPT
+	id S1759788Ab3BZEXt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 23:23:49 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:54806 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757513Ab3BZEXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 23:20:20 -0500
+	Mon, 25 Feb 2013 23:23:47 -0500
+Date: Mon, 25 Feb 2013 20:23:43 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Glen Turner <gdt@gdt.id.au>
+Cc: linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb/net/asix_devices: Add USBNET HG20F9 ethernet dongle
+Message-ID: <20130226042343.GA27766@kroah.com>
+References: <1361852232.23197.4.camel@andromache.adelaide.aarnet.edu.au>
 MIME-Version: 1.0
-In-Reply-To: <CAJErZ53dadbU3oM4Prhi3n_R+Lsbp3TG=FP1=whTK5uPMpj90A@mail.gmail.com>
-References: <512B7D10.4060304@tpi.com>
-	<512B8407.2090807@canonical.com>
-	<512BD753.4080001@hp.com>
-	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
-	<CAE9FiQXs3MyUW+hJhupJgL-t9sYmT5GdeStWD2vMjsJG+6qCrQ@mail.gmail.com>
-	<CAE9FiQXHNm+E+PchPsReOykVPNkRrC8ttjDpWWs=njANT+Wf1Q@mail.gmail.com>
-	<CAJErZ53dadbU3oM4Prhi3n_R+Lsbp3TG=FP1=whTK5uPMpj90A@mail.gmail.com>
-Date: Mon, 25 Feb 2013 20:20:19 -0800
-X-Google-Sender-Auth: ZJBkV4_Mbr2JzCOtj5qLFFr-wyM
-Message-ID: <CAE9FiQWx=FdQSH_H_PoVxUksY6rFnN6yDfwmK3w8OTbCPLM1+w@mail.gmail.com>
-Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
-From: Yinghai Lu <yinghai@kernel.org>
-To: Martin Bligh <mbligh@mbligh.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Don Morris <don.morris@hp.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        a.p.zijlstra@chello.nl, jarkko.sakkinen@intel.com,
-        tangchen@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361852232.23197.4.camel@andromache.adelaide.aarnet.edu.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 7:21 PM, Martin Bligh <mbligh@mbligh.org> wrote:
->>>> 4, it does not CC to TJ and other numa guys...
->>>
->>> attached workaround the problem for now.
->>> but it will assume NUMAQ would not have SRAT table.
->>
->>  Martin, can you confirm that numaq does not have srat?
->
-> No, it's pre-SRAT. I forget the exact name of the table, but no SRAT until x440.
->
-> OTOH, you should probably feel free to break it by now, I can't
-> imagine they are any use to man nor beast any more.
+On Tue, Feb 26, 2013 at 02:47:12PM +1030, Glen Turner wrote:
+> This USB ethernet adapter was purchased in anodyne packaging
+> marked "USB2.0 to LAN" from the computer store adjacent to
+> linux.conf.au 2013 in Canberra (Australia). A web search
+> shows other recent purchasers in Lancaster (UK) and Seattle
+> (USA). Just like an emergent virus, our age of e-commerce and
+> airmail allows underdocumented hardware to spread around the
+> world instantly using the vector of ridiculously low prices.
+> 
+> Paige Thompson, infected via eBay, discovered that the HG20F9
+> is a copy of the Asix 88772B; many viruses copy the RNA of
+> other viruses. See Paige's work at
+> <https://github.com/paigeadele/HG20F9>.
+> This patch uses her discovery to update the restructured Asix
+> driver in the current kernel.
+> 
+> The spread of viruses is often accompanied by rumours. It is
+> rumoured that the HG20F9 has extensions to to provide gigabit
+> ethernet. This patch does not chase that chimera.
+> 
+> Just as some viruses inhabit seemingly-healthy cells, the
+> HG20F9 uses the Vendor ID 0x066b assigned to Linksys Inc.
+> For the present there is no clash of Product ID 0x20f9.
+> 
+> Signed-off-by: Glen Turner <gdt@gdt.id.au>
 
-Do you mean we can remove numaq x86 32bit code now?
+That is the best "add a new device id" changelog entry I have _ever_
+seen.  Wonderful job:
 
-Thanks
-
-Yinghai
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
