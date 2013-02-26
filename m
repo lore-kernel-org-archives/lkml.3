@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759686Ab3B0ACs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:02:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42537 "EHLO
+	id S1760325Ab3B0ADL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:03:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42529 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933598Ab3BZX7N (ORCPT
+	with ESMTP id S933459Ab3BZX7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:59:13 -0500
+	Tue, 26 Feb 2013 18:59:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 37/53] [PARISC] Purge existing TLB entries in set_pte_at and ptep_set_wrprotect
-Date: Tue, 26 Feb 2013 15:58:06 -0800
-Message-Id: <20130226235623.716341293@linuxfoundation.org>
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Subject: [ 35/53] ARM: PXA3xx: program the CSMSADRCFG register
+Date: Tue, 26 Feb 2013 15:58:04 -0800
+Message-Id: <20130226235623.502043360@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,92 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Igor Grinberg <grinberg@compulab.co.il>
 
-commit 7139bc1579901b53db7e898789e916ee2fb52d78 upstream.
+commit d107a204154ddd79339203c2deeb7433f0cf6777 upstream.
 
-This patch goes a long way toward fixing the minifail bug, and
-it  significantly improves the stability of SMP machines such as
-the rp3440.  When write  protecting a page for COW, we need to
-purge the existing translation.  Otherwise, the COW break
-doesn't occur as expected because the TLB may still have a stale entry
-which allows writes.
+The Chip Select Configuration Register must be programmed to 0x2 in
+order to achieve the correct behavior of the Static Memory Controller.
 
-[jejb: fix up checkpatch errors]
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Without this patch devices wired to DFI and accessed through SMC cannot
+be accessed after resume from S2.
+
+Do not rely on the boot loader to program the CSMSADRCFG register by
+programming it in the kernel smemc module.
+
+Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/pgtable.h |   13 ++++++++++---
- arch/parisc/kernel/cache.c        |   18 ++++++++++++++++++
- 2 files changed, 28 insertions(+), 3 deletions(-)
+ arch/arm/mach-pxa/include/mach/smemc.h |    1 +
+ arch/arm/mach-pxa/smemc.c              |   15 ++++++++++++++-
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
---- a/arch/parisc/include/asm/pgtable.h
-+++ b/arch/parisc/include/asm/pgtable.h
-@@ -12,11 +12,10 @@
+--- a/arch/arm/mach-pxa/include/mach/smemc.h
++++ b/arch/arm/mach-pxa/include/mach/smemc.h
+@@ -37,6 +37,7 @@
+ #define CSADRCFG1	(SMEMC_VIRT + 0x84)  /* Address Configuration Register for CS1 */
+ #define CSADRCFG2	(SMEMC_VIRT + 0x88)  /* Address Configuration Register for CS2 */
+ #define CSADRCFG3	(SMEMC_VIRT + 0x8C)  /* Address Configuration Register for CS3 */
++#define CSMSADRCFG	(SMEMC_VIRT + 0xA0)  /* Chip Select Configuration Register */
  
- #include <linux/bitops.h>
- #include <linux/spinlock.h>
-+#include <linux/mm_types.h>
- #include <asm/processor.h>
- #include <asm/cache.h>
- 
--struct vm_area_struct;
--
  /*
-  * kern_addr_valid(ADDR) tests if ADDR is pointing to valid kernel
-  * memory.  For the return value to be meaningful, ADDR must be >=
-@@ -40,7 +39,14 @@ struct vm_area_struct;
-         do{                                                     \
-                 *(pteptr) = (pteval);                           \
-         } while(0)
--#define set_pte_at(mm,addr,ptep,pteval) set_pte(ptep,pteval)
-+
-+extern void purge_tlb_entries(struct mm_struct *, unsigned long);
-+
-+#define set_pte_at(mm, addr, ptep, pteval)                      \
-+	do {                                                    \
-+		set_pte(ptep, pteval);                          \
-+		purge_tlb_entries(mm, addr);                    \
-+	} while (0)
+  * More handy macros for PCMCIA
+--- a/arch/arm/mach-pxa/smemc.c
++++ b/arch/arm/mach-pxa/smemc.c
+@@ -40,6 +40,8 @@ static void pxa3xx_smemc_resume(void)
+ 	__raw_writel(csadrcfg[1], CSADRCFG1);
+ 	__raw_writel(csadrcfg[2], CSADRCFG2);
+ 	__raw_writel(csadrcfg[3], CSADRCFG3);
++	/* CSMSADRCFG wakes up in its default state (0), so we need to set it */
++	__raw_writel(0x2, CSMSADRCFG);
+ }
  
- #endif /* !__ASSEMBLY__ */
+ static struct syscore_ops smemc_syscore_ops = {
+@@ -49,8 +51,19 @@ static struct syscore_ops smemc_syscore_
  
-@@ -464,6 +470,7 @@ static inline void ptep_set_wrprotect(st
- 		old = pte_val(*ptep);
- 		new = pte_val(pte_wrprotect(__pte (old)));
- 	} while (cmpxchg((unsigned long *) ptep, old, new) != old);
-+	purge_tlb_entries(mm, addr);
- #else
- 	pte_t old_pte = *ptep;
- 	set_pte_at(mm, addr, ptep, pte_wrprotect(old_pte));
---- a/arch/parisc/kernel/cache.c
-+++ b/arch/parisc/kernel/cache.c
-@@ -421,6 +421,24 @@ void kunmap_parisc(void *addr)
- EXPORT_SYMBOL(kunmap_parisc);
- #endif
- 
-+void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
-+{
-+	unsigned long flags;
-+
-+	/* Note: purge_tlb_entries can be called at startup with
-+	   no context.  */
-+
-+	/* Disable preemption while we play with %sr1.  */
-+	preempt_disable();
-+	mtsp(mm->context, 1);
-+	purge_tlb_start(flags);
-+	pdtlb(addr);
-+	pitlb(addr);
-+	purge_tlb_end(flags);
-+	preempt_enable();
-+}
-+EXPORT_SYMBOL(purge_tlb_entries);
-+
- void __flush_tlb_range(unsigned long sid, unsigned long start,
- 		       unsigned long end)
+ static int __init smemc_init(void)
  {
+-	if (cpu_is_pxa3xx())
++	if (cpu_is_pxa3xx()) {
++		/*
++		 * The only documentation we have on the
++		 * Chip Select Configuration Register (CSMSADRCFG) is that
++		 * it must be programmed to 0x2.
++		 * Moreover, in the bit definitions, the second bit
++		 * (CSMSADRCFG[1]) is called "SETALWAYS".
++		 * Other bits are reserved in this register.
++		 */
++		__raw_writel(0x2, CSMSADRCFG);
++
+ 		register_syscore_ops(&smemc_syscore_ops);
++	}
+ 
+ 	return 0;
+ }
 
 
