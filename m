@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759987Ab3B0BVk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:21:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41708 "EHLO
+	id S1760655Ab3B0BWN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:22:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41688 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759886Ab3BZX5F (ORCPT
+	with ESMTP id S1759827Ab3BZX47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:05 -0500
+	Tue, 26 Feb 2013 18:56:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ 006/150] timeconst.pl: Eliminate Perl warning
-Date: Tue, 26 Feb 2013 15:54:23 -0800
-Message-Id: <20130226235524.689029517@linuxfoundation.org>
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: [ 002/150] x86-32, mm: Remove reference to resume_map_numa_kva()
+Date: Tue, 26 Feb 2013 15:54:19 -0800
+Message-Id: <20130226235524.246484699@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -30,40 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 63a3f603413ffe82ad775f2d62a5afff87fd94a0 upstream.
+commit bb112aec5ee41427e9b9726e3d57b896709598ed upstream.
 
-defined(@array) is deprecated in Perl and gives off a warning.
-Restructure the code to remove that warning.
+Remove reference to removed function resume_map_numa_kva().
 
-[ hpa: it would be interesting to revert to the timeconst.bc script.
-  It appears that the failures reported by akpm during testing of
-  that script was due to a known broken version of make, not a problem
-  with bc.  The Makefile rules could probably be restructured to avoid
-  the make bug, or it is probably old enough that it doesn't matter. ]
-
-Reported-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20130131005616.1C79F411@kernel.stglabs.ibm.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/timeconst.pl |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/mmzone_32.h |    6 ------
+ arch/x86/power/hibernate_32.c    |    2 --
+ 2 files changed, 8 deletions(-)
 
---- a/kernel/timeconst.pl
-+++ b/kernel/timeconst.pl
-@@ -369,10 +369,8 @@ if ($hz eq '--can') {
- 		die "Usage: $0 HZ\n";
+--- a/arch/x86/include/asm/mmzone_32.h
++++ b/arch/x86/include/asm/mmzone_32.h
+@@ -14,12 +14,6 @@ extern struct pglist_data *node_data[];
+ 
+ #include <asm/numaq.h>
+ 
+-extern void resume_map_numa_kva(pgd_t *pgd);
+-
+-#else /* !CONFIG_NUMA */
+-
+-static inline void resume_map_numa_kva(pgd_t *pgd) {}
+-
+ #endif /* CONFIG_NUMA */
+ 
+ #ifdef CONFIG_DISCONTIGMEM
+--- a/arch/x86/power/hibernate_32.c
++++ b/arch/x86/power/hibernate_32.c
+@@ -129,8 +129,6 @@ static int resume_physical_mapping_init(
+ 		}
  	}
  
--	@val = @{$canned_values{$hz}};
--	if (!defined(@val)) {
--		@val = compute_values($hz);
--	}
-+	$cv = $canned_values{$hz};
-+	@val = defined($cv) ? @$cv : compute_values($hz);
- 	output($hz, @val);
+-	resume_map_numa_kva(pgd_base);
+-
+ 	return 0;
  }
- exit 0;
+ 
 
 
