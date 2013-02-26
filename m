@@ -1,110 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab3BZHyJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 02:54:09 -0500
-Received: from relay.parallels.com ([195.214.232.42]:52065 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab3BZHyH (ORCPT
+	id S1758658Ab3BZHyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 02:54:35 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:57288 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339Ab3BZHye convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 02:54:07 -0500
-Message-ID: <512C69EA.8020603@parallels.com>
-Date: Tue, 26 Feb 2013 11:53:14 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 26 Feb 2013 02:54:34 -0500
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 00/10] ipc MSG_COPY fixes
-References: <1361845307-12737-1-git-send-email-peter@hurleysoftware.com>
-In-Reply-To: <1361845307-12737-1-git-send-email-peter@hurleysoftware.com>
-Content-Type: text/plain; charset="windows-1251"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.29.37]
+In-Reply-To: <512C56AF.1030801@oracle.com>
+References: <EB937501617BFC44BE90EDA24CA6A13A0117EB@SGSIMBX003.nsn-intra.net>
+	<512C56AF.1030801@oracle.com>
+Date: Tue, 26 Feb 2013 08:54:32 +0100
+Message-ID: <CAFLxGvyQmPz_iK26NavuRdBWAFiWzmt8BMfL8f6rg_Qm4LF7WQ@mail.gmail.com>
+Subject: Re: [Ocfs2-users] Kernel panic due to ocfs2
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: "Ramappa, Ravi (NSN - IN/Bangalore)" <ravi.ramappa@nsn.com>,
+        "ocfs2-users@oss.oracle.com" <ocfs2-users@oss.oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, david@sigma-star.at
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good to me. Thanks you, Peter!
+On Tue, Feb 26, 2013 at 7:31 AM, Srinivas Eeda <srinivas.eeda@oracle.com> wrote:
+> This is due to a race in lock mastery/purge. I have recently fixed this
+> problem but haven't yet submitted the patch to mainline. Please file a
+> Service request with Oracle to get a one-off fix.
 
-Acked-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-
-Next time please, add maintainer to "To" list instead of "CC" list (no need to resend - I've added Andrew Morton to "To" list in this reply).
-
-26.02.2013 06:21, Peter Hurley пишет:
-> Over the weekend testing with trinity on KVM, I hit a similar oops
-> (pasted below) to what others have already reported here
->       http://lkml.indiana.edu/hypermail/linux/kernel/1302.2/01465.html
->
-> While trying to uncover the underlying cause of the list corruption,
-> I uncovered two other bugs which are addressed in
->    ipc: Fix potential oops when src msg > 4k w/ MSG_COPY
->    ipc: Don't allocate a copy larger than max
->
-> The other cleanup was incidental to trying to uncover the oops (so far
-> unsuccessfully).
->
-> Can the alloc_msg() be further simplified to allocate one block with
-> vmalloc() and link the msg segments in-place?
->
->
-> [   86.026309] BUG: unable to handle kernel paging request at 0000000000058134
-> [   86.035004] IP: [<ffffffff813087d0>] testmsg.isra.5+0x30/0x60
-> [   86.035004] PGD 5ff2d067 PUD 5ee34067 PMD 0
-> [   86.035004] Oops: 0000 [#1] PREEMPT SMP
-> [   86.035004] Modules linked in: can_bcm bridge stp dlci af_rxrpc .......
-> [   86.035004] CPU 5
-> [   86.035004] Pid: 1736, comm: trinity-child37 Not tainted 3.9.0-next-20130220+ldsem-xeon+lockdep #20130220+ldsem Bochs Bochs
-> [   86.035004] RIP: 0010:[<ffffffff813087d0>]  [<ffffffff813087d0>] testmsg.isra.5+0x30/0x60
-> [   86.035004] RSP: 0018:ffff88005ee2fe78  EFLAGS: 00010246
-> [   86.035004] RAX: 0000000000000000 RBX: 0000000000000004 RCX: 0000000000000001
-> [   86.035004] RDX: 0000000000000004 RSI: 8000000000000000 RDI: 0000000000058134
-> [   86.035004] RBP: ffff88005ee2fe78 R08: 0000000b0ff40000 R09: 0000000000000000
-> [   86.035004] R10: 0000000000000001 R11: 0000000000000000 R12: 8000000000000000
-> [   86.035004] R13: ffff880061275c20 R14: 0000000000058124 R15: ffff880061275b70
-> [   86.035004] FS:  00007f9b37442700(0000) GS:ffff88007d400000(0000) knlGS:0000000000000000
-> [   86.035004] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [   86.035004] CR2: 0000000000058134 CR3: 000000005ff2c000 CR4: 00000000000007e0
-> [   86.035004] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [   86.035004] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [   86.035004] Process trinity-child37 (pid: 1736, threadinfo ffff88005ee2e000, task ffff88005edaa440)
-> [   86.035004] Stack:
-> [   86.035004]  ffff88005ee2ff68 ffffffff81309c06 00000000001d5b00 ffff88005edaa440
-> [   86.035004]  ffff88005edaa440 ffff88005edaa440 0000000000000000 ffffffff813085e0
-> [   86.035004]  0000000000000000 ffff88005ff7e458 0000000000000000 00000000006fe000
-> [   86.035004] Call Trace:
-> [   86.035004]  [<ffffffff81309c06>] do_msgrcv+0x1d6/0x6a0
-> [   86.035004]  [<ffffffff813085e0>] ? load_msg+0x180/0x180
-> [   86.035004]  [<ffffffff810d473d>] ? trace_hardirqs_on_caller+0x10d/0x1a0
-> [   86.035004]  [<ffffffff813b52fe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> [   86.035004]  [<ffffffff8130a0e5>] sys_msgrcv+0x15/0x20
-> [   86.035004]  [<ffffffff817aebd9>] system_call_fastpath+0x16/0x1b
-> [   86.035004] Code: 55 83 fa 02 48 89 e5 74 32 7e 10 83 fa 03 74 3b 83 fa 04 74 16 31 c0 5d c3 66 90 83 fa 01 b8 01 00 00 00 74 f2 31 c0 eb ee 66 90 <48> 39 37 b8 01 00 00 00 7e e2 31 c0 eb de 66 90 48 3b 37 75 d5
-> [   86.035004] RIP  [<ffffffff813087d0>] testmsg.isra.5+0x30/0x60
-> [   86.035004]  RSP <ffff88005ee2fe78>
-> [   86.035004] CR2: 0000000000058134
-> [   86.183799] ---[ end trace f8a403aaa782a5b4 ]---
->
->
->
-> Peter Hurley (10):
->    ipc: Fix potential oops when src msg > 4k w/ MSG_COPY
->    ipc: Clamp with min()
->    ipc: Separate msg allocation from userspace copy
->    ipc: Tighten msg copy loops
->    ipc: Set EFAULT as default error in load_msg()
->    ipc: Don't allocate a copy larger than max
->    ipc: Remove msg handling from queue scan
->    ipc: Implement MSG_COPY as a new receive mode
->    ipc: Simplify msg list search
->    ipc: Refactor msg list search into separate function
->
->   ipc/msg.c     |  84 +++++++++++++++++++++-----------------------
->   ipc/msgutil.c | 109 +++++++++++++++++++++++++++-------------------------------
->   2 files changed, 90 insertions(+), 103 deletions(-)
->
-
+Please submit the patch immediately.
+Why does one need a f§&"!#$ SR from Oracle to have this fixed?
+OCFS2 is mainline...
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+Thanks,
+//richard
