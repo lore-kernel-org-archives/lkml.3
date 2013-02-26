@@ -1,126 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758913Ab3BZNUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 08:20:45 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:61289 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758699Ab3BZNUm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 08:20:42 -0500
-From: Magnus Damm <magnus.damm@gmail.com>
+	id S1758651Ab3BZNV4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 08:21:56 -0500
+Received: from slimlogic.co.uk ([89.16.172.20]:38057 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756234Ab3BZNVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 08:21:55 -0500
+From: Ian Lartey <ian@slimlogic.co.uk>
 To: linux-kernel@vger.kernel.org
-Cc: grant.likely@secretlab.ca, Magnus Damm <magnus.damm@gmail.com>,
-        horms@verge.net.au, linus.walleij@linaro.org, linux-sh@vger.kernel.org
-Date: Tue, 26 Feb 2013 22:26:23 +0900
-Message-Id: <20130226132623.18365.36583.sendpatchset@w520>
-Subject: [PATCH] gpio: em: Add Device Tree support
+Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org, ldewangan@nvidia.com,
+        sameo@linux.intel.com, Ian Lartey <ian@slimlogic.co.uk>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: [PATCH] gpio: palmas: add in GPIO support for palmas charger
+Date: Tue, 26 Feb 2013 13:21:08 +0000
+Message-Id: <1361884868-27783-1-git-send-email-ian@slimlogic.co.uk>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+this patch depenfs on [PATCH] mfd: palmas: is_palmas_charger needed by multiple drivers
 
-Update the Emma Mobile GPIO driver to add DT support.
+Palmas charger has 16 GPIOs
+add palmas_gpio_[read|write|update] api to take account
+second bank of GPIOs
 
-The patch simply adds a two-cell xlate function and
-updates the probe code to allow configuration via DT
-using the "ngpios" property plus OF id in the same
-style as gpio-mvebu.c. The code is also adjusted to
-use postcore_initcall() to force early setup.
-
-Signed-off-by: Magnus Damm <damm@opensource.se>
+Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
 ---
+ drivers/gpio/gpio-palmas.c |   73 ++++++++++++++++++++++++++++++++++++-------
+ include/linux/mfd/palmas.h |   12 ++++++-
+ 2 files changed, 72 insertions(+), 13 deletions(-)
 
- Written on top of:
- [PATCH] gpio: em: Use irq_domain_add_simple() to fix runtime error
-
- drivers/gpio/gpio-em.c |   45 ++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 42 insertions(+), 3 deletions(-)
-
---- 0010/drivers/gpio/gpio-em.c
-+++ work/drivers/gpio/gpio-em.c	2013-02-26 22:11:58.000000000 +0900
-@@ -231,10 +231,12 @@ static int em_gio_irq_domain_map(struct
- 
- static struct irq_domain_ops em_gio_irq_domain_ops = {
- 	.map	= em_gio_irq_domain_map,
-+	.xlate	= irq_domain_xlate_twocell,
+diff --git a/drivers/gpio/gpio-palmas.c b/drivers/gpio/gpio-palmas.c
+index e3a4e56..c019c99 100644
+--- a/drivers/gpio/gpio-palmas.c
++++ b/drivers/gpio/gpio-palmas.c
+@@ -1,5 +1,5 @@
+ /*
+- * TI Palma series PMIC's GPIO driver.
++ * TI Palmas series PMIC's GPIO driver.
+  *
+  * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
+  *
+@@ -31,6 +31,36 @@ struct palmas_gpio {
+ 	struct palmas *palmas;
  };
  
- static int em_gio_probe(struct platform_device *pdev)
++static int palmas_gpio_read(struct palmas *palmas, unsigned int reg,
++		int gpio, unsigned int *dest)
++{
++	/* registers for second bank are identical and offset by 0x9 */
++	if (gpio > 7)
++		reg += PALMAS_GPIO_DATA_IN2;
++
++	return palmas_read(palmas, PALMAS_GPIO_BASE, reg, dest);
++}
++
++static int palmas_gpio_write(struct palmas *palmas, unsigned int reg,
++		int gpio, unsigned int data)
++{
++	/* registers for second bank are identical and offset by 0x9 */
++	if (gpio > 7)
++		reg += PALMAS_GPIO_DATA_IN2;
++
++	return palmas_write(palmas, PALMAS_GPIO_BASE, reg, data);
++}
++
++static int palmas_gpio_update_bits(struct palmas *palmas, unsigned int reg,
++		int gpio, unsigned int mask, unsigned int data)
++{
++	/* registers for second bank are identical and offset by 0x9 */
++	if (gpio > 7)
++		reg += PALMAS_GPIO_DATA_IN2;
++
++	return palmas_update_bits(palmas, PALMAS_GPIO_BASE, reg, mask, data);
++}
++
+ static inline struct palmas_gpio *to_palmas_gpio(struct gpio_chip *chip)
  {
-+	struct gpio_em_config pdata_dt;
- 	struct gpio_em_config *pdata = pdev->dev.platform_data;
- 	struct em_gio_priv *p;
- 	struct resource *io[2], *irq[2];
-@@ -259,8 +261,8 @@ static int em_gio_probe(struct platform_
- 	irq[0] = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	irq[1] = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
+ 	return container_of(chip, struct palmas_gpio, gpio_chip);
+@@ -43,12 +73,12 @@ static int palmas_gpio_get(struct gpio_chip *gc, unsigned offset)
+ 	unsigned int val;
+ 	int ret;
  
--	if (!io[0] || !io[1] || !irq[0] || !irq[1] || !pdata) {
--		dev_err(&pdev->dev, "missing IRQ, IOMEM or configuration\n");
-+	if (!io[0] || !io[1] || !irq[0] || !irq[1]) {
-+		dev_err(&pdev->dev, "missing IRQ or IOMEM\n");
- 		ret = -EINVAL;
- 		goto err1;
+-	ret = palmas_read(palmas, PALMAS_GPIO_BASE, PALMAS_GPIO_DATA_IN, &val);
++	ret = palmas_gpio_read(palmas, PALMAS_GPIO_DATA_IN, offset, &val);
+ 	if (ret < 0) {
+ 		dev_err(gc->dev, "GPIO_DATA_IN read failed, err = %d\n", ret);
+ 		return ret;
  	}
-@@ -279,6 +281,25 @@ static int em_gio_probe(struct platform_
- 		goto err2;
- 	}
- 
-+	if (!pdata) {
-+		memset(&pdata_dt, 0, sizeof(pdata_dt));
-+		pdata = &pdata_dt;
-+
-+		if (of_property_read_u32(pdev->dev.of_node, "ngpios",
-+					 &pdata->number_of_pins)) {
-+			dev_err(&pdev->dev, "Missing ngpios OF property\n");
-+			ret = -EINVAL;
-+			goto err3;
-+		}
-+
-+		ret = of_alias_get_id(pdev->dev.of_node, "gpio");
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "Couldn't get OF id\n");
-+			goto err3;
-+		}
-+		pdata->gpio_base = ret * 32; /* 32 GPIOs per instance */
-+	}
-+
- 	gpio_chip = &p->gpio_chip;
- 	gpio_chip->direction_input = em_gio_direction_input;
- 	gpio_chip->get = em_gio_get;
-@@ -366,15 +387,33 @@ static int em_gio_remove(struct platform
- 	return 0;
+-	return !!(val & BIT(offset));
++	return !!(val & BIT(offset % 8));
  }
  
-+static const struct of_device_id em_gio_dt_ids[] = {
-+	{ .compatible = "renesas,em-gio", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, em_gio_dt_ids);
+ static void palmas_gpio_set(struct gpio_chip *gc, unsigned offset,
+@@ -59,11 +89,11 @@ static void palmas_gpio_set(struct gpio_chip *gc, unsigned offset,
+ 	int ret;
+ 
+ 	if (value)
+-		ret = palmas_write(palmas, PALMAS_GPIO_BASE,
+-				PALMAS_GPIO_SET_DATA_OUT, BIT(offset));
++		ret = palmas_gpio_write(palmas, PALMAS_GPIO_SET_DATA_OUT,
++				offset, BIT(offset % 8));
+ 	else
+-		ret = palmas_write(palmas, PALMAS_GPIO_BASE,
+-				PALMAS_GPIO_CLEAR_DATA_OUT, BIT(offset));
++		ret = palmas_gpio_write(palmas, PALMAS_GPIO_CLEAR_DATA_OUT,
++				offset, BIT(offset % 8));
+ 	if (ret < 0)
+ 		dev_err(gc->dev, "%s write failed, err = %d\n",
+ 			(value) ? "GPIO_SET_DATA_OUT" : "GPIO_CLEAR_DATA_OUT",
+@@ -80,8 +110,8 @@ static int palmas_gpio_output(struct gpio_chip *gc, unsigned offset,
+ 	/* Set the initial value */
+ 	palmas_gpio_set(gc, offset, value);
+ 
+-	ret = palmas_update_bits(palmas, PALMAS_GPIO_BASE,
+-		PALMAS_GPIO_DATA_DIR, BIT(offset), BIT(offset));
++	ret = palmas_gpio_update_bits(palmas, PALMAS_GPIO_DATA_DIR,
++			offset, 1 << (offset % 8), 1 << (offset % 8));
+ 	if (ret < 0)
+ 		dev_err(gc->dev, "GPIO_DATA_DIR write failed, err = %d\n", ret);
+ 	return ret;
+@@ -93,8 +123,8 @@ static int palmas_gpio_input(struct gpio_chip *gc, unsigned offset)
+ 	struct palmas *palmas = pg->palmas;
+ 	int ret;
+ 
+-	ret = palmas_update_bits(palmas, PALMAS_GPIO_BASE,
+-		PALMAS_GPIO_DATA_DIR, BIT(offset), 0);
++	ret =  palmas_gpio_update_bits(palmas, PALMAS_GPIO_DATA_DIR,
++				offset, 1 << (offset % 8), 0);
+ 	if (ret < 0)
+ 		dev_err(gc->dev, "GPIO_DATA_DIR write failed, err = %d\n", ret);
+ 	return ret;
+@@ -108,7 +138,21 @@ static int palmas_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
+ 	return palmas_irq_get_virq(palmas, PALMAS_GPIO_0_IRQ + offset);
+ }
+ 
+-static int palmas_gpio_probe(struct platform_device *pdev)
++static int palmas_gpio_set_debounce(struct gpio_chip *gc, unsigned offset,
++				    unsigned debounce)
++{
++	struct palmas_gpio *palmas_gpio = to_palmas_gpio(gc);
++	struct palmas *palmas = palmas_gpio->palmas;
++	unsigned int data = 0;
 +
- static struct platform_driver em_gio_device_driver = {
- 	.probe		= em_gio_probe,
- 	.remove		= em_gio_remove,
- 	.driver		= {
- 		.name	= "em_gio",
-+		.of_match_table = em_gio_dt_ids,
-+		.owner		= THIS_MODULE,
++	if (debounce)
++		data = 0xff;
++
++	return palmas_gpio_update_bits(palmas, PALMAS_GPIO_DEBOUNCE_EN,
++			offset, 1 << (offset % 8), data);
++}
++
++static int  palmas_gpio_probe(struct platform_device *pdev)
+ {
+ 	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
+ 	struct palmas_platform_data *palmas_pdata;
+@@ -122,6 +166,10 @@ static int palmas_gpio_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
  	}
- };
  
--module_platform_driver(em_gio_device_driver);
-+static int __init em_gio_init(void)
-+{
-+	return platform_driver_register(&em_gio_device_driver);
-+}
-+postcore_initcall(em_gio_init);
++	/* palmas charger has 16 gpios */
++	if (is_palmas_charger(palmas->product_id))
++		palmas_gpio->gpio_chip.ngpio = 16;
 +
-+static void __exit em_gio_exit(void)
-+{
-+	platform_driver_unregister(&em_gio_device_driver);
-+}
-+module_exit(em_gio_exit);
+ 	palmas_gpio->palmas = palmas;
+ 	palmas_gpio->gpio_chip.owner = THIS_MODULE;
+ 	palmas_gpio->gpio_chip.label = dev_name(&pdev->dev);
+@@ -129,6 +177,7 @@ static int palmas_gpio_probe(struct platform_device *pdev)
+ 	palmas_gpio->gpio_chip.can_sleep = 1;
+ 	palmas_gpio->gpio_chip.direction_input = palmas_gpio_input;
+ 	palmas_gpio->gpio_chip.direction_output = palmas_gpio_output;
++	palmas_gpio->gpio_chip.set_debounce = palmas_gpio_set_debounce,
+ 	palmas_gpio->gpio_chip.to_irq = palmas_gpio_to_irq;
+ 	palmas_gpio->gpio_chip.set	= palmas_gpio_set;
+ 	palmas_gpio->gpio_chip.get	= palmas_gpio_get;
+diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+index 98c0567..0b86845 100644
+--- a/include/linux/mfd/palmas.h
++++ b/include/linux/mfd/palmas.h
+@@ -243,7 +243,7 @@ struct palmas_platform_data {
+ 	 * then the two value to load into the registers if true
+ 	 */
+ 	int mux_from_pdata;
+-	u8 pad1, pad2;
++	u8 pad1, pad2, pad3, pad4;
  
- MODULE_AUTHOR("Magnus Damm");
- MODULE_DESCRIPTION("Renesas Emma Mobile GIO Driver");
+ 	struct palmas_pmic_platform_data *pmic_pdata;
+ 	struct palmas_gpadc_platform_data *gpadc_pdata;
+@@ -2512,6 +2512,16 @@ enum usb_irq_events {
+ #define PALMAS_PU_PD_GPIO_CTRL1					0x6
+ #define PALMAS_PU_PD_GPIO_CTRL2					0x7
+ #define PALMAS_OD_OUTPUT_GPIO_CTRL				0x8
++#define PALMAS_GPIO_DATA_IN2					0x9
++#define PALMAS_GPIO_DATA_DIR2					0xA
++#define PALMAS_GPIO_DATA_OUT2					0xB
++#define PALMAS_GPIO_DEBOUNCE_EN2				0xC
++#define PALMAS_GPIO_CLEAR_DATA_OUT2				0xD
++#define PALMAS_GPIO_SET_DATA_OUT2				0xE
++#define PALMAS_PU_PD_GPIO_CTRL3					0xF
++#define PALMAS_PU_PD_GPIO_CTRL4					0x10
++#define PALMAS_OD_OUTPUT_GPIO_CTRL2				0x11
++#define PALMAS_GPO_CTRL						0x12
+ 
+ /* Bit definitions for GPIO_DATA_IN */
+ #define PALMAS_GPIO_DATA_IN_GPIO_7_IN				0x80
+-- 
+1.7.0.4
+
