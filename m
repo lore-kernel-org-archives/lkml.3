@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab3BZLbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 06:31:46 -0500
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:58781 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751Ab3BZLbo (ORCPT
+	id S1757085Ab3BZLcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 06:32:53 -0500
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:36650 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754751Ab3BZLcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 06:31:44 -0500
-Message-ID: <512C9D20.8020309@linaro.org>
-Date: Tue, 26 Feb 2013 12:31:44 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 26 Feb 2013 06:32:52 -0500
+Date: Tue, 26 Feb 2013 12:32:48 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] timer fixes
+Message-ID: <20130226113248.GA14726@gmail.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, fweisbec@gmail.com,
-        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH 1/2] time : pass broadcast device parameter
-References: <5123C299.3080005@linaro.org> <1361484083-5906-1-git-send-email-daniel.lezcano@linaro.org> <CAKohpomqooF6DzzzdUFByA0wDxQ3RuPne15a9Vy1sScKjZfeyA@mail.gmail.com>
-In-Reply-To: <CAKohpomqooF6DzzzdUFByA0wDxQ3RuPne15a9Vy1sScKjZfeyA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2013 09:45 AM, Viresh Kumar wrote:
-> On 22 February 2013 03:31, Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
->> The broadcast timer could be passed as parameter to the function
->> instead of using again tick_broadcast_device.evtdev which was
->> previously used in the caller function.
->>
->> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> 
-> I know you are going for another round with this patchset and was just
-> trying v1.
-> 
-> I did my tests on ARM Vexpress - TC2, big.LITTLE Arch.
-> 
-> Tested-by: Viresh Kumar <viresh.kumar@linaro.org>
+Linus,
 
-Oh, by the way, could send me the patch to set the flag to the timer
-device ? I will include it to the patchset.
+Please pull the latest timers-urgent-for-linus git tree from:
 
-Thanks
-  -- Daniel
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+   HEAD: 00f4e13c4634b10f6a16b26a980b22a53dfa6bb5 clocksource : Nomadik-mtu : fix missing irq initialization
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+ Thanks,
 
+	Ingo
+
+------------------>
+Daniel Lezcano (1):
+      clocksource : Nomadik-mtu : fix missing irq initialization
+
+Tejun Heo (1):
+      posix-timer: Don't call idr_find() with out-of-range ID
+
+
+ drivers/clocksource/nomadik-mtu.c | 1 +
+ kernel/posix-timers.c             | 7 +++++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/drivers/clocksource/nomadik-mtu.c b/drivers/clocksource/nomadik-mtu.c
+index 8914c3c..7cbcaa0 100644
+--- a/drivers/clocksource/nomadik-mtu.c
++++ b/drivers/clocksource/nomadik-mtu.c
+@@ -226,5 +226,6 @@ void __init nmdk_timer_init(void __iomem *base, int irq)
+ 	/* Timer 1 is used for events, register irq and clockevents */
+ 	setup_irq(irq, &nmdk_timer_irq);
+ 	nmdk_clkevt.cpumask = cpumask_of(0);
++	nmdk_clkevt.irq = irq;
+ 	clockevents_config_and_register(&nmdk_clkevt, rate, 2, 0xffffffffU);
+ }
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 10349d5..7edfe4b 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -639,6 +639,13 @@ static struct k_itimer *__lock_timer(timer_t timer_id, unsigned long *flags)
+ {
+ 	struct k_itimer *timr;
+ 
++	/*
++	 * timer_t could be any type >= int and we want to make sure any
++	 * @timer_id outside positive int range fails lookup.
++	 */
++	if ((unsigned long long)timer_id > INT_MAX)
++		return NULL;
++
+ 	rcu_read_lock();
+ 	timr = idr_find(&posix_timers_id, (int)timer_id);
+ 	if (timr) {
