@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab3BZX6V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42148 "EHLO
+	id S934031Ab3B0AuI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:50:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42187 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932469Ab3BZX6P (ORCPT
+	with ESMTP id S932726Ab3BZX6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:15 -0500
+	Tue, 26 Feb 2013 18:58:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 112/150] [PARISC] Purge existing TLB entries in set_pte_at and ptep_set_wrprotect
-Date: Tue, 26 Feb 2013 15:56:09 -0800
-Message-Id: <20130226235535.730234771@linuxfoundation.org>
+        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
+Subject: [ 119/150] mmc: sdhci-esdhc-imx: fix host version read
+Date: Tue, 26 Feb 2013 15:56:16 -0800
+Message-Id: <20130226235536.478932213@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,92 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit 7139bc1579901b53db7e898789e916ee2fb52d78 upstream.
+commit ef4d0888bb7e1b963880f086575081c3d39cad2d upstream.
 
-This patch goes a long way toward fixing the minifail bug, and
-it  significantly improves the stability of SMP machines such as
-the rp3440.  When write  protecting a page for COW, we need to
-purge the existing translation.  Otherwise, the COW break
-doesn't occur as expected because the TLB may still have a stale entry
-which allows writes.
+When commit 95a2482 (mmc: sdhci-esdhc-imx: add basic imx6q usdhc
+support) works around host version issue on imx6q, it gets the
+register address fixup "reg ^= 2" lost for imx25/35/51/53 esdhc.
+Thus, the controller version on these SoCs is wrongly identified
+as v1 while it's actually v2.
 
-[jejb: fix up checkpatch errors]
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Add the address fixup back and take a different approach to correct
+imx6q host version, so that the host version read gets back to work
+for all SoCs.
+
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/pgtable.h |   13 ++++++++++---
- arch/parisc/kernel/cache.c        |   18 ++++++++++++++++++
- 2 files changed, 28 insertions(+), 3 deletions(-)
+ drivers/mmc/host/sdhci-esdhc-imx.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/arch/parisc/include/asm/pgtable.h
-+++ b/arch/parisc/include/asm/pgtable.h
-@@ -12,11 +12,10 @@
+--- a/drivers/mmc/host/sdhci-esdhc-imx.c
++++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+@@ -237,15 +237,18 @@ static void esdhc_writel_le(struct sdhci
  
- #include <linux/bitops.h>
- #include <linux/spinlock.h>
-+#include <linux/mm_types.h>
- #include <asm/processor.h>
- #include <asm/cache.h>
- 
--struct vm_area_struct;
--
- /*
-  * kern_addr_valid(ADDR) tests if ADDR is pointing to valid kernel
-  * memory.  For the return value to be meaningful, ADDR must be >=
-@@ -40,7 +39,14 @@ struct vm_area_struct;
-         do{                                                     \
-                 *(pteptr) = (pteval);                           \
-         } while(0)
--#define set_pte_at(mm,addr,ptep,pteval) set_pte(ptep,pteval)
-+
-+extern void purge_tlb_entries(struct mm_struct *, unsigned long);
-+
-+#define set_pte_at(mm, addr, ptep, pteval)                      \
-+	do {                                                    \
-+		set_pte(ptep, pteval);                          \
-+		purge_tlb_entries(mm, addr);                    \
-+	} while (0)
- 
- #endif /* !__ASSEMBLY__ */
- 
-@@ -466,6 +472,7 @@ static inline void ptep_set_wrprotect(st
- 		old = pte_val(*ptep);
- 		new = pte_val(pte_wrprotect(__pte (old)));
- 	} while (cmpxchg((unsigned long *) ptep, old, new) != old);
-+	purge_tlb_entries(mm, addr);
- #else
- 	pte_t old_pte = *ptep;
- 	set_pte_at(mm, addr, ptep, pte_wrprotect(old_pte));
---- a/arch/parisc/kernel/cache.c
-+++ b/arch/parisc/kernel/cache.c
-@@ -419,6 +419,24 @@ void kunmap_parisc(void *addr)
- EXPORT_SYMBOL(kunmap_parisc);
- #endif
- 
-+void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
-+{
-+	unsigned long flags;
-+
-+	/* Note: purge_tlb_entries can be called at startup with
-+	   no context.  */
-+
-+	/* Disable preemption while we play with %sr1.  */
-+	preempt_disable();
-+	mtsp(mm->context, 1);
-+	purge_tlb_start(flags);
-+	pdtlb(addr);
-+	pitlb(addr);
-+	purge_tlb_end(flags);
-+	preempt_enable();
-+}
-+EXPORT_SYMBOL(purge_tlb_entries);
-+
- void __flush_tlb_range(unsigned long sid, unsigned long start,
- 		       unsigned long end)
+ static u16 esdhc_readw_le(struct sdhci_host *host, int reg)
  {
++	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct pltfm_imx_data *imx_data = pltfm_host->priv;
++
+ 	if (unlikely(reg == SDHCI_HOST_VERSION)) {
+-		u16 val = readw(host->ioaddr + (reg ^ 2));
+-		/*
+-		 * uSDHC supports SDHCI v3.0, but it's encoded as value
+-		 * 0x3 in host controller version register, which violates
+-		 * SDHCI_SPEC_300 definition.  Work it around here.
+-		 */
+-		if ((val & SDHCI_SPEC_VER_MASK) == 3)
+-			return --val;
++		reg ^= 2;
++		if (is_imx6q_usdhc(imx_data)) {
++			/*
++			 * The usdhc register returns a wrong host version.
++			 * Correct it here.
++			 */
++			return SDHCI_SPEC_300;
++		}
+ 	}
+ 
+ 	return readw(host->ioaddr + reg);
 
 
