@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933310Ab3BZX6v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42384 "EHLO
+	id S1760628Ab3B0Aez (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:34:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42394 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933283Ab3BZX6t (ORCPT
+	with ESMTP id S933050Ab3BZX6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:49 -0500
+	Tue, 26 Feb 2013 18:58:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ 03/53] timeconst.pl: Eliminate Perl warning
-Date: Tue, 26 Feb 2013 15:57:32 -0800
-Message-Id: <20130226235620.192151489@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>, Dave Jones <davej@redhat.com>,
+        John Stultz <john.stultz@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 05/53] posix-cpu-timers: Fix nanosleep task_struct leak
+Date: Tue, 26 Feb 2013 15:57:34 -0800
+Message-Id: <20130226235620.400187767@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -28,42 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 63a3f603413ffe82ad775f2d62a5afff87fd94a0 upstream.
+commit e6c42c295e071dd74a66b5a9fcf4f44049888ed8 upstream.
 
-defined(@array) is deprecated in Perl and gives off a warning.
-Restructure the code to remove that warning.
+The trinity fuzzer triggered a task_struct reference leak via
+clock_nanosleep with CPU_TIMERs. do_cpu_nanosleep() calls
+posic_cpu_timer_create(), but misses a corresponding
+posix_cpu_timer_del() which leads to the task_struct reference leak.
 
-[ hpa: it would be interesting to revert to the timeconst.bc script.
-  It appears that the failures reported by akpm during testing of
-  that script was due to a known broken version of make, not a problem
-  with bc.  The Makefile rules could probably be restructured to avoid
-  the make bug, or it is probably old enough that it doesn't matter. ]
-
-Reported-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20130215100810.GF4392@redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/timeconst.pl |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ kernel/posix-cpu-timers.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
---- a/kernel/timeconst.pl
-+++ b/kernel/timeconst.pl
-@@ -369,10 +369,8 @@ if ($hz eq '--can') {
- 		die "Usage: $0 HZ\n";
- 	}
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -1450,8 +1450,10 @@ static int do_cpu_nanosleep(const clocki
+ 		while (!signal_pending(current)) {
+ 			if (timer.it.cpu.expires.sched == 0) {
+ 				/*
+-				 * Our timer fired and was reset.
++				 * Our timer fired and was reset, below
++				 * deletion can not fail.
+ 				 */
++				posix_cpu_timer_del(&timer);
+ 				spin_unlock_irq(&timer.it_lock);
+ 				return 0;
+ 			}
+@@ -1469,9 +1471,26 @@ static int do_cpu_nanosleep(const clocki
+ 		 * We were interrupted by a signal.
+ 		 */
+ 		sample_to_timespec(which_clock, timer.it.cpu.expires, rqtp);
+-		posix_cpu_timer_set(&timer, 0, &zero_it, it);
++		error = posix_cpu_timer_set(&timer, 0, &zero_it, it);
++		if (!error) {
++			/*
++			 * Timer is now unarmed, deletion can not fail.
++			 */
++			posix_cpu_timer_del(&timer);
++		}
+ 		spin_unlock_irq(&timer.it_lock);
  
--	@val = @{$canned_values{$hz}};
--	if (!defined(@val)) {
--		@val = compute_values($hz);
--	}
-+	$cv = $canned_values{$hz};
-+	@val = defined($cv) ? @$cv : compute_values($hz);
- 	output($hz, @val);
- }
- exit 0;
++		while (error == TIMER_RETRY) {
++			/*
++			 * We need to handle case when timer was or is in the
++			 * middle of firing. In other cases we already freed
++			 * resources.
++			 */
++			spin_lock_irq(&timer.it_lock);
++			error = posix_cpu_timer_del(&timer);
++			spin_unlock_irq(&timer.it_lock);
++		}
++
+ 		if ((it->it_value.tv_sec | it->it_value.tv_nsec) == 0) {
+ 			/*
+ 			 * It actually did fire already.
 
 
