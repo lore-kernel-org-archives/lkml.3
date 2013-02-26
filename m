@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933677Ab3B0BEc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:04:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41973 "EHLO
+	id S1760215Ab3BZX5o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:57:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41930 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760218Ab3BZX5q (ORCPT
+	with ESMTP id S1760179Ab3BZX5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:46 -0500
+	Tue, 26 Feb 2013 18:57:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 070/150] vgacon/vt: clear buffer attributes when we load a 512 character font (v2)
-Date: Tue, 26 Feb 2013 15:55:27 -0800
-Message-Id: <20130226235531.467469089@linuxfoundation.org>
+        Stephan Raue <stephan@openelec.tv>,
+        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 057/150] ALSA: hda - Fix broken workaround for HDMI/SPDIF conflicts
+Date: Tue, 26 Feb 2013 15:55:14 -0800
+Message-Id: <20130226235530.113499269@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,103 +27,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 2a2483072393b27f4336ab068a1f48ca19ff1c1e upstream.
+commit ea9b43addc4d90ca5b029f47f85ca152320a1e8d upstream.
 
-When we switch from 256->512 byte font rendering mode, it means the
-current contents of the screen is being reinterpreted. The bit that holds
-the high bit of the 9-bit font, may have been previously set, and thus
-the new font misrenders.
+The commit [dcda58061: ALSA: hda - Add workaround for conflicting
+IEC958 controls] introduced a workaround for cards that have both
+SPDIF and HDMI devices for giving device=1 to SPDIF control elements.
+It turned out, however, that this workaround doesn't work well -
 
-The problem case we see is grub2 writes spaces with the bit set, so it
-ends up with data like 0x820, which gets reinterpreted into 0x120 char
-which the font translates into G with a circumflex. This flashes up on
-screen at boot and is quite ugly.
+- The workaround checks only conflicts in a single codec, but SPDIF
+  and HDMI are provided by multiple codecs in many cases, and
 
-A current side effect of this patch though is that any rendering on the
-screen changes color to a slightly darker color, but at least the screen
-no longer corrupts.
+- ALSA mixer abstraction doesn't care about the device number in ctl
+  elements, thus you'll get errors from amixer such as
+  % amixer scontrols -c 0
+  ALSA lib simple_none.c:1551:(simple_add1) helem (MIXER,'IEC958
+  Playback Switch',0,1,0) appears twice or more
+  amixer: Mixer hw:0 load error: Invalid argument
 
-v2: as suggested by hpa, always clear the attribute space, whether we
-are are going to or from 512 chars.
+This patch fixes the previous broken workaround.  Instead of changing
+the device number of SPDIF ctl elements, shift the element indices of
+such controls up to 16.  Also, the conflict check is performed over
+all codecs found on the bus.
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+HDMI devices will be put to dev=0,index=0 as before.  Only the
+conflicting SPDIF device is moved to a different place.  The new place
+of SPDIF device is supposed by the updated alsa-lib HDA-Intel.conf,
+respectively.
+
+Reported-by: Stephan Raue <stephan@openelec.tv>
+Reported-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/vt/vt.c            |    2 +-
- drivers/video/console/vgacon.c |   22 +++++++++++++++-------
- include/linux/vt_kern.h        |    1 +
- 3 files changed, 17 insertions(+), 8 deletions(-)
+ sound/pci/hda/hda_codec.c |   43 +++++++++++++++++++++----------------------
+ sound/pci/hda/hda_codec.h |    3 ++-
+ 2 files changed, 23 insertions(+), 23 deletions(-)
 
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -638,7 +638,7 @@ static inline void save_screen(struct vc
-  *	Redrawing of screen
-  */
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -2160,11 +2160,12 @@ struct snd_kcontrol *snd_hda_find_mixer_
+ EXPORT_SYMBOL_HDA(snd_hda_find_mixer_ctl);
  
--static void clear_buffer_attributes(struct vc_data *vc)
-+void clear_buffer_attributes(struct vc_data *vc)
+ static int find_empty_mixer_ctl_idx(struct hda_codec *codec, const char *name,
+-				    int dev)
++				    int start_idx)
  {
- 	unsigned short *p = (unsigned short *)vc->vc_origin;
- 	int count = vc->vc_screenbuf_size / 2;
---- a/drivers/video/console/vgacon.c
-+++ b/drivers/video/console/vgacon.c
-@@ -1064,7 +1064,7 @@ static int vgacon_do_font_op(struct vgas
- 	unsigned short video_port_status = vga_video_port_reg + 6;
- 	int font_select = 0x00, beg, i;
- 	char *charmap;
--	
-+	bool clear_attribs = false;
- 	if (vga_video_type != VIDEO_TYPE_EGAM) {
- 		charmap = (char *) VGA_MAP_MEM(colourmap, 0);
- 		beg = 0x0e;
-@@ -1169,12 +1169,6 @@ static int vgacon_do_font_op(struct vgas
- 
- 	/* if 512 char mode is already enabled don't re-enable it. */
- 	if ((set) && (ch512 != vga_512_chars)) {
--		/* attribute controller */
--		for (i = 0; i < MAX_NR_CONSOLES; i++) {
--			struct vc_data *c = vc_cons[i].d;
--			if (c && c->vc_sw == &vga_con)
--				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
--		}
- 		vga_512_chars = ch512;
- 		/* 256-char: enable intensity bit
- 		   512-char: disable intensity bit */
-@@ -1185,8 +1179,22 @@ static int vgacon_do_font_op(struct vgas
- 		   it means, but it works, and it appears necessary */
- 		inb_p(video_port_status);
- 		vga_wattr(state->vgabase, VGA_AR_ENABLE_DISPLAY, 0);	
-+		clear_attribs = true;
+-	int idx;
+-	for (idx = 0; idx < 16; idx++) { /* 16 ctlrs should be large enough */
+-		if (!find_mixer_ctl(codec, name, dev, idx))
++	int i, idx;
++	/* 16 ctlrs should be large enough */
++	for (i = 0, idx = start_idx; i < 16; i++, idx++) {
++		if (!find_mixer_ctl(codec, name, 0, idx))
+ 			return idx;
  	}
- 	raw_spin_unlock_irq(&vga_lock);
-+
-+	if (clear_attribs) {
-+		for (i = 0; i < MAX_NR_CONSOLES; i++) {
-+			struct vc_data *c = vc_cons[i].d;
-+			if (c && c->vc_sw == &vga_con) {
-+				/* force hi font mask to 0, so we always clear
-+				   the bit on either transition */
-+				c->vc_hi_font_mask = 0x00;
-+				clear_buffer_attributes(c);
-+				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
-+			}
-+		}
-+	}
- 	return 0;
- }
+ 	return -EBUSY;
+@@ -3132,30 +3133,29 @@ int snd_hda_create_dig_out_ctls(struct h
+ 	int err;
+ 	struct snd_kcontrol *kctl;
+ 	struct snd_kcontrol_new *dig_mix;
+-	int idx, dev = 0;
+-	const int spdif_pcm_dev = 1;
++	int idx = 0;
++	const int spdif_index = 16;
+ 	struct hda_spdif_out *spdif;
++	struct hda_bus *bus = codec->bus;
  
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -47,6 +47,7 @@ int con_set_cmap(unsigned char __user *c
- int con_get_cmap(unsigned char __user *cmap);
- void scrollback(struct vc_data *vc, int lines);
- void scrollfront(struct vc_data *vc, int lines);
-+void clear_buffer_attributes(struct vc_data *vc);
- void update_region(struct vc_data *vc, unsigned long start, int count);
- void redraw_screen(struct vc_data *vc, int is_switch);
- #define update_screen(x) redraw_screen(x, 0)
+-	if (codec->primary_dig_out_type == HDA_PCM_TYPE_HDMI &&
++	if (bus->primary_dig_out_type == HDA_PCM_TYPE_HDMI &&
+ 	    type == HDA_PCM_TYPE_SPDIF) {
+-		dev = spdif_pcm_dev;
+-	} else if (codec->primary_dig_out_type == HDA_PCM_TYPE_SPDIF &&
++		idx = spdif_index;
++	} else if (bus->primary_dig_out_type == HDA_PCM_TYPE_SPDIF &&
+ 		   type == HDA_PCM_TYPE_HDMI) {
+-		for (idx = 0; idx < codec->spdif_out.used; idx++) {
+-			spdif = snd_array_elem(&codec->spdif_out, idx);
+-			for (dig_mix = dig_mixes; dig_mix->name; dig_mix++) {
+-				kctl = find_mixer_ctl(codec, dig_mix->name, 0, idx);
+-				if (!kctl)
+-					break;
+-				kctl->id.device = spdif_pcm_dev;
+-			}
++		/* suppose a single SPDIF device */
++		for (dig_mix = dig_mixes; dig_mix->name; dig_mix++) {
++			kctl = find_mixer_ctl(codec, dig_mix->name, 0, 0);
++			if (!kctl)
++				break;
++			kctl->id.index = spdif_index;
+ 		}
+-		codec->primary_dig_out_type = HDA_PCM_TYPE_HDMI;
++		bus->primary_dig_out_type = HDA_PCM_TYPE_HDMI;
+ 	}
+-	if (!codec->primary_dig_out_type)
+-		codec->primary_dig_out_type = type;
++	if (!bus->primary_dig_out_type)
++		bus->primary_dig_out_type = type;
+ 
+-	idx = find_empty_mixer_ctl_idx(codec, "IEC958 Playback Switch", dev);
++	idx = find_empty_mixer_ctl_idx(codec, "IEC958 Playback Switch", idx);
+ 	if (idx < 0) {
+ 		printk(KERN_ERR "hda_codec: too many IEC958 outputs\n");
+ 		return -EBUSY;
+@@ -3165,7 +3165,6 @@ int snd_hda_create_dig_out_ctls(struct h
+ 		kctl = snd_ctl_new1(dig_mix, codec);
+ 		if (!kctl)
+ 			return -ENOMEM;
+-		kctl->id.device = dev;
+ 		kctl->id.index = idx;
+ 		kctl->private_value = codec->spdif_out.used - 1;
+ 		err = snd_hda_ctl_add(codec, associated_nid, kctl);
+--- a/sound/pci/hda/hda_codec.h
++++ b/sound/pci/hda/hda_codec.h
+@@ -671,6 +671,8 @@ struct hda_bus {
+ 	unsigned int response_reset:1;	/* controller was reset */
+ 	unsigned int in_reset:1;	/* during reset operation */
+ 	unsigned int power_keep_link_on:1; /* don't power off HDA link */
++
++	int primary_dig_out_type;	/* primary digital out PCM type */
+ };
+ 
+ /*
+@@ -837,7 +839,6 @@ struct hda_codec {
+ 	struct mutex hash_mutex;
+ 	struct snd_array spdif_out;
+ 	unsigned int spdif_in_enable;	/* SPDIF input enable? */
+-	int primary_dig_out_type;	/* primary digital out PCM type */
+ 	const hda_nid_t *slave_dig_outs; /* optional digital out slave widgets */
+ 	struct snd_array init_pins;	/* initial (BIOS) pin configurations */
+ 	struct snd_array driver_pins;	/* pin configs set by codec parser */
 
 
