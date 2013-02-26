@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933756Ab3B0AAu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:00:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42589 "EHLO
+	id S933781Ab3B0ABJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:01:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42585 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933682Ab3BZX7S (ORCPT
+	with ESMTP id S933672Ab3BZX7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:59:18 -0500
+	Tue, 26 Feb 2013 18:59:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 50/53] USB: option: add Huawei "ACM" devices using protocol = vendor
-Date: Tue, 26 Feb 2013 15:58:19 -0800
-Message-Id: <20130226235625.041463445@linuxfoundation.org>
+        Mika Kuoppala <mika.kuoppala@intel.com>,
+        Andreas Sturmlechner <andreas.sturmlechner@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 32/53] drm/i915: disable shared panel fitter for pipe
+Date: Tue, 26 Feb 2013 15:58:01 -0800
+Message-Id: <20130226235623.159697638@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,49 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Mika Kuoppala <mika.kuoppala@linux.intel.com>
 
-commit 1f3f687722fd9b29a0c2a85b4844e3b2a3585c63 upstream.
+commit 24a1f16de97c4cf0029d9acd04be06db32208726 upstream.
 
-The USB device descriptor of one identity presented by a few
-Huawei morphing devices have serial functions with class codes
-02/02/ff, indicating CDC ACM with a vendor specific protocol. This
-combination is often used for MSFT RNDIS functions, and the CDC
-ACM class driver will therefore ignore such functions.
+If encoder is switched off by BIOS, but the panel fitter is left on,
+we never try to turn off the panel fitter and leave it still attached
+to the pipe - which can cause blurry output elsewhere.
 
-The CDC ACM class driver cannot support functions with only 2
-endpoints.  The underlying serial functions of these modems are
-also believed to be the same as for alternate device identities
-already supported by the option driver. Letting the same driver
-handle these functions independently of the current identity
-ensures consistent handling and user experience.
+Based on work by Chris Wilson <chris@chris-wilson.co.uk>
 
-There is no need to blacklist these devices in the rndis_host
-driver. Huawei serial functions will either have only 2 endpoints
-or a CDC ACM functional descriptor with bmCapabilities != 0, making
-them correctly ignored as "non RNDIS" by that driver.
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=58867
+Signed-off-by: Mika Kuoppala <mika.kuoppala@intel.com>
+Tested-by: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+[danvet: Remove the redundant HAS_PCH_SPLIT check and add a tiny
+comment.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/i915/intel_display.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -578,8 +578,12 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
- 	{ USB_DEVICE(QUANTA_VENDOR_ID, 0xea42),
- 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c05, USB_CLASS_COMM, 0x02, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1442, USB_CLASS_COMM, 0x02, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -2898,6 +2898,7 @@ static void i9xx_crtc_disable(struct drm
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+ 	int pipe = intel_crtc->pipe;
+ 	int plane = intel_crtc->plane;
++	u32 pctl;
+ 
+ 	if (!intel_crtc->active)
+ 		return;
+@@ -2914,6 +2915,13 @@ static void i9xx_crtc_disable(struct drm
+ 
+ 	intel_disable_plane(dev_priv, plane, pipe);
+ 	intel_disable_pipe(dev_priv, pipe);
++
++	/* Disable pannel fitter if it is on this pipe. */
++	pctl = I915_READ(PFIT_CONTROL);
++	if ((pctl & PFIT_ENABLE) &&
++	    ((pctl & PFIT_PIPE_MASK) >> PFIT_PIPE_SHIFT) == pipe)
++		I915_WRITE(PFIT_CONTROL, 0);
++
+ 	intel_disable_pll(dev_priv, pipe);
+ 
+ 	intel_crtc->active = false;
 
 
