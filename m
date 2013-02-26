@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758113Ab3BZRrb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 12:47:31 -0500
-Received: from www.linutronix.de ([62.245.132.108]:50378 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743Ab3BZRra (ORCPT
+	id S1758245Ab3BZRtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 12:49:00 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:54660 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab3BZRs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 12:47:30 -0500
-Date: Tue, 26 Feb 2013 18:47:25 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Magnus Damm <magnus.damm@gmail.com>
-cc: linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com,
-        linux-sh@vger.kernel.org, benh@kernel.crashing.org,
-        grant.likely@secretlab.ca, horms@verge.net.au
-Subject: Re: [PATCH 00/05] irqchip: Renesas INTC External IRQ pin v2 update
-In-Reply-To: <20130226115834.5630.45471.sendpatchset@w520>
-Message-ID: <alpine.LFD.2.02.1302261846550.22263@ionos>
-References: <20130226115834.5630.45471.sendpatchset@w520>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 26 Feb 2013 12:48:59 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <512CF2C9.5060309@tomt.net>
+References: <20130225221636.018756060@linuxfoundation.org>
+	<512CF2C9.5060309@tomt.net>
+Date: Tue, 26 Feb 2013 12:48:58 -0500
+Message-ID: <CA+5PVA6=ZzxxvmnU3Dc-pfn2Qia721aeqfWczFBRoFZNH7D7yA@mail.gmail.com>
+Subject: Re: [ 00/58] 3.7.10-stable review
+From: Josh Boyer <jwboyer@gmail.com>
+To: Andre Tomt <andre@tomt.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org, davem@davemloft.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Feb 2013, Magnus Damm wrote:
+On Tue, Feb 26, 2013 at 12:37 PM, Andre Tomt <andre@tomt.net> wrote:
+> Hi Greg, David.
+>
+> The patches for the sock_diag privilege escalation issue in 3.3-3.8 seems to
+> be missing. Would be good to get those out the way before 3.7 is retired.
+>
+> http://comments.gmane.org/gmane.linux.network/260062
 
-> irqchip: Renesas INTC External IRQ pin v2 update
-> 
-> [PATCH 01/05] irqchip: intc-irqpin: Whitespace fixes
-> [PATCH 02/05] irqchip: intc-irqpin: Cache mapped IRQ
-> [PATCH 03/05] irqchip: intc-irqpin: Add force comments
-> [PATCH 04/05] irqchip: intc-irqpin: Make use of devm functions
-> [PATCH 05/05] irqchip: intc-irqpin: GPL header for platform data
-> 
-> These patches update the v1 of the INTC External IRQ pin driver
-> in various ways based on feedback kindly received from:
-> - Simon Horman
-> - Kuninori Morimoto
-> - Thomas Gleixner
-> 
-> With the series applied I see the driver as "v2", but
-> I prefer to keep these changes as incremental ones instead
-> of redoing a single "v2" patch for the driver. The reason
-> behind this is that there are on-going back porting efforts
-> that are better dealt with using incremental patches.
-> 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
+They aren't in Linus' tree yet.  They can't go into -stable until they
+are.
 
-For the full series:
+> Hmm. Seems to be missing stable tag and CC. David?
 
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+He was already asked about this earlier.  Things are queued and working
+through the process.
 
-> ---
-> 
->  Depends on:
->  [PATCH] irqchip: Renesas INTC External IRQ pin driver
-> 
->  drivers/irqchip/irq-renesas-intc-irqpin.c             |   88 ++++++++---------
->  include/linux/platform_data/irq-renesas-intc-irqpin.h |   19 +++
->  2 files changed, 62 insertions(+), 45 deletions(-)
-> 
+josh
