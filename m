@@ -1,97 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759990Ab3BZVa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 16:30:59 -0500
-Received: from ka.mail.enyo.de ([87.106.162.201]:42512 "EHLO ka.mail.enyo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759658Ab3BZVa6 convert rfc822-to-8bit (ORCPT
+	id S1759994Ab3BZVgc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 16:36:32 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:57418 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759947Ab3BZVga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 16:30:58 -0500
-From: Florian Weimer <fw@deneb.enyo.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        David Howells <dhowells@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-References: <18738.1361836265@warthog.procyon.org.uk>
-	<20130226005955.GA19686@kroah.com>
-	<20130226023332.GA29282@srcf.ucam.org>
-	<20130226030249.GB23834@kroah.com>
-	<20130226031338.GA29784@srcf.ucam.org>
-	<20130226032508.GA12906@thunk.org>
-	<20130226032839.GA30164@srcf.ucam.org>
-	<CA+55aFyVShz4T65VJ-1=V=OGwNNriyYf-aaomhDSMHOU7ZZqbA@mail.gmail.com>
-	<20130226034250.GB30285@srcf.ucam.org>
-	<CA+55aFzn4KGKtn6cXN-jh9jgF+U1zJUnCmk6tRxmW8BZP7_Jnw@mail.gmail.com>
-	<20130226034842.GD30285@srcf.ucam.org>
-	<CA+55aFyAfgqmxGnh+WpZjgR5qKd+CLr1S7gKnXihqJXB346DqQ@mail.gmail.com>
-Date: Tue, 26 Feb 2013 22:30:46 +0100
-In-Reply-To: <CA+55aFyAfgqmxGnh+WpZjgR5qKd+CLr1S7gKnXihqJXB346DqQ@mail.gmail.com>
-	(Linus Torvalds's message of "Mon, 25 Feb 2013 20:31:08 -0800")
-Message-ID: <87bob6pxtl.fsf@mid.deneb.enyo.de>
+	Tue, 26 Feb 2013 16:36:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
+References: <512B7D10.4060304@tpi.com>
+	<512B8407.2090807@canonical.com>
+	<512BD753.4080001@hp.com>
+	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
+Date: Tue, 26 Feb 2013 13:36:30 -0800
+X-Google-Sender-Auth: KvJNcbyUwMw2giIUQgIK5NWg1JM
+Message-ID: <CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com>
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+From: Yinghai Lu <yinghai@kernel.org>
+To: Don Morris <don.morris@hp.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Thomas Renninger <trenn@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        a.p.zijlstra@chello.nl, jarkko.sakkinen@intel.com,
+        tangchen@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds:
-
-> So here's what I would suggest, and it is based on REAL SECURITY and
-> on PUTTING THE USER FIRST instead of your continual "let's please
-> microsoft by doing idiotic crap" approach.
-
-I think the real question is this one: Is there *any* device out there
-which comes with Microsoft Secure Boot enabled, but doesn't have a
-copy of Windows 8 on it?
-
-I guess there isn't.  So Secure Boot support is only required for
-supporting dual-booting Windows 8, while still retaining the automated
-recovery capabilities (which might well remove the Linux installation
-on the same box).
-
-Without dual-booting, there is currently no reason whatsoever to
-enable UEFI Secure Boot (or the Microsoft variant).  Not providing a
-signed boot loader forces the user to configure the device in a way
-that ensures long-term supportability and feature stability (i.e.,
-they don't suffer when someone decides to introduce further
-restrictions under CAP_COMPROMISE_KERNEL).
-
-Unfortuantely, almost all people I talked to *want* secure boot,
-presumably because security is good.  Many of them hate the Microsoft
-key (but wouldn't want to own the key, either), but the proposed
-alternatives, such as distro-specific keys, are impractical.  Do we
-really want systems on which you cannot install Fedora once you have
-installed Debian?
-
-> So instead of pleasing microsoft, try to see how we can add real security:
+On Mon, Feb 25, 2013 at 2:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Feb 25, 2013 at 1:27 PM, Don Morris <don.morris@hp.com> wrote:
+>> On 02/25/2013 10:32 AM, Tim Gardner wrote:
+>>> On 02/25/2013 08:02 AM, Tim Gardner wrote:
+>>>> Is this an expected warning ? I'll boot a vanilla kernel just to be sure.
+>>>>
+>>>> rebased against ab7826595e9ec51a51f622c5fc91e2f59440481a in Linus' repo:
+>>>>
+>>>
+>>> Same with a vanilla kernel, so it doesn't appear that any Ubuntu cruft
+>>> is having an impact:
+>>
+>> Reproduced on a HP z620 workstation (E5-2620 instead of E5-2680, but
+>> still Sandy Bridge, though I don't think that matters).
+>>
+>> Bisection leads to:
+>> # bad: [e8d1955258091e4c92d5a975ebd7fd8a98f5d30f] acpi, memory-hotplug:
+>> parse SRAT before memblock is ready
+>>
+>> Nothing terribly obvious leaps out as to *why* that reshuffling messes
+>> up the cpu<-->node bindings, but I wanted to put this out there while
+>> I poke around further. [Note that the SRAT: PXM -> APIC -> Node print
+>> outs during boot are the same either way -- if you look at the APIC
+>> numbers of the processors (from /proc/cpuinfo), the processors should
+>> be assigned to the correct node, but they aren't.] cc'ing Tang Chen
+>> in case this is obvious to him or he's already fixed it somewhere not
+>> on Linus's tree yet.
+>>
+>> Don Morris
+>>
+>>>
+>>> [    0.170435] ------------[ cut here ]------------
+>>> [    0.170450] WARNING: at arch/x86/kernel/smpboot.c:324
+>>> topology_sane.isra.2+0x71/0x84()
+>>> [    0.170452] Hardware name: S2600CP
+>>> [    0.170454] sched: CPU #1's llc-sibling CPU #0 is not on the same
+>>> node! [node: 1 != 0]. Ignoring dependency.
+>>> [    0.156000] smpboot: Booting Node   1, Processors  #1
+>>> [    0.170455] Modules linked in:
+>>> [    0.170460] Pid: 0, comm: swapper/1 Not tainted 3.8.0+ #1
+>>> [    0.170461] Call Trace:
+>>> [    0.170466]  [<ffffffff810597bf>] warn_slowpath_common+0x7f/0xc0
+>>> [    0.170473]  [<ffffffff810598b6>] warn_slowpath_fmt+0x46/0x50
+>>> [    0.170477]  [<ffffffff816cc752>] topology_sane.isra.2+0x71/0x84
+>>> [    0.170482]  [<ffffffff816cc9de>] set_cpu_sibling_map+0x23f/0x436
+>>> [    0.170487]  [<ffffffff816ccd0c>] start_secondary+0x137/0x201
+>>> [    0.170502] ---[ end trace 09222f596307ca1d ]---
 >
->  - a distro should sign its own modules AND NOTHING ELSE by default.
+> that commit is totally broken, and it should be reverted.
+>
+> 1. numa_init is called several times, NOT just for srat. so those
+>    nodes_clear(numa_nodes_parsed)
+>    memset(&numa_meminfo, 0, sizeof(numa_meminfo))
+> can not be just removed.
+> please consider sequence is: numaq, srat, amd, dummy.
+> You need to make fall back path working!
+>
+> 2. simply split acpi_numa_init to early_parse_srat.
+> a. that early_parse_srat is NOT called for ia64, so you break ia64.
+> b.  for (i = 0; i < MAX_LOCAL_APIC; i++)
+>      set_apicid_to_node(i, NUMA_NO_NODE)
+> still left in numa_init. So it will just clear result from early_parse_srat.
+> it should be moved before that....
 
-I strongly agree with that (but obviously not the wording, *ahem*).
-Actually, we already sign our own kernel modules (and all the software
-we ship) in one way or the other.  Some of us even sign a lot of
-third-party software which we haven't built from source.
+   c.  it breaks ACPI_TABLE_OVERIDE...as the acpi table scan is moved
+early before override from INITRD is settled.
 
->  - before loading any third-party module, you'd better make sure you
-> ask the user for permission. On the console. Not using keys. Nothing
-> like that. Keys will be compromised. Try to limit the damage, but more
-> importantly, let the user be in control.
-
-This needs a trusted input/output path to the user.  Currently, this
-seems difficult to provide once arbitrary userspace code has run as
-root.  Hence the round-trip through the UEFI pre-boot environment.
-
-One thing that would be neat is an assurance that if you boot some
-image over PXE, it doesn't do any harm to your system.  This isn't
-something Microsoft Secure Boot promises at the moment because a
-signed boot loader can easily lead to an initrd which wipes your hard
-disk.  It's really hard to get there, but at least it would be
-something useful.  Similarly, server firmware in a datacenter could
-validate the recovery image before executing.  (Actually, I view boot
-path validation mainly as a server technology—for clients, you just
-save $1 for the known-good, read-only recovery medium.)
+>
+> 3. that patch TITLE is total misleading, there is NO x86 in the title,
+> but it changes
+> to x86 code.
+>
+> 4, it does not CC to TJ and other numa guys...
