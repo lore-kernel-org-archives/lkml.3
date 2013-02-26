@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab3BZRfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 12:35:19 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:59586 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab3BZRfR (ORCPT
+	id S1758402Ab3BZRg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 12:36:58 -0500
+Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:1764 "EHLO
+	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015Ab3BZRg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 12:35:17 -0500
-Date: Tue, 26 Feb 2013 09:35:14 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
-        Martin Peres <martin.peres@labri.fr>, dri-devel@lists.freedesktop.org,
+	Tue, 26 Feb 2013 12:36:57 -0500
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Andrey Smirnov <andrew.smirnov@gmail.com>
+Subject: Re: [PATCH v6 0/9] Driver for Si476x series of chips
+Date: Tue, 26 Feb 2013 18:36:39 +0100
+User-Agent: KMail/1.13.7 (Linux/3.8.0-rc3-tschai; KDE/4.8.4; x86_64; ; )
+Cc: mchehab@redhat.com, sameo@linux.intel.com, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: resume fails to light display on Macbook Pro Retina on 3.8-rc1
-Message-ID: <20130226173514.GA24136@kroah.com>
-References: <CAPM=9txjG5rohsNbme=myrX+-Z5eucpEXYQMWqPQqN=5dNze8g@mail.gmail.com>
- <CAPM=9tw_vfESbbH4dD9z8mAYVYcwmVs=n4BrRz4XBj1Rw1qrkw@mail.gmail.com>
- <20130225223243.GA18744@kroah.com>
- <20130226034545.GA1089@kroah.com>
+References: <1361896295-26138-1-git-send-email-andrew.smirnov@gmail.com>
+In-Reply-To: <1361896295-26138-1-git-send-email-andrew.smirnov@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130226034545.GA1089@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302261836.39517.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 07:45:45PM -0800, Greg KH wrote:
-> On Mon, Feb 25, 2013 at 02:32:43PM -0800, Greg KH wrote:
-> > On Mon, Feb 25, 2013 at 04:06:02PM +1000, Dave Airlie wrote:
-> > > On Mon, Feb 25, 2013 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > > > Hi Ben,
-> > > >
-> > > > My Macbook Pro Retina fails to resume properly on 3.8.  I tracked this
-> > > > down to commit 6c5a04249d7afeea3e0ed971e7813f84e29a1706 (drm/nvd0/disp:
-> > > > move link training helpers into core as display methods)
-> > > >
-> > > > Anything I can try to help solve this?
-> > > >
-> > > > Note, I'm using the Intel driver as the main controller for this laptop,
-> > > > well, I think I am, my xorg log is attached.
-> > > 
-> > > No you are using the nvidia, the efi always boots nvidia enabled now.
-> > 
-> > Really?  When did that change?  I thought I wanted to be using the Intel
-> > chip to save battery life.
-> > 
-> > > btw I just tested my drm-next tree on mine and it resumed the display
-> > > fine, something oopsed a few seconds later that I haven't tracked down
-> > > 
-> > > git://git.freedesktop.org/~airlied/linux drm-next
-> > > 
-> > > I'll be sending it to Linus this evening or tomorrow morning, once I
-> > > fix my tree.
-> > 
-> > Ok, I'll test again when it hits Linus's tree, and if that works, it
-> > would be good to try to work out what patch fixes it to get them into
-> > the 3.8-stable series so that others don't run into the same problem.
+On Tue February 26 2013 17:31:26 Andrey Smirnov wrote:
+> This is a fourth version of the patchset originaly posted here:
+> https://lkml.org/lkml/2012/9/13/590
 > 
-> I've tested Linus's tree now (I'm guessing it has all of your changes in
-> it), and it works!
+> Second version of the patch was posted here:
+> https://lkml.org/lkml/2012/10/5/598
 > 
-> I see a bunch of patches marked for the stable branch, so I'll try those
-> out and see if they fix the problem.  If not, I'll let you and Ben know.
+> Third version of the patch was posted here:
+> https://lkml.org/lkml/2012/10/23/510
+> 
+> Fourth version of the patch was posted here:
+> https://lkml.org/lkml/2013/2/18/572
+> 
+> Fifth version of the patch was posted here:
+> https://lkml.org/lkml/2013/2/26/45
+> 
+> To save everyone's time I'll repost the original description of it:
+> 
+> This patchset contains a driver for a Silicon Laboratories 476x series
+> of radio tuners. The driver itself is implemented as an MFD devices
+> comprised of three parts: 
+>  1. Core device that provides all the other devices with basic
+> functionality and locking scheme.
+>  2. Radio device that translates between V4L2 subsystem requests into
+> Core device commands.
+>  3. Codec device that does similar to the earlier described task, but
+> for ALSA SoC subsystem.
+> 
+> v6 of this driver has following changes:
+>    - Minor corrections
 
-I've applied the radeon patches tagged for -stable and tested that on
-3.8.0, but that doesn't solve the resume problem.  Any ideas of anything
-else I can do to test this?  Doing a "backwards" git-bisect is a pain,
-but I guess I can do that to try to track down what patch fixed this, if
-that's the only idea people have...
+For this patch series:
 
-thanks,
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 
-greg k-h
+Thank you very much for your work on this!
+
+Regards,
+
+	Hans
