@@ -1,124 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab3BYX77 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 18:59:59 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:49641 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab3BYX76 (ORCPT
+	id S1757814Ab3BZAAo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 19:00:44 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56726 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513Ab3BZAAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 18:59:58 -0500
-Date: Tue, 26 Feb 2013 08:59:53 +0900
-From: Simon Horman <horms@verge.net.au>
+	Mon, 25 Feb 2013 19:00:43 -0500
+X-AuditID: 9c930197-b7c43ae0000006e1-a4-512bfb2849eb
+Date: Tue, 26 Feb 2013 09:00:40 +0900
+From: Minchan Kim <minchan@kernel.org>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kexec: Use min_t to simplify logic
-Message-ID: <20130225235951.GA16202@verge.net.au>
-References: <512A25A1.4040002@gmail.com>
- <20130225003651.GD17964@verge.net.au>
- <20130225153554.19cde4b4.akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH v2] mm: remove MIGRATE_ISOLATE check in hotpath
+Message-ID: <20130226000040.GA17802@blaptop>
+References: <1358209006-18859-1-git-send-email-minchan@kernel.org>
+ <20130115153625.96265439.akpm@linux-foundation.org>
+ <20130225021308.GA6498@blaptop>
+ <20130225145011.68e55812.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130225153554.19cde4b4.akpm@linux-foundation.org>
-Organisation: Horms Solutions Ltd.
+In-Reply-To: <20130225145011.68e55812.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 03:35:54PM -0800, Andrew Morton wrote:
-> On Mon, 25 Feb 2013 09:36:51 +0900
-> Simon Horman <horms@verge.net.au> wrote:
-> 
-> > On Sun, Feb 24, 2013 at 10:37:21PM +0800, Zhang Yanfei wrote:
-> > > From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> > > 
-> > > This is just a tweak: using min_t to simplify logic of variable
-> > > assignments.
-> > > 
-> > > v2:
-> > > - Rewrite patch description as Simon suggested.
-> > > - Fix an inappropriate if test introduced by v1. Thanks Simon.
-> > 
-> > Hi Zhang,
-> > 
-> > thanks for the update.
-> > 
-> > Signed-off-by: Simon Horman <horms@verge.net.au>
-> 
-> Signed-off-by: implies that you were involved in the development or
-> patch delivery.  Were you?  If not, an Acked-by or Reviewed-by is more
-> appropriate.
-
-My bad, I meant:
-
-Reviewed-by: Simon Horman <horms@verge.net.au>
-
-> Also, the need to use min_t rather than min is a sign that the types
-> are screwed up.  Let's take a look.
+On Mon, Feb 25, 2013 at 02:50:11PM -0800, Andrew Morton wrote:
+> On Mon, 25 Feb 2013 11:13:08 +0900
+> Minchan Kim <minchan@kernel.org> wrote:
 > 
 > > > 
-> > > diff --git a/kernel/kexec.c b/kernel/kexec.c
-> > > index 2436ffc..effd655 100644
-> > > --- a/kernel/kexec.c
-> > > +++ b/kernel/kexec.c
-> > > @@ -822,13 +822,8 @@ static int kimage_load_normal_segment(struct kimage *image,
-> > >  		/* Start with a clear page */
-> > >  		clear_page(ptr);
-> > >  		ptr += maddr & ~PAGE_MASK;
-> > > -		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
-> > > -		if (mchunk > mbytes)
-> > > -			mchunk = mbytes;
-> > > -
-> > > -		uchunk = mchunk;
-> > > -		if (uchunk > ubytes)
-> > > -			uchunk = ubytes;
-> > > +		mchunk = min_t(size_t, mbytes, PAGE_SIZE - (maddr & ~PAGE_MASK));
-> > > +		uchunk = min_t(size_t, ubytes, mchunk);
+> > > >
+> > > > ...
+> > > >
+> > > > @@ -683,7 +683,7 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
+> > > >  	zone->pages_scanned = 0;
+> > > >  
+> > > >  	__free_one_page(page, zone, order, migratetype);
+> > > > -	if (unlikely(migratetype != MIGRATE_ISOLATE))
+> > > > +	if (unlikely(!is_migrate_isolate(migratetype)))
+> > > >  		__mod_zone_freepage_state(zone, 1 << order, migratetype);
+> > > >  	spin_unlock(&zone->lock);
+> > > >  }
+> > > 
+> > > The code both before and after this patch is assuming that the
+> > > migratetype in free_one_page is likely to be MIGRATE_ISOLATE.  Seems
+> > > wrong.  If CONFIG_MEMORY_ISOLATION=n this ends up doing
+> > > if(unlikely(true)) which is harmless-but-amusing.
+> > 
+> > >From the beginning of [2139cbe627, cma: fix counting of isolated pages],
+> > it was wrong. We can't make sure it's very likely.
+> > If it is called by order-0 page free path, it is but if it is called by
+> > high order page free path, we can't.
+> > So I think it would be better to remove unlikley.
 > 
-> The types of ubytes and mbytes are clearly wrong.  They are initialised
-> from a size_t and they are manipulated alongside size_t's.
+> Order-0 pages surely preponderate, so I'd say that "likely" is the way
+> to go.
+
+Okay then, let's rule out high order allocation.
+Firstly, let's look CONFIG_MEMORY_ISOLATION=y case.
+In case of order-0, free_hot_cold_page calls free_one_page very unlikely.
+
+void free_hot_cold_page ()
+{
+        ...
+        if (migratetype >= MIGRATE_PCPTYPES) {
+                if (unlikely(is_migrate_isolate(migratetype))) {
+                        free_one_page(zone, page, 0, migratetype);
+                        goto out;
+                }
+        ...
+}
+
+So, if free_one_page is called for order-0 page, it's for only MIGRATE_ISOLATE.
+So unlikely(!is_migrate_isolate(migratetype)) in free_one_page does make sense
+to me.
+
+In case of CONFIG_MEMORY_ISOLATION=n case, below is_migrate_isolate is always
+false so it could be compiled out so free_one_page is called only
+for high order page free path. So if you don't mind high order free path
+hitting on likely/unlikely, I think current code doesn't have any problem.
+
+ if (migratetype >= MIGRATE_PCPTYPES) {
+                if (unlikely(is_migrate_isolate(migratetype))) { ==> always false
+                        free_one_page(zone, page, 0, migratetype);
+                        goto out;
+                }
+
+In summary, if you don't care of high order free path, there is no problem.
+
 > 
-> The types of PAGE_SIZE and PAGE_MASK are vague - iirc they once had
-> different types on different architectures, so some form of casting is
-> unavoidable here.
+> I don't recall anyone ever demonstrating that likely/unlikely actually
+> does anything useful.  It would be interesting to have a play around,
+> see if it actually does good things to the code generation.
+
+Yes. especially about page alloc/free path. 
+
 > 
-> > >  		result = copy_from_user(ptr, buf, uchunk);
-> > >  		kunmap(page);
-> > > @@ -874,13 +869,9 @@ static int kimage_load_crash_segment(struct kimage *image,
-> > >  		}
-> > >  		ptr = kmap(page);
-> > >  		ptr += maddr & ~PAGE_MASK;
-> > > -		mchunk = PAGE_SIZE - (maddr & ~PAGE_MASK);
-> > > -		if (mchunk > mbytes)
-> > > -			mchunk = mbytes;
-> > > -
-> > > -		uchunk = mchunk;
-> > > -		if (uchunk > ubytes) {
-> > > -			uchunk = ubytes;
-> > > +		mchunk = min_t(size_t, mbytes, PAGE_SIZE - (maddr & ~PAGE_MASK));
-> > > +		uchunk = min_t(size_t, ubytes, mchunk);
-> > > +		if (mchunk > uchunk) {
-> > >  			/* Zero the trailing part of the page */
-> > >  			memset(ptr + uchunk, 0, mchunk - uchunk);
-> > >  		}
+> I think someone (perhaps in or near Dave Jones?) once had a patch which
+> added counters to likely/unlikely, so the kernel can accumulate and
+> then report upon the hit/miss ratio at each site.  iirc, an alarmingly
+> large number of the sites were deoptimisations!
+
+It seems you mean "Branch Profiling (Trace likely/unlikely profiler)" made by
+Steven Rostedt. Anyway, it's a rather troublesome job and needs many workload
+but worthy. Will queue it up to my future TODO. :)
+
 > 
-> Again, mybtes and ubytes have the wrong type.
+> > They are trivial patch so send it now or send it after you release
+> > first mmotm after finishing merge window?
 > 
-> > > @@ -1461,8 +1452,7 @@ void vmcoreinfo_append_str(const char *fmt, ...)
-> > >  	r = vsnprintf(buf, sizeof(buf), fmt, args);
-> > >  	va_end(args);
-> > >  
-> > > -	if (r + vmcoreinfo_size > vmcoreinfo_max_size)
-> > > -		r = vmcoreinfo_max_size - vmcoreinfo_size;
-> > > +	r = min_t(size_t, r, vmcoreinfo_max_size - vmcoreinfo_size);
-> > >  
-> > >  	memcpy(&vmcoreinfo_data[vmcoreinfo_size], buf, r);
+> It's in mainline now.
+
+I will send fix about only undo_isolate_page_range if you don't object my
+above opinion.
+
+Thanks.
+
 > 
-> vmcoreinfo_max_size is a size_t and vmcoreinfo_size is a size_t and
-> memcpy's `size' argument is a size_t.  Therefore the type of `r' should
-> be...  what?  int!  bzzzzt.
-> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
