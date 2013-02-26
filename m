@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757702Ab3BZMPT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 07:15:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:48082 "EHLO
+	id S1757152Ab3BZMRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 07:17:11 -0500
+Received: from www.linutronix.de ([62.245.132.108]:48098 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754961Ab3BZMPR (ORCPT
+	with ESMTP id S1754751Ab3BZMRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 07:15:17 -0500
-Date: Tue, 26 Feb 2013 13:15:08 +0100 (CET)
+	Tue, 26 Feb 2013 07:17:10 -0500
+Date: Tue, 26 Feb 2013 13:17:07 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+To: John Stultz <john.stultz@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] irq: Cleanup context state transitions in
- irq_exit()
-In-Reply-To: <CA+55aFxOreKQ-uzfMtXEb6XH4D8By2i=qOxfDLJnchSYsa34PQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1302261308550.22263@ionos>
-References: <1361496971-16939-1-git-send-email-fweisbec@gmail.com> <1361496971-16939-3-git-send-email-fweisbec@gmail.com> <alpine.LFD.2.02.1302221528470.22263@ionos> <20130222150444.GD18149@somewhere.redhat.com> <alpine.LFD.2.02.1302221605520.22263@ionos>
- <CA+55aFxOreKQ-uzfMtXEb6XH4D8By2i=qOxfDLJnchSYsa34PQ@mail.gmail.com>
+        Eric Dumazet <dada1@cosmosbay.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC patch 7/8] timekeeping: Implement a shadow timekeeper
+In-Reply-To: <512804E9.1010408@linaro.org>
+Message-ID: <alpine.LFD.2.02.1302261316060.22263@ionos>
+References: <20130221220147.719832397@linutronix.de> <20130221224231.174700473@linutronix.de> <512804E9.1010408@linaro.org>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -30,30 +28,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Feb 2013, Linus Torvalds wrote:
-> On Fri, Feb 22, 2013 at 7:06 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >>
-> >> I prefer to let you guys have the final word on this patch. Whether you
-> >> apply it or not, I fear I'll never be entirely happy either way :)
-> >> That's the sad fate of dealing with circular dependencies...
-> >
-> > plus the butt ugly softirq semantics or the lack thereof ...
-> 
-> The softirq semantics are perfectly fine. Don't blame softirq for the
-> fact that irq_exit() has had shit-for-brains for a long time.
-> 
-> Just move the whole "invoke_softirq()" thing down to *after* the
-> tick_nohz_irq_exit() stuff.
+On Fri, 22 Feb 2013, John Stultz wrote:
 
-We can't move tick_nohz_irq_exit() before invoke_softirq() simply
-because we need to take the timers into account for NOHZ and those can
-change when the softirq code runs.
+> On 02/21/2013 02:51 PM, Thomas Gleixner wrote:
+> > Use the shadow timekeeper to do the update_wall_time() adjustments and
+> > then copy it over to the real timekeeper.
+> > 
+> > Keep the shadow timekeeper in sync when updating stuff outside of
+> > update_wall_time().
+> > 
+> > This allows us to limit the timekeeper_seq hold time to the update of
+> > the real timekeeper and the vsyscall data in the next patch.
+> > 
+> > Signed-off-by: Thomas Gleixner<tglx@linutronix.de>
+> > ---
+> 
+> So up to here it all looks ok to me (and not so different from my earlier
+> attempts at the same).
+> 
+> The only gotcha here that I realized with my earlier patches, is that in order
+> to do the shadow copy update properly, we are also going to need to merge the
+> NTP state data into the timekeeper. Otherwise, we could run into odd cases
+> where as we update the shadow copy, we change the NTP state which then would
+> affect the non-shadow timekeeping state that is about to be updated. One
+> example: A the leap second lands, and the tai offset gets bumped in the ntp
+> state, while we do a similar counter adjustment to the shadow-copy. Then
+> before the real/active timekeeper is updated, someone gets the tai offset and
+> applies it to that pre-update timekeeper state, and gets an invalid tai time.
+> 
+> The down side is that the NTP state data is fairly large, and so adding it to
+> the timekeeper will cause the memcopys to be a bit more painful.
+> 
+> I'm looking at the NTP code now to try to see if we can bound where the NTP
+> state is accessed, so we can maybe thin out what ntp state is linked to
+> timekeeper updates, and only move that data over to the timekeeper.
 
-So no, we need an extra check after invoke_softirq() and the same is
-true for RCU.
+Hmm. Can we block the NTP data readout while we are doing the update ?
 
 Thanks,
 
 	tglx
-
-
