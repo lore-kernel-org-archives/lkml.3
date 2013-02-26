@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759604Ab3BZXiu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:38:50 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42705 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759240Ab3BZXip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:38:45 -0500
-Message-ID: <512D47AB.9030401@infradead.org>
-Date: Tue, 26 Feb 2013 15:39:23 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1758699Ab3BZXkY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:40:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:47806 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756234Ab3BZXkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 18:40:23 -0500
+Message-ID: <512D478C.4030503@zytor.com>
+Date: Tue, 26 Feb 2013 15:38:52 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: linux-pm <linux-pm@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PM / OPP: improve introductory documentation
-References: <1361900231-10478-1-git-send-email-nm@ti.com> <512D3A9C.5040801@infradead.org> <20130226231038.GB24732@kahuna>
-In-Reply-To: <20130226231038.GB24732@kahuna>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+CC: tglx@linutronix.de, mingo@redhat.com, konrad.wilk@oracle.com,
+        xen-devel@lists.xen.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/x86: Flush lazy MMU when DEBUG_PAGEALLOC is set
+References: <1361919370-18058-1-git-send-email-boris.ostrovsky@oracle.com>
+In-Reply-To: <1361919370-18058-1-git-send-email-boris.ostrovsky@oracle.com>
+X-Enigmail-Version: 1.5
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/13 15:10, Nishanth Menon wrote:
-> On 14:43-20130226, Randy Dunlap wrote:
->> On 02/26/13 09:37, Nishanth Menon wrote:
-> [..]
->>>  
->>>  1. Introduction
->>>  ===============
->>> +1.1 What is an Operating Performance Point (OPP)?
->>> +
->>>  Complex SoCs of today consists of a multiple sub-modules working in conjunction.
->>>  In an operational system executing varied use cases, not all modules in the SoC
->>>  need to function at their highest performing frequency all the time. To
->>>  facilitate this, sub-modules in a SoC are grouped into domains, allowing some
->>>  domains to run at lower voltage and frequency while other domains are loaded
->>> -more. The set of discrete tuples consisting of frequency and voltage pairs that
->>> +more.
->>
->> huh???
-> I split the definition line to it's own paragraph below. But, I think
-> you intend to say we could improve better the remaining paragraph.
-> Could you elaborate your thoughts?
-
-"while other domains are loaded more."  Some people probably understand
-that OK; I dunno.  I would rather see it written out more verbosely, e.g.:
-
-"while other domains run at voltage/frequency pairs that are higher."
-
-but partly I was confused by the diff(1) lines.  my bad :(
-
-
->>> +
->>> +The set of discrete tuples consisting of frequency and voltage pairs that
->>>  the device will support per domain are called Operating Performance Points or
->>>  OPPs.
->>>  
->>> +As an example:
->>> +Let us consider an MPU device which supports the following:
->>> +{300MHz at minimum voltage of 1V}, {800MHz at minimum voltage of 1.2V},
->>> +{1GHz at minimum voltage of 1.3V}
->>> +
->>> +We can represent these as three OPPs as the following {Hz, uV} tuples:
->>> +{300000000, 1000000}
->>> +{600000000, 1200000}
->>     800000000
->>
->>> +{100000000, 1300000}
->>     1000000000 ??
-> Thanks for catching it. will fix it in next rev.
+On 02/26/2013 02:56 PM, Boris Ostrovsky wrote:
+> When CONFIG_DEBUG_PAGEALLOC is set page table updates made by
+> kernel_map_pages() are not made visible (via TLB flush) immediately if lazy
+> MMU is on. In environments that support lazy MMU (e.g. Xen) this may lead to
+> fatal page faults, for example, when zap_pte_range() needs to allocate pages
+> in __tlb_remove_page() -> tlb_next_batch().
+> 
+> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> ---
+>  arch/x86/mm/pageattr.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+> index ca1f1c2..7b3216e 100644
+> --- a/arch/x86/mm/pageattr.c
+> +++ b/arch/x86/mm/pageattr.c
+> @@ -1369,6 +1369,8 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
+>  	 * but that can deadlock->flush only current cpu:
+>  	 */
+>  	__flush_tlb_all();
+> +
+> +	arch_flush_lazy_mmu_mode();
+>  }
+>  
+>  #ifdef CONFIG_HIBERNATION
 > 
 
+This sounds like a critical fix, i.e. a -stable candidate.  Am I correct?
 
--- 
-~Randy
+	-hpa
+
