@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933389Ab3B0Ai0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:38:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42328 "EHLO
+	id S933185Ab3BZX6l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:58:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42260 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933188Ab3BZX6m (ORCPT
+	with ESMTP id S933053Ab3BZX6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:42 -0500
+	Tue, 26 Feb 2013 18:58:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>
-Subject: [ 150/150] usb: musb: ux500: use clk_prepare_enable and clk_disable_unprepare
-Date: Tue, 26 Feb 2013 15:56:47 -0800
-Message-Id: <20130226235540.178907541@linuxfoundation.org>
+        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>,
+        Amir Vadai <amirv@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 134/150] mlx4_en: fix allocation of CPU affinity reverse-map
+Date: Tue, 26 Feb 2013 15:56:31 -0800
+Message-Id: <20130226235538.152295835@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,70 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
 
-commit 99d17cfa3bbc6f4edb175f819af59c6b9e245e82 upstream.
+From: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
 
-This patch converts the module to use clk_prepare_enable and
-clk_disable_unprepare variants as required by common clock framework.
+[ Upstream commit 3770699675dd1b8fc1e86ff369eb3cce44e10082 ]
 
-Without this the system crash during probe function.
+The mlx4_en driver allocates the number of objects for the CPU affinity
+reverse-map based on the number of rx rings of the device. However,
+mlx4_assign_eq() calls irq_cpu_rmap_add() as many times as IRQ's are
+assigned to EQ's, which can be as large as mlx4_dev->caps.comp_pool. If
+caps.comp_pool is larger than rx_ring_num we will eventually hit the
+BUG_ON() in cpu_rmap_add().
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Fix this problem by allocating space for the maximum number of CPU
+affinity reverse-map objects we might want to add.
+
+Signed-off-by: Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Acked-by: Amir Vadai <amirv@mellanox.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/musb/ux500.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/musb/ux500.c
-+++ b/drivers/usb/musb/ux500.c
-@@ -108,7 +108,7 @@ static int ux500_probe(struct platform_d
- 		goto err3;
+--- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+@@ -1434,7 +1434,7 @@ int mlx4_en_alloc_resources(struct mlx4_
  	}
  
--	ret = clk_enable(clk);
-+	ret = clk_prepare_enable(clk);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to enable clock\n");
- 		goto err4;
-@@ -148,7 +148,7 @@ static int ux500_probe(struct platform_d
- 	return 0;
+ #ifdef CONFIG_RFS_ACCEL
+-	priv->dev->rx_cpu_rmap = alloc_irq_cpu_rmap(priv->rx_ring_num);
++	priv->dev->rx_cpu_rmap = alloc_irq_cpu_rmap(priv->mdev->dev->caps.comp_pool);
+ 	if (!priv->dev->rx_cpu_rmap)
+ 		goto err;
  
- err5:
--	clk_disable(clk);
-+	clk_disable_unprepare(clk);
- 
- err4:
- 	clk_put(clk);
-@@ -168,7 +168,7 @@ static int ux500_remove(struct platform_
- 	struct ux500_glue	*glue = platform_get_drvdata(pdev);
- 
- 	platform_device_unregister(glue->musb);
--	clk_disable(glue->clk);
-+	clk_disable_unprepare(glue->clk);
- 	clk_put(glue->clk);
- 	kfree(glue);
- 
-@@ -182,7 +182,7 @@ static int ux500_suspend(struct device *
- 	struct musb		*musb = glue_to_musb(glue);
- 
- 	usb_phy_set_suspend(musb->xceiv, 1);
--	clk_disable(glue->clk);
-+	clk_disable_unprepare(glue->clk);
- 
- 	return 0;
- }
-@@ -193,7 +193,7 @@ static int ux500_resume(struct device *d
- 	struct musb		*musb = glue_to_musb(glue);
- 	int			ret;
- 
--	ret = clk_enable(glue->clk);
-+	ret = clk_prepare_enable(glue->clk);
- 	if (ret) {
- 		dev_err(dev, "failed to enable clock\n");
- 		return ret;
 
 
