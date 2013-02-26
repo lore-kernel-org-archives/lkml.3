@@ -1,161 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759968Ab3BZJUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 04:20:39 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:60759 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab3BZJUD (ORCPT
+	id S1759908Ab3BZJXz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 04:23:55 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:62227 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab3BZJXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 04:20:03 -0500
-From: Tiejun Chen <tiejun.chen@windriver.com>
-To: <benh@kernel.crashing.org>, <galak@kernel.crashing.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: [v1][PATCH 3/7] book3e/kexec/kdump: create a 1:1 TLB mapping
-Date: Tue, 26 Feb 2013 17:19:38 +0800
-Message-ID: <1361870382-743-4-git-send-email-tiejun.chen@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361870382-743-1-git-send-email-tiejun.chen@windriver.com>
-References: <1361870382-743-1-git-send-email-tiejun.chen@windriver.com>
+	Tue, 26 Feb 2013 04:23:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+Reply-To: sedat.dilek@gmail.com
+Date: Tue, 26 Feb 2013 10:23:48 +0100
+Message-ID: <CA+icZUWWXg31mQgDwBspAdLG2gQisxZ+M8n6isKYurPuXF8YtQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Feb 26 [ vfs | mm/shmem ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-book3e have no real MMU mode so we have to create a 1:1 TLB
-mapping to make sure we can access the real physical address.
-And correct something to support this pseudo real mode on book3e.
+On Tue, Feb 26, 2013 at 4:16 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Please do not add any work destined for v3.10 to your -next included
+> branches until after Linus has release v3.9-rc1.
+>
+> Changes since 20130223:
+>
+> The kbuild tree lost its build failure.
+>
+> The infiniband tree gained a conflict against Linus' tree.
+>
+> The drm tree still has its build failure for which I applied a patch.
+>
+> ----------------------------------------------------------------------------
+>
 
-Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
----
- arch/powerpc/kernel/head_64.S |    9 ++++---
- arch/powerpc/kernel/misc_64.S |   55 ++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 60 insertions(+), 4 deletions(-)
+[ Changed subject-line to correct date: Feb 26 ]
 
-diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
-index b07ed784..a93ca67 100644
---- a/arch/powerpc/kernel/head_64.S
-+++ b/arch/powerpc/kernel/head_64.S
-@@ -444,12 +444,12 @@ _STATIC(__after_prom_start)
- 	tovirt(r3,r3)			/* on booke, we already run at PAGE_OFFSET */
- #endif
- 	mr.	r4,r26			/* In some cases the loader may  */
-+#if defined(CONFIG_PPC_BOOK3E)
-+	tovirt(r4,r4)
-+#endif
- 	beq	9f			/* have already put us at zero */
- 	li	r6,0x100		/* Start offset, the first 0x100 */
- 					/* bytes were copied earlier.	 */
--#ifdef CONFIG_PPC_BOOK3E
--	tovirt(r6,r6)			/* on booke, we already run at PAGE_OFFSET */
--#endif
- 
- #ifdef CONFIG_RELOCATABLE
- /*
-@@ -492,6 +492,9 @@ _STATIC(__after_prom_start)
- p_end:	.llong	_end - _stext
- 
- 4:	/* Now copy the rest of the kernel up to _end */
-+#if defined(CONFIG_PPC_BOOK3E)
-+	tovirt(r26,r26)
-+#endif
- 	addis	r5,r26,(p_end - _stext)@ha
- 	ld	r5,(p_end - _stext)@l(r5)	/* get _end */
- 5:	bl	.copy_and_flush		/* copy the rest */
-diff --git a/arch/powerpc/kernel/misc_64.S b/arch/powerpc/kernel/misc_64.S
-index c2acf8c..ffe6043 100644
---- a/arch/powerpc/kernel/misc_64.S
-+++ b/arch/powerpc/kernel/misc_64.S
-@@ -449,6 +449,49 @@ kexec_flag:
- 
- 
- #ifdef CONFIG_KEXEC
-+#ifdef CONFIG_PPC_BOOK3E
-+/* BOOK3E have no a real MMU mode so we have to setup the initial TLB
-+ * for a core to map v:0 to p:0 as 1:1. This current implementation
-+ * assume that 1G is enough for kexec.
-+ */
-+#include <asm/mmu.h>
-+kexec_create_tlb:
-+	/* Invalidate all TLBs to avoid any TLB conflict. */
-+	PPC_TLBILX_ALL(0,R0)
-+	sync
-+	isync
-+
-+	mfspr	r10,SPRN_TLB1CFG
-+	andi.	r10,r10,TLBnCFG_N_ENTRY	/* Extract # entries */
-+	subi	r10,r10,1		/* Often its always safe to use last */
-+	lis	r9,MAS0_TLBSEL(1)@h
-+	rlwimi	r9,r10,16,4,15		/* Setup MAS0 = TLBSEL | ESEL(r9) */
-+
-+/* Setup a temp mapping v:0 to p:0 as 1:1 and return to it.
-+ */
-+#ifdef CONFIG_SMP
-+#define M_IF_SMP	MAS2_M
-+#else
-+#define M_IF_SMP	0
-+#endif
-+	mtspr	SPRN_MAS0,r9
-+
-+	lis	r9,(MAS1_VALID|MAS1_IPROT)@h
-+	ori	r9,r9,(MAS1_TSIZE(BOOK3E_PAGESZ_1GB))@l
-+	mtspr	SPRN_MAS1,r9
-+
-+	LOAD_REG_IMMEDIATE(r9, 0x0 | M_IF_SMP)
-+	mtspr	SPRN_MAS2,r9
-+
-+	LOAD_REG_IMMEDIATE(r9, 0x0 | MAS3_SR | MAS3_SW | MAS3_SX)
-+	mtspr	SPRN_MAS3,r9
-+	li	r9,0
-+	mtspr	SPRN_MAS7,r9
-+
-+	tlbwe
-+	isync
-+	blr
-+#endif
- 
- /* kexec_smp_wait(void)
-  *
-@@ -462,6 +505,10 @@ kexec_flag:
-  */
- _GLOBAL(kexec_smp_wait)
- 	lhz	r3,PACAHWCPUID(r13)
-+#ifdef CONFIG_PPC_BOOK3E
-+	/* Create a 1:1 mapping. */
-+	bl	kexec_create_tlb
-+#endif
- 	bl	real_mode
- 
- 	li	r4,KEXEC_STATE_REAL_MODE
-@@ -478,6 +525,7 @@ _GLOBAL(kexec_smp_wait)
-  * don't overwrite r3 here, it is live for kexec_wait above.
-  */
- real_mode:	/* assume normal blr return */
-+#ifndef CONFIG_PPC_BOOK3E
- 1:	li	r9,MSR_RI
- 	li	r10,MSR_DR|MSR_IR
- 	mflr	r11		/* return address to SRR0 */
-@@ -489,7 +537,10 @@ real_mode:	/* assume normal blr return */
- 	mtspr	SPRN_SRR1,r10
- 	mtspr	SPRN_SRR0,r11
- 	rfid
--
-+#else
-+	/* the real mode is nothing for book3e. */
-+	blr
-+#endif
- 
- /*
-  * kexec_sequence(newstack, start, image, control, clear_all())
-@@ -538,6 +589,8 @@ _GLOBAL(kexec_sequence)
- 	mtmsrd	r3,1
- #else
- 	wrteei	0
-+	/* Create a 1:1 mapping. */
-+	bl	kexec_create_tlb
- #endif
- 
- 	/* copy dest pages, flush whole dest image */
--- 
-1.7.9.5
+The warning I reported yesterday [0] still remains as Al's vfs-next
+tree was updated some hours ago.
+The correct fix [1] is pending there and will be in tommorrows next-20130227.
+You still need to revert the old ("buggy") commit first in Linux-Next.
+Just as a note:
+The function is called "shmem_file_setup()" not "shmem_setup_file()"
+as the subject-line of both patches indicates.
 
+The pending patch fixes the warnings here!
+
+- Sedat -
+
+[0] http://marc.info/?l=linux-kernel&m=136179858021827&w=2
+[1] http://git.kernel.org/?p=linux/kernel/git/viro/vfs.git;a=patch;h=3451538a114d738a6528b1da58e19e7d8964c647
+[2] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=7dbc68fcb0cdce27737dba9ee252f26d39d75fb6
