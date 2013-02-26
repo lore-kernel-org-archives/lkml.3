@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228Ab3BZPcK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 10:32:10 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:39846 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759465Ab3BZPcG (ORCPT
+	id S1759901Ab3BZPcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 10:32:23 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:46123 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759578Ab3BZPcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 10:32:06 -0500
+	Tue, 26 Feb 2013 10:32:17 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J . Wysocki" <rjw@sisk.pl>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
@@ -14,10 +14,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH v8 09/13] PCI, ACPI: handle PCI slot devices when creating/destroying PCI busses
-Date: Tue, 26 Feb 2013 23:25:49 +0800
-Message-Id: <1361892353-14786-10-git-send-email-jiang.liu@huawei.com>
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH v8 10/13] PCI/acpiphp: do not use ACPI PCI subdriver mechanism
+Date: Tue, 26 Feb 2013 23:25:50 +0800
+Message-Id: <1361892353-14786-11-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361892353-14786-1-git-send-email-jiang.liu@huawei.com>
 References: <1361892353-14786-1-git-send-email-jiang.liu@huawei.com>
@@ -25,383 +26,540 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the pci_slot driver doesn't update PCI slot devices when PCI
-device hotplug event happens, which may cause memory leak and returning
-stale information to user.
+Previously the acpiphp driver registers itself as an ACPI PCI subdriver,
+so it's callbacks will be invoked when creating/destroying PCI root
+buses to manage ACPI based PCI hotplug slots. But it doesn't handle
+P2P bridge hotplug events, so it will cause strange behavours if there
+are hotplug slots associated with a hot-removed P2P bridge.
 
-Now the pci_slot driver has been changed as built-in driver, so invoke
-PCI slot enumeration and destroy routines directly from the PCI core.
-And remove ACPI PCI sub-driver related code because it isn't needed
-any more.
+So this patch tries to fix this issue by:
+1) Make acpiphp built-in only, not a module.
+2) Directly hook into PCI core to update hotplug slot devices when
+   creating/destroying PCI buses through:
+	pci_{add|remove}_bus() -> acpi_pci_{add|remove}_bus()
+3) Get rid of ACPI PCI subdriver related code, it's not used any more.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Cc: Toshi Kani <toshi.kani@hp.com>
 Cc: linux-pci@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/acpi/internal.h  |    5 --
- drivers/acpi/pci_slot.c  |  177 +++++++---------------------------------------
- drivers/acpi/scan.c      |    1 -
- drivers/pci/pci-acpi.c   |    7 +-
- include/linux/pci-acpi.h |   12 ++++
- 5 files changed, 44 insertions(+), 158 deletions(-)
+ drivers/pci/hotplug/Kconfig        |    7 +-
+ drivers/pci/hotplug/acpiphp.h      |    3 -
+ drivers/pci/hotplug/acpiphp_core.c |   23 +--
+ drivers/pci/hotplug/acpiphp_glue.c |  282 +++++++-----------------------------
+ drivers/pci/pci-acpi.c             |    3 +
+ include/linux/pci-acpi.h           |   14 +-
+ 6 files changed, 67 insertions(+), 265 deletions(-)
 
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index e09ce03..0f24148 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -67,11 +67,6 @@ struct acpi_ec {
+diff --git a/drivers/pci/hotplug/Kconfig b/drivers/pci/hotplug/Kconfig
+index 13e9e63..9fcb87f 100644
+--- a/drivers/pci/hotplug/Kconfig
++++ b/drivers/pci/hotplug/Kconfig
+@@ -52,15 +52,12 @@ config HOTPLUG_PCI_IBM
+ 	  When in doubt, say N.
  
- extern struct acpi_ec *first_ec;
+ config HOTPLUG_PCI_ACPI
+-	tristate "ACPI PCI Hotplug driver"
+-	depends on (!ACPI_DOCK && ACPI) || (ACPI_DOCK)
++	bool "ACPI PCI Hotplug driver"
++	depends on HOTPLUG_PCI=y && ((!ACPI_DOCK && ACPI) || (ACPI_DOCK))
+ 	help
+ 	  Say Y here if you have a system that supports PCI Hotplug using
+ 	  ACPI.
  
--#ifdef	CONFIG_ACPI_PCI_SLOT
--void acpi_pci_slot_init(void);
--#else
--static inline void acpi_pci_slot_init(void) { }
--#endif
- int acpi_pci_root_init(void);
- void acpi_pci_root_hp_init(void);
- int acpi_ec_init(void);
-diff --git a/drivers/acpi/pci_slot.c b/drivers/acpi/pci_slot.c
-index a7d7e77..35d7227 100644
---- a/drivers/acpi/pci_slot.c
-+++ b/drivers/acpi/pci_slot.c
-@@ -9,6 +9,9 @@
-  *  Copyright (C) 2007-2008 Hewlett-Packard Development Company, L.P.
-  *  	Alex Chiang <achiang@hp.com>
-  *
-+ *  Copyright (C) 2013 Huawei Tech. Co., Ltd.
-+ *	Jiang Liu <jiang.liu@huawei.com>
-+ *
-  *  This program is free software; you can redistribute it and/or modify it
-  *  under the terms and conditions of the GNU General Public License,
-  *  version 2, as published by the Free Software Foundation.
-@@ -28,10 +31,9 @@
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/types.h>
-+#include <linux/list.h>
- #include <linux/pci.h>
- #include <linux/acpi.h>
--#include <acpi/acpi_bus.h>
--#include <acpi/acpi_drivers.h>
- #include <linux/dmi.h>
- 
- static bool debug;
-@@ -50,32 +52,23 @@ module_param(debug, bool, 0644);
- ACPI_MODULE_NAME("pci_slot");
- 
- #define MY_NAME "pci_slot"
--#define err(format, arg...) printk(KERN_ERR "%s: " format , MY_NAME , ## arg)
--#define info(format, arg...) printk(KERN_INFO "%s: " format , MY_NAME , ## arg)
-+#define err(format, arg...) pr_err("%s: " format , MY_NAME , ## arg)
-+#define info(format, arg...) pr_info("%s: " format , MY_NAME , ## arg)
- #define dbg(format, arg...)					\
- 	do {							\
- 		if (debug)					\
--			printk(KERN_DEBUG "%s: " format,	\
--				MY_NAME , ## arg);		\
-+			pr_debug(KERN_DEBUG "%s: " format, MY_NAME , ## arg); \
- 	} while (0)
- 
- #define SLOT_NAME_SIZE 21		/* Inspired by #define in acpiphp.h */
- 
- struct acpi_pci_slot {
--	acpi_handle root_handle;	/* handle of the root bridge */
- 	struct pci_slot *pci_slot;	/* corresponding pci_slot */
- 	struct list_head list;		/* node in the list of slots */
- };
- 
--static int acpi_pci_slot_add(struct acpi_pci_root *root);
--static void acpi_pci_slot_remove(struct acpi_pci_root *root);
+-	  To compile this driver as a module, choose M here: the
+-	  module will be called acpiphp.
 -
- static LIST_HEAD(slot_list);
- static DEFINE_MUTEX(slot_list_lock);
--static struct acpi_pci_driver acpi_pci_slot_driver = {
--	.add = acpi_pci_slot_add,
--	.remove = acpi_pci_slot_remove,
--};
+ 	  When in doubt, say N.
  
- static int
- check_slot(acpi_handle handle, unsigned long long *sun)
-@@ -114,21 +107,8 @@ out:
- 	return device;
- }
- 
--struct callback_args {
--	acpi_walk_callback	user_function;	/* only for walk_p2p_bridge */
--	struct pci_bus		*pci_bus;
--	acpi_handle		root_handle;
--};
--
- /*
-- * register_slot
-- *
-- * Called once for each SxFy object in the namespace. Don't worry about
-- * calling pci_create_slot multiple times for the same pci_bus:device,
-- * since each subsequent call simply bumps the refcount on the pci_slot.
-- *
-- * The number of calls to pci_destroy_slot from unregister_slot is
-- * symmetrical.
-+ * Check whether handle has an associated slot and create PCI slot if it has.
+ config HOTPLUG_PCI_ACPI_IBM
+diff --git a/drivers/pci/hotplug/acpiphp.h b/drivers/pci/hotplug/acpiphp.h
+index 1b311f9..69b4aac 100644
+--- a/drivers/pci/hotplug/acpiphp.h
++++ b/drivers/pci/hotplug/acpiphp.h
+@@ -119,7 +119,6 @@ struct acpiphp_slot {
   */
- static acpi_status
- register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
-@@ -138,13 +118,22 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	char name[SLOT_NAME_SIZE];
- 	struct acpi_pci_slot *slot;
- 	struct pci_slot *pci_slot;
--	struct callback_args *parent_context = context;
--	struct pci_bus *pci_bus = parent_context->pci_bus;
-+	struct pci_bus *pci_bus = context;
+ struct acpiphp_func {
+ 	struct acpiphp_slot *slot;	/* parent */
+-	struct acpiphp_bridge *bridge;	/* Ejectable PCI-to-PCI bridge */
  
- 	device = check_slot(handle, &sun);
- 	if (device < 0)
- 		return AE_OK;
+ 	struct list_head sibling;
+ 	struct notifier_block nb;
+@@ -176,8 +175,6 @@ extern int acpiphp_register_hotplug_slot(struct acpiphp_slot *slot);
+ extern void acpiphp_unregister_hotplug_slot(struct acpiphp_slot *slot);
  
-+	/*
-+	 * There may be multiple PCI functions associated with the same slot.
-+	 * Check whether PCI slot has already been created for this PCI device.
-+	 */
-+	list_for_each_entry(slot, &slot_list, list) {
-+		pci_slot = slot->pci_slot;
-+		if (pci_slot->bus == pci_bus && pci_slot->number == device)
-+			return AE_OK;
-+	}
-+
- 	slot = kmalloc(sizeof(*slot), GFP_KERNEL);
- 	if (!slot) {
- 		err("%s: cannot allocate memory\n", __func__);
-@@ -159,12 +148,8 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 		return AE_OK;
- 	}
+ /* acpiphp_glue.c */
+-extern int acpiphp_glue_init (void);
+-extern void acpiphp_glue_exit (void);
+ typedef int (*acpiphp_callback)(struct acpiphp_slot *slot, void *data);
  
--	slot->root_handle = parent_context->root_handle;
- 	slot->pci_slot = pci_slot;
--	INIT_LIST_HEAD(&slot->list);
--	mutex_lock(&slot_list_lock);
- 	list_add(&slot->list, &slot_list);
--	mutex_unlock(&slot_list_lock);
+ extern int acpiphp_enable_slot (struct acpiphp_slot *slot);
+diff --git a/drivers/pci/hotplug/acpiphp_core.c b/drivers/pci/hotplug/acpiphp_core.c
+index c2fd309..80d777c 100644
+--- a/drivers/pci/hotplug/acpiphp_core.c
++++ b/drivers/pci/hotplug/acpiphp_core.c
+@@ -37,6 +37,7 @@
  
- 	get_device(&pci_bus->dev);
- 
-@@ -174,131 +159,24 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	return AE_OK;
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
++#include <linux/pci-acpi.h>
+ #include <linux/pci_hotplug.h>
+ #include <linux/slab.h>
+ #include <linux/smp.h>
+@@ -351,27 +352,7 @@ void acpiphp_unregister_hotplug_slot(struct acpiphp_slot *acpiphp_slot)
  }
  
--/*
-- * walk_p2p_bridge - discover and walk p2p bridges
-- * @handle: points to an acpi_pci_root
-- * @context: p2p_bridge_context pointer
-- *
-- * Note that when we call ourselves recursively, we pass a different
-- * value of pci_bus in the child_context.
-- */
--static acpi_status
--walk_p2p_bridge(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 
+-static int __init acpiphp_init(void)
++void __init acpiphp_init(void)
+ {
+ 	info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
+-
+-	if (acpi_pci_disabled)
+-		return 0;
+-
+-	/* read all the ACPI info from the system */
+-	/* initialize internal data structure etc. */
+-	return acpiphp_glue_init();
+-}
+-
+-
+-static void __exit acpiphp_exit(void)
 -{
--	int device, function;
--	unsigned long long adr;
--	acpi_status status;
+-	if (acpi_pci_disabled)
+-		return;
+-
+-	/* deallocate internal data structures etc. */
+-	acpiphp_glue_exit();
+ }
+-
+-module_init(acpiphp_init);
+-module_exit(acpiphp_exit);
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 89e0c36..3db84b6 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -157,6 +157,7 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 	int device, function, retval;
+ 	struct pci_bus *pbus = bridge->pci_bus;
+ 	struct pci_dev *pdev;
++	u32 val;
+ 
+ 	if (!acpi_pci_check_ejectable(pbus, handle) && !is_dock_device(handle))
+ 		return AE_OK;
+@@ -249,11 +250,9 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 	newfunc->slot = slot;
+ 	list_add_tail(&newfunc->sibling, &slot->funcs);
+ 
+-	pdev = pci_get_slot(pbus, PCI_DEVFN(device, function));
+-	if (pdev) {
++	if (pci_bus_read_dev_vendor_id(pbus, PCI_DEVFN(device, function),
++				       &val, 60*1000))
+ 		slot->flags |= (SLOT_ENABLED | SLOT_POWEREDON);
+-		pci_dev_put(pdev);
+-	}
+ 
+ 	if (is_dock_device(handle)) {
+ 		/* we don't want to call this device's _EJ0
+@@ -366,148 +365,6 @@ static struct acpiphp_func *acpiphp_bridge_handle_to_function(acpi_handle handle
+ }
+ 
+ 
+-static inline void config_p2p_bridge_flags(struct acpiphp_bridge *bridge)
+-{
 -	acpi_handle dummy_handle;
--	acpi_walk_callback user_function;
+-	struct acpiphp_func *func;
 -
+-	if (ACPI_SUCCESS(acpi_get_handle(bridge->handle,
+-					"_EJ0", &dummy_handle))) {
+-		bridge->flags |= BRIDGE_HAS_EJ0;
+-
+-		dbg("found ejectable p2p bridge\n");
+-
+-		/* make link between PCI bridge and PCI function */
+-		func = acpiphp_bridge_handle_to_function(bridge->handle);
+-		if (!func)
+-			return;
+-		bridge->func = func;
+-		func->bridge = bridge;
+-	}
+-}
+-
+-
+-/* allocate and initialize host bridge data structure */
+-static void add_host_bridge(struct acpi_pci_root *root)
+-{
+-	struct acpiphp_bridge *bridge;
+-	acpi_handle handle = root->device->handle;
+-
+-	bridge = kzalloc(sizeof(struct acpiphp_bridge), GFP_KERNEL);
+-	if (bridge == NULL)
+-		return;
+-
+-	bridge->handle = handle;
+-
+-	bridge->pci_bus = root->bus;
+-
+-	init_bridge_misc(bridge);
+-}
+-
+-
+-/* allocate and initialize PCI-to-PCI bridge data structure */
+-static void add_p2p_bridge(acpi_handle *handle)
+-{
+-	struct acpiphp_bridge *bridge;
+-
+-	bridge = kzalloc(sizeof(struct acpiphp_bridge), GFP_KERNEL);
+-	if (bridge == NULL) {
+-		err("out of memory\n");
+-		return;
+-	}
+-
+-	bridge->handle = handle;
+-	config_p2p_bridge_flags(bridge);
+-
+-	bridge->pci_dev = acpi_get_pci_dev(handle);
+-	bridge->pci_bus = bridge->pci_dev->subordinate;
+-	if (!bridge->pci_bus) {
+-		err("This is not a PCI-to-PCI bridge!\n");
+-		goto err;
+-	}
+-
+-	/*
+-	 * Grab a ref to the subordinate PCI bus in case the bus is
+-	 * removed via PCI core logical hotplug. The ref pins the bus
+-	 * (which we access during module unload).
+-	 */
+-	get_device(&bridge->pci_bus->dev);
+-
+-	init_bridge_misc(bridge);
+-	return;
+- err:
+-	pci_dev_put(bridge->pci_dev);
+-	kfree(bridge);
+-	return;
+-}
+-
+-
+-/* callback routine to find P2P bridges */
+-static acpi_status
+-find_p2p_bridge(acpi_handle handle, u32 lvl, void *context, void **rv)
+-{
+-	acpi_status status;
 -	struct pci_dev *dev;
--	struct pci_bus *pci_bus;
--	struct callback_args child_context;
--	struct callback_args *parent_context = context;
 -
--	pci_bus = parent_context->pci_bus;
--	user_function = parent_context->user_function;
--
--	status = acpi_get_handle(handle, "_ADR", &dummy_handle);
--	if (ACPI_FAILURE(status))
--		return AE_OK;
--
--	status = acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
--	if (ACPI_FAILURE(status))
--		return AE_OK;
--
--	device = (adr >> 16) & 0xffff;
--	function = adr & 0xffff;
--
--	dev = pci_get_slot(pci_bus, PCI_DEVFN(device, function));
+-	dev = acpi_get_pci_dev(handle);
 -	if (!dev || !dev->subordinate)
 -		goto out;
 -
--	child_context.pci_bus = dev->subordinate;
--	child_context.user_function = user_function;
--	child_context.root_handle = parent_context->root_handle;
+-	/* check if this bridge has ejectable slots */
+-	if ((detect_ejectable_slots(handle) > 0)) {
+-		dbg("found PCI-to-PCI bridge at PCI %s\n", pci_name(dev));
+-		add_p2p_bridge(handle);
+-	}
 -
--	dbg("p2p bridge walk, pci_bus = %x\n", dev->subordinate->number);
+-	/* search P2P bridges under this p2p bridge */
 -	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
--				     user_function, NULL, &child_context, NULL);
+-				     find_p2p_bridge, NULL, NULL, NULL);
 -	if (ACPI_FAILURE(status))
--		goto out;
+-		warn("find_p2p_bridge failed (error code = 0x%x)\n", status);
 -
--	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
--				     walk_p2p_bridge, NULL, &child_context, NULL);
--out:
+- out:
 -	pci_dev_put(dev);
 -	return AE_OK;
 -}
 -
--/*
-- * walk_root_bridge - generic root bridge walker
-- * @root: poiner of an acpi_pci_root
-- * @user_function: user callback for slot objects
-- *
-- * Call user_function for all objects underneath this root bridge.
-- * Walk p2p bridges underneath us and call user_function on those too.
-- */
--static int
--walk_root_bridge(struct acpi_pci_root *root, acpi_walk_callback user_function)
+-
+-/* find hot-pluggable slots, and then find P2P bridge */
+-static int add_bridge(struct acpi_pci_root *root)
 -{
 -	acpi_status status;
+-	unsigned long long tmp;
+-	acpi_handle dummy_handle;
 -	acpi_handle handle = root->device->handle;
--	struct pci_bus *pci_bus = root->bus;
--	struct callback_args context;
 -
--	context.pci_bus = pci_bus;
--	context.user_function = user_function;
--	context.root_handle = handle;
+-	/* if the bridge doesn't have _STA, we assume it is always there */
+-	status = acpi_get_handle(handle, "_STA", &dummy_handle);
+-	if (ACPI_SUCCESS(status)) {
+-		status = acpi_evaluate_integer(handle, "_STA", NULL, &tmp);
+-		if (ACPI_FAILURE(status)) {
+-			dbg("%s: _STA evaluation failure\n", __func__);
+-			return 0;
+-		}
+-		if ((tmp & ACPI_STA_DEVICE_FUNCTIONING) == 0)
+-			/* don't register this object */
+-			return 0;
+-	}
 -
--	dbg("root bridge walk, pci_bus = %x\n", pci_bus->number);
+-	/* check if this bridge has ejectable slots */
+-	if (detect_ejectable_slots(handle) > 0) {
+-		dbg("found PCI host-bus bridge with hot-pluggable slots\n");
+-		add_host_bridge(root);
+-	}
+-
+-	/* search P2P bridges under this host bridge */
 -	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
--				     user_function, NULL, &context, NULL);
--	if (ACPI_FAILURE(status))
--		return status;
+-				     find_p2p_bridge, NULL, NULL, NULL);
 -
--	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
--				     walk_p2p_bridge, NULL, &context, NULL);
 -	if (ACPI_FAILURE(status))
--		err("%s: walk_p2p_bridge failure - %d\n", __func__, status);
+-		warn("find_p2p_bridge failed (error code = 0x%x)\n", status);
 -
--	return status;
+-	return 0;
 -}
 -
--/*
-- * acpi_pci_slot_add
-- * @handle: points to an acpi_pci_root
-- */
--static int
--acpi_pci_slot_add(struct acpi_pci_root *root)
-+void acpi_pci_slot_enumerate(struct pci_bus *bus, acpi_handle handle)
+ static struct acpiphp_bridge *acpiphp_handle_to_bridge(acpi_handle handle)
  {
--	acpi_status status;
+ 	struct acpiphp_bridge *bridge;
+@@ -567,56 +424,12 @@ static void cleanup_bridge(struct acpiphp_bridge *bridge)
+ 		slot = next;
+ 	}
+ 
+-	/*
+-	 * Only P2P bridges have a pci_dev
+-	 */
+-	if (bridge->pci_dev)
+-		put_device(&bridge->pci_bus->dev);
 -
--	status = walk_root_bridge(root, register_slot);
--	if (ACPI_FAILURE(status))
--		err("%s: register_slot failure - %d\n", __func__, status);
--
--	return status;
-+	mutex_lock(&slot_list_lock);
-+	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
-+			    register_slot, NULL, bus, NULL);
-+	mutex_unlock(&slot_list_lock);
++	put_device(&bridge->pci_bus->dev);
+ 	pci_dev_put(bridge->pci_dev);
+ 	list_del(&bridge->list);
+ 	kfree(bridge);
  }
  
--/*
-- * acpi_pci_slot_remove
-- * @handle: points to an acpi_pci_root
-- */
--static void
--acpi_pci_slot_remove(struct acpi_pci_root *root)
-+void acpi_pci_slot_remove(struct pci_bus *bus)
- {
- 	struct acpi_pci_slot *slot, *tmp;
--	struct pci_bus *pbus;
+-static acpi_status
+-cleanup_p2p_bridge(acpi_handle handle, u32 lvl, void *context, void **rv)
+-{
+-	struct acpiphp_bridge *bridge;
+-
+-	/* cleanup p2p bridges under this P2P bridge
+-	   in a depth-first manner */
+-	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
+-				cleanup_p2p_bridge, NULL, NULL, NULL);
+-
+-	bridge = acpiphp_handle_to_bridge(handle);
+-	if (bridge)
+-		cleanup_bridge(bridge);
+-
+-	return AE_OK;
+-}
+-
+-static void remove_bridge(struct acpi_pci_root *root)
+-{
+-	struct acpiphp_bridge *bridge;
 -	acpi_handle handle = root->device->handle;
- 
- 	mutex_lock(&slot_list_lock);
- 	list_for_each_entry_safe(slot, tmp, &slot_list, list) {
--		if (slot->root_handle == handle) {
-+		if (slot->pci_slot->bus == bus) {
- 			list_del(&slot->list);
--			pbus = slot->pci_slot->bus;
- 			pci_destroy_slot(slot->pci_slot);
--			put_device(&pbus->dev);
-+			put_device(&bus->dev);
- 			kfree(slot);
+-
+-	/* cleanup p2p bridges under this host bridge
+-	   in a depth-first manner */
+-	acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
+-				(u32)1, cleanup_p2p_bridge, NULL, NULL, NULL);
+-
+-	/*
+-	 * On root bridges with hotplug slots directly underneath (ie,
+-	 * no p2p bridge between), we call cleanup_bridge(). 
+-	 *
+-	 * The else clause cleans up root bridges that either had no
+-	 * hotplug slots at all, or had a p2p bridge underneath.
+-	 */
+-	bridge = acpiphp_handle_to_bridge(handle);
+-	if (bridge)
+-		cleanup_bridge(bridge);
+-}
+-
+ static int power_on_slot(struct acpiphp_slot *slot)
+ {
+ 	acpi_status status;
+@@ -802,6 +615,7 @@ static void check_hotplug_bridge(struct acpiphp_slot *slot, struct pci_dev *dev)
  		}
  	}
-@@ -333,5 +211,4 @@ static struct dmi_system_id acpi_pci_slot_dmi_table[] __initdata = {
- void __init acpi_pci_slot_init(void)
- {
- 	dmi_check_system(acpi_pci_slot_dmi_table);
--	acpi_pci_register_driver(&acpi_pci_slot_driver);
  }
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index b643aed..bc2f337 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -1687,7 +1687,6 @@ int __init acpi_scan_init(void)
++
+ /**
+  * enable_device - enable, configure a slot
+  * @slot: slot to be enabled
+@@ -816,7 +630,6 @@ static int __ref enable_device(struct acpiphp_slot *slot)
+ 	struct acpiphp_func *func;
+ 	int retval = 0;
+ 	int num, max, pass;
+-	acpi_status status;
  
- 	acpi_power_init();
- 	acpi_pci_root_init();
--	acpi_pci_slot_init();
+ 	if (slot->flags & SLOT_ENABLED)
+ 		goto err_exit;
+@@ -871,18 +684,6 @@ static int __ref enable_device(struct acpiphp_slot *slot)
+ 			slot->flags &= (~SLOT_ENABLED);
+ 			continue;
+ 		}
+-
+-		if (dev->hdr_type != PCI_HEADER_TYPE_BRIDGE &&
+-		    dev->hdr_type != PCI_HEADER_TYPE_CARDBUS) {
+-			pci_dev_put(dev);
+-			continue;
+-		}
+-
+-		status = find_p2p_bridge(func->handle, (u32)1, bus, NULL);
+-		if (ACPI_FAILURE(status))
+-			warn("find_p2p_bridge failed (error code = 0x%x)\n",
+-				status);
+-		pci_dev_put(dev);
+ 	}
+ 
+ 
+@@ -916,16 +717,6 @@ static int disable_device(struct acpiphp_slot *slot)
+ {
+ 	struct acpiphp_func *func;
+ 	struct pci_dev *pdev;
+-	struct pci_bus *bus = slot->bridge->pci_bus;
+-
+-	list_for_each_entry(func, &slot->funcs, sibling) {
+-		if (func->bridge) {
+-			/* cleanup p2p bridges under this P2P bridge */
+-			cleanup_p2p_bridge(func->bridge->handle,
+-						(u32)1, NULL, NULL);
+-			func->bridge = NULL;
+-		}
+-	}
  
  	/*
- 	 * Enumerate devices in the ACPI namespace.
+ 	 * enable_device() enumerates all functions in this device via
+@@ -944,7 +735,6 @@ static int disable_device(struct acpiphp_slot *slot)
+ 
+ 	slot->flags &= (~SLOT_ENABLED);
+ 
+-err_exit:
+ 	return 0;
+ }
+ 
+@@ -1285,30 +1075,56 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
+ 	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_func);
+ }
+ 
+-static struct acpi_pci_driver acpi_pci_hp_driver = {
+-	.add =		add_bridge,
+-	.remove =	remove_bridge,
+-};
+-
+-/**
+- * acpiphp_glue_init - initializes all PCI hotplug - ACPI glue data structures
++/*
++ * Create hotplug slots for the PCI bus.
++ * It should always return 0 to avoid skipping following notifiers.
+  */
+-int __init acpiphp_glue_init(void)
++void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle)
+ {
+-	acpi_pci_register_driver(&acpi_pci_hp_driver);
++	acpi_handle dummy_handle;
++	struct acpiphp_bridge *bridge;
+ 
+-	return 0;
+-}
++	if (detect_ejectable_slots(handle) <= 0)
++		return;
+ 
++	bridge = kzalloc(sizeof(struct acpiphp_bridge), GFP_KERNEL);
++	if (bridge == NULL) {
++		err("out of memory\n");
++		return;
++	}
+ 
+-/**
+- * acpiphp_glue_exit - terminates all PCI hotplug - ACPI glue data structures
+- *
+- * This function frees all data allocated in acpiphp_glue_init().
+- */
+-void  acpiphp_glue_exit(void)
++	bridge->handle = handle;
++	bridge->pci_dev = pci_dev_get(bus->self);
++	bridge->pci_bus = bus;
++
++	/*
++	 * Grab a ref to the subordinate PCI bus in case the bus is
++	 * removed via PCI core logical hotplug. The ref pins the bus
++	 * (which we access during module unload).
++	 */
++	get_device(&bus->dev);
++
++	if (!pci_is_root_bus(bridge->pci_bus) &&
++	    ACPI_SUCCESS(acpi_get_handle(bridge->handle,
++					"_EJ0", &dummy_handle))) {
++		dbg("found ejectable p2p bridge\n");
++		bridge->flags |= BRIDGE_HAS_EJ0;
++		bridge->func = acpiphp_bridge_handle_to_function(handle);
++	}
++
++	init_bridge_misc(bridge);
++}
++
++/* Destroy hotplug slots associated with the PCI bus */
++void acpiphp_remove_slots(struct pci_bus *bus)
+ {
+-	acpi_pci_unregister_driver(&acpi_pci_hp_driver);
++	struct acpiphp_bridge *bridge, *tmp;
++
++	list_for_each_entry_safe(bridge, tmp, &bridge_list, list)
++		if (bridge->pci_bus == bus) {
++			cleanup_bridge(bridge);
++			break;
++		}
+ }
+ 
+ /**
 diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-index 99878ac..2dbca38 100644
+index 2dbca38..6fe7bf8 100644
 --- a/drivers/pci/pci-acpi.c
 +++ b/drivers/pci/pci-acpi.c
-@@ -296,7 +296,7 @@ void acpi_pci_add_bus(struct pci_bus *bus)
- 	if (acpi_pci_disabled || handle == NULL)
+@@ -297,6 +297,7 @@ void acpi_pci_add_bus(struct pci_bus *bus)
  		return;
  
--	/* TODO: add PCI slots and acpiphp hotplug slots */
-+	acpi_pci_slot_enumerate(bus, handle);
+ 	acpi_pci_slot_enumerate(bus, handle);
++	acpiphp_enumerate_slots(bus, handle);
  }
  
  void acpi_pci_remove_bus(struct pci_bus *bus)
-@@ -308,7 +308,7 @@ void acpi_pci_remove_bus(struct pci_bus *bus)
+@@ -308,6 +309,7 @@ void acpi_pci_remove_bus(struct pci_bus *bus)
  	if (acpi_pci_disabled)
  		return;
  
--	/* TODO: remove PCI slots and acpiphp hotplug slots */
-+	acpi_pci_slot_remove(bus);
++	acpiphp_remove_slots(bus);
+ 	acpi_pci_slot_remove(bus);
  }
  
- /* ACPI bus type */
-@@ -381,7 +381,10 @@ static int __init acpi_pci_init(void)
- 	ret = register_acpi_bus_type(&acpi_pci_bus);
- 	if (ret)
- 		return 0;
-+
+@@ -384,6 +386,7 @@ static int __init acpi_pci_init(void)
+ 
  	pci_set_platform_pm(&acpi_pci_platform_pm);
-+	acpi_pci_slot_init();
-+
+ 	acpi_pci_slot_init();
++	acpiphp_init();
+ 
  	return 0;
  }
- arch_initcall(acpi_pci_init);
 diff --git a/include/linux/pci-acpi.h b/include/linux/pci-acpi.h
-index 2b1743c..1ef126f 100644
+index 1ef126f..f1b2380 100644
 --- a/include/linux/pci-acpi.h
 +++ b/include/linux/pci-acpi.h
-@@ -44,6 +44,18 @@ static inline acpi_handle acpi_pci_get_bridge_handle(struct pci_bus *pbus)
+@@ -56,9 +56,17 @@ static inline void acpi_pci_slot_enumerate(struct pci_bus *bus,
+ static inline void acpi_pci_slot_remove(struct pci_bus *bus) { }
+ #endif
  
- void acpi_pci_add_bus(struct pci_bus *bus);
- void acpi_pci_remove_bus(struct pci_bus *bus);
-+
-+#ifdef	CONFIG_ACPI_PCI_SLOT
-+extern void acpi_pci_slot_init(void);
-+extern void acpi_pci_slot_enumerate(struct pci_bus *bus, acpi_handle handle);
-+extern void acpi_pci_slot_remove(struct pci_bus *bus);
+-#else	/* CONFIG_ACPI */
+-static inline void acpi_pci_add_bus(struct pci_bus *bus) { }
+-static inline void acpi_pci_remove_bus(struct pci_bus *bus) { }
++#ifdef	CONFIG_HOTPLUG_PCI_ACPI
++void acpiphp_init(void);
++void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle);
++void acpiphp_remove_slots(struct pci_bus *bus);
 +#else
-+static inline void acpi_pci_slot_init(void) { }
-+static inline void acpi_pci_slot_enumerate(struct pci_bus *bus,
++static inline void acpiphp_init(void) { }
++static inline void acpiphp_enumerate_slots(struct pci_bus *bus,
 +					   acpi_handle handle) { }
-+static inline void acpi_pci_slot_remove(struct pci_bus *bus) { }
++static inline void acpiphp_remove_slots(struct pci_bus *bus) { }
 +#endif
 +
- #else	/* CONFIG_ACPI */
- static inline void acpi_pci_add_bus(struct pci_bus *bus) { }
- static inline void acpi_pci_remove_bus(struct pci_bus *bus) { }
+ #endif	/* CONFIG_ACPI */
+ 
+ #ifdef CONFIG_ACPI_APEI
 -- 
 1.7.9.5
 
