@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934053Ab3B0Atb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:49:31 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:62735 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932924Ab3B0At3 (ORCPT
+	id S933081Ab3B0Atq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:49:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42195 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932156Ab3BZX6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:49:29 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
-        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
-        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH Resend v5 12/16] spi/spi-atmel: add pinctrl support for atmel spi
-Date: Wed, 27 Feb 2013 08:47:09 +0800
-Message-ID: <1361926029-12518-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 26 Feb 2013 18:58:22 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 113/150] pcmcia/vrc4171: Add missing spinlock init
+Date: Tue, 26 Feb 2013 15:56:10 -0800
+Message-Id: <20130226235535.827158973@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
+References: <20130226235523.930663721@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: spi-devel-general@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org
----
- drivers/spi/spi-atmel.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 00ca85f..0ed3e1a 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -23,6 +23,7 @@
- #include <linux/platform_data/atmel.h>
- #include <linux/platform_data/dma-atmel.h>
- #include <linux/of.h>
-+#include <linux/pinctrl/consumer.h>
+------------------
+
+From: Jean Delvare <khali@linux-fr.org>
+
+commit 811af9723859884f2f771f3174f3ddedab7c53b5 upstream.
+
+It doesn't seem this spinlock was properly initialized. This bug was
+introduced by commit 7a410e8d4d97457c8c381e2de9cdc7bd3306badc.
+
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/pcmcia/vrc4171_card.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/pcmcia/vrc4171_card.c
++++ b/drivers/pcmcia/vrc4171_card.c
+@@ -246,6 +246,7 @@ static int pccard_init(struct pcmcia_soc
+ 	socket = &vrc4171_sockets[slot];
+ 	socket->csc_irq = search_nonuse_irq();
+ 	socket->io_irq = search_nonuse_irq();
++	spin_lock_init(&socket->lock);
  
- #include <asm/io.h>
- #include <asm/gpio.h>
-@@ -1503,11 +1504,18 @@ static int atmel_spi_probe(struct platform_device *pdev)
- 	int			ret;
- 	struct spi_master	*master;
- 	struct atmel_spi	*as;
-+	struct pinctrl		*pinctrl;
- 
- 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!regs)
- 		return -ENXIO;
- 
-+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-+	if (IS_ERR(pinctrl)) {
-+		dev_err(&pdev->dev, "Failed to request pinctrl\n");
-+		return PTR_ERR(pinctrl);
-+	}
-+
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0)
- 		return irq;
--- 
-1.7.9.5
+ 	return 0;
+ }
+
 
