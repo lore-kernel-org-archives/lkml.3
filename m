@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760474Ab3B0A5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:57:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42077 "EHLO
+	id S1760613Ab3B0A5t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:57:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42074 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759877Ab3BZX6D (ORCPT
+	with ESMTP id S1760305Ab3BZX6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 18:58:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 085/150] drm/i915: write backlight harder
-Date: Tue, 26 Feb 2013 15:55:42 -0800
-Message-Id: <20130226235532.934910414@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 093/150] staging: comedi: disallow COMEDI_DEVCONFIG on non-board minors
+Date: Tue, 26 Feb 2013 15:55:50 -0800
+Message-Id: <20130226235533.745356622@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,66 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit cf0a6584aa6d382f802f2c3cacac23ccbccde0cd upstream.
+commit 754ab5c0e55dd118273ca2c217c4d95e9fbc8259 upstream.
 
-770c12312ad617172b1a65b911d3e6564fc5aca8 is the first bad commit
-commit 770c12312ad617172b1a65b911d3e6564fc5aca8
-Author: Takashi Iwai <tiwai@suse.de>
-Date:   Sat Aug 11 08:56:42 2012 +0200
+Comedi has two sorts of minor devices:
+(a) normal board minor devices in the range 0 to
+COMEDI_NUM_BOARD_MINORS-1 inclusive; and
+(b) special subdevice minor devices in the range COMEDI_NUM_BOARD_MINORS
+upwards that are used to open the same underlying comedi device as the
+normal board minor devices, but with non-default read and write
+subdevices for asynchronous commands.
 
-    drm/i915: Fix blank panel at reopening lid
+The special subdevice minor devices get created when a board supporting
+asynchronous commands is attached to a normal board minor device, and
+destroyed when the board is detached from the normal board minor device.
+One way to attach or detach a board is by using the COMEDI_DEVCONFIG
+ioctl.  This should only be used on normal board minors as the special
+subdevice minors are too ephemeral.  In particular, the change
+introduced in commit 7d3135af399e92cf4c9bbc5f86b6c140aab3b88c ("staging:
+comedi: prevent auto-unconfig of manually configured devices") breaks
+horribly for special subdevice minor devices.
 
-changed the register write sequence for restoring the backlight, which
-helped prevent non-working backlights on some machines. Turns out that
-the original sequence was the right thing to do for a different set of
-machines. Worse, setting the backlight level _after_ enabling it seems
-to reset it somehow. So we need to make that one conditional upon the
-backlight having been reset to zero, and add the old one back.
+Since there's no legitimate use for the COMEDI_DEVCONFIG ioctl on a
+special subdevice minor device node, disallow it and return -ENOTTY.
 
-Cargo-culting at it's best, but it seems to work.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=47941
-Cc: Takashi Iwai <tiwai@suse.de>
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-Acked-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_panel.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/staging/comedi/comedi_fops.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -321,6 +321,9 @@ void intel_panel_enable_backlight(struct
- 	if (dev_priv->backlight_level == 0)
- 		dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
- 
-+	dev_priv->backlight_enabled = true;
-+	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
-+
- 	if (INTEL_INFO(dev)->gen >= 4) {
- 		uint32_t reg, tmp;
- 
-@@ -356,12 +359,12 @@ void intel_panel_enable_backlight(struct
- 	}
- 
- set_level:
--	/* Call below after setting BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1.
--	 * BLC_PWM_CPU_CTL may be cleared to zero automatically when these
--	 * registers are set.
-+	/* Check the current backlight level and try to set again if it's zero.
-+	 * On some machines, BLC_PWM_CPU_CTL is cleared to zero automatically
-+	 * when BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1 are written.
- 	 */
--	dev_priv->backlight_enabled = true;
--	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
-+	if (!intel_panel_get_backlight(dev))
-+		intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
- }
- 
- static void intel_panel_init_backlight(struct drm_device *dev)
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1547,6 +1547,11 @@ static long comedi_unlocked_ioctl(struct
+ 	/* Device config is special, because it must work on
+ 	 * an unconfigured device. */
+ 	if (cmd == COMEDI_DEVCONFIG) {
++		if (minor >= COMEDI_NUM_BOARD_MINORS) {
++			/* Device config not appropriate on non-board minors. */
++			rc = -ENOTTY;
++			goto done;
++		}
+ 		rc = do_devconfig_ioctl(dev,
+ 					(struct comedi_devconfig __user *)arg);
+ 		if (rc == 0)
 
 
