@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760205Ab3B0BJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:09:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41880 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760142Ab3BZX5b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760148Ab3BZX5b (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Feb 2013 18:57:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41869 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760067Ab3BZX50 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 18:57:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weston Andros Adamson <dros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 048/150] NFSv4.1: Dont decode skipped layoutgets
-Date: Tue, 26 Feb 2013 15:55:05 -0800
-Message-Id: <20130226235529.171040384@linuxfoundation.org>
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 041/150] tmpfs: fix use-after-free of mempolicy object
+Date: Tue, 26 Feb 2013 15:54:58 -0800
+Message-Id: <20130226235528.469455259@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,71 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@netapp.com>
+From: Greg Thelen <gthelen@google.com>
 
-commit 085b7a45c63d3da5be155faab9249a5cab224561 upstream.
+commit 5f00110f7273f9ff04ac69a5f85bb535a4fd0987 upstream.
 
-layoutget's prepare hook can call rpc_exit with status = NFS4_OK (0).
-Because of this, nfs4_proc_layoutget can't depend on a 0 status to mean
-that the RPC was successfully sent, received and parsed.
+The tmpfs remount logic preserves filesystem mempolicy if the mpol=M
+option is not specified in the remount request.  A new policy can be
+specified if mpol=M is given.
 
-To fix this, use the result's len member to see if parsing took place.
+Before this patch remounting an mpol bound tmpfs without specifying
+mpol= mount option in the remount request would set the filesystem's
+mempolicy object to a freed mempolicy object.
 
-This fixes the following OOPS -- calling xdr_init_decode() with a buffer length
-0 doesn't set the stream's 'p' member and ends up using uninitialized memory
-in filelayout_decode_layout.
+To reproduce the problem boot a DEBUG_PAGEALLOC kernel and run:
+    # mkdir /tmp/x
 
-BUG: unable to handle kernel paging request at 0000000000008050
-IP: [<ffffffff81282e78>] memcpy+0x18/0x120
-PGD 0
-Oops: 0000 [#1] SMP
-last sysfs file: /sys/devices/pci0000:00/0000:00:11.0/0000:02:01.0/irq
-CPU 1
-Modules linked in: nfs_layout_nfsv41_files nfs lockd fscache auth_rpcgss nfs_acl autofs4 sunrpc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_mod ppdev parport_pc parport snd_ens1371 snd_rawmidi snd_ac97_codec ac97_bus snd_seq snd_seq_device snd_pcm snd_timer snd soundcore snd_page_alloc e1000 microcode vmware_balloon i2c_piix4 i2c_core sg shpchp ext4 mbcache jbd2 sr_mod cdrom sd_mod crc_t10dif pata_acpi ata_generic ata_piix mptspi mptscsih mptbase scsi_transport_spi [last unloaded: speedstep_lib]
+    # mount -t tmpfs -o size=100M,mpol=interleave nodev /tmp/x
 
-Pid: 1665, comm: flush-0:22 Not tainted 2.6.32-356-test-2 #2 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
-RIP: 0010:[<ffffffff81282e78>]  [<ffffffff81282e78>] memcpy+0x18/0x120
-RSP: 0018:ffff88003dfab588  EFLAGS: 00010206
-RAX: ffff88003dc42000 RBX: ffff88003dfab610 RCX: 0000000000000009
-RDX: 000000003f807ff0 RSI: 0000000000008050 RDI: ffff88003dc42000
-RBP: ffff88003dfab5b0 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000000 R11: 0000000000000080 R12: 0000000000000024
-R13: ffff88003dc42000 R14: ffff88003f808030 R15: ffff88003dfab6a0
-FS:  0000000000000000(0000) GS:ffff880003420000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0018 ES: 0018 CR0: 000000008005003b
-CR2: 0000000000008050 CR3: 000000003bc92000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process flush-0:22 (pid: 1665, threadinfo ffff88003dfaa000, task ffff880037f77540)
-Stack:
-ffffffffa0398ac1 ffff8800397c5940 ffff88003dfab610 ffff88003dfab6a0
-<d> ffff88003dfab5d0 ffff88003dfab680 ffffffffa01c150b ffffea0000d82e70
-<d> 000000508116713b 0000000000000000 0000000000000000 0000000000000000
-Call Trace:
-[<ffffffffa0398ac1>] ? xdr_inline_decode+0xb1/0x120 [sunrpc]
-[<ffffffffa01c150b>] filelayout_decode_layout+0xeb/0x350 [nfs_layout_nfsv41_files]
-[<ffffffffa01c17fc>] filelayout_alloc_lseg+0x8c/0x3c0 [nfs_layout_nfsv41_files]
-[<ffffffff8150e6ce>] ? __wait_on_bit+0x7e/0x90
+    # grep /tmp/x /proc/mounts
+    nodev /tmp/x tmpfs rw,relatime,size=102400k,mpol=interleave:0-3 0 0
 
-Signed-off-by: Weston Andros Adamson <dros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    # mount -o remount,size=200M nodev /tmp/x
+
+    # grep /tmp/x /proc/mounts
+    nodev /tmp/x tmpfs rw,relatime,size=204800k,mpol=??? 0 0
+        # note ? garbage in mpol=... output above
+
+    # dd if=/dev/zero of=/tmp/x/f count=1
+        # panic here
+
+Panic:
+    BUG: unable to handle kernel NULL pointer dereference at           (null)
+    IP: [<          (null)>]           (null)
+    [...]
+    Oops: 0010 [#1] SMP DEBUG_PAGEALLOC
+    Call Trace:
+      mpol_shared_policy_init+0xa5/0x160
+      shmem_get_inode+0x209/0x270
+      shmem_mknod+0x3e/0xf0
+      shmem_create+0x18/0x20
+      vfs_create+0xb5/0x130
+      do_last+0x9a1/0xea0
+      path_openat+0xb3/0x4d0
+      do_filp_open+0x42/0xa0
+      do_sys_open+0xfe/0x1e0
+      compat_sys_open+0x1b/0x20
+      cstar_dispatch+0x7/0x1f
+
+Non-debug kernels will not crash immediately because referencing the
+dangling mpol will not cause a fault.  Instead the filesystem will
+reference a freed mempolicy object, which will cause unpredictable
+behavior.
+
+The problem boils down to a dropped mpol reference below if
+shmem_parse_options() does not allocate a new mpol:
+
+    config = *sbinfo
+    shmem_parse_options(data, &config, true)
+    mpol_put(sbinfo->mpol)
+    sbinfo->mpol = config.mpol  /* BUG: saves unreferenced mpol */
+
+This patch avoids the crash by not releasing the mempolicy if
+shmem_parse_options() doesn't create a new mpol.
+
+How far back does this issue go? I see it in both 2.6.36 and 3.3.  I did
+not look back further.
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/shmem.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6142,7 +6142,8 @@ nfs4_proc_layoutget(struct nfs4_layoutge
- 	status = nfs4_wait_for_completion_rpc_task(task);
- 	if (status == 0)
- 		status = task->tk_status;
--	if (status == 0)
-+	/* if layoutp->len is 0, nfs4_layoutget_prepare called rpc_exit */
-+	if (status == 0 && lgp->res.layoutp->len)
- 		lseg = pnfs_layout_process(lgp);
- 	rpc_put_task(task);
- 	dprintk("<-- %s status=%d\n", __func__, status);
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2487,6 +2487,7 @@ static int shmem_remount_fs(struct super
+ 	unsigned long inodes;
+ 	int error = -EINVAL;
+ 
++	config.mpol = NULL;
+ 	if (shmem_parse_options(data, &config, true))
+ 		return error;
+ 
+@@ -2511,8 +2512,13 @@ static int shmem_remount_fs(struct super
+ 	sbinfo->max_inodes  = config.max_inodes;
+ 	sbinfo->free_inodes = config.max_inodes - inodes;
+ 
+-	mpol_put(sbinfo->mpol);
+-	sbinfo->mpol        = config.mpol;	/* transfers initial ref */
++	/*
++	 * Preserve previous mempolicy unless mpol remount option was specified.
++	 */
++	if (config.mpol) {
++		mpol_put(sbinfo->mpol);
++		sbinfo->mpol = config.mpol;	/* transfers initial ref */
++	}
+ out:
+ 	spin_unlock(&sbinfo->stat_lock);
+ 	return error;
 
 
