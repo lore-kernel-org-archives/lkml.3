@@ -1,145 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759169Ab3BZAXx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 19:23:53 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30659 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535Ab3BZAXv convert rfc822-to-8bit (ORCPT
+	id S1759905Ab3BZAYI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 19:24:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35741 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759707Ab3BZAYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 19:23:51 -0500
+	Mon, 25 Feb 2013 19:24:06 -0500
+Date: Mon, 25 Feb 2013 16:22:48 -0800
+From: tip-bot for Matt Fleming <tipbot@zytor.com>
+Message-ID: <tip-058e7b5814534461b0e2468fce5a8f8d2f43c38f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, matt.fleming@intel.com,
+        takeuchi_satoru@jp.fujitsu.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, matt.fleming@intel.com,
+        takeuchi_satoru@jp.fujitsu.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1361545427-26393-1-git-send-email-matt@console-pimps.org>
+References: <1361545427-26393-1-git-send-email-matt@console-pimps.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, efi: Mark disable_runtime as __initdata
+Git-Commit-ID: 058e7b5814534461b0e2468fce5a8f8d2f43c38f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Message-ID: <413ecbbe-cc87-4f9e-a938-aad32e8fe7a9@default>
-Date: Mon, 25 Feb 2013 16:20:03 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Minchan Kim <minchan@kernel.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: RE: [PATCHv5 1/8] zsmalloc: add to mm/
-References: <1360780731-11708-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1360780731-11708-2-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130219091804.GA13989@lge.com> <5123BC4D.1010404@linux.vnet.ibm.com>
- <20130219233733.GA16950@blaptop> <20130222092420.GA8077@lge.com>
- <5127CF34.9040302@linux.vnet.ibm.com>
- <69936094-e2fc-44bd-b179-f567e8681bec@default>
- <512BB825.7070304@linux.vnet.ibm.com>
-In-Reply-To: <512BB825.7070304@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 25 Feb 2013 16:22:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Subject: Re: [PATCHv5 1/8] zsmalloc: add to mm/
-> 
-> On 02/25/2013 11:05 AM, Dan Magenheimer wrote:
-> >> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> >> Sent: Friday, February 22, 2013 1:04 PM
-> >> To: Joonsoo Kim
-> >> Subject: Re: [PATCHv5 1/8] zsmalloc: add to mm/
-> >>
-> >> On 02/22/2013 03:24 AM, Joonsoo Kim wrote:
-> >>>
-> >>> It's my quick thought. So there is no concrete idea.
-> >>> As Seth said, with a FULL list, zsmalloc always access all zspage.
-> >>> So, if we want to know what pages are for zsmalloc, we can know it.
-> >>> The EMPTY list can be used for pool of zsmalloc itself. With it, we don't
-> >>> need to free zspage directly, we can keep zspages, so can reduce
-> >>> alloc/free overhead. But, I'm not sure whether it is useful.
-> >>
-> >> I think it's a good idea.  zswap actually does this "keeping some free
-> >> pages around for later allocations" outside zsmalloc in a mempool that
-> >> zswap manages.  Minchan once mentioned bringing that inside zsmalloc
-> >> and this would be a way we could do it.
-> >
-> > I think it's a very bad idea.  If I understand, the suggestion will
-> > hide away some quantity (possibly a very large quantity) of pages
-> > for the sole purpose of zswap, in case zswap gets around to using them
-> > sometime in the future.  In the meantime, those pages are not available
-> > for use by any other kernel subsystems or by userland processes.
-> > An idle page is a wasted page.
-> >
-> > While you might defend the mempool use for a handful of pages,
-> > frontswap writes/reads thousands of pages in a bursty way,
-> > and then can go idle for a very long time.  This may not be
-> > readily apparent with artificially-created memory pressure
-> > from kernbench with -jN (high N).  Leaving thousands
-> > of pages in zswap's personal free list may cause memory pressure
-> > that would otherwise never have existed.
-> 
-> I experimentally determined that this pool increased allocation
-> success rate and, therefore, reduced the number of pages going to the
-> swap device.
+Commit-ID:  058e7b5814534461b0e2468fce5a8f8d2f43c38f
+Gitweb:     http://git.kernel.org/tip/058e7b5814534461b0e2468fce5a8f8d2f43c38f
+Author:     Matt Fleming <matt.fleming@intel.com>
+AuthorDate: Fri, 22 Feb 2013 15:03:47 +0000
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 25 Feb 2013 16:01:35 -0800
 
-Of course it does.  But you can't experimentally determine how
-pre-allocating pages will impact overall performance, especially
-over a wide range of workloads that may or may not even swap.
+x86, efi: Mark disable_runtime as __initdata
 
-> The zswap mempool has a target size of 256 pages.  This places an
-> upper bound on the number of pages held in reserve for zswap.  So we
-> aren't talking about "thousands of pages".
+disable_runtime is only referenced from __init functions, so mark it
+as __initdata.
 
-I used "thousands of pages" in reference to Joonsoo's idea about
-releasing pages to the EMPTY list, not about mempool.  I wasn't
-aware that mempool has a target size of 256 pages, but even
-that smaller amount seems wrong to me, especially if the
-mempool user (zswap) will blithely use many thousands of pages
-in a burst.
+Reported-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Link: http://lkml.kernel.org/r/1361545427-26393-1-git-send-email-matt@console-pimps.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/platform/efi/efi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index e2cd38f..ec9f325 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -85,7 +85,7 @@ int efi_enabled(int facility)
+ }
+ EXPORT_SYMBOL(efi_enabled);
  
-> And yes, the pool does remove up to 1MB of memory (on a 4k PAGE_SIZE)
-> from general use, which causes the reclaim to start very slightly earlier.
-> 
-> >
-> >> Just want to be clear that I'd be in favor of looking at this after
-> >> the merge.
-> >
-> > I disagree... I think this is exactly the kind of fundamental
-> > MM interaction that should be well understood and resolved
-> > BEFORE anything gets merged.
-> 
-> While there is discussion to be had here, I don't agree that it's
-> "fundamental" and should not block merging.
-> 
-> The mempool does serve a purpose and adds measurable benefit. However,
-> if it is determined at some future time that having a reserved pool of
-> any size in zswap is bad practice, it can be removed trivially.
-
-We had this argument last summer... Sure, _any_ cache can be shown
-to add some measurable benefit under the right circumstances.
-Any cacheing solution also has some often subtle side effects
-on some workloads, that can have more costs than benefits.
-Our cache (zcache and/or zswap and/or zram) is not just a cache
-but it is also stealing capacity from its backing store (total
-kernel RAM), so is even more likely to have side effects.
-
-While I firmly believe -- intuitively -- that compression should
-eventually be a feature of the MM subsystem, I don't think we
-have enough understanding yet of the interactions or the
-policies needed to control those interactions or the impact
-of those policies on the underlying zram/zcache/zswap design choices.
-For example, zswap completely ignores the pagecache... is that
-a good thing or a bad thing, and why?
-
-Seth, I'm not trying to piss you off, but last summer you seemed
-hell-bent on promoting zcache out of staging, and it didn't
-happen so you hacked off the part of zcache you were most interested
-in, forked it and rewrote it, and are now trying to merge that
-fork into MM ASAP.  Why?  Why can't we work together on solving
-the hard problems instead of infighting and reimplementing the wheel?
-
-Dan "shakes head"
+-static bool disable_runtime = false;
++static bool __initdata disable_runtime = false;
+ static int __init setup_noefi(char *arg)
+ {
+ 	disable_runtime = true;
