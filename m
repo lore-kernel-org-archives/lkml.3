@@ -1,128 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046Ab3BZRpp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 12:45:45 -0500
-Received: from catastrophix.ugh.no ([178.79.162.34]:57870 "EHLO mail1.ugh.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752743Ab3BZRpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 12:45:44 -0500
-X-Greylist: delayed 505 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Feb 2013 12:45:44 EST
-Message-ID: <512CF2C9.5060309@tomt.net>
-Date: Tue, 26 Feb 2013 18:37:13 +0100
-From: Andre Tomt <andre@tomt.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+	id S1758113Ab3BZRrb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 12:47:31 -0500
+Received: from www.linutronix.de ([62.245.132.108]:50378 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab3BZRra (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 12:47:30 -0500
+Date: Tue, 26 Feb 2013 18:47:25 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Magnus Damm <magnus.damm@gmail.com>
+cc: linux-kernel@vger.kernel.org, kuninori.morimoto.gx@renesas.com,
+        linux-sh@vger.kernel.org, benh@kernel.crashing.org,
+        grant.likely@secretlab.ca, horms@verge.net.au
+Subject: Re: [PATCH 00/05] irqchip: Renesas INTC External IRQ pin v2 update
+In-Reply-To: <20130226115834.5630.45471.sendpatchset@w520>
+Message-ID: <alpine.LFD.2.02.1302261846550.22263@ionos>
+References: <20130226115834.5630.45471.sendpatchset@w520>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org, davem@davemloft.net
-Subject: Re: [ 00/58] 3.7.10-stable review
-References: <20130225221636.018756060@linuxfoundation.org>
-In-Reply-To: <20130225221636.018756060@linuxfoundation.org>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms010404050707090202050503"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Tue, 26 Feb 2013, Magnus Damm wrote:
 
---------------ms010404050707090202050503
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: quoted-printable
+> irqchip: Renesas INTC External IRQ pin v2 update
+> 
+> [PATCH 01/05] irqchip: intc-irqpin: Whitespace fixes
+> [PATCH 02/05] irqchip: intc-irqpin: Cache mapped IRQ
+> [PATCH 03/05] irqchip: intc-irqpin: Add force comments
+> [PATCH 04/05] irqchip: intc-irqpin: Make use of devm functions
+> [PATCH 05/05] irqchip: intc-irqpin: GPL header for platform data
+> 
+> These patches update the v1 of the INTC External IRQ pin driver
+> in various ways based on feedback kindly received from:
+> - Simon Horman
+> - Kuninori Morimoto
+> - Thomas Gleixner
+> 
+> With the series applied I see the driver as "v2", but
+> I prefer to keep these changes as incremental ones instead
+> of redoing a single "v2" patch for the driver. The reason
+> behind this is that there are on-going back porting efforts
+> that are better dealt with using incremental patches.
+> 
+> Signed-off-by: Magnus Damm <damm@opensource.se>
 
-Hi Greg, David.
+For the full series:
 
-The patches for the sock_diag privilege escalation issue in 3.3-3.8=20
-seems to be missing. Would be good to get those out the way before 3.7=20
-is retired.
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 
-http://comments.gmane.org/gmane.linux.network/260062
-
-Hmm. Seems to be missing stable tag and CC. David?
-
-
---------------ms010404050707090202050503
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIMbzCC
-BjMwggUboAMCAQICAwVSnTANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNV
-BAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRl
-IFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlh
-dGUgQ2xpZW50IENBMB4XDTEyMTExNzE2NTUxNloXDTEzMTExODIzNDE0MFowUzEZMBcGA1UE
-DRMQMkhGN3pVN3RQOFd6OW0zMTEXMBUGA1UEAwwOYW5kcmVAdG9tdC5uZXQxHTAbBgkqhkiG
-9w0BCQEWDmFuZHJlQHRvbXQubmV0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
-40aMqjCLAvFtOKJTRAbXsBrNy5X+5G8GLiFelajZQtM9zbSBAg6Bsplew0hRNt9d6UwXOxvz
-1wgu5QR4qSsqSQ2dzg/z4VhRlpA/kEc3gIWOQQjxoGnomOJqKz8BAXS+jsxJhjiRO3HDOaXF
-UQA35TYbo1G6ERuF49ncONOvKnTWDhakSfF9Bzk9HUvKwCMykFrMdXjuBbjlZ8UzglFzLdS+
-N/eAhLhy3cBD0P+UzIjI6gX+BgghX4owyWTTxNPmZh2BhsIGIKCTYc9mEhvG6wbxEKLjBKZx
-i/PQ0toQQ+vSB4/R0VyEEkJGjMGvHYkMiLI5d7Fhg4kSWXln6yjz0QIDAQABo4IC1DCCAtAw
-CQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUFBwME
-MB0GA1UdDgQWBBRQhN8RHnc2qewFRMq5Ndt/v7ZSnzAfBgNVHSMEGDAWgBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAZBgNVHREEEjAQgQ5hbmRyZUB0b210Lm5ldDCCAUwGA1UdIASCAUMwggE/
-MIIBOwYLKwYBBAGBtTcBAgMwggEqMC4GCCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3Ns
-LmNvbS9wb2xpY3kucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBDZXJ0aWZpY2F0
-aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVkIGFjY29y
-ZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUgU3Rh
-cnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
-ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjA2BgNV
-HR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGO
-BggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20v
-c3ViL2NsYXNzMS9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wu
-Y29tL2NlcnRzL3N1Yi5jbGFzczEuY2xpZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8v
-d3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBAMUhH/RqcM54mAIm72hN9fWd
-d4nK3KJWAak6SVvAUc9sO71Tlzk9EV7k1DL8r+TT/M+xFnVQvyh1a5yd+wY5YjbkdhzFnXT7
-55rQjosLGCs/4479z2BWL38m4GT87CjwBxx9ONSarfYwRGRwNbC8j6mFC5SVli1yBAqKWd+5
-ZmHIKWPUI1HpQSAzf+r7XvzRjBAbGnLjJC1QMgx3CZzR/tEC+X1xl54icKZZbrjutCj84mbw
-nuSoPXfvKztJslH0LXS3KWCDVOWsptboAzRV/pcAOadc9l0WbyEfCQv5gfdxJU5jf76wfyrw
-XYWwzdRgGfEfeDOcVfF5yLx+MbcgbsgwggY0MIIEHKADAgECAgEeMA0GCSqGSIb3DQEBBQUA
-MH0xCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1
-cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMSkwJwYDVQQDEyBTdGFydENvbSBDZXJ0
-aWZpY2F0aW9uIEF1dGhvcml0eTAeFw0wNzEwMjQyMTAxNTVaFw0xNzEwMjQyMTAxNTVaMIGM
-MQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJl
-IERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3Mg
-MSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IB
-DwAwggEKAoIBAQDHCYPMzi3YGrEppC4Tq5a+ijKDjKaIQZZVR63UbxIP6uq/I0fhCu+cQhoU
-fE6ERKKnu8zPf1Jwuk0tsvVCk6U9b+0UjM0dLep3ZdE1gblK/1FwYT5Pipsu2yOMluLqwvsu
-z9/9f1+1PKHG/FaR/wpbfuIqu54qzHDYeqiUfsYzoVflR80DAC7hmJ+SmZnNTWyUGHJbBpA8
-Q89lGxahNvuryGaC/o2/ceD2uYDX9U8Eg5DpIpGQdcbQeGarV04WgAUjjXX5r/2dabmtxWMZ
-whZna//jdiSyrrSMTGKkDiXm6/3/4ebfeZuCYKzN2P8O2F/Xe2AC/Y7zeEsnR7FOp+uXAgMB
-AAGjggGtMIIBqTAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBBjAdBgNVHQ4EFgQU
-U3Ltkpzg2ssBXHx+ljVO8tS4UYIwHwYDVR0jBBgwFoAUTgvvGqRAW6UXaYcwyjRoQ9BBrvIw
-ZgYIKwYBBQUHAQEEWjBYMCcGCCsGAQUFBzABhhtodHRwOi8vb2NzcC5zdGFydHNzbC5jb20v
-Y2EwLQYIKwYBBQUHMAKGIWh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNydDBbBgNV
-HR8EVDBSMCegJaAjhiFodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9zZnNjYS5jcmwwJ6AloCOG
-IWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDCBgAYDVR0gBHkwdzB1BgsrBgEE
-AYG1NwECATBmMC4GCCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3ku
-cGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUu
-cGRmMA0GCSqGSIb3DQEBBQUAA4ICAQAKgwh9eKssBly4Y4xerhy5I3dNoXHYfYa8PlVLL/qt
-XnkFgdtY1o95CfegFJTwqBBmf8pyTUnFsukDFUI22zF5bVHzuJ+GxhnSqN2sD1qetbYwBYK2
-iyYA5Pg7Er1A+hKMIzEzcduRkIMmCeUTyMyikfbUFvIBivtvkR8ZFAk22BZy+pJfAoedO61H
-Tz4qSfQoCRcLN5A0t4DkuVhTMXIzuQ8CnykhExD6x4e6ebIbrjZLb7L+ocR0y4YjCl/Pd4MX
-U91y0vTipgr/O75CDUHDRHCCKBVmz/Rzkc/b970MEeHt5LC3NiWTgBSvrLEuVzBKM586YoRD
-9Dy3OHQgWI270g+5MYA8GfgI/EPT5G7xPbCDz+zjdH89PeR3U4So4lSXur6H6vp+m9TQXPF3
-a0LwZrp8MQ+Z77U1uL7TelWO5lApsbAonrqASfTpaprFVkL4nyGH+NHST2ZJPWIBk81i6Vw0
-ny0qZW2Niy/QvVNKbb43A43ny076khXO7cNbBIRdJ/6qQNq9Bqb5C0Q5nEsFcj75oxQRqlKf
-6TcvGbjxkJh8BYtv9ePsXklAxtm8J7GCUBthHSQgepbkOexhJ0wP8imUkyiPHQ0GvEnd8312
-9fZjoEhdGwXV27ioRKbj/cIq7JRXun0NbeY+UdMYu9jGfIpDLtUUGSgsg2zMGs5R4jGCA90w
-ggPZAgEBMIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkG
-A1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3Rh
-cnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwVSnTAJBgUr
-DgMCGgUAoIICHTAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0x
-MzAyMjYxNzM3MTNaMCMGCSqGSIb3DQEJBDEWBBRIrJkutcYI6FE2ZCnzuDCXGjOHITBsBgkq
-hkiG9w0BCQ8xXzBdMAsGCWCGSAFlAwQBKjALBglghkgBZQMEAQIwCgYIKoZIhvcNAwcwDgYI
-KoZIhvcNAwICAgCAMA0GCCqGSIb3DQMCAgFAMAcGBSsOAwIHMA0GCCqGSIb3DQMCAgEoMIGl
-BgkrBgEEAYI3EAQxgZcwgZQwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBM
-dGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYD
-VQQDEy9TdGFydENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQID
-BVKdMIGnBgsqhkiG9w0BCRACCzGBl6CBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0
-YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25p
-bmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xp
-ZW50IENBAgMFUp0wDQYJKoZIhvcNAQEBBQAEggEAcxLq8Tb3ZndAFZwx1qJD44Z4HJOrhfXU
-DN0NOzk119hqnuJcDRvcZRnnPD2Ssn6BPGX3jINPUW8xtfVDr2KLbrNyUa9UbvVRdZxTQcUr
-62brNdCuRV+OeKEFHHIHjfd0tYi3U6JqYPpKMXWbmnDFOZ3NblRNmopRaazK2y2bWjILXz+m
-ts8qkCCf6DNOGz12VdYBtVlvI2c9pusB6rdgx6e1E5gSaLJK0TxH08OQCi+5qWORdIc1hK8l
-h5ZtHFg8ZQwOo0nK2xnc5dTFu0rYudRzlIO6JBYo9cnMFxiQcvXDfbDH+8QYMcZpMiwiOp72
-tecg/DTpZCajen5iQsTHagAAAAAAAA==
---------------ms010404050707090202050503--
+> ---
+> 
+>  Depends on:
+>  [PATCH] irqchip: Renesas INTC External IRQ pin driver
+> 
+>  drivers/irqchip/irq-renesas-intc-irqpin.c             |   88 ++++++++---------
+>  include/linux/platform_data/irq-renesas-intc-irqpin.h |   19 +++
+>  2 files changed, 62 insertions(+), 45 deletions(-)
+> 
