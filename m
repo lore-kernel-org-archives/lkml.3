@@ -1,34 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759929Ab3BZT14 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 14:27:56 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:65005 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757187Ab3BZT1S (ORCPT
+	id S1759876Ab3BZT3B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 14:29:01 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:62734 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757815Ab3BZT27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 14:27:18 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2 0/4] gpiolib: some fixup patches
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Ryan Mallon <rmallon@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "acourbot@nvidia.com" <acourbot@nvidia.com>
-In-Reply-To: <CAAVeFuLP0KLVL-0SS+nGWSoK1RMPCmKgZV-OjMJo-h7E1UVuXw@mail.gmail.com>
-References: <1360907177-6468-1-git-send-email-acourbot@nvidia.com> <CAAVeFuLP0KLVL-0SS+nGWSoK1RMPCmKgZV-OjMJo-h7E1UVuXw@mail.gmail.com>
-Date: Tue, 26 Feb 2013 17:53:11 +0000
-Message-Id: <20130226175311.D17173E2EF8@localhost>
+	Tue, 26 Feb 2013 14:28:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAB=NE6WAKjktv8G1eikkfkbB7KAa_XefJj-udfH8b_vvgLbznQ@mail.gmail.com>
+References: <1361648055-15871-1-git-send-email-kazikcz@gmail.com>
+	<CAB=NE6WAKjktv8G1eikkfkbB7KAa_XefJj-udfH8b_vvgLbznQ@mail.gmail.com>
+Date: Tue, 26 Feb 2013 20:28:58 +0100
+Message-ID: <CABvG-CW+ykoZMz49UNS11=rLViNQ3uyo-sHeJqOdp06Vwd628g@mail.gmail.com>
+Subject: Re: [PATCH] ath: sanitize 0xFFFF regdomain
+From: =?UTF-8?Q?Micha=C5=82_Kazior?= <kazikcz@gmail.com>
+To: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
+Cc: David Quan <dquan@qca.qualcomm.com>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Feb 2013 11:19:44 +0900, Alexandre Courbot <gnurou@gmail.com> wrote:
-> Grant, will you be able to include these for 3.9? They fix code that
-> you merged recently, so I'd be glad if they could be squashed into the
-> patch mentioned in the description.
+On 26 February 2013 19:29, Luis R. Rodriguez <mcgrof@qca.qualcomm.com> wrote:
+> NACK. This comes up every now and then and this is not a valid device
+> ID, this is an issue with the card, so what you can do is adjust the
+> device ID post bootup. Not sure if distros have an easy way to set
+> this up, if not perhaps this should be considered as this has come up
+> twice before.
 
-They won't get squashed in because the tree is already composed and in
-linux-next. I don't rebase unless I really need to. I've applied them
-and I'll probably push to Linus since they are effectively bug fixes of
-a sort and the merge window hasn't closed yet.
+The erroneous 0xFFFF value comes from using one of eeprom_ops
+implementations. Do you suggest I should fool ath regd code to think
+this is a different card so it picks a different (perhaps correct, if
+at all) eeprom_ops variant? How do I do that?
 
-g.
+>From what I can tell this is in the pci probing and I can't see any
+way to skip the regd initialisation. I don't see how current_rd can
+have a value other than 0xFFFF for this device in this code path.
+
+Or am I missing something?
+
+
+-- Michal.
