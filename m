@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933282Ab3B0AjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:39:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42315 "EHLO
+	id S933155Ab3BZX6j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:58:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42265 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932999Ab3BZX6k (ORCPT
+	with ESMTP id S932999Ab3BZX6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:40 -0500
+	Tue, 26 Feb 2013 18:58:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Carsten S." <carsteniq@yahoo.com>, Josh Boyer <jwboyer@redhat.com>
-Subject: [ 147/150] USB: usb-storage: unusual_devs update for Super TOP SATA bridge
-Date: Tue, 26 Feb 2013 15:56:44 -0800
-Message-Id: <20130226235539.822417363@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 135/150] sock_diag: Fix out-of-bounds access to sock_diag_handlers[]
+Date: Tue, 26 Feb 2013 15:56:32 -0800
+Message-Id: <20130226235538.312022308@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,40 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
 
-commit 18e03310b5caa6d11c1a8c61b982c37047693fba upstream.
+From: Mathias Krause <minipli@googlemail.com>
 
-The current entry in unusual_cypress.h for the Super TOP SATA bridge devices
-seems to be causing corruption on newer revisions of this device.  This has
-been reported in Arch Linux and Fedora.  The original patch was tested on
-devices with bcdDevice of 1.60, whereas the newer devices report bcdDevice
-as 2.20.  Limit the UNUSUAL_DEV entry to devices less than 2.20.
+[ Upstream commit 6e601a53566d84e1ffd25e7b6fe0b6894ffd79c0 ]
 
-This fixes https://bugzilla.redhat.com/show_bug.cgi?id=909591
+Userland can send a netlink message requesting SOCK_DIAG_BY_FAMILY
+with a family greater or equal then AF_MAX -- the array size of
+sock_diag_handlers[]. The current code does not test for this
+condition therefore is vulnerable to an out-of-bound access opening
+doors for a privilege escalation.
 
-The Arch Forum post on this is here:
-	https://bbs.archlinux.org/viewtopic.php?id=152011
-
-Reported-by: Carsten S. <carsteniq@yahoo.com>
-Tested-by: Carsten S. <carsteniq@yahoo.com>
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/storage/unusual_cypress.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/sock_diag.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/storage/unusual_cypress.h
-+++ b/drivers/usb/storage/unusual_cypress.h
-@@ -31,7 +31,7 @@ UNUSUAL_DEV(  0x04b4, 0x6831, 0x0000, 0x
- 		"Cypress ISD-300LP",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
+--- a/net/core/sock_diag.c
++++ b/net/core/sock_diag.c
+@@ -121,6 +121,9 @@ static int __sock_diag_rcv_msg(struct sk
+ 	if (nlmsg_len(nlh) < sizeof(*req))
+ 		return -EINVAL;
  
--UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x9999,
-+UNUSUAL_DEV( 0x14cd, 0x6116, 0x0000, 0x0219,
- 		"Super Top",
- 		"USB 2.0  SATA BRIDGE",
- 		USB_SC_CYP_ATACB, USB_PR_DEVICE, NULL, 0),
++	if (req->sdiag_family >= AF_MAX)
++		return -EINVAL;
++
+ 	hndl = sock_diag_lock_handler(req->sdiag_family);
+ 	if (hndl == NULL)
+ 		err = -ENOENT;
 
 
