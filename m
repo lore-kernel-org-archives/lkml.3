@@ -1,93 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759617Ab3BZPPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 10:15:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47437 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758921Ab3BZPPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 10:15:14 -0500
-Date: Tue, 26 Feb 2013 16:15:09 +0100
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PULL REQUEST] ext2, ext3, udf updates for 3.9-rc1
-Message-ID: <20130226151509.GA8465@quack.suse.cz>
-References: <20130222152507.GD15083@quack.suse.cz>
+	id S932157Ab3BZPUL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 10:20:11 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:40086 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759497Ab3BZPUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 10:20:08 -0500
+Message-ID: <512CD20A.3020100@linux.vnet.ibm.com>
+Date: Tue, 26 Feb 2013 20:47:30 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130222152507.GD15083@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Lai Jiangshan <eag0628@gmail.com>
+CC: linux-doc@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        mingo@kernel.org, linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        xiaoguangrong@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au, rostedt@goodmis.org,
+        rjw@sisk.pl, namhyung@kernel.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, netdev@vger.kernel.org,
+        oleg@redhat.com, vincent.guittot@linaro.org, sbw@mit.edu,
+        tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com> <20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com> <CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com> <5122551E.1080703@linux.vnet.ibm.com> <51226B46.9080707@linux.vnet.ibm.com> <CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com> <51226F91.7000108@linux.vnet.ibm.com> <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com> <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF53gcuEfgM=L8-mPTt4W3GFMte-w6eyO0iv2CobAN68SNw@mail.gmail.com>
+In-Reply-To: <CACvQF53gcuEfgM=L8-mPTt4W3GFMte-w6eyO0iv2CobAN68SNw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022615-9574-0000-0000-000006C1EE21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 22-02-13 16:25:07, Jan Kara wrote:
->   Hello Linus,
+On 02/26/2013 07:04 PM, Lai Jiangshan wrote:
+> On Tue, Feb 26, 2013 at 3:26 AM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> Hi Lai,
+>>
+>> On 02/25/2013 09:23 PM, Lai Jiangshan wrote:
+>>> Hi, Srivatsa,
+>>>
+>>> The target of the whole patchset is nice for me.
+>>
+>> Cool! Thanks :-)
+>>
+>>> A question: How did you find out the such usages of
+>>> "preempt_disable()" and convert them? did all are converted?
+>>>
+>>
+>> Well, I scanned through the source tree for usages which implicitly
+>> disabled CPU offline and converted them over.
 > 
->   could you please pull from
+> How do you scan? could you show the way you scan the source tree.
+> I can follow your instructions for double checking.
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
-> 
->   to get several UDF fixes, a support for UDF extent cache, and couple of
-> ext2 and ext3 cleanups and minor fixes.
-  Did this get lost somehow? You didn't pull yet and I didn't get any hate
-mail from you either ;)...
 
-								Honza
+Its nothing special. I grepped the source tree for anything dealing with
+cpu_online_mask or its derivatives and also for functions/constructs that
+rely on the cpumasks internally (eg: smp_call_function). Then I audited all
+such call-sites and converted them (if needed) accordingly.
 
-> Top of the tree is 712ddc5. The full shortlog is:
+>> Its not limited to uses
+>> of preempt_disable() alone - even spin_locks, rwlocks, local_irq_disable()
+>> etc also help disable CPU offline. So I tried to dig out all such uses
+>> and converted them. However, since the merge window is open, a lot of
+>> new code is flowing into the tree. So I'll have to rescan the tree to
+>> see if there are any more places to convert.
 > 
-> Guo Chao (1):
->       ext3, ext4, ocfs2: remove unused macro NAMEI_RA_INDEX
+> I remember some code has such assumption:
+>     preempt_disable() (or something else)
+>     //the code assume that the cpu_online_map can't be changed.
+>     preempt_enable()
 > 
-> Jan Kara (5):
->       ext3: Fix memory leak when quota options are specified multiple times
->       udf: Write LVID to disk after opening / closing
->       udf: Fix bitmap overflow on large filesystems with small block size
->       udf: Make s_block_bitmap standard array
->       udf: Remove unused s_extLength from udf_bitmap
+> It is very hard to find out all such kinds of assumptions and fixes them.
+> (I notice your code mainly fixes code around send_xxxx())
 > 
-> Namjae Jeon (1):
->       udf: add extent cache support in case of file reading
-> 
-> Wang Shilong (9):
->       Ext2: free memory allocated and forget buffer head when io error happens
->       Ext3: add necessary check in case IO error happens
->       Ext2: use unlikely to improve the efficiency of the kernel
->       Ext3: use unlikely to improve the efficiency of the kernel
->       Ext2: return ENOMEM rather than EIO if sb_getblk fails
->       Ext3: return ENOMEM rather than EIO if sb_getblk fails
->       Ext2: remove the overhead check about sb in the function ext2_new_blocks
->       Ext2: mark inode dirty after the function dquot_free_block_nodirty is called
->       Ext2: remove the static function release_blocks to optimize the kernel
-> 
-> The diffstat is
-> 
->  fs/ext2/balloc.c |   28 ++++++-----------
->  fs/ext2/inode.c  |   12 +++++++
->  fs/ext2/super.c  |    2 +-
->  fs/ext2/xattr.c  |    4 +-
->  fs/ext3/inode.c  |   16 ++++++----
->  fs/ext3/namei.c  |    1 -
->  fs/ext3/resize.c |   12 ++++----
->  fs/ext3/super.c  |   51 +++++++++++++++++++-------------
->  fs/ext3/xattr.c  |    4 +-
->  fs/ext4/namei.c  |    1 -
->  fs/ocfs2/dir.c   |    1 -
->  fs/udf/inode.c   |   86 ++++++++++++++++++++++++++++++++++++++++++++++++++----
->  fs/udf/super.c   |   11 ++++---
->  fs/udf/udf_i.h   |   16 ++++++++++
->  fs/udf/udf_sb.h  |    5 +--
->  fs/udf/udfdecl.h |    5 ---
->  16 files changed, 177 insertions(+), 78 deletions(-)
-> 
-> 							Thanks
-> 								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
+The conversion can be carried out using the method I mentioned above.
+
+Regards,
+Srivatsa S. Bhat
+
