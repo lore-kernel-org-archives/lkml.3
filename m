@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758699Ab3BZXkY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:40:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47806 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756234Ab3BZXkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:40:23 -0500
-Message-ID: <512D478C.4030503@zytor.com>
-Date: Tue, 26 Feb 2013 15:38:52 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	id S1758699Ab3BZXn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:43:58 -0500
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:48226 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754656Ab3BZXn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 18:43:56 -0500
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: tglx@linutronix.de, mingo@redhat.com, konrad.wilk@oracle.com,
-        xen-devel@lists.xen.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/x86: Flush lazy MMU when DEBUG_PAGEALLOC is set
-References: <1361919370-18058-1-git-send-email-boris.ostrovsky@oracle.com>
-In-Reply-To: <1361919370-18058-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFzCU3jKDssYj9sDJU-VkugCfy_Cv5+VhMv9renZ94jRdQ@mail.gmail.com>
+References: <20130226045424.GA3576@osiris>
+	<CA+55aFx8pUSHPhC_-ob2i5BbvBkEC4BVYtAbNkf3+FE+=3AmgA@mail.gmail.com>
+	<20130226125739.GA3924@osiris>
+	<CA+55aFycXwZi-U2uJWWusLGeaV3=BMEBdgcxGN9Lo0QcHHUrDA@mail.gmail.com>
+	<CA+55aFzCU3jKDssYj9sDJU-VkugCfy_Cv5+VhMv9renZ94jRdQ@mail.gmail.com>
+Date: Tue, 26 Feb 2013 15:43:55 -0800
+X-Google-Sender-Auth: fHvRruFwkn_egzFB7infMdl8WGs
+Message-ID: <CA+55aFzckUoJGEywgentKT-vQieiuLu-mQtELiA6UotWqBWH7A@mail.gmail.com>
+Subject: Re: bug in generic strncpy_from_user
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2013 02:56 PM, Boris Ostrovsky wrote:
-> When CONFIG_DEBUG_PAGEALLOC is set page table updates made by
-> kernel_map_pages() are not made visible (via TLB flush) immediately if lazy
-> MMU is on. In environments that support lazy MMU (e.g. Xen) this may lead to
-> fatal page faults, for example, when zap_pte_range() needs to allocate pages
-> in __tlb_remove_page() -> tlb_next_batch().
-> 
-> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> ---
->  arch/x86/mm/pageattr.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-> index ca1f1c2..7b3216e 100644
-> --- a/arch/x86/mm/pageattr.c
-> +++ b/arch/x86/mm/pageattr.c
-> @@ -1369,6 +1369,8 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
->  	 * but that can deadlock->flush only current cpu:
->  	 */
->  	__flush_tlb_all();
-> +
-> +	arch_flush_lazy_mmu_mode();
->  }
->  
->  #ifdef CONFIG_HIBERNATION
-> 
+On Tue, Feb 26, 2013 at 8:08 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> It is totally untested, though.  Does it work for you (and we should
+> do the same thing for the grows-up case, obviously)?
 
-This sounds like a critical fix, i.e. a -stable candidate.  Am I correct?
+Ok, thinking about this more, this is not good enough.
 
-	-hpa
+There is one case where growing into the previous/next vma is
+perfectly ok: when the previous/next vma is the same stack vma, and
+the reason we expanded it was because we had somehow unmapped the
+stack in the middle.
 
+Which isn't common or normal, but it has been known to happen. People
+doing things like unmapping sensitive data in the middle of the stack
+or whatever. We explicitly allow that case for the stack guard page
+for that reason.
+
+So I'll need to extend on that logic a bit more.
+
+                    Linus
