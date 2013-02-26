@@ -1,151 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934043Ab3B0Av0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:51:26 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:25004 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932663Ab3B0AvW (ORCPT
+	id S932648Ab3BZX6T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:58:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42153 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932516Ab3BZX6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:51:22 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>
-CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
-        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
-        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH Resend v5 15/16] ARM: dts: add spi nodes for the atmel boards
-Date: Wed, 27 Feb 2013 08:49:10 +0800
-Message-ID: <1361926150-12646-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 26 Feb 2013 18:58:16 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [ 103/150] ARM: at91/DT: remove atmel,use-dma-* from 9x5 and 9n12 USART nodes
+Date: Tue, 26 Feb 2013 15:56:00 -0800
+Message-Id: <20130226235534.803830632@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
+References: <20130226235523.930663721@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Genoud <richard.genoud@gmail.com>
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-[wenyou.yang@atmel.com: added spi nodes for the sam9263ek, sam9g20ek, sam9m10g45ek and sam9n12ek boards]
-[wenyou.yang@atmel.com: submit the patch]
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org
+------------------
+
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+commit c3f0f282d950a1e87496a2633ed9e924e275ff8c upstream.
+
+Fix the use of USART on both at91sam9x5 and at91sam9n12. In DTS, the
+atmel,use-dma-[rx|tx] property is present but a DMA channel cannot be used.
+Indeed the connexion between the DMA engine and the slave is not implemented
+yet in Device Tree.
+Note however that this property is also used for PDC (private DMA) on older
+SoCs. This is why the driver alone cannot determine the validity of this
+property.
+
+Reported-by: Douglas Gilbert <dgilbert@interlog.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/arm/boot/dts/at91sam9263ek.dts         |   10 ++++++++++
- arch/arm/boot/dts/at91sam9g20ek_common.dtsi |   10 ++++++++++
- arch/arm/boot/dts/at91sam9m10g45ek.dts      |   10 ++++++++++
- arch/arm/boot/dts/at91sam9n12ek.dts         |   10 ++++++++++
- arch/arm/boot/dts/at91sam9x5ek.dtsi         |   10 ++++++++++
- 5 files changed, 50 insertions(+)
+ arch/arm/boot/dts/at91sam9n12.dtsi |    8 --------
+ arch/arm/boot/dts/at91sam9x5.dtsi  |    6 ------
+ 2 files changed, 14 deletions(-)
 
-diff --git a/arch/arm/boot/dts/at91sam9263ek.dts b/arch/arm/boot/dts/at91sam9263ek.dts
-index 1eb0872..a14e424 100644
---- a/arch/arm/boot/dts/at91sam9263ek.dts
-+++ b/arch/arm/boot/dts/at91sam9263ek.dts
-@@ -79,6 +79,16 @@
- 					};
- 				};
- 			};
-+
-+			spi0: spi@fffa4000 {
-+				status = "okay";
-+				cs-gpios = <&pioA 5 0>, <0>, <0>, <0>;
-+				mtd_dataflash@0 {
-+					compatible = "atmel,at45", "atmel,dataflash";
-+					spi-max-frequency = <50000000>;
-+					reg = <0>;
-+				};
-+			};
- 		};
- 
- 		nand0: nand@40000000 {
-diff --git a/arch/arm/boot/dts/at91sam9g20ek_common.dtsi b/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
-index da15e83..23d1f46 100644
---- a/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g20ek_common.dtsi
-@@ -96,6 +96,16 @@
- 				status = "okay";
- 				pinctrl-0 = <&pinctrl_ssc0_tx>;
- 			};
-+
-+			spi0: spi@fffc8000 {
-+				status = "okay";
-+				cs-gpios = <0>, <&pioC 11 0>, <0>, <0>;
-+				mtd_dataflash@0 {
-+					compatible = "atmel,at45", "atmel,dataflash";
-+					spi-max-frequency = <50000000>;
-+					reg = <1>;
-+				};
-+			};
- 		};
- 
- 		nand0: nand@40000000 {
-diff --git a/arch/arm/boot/dts/at91sam9m10g45ek.dts b/arch/arm/boot/dts/at91sam9m10g45ek.dts
-index 20c3191..92c52a7 100644
---- a/arch/arm/boot/dts/at91sam9m10g45ek.dts
-+++ b/arch/arm/boot/dts/at91sam9m10g45ek.dts
-@@ -102,6 +102,16 @@
- 					};
- 				};
- 			};
-+
-+			spi0: spi@fffa4000{
-+				status = "okay";
-+				cs-gpios = <&pioB 3 0>, <0>, <0>, <0>;
-+				mtd_dataflash@0 {
-+					compatible = "atmel,at45", "atmel,dataflash";
-+					spi-max-frequency = <13000000>;
-+					reg = <0>;
-+				};
-+			};
- 		};
- 
- 		nand0: nand@40000000 {
-diff --git a/arch/arm/boot/dts/at91sam9n12ek.dts b/arch/arm/boot/dts/at91sam9n12ek.dts
-index 0376bf4..82551a8 100644
---- a/arch/arm/boot/dts/at91sam9n12ek.dts
-+++ b/arch/arm/boot/dts/at91sam9n12ek.dts
-@@ -67,6 +67,16 @@
- 					};
- 				};
- 			};
-+
-+			spi0: spi@f0000000 {
-+				status = "okay";
-+				cs-gpios = <&pioA 14 0>, <0>, <0>, <0>;
-+				m25p80@0 {
-+					compatible = "atmel,at25df321a";
-+					spi-max-frequency = <50000000>;
-+					reg = <0>;
-+				};
-+			};
- 		};
- 
- 		nand0: nand@40000000 {
-diff --git a/arch/arm/boot/dts/at91sam9x5ek.dtsi b/arch/arm/boot/dts/at91sam9x5ek.dtsi
-index 8a7cf1d..09f5e66 100644
---- a/arch/arm/boot/dts/at91sam9x5ek.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5ek.dtsi
-@@ -84,6 +84,16 @@
- 					};
- 				};
- 			};
-+
-+			spi0: spi@f0000000 {
-+				status = "okay";
-+				cs-gpios = <&pioA 14 0>, <0>, <0>, <0>;
-+				m25p80@0 {
-+					compatible = "atmel,at25df321a";
-+					spi-max-frequency = <50000000>;
-+					reg = <0>;
-+				};
-+			};
- 		};
- 
- 		usb0: ohci@00600000 {
--- 
-1.7.9.5
+--- a/arch/arm/boot/dts/at91sam9n12.dtsi
++++ b/arch/arm/boot/dts/at91sam9n12.dtsi
+@@ -324,8 +324,6 @@
+ 				compatible = "atmel,at91sam9260-usart";
+ 				reg = <0xf801c000 0x4000>;
+ 				interrupts = <5 4 5>;
+-				atmel,use-dma-rx;
+-				atmel,use-dma-tx;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_usart0>;
+ 				status = "disabled";
+@@ -335,8 +333,6 @@
+ 				compatible = "atmel,at91sam9260-usart";
+ 				reg = <0xf8020000 0x4000>;
+ 				interrupts = <6 4 5>;
+-				atmel,use-dma-rx;
+-				atmel,use-dma-tx;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_usart1>;
+ 				status = "disabled";
+@@ -346,8 +342,6 @@
+ 				compatible = "atmel,at91sam9260-usart";
+ 				reg = <0xf8024000 0x4000>;
+ 				interrupts = <7 4 5>;
+-				atmel,use-dma-rx;
+-				atmel,use-dma-tx;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_usart2>;
+ 				status = "disabled";
+@@ -357,8 +351,6 @@
+ 				compatible = "atmel,at91sam9260-usart";
+ 				reg = <0xf8028000 0x4000>;
+ 				interrupts = <8 4 5>;
+-				atmel,use-dma-rx;
+-				atmel,use-dma-tx;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_usart3>;
+ 				status = "disabled";
+--- a/arch/arm/boot/dts/at91sam9x5.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+@@ -402,8 +402,6 @@
+ 				compatible = "atmel,at91sam9260-usart";
+ 				reg = <0xf801c000 0x200>;
+ 				interrupts = <5 4 5>;
+-				atmel,use-dma-rx;
+-				atmel,use-dma-tx;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_usart0>;
+ 				status = "disabled";
+@@ -413,8 +411,6 @@
+ 				compatible = "atmel,at91sam9260-usart";
+ 				reg = <0xf8020000 0x200>;
+ 				interrupts = <6 4 5>;
+-				atmel,use-dma-rx;
+-				atmel,use-dma-tx;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_usart1>;
+ 				status = "disabled";
+@@ -424,8 +420,6 @@
+ 				compatible = "atmel,at91sam9260-usart";
+ 				reg = <0xf8024000 0x200>;
+ 				interrupts = <7 4 5>;
+-				atmel,use-dma-rx;
+-				atmel,use-dma-tx;
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&pinctrl_usart2>;
+ 				status = "disabled";
+
 
