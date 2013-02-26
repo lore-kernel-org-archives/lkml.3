@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760192Ab3B0BOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:14:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41802 "EHLO
+	id S1760117Ab3B0BPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:15:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41808 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760050Ab3BZX5T (ORCPT
+	with ESMTP id S1760044Ab3BZX5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:19 -0500
+	Tue, 26 Feb 2013 18:57:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <js1304@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 031/150] Driver core: treat unregistered bus_types as having no devices
-Date: Tue, 26 Feb 2013 15:54:48 -0800
-Message-Id: <20130226235527.447606734@linuxfoundation.org>
+        Jerome Marchand <jmarchand@redhat.com>,
+        Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@kernel.org>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [ 030/150] zram: Fix deadlock bug in partial read/write
+Date: Tue, 26 Feb 2013 15:54:47 -0800
+Message-Id: <20130226235527.355720207@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,57 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Minchan Kim <minchan@kernel.org>
 
-commit 4fa3e78be7e985ca814ce2aa0c09cbee404efcf7 upstream.
+commit 7e5a5104c6af709a8d97d5f4711e7c917761d464 upstream.
 
-A bus_type has a list of devices (klist_devices), but the list and the
-subsys_private structure that contains it are not initialized until the
-bus_type is registered with bus_register().
+Now zram allocates new page with GFP_KERNEL in zram I/O path
+if IO is partial. Unfortunately, It may cause deadlock with
+reclaim path like below.
 
-The panic/reboot path has fixups that look up devices in pci_bus_type.  If
-we panic before registering pci_bus_type, the bus_type exists but the list
-does not, so mach_reboot_fixups() trips over a null pointer and panics
-again:
+write_page from fs
+fs_lock
+allocation(GFP_KERNEL)
+reclaim
+pageout
+				write_page from fs
+				fs_lock <-- deadlock
 
-    mach_reboot_fixups
-      pci_get_device
-        ..
-          bus_find_device(&pci_bus_type, ...)
-            bus->p is NULL
+This patch fixes it by using GFP_NOIO.  In read path, we
+reorganize code flow so that kmap_atomic is called after the
+GFP_NOIO allocation.
 
-Joonsoo reported a problem when panicking before PCI was initialized.
-I think this patch should be sufficient to replace the patch he posted
-here: https://lkml.org/lkml/2012/12/28/75 ("[PATCH] x86, reboot: skip
-reboot_fixups in early boot phase")
-
-Reported-by: Joonsoo Kim <js1304@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Jerome Marchand <jmarchand@redhat.com>
+Acked-by: Nitin Gupta <ngupta@vflare.org>
+[ penberg@kernel.org: don't use GFP_ATOMIC ]
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/bus.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/zram/zram_drv.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -290,7 +290,7 @@ int bus_for_each_dev(struct bus_type *bu
- 	struct device *dev;
- 	int error = 0;
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -228,11 +228,12 @@ static int zram_bvec_read(struct zram *z
+ 		return 0;
+ 	}
  
--	if (!bus)
-+	if (!bus || !bus->p)
- 		return -EINVAL;
+-	user_mem = kmap_atomic(page);
+ 	if (is_partial_io(bvec))
+ 		/* Use  a temporary buffer to decompress the page */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+-	else
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
++
++	user_mem = kmap_atomic(page);
++	if (!is_partial_io(bvec))
+ 		uncmem = user_mem;
  
- 	klist_iter_init_node(&bus->p->klist_devices, &i,
-@@ -324,7 +324,7 @@ struct device *bus_find_device(struct bu
- 	struct klist_iter i;
- 	struct device *dev;
- 
--	if (!bus)
-+	if (!bus || !bus->p)
- 		return NULL;
- 
- 	klist_iter_init_node(&bus->p->klist_devices, &i,
+ 	if (!uncmem) {
+@@ -279,7 +280,7 @@ static int zram_bvec_write(struct zram *
+ 		 * This is a partial IO. We need to read the full page
+ 		 * before to write the changes.
+ 		 */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		uncmem = kmalloc(PAGE_SIZE, GFP_NOIO);
+ 		if (!uncmem) {
+ 			pr_info("Error allocating temp memory!\n");
+ 			ret = -ENOMEM;
 
 
