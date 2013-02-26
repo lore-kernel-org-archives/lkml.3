@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759416Ab3BZOd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 09:33:57 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:36925 "EHLO bear.ext.ti.com"
+	id S1759259Ab3BZOdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 09:33:55 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56636 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758511Ab3BZOdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758491Ab3BZOdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 09:33:53 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <balbi@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
@@ -12,9 +12,9 @@ To: <balbi@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
 CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <gregkh@linuxfoundation.org>, <kishon@ti.com>
-Subject: [PATCH 2/3] usb: dwc3-omap: remove platform data associated with dwc3-omap
-Date: Tue, 26 Feb 2013 20:03:28 +0530
-Message-ID: <1361889210-12875-2-git-send-email-kishon@ti.com>
+Subject: [PATCH 3/3] usb: dwc3-omap: stop using nop-usb-xceiv
+Date: Tue, 26 Feb 2013 20:03:29 +0530
+Message-ID: <1361889210-12875-3-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1361889210-12875-1-git-send-email-kishon@ti.com>
 References: <1361889210-12875-1-git-send-email-kishon@ti.com>
@@ -24,83 +24,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-omap5 is not going to have support for non-dt boot making the platform
-data associated with dwc3 useless. Removed it here.
+Now that we have drivers for omap-usb2 phy and omap-usb3 phy, stop
+using nop-usb-xceiv.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/usb/dwc3/dwc3-omap.c            |   24 ++++++++++--------------
- include/linux/platform_data/dwc3-omap.h |    4 ----
- 2 files changed, 10 insertions(+), 18 deletions(-)
+ drivers/usb/dwc3/dwc3-omap.c |   67 ------------------------------------------
+ 1 file changed, 67 deletions(-)
 
 diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index bafff68..38d0516 100644
+index 38d0516..84f64a5 100644
 --- a/drivers/usb/dwc3/dwc3-omap.c
 +++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -311,7 +311,6 @@ static int dwc3_omap_remove_core(struct device *dev, void *c)
+@@ -52,7 +52,6 @@
+ #include <linux/of_platform.h>
  
- static int dwc3_omap_probe(struct platform_device *pdev)
+ #include <linux/usb/otg.h>
+-#include <linux/usb/nop-usb-xceiv.h>
+ 
+ #include "core.h"
+ 
+@@ -119,8 +118,6 @@ struct dwc3_omap {
+ 	/* device lock */
+ 	spinlock_t		lock;
+ 
+-	struct platform_device	*usb2_phy;
+-	struct platform_device	*usb3_phy;
+ 	struct device		*dev;
+ 
+ 	int			irq;
+@@ -195,60 +192,6 @@ void dwc3_omap_mailbox(enum omap_dwc3_vbus_id_status status)
+ }
+ EXPORT_SYMBOL_GPL(dwc3_omap_mailbox);
+ 
+-static int dwc3_omap_register_phys(struct dwc3_omap *omap)
+-{
+-	struct nop_usb_xceiv_platform_data pdata;
+-	struct platform_device	*pdev;
+-	int			ret;
+-
+-	memset(&pdata, 0x00, sizeof(pdata));
+-
+-	pdev = platform_device_alloc("nop_usb_xceiv", PLATFORM_DEVID_AUTO);
+-	if (!pdev)
+-		return -ENOMEM;
+-
+-	omap->usb2_phy = pdev;
+-	pdata.type = USB_PHY_TYPE_USB2;
+-
+-	ret = platform_device_add_data(omap->usb2_phy, &pdata, sizeof(pdata));
+-	if (ret)
+-		goto err1;
+-
+-	pdev = platform_device_alloc("nop_usb_xceiv", PLATFORM_DEVID_AUTO);
+-	if (!pdev) {
+-		ret = -ENOMEM;
+-		goto err1;
+-	}
+-
+-	omap->usb3_phy = pdev;
+-	pdata.type = USB_PHY_TYPE_USB3;
+-
+-	ret = platform_device_add_data(omap->usb3_phy, &pdata, sizeof(pdata));
+-	if (ret)
+-		goto err2;
+-
+-	ret = platform_device_add(omap->usb2_phy);
+-	if (ret)
+-		goto err2;
+-
+-	ret = platform_device_add(omap->usb3_phy);
+-	if (ret)
+-		goto err3;
+-
+-	return 0;
+-
+-err3:
+-	platform_device_del(omap->usb2_phy);
+-
+-err2:
+-	platform_device_put(omap->usb3_phy);
+-
+-err1:
+-	platform_device_put(omap->usb2_phy);
+-
+-	return ret;
+-}
+-
+ static irqreturn_t dwc3_omap_interrupt(int irq, void *_omap)
  {
--	struct dwc3_omap_data	*pdata = pdev->dev.platform_data;
- 	struct device_node	*node = pdev->dev.of_node;
- 
- 	struct dwc3_omap	*omap;
-@@ -328,6 +327,11 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 	void __iomem		*base;
- 	void			*context;
- 
-+	if (!node) {
-+		dev_err(dev, "device node not found\n");
-+		return -EINVAL;
-+	}
-+
- 	omap = devm_kzalloc(dev, sizeof(*omap), GFP_KERNEL);
- 	if (!omap) {
- 		dev_err(dev, "not enough memory\n");
-@@ -389,12 +393,7 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 
- 	reg = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
- 
--	if (node)
--		of_property_read_u32(node, "utmi-mode", &utmi_mode);
--	else if (pdata)
--		utmi_mode = pdata->utmi_mode;
--	else
--		dev_dbg(dev, "missing platform data\n");
-+	of_property_read_u32(node, "utmi-mode", &utmi_mode);
- 
- 	switch (utmi_mode) {
- 	case DWC3_OMAP_UTMI_MODE_SW:
-@@ -437,13 +436,10 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 
- 	dwc3_omap_writel(omap->base, USBOTGSS_IRQENABLE_SET_1, reg);
- 
--	if (node) {
--		ret = of_platform_populate(node, NULL, NULL, dev);
--		if (ret) {
--			dev_err(&pdev->dev,
--				"failed to add create dwc3 core\n");
--			return ret;
--		}
-+	ret = of_platform_populate(node, NULL, NULL, dev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to create dwc3 core\n");
-+		return ret;
+ 	struct dwc3_omap	*omap = _omap;
+@@ -358,12 +301,6 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
  	}
  
- 	return 0;
-diff --git a/include/linux/platform_data/dwc3-omap.h b/include/linux/platform_data/dwc3-omap.h
-index ada4012..1d36ca8 100644
---- a/include/linux/platform_data/dwc3-omap.h
-+++ b/include/linux/platform_data/dwc3-omap.h
-@@ -41,7 +41,3 @@ enum dwc3_omap_utmi_mode {
- 	DWC3_OMAP_UTMI_MODE_HW,
- 	DWC3_OMAP_UTMI_MODE_SW,
- };
+-	ret = dwc3_omap_register_phys(omap);
+-	if (ret) {
+-		dev_err(dev, "couldn't register PHYs\n");
+-		return ret;
+-	}
 -
--struct dwc3_omap_data {
--	enum dwc3_omap_utmi_mode	utmi_mode;
--};
+ 	context = devm_kzalloc(dev, resource_size(res), GFP_KERNEL);
+ 	if (!context) {
+ 		dev_err(dev, "couldn't allocate dwc3 context memory\n");
+@@ -447,10 +384,6 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 
+ static int dwc3_omap_remove(struct platform_device *pdev)
+ {
+-	struct dwc3_omap	*omap = platform_get_drvdata(pdev);
+-
+-	platform_device_unregister(omap->usb2_phy);
+-	platform_device_unregister(omap->usb3_phy);
+ 	pm_runtime_put_sync(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+ 	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
 -- 
 1.7.10.4
 
