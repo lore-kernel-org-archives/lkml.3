@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760573Ab3B0BB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:01:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41983 "EHLO
+	id S1760244Ab3BZX5v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:57:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41960 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760248Ab3BZX5w (ORCPT
+	with ESMTP id S1760212Ab3BZX5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:52 -0500
+	Tue, 26 Feb 2013 18:57:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        "Sankaran, Rajesh" <rajesh.sankaran@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 078/150] intel/iommu: force writebuffer-flush quirk on Gen 4 Chipsets
-Date: Tue, 26 Feb 2013 15:55:35 -0800
-Message-Id: <20130226235532.242235182@linuxfoundation.org>
+        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 056/150] ALSA: hda - Workaround for silent output on Sony Vaio VGC-LN51JGB with ALC889
+Date: Tue, 26 Feb 2013 15:55:13 -0800
+Message-Id: <20130226235529.987201933@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -28,47 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
 
-commit 210561ffd72d00eccf12c0131b8024d5436bae95 upstream.
+commit 12e31a78c70dc12897fda2489113f445c0e94a18 upstream.
 
-We already have the quirk entry for the mobile platform, but also
-reports on some desktop versions. So be paranoid and set it
-everywhere.
+Some Vaio all-in-one desktop PCs (for example VGC-LN51JGB) are affected by
+the same issue that caused Vaio Z laptops to become silent: the speaker pin
+must be connected to the first DAC even though the codec itself advertises
+flexible routing through any of the DACs.
 
-References: http://www.mail-archive.com/dri-devel@lists.freedesktop.org/msg33138.html
-Reported-and-tested-by: Mihai Moldovan <ionic@ionic.de>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: "Sankaran, Rajesh" <rajesh.sankaran@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Use the no-primary-hp fixup for choosing the speaker pin as the primary so
+that the right DAC is assigned on this device.
+
+Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/intel-iommu.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -4253,13 +4253,19 @@ static void quirk_iommu_rwbf(struct pci_
- {
- 	/*
- 	 * Mobile 4 Series Chipset neglects to set RWBF capability,
--	 * but needs it:
-+	 * but needs it. Same seems to hold for the desktop versions.
- 	 */
- 	printk(KERN_INFO "DMAR: Forcing write-buffer flush capability\n");
- 	rwbf_quirk = 1;
- }
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5394,6 +5394,7 @@ static const struct snd_pci_quirk alc882
+ 	SND_PCI_QUIRK(0x1043, 0x835f, "Asus Eee 1601", ALC888_FIXUP_EEE1601),
+ 	SND_PCI_QUIRK(0x104d, 0x9047, "Sony Vaio TT", ALC889_FIXUP_VAIO_TT),
+ 	SND_PCI_QUIRK(0x104d, 0x905a, "Sony Vaio Z", ALC882_FIXUP_NO_PRIMARY_HP),
++	SND_PCI_QUIRK(0x104d, 0x9043, "Sony Vaio VGC-LN51JGB", ALC882_FIXUP_NO_PRIMARY_HP),
  
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2a40, quirk_iommu_rwbf);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e00, quirk_iommu_rwbf);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e10, quirk_iommu_rwbf);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e20, quirk_iommu_rwbf);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e30, quirk_iommu_rwbf);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e40, quirk_iommu_rwbf);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x2e90, quirk_iommu_rwbf);
- 
- #define GGC 0x52
- #define GGC_MEMORY_SIZE_MASK	(0xf << 8)
+ 	/* All Apple entries are in codec SSIDs */
+ 	SND_PCI_QUIRK(0x106b, 0x00a0, "MacBookPro 3,1", ALC889_FIXUP_MBP_VREF),
 
 
