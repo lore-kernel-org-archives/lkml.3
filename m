@@ -1,231 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759911Ab3B0ACc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:02:32 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:45762 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758550Ab3B0AC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:02:29 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: [Update][PATCH v2, 3/7] ACPI / container: Use common hotplug code
-Date: Wed, 27 Feb 2013 01:09:14 +0100
-Message-ID: <2454110.rj1LbBxzqa@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2961608.xElddy7TSk@vostro.rjw.lan>
-References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <3171747.TOMjvVkWL1@vostro.rjw.lan> <2961608.xElddy7TSk@vostro.rjw.lan>
+	id S1759686Ab3B0ACs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:02:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42537 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933598Ab3BZX7N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 18:59:13 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        John David Anglin <dave.anglin@bell.net>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 37/53] [PARISC] Purge existing TLB entries in set_pte_at and ptep_set_wrprotect
+Date: Tue, 26 Feb 2013 15:58:06 -0800
+Message-Id: <20130226235623.716341293@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
+References: <20130226235619.844721947@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: ACPI / container: Use common hotplug code
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Switch the ACPI container driver to using common device hotplug code
-introduced previously.  This reduces the driver down to a trivial
-definition and registration of a struct acpi_scan_handler object.
+------------------
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+From: John David Anglin <dave.anglin@bell.net>
+
+commit 7139bc1579901b53db7e898789e916ee2fb52d78 upstream.
+
+This patch goes a long way toward fixing the minifail bug, and
+it  significantly improves the stability of SMP machines such as
+the rp3440.  When write  protecting a page for COW, we need to
+purge the existing translation.  Otherwise, the COW break
+doesn't occur as expected because the TLB may still have a stale entry
+which allows writes.
+
+[jejb: fix up checkpatch errors]
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ arch/parisc/include/asm/pgtable.h |   13 ++++++++++---
+ arch/parisc/kernel/cache.c        |   18 ++++++++++++++++++
+ 2 files changed, 28 insertions(+), 3 deletions(-)
 
-I sent an old version of the patch before, sorry about that.
-
-Thanks,
-Rafael
-
----
- drivers/acpi/container.c |  146 +++--------------------------------------------
- 1 file changed, 10 insertions(+), 136 deletions(-)
-
-Index: test/drivers/acpi/container.c
-===================================================================
---- test.orig/drivers/acpi/container.c
-+++ test/drivers/acpi/container.c
-@@ -1,12 +1,12 @@
+--- a/arch/parisc/include/asm/pgtable.h
++++ b/arch/parisc/include/asm/pgtable.h
+@@ -12,11 +12,10 @@
+ 
+ #include <linux/bitops.h>
+ #include <linux/spinlock.h>
++#include <linux/mm_types.h>
+ #include <asm/processor.h>
+ #include <asm/cache.h>
+ 
+-struct vm_area_struct;
+-
  /*
-- * acpi_container.c  - ACPI Generic Container Driver
-- * ($Revision: )
-+ * container.c  - ACPI Generic Container Driver
-  *
-  * Copyright (C) 2004 Anil S Keshavamurthy (anil.s.keshavamurthy@intel.com)
-  * Copyright (C) 2004 Keiichiro Tokunaga (tokunaga.keiich@jp.fujitsu.com)
-  * Copyright (C) 2004 Motoyuki Ito (motoyuki@soft.fujitsu.com)
-- * Copyright (C) 2004 Intel Corp.
-  * Copyright (C) 2004 FUJITSU LIMITED
-+ * Copyright (C) 2004, 2013 Intel Corp.
-+ * Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-  *
-  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  *
-@@ -26,14 +26,9 @@
-  *
-  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  */
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/init.h>
--#include <linux/slab.h>
--#include <linux/types.h>
- #include <linux/acpi.h>
--#include <acpi/acpi_bus.h>
--#include <acpi/acpi_drivers.h>
+  * kern_addr_valid(ADDR) tests if ADDR is pointing to valid kernel
+  * memory.  For the return value to be meaningful, ADDR must be >=
+@@ -40,7 +39,14 @@ struct vm_area_struct;
+         do{                                                     \
+                 *(pteptr) = (pteval);                           \
+         } while(0)
+-#define set_pte_at(mm,addr,ptep,pteval) set_pte(ptep,pteval)
 +
-+#include "internal.h"
++extern void purge_tlb_entries(struct mm_struct *, unsigned long);
++
++#define set_pte_at(mm, addr, ptep, pteval)                      \
++	do {                                                    \
++		set_pte(ptep, pteval);                          \
++		purge_tlb_entries(mm, addr);                    \
++	} while (0)
  
- #define PREFIX "ACPI: "
+ #endif /* !__ASSEMBLY__ */
  
-@@ -50,141 +45,20 @@ static const struct acpi_device_id conta
- static int container_device_attach(struct acpi_device *device,
- 				   const struct acpi_device_id *not_used)
+@@ -464,6 +470,7 @@ static inline void ptep_set_wrprotect(st
+ 		old = pte_val(*ptep);
+ 		new = pte_val(pte_wrprotect(__pte (old)));
+ 	} while (cmpxchg((unsigned long *) ptep, old, new) != old);
++	purge_tlb_entries(mm, addr);
+ #else
+ 	pte_t old_pte = *ptep;
+ 	set_pte_at(mm, addr, ptep, pte_wrprotect(old_pte));
+--- a/arch/parisc/kernel/cache.c
++++ b/arch/parisc/kernel/cache.c
+@@ -421,6 +421,24 @@ void kunmap_parisc(void *addr)
+ EXPORT_SYMBOL(kunmap_parisc);
+ #endif
+ 
++void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
++{
++	unsigned long flags;
++
++	/* Note: purge_tlb_entries can be called at startup with
++	   no context.  */
++
++	/* Disable preemption while we play with %sr1.  */
++	preempt_disable();
++	mtsp(mm->context, 1);
++	purge_tlb_start(flags);
++	pdtlb(addr);
++	pitlb(addr);
++	purge_tlb_end(flags);
++	preempt_enable();
++}
++EXPORT_SYMBOL(purge_tlb_entries);
++
+ void __flush_tlb_range(unsigned long sid, unsigned long start,
+ 		       unsigned long end)
  {
--	/*
--	 * FIXME: This is necessary, so that acpi_eject_store() doesn't return
--	 * -ENODEV for containers.
--	 */
-+	/* This is necessary for container hotplug to work. */
- 	return 1;
- }
- 
- static struct acpi_scan_handler container_device_handler = {
- 	.ids = container_device_ids,
- 	.attach = container_device_attach,
-+	.hotplug = {
-+		.enabled = true,
-+		.mode = AHM_CONTAINER,
-+	},
- };
- 
--static int is_device_present(acpi_handle handle)
--{
--	acpi_handle temp;
--	acpi_status status;
--	unsigned long long sta;
--
--
--	status = acpi_get_handle(handle, "_STA", &temp);
--	if (ACPI_FAILURE(status))
--		return 1;	/* _STA not found, assume device present */
--
--	status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
--	if (ACPI_FAILURE(status))
--		return 0;	/* Firmware error */
--
--	return ((sta & ACPI_STA_DEVICE_PRESENT) == ACPI_STA_DEVICE_PRESENT);
--}
--
--static void container_notify_cb(acpi_handle handle, u32 type, void *context)
--{
--	struct acpi_device *device = NULL;
--	int result;
--	int present;
--	acpi_status status;
--	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
--
--	acpi_scan_lock_acquire();
--
--	switch (type) {
--	case ACPI_NOTIFY_BUS_CHECK:
--		/* Fall through */
--	case ACPI_NOTIFY_DEVICE_CHECK:
--		pr_debug("Container driver received %s event\n",
--		       (type == ACPI_NOTIFY_BUS_CHECK) ?
--		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
--
--		present = is_device_present(handle);
--		status = acpi_bus_get_device(handle, &device);
--		if (!present) {
--			if (ACPI_SUCCESS(status)) {
--				/* device exist and this is a remove request */
--				device->flags.eject_pending = 1;
--				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
--				goto out;
--			}
--			break;
--		}
--
--		if (!ACPI_FAILURE(status) || device)
--			break;
--
--		result = acpi_bus_scan(handle);
--		if (result) {
--			acpi_handle_warn(handle, "Failed to add container\n");
--			break;
--		}
--		result = acpi_bus_get_device(handle, &device);
--		if (result) {
--			acpi_handle_warn(handle, "Missing device object\n");
--			break;
--		}
--
--		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
--		ost_code = ACPI_OST_SC_SUCCESS;
--		break;
--
--	case ACPI_NOTIFY_EJECT_REQUEST:
--		if (!acpi_bus_get_device(handle, &device) && device) {
--			device->flags.eject_pending = 1;
--			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
--			goto out;
--		}
--		break;
--
--	default:
--		/* non-hotplug event; possibly handled by other handler */
--		goto out;
--	}
--
--	/* Inform firmware that the hotplug operation has completed */
--	(void) acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
--
-- out:
--	acpi_scan_lock_release();
--}
--
--static bool is_container(acpi_handle handle)
--{
--	struct acpi_device_info *info;
--	bool ret = false;
--
--	if (ACPI_FAILURE(acpi_get_object_info(handle, &info)))
--		return false;
--
--	if (info->valid & ACPI_VALID_HID) {
--		const struct acpi_device_id *id;
--
--		for (id = container_device_ids; id->id[0]; id++) {
--			ret = !strcmp((char *)id->id, info->hardware_id.string);
--			if (ret)
--				break;
--		}
--	}
--	kfree(info);
--	return ret;
--}
--
--static acpi_status acpi_container_register_notify_handler(acpi_handle handle,
--							  u32 lvl, void *ctxt,
--							  void **retv)
--{
--	if (is_container(handle))
--		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
--					    container_notify_cb, NULL);
--
--	return AE_OK;
--}
--
- void __init acpi_container_init(void)
- {
--	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, ACPI_UINT32_MAX,
--			    acpi_container_register_notify_handler, NULL,
--			    NULL, NULL);
--
- 	acpi_scan_add_handler(&container_device_handler);
- }
+
 
