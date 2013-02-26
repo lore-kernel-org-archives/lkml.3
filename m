@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933420Ab3BZX7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:59:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42415 "EHLO
+	id S933481Ab3B0AHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:07:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42452 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933276Ab3BZX6y (ORCPT
+	with ESMTP id S933414Ab3BZX7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:54 -0500
+	Tue, 26 Feb 2013 18:59:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: [ 10/53] xen/netback: check correct frag when looking for head frag
-Date: Tue, 26 Feb 2013 15:57:39 -0800
-Message-Id: <20130226235620.921946936@linuxfoundation.org>
+        Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 19/53] ocfs2: unlock super lock if lockres refresh failed
+Date: Tue, 26 Feb 2013 15:57:48 -0800
+Message-Id: <20130226235621.834415204@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -27,30 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Campbell <ian.campbell@citrix.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-When I backported 7d5145d8eb2b "xen/netback: don't leak pages on failure in
-xen_netbk_tx_check_gop" to 3.0 (where it became f0457844e605) I somehow picked
-up an extraneous hunk breaking this.
+commit 3278bb748d2437eb1464765f36429e5d6aa91c38 upstream.
 
-Reported-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+If lockres refresh failed, the super lock will never be released which
+will cause some processes on other cluster nodes hung forever.
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/xen-netback/netback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ocfs2/dlmglue.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -990,7 +990,7 @@ static int xen_netbk_tx_check_gop(struct
- 		xen_netbk_idx_release(netbk, pending_idx, XEN_NETIF_RSP_ERROR);
+--- a/fs/ocfs2/dlmglue.c
++++ b/fs/ocfs2/dlmglue.c
+@@ -2539,6 +2539,7 @@ int ocfs2_super_lock(struct ocfs2_super
+ 	 * everything is up to the caller :) */
+ 	status = ocfs2_should_refresh_lock_res(lockres);
+ 	if (status < 0) {
++		ocfs2_cluster_unlock(osb, lockres, level);
+ 		mlog_errno(status);
+ 		goto bail;
+ 	}
+@@ -2547,8 +2548,10 @@ int ocfs2_super_lock(struct ocfs2_super
  
- 	/* Skip first skb fragment if it is on same page as header fragment. */
--	start = ((unsigned long)shinfo->frags[i].page == pending_idx);
-+	start = ((unsigned long)shinfo->frags[0].page == pending_idx);
+ 		ocfs2_complete_lock_res_refresh(lockres, status);
  
- 	for (i = start; i < nr_frags; i++) {
- 		int j, newerr;
+-		if (status < 0)
++		if (status < 0) {
++			ocfs2_cluster_unlock(osb, lockres, level);
+ 			mlog_errno(status);
++		}
+ 		ocfs2_track_lock_refresh(lockres);
+ 	}
+ bail:
 
 
