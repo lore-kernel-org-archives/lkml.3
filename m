@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760195Ab3B0BKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:10:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41889 "EHLO
+	id S1760125Ab3BZX52 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:57:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41865 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760104Ab3BZX53 (ORCPT
+	with ESMTP id S1760104Ab3BZX5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:29 -0500
+	Tue, 26 Feb 2013 18:57:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wangyuan Zhang <Wangyuan.Zhang@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 045/150] NLM: Ensure that we resend all pending blocking locks after a reclaim
-Date: Tue, 26 Feb 2013 15:55:02 -0800
-Message-Id: <20130226235528.857347786@linuxfoundation.org>
+        David Howells <dhowells@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 040/150] KEYS: Revert one application of "Fix unreachable code" patch
+Date: Tue, 26 Feb 2013 15:54:57 -0800
+Message-Id: <20130226235528.366051213@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,36 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: David Howells <dhowells@redhat.com>
 
-commit 666b3d803a511fbc9bc5e5ea8ce66010cf03ea13 upstream.
+commit fe9453a1dcb5fb146f9653267e78f4a558066f6f upstream.
 
-Currently, nlmclnt_lock will break out of the for(;;) loop when
-the reclaimer wakes up the blocking lock thread by setting
-nlm_lck_denied_grace_period. This causes the lock request to fail
-with an ENOLCK error.
-The intention was always to ensure that we resend the lock request
-after the grace period has expired.
+A patch to fix some unreachable code in search_my_process_keyrings() got
+applied twice by two different routes upstream as commits e67eab39bee2
+and b010520ab3d2 (both "fix unreachable code").
 
-Reported-by: Wangyuan Zhang <Wangyuan.Zhang@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Unfortunately, the second application removed something it shouldn't
+have and this wasn't detected by GIT.  This is due to the patch not
+having sufficient lines of context to distinguish the two places of
+application.
+
+The effect of this is relatively minor: inside the kernel, the keyring
+search routines may search multiple keyrings and then prioritise the
+errors if no keys or negative keys are found in any of them.  With the
+extra deletion, the presence of a negative key in the thread keyring
+(causing ENOKEY) is incorrectly overridden by an error searching the
+process keyring.
+
+So revert the second application of the patch.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/clntproc.c |    3 +++
- 1 file changed, 3 insertions(+)
+ security/keys/process_keys.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/lockd/clntproc.c
-+++ b/fs/lockd/clntproc.c
-@@ -550,6 +550,9 @@ again:
- 		status = nlmclnt_block(block, req, NLMCLNT_POLL_TIMEOUT);
- 		if (status < 0)
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -367,6 +367,8 @@ key_ref_t search_my_process_keyrings(str
+ 
+ 		switch (PTR_ERR(key_ref)) {
+ 		case -EAGAIN: /* no key */
++			if (ret)
++				break;
+ 		case -ENOKEY: /* negative key */
+ 			ret = key_ref;
  			break;
-+		/* Resend the blocking lock request after a server reboot */
-+		if (resp->status ==  nlm_lck_denied_grace_period)
-+			continue;
- 		if (resp->status != nlm_lck_blocked)
- 			break;
- 	}
 
 
