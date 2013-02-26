@@ -1,114 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760645Ab3B0Afr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:35:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42375 "EHLO
+	id S933241Ab3BZX6p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:58:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42325 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933256Ab3BZX6r (ORCPT
+	with ESMTP id S933053Ab3BZX6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:47 -0500
+	Tue, 26 Feb 2013 18:58:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: [ 16/53] KVM: s390: Handle hosts not supporting s390-virtio.
-Date: Tue, 26 Feb 2013 15:57:45 -0800
-Message-Id: <20130226235621.504819465@linuxfoundation.org>
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Ming Lei <ming.lei@canonical.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 149/150] usb: musb: fix dependency on transceiver driver
+Date: Tue, 26 Feb 2013 15:56:46 -0800
+Message-Id: <20130226235540.047549255@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
-References: <20130226235619.844721947@linuxfoundation.org>
+In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
+References: <20130226235523.930663721@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit 55c171a6d90dc0574021f9c836127cfd1a7d2e30 upstream.
+commit 25736e0c8269e9613aa6036fbc591818daa30d14 upstream.
 
-Running under a kvm host does not necessarily imply the presence of
-a page mapped above the main memory with the virtio information;
-however, the code includes a hard coded access to that page.
+This patch let glue driver return -EPROBE_DEFER if the transceiver
+is not readly, so we can support defer probe on musb to fix the
+below error on 3.7-rc5 if transceiver drivers are built as module:
 
-Instead, check for the presence of the page and exit gracefully
-before we hit an addressing exception if it does not exist.
+[   19.052490] unable to find transceiver of type USB2 PHY
+[   19.072052] HS USB OTG: no transceiver configured
+[   19.076995] musb-hdrc musb-hdrc.0.auto: musb_init_controller failed with status -19
+[   19.089355] musb-hdrc: probe of musb-hdrc.0.auto rejects match -19
+[   19.096771] driver: 'musb-omap2430': driver_bound: bound to device 'musb-omap2430'
+[   19.105194] bus: 'platform': really_probe: bound device musb-omap2430 to driver musb-omap2430
+[   19.174407] bus: 'platform': add driver twl4030_usb
+[   19.179656] bus: 'platform': driver_probe_device: matched device twl4030_usb with driver twl4030_usb
+[   19.202270] bus: 'platform': really_probe: probing driver twl4030_usb with device twl4030_usb
+[   19.214172] twl4030_usb twl4030_usb: HW_CONDITIONS 0xc0/192; link 3
+[   19.239624] musb-omap2430 musb-omap2430: musb core is not yet ready
+[   19.246765] twl4030_usb twl4030_usb: Initialized TWL4030 USB module
+[   19.254516] driver: 'twl4030_usb': driver_bound: bound to device 'twl4030_usb'
+[   19.263580] bus: 'platform': really_probe: bound device twl4030_usb to driver twl4030_usb
 
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Reviewed-by: Alexander Graf <agraf@suse.de>
-Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/kvm/kvm_virtio.c |   38 ++++++++++++++++++++++++++++++--------
- 1 file changed, 30 insertions(+), 8 deletions(-)
+ drivers/usb/musb/am35x.c     |    2 +-
+ drivers/usb/musb/blackfin.c  |    2 +-
+ drivers/usb/musb/da8xx.c     |    7 +++++--
+ drivers/usb/musb/davinci.c   |    7 +++++--
+ drivers/usb/musb/musb_dsps.c |    2 +-
+ drivers/usb/musb/omap2430.c  |    2 +-
+ drivers/usb/musb/tusb6010.c  |    2 +-
+ drivers/usb/musb/ux500.c     |    2 +-
+ 8 files changed, 16 insertions(+), 10 deletions(-)
 
---- a/drivers/s390/kvm/kvm_virtio.c
-+++ b/drivers/s390/kvm/kvm_virtio.c
-@@ -413,6 +413,26 @@ static void kvm_extint_handler(unsigned
- }
+--- a/drivers/usb/musb/am35x.c
++++ b/drivers/usb/musb/am35x.c
+@@ -365,7 +365,7 @@ static int am35x_musb_init(struct musb *
+ 	usb_nop_xceiv_register();
+ 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
+ 	if (IS_ERR_OR_NULL(musb->xceiv))
+-		return -ENODEV;
++		return -EPROBE_DEFER;
  
- /*
-+ * For s390-virtio, we expect a page above main storage containing
-+ * the virtio configuration. Try to actually load from this area
-+ * in order to figure out if the host provides this page.
-+ */
-+static int __init test_devices_support(unsigned long addr)
-+{
-+	int ret = -EIO;
-+
-+	asm volatile(
-+		"0:	lura	0,%1\n"
-+		"1:	xgr	%0,%0\n"
-+		"2:\n"
-+		EX_TABLE(0b,2b)
-+		EX_TABLE(1b,2b)
-+		: "+d" (ret)
-+		: "a" (addr)
-+		: "0", "cc");
-+	return ret;
-+}
-+/*
-  * Init function for virtio
-  * devices are in a single page above top of "normal" mem
-  */
-@@ -423,21 +443,23 @@ static int __init kvm_devices_init(void)
- 	if (!MACHINE_IS_KVM)
- 		return -ENODEV;
+ 	setup_timer(&otg_workaround, otg_timer, (unsigned long) musb);
  
-+	if (test_devices_support(real_memory_size) < 0)
-+		return -ENODEV;
-+
-+	rc = vmem_add_mapping(real_memory_size, PAGE_SIZE);
-+	if (rc)
-+		return rc;
-+
-+	kvm_devices = (void *) real_memory_size;
-+
- 	kvm_root = root_device_register("kvm_s390");
- 	if (IS_ERR(kvm_root)) {
- 		rc = PTR_ERR(kvm_root);
- 		printk(KERN_ERR "Could not register kvm_s390 root device");
-+		vmem_remove_mapping(real_memory_size, PAGE_SIZE);
- 		return rc;
+--- a/drivers/usb/musb/blackfin.c
++++ b/drivers/usb/musb/blackfin.c
+@@ -406,7 +406,7 @@ static int bfin_musb_init(struct musb *m
+ 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
+ 	if (IS_ERR_OR_NULL(musb->xceiv)) {
+ 		gpio_free(musb->config->gpio_vrsel);
+-		return -ENODEV;
++		return -EPROBE_DEFER;
  	}
  
--	rc = vmem_add_mapping(real_memory_size, PAGE_SIZE);
--	if (rc) {
--		root_device_unregister(kvm_root);
--		return rc;
--	}
--
--	kvm_devices = (void *) real_memory_size;
--
- 	INIT_WORK(&hotplug_work, hotplug_devices);
+ 	bfin_musb_reg_init(musb);
+--- a/drivers/usb/musb/da8xx.c
++++ b/drivers/usb/musb/da8xx.c
+@@ -410,6 +410,7 @@ static int da8xx_musb_init(struct musb *
+ {
+ 	void __iomem *reg_base = musb->ctrl_base;
+ 	u32 rev;
++	int ret = -ENODEV;
  
- 	service_subclass_irq_register();
+ 	musb->mregs += DA8XX_MENTOR_CORE_OFFSET;
+ 
+@@ -420,8 +421,10 @@ static int da8xx_musb_init(struct musb *
+ 
+ 	usb_nop_xceiv_register();
+ 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
+-	if (IS_ERR_OR_NULL(musb->xceiv))
++	if (IS_ERR_OR_NULL(musb->xceiv)) {
++		ret = -EPROBE_DEFER;
+ 		goto fail;
++	}
+ 
+ 	setup_timer(&otg_workaround, otg_timer, (unsigned long)musb);
+ 
+@@ -441,7 +444,7 @@ static int da8xx_musb_init(struct musb *
+ 	musb->isr = da8xx_musb_interrupt;
+ 	return 0;
+ fail:
+-	return -ENODEV;
++	return ret;
+ }
+ 
+ static int da8xx_musb_exit(struct musb *musb)
+--- a/drivers/usb/musb/davinci.c
++++ b/drivers/usb/musb/davinci.c
+@@ -380,11 +380,14 @@ static int davinci_musb_init(struct musb
+ {
+ 	void __iomem	*tibase = musb->ctrl_base;
+ 	u32		revision;
++	int 		ret = -ENODEV;
+ 
+ 	usb_nop_xceiv_register();
+ 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
+-	if (IS_ERR_OR_NULL(musb->xceiv))
++	if (IS_ERR_OR_NULL(musb->xceiv)) {
++		ret = -EPROBE_DEFER;
+ 		goto unregister;
++	}
+ 
+ 	musb->mregs += DAVINCI_BASE_OFFSET;
+ 
+@@ -438,7 +441,7 @@ fail:
+ 	usb_put_phy(musb->xceiv);
+ unregister:
+ 	usb_nop_xceiv_unregister();
+-	return -ENODEV;
++	return ret;
+ }
+ 
+ static int davinci_musb_exit(struct musb *musb)
+--- a/drivers/usb/musb/musb_dsps.c
++++ b/drivers/usb/musb/musb_dsps.c
+@@ -419,7 +419,7 @@ static int dsps_musb_init(struct musb *m
+ 	usb_nop_xceiv_register();
+ 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
+ 	if (IS_ERR_OR_NULL(musb->xceiv))
+-		return -ENODEV;
++		return -EPROBE_DEFER;
+ 
+ 	/* Returns zero if e.g. not clocked */
+ 	rev = dsps_readl(reg_base, wrp->revision);
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -369,7 +369,7 @@ static int omap2430_musb_init(struct mus
+ 	musb->xceiv = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+ 	if (IS_ERR_OR_NULL(musb->xceiv)) {
+ 		pr_err("HS USB OTG: no transceiver configured\n");
+-		return -ENODEV;
++		return -EPROBE_DEFER;
+ 	}
+ 
+ 	musb->isr = omap2430_musb_interrupt;
+--- a/drivers/usb/musb/tusb6010.c
++++ b/drivers/usb/musb/tusb6010.c
+@@ -1069,7 +1069,7 @@ static int tusb_musb_init(struct musb *m
+ 	usb_nop_xceiv_register();
+ 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
+ 	if (IS_ERR_OR_NULL(musb->xceiv))
+-		return -ENODEV;
++		return -EPROBE_DEFER;
+ 
+ 	pdev = to_platform_device(musb->controller);
+ 
+--- a/drivers/usb/musb/ux500.c
++++ b/drivers/usb/musb/ux500.c
+@@ -61,7 +61,7 @@ static int ux500_musb_init(struct musb *
+ 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
+ 	if (IS_ERR_OR_NULL(musb->xceiv)) {
+ 		pr_err("HS USB OTG: no transceiver configured\n");
+-		return -ENODEV;
++		return -EPROBE_DEFER;
+ 	}
+ 
+ 	musb->isr = ux500_musb_interrupt;
 
 
