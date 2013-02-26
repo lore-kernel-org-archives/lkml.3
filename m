@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933054Ab3BZX6b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:58:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42231 "EHLO
+	id S933720Ab3B0Ang (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:43:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42255 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932999Ab3BZX61 (ORCPT
+	with ESMTP id S933044Ab3BZX6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:27 -0500
+	Tue, 26 Feb 2013 18:58:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Romain Kuntz <r.kuntz@ipflavors.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 126/150] xfrm: release neighbor upon dst destruction
-Date: Tue, 26 Feb 2013 15:56:23 -0800
-Message-Id: <20130226235537.228929650@linuxfoundation.org>
+        Victor Quicksilver <victor.quicksilver@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 121/150] HID: wiimote: fix nunchuck button parser
+Date: Tue, 26 Feb 2013 15:56:18 -0800
+Message-Id: <20130226235536.671743228@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,36 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: David Herrmann <dh.herrmann@gmail.com>
 
-From: Romain KUNTZ <r.kuntz@ipflavors.com>
+commit 89bdd0c6f38ccf0de43d5a36ede384a730f3394e upstream.
 
-[ Upstream commit 18cf0d0784b4a634472ed24d0d7ca1c721d93e90 ]
+The buttons of the Wii Remote Nunchuck extension are actually active low.
+Fix the parser to forward the inverted values. The comment in the function
+always said "0 == pressed" but the implementation was wrong from the
+beginning.
 
-Neighbor is cloned in xfrm6_fill_dst but seems to never be released.
-Neighbor entry should be released when XFRM6 dst entry is destroyed
-in xfrm6_dst_destroy, otherwise references may be kept forever on
-the device pointed by the neighbor entry.
-
-I may not have understood all the subtleties of XFRM & dst so I would
-be happy to receive comments on this patch.
-
-Signed-off-by: Romain Kuntz <r.kuntz@ipflavors.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Victor Quicksilver <victor.quicksilver@gmail.com>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/xfrm6_policy.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/net/ipv6/xfrm6_policy.c
-+++ b/net/ipv6/xfrm6_policy.c
-@@ -236,6 +236,8 @@ static void xfrm6_dst_destroy(struct dst
- {
- 	struct xfrm_dst *xdst = (struct xfrm_dst *)dst;
+---
+ drivers/hid/hid-wiimote-ext.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- a/drivers/hid/hid-wiimote-ext.c
++++ b/drivers/hid/hid-wiimote-ext.c
+@@ -403,14 +403,14 @@ static void handler_nunchuck(struct wiim
  
-+	if (likely(xdst->u.rt6.n))
-+		neigh_release(xdst->u.rt6.n);
- 	if (likely(xdst->u.rt6.rt6i_idev))
- 		in6_dev_put(xdst->u.rt6.rt6i_idev);
- 	dst_destroy_metrics_generic(dst);
+ 	if (ext->motionp) {
+ 		input_report_key(ext->input,
+-			wiiext_keymap[WIIEXT_KEY_Z], !!(payload[5] & 0x04));
++			wiiext_keymap[WIIEXT_KEY_Z], !(payload[5] & 0x04));
+ 		input_report_key(ext->input,
+-			wiiext_keymap[WIIEXT_KEY_C], !!(payload[5] & 0x08));
++			wiiext_keymap[WIIEXT_KEY_C], !(payload[5] & 0x08));
+ 	} else {
+ 		input_report_key(ext->input,
+-			wiiext_keymap[WIIEXT_KEY_Z], !!(payload[5] & 0x01));
++			wiiext_keymap[WIIEXT_KEY_Z], !(payload[5] & 0x01));
+ 		input_report_key(ext->input,
+-			wiiext_keymap[WIIEXT_KEY_C], !!(payload[5] & 0x02));
++			wiiext_keymap[WIIEXT_KEY_C], !(payload[5] & 0x02));
+ 	}
+ 
+ 	input_sync(ext->input);
 
 
