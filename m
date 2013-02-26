@@ -1,41 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab3BZFTy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 00:19:54 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:49278 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab3BZFTw (ORCPT
+	id S1758440Ab3BZFUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 00:20:22 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:38349 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758100Ab3BZFUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 00:19:52 -0500
+	Tue, 26 Feb 2013 00:20:11 -0500
+Date: Mon, 25 Feb 2013 21:20:08 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: gdt@gdt.id.au, linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb/net/asix_devices: Add USBNET HG20F9 ethernet dongle
+Message-ID: <20130226052008.GA25217@kroah.com>
+References: <20130226042343.GA27766@kroah.com>
+ <20130225.234529.1601978289377551611.davem@davemloft.net>
+ <20130226050311.GB21390@kroah.com>
+ <20130226.001022.1341620780921182778.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWDktthNN3aCq-+tqWJU+Cz+PjN57E=pHzBBErCsZ8B7Q@mail.gmail.com>
-References: <20130223212120.GA4593@google.com>
-	<CAE9FiQWDktthNN3aCq-+tqWJU+Cz+PjN57E=pHzBBErCsZ8B7Q@mail.gmail.com>
-Date: Mon, 25 Feb 2013 21:19:50 -0800
-X-Google-Sender-Auth: ituMyDyNBoL6MYoJ3Q9oRJ_zMzU
-Message-ID: <CA+55aFx7jq7ruTN+pnp-4hPHnkr1G-1WAiAJSQYTPr7GOJjExw@mail.gmail.com>
-Subject: Re: [GIT PULL] PCI changes for v3.9
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130226.001022.1341620780921182778.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 23, 2013 at 6:49 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->
-> Please check if attached diff is right, and hope it could save Linus some time.
+On Tue, Feb 26, 2013 at 12:10:22AM -0500, David Miller wrote:
+> From: Greg KH <gregkh@linuxfoundation.org>
+> Date: Mon, 25 Feb 2013 21:03:11 -0800
+> 
+> > On Mon, Feb 25, 2013 at 11:45:29PM -0500, David Miller wrote:
+> >> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> Date: Mon, 25 Feb 2013 20:23:43 -0800
+> >> 
+> >> > On Tue, Feb 26, 2013 at 02:47:12PM +1030, Glen Turner wrote:
+> >> >> This USB ethernet adapter was purchased in anodyne packaging
+> >> >> marked "USB2.0 to LAN" from the computer store adjacent to
+> >> >> linux.conf.au 2013 in Canberra (Australia). A web search
+> >> >> shows other recent purchasers in Lancaster (UK) and Seattle
+> >> >> (USA). Just like an emergent virus, our age of e-commerce and
+> >> >> airmail allows underdocumented hardware to spread around the
+> >> >> world instantly using the vector of ridiculously low prices.
+> >> >> 
+> >> >> Paige Thompson, infected via eBay, discovered that the HG20F9
+> >> >> is a copy of the Asix 88772B; many viruses copy the RNA of
+> >> >> other viruses. See Paige's work at
+> >> >> <https://github.com/paigeadele/HG20F9>.
+> >> >> This patch uses her discovery to update the restructured Asix
+> >> >> driver in the current kernel.
+> >> >> 
+> >> >> The spread of viruses is often accompanied by rumours. It is
+> >> >> rumoured that the HG20F9 has extensions to to provide gigabit
+> >> >> ethernet. This patch does not chase that chimera.
+> >> >> 
+> >> >> Just as some viruses inhabit seemingly-healthy cells, the
+> >> >> HG20F9 uses the Vendor ID 0x066b assigned to Linksys Inc.
+> >> >> For the present there is no clash of Product ID 0x20f9.
+> >> >> 
+> >> >> Signed-off-by: Glen Turner <gdt@gdt.id.au>
+> >> > 
+> >> > That is the best "add a new device id" changelog entry I have _ever_
+> >> > seen.  Wonderful job:
+> >> > 
+> >> > Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> 
+> >> Was this patch really submitted properly to netdev?  I can't
+> >> find it in patchwork at all.
+> > 
+> > It was Cc: netdev@vger.kernel.org with Message-ID:
+> > <1361852232.23197.4.camel@andromache.adelaide.aarnet.edu.au> so it
+> > should have gone through there somehow.
+> 
+> Nope:
+> 
+> http://marc.info/?t=136185267100001&r=1&w=2
+> 
+> It didn't make it to any of the lists, that's why you are the
+> only person who saw the original patch.
 
-Hmm. I did things a bit differently, moving things around more in
-drivers/acpi/internal.h.
+Odd, I've now bounced it to the mailing lists, hopefully it gets there
+that way.  If not, I can resend it from me directly.
 
-Also, my *gut* feel is that the new _handle_hotplug_event_root()
-function should do that whole dance with
-acpi_scan_lock_acquire()/acpi_scan_lock_release(), but I didn't really
-know if it's required or appropriate, so I left it alone. Could you
-take a look?
+I'll wait till the morning to see if the messages make it through the
+lists.
 
-            Linus
+thanks,
+
+greg k-h
