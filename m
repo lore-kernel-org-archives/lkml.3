@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276Ab3B0Aiw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:38:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42320 "EHLO
+	id S933634Ab3B0AjS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:39:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42311 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933173Ab3BZX6l (ORCPT
+	with ESMTP id S933156Ab3BZX6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:41 -0500
+	Tue, 26 Feb 2013 18:58:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Ming Lei <ming.lei@canonical.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 148/150] usb: musb: core: fix failure path
-Date: Tue, 26 Feb 2013 15:56:45 -0800
-Message-Id: <20130226235539.924029307@linuxfoundation.org>
+        fangxiaozhi <huananhu@huawei.com>
+Subject: [ 146/150] USB: storage: properly handle the endian issues of idProduct
+Date: Tue, 26 Feb 2013 15:56:43 -0800
+Message-Id: <20130226235539.709068882@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -27,33 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: fangxiaozhi <huananhu@huawei.com>
 
-commit 681d1e8761ca773967bce9bd1bb2896f07279551 upstream.
+commit cd060956c5e97931c3909e4a808508469c0bb9f6 upstream.
 
-In the fail1~fail5 failure path, pm_runtime_disable() should
-be called to avoid 'Unbalanced pm_runtime_enable' error in
-next probe() which may be triggered by defer probe or next
-'modprobe musb_hdrc'.
+1. The idProduct is little endian, so make sure its value to be
+compatible with the current CPU. Make no break on big endian processors.
 
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: fangxiaozhi <huananhu@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/musb_core.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/storage/initializers.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1993,6 +1993,7 @@ fail2:
- 	musb_platform_exit(musb);
+--- a/drivers/usb/storage/initializers.c
++++ b/drivers/usb/storage/initializers.c
+@@ -147,7 +147,7 @@ static int usb_stor_huawei_dongles_pid(s
+ 	int idProduct;
  
- fail1:
-+	pm_runtime_disable(musb->controller);
- 	dev_err(musb->controller,
- 		"musb_init_controller failed with status %d\n", status);
+ 	idesc = &us->pusb_intf->cur_altsetting->desc;
+-	idProduct = us->pusb_dev->descriptor.idProduct;
++	idProduct = le16_to_cpu(us->pusb_dev->descriptor.idProduct);
+ 	/* The first port is CDROM,
+ 	 * means the dongle in the single port mode,
+ 	 * and a switch command is required to be sent. */
+@@ -169,7 +169,7 @@ int usb_stor_huawei_init(struct us_data
+ 	int result = 0;
  
+ 	if (usb_stor_huawei_dongles_pid(us)) {
+-		if (us->pusb_dev->descriptor.idProduct >= 0x1446)
++		if (le16_to_cpu(us->pusb_dev->descriptor.idProduct) >= 0x1446)
+ 			result = usb_stor_huawei_scsi_init(us);
+ 		else
+ 			result = usb_stor_huawei_feature_init(us);
 
 
