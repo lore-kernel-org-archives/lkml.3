@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550Ab3BZV5k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 16:57:40 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:33235 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753728Ab3BZV5i (ORCPT
+	id S1758628Ab3BZV6L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 16:58:11 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:39909 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab3BZV6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 16:57:38 -0500
+	Tue, 26 Feb 2013 16:58:08 -0500
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        Kyungsik Lee <kyungsik.lee@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
+        raphael.andy.lee@gmail.com
+Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
+References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
+	<512D1C12.4080109@oberhumer.com>
+	<alpine.LFD.2.03.1302261557220.1254@syhkavp.arg>
+Date: Tue, 26 Feb 2013 22:58:02 +0100
+In-Reply-To: <alpine.LFD.2.03.1302261557220.1254@syhkavp.arg> (Nicolas Pitre's
+	message of "Tue, 26 Feb 2013 15:59:56 -0500 (EST)")
+Message-ID: <87fw0i7n6d.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFx9HkRGfMx6pfR2xsTf0vof_yyrT4ks5TzMKoEpS7w=5g@mail.gmail.com>
-References: <18738.1361836265@warthog.procyon.org.uk>
-	<20130226005955.GA19686@kroah.com>
-	<20130226023332.GA29282@srcf.ucam.org>
-	<20130226030249.GB23834@kroah.com>
-	<20130226031338.GA29784@srcf.ucam.org>
-	<20130226033156.GA24999@kroah.com>
-	<20130226033803.GA30285@srcf.ucam.org>
-	<20130226035416.GA1128@kroah.com>
-	<20130226040456.GA30717@srcf.ucam.org>
-	<20130226041324.GA7241@kroah.com>
-	<20130226042338.GA30944@srcf.ucam.org>
-	<CA+55aFx9HkRGfMx6pfR2xsTf0vof_yyrT4ks5TzMKoEpS7w=5g@mail.gmail.com>
-Date: Tue, 26 Feb 2013 22:57:38 +0100
-X-Google-Sender-Auth: fGxP_YnzGJA42_7kCarD9dJPliw
-Message-ID: <CAMuHMdV4DbX_i6Ye5v7ObR0no-eDhBzqYrsqVtR5PAXQTVSmVQ@mail.gmail.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
-        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
-        keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 5:43 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Feb 25, 2013 at 8:23 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->> If the user has explicitly enrolled a hash then they're stepping outside
->> the trust model.
->
-> This is the kind of totally bogus crap that no sane person should ever
-> spout. Stop it.
->
-> If the user has explicitly enrolled a hash, then that should be the
-> *primary* trust model, dammit. That should be very much what you
-> should care about first and foremost, and that should be your goal in
-> life. That's when the user says "I'm in control of my own machine, and
-> I want to trust *this*".
->
-> It's not about "stepping outside of the trust model". Quite the
-> reverse. It's about actually being *part* of the trust model, and
-> taking control of your own machine. It's the *good* scenario. It's
-> what you should encourage users to do.
+>>>>> "Nicolas" == Nicolas Pitre <nico@fluxnic.net> writes:
 
-Indeed.
+Hi,
 
-But explicitly enrolling your own hash is not enough to take control.
-You must also remove the other hashes that are already present, since
-you don't control what's signed using the corresponding private keys.
+ >> Did you actually *try* the new LZO version and the patch (which is attached
+ >> once again) as explained in https://lkml.org/lkml/2013/2/3/367 ?
+ >> 
+ >> Because the new LZO version is faster than LZ4 in my testing, at least
+ >> when comparing apples with apples and enabling unaligned access in
+ >> BOTH versions:
+ >> 
+ >> armv7 (Cortex-A9), Linaro gcc-4.6 -O3, Silesia test corpus, 256 kB block-size:
+ >> 
+ >> compression speed   decompression speed
+ >> 
+ >> LZO-2012    :          44 MB/sec          117 MB/sec     no unaligned access
+ >> LZO-2013-UA :          47 MB/sec          167 MB/sec     Unaligned Access
+ >> LZ4 r88  UA :          46 MB/sec          154 MB/sec     Unaligned Access
 
-BTW, I assume UEFI checks itself if enrolled hashes have been revoked,
-so it must phone home to some server? That must be disabled as well.
+ Nicolas> To be fair, you should also take into account the compressed
+ Nicolas> size of a typical ARM kernel.  Sometimes a slightly slower
+ Nicolas> decompressor may be faster overall if the compressed image to
+ Nicolas> work on is smaller.
 
-Gr{oetje,eeting}s,
+Yes, but notice that lzo compressed BETTER than lz4 - E.G. from the
+introduction mail:
 
-                        Geert
+1. ARMv7, 1.5GHz based board
+   Kernel: linux 3.4
+   Uncompressed Kernel Size: 14MB
+        Compressed Size  Decompression Speed
+   LZO  6.7MB            21.1MB/s
+   LZ4  7.3MB            29.1MB/s, 45.6MB/s(UA)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Bye, Peter Korsgaard
