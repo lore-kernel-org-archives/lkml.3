@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759570Ab3BZPL4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 10:11:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36111 "EHLO mx1.redhat.com"
+	id S1759601Ab3BZPMN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 10:12:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27151 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759497Ab3BZPLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 10:11:54 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20130226005955.GA19686@kroah.com>
-References: <20130226005955.GA19686@kroah.com> <87ppzo79in.fsf@mid.deneb.enyo.de> <30665.1361461678@warthog.procyon.org.uk> <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com> <20130221164244.GA19625@srcf.ucam.org> <18738.1361836265@warthog.procyon.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: dhowells@redhat.com, Florian Weimer <fw@deneb.enyo.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
-        keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Date: Tue, 26 Feb 2013 15:11:41 +0000
-Message-ID: <4474.1361891501@warthog.procyon.org.uk>
+	id S1759497Ab3BZPML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 10:12:11 -0500
+From: Nikola Pajkovsky <npajkovs@redhat.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] amd_iommu_init: remove __init from amd_iommu_erratum_746_workaround
+Date: Tue, 26 Feb 2013 16:12:05 +0100
+Message-Id: <a6e63dc6f1bdc2d20f3d7d07a5d878e9c1b01d85.1361891160.git.npajkovs@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@linuxfoundation.org> wrote:
+commit 318fe78 ("IOMMU, AMD Family15h Model10-1Fh erratum 746 Workaround")
+added amd_iommu_erratum_746_workaround and it's marked as __init, which is wrong
 
-> >  (6) To maintain secure boot mode, the kernel must be signed and the boot
-> >      loader must check the signature on it.  The key must be either compiled
-> >      into the bootloader (and thus validated by the bootloader signature) or
-> >      must reside in the UEFI database.
-> > 
-> >      [*] Note: This step is simplified a bit.
-> 
-> That's all fine, and now your machine can boot both Linux and Windows
-> wonderfully.  Distros have shipped code doing this for a short while now
-> thanks to Matthew's and other developer's effort in writing a UEFI
-> bootloader / shim that Microsoft has signed.
-> 
-> >  (7) To maintain secure boot mode, the kernel modules must be signed and the
-> >      kernel must check the signature on them.  The key must be compiled into
-> >      the kernel or the bootloader or must reside in the UEFI database.
-> 
-> Wait right here.  This is NOT mandated by UEFI, nor by anyone else.  It
-> might be a nice thing that some people and companies want to implement,
-> but please don't think that some external entity is requiring that Linux
-> implement this, that is not true.
+WARNING: drivers/iommu/built-in.o(.text+0x639c): Section mismatch in reference from the function iommu_init_pci() to the function .init.text:amd_iommu_erratum_746_workaround()
+The function iommu_init_pci() references
+the function __init amd_iommu_erratum_746_workaround().
+This is often because iommu_init_pci lacks a __init
+annotation or the annotation of amd_iommu_erratum_746_workaround is wrong.
 
-What's the point in having the bootloader check the signature on a kernel
-(which you say is fine) if you then permit it to be modified arbitrarily once
-it is running?  If you don't have signed modules then there's no point having
-signed kernels (assuming you don't disable module loading).
+Signed-off-by: Nikola Pajkovsky <npajkovs@redhat.com>
+---
+ drivers/iommu/amd_iommu_init.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-David
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index faf10ba..9761a4f 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -980,7 +980,7 @@ static void __init free_iommu_all(void)
+  *     BIOS should disable L2B micellaneous clock gating by setting
+  *     L2_L2B_CK_GATE_CONTROL[CKGateL2BMiscDisable](D0F2xF4_x90[2]) = 1b
+  */
+-static void __init amd_iommu_erratum_746_workaround(struct amd_iommu *iommu)
++static void amd_iommu_erratum_746_workaround(struct amd_iommu *iommu)
+ {
+ 	u32 value;
+ 
+-- 
+1.7.1
+
