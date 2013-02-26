@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146Ab3BZMRd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 07:17:33 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:33087 "HELO
-	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753371Ab3BZMRc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 07:17:32 -0500
-Message-ID: <512CA7D9.3040004@gaisler.com>
-Date: Tue, 26 Feb 2013 13:17:29 +0100
-From: Andreas Larsson <andreas@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1757972Ab3BZMST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 07:18:19 -0500
+Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:50148 "EHLO
+	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752181Ab3BZMSS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 07:18:18 -0500
+From: "Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com>
+To: Tim Gardner <tim.gardner@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>,
+        Support <support@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "DL-MPT Fusion Linux" <DL-MPTFusionLinux@lsi.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Date: Tue, 26 Feb 2013 17:48:13 +0530
+Subject: RE: [PATCH linux/linux-next] mpt2sas:
+ _scsih_sas_broadcast_primitive_event: Quiet unused variable warning
+Thread-Topic: [PATCH linux/linux-next] mpt2sas:
+ _scsih_sas_broadcast_primitive_event: Quiet unused variable warning
+Thread-Index: Ac4Pmu9Yn03e0AYSQ9uugDCqrx3F5wEf2M9w
+Message-ID: <DCD177647606E9419ED923E0C8C4AA7223E77C8E99@inbmail02.lsi.com>
+References: <1361386107-49136-1-git-send-email-tim.gardner@canonical.com>
+In-Reply-To: <1361386107-49136-1-git-send-email-tim.gardner@canonical.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, software@gaisler.com
-Subject: Re: [PATCH 1/2] gpio: gpio-generic: Fix bug in big endian bit conversion
-References: <1360060383-16880-1-git-send-email-andreas@gaisler.com> <1360060383-16880-2-git-send-email-andreas@gaisler.com> <20130209145855.D517E3E328E@localhost> <20130226075228.A963F3E0AEF@localhost> <512C9287.6000100@gaisler.com>
-In-Reply-To: <512C9287.6000100@gaisler.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-02-26 11:46, Andreas Larsson wrote:
-> On 2013-02-26 08:52, Grant Likely wrote:
->> On Sat, 09 Feb 2013 14:58:55 +0000, Grant Likely
->> <grant.likely@secretlab.ca> wrote:
->> We /could/ have a ioread32be/write32be mode in the driver, but I don't
->> think that is the right approach. It means we need yet another set of
->> accessors for register except using the 'be' variants. Blech. What I'd
->> actually like to do is add a bitmask field to the gpio_desc which can be
->> calculated ahead of time to whatever madness is required from the way
->> the device is wired. Then the access routines don't need to even care.
->> they just apply the bitmask to ioread/iowrite and it doesn't even need
->> to know what the bit number actually is. The new support for gpio_desc
->> in the core code makes this feasable.
->
-> I am not sure I understand what you mean here or what new support for
-> gpio_desc you are referring to (looking in gpio/next at
-> git://git.secretlab.ca/git/linux-2.6).
->
-> Do you mean to add something like an 'unsigned long bitmask[64]' bitmap
-> array with one bitmap for each gpio line to struct gpio_desc and use
-> this primarily by gpio-generic.c, populated in bgpio_init? Is gpio_desc
-> now available outside of gpiolib.c in some repository/branch that I
-> might be unaware of?
+Hi Tim,
 
-Ah, I realize that it is the "gpiolib: remove gpio_desc[] static array" 
-patch series you refer to, not yet pushed to gpio/next at 
-git://git.secretlab.ca/git/linux-2.6.
+Today I have sent the below titled patch to upstream which fix the "Unused variable 'event_data' warning".
+ The Patch title is 
+	"[PATCH][SCSI] mpt2sas: fix for unused variable 'event_data' warning"
 
-The question on how you intend the bitmap field to be 
-defined/used/populated remains.
+This patch will help you in fixing the "Unused variable 'event_data' warning".
 
-Cheers,
-Andreas
+Thanks,
+Sreekanth
 
+> -----Original Message-----
+> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
+> owner@vger.kernel.org] On Behalf Of Tim Gardner
+> Sent: Thursday, February 21, 2013 12:18 AM
+> To: linux-kernel@vger.kernel.org
+> Cc: Tim Gardner; Nandigama, Nagalakshmi; Reddy, Sreekanth; Support;
+> James E.J. Bottomley; DL-MPT Fusion Linux; linux-scsi@vger.kernel.org
+> Subject: [PATCH linux/linux-next] mpt2sas:
+> _scsih_sas_broadcast_primitive_event: Quiet unused variable warning
+> 
+> If CONFIG_SCSI_MPT2SAS_LOGGING is undefined, then these warnings are
+> emitted:
+> 
+> drivers/scsi/mpt2sas/mpt2sas_scsih.c: In function
+> '_scsih_sas_broadcast_primitive_event':
+> drivers/scsi/mpt2sas/mpt2sas_scsih.c:5810:40: warning: unused variable
+> 'event_data' [-Wunused-variable]
+> 
+> Add __maybe_unused to the definition of event_data.
+> 
+> Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
+> Cc: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+> Cc: support@lsi.com
+> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+> Cc: DL-MPTFusionLinux@lsi.com
+> Cc: linux-scsi@vger.kernel.org
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  drivers/scsi/mpt2sas/mpt2sas_scsih.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+> b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+> index c6bdc92..416f907 100644
+> --- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+> +++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+> @@ -5807,7 +5807,8 @@ _scsih_sas_broadcast_primitive_event(struct
+> MPT2SAS_ADAPTER *ioc,
+>  	u32 termination_count;
+>  	u32 query_count;
+>  	Mpi2SCSITaskManagementReply_t *mpi_reply;
+> -	Mpi2EventDataSasBroadcastPrimitive_t *event_data = fw_event-
+> >event_data;
+> +	Mpi2EventDataSasBroadcastPrimitive_t *event_data
+> __maybe_unused =
+> +		fw_event->event_data;
+>  	u16 ioc_status;
+>  	unsigned long flags;
+>  	int r;
+> --
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the
+> body of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
