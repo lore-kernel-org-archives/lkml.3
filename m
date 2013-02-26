@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936Ab3BZSvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 13:51:10 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:4115 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761Ab3BZSvI (ORCPT
+	id S1759588Ab3BZSzV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 13:55:21 -0500
+Received: from www.linutronix.de ([62.245.132.108]:51026 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755915Ab3BZSzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 13:51:08 -0500
-Date: Tue, 26 Feb 2013 19:50:59 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Problem with commit "USB: EHCI: remove ASS/PSS polling timeout"
-Message-ID: <20130226195059.7f763ca5@endymion.delvare>
-In-Reply-To: <Pine.LNX.4.44L0.1302261316450.1832-100000@iolanthe.rowland.org>
-References: <20130226182409.046bdecd@endymion.delvare>
-	<Pine.LNX.4.44L0.1302261316450.1832-100000@iolanthe.rowland.org>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Feb 2013 13:55:19 -0500
+Date: Tue, 26 Feb 2013 19:55:06 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/2] irq: Cleanup context state transitions in
+ irq_exit()
+In-Reply-To: <20130226163911.GA3309@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.02.1302261950120.22263@ionos>
+References: <1361496971-16939-1-git-send-email-fweisbec@gmail.com> <1361496971-16939-3-git-send-email-fweisbec@gmail.com> <alpine.LFD.2.02.1302221528470.22263@ionos> <20130222150444.GD18149@somewhere.redhat.com> <alpine.LFD.2.02.1302221605520.22263@ionos>
+ <CA+55aFxOreKQ-uzfMtXEb6XH4D8By2i=qOxfDLJnchSYsa34PQ@mail.gmail.com> <alpine.LFD.2.02.1302261308550.22263@ionos> <CAFTL4hyYRO3MGBy9SgCvB+jhBTtW=RH3Pb4cXGpYMQJfCa3M5g@mail.gmail.com> <alpine.LFD.2.02.1302261614060.22263@ionos>
+ <20130226163911.GA3309@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
-
-On Tue, 26 Feb 2013 13:21:30 -0500 (EST), Alan Stern wrote:
-> On Tue, 26 Feb 2013, Jean Delvare wrote:
-> > Since kernel 3.7.7, my Hauppauge Nova-T 500 Dual DVB-T TV card stopped
-> > working reliably. Half of the boots it will work, the other half it
-> > won't, with different error messages. For example
+On Tue, 26 Feb 2013, Paul E. McKenney wrote:
+> On Tue, Feb 26, 2013 at 04:14:43PM +0100, Thomas Gleixner wrote:
+> > 
+> > On Tue, 26 Feb 2013, Frederic Weisbecker wrote:
+> > > And what do you think about Linus's idea to move tick_nohz_irq_exit()
+> > > to do_softirq()?
+> > > This sounds feasible and a right place to do this, I hope that won't
+> > > uglify do_softirq() though.
+> > > I can try something.
+> > 
+> > Yeah, looks doable. the rcu stuff needs to go there as well, right?
 > 
-> Yes, I know.  Other people have already reported the same problem -- 
-> but only for EHCI controllers made by VIA.  Do you also have a VIA EHCI 
-> controller?
+> If it does, it needs to do so in such a way that rcu_irq_enter() and
+> rcu_irq_exit() nest properly.  One area of concern is the force_irqthreads
+> case, skips calling do_softirq().  Another area of concern is the
+> __ARCH_IRQ_EXIT_IRQS_DISABLED case, which calls __do_softirq() rather
+> than do_softirq().
 
-Yes, VIA VT6212L:
+That's sorted already. We disable interrupts in irq_exit().
 
-01:04.0 USB Controller [0c03]: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 Controller [1106:3038] (rev 62)
-01:04.1 USB Controller [0c03]: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 Controller [1106:3038] (rev 62)
-01:04.2 USB Controller [0c03]: VIA Technologies, Inc. USB 2.0 [1106:3104] (rev 65)
+> Or am I missing some adjustment that is to be made when moving rcu_irq_exit()
+> to do_softirq()?
 
-> > So please revert this commit upstream as well as in 3.8 and 3.7 stable
-> > kernel series.
-> 
-> I intend to as soon as the current merge window closes.
-> 
-> Or should I do it sooner?  Greg, if I send in a reversion patch now, 
-> will it get pushed to Linus within the merge window?
+Yeah, we need an extra parameter or such, so the other callers of
+__do_softirq() don't mess with it.
 
-I see no reason to delay it. The merge window is when more patches are
-allowed to go in, not fewer. When a commit caused a regression in a
-stable kernel series, the right time to get it fixed is "as soon as
-possible."
+I also noticed that rcu_irq_enter/exit needs to be symetric and the
+NOHZ code will get confused as well if we call it asymetric.
+
+So that will become even more ugly than the extra check at the end of
+irq_exit().
 
 Thanks,
--- 
-Jean Delvare
+
+	tglx
+
+
+
