@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146Ab3BZF7P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 00:59:15 -0500
-Received: from nm36-vm8.bullet.mail.sg3.yahoo.com ([106.10.151.95]:40797 "EHLO
-	nm36-vm8.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752275Ab3BZF7O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 00:59:14 -0500
-X-Greylist: delayed 381 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Feb 2013 00:59:12 EST
-X-Yahoo-Newman-Id: 968749.82824.bm@smtp128.mail.sg3.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: tYXNM_cVM1k33B4TvrWrOZTlHasi.Wk7bYiGHlckywuBjns
- 4rWg1jDOYkXiVkZuYeQVoAD0awCJtRDtUz.TPpXFzocKeErQzbismYcL72Ab
- qxhv83o2tSDdxQqahoMZ3PCCzwRnAImMK5NuVqKyIZCUPR_NMFda8W1ddklP
- yjUPWJJEiuYDO0cxHnEmMic9T81Mybz8nw7DTLVPzCdFbdQh6y1JFQzlzm0C
- iaJYXPr7mke4eL7slwXGW0smdWvzkkJ.L.vRC2fQsdvDG0TlNql8Lv_.3p9L
- ITdRNOGqXggdfVeOX.w9q.h8OUKGnVa.buFkul1B5fL6LssqjcMPiHjsHKaT
- BqWe0v.KltBaNi.VPe6Pr6E4Lam6J1pqMz.RNXdCZddY.QPCJb73vJuuwZ4c
- QKq4a0QxokQUpfpTZCfi_K2DsF2jCZGNQKjJ6F9FFnOZNPw--
-X-Yahoo-SMTP: tW.h3tiswBBMXO2coYcbPigGD5Lt6zY_.Zc-
-From: Marek Lindner <lindner_marek@yahoo.de>
-To: b.a.t.m.a.n@lists.open-mesh.org
-Subject: Re: [B.A.T.M.A.N.] batman-adv: gpf in batadv_slide_own_bcast_window
-Date: Tue, 26 Feb 2013 13:52:46 +0800
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Antonio Quartulli <ordex@autistici.org>, netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        Dave Jones <davej@redhat.com>, "David S. Miller" <davem@davemloft.net>
-References: <5127A2AF.9030502@oracle.com> <20130222170621.GU3523@ritirata.org> <5127BAD2.1040007@oracle.com>
-In-Reply-To: <5127BAD2.1040007@oracle.com>
+	id S1758026Ab3BZGEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 01:04:41 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:49975 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752275Ab3BZGEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 01:04:40 -0500
+Date: Tue, 26 Feb 2013 01:04:28 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Message-ID: <20130226060428.GD12906@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Airlie <airlied@gmail.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	David Howells <dhowells@redhat.com>,
+	Florian Weimer <fw@deneb.enyo.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
+	Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+	keyrings@linux-nfs.org,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20130226030249.GB23834@kroah.com>
+ <20130226031338.GA29784@srcf.ucam.org>
+ <20130226033156.GA24999@kroah.com>
+ <20130226033803.GA30285@srcf.ucam.org>
+ <20130226035416.GA1128@kroah.com>
+ <20130226040456.GA30717@srcf.ucam.org>
+ <20130226041324.GA7241@kroah.com>
+ <CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com>
+ <20130226044521.GC12906@thunk.org>
+ <CAPM=9tygczL81L_t=uJs3bAae_h96iGkxWK-qYfcWkcCzOjsXw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302261352.47191.lindner_marek@yahoo.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9tygczL81L_t=uJs3bAae_h96iGkxWK-qYfcWkcCzOjsXw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, February 23, 2013 02:37:06 Sasha Levin wrote:
-> I'm confused about how batadv_orig_hash_del_if removes an interface from
-> the hashtable. I see the hashtable is using rcu to protect it, but when we
-> delete an entry we free it straight away by calling
-> batadv_orig_node_del_if() and not going through kfree_rcu().
+On Tue, Feb 26, 2013 at 02:55:32PM +1000, Dave Airlie wrote:
 > 
-> Is there a reason behind doing that, or might it be the cause of the
-> problem we're seeing here?
+> So it would be nice if LF could undertake to go and talk to Microsoft,
+> and get vague opinions turned into something real.
 
-Maybe I am overlooking something but it seems to me access to this memory is 
-protected by the same lock: orig_node->ogm_cnt_lock
-Before batadv_orig_node_del_if() is called this lock is acquired and 
-batadv_slide_own_bcast_window() also attempts acquire the orig_node-
->ogm_cnt_lock spinlock before writing to this chunk of memory.
+Uh, folks like James and Greg K-H have talked to folks at
+Microsoft.... I haven't talked to the folks at Microsoft personally,
+but my understanding is that did _not_ tell us we had to do what
+Matthew claims other folks at Mircrosoft have claimed that we have to
+do, "or else".
 
-Do we know for certain that batadv_orig_hash_del_if() is involved or is that a 
-guess at this point ? If you ask me the next for-loop in 
-batadv_orig_hash_del_if() looks more suspicious than the first one. The 
-interfaces get renumbered without any protection. Could be a regression from 
-the orig_hash_lock removal (the comments refer to a now inexisting lock).
+> Ted you might be at liberty to get a chromebook pixel from google, but
+> that isn't going to help the other X% of users who have a PC they want
+> to use Linux on, and maybe boot Windows to do their taxes.
 
-Cheers,
-Marek
+The point is that users will have choices.  It wasn't the end of the
+world when some laptop manufacturers shipped devices that required
+crappy Nvidia drivers.  I just simply chose not to buy laptops that
+were crippled with the Optimus chipset, and purchased laptops that
+used Intel graphics instead.  That's the free market at work.
+
+Yes, it's sad that some users got stuck buying hardware which screwed
+them over and made it very hard or impossible to use bleeding edge
+kernels.  It's too bad some people had to learn the hard way.  The
+good news though is that people who did do their due diligence could
+purchase open hardware, and not get screwed by peripherals that
+required proprietary drivers, whether they be WiFi or Graphics
+drivers.
+
+Of course, there are still crappy laptops that require proprietary
+drivers, or for which no Linux drivers exist at all.  There's a reason
+why I buy Thinkpads and not Sony laptops.  Similarly, the good news is
+that there are open x86 devices being sold right now, post Windows-8,
+which don't require us to be beholden to Microsoft.  Yes, there will
+be users who buy the locked down crap.  There are also users who buy
+Sony laptops.  Sometimes, we can't help everyone, and somtimes, it's
+better not to encourage users to use hardware that require propietary
+drivers, but to rather incentize them to use open hardware instead.
+
+Regards,
+
+	     	       		      	 - Ted
