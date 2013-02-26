@@ -1,39 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334Ab3BZKIG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 05:08:06 -0500
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:51681 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759926Ab3BZKIE (ORCPT
+	id S1756634Ab3BZKRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 05:17:11 -0500
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:55203 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752159Ab3BZKRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 05:08:04 -0500
+	Tue, 26 Feb 2013 05:17:10 -0500
+Message-ID: <512C8B89.6060303@stericsson.com>
+Date: Tue, 26 Feb 2013 11:16:41 +0100
+From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130226063813.GA17317@thunk.org>
-References: <20130226031338.GA29784@srcf.ucam.org> <20130226033156.GA24999@kroah.com>
- <20130226033803.GA30285@srcf.ucam.org> <20130226035416.GA1128@kroah.com>
- <20130226040456.GA30717@srcf.ucam.org> <20130226041324.GA7241@kroah.com>
- <CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com>
- <20130226044521.GC12906@thunk.org> <CAPM=9tygczL81L_t=uJs3bAae_h96iGkxWK-qYfcWkcCzOjsXw@mail.gmail.com>
- <20130226060428.GD12906@thunk.org> <20130226063813.GA17317@thunk.org>
-From: Raymond Jennings <shentino@gmail.com>
-Date: Tue, 26 Feb 2013 02:07:22 -0800
-Message-ID: <CAGDaZ_rkxQFDfJXdoPSXMx6hk21t0jPM4p+KQsLfvPWScofWag@mail.gmail.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-To: "Theodore Ts'o" <tytso@mit.edu>, Dave Airlie <airlied@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
-        keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH 05/73] ARM: ux500: Vsmps3 controlled by SysClkReq1
+References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org> <1359978868-28736-6-git-send-email-lee.jones@linaro.org> <20130204193737.GU4720@opensource.wolfsonmicro.com> <CACRpkdYWZOa=bbJYpG7owxVJXxPq5sx7jHmo5UpRe8pmPGYKMQ@mail.gmail.com> <20130205120134.GY4720@opensource.wolfsonmicro.com> <20130226094412.GD16685@gmail.com>
+In-Reply-To: <20130226094412.GD16685@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just curious here, but is this as much of an issue if a user is
-somehow able to take ownership of his own machine?
+On 02/26/2013 10:44 AM, Lee Jones wrote:
+> On Tue, 05 Feb 2013, Mark Brown wrote:
+>
+>> On Mon, Feb 04, 2013 at 10:21:36PM +0100, Linus Walleij wrote:
+>>
+>>> What is needed is some way to model that
+>>> electronic relationship into both the regulator
+>>> and clock subsystems (Ulf Hansson is working on
+>>> the ABx500 clocks as we speak.)
+>>> Maybe the actual place to have it would be
+>>> somewhere like drivers/mfd/ab8500-core.c.
+>>> Have you seen similar stuff in other PMICs?
+>> Yes, it's fairly common to at least have hardware enable signals.  If
+>> what was going on was actually understood by the driver in some way it
+>> might be better but right now...  Especially in a series like this it's
+>> really bad to just see loads of patches which boil down to "change the
+>> semi-documented magic value" - this just makes the series depressing to
+>> read.
+> Okay, I've just re-read this thread and it appears you're both talking
+> about different things.
+>
+> Linus is talking about a discussion with Bengt regarding how these
+> strange sysclkreq thingies work. When I first read the code they
+> appear to be equivalent to GPIO regulators, but in actual fact the
+> hardware logic is different on enable/disable. So they probably don't
+> belong in regulator code at all.
+>
+> Where as, Mark is complaining about how the regulators are initialised
+> by lots of magic register writes during init. Although, comments are
+> inserted for each of the values, they're by no means exhaustive and
+> aren't really even helpful if you don't have the uber-s3cr3t design
+> specification. What he would like to see is that most of this stuff
+> being handled by the framework. Some of this stuff is clearly only
+> setting voltages and power-states and the like.
+>
+> I'd certainly be up for taking this on, but I think an in-depth
+> knowledge of the AB8500 regulator subsystem would be required.
+>
+We got a comment about this some years before and then I thought that it 
+was best to just initialise the registers because (1) there are many 
+settings that could not be handled by the regulator framework and (2) 
+many settings are mixed up in same registers which would lead to many 
+more write operations. The risk is also that everything gets more 
+complicated if we mix regulator framework initialisation with our own 
+initialisation.
 
-I'm assuming this is related to TPM somehow.
+I still doubt that letting the framework initialise the regulator 
+registers is the way to go but of course we should have a look at it. I 
+agree that the current code is depressing, it does not provide much 
+understanding. I can go through the register initialisation and propose 
+what to do with each bit.
+
+
