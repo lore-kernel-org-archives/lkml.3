@@ -1,149 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758346Ab3BZGQW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 01:16:22 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:3991
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753386Ab3BZGQU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 01:16:20 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahz8dhz8275dh8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5hbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Stuart Yoder <b08248@gmail.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Joerg Roedel <joro@8bytes.org>,
-        Yoder Stuart-B08248 <B08248@freescale.com>
-Subject: RE: [PATCH 2/6] powerpc/fsl_pci: Store the platform device
- information corresponding to the pci controller.
-Thread-Topic: [PATCH 2/6] powerpc/fsl_pci: Store the platform device
- information corresponding to the pci controller.
-Thread-Index: AQHODdfJlEhE0nyIf0aqdKEpYTrUTpiLT0kAgABlsAA=
-Date: Tue, 26 Feb 2013 06:16:10 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D3BD338@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com>
-	<1361191939-21260-3-git-send-email-Varun.Sethi@freescale.com>
- <CALRxmdDc9TuxH7HgAF3_iLgatoaOUML6fUt8SU+sxHyz6ZVjfw@mail.gmail.com>
-In-Reply-To: <CALRxmdDc9TuxH7HgAF3_iLgatoaOUML6fUt8SU+sxHyz6ZVjfw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.132.143]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1753194Ab3BZGUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 01:20:41 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:26881 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab3BZGUk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 01:20:40 -0500
+X-AuditID: cbfee61a-b7f7d6d000000f4e-bc-512c54366be4
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [GIT PULL] DMA-mapping updates for v3.9-rc1
+Date: Tue, 26 Feb 2013 07:20:29 +0100
+Message-id: <1361859629-12984-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t9jQV3zEJ1Ag60KFpd3zWGzWHvkLrvF
+	o7637A7MHidm/Gbx6NuyitHj8ya5AOYoLpuU1JzMstQifbsEroyl938yFbzjq7j68BJLA+Mb
+	7i5GTg4JAROJv4e/M0PYYhIX7q1n62Lk4hASmM4ocenVahYIp51JYurqqWwgVWwChhJdb7vA
+	bBEBI4nPL66wgtjMAr4Sd16tYgGxhYGmPun/wQ5iswioSuw8sp0RxOYV8JCYfm8i0DYOoG0K
+	EnMm2Uxg5F7AyLCKUTS1ILmgOCk911CvODG3uDQvXS85P3cTI9jPz6R2MK5ssDjEKMDBqMTD
+	m8CiEyjEmlhWXJl7iFGCg1lJhJczQztQiDclsbIqtSg/vqg0J7X4EKM0B4uSOC/jqScBQgLp
+	iSWp2ampBalFMFkmDk6pBkZP+8BsnsXiqpUexvrrU9/ebnTLcPv/7Br/+0tLBXWfuTutFQw/
+	n/p7/zXmJi/rug8JZcufsl5Il0lx7D4R8lNMuiTlpfp3uYxl5RaPPYP+z9770Fa4Vo6ta8+V
+	MqeNl2xko6+t+7Xt3eFJAfHTIhQM3KdNmOKudmSvy5zOhNorrBbv1jb7zFViKc5INNRiLipO
+	BABNmJGM7wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is not present in Joerg's tree and the add_device API in the PAMU driver requires this patch.
+Hi Linus,
 
--Varun
+I would like to ask You for pulling some fixes and extensions to ARM
+dma-mapping subsystem for v3.9-rc1.
 
-> -----Original Message-----
-> From: Stuart Yoder [mailto:b08248@gmail.com]
-> Sent: Tuesday, February 26, 2013 5:39 AM
-> To: Sethi Varun-B16395
-> Cc: iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
-> linux-kernel@vger.kernel.org; Wood Scott-B07421; Joerg Roedel; Yoder
-> Stuart-B08248
-> Subject: Re: [PATCH 2/6] powerpc/fsl_pci: Store the platform device
-> information corresponding to the pci controller.
-> 
-> This patch was submitted separately to linuxppc-dev (and was already
-> applied).  You don't need it in this patch set, right?
-> 
-> Stuart
-> 
-> On Mon, Feb 18, 2013 at 6:52 AM, Varun Sethi <Varun.Sethi@freescale.com>
-> wrote:
-> > The pci controller structure has a provision to store the device
-> > strcuture pointer of the corresponding platform device. Currently this
-> > information is not stored during fsl pci controller initialization.
-> > This information is required while dealing with iommu groups for pci
-> > devices connected to the fsl pci controller. For the case where the
-> > pci devices can't be paritioned, they would fall under the same device
-> group as the pci controller.
-> >
-> > This patch stores the platform device information in the pci
-> > controller structure during initialization.
-> >
-> > Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
-> > ---
-> >  arch/powerpc/sysdev/fsl_pci.c |    9 +++++++--
-> >  arch/powerpc/sysdev/fsl_pci.h |    2 +-
-> >  2 files changed, 8 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/arch/powerpc/sysdev/fsl_pci.c
-> > b/arch/powerpc/sysdev/fsl_pci.c index 92a5915..b393ae7 100644
-> > --- a/arch/powerpc/sysdev/fsl_pci.c
-> > +++ b/arch/powerpc/sysdev/fsl_pci.c
-> > @@ -421,13 +421,16 @@ void fsl_pcibios_fixup_bus(struct pci_bus *bus)
-> >         }
-> >  }
-> >
-> > -int __init fsl_add_bridge(struct device_node *dev, int is_primary)
-> > +int __init fsl_add_bridge(struct platform_device *pdev, int
-> > +is_primary)
-> >  {
-> >         int len;
-> >         struct pci_controller *hose;
-> >         struct resource rsrc;
-> >         const int *bus_range;
-> >         u8 hdr_type, progif;
-> > +       struct device_node *dev;
-> > +
-> > +       dev = pdev->dev.of_node;
-> >
-> >         if (!of_device_is_available(dev)) {
-> >                 pr_warning("%s: disabled\n", dev->full_name); @@
-> > -453,6 +456,8 @@ int __init fsl_add_bridge(struct device_node *dev, int
-> is_primary)
-> >         if (!hose)
-> >                 return -ENOMEM;
-> >
-> > +       /* set platform device as the parent */
-> > +       hose->parent = &pdev->dev;
-> >         hose->first_busno = bus_range ? bus_range[0] : 0x0;
-> >         hose->last_busno = bus_range ? bus_range[1] : 0xff;
-> >
-> > @@ -880,7 +885,7 @@ static int fsl_pci_probe(struct platform_device
-> > *pdev)  #endif
-> >
-> >         node = pdev->dev.of_node;
-> > -       ret = fsl_add_bridge(node, fsl_pci_primary == node);
-> > +       ret = fsl_add_bridge(pdev, fsl_pci_primary == node);
-> >
-> >  #ifdef CONFIG_SWIOTLB
-> >         if (ret == 0) {
-> > diff --git a/arch/powerpc/sysdev/fsl_pci.h
-> > b/arch/powerpc/sysdev/fsl_pci.h index d078537..c495c00 100644
-> > --- a/arch/powerpc/sysdev/fsl_pci.h
-> > +++ b/arch/powerpc/sysdev/fsl_pci.h
-> > @@ -91,7 +91,7 @@ struct ccsr_pci {
-> >         __be32  pex_err_cap_r3;         /* 0x.e34 - PCIE error capture
-> register 0 */
-> >  };
-> >
-> > -extern int fsl_add_bridge(struct device_node *dev, int is_primary);
-> > +extern int fsl_add_bridge(struct platform_device *pdev, int
-> > +is_primary);
-> >  extern void fsl_pcibios_fixup_bus(struct pci_bus *bus);  extern int
-> > mpc83xx_add_bridge(struct device_node *dev);
-> >  u64 fsl_pci_immrbar_base(struct pci_controller *hose);
-> > --
-> > 1.7.4.1
-> >
-> >
-> > _______________________________________________
-> > iommu mailing list
-> > iommu@lists.linux-foundation.org
-> > https://lists.linuxfoundation.org/mailman/listinfo/iommu
+The following changes since commit 19f949f52599ba7c3f67a5897ac6be14bfcb1200:
+
+  Linux 3.8 (2013-02-18 15:58:34 -0800)
+
+are available in the git repository at:
+
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git for-v3.9
+
+for you to fetch changes up to d589829107c5528164a9b7dfe50d0001780865ed:
+
+  ARM: DMA-mapping: fix memory leak in IOMMU dma-mapping implementation (2013-02-25 15:30:44 +0100)
+
+----------------------------------------------------------------
+
+This time all patches are related only to ARM DMA-mapping subsystem. The
+main extension provided by this pull request is highmem support. Besides
+that it contains a bunch of small bugfixes and cleanups.
+
+Thanks!
+
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
 
 
+Patch summary:
+
+Hiroshi Doyu (3):
+      ARM: dma-mapping: Set arm_dma_set_mask() for iommu->set_dma_mask()
+      ARM: dma-mapping: Add macro to_dma_iommu_mapping()
+      ARM: dma-mapping: Add arm_iommu_detach_device()
+
+Laurent Pinchart (1):
+      ARM: iommu: Include linux/kref.h in asm/dma-iommu.h
+
+Marek Szyprowski (3):
+      ARM: dma-mapping: add support for CMA regions placed in highmem zone
+      ARM: dma-mapping: use himem for DMA buffers for IOMMU-mapped devices
+      ARM: DMA-mapping: fix memory leak in IOMMU dma-mapping implementation
+
+Prathyush K (1):
+      arm: dma mapping: export arm iommu functions
+
+Seung-Woo Kim (1):
+      ARM: dma-mapping: Add maximum alignment order for dma iommu buffers
+
+ arch/arm/Kconfig                 |   21 ++++++++
+ arch/arm/include/asm/device.h    |    6 +++
+ arch/arm/include/asm/dma-iommu.h |    2 +
+ arch/arm/mm/dma-mapping.c        |  108 +++++++++++++++++++++++++++++++-------
+ 4 files changed, 117 insertions(+), 20 deletions(-)
