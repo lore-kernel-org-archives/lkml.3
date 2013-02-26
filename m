@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760148Ab3BZX5b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 18:57:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41869 "EHLO
+	id S1760395Ab3B0BK5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:10:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41885 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760067Ab3BZX50 (ORCPT
+	with ESMTP id S1760126Ab3BZX52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:26 -0500
+	Tue, 26 Feb 2013 18:57:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 041/150] tmpfs: fix use-after-free of mempolicy object
-Date: Tue, 26 Feb 2013 15:54:58 -0800
-Message-Id: <20130226235528.469455259@linuxfoundation.org>
+        fanchaoting <fanchaoting@cn.fujitsu.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 044/150] umount oops when remove blocklayoutdriver first
+Date: Tue, 26 Feb 2013 15:55:01 -0800
+Message-Id: <20130226235528.748847597@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -28,107 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Thelen <gthelen@google.com>
+From: fanchaoting <fanchaoting@cn.fujitsu.com>
 
-commit 5f00110f7273f9ff04ac69a5f85bb535a4fd0987 upstream.
+commit 5a12cca697aca5dfba42a7d4c3356acc0445a2b0 upstream.
 
-The tmpfs remount logic preserves filesystem mempolicy if the mpol=M
-option is not specified in the remount request.  A new policy can be
-specified if mpol=M is given.
+now pnfs client uses block layout, maybe we can remove
+blocklayoutdriver first. if we umount later,
+it can cause oops in unset_pnfs_layoutdriver.
+because nfss->pnfs_curr_ld->clear_layoutdriver is invalid.
 
-Before this patch remounting an mpol bound tmpfs without specifying
-mpol= mount option in the remount request would set the filesystem's
-mempolicy object to a freed mempolicy object.
+reproduce it:
+ modprobe  blocklayoutdriver
+ mount -t nfs4 -o minorversion=1 pnfsip:/ /mnt/
+ rmmod blocklayoutdriver
+ umount /mnt
 
-To reproduce the problem boot a DEBUG_PAGEALLOC kernel and run:
-    # mkdir /tmp/x
+then you can see following
 
-    # mount -t tmpfs -o size=100M,mpol=interleave nodev /tmp/x
+CPU 0
+Pid: 17023, comm: umount.nfs4 Tainted: GF          O 3.7.0-rc6-pnfs #1 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
+RIP: 0010:[<ffffffffa04cfe6d>]  [<ffffffffa04cfe6d>] unset_pnfs_layoutdriver+0x1d/0x70 [nfsv4]
+RSP: 0018:ffff8800022d9e48  EFLAGS: 00010286
+RAX: ffffffffa04a1b00 RBX: ffff88000b013800 RCX: 0000000000000001
+RDX: ffffffff81ae8ee0 RSI: ffff880001ee94b8 RDI: ffff88000b013800
+RBP: ffff8800022d9e58 R08: 0000000000000001 R09: 0000000000000000
+R10: 0000000000000000 R11: 0000000000000000 R12: ffff880001ee9400
+R13: ffff8800105978c0 R14: 00007fff25846c08 R15: 0000000001bba550
+FS:  00007f45ae7f0700(0000) GS:ffff880012c00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: ffffffffa04a1b38 CR3: 0000000002c0c000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process umount.nfs4 (pid: 17023, threadinfo ffff8800022d8000, task ffff880006e48aa0)
+Stack:
+ffff8800105978c0 ffff88000b013800 ffff8800022d9e78 ffffffffa04cd0ce
+ffff8800022d9e78 ffff88000b013800 ffff8800022d9ea8 ffffffffa04755a7
+ffff8800022d9ea8 ffff880002f96400 ffff88000b013800 ffff880002f96400
+Call Trace:
+[<ffffffffa04cd0ce>] nfs4_destroy_server+0x1e/0x30 [nfsv4]
+[<ffffffffa04755a7>] nfs_free_server+0xb7/0x150 [nfs]
+[<ffffffffa047d4d5>] nfs_kill_super+0x35/0x40 [nfs]
+[<ffffffff81178d35>] deactivate_locked_super+0x45/0x70
+[<ffffffff8117986a>] deactivate_super+0x4a/0x70
+[<ffffffff81193ee2>] mntput_no_expire+0xd2/0x130
+[<ffffffff81194d62>] sys_umount+0x72/0xe0
+[<ffffffff8154af59>] system_call_fastpath+0x16/0x1b
+Code: 06 e1 b8 ea ff ff ff eb 9e 0f 1f 44 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 48 8b 87 80 03 00 00 48 89 fb 48 85 c0 74 29 <48> 8b 40 38 48 85 c0 74 02 ff d0 48 8b 03 3e ff 48 04 0f 94 c2
+RIP  [<ffffffffa04cfe6d>] unset_pnfs_layoutdriver+0x1d/0x70 [nfsv4]
+RSP <ffff8800022d9e48>
+CR2: ffffffffa04a1b38
+---[ end trace 29f75aaedda058bf ]---
 
-    # grep /tmp/x /proc/mounts
-    nodev /tmp/x tmpfs rw,relatime,size=102400k,mpol=interleave:0-3 0 0
-
-    # mount -o remount,size=200M nodev /tmp/x
-
-    # grep /tmp/x /proc/mounts
-    nodev /tmp/x tmpfs rw,relatime,size=204800k,mpol=??? 0 0
-        # note ? garbage in mpol=... output above
-
-    # dd if=/dev/zero of=/tmp/x/f count=1
-        # panic here
-
-Panic:
-    BUG: unable to handle kernel NULL pointer dereference at           (null)
-    IP: [<          (null)>]           (null)
-    [...]
-    Oops: 0010 [#1] SMP DEBUG_PAGEALLOC
-    Call Trace:
-      mpol_shared_policy_init+0xa5/0x160
-      shmem_get_inode+0x209/0x270
-      shmem_mknod+0x3e/0xf0
-      shmem_create+0x18/0x20
-      vfs_create+0xb5/0x130
-      do_last+0x9a1/0xea0
-      path_openat+0xb3/0x4d0
-      do_filp_open+0x42/0xa0
-      do_sys_open+0xfe/0x1e0
-      compat_sys_open+0x1b/0x20
-      cstar_dispatch+0x7/0x1f
-
-Non-debug kernels will not crash immediately because referencing the
-dangling mpol will not cause a fault.  Instead the filesystem will
-reference a freed mempolicy object, which will cause unpredictable
-behavior.
-
-The problem boils down to a dropped mpol reference below if
-shmem_parse_options() does not allocate a new mpol:
-
-    config = *sbinfo
-    shmem_parse_options(data, &config, true)
-    mpol_put(sbinfo->mpol)
-    sbinfo->mpol = config.mpol  /* BUG: saves unreferenced mpol */
-
-This patch avoids the crash by not releasing the mempolicy if
-shmem_parse_options() doesn't create a new mpol.
-
-How far back does this issue go? I see it in both 2.6.36 and 3.3.  I did
-not look back further.
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: fanchaoting<fanchaoting@cn.fujitsu.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/shmem.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ fs/nfs/blocklayout/blocklayout.c |    1 +
+ fs/nfs/objlayout/objio_osd.c     |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2487,6 +2487,7 @@ static int shmem_remount_fs(struct super
- 	unsigned long inodes;
- 	int error = -EINVAL;
+--- a/fs/nfs/blocklayout/blocklayout.c
++++ b/fs/nfs/blocklayout/blocklayout.c
+@@ -1273,6 +1273,7 @@ static const struct nfs_pageio_ops bl_pg
+ static struct pnfs_layoutdriver_type blocklayout_type = {
+ 	.id				= LAYOUT_BLOCK_VOLUME,
+ 	.name				= "LAYOUT_BLOCK_VOLUME",
++	.owner				= THIS_MODULE,
+ 	.read_pagelist			= bl_read_pagelist,
+ 	.write_pagelist			= bl_write_pagelist,
+ 	.alloc_layout_hdr		= bl_alloc_layout_hdr,
+--- a/fs/nfs/objlayout/objio_osd.c
++++ b/fs/nfs/objlayout/objio_osd.c
+@@ -647,6 +647,7 @@ static struct pnfs_layoutdriver_type obj
+ 	.flags                   = PNFS_LAYOUTRET_ON_SETATTR |
+ 				   PNFS_LAYOUTRET_ON_ERROR,
  
-+	config.mpol = NULL;
- 	if (shmem_parse_options(data, &config, true))
- 		return error;
++	.owner		       	 = THIS_MODULE,
+ 	.alloc_layout_hdr        = objlayout_alloc_layout_hdr,
+ 	.free_layout_hdr         = objlayout_free_layout_hdr,
  
-@@ -2511,8 +2512,13 @@ static int shmem_remount_fs(struct super
- 	sbinfo->max_inodes  = config.max_inodes;
- 	sbinfo->free_inodes = config.max_inodes - inodes;
- 
--	mpol_put(sbinfo->mpol);
--	sbinfo->mpol        = config.mpol;	/* transfers initial ref */
-+	/*
-+	 * Preserve previous mempolicy unless mpol remount option was specified.
-+	 */
-+	if (config.mpol) {
-+		mpol_put(sbinfo->mpol);
-+		sbinfo->mpol = config.mpol;	/* transfers initial ref */
-+	}
- out:
- 	spin_unlock(&sbinfo->stat_lock);
- 	return error;
 
 
