@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759491Ab3BZOd6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 09:33:58 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56638 "EHLO arroyo.ext.ti.com"
+	id S1759416Ab3BZOd5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 09:33:57 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:36925 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758578Ab3BZOdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758511Ab3BZOdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 09:33:53 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <balbi@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
@@ -12,153 +12,95 @@ To: <balbi@ti.com>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
 CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <gregkh@linuxfoundation.org>, <kishon@ti.com>
-Subject: [PATCH 1/3] usb: dwc3-omap: Minor fixes to get dt working
-Date: Tue, 26 Feb 2013 20:03:27 +0530
-Message-ID: <1361889210-12875-1-git-send-email-kishon@ti.com>
+Subject: [PATCH 2/3] usb: dwc3-omap: remove platform data associated with dwc3-omap
+Date: Tue, 26 Feb 2013 20:03:28 +0530
+Message-ID: <1361889210-12875-2-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1361889210-12875-1-git-send-email-kishon@ti.com>
+References: <1361889210-12875-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Includes few minor fixes in dwc3-omap like populating the compatible
-string in a correct way, extracting the utmi-mode property properly and
-changing the index of get_irq since irq of core is removed from hwmod
-entry.
-Also updated the documentation with dwc3-omap device tree binding
-information.
+omap5 is not going to have support for non-dt boot making the platform
+data associated with dwc3 useless. Removed it here.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- Documentation/devicetree/bindings/usb/omap-usb.txt |   28 ++++++++++++
- drivers/usb/dwc3/dwc3-omap.c                       |   45 +++++++++-----------
- 2 files changed, 49 insertions(+), 24 deletions(-)
+ drivers/usb/dwc3/dwc3-omap.c            |   24 ++++++++++--------------
+ include/linux/platform_data/dwc3-omap.h |    4 ----
+ 2 files changed, 10 insertions(+), 18 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/usb/omap-usb.txt b/Documentation/devicetree/bindings/usb/omap-usb.txt
-index 1ef0ce7..1b9f55f 100644
---- a/Documentation/devicetree/bindings/usb/omap-usb.txt
-+++ b/Documentation/devicetree/bindings/usb/omap-usb.txt
-@@ -41,6 +41,34 @@ Board specific device node entry
- 	power = <50>;
- };
- 
-+OMAP DWC3 GLUE
-+ - compatible : Should be "ti,dwc3"
-+ - ti,hwmods : Should be "usb_otg_ss"
-+ - reg : Address and length of the register set for the device.
-+ - interrupts : The irq number of this device that is used to interrupt the
-+   MPU
-+ - #address-cells, #size-cells : Must be present if the device has sub-nodes
-+ - utmi-mode : controls the source of UTMI/PIPE status for VBUS and OTG ID.
-+   It should be set to "1" for HW mode and "2" for SW mode.
-+ - ranges: the child address space are mapped 1:1 onto the parent address space
-+
-+Sub-nodes:
-+The dwc3 core should be added as subnode to omap dwc3 glue.
-+- dwc3 :
-+   The binding details of dwc3 can be found in:
-+   Documentation/devicetree/bindings/usb/dwc3.txt
-+
-+omap_dwc3 {
-+	compatible = "ti,dwc3";
-+	ti,hwmods = "usb_otg_ss";
-+	reg = <0x4a020000 0x1ff>;
-+	interrupts = <0 93 4>;
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	utmi-mode = <2>;
-+	ranges;
-+};
-+
- OMAP CONTROL USB
- 
- Required properties:
 diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index 22f337f..bafff68 100644
+index bafff68..38d0516 100644
 --- a/drivers/usb/dwc3/dwc3-omap.c
 +++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -318,11 +318,11 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 	struct resource		*res;
- 	struct device		*dev = &pdev->dev;
+@@ -311,7 +311,6 @@ static int dwc3_omap_remove_core(struct device *dev, void *c)
  
--	int			size;
- 	int			ret = -ENOMEM;
- 	int			irq;
+ static int dwc3_omap_probe(struct platform_device *pdev)
+ {
+-	struct dwc3_omap_data	*pdata = pdev->dev.platform_data;
+ 	struct device_node	*node = pdev->dev.of_node;
  
--	const u32		*utmi_mode;
-+	int			utmi_mode;
-+
- 	u32			reg;
- 
+ 	struct dwc3_omap	*omap;
+@@ -328,6 +327,11 @@ static int dwc3_omap_probe(struct platform_device *pdev)
  	void __iomem		*base;
-@@ -336,13 +336,13 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 	void			*context;
  
- 	platform_set_drvdata(pdev, omap);
- 
--	irq = platform_get_irq(pdev, 1);
-+	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
- 		dev_err(dev, "missing IRQ resource\n");
- 		return -EINVAL;
- 	}
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(dev, "missing memory base resource\n");
- 		return -EINVAL;
-@@ -389,25 +389,22 @@ static int dwc3_omap_probe(struct platform_device *pdev)
++	if (!node) {
++		dev_err(dev, "device node not found\n");
++		return -EINVAL;
++	}
++
+ 	omap = devm_kzalloc(dev, sizeof(*omap), GFP_KERNEL);
+ 	if (!omap) {
+ 		dev_err(dev, "not enough memory\n");
+@@ -389,12 +393,7 @@ static int dwc3_omap_probe(struct platform_device *pdev)
  
  	reg = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
  
--	utmi_mode = of_get_property(node, "utmi-mode", &size);
--	if (utmi_mode && size == sizeof(*utmi_mode)) {
--		reg |= *utmi_mode;
--	} else {
--		if (!pdata) {
--			dev_dbg(dev, "missing platform data\n");
--		} else {
--			switch (pdata->utmi_mode) {
--			case DWC3_OMAP_UTMI_MODE_SW:
--				reg |= USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
--				break;
--			case DWC3_OMAP_UTMI_MODE_HW:
--				reg &= ~USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
--				break;
--			default:
--				dev_dbg(dev, "UNKNOWN utmi mode %d\n",
--						pdata->utmi_mode);
--			}
+-	if (node)
+-		of_property_read_u32(node, "utmi-mode", &utmi_mode);
+-	else if (pdata)
+-		utmi_mode = pdata->utmi_mode;
+-	else
+-		dev_dbg(dev, "missing platform data\n");
++	of_property_read_u32(node, "utmi-mode", &utmi_mode);
+ 
+ 	switch (utmi_mode) {
+ 	case DWC3_OMAP_UTMI_MODE_SW:
+@@ -437,13 +436,10 @@ static int dwc3_omap_probe(struct platform_device *pdev)
+ 
+ 	dwc3_omap_writel(omap->base, USBOTGSS_IRQENABLE_SET_1, reg);
+ 
+-	if (node) {
+-		ret = of_platform_populate(node, NULL, NULL, dev);
+-		if (ret) {
+-			dev_err(&pdev->dev,
+-				"failed to add create dwc3 core\n");
+-			return ret;
 -		}
-+	if (node)
-+		of_property_read_u32(node, "utmi-mode", &utmi_mode);
-+	else if (pdata)
-+		utmi_mode = pdata->utmi_mode;
-+	else
-+		dev_dbg(dev, "missing platform data\n");
-+
-+	switch (utmi_mode) {
-+	case DWC3_OMAP_UTMI_MODE_SW:
-+		reg |= USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
-+		break;
-+	case DWC3_OMAP_UTMI_MODE_HW:
-+		reg &= ~USBOTGSS_UTMI_OTG_STATUS_SW_MODE;
-+		break;
-+	default:
-+		dev_dbg(dev, "UNKNOWN utmi mode %d\n", utmi_mode);
++	ret = of_platform_populate(node, NULL, NULL, dev);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to create dwc3 core\n");
++		return ret;
  	}
  
- 	dwc3_omap_writel(omap->base, USBOTGSS_UTMI_OTG_STATUS, reg);
-@@ -467,7 +464,7 @@ static int dwc3_omap_remove(struct platform_device *pdev)
- 
- static const struct of_device_id of_dwc3_matach[] = {
- 	{
--		"ti,dwc3",
-+		.compatible =	"ti,dwc3"
- 	},
- 	{ },
+ 	return 0;
+diff --git a/include/linux/platform_data/dwc3-omap.h b/include/linux/platform_data/dwc3-omap.h
+index ada4012..1d36ca8 100644
+--- a/include/linux/platform_data/dwc3-omap.h
++++ b/include/linux/platform_data/dwc3-omap.h
+@@ -41,7 +41,3 @@ enum dwc3_omap_utmi_mode {
+ 	DWC3_OMAP_UTMI_MODE_HW,
+ 	DWC3_OMAP_UTMI_MODE_SW,
  };
+-
+-struct dwc3_omap_data {
+-	enum dwc3_omap_utmi_mode	utmi_mode;
+-};
 -- 
 1.7.10.4
 
