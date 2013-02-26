@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759997Ab3B0BUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:20:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41743 "EHLO
+	id S1759927Ab3BZX5G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 18:57:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41711 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759935Ab3BZX5H (ORCPT
+	with ESMTP id S1756969Ab3BZX5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:07 -0500
+	Tue, 26 Feb 2013 18:57:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Denis Efremov <yefremov.denis@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 013/150] ALSA: rme32.c irq enabling after spin_lock_irq
-Date: Tue, 26 Feb 2013 15:54:30 -0800
-Message-Id: <20130226235525.569408221@linuxfoundation.org>
+        Edward Donovan <edward.donovan@numble.net>,
+        "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 007/150] genirq: Avoid deadlock in spurious handling
+Date: Tue, 26 Feb 2013 15:54:24 -0800
+Message-Id: <20130226235524.805893386@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
 References: <20130226235523.930663721@linuxfoundation.org>
@@ -26,35 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denis Efremov <yefremov.denis@gmail.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit f49a59c4471d81a233e09dda45187cc44fda009d upstream.
+commit e716efde75267eab919cdb2bef5b2cb77f305326 upstream.
 
-According to the other code in this driver and similar
-code in rme96 it seems, that spin_lock_irq in
-snd_rme32_capture_close function should be paired
-with spin_unlock_irq.
+commit 52553ddf(genirq: fix regression in irqfixup, irqpoll)
+introduced a potential deadlock by calling the action handler with the
+irq descriptor lock held.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+Remove the call and let the handling code run even for an interrupt
+where only a single action is registered. That matches the goal of
+the above commit and avoids the deadlock.
 
-Signed-off-by: Denis Efremov <yefremov.denis@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Document the confusing action = desc->action reload in the handling
+loop while at it.
+
+Reported-and-tested-by: "Wang, Warner" <warner.wang@hp.com>
+Tested-by: Edward Donovan <edward.donovan@numble.net>
+Cc: "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/rme32.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/irq/spurious.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/sound/pci/rme32.c
-+++ b/sound/pci/rme32.c
-@@ -1017,7 +1017,7 @@ static int snd_rme32_capture_close(struc
- 	spin_lock_irq(&rme32->lock);
- 	rme32->capture_substream = NULL;
- 	rme32->capture_periodsize = 0;
--	spin_unlock(&rme32->lock);
-+	spin_unlock_irq(&rme32->lock);
- 	return 0;
- }
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -80,13 +80,11 @@ static int try_one_irq(int irq, struct i
  
+ 	/*
+ 	 * All handlers must agree on IRQF_SHARED, so we test just the
+-	 * first. Check for action->next as well.
++	 * first.
+ 	 */
+ 	action = desc->action;
+ 	if (!action || !(action->flags & IRQF_SHARED) ||
+-	    (action->flags & __IRQF_TIMER) ||
+-	    (action->handler(irq, action->dev_id) == IRQ_HANDLED) ||
+-	    !action->next)
++	    (action->flags & __IRQF_TIMER))
+ 		goto out;
+ 
+ 	/* Already running on another processor */
+@@ -104,6 +102,7 @@ static int try_one_irq(int irq, struct i
+ 	do {
+ 		if (handle_irq_event(desc) == IRQ_HANDLED)
+ 			ret = IRQ_HANDLED;
++		/* Make sure that there is still a valid action */
+ 		action = desc->action;
+ 	} while ((desc->istate & IRQS_PENDING) && action);
+ 	desc->istate &= ~IRQS_POLL_INPROGRESS;
 
 
