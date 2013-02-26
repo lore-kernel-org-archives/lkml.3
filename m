@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760468Ab3B0AcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:32:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42437 "EHLO
+	id S1760598Ab3B0Acn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:32:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42430 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933393Ab3BZX66 (ORCPT
+	with ESMTP id S933370Ab3BZX65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:58 -0500
+	Tue, 26 Feb 2013 18:58:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 30/53] drm/usb: bind driver to correct device
-Date: Tue, 26 Feb 2013 15:57:59 -0800
-Message-Id: <20130226235622.968926194@linuxfoundation.org>
+        Mark Kettenis <mark.kettenis@xs4all.nl>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 29/53] sunvdc: Fix off-by-one in generic_request().
+Date: Tue, 26 Feb 2013 15:57:58 -0800
+Message-Id: <20130226235622.876953094@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
 References: <20130226235619.844721947@linuxfoundation.org>
@@ -26,32 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
 
-commit 9f23de52b64f7fb801fd76f3dd8651a0dc89187b upstream.
+From: "David S. Miller" <davem@davemloft.net>
 
-While looking at plymouth on udl I noticed that plymouth was trying
-to use its fb plugin not its drm one, it was trying to drmOpen a driver called
-usb not udl, noticed that we actually had out driver pointing at the wrong
-device.
+[ Upstream commit f4d9605434c0fd4cc8639bf25cfc043418c52362 ]
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+The 'operations' bitmap corresponds one-for-one with the operation
+codes, no adjustment is necessary.
+
+Reported-by: Mark Kettenis <mark.kettenis@xs4all.nl>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/drm_usb.c |    2 +-
+ drivers/block/sunvdc.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/drm_usb.c
-+++ b/drivers/gpu/drm/drm_usb.c
-@@ -18,7 +18,7 @@ int drm_get_usb_dev(struct usb_interface
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -461,7 +461,7 @@ static int generic_request(struct vdc_po
+ 	int op_len, err;
+ 	void *req_buf;
  
- 	usbdev = interface_to_usbdev(interface);
- 	dev->usbdev = usbdev;
--	dev->dev = &usbdev->dev;
-+	dev->dev = &interface->dev;
+-	if (!(((u64)1 << ((u64)op - 1)) & port->operations))
++	if (!(((u64)1 << (u64)op) & port->operations))
+ 		return -EOPNOTSUPP;
  
- 	mutex_lock(&drm_global_mutex);
- 
+ 	switch (op) {
 
 
