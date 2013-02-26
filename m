@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932665Ab3BZJoX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 04:44:23 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:49255 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760187Ab3BZJoS (ORCPT
+	id S1760219Ab3BZJoV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 04:44:21 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:41644 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760186Ab3BZJoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 04:44:18 -0500
-Date: Tue, 26 Feb 2013 09:44:12 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH 05/73] ARM: ux500: Vsmps3 controlled by SysClkReq1
-Message-ID: <20130226094412.GD16685@gmail.com>
-References: <1359978868-28736-1-git-send-email-lee.jones@linaro.org>
- <1359978868-28736-6-git-send-email-lee.jones@linaro.org>
- <20130204193737.GU4720@opensource.wolfsonmicro.com>
- <CACRpkdYWZOa=bbJYpG7owxVJXxPq5sx7jHmo5UpRe8pmPGYKMQ@mail.gmail.com>
- <20130205120134.GY4720@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130205120134.GY4720@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl, trenn@suse.de
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [RFC] cpufreq: governor: Set MIN_LATENCY_MULTIPLIER to 20
+Date: Tue, 26 Feb 2013 15:13:32 +0530
+Message-Id: <472e2bac1fc4a2589651beddbfaf6da53500d12e.1361871582.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+X-OriginalArrivalTime: 26 Feb 2013 09:44:14.0139 (UTC) FILETIME=[D63320B0:01CE1405]
+X-MC-Unique: 113022609441600301
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r1Q9ikKi030159
 
-On Tue, 05 Feb 2013, Mark Brown wrote:
+Currently MIN_LATENCY_MULTIPLIER is set defined as 100 and so on a system with
+transition latency of 1 ms, the minimum sampling time comes to be around 100 ms.
+That is quite big if you want to get better performance for your system.
 
-> On Mon, Feb 04, 2013 at 10:21:36PM +0100, Linus Walleij wrote:
-> 
-> > What is needed is some way to model that
-> > electronic relationship into both the regulator
-> > and clock subsystems (Ulf Hansson is working on
-> > the ABx500 clocks as we speak.)
-> 
-> > Maybe the actual place to have it would be
-> > somewhere like drivers/mfd/ab8500-core.c.
-> 
-> > Have you seen similar stuff in other PMICs?
-> 
-> Yes, it's fairly common to at least have hardware enable signals.  If
-> what was going on was actually understood by the driver in some way it
-> might be better but right now...  Especially in a series like this it's
-> really bad to just see loads of patches which boil down to "change the
-> semi-documented magic value" - this just makes the series depressing to
-> read.
+Redefine MIN_LATENCY_MULTIPLIER to 20 so that we can support 20ms sampling rate
+for such platforms.
 
-Okay, I've just re-read this thread and it appears you're both talking
-about different things.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
 
-Linus is talking about a discussion with Bengt regarding how these
-strange sysclkreq thingies work. When I first read the code they
-appear to be equivalent to GPIO regulators, but in actual fact the
-hardware logic is different on enable/disable. So they probably don't
-belong in regulator code at all.
+Hi Guys,
 
-Where as, Mark is complaining about how the regulators are initialised
-by lots of magic register writes during init. Although, comments are
-inserted for each of the values, they're by no means exhaustive and
-aren't really even helpful if you don't have the uber-s3cr3t design
-specification. What he would like to see is that most of this stuff
-being handled by the framework. Some of this stuff is clearly only
-setting voltages and power-states and the like.
+I really don't know how this figure (100) came initially, but we really need to
+have 20ms support for my platform: ARM TC2.
 
-I'd certainly be up for taking this on, but I think an in-depth
-knowledge of the AB8500 regulator subsystem would be required.
+Pushed here:
 
+http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/cpufreq-fixes
+
+ drivers/cpufreq/cpufreq_governor.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index d2ac911..adb8e30 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -34,7 +34,7 @@
+  */
+ #define MIN_SAMPLING_RATE_RATIO			(2)
+ #define LATENCY_MULTIPLIER			(1000)
+-#define MIN_LATENCY_MULTIPLIER			(100)
++#define MIN_LATENCY_MULTIPLIER			(20)
+ #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
+ 
+ /* Ondemand Sampling types */
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.12.rc2.18.g61b472e
+
+
