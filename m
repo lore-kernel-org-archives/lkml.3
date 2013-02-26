@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758842Ab3BZDss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Feb 2013 22:48:48 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:50816 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab3BZDsr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Feb 2013 22:48:47 -0500
-Date: Tue, 26 Feb 2013 03:48:42 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Greg KH <gregkh@linuxfoundation.org>,
-        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
+	id S1759280Ab3BZDtp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Feb 2013 22:49:45 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:49945 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754265Ab3BZDto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Feb 2013 22:49:44 -0500
+Date: Mon, 25 Feb 2013 22:49:35 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, David Howells <dhowells@redhat.com>,
+        Florian Weimer <fw@deneb.enyo.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
         Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
         keyrings@linux-nfs.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Message-ID: <20130226034842.GD30285@srcf.ucam.org>
-References: <18738.1361836265@warthog.procyon.org.uk>
+Message-ID: <20130226034935.GB12906@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	David Howells <dhowells@redhat.com>,
+	Florian Weimer <fw@deneb.enyo.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Josh Boyer <jwboyer@redhat.com>, Peter Jones <pjones@redhat.com>,
+	Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+	keyrings@linux-nfs.org,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <30665.1361461678@warthog.procyon.org.uk>
+ <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
+ <20130221164244.GA19625@srcf.ucam.org>
+ <18738.1361836265@warthog.procyon.org.uk>
  <20130226005955.GA19686@kroah.com>
  <20130226023332.GA29282@srcf.ucam.org>
  <20130226030249.GB23834@kroah.com>
  <20130226031338.GA29784@srcf.ucam.org>
  <20130226032508.GA12906@thunk.org>
  <20130226032839.GA30164@srcf.ucam.org>
- <CA+55aFyVShz4T65VJ-1=V=OGwNNriyYf-aaomhDSMHOU7ZZqbA@mail.gmail.com>
- <20130226034250.GB30285@srcf.ucam.org>
- <CA+55aFzn4KGKtn6cXN-jh9jgF+U1zJUnCmk6tRxmW8BZP7_Jnw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzn4KGKtn6cXN-jh9jgF+U1zJUnCmk6tRxmW8BZP7_Jnw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130226032839.GA30164@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 07:45:24PM -0800, Linus Torvalds wrote:
-> On Mon, Feb 25, 2013 at 7:42 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> >
-> > The user Microsoft care about isn't running Linux
-> 
-> How f*cking hard is it for you to understand?
-> 
-> Stop arguing about what MS wants. We do not care. We care bout the
-> *user*. You are continually missing the whole point of security, and
-> then you make some idiotic arguments about what MS wants you to do.
-> 
-> It's irrelevant. The only thing that matters is what our *users* want
-> us to do, and protecting *their* rights. As long as you seem to treat
-> this as some kind of "let's please MS, not our users" issue, all your
-> arguments are going to be crap.
+On Tue, Feb 26, 2013 at 03:28:39AM +0000, Matthew Garrett wrote:
+> You're happy advising Linux vendors that they don't need to worry about 
+> module signing because it's "not obvious" that Microsoft would actually 
+> enforce the security model they've spent significant money developing 
+> and advertising?
 
-Our users want to be able to boot Linux. If Microsoft blacklist a 
-distribution's bootloader, that user isn't going to be able to boot 
-Linux any more. How does that benefit our users? The user that wants to 
-explicitly disable the security is free to do so ("mokutil 
---disable-validation" as root, follow the prompts, reboot), but if 
-we only care about *our* users then Microsoft will gleefully blacklist 
-us into complete irrelevance.
+My advice was to Linus and those who are willing to listen to me, not
+to Red Hat.  Red Hat has not generally been receptive to my advice in
+the past; not that they have any obligation to listen to me, of
+course.  After all, I'm not on Red Hat's payroll.  :-)
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Speaking more generally, though, (a) revoking the Linux's key is not
+zero-cost to Microsoft, (b) it's also not an instant death sentence to
+Linux distributions.  Users can always either disable secure boot
+mode, or they can install another signing key.  Yes, that is not the
+best user experience, but it's something which is doable.
+
+The other thing to consider is that it's not clear in the long run how
+much of a lock Microsoft and Windows 8 will have hardware
+manufacturers.  There's already been people discussing how to install
+Linux on the Chromebook Pixel.  Other traditional PC manufacturers,
+including HP and Lenovo, have started creating non-Windows-8 x86
+systems using ChromeOS, which can easily have a stock Linux distro
+installed on it, and they come at a variety of different price points.
+(Heck, the recent ChromeOS boxes, such as Pixel, come with an open
+source BIOS which you can reflash.)
+
+Finally note that secure boot is not an issue on server platforms,
+which is where most of the traditional Linux vendors have made their
+money.  And those who are making money with pre-installed Linux
+systems (i.e., like Ubuntu, or Google with ChromeOS) for consumers are
+generally doing so in cooperation with hardware OEM partners, where
+there's no reason to kowtow to Microsoft's policies.  So there really
+isn't a good reason for Linux vendors to cower in fear of Microsoft.
+
+Much of Microsoft power comes from people letting them have power over
+them.  You don't have to do it.  Sometimes it's better to let them
+carry through on their threat, and while it will be inconvenient, it
+is highly likely they will also take damage from their taking action.
+Consider what happened the last time the Republicans carried through
+on their threat to shut down the US Federal Government.  Sometimes
+it's better to let the blackmailers carry through on their threat, and
+then steps from there.  Cowering in fear and paying Danegled rarely
+gets rid of the Dane.
+
+Regards,
+
+						- Ted
+
