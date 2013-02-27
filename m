@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760559Ab3B0AVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:21:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42807 "EHLO
+	id S1760544Ab3B0AVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:21:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42803 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760184Ab3B0AJE (ORCPT
+	with ESMTP id S1756448Ab3B0AJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:04 -0500
+	Tue, 26 Feb 2013 19:09:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pawel Moll <mail@pawelmoll.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 38/86] ALSA: usb: Fix Processing Unit Descriptor parsers
-Date: Tue, 26 Feb 2013 16:07:46 -0800
-Message-Id: <20130226235916.846701450@linuxfoundation.org>
+        Clemens Ladisch <clemens@ladisch.de>
+Subject: [ 37/86] ALSA: usb-audio: fix Roland A-PRO support
+Date: Tue, 26 Feb 2013 16:07:45 -0800
+Message-Id: <20130226235916.742479614@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -26,73 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pawel Moll <mail@pawelmoll.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit b531f81b0d70ffbe8d70500512483227cc532608 upstream.
+commit 7da58046482fceb17c4a0d4afefd9507ec56de7f upstream.
 
-Commit 99fc86450c439039d2ef88d06b222fd51a779176 "ALSA: usb-mixer:
-parse descriptors with structs" introduced a set of useful parsers
-for descriptors. Unfortunately the parses for the Processing Unit
-Descriptor came with a very subtle bug...
+The quirk for the Roland/Cakewalk A-PRO keyboards accidentally used the
+wrong interface number, which prevented the driver from attaching to the
+device.
 
-Functions uac_processing_unit_iProcessing() and
-uac_processing_unit_specific() were indexing the baSourceID array
-forgetting the fields before the iProcessing and process-specific
-descriptors.
-
-The problem was observed with Sound Blaster Extigy mixer,
-where nNrModes in Up/Down-mix Processing Unit Descriptor
-was accessed at offset 10 of the descriptor (value 0)
-instead of offset 15 (value 7). In result the resulting
-control had interesting limit values:
-
-Simple mixer control 'Channel Routing Mode Select',0
-  Capabilities: volume volume-joined penum
-  Playback channels: Mono
-  Capture channels: Mono
-  Limits: 0 - -1
-  Mono: -1 [100%]
-
-Fixed by starting from the bmControls, which was calculated
-correctly, instead of baSourceID.
-
-Now the mentioned control is fine:
-
-Simple mixer control 'Channel Routing Mode Select',0
-  Capabilities: volume volume-joined penum
-  Playback channels: Mono
-  Capture channels: Mono
-  Limits: 0 - 6
-  Mono: 0 [0%]
-
-Signed-off-by: Pawel Moll <mail@pawelmoll.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/usb/audio.h |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sound/usb/quirks-table.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/usb/audio.h
-+++ b/include/linux/usb/audio.h
-@@ -384,14 +384,16 @@ static inline __u8 uac_processing_unit_i
- 						   int protocol)
- {
- 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
--	return desc->baSourceID[desc->bNrInPins + control_size];
-+	return *(uac_processing_unit_bmControls(desc, protocol)
-+			+ control_size);
- }
- 
- static inline __u8 *uac_processing_unit_specific(struct uac_processing_unit_descriptor *desc,
- 						 int protocol)
- {
- 	__u8 control_size = uac_processing_unit_bControlSize(desc, protocol);
--	return &desc->baSourceID[desc->bNrInPins + control_size + 1];
-+	return uac_processing_unit_bmControls(desc, protocol)
-+			+ control_size + 1;
- }
- 
- /* 4.5.2 Class-Specific AS Interface Descriptor */
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -1658,7 +1658,7 @@ YAMAHA_DEVICE(0x7010, "UB99"),
+ 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
+ 		/* .vendor_name = "Roland", */
+ 		/* .product_name = "A-PRO", */
+-		.ifnum = 1,
++		.ifnum = 0,
+ 		.type = QUIRK_MIDI_FIXED_ENDPOINT,
+ 		.data = & (const struct snd_usb_midi_endpoint_info) {
+ 			.out_cables = 0x0003,
 
 
