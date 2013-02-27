@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933888Ab3B0Abd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:31:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42628 "EHLO
+	id S933795Ab3B0Abc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:31:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42631 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab3B0AIi (ORCPT
+	with ESMTP id S932374Ab3B0AIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 19:08:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
         "H. Peter Anvin" <hpa@linux.intel.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [ 02/86] x86-32, mm: Remove reference to resume_map_numa_kva()
-Date: Tue, 26 Feb 2013 16:07:10 -0800
-Message-Id: <20130226235913.146295075@linuxfoundation.org>
+Subject: [ 03/86] x86-32, mm: Remove reference to alloc_remap()
+Date: Tue, 26 Feb 2013 16:07:11 -0800
+Message-Id: <20130226235913.252660037@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -29,45 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit bb112aec5ee41427e9b9726e3d57b896709598ed upstream.
+commit 07f4207a305c834f528d08428df4531744e25678 upstream.
 
-Remove reference to removed function resume_map_numa_kva().
+We have removed the remap allocator for x86-32, and x86-64 never had
+it (and doesn't need it).  Remove residual reference to it.
 
+Reported-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20130131005616.1C79F411@kernel.stglabs.ibm.com
+Link: http://lkml.kernel.org/r/CAE9FiQVn6_QZi3fNQ-JHYiR-7jeDJ5hT0SyT_%2BzVvfOj=PzF3w@mail.gmail.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/mmzone_32.h |    6 ------
- arch/x86/power/hibernate_32.c    |    2 --
- 2 files changed, 8 deletions(-)
+ arch/x86/mm/numa.c |   29 +++++++++++------------------
+ 1 file changed, 11 insertions(+), 18 deletions(-)
 
---- a/arch/x86/include/asm/mmzone_32.h
-+++ b/arch/x86/include/asm/mmzone_32.h
-@@ -14,12 +14,6 @@ extern struct pglist_data *node_data[];
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -193,7 +193,6 @@ int __init numa_add_memblk(int nid, u64
+ static void __init setup_node_data(int nid, u64 start, u64 end)
+ {
+ 	const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
+-	bool remapped = false;
+ 	u64 nd_pa;
+ 	void *nd;
+ 	int tnid;
+@@ -211,28 +210,22 @@ static void __init setup_node_data(int n
+ 	       nid, start, end);
  
- #include <asm/numaq.h>
- 
--extern void resume_map_numa_kva(pgd_t *pgd);
--
--#else /* !CONFIG_NUMA */
--
--static inline void resume_map_numa_kva(pgd_t *pgd) {}
--
- #endif /* CONFIG_NUMA */
- 
- #ifdef CONFIG_DISCONTIGMEM
---- a/arch/x86/power/hibernate_32.c
-+++ b/arch/x86/power/hibernate_32.c
-@@ -129,8 +129,6 @@ static int resume_physical_mapping_init(
- 		}
+ 	/*
+-	 * Allocate node data.  Try remap allocator first, node-local
+-	 * memory and then any node.  Never allocate in DMA zone.
++	 * Allocate node data.  Try node-local memory and then any node.
++	 * Never allocate in DMA zone.
+ 	 */
+-	nd = alloc_remap(nid, nd_size);
+-	if (nd) {
+-		nd_pa = __pa(nd);
+-		remapped = true;
+-	} else {
+-		nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
+-		if (!nd_pa) {
+-			pr_err("Cannot find %zu bytes in node %d\n",
+-			       nd_size, nid);
+-			return;
+-		}
+-		nd = __va(nd_pa);
++	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
++	if (!nd_pa) {
++		pr_err("Cannot find %zu bytes in node %d\n",
++		       nd_size, nid);
++		return;
  	}
++	nd = __va(nd_pa);
  
--	resume_map_numa_kva(pgd_base);
--
- 	return 0;
- }
+ 	/* report and initialize */
+-	printk(KERN_INFO "  NODE_DATA [%016Lx - %016Lx]%s\n",
+-	       nd_pa, nd_pa + nd_size - 1, remapped ? " (remapped)" : "");
++	printk(KERN_INFO "  NODE_DATA [mem %#010Lx-%#010Lx]\n",
++	       nd_pa, nd_pa + nd_size - 1);
+ 	tnid = early_pfn_to_nid(nd_pa >> PAGE_SHIFT);
+-	if (!remapped && tnid != nid)
++	if (tnid != nid)
+ 		printk(KERN_INFO "    NODE_DATA(%d) on node %d\n", nid, tnid);
  
+ 	node_data[nid] = nd;
 
 
