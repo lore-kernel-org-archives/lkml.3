@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760544Ab3B0AVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:21:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42803 "EHLO
+	id S1760539Ab3B0AV5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:21:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42799 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756448Ab3B0AJD (ORCPT
+	with ESMTP id S933885Ab3B0AJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:03 -0500
+	Tue, 26 Feb 2013 19:09:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>
-Subject: [ 37/86] ALSA: usb-audio: fix Roland A-PRO support
-Date: Tue, 26 Feb 2013 16:07:45 -0800
-Message-Id: <20130226235916.742479614@linuxfoundation.org>
+        Tomasz Guszkowski <tsg@o2.pl>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 36/86] p54usb: corrected USB ID for T-Com Sinus 154 data II
+Date: Tue, 26 Feb 2013 16:07:44 -0800
+Message-Id: <20130226235916.641782581@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -26,31 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Tomasz Guszkowski <tsg@o2.pl>
 
-commit 7da58046482fceb17c4a0d4afefd9507ec56de7f upstream.
+commit 008e33f733ca51acb2dd9d88ea878693b04d1d2a upstream.
 
-The quirk for the Roland/Cakewalk A-PRO keyboards accidentally used the
-wrong interface number, which prevented the driver from attaching to the
-device.
+Corrected USB ID for T-Com Sinus 154 data II. ISL3887-based. The
+device was tested in managed mode with no security, WEP 128
+bit and WPA-PSK (TKIP) with firmware 2.13.1.0.lm87.arm (md5sum:
+7d676323ac60d6e1a3b6d61e8c528248). It works.
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Tomasz Guszkowski <tsg@o2.pl>
+Acked-By: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/quirks-table.h |    2 +-
+ drivers/net/wireless/p54/p54usb.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -1658,7 +1658,7 @@ YAMAHA_DEVICE(0x7010, "UB99"),
- 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
- 		/* .vendor_name = "Roland", */
- 		/* .product_name = "A-PRO", */
--		.ifnum = 1,
-+		.ifnum = 0,
- 		.type = QUIRK_MIDI_FIXED_ENDPOINT,
- 		.data = & (const struct snd_usb_midi_endpoint_info) {
- 			.out_cables = 0x0003,
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -84,8 +84,8 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
+ 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
+ 	{USB_DEVICE(0x0803, 0x4310)},	/* Zoom 4410a */
+-	{USB_DEVICE(0x083a, 0x4503)},	/* T-Com Sinus 154 data II */
+ 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
++	{USB_DEVICE(0x083a, 0x4531)},	/* T-Com Sinus 154 data II */
+ 	{USB_DEVICE(0x083a, 0xc501)},	/* Zoom Wireless-G 4410 */
+ 	{USB_DEVICE(0x083a, 0xf503)},	/* Accton FD7050E ver 1010ec  */
+ 	{USB_DEVICE(0x0846, 0x4240)},	/* Netgear WG111 (v2) */
 
 
