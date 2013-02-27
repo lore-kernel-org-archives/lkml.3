@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760650Ab3B0SF4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 13:05:56 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:46046 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760238Ab3B0SFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 13:05:55 -0500
-Date: Wed, 27 Feb 2013 10:05:47 -0800
-From: Kees Cook <kees@outflux.net>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, eparis@redhat.com,
-        Christian Kujau <lists@nerdbynature.de>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
-Message-ID: <20130227180547.GR26411@outflux.net>
-References: <20130222181856.GA2419@hansolo.jdub.homelinux.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130222181856.GA2419@hansolo.jdub.homelinux.org>
-Organization: Outflux
-X-HELO: www.outflux.net
+	id S1760618Ab3B0SHp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 13:07:45 -0500
+Received: from mail.not-your-server.de ([78.46.182.243]:53681 "EHLO
+	mail.not-your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758009Ab3B0SHm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 13:07:42 -0500
+From: jlec@gentoo.org
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Justin Lecher <jlec@gentoo.org>
+Subject: [PATCH 1/2] Use config scripts to detect ncurses libs for menuconfig
+Date: Wed, 27 Feb 2013 19:07:37 +0100
+Message-Id: <1361988458-18486-1-git-send-email-jlec@gentoo.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <jlec@gentoo.org>
+References: <jlec@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Justin Lecher <jlec@gentoo.org>
 
-On Fri, Feb 22, 2013 at 01:18:57PM -0500, Josh Boyer wrote:
-> Originally, the addition of dmesg_restrict covered both the syslog
-> method of accessing dmesg, as well as /dev/kmsg itself.  This was done
-> indirectly by security_syslog calling cap_syslog before doing any LSM
-> checks.
+When building ncurses with --with-termlib several symbols get moved from
+libncurses.so to libtinfo.so. Thus when linking with libncurses.so, one
+additionally needs to link with libtinfo.so.
 
-Actually, are the security_syslog() checks in /dev/kmsg correct? There is
-only one used in devkmsg_open which uses SYSLOG_ACTION_READ_ALL. Shouldn't
-it be using SYSLOG_ACTION_OPEN? And have SYSLOG_ACTION_READ_ALL added to
-devkmsg_read? (And should we add one for write?)
+Ncurses provides a config script (ncurses5-config) to assist finding ncurses.
+This patch makes use of it to detect the necessary libs for linking of the
+ncurses menuconfig dialog.
 
--Kees
+Signed-off-by: Justin Lecher <jlec@gentoo.org>
+---
+ scripts/kconfig/lxdialog/check-lxdialog.sh | 24 ++++++++++++++++--------
+ 1 file changed, 16 insertions(+), 8 deletions(-)
 
+diff --git a/scripts/kconfig/lxdialog/check-lxdialog.sh b/scripts/kconfig/lxdialog/check-lxdialog.sh
+index c8e8a71..e429207 100644
+--- a/scripts/kconfig/lxdialog/check-lxdialog.sh
++++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
+@@ -4,15 +4,23 @@
+ # What library to link
+ ldflags()
+ {
+-	for ext in so a dll.a dylib ; do
+-		for lib in ncursesw ncurses curses ; do
+-			$cc -print-file-name=lib${lib}.${ext} | grep -q /
+-			if [ $? -eq 0 ]; then
+-				echo "-l${lib}"
+-				exit
+-			fi
++	if ncursesw5-config --libs >/dev/null 2>&1; then
++		ncursesw5-config --libs
++		exit
++	elif ncurses5-config --libs >/dev/null 2>&1; then
++		ncurses5-config --libs
++		exit
++	else
++		for ext in so a dll.a dylib ; do
++			for lib in ncursesw ncurses curses ; do
++				$cc -print-file-name=lib${lib}.${ext} | grep -q /
++				if [ $? -eq 0 ]; then
++					echo "-l${lib}"
++					exit
++				fi
++			done
+ 		done
+-	done
++	fi
+ 	exit 1
+ }
+ 
 -- 
-Kees Cook
-Chrome OS Security
+1.8.1.4
+
