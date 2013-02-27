@@ -1,188 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760161Ab3B0Ous (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 09:50:48 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:39553 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759935Ab3B0Our (ORCPT
+	id S1760174Ab3B0O4u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 09:56:50 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:48566 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758791Ab3B0O4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 09:50:47 -0500
+	Wed, 27 Feb 2013 09:56:50 -0500
+Date: Wed, 27 Feb 2013 14:56:47 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: ownssh <ownssh@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Message-ID: <20130227145647.GA5184@srcf.ucam.org>
+References: <87ppzo79in.fsf@mid.deneb.enyo.de>
+ <30665.1361461678@warthog.procyon.org.uk>
+ <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
+ <20130221164244.GA19625@srcf.ucam.org>
+ <18738.1361836265@warthog.procyon.org.uk>
+ <loom.20130227T103444-514@post.gmane.org>
 MIME-Version: 1.0
-In-Reply-To: <1361023812.11130.15.camel@cliu38-desktop-build>
-References: <1360163901.24670.13.camel@cliu38-desktop-build>
-	<1361023075.11130.12.camel@cliu38-desktop-build>
-	<1361023812.11130.15.camel@cliu38-desktop-build>
-Date: Wed, 27 Feb 2013 22:50:46 +0800
-Message-ID: <CACvQF51cfqYk3idypNrQ54TOYJSPYvzR+1TTRBOQ5_vH8etwWw@mail.gmail.com>
-Subject: Re: [PATCH V2] smp: Give WARN()ing when calling smp_call_function_many()/single()
- in serving irq
-From: Lai Jiangshan <eag0628@gmail.com>
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: mingo@kernel.org, peterz@infradead.org, jbeulich@suse.com,
-        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        mina86@mina86.org, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, jun.zhang@intel.com,
-        fengguang.wu@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <loom.20130227T103444-514@post.gmane.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 16, 2013 at 10:10 PM, Chuansheng Liu
-<chuansheng.liu@intel.com> wrote:
-> Currently the functions smp_call_function_many()/single() will
-> give a WARN()ing only in the case of irqs_disabled(), but that
-> check is not enough to guarantee execution of the SMP
-> cross-calls.
->
-> In many other cases such as softirq handling/interrupt handling,
-> the two APIs still can not be called, just as the
-> smp_call_function_many() comments say:
->
->   * You must not call this function with disabled interrupts or from a
->   * hardware interrupt handler or from a bottom half handler. Preemption
->   * must be disabled when calling this function.
->
-> There is a real case for softirq DEADLOCK case:
->
-> CPUA                            CPUB
->                                 spin_lock(&spinlock)
->                                 Any irq coming, call the irq handler
->                                 irq_exit()
-> spin_lock_irq(&spinlock)
-> <== Blocking here due to
-> CPUB hold it
->                                   __do_softirq()
->                                     run_timer_softirq()
->                                       timer_cb()
->                                         call smp_call_function_many()
->                                           send IPI interrupt to CPUA
->                                             wait_csd()
->
-> Then both CPUA and CPUB will be deadlocked here.
->
-> So we should give a warning in the nmi, hardirq or softirq context as well.
->
-> Moreover, adding one new macro in_serving_irq() which indicates
-> we are processing nmi, hardirq or sofirq.
+On Wed, Feb 27, 2013 at 09:35:24AM +0000, ownssh wrote:
 
-The code smells bad. in_serving_softirq() don't take spin_lock_bh() in account.
+> I think, redhat should have their own root key to sign binary files.
+> Bootloader of install media can be sign by MS certificates, but only use to add
+> the redhat root key to UEFI database before install.
 
-CPUA                    CPUB                             CPUC
-                        spin_lock(&lockA)
-                          Any irq coming, call
-                          the irq handler
-                          irq_exit()
-spin_lock_irq(&lockA)
-*Blocking* here
-due to CPUB hold it                                      spin_lock_bh(&lockB)
-                            __do_softirq()
-                              run_timer_softirq()
-                                spin_lock_bh(&lockB)
-                                *Blocking* heredue to
-                                CPUC hold it
-                                                         call
-smp_call_function_many()
-                                                         send IPI
-interrupt to CPUA
-                                                           wait_csd()
-                                                           *Blocking* here.
+There's no way to update the UEFI key database without the update being 
+signed by an already trusted key, so what you're proposing isn't 
+possible.
 
-So it is still deadlock. but your code does not warn it.
-so in_softirq() is better than in_serving_softirq() in in_serving_irq(),
-and results in_serving_irq() is the same as in_interrupt().
-
-so please remove in_serving_irq() and use in_interrupt() instead.
-And add:
-
-Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-
-In the long-term, the best solution is using percpu lockdep for
-local_irq_disable()
-and smp_call_function_many():
-
-CPUA                    CPUB
-                        spin_lock(&lockA)
-spin_lock_irq(&lockA)
-*Blocking* here
-due to CPUB hold it
-                        call smp_call_function_many()
-                          send IPI interrupt to CPUA
-                            wait_csd()
-                            *Blocking* here.
-
-I will do it in the next week after the next week.
-
-Thanks,
-Lai
-
-
->
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> ---
->  include/linux/hardirq.h |    5 +++++
->  kernel/smp.c            |   11 +++++++----
->  2 files changed, 12 insertions(+), 4 deletions(-)
->
-> diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-> index 624ef3f..e07663f 100644
-> --- a/include/linux/hardirq.h
-> +++ b/include/linux/hardirq.h
-> @@ -94,6 +94,11 @@
->   */
->  #define in_nmi()       (preempt_count() & NMI_MASK)
->
-> +/*
-> + * Are we in nmi,irq context, or softirq context?
-> + */
-> +#define in_serving_irq() (in_nmi() || in_irq() || in_serving_softirq())
-> +
->  #if defined(CONFIG_PREEMPT_COUNT)
->  # define PREEMPT_CHECK_OFFSET 1
->  #else
-> diff --git a/kernel/smp.c b/kernel/smp.c
-> index 69f38bd..b0a5d21 100644
-> --- a/kernel/smp.c
-> +++ b/kernel/smp.c
-> @@ -12,6 +12,7 @@
->  #include <linux/gfp.h>
->  #include <linux/smp.h>
->  #include <linux/cpu.h>
-> +#include <linux/hardirq.h>
->
->  #include "smpboot.h"
->
-> @@ -323,8 +324,9 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
->          * send smp call function interrupt to this cpu and as such deadlocks
->          * can't happen.
->          */
-> -       WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
-> -                    && !oops_in_progress);
-> +       WARN_ON_ONCE(cpu_online(this_cpu)
-> +               && (irqs_disabled() || in_serving_irq())
-> +               && !oops_in_progress);
->
->         if (cpu == this_cpu) {
->                 local_irq_save(flags);
-> @@ -462,8 +464,9 @@ void smp_call_function_many(const struct cpumask *mask,
->          * send smp call function interrupt to this cpu and as such deadlocks
->          * can't happen.
->          */
-> -       WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
-> -                    && !oops_in_progress && !early_boot_irqs_disabled);
-> +       WARN_ON_ONCE(cpu_online(this_cpu)
-> +               && (irqs_disabled() || in_serving_irq())
-> +               && !oops_in_progress && !early_boot_irqs_disabled);
->
->         /* Try to fastpath.  So, what's a CPU they want? Ignoring this one. */
->         cpu = cpumask_first_and(mask, cpu_online_mask);
-> --
-> 1.7.0.4
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
