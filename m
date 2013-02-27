@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760406Ab3B0RHU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 12:07:20 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:42152 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759453Ab3B0RHS convert rfc822-to-8bit (ORCPT
+	id S1760271Ab3B0RJz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:09:55 -0500
+Received: from mail-da0-f45.google.com ([209.85.210.45]:64639 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927Ab3B0RJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 12:07:18 -0500
-References: <20130227154311.GA12450@redhat.com> <20130227155539.GA2638@pd.tnic> <20130227160446.GA4792@redhat.com> <20130227164417.GF5609@thunk.org> <20130227165621.GA8834@redhat.com>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <20130227165621.GA8834@redhat.com>
-Content-Type: text/plain;
-	charset=GB2312
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3F9FDA73-A142-43FB-BFF2-35C200355736@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Borislav Petkov <bp@alien8.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-X-Mailer: iPad Mail (10B146)
-From: "gnehzuil.liu" <gnehzuil.liu@gmail.com>
-Subject: Re: EXT4 corruption on Linus latest tree.
-Date: Thu, 28 Feb 2013 01:07:10 +0800
-To: Dave Jones <davej@redhat.com>
+	Wed, 27 Feb 2013 12:09:54 -0500
+Date: Wed, 27 Feb 2013 09:09:50 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: Dave Airlie <airlied@gmail.com>, David Airlie <airlied@linux.ie>,
+        Martin Peres <martin.peres@labri.fr>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: resume fails to light display on Macbook Pro Retina on 3.8-rc1
+Message-ID: <20130227170950.GA26860@kroah.com>
+References: <CAPM=9txjG5rohsNbme=myrX+-Z5eucpEXYQMWqPQqN=5dNze8g@mail.gmail.com>
+ <CAPM=9tw_vfESbbH4dD9z8mAYVYcwmVs=n4BrRz4XBj1Rw1qrkw@mail.gmail.com>
+ <20130225223243.GA18744@kroah.com>
+ <20130226034545.GA1089@kroah.com>
+ <20130226173514.GA24136@kroah.com>
+ <20130227040251.GA1081@kroah.com>
+ <1361957135.3358.0.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361957135.3358.0.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ÔÚ 2013-2-28£¬ÉÏÎç12:56£¬Dave Jones <davej@redhat.com> Ð´µÀ£º
+On Wed, Feb 27, 2013 at 07:25:35PM +1000, Ben Skeggs wrote:
+> On Tue, 2013-02-26 at 20:02 -0800, Greg KH wrote:
+> > On Tue, Feb 26, 2013 at 09:35:14AM -0800, Greg KH wrote:
+> > > On Mon, Feb 25, 2013 at 07:45:45PM -0800, Greg KH wrote:
+> > > > On Mon, Feb 25, 2013 at 02:32:43PM -0800, Greg KH wrote:
+> > > > > On Mon, Feb 25, 2013 at 04:06:02PM +1000, Dave Airlie wrote:
+> > > > > > On Mon, Feb 25, 2013 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > > > > > > Hi Ben,
+> > > > > > >
+> > > > > > > My Macbook Pro Retina fails to resume properly on 3.8.  I tracked this
+> > > > > > > down to commit 6c5a04249d7afeea3e0ed971e7813f84e29a1706 (drm/nvd0/disp:
+> > > > > > > move link training helpers into core as display methods)
+> > > > > > >
+> > > > > > > Anything I can try to help solve this?
+> > > > > > >
+> > > > > > > Note, I'm using the Intel driver as the main controller for this laptop,
+> > > > > > > well, I think I am, my xorg log is attached.
+> > > > > > 
+> > > > > > No you are using the nvidia, the efi always boots nvidia enabled now.
+> > > > > 
+> > > > > Really?  When did that change?  I thought I wanted to be using the Intel
+> > > > > chip to save battery life.
+> > > > > 
+> > > > > > btw I just tested my drm-next tree on mine and it resumed the display
+> > > > > > fine, something oopsed a few seconds later that I haven't tracked down
+> > > > > > 
+> > > > > > git://git.freedesktop.org/~airlied/linux drm-next
+> > > > > > 
+> > > > > > I'll be sending it to Linus this evening or tomorrow morning, once I
+> > > > > > fix my tree.
+> > > > > 
+> > > > > Ok, I'll test again when it hits Linus's tree, and if that works, it
+> > > > > would be good to try to work out what patch fixes it to get them into
+> > > > > the 3.8-stable series so that others don't run into the same problem.
+> > > > 
+> > > > I've tested Linus's tree now (I'm guessing it has all of your changes in
+> > > > it), and it works!
+> > > > 
+> > > > I see a bunch of patches marked for the stable branch, so I'll try those
+> > > > out and see if they fix the problem.  If not, I'll let you and Ben know.
+> > > 
+> > > I've applied the radeon patches tagged for -stable and tested that on
+> > > 3.8.0, but that doesn't solve the resume problem.  Any ideas of anything
+> > > else I can do to test this?  Doing a "backwards" git-bisect is a pain,
+> > > but I guess I can do that to try to track down what patch fixed this, if
+> > > that's the only idea people have...
+> > 
+> > Ok, after getting my brain warped by doing a reverse 'git bisect', I
+> > tracked it down to commit ac8cc241a81941932da44993242e68c62e115ec7
+> > (drm/nv50/devinit: reverse the logic for running encoder init scripts)
+> > as the patch that solves the problem.
+> > 
+> > So, I tried applying that patch on 3.8.1-rc1, but ran into the efifb bug
+> > that Dave fixed already, which took me a while, so I've queued that up
+> > for 3.8.1.  Then I determined that it really also needs commit
+> > f3ed1048715f2edc10c4dda6148b60e93f6282ed (drm/nouveau/bios: parse
+> > external transmitter type if off-chip) and commit
+> > 8e992c8d9eebc2bd3246252ee5c0422dbbbce7ae (drm/nouveau/bios: store a
+> > type/mask hash in parsed dcb data) in order to build properly.
+> > 
+> > With those three patches, plus the efifb fix, I can now properly boot,
+> > and suspend and resume my macbook on 3.8.1-rc1.  Just like I can on
+> > Linus's tree.
+> > 
+> > So, Ben, Dave, any objection to me including these 3 nouveau patches in
+> > the 3.8.1-final release?
+> Thanks for taking the time to track down exactly what's needed here.  I
+> believe those three should be safe to apply.
 
-> On Wed, Feb 27, 2013 at 11:44:17AM -0500, Theodore Ts'o wrote:
->> On Wed, Feb 27, 2013 at 11:04:46AM -0500, Dave Jones wrote:
->>>>> EXT4-fs error (device sdb1): htree_dirblock_to_tree:919: inode #172235804: block 152052301: comm ls: bad entry in directory: rec_len is smaller than minimal - offset=0(0), inode=0, rec_len=0, name_len=0
->>> 
->>> Yeah, looks similar.  The missing files/dirs reappeared when I
->>> booted an older kernel, so it looks like the corruption doesn't
->>> hit the disk.  Fsck (1.42.5) didn't find anything either.
->> 
->> I suspect I see the problem...   can you send me the results of 
->> 
->>  debugfs -R "stat <172235804>" /dev/sdb1
->> 
->> to confirm?
-> 
-> debugfs 1.42.5 (29-Jul-2012)
-> Inode: 172235804   Type: directory    Mode:  0775   Flags: 0x80000
-> Generation: 1174354732    Version: 0x00000000:00000055
-> User:  1000   Group:  1000   Size: 4096
-> File ACL: 0    Directory ACL: 0
-> Links: 24   Blockcount: 8
-> Fragment:  Address: 0    Number: 0    Size: 0
-> ctime: 0x512d0fdc:71fe3000 -- Tue Feb 26 14:41:16 2013
-> atime: 0x512d106e:5a143300 -- Tue Feb 26 14:43:42 2013
-> mtime: 0x512d0fdc:71fe3000 -- Tue Feb 26 14:41:16 2013
-> crtime: 0x50e76c35:1d69aad8 -- Fri Jan  4 18:56:37 2013
-> Size of extra inode fields: 28
-> Extended attributes stored in inode body: 
->  selinux = "unconfined_u:object_r:file_t:s0\000" (32)
-> EXTENTS:
-> (0):688923213
-> 
-> 
-> That took about 2 minutes to run btw, expected ?
+Ok, thanks for verifying, I've now applied all 3 of them.
 
-Hi Dave and Ted,
-
-Thanks for the report.  From the result, I think extent status tree is root cause because of wrong logical-to-physical block mapping.  I am very sorry about that.  I will try to fix the bug ASAP.
-
-Ted, I am not sure whether we need to revert the patch or give me sometimes to fix it.
-
-Thanks!!
-                                                - Zheng
+greg k-h
