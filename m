@@ -1,31 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759768Ab3B0Me6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 07:34:58 -0500
-Received: from rc1.amaonline.com ([69.6.190.201]:53419 "EHLO rc.amaonline.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753583Ab3B0Me5 convert rfc822-to-8bit (ORCPT
+	id S932363Ab3B0Mfc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 07:35:32 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:59514 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759870Ab3B0Mf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 07:34:57 -0500
-X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Feb 2013 07:34:57 EST
-X-RC-FROM: <lindahiti224@gmail.com>
-Message-ID: <380-220132327123038828@gmail.com>
-X-Priority: 1
-Reply-To: lindahiti@yahoo.com
-From: "=?iso-8859-6?Q?Bar=2E_Linda_Hitti?=" <lindahiti224@gmail.com>
-Subject: =?iso-8859-6?Q?Dear_Friend?=
-Date: Wed, 27 Feb 2013 06:30:38 -0600
+	Wed, 27 Feb 2013 07:35:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-MAG-OUTBOUND: amatechtel.redcondor.net@69.6.128/18
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20130211231500.GD21501@hansolo.jdub.homelinux.org>
+References: <20130211231500.GD21501@hansolo.jdub.homelinux.org>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 27 Feb 2013 13:35:07 +0100
+Message-ID: <CAPXgP11TQ01QZXAnNHA81rdt3WdYQfixKxit28+iGHysiAUenw@mail.gmail.com>
+Subject: Re: [PATCH] pstore: Create a convenient mount point for pstore
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        kay@redhat.com, lpoetter@redhat.com, mjg59@srcf.ucam.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 12, 2013 at 12:15 AM, Josh Boyer <jwboyer@redhat.com> wrote:
+> Using /dev/pstore as a mount point for the pstore filesystem is slightly
+> awkward.  We don't normally mount filesystems in /dev/ and the /dev/pstore
+> file isn't created automatically by anything.  While this method will
+> still work, we can create a persistent mount point in sysfs.  This will
+> put pstore on par with things like cgroups and efivarfs.
 
-I will credit $800,000 USD. As Compensation in your name for your 
-humility on the transaction.
+Mounted by default now, if available:
+  http://cgit.freedesktop.org/systemd/systemd/commit/?id=c06bf414042cd1bf94e0af63e9e2a0c291bfc546
 
-
+Thanks everybody,
+Kay
