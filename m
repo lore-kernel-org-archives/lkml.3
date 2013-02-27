@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760040Ab3B0Ngo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 08:36:44 -0500
-Received: from dkim2.fusionio.com ([66.114.96.54]:55957 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759859Ab3B0Ngn (ORCPT
+	id S1760061Ab3B0Nqd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 08:46:33 -0500
+Received: from mx0.parallels.com ([199.115.104.20]:45194 "EHLO
+	mx0.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760009Ab3B0Nqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 08:36:43 -0500
-X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Feb 2013 08:36:43 EST
-X-ASG-Debug-ID: 1361971658-03d6a5664a38810001-xx1T2L
-X-Barracuda-Envelope-From: JBacik@fusionio.com
-Date: Wed, 27 Feb 2013 08:27:36 -0500
-From: Josef Bacik <jbacik@fusionio.com>
-To: Dave Jones <davej@redhat.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: btrfs crash when low on memory.
-Message-ID: <20130227132736.GH19641@localhost.localdomain>
-X-ASG-Orig-Subj: Re: btrfs crash when low on memory.
-References: <20130227052247.GA20213@redhat.com>
+	Wed, 27 Feb 2013 08:46:31 -0500
+Message-ID: <512E0E53.9010908@parallels.com>
+Date: Wed, 27 Feb 2013 17:46:59 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130227052247.GA20213@redhat.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1361971658
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.123755
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+To: Pekka Enberg <penberg@kernel.org>
+CC: Christoph Lameter <cl@linux.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH v2] slub: correctly bootstrap boot caches
+References: <1361550000-14173-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.02.1302221034380.7600@gentwo.org> <alpine.DEB.2.02.1302221057430.7600@gentwo.org> <0000013d02d9ee83-9b41b446-ee42-4498-863e-33b3175c007c-000000@email.amazonses.com> <5127A607.3040603@parallels.com> <0000013d02ee5bf7-a2d47cfc-64fb-4faa-b92e-e567aeb6b587-000000@email.amazonses.com> <CAOJsxLFzrw0pCzUG7Ru4dB9=aPoNKHiJ_y3bopiFvBhzV9A5Zg@mail.gmail.com>
+In-Reply-To: <CAOJsxLFzrw0pCzUG7Ru4dB9=aPoNKHiJ_y3bopiFvBhzV9A5Zg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 10:22:47PM -0700, Dave Jones wrote:
-> Something I've yet to repeat managed to leak a whole bunch of memory
-> while I was travelling, and locked up my workstation.
+On 02/27/2013 11:47 AM, Pekka Enberg wrote:
+> On Fri, Feb 22, 2013 at 7:23 PM, Christoph Lameter <cl@linux.com> wrote:
+>> On Fri, 22 Feb 2013, Glauber Costa wrote:
+>>
+>>> On 02/22/2013 09:01 PM, Christoph Lameter wrote:
+>>>> Argh. This one was the final version:
+>>>>
+>>>> https://patchwork.kernel.org/patch/2009521/
+>>>>
+>>>
+>>> It seems it would work. It is all the same to me.
+>>> Which one do you prefer?
+>>
+>> Flushing seems to be simpler and less code.
 > 
-> When I got home, this was the last thing printed out before it locked up
-> (it did make it into the logs thankfully) after a bunch of instances of
-> the oom-killers handywork.
+> Well, I completely lost track of what to apply... Can someone please
+> send me the final version that everybody agrees on with proper ACKs
+> and other attributions?
+> 
+You can apply this one as-is with Christoph's ACK.
 
-Yeah we have a lot of
-
-ptr = kmalloc();
-BUG_ON(ptr);
-
-everywhere.  I'll fix this one up but I really need to sit down and go through
-all of them and make sure we do the right thing in all these places.  Thanks,
-
-Josef
