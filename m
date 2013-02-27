@@ -1,85 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab3B0HJb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 02:09:31 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:65098 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab3B0HJ3 (ORCPT
+	id S1752567Ab3B0HLJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 02:11:09 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42114 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750919Ab3B0HLH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 02:09:29 -0500
-X-AuditID: cbfec7f5-b7fd76d000007247-60-512db127e5f7
-Message-id: <512DB11F.7080909@samsung.com>
-Date: Wed, 27 Feb 2013 08:09:19 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215
- Thunderbird/17.0.3
-MIME-version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH 1/5] metag: Provide dma_get_sgtable()
-References: <1361876642-10247-1-git-send-email-james.hogan@imgtec.com>
- <1361876642-10247-2-git-send-email-james.hogan@imgtec.com>
-In-reply-to: <1361876642-10247-2-git-send-email-james.hogan@imgtec.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e/4FV31jbqBBqd2K1tc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6M6/d2sxa84664eHsHewPjV84uRg4OCQETib0zw7oYOYFMMYkL
-	99azdTFycQgJLGWU6F70lwXCWcIk0fH3KiNIFa+AlsSC6T/ZQGwWAVWJbbOWgtlsAoYSXW+7
-	wGxRgVCJR6+3Q9ULSvyYfI8FxBYR0JBYc6mXCcRmFvCWOP38GTOILSxgKTFn71Kozc2MEg+e
-	LQBLcAq4S7St+sUK0WAm8ahlHTOELS+xec1b5gmMArOQ7JiFpGwWkrIFjMyrGEVTS5MLipPS
-	c430ihNzi0vz0vWS83M3MUJC8OsOxqXHrA4xCnAwKvHwrripEyjEmlhWXJl7iFGCg1lJhPfj
-	AaAQb0piZVVqUX58UWlOavEhRiYOTqkGxoMFlsLPm5bNEGvgizqf/KpisZ4nw9VtLTJ2rqbX
-	ns3bXXbh/FZjo06/kBxGo1iRLWUTHiT8mOfPZnp9/UumsxUGraqxKokCNhnWOxPez1G+Jh3t
-	c+erhO30vOcbJmw5dYTta3ago0HRzqvOD2VXvXvmsqvb+6pU2kaGu48j31dwd+xbWD1VW4ml
-	OCPRUIu5qDgRANkJ+CAfAgAA
+	Wed, 27 Feb 2013 02:11:07 -0500
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>
+CC: "tony@atomide.com" <tony@atomide.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "perex@perex.cz" <perex@perex.cz>, "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v4 0/3] ASoC davinci/tlv320aic3x updates, fixes & DT
+ support
+Thread-Topic: [PATCH v4 0/3] ASoC davinci/tlv320aic3x updates, fixes & DT
+ support
+Thread-Index: AQHN/7HCcLL9EVbRokqiCPMmcIHa9JiNcVSQ
+Date: Wed, 27 Feb 2013 07:10:40 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EB76CE8@DBDE01.ent.ti.com>
+References: <1359636786-7056-1-git-send-email-gururaja.hebbar@ti.com>
+In-Reply-To: <1359636786-7056-1-git-send-email-gururaja.hebbar@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Mark,
 
-On 2/26/2013 12:03 PM, James Hogan wrote:
-> metag/allmodconfig:
->
-> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function 'vb2_dc_get_base_sgt':
-> drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function 'dma_get_sgtable'
->
-> For architectures using dma_map_ops, dma_get_sgtable() is provided in
-> <asm-generic/dma-mapping-common.h>.
->
-> Metag does not use dma_map_ops yet, hence it should implement it as an
-> inline stub using dma_common_get_sgtable().
->
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+On Thu, Jan 31, 2013 at 18:23:03, Hebbar, Gururaja wrote:
+> 1. Convert tlv320aic3x mic bias to a supply widget and related machine driver
+> 2. Add DT support for Davinci machine platform
+> 3. Remove __dev* attributes
+> 
+> This patch-set is tested on Davinci platform (DA850 EVM). This series applies on
+> top of tag next-20130128 git tree
+> https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> 
+> These patches cannot be tested directly on mainline kernel (DT based).
+> This is because dma is not yet completely ported to Davinci ASoC. I had to add
+> few hacks to get Audio working on Davinci DA850 platform.
+> 
+> For reference, I have placed the entire working tree @
+> Tree :  https://github.com/ghebbar/linux.git
+> Branch : dev_next-20130128_davinci_asoc_dt_v3
 
-Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Only one patch out of the 3 is accepted.  I haven't received any review comments
+from anyone for the other 2.
 
-> ---
->   arch/metag/include/asm/dma-mapping.h | 7 +++++++
->   1 file changed, 7 insertions(+)
->
-> diff --git a/arch/metag/include/asm/dma-mapping.h b/arch/metag/include/asm/dma-mapping.h
-> index b5f80a6..14b23ef 100644
-> --- a/arch/metag/include/asm/dma-mapping.h
-> +++ b/arch/metag/include/asm/dma-mapping.h
-> @@ -180,4 +180,11 @@ dma_cache_sync(struct device *dev, void *vaddr, size_t size,
->   {
->   }
->   
-> +/* drivers/base/dma-mapping.c */
-> +extern int dma_common_get_sgtable(struct device *dev, struct sg_table *sgt,
-> +				  void *cpu_addr, dma_addr_t dma_addr,
-> +				  size_t size);
-> +
-> +#define dma_get_sgtable(d, t, v, h, s) dma_common_get_sgtable(d, t, v, h, s)
-> +
->   #endif
+Kindly let me know if any further changes are required in the remaining changes 
+or if I have missed any of comments.
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
+If not, Could you please accept the remaining patch?
+
+Remaining patches
+ASoC: davinci: remove __dev* attributes [1]
+ASoC: davinci: machine: Add device tree binding [2]
 
 
+[1]
+http://lkml.org/lkml/2013/1/31/243
+
+
+[2]
+http://lkml.org/lkml/2013/1/31/244
+
+
+Regards, 
+Gururaja
+
+> 
+> Changes in v4
+> 	 - updated pending machine driver to change in micbias -> supply widget
+> 	 - merge codec & machine driver change into a single commit
+> 
+> Changes in v3
+> 	- drop mcasp pinctrl handler patch from series as it is now handled
+> 	  centrally.
+> 	- Convert tlv320aic3x mic bias to a supply widget and related machine
+> 	  driver
+> 	- remove __dev* attributes
+> 
+> Changes in v2
+> 	 - Remove reference to Linux & software details from DT binding
+> 
+> Hebbar Gururaja (2):
+>   ASoC: tlv320aic3x: Convert mic bias to a supply widget
+>   ASoC: davinci: remove __dev* attributes
+> 
+> Hebbar, Gururaja (1):
+>   ASoC: davinci: machine: Add device tree binding
+> 
+>  .../bindings/sound/davinci-evm-audio.txt           |   53 ++++++
+>  .../devicetree/bindings/sound/tlv320aic3x.txt      |    6 +
+>  include/sound/tlv320aic3x.h                        |   10 ++
+>  sound/soc/codecs/tlv320aic3x.c                     |   83 ++++++++-
+>  sound/soc/codecs/tlv320aic3x.h                     |    4 +
+>  sound/soc/davinci/davinci-evm.c                    |  185 +++++++++++++++++---
+>  sound/soc/omap/n810.c                              |    4 +-
+>  sound/soc/omap/rx51.c                              |    8 +-
+>  8 files changed, 318 insertions(+), 35 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/sound/davinci-evm-audio.txt
+> 
+> -- 
+> 1.7.9.5
+> 
+> 
