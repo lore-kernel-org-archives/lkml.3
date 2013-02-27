@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab3B0B1w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:27:52 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:57655 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759076Ab3B0B1s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 20:27:48 -0500
+	id S1758887Ab3B0B1p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:27:45 -0500
+Received: from ozlabs.org ([203.10.76.45]:37748 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756920Ab3B0B1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 20:27:41 -0500
+Date: Wed, 27 Feb 2013 12:27:37 +1100
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        robert.richter@amd.com, Anton Blanchard <anton@au1.ibm.com>,
+        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        linuxppc-dev@ozlabs.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 5/6][v4]: perf: Create a sysfs entry for Power event
+ format
+Message-ID: <20130227012736.GD5819@concordia>
+References: <20130123062201.GA13720@us.ibm.com>
+ <20130123062613.GF13720@us.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20130223074001.GA5199@www.outflux.net>
-References: <20130223074001.GA5199@www.outflux.net>
-Date: Tue, 26 Feb 2013 17:27:45 -0800
-X-Google-Sender-Auth: RIAL8vJSyAOGgcPeIhTzKBuH8MM
-Message-ID: <CAA9_cmfa1hhijh4g_hSwMy_GR81rxjEFMurJwSvhBruh1R5dtw@mail.gmail.com>
-Subject: Re: [PATCH] md/raid456: remove depends on CONFIG_EXPERIMENTAL
-From: Dan Williams <djbw@fb.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>,
-        linux-raid@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130123062613.GF13720@us.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 22, 2013 at 11:40 PM, Kees Cook <keescook@chromium.org> wrote:
-> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
-> while now and is almost always enabled by default. As agreed during the
-> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: Arjan van de Ven <arjan@linux.intel.com>
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Cc: Alasdair G Kergon <agk@redhat.com>
-> ---
->  drivers/md/Kconfig |    1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
-> index 7cdf359..0cc3a3d 100644
-> --- a/drivers/md/Kconfig
-> +++ b/drivers/md/Kconfig
-> @@ -158,7 +158,6 @@ config MULTICORE_RAID456
->         bool "RAID-4/RAID-5/RAID-6 Multicore processing (EXPERIMENTAL)"
->         depends on MD_RAID456
->         depends on SMP
-> -       depends on EXPERIMENTAL
+On Tue, Jan 22, 2013 at 10:26:13PM -0800, Sukadev Bhattiprolu wrote:
+> 
+> [PATCH 5/6][v4]: perf: Create a sysfs entry for Power event format
+> 
+> Create a sysfs entry, '/sys/bus/event_source/devices/cpu/format/event'
+> which describes the format of a POWER cpu.
 
-In this case MULTICORE_RAID456 and the related code should go as
-well... now that there are patches to supersede this implementation in
-md-next.
+> diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+> index fa476d5..4ae044b 100644
+> --- a/arch/powerpc/perf/core-book3s.c
+> +++ b/arch/powerpc/perf/core-book3s.c
+> @@ -1315,6 +1315,18 @@ ssize_t power_events_sysfs_show(struct device *dev,
+>  	return sprintf(page, "event=0x%02llx\n", pmu_attr->id);
+>  }
+>  
+> +PMU_FORMAT_ATTR(event, "config:0-20");
 
---
-Dan
+Just noticed, it's 20 bits, which is 0-19.
+
+cheers
