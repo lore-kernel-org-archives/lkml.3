@@ -1,30 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab3B0KhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 05:37:23 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:55231 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab3B0KhW (ORCPT
+	id S1755344Ab3B0Kii (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 05:38:38 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:60367 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183Ab3B0Kig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 05:37:22 -0500
+	Wed, 27 Feb 2013 05:38:36 -0500
+X-Spam-Score: -100.8
+Message-ID: <512DE213.3050001@asianux.com>
+Date: Wed, 27 Feb 2013 18:38:11 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-From: Peng Tao <lkml.bergwolf@gmail.com>
-Date: Wed, 27 Feb 2013 18:37:00 +0800
-X-Google-Sender-Auth: Q35a_UJyUwX72de99qhsjUVxUhs
-Message-ID: <CA+a=Yy5FkgAK5Cr_qQ7jTSZbWCDA073VJ9b3nVqA9M6J=Sy=iw@mail.gmail.com>
-Subject: Why create_kthread passes SIGCHLD to kernel_thread?
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Jan Beulich <JBeulich@suse.com>
+CC: roger.pau@citrix.com, stefano.stabellini@eu.citrix.com,
+        xen-devel <xen-devel@lists.xen.org>, konrad.wilk@oracle.com,
+        dgdegra@tycho.nsa.gov,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/block/xen-blkback: preq.dev is used without initialized
+References: <512D90F2.9070200@asianux.com> <512DE6B302000078000C1631@nat28.tlf.novell.com>
+In-Reply-To: <512DE6B302000078000C1631@nat28.tlf.novell.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+于 2013年02月27日 17:57, Jan Beulich 写道:
+> You also could have mentioned that even before commit 
+> 01c681d4c70d64cb72142a2823f27c4146a02e63 the value printed
+> here was bogus, as it was the guest provided value from
+> req->u.rw.handle rather than the actual device.
 
-Looking at do_fork(), it seems that SIGCHLD is used to tell what kind
-of trace event to report but kernel_thread() certainly doesn't want
-any of it. So what does this SIGCHLD mean for create_kthread?
+  pardon ?
+
+  I guess what you said is :
+    my patch seems ok, but the comments need improving.
+    need add "additional info" in comments:
+      "before commit 01c681d4c70d64cb72142a2823f27c4146a02e63
+       the value printed here was bogus, as it was the guest
+       provided value from req->u.rw.handle rather than the
+       actual device".
+
+  is it correct ?
+
+  thanks.
 
 -- 
-Thanks,
-Tao
+Chen Gang
+
+Asianux Corporation
