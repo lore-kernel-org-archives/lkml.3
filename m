@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760501Ab3B0AUv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:20:51 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42822 "EHLO
+	id S1760356Ab3B0AJE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:09:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42780 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755377Ab3B0AJG (ORCPT
+	with ESMTP id S933602Ab3B0AI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:06 -0500
+	Tue, 26 Feb 2013 19:08:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 44/86] drm/udl: make usage as a console safer
-Date: Tue, 26 Feb 2013 16:07:52 -0800
-Message-Id: <20130226235917.471054408@linuxfoundation.org>
+        Mel Gorman <mgorman@suse.de>, Rob van der Heij <rvdheij@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 32/86] mm/fadvise.c: drain all pagevecs if POSIX_FADV_DONTNEED fails to discard all pages
+Date: Tue, 26 Feb 2013 16:07:40 -0800
+Message-Id: <20130226235916.205075762@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -26,124 +28,198 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit bcb39af4486be07e896fc374a2336bad3104ae0a upstream.
+commit 67d46b296a1ba1477c0df8ff3bc5e0167a0b0732 upstream.
 
-Okay you don't really want to use udl devices as your console, but if
-you are unlucky enough to do so, you run into a lot of schedule while atomic
-due to printk being called from all sorts of funky places. So check if we
-are in an atomic context, and queue the damage for later, the next printk
-should cause it to appear. This isn't ideal, but it is simple, and seems to
-work okay in my testing here.
+Rob van der Heij reported the following (paraphrased) on private mail.
 
-(dirty area idea came from xenfb)
+	The scenario is that I want to avoid backups to fill up the page
+	cache and purge stuff that is more likely to be used again (this is
+	with s390x Linux on z/VM, so I don't give it as much memory that
+	we don't care anymore). So I have something with LD_PRELOAD that
+	intercepts the close() call (from tar, in this case) and issues
+	a posix_fadvise() just before closing the file.
 
-fixes a bunch of sleeping while atomic issues running fbcon on udl devices.
+	This mostly works, except for small files (less than 14 pages)
+	that remains in page cache after the face.
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Unfortunately Rob has not had a chance to test this exact patch but the
+test program below should be reproducing the problem he described.
+
+The issue is the per-cpu pagevecs for LRU additions.  If the pages are
+added by one CPU but fadvise() is called on another then the pages
+remain resident as the invalidate_mapping_pages() only drains the local
+pagevecs via its call to pagevec_release().  The user-visible effect is
+that a program that uses fadvise() properly is not obeyed.
+
+A possible fix for this is to put the necessary smarts into
+invalidate_mapping_pages() to globally drain the LRU pagevecs if a
+pagevec page could not be discarded.  The downside with this is that an
+inode cache shrink would send a global IPI and memory pressure
+potentially causing global IPI storms is very undesirable.
+
+Instead, this patch adds a check during fadvise(POSIX_FADV_DONTNEED) to
+check if invalidate_mapping_pages() discarded all the requested pages.
+If a subset of pages are discarded it drains the LRU pagevecs and tries
+again.  If the second attempt fails, it assumes it is due to the pages
+being mapped, locked or dirty and does not care.  With this patch, an
+application using fadvise() correctly will be obeyed but there is a
+downside that a malicious application can force the kernel to send
+global IPIs and increase overhead.
+
+If accepted, I would like this to be considered as a -stable candidate.
+It's not an urgent issue but it's a system call that is not working as
+advertised which is weak.
+
+The following test program demonstrates the problem.  It should never
+report that pages are still resident but will without this patch.  It
+assumes that CPU 0 and 1 exist.
+
+int main() {
+	int fd;
+	int pagesize = getpagesize();
+	ssize_t written = 0, expected;
+	char *buf;
+	unsigned char *vec;
+	int resident, i;
+	cpu_set_t set;
+
+	/* Prepare a buffer for writing */
+	expected = FILESIZE_PAGES * pagesize;
+	buf = malloc(expected + 1);
+	if (buf == NULL) {
+		printf("ENOMEM\n");
+		exit(EXIT_FAILURE);
+	}
+	buf[expected] = 0;
+	memset(buf, 'a', expected);
+
+	/* Prepare the mincore vec */
+	vec = malloc(FILESIZE_PAGES);
+	if (vec == NULL) {
+		printf("ENOMEM\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Bind ourselves to CPU 0 */
+	CPU_ZERO(&set);
+	CPU_SET(0, &set);
+	if (sched_setaffinity(getpid(), sizeof(set), &set) == -1) {
+		perror("sched_setaffinity");
+		exit(EXIT_FAILURE);
+	}
+
+	/* open file, unlink and write buffer */
+	fd = open("fadvise-test-file", O_CREAT|O_EXCL|O_RDWR);
+	if (fd == -1) {
+		perror("open");
+		exit(EXIT_FAILURE);
+	}
+	unlink("fadvise-test-file");
+	while (written < expected) {
+		ssize_t this_write;
+		this_write = write(fd, buf + written, expected - written);
+
+		if (this_write == -1) {
+			perror("write");
+			exit(EXIT_FAILURE);
+		}
+
+		written += this_write;
+	}
+	free(buf);
+
+	/*
+	 * Force ourselves to another CPU. If fadvise only flushes the local
+	 * CPUs pagevecs then the fadvise will fail to discard all file pages
+	 */
+	CPU_ZERO(&set);
+	CPU_SET(1, &set);
+	if (sched_setaffinity(getpid(), sizeof(set), &set) == -1) {
+		perror("sched_setaffinity");
+		exit(EXIT_FAILURE);
+	}
+
+	/* sync and fadvise to discard the page cache */
+	fsync(fd);
+	if (posix_fadvise(fd, 0, expected, POSIX_FADV_DONTNEED) == -1) {
+		perror("posix_fadvise");
+		exit(EXIT_FAILURE);
+	}
+
+	/* map the file and use mincore to see which parts of it are resident */
+	buf = mmap(NULL, expected, PROT_READ, MAP_SHARED, fd, 0);
+	if (buf == NULL) {
+		perror("mmap");
+		exit(EXIT_FAILURE);
+	}
+	if (mincore(buf, expected, vec) == -1) {
+		perror("mincore");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Check residency */
+	for (i = 0, resident = 0; i < FILESIZE_PAGES; i++) {
+		if (vec[i])
+			resident++;
+	}
+	if (resident != 0) {
+		printf("Nr unexpected pages resident: %d\n", resident);
+		exit(EXIT_FAILURE);
+	}
+
+	munmap(buf, expected);
+	close(fd);
+	free(vec);
+	exit(EXIT_SUCCESS);
+}
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reported-by: Rob van der Heij <rvdheij@gmail.com>
+Tested-by: Rob van der Heij <rvdheij@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/udl/udl_drv.h |    2 +
- drivers/gpu/drm/udl/udl_fb.c  |   44 ++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 42 insertions(+), 4 deletions(-)
+ mm/fadvise.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/udl/udl_drv.h
-+++ b/drivers/gpu/drm/udl/udl_drv.h
-@@ -74,6 +74,8 @@ struct udl_framebuffer {
- 	struct drm_framebuffer base;
- 	struct udl_gem_object *obj;
- 	bool active_16; /* active on the 16-bit channel */
-+	int x1, y1, x2, y2; /* dirty rect */
-+	spinlock_t dirty_lock;
- };
+--- a/mm/fadvise.c
++++ b/mm/fadvise.c
+@@ -17,6 +17,7 @@
+ #include <linux/fadvise.h>
+ #include <linux/writeback.h>
+ #include <linux/syscalls.h>
++#include <linux/swap.h>
  
- #define to_udl_fb(x) container_of(x, struct udl_framebuffer, base)
---- a/drivers/gpu/drm/udl/udl_fb.c
-+++ b/drivers/gpu/drm/udl/udl_fb.c
-@@ -153,6 +153,9 @@ int udl_handle_damage(struct udl_framebu
- 	struct urb *urb;
- 	int aligned_x;
- 	int bpp = (fb->base.bits_per_pixel / 8);
-+	int x2, y2;
-+	bool store_for_later = false;
-+	unsigned long flags;
+ #include <asm/unistd.h>
  
- 	if (!fb->active_16)
- 		return 0;
-@@ -160,8 +163,6 @@ int udl_handle_damage(struct udl_framebu
- 	if (!fb->obj->vmapping)
- 		udl_gem_vmap(fb->obj);
+@@ -124,9 +125,22 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, lof
+ 		start_index = (offset+(PAGE_CACHE_SIZE-1)) >> PAGE_CACHE_SHIFT;
+ 		end_index = (endbyte >> PAGE_CACHE_SHIFT);
  
--	start_cycles = get_cycles();
--
- 	aligned_x = DL_ALIGN_DOWN(x, sizeof(unsigned long));
- 	width = DL_ALIGN_UP(width + (x-aligned_x), sizeof(unsigned long));
- 	x = aligned_x;
-@@ -171,19 +172,53 @@ int udl_handle_damage(struct udl_framebu
- 	    (y + height > fb->base.height))
- 		return -EINVAL;
- 
-+	/* if we are in atomic just store the info
-+	   can't test inside spin lock */
-+	if (in_atomic())
-+		store_for_later = true;
+-		if (end_index >= start_index)
+-			invalidate_mapping_pages(mapping, start_index,
++		if (end_index >= start_index) {
++			unsigned long count = invalidate_mapping_pages(mapping,
++						start_index, end_index);
 +
-+	x2 = x + width - 1;
-+	y2 = y + height - 1;
-+
-+	spin_lock_irqsave(&fb->dirty_lock, flags);
-+
-+	if (fb->y1 < y)
-+		y = fb->y1;
-+	if (fb->y2 > y2)
-+		y2 = fb->y2;
-+	if (fb->x1 < x)
-+		x = fb->x1;
-+	if (fb->x2 > x2)
-+		x2 = fb->x2;
-+
-+	if (store_for_later) {
-+		fb->x1 = x;
-+		fb->x2 = x2;
-+		fb->y1 = y;
-+		fb->y2 = y2;
-+		spin_unlock_irqrestore(&fb->dirty_lock, flags);
-+		return 0;
-+	}
-+
-+	fb->x1 = fb->y1 = INT_MAX;
-+	fb->x2 = fb->y2 = 0;
-+
-+	spin_unlock_irqrestore(&fb->dirty_lock, flags);
-+	start_cycles = get_cycles();
-+
- 	urb = udl_get_urb(dev);
- 	if (!urb)
- 		return 0;
- 	cmd = urb->transfer_buffer;
- 
--	for (i = y; i < y + height ; i++) {
-+	for (i = y; i <= y2 ; i++) {
- 		const int line_offset = fb->base.pitches[0] * i;
- 		const int byte_offset = line_offset + (x * bpp);
- 		const int dev_byte_offset = (fb->base.width * bpp * i) + (x * bpp);
- 		if (udl_render_hline(dev, bpp, &urb,
- 				     (char *) fb->obj->vmapping,
- 				     &cmd, byte_offset, dev_byte_offset,
--				     width * bpp,
-+				     (x2 - x + 1) * bpp,
- 				     &bytes_identical, &bytes_sent))
- 			goto error;
- 	}
-@@ -408,6 +443,7 @@ udl_framebuffer_init(struct drm_device *
- {
- 	int ret;
- 
-+	spin_lock_init(&ufb->dirty_lock);
- 	ufb->obj = obj;
- 	ret = drm_framebuffer_init(dev, &ufb->base, &udlfb_funcs);
- 	drm_helper_mode_fill_fb_struct(&ufb->base, mode_cmd);
++			/*
++			 * If fewer pages were invalidated than expected then
++			 * it is possible that some of the pages were on
++			 * a per-cpu pagevec for a remote CPU. Drain all
++			 * pagevecs and try again.
++			 */
++			if (count < (end_index - start_index + 1)) {
++				lru_add_drain_all();
++				invalidate_mapping_pages(mapping, start_index,
+ 						end_index);
++			}
++		}
+ 		break;
+ 	default:
+ 		ret = -EINVAL;
 
 
