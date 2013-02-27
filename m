@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980Ab3B0WSy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 17:18:54 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:46779 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab3B0WSx (ORCPT
+	id S1754760Ab3B0WTO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 17:19:14 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:61963 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991Ab3B0WTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 17:18:53 -0500
+	Wed, 27 Feb 2013 17:19:11 -0500
+Date: Wed, 27 Feb 2013 14:19:09 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: John Stultz <john.stultz@linaro.org>
+cc: lkml <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Arve_Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 2/5] staging: android: lowmemorykiller: Don't count
+ reserved free memory
+In-Reply-To: <1361945258-24420-3-git-send-email-john.stultz@linaro.org>
+Message-ID: <alpine.DEB.2.02.1302271418580.7155@chino.kir.corp.google.com>
+References: <1361945258-24420-1-git-send-email-john.stultz@linaro.org> <1361945258-24420-3-git-send-email-john.stultz@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [212.159.75.221]
-In-Reply-To: <51236191.5070805@imgtec.com>
-References: <51236191.5070805@imgtec.com>
-Date: Wed, 27 Feb 2013 22:18:51 +0000
-X-Google-Sender-Auth: qcChSLc6fhWwasA7WVprr39yaBg
-Message-ID: <CAAG0J98xqgDnpEe9d_qxrgCL-Gtomf9=EcLoxCN4hgmRjL_RxQ@mail.gmail.com>
-Subject: Re: [GIT PULL] arch/metag for v3.9-rc1
-From: James Hogan <james.hogan@imgtec.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-1026898013-1362003550=:7155"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On 19 February 2013 11:27, James Hogan <james.hogan@imgtec.com> wrote:
-> Here is the arch/metag/ tree for v3.9-rc1. Arnd said he's happy to ack
-> it (the additional changes since then have been mostly further cleanups
-> and fixes for when merged with other trees).
->
-> Please pull.
+--531381512-1026898013-1362003550=:7155
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-I'd just like to check if there was a particular reason this hasn't
-been merged yet?
+On Tue, 26 Feb 2013, John Stultz wrote:
 
-Note: now that the modules tree has been merged the actual diffstat is
-much more contained within arch/metag.
+> From: Arve Hjønnevåg <arve@android.com>
+> 
+> The amount of reserved memory varies between devices. Subtract it
+> here to reduce the amount of devices specific tuning needed for the
+> minfree values.
+> 
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: Arve Hjønnevåg <arve@android.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Arve Hjønnevåg <arve@android.com>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-Cheers
-James
+Acked-by: David Rientjes <rientjes@google.com>
+--531381512-1026898013-1362003550=:7155--
