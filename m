@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933743Ab3B0Aam (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:30:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42641 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933299Ab3B0AIk (ORCPT
+	id S933862Ab3B0Aay (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:30:54 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:47298 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933299Ab3B0Aav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:08:40 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ 05/86] timeconst.pl: Eliminate Perl warning
-Date: Tue, 26 Feb 2013 16:07:13 -0800
-Message-Id: <20130226235913.452205851@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
-References: <20130226235912.881663118@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 26 Feb 2013 19:30:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFzckUoJGEywgentKT-vQieiuLu-mQtELiA6UotWqBWH7A@mail.gmail.com>
+References: <20130226045424.GA3576@osiris>
+	<CA+55aFx8pUSHPhC_-ob2i5BbvBkEC4BVYtAbNkf3+FE+=3AmgA@mail.gmail.com>
+	<20130226125739.GA3924@osiris>
+	<CA+55aFycXwZi-U2uJWWusLGeaV3=BMEBdgcxGN9Lo0QcHHUrDA@mail.gmail.com>
+	<CA+55aFzCU3jKDssYj9sDJU-VkugCfy_Cv5+VhMv9renZ94jRdQ@mail.gmail.com>
+	<CA+55aFzckUoJGEywgentKT-vQieiuLu-mQtELiA6UotWqBWH7A@mail.gmail.com>
+Date: Tue, 26 Feb 2013 16:30:50 -0800
+X-Google-Sender-Auth: r8sAM7eHc3X1F0h6OvEgBv0A0Dc
+Message-ID: <CA+55aFz3JW6HnTC-4xqOBsgQNboLbjvZnQ0h7KfaZjQVinAt2g@mail.gmail.com>
+Subject: Re: bug in generic strncpy_from_user
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Content-Type: multipart/mixed; boundary=bcaec54d4cfcdb5c9604d6a9e249
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+--bcaec54d4cfcdb5c9604d6a9e249
+Content-Type: text/plain; charset=UTF-8
 
-------------------
+On Tue, Feb 26, 2013 at 3:43 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> So I'll need to extend on that logic a bit more.
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+Ok, here's the fleshed-out patch. Also fixed to use "expand_stack()",
+which is what the page fault handling actually uses. And it has the
+GROWSUP case as well as a comment about this all.
 
-commit 63a3f603413ffe82ad775f2d62a5afff87fd94a0 upstream.
+So it all looks good. But it's still totally and entirely untested.
 
-defined(@array) is deprecated in Perl and gives off a warning.
-Restructure the code to remove that warning.
+Because that's how I roll. Gangsta life!
 
-[ hpa: it would be interesting to revert to the timeconst.bc script.
-  It appears that the failures reported by akpm during testing of
-  that script was due to a known broken version of make, not a problem
-  with bc.  The Makefile rules could probably be restructured to avoid
-  the make bug, or it is probably old enough that it doesn't matter. ]
+              Linus
 
-Reported-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+--bcaec54d4cfcdb5c9604d6a9e249
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hdnqyzfv0
 
----
- kernel/timeconst.pl |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
---- a/kernel/timeconst.pl
-+++ b/kernel/timeconst.pl
-@@ -369,10 +369,8 @@ if ($hz eq '--can') {
- 		die "Usage: $0 HZ\n";
- 	}
- 
--	@val = @{$canned_values{$hz}};
--	if (!defined(@val)) {
--		@val = compute_values($hz);
--	}
-+	$cv = $canned_values{$hz};
-+	@val = defined($cv) ? @$cv : compute_values($hz);
- 	output($hz, @val);
- }
- exit 0;
-
-
+IG1tL21tYXAuYyB8IDI3ICsrKysrKysrKysrKysrKysrKysrKysrKysrKwogMSBmaWxlIGNoYW5n
+ZWQsIDI3IGluc2VydGlvbnMoKykKCmRpZmYgLS1naXQgYS9tbS9tbWFwLmMgYi9tbS9tbWFwLmMK
+aW5kZXggMzE4ZTEyMWFmZmRhLi4yZmQ5ZjAzZWVlNmYgMTAwNjQ0Ci0tLSBhL21tL21tYXAuYwor
+KysgYi9tbS9tbWFwLmMKQEAgLTIxODUsOSArMjE4NSwyOCBAQCBpbnQgZXhwYW5kX2Rvd253YXJk
+cyhzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwKIAlyZXR1cm4gZXJyb3I7CiB9CiAKKy8qCisg
+KiBOb3RlIGhvdyBleHBhbmRfc3RhY2soKSByZWZ1c2VzIHRvIGV4cGFuZCB0aGUgc3RhY2sgYWxs
+IHRoZSB3YXkgdG8KKyAqIGFidXQgdGhlIG5leHQgdmlydHVhbCBtYXBwaW5nLCAqdW5sZXNzKiB0
+aGF0IG1hcHBpbmcgaXRzZWxmIGlzIGFsc28KKyAqIGEgc3RhY2sgbWFwcGluZy4gV2Ugd2FudCB0
+byBsZWF2ZSByb29tIGZvciBhIGd1YXJkIHBhZ2UsIGFmdGVyIGFsbAorICogKHRoZSBndWFyZCBw
+YWdlIGl0c2VsZiBpcyBub3QgYWRkZWQgaGVyZSwgdGhhdCBpcyBkb25lIGJ5IHRoZQorICogYWN0
+dWFsIHBhZ2UgZmF1bHRpbmcgbG9naWMpCisgKgorICogVGhpcyBtYXRjaGVzIHRoZSBiZWhhdmlv
+ciBvZiB0aGUgZ3VhcmQgcGFnZSBsb2dpYyAoc2VlIG1tL21lbW9yeS5jOgorICogY2hlY2tfc3Rh
+Y2tfZ3VhcmRfcGFnZSgpKSwgd2hpY2ggb25seSBhbGxvd3MgdGhlIGd1YXJkIHBhZ2UgdG8gYmUK
+KyAqIHJlbW92ZWQgdW5kZXIgdGhlc2UgY2lyY3Vtc3RhbmNlcy4KKyAqLwogI2lmZGVmIENPTkZJ
+R19TVEFDS19HUk9XU1VQCiBpbnQgZXhwYW5kX3N0YWNrKHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAq
+dm1hLCB1bnNpZ25lZCBsb25nIGFkZHJlc3MpCiB7CisJc3RydWN0IHZtX2FyZWFfc3RydWN0ICpu
+ZXh0OworCisJYWRkcmVzcyAmPSBQQUdFX01BU0s7CisJbmV4dCA9IHZtYS0+dm1fbmV4dDsKKwlp
+ZiAobmV4dCAmJiBuZXh0LT52bV9zdGFydCA9PSBhZGRyZXNzICsgUEFHRV9TSVpFKSB7CisJCWlm
+ICghKG5leHQtPnZtX2ZsYWdzICYgVk1fR1JPV1NVUCkpCisJCQlyZXR1cm4gLUVOT01FTTsKKwl9
+CiAJcmV0dXJuIGV4cGFuZF91cHdhcmRzKHZtYSwgYWRkcmVzcyk7CiB9CiAKQEAgLTIyMDksNiAr
+MjIyOCwxNCBAQCBmaW5kX2V4dGVuZF92bWEoc3RydWN0IG1tX3N0cnVjdCAqbW0sIHVuc2lnbmVk
+IGxvbmcgYWRkcikKICNlbHNlCiBpbnQgZXhwYW5kX3N0YWNrKHN0cnVjdCB2bV9hcmVhX3N0cnVj
+dCAqdm1hLCB1bnNpZ25lZCBsb25nIGFkZHJlc3MpCiB7CisJc3RydWN0IHZtX2FyZWFfc3RydWN0
+ICpwcmV2OworCisJYWRkcmVzcyAmPSBQQUdFX01BU0s7CisJcHJldiA9IHZtYS0+dm1fcHJldjsK
+KwlpZiAocHJldiAmJiBwcmV2LT52bV9lbmQgPT0gYWRkcmVzcykgeworCQlpZiAoIShwcmV2LT52
+bV9mbGFncyAmIFZNX0dST1dTRE9XTikpCisJCQlyZXR1cm4gLUVOT01FTTsKKwl9CiAJcmV0dXJu
+IGV4cGFuZF9kb3dud2FyZHModm1hLCBhZGRyZXNzKTsKIH0KIAo=
+--bcaec54d4cfcdb5c9604d6a9e249--
