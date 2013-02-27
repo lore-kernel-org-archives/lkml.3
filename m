@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478Ab3B0UgE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 15:36:04 -0500
-Received: from plane.gmane.org ([80.91.229.3]:33103 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752706Ab3B0UgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 15:36:02 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: ownssh <ownssh@gmail.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Date: Wed, 27 Feb 2013 20:35:45 +0000 (UTC)
-Message-ID: <loom.20130227T210924-53@post.gmane.org>
-References: <87ppzo79in.fsf@mid.deneb.enyo.de> <30665.1361461678@warthog.procyon.org.uk> <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com> <20130221164244.GA19625@srcf.ucam.org> <18738.1361836265@warthog.procyon.org.uk> <loom.20130227T103444-514@post.gmane.org> <20130227145647.GA5184@srcf.ucam.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757421Ab3B0Ugt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 15:36:49 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58117 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005Ab3B0Ugs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 15:36:48 -0500
+Message-ID: <512E6E5B.7010601@wwwdotorg.org>
+Date: Wed, 27 Feb 2013 13:36:43 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Ian Lartey <ian@slimlogic.co.uk>
+CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        ldewangan@nvidia.com, j-keerthy@ti.com, gg@slimlogic.co.uk,
+        wim@iguana.be, grant.likely@secretlab.ca, rob.herring@calxeda.com
+Subject: Re: [PATCH 1/2] watchdog: add Palmas Watchdog support
+References: <1361990168-882-1-git-send-email-ian@slimlogic.co.uk> <512E52BC.6070206@wwwdotorg.org> <512E69C5.5020607@slimlogic.co.uk>
+In-Reply-To: <512E69C5.5020607@slimlogic.co.uk>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 80.79.116.141 (Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130220 Firefox/17.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett <mjg59 <at> srcf.ucam.org> writes:
-
-> There's no way to update the UEFI key database without the update being 
-> signed by an already trusted key, so what you're proposing isn't 
-> possible.
+On 02/27/2013 01:17 PM, Ian Lartey wrote:
+> On 27/02/13 18:38, Stephen Warren wrote:
+>> On 02/27/2013 11:36 AM, Ian Lartey wrote:
+>>> From: Graeme Gregory <gg@slimlogic.co.uk>
+>>>
+>>> Add support for the Palmas watchdog timer which has a timeout
+>>> configurable
+>>> from 1s to 128s.
+>>
+>>> diff --git a/drivers/watchdog/palmas_wdt.c
+>>> b/drivers/watchdog/palmas_wdt.c
+>>
+>>> +static struct of_device_id of_palmas_match_tbl[] = {
+>>> +    { .compatible = "ti,palmas-wdt", },
+>>> +    { /* end */ }
+>>> +};
+>>
+>> Is there a DT binding document for that compatible value?
 > 
+> The device tree for this compatible value is actually empty,
+> shall I remove it or is it OK to show it as empty in the
+> bindings document ?
+> There will be other palmas device bindings in this document.
 
-I confused.
-Isn't custom mode can add user's own key?
-> http://mjg59.dreamwidth.org/12368.html
-> But I don't trust Microsoft
-So I dont trust, I very worry MS will block the key they give in some day then
-most fedora user need disable secure boot & update kernel and kmod signed
-by that key.
+Well, you need a binding document that describes how to create this
+node. If it needs no properties other than compatible, it'll be a simple
+document!
 
-I think secure boot should not control by MS, but if it's,
-then it should not merge to linux kernel.
-
+Did you review my comments on the other patches re: whether the
+sub-modules of this HW actually should be sub-nodes in DT or not? If
+not, then you don't need this node in DT, and hence there will be no
+compatible value for the node, and hence no need to write a binding
+document.
