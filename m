@@ -1,467 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab3B0Vg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 16:36:26 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:57270 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab3B0VgY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 16:36:24 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Subject: Re: crypto: omap-sham, omap-aes and dma_request_slave_channel_compat()
-Date: Wed, 27 Feb 2013 21:36:03 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Mark A. Greer" <mgreer@animalcreek.com>,
-        Tim Gardner <tim.gardner@canonical.com>, herbert@gondor.hengli.com.au,
-        dmitry.kasatkin@intel.com, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        "linux-omap" <linux-omap@vger.kernel.org>
-References: <512D00BE.8090204@canonical.com> <20130226225205.GA13338@animalcreek.com> <20130227053109.GA28537@intel.com>
-In-Reply-To: <20130227053109.GA28537@intel.com>
+	id S1753632Ab3B0Vky (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 16:40:54 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:46817 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751962Ab3B0Vkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 16:40:53 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] PCI changes for v3.9
+Date: Wed, 27 Feb 2013 22:47:39 +0100
+Message-ID: <1673357.1IdxNNvGWX@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQUkMqqSE9JJuxt7MxLheQA1j2nKC7QfOB7xLEJ9iUhs7g@mail.gmail.com>
+References: <20130223212120.GA4593@google.com> <CA+55aFy7PvVqAN6tLFFuCUALsXsKsuf-yqWso3aZGe4-MkFvuw@mail.gmail.com> <CAE9FiQUkMqqSE9JJuxt7MxLheQA1j2nKC7QfOB7xLEJ9iUhs7g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302272136.04100.arnd@arndb.de>
-X-Provags-ID: V02:K0:+qPhNi5iuzl6UB6K68R+LXl6lLGxYqKWZhyz/C7MB2M
- DxMVlBXpNh2mGPTG9mQNMyYeIpjy7W5N4mIl2zdPH6mxUEzDUO
- 9vydTrph3YPQwaWxGAtvr8GUnupNR/QBF02rz9EyNIqNTCCkHE
- sOaRXOoCHjZgY+uPlPNqa6fszyziObDgFcwHTV3qSHkkZDuGvu
- ZsMbLWutDYBGM6M9lE8F6QDAx0G2q7VY21MXH6rOihZODzUlEk
- NvNCsvNTY5aNDnd4C4wgggzlLtlojr1x+W7jBXkWX7dREGX8Cn
- lYEXYyrFUtyOKIeQF+yGOKguO20CGzGTRYTNGBjLLFeV0SHY3M
- C2/GmK0sRbwtcexRkl8w=
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 February 2013, Vinod Koul wrote:
-> Yes we had agreed that I will send it.
+On Tuesday, February 26, 2013 10:14:29 AM Yinghai Lu wrote:
+> On Tue, Feb 26, 2013 at 8:13 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Mon, Feb 25, 2013 at 10:46 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> >> On Mon, Feb 25, 2013 at 9:19 PM, Linus Torvalds
+> >> <torvalds@linux-foundation.org> wrote:
+> >>>
+> >>> Also, my *gut* feel is that the new _handle_hotplug_event_root()
+> >>> function should do that whole dance with
+> >>> acpi_scan_lock_acquire()/acpi_scan_lock_release(), but I didn't really
+> >>> know if it's required or appropriate, so I left it alone. Could you
+> >>> take a look?
+> >>
+> >> Yes, we need that for root bridge hot add path.
+> >>
+> >> for hot remove path, we already have lock acquire/release in
+> >> acpi_bus_hot_remove_device().
+> >>
+> >> Please check attached patch for hot add path.
+> >
+> > Quite frankly, doing this in handle_root_bridge_insertion() doesn't
+> > match the pattern elsewhere. Elsewhere you also protected the whole
+> > acpi_get_name() lookup etc. Which is why I felt that it would make
+> > more sense to add this to _handle_hotplug_event_root().
+> >
+> > But there may be good reasons why the root bridge case is different,
+> > and I don't have strong opinions, I just wanted people to look at his
+> > case. I'll let you and Bjorn sort it out...
 > 
-> I have applied this one now, and will send second PULL request to Linus soon.
+> ok,
 > 
-> Arnd,
-> The second patch of dw_dmac you wnated to send me fails to apply for me. Can you
-> either rebase or send with your updates with my ack?
+> Bjorn, Rafael,
+> 
+> Can you please check if you are ok with attached patch ?
 
-I would prefer if you send the patch. I've rebased my patch on top of
-today's upstream tree but could not see any difference to my previous
-version. Anyway, here it is again.
+The patch looks correct to me.
 
-	Arnd
+Thanks,
+Rafael
 
-8<----------
-Subject: [PATCH] dmaengine: dw_dmac: move to generic DMA binding
 
-The original device tree binding for this driver, from Viresh Kumar
-unfortunately conflicted with the generic DMA binding, and did not allow
-to completely seperate slave device configuration from the controller.
-
-This is an attempt to replace it with an implementation of the generic
-binding, but it is currently completely untested, because I do not have
-any hardware with this particular controller.
-
-The patch applies on top of the slave-dma tree, which contains both the base
-support for the generic DMA binding, as well as the earlier attempt from
-Viresh. Both of these are currently not merged upstream however.
-
-This version incorporates feedback from Viresh Kumar, Andy Shevchenko
-and Russell King.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-arm-kernel@lists.infradead.org
-
-diff --git a/Documentation/devicetree/bindings/dma/snps-dma.txt b/Documentation/devicetree/bindings/dma/snps-dma.txt
-index 5bb3dfb..d58675e 100644
---- a/Documentation/devicetree/bindings/dma/snps-dma.txt
-+++ b/Documentation/devicetree/bindings/dma/snps-dma.txt
-@@ -3,59 +3,61 @@
- Required properties:
- - compatible: "snps,dma-spear1340"
- - reg: Address range of the DMAC registers
--- interrupt-parent: Should be the phandle for the interrupt controller
--  that services interrupts for this device
- - interrupt: Should contain the DMAC interrupt number
--- nr_channels: Number of channels supported by hardware
--- is_private: The device channels should be marked as private and not for by the
--  general purpose DMA channel allocator. False if not passed.
-+- dma-channels: Number of channels supported by hardware
-+- dma-requests: Number of DMA request lines supported, up to 16
-+- dma-masters: Number of AHB masters supported by the controller
-+- #dma-cells: must be <3>
- - chan_allocation_order: order of allocation of channel, 0 (default): ascending,
-   1: descending
- - chan_priority: priority of channels. 0 (default): increase from chan 0->n, 1:
-   increase from chan n->0
- - block_size: Maximum block size supported by the controller
--- nr_masters: Number of AHB masters supported by the controller
- - data_width: Maximum data width supported by hardware per AHB master
-   (0 - 8bits, 1 - 16bits, ..., 5 - 256bits)
--- slave_info:
--	- bus_id: name of this device channel, not just a device name since
--	  devices may have more than one channel e.g. "foo_tx". For using the
--	  dw_generic_filter(), slave drivers must pass exactly this string as
--	  param to filter function.
--	- cfg_hi: Platform-specific initializer for the CFG_HI register
--	- cfg_lo: Platform-specific initializer for the CFG_LO register
--	- src_master: src master for transfers on allocated channel.
--	- dst_master: dest master for transfers on allocated channel.
-+
-+
-+Optional properties:
-+- interrupt-parent: Should be the phandle for the interrupt controller
-+  that services interrupts for this device
-+- is_private: The device channels should be marked as private and not for by the
-+  general purpose DMA channel allocator. False if not passed.
- 
- Example:
- 
--	dma@fc000000 {
-+	dmahost: dma@fc000000 {
- 		compatible = "snps,dma-spear1340";
- 		reg = <0xfc000000 0x1000>;
- 		interrupt-parent = <&vic1>;
- 		interrupts = <12>;
- 
--		nr_channels = <8>;
-+		dma-channels = <8>;
-+		dma-requests = <16>;
-+		dma-masters = <2>;
-+		#dma-cells = <3>;
- 		chan_allocation_order = <1>;
- 		chan_priority = <1>;
- 		block_size = <0xfff>;
--		nr_masters = <2>;
- 		data_width = <3 3 0 0>;
-+	};
- 
--		slave_info {
--			uart0-tx {
--				bus_id = "uart0-tx";
--				cfg_hi = <0x4000>;	/* 0x8 << 11 */
--				cfg_lo = <0>;
--				src_master = <0>;
--				dst_master = <1>;
--			};
--			spi0-tx {
--				bus_id = "spi0-tx";
--				cfg_hi = <0x2000>;	/* 0x4 << 11 */
--				cfg_lo = <0>;
--				src_master = <0>;
--				dst_master = <0>;
--			};
--		};
-+DMA clients connected to the Designware DMA controller must use the format
-+described in the dma.txt file, using a four-cell specifier for each channel.
-+The four cells in order are:
-+
-+1. A phandle pointing to the DMA controller
-+2. The DMA request line number
-+3. Source master for transfers on allocated channel
-+4. Destination master for transfers on allocated channel
-+
-+Example:
-+	
-+	serial@e0000000 {
-+		compatible = "arm,pl011", "arm,primecell";
-+		reg = <0xe0000000 0x1000>;
-+		interrupts = <0 35 0x4>;
-+		status = "disabled";
-+		dmas = <&dmahost 12 0 1>,
-+			<&dmahost 13 0 1 0>;
-+		dma-names = "rx", "rx";
- 	};
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 51c3ea2..c599558 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -20,6 +20,7 @@
- #include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/of.h>
-+#include <linux/of_dma.h>
- #include <linux/mm.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
-@@ -171,7 +172,13 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
- 	if (dwc->initialized == true)
- 		return;
- 
--	if (dws) {
-+	if (dws && dws->cfg_hi == ~0 && dws->cfg_lo == ~0) {
-+		/* autoconfigure based on request line from DT */
-+		if (dwc->direction == DMA_MEM_TO_DEV)
-+			cfghi = DWC_CFGH_DST_PER(dwc->request_line);
-+		else if (dwc->direction == DMA_DEV_TO_MEM)
-+			cfghi = DWC_CFGH_SRC_PER(dwc->request_line);
-+	} else if (dws) {
- 		/*
- 		 * We need controller-specific data to set up slave
- 		 * transfers.
-@@ -1226,49 +1233,64 @@ static void dwc_free_chan_resources(struct dma_chan *chan)
- 	dev_vdbg(chan2dev(chan), "%s: done\n", __func__);
- }
- 
--bool dw_dma_generic_filter(struct dma_chan *chan, void *param)
-+struct dw_dma_filter_args {
-+	struct dw_dma *dw;
-+	unsigned int req;
-+	unsigned int src;
-+	unsigned int dst;
-+};
-+
-+static bool dw_dma_generic_filter(struct dma_chan *chan, void *param)
- {
-+	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
- 	struct dw_dma *dw = to_dw_dma(chan->device);
--	static struct dw_dma *last_dw;
--	static char *last_bus_id;
--	int i = -1;
-+	struct dw_dma_filter_args *fargs = param;
-+	struct dw_dma_slave *dws = &dwc->slave;
- 
--	/*
--	 * dmaengine framework calls this routine for all channels of all dma
--	 * controller, until true is returned. If 'param' bus_id is not
--	 * registered with a dma controller (dw), then there is no need of
--	 * running below function for all channels of dw.
--	 *
--	 * This block of code does this by saving the parameters of last
--	 * failure. If dw and param are same, i.e. trying on same dw with
--	 * different channel, return false.
--	 */
--	if ((last_dw == dw) && (last_bus_id == param))
--		return false;
--	/*
--	 * Return true:
--	 * - If dw_dma's platform data is not filled with slave info, then all
--	 *   dma controllers are fine for transfer.
--	 * - Or if param is NULL
--	 */
--	if (!dw->sd || !param)
--		return true;
-+	/* ensure the device matches our channel */
-+        if (chan->device != &fargs->dw->dma)
-+                return false;
- 
--	while (++i < dw->sd_count) {
--		if (!strcmp(dw->sd[i].bus_id, param)) {
--			chan->private = &dw->sd[i];
--			last_dw = NULL;
--			last_bus_id = NULL;
-+	dws->dma_dev	= dw->dma.dev;
-+	dws->cfg_hi	= ~0;
-+	dws->cfg_lo	= ~0;
-+	dws->src_master	= fargs->src;
-+	dws->dst_master	= fargs->dst;
- 
--			return true;
--		}
--	}
-+	dwc->request_line = fargs->req;
- 
--	last_dw = dw;
--	last_bus_id = param;
--	return false;
-+	chan->private = dws;
-+
-+	return true;
-+}
-+
-+static struct dma_chan *dw_dma_xlate(struct of_phandle_args *dma_spec,
-+					 struct of_dma *ofdma)
-+{
-+	struct dw_dma *dw = ofdma->of_dma_data;
-+	struct dw_dma_filter_args fargs = {
-+		.dw = dw,
-+	};
-+	dma_cap_mask_t cap;
-+
-+	if (dma_spec->args_count != 3)
-+		return NULL;
-+
-+	fargs.req = be32_to_cpup(dma_spec->args+0);
-+	fargs.src = be32_to_cpup(dma_spec->args+1);
-+	fargs.dst = be32_to_cpup(dma_spec->args+2);
-+
-+	if (WARN_ON(fargs.req >= DW_DMA_MAX_NR_REQUESTS ||
-+		    fargs.src >= dw->nr_masters ||
-+		    fargs.dst >= dw->nr_masters))
-+		return NULL;
-+
-+	dma_cap_zero(cap);
-+	dma_cap_set(DMA_SLAVE, cap);
-+
-+	/* TODO: there should be a simpler way to do this */
-+	return dma_request_channel(cap, dw_dma_generic_filter, &fargs);
- }
--EXPORT_SYMBOL(dw_dma_generic_filter);
- 
- /* --------------------- Cyclic DMA API extensions -------------------- */
- 
-@@ -1554,9 +1576,8 @@ static void dw_dma_off(struct dw_dma *dw)
- static struct dw_dma_platform_data *
- dw_dma_parse_dt(struct platform_device *pdev)
- {
--	struct device_node *sn, *cn, *np = pdev->dev.of_node;
-+	struct device_node *np = pdev->dev.of_node;
- 	struct dw_dma_platform_data *pdata;
--	struct dw_dma_slave *sd;
- 	u32 tmp, arr[4];
- 
- 	if (!np) {
-@@ -1568,7 +1589,7 @@ dw_dma_parse_dt(struct platform_device *pdev)
- 	if (!pdata)
- 		return NULL;
- 
--	if (of_property_read_u32(np, "nr_channels", &pdata->nr_channels))
-+	if (of_property_read_u32(np, "dma-channels", &pdata->nr_channels))
- 		return NULL;
- 
- 	if (of_property_read_bool(np, "is_private"))
-@@ -1583,7 +1604,7 @@ dw_dma_parse_dt(struct platform_device *pdev)
- 	if (!of_property_read_u32(np, "block_size", &tmp))
- 		pdata->block_size = tmp;
- 
--	if (!of_property_read_u32(np, "nr_masters", &tmp)) {
-+	if (!of_property_read_u32(np, "dma-masters", &tmp)) {
- 		if (tmp > 4)
- 			return NULL;
- 
-@@ -1595,36 +1616,6 @@ dw_dma_parse_dt(struct platform_device *pdev)
- 		for (tmp = 0; tmp < pdata->nr_masters; tmp++)
- 			pdata->data_width[tmp] = arr[tmp];
- 
--	/* parse slave data */
--	sn = of_find_node_by_name(np, "slave_info");
--	if (!sn)
--		return pdata;
--
--	/* calculate number of slaves */
--	tmp = of_get_child_count(sn);
--	if (!tmp)
--		return NULL;
--
--	sd = devm_kzalloc(&pdev->dev, sizeof(*sd) * tmp, GFP_KERNEL);
--	if (!sd)
--		return NULL;
--
--	pdata->sd = sd;
--	pdata->sd_count = tmp;
--
--	for_each_child_of_node(sn, cn) {
--		sd->dma_dev = &pdev->dev;
--		of_property_read_string(cn, "bus_id", &sd->bus_id);
--		of_property_read_u32(cn, "cfg_hi", &sd->cfg_hi);
--		of_property_read_u32(cn, "cfg_lo", &sd->cfg_lo);
--		if (!of_property_read_u32(cn, "src_master", &tmp))
--			sd->src_master = tmp;
--
--		if (!of_property_read_u32(cn, "dst_master", &tmp))
--			sd->dst_master = tmp;
--		sd++;
--	}
--
- 	return pdata;
- }
- #else
-@@ -1705,8 +1696,6 @@ static int dw_probe(struct platform_device *pdev)
- 	clk_prepare_enable(dw->clk);
- 
- 	dw->regs = regs;
--	dw->sd = pdata->sd;
--	dw->sd_count = pdata->sd_count;
- 
- 	/* get hardware configuration parameters */
- 	if (autocfg) {
-@@ -1837,6 +1826,14 @@ static int dw_probe(struct platform_device *pdev)
- 
- 	dma_async_device_register(&dw->dma);
- 
-+	if (pdev->dev.of_node) {
-+		err = of_dma_controller_register(pdev->dev.of_node,
-+						 dw_dma_xlate, dw);
-+		if (err && err != -ENODEV)
-+			dev_err(&pdev->dev,
-+				"could not register of_dma_controller\n");
-+	}
-+
- 	return 0;
- }
- 
-@@ -1845,6 +1842,8 @@ static int dw_remove(struct platform_device *pdev)
- 	struct dw_dma		*dw = platform_get_drvdata(pdev);
- 	struct dw_dma_chan	*dwc, *_dwc;
- 
-+	if (pdev->dev.of_node)
-+		of_dma_controller_free(pdev->dev.of_node);
- 	dw_dma_off(dw);
- 	dma_async_device_unregister(&dw->dma);
- 
-diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-index 88dd8eb..cf0ce5c 100644
---- a/drivers/dma/dw_dmac_regs.h
-+++ b/drivers/dma/dw_dmac_regs.h
-@@ -13,6 +13,7 @@
- #include <linux/dw_dmac.h>
- 
- #define DW_DMA_MAX_NR_CHANNELS	8
-+#define DW_DMA_MAX_NR_REQUESTS	16
- 
- /* flow controller */
- enum dw_dma_fc {
-@@ -211,6 +212,8 @@ struct dw_dma_chan {
- 	/* hardware configuration */
- 	unsigned int		block_size;
- 	bool			nollp;
-+	unsigned int		request_line;
-+	struct dw_dma_slave	slave;
- 
- 	/* configuration passed via DMA_SLAVE_CONFIG */
- 	struct dma_slave_config dma_sconfig;
-@@ -239,10 +242,6 @@ struct dw_dma {
- 	struct tasklet_struct	tasklet;
- 	struct clk		*clk;
- 
--	/* slave information */
--	struct dw_dma_slave	*sd;
--	unsigned int		sd_count;
--
- 	u8			all_chan_mask;
- 
- 	/* hardware configuration */
-diff --git a/include/linux/dw_dmac.h b/include/linux/dw_dmac.h
-index 41766de..481ab23 100644
---- a/include/linux/dw_dmac.h
-+++ b/include/linux/dw_dmac.h
-@@ -27,7 +27,6 @@
-  */
- struct dw_dma_slave {
- 	struct device		*dma_dev;
--	const char		*bus_id;
- 	u32			cfg_hi;
- 	u32			cfg_lo;
- 	u8			src_master;
-@@ -60,9 +59,6 @@ struct dw_dma_platform_data {
- 	unsigned short	block_size;
- 	unsigned char	nr_masters;
- 	unsigned char	data_width[4];
--
--	struct dw_dma_slave *sd;
--	unsigned int sd_count;
- };
- 
- /* bursts size */
-@@ -114,6 +110,5 @@ void dw_dma_cyclic_stop(struct dma_chan *chan);
- dma_addr_t dw_dma_get_src_addr(struct dma_chan *chan);
- 
- dma_addr_t dw_dma_get_dst_addr(struct dma_chan *chan);
--bool dw_dma_generic_filter(struct dma_chan *chan, void *param);
- 
- #endif /* DW_DMAC_H */
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
