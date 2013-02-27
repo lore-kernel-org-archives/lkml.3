@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933982Ab3B0ATh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:19:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42828 "EHLO
+	id S933951Ab3B0ATf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:19:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42832 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933903Ab3B0AJI (ORCPT
+	with ESMTP id S933911Ab3B0AJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 19:09:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Adam Jackson <ajax@redhat.com>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
         Dave Airlie <airlied@redhat.com>
-Subject: [ 46/86] vgacon/vt: clear buffer attributes when we load a 512 character font (v2)
-Date: Tue, 26 Feb 2013 16:07:54 -0800
-Message-Id: <20130226235917.700351868@linuxfoundation.org>
+Subject: [ 47/86] drm: dont add inferred modes for monitors that dont support them
+Date: Tue, 26 Feb 2013 16:07:55 -0800
+Message-Id: <20130226235917.797986066@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -26,103 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-commit 2a2483072393b27f4336ab068a1f48ca19ff1c1e upstream.
+commit 196e077dc165a307efbd9e7569f81bbdbcf18f65 upstream.
 
-When we switch from 256->512 byte font rendering mode, it means the
-current contents of the screen is being reinterpreted. The bit that holds
-the high bit of the 9-bit font, may have been previously set, and thus
-the new font misrenders.
+If bit 0 of the features byte (0x18) is set to 0, then, according to
+the EDID spec, "the display is non-continuous frequency (multi-mode)
+and is only specified to accept the video timing formats that are
+listed in Base EDID and certain Extension Blocks".
 
-The problem case we see is grub2 writes spaces with the bit set, so it
-ends up with data like 0x820, which gets reinterpreted into 0x120 char
-which the font translates into G with a circumflex. This flashes up on
-screen at boot and is quite ugly.
+For more information, please see the EDID spec, check the notes of the
+table that explains the "Feature Support" byte (18h) and also the
+notes on the tables of the section that explains "Display Range Limits
+& Additional Timing Description Definition (tag #FDh)".
 
-A current side effect of this patch though is that any rendering on the
-screen changes color to a slightly darker color, but at least the screen
-no longer corrupts.
-
-v2: as suggested by hpa, always clear the attribute space, whether we
-are are going to or from 512 chars.
-
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=45729
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/vt/vt.c            |    2 +-
- drivers/video/console/vgacon.c |   22 +++++++++++++++-------
- include/linux/vt_kern.h        |    1 +
- 3 files changed, 17 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/drm_edid.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -656,7 +656,7 @@ static inline void save_screen(struct vc
-  *	Redrawing of screen
-  */
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -1769,7 +1769,8 @@ int drm_add_edid_modes(struct drm_connec
+ 	num_modes += add_cvt_modes(connector, edid);
+ 	num_modes += add_standard_modes(connector, edid);
+ 	num_modes += add_established_modes(connector, edid);
+-	num_modes += add_inferred_modes(connector, edid);
++	if (edid->features & DRM_EDID_FEATURE_DEFAULT_GTF)
++		num_modes += add_inferred_modes(connector, edid);
+ 	num_modes += add_cea_modes(connector, edid);
  
--static void clear_buffer_attributes(struct vc_data *vc)
-+void clear_buffer_attributes(struct vc_data *vc)
- {
- 	unsigned short *p = (unsigned short *)vc->vc_origin;
- 	int count = vc->vc_screenbuf_size / 2;
---- a/drivers/video/console/vgacon.c
-+++ b/drivers/video/console/vgacon.c
-@@ -1064,7 +1064,7 @@ static int vgacon_do_font_op(struct vgas
- 	unsigned short video_port_status = vga_video_port_reg + 6;
- 	int font_select = 0x00, beg, i;
- 	char *charmap;
--	
-+	bool clear_attribs = false;
- 	if (vga_video_type != VIDEO_TYPE_EGAM) {
- 		charmap = (char *) VGA_MAP_MEM(colourmap, 0);
- 		beg = 0x0e;
-@@ -1169,12 +1169,6 @@ static int vgacon_do_font_op(struct vgas
- 
- 	/* if 512 char mode is already enabled don't re-enable it. */
- 	if ((set) && (ch512 != vga_512_chars)) {
--		/* attribute controller */
--		for (i = 0; i < MAX_NR_CONSOLES; i++) {
--			struct vc_data *c = vc_cons[i].d;
--			if (c && c->vc_sw == &vga_con)
--				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
--		}
- 		vga_512_chars = ch512;
- 		/* 256-char: enable intensity bit
- 		   512-char: disable intensity bit */
-@@ -1185,8 +1179,22 @@ static int vgacon_do_font_op(struct vgas
- 		   it means, but it works, and it appears necessary */
- 		inb_p(video_port_status);
- 		vga_wattr(state->vgabase, VGA_AR_ENABLE_DISPLAY, 0);	
-+		clear_attribs = true;
- 	}
- 	raw_spin_unlock_irq(&vga_lock);
-+
-+	if (clear_attribs) {
-+		for (i = 0; i < MAX_NR_CONSOLES; i++) {
-+			struct vc_data *c = vc_cons[i].d;
-+			if (c && c->vc_sw == &vga_con) {
-+				/* force hi font mask to 0, so we always clear
-+				   the bit on either transition */
-+				c->vc_hi_font_mask = 0x00;
-+				clear_buffer_attributes(c);
-+				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
-+			}
-+		}
-+	}
- 	return 0;
- }
- 
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -47,6 +47,7 @@ int con_set_cmap(unsigned char __user *c
- int con_get_cmap(unsigned char __user *cmap);
- void scrollback(struct vc_data *vc, int lines);
- void scrollfront(struct vc_data *vc, int lines);
-+void clear_buffer_attributes(struct vc_data *vc);
- void update_region(struct vc_data *vc, unsigned long start, int count);
- void redraw_screen(struct vc_data *vc, int is_switch);
- #define update_screen(x) redraw_screen(x, 0)
+ 	if (quirks & (EDID_QUIRK_PREFER_LARGE_60 | EDID_QUIRK_PREFER_LARGE_75))
 
 
