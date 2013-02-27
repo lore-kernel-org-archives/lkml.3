@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760709Ab3B0BCw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:02:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41965 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760234Ab3BZX5t (ORCPT
+	id S1760689Ab3B0BCv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:02:51 -0500
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:31683 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760242Ab3B0BCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:57:49 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 074/150] drm: Fill depth/bits_per_pixel for C8 format
-Date: Tue, 26 Feb 2013 15:55:31 -0800
-Message-Id: <20130226235531.854958595@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
-References: <20130226235523.930663721@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 26 Feb 2013 20:02:36 -0500
+Message-ID: <1361926300.12845.102.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2, 0/7] ACPI / hotplug: Common code for ACPI-based
+ hotplug
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jiang Liu <liuj97@gmail.com>
+Date: Tue, 26 Feb 2013 17:51:40 -0700
+In-Reply-To: <3171747.TOMjvVkWL1@vostro.rjw.lan>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan>
+	 <3171747.TOMjvVkWL1@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2013-02-26 at 23:41 +0100, Rafael J. Wysocki wrote:
+> On Sunday, February 17, 2013 04:18:31 PM Rafael J. Wysocki wrote:
+> > Hi All,
+> > 
+> > The following patches introduce common code for ACPI-based hotplug for non-PCI
+> > devices and modify the container and memory hotplug ACPI drivers to use the new
+> > code.
+> > 
+> > This is based on linux-pm.git/master and regarded as v3.10 material.
+> > 
+> > [1/7] Introduce acpi_scan_match_handler() that will be useful going forward.
+> > [2/7] Introduce common code for ACPI-base device hotplug.
+> > [3/7] Use the new commot hotplug code in the container driver.
+> > [4/7] Introduce acpi_scan_handler_matching() that will be useful subsequently.
+> > [5/7] Introduce user space interface for hotplug profiles.
+> > [6/7] Make the container driver use the hotplug profiles user space interface.
+> > [7/7] Make the memory hotplug driver use struct acpi_scan_handler along with
+> >       the hotplug profiles user space interface.
+> 
+> Following is the second iteration.  It takes all of the updates of patch [2/7]
+> and the discussion of them into account and fixes the issue with 'enabled'
+> working inversely in [5/7] spotted by Toshi Kani.
 
-------------------
+Thanks for all the updates.  Things look good now.  For the series:
 
-From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+Tested-by: Toshi Kani <toshi.kani@hp.com>
 
-commit c51a6bc5f6d328926a9a4a1247c5030faf190a80 upstream.
-
-Set depth/bits_per_pixel to 8 for C8 format.
-
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Acked-by: Dave Airlie <airlied@gmail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/drm_crtc.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -3702,6 +3702,7 @@ void drm_fb_get_bpp_depth(uint32_t forma
- 			  int *bpp)
- {
- 	switch (format) {
-+	case DRM_FORMAT_C8:
- 	case DRM_FORMAT_RGB332:
- 	case DRM_FORMAT_BGR233:
- 		*depth = 8;
-
+-Toshi
 
