@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760385Ab3B0APC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:15:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42924 "EHLO
+	id S933936Ab3B0AJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:09:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42886 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933954Ab3B0AJW (ORCPT
+	with ESMTP id S1760334Ab3B0AJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:22 -0500
+	Tue, 26 Feb 2013 19:09:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Jiri Kosina <jkosina@suse.cz>, Sedat Dilek <sedat.dilek@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 67/86] fb: Yet another band-aid for fixing lockdep mess
-Date: Tue, 26 Feb 2013 16:08:15 -0800
-Message-Id: <20130226235919.856345331@linuxfoundation.org>
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 60/86] ARM: 7643/1: sched: correct update_sched_clock()
+Date: Tue, 26 Feb 2013 16:08:08 -0800
+Message-Id: <20130226235919.142149593@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -30,202 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Joonsoo Kim <js1304@gmail.com>
 
-commit e93a9a868792ad71cdd09d75e5a02d8067473c4e upstream.
+commit 7c4e9ced424be4d36df6a3e3825763e97ee97607 upstream.
 
-I've still got lockdep warnings even after Alan's patch, and it seems that
-yet more band aids are required to paper over similar paths for
-unbind_con_driver() and unregister_con_driver().  After this hack, lockdep
-warnings are finally gone.
+If we want load epoch_cyc and epoch_ns atomically,
+we should update epoch_cyc_copy first of all.
+This notify reader that updating is in progress.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+If we update epoch_cyc first like as current implementation,
+there is subtle error case.
+Look at the below example.
+
+<Initial Condition>
+cyc = 9
+ns = 900
+cyc_copy = 9
+
+== CASE 1 ==
+<CPU A = reader>           <CPU B = updater>
+                           write cyc = 10
+read cyc = 10
+read ns = 900
+                           write ns = 1000
+                           write cyc_copy = 10
+read cyc_copy = 10
+
+output = (10, 900)
+
+== CASE 2 ==
+<CPU A = reader>           <CPU B = updater>
+read cyc = 9
+                           write cyc = 10
+                           write ns = 1000
+read ns = 1000
+read cyc_copy = 9
+                           write cyc_copy = 10
+output = (9, 1000)
+
+If atomic read is ensured, output should be (9, 900) or (10, 1000).
+But, output in example case are not.
+
+So, change updating sequence in order to correct this problem.
+
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/vt/vt.c           |   43 +++++++++++++++++++++++++++---------------
- drivers/video/console/fbcon.c |    4 +--
- drivers/video/fbmem.c         |    4 +++
- include/linux/console.h       |    1 
- include/linux/vt_kern.h       |    2 +
- 5 files changed, 37 insertions(+), 17 deletions(-)
+ arch/arm/kernel/sched_clock.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -3165,6 +3165,18 @@ static int con_is_graphics(const struct
-  */
- int unbind_con_driver(const struct consw *csw, int first, int last, int deflt)
- {
-+	int retval;
-+
-+	console_lock();
-+	retval = do_unbind_con_driver(csw, first, last, deflt);
-+	console_unlock();
-+	return retval;
-+}
-+EXPORT_SYMBOL(unbind_con_driver);
-+
-+/* unlocked version of unbind_con_driver() */
-+int do_unbind_con_driver(const struct consw *csw, int first, int last, int deflt)
-+{
- 	struct module *owner = csw->owner;
- 	const struct consw *defcsw = NULL;
- 	struct con_driver *con_driver = NULL, *con_back = NULL;
-@@ -3173,7 +3185,7 @@ int unbind_con_driver(const struct consw
- 	if (!try_module_get(owner))
- 		return -ENODEV;
- 
--	console_lock();
-+	WARN_CONSOLE_UNLOCKED();
- 
- 	/* check if driver is registered and if it is unbindable */
- 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
-@@ -3186,10 +3198,8 @@ int unbind_con_driver(const struct consw
- 		}
- 	}
- 
--	if (retval) {
--		console_unlock();
-+	if (retval)
- 		goto err;
--	}
- 
- 	retval = -ENODEV;
- 
-@@ -3205,15 +3215,11 @@ int unbind_con_driver(const struct consw
- 		}
- 	}
- 
--	if (retval) {
--		console_unlock();
-+	if (retval)
- 		goto err;
--	}
- 
--	if (!con_is_bound(csw)) {
--		console_unlock();
-+	if (!con_is_bound(csw))
- 		goto err;
--	}
- 
- 	first = max(first, con_driver->first);
- 	last = min(last, con_driver->last);
-@@ -3242,13 +3248,12 @@ int unbind_con_driver(const struct consw
- 
- 	/* ignore return value, binding should not fail */
- 	do_bind_con_driver(defcsw, first, last, deflt);
--	console_unlock();
- err:
- 	module_put(owner);
- 	return retval;
- 
+--- a/arch/arm/kernel/sched_clock.c
++++ b/arch/arm/kernel/sched_clock.c
+@@ -84,11 +84,11 @@ static void notrace update_sched_clock(v
+ 	 * detectable in cyc_to_fixed_sched_clock().
+ 	 */
+ 	raw_local_irq_save(flags);
+-	cd.epoch_cyc = cyc;
++	cd.epoch_cyc_copy = cyc;
+ 	smp_wmb();
+ 	cd.epoch_ns = ns;
+ 	smp_wmb();
+-	cd.epoch_cyc_copy = cyc;
++	cd.epoch_cyc = cyc;
+ 	raw_local_irq_restore(flags);
  }
--EXPORT_SYMBOL(unbind_con_driver);
-+EXPORT_SYMBOL_GPL(do_unbind_con_driver);
  
- static int vt_bind(struct con_driver *con)
- {
-@@ -3635,9 +3640,18 @@ EXPORT_SYMBOL(register_con_driver);
-  */
- int unregister_con_driver(const struct consw *csw)
- {
--	int i, retval = -ENODEV;
-+	int retval;
- 
- 	console_lock();
-+	retval = do_unregister_con_driver(csw);
-+	console_unlock();
-+	return retval;
-+}
-+EXPORT_SYMBOL(unregister_con_driver);
-+
-+int do_unregister_con_driver(const struct consw *csw)
-+{
-+	int i, retval = -ENODEV;
- 
- 	/* cannot unregister a bound driver */
- 	if (con_is_bound(csw))
-@@ -3663,10 +3677,9 @@ int unregister_con_driver(const struct c
- 		}
- 	}
- err:
--	console_unlock();
- 	return retval;
- }
--EXPORT_SYMBOL(unregister_con_driver);
-+EXPORT_SYMBOL_GPL(do_unregister_con_driver);
- 
- /*
-  *	If we support more console drivers, this function is used
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -3010,7 +3010,7 @@ static int fbcon_unbind(void)
- {
- 	int ret;
- 
--	ret = unbind_con_driver(&fb_con, first_fb_vc, last_fb_vc,
-+	ret = do_unbind_con_driver(&fb_con, first_fb_vc, last_fb_vc,
- 				fbcon_is_default);
- 
- 	if (!ret)
-@@ -3083,7 +3083,7 @@ static int fbcon_fb_unregistered(struct
- 		primary_device = -1;
- 
- 	if (!num_registered_fb)
--		unregister_con_driver(&fb_con);
-+		do_unregister_con_driver(&fb_con);
- 
- 	return 0;
- }
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1660,8 +1660,10 @@ static int do_unregister_framebuffer(str
- 
- 	if (!lock_fb_info(fb_info))
- 		return -ENODEV;
-+	console_lock();
- 	event.info = fb_info;
- 	ret = fb_notifier_call_chain(FB_EVENT_FB_UNBIND, &event);
-+	console_unlock();
- 	unlock_fb_info(fb_info);
- 
- 	if (ret)
-@@ -1676,7 +1678,9 @@ static int do_unregister_framebuffer(str
- 	num_registered_fb--;
- 	fb_cleanup_device(fb_info);
- 	event.info = fb_info;
-+	console_lock();
- 	fb_notifier_call_chain(FB_EVENT_FB_UNREGISTERED, &event);
-+	console_unlock();
- 
- 	/* this may free fb info */
- 	put_fb_info(fb_info);
---- a/include/linux/console.h
-+++ b/include/linux/console.h
-@@ -77,6 +77,7 @@ extern const struct consw prom_con;	/* S
- int con_is_bound(const struct consw *csw);
- int register_con_driver(const struct consw *csw, int first, int last);
- int unregister_con_driver(const struct consw *csw);
-+int do_unregister_con_driver(const struct consw *csw);
- int take_over_console(const struct consw *sw, int first, int last, int deflt);
- int do_take_over_console(const struct consw *sw, int first, int last, int deflt);
- void give_up_console(const struct consw *sw);
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -132,6 +132,8 @@ void vt_event_post(unsigned int event, u
- int vt_waitactive(int n);
- void change_console(struct vc_data *new_vc);
- void reset_vc(struct vc_data *vc);
-+extern int do_unbind_con_driver(const struct consw *csw, int first, int last,
-+			     int deflt);
- extern int unbind_con_driver(const struct consw *csw, int first, int last,
- 			     int deflt);
- int vty_init(const struct file_operations *console_fops);
 
 
