@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497Ab3B0Ru1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 12:50:27 -0500
+	id S1760593Ab3B0RuD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:50:03 -0500
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4530 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760119Ab3B0RuE (ORCPT
+	with ESMTP id S1760119Ab3B0Rt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 12:50:04 -0500
-X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=SGbVKvNtADEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Jw0if3e8IwAA:10 a=20KFwNOVAAAA:8 a=drOt6m5kAAAA:8 a=lWr70UQL_JmQNKFjZCYA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Wed, 27 Feb 2013 12:49:59 -0500
+X-Authority-Analysis: v=2.0 cv=H5hZMpki c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=GKElicI09NwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=DVV_lGpT1NkA:10 a=I8-cvdjB6tWXQnppWGcA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130227174958.847915498@goodmis.org>
+Message-Id: <20130227172232.707306533@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 27 Feb 2013 12:22:39 -0500
+Date: Wed, 27 Feb 2013 12:22:32 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
@@ -21,258 +21,87 @@ Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>, hcochran@lexmark.com,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [for-next][PATCH 7/8] tracing: Add interface to allow multiple trace buffers
-References: <20130227172232.707306533@goodmis.org>
-Content-Disposition: inline; filename=0007-tracing-Add-interface-to-allow-multiple-trace-buffer.patch
+        Vaibhav Nagarnaik <vnagarnaik@google.com>, hcochran@lexmark.com
+Subject: [for-next][PATCH 0/8] tracing: Addition of multiple buffers
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+I've been on and off working on getting multiple buffers for ftrace since
+last June. This has been requested time and time again, and because it
+was so intrusive to the tracing system it took me a while to get it working
+properly. But now I feel it's ready for inclusion and destined for 3.10.
+But I would like to get it into linux-next right away to get the most
+testing out of it as possible before I even send it to Ingo for inclusion
+into tip.
 
-Add the interface ("instances" directory) to add multiple buffers
-to ftrace. To create a new instance, simply do a mkdir in the
-instances directory:
+It required rewriting a lot of the way events and tracers work, to get
+rid of all the global variables that were referenced. I NACK'd ever effort
+to make "global_trace" non static, and that has helped to make this effort
+a bit easier, but I allowed short cuts to get to the global_trace via
+functions that did not pass in a descriptor. All that had to change.
 
-This will create a directory with the following:
+With this patch set, a new directory is created in the debug/tracing
+directory called "instances". Here you can mkdir/rmdir a new directory
+that will contain some of the files in the debug/tracing directory.
+Note, this is not totally finished, but it's at a point were it is
+functional and useful.
 
- # cd instances
- # mkdir foo
- # ls foo
-buffer_size_kb        free_buffer  trace_clock    trace_pipe
-buffer_total_size_kb  set_event    trace_marker   tracing_enabled
-events/               trace        trace_options  tracing_on
+To add mkdir/rmdir in debugfs, as debugfs does not support these operations,
+I had to have the instances' inode use its own inode_operations and add a
+mkdir and rmdir method. As the instances directory can not be renamed
+or removed, or modified in any other way, it has the inode mutex released
+in order to call back to create or remove the debugfs directories.
+It has its own mutex to protect against multiple instances of this,
+and I've run many stress tests to make sure it can't crash. I haven't
+found were it can. The alternative is to have a "new" and "free" file
+to create and remove directories and it will basically do the exact
+same thing that the mkdir/rmdir does now, with the exact same protection.
+I do eventually want to make a tracefs, but that requires a lot of
+design planning and wont be in the near future (too many other things
+to do).
 
-Currently only events are able to be set, and there isn't a way
-to delete a buffer when one is created (yet).
+Anyway, there's a lot more to be done here:
 
-Note, the i_mutex lock is dropped from the parent "instances"
-directory during the mkdir operation. As the "instances" directory
-can not be renamed or deleted (created on boot), I do not see
-any harm in dropping the lock. The creation of the sub directories
-is protected by trace_types_lock mutex, which only lets one
-instance get into the code path at a time. If two tasks try to
-create or delete directories of the same name, only one will occur
-and the other will fail with -EEXIST.
+ o 	Make the per_cpu directories available for instances
+ o	Make the snapshot available for instances
+ o	Make tracers available for instances
+ o	Make trace options affect instances differenty (right now it
+	  it's global for all buffers, including top level)
+ o	Add a hook for perf to access ftrace buffers directly
 
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c        |  129 +++++++++++++++++++++++++++++++++++++++++++
- kernel/trace/trace.h        |    2 +
- kernel/trace/trace_events.c |   12 +++-
- 3 files changed, 142 insertions(+), 1 deletion(-)
+That last point is a goal for this work. I would like perf to be able
+to access ftrace buffer and features directly via a system call. But
+in order to do that, a lot of this needs to be designed differently and
+this patch set moves things in that direction.
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 74bc123..079f909 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5016,6 +5016,133 @@ static const struct file_operations rb_simple_fops = {
- 	.llseek		= default_llseek,
- };
- 
-+struct dentry *trace_instance_dir;
-+
-+static void
-+init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer);
-+
-+static int new_instance_create(const char *name)
-+{
-+	enum ring_buffer_flags rb_flags;
-+	struct trace_array *tr;
-+	int ret;
-+	int i;
-+
-+	mutex_lock(&trace_types_lock);
-+
-+	ret = -EEXIST;
-+	list_for_each_entry(tr, &ftrace_trace_arrays, list) {
-+		if (tr->name && strcmp(tr->name, name) == 0)
-+			goto out_unlock;
-+	}
-+
-+	ret = -ENOMEM;
-+	tr = kzalloc(sizeof(*tr), GFP_KERNEL);
-+	if (!tr)
-+		goto out_unlock;
-+
-+	tr->name = kstrdup(name, GFP_KERNEL);
-+	if (!tr->name)
-+		goto out_free_tr;
-+
-+	raw_spin_lock_init(&tr->start_lock);
-+
-+	tr->current_trace = &nop_trace;
-+
-+	INIT_LIST_HEAD(&tr->systems);
-+	INIT_LIST_HEAD(&tr->events);
-+
-+	rb_flags = trace_flags & TRACE_ITER_OVERWRITE ? RB_FL_OVERWRITE : 0;
-+
-+	tr->buffer = ring_buffer_alloc(trace_buf_size, rb_flags);
-+	if (!tr->buffer)
-+		goto out_free_tr;
-+
-+	tr->data = alloc_percpu(struct trace_array_cpu);
-+	if (!tr->data)
-+		goto out_free_tr;
-+
-+	for_each_tracing_cpu(i) {
-+		memset(per_cpu_ptr(tr->data, i), 0, sizeof(struct trace_array_cpu));
-+		per_cpu_ptr(tr->data, i)->trace_cpu.cpu = i;
-+		per_cpu_ptr(tr->data, i)->trace_cpu.tr = tr;
-+	}
-+
-+	/* Holder for file callbacks */
-+	tr->trace_cpu.cpu = RING_BUFFER_ALL_CPUS;
-+	tr->trace_cpu.tr = tr;
-+
-+	tr->dir = debugfs_create_dir(name, trace_instance_dir);
-+	if (!tr->dir)
-+		goto out_free_tr;
-+
-+	ret = event_trace_add_tracer(tr->dir, tr);
-+	if (ret)
-+		goto out_free_tr;
-+
-+	init_tracer_debugfs(tr, tr->dir);
-+
-+	list_add(&tr->list, &ftrace_trace_arrays);
-+
-+	mutex_unlock(&trace_types_lock);
-+
-+	return 0;
-+
-+ out_free_tr:
-+	if (tr->buffer)
-+		ring_buffer_free(tr->buffer);
-+	kfree(tr->name);
-+	kfree(tr);
-+
-+ out_unlock:
-+	mutex_unlock(&trace_types_lock);
-+
-+	return ret;
-+
-+}
-+
-+static int instance_mkdir (struct inode *inode, struct dentry *dentry, umode_t mode)
-+{
-+	struct dentry *parent;
-+	int ret;
-+
-+	/* Paranoid: Make sure the parent is the "instances" directory */
-+	parent = hlist_entry(inode->i_dentry.first, struct dentry, d_alias);
-+	if (WARN_ON_ONCE(parent != trace_instance_dir))
-+		return -ENOENT;
-+
-+	/*
-+	 * The inode mutex is locked, but debugfs_create_dir() will also
-+	 * take the mutex. As the instances directory can not be destroyed
-+	 * or changed in any other way, it is safe to unlock it, and
-+	 * let the dentry try. If two users try to make the same dir at
-+	 * the same time, then the new_instance_create() will determine the
-+	 * winner.
-+	 */
-+	mutex_unlock(&inode->i_mutex);
-+
-+	ret = new_instance_create(dentry->d_iname);
-+
-+	mutex_lock(&inode->i_mutex);
-+
-+	return ret;
-+}
-+
-+static const struct inode_operations instance_dir_inode_operations = {
-+	.lookup		= simple_lookup,
-+	.mkdir		= instance_mkdir,
-+};
-+
-+static __init void create_trace_instances(struct dentry *d_tracer)
-+{
-+	trace_instance_dir = debugfs_create_dir("instances", d_tracer);
-+	if (WARN_ON(!trace_instance_dir))
-+		return;
-+
-+	/* Hijack the dir inode operations, to allow mkdir */
-+	trace_instance_dir->d_inode->i_op = &instance_dir_inode_operations;
-+}
-+
- static void
- init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
- {
-@@ -5092,6 +5219,8 @@ static __init int tracer_init_debugfs(void)
- 			  (void *) RING_BUFFER_ALL_CPUS, &snapshot_fops);
- #endif
- 
-+	create_trace_instances(d_tracer);
-+
- 	create_trace_options_dir(&global_trace);
- 
- 	for_each_tracing_cpu(cpu)
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 5b45688..8aeac9b 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -175,6 +175,7 @@ struct tracer;
- struct trace_array {
- 	struct ring_buffer	*buffer;
- 	struct list_head	list;
-+	char			*name;
- 	int			cpu;
- 	int			buffer_disabled;
- 	struct trace_cpu	trace_cpu;	/* place holder */
-@@ -995,6 +996,7 @@ filter_check_discard(struct ftrace_event_call *call, void *rec,
- }
- 
- extern void trace_event_enable_cmd_record(bool enable);
-+extern int event_trace_add_tracer(struct dentry *parent, struct trace_array *tr);
- 
- extern struct mutex event_mutex;
- extern struct list_head ftrace_events;
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 4399552..58a6130 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1754,16 +1754,22 @@ int event_trace_add_tracer(struct dentry *parent, struct trace_array *tr)
- 	struct dentry *d_events;
- 	struct dentry *entry;
- 
-+	mutex_lock(&event_mutex);
-+
- 	entry = debugfs_create_file("set_event", 0644, parent,
- 				    tr, &ftrace_set_event_fops);
- 	if (!entry) {
- 		pr_warning("Could not create debugfs 'set_event' entry\n");
-+		mutex_unlock(&event_mutex);
- 		return -ENOMEM;
- 	}
- 
- 	d_events = debugfs_create_dir("events", parent);
--	if (!d_events)
-+	if (!d_events) {
- 		pr_warning("Could not create debugfs 'events' directory\n");
-+		mutex_unlock(&event_mutex);
-+		return -ENOMEM;
-+	}
- 
- 	/* ring buffer internal formats */
- 	trace_create_file("header_page", 0444, d_events,
-@@ -1778,7 +1784,11 @@ int event_trace_add_tracer(struct dentry *parent, struct trace_array *tr)
- 			  tr, &ftrace_tr_enable_fops);
- 
- 	tr->event_dir = d_events;
-+	down_write(&trace_event_mutex);
- 	__trace_add_event_dirs(tr);
-+	up_write(&trace_event_mutex);
-+
-+	mutex_unlock(&event_mutex);
- 
- 	return 0;
- }
--- 
-1.7.10.4
+I'll be pushing this to linux-next probably tomorrow. This is just
+a preview of what's to come.
 
+Steven Rostedt (8):
+      tracing: Separate out trace events from global variables
+      tracing: Use RING_BUFFER_ALL_CPUS for TRACE_PIPE_ALL_CPU
+      tracing: Encapsulate global_trace and remove dependencies on global vars
+      tracing: Pass the ftrace_file to the buffer lock reserve code
+      tracing: Replace the static global per_cpu arrays with allocated per_cpu
+      tracing: Make syscall events suitable for multiple buffers
+      tracing: Add interface to allow multiple trace buffers
+      tracing: Add rmdir to remove multibuffer instances
 
+----
+ include/linux/ftrace_event.h         |   58 ++-
+ include/trace/ftrace.h               |   12 +-
+ kernel/trace/trace.c                 |  819 +++++++++++++++++++++++-----------
+ kernel/trace/trace.h                 |   76 +++-
+ kernel/trace/trace_branch.c          |    6 +-
+ kernel/trace/trace_events.c          |  819 ++++++++++++++++++++++++----------
+ kernel/trace/trace_events_filter.c   |    5 +-
+ kernel/trace/trace_functions.c       |    4 +-
+ kernel/trace/trace_functions_graph.c |    4 +-
+ kernel/trace/trace_irqsoff.c         |    6 +-
+ kernel/trace/trace_kdb.c             |    4 +-
+ kernel/trace/trace_mmiotrace.c       |    4 +-
+ kernel/trace/trace_sched_switch.c    |    4 +-
+ kernel/trace/trace_sched_wakeup.c    |   14 +-
+ kernel/trace/trace_syscalls.c        |   80 ++--
+ 15 files changed, 1331 insertions(+), 584 deletions(-)
