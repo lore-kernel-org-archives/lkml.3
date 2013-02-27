@@ -1,299 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760207Ab3B0Ojf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 09:39:35 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:5135 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751937Ab3B0Ojd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 09:39:33 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: criu@openvz.org, linux-api@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>, Roland McGrath <roland@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pedro Alves <palves@redhat.com>
-Subject: [PATCH 2/2] selftest: add a test case for PTRACE_PEEKSIGINFO
-Date: Wed, 27 Feb 2013 18:37:09 +0400
-Message-Id: <1361975829-1738-2-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1361975829-1738-1-git-send-email-avagin@openvz.org>
-References: <1361975829-1738-1-git-send-email-avagin@openvz.org>
+	id S1760042Ab3B0Okb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 09:40:31 -0500
+Received: from mail.free-electrons.com ([94.23.35.102]:57668 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752865Ab3B0Oka (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 09:40:30 -0500
+Message-ID: <512E1AD9.4090403@free-electrons.com>
+Date: Wed, 27 Feb 2013 15:40:25 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Jamie Iles <jamie@jamieiles.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Serial port initialization broken on Armada 370/XP due to "serial:
+ 8250_dw: Don't use UPF_FIXED_TYPE"
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dump signals from process-wide and per-thread queues with
-  different sizes of buffers.
-* Check error paths for buffers with restricted permissions. A part of
-  buffer or a whole buffer is for read-only.
-* Try to get nonexistent signal.
+Hello,
 
-Cc: Roland McGrath <roland@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Pedro Alves <palves@redhat.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- tools/testing/selftests/Makefile             |   2 +-
- tools/testing/selftests/ptrace/Makefile      |   5 +
- tools/testing/selftests/ptrace/peeksiginfo.c | 214 +++++++++++++++++++++++++++
- 3 files changed, 220 insertions(+), 1 deletion(-)
- create mode 100644 tools/testing/selftests/ptrace/Makefile
- create mode 100644 tools/testing/selftests/ptrace/peeksiginfo.c
+when I tried to use the linux-next git tree (next-20130226), I
+encountered a problem during boot: the serial port was no more
+initialized on my Armada XP (ARM SoC) base board . I get:
 
-diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-index 85baf11..379ba69 100644
---- a/tools/testing/selftests/Makefile
-+++ b/tools/testing/selftests/Makefile
-@@ -1,4 +1,4 @@
--TARGETS = breakpoints kcmp mqueue vm cpu-hotplug memory-hotplug
-+TARGETS = breakpoints kcmp mqueue vm cpu-hotplug memory-hotplug ptrace
- 
- all:
- 	for TARGET in $(TARGETS); do \
-diff --git a/tools/testing/selftests/ptrace/Makefile b/tools/testing/selftests/ptrace/Makefile
-new file mode 100644
-index 0000000..82ada21
---- /dev/null
-+++ b/tools/testing/selftests/ptrace/Makefile
-@@ -0,0 +1,5 @@
-+CFLAGS += -iquote../../../../include/uapi -Wall
-+peeksiginfo: peeksiginfo.c
-+
-+clean:
-+	rm -f peeksiginfo
-diff --git a/tools/testing/selftests/ptrace/peeksiginfo.c b/tools/testing/selftests/ptrace/peeksiginfo.c
-new file mode 100644
-index 0000000..d46558b
---- /dev/null
-+++ b/tools/testing/selftests/ptrace/peeksiginfo.c
-@@ -0,0 +1,214 @@
-+#define _GNU_SOURCE
-+#include <stdio.h>
-+#include <signal.h>
-+#include <unistd.h>
-+#include <errno.h>
-+#include <linux/types.h>
-+#include <sys/wait.h>
-+#include <sys/syscall.h>
-+#include <sys/user.h>
-+#include <sys/mman.h>
-+
-+#include "linux/ptrace.h"
-+
-+static int sys_rt_sigqueueinfo(pid_t tgid, int sig, siginfo_t *uinfo)
-+{
-+	return syscall(SYS_rt_sigqueueinfo, tgid, sig, uinfo);
-+}
-+
-+static int sys_rt_tgsigqueueinfo(pid_t tgid, pid_t tid,
-+					int sig, siginfo_t *uinfo)
-+{
-+	return syscall(SYS_rt_tgsigqueueinfo, tgid, tid, sig, uinfo);
-+}
-+
-+static int sys_ptrace(int request, pid_t pid, void *addr, void *data)
-+{
-+	return syscall(SYS_ptrace, request, pid, addr, data);
-+}
-+
-+#define SIGNR 10
-+#define TEST_SICODE_PRIV	-1
-+#define TEST_SICODE_SHARE	-2
-+
-+#define err(fmt, ...)						\
-+		fprintf(stderr,					\
-+			"Error (%s:%d): " fmt,			\
-+			__FILE__, __LINE__, ##__VA_ARGS__)
-+
-+static int check_error_paths(pid_t child)
-+{
-+	struct ptrace_peeksiginfo_args arg;
-+	int ret, exit_code = -1;
-+	void *addr_rw, *addr_ro;
-+
-+	/*
-+	 * Allocate two contiguous pages. The first one is for read-write,
-+	 * another is for read-only.
-+	 */
-+	addr_rw = mmap(NULL, 2 * PAGE_SIZE, PROT_READ | PROT_WRITE,
-+				MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-+	if (addr_rw == MAP_FAILED) {
-+		err("mmap() failed: %m\n");
-+		return 1;
-+	}
-+
-+	addr_ro = mmap(addr_rw + PAGE_SIZE, PAGE_SIZE, PROT_READ,
-+			MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
-+	if (addr_ro == MAP_FAILED) {
-+		err("mmap() failed: %m\n");
-+		goto out;
-+	}
-+
-+	arg.nr = SIGNR;
-+	arg.off = 0;
-+
-+	/* Unsupported flags */
-+	arg.flags = ~0;
-+	ret = sys_ptrace(PTRACE_PEEKSIGINFO, child, &arg, addr_rw);
-+	if (ret != -1 || errno != EINVAL) {
-+		err("sys_ptrace() returns %d (expected -1),"
-+				" errno %d (expected %d): %m\n",
-+				ret, errno, EINVAL);
-+		goto out;
-+	}
-+	arg.flags = 0;
-+
-+	/* A part of the buffer is read-only */
-+	ret = sys_ptrace(PTRACE_PEEKSIGINFO, child, &arg,
-+					addr_ro - sizeof(siginfo_t) * 2);
-+	if (ret != 2) {
-+		err("sys_ptrace() returns %d (expected 2): %m\n", ret);
-+		goto out;
-+	}
-+
-+	/* Read-only buffer */
-+	ret = sys_ptrace(PTRACE_PEEKSIGINFO, child, &arg, addr_ro);
-+	if (ret != -1 && errno != EFAULT) {
-+		err("sys_ptrace() returns %d (expected -1),"
-+				" errno %d (expected %d): %m\n",
-+				ret, errno, EFAULT);
-+		goto out;
-+	}
-+
-+	exit_code = 0;
-+out:
-+	munmap(addr_rw, 2 * PAGE_SIZE);
-+	return exit_code;
-+}
-+
-+int check_direct_path(pid_t child, int shared, int nr)
-+{
-+	struct ptrace_peeksiginfo_args arg = {.flags = 0, .nr = nr, .off = 0};
-+	int i, j, ret, exit_code = -1;
-+	siginfo_t siginfo[SIGNR];
-+	int si_code;
-+
-+	if (shared == 1) {
-+		arg.flags = PTRACE_PEEKSIGINFO_SHARED;
-+		si_code = TEST_SICODE_SHARE;
-+	} else {
-+		arg.flags = 0;
-+		si_code = TEST_SICODE_PRIV;
-+	}
-+
-+	for (i = 0; i < SIGNR; ) {
-+		arg.off = i;
-+		ret = sys_ptrace(PTRACE_PEEKSIGINFO, child, &arg, siginfo);
-+		if (ret == -1) {
-+			err("ptrace() failed: %m\n");
-+			goto out;
-+		}
-+
-+		if (ret == 0)
-+			break;
-+
-+		for (j = 0; j < ret; j++, i++) {
-+			if (siginfo[j].si_code == si_code &&
-+			    siginfo[j].si_int == i)
-+				continue;
-+
-+			err("%d: Wrong siginfo i=%d si_code=%d si_int=%d\n",
-+			     shared, i, siginfo[j].si_code, siginfo[j].si_int);
-+			goto out;
-+		}
-+	}
-+
-+	if (i != SIGNR) {
-+		err("Only %d signals were read\n", i);
-+		goto out;
-+	}
-+
-+	exit_code = 0;
-+out:
-+	return exit_code;
-+}
-+
-+int main(int argc, char *argv[])
-+{
-+	siginfo_t siginfo[SIGNR];
-+	int i, exit_code = 1;
-+	sigset_t blockmask;
-+	pid_t child;
-+
-+	sigemptyset(&blockmask);
-+	sigaddset(&blockmask, SIGRTMIN);
-+	sigprocmask(SIG_BLOCK, &blockmask, NULL);
-+
-+	child = fork();
-+	if (child == -1) {
-+		err("fork() failed: %m");
-+		return 1;
-+	} else if (child == 0) {
-+		pid_t ppid = getppid();
-+		while (1) {
-+			if (ppid != getppid())
-+				break;
-+			sleep(1);
-+		}
-+		return 1;
-+	}
-+
-+	/* Send signals in process-wide and per-thread queues */
-+	for (i = 0; i < SIGNR; i++) {
-+		siginfo->si_code = TEST_SICODE_SHARE;
-+		siginfo->si_int = i;
-+		sys_rt_sigqueueinfo(child, SIGRTMIN, siginfo);
-+
-+		siginfo->si_code = TEST_SICODE_PRIV;
-+		siginfo->si_int = i;
-+		sys_rt_tgsigqueueinfo(child, child, SIGRTMIN, siginfo);
-+	}
-+
-+	if (sys_ptrace(PTRACE_ATTACH, child, NULL, NULL) == -1)
-+		return 1;
-+
-+	waitpid(child, NULL, 0);
-+
-+	/* Dump signals one by one*/
-+	if (check_direct_path(child, 0, 1))
-+		goto out;
-+	/* Dump all signals for one call */
-+	if (check_direct_path(child, 0, SIGNR))
-+		goto out;
-+
-+	/*
-+	 * Dump signal from the process-wide queue.
-+	 * The number of signals is not multible to the buffer size
-+	 */
-+	if (check_direct_path(child, 1, 3))
-+		goto out;
-+
-+	if (check_error_paths(child))
-+		goto out;
-+
-+	printf("PASS\n");
-+	exit_code = 0;
-+out:
-+	if (sys_ptrace(PTRACE_KILL, child, NULL, NULL) == -1)
-+		return 1;
-+
-+	waitpid(child, NULL, 0);
-+
-+	return exit_code;
-+}
+[...]
+Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+sata_mv d00a0000.sata: slots 32 ports 2
+[...]
+turn off boot console earlycon0
+
+
+And then nothing.
+
+So after git bisect I ended to the commit " serial: 8250_dw: Don't use
+UPF_FIXED_TYPE". Then by adding again the UPF_FIXED_TYPE flag (ie
+reverting this commit) I got the usual boot log:
+
+[...]
+Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+d0012000.serial: ttyS0 at MMIO 0xd0012000 (irq = 17) is a 8250
+console [ttyS0] enabled, bootconsole disabled
+console [ttyS0] enabled, bootconsole disabled
+d0012100.serial: ttyS1 at MMIO 0xd0012100 (irq = 18) is a 8250
+d0012200.serial: ttyS2 at MMIO 0xd0012200 (irq = 29) is a 8250
+d0012300.serial: ttyS3 at MMIO 0xd0012300 (irq = 30) is a 8250
+sata_mv d00a0000.sata: slots 32 ports 2
+[...]
+Freeing init memory: 2160K
+Starting logging: OK
+Initializing random number generator... done.
+Starting network...
+
+Welcome to Buildroot
+buildroot login:
+
+
+
+I understand that the purpose of this commit was to let the driver
+find by itself the port type, but I didn't find yet how it managed to
+do it and then why it failed in our case.
+
+I will continue to investigate but any pointers are welcome.
+
+Thanks,
+
 -- 
-1.7.11.7
-
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
