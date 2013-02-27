@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758440Ab3B0TDH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 14:03:07 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:41672 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab3B0TDF (ORCPT
+	id S1759661Ab3B0TEb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 14:04:31 -0500
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:59222 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752981Ab3B0TEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 14:03:05 -0500
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 2/2] Use config scripts to detect ncurses libs for nconfig
-Date: Wed, 27 Feb 2013 20:02:59 +0100
-User-Agent: KMail/1.13.5 (Linux/3.8.0-treguer; KDE/4.4.5; x86_64; ; )
-Cc: jlec@gentoo.org, linux-kernel@vger.kernel.org
-References: <jlec@gentoo.org> <1361988458-18486-1-git-send-email-jlec@gentoo.org> <1361988458-18486-2-git-send-email-jlec@gentoo.org>
-In-Reply-To: <1361988458-18486-2-git-send-email-jlec@gentoo.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201302272002.59833.yann.morin.1998@free.fr>
+	Wed, 27 Feb 2013 14:04:30 -0500
+From: "Raphael S.Carvalho" <raphael.scarv@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Raphael S.Carvalho" <raphael.scarv@gmail.com>
+Subject: [PATCH 1/1] kernel/nsproxy.c: Improving a snippet of code.
+Date: Wed, 27 Feb 2013 15:32:09 -0300
+Message-Id: <1361989929-1145-1-git-send-email-raphael.scarv@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin, All,
+It seems GCC generates a better code in that way, so I changed that statement.
+Btw, they have the same semantic, so I'm sending this patch due to performance issues.
 
-On Wednesday 27 February 2013 jlec@gentoo.org wrote:
-> From: Justin Lecher <jlec@gentoo.org>
-> 
-> When building ncurses with --with-termlib several symbols get moved from
-> libncurses.so to libtinfo.so. Thus when linking with libncurses.so, one
-> additionally needs to link with libtinfo.so.
-> 
-> Ncurses provides a config script (ncurses5-config) to assist finding ncurses.
-> This patch makes use of it to detect the necessary libs for linking of the
-> ncurses nconfig dialog.
-> 
-> Signed-off-by: Justin Lecher <jlec@gentoo.org>
+Signed-off-by: Raphael S.Carvalho <raphael.scarv@gmail.com>
+---
+ kernel/nsproxy.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Ditto for the subject, as for your previous patch.
-
-> ---
->  scripts/kconfig/Makefile | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-> index 3091794..7ddbf98 100644
-> --- a/scripts/kconfig/Makefile
-> +++ b/scripts/kconfig/Makefile
-> @@ -216,7 +216,7 @@ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
->  
->  HOSTLOADLIBES_mconf   = $(shell $(CONFIG_SHELL) $(check-lxdialog) -ldflags $(HOSTCC))
->  
-> -HOSTLOADLIBES_nconf	= -lmenu -lpanel -lncurses
-> +HOSTLOADLIBES_nconf	= -lmenu -lpanel `ncursesw5-config --libs 2>/dev/null || ncurses5-config --libs 2>/dev/null`
-
-Long-line. Also, this expands the `...` in the shell, not in the Makefile.
-I'd rather have the expansion be done by the Makefile:
-
-HOSTLOADLIBES_nconf	= -lmenu -lpanel
-HOSTLOADLIBES_nconf	+= $(shell    ncursesw5-config --libs 2>/dev/null \
-				   || ncurses5-config --libs 2>/dev/null  )
-
-Regards,
-Yann E. MORIN.
-
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 78e2ecb..21da3d1 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -148,7 +148,8 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
+ 	 * means share undolist with parent, so we must forbid using
+ 	 * it along with CLONE_NEWIPC.
+ 	 */
+-	if ((flags & CLONE_NEWIPC) && (flags & CLONE_SYSVSEM)) {
++	if ((flags & (CLONE_NEWIPC | CLONE_SYSVSEM)) ==
++		(CLONE_NEWIPC | CLONE_SYSVSEM)) {
+ 		err = -EINVAL;
+ 		goto out;
+ 	}
 -- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+1.7.2.5
+
