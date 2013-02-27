@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933778Ab3B0A0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:26:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42700 "EHLO
+	id S933830Ab3B0A0y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:26:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933688Ab3B0AIt (ORCPT
+	with ESMTP id S933431Ab3B0AIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 19:08:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Liu <wei.liu2@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 19/86] xen: close evtchn port if binding to irq fails
-Date: Tue, 26 Feb 2013 16:07:27 -0800
-Message-Id: <20130226235914.927078545@linuxfoundation.org>
+Subject: [ 18/86] xen: Send spinlock IPI to all waiters
+Date: Tue, 26 Feb 2013 16:07:26 -0800
+Message-Id: <20130226235914.818659203@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -27,43 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: Stefan Bader <stefan.bader@canonical.com>
 
-commit e7e44e444876478d50630f57b0c31d29f6725020 upstream.
+commit 76eaca031f0af2bb303e405986f637811956a422 upstream.
 
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+There is a loophole between Xen's current implementation of
+pv-spinlocks and the scheduler. This was triggerable through
+a testcase until v3.6 changed the TLB flushing code. The
+problem potentially is still there just not observable in the
+same way.
+
+What could happen was (is):
+
+1. CPU n tries to schedule task x away and goes into a slow
+   wait for the runq lock of CPU n-# (must be one with a lower
+   number).
+2. CPU n-#, while processing softirqs, tries to balance domains
+   and goes into a slow wait for its own runq lock (for updating
+   some records). Since this is a spin_lock_irqsave in softirq
+   context, interrupts will be re-enabled for the duration of
+   the poll_irq hypercall used by Xen.
+3. Before the runq lock of CPU n-# is unlocked, CPU n-1 receives
+   an interrupt (e.g. endio) and when processing the interrupt,
+   tries to wake up task x. But that is in schedule and still
+   on_cpu, so try_to_wake_up goes into a tight loop.
+4. The runq lock of CPU n-# gets unlocked, but the message only
+   gets sent to the first waiter, which is CPU n-# and that is
+   busily stuck.
+5. CPU n-# never returns from the nested interruption to take and
+   release the lock because the scheduler uses a busy wait.
+   And CPU n never finishes the task migration because the unlock
+   notification only went to CPU n-#.
+
+To avoid this and since the unlocking code has no real sense of
+which waiter is best suited to grab the lock, just send the IPI
+to all of them. This causes the waiters to return from the hyper-
+call (those not interrupted at least) and do active spinlocking.
+
+BugLink: http://bugs.launchpad.net/bugs/1011792
+
+Acked-by: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/evtchn.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/x86/xen/spinlock.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/xen/evtchn.c
-+++ b/drivers/xen/evtchn.c
-@@ -269,6 +269,14 @@ static int evtchn_bind_to_user(struct pe
- 				       u->name, (void *)(unsigned long)port);
- 	if (rc >= 0)
- 		rc = evtchn_make_refcounted(port);
-+	else {
-+		/* bind failed, should close the port now */
-+		struct evtchn_close close;
-+		close.port = port;
-+		if (HYPERVISOR_event_channel_op(EVTCHNOP_close, &close) != 0)
-+			BUG();
-+		set_port_user(port, NULL);
-+	}
- 
- 	return rc;
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -328,7 +328,6 @@ static noinline void xen_spin_unlock_slo
+ 		if (per_cpu(lock_spinners, cpu) == xl) {
+ 			ADD_STATS(released_slow_kicked, 1);
+ 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
+-			break;
+ 		}
+ 	}
  }
-@@ -277,6 +285,8 @@ static void evtchn_unbind_from_user(stru
- {
- 	int irq = irq_from_evtchn(port);
- 
-+	BUG_ON(irq < 0);
-+
- 	unbind_from_irqhandler(irq, (void *)(unsigned long)port);
- 
- 	set_port_user(port, NULL);
 
 
