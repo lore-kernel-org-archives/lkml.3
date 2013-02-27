@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab3B0UYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 15:24:46 -0500
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:39442 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755048Ab3B0UYp (ORCPT
+	id S1755608Ab3B0U2z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 15:28:55 -0500
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:35240 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab3B0U2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 15:24:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+5PVA5vvw-JyODTtRwVhQSEiGrt=3wzDoCmeButEMTZxWAhbA@mail.gmail.com>
-References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
-	<CA+5PVA5wtZipQRTPfvbh1U8gjDMaW0095EsNz==Co+iww3YN1g@mail.gmail.com>
-	<CA+5PVA5vvw-JyODTtRwVhQSEiGrt=3wzDoCmeButEMTZxWAhbA@mail.gmail.com>
-Date: Wed, 27 Feb 2013 15:24:43 -0500
-Message-ID: <CA+5PVA7d8fXNxXm0UG4RdH2QLgyRGZEScDtJnK0f-+j_hoCzOA@mail.gmail.com>
-Subject: Re: [git pull] drm merge for 3.9-rc1
-From: Josh Boyer <jwboyer@gmail.com>
-To: Dave Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>
-Cc: torvalds@linux-foundation.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Feb 2013 15:28:54 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: kvm@vger.kernel.org
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Gleb Natapov <gleb@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH] x86/kvm: Fix pvclock vsyscall fixmap
+Date: Wed, 27 Feb 2013 15:28:28 -0500
+Message-Id: <1361996908-11064-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20130227194336.GA17324@amt.cnet>
+References: <20130227194336.GA17324@amt.cnet>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 3:20 PM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Wed, Feb 27, 2013 at 11:34 AM, Josh Boyer <jwboyer@gmail.com> wrote:
->> On Mon, Feb 25, 2013 at 7:05 PM, Dave Airlie <airlied@linux.ie> wrote:
->>> Alex Deucher (29):
->>>       drm/radeon: halt engines before disabling MC (6xx/7xx)
->>>       drm/radeon: halt engines before disabling MC (evergreen)
->>>       drm/radeon: halt engines before disabling MC (cayman/TN)
->>>       drm/radeon: halt engines before disabling MC (si)
->>>       drm/radeon: use the reset mask to determine if rings are hung
->>
->> Something in this series of commits is causing the GPU to hang on reboot
->> on my Dell XPS 8300 machine.  That has a:
->>
->> 01:00.0 VGA compatible controller: Advanced Micro Devices [AMD] nee
->> ATI Caicos [Radeon HD 6450]
->>
->> card in it.  After reboots, I get a screen that looks like this:
->>
->> http://t.co/tPnT6xQZUK
->>
->> I can hit it fairly consistently after a few reboots, so I tried doing a
->> git bisect on the radeon driver and it came down to:
->>
->> ca57802e521de54341efc8a56f70571f79ffac72 is the first bad commit
->
-> So I don't think that's actually the cause of the problem.  Or at least
-> not that alone.  I reverted it on top of Linus' latest tree and I still
-> get the lockups.
->
-> Thus far I've reverted:
->
->       drm/radeon: use status regs to determine what to reset (6xx/7xx)
->       drm/radeon: use status regs to determine what to reset (evergreen)
->       drm/radeon: use status regs to determine what to reset (cayman)
->       drm/radeon: use status regs to determine what to reset (si)
->       drm/radeon: halt engines before disabling MC (6xx/7xx)
->       drm/radeon: halt engines before disabling MC (evergreen)
->       drm/radeon: halt engines before disabling MC (cayman/TN)
->       drm/radeon: halt engines before disabling MC (si)
->       drm/radeon: use the reset mask to determine if rings are hung
->
-> and can still recreate the issue.  I'm starting to think the problem is
+The physical memory fixmapped for the pvclock clock_gettime vsyscall
+was allocated, and thus is not a kernel symbol. __pa() is the proper
+method to use in this case.
 
-Sigh.  Of course I just realized that I haven't been regenerating the
-initramfs, so I'm not even testing what I'm building at this point.  So
-all I know is that it's broken somewhere between the two commits in my
-initial bisect log.  I've had better days.
+Fixes the crash below when booting a next-20130204+ smp guest on a
+3.8-rc5+ KVM host.
 
-josh
+[    0.666410] udevd[97]: starting version 175
+[    0.674043] udevd[97]: udevd:[97]: segfault at ffffffffff5fd020
+     ip 00007fff069e277f sp 00007fff068c9ef8 error d
+
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ arch/x86/kernel/pvclock.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
+index 85c3959..2cb9470 100644
+--- a/arch/x86/kernel/pvclock.c
++++ b/arch/x86/kernel/pvclock.c
+@@ -185,7 +185,7 @@ int __init pvclock_init_vsyscall(struct pvclock_vsyscall_time_info *i,
+ 
+ 	for (idx = 0; idx <= (PVCLOCK_FIXMAP_END-PVCLOCK_FIXMAP_BEGIN); idx++) {
+ 		__set_fixmap(PVCLOCK_FIXMAP_BEGIN + idx,
+-			     __pa_symbol(i) + (idx*PAGE_SIZE),
++			     __pa(i) + (idx*PAGE_SIZE),
+ 			     PAGE_KERNEL_VVAR);
+ 	}
+ 
+-- 
+1.8.1.2
+
