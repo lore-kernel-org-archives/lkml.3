@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760393Ab3B0Q4Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 11:56:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20886 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756742Ab3B0Q4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 11:56:22 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/7] HID: multitouch: support of hybrid finger/pen devices
-Date: Wed, 27 Feb 2013 17:55:20 +0100
-Message-Id: <1361984127-912-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1760380Ab3B0RCC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:02:02 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:38819 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760189Ab3B0RCA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 12:02:00 -0500
+Date: Wed, 27 Feb 2013 18:01:57 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] ext4 updates for 3.9
+Message-ID: <20130227170157.GA222@x4>
+References: <nsxr4k2kdwv.fsf@closure.thunk.org>
+ <20130227124727.GA225@x4>
+ <20130227153435.GB5609@thunk.org>
+ <20130227154450.GA23402@x4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130227154450.GA23402@x4>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On 2013.02.27 at 16:44 +0100, Markus Trippelsdorf wrote:
+> On 2013.02.27 at 10:34 -0500, Theodore Ts'o wrote:
+> > On Wed, Feb 27, 2013 at 01:47:27PM +0100, Markus Trippelsdorf wrote:
+> > > Just booted todays Linux tree and got the following errors:
+> > > 
+> > > ...
+> > > Feb 27 13:33:31 x4 kernel: EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)
+> > > ...
+> > > Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: inode #70647809: block 14164000: comm cupsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2569822761, rec_len=3837, name_len=1
+> > > Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: inode #70911401: block 15213579: comm pdnsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2000846358, rec_len=36782, name_len=120
+> > 
+> > Is this reproducible? 
 
-Here is the support of hybrid devices presenting pen and touch at the same time.
-I don't think it's possible to split the handling of the different reports by
-several hid drivers unless deepest changes in the HID core subsystem.
-The main problem is the control of the underlaying transport layer of the hid
-device. For instance, if two drivers (let's say hid-multitouch and hid-generic)
-handle the same device, and one of them is removed, then we should not call
-hid_hw_stop at this point, but only when the second is also removed.
+The issue is caused by:
 
-The other big problem lies with hid drivers that fix the hid report descriptors.
-We can not split the hid device before we get the fix, so those drivers should
-have a special behavior.
+commit d100eef2440fea13e4f09e88b1c8bcbca64beb9f
+Author: Zheng Liu <wenqing.lz@taobao.com>
+Date:   Mon Feb 18 00:29:59 2013 -0500
 
-To sum up, I think does not make sense to do such deep changes, and to take such
-a risk of breaking existing devices.
-
-So the solution consists in relying inconditionaly to the quirk MULTI_INPUT for
-hid-multitouch. Before registering the input device in hid-input, we can test if
-it has been populated, and if not, then we simply don't register it. In order to
-prevent a regression for drivers that do not fill the input device, we need to
-add an other quirk.
-
-Cheers,
-Benjamin
-
-Benjamin Tissoires (7):
-  HID: input: don't register unmapped input devices
-  HID: multitouch: breaks out touch handling in specific functions
-  HID: multitouch: do not map usage from non used reports
-  HID: multitouch: add handling for pen in dual-sensors device
-  HID: multitouch: manually send sync event for pen input report
-  HID: multitouch: append " Pen" to the name of the stylus input
-  HID: multitouch: force BTN_STYLUS for pen devices
-
- drivers/hid/hid-input.c      |  77 ++++++++++++++++++++++
- drivers/hid/hid-multitouch.c | 151 ++++++++++++++++++++++++++++++++++++-------
- include/linux/hid.h          |   1 +
- 3 files changed, 207 insertions(+), 22 deletions(-)
+    ext4: lookup block mapping in extent status tree
 
 -- 
-1.8.1.2
-
+Markus
