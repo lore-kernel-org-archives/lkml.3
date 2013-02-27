@@ -1,71 +1,561 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab3B0F7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 00:59:11 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:41063 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265Ab3B0F7J (ORCPT
+	id S1753142Ab3B0F7j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 00:59:39 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:62408 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab3B0F6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 00:59:09 -0500
-Message-ID: <512DA0EB.5000803@ti.com>
-Date: Wed, 27 Feb 2013 11:30:11 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: <john.stultz@linaro.org>, <tglx@linutronix.de>, <viresh.kumar@linaro.org>,
-        <jacob.jun.pan@linux.intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
-        <patches@linaro.org>, <linus.walleij@stericsson.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 0/4] time: dynamic irq affinity
-References: <1361917047-29230-1-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1361917047-29230-1-git-send-email-daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Feb 2013 00:58:03 -0500
+Date: Tue, 26 Feb 2013 21:58:02 -0800 (PST)
+From: Rob Landley <rob@landley.net>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+In-Reply-To: <1361944667.957820@landley.net>
+Message-Id: <1361944667.958809@landley.net>
+Subject: [PATCH 2/3] convert timeconst.pl to mktimeconst.c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 February 2013 03:47 AM, Daniel Lezcano wrote:
-> When a cpu goes to a deep idle state where its local timer is shutdown,
-> it notifies the time framework to use the broadcast timer instead.
->
-> Unfortunately, the broadcast device could wake up any CPU, including an
-> idle one which is not concerned by the wake up at all.
->
-> This implies, in the worst case, an idle CPU will wake up to send an IPI
-> to another idle cpu.
->
-> This patch solves this by setting the irq affinity to the cpu concerned
-> by the nearest timer event, by this way, the CPU which is wake up is
-> guarantee to be the one concerned by the next event and we are safe with
-> unnecessary wakeup for another idle CPU.
->
-> As the irq affinity is not supported by all the archs, a flag is needed
-> to specify which clocksource can handle it.
->
-Not completely related to this series but there is another
-issue where this local timer not wakeup capable hurts. So
-far we are discussing only the timer related future events
-which are known and can be programmed with broadcast device.
+From: Rob Landley <rob@landley.net>
 
-But think of the scenario's where we need to send asynchronous
-IPIs to CPUs to do some work. e.g generic_exec_single().
-If the CPU which is suppose to be available after IPI call
-is in deep low power state, then the IPI(implemented on ARM)
-isn't effective. In CPU off idle modes, a GIC SGI will not wake
-the CPU and hence a special wakeup is needed to bring out
-those CPUs out of idle. This special wakeup is handled
-by broad-cast timer in case of CPUIDLE.
+Replace perl header file generator with smaller/faster/simpler C version.
 
-In short what I mean is, you need to have IPI which
-can wakeup CPUs from any deep idle power state to address
-above. Has anybody thought of this one ?
+Hasn't changed in several years, see:
 
-Regards,
-Santosh
-P.S: Time and again it proves that making the local timer wakeup
-capable solves the issue.
+Message-ID: <4D35FEF3.4070001@parallels.com>
+Subject: Re: [PATCH] Use sed instead of perl to generate x86/kernel/cpu/capflags.c.
 
+Note, the version I submitted 2 years ago included a test program to show
+it was producing the same output for HZ 1 through 5000:
+https://lkml.org/lkml/2011/1/18/257
+
+Signed-off-by: Rob Landley <rob@landley.net>
+---
+
+ kernel/Makefile      |   10 -
+ kernel/mktimeconst.c |  110 +++++++++++
+ kernel/timeconst.pl  |  376 -----------------------------------------
+ 3 files changed, 116 insertions(+), 380 deletions(-)
+
+
+diff --git a/kernel/Makefile b/kernel/Makefile
+index eceac38..f00be6d 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -127,11 +127,13 @@ $(obj)/config_data.h: $(obj)/config_data.gz FORCE
+ 
+ $(obj)/time.o: $(obj)/timeconst.h
+ 
+-quiet_cmd_timeconst  = TIMEC   $@
+-      cmd_timeconst  = $(PERL) $< $(CONFIG_HZ) > $@
++hostprogs-y	+= mktimeconst
++quiet_cmd_mktimeconst = TIMEC   $@
++	cmd_mktimeconst = $(obj)/mktimeconst $(CONFIG_HZ) $@ || ( rm -f $@ && exit 1 )
++
+ targets += timeconst.h
+-$(obj)/timeconst.h: $(src)/timeconst.pl FORCE
+-	$(call if_changed,timeconst)
++$(obj)/timeconst.h: $(obj)/mktimeconst FORCE
++	$(call if_changed,mktimeconst)
+ 
+ ifeq ($(CONFIG_MODULE_SIG),y)
+ #
+--- /dev/null
++++ linux/kernel/mktimeconst.c
+@@ -0,0 +1,110 @@
++/* Copyright 2010 Parallels Inc, licensed under GPLv2 */
++/* Copyright 2010-2013 Rob Landley <rob@landley.net> */
++
++#include <inttypes.h>
++#include <stdio.h>
++#include <stdlib.h>
++
++int main(int argc, char *argv[])
++{
++	uint64_t hz, periods[] = {1000, 1000000};
++	char *names[] = {"MSEC", "USEC"};
++	FILE *file;
++	int i, j;
++
++	if (argc != 3 || (hz = atol(argv[1])) < 1
++	    || !(file = fopen(argv[2], "w")))
++	{
++		fprintf(stderr, "Usage: mktimeconst HZ FILENAME\n\n");
++		fprintf(stderr, "Generate a header file with constants to convert between\n");
++		fprintf(stderr, "decimal HZ timer ticks and milisecond or microsecond delays,\n");
++		fprintf(stderr, "using reciprocal multiplication to avoid 64 bit division.\n");
++		exit(1);
++	}
++
++	fprintf(file,
++		"/* Automatically generated by kernel/mktimeconst */\n"
++		"/* Conversion constants for HZ == %"PRIu64" */\n\n"
++		"#ifndef __KERNEL_TIMECONST_H\n"
++		"#define __KERNEL_TIMECONST_H\n\n"
++		"#include <linux/param.h>\n"
++		"#include <linux/types.h>\n\n"
++		"#if HZ != %"PRIu64"\n"
++		"#error \"kernel/timeconst.h has the wrong HZ value!\"\n"
++		"#endif\n\n", hz, hz);
++
++	/* Repeat for MSEC and USEC */
++
++	for (i = 0; i < 2; i++) {
++		uint64_t gcd, period;
++
++		/* Find greatest common denominator using Euclid's algorithm. */
++
++		gcd = hz;
++		period = periods[i];
++		while (period) {
++			uint64_t temp = gcd % period;
++			gcd = period;
++			period = temp;
++		}
++
++		/* Output both directions (HZ_TO_PERIOD and PERIOD_TO_HZ) */
++
++		for (j = 0; j < 2; j++) {
++			char name[16];
++			uint64_t from = j ? periods[i] : hz;
++			uint64_t to = j ? hz : periods[i];
++			uint64_t mul32 = 0, adj32 = 0, shift = 0;
++
++			sprintf(name, j ? "%s_TO_HZ" : "HZ_TO_%s", names[i]);
++
++			/* Figure out what shift value gives 32 significant
++			   bits of MUL32 data.  (Worst case to=1 from=1000000
++			   uses 52 bits, to<<shift won't overflow 64 bit math.)
++			*/
++
++			for (;;) {
++				mul32 = ((to << shift) + from - 1) / from;
++				if (mul32 >= (1UL<<31))
++					break;
++				shift++;
++			}
++
++			/* ADJ32 is is just (((FROM/GCD)-1)<<SHIFT)/(FROM/GCD)
++			   but this can overflow 64 bit math (examples, HZ=24
++			   or HZ=122).  Worst case scenario uses 32+20+20=72
++			   bits.  Workaround: split off bottom 32 bits and
++			   reassemble after calculation (32+64=96 bits). */
++
++			adj32 = from / gcd;
++
++			if (shift > 32) {
++				uint64_t upper, lower;
++
++				upper = (adj32 - 1) << (shift - 32);
++				lower = (upper % adj32) << 32;
++				adj32 = ((upper/adj32) << 32) + (lower/adj32);
++			} else
++				adj32 = ((adj32 - 1) << shift) / adj32;
++
++			/* Emit the constants into the header file. */
++
++			fprintf(file, "#define %s_MUL32\tU64_C(0x%"PRIx64")\n",
++				name, mul32);
++			fprintf(file, "#define %s_ADJ32\tU64_C(0x%"PRIx64")\n",
++				name, adj32);
++			fprintf(file, "#define %s_SHR32\t%"PRIu64"\n",
++				name, shift);
++			fprintf(file, "#define %s_NUM\t\tU64_C(%"PRIu64")\n",
++				name, to/gcd);
++			fprintf(file, "#define %s_DEN\t\tU64_C(%"PRIu64")\n\n",
++				name, from/gcd);
++		}
++	}
++	fprintf(file, "#endif /* __KERNEL_TIMECONST_H */\n");
++
++	/* Notice if the disk fills up. */
++
++	fflush(stdout);
++	return ferror(stdout);
++}
+--- linux/kernel/timeconst.pl
++++ /dev/null
+@@ -1,376 +0,0 @@
+-#!/usr/bin/perl
+-# -----------------------------------------------------------------------
+-#
+-#   Copyright 2007-2008 rPath, Inc. - All Rights Reserved
+-#
+-#   This file is part of the Linux kernel, and is made available under
+-#   the terms of the GNU General Public License version 2 or (at your
+-#   option) any later version; incorporated herein by reference.
+-#
+-# -----------------------------------------------------------------------
+-#
+-
+-#
+-# Usage: timeconst.pl HZ > timeconst.h
+-#
+-
+-# Precomputed values for systems without Math::BigInt
+-# Generated by:
+-# timeconst.pl --can 24 32 48 64 100 122 128 200 250 256 300 512 1000 1024 1200
+-%canned_values = (
+-	24 => [
+-		'0xa6aaaaab','0x2aaaaaa',26,
+-		125,3,
+-		'0xc49ba5e4','0x1fbe76c8b4',37,
+-		3,125,
+-		'0xa2c2aaab','0xaaaa',16,
+-		125000,3,
+-		'0xc9539b89','0x7fffbce4217d',47,
+-		3,125000,
+-	], 32 => [
+-		'0xfa000000','0x6000000',27,
+-		125,4,
+-		'0x83126e98','0xfdf3b645a',36,
+-		4,125,
+-		'0xf4240000','0x0',17,
+-		31250,1,
+-		'0x8637bd06','0x3fff79c842fa',46,
+-		1,31250,
+-	], 48 => [
+-		'0xa6aaaaab','0x6aaaaaa',27,
+-		125,6,
+-		'0xc49ba5e4','0xfdf3b645a',36,
+-		6,125,
+-		'0xa2c2aaab','0x15555',17,
+-		62500,3,
+-		'0xc9539b89','0x3fffbce4217d',46,
+-		3,62500,
+-	], 64 => [
+-		'0xfa000000','0xe000000',28,
+-		125,8,
+-		'0x83126e98','0x7ef9db22d',35,
+-		8,125,
+-		'0xf4240000','0x0',18,
+-		15625,1,
+-		'0x8637bd06','0x1fff79c842fa',45,
+-		1,15625,
+-	], 100 => [
+-		'0xa0000000','0x0',28,
+-		10,1,
+-		'0xcccccccd','0x733333333',35,
+-		1,10,
+-		'0x9c400000','0x0',18,
+-		10000,1,
+-		'0xd1b71759','0x1fff2e48e8a7',45,
+-		1,10000,
+-	], 122 => [
+-		'0x8325c53f','0xfbcda3a',28,
+-		500,61,
+-		'0xf9db22d1','0x7fbe76c8b',35,
+-		61,500,
+-		'0x8012e2a0','0x3ef36',18,
+-		500000,61,
+-		'0xffda4053','0x1ffffbce4217',45,
+-		61,500000,
+-	], 128 => [
+-		'0xfa000000','0x1e000000',29,
+-		125,16,
+-		'0x83126e98','0x3f7ced916',34,
+-		16,125,
+-		'0xf4240000','0x40000',19,
+-		15625,2,
+-		'0x8637bd06','0xfffbce4217d',44,
+-		2,15625,
+-	], 200 => [
+-		'0xa0000000','0x0',29,
+-		5,1,
+-		'0xcccccccd','0x333333333',34,
+-		1,5,
+-		'0x9c400000','0x0',19,
+-		5000,1,
+-		'0xd1b71759','0xfff2e48e8a7',44,
+-		1,5000,
+-	], 250 => [
+-		'0x80000000','0x0',29,
+-		4,1,
+-		'0x80000000','0x180000000',33,
+-		1,4,
+-		'0xfa000000','0x0',20,
+-		4000,1,
+-		'0x83126e98','0x7ff7ced9168',43,
+-		1,4000,
+-	], 256 => [
+-		'0xfa000000','0x3e000000',30,
+-		125,32,
+-		'0x83126e98','0x1fbe76c8b',33,
+-		32,125,
+-		'0xf4240000','0xc0000',20,
+-		15625,4,
+-		'0x8637bd06','0x7ffde7210be',43,
+-		4,15625,
+-	], 300 => [
+-		'0xd5555556','0x2aaaaaaa',30,
+-		10,3,
+-		'0x9999999a','0x1cccccccc',33,
+-		3,10,
+-		'0xd0555556','0xaaaaa',20,
+-		10000,3,
+-		'0x9d495183','0x7ffcb923a29',43,
+-		3,10000,
+-	], 512 => [
+-		'0xfa000000','0x7e000000',31,
+-		125,64,
+-		'0x83126e98','0xfdf3b645',32,
+-		64,125,
+-		'0xf4240000','0x1c0000',21,
+-		15625,8,
+-		'0x8637bd06','0x3ffef39085f',42,
+-		8,15625,
+-	], 1000 => [
+-		'0x80000000','0x0',31,
+-		1,1,
+-		'0x80000000','0x0',31,
+-		1,1,
+-		'0xfa000000','0x0',22,
+-		1000,1,
+-		'0x83126e98','0x1ff7ced9168',41,
+-		1,1000,
+-	], 1024 => [
+-		'0xfa000000','0xfe000000',32,
+-		125,128,
+-		'0x83126e98','0x7ef9db22',31,
+-		128,125,
+-		'0xf4240000','0x3c0000',22,
+-		15625,16,
+-		'0x8637bd06','0x1fff79c842f',41,
+-		16,15625,
+-	], 1200 => [
+-		'0xd5555556','0xd5555555',32,
+-		5,6,
+-		'0x9999999a','0x66666666',31,
+-		6,5,
+-		'0xd0555556','0x2aaaaa',22,
+-		2500,3,
+-		'0x9d495183','0x1ffcb923a29',41,
+-		3,2500,
+-	]
+-);
+-
+-$has_bigint = eval 'use Math::BigInt qw(bgcd); 1;';
+-
+-sub bint($)
+-{
+-	my($x) = @_;
+-	return Math::BigInt->new($x);
+-}
+-
+-#
+-# Constants for division by reciprocal multiplication.
+-# (bits, numerator, denominator)
+-#
+-sub fmul($$$)
+-{
+-	my ($b,$n,$d) = @_;
+-
+-	$n = bint($n);
+-	$d = bint($d);
+-
+-	return scalar (($n << $b)+$d-bint(1))/$d;
+-}
+-
+-sub fadj($$$)
+-{
+-	my($b,$n,$d) = @_;
+-
+-	$n = bint($n);
+-	$d = bint($d);
+-
+-	$d = $d/bgcd($n, $d);
+-	return scalar (($d-bint(1)) << $b)/$d;
+-}
+-
+-sub fmuls($$$) {
+-	my($b,$n,$d) = @_;
+-	my($s,$m);
+-	my($thres) = bint(1) << ($b-1);
+-
+-	$n = bint($n);
+-	$d = bint($d);
+-
+-	for ($s = 0; 1; $s++) {
+-		$m = fmul($s,$n,$d);
+-		return $s if ($m >= $thres);
+-	}
+-	return 0;
+-}
+-
+-# Generate a hex value if the result fits in 64 bits;
+-# otherwise skip.
+-sub bignum_hex($) {
+-	my($x) = @_;
+-	my $s = $x->as_hex();
+-
+-	return (length($s) > 18) ? undef : $s;
+-}
+-
+-# Provides mul, adj, and shr factors for a specific
+-# (bit, time, hz) combination
+-sub muladj($$$) {
+-	my($b, $t, $hz) = @_;
+-	my $s = fmuls($b, $t, $hz);
+-	my $m = fmul($s, $t, $hz);
+-	my $a = fadj($s, $t, $hz);
+-	return (bignum_hex($m), bignum_hex($a), $s);
+-}
+-
+-# Provides numerator, denominator values
+-sub numden($$) {
+-	my($n, $d) = @_;
+-	my $g = bgcd($n, $d);
+-	return ($n/$g, $d/$g);
+-}
+-
+-# All values for a specific (time, hz) combo
+-sub conversions($$) {
+-	my ($t, $hz) = @_;
+-	my @val = ();
+-
+-	# HZ_TO_xx
+-	push(@val, muladj(32, $t, $hz));
+-	push(@val, numden($t, $hz));
+-
+-	# xx_TO_HZ
+-	push(@val, muladj(32, $hz, $t));
+-	push(@val, numden($hz, $t));
+-
+-	return @val;
+-}
+-
+-sub compute_values($) {
+-	my($hz) = @_;
+-	my @val = ();
+-	my $s, $m, $a, $g;
+-
+-	if (!$has_bigint) {
+-		die "$0: HZ == $hz not canned and ".
+-		    "Math::BigInt not available\n";
+-	}
+-
+-	# MSEC conversions
+-	push(@val, conversions(1000, $hz));
+-
+-	# USEC conversions
+-	push(@val, conversions(1000000, $hz));
+-
+-	return @val;
+-}
+-
+-sub outputval($$)
+-{
+-	my($name, $val) = @_;
+-	my $csuf;
+-
+-	if (defined($val)) {
+-	    if ($name !~ /SHR/) {
+-		$val = "U64_C($val)";
+-	    }
+-	    printf "#define %-23s %s\n", $name.$csuf, $val.$csuf;
+-	}
+-}
+-
+-sub output($@)
+-{
+-	my($hz, @val) = @_;
+-	my $pfx, $bit, $suf, $s, $m, $a;
+-
+-	print "/* Automatically generated by kernel/timeconst.pl */\n";
+-	print "/* Conversion constants for HZ == $hz */\n";
+-	print "\n";
+-	print "#ifndef KERNEL_TIMECONST_H\n";
+-	print "#define KERNEL_TIMECONST_H\n";
+-	print "\n";
+-
+-	print "#include <linux/param.h>\n";
+-	print "#include <linux/types.h>\n";
+-
+-	print "\n";
+-	print "#if HZ != $hz\n";
+-	print "#error \"kernel/timeconst.h has the wrong HZ value!\"\n";
+-	print "#endif\n";
+-	print "\n";
+-
+-	foreach $pfx ('HZ_TO_MSEC','MSEC_TO_HZ',
+-		      'HZ_TO_USEC','USEC_TO_HZ') {
+-		foreach $bit (32) {
+-			foreach $suf ('MUL', 'ADJ', 'SHR') {
+-				outputval("${pfx}_$suf$bit", shift(@val));
+-			}
+-		}
+-		foreach $suf ('NUM', 'DEN') {
+-			outputval("${pfx}_$suf", shift(@val));
+-		}
+-	}
+-
+-	print "\n";
+-	print "#endif /* KERNEL_TIMECONST_H */\n";
+-}
+-
+-# Pretty-print Perl values
+-sub perlvals(@) {
+-	my $v;
+-	my @l = ();
+-
+-	foreach $v (@_) {
+-		if (!defined($v)) {
+-			push(@l, 'undef');
+-		} elsif ($v =~ /^0x/) {
+-			push(@l, "\'".$v."\'");
+-		} else {
+-			push(@l, $v.'');
+-		}
+-	}
+-	return join(',', @l);
+-}
+-
+-($hz) = @ARGV;
+-
+-# Use this to generate the %canned_values structure
+-if ($hz eq '--can') {
+-	shift(@ARGV);
+-	@hzlist = sort {$a <=> $b} (@ARGV);
+-
+-	print "# Precomputed values for systems without Math::BigInt\n";
+-	print "# Generated by:\n";
+-	print "# timeconst.pl --can ", join(' ', @hzlist), "\n";
+-	print "\%canned_values = (\n";
+-	my $pf = "\t";
+-	foreach $hz (@hzlist) {
+-		my @values = compute_values($hz);
+-		print "$pf$hz => [\n";
+-		while (scalar(@values)) {
+-			my $bit;
+-			foreach $bit (32) {
+-				my $m = shift(@values);
+-				my $a = shift(@values);
+-				my $s = shift(@values);
+-				print "\t\t", perlvals($m,$a,$s), ",\n";
+-			}
+-			my $n = shift(@values);
+-			my $d = shift(@values);
+-			print "\t\t", perlvals($n,$d), ",\n";
+-		}
+-		print "\t]";
+-		$pf = ', ';
+-	}
+-	print "\n);\n";
+-} else {
+-	$hz += 0;			# Force to number
+-	if ($hz < 1) {
+-		die "Usage: $0 HZ\n";
+-	}
+-
+-	$cv = $canned_values{$hz};
+-	@val = defined($cv) ? @$cv : compute_values($hz);
+-	output($hz, @val);
+-}
+-exit 0;
