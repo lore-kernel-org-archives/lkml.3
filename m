@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab3B0KLZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 05:11:25 -0500
-Received: from forward19.mail.yandex.net ([95.108.253.144]:32942 "EHLO
-	forward19.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547Ab3B0KLX (ORCPT
+	id S1756450Ab3B0KLm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 05:11:42 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:61862 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755089Ab3B0KLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 05:11:23 -0500
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: Greg Thelen <gthelen@google.com>
-Cc: Johannes Weiner-Arquette <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, "mel@csn.ul.ie" <mel@csn.ul.ie>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <xr93y5eacgmj.fsf@gthelen.mtv.corp.google.com>
-References: <8121361952156@webcorp1g.yandex-team.ru> <xr93y5eacgmj.fsf@gthelen.mtv.corp.google.com>
-Subject: Re: [PATCH] memcg: implement low limits
+	Wed, 27 Feb 2013 05:11:40 -0500
 MIME-Version: 1.0
-Message-Id: <16331361959879@webcorp2g.yandex-team.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 27 Feb 2013 14:11:19 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+In-Reply-To: <20130226235918.530615135@linuxfoundation.org>
+References: <20130226235912.881663118@linuxfoundation.org>
+	<20130226235918.530615135@linuxfoundation.org>
+Date: Wed, 27 Feb 2013 11:11:38 +0100
+Message-ID: <CAMeQTsadxx_hEkJ0Jd5wHp2UNERh1+c5Z-VV-Zi4=xz=VJ3d+A@mail.gmail.com>
+Subject: Re: [ 54/86] drm/i915: Set i9xx sdvo clock limits according to specifications
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So the new low limit is not a rigid limit. šGlobal reclaim can reclaim
-> from a cgroup when its usage is below low_limit_in_bytes although such
-> reclaim is less aggressive than when usage is above low_limit_in_bytes.
-> Correct?
-
-That's true.
-But such reclaim occurs only on very small reclaiming priorities, 
-so it's not a common behavior. It's mostly a protection against 
-a case when all cgroups are under low limit (a results of wrong cgroups configuration).
-
+On Wed, Feb 27, 2013 at 1:08 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> 3.4-stable review patch.  If anyone has any objections, please let me know.
 >
-> Why doesn't memcg reclaim (i.e. !global_reclaim) also consider
-> low_limit_in_bytes?
-
-For some configurations (for instance, low_limit_in_bytes == limit_in_bytes) it will work ugly.
-May be it's better to introduce some restrictions on setting memcg limits, but it will be
-a much more significant change from a user's point of view.
-
+> ------------------
 >
-> Do you have demonstration of how this improves system operation?
-
-Assume, you have a machine with some production processes (db, web servers, etc) and a set 
-of additional helper processes. You have to protect production processes from steeling theirs 
-memory by other processes.
-You have constant memory starvation, so kswapd works fast permanently. The production processes 
-use, for instance, 80-90% of all physical memory.
-Setting low limit for production cgroup to 80% of physical memory solves this problem easily and secure.
-
-And I see no possibility to solve this task with current hard- and soft limits.
-So, even if I set hard limit for all other processes to 20% of physical memory, it doesn't mean that 
-production cgroup will not been scanned/reclaimed. Some magic with soft limits can help in some cases, 
-but it's much more complex in configuration (see below).
-
-> Why is soft_limit insufficient?
-
-
-1) If I want to grant (and protect) some amount of memory to a cgroup, i have to set soft limits for 
-all other cgroups. I must consider total amount of memory, number of cgroups, theirs soft and hard limits.
-Low limits provide an easier interface.
-2) It works only on DEF_PRIORITY priority.
-3) Also, it can be so, that my preferable cgroup is higher above it's soft limit than 
-other cgroups (and it's hard to control), so it will be reclaimed more intensively than necessary.
-
->> šSigned-off-by: Roman Gushchin <klamm@yandex-team.ru>
->> š---
->> ššinclude/linux/memcontrol.h š| ššš7 +++++
->> ššinclude/linux/res_counter.h | šš17 +++++++++++
->> šškernel/res_counter.c ššššššš| ššš2 ++
->> ššmm/memcontrol.c šššššššššššš| šš67 +++++++++++++++++++++++++++++++++++++++++++
->> ššmm/vmscan.c šššššššššššššššš| ššš5 ++++
->> šš5 files changed, 98 insertions(+)
+> From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 >
-> Need to update Documentation/cgroups/memory.txt explaining the external
-> behavior of this new know and how it interacts with soft_limit_in_bytes.
+> commit 4f7dfb6788dd022446847fbbfbe45e13bedb5be2 upstream.
+>
+> The Intel PRM says the M1 and M2 divisors must be in the range of 10-20 and 5-9.
+> Since we do all calculations based on them being register values (which are
+> subtracted by 2) we need to specify them accordingly.
+>
+> Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+> Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+> Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=56359
+> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> ---
+>  drivers/gpu/drm/i915/intel_display.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -142,8 +142,8 @@ static const intel_limit_t intel_limits_
+>         .vco = { .min = 1400000, .max = 2800000 },
+>         .n = { .min = 1, .max = 6 },
+>         .m = { .min = 70, .max = 120 },
+> -       .m1 = { .min = 10, .max = 22 },
+> -       .m2 = { .min = 5, .max = 9 },
+> +       .m1 = { .min = 8, .max = 18 },
+> +       .m2 = { .min = 3, .max = 7 },
+>         .p = { .min = 5, .max = 80 },
+>         .p1 = { .min = 1, .max = 8 },
+>         .p2 = { .dot_limit = 200000,
 
-Will do.
+Is this really stable material? It fixes no known issues and the bug
+report seems to be a different problem.
 
-Thank you!
-
---
-Regards,
-Roman
+-Patrik
