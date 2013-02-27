@@ -1,123 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760202Ab3B0Ocy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 09:32:54 -0500
-Received: from eth6445.sa.adsl.internode.on.net ([150.101.30.44]:52771 "EHLO
-	aix.gdt.id.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760025Ab3B0Ocw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 09:32:52 -0500
-Message-ID: <1361975556.13093.3.camel@ilion>
-Subject: [PATCHv2] usb/net/asix_devices: Add USBNET HG20F9 ethernet dongle
-From: Glen Turner <gdt@gdt.id.au>
-To: David Miller <davem@davemloft.net>
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 28 Feb 2013 01:02:36 +1030
-In-Reply-To: <20130226.172955.926853809838377302.davem@davemloft.net>
-References: <1361852232.23197.4.camel@andromache.adelaide.aarnet.edu.au>
-	 <20130226.172856.235525833921140241.davem@davemloft.net>
-	 <20130226.172955.926853809838377302.davem@davemloft.net>
-Organization: http://www.gdt.id.au/~gdt/
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1760189Ab3B0Ogh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 09:36:37 -0500
+Received: from slimlogic.co.uk ([89.16.172.20]:45325 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759975Ab3B0Ogg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 09:36:36 -0500
+Message-ID: <512E19F2.7060801@slimlogic.co.uk>
+Date: Wed, 27 Feb 2013 14:36:34 +0000
+From: Graeme Gregory <gg@slimlogic.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>
+Subject: Re: [PATCH 2/2] mfd: palmas: get rid of of_platform_populate() in
+ DT registration
+References: <1361974120-18134-1-git-send-email-ldewangan@nvidia.com> <1361974120-18134-2-git-send-email-ldewangan@nvidia.com> <512E1685.6080206@slimlogic.co.uk> <512E17AD.1080703@nvidia.com>
+In-Reply-To: <512E17AD.1080703@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This USB ethernet adapter was purchased in anodyne packaging
-from the computer store adjacent to linux.conf.au 2013 in
-Canberra (Australia). A web search shows other recent
-purchasers in Lancaster (UK) and Seattle (USA). Just like an
-emergent virus, our age of e-commerce and airmail allows
-underdocumented hardware to spread around the world instantly
-using the vector of ridiculously low prices.
+On 27/02/13 14:26, Laxman Dewangan wrote:
+> On Wednesday 27 February 2013 07:51 PM, Graeme Gregory wrote:
+>> On 27/02/13 14:08, Laxman Dewangan wrote:
+>>> If driver is getting registered through DT then it look for
+>>> population of platform data which is not possible if platform
+>>> completely support the DT.
+>> No it doesnt!
+>>> In this case, if device is registered through DT then just ignore
+>>> platform data population and continue the further registration.
+>>> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+>>> ---
+>>>   drivers/mfd/palmas.c |   21 +++++++++------------
+>>>   1 files changed, 9 insertions(+), 12 deletions(-)
+>>>
+>>> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+>>> index 25f0eab..6771d9b 100644
+>>> --- a/drivers/mfd/palmas.c
+>>> +++ b/drivers/mfd/palmas.c
+>>> @@ -465,18 +465,6 @@ static int palmas_i2c_probe(struct i2c_client
+>>> *i2c,
+>>>       if (ret)
+>>>           goto err_irq;
+>>>   -    /*
+>>> -     * If we are probing with DT do this the DT way and return here
+>>> -     * otherwise continue and add devices using mfd helpers.
+>>> -     */
+>>> -    if (node) {
+>>> -        ret = of_platform_populate(node, NULL, NULL, &i2c->dev);
+>>> -        if (ret < 0)
+>>> -            goto err_irq;
+>>> -        else
+>>> -            return ret;
+>>> -    }
+>>> -
+>> At this point we exit the function and do nothing with the platform data
+>> which should work on wholy DT systems. I have tested it!
+>
+>
+> I think then dt files are different in this case. I did not saw the
+> documentation of dt file.
+> But following is my entry in dts file which we follow for other devices:
+>
+>         i2c@7000d000 {
+>                 status = "okay";
+>                 clock-frequency = <100000>;
+>
+>   ::::::::::::::
+>                 tps65913@58 {
+>                         compatible = "ti,palmas";
+>                         reg = <0x58>;
+>                         interrupts = <0 86 0x4>;
+>
+>                         #interrupt-cells = <2>;
+>                         interrupt-controller;
+>
+>                         #gpio-cells = <2>;
+>                         gpio-controller;
+>
+>                         regulators {
+>                                 smps12 {
+>                                         regulator-name = "palmas-smps12";
+>                                         regulator-min-microvolt =
+> <1350000>;
+>                                         regulator-max-microvolt =
+> <1350000>;
+>                                         regulator-always-on;
+>                                         regulator-boot-on;
+>                                 };
+>
+>                                 smps3 {
+>                                         regulator-name = "palmas-smps3";
+>                                         regulator-min-microvolt =
+> <1800000>;
+>                                         regulator-max-microvolt =
+> <1800000>;
+>                                         regulator-always-on;
+>                                         regulator-boot-on;
+>                                 };
+> :::::::::::::::
+>                     };
+>             };
+>     };
+>
+>
+> In the above DT file, it does not work.
+>
+>
+I did slip up and forget to push the documentation file, it has since
+started the upstream here
 
-Paige Thompson, infected via eBay, discovered that the HG20F9
-is a copy of the Asix 88772B; many viruses copy the RNA of
-other viruses. See Paige's work at
-<https://github.com/paigeadele/HG20F9>.
-This patch uses her discovery to update the restructured Asix
-driver in the current kernel.
+http://article.gmane.org/gmane.linux.documentation/9491/match=palmas+dts
 
-Just as some viruses inhabit seemingly-healthy cells, the
-HG20F9 uses the Vendor ID 0x066b assigned to Linksys Inc.
-For the present there is no clash of Product ID 0x20f9.
-
-Signed-off-by: Glen Turner <gdt@gdt.id.au>
----
-David,
-
-My apologies for the patch failing to compile. I worked off Linus' GIT tree
-from a week ago, which I now realise was ignorant. Today I downloaded
-<git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git>,
-modified the patch to suit, compiled with a distributor's .config (ten hours
-on my EeePC 901), and re-tested against a range of switches and traffic.
-
-Thanks to Bjørn Mork for the heads-up about comment coding style. I had
-copied the style used throughout asix_devices.c but one never knows where
-being on the bad side of an automated tool can lead, now that the creator
-of the Daleks can no longer protect us from robots with rigid notions
-of the acceptable and the exterminatable.
-
--glen
-
- drivers/net/usb/asix_devices.c |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
-
-diff --git a/drivers/net/usb/asix_devices.c b/drivers/net/usb/asix_devices.c
-index 2205dbc..7097534 100644
---- a/drivers/net/usb/asix_devices.c
-+++ b/drivers/net/usb/asix_devices.c
-@@ -924,6 +924,29 @@ static const struct driver_info ax88178_info = {
- 	.tx_fixup = asix_tx_fixup,
- };
+The design of the palmas was to make it properly hierarchical to stop
+nasty hacks like accessing parent of parent. As a MFD children should
+not be tightly bonded to the MFD device!
  
-+/*
-+ * USBLINK 20F9 "USB 2.0 LAN" USB ethernet adapter, typically found in
-+ * no-name packaging.
-+ * USB device strings are:
-+ *   1: Manufacturer: USBLINK
-+ *   2: Product: HG20F9 USB2.0
-+ *   3: Serial: 000003
-+ * Appears to be compatible with Asix 88772B.
-+ */
-+static const struct driver_info hg20f9_info = {
-+	.description = "HG20F9 USB 2.0 Ethernet",
-+	.bind = ax88772_bind,
-+	.unbind = ax88772_unbind,
-+	.status = asix_status,
-+	.link_reset = ax88772_link_reset,
-+	.reset = ax88772_reset,
-+	.flags = FLAG_ETHER | FLAG_FRAMING_AX | FLAG_LINK_INTR |
-+	         FLAG_MULTI_PACKET,
-+	.rx_fixup = asix_rx_fixup_common,
-+	.tx_fixup = asix_tx_fixup,
-+	.data = FLAG_EEPROM_MAC,
-+};
-+
- extern const struct driver_info ax88172a_info;
- 
- static const struct usb_device_id	products [] = {
-@@ -1063,6 +1086,14 @@ static const struct usb_device_id	products [] = {
- 	/* ASIX 88172a demo board */
- 	USB_DEVICE(0x0b95, 0x172a),
- 	.driver_info = (unsigned long) &ax88172a_info,
-+}, {
-+	/*
-+	 * USBLINK HG20F9 "USB 2.0 LAN"
-+	 * Appears to have gazumped Linksys's manufacturer ID but
-+	 * doesn't (yet) conflict with any known Linksys product.
-+	 */
-+	USB_DEVICE(0x066b, 0x20f9),
-+	.driver_info = (unsigned long) &hg20f9_info,
- },
- 	{ },		// END
- };
--- 
-1.7.10.4
-
-
+Graeme
 
