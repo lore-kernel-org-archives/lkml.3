@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758329Ab3B0W4N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 17:56:13 -0500
-Received: from mga01.intel.com ([192.55.52.88]:3181 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751991Ab3B0W4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 17:56:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,751,1355126400"; 
-   d="scan'208";a="296856134"
-Message-ID: <512E8F09.2090003@linux.intel.com>
-Date: Wed, 27 Feb 2013 14:56:09 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1758245Ab3B0XAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 18:00:15 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:34008 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672Ab3B0XAN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 18:00:13 -0500
+Date: Wed, 27 Feb 2013 15:00:09 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>, mingo@redhat.com,
+        konrad.wilk@oracle.com, tglx@linutronix.de, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/x86: Flush lazy MMU when DEBUG_PAGEALLOC is set
+Message-ID: <20130227230009.GA32465@kroah.com>
+References: <91983d94-7b7d-4a0b-9470-e7cd823ba139@default>
+ <512E8B41.8000504@zytor.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        linux-parisc@vger.kernel.org, linux-s390@vger.kernel.org,
-        Helge Deller <deller@gmx.de>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] Consolidate CONFIG_DEBUG_STRICT_USER_COPY_CHECK
-References: <1361934016-22630-1-git-send-email-sboyd@codeaurora.org> <201302272032.21014.arnd@arndb.de> <512E6FA9.4060504@codeaurora.org> <512E8664.3070903@zytor.com> <20130228094510.3341017130e4476e046bdd22@canb.auug.org.au>
-In-Reply-To: <20130228094510.3341017130e4476e046bdd22@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <512E8B41.8000504@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/27/2013 2:45 PM, Stephen Rothwell wrote:
-> Hi all,
->
-> On Wed, 27 Feb 2013 14:19:16 -0800 "H. Peter Anvin" <hpa@zytor.com> wrote:
->>
->> Although some of the cases I have seen being flagged as "false
->> positives" have been real bugs.
->
-> [hijacking the thread :-)]
->
-> I have been getting this warning for a very long time ( which would be an
-> error if CONFIG_DEBUG_STRICT_USER_COPY_CHECK was set):
->
-> i386 defconfig
-> i386-linux-gcc (GCC) 4.6.3
->
-> In file included from arch/x86/include/asm/uaccess.h:537:0,
->                   from include/linux/uaccess.h:5,
->                   from include/linux/highmem.h:8,
->                   from include/linux/pagemap.h:10,
->                   from fs/binfmt_misc.c:27:
-> arch/x86/include/asm/uaccess_32.h: In function 'parse_command.part.2':
-> arch/x86/include/asm/uaccess_32.h:211:26: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct [enabled by default]
->
+On Wed, Feb 27, 2013 at 02:40:01PM -0800, H. Peter Anvin wrote:
+> Greg, policy opinion?
+> 
+> 	-hpa
+> 
+> On 02/26/2013 03:57 PM, Boris Ostrovsky wrote:
+> > 
+> > ----- hpa@zytor.com wrote:
+> > 
+> >> On 02/26/2013 02:56 PM, Boris Ostrovsky wrote:
+> >>> When CONFIG_DEBUG_PAGEALLOC is set page table updates made by
+> >>> kernel_map_pages() are not made visible (via TLB flush) immediately
+> >> if lazy
+> >>> MMU is on. In environments that support lazy MMU (e.g. Xen) this may
+> >> lead to
+> >>> fatal page faults, for example, when zap_pte_range() needs to
+> >> allocate pages
+> >>> in __tlb_remove_page() -> tlb_next_batch().
+> >>>
+> >>> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> >>> ---
+> >>>  arch/x86/mm/pageattr.c | 2 ++
+> >>>  1 file changed, 2 insertions(+)
+> >>>
+> >>> diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+> >>> index ca1f1c2..7b3216e 100644
+> >>> --- a/arch/x86/mm/pageattr.c
+> >>> +++ b/arch/x86/mm/pageattr.c
+> >>> @@ -1369,6 +1369,8 @@ void kernel_map_pages(struct page *page, int
+> >> numpages, int enable)
+> >>>  	 * but that can deadlock->flush only current cpu:
+> >>>  	 */
+> >>>  	__flush_tlb_all();
+> >>> +
+> >>> +	arch_flush_lazy_mmu_mode();
+> >>>  }
+> >>>  
+> >>>  #ifdef CONFIG_HIBERNATION
+> >>>
+> >>
+> >> This sounds like a critical fix, i.e. a -stable candidate.  Am I
+> >> correct?
+> > 
+> > I considered copying stable but then I decided that this is a debugging feature
+> > --- kernel_map_pages() is only defined if CONFIG_DEBUG_PAGEALLOC is set and my
+> > thinking was that stable kernels usually don't do this.
 
+"Stable" kernels are used all over the place, like in distros, which
+might enable this.
 
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=35392
+I have no objection to taking this patch in a stable release, as it does
+fix a real problem.
 
-the gcc folks finally fixed that one it seems
+thanks,
 
-(but while there are some false positives, esp with older gcc, the majority were real originally.. just those all got fixed)
-
-
+greg k-h
