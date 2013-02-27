@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760068Ab3B0OC5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 09:02:57 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60260 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752565Ab3B0OC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 09:02:56 -0500
-Message-ID: <512E120D.7000101@ti.com>
-Date: Wed, 27 Feb 2013 16:02:53 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1760080Ab3B0OEO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 09:04:14 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:60429 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565Ab3B0OEM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 09:04:12 -0500
+Message-ID: <512E1259.5020903@gmail.com>
+Date: Wed, 27 Feb 2013 08:04:09 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: "sameo@linux.intel.com" <sameo@linux.intel.com>
-CC: "Balbi, Felipe" <balbi@ti.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>
-Subject: mfd: omap-usb-host: bug fix for 3.9
-Content-Type: text/plain; charset="ISO-8859-1"
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+CC: linux-mmc@vger.kernel.org, grant.likely@secretlab.ca, rob@landley.net,
+        linux@arm.linux.org.uk, nsekhar@ti.com, hs@denx.de,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, cjb@laptop.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 5/5] ARM: davinci: da850: override mmc DT node device
+ name
+References: <1360909322-1858-1-git-send-email-prakash.pm@ti.com> <1360909322-1858-6-git-send-email-prakash.pm@ti.com>
+In-Reply-To: <1360909322-1858-6-git-send-email-prakash.pm@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+On 02/15/2013 12:22 AM, Manjunathappa, Prakash wrote:
+> Populate OF_DEV_AUXDATA with desired device name expected by
+> davinci_mmc driver. Without this clk_get of davinci_mmc DT driver
+> fails.
+> 
+> Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+> Cc: linux-mmc@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: davinci-linux-open-source@linux.davincidsp.com
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: cjb@laptop.org
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> ---
+> Since v2:
+> Rebased on top of v3.9/dt-2 branch of linux_davinci and reordered this patch.
+> 
+>  arch/arm/mach-davinci/da8xx-dt.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
+> index 5404e92..2b740a9 100644
+> --- a/arch/arm/mach-davinci/da8xx-dt.c
+> +++ b/arch/arm/mach-davinci/da8xx-dt.c
+> @@ -40,6 +40,8 @@ static void __init da8xx_init_irq(void)
+>  struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
+>  	OF_DEV_AUXDATA("ti,davinci-i2c", 0x01c22000, "i2c_davinci.1", NULL),
+>  	OF_DEV_AUXDATA("ti,davinci-wdt", 0x01c21000, "watchdog", NULL),
+> +	OF_DEV_AUXDATA("ti,davinci-mmc-da830", 0x01c40000, "davinci-mmc-da830.0",
+> +			NULL),
 
-One of my patch that I sent for 3.9 introduces a bug that fails to
-update the port mode hostconfig register. Because of that, the port modes will
-always be 0 (i.e. EHCI PHY mode) and other modes will not work. PHY mode will
-work, so beagle/panda have no issues.
+If you only need clock lookup, just add a clkdev entry with the new name.
 
-Since my hardware setup uses only PHY mode, I couldn't catch this problem earlier.
-
-Below is the fix.
-
->From 82466757a212bd8b54d806c9d56b1acccbd4d464 Mon Sep 17 00:00:00 2001
-From: Roger Quadros <rogerq@ti.com>
-Date: Wed, 27 Feb 2013 15:19:24 +0200
-Subject: [PATCH] mfd: omap-usb-host: Actually update hostconfig
-
-The helper functions omap_usbhs_rev1_hostconfig()
-and omap_usbhs_rev2_hostconfig() don't write into
-the hostconfig register. Make sure that we write
-the return value into the hostconfig register.
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- drivers/mfd/omap-usb-host.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 6b5edf6..4febc5c 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -460,15 +460,15 @@ static void omap_usbhs_init(struct device *dev)
- 
- 	switch (omap->usbhs_rev) {
- 	case OMAP_USBHS_REV1:
--		omap_usbhs_rev1_hostconfig(omap, reg);
-+		reg = omap_usbhs_rev1_hostconfig(omap, reg);
- 		break;
- 
- 	case OMAP_USBHS_REV2:
--		omap_usbhs_rev2_hostconfig(omap, reg);
-+		reg = omap_usbhs_rev2_hostconfig(omap, reg);
- 		break;
- 
- 	default:	/* newer revisions */
--		omap_usbhs_rev2_hostconfig(omap, reg);
-+		reg = omap_usbhs_rev2_hostconfig(omap, reg);
- 		break;
- 	}
- 
--- 
-1.7.4.1
+Rob
