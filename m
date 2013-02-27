@@ -1,152 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab3B0F6F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 00:58:05 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:47408 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab3B0F57 (ORCPT
+	id S1752971Ab3B0F6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 00:58:11 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:63559 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab3B0F6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 00:57:59 -0500
-Date: Tue, 26 Feb 2013 21:57:58 -0800 (PST)
+	Wed, 27 Feb 2013 00:58:07 -0500
+Date: Tue, 26 Feb 2013 21:58:06 -0800 (PST)
 From: Rob Landley <rob@landley.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Josh Boyer <jwboyer@redhat.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Zheng Yan <zheng.z.yan@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-To: linux-kernel@vger.kernel.org
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowell@redhat.com>, Michal Marek <mmarek@suse.cz>,
+        Sam Ravnborg <sam@ravnborg.org>
+To: linux-kbuild@vger.kernel.org
 In-Reply-To: <1361944667.957820@landley.net>
-Message-Id: <1361944667.958247@landley.net>
-Subject: [PATCH 1/3] convert mkcapflags.pl to mkcapflags.sh
+Message-Id: <1361944667.959170@landley.net>
+Subject: [PATCH 3/3] convert headers_install.pl to headers_install.sh
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Landley <rob@landley.net>
 
-Generate asm-x86/cpufeature.h with posix-2008 commands instead of perl.
+Remove perl from make headers_install by replacing a perl script (doing
+a simple regex search and replace) with a smaller, faster, simpler,
+POSIX-2008 shell script implementation.  The new shell script is a single
+for loop calling sed and piping its output through unifdef to produce the
+target file.
+
+Same as last time except for minor tweak to deal with code review from here:
+http://lkml.indiana.edu/hypermail/linux/kernel/1302.3/00078.html
+
+(Note that this drops the "arch" argument, which isn't used. Kbuild
+already points to the right input files on the command line.)
 
 Signed-off-by: Rob Landley <rob@landley.net>
 ---
 
- arch/x86/kernel/cpu/Makefile      |    4 +-
- arch/x86/kernel/cpu/mkcapflags.pl |   48 ----------------------------
- arch/x86/kernel/cpu/mkcapflags.sh |   41 +++++++++++++++++++++++
- 3 files changed, 43 insertions(+), 50 deletions(-)
+ scripts/Makefile.headersinst |    4 +-
+ scripts/headers_install.pl   |   63 ---------------------------------
+ scripts/headers_install.sh   |   43 ++++++++++++++++++++++
+ 3 files changed, 45 insertions(+), 65 deletions(-)
 
---- linux/arch/x86/kernel/cpu/mkcapflags.pl
+diff -ruN linux-3.1/scripts/headers_install.sh linux-2.6.30/scripts/headers_install.sh
+--- linux-3.1/scripts/headers_install.sh
++++ linux/scripts/headers_install.sh
+@@ -0,0 +1,43 @@
++#!/bin/sh
++
++if [ $# -lt 1 ]
++then
++	echo "Usage: headers_install.sh OUTDIR [FILES...]
++	echo
++	echo "Prepares kernel header files for use by user space, by removing"
++	echo "all compiler.h definitions and #includes, removing any"
++	echo "#ifdef __KERNEL__ sections, and putting __underscores__ around"
++	echo "asm/inline/volatile keywords."
++	echo
++	echo "OUTDIR: directory to write each userspace header FILE to."
++	echo "FILES:  list of header files to operate on."
++
++	exit 1
++fi
++
++# Grab arguments
++
++OUTDIR="$1"
++shift
++
++# Iterate through files listed on command line
++
++FILE=
++trap 'rm -f "$OUTDIR/$FILE" "$OUTDIR/$FILE.sed"' EXIT
++for i in "$@"
++do
++	FILE="$(basename "$i")"
++	sed -r \
++		-e 's/([ \t(])(__user|__force|__iomem)[ \t]/\1/g' \
++		-e 's/__attribute_const__([ \t]|$)/\1/g' \
++		-e 's@^#include <linux/compiler.h>@@' \
++		-e 's/(^|[^a-zA-Z0-9])__packed([^a-zA-Z0-9_]|$)/\1__attribute__((packed))\2/g' \
++		-e 's/(^|[ \t(])(inline|asm|volatile)([ \t(]|$)/\1__\2__\3/g' \
++		-e 's@#(ifndef|define|endif[ \t]*/[*])[ \t]*_UAPI@#\1 @' \
++		"$i" > "$OUTDIR/$FILE.sed" || exit 1
++	scripts/unifdef -U__KERNEL__ -D__EXPORTED_HEADERS__ "$OUTDIR/$FILE.sed" \
++		> "$OUTDIR/$FILE"
++	[ $? -gt 1 ] && exit 1
++	rm -f "$OUTDIR/$FILE.sed"
++done
++trap - EXIT
+diff -ruN linux-3.1/scripts/Makefile.headersinst
+--- linux-3.1/scripts/Makefile.headersinst
++++ linux/scripts/Makefile.headersinst
+@@ -71,7 +71,7 @@
+ quiet_cmd_install = INSTALL $(printdir) ($(words $(all-files))\
+                             file$(if $(word 2, $(all-files)),s))
+       cmd_install = \
+-        $(PERL) $< $(installdir) $(SRCARCH) $(input-files); \
++        $(CONFIG_SHELL) $< $(installdir) $(input-files); \
+         for F in $(wrapper-files); do                                   \
+                 echo "\#include <asm-generic/$$F>" > $(installdir)/$$F;    \
+         done;                                                           \
+@@ -97,7 +97,7 @@
+ 	@:
+ 
+ targets += $(install-file)
+-$(install-file): scripts/headers_install.pl $(input-files) FORCE
++$(install-file): scripts/headers_install.sh $(input-files) FORCE
+ 	$(if $(unwanted),$(call cmd,remove),)
+ 	$(if $(wildcard $(dir $@)),,$(shell mkdir -p $(dir $@)))
+ 	$(call if_changed,install)
+--- a/scripts/headers_install.pl
 +++ /dev/null
-@@ -1,48 +0,0 @@
+@@ -1,63 +0,0 @@
 -#!/usr/bin/perl -w
 -#
--# Generate the x86_cap_flags[] array from include/asm-x86/cpufeature.h
+-# headers_install prepare the listed header files for use in
+-# user space and copy the files to their destination.
 -#
+-# Usage: headers_install.pl readdir installdir arch [files...]
+-# installdir: dir to install the files to
+-# arch:       current architecture
+-#             arch is used to force a reinstallation when the arch
+-#             changes because kbuild then detect a command line change.
+-# files:      list of files to check
+-#
+-# Step in preparation for users space:
+-# 1) Drop all use of compiler.h definitions
+-# 2) Drop include of compiler.h
+-# 3) Drop all sections defined out by __KERNEL__ (using unifdef)
 -
--($in, $out) = @ARGV;
+-use strict;
 -
--open(IN, "< $in\0")   or die "$0: cannot open: $in: $!\n";
--open(OUT, "> $out\0") or die "$0: cannot create: $out: $!\n";
+-my ($installdir, $arch, @files) = @ARGV;
 -
--print OUT "#ifndef _ASM_X86_CPUFEATURE_H\n";
--print OUT "#include <asm/cpufeature.h>\n";
--print OUT "#endif\n";
--print OUT "\n";
--print OUT "const char * const x86_cap_flags[NCAPINTS*32] = {\n";
+-my $unifdef = "scripts/unifdef -U__KERNEL__ -D__EXPORTED_HEADERS__";
 -
--%features = ();
--$err = 0;
+-foreach my $filename (@files) {
+-	my $file = $filename;
+-	$file =~ s!^.*/!!;
 -
--while (defined($line = <IN>)) {
--	if ($line =~ /^\s*\#\s*define\s+(X86_FEATURE_(\S+))\s+(.*)$/) {
--		$macro = $1;
--		$feature = "\L$2";
--		$tail = $3;
--		if ($tail =~ /\/\*\s*\"([^"]*)\".*\*\//) {
--			$feature = "\L$1";
--		}
+-	my $tmpfile = "$installdir/$file.tmp";
 -
--		next if ($feature eq '');
--
--		if ($features{$feature}++) {
--			print STDERR "$in: duplicate feature name: $feature\n";
--			$err++;
--		}
--		printf OUT "\t%-32s = \"%s\",\n", "[$macro]", $feature;
+-	open(my $in, '<', $filename)
+-	    or die "$filename: $!\n";
+-	open(my $out, '>', $tmpfile)
+-	    or die "$tmpfile: $!\n";
+-	while (my $line = <$in>) {
+-		$line =~ s/([\s(])__user\s/$1/g;
+-		$line =~ s/([\s(])__force\s/$1/g;
+-		$line =~ s/([\s(])__iomem\s/$1/g;
+-		$line =~ s/\s__attribute_const__\s/ /g;
+-		$line =~ s/\s__attribute_const__$//g;
+-		$line =~ s/\b__packed\b/__attribute__((packed))/g;
+-		$line =~ s/^#include <linux\/compiler.h>//;
+-		$line =~ s/(^|\s)(inline)\b/$1__$2__/g;
+-		$line =~ s/(^|\s)(asm)\b(\s|[(]|$)/$1__$2__$3/g;
+-		$line =~ s/(^|\s|[(])(volatile)\b(\s|[(]|$)/$1__$2__$3/g;
+-		$line =~ s/#ifndef\s+_UAPI/#ifndef /;
+-		$line =~ s/#define\s+_UAPI/#define /;
+-		$line =~ s!#endif\s+/[*]\s*_UAPI!#endif /* !;
+-		printf {$out} "%s", $line;
 -	}
+-	close $out;
+-	close $in;
+-
+-	system $unifdef . " $tmpfile > $installdir/$file";
+-	# unifdef will exit 0 on success, and will exit 1 when the
+-	# file was processed successfully but no changes were made,
+-	# so abort only when it's higher than that.
+-	my $e = $? >> 8;
+-	if ($e > 1) {
+-		die "$tmpfile: $!\n";
+-	}
+-	unlink $tmpfile;
 -}
--print OUT "};\n";
--
--close(IN);
--close(OUT);
--
--if ($err) {
--	unlink($out);
--	exit(1);
--}
--
--exit(0);
---- /dev/null	2012-07-11 05:54:12.790418331 -0500
-+++ linux/arch/x86/kernel/cpu/mkcapflags.sh	2012-07-22 13:13:57.700823094 -0500
-@@ -0,0 +1,41 @@
-+#!/bin/sh
-+#
-+# Generate the x86_cap_flags[] array from include/asm/cpufeature.h
-+#
-+
-+IN=$1
-+OUT=$2
-+
-+TABS="$(printf '\t\t\t\t\t')"
-+trap 'rm "$OUT"' EXIT
-+
-+(
-+	echo "#ifndef _ASM_X86_CPUFEATURE_H"
-+	echo "#include <asm/cpufeature.h>"
-+	echo "#endif"
-+	echo ""
-+	echo "const char * const x86_cap_flags[NCAPINTS*32] = {"
-+
-+	# Iterate through any input lines starting with #define X86_FEATURE_
-+	sed -n -e 's/\t/ /g' -e 's/^ *# *define *X86_FEATURE_//p' $IN |
-+	while read i
-+	do
-+		# Name is everything up to the first whitespace
-+		NAME="$(echo "$i" | sed 's/ .*//')"
-+
-+		# If the /* comment */ starts with a quote string, grab that.
-+		VALUE="$(echo "$i" | sed -n 's@.*/\* *\("[^"]*"\).*\*/@\1@p')"
-+		[ -z "$VALUE" ] && VALUE="\"$NAME\""
-+		[ "$VALUE" == '""' ] && continue
-+
-+		# Name is uppercase, VALUE is all lowercase
-+		VALUE="$(echo "$VALUE" | tr A-Z a-z)"
-+
-+		TABCOUNT=$(( ( 5*8 - 14 - $(echo "$NAME" | wc -c) ) / 8 ))
-+		printf "\t[%s]%.*s = %s,\n" \
-+			"X86_FEATURE_$NAME" "$TABCOUNT" "$TABS" "$VALUE"
-+	done
-+	echo "};"
-+) > $OUT
-+
-+trap - EXIT
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 25f24dc..9edf7e7 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -43,10 +43,10 @@ obj-$(CONFIG_MTRR)			+= mtrr/
- obj-$(CONFIG_X86_LOCAL_APIC)		+= perfctr-watchdog.o perf_event_amd_ibs.o
- 
- quiet_cmd_mkcapflags = MKCAP   $@
--      cmd_mkcapflags = $(PERL) $(srctree)/$(src)/mkcapflags.pl $< $@
-+      cmd_mkcapflags = $(CONFIG_SHELL) $(srctree)/$(src)/mkcapflags.sh $< $@
- 
- cpufeature = $(src)/../../include/asm/cpufeature.h
- 
- targets += capflags.c
--$(obj)/capflags.c: $(cpufeature) $(src)/mkcapflags.pl FORCE
-+$(obj)/capflags.c: $(cpufeature) $(src)/mkcapflags.sh FORCE
- 	$(call if_changed,mkcapflags)
+-exit 0;
