@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759911Ab3B0BwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:52:12 -0500
-Received: from ozlabs.org ([203.10.76.45]:55780 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759240Ab3B0BwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 20:52:09 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Milos Vyletel <milos.vyletel@sde.cz>, Greg KH <greg@kroah.com>
-Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
-        linux-hotplug@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, mst@redhat.com
-Subject: Re: [PATCH] virtio-blk: emit udev event when device is resized
-In-Reply-To: <16100EF6-6C55-47ED-9BBB-2C3CAC8FA37A@sde.cz>
-References: <1361473348-7660-1-git-send-email-milos.vyletel@sde.cz> <87y5ehfczy.fsf@rustcorp.com.au> <20130225221238.GA10575@kroah.com> <16100EF6-6C55-47ED-9BBB-2C3CAC8FA37A@sde.cz>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 27 Feb 2013 11:04:14 +1030
-Message-ID: <87wqtuegs9.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1759870Ab3B0CAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 21:00:18 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:32802 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756859Ab3B0CAP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 21:00:15 -0500
+Date: Wed, 27 Feb 2013 13:00:07 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: linux-next: manual merge of the akpm-current tree with the vfs tree
+Message-Id: <20130227130007.ffaca3220a5a5e87d9f50f2b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__27_Feb_2013_13_00_07_+1100_aDNaTOsWM0_SChu8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Milos Vyletel <milos.vyletel@sde.cz> writes:
-> On Feb 25, 2013, at 5:12 PM, Greg KH <greg@kroah.com> wrote:
->
->> On Fri, Feb 22, 2013 at 10:14:49AM +1030, Rusty Russell wrote:
->>> Milos Vyletel <milos.vyletel@sde.cz> writes:
->>> 
->>>> When virtio-blk device is resized from host (using block_resize from QEMU) emit
->>>> KOBJ_CHANGE uevent to notify guest about such change. This allows user to have
->>>> custom udev rules which would take whatever action if such event occurs. As a
->>>> proof of concept I've created simple udev rule that automatically resize
->>>> filesystem on virtio-blk device.
->>>> 
->>>> ACTION=="change", KERNEL=="vd*", \
->>>>        ENV{RESIZE}=="1", \
->>>>        ENV{ID_FS_TYPE}=="ext[3-4]", \
->>>>        RUN+="/sbin/resize2fs /dev/%k"
->>>> ACTION=="change", KERNEL=="vd*", \
->>>>        ENV{RESIZE}=="1", \
->>>>        ENV{ID_FS_TYPE}=="LVM2_member", \
->>>>        RUN+="/sbin/pvresize /dev/%k"
->>> 
->>> This looks fine to me, but I like to check with Greg before adding udev
->>> callouts.... Greg?
->> 
->> Hm, I thought we were frowning apon running binaries from udev rules
->> these days, especially ones that might have big consequences (like
->> resizing a disk image) like this.
->> 
->> Kay, am I right?
->> 
->> We already emit KOBJECT_CHANGE events when block devices change, from
->> within the block core code.  Why is the patch below needed instead of
->> using these events that are already generated?  How are virtio block
->> devices special?
->> 
->>> BTW, if this is good, it's good for stable IMHO.
->> 
->> What bug does it fix?
->> 
->
-> It is not really a bug but it definitely is useful enhancement to have in stable too. I
-> can imagine lots of people can benefit from this.
+--Signature=_Wed__27_Feb_2013_13_00_07_+1100_aDNaTOsWM0_SChu8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-But that applies to almost any enhancement :)
+Hi Andrew,
 
-It will go in *next* merge window, not this one.
+Today's linux-next merge of the akpm-current tree got a conflict in
+fs/proc/inode.c between commit d3d009cb965e ("saner proc_get_inode()
+calling conventions") from the vfs tree and commit "fs/proc: clean up
+printks" from the akpm-current tree.
 
-Thanks,
-Rusty.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/proc/inode.c
+index 70322e1,b4625dd..0000000
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@@ -495,7 -499,8 +496,7 @@@ int proc_fill_super(struct super_block=20
+  	pde_get(&proc_root);
+  	root_inode =3D proc_get_inode(s, &proc_root);
+  	if (!root_inode) {
+- 		printk(KERN_ERR "proc_fill_super: get root inode failed\n");
++ 		pr_warn("proc_fill_super: get root inode failed\n");
+ -		pde_put(&proc_root);
+  		return -ENOMEM;
+  	}
+ =20
+
+--Signature=_Wed__27_Feb_2013_13_00_07_+1100_aDNaTOsWM0_SChu8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRLWinAAoJEECxmPOUX5FE3w8P/3FKBsi64pmdpq6tDFQyzao7
+Pd4MbzmVCGPKFrCSU13vwFZ30Pr+56+rZ5dbE8TQwKPUfMfZ2G3YW5QTyuRSco8e
+Pff7dWAKPsrSfoXgXtaRktMRb9Ll79/fOTsfERVs8ae4PcLl7SnD5Fb2P+HGAkVy
+txWXECPwVZdDTybIAuCGF3tRfOhQzn3OlLq2kBQdVAcPLtrJDEceqUCGDy0+WJHc
+c/ExWNzmtMfL4R47k/Xj0BJbzdSQN7vDnV99ECn2GXHKJ4KPpnmsKGzOoQkqRV6t
+cqzqi4ZcJUATSKVLXQpdojiMLZST6JbnM3fbImarvNaI6EorHGLvAARal3BnpCSw
+YYfQ4zSsooi/o4IRRXiWZLXEVwVf+IXlhjCAkhNTCCdkp7VARMbyPglYik3pAkAA
+G6FN8IGF5FW0ZcNSbwk4t5TQyqZrLPxhS07AqHHTmq6diXqMdKVPA4ZmmYUcsg6K
+wVbUWxirkWcj3ducR9SI0yIJMUSgNJuCg5EhDikPoA643+U3MShdiGWRiGpTxArx
+QrnBCKtTsag47S7J2R34EDWP27UgqOFRsUzaEbzPs5CR5Wf592dlkx/tD4hfjSqB
+Cny37617ip95CpDmEqh9PYR4xbqW/OEn3BX/SKoKwAdUtxKvPHqN7d5T5PFwTHTS
+OfnVP58UYzL3PxUwkib7
+=sjGQ
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__27_Feb_2013_13_00_07_+1100_aDNaTOsWM0_SChu8--
