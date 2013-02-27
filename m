@@ -1,105 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757194Ab3B0JZl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 04:25:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37654 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755344Ab3B0JZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 04:25:38 -0500
-Message-ID: <1361957135.3358.0.camel@localhost>
-Subject: Re: resume fails to light display on Macbook Pro Retina on 3.8-rc1
-From: Ben Skeggs <bskeggs@redhat.com>
-Reply-To: bskeggs@redhat.com
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Dave Airlie <airlied@gmail.com>, David Airlie <airlied@linux.ie>,
-        Martin Peres <martin.peres@labri.fr>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 27 Feb 2013 19:25:35 +1000
-In-Reply-To: <20130227040251.GA1081@kroah.com>
-References: <CAPM=9txjG5rohsNbme=myrX+-Z5eucpEXYQMWqPQqN=5dNze8g@mail.gmail.com>
-	 <CAPM=9tw_vfESbbH4dD9z8mAYVYcwmVs=n4BrRz4XBj1Rw1qrkw@mail.gmail.com>
-	 <20130225223243.GA18744@kroah.com> <20130226034545.GA1089@kroah.com>
-	 <20130226173514.GA24136@kroah.com> <20130227040251.GA1081@kroah.com>
-Organization: Red Hat
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932255Ab3B0J3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 04:29:17 -0500
+Received: from mysmtp1.stec-inc.com ([1.9.68.9]:50005 "HELO
+	mysmtp1.stec-inc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932146Ab3B0J3N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 04:29:13 -0500
+X-ASG-Debug-ID: 1361957342-053ea90dcf331a50001-xx1T2L
+X-Barracuda-Envelope-From: sunnikrishnan@stec-inc.com
+X-Barracuda-RBL-Trusted-Forwarder: 172.30.0.57
+From: Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com>
+X-Barracuda-BWL-IP: fe80::64e7:ed5b:e6f9:c391
+X-Barracuda-Apparent-Source-IP: fe80::64e7:ed5b:e6f9:c391
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+CC: OS Engineering <osengineering@stec-inc.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        =?utf-8?B?546L6YeR5rWm?= <jinpuwang@gmail.com>,
+        Amit Kale <akale@stec-inc.com>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "koverstreet@google.com" <koverstreet@google.com>,
+        "thornber@redhat.com" <thornber@redhat.com>
+Date: Wed, 27 Feb 2013 17:29:00 +0800
+Subject: RE: [PATCH] EnhanceIO ssd caching software
+Thread-Topic: [PATCH] EnhanceIO ssd caching software
+X-ASG-Orig-Subj: RE: [PATCH] EnhanceIO ssd caching software
+Thread-Index: Ac4Uao2cWebjvFE1T4GhiZBAaXJmIgAYjkUQ
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0D55E021E0@MYMBX.MY.STEC-INC.AD>
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A624D6AAF@MYMBX.MY.STEC-INC.AD>
+ <20130215203139.GE26292@blackbox.djwong.org>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B0C746B4948@MYMBX.MY.STEC-INC.AD>
+ <20130226214528.GC4059@blackbox.djwong.org>
+In-Reply-To: <20130226214528.GC4059@blackbox.djwong.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-Barracuda-Connect: mycas01.my.stec-inc.ad[172.30.0.57]
+X-Barracuda-Start-Time: 1361957342
+X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_SC0_MISMATCH_TO
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.123741
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.00 BSF_SC0_MISMATCH_TO    Envelope rcpt doesn't match header
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r1R9TJfY006206
 
-On Tue, 2013-02-26 at 20:02 -0800, Greg KH wrote:
-> On Tue, Feb 26, 2013 at 09:35:14AM -0800, Greg KH wrote:
-> > On Mon, Feb 25, 2013 at 07:45:45PM -0800, Greg KH wrote:
-> > > On Mon, Feb 25, 2013 at 02:32:43PM -0800, Greg KH wrote:
-> > > > On Mon, Feb 25, 2013 at 04:06:02PM +1000, Dave Airlie wrote:
-> > > > > On Mon, Feb 25, 2013 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > > > > > Hi Ben,
-> > > > > >
-> > > > > > My Macbook Pro Retina fails to resume properly on 3.8.  I tracked this
-> > > > > > down to commit 6c5a04249d7afeea3e0ed971e7813f84e29a1706 (drm/nvd0/disp:
-> > > > > > move link training helpers into core as display methods)
-> > > > > >
-> > > > > > Anything I can try to help solve this?
-> > > > > >
-> > > > > > Note, I'm using the Intel driver as the main controller for this laptop,
-> > > > > > well, I think I am, my xorg log is attached.
-> > > > > 
-> > > > > No you are using the nvidia, the efi always boots nvidia enabled now.
-> > > > 
-> > > > Really?  When did that change?  I thought I wanted to be using the Intel
-> > > > chip to save battery life.
-> > > > 
-> > > > > btw I just tested my drm-next tree on mine and it resumed the display
-> > > > > fine, something oopsed a few seconds later that I haven't tracked down
-> > > > > 
-> > > > > git://git.freedesktop.org/~airlied/linux drm-next
-> > > > > 
-> > > > > I'll be sending it to Linus this evening or tomorrow morning, once I
-> > > > > fix my tree.
-> > > > 
-> > > > Ok, I'll test again when it hits Linus's tree, and if that works, it
-> > > > would be good to try to work out what patch fixes it to get them into
-> > > > the 3.8-stable series so that others don't run into the same problem.
-> > > 
-> > > I've tested Linus's tree now (I'm guessing it has all of your changes in
-> > > it), and it works!
-> > > 
-> > > I see a bunch of patches marked for the stable branch, so I'll try those
-> > > out and see if they fix the problem.  If not, I'll let you and Ben know.
-> > 
-> > I've applied the radeon patches tagged for -stable and tested that on
-> > 3.8.0, but that doesn't solve the resume problem.  Any ideas of anything
-> > else I can do to test this?  Doing a "backwards" git-bisect is a pain,
-> > but I guess I can do that to try to track down what patch fixed this, if
-> > that's the only idea people have...
-> 
-> Ok, after getting my brain warped by doing a reverse 'git bisect', I
-> tracked it down to commit ac8cc241a81941932da44993242e68c62e115ec7
-> (drm/nv50/devinit: reverse the logic for running encoder init scripts)
-> as the patch that solves the problem.
-> 
-> So, I tried applying that patch on 3.8.1-rc1, but ran into the efifb bug
-> that Dave fixed already, which took me a while, so I've queued that up
-> for 3.8.1.  Then I determined that it really also needs commit
-> f3ed1048715f2edc10c4dda6148b60e93f6282ed (drm/nouveau/bios: parse
-> external transmitter type if off-chip) and commit
-> 8e992c8d9eebc2bd3246252ee5c0422dbbbce7ae (drm/nouveau/bios: store a
-> type/mask hash in parsed dcb data) in order to build properly.
-> 
-> With those three patches, plus the efifb fix, I can now properly boot,
-> and suspend and resume my macbook on 3.8.1-rc1.  Just like I can on
-> Linus's tree.
-> 
-> So, Ben, Dave, any objection to me including these 3 nouveau patches in
-> the 3.8.1-final release?
-Thanks for taking the time to track down exactly what's needed here.  I
-believe those three should be safe to apply.
+Hi Darrick, 
 
-Ben.
+> -----Original Message-----
+> From: Darrick J. Wong [mailto:darrick.wong@oracle.com]
+> Sent: Wednesday, February 27, 2013 3:15 AM
+> To: Sanoj Unnikrishnan
+> Cc: OS Engineering; Greg Kroah-Hartman; LKML; Jens Axboe; ç‹é‡‘æµ¦; Amit
+> Kale; dm-devel@redhat.com; koverstreet@google.com; thornber@redhat.com
+> Subject: Re: [PATCH] EnhanceIO ssd caching software
 > 
-> thanks,
+> On Mon, Feb 18, 2013 at 05:42:38PM +0800, Sanoj Unnikrishnan wrote:
+> > > -----Original Message-----
+> > > From: Darrick J. Wong [mailto:darrick.wong@oracle.com]
+> > > Sent: Saturday, February 16, 2013 2:02 AM
+> > > To: OS Engineering
+> > > Cc: Greg Kroah-Hartman; LKML; Jens Axboe; Sanoj Unnikrishnan;
+> ç‹é‡‘æµ¦;
+> > > Amit Kale; dm-devel@redhat.com; koverstreet@google.com;
+> > > thornber@redhat.com
+> > > Subject: Re: [PATCH] EnhanceIO ssd caching software
+> > >
+> > > [Resending with dm-devel, Kent, and Joe on cc.  Sorry for the
+> > > noise.]
+> > >
+> > > On Fri, Feb 15, 2013 at 02:02:38PM +0800, OS Engineering wrote:
+> > > > Hi Greg, Jens,
+> > > >
+> > > > We are submitting EnhanceIO(TM) software driver for an inclusion
+> > > > in
+> > > linux
+> > > > staging tree. Present state of this driver is beta. We have been
+> > > posting it
+> > > > for a few weeks, while it was maintained at github. It is still
+> > > > being cleaned-up and is being tested by LKML members. Inclusion
+> in
+> > > > linux
+> > > staging
+> > > > tree will make testing and reviewing easier and help a future
+> > > integration in
+> > > > Linux kernel.
+> > > >
+> > > > Could you please include it?
+> >
+> > > >
+> > > > Signed-off-by:
+> > > > Amit Kale <akale@stec-inc.com>
+> > > > Sanoj Unnikrishnan <sunnikrishnan@stec-inc.com> Darrick J. Wong
+> > > > <darrick.wong@oracle.com> Jinpu Wang <jinpuwang@gmail.com>
+> > >
+> > > Each of these email addresses needs to have the "S-o-b:" prefix
+> >
+> > > Also, you ought to run this patch through scripts/checkpatch.pl, as
+> > > there are quite a lot of style errors.
+> >
+> > we will fix these in the next patch.
+> >
+> >
+> > > > +       Write-back improves write latency by writing application
+> > > requested data
+> > > > +       only to SSD. This data, referred to as dirty data, is
+> > > > + copied
+> > > later to
+> > >
+> > > How much later?
+> > >
+> >
+> > This is triggered by a set of thresholds.
+> > per cache dirty high and low watermark.
+> > per cache set dirty high and low watermark.
+> > and a time based threshold.
+> > If any of the high watermarks or time based interval is triggered
+> clean is initiated.
+> >
+> > These thresholds are all configurable through sysctl.
 > 
-> greg k-h
+> Is there a way for a user application to force a cache flush?  It looks
+> as though a REQ_FLUSH will cause both SSD and HDD to flush their write
+> caches, but I couldn't find anything that would suggest writing all the
+> dirty blocks in the cache out to the HDD.
 
 
+There is a clean command in eio_cli which flushes all the dirty data on user input.
+ 
+Thanks and regards,
+Sanoj
+
+
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
