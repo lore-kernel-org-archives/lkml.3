@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933999Ab3B0AJl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:09:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42983 "EHLO
+	id S933973Ab3B0AJj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:09:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42971 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760465Ab3B0AJb (ORCPT
+	with ESMTP id S1760459Ab3B0AJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:31 -0500
+	Tue, 26 Feb 2013 19:09:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiang Liu <jiang.liu@huawei.com>, Gaohuai Han <hangaohuai@huawei.com>,
-        Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        Dan Williams <djbw@fb.com>
-Subject: [ 80/86] dca: check against empty dca_domains list before unregister provider
-Date: Tue, 26 Feb 2013 16:08:28 -0800
-Message-Id: <20130226235921.217435645@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 77/86] sock_diag: Fix out-of-bounds access to sock_diag_handlers[]
+Date: Tue, 26 Feb 2013 16:08:25 -0800
+Message-Id: <20130226235920.914226168@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -28,37 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maciej Sosnowski <maciej.sosnowski@intel.com>
 
-commit c419fcfd071cf34ba00f9f65282583772d2655e7 upstream.
+From: Mathias Krause <minipli@googlemail.com>
 
-When providers get blocked unregister_dca_providers() is called ending up
-with dca_providers and dca_domain lists emptied. Dca should be prevented from
-trying to unregister any provider if dca_domain list is found empty.
+[ Upstream commit 6e601a53566d84e1ffd25e7b6fe0b6894ffd79c0 ]
 
-Reported-by: Jiang Liu <jiang.liu@huawei.com>
-Tested-by: Gaohuai Han <hangaohuai@huawei.com>
-Signed-off-by: Maciej Sosnowski <maciej.sosnowski@intel.com>
-Signed-off-by: Dan Williams <djbw@fb.com>
+Userland can send a netlink message requesting SOCK_DIAG_BY_FAMILY
+with a family greater or equal then AF_MAX -- the array size of
+sock_diag_handlers[]. The current code does not test for this
+condition therefore is vulnerable to an out-of-bound access opening
+doors for a privilege escalation.
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/dca/dca-core.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/core/sock_diag.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/dca/dca-core.c
-+++ b/drivers/dca/dca-core.c
-@@ -420,6 +420,11 @@ void unregister_dca_provider(struct dca_
+--- a/net/core/sock_diag.c
++++ b/net/core/sock_diag.c
+@@ -126,6 +126,9 @@ static int __sock_diag_rcv_msg(struct sk
+ 	if (nlmsg_len(nlh) < sizeof(*req))
+ 		return -EINVAL;
  
- 	raw_spin_lock_irqsave(&dca_lock, flags);
- 
-+	if (list_empty(&dca_domains)) {
-+		raw_spin_unlock_irqrestore(&dca_lock, flags);
-+		return;
-+	}
++	if (req->sdiag_family >= AF_MAX)
++		return -EINVAL;
 +
- 	list_del(&dca->node);
- 
- 	pci_rc = dca_pci_rc_from_dev(dev);
+ 	hndl = sock_diag_lock_handler(req->sdiag_family);
+ 	if (hndl == NULL)
+ 		err = -ENOENT;
 
 
