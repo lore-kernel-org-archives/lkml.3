@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760314Ab3B0TJB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 14:09:01 -0500
-Received: from mail.windriver.com ([147.11.1.11]:36569 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab3B0TJA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 14:09:00 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-usb@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Moiz Sonasath <m-sonasath@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] usb: limit OMAP related USB options to OMAP2PLUS platforms
-Date: Wed, 27 Feb 2013 14:08:39 -0500
-Message-ID: <1361992119-2465-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1760740Ab3B0TLp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 14:11:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47413 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755061Ab3B0TLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 14:11:44 -0500
+Date: Wed, 27 Feb 2013 14:11:15 -0500
+From: Dave Jones <davej@redhat.com>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ext4 updates for 3.9
+Message-ID: <20130227191115.GA10710@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Theodore Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	"gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+	Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20130227154450.GA23402@x4>
+ <20130227170157.GA222@x4>
+ <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
+ <20130227172256.GA236@x4>
+ <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
+ <20130227174553.GA224@x4>
+ <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
+ <20130227184912.GA19624@thunk.org>
+ <20130227185755.GA17786@redhat.com>
+ <20130227190419.GB19624@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130227190419.GB19624@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 57f6ce072e35770a63be0c5d5e82f90d8da7d665 ("usb: phy:
-add a new driver for usb3 phy") added the new Kconfig option
-OMAP_USB3, but it had no dependencies whatsoever, and hence
-became available across all arch/platforms.
+On Wed, Feb 27, 2013 at 02:04:19PM -0500, Theodore Ts'o wrote:
+ > On Wed, Feb 27, 2013 at 01:57:55PM -0500, Dave Jones wrote:
+ > > Building now.  Can you confirm that nothing on-disk should be awry ?
+ > > Or will I need a new fsck to detect what happened ?
+ > > 
+ > 
+ > Well, it's possible that a read from data file which had blocks
+ > located above 512GB might have gotten bogus information, or a block
+ > allocated above 512GB might result in a write to the wrong place on
+ > disk.
+ > 
+ > So if you are very cautious, running fsck just to make sure things are
+ > OK is not a bad idea.  But it's likely that the directory sanity
+ > checks would have caught things quickly, or trying run an executable
+ > would have caused a seg fault quickly enough.  If your system crashed
+ > very quickly during the boot process, you'll probably be OK.
 
-Which presumably caused this to show up in x86 randconfig:
+It had been up a few hours before I hit those checks.
 
-    warning: (USB_MUSB_HDRC && OMAP_USB3) selects \
-        OMAP_CONTROL_USB which has unmet direct \
-        dependencies (USB_SUPPORT && ARCH_OMAP2PLUS)
+fsck never found anything.  I do have another disk (XFS formatted) with
+a backup from a week ago. I'll run a --dry-run rsync to see if it
+picks up any changes that I don't expect.
 
-Then commit 6992819feb39cb9adac72170555d957d07f869f2 ("usb: phy:
-fix Kconfig warning") was added.  However, this just deleted the
-ARCH_OMAP2PLUS dependency from OMAP_CONTROL_USB, further
-compounding the problem by opening up OMAP_CONTROL_USB to
-all arch/platforms as well.
-
-Here we revert the change of 6992819feb to restore the dependency,
-and add the same ARCH_OMAP2PLUS dependency to the new OMAP_USB3.
-
-Perhaps a more platform specific dependency could be chosen for
-OMAP_USB3, but at least this keeps it from bleeding out to other
-architectures and non-OMAP ARM platforms as it is currently doing.
-
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Moiz Sonasath <m-sonasath@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- drivers/usb/phy/Kconfig | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index 65217a5..40b8463 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -17,6 +17,7 @@ config OMAP_USB2
- 
- config OMAP_USB3
- 	tristate "OMAP USB3 PHY Driver"
-+	depends on ARCH_OMAP2PLUS
- 	select USB_OTG_UTILS
- 	select OMAP_CONTROL_USB
- 	help
-@@ -27,6 +28,7 @@ config OMAP_USB3
- 
- config OMAP_CONTROL_USB
- 	tristate "OMAP CONTROL USB Driver"
-+	depends on ARCH_OMAP2PLUS
- 	help
- 	  Enable this to add support for the USB part present in the control
- 	  module. This driver has API to power on the USB2 PHY and to write to
--- 
-1.8.1.2
+	Dave
 
