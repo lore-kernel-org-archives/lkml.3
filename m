@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476Ab3B0AIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:08:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42726 "EHLO
+	id S1760612Ab3B0AZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:25:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42737 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933722Ab3B0AIw (ORCPT
+	with ESMTP id S933775Ab3B0AIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:08:52 -0500
+	Tue, 26 Feb 2013 19:08:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Gleb Natapov <gleb@redhat.com>
-Subject: [ 24/86] KVM: s390: Handle hosts not supporting s390-virtio.
-Date: Tue, 26 Feb 2013 16:07:32 -0800
-Message-Id: <20130226235915.413985731@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, davej@redhat.com, keescook@chromium.org,
+        ebiederm@xmission.com
+Subject: [ 26/86] futex: Revert "futex: Mark get_robust_list as deprecated"
+Date: Tue, 26 Feb 2013 16:07:34 -0800
+Message-Id: <20130226235915.617209391@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -28,87 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 55c171a6d90dc0574021f9c836127cfd1a7d2e30 upstream.
+commit fe2b05f7ca9f906be61dced5489f63b8b4d7c770 upstream.
 
-Running under a kvm host does not necessarily imply the presence of
-a page mapped above the main memory with the virtio information;
-however, the code includes a hard coded access to that page.
+This reverts commit ec0c4274e33c0373e476b73e01995c53128f1257.
 
-Instead, check for the presence of the page and exit gracefully
-before we hit an addressing exception if it does not exist.
+get_robust_list() is in use and a removal would break existing user
+space. With the permission checks in place it's not longer a security
+hole. Remove the deprecation warnings.
 
-Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
-Reviewed-by: Alexander Graf <agraf@suse.de>
-Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: akpm@linux-foundation.org
+Cc: paul.gortmaker@windriver.com
+Cc: davej@redhat.com
+Cc: keescook@chromium.org
+Cc: ebiederm@xmission.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/kvm/kvm_virtio.c |   38 ++++++++++++++++++++++++++++++--------
- 1 file changed, 30 insertions(+), 8 deletions(-)
+ kernel/futex.c        |    2 --
+ kernel/futex_compat.c |    2 --
+ 2 files changed, 4 deletions(-)
 
---- a/drivers/s390/kvm/kvm_virtio.c
-+++ b/drivers/s390/kvm/kvm_virtio.c
-@@ -418,6 +418,26 @@ static void kvm_extint_handler(struct ex
- }
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2471,8 +2471,6 @@ SYSCALL_DEFINE3(get_robust_list, int, pi
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
  
- /*
-+ * For s390-virtio, we expect a page above main storage containing
-+ * the virtio configuration. Try to actually load from this area
-+ * in order to figure out if the host provides this page.
-+ */
-+static int __init test_devices_support(unsigned long addr)
-+{
-+	int ret = -EIO;
-+
-+	asm volatile(
-+		"0:	lura	0,%1\n"
-+		"1:	xgr	%0,%0\n"
-+		"2:\n"
-+		EX_TABLE(0b,2b)
-+		EX_TABLE(1b,2b)
-+		: "+d" (ret)
-+		: "a" (addr)
-+		: "0", "cc");
-+	return ret;
-+}
-+/*
-  * Init function for virtio
-  * devices are in a single page above top of "normal" mem
-  */
-@@ -428,21 +448,23 @@ static int __init kvm_devices_init(void)
- 	if (!MACHINE_IS_KVM)
- 		return -ENODEV;
- 
-+	if (test_devices_support(real_memory_size) < 0)
-+		return -ENODEV;
-+
-+	rc = vmem_add_mapping(real_memory_size, PAGE_SIZE);
-+	if (rc)
-+		return rc;
-+
-+	kvm_devices = (void *) real_memory_size;
-+
- 	kvm_root = root_device_register("kvm_s390");
- 	if (IS_ERR(kvm_root)) {
- 		rc = PTR_ERR(kvm_root);
- 		printk(KERN_ERR "Could not register kvm_s390 root device");
-+		vmem_remove_mapping(real_memory_size, PAGE_SIZE);
- 		return rc;
- 	}
- 
--	rc = vmem_add_mapping(real_memory_size, PAGE_SIZE);
--	if (rc) {
--		root_device_unregister(kvm_root);
--		return rc;
--	}
+-	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
 -
--	kvm_devices = (void *) real_memory_size;
--
- 	INIT_WORK(&hotplug_work, hotplug_devices);
+ 	rcu_read_lock();
  
- 	service_subclass_irq_register();
+ 	ret = -ESRCH;
+--- a/kernel/futex_compat.c
++++ b/kernel/futex_compat.c
+@@ -142,8 +142,6 @@ compat_sys_get_robust_list(int pid, comp
+ 	if (!futex_cmpxchg_enabled)
+ 		return -ENOSYS;
+ 
+-	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
+-
+ 	rcu_read_lock();
+ 
+ 	ret = -ESRCH;
 
 
