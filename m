@@ -1,407 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab3B0IJY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 03:09:24 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:37144 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729Ab3B0IJU (ORCPT
+	id S1754844Ab3B0IOz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 03:14:55 -0500
+Received: from forward16.mail.yandex.net ([95.108.253.141]:42104 "EHLO
+	forward16.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364Ab3B0IOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 03:09:20 -0500
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-sh@vger.kernel.org, benh@kernel.crashing.org,
-        grant.likely@secretlab.ca, horms@verge.net.au,
-        Magnus Damm <magnus.damm@gmail.com>, tglx@linutronix.de
-Date: Wed, 27 Feb 2013 17:15:01 +0900
-Message-Id: <20130227081501.30706.60471.sendpatchset@w520>
-Subject: [PATCH] irqchip: Renesas IRQC driver
+	Wed, 27 Feb 2013 03:14:53 -0500
+X-Greylist: delayed 640 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Feb 2013 03:14:53 EST
+From: Roman Gushchin <klamm@yandex-team.ru>
+To: Johannes Weiner-Arquette <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, Rik van Riel <riel@redhat.com>,
+        mel@csn.ul.ie, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] memcg: implement low limits
+MIME-Version: 1.0
+Message-Id: <8121361952156@webcorp1g.yandex-team.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 27 Feb 2013 12:02:36 +0400
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+Hi, all!
 
-This patch adds a driver for external IRQ pins connected
-to the IRQC hardware block on recent SoCs from Renesas.
+I've implemented low limits for memory cgroups. The primary goal was to add an ability 
+to protect some memory from reclaiming without using mlock(). A kind of "soft mlock()".
 
-The IRQC hardware block is used together with more
-recent ARM based SoCs using the GIC. As usual the GIC
-requires external IRQ trigger setup somewhere else
-which in this particular case happens to be IRQC.
+I think this patch will be helpful when it's necessary to protect production processes from
+memory-wasting backup processes.
 
-This driver implements the glue code needed to configure
-IRQ trigger and also handle mask/unmask and demux of
-external IRQ pins hooked up from the IRQC to the GIC.
+--
 
-Tested on r8a73a4 but is designed to work with a wide
-range of SoCs. The driver requires one GIC SPI per
-external IRQ pin to operate.  Each driver instance
-will handle up to 32 external IRQ pins.
+Low limits for memory cgroup can be used to limit memory pressure on it.
+If memory usage of a cgroup is under it's low limit, it will not be
+affected by global reclaim. If it reaches it's low limit from above,
+the reclaiming speed will be dropped exponentially.
 
-The SoCs using this driver are currently mainly used
-together with regular platform devices so this driver
-allows configuration via platform data to support things
-like static interrupt base address. DT support will
-be added incrementally in the not so distant future.
+Low limits don't affect soft reclaim.
+Also, it's possible that a cgroup with memory usage under low limit
+will be reclaimed slowly on very low scanning priorities.
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
+Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
 ---
+ include/linux/memcontrol.h  |    7 +++++
+ include/linux/res_counter.h |   17 +++++++++++
+ kernel/res_counter.c        |    2 ++
+ mm/memcontrol.c             |   67 +++++++++++++++++++++++++++++++++++++++++++
+ mm/vmscan.c                 |    5 ++++
+ 5 files changed, 98 insertions(+)
 
- drivers/irqchip/Kconfig                        |    4 
- drivers/irqchip/Makefile                       |    1 
- drivers/irqchip/irq-renesas-irqc.c             |  298 ++++++++++++++++++++++++
- include/linux/platform_data/irq-renesas-irqc.h |   27 ++
- 4 files changed, 330 insertions(+)
-
---- 0002/drivers/irqchip/Kconfig
-+++ work/drivers/irqchip/Kconfig	2013-02-27 16:00:08.000000000 +0900
-@@ -29,6 +29,10 @@ config RENESAS_INTC_IRQPIN
- 	bool
- 	select IRQ_DOMAIN
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index d6183f0..33e233f 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -183,6 +183,8 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ 						gfp_t gfp_mask,
+ 						unsigned long *total_scanned);
  
-+config RENESAS_IRQC
-+	bool
-+	select IRQ_DOMAIN
++unsigned int mem_cgroup_low_limit_scale(struct lruvec *lruvec);
 +
- config VERSATILE_FPGA_IRQ
- 	bool
- 	select IRQ_DOMAIN
---- 0002/drivers/irqchip/Makefile
-+++ work/drivers/irqchip/Makefile	2013-02-27 16:00:08.000000000 +0900
-@@ -6,4 +6,5 @@ obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-sh
- obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
- obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
- obj-$(CONFIG_RENESAS_INTC_IRQPIN)	+= irq-renesas-intc-irqpin.o
-+obj-$(CONFIG_RENESAS_IRQC)		+= irq-renesas-irqc.o
- obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
---- /dev/null
-+++ work/drivers/irqchip/irq-renesas-irqc.c	2013-02-27 17:04:02.000000000 +0900
-@@ -0,0 +1,298 @@
+ void __mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx);
+ static inline void mem_cgroup_count_vm_event(struct mm_struct *mm,
+ 					     enum vm_event_item idx)
+@@ -365,6 +367,11 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ 	return 0;
+ }
+ 
++static inline unsigned int mem_cgroup_low_limit_scale(struct lruvec *lruvec)
++{
++	return 0;
++}
++
+ static inline void mem_cgroup_split_huge_fixup(struct page *head)
+ {
+ }
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index 5ae8456..df3510d 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -39,6 +39,10 @@ struct res_counter {
+ 	 */
+ 	unsigned long long soft_limit;
+ 	/*
++	 * the secured guaranteed minimal limit of resource
++	 */
++	unsigned long long low_limit;
++	/*
+ 	 * the number of unsuccessful attempts to consume the resource
+ 	 */
+ 	unsigned long long failcnt;
+@@ -87,6 +91,7 @@ enum {
+ 	RES_LIMIT,
+ 	RES_FAILCNT,
+ 	RES_SOFT_LIMIT,
++	RES_LOW_LIMIT,
+ };
+ 
+ /*
+@@ -223,4 +228,16 @@ res_counter_set_soft_limit(struct res_counter *cnt,
+ 	return 0;
+ }
+ 
++static inline int
++res_counter_set_low_limit(struct res_counter *cnt,
++			   unsigned long long low_limit)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&cnt->lock, flags);
++	cnt->low_limit = low_limit;
++	spin_unlock_irqrestore(&cnt->lock, flags);
++	return 0;
++}
++
+ #endif
+diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+index ff55247..ebfefc1 100644
+--- a/kernel/res_counter.c
++++ b/kernel/res_counter.c
+@@ -135,6 +135,8 @@ res_counter_member(struct res_counter *counter, int member)
+ 		return &counter->failcnt;
+ 	case RES_SOFT_LIMIT:
+ 		return &counter->soft_limit;
++	case RES_LOW_LIMIT:
++		return &counter->low_limit;
+ 	};
+ 
+ 	BUG();
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 53b8201..d8e6ee6 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1743,6 +1743,53 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 			 NULL, "Memory cgroup out of memory");
+ }
+ 
 +/*
-+ * Renesas IRQC Driver
++ * If a cgroup is under low limit or enough close to it,
++ * decrease speed of page scanning.
 + *
-+ *  Copyright (C) 2013 Magnus Damm
++ * mem_cgroup_low_limit_scale() returns a number
++ * from range [0, DEF_PRIORITY - 2], which is used
++ * in the reclaim code as a scanning priority modifier.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License
++ * If the low limit is not set, it returns 0;
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * usage - low_limit > usage / 8  => 0
++ * usage - low_limit > usage / 16 => 1
++ * usage - low_limit > usage / 32 => 2
++ * ...
++ * usage - low_limit > usage / (2 ^ DEF_PRIORITY - 3) => DEF_PRIORITY - 3
++ * usage < low_limit => DEF_PRIORITY - 2
 + *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + */
-+
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/spinlock.h>
-+#include <linux/interrupt.h>
-+#include <linux/ioport.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/irqdomain.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/platform_data/irq-renesas-irqc.h>
-+
-+#define IRQC_IRQ_MAX 32 /* maximum 32 interrupts per driver instance */
-+
-+#define IRQC_REQ_STS 0x00
-+#define IRQC_EN_STS 0x04
-+#define IRQC_EN_SET 0x08
-+#define IRQC_INT_CPU_BASE(n) (0x000 + ((n) * 0x10))
-+#define DETECT_STATUS 0x100
-+#define IRQC_CONFIG(n) (0x180 + ((n) * 0x04))
-+
-+struct irqc_irq {
-+	int hw_irq;
-+	int requested_irq;
-+	int domain_irq;
-+	struct irqc_priv *p;
-+};
-+
-+struct irqc_priv {
-+	void __iomem *iomem;
-+	void __iomem *cpu_int_base;
-+	struct irqc_irq irq[IRQC_IRQ_MAX];
-+	struct renesas_irqc_config config;
-+	unsigned int number_of_irqs;
-+	struct platform_device *pdev;
-+	struct irq_chip irq_chip;
-+	struct irq_domain *irq_domain;
-+};
-+
-+static void irqc_dbg(struct irqc_irq *i, char *str)
++unsigned int mem_cgroup_low_limit_scale(struct lruvec *lruvec)
 +{
-+	dev_dbg(&i->p->pdev->dev, "%s (%d:%d:%d)\n",
-+		str, i->requested_irq, i->hw_irq, i->domain_irq);
-+}
++	struct mem_cgroup_per_zone *mz;
++	struct mem_cgroup *memcg;
++	unsigned long long low_limit;
++	unsigned long long usage;
++	unsigned int i;
 +
-+static void irqc_irq_enable(struct irq_data *d)
-+{
-+	struct irqc_priv *p = irq_data_get_irq_chip_data(d);
-+	int hw_irq = irqd_to_hwirq(d);
++	mz = container_of(lruvec, struct mem_cgroup_per_zone, lruvec);
++	memcg = mz->memcg;
++	if (!memcg)
++		return 0;
 +
-+	irqc_dbg(&p->irq[hw_irq], "enable");
-+	iowrite32(BIT(hw_irq), p->cpu_int_base + IRQC_EN_SET);
-+}
++	low_limit = res_counter_read_u64(&memcg->res, RES_LOW_LIMIT);
++	if (!low_limit)
++		return 0;
 +
-+static void irqc_irq_disable(struct irq_data *d)
-+{
-+	struct irqc_priv *p = irq_data_get_irq_chip_data(d);
-+	int hw_irq = irqd_to_hwirq(d);
++	usage = res_counter_read_u64(&memcg->res, RES_USAGE);
 +
-+	irqc_dbg(&p->irq[hw_irq], "disable");
-+	iowrite32(BIT(hw_irq), p->cpu_int_base + IRQC_EN_STS);
-+}
++	if (usage < low_limit)
++		return DEF_PRIORITY - 2;
 +
-+#define INTC_IRQ_SENSE_VALID 0x10
-+#define INTC_IRQ_SENSE(x) (x + INTC_IRQ_SENSE_VALID)
-+
-+static unsigned char irqc_sense[IRQ_TYPE_SENSE_MASK + 1] = {
-+	[IRQ_TYPE_LEVEL_LOW] = INTC_IRQ_SENSE(0x01),
-+	[IRQ_TYPE_LEVEL_HIGH] = INTC_IRQ_SENSE(0x02),
-+	[IRQ_TYPE_EDGE_FALLING] = INTC_IRQ_SENSE(0x04), /* Synchronous */
-+	[IRQ_TYPE_EDGE_RISING] = INTC_IRQ_SENSE(0x08), /* Synchronous */
-+	[IRQ_TYPE_EDGE_BOTH] = INTC_IRQ_SENSE(0x0c),  /* Synchronous */
-+};
-+
-+static int irqc_irq_set_type(struct irq_data *d, unsigned int type)
-+{
-+	struct irqc_priv *p = irq_data_get_irq_chip_data(d);
-+	int hw_irq = irqd_to_hwirq(d);
-+	unsigned char value = irqc_sense[type & IRQ_TYPE_SENSE_MASK];
-+	unsigned long tmp;
-+
-+	irqc_dbg(&p->irq[hw_irq], "sense");
-+
-+	if (!(value & INTC_IRQ_SENSE_VALID))
-+		return -EINVAL;
-+
-+	tmp = ioread32(p->iomem + IRQC_CONFIG(hw_irq));
-+	tmp &= ~0x3f;
-+	tmp |= value ^ INTC_IRQ_SENSE_VALID;
-+	iowrite32(tmp, p->iomem + IRQC_CONFIG(hw_irq));
-+	return 0;
-+}
-+
-+static irqreturn_t irqc_irq_handler(int irq, void *dev_id)
-+{
-+	struct irqc_irq *i = dev_id;
-+	struct irqc_priv *p = i->p;
-+	unsigned long bit = BIT(i->hw_irq);
-+
-+	irqc_dbg(i, "demux1");
-+
-+	if (ioread32(p->iomem + DETECT_STATUS) & bit) {
-+		iowrite32(bit, p->iomem + DETECT_STATUS);
-+		irqc_dbg(i, "demux2");
-+		generic_handle_irq(i->domain_irq);
-+		return IRQ_HANDLED;
-+	}
-+	return IRQ_NONE;
-+}
-+
-+static int irqc_irq_domain_map(struct irq_domain *h, unsigned int virq,
-+			       irq_hw_number_t hw)
-+{
-+	struct irqc_priv *p = h->host_data;
-+
-+	p->irq[hw].domain_irq = virq;
-+	p->irq[hw].hw_irq = hw;
-+
-+	irqc_dbg(&p->irq[hw], "map");
-+	irq_set_chip_data(virq, h->host_data);
-+	irq_set_chip_and_handler(virq, &p->irq_chip, handle_level_irq);
-+	set_irq_flags(virq, IRQF_VALID); /* kill me now */
-+	return 0;
-+}
-+
-+static struct irq_domain_ops irqc_irq_domain_ops = {
-+	.map	= irqc_irq_domain_map,
-+};
-+
-+static int irqc_probe(struct platform_device *pdev)
-+{
-+	struct renesas_irqc_config *pdata = pdev->dev.platform_data;
-+	struct irqc_priv *p;
-+	struct resource *io;
-+	struct resource *irq;
-+	struct irq_chip *irq_chip;
-+	const char *name = dev_name(&pdev->dev);
-+	int ret;
-+	int k;
-+
-+	p = kzalloc(sizeof(*p), GFP_KERNEL);
-+	if (!p) {
-+		dev_err(&pdev->dev, "failed to allocate driver data\n");
-+		ret = -ENOMEM;
-+		goto err0;
-+	}
-+
-+	/* deal with driver instance configuration */
-+	if (pdata)
-+		memcpy(&p->config, pdata, sizeof(*pdata));
-+
-+	p->pdev = pdev;
-+	platform_set_drvdata(pdev, p);
-+
-+	/* get hold of manadatory IOMEM */
-+	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!io) {
-+		dev_err(&pdev->dev, "not enough IOMEM resources\n");
-+		ret = -EINVAL;
-+		goto err1;
-+	}
-+
-+	/* allow any number of IRQs between 1 and IRQC_IRQ_MAX */
-+	for (k = 0; k < IRQC_IRQ_MAX; k++) {
-+		irq = platform_get_resource(pdev, IORESOURCE_IRQ, k);
-+		if (!irq)
++	for (i = 0; i < DEF_PRIORITY - 2; i++)
++		if (usage - low_limit > (usage >> (i + 3)))
 +			break;
 +
-+		p->irq[k].p = p;
-+		p->irq[k].requested_irq = irq->start;
-+	}
-+
-+	p->number_of_irqs = k;
-+	if (p->number_of_irqs < 1) {
-+		dev_err(&pdev->dev, "not enough IRQ resources\n");
-+		ret = -EINVAL;
-+		goto err1;
-+	}
-+
-+	/* ioremap IOMEM and setup read/write callbacks */
-+	p->iomem = ioremap_nocache(io->start, resource_size(io));
-+	if (!p->iomem) {
-+		dev_err(&pdev->dev, "failed to remap IOMEM\n");
-+		ret = -ENXIO;
-+		goto err2;
-+	}
-+
-+	p->cpu_int_base = p->iomem + IRQC_INT_CPU_BASE(0); /* SYS-SPI */
-+
-+	irq_chip = &p->irq_chip;
-+	irq_chip->name = name;
-+	irq_chip->irq_mask = irqc_irq_disable;
-+	irq_chip->irq_unmask = irqc_irq_enable;
-+	irq_chip->irq_enable = irqc_irq_enable;
-+	irq_chip->irq_disable = irqc_irq_disable;
-+	irq_chip->irq_set_type = irqc_irq_set_type;
-+	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
-+
-+	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
-+					      p->number_of_irqs,
-+					      p->config.irq_base,
-+					      &irqc_irq_domain_ops, p);
-+	if (!p->irq_domain) {
-+		ret = -ENXIO;
-+		dev_err(&pdev->dev, "cannot initialize irq domain\n");
-+		goto err2;
-+	}
-+
-+	/* request interrupts one by one */
-+	for (k = 0; k < p->number_of_irqs; k++) {
-+		if (request_irq(p->irq[k].requested_irq, irqc_irq_handler,
-+				0, name, &p->irq[k])) {
-+			dev_err(&pdev->dev, "failed to request IRQ\n");
-+			ret = -ENOENT;
-+			goto err3;
-+		}
-+	}
-+
-+	dev_info(&pdev->dev, "driving %d irqs\n", p->number_of_irqs);
-+
-+	/* warn in case of mismatch if irq base is specified */
-+	if (p->config.irq_base) {
-+		if (p->config.irq_base != p->irq[0].domain_irq)
-+			dev_warn(&pdev->dev, "irq base mismatch (%d/%d)\n",
-+				 p->config.irq_base, p->irq[0].domain_irq);
-+	}
-+
-+	return 0;
-+err3:
-+	for (; k >= 0; k--)
-+		free_irq(p->irq[k - 1].requested_irq, &p->irq[k - 1]);
-+
-+	irq_domain_remove(p->irq_domain);
-+err2:
-+	iounmap(p->iomem);
-+err1:
-+	kfree(p);
-+err0:
-+	return ret;
++	return i;
 +}
 +
-+static int irqc_remove(struct platform_device *pdev)
-+{
-+	struct irqc_priv *p = platform_get_drvdata(pdev);
-+	int k;
+ static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
+ 					gfp_t gfp_mask,
+ 					unsigned long flags)
+@@ -5116,6 +5163,20 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+ 		else
+ 			ret = -EINVAL;
+ 		break;
++	case RES_LOW_LIMIT:
++		ret = res_counter_memparse_write_strategy(buffer, &val);
++		if (ret)
++			break;
++		/*
++		 * For memsw, low limits (as also soft limits, see upper)
++		 * are hard to implement in terms of semantics,
++		 * for now, we support soft limits for control without swap
++		 */
++		if (type == _MEM)
++			ret = res_counter_set_low_limit(&memcg->res, val);
++		else
++			ret = -EINVAL;
++		break;
+ 	default:
+ 		ret = -EINVAL; /* should be BUG() ? */
+ 		break;
+@@ -5798,6 +5859,12 @@ static struct cftype mem_cgroup_files[] = {
+ 		.read = mem_cgroup_read,
+ 	},
+ 	{
++		.name = "low_limit_in_bytes",
++		.private = MEMFILE_PRIVATE(_MEM, RES_LOW_LIMIT),
++		.write_string = mem_cgroup_write,
++		.read = mem_cgroup_read,
++	},
++	{
+ 		.name = "failcnt",
+ 		.private = MEMFILE_PRIVATE(_MEM, RES_FAILCNT),
+ 		.trigger = mem_cgroup_reset,
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 88c5fed..9c1c702 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1660,6 +1660,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 	bool force_scan = false;
+ 	unsigned long ap, fp;
+ 	enum lru_list lru;
++	unsigned int low_limit_scale = 0;
+ 
+ 	/*
+ 	 * If the zone or memcg is small, nr[l] can be 0.  This
+@@ -1779,6 +1780,9 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 	fraction[1] = fp;
+ 	denominator = ap + fp + 1;
+ out:
++	if (global_reclaim(sc))
++		low_limit_scale = mem_cgroup_low_limit_scale(lruvec);
 +
-+	for (k = 0; k < p->number_of_irqs; k++)
-+		free_irq(p->irq[k].requested_irq, &p->irq[k]);
-+
-+	irq_domain_remove(p->irq_domain);
-+	iounmap(p->iomem);
-+	kfree(p);
-+	return 0;
-+}
-+
-+static struct platform_driver irqc_device_driver = {
-+	.probe		= irqc_probe,
-+	.remove		= irqc_remove,
-+	.driver		= {
-+		.name	= "renesas_irqc",
-+	}
-+};
-+
-+static int __init irqc_init(void)
-+{
-+	return platform_driver_register(&irqc_device_driver);
-+}
-+postcore_initcall(irqc_init);
-+
-+static void __exit irqc_exit(void)
-+{
-+	platform_driver_unregister(&irqc_device_driver);
-+}
-+module_exit(irqc_exit);
-+
-+MODULE_AUTHOR("Magnus Damm");
-+MODULE_DESCRIPTION("Renesas IRQC Driver");
-+MODULE_LICENSE("GPL v2");
---- /dev/null
-+++ work/include/linux/platform_data/irq-renesas-irqc.h	2013-02-27 16:12:09.000000000 +0900
-@@ -0,0 +1,27 @@
-+/*
-+ * Renesas IRQC Driver
-+ *
-+ *  Copyright (C) 2013 Magnus Damm
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#ifndef __IRQ_RENESAS_IRQC_H__
-+#define __IRQ_RENESAS_IRQC_H__
-+
-+struct renesas_irqc_config {
-+	unsigned int irq_base;
-+};
-+
-+#endif /* __IRQ_RENESAS_IRQC_H__ */
+ 	for_each_evictable_lru(lru) {
+ 		int file = is_file_lru(lru);
+ 		unsigned long size;
+@@ -1786,6 +1790,7 @@ out:
+ 
+ 		size = get_lru_size(lruvec, lru);
+ 		scan = size >> sc->priority;
++		scan >>= low_limit_scale;
+ 
+ 		if (!scan && force_scan)
+ 			scan = min(size, SWAP_CLUSTER_MAX);
+-- 
+1.7.9.5
