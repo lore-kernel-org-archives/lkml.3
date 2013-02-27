@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab3B0T5w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 14:57:52 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:55654 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab3B0T5v (ORCPT
+	id S1753459Ab3B0T6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 14:58:09 -0500
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:27948 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752852Ab3B0T6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 14:57:51 -0500
-Message-ID: <512E653F.1090706@windriver.com>
-Date: Wed, 27 Feb 2013 14:57:51 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+	Wed, 27 Feb 2013 14:58:06 -0500
+Message-ID: <512E654A.2010209@hp.com>
+Date: Wed, 27 Feb 2013 11:58:02 -0800
+From: Rick Jones <rick.jones2@hp.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] usb: limit OMAP related USB options to OMAP2PLUS platforms
-References: <1361992119-2465-1-git-send-email-paul.gortmaker@windriver.com> <20130227195046.GA2300@arwen.pp.htv.fi>
-In-Reply-To: <20130227195046.GA2300@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Dave Miller <davem@davemloft.net>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [RFC PATCH 0/5] net: low latency Ethernet device polling
+References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
+In-Reply-To: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-02-27 02:51 PM, Felipe Balbi wrote:
-> HI,
-> 
-> On Wed, Feb 27, 2013 at 02:08:39PM -0500, Paul Gortmaker wrote:
->> commit 57f6ce072e35770a63be0c5d5e82f90d8da7d665 ("usb: phy:
->> add a new driver for usb3 phy") added the new Kconfig option
->> OMAP_USB3, but it had no dependencies whatsoever, and hence
->> became available across all arch/platforms.
->>
->> Which presumably caused this to show up in x86 randconfig:
->>
->>     warning: (USB_MUSB_HDRC && OMAP_USB3) selects \
->>         OMAP_CONTROL_USB which has unmet direct \
->>         dependencies (USB_SUPPORT && ARCH_OMAP2PLUS)
->>
->> Then commit 6992819feb39cb9adac72170555d957d07f869f2 ("usb: phy:
->> fix Kconfig warning") was added.  However, this just deleted the
->> ARCH_OMAP2PLUS dependency from OMAP_CONTROL_USB, further
->> compounding the problem by opening up OMAP_CONTROL_USB to
->> all arch/platforms as well.
->>
->> Here we revert the change of 6992819feb to restore the dependency,
->> and add the same ARCH_OMAP2PLUS dependency to the new OMAP_USB3.
->>
->> Perhaps a more platform specific dependency could be chosen for
->> OMAP_USB3, but at least this keeps it from bleeding out to other
->> architectures and non-OMAP ARM platforms as it is currently doing.
->>
->> Cc: Felipe Balbi <balbi@ti.com>
->> Cc: Kishon Vijay Abraham I <kishon@ti.com>
->> Cc: Moiz Sonasath <m-sonasath@ti.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
->> ---
->>  drivers/usb/phy/Kconfig | 2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
->> index 65217a5..40b8463 100644
->> --- a/drivers/usb/phy/Kconfig
->> +++ b/drivers/usb/phy/Kconfig
->> @@ -17,6 +17,7 @@ config OMAP_USB2
->>  
->>  config OMAP_USB3
->>  	tristate "OMAP USB3 PHY Driver"
->> +	depends on ARCH_OMAP2PLUS
->>  	select USB_OTG_UTILS
->>  	select OMAP_CONTROL_USB
->>  	help
->> @@ -27,6 +28,7 @@ config OMAP_USB3
->>  
->>  config OMAP_CONTROL_USB
->>  	tristate "OMAP CONTROL USB Driver"
->> +	depends on ARCH_OMAP2PLUS
-> 
-> I rather not add dependencies here and fix the selections of
-> OMAP_CONTROL_USB.
+On 02/27/2013 09:55 AM, Eliezer Tamir wrote:
+> This patchset adds the ability for the socket layer code to poll directly
+> on an Ethernet device's RX queue. This eliminates the cost of the interrupt
+> and context switch and with proper tuning allows us to get very close
+> to the HW latency.
+>
+> This is a follow up to Jesse Brandeburg's Kernel Plumbers talk from last year
+> http://www.linuxplumbersconf.org/2012/wp-content/uploads/2012/09/2012-lpc-Low-Latency-Sockets-slides-brandeburg.pdf
+>
+> Patch 1 adds ndo_ll_poll and the IP code to use it.
+> Patch 2 is an example of how TCP can use ndo_ll_poll.
+> Patch 3 shows how this method would be implemented for the ixgbe driver.
+> Patch 4 adds statistics to the ixgbe driver for ndo_ll_poll events.
+> (Optional) Patch 5 is a handy kprobes module to measure detailed latency
+> numbers.
+>
+> this patchset is also available in the following git branch
+> git://github.com/jbrandeb/lls.git rfc
+>
+> Performance numbers:
+> Kernel   Config     C3/6  rx-usecs  TCP  UDP
+> 3.8rc6   typical    off   adaptive  37k  40k
+> 3.8rc6   typical    off   0*        50k  56k
+> 3.8rc6   optimized  off   0*        61k  67k
+> 3.8rc6   optimized  on    adaptive  26k  29k
+> patched  typical    off   adaptive  70k  78k
+> patched  optimized  off   adaptive  79k  88k
+> patched  optimized  off   100       84k  92k
+> patched  optimized  on    adaptive  83k  91k
+> *rx-usecs=0 is usually not useful in a production environment.
 
-I am not sure I understand what you mean, or why you wouldn't
-want sane dependencies in place like those given above.  Perhaps
-you can send an alternate patch so there is no ambiguity?
+I would think that latency-sensitive folks would be using rx-usecs=0 in 
+production - at least if the NIC in use didn't have low enough latency 
+with its default interrupt coalescing/avoidance heuristics.
 
-Paul.
+If I take the first "pure" A/B comparison it seems that the change as 
+benchmarked takes latency for TCP from ~27 usec (37k) to ~14 usec (70k). 
+  At what request/response size does the benefit taper-off?  13 usec 
+seems to be about 16250 bytes at 10 GbE.
 
+When I last looked at netperf TCP_RR performance where something similar 
+could happen I think it was IPoIB where it was possible to set things up 
+such that polling happened rather than wakeups (perhaps it was with a 
+shim library that converted netperf's socket calls to "native" IB).  My 
+recollection is that it "did a number" on the netperf service demands 
+thanks to the spinning.  It would be a good thing to include those 
+figures in any subsequent rounds of benchmarking.
 
-> 
+Am I correct in assuming this is a mechanism which would not be used in 
+a high aggregate PPS situation?
+
+happy benchmarking,
+
+rick jones
