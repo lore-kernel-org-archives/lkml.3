@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758887Ab3B0UkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 15:40:13 -0500
-Received: from mga03.intel.com ([143.182.124.21]:60709 "EHLO mga03.intel.com"
+	id S1757487Ab3B0Ulc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 15:41:32 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:55002 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758428Ab3B0UkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 15:40:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,750,1355126400"; 
-   d="scan'208";a="262284360"
-Message-ID: <512E6F23.3090003@linux.intel.com>
-Date: Wed, 27 Feb 2013 22:40:03 +0200
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	id S1753005Ab3B0Ulb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 15:41:31 -0500
+Date: Wed, 27 Feb 2013 21:41:23 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+        Zheng Liu <wenqing.lz@taobao.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL URGENT] ext4 regression fix for 3.9
+Message-ID: <20130227204123.GM5530@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Theodore Ts'o <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	"gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+	Zheng Liu <wenqing.lz@taobao.com>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
+ <20130227174553.GA224@x4>
+ <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
+ <20130227184912.GA19624@thunk.org>
+ <20130227185625.GA224@x4>
+ <20130227191923.GA1121@redhat.com>
+ <20130227192907.GB14253@thunk.org>
+ <20130227201217.GD14253@thunk.org>
+ <20130227201503.GF14253@thunk.org>
+ <CA+55aFx+mHr080Wzfo8s8cb4qAO74x0r8iDFE90CziybFSTgQA@mail.gmail.com>
 MIME-Version: 1.0
-To: Rick Jones <rick.jones2@hp.com>
-CC: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Dave Miller <davem@davemloft.net>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        e1000-devel@lists.sourceforge.net,
-        Willem de Bruijn <willemb@google.com>,
-        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Subject: Re: [RFC PATCH 0/5] net: low latency Ethernet device polling
-References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com> <512E654A.2010209@hp.com>
-In-Reply-To: <512E654A.2010209@hp.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+55aFx+mHr080Wzfo8s8cb4qAO74x0r8iDFE90CziybFSTgQA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/02/2013 21:58, Rick Jones wrote:
-> On 02/27/2013 09:55 AM, Eliezer Tamir wrote:
->>
->> Performance numbers:
->> Kernel   Config     C3/6  rx-usecs  TCP  UDP
->> 3.8rc6   typical    off   adaptive  37k  40k
->> 3.8rc6   typical    off   0*        50k  56k
->> 3.8rc6   optimized  off   0*        61k  67k
->> 3.8rc6   optimized  on    adaptive  26k  29k
->> patched  typical    off   adaptive  70k  78k
->> patched  optimized  off   adaptive  79k  88k
->> patched  optimized  off   100       84k  92k
->> patched  optimized  on    adaptive  83k  91k
->> *rx-usecs=0 is usually not useful in a production environment.
->
-> I would think that latency-sensitive folks would be using rx-usecs=0 in
-> production - at least if the NIC in use didn't have low enough latency
-> with its default interrupt coalescing/avoidance heuristics.
+On Wed, Feb 27, 2013 at 12:23:18PM -0800, Linus Torvalds wrote:
+> On Wed, Feb 27, 2013 at 12:15 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> > On Wed, Feb 27, 2013 at 03:12:17PM -0500, Linus Torvalds wrote:
+> >> The following changes since commit 304e220f0879198b1f5309ad6f0be862b4009491:
+> >
+> > Obviously, this wasn't from Linus.  I screwed up on sending the pull
+> > request.  Sigh...
+> 
+> That looked really odd in my inbox for a while ;)
+> 
+>           Linus "the *real* one" Torvalds
 
-It will only work well if you have no bulk traffic on the same port as 
-the low latency traffic at all.
+He doesn't trust anyone - he sends pull requests to himself!
 
-> If I take the first "pure" A/B comparison it seems that the change as
-> benchmarked takes latency for TCP from ~27 usec (37k) to ~14 usec (70k).
->   At what request/response size does the benefit taper-off?  13 usec
-> seems to be about 16250 bytes at 10 GbE.
+:-)
 
-It's pretty easy to get a result of 80K+ with a little tweaking, an 
-rx-usecs value of 100 with C3/6 enabled will get you that.
+-- 
+Regards/Gruss,
+    Boris.
 
-> When I last looked at netperf TCP_RR performance where something similar
-> could happen I think it was IPoIB where it was possible to set things up
-> such that polling happened rather than wakeups (perhaps it was with a
-> shim library that converted netperf's socket calls to "native" IB).  My
-> recollection is that it "did a number" on the netperf service demands
-> thanks to the spinning.  It would be a good thing to include those
-> figures in any subsequent rounds of benchmarking.
-
-I will get service demand numbers, but we are busy polling so I can tell 
-you right now that one core will be at 100%.
-
-> Am I correct in assuming this is a mechanism which would not be used in
-> a high aggregate PPS situation?
-
-The current design has in mind situations where you want to react very 
-fast to a trigger but that reaction could involve more than short 
-messages. so we are willing to burn CPU cycles when there is nothing 
-better to do, but we also want to work well when there is bulk traffic.
-Ideally I would want the system to be smart about this and to know when 
-not to allow busy polling.
-
-> happy benchmarking,
-we love netperf.
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
