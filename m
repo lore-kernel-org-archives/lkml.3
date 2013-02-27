@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417Ab3B0S0V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 13:26:21 -0500
-Received: from dkim1.fusionio.com ([66.114.96.53]:52196 "EHLO
-	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758245Ab3B0S0T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 13:26:19 -0500
-X-ASG-Debug-ID: 1361989579-03d6a5664941ab0001-xx1T2L
-X-Barracuda-Envelope-From: JBacik@fusionio.com
-Date: Wed, 27 Feb 2013 13:26:17 -0500
-From: Josef Bacik <jbacik@fusionio.com>
-To: Ahmet Inan <ainan@mathematik.uni-freiburg.de>
-CC: Josef Bacik <JBacik@fusionio.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: btrfs crash when low on memory.
-Message-ID: <20130227182617.GI19641@localhost.localdomain>
-X-ASG-Orig-Subj: Re: btrfs crash when low on memory.
-References: <20130227052247.GA20213@redhat.com>
- <20130227132736.GH19641@localhost.localdomain>
- <CAFDW0jK6zigx0YgVMHomUkRQkqpw5mUgkdeynv36LUiQn4XTxg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAFDW0jK6zigx0YgVMHomUkRQkqpw5mUgkdeynv36LUiQn4XTxg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1361989579
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.123776
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S932574Ab3B0S0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 13:26:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932485Ab3B0S0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 13:26:40 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CA+55aFyGr5J2nPwgbX9U_6WPnwnQ6t2AKpnoxrEqerM5Yv+WqA@mail.gmail.com>
+References: <CA+55aFyGr5J2nPwgbX9U_6WPnwnQ6t2AKpnoxrEqerM5Yv+WqA@mail.gmail.com> <1352665488-13818-1-git-send-email-mathieu.poirier@linaro.org> <20121119072525.GA16730@core.coreip.homeip.net> <CAPM=9tw8mefcYTqELXFbZWZ44a--SNcPnRMAvMSGTiODzRpDhg@mail.gmail.com> <CA+55aFysXNSJMHL-rKZ_fvPP3t357zTC-6hyHmh=S6K-Qx0WbQ@mail.gmail.com> <512E4954.6060601@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        arve@android.com, kernel-team@android.com,
+        John Stultz <john.stultz@linaro.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH v4] drivers/tty: Folding Android's keyreset driver in sysRQ
+Date: Wed, 27 Feb 2013 18:26:18 +0000
+Message-ID: <8629.1361989578@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 07:31:11AM -0700, Ahmet Inan wrote:
-> > Yeah we have a lot of
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> > Your fix is compiling, running and yielding the correct results -
+> > apologies about that.
 > >
-> > ptr = kmalloc();
-> > BUG_ON(ptr);
-> >
-> > everywhere.  I'll fix this one up but I really need to sit down and go through
-> > all of them and make sure we do the right thing in all these places.  Thanks,
+> > Acked-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 > 
-> But what would be the right thing to do when you got no memory?
-> Spinlock until you can kmalloc? Pre-reserve some memory?
->
+> Ok, good. Committed and pushed out. Adding rmk and dhowells to the cc
+> just to let them know, since Dave said they were debugging this on
+> irc.
 
-Return ENOMEM?  We have a way to abort transactions now, if it's in a horrible
-of enough spot we can just abort the transaction and let the user deal with the
-aftermath, it's nicer than panicing.  Thanks,
+Seems reasonable to me.  After dissecting stuff this morning, we noted that
+the code dump in the oops shows that the MOV insn that gets the value to test
+does not load 0.
 
-Josef 
+The first five bytes of:
+
+	ba 00 00 40 ff | 31 c0 | 8b 1d 0c 0e a0
+
+correspond to this:
+
+	mov $0xff400000,%edx
+
+when the linker should've made it this:
+
+	mov $0x00000000,%edx
+
+I suspect that the number may be some metadata reference that didn't get
+substituted.
+
+Dave Airlie tried disassembling his vmlinux with gdb - and that apparently did
+show a load of 0, but the EIP in his oops doesn't match the addresses from
+gdb's disassembly - so I'm not sure what's happening there.
+
+In the oops, the %cr2 value was 0xff400000, but the offending instruction
+bytes of the actual faulting instruction in the code dump were cropped by his
+photo of the screen.
+
+David
