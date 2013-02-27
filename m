@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab3B0Vky (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 16:40:54 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:46817 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751962Ab3B0Vkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 16:40:53 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] PCI changes for v3.9
-Date: Wed, 27 Feb 2013 22:47:39 +0100
-Message-ID: <1673357.1IdxNNvGWX@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAE9FiQUkMqqSE9JJuxt7MxLheQA1j2nKC7QfOB7xLEJ9iUhs7g@mail.gmail.com>
-References: <20130223212120.GA4593@google.com> <CA+55aFy7PvVqAN6tLFFuCUALsXsKsuf-yqWso3aZGe4-MkFvuw@mail.gmail.com> <CAE9FiQUkMqqSE9JJuxt7MxLheQA1j2nKC7QfOB7xLEJ9iUhs7g@mail.gmail.com>
+	id S1755815Ab3B0VlN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 16:41:13 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:48514 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955Ab3B0VlL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 16:41:11 -0500
+Date: Wed, 27 Feb 2013 15:56:30 -0500
+From: Andrew Shewmaker <agshew@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH v2 1/2] mm: tuning hardcoded reserved memory
+Message-ID: <20130227205629.GA8429@localhost.localdomain>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 26, 2013 10:14:29 AM Yinghai Lu wrote:
-> On Tue, Feb 26, 2013 at 8:13 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On Mon, Feb 25, 2013 at 10:46 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> >> On Mon, Feb 25, 2013 at 9:19 PM, Linus Torvalds
-> >> <torvalds@linux-foundation.org> wrote:
-> >>>
-> >>> Also, my *gut* feel is that the new _handle_hotplug_event_root()
-> >>> function should do that whole dance with
-> >>> acpi_scan_lock_acquire()/acpi_scan_lock_release(), but I didn't really
-> >>> know if it's required or appropriate, so I left it alone. Could you
-> >>> take a look?
-> >>
-> >> Yes, we need that for root bridge hot add path.
-> >>
-> >> for hot remove path, we already have lock acquire/release in
-> >> acpi_bus_hot_remove_device().
-> >>
-> >> Please check attached patch for hot add path.
-> >
-> > Quite frankly, doing this in handle_root_bridge_insertion() doesn't
-> > match the pattern elsewhere. Elsewhere you also protected the whole
-> > acpi_get_name() lookup etc. Which is why I felt that it would make
-> > more sense to add this to _handle_hotplug_event_root().
-> >
-> > But there may be good reasons why the root bridge case is different,
-> > and I don't have strong opinions, I just wanted people to look at his
-> > case. I'll let you and Bjorn sort it out...
-> 
-> ok,
-> 
-> Bjorn, Rafael,
-> 
-> Can you please check if you are ok with attached patch ?
+The following patches are against the mmtom git tree as of February 27th.
 
-The patch looks correct to me.
+The first patch only affects OVERCOMMIT_NEVER mode, entirely removing 
+the 3% reserve for other user processes.
 
-Thanks,
-Rafael
+The second patch affects both OVERCOMMIT_GUESS and OVERCOMMIT_NEVER 
+modes, replacing the hardcoded 3% reserve for the root user with a 
+tunable knob.
 
+Signed-off-by: Andrew Shewmaker <agshew@gmail.com>
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+---
+
+__vm_enough_memory reserves 3% of free pages with the default 
+overcommit mode and 6% when overcommit is disabled. These hardcoded 
+values have become less reasonable as memory sizes have grown.
+
+On scientific clusters, systems are generally dedicated to one user. 
+Also, overcommit is sometimes disabled in order to prevent a long 
+running job from suddenly failing days or weeks into a calculation.
+In this case, a user wishing to allocate as much memory as possible 
+to one process may be prevented from using, for example, around 7GB 
+out of 128GB.
+
+The effect is less, but still significant when a user starts a job 
+with one process per core. I have repeatedly seen a set of processes 
+requesting the same amount of memory fail because one of them could  
+not allocate the amount of memory a user would expect to be able to 
+allocate.
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index d1e4124..5993f33 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -182,11 +182,6 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 		allowed -= allowed / 32;
+ 	allowed += total_swap_pages;
+ 
+-	/* Don't let a single process grow too big:
+-	   leave 3% of the size of this process for other processes */
+-	if (mm)
+-		allowed -= mm->total_vm / 32;
+-
+ 	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
+ 		return 0;
+ error:
