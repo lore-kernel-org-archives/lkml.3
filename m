@@ -1,95 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298Ab3B0LKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 06:10:54 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:39266 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521Ab3B0LKx (ORCPT
+	id S1758619Ab3B0LLi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 06:11:38 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:38049 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758291Ab3B0LLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 06:10:53 -0500
+	Wed, 27 Feb 2013 06:11:35 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAPM=9txzwGBeKx=ozzTmf=FG6c3ke3Gw5meBD+d98UqhmjZJ2g@mail.gmail.com>
-References: <1352665488-13818-1-git-send-email-mathieu.poirier@linaro.org>
-	<20121119072525.GA16730@core.coreip.homeip.net>
-	<CAPM=9tw8mefcYTqELXFbZWZ44a--SNcPnRMAvMSGTiODzRpDhg@mail.gmail.com>
-	<CAPM=9tzyBuxwLS=0vAcF5h4vZnB01X7_1NbnMo0M=M454gwZBQ@mail.gmail.com>
-	<CAPM=9txzwGBeKx=ozzTmf=FG6c3ke3Gw5meBD+d98UqhmjZJ2g@mail.gmail.com>
-Date: Wed, 27 Feb 2013 21:10:49 +1000
-Message-ID: <CAPM=9tx_NCg4WS9Kmk_Gv1y7Yz9b8YWqZzg2xRjWyR9K5oarLQ@mail.gmail.com>
-Subject: Re: [PATCH v4] drivers/tty: Folding Android's keyreset driver in sysRQ
-From: Dave Airlie <airlied@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: mathieu.poirier@linaro.org, linux-kernel@vger.kernel.org, arve@android.com,
-        kernel-team@android.com, john.stultz@linaro.org,
-        alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <512D0D67.9010609@linux.vnet.ibm.com>
+References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
+	<20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com>
+	<CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com>
+	<5122551E.1080703@linux.vnet.ibm.com>
+	<51226B46.9080707@linux.vnet.ibm.com>
+	<CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com>
+	<51226F91.7000108@linux.vnet.ibm.com>
+	<CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com>
+	<512BBAD8.8010006@linux.vnet.ibm.com>
+	<CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com>
+	<512C7A38.8060906@linux.vnet.ibm.com>
+	<CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com>
+	<512CC509.1050000@linux.vnet.ibm.com>
+	<CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com>
+	<512D0D67.9010609@linux.vnet.ibm.com>
+Date: Wed, 27 Feb 2013 19:11:34 +0800
+Message-ID: <CANN689FuuEb9wpV43DkTtgv6syvBYL-LQxByWznyAq8dkrhzBw@mail.gmail.com>
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+ Per-CPU Reader-Writer Locks
+From: Michel Lespinasse <walken@google.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Lai Jiangshan <eag0628@gmail.com>, linux-doc@vger.kernel.org,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
+        vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 9:06 PM, Dave Airlie <airlied@gmail.com> wrote:
-> On Wed, Feb 27, 2013 at 6:26 PM, Dave Airlie <airlied@gmail.com> wrote:
->>>
->>> this patch seems to be oopsing on my x86 32-bit machine on bootup, pic attached.
->>>
->>> .config attached.
->>>
->>> It looks to me like the weak bit isn't working so well
->>>
->>>         if (platform_sysrq_reset_seq) {
->>>                 for (i = 0; i < ARRAY_SIZE(sysrq_reset_seq); i++) {
->>>                         key = platform_sysrq_reset_seq[i];
->>>   6d:   66 8b 8c 00 00 00 00    mov    0x0(%eax,%eax,1),%cx
->>>   74:   00
->>>
->>> is around where it craps out.
->>> gcc version 4.7.2 20121109 (Red Hat 4.7.2-8) (GCC)
->>> Fedora 18 machine.
->>
->> And just to confirm reverting
->> 154b7a489a5b1d808323b933b04864958c2f1056.in Linus' tree allows boot to
->> proceed.
->
->
-> Looks like my first picture bounced,
->
-> here's a link
-> http://www.skynet.ie/~airlied/sysrq_oops.jpg
+Hi Srivatsa,
 
-Just some more disasm:
+I think there is some elegance in Lai's proposal of using a local
+trylock for the reader uncontended case and global rwlock to deal with
+the contended case without deadlocks. He apparently didn't realize
+initially that nested read locks are common, and he seems to have
+confused you because of that, but I think his proposal could be
+changed easily to account for that and result in short, easily
+understood code. What about the following:
 
-       if (platform_sysrq_reset_seq) {
-  4c:   ba 00 00 00 00          mov    $0x0,%edx
-  51:   31 c0                   xor    %eax,%eax
-  53:   8b 1d 04 00 00 00       mov    0x4,%ebx
-  59:   85 d2                   test   %edx,%edx
-  5b:   75 2d                   jne    8a <sysrq_init+0x72>
+- local_refcnt is a local lock count; it indicates how many recursive
+locks are taken using the local lglock
+- lglock is used by readers for local locking; it must be acquired
+before local_refcnt becomes nonzero and released after local_refcnt
+goes back to zero.
+- fallback_rwlock is used by readers for global locking; it is
+acquired when fallback_reader_refcnt is zero and the trylock fails on
+lglock
 
-                        sysrq_reset_seq[sysrq_reset_seq_len++] = key;
-                }
-        }
++void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
++{
++       preempt_disable();
++
++       if (__this_cpu_read(*lgrw->local_refcnt) ||
++           arch_spin_trylock(this_cpu_ptr(lgrw->lglock->lock))) {
++               __this_cpu_inc(*lgrw->local_refcnt);
++
+rwlock_acquire_read(&lgrw->fallback_rwlock->lock_dep_map, 0, 0,
+_RET_IP_);
++       } else {
++               read_lock(&lgrw->fallback_rwlock);
++       }
++}
++EXPORT_SYMBOL(lg_rwlock_local_read_lock);
++
++void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
++{
++       if (likely(__this_cpu_read(*lgrw->local_refcnt))) {
++               rwlock_release(&lgrw->fallback_rwlock->lock_dep_map,
+1, _RET_IP_);
++               if (!__this_cpu_dec_return(*lgrw->local_refcnt))
++                       arch_spin_unlock(this_cpu_ptr(lgrw->lglock->lock));
++       } else {
++               read_unlock(&lgrw->fallback_rwlock);
++       }
++
++       preempt_enable();
++}
++EXPORT_SYMBOL(lg_rwlock_local_read_unlock);
++
++void lg_rwlock_global_write_lock(struct lgrwlock *lgrw)
++{
++       int i;
++
++       preempt_disable();
++
++       for_each_possible_cpu(i)
++               arch_spin_lock(per_cpu_ptr(lgrw->lglock->lock, i));
++       write_lock(&lgrw->fallback_rwlock);
++}
++EXPORT_SYMBOL(lg_rwlock_global_write_lock);
++
++void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw)
++{
++       int i;
++
++       write_unlock(&lgrw->fallback_rwlock);
++       for_each_possible_cpu(i)
++               arch_spin_unlock(per_cpu_ptr(lgrw->lglock->lock, i));
++
++       preempt_enable();
++}
++EXPORT_SYMBOL(lg_rwlock_global_write_unlock);
 
-        error = input_register_handler(&sysrq_handler);
-  5d:   b8 b4 00 00 00          mov    $0xb4,%eax
-  62:   e8 fc ff ff ff          call   63 <sysrq_init+0x4b>
-        if (error)
-  67:   85 c0                   test   %eax,%eax
-  69:   74 3e                   je     a9 <sysrq_init+0x91>
-  6b:   eb 2d                   jmp    9a <sysrq_init+0x82>
-        int error;
-        int i;
-  6d:   66 8b 8c 00 00 00 00    mov    0x0(%eax,%eax,1),%cx
-  74:   00
-                        if (key == KEY_RESERVED || key > KEY_MAX)
-  75:   8d 71 ff                lea    -0x1(%ecx),%esi
-  78:   66 81 fe fe 02          cmp    $0x2fe,%si
-  7d:   76 02                   jbe    81 <sysrq_init+0x69>
-  7f:   eb 11                   jmp    92 <sysrq_init+0x7a>
-                                break;
+This is to me relatively easier to understand than Srivatsa's
+proposal. Now I'm not sure who wins efficiency wise, but I think it
+should be relatively close as readers at least don't touch shared
+state in the uncontended case (even with some recursion going on).
 
-                        sysrq_reset_seq[sysrq_reset_seq_len++] = key;
-  81:   66 89 8c 12 08 00 00    mov    %cx,0x8(%edx,%edx,1)
-  88:   00
+There is an interesting case where lg_rwlock_local_read_lock could be
+interrupted after getting the local lglock but before incrementing
+local_refcnt to 1; if that happens any nested readers within that
+interrupt will have to take the global rwlock read side. I think this
+is perfectly acceptable as this should not be a common case though
+(and thus the global rwlock cache line probably wouldn't even bounce
+between cpus then).
 
-Dave.
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
