@@ -1,71 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933897Ab3B0AqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:46:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42235 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932259Ab3BZX61 (ORCPT
+	id S933963Ab3B0AqP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:46:15 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:51088 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932259Ab3B0AqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:27 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yanko Kaneti <yaneti@declera.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 127/150] ppp: set qdisc_tx_busylock to avoid LOCKDEP splat
-Date: Tue, 26 Feb 2013 15:56:24 -0800
-Message-Id: <20130226235537.342430443@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
-References: <20130226235523.930663721@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 26 Feb 2013 19:46:10 -0500
+Date: Tue, 26 Feb 2013 16:46:08 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [patch] mm, show_mem: suppress page counts in non-blockable
+ contexts
+Message-ID: <alpine.DEB.2.02.1302261642520.11109@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On large systems with a lot of memory, walking all RAM to determine page 
+types may take a half second or even more.
 
-------------------
+In non-blockable contexts, the page allocator will emit a page allocation 
+failure warning unless __GFP_NOWARN is specified.  In such contexts, irqs 
+are typically disabled and such a lengthy delay may result in soft 
+lockups.
 
+To fix this, suppress the page walk in such contexts when printing the 
+page allocation failure warning.
 
-From: Eric Dumazet <edumazet@google.com>
-
-[ Upstream commit 303c07db487be59ae9fda10600ea65ca11c21497 ]
-
-If a qdisc is installed on a ppp device, its possible to get
-a lockdep splat under stress, because nested dev_queue_xmit() can
-lock busylock a second time (on a different device, so its a false
-positive)
-
-Avoid this problem using a distinct lock_class_key for ppp
-devices.
-
-Reported-by: Yanko Kaneti <yaneti@declera.com>
-Tested-by: Yanko Kaneti <yaneti@declera.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- drivers/net/ppp/ppp_generic.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/arm/mm/init.c       | 3 +++
+ arch/ia64/mm/contig.c    | 2 ++
+ arch/ia64/mm/discontig.c | 2 ++
+ arch/parisc/mm/init.c    | 2 ++
+ arch/unicore32/mm/init.c | 3 +++
+ include/linux/mm.h       | 3 ++-
+ lib/show_mem.c           | 3 +++
+ mm/page_alloc.c          | 7 +++++++
+ 8 files changed, 24 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ppp/ppp_generic.c
-+++ b/drivers/net/ppp/ppp_generic.c
-@@ -1058,7 +1058,15 @@ ppp_get_stats64(struct net_device *dev,
- 	return stats64;
- }
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -99,6 +99,9 @@ void show_mem(unsigned int filter)
+ 	printk("Mem-info:\n");
+ 	show_free_areas(filter);
  
-+static struct lock_class_key ppp_tx_busylock;
-+static int ppp_dev_init(struct net_device *dev)
-+{
-+	dev->qdisc_tx_busylock = &ppp_tx_busylock;
-+	return 0;
-+}
++	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
++		return;
 +
- static const struct net_device_ops ppp_netdev_ops = {
-+	.ndo_init	 = ppp_dev_init,
- 	.ndo_start_xmit  = ppp_start_xmit,
- 	.ndo_do_ioctl    = ppp_net_ioctl,
- 	.ndo_get_stats64 = ppp_get_stats64,
-
-
+ 	for_each_bank (i, mi) {
+ 		struct membank *bank = &mi->bank[i];
+ 		unsigned int pfn1, pfn2;
+diff --git a/arch/ia64/mm/contig.c b/arch/ia64/mm/contig.c
+--- a/arch/ia64/mm/contig.c
++++ b/arch/ia64/mm/contig.c
+@@ -47,6 +47,8 @@ void show_mem(unsigned int filter)
+ 	printk(KERN_INFO "Mem-info:\n");
+ 	show_free_areas(filter);
+ 	printk(KERN_INFO "Node memory in pages:\n");
++	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
++		return;
+ 	for_each_online_pgdat(pgdat) {
+ 		unsigned long present;
+ 		unsigned long flags;
+diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
+--- a/arch/ia64/mm/discontig.c
++++ b/arch/ia64/mm/discontig.c
+@@ -623,6 +623,8 @@ void show_mem(unsigned int filter)
+ 
+ 	printk(KERN_INFO "Mem-info:\n");
+ 	show_free_areas(filter);
++	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
++		return;
+ 	printk(KERN_INFO "Node memory in pages:\n");
+ 	for_each_online_pgdat(pgdat) {
+ 		unsigned long present;
+diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
+--- a/arch/parisc/mm/init.c
++++ b/arch/parisc/mm/init.c
+@@ -697,6 +697,8 @@ void show_mem(unsigned int filter)
+ 
+ 	printk(KERN_INFO "Mem-info:\n");
+ 	show_free_areas(filter);
++	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
++		return;
+ #ifndef CONFIG_DISCONTIGMEM
+ 	i = max_mapnr;
+ 	while (i-- > 0) {
+diff --git a/arch/unicore32/mm/init.c b/arch/unicore32/mm/init.c
+--- a/arch/unicore32/mm/init.c
++++ b/arch/unicore32/mm/init.c
+@@ -66,6 +66,9 @@ void show_mem(unsigned int filter)
+ 	printk(KERN_DEFAULT "Mem-info:\n");
+ 	show_free_areas(filter);
+ 
++	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
++		return;
++
+ 	for_each_bank(i, mi) {
+ 		struct membank *bank = &mi->bank[i];
+ 		unsigned int pfn1, pfn2;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -898,7 +898,8 @@ extern void pagefault_out_of_memory(void);
+  * Flags passed to show_mem() and show_free_areas() to suppress output in
+  * various contexts.
+  */
+-#define SHOW_MEM_FILTER_NODES	(0x0001u)	/* filter disallowed nodes */
++#define SHOW_MEM_FILTER_NODES		(0x0001u)	/* disallowed nodes */
++#define SHOW_MEM_FILTER_PAGE_COUNT	(0x0002u)	/* page type count */
+ 
+ extern void show_free_areas(unsigned int flags);
+ extern bool skip_free_areas_node(unsigned int flags, int nid);
+diff --git a/lib/show_mem.c b/lib/show_mem.c
+--- a/lib/show_mem.c
++++ b/lib/show_mem.c
+@@ -18,6 +18,9 @@ void show_mem(unsigned int filter)
+ 	printk("Mem-Info:\n");
+ 	show_free_areas(filter);
+ 
++	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
++		return;
++
+ 	for_each_online_pgdat(pgdat) {
+ 		unsigned long i, flags;
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2009,6 +2009,13 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
+ 		return;
+ 
+ 	/*
++	 * Walking all memory to count page types is very expensive and should
++	 * be inhibited in non-blockable contexts.
++	 */
++	if (!(gfp_mask & __GFP_WAIT))
++		filter |= SHOW_MEM_FILTER_PAGE_COUNT;
++
++	/*
+ 	 * This documents exceptions given to allocations in certain
+ 	 * contexts that are allowed to allocate outside current's set
+ 	 * of allowed nodes.
