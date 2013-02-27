@@ -1,24 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933936Ab3B0AJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:09:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42886 "EHLO
+	id S933720Ab3B0APa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:15:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42914 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760334Ab3B0AJR (ORCPT
+	with ESMTP id S933398Ab3B0AJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:17 -0500
+	Tue, 26 Feb 2013 19:09:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 60/86] ARM: 7643/1: sched: correct update_sched_clock()
-Date: Tue, 26 Feb 2013 16:08:08 -0800
-Message-Id: <20130226235919.142149593@linuxfoundation.org>
+        Alan Cox <alan@linux.intel.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Jiri Kosina <jkosina@suse.cz>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 66/86] fb: rework locking to fix lock ordering on takeover
+Date: Tue, 26 Feb 2013 16:08:14 -0800
+Message-Id: <20130226235919.760945323@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,72 +35,302 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonsoo Kim <js1304@gmail.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 7c4e9ced424be4d36df6a3e3825763e97ee97607 upstream.
+commit 50e244cc793d511b86adea24972f3a7264cae114 upstream.
 
-If we want load epoch_cyc and epoch_ns atomically,
-we should update epoch_cyc_copy first of all.
-This notify reader that updating is in progress.
+Adjust the console layer to allow a take over call where the caller
+already holds the locks.  Make the fb layer lock in order.
 
-If we update epoch_cyc first like as current implementation,
-there is subtle error case.
-Look at the below example.
+This is partly a band aid, the fb layer is terminally confused about the
+locking rules it uses for its notifiers it seems.
 
-<Initial Condition>
-cyc = 9
-ns = 900
-cyc_copy = 9
-
-== CASE 1 ==
-<CPU A = reader>           <CPU B = updater>
-                           write cyc = 10
-read cyc = 10
-read ns = 900
-                           write ns = 1000
-                           write cyc_copy = 10
-read cyc_copy = 10
-
-output = (10, 900)
-
-== CASE 2 ==
-<CPU A = reader>           <CPU B = updater>
-read cyc = 9
-                           write cyc = 10
-                           write ns = 1000
-read ns = 1000
-read cyc_copy = 9
-                           write cyc_copy = 10
-output = (9, 1000)
-
-If atomic read is ensured, output should be (9, 900) or (10, 1000).
-But, output in example case are not.
-
-So, change updating sequence in order to correct this problem.
-
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[akpm@linux-foundation.org: remove stray non-ascii char, tidy comment]
+[akpm@linux-foundation.org: export do_take_over_console()]
+[airlied: cleanup another non-ascii char]
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/sched_clock.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/tty/vt/vt.c           |   93 +++++++++++++++++++++++++++++++-----------
+ drivers/video/console/fbcon.c |   29 ++++++++++++-
+ drivers/video/fbmem.c         |    5 --
+ drivers/video/fbsysfs.c       |    3 +
+ include/linux/console.h       |    1 
+ 5 files changed, 104 insertions(+), 27 deletions(-)
 
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -84,11 +84,11 @@ static void notrace update_sched_clock(v
- 	 * detectable in cyc_to_fixed_sched_clock().
- 	 */
- 	raw_local_irq_save(flags);
--	cd.epoch_cyc = cyc;
-+	cd.epoch_cyc_copy = cyc;
- 	smp_wmb();
- 	cd.epoch_ns = ns;
- 	smp_wmb();
--	cd.epoch_cyc_copy = cyc;
-+	cd.epoch_cyc = cyc;
- 	raw_local_irq_restore(flags);
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -3017,7 +3017,7 @@ int __init vty_init(const struct file_op
+ 
+ static struct class *vtconsole_class;
+ 
+-static int bind_con_driver(const struct consw *csw, int first, int last,
++static int do_bind_con_driver(const struct consw *csw, int first, int last,
+ 			   int deflt)
+ {
+ 	struct module *owner = csw->owner;
+@@ -3028,7 +3028,7 @@ static int bind_con_driver(const struct
+ 	if (!try_module_get(owner))
+ 		return -ENODEV;
+ 
+-	console_lock();
++	WARN_CONSOLE_UNLOCKED();
+ 
+ 	/* check if driver is registered */
+ 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+@@ -3113,11 +3113,22 @@ static int bind_con_driver(const struct
+ 
+ 	retval = 0;
+ err:
+-	console_unlock();
+ 	module_put(owner);
+ 	return retval;
+ };
+ 
++
++static int bind_con_driver(const struct consw *csw, int first, int last,
++			   int deflt)
++{
++	int ret;
++
++	console_lock();
++	ret = do_bind_con_driver(csw, first, last, deflt);
++	console_unlock();
++	return ret;
++}
++
+ #ifdef CONFIG_VT_HW_CONSOLE_BINDING
+ static int con_is_graphics(const struct consw *csw, int first, int last)
+ {
+@@ -3229,9 +3240,9 @@ int unbind_con_driver(const struct consw
+ 	if (!con_is_bound(csw))
+ 		con_driver->flag &= ~CON_DRIVER_FLAG_INIT;
+ 
+-	console_unlock();
+ 	/* ignore return value, binding should not fail */
+-	bind_con_driver(defcsw, first, last, deflt);
++	do_bind_con_driver(defcsw, first, last, deflt);
++	console_unlock();
+ err:
+ 	module_put(owner);
+ 	return retval;
+@@ -3522,28 +3533,18 @@ int con_debug_leave(void)
+ }
+ EXPORT_SYMBOL_GPL(con_debug_leave);
+ 
+-/**
+- * register_con_driver - register console driver to console layer
+- * @csw: console driver
+- * @first: the first console to take over, minimum value is 0
+- * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
+- *
+- * DESCRIPTION: This function registers a console driver which can later
+- * bind to a range of consoles specified by @first and @last. It will
+- * also initialize the console driver by calling con_startup().
+- */
+-int register_con_driver(const struct consw *csw, int first, int last)
++static int do_register_con_driver(const struct consw *csw, int first, int last)
+ {
+ 	struct module *owner = csw->owner;
+ 	struct con_driver *con_driver;
+ 	const char *desc;
+ 	int i, retval = 0;
+ 
++	WARN_CONSOLE_UNLOCKED();
++
+ 	if (!try_module_get(owner))
+ 		return -ENODEV;
+ 
+-	console_lock();
+-
+ 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+ 		con_driver = &registered_con_driver[i];
+ 
+@@ -3596,10 +3597,29 @@ int register_con_driver(const struct con
+ 	}
+ 
+ err:
+-	console_unlock();
+ 	module_put(owner);
+ 	return retval;
+ }
++
++/**
++ * register_con_driver - register console driver to console layer
++ * @csw: console driver
++ * @first: the first console to take over, minimum value is 0
++ * @last: the last console to take over, maximum value is MAX_NR_CONSOLES -1
++ *
++ * DESCRIPTION: This function registers a console driver which can later
++ * bind to a range of consoles specified by @first and @last. It will
++ * also initialize the console driver by calling con_startup().
++ */
++int register_con_driver(const struct consw *csw, int first, int last)
++{
++	int retval;
++
++	console_lock();
++	retval = do_register_con_driver(csw, first, last);
++	console_unlock();
++	return retval;
++}
+ EXPORT_SYMBOL(register_con_driver);
+ 
+ /**
+@@ -3653,17 +3673,44 @@ EXPORT_SYMBOL(unregister_con_driver);
+  *	when a driver wants to take over some existing consoles
+  *	and become default driver for newly opened ones.
+  *
+- *      take_over_console is basically a register followed by unbind
++ *	take_over_console is basically a register followed by unbind
++ */
++int do_take_over_console(const struct consw *csw, int first, int last, int deflt)
++{
++	int err;
++
++	err = do_register_con_driver(csw, first, last);
++	/*
++	 * If we get an busy error we still want to bind the console driver
++	 * and return success, as we may have unbound the console driver
++	 * but not unregistered it.
++	 */
++	if (err == -EBUSY)
++		err = 0;
++	if (!err)
++		do_bind_con_driver(csw, first, last, deflt);
++
++	return err;
++}
++EXPORT_SYMBOL_GPL(do_take_over_console);
++
++/*
++ *	If we support more console drivers, this function is used
++ *	when a driver wants to take over some existing consoles
++ *	and become default driver for newly opened ones.
++ *
++ *	take_over_console is basically a register followed by unbind
+  */
+ int take_over_console(const struct consw *csw, int first, int last, int deflt)
+ {
+ 	int err;
+ 
+ 	err = register_con_driver(csw, first, last);
+-	/* if we get an busy error we still want to bind the console driver
++	/*
++	 * If we get an busy error we still want to bind the console driver
+ 	 * and return success, as we may have unbound the console driver
+-	 * but not unregistered it.
+-	*/
++	 * but not unregistered it.
++	 */
+ 	if (err == -EBUSY)
+ 		err = 0;
+ 	if (!err)
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -529,6 +529,33 @@ static int search_for_mapped_con(void)
+ 	return retval;
  }
  
++static int do_fbcon_takeover(int show_logo)
++{
++	int err, i;
++
++	if (!num_registered_fb)
++		return -ENODEV;
++
++	if (!show_logo)
++		logo_shown = FBCON_LOGO_DONTSHOW;
++
++	for (i = first_fb_vc; i <= last_fb_vc; i++)
++		con2fb_map[i] = info_idx;
++
++	err = do_take_over_console(&fb_con, first_fb_vc, last_fb_vc,
++				fbcon_is_default);
++
++	if (err) {
++		for (i = first_fb_vc; i <= last_fb_vc; i++)
++			con2fb_map[i] = -1;
++		info_idx = -1;
++	} else {
++		fbcon_has_console_bind = 1;
++	}
++
++	return err;
++}
++
+ static int fbcon_takeover(int show_logo)
+ {
+ 	int err, i;
+@@ -3121,7 +3148,7 @@ static int fbcon_fb_registered(struct fb
+ 		}
+ 
+ 		if (info_idx != -1)
+-			ret = fbcon_takeover(1);
++			ret = do_fbcon_takeover(1);
+ 	} else {
+ 		for (i = first_fb_vc; i <= last_fb_vc; i++) {
+ 			if (con2fb_map_boot[i] == idx)
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1642,7 +1642,9 @@ static int do_register_framebuffer(struc
+ 	event.info = fb_info;
+ 	if (!lock_fb_info(fb_info))
+ 		return -ENODEV;
++	console_lock();
+ 	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
++	console_unlock();
+ 	unlock_fb_info(fb_info);
+ 	return 0;
+ }
+@@ -1845,11 +1847,8 @@ int fb_new_modelist(struct fb_info *info
+ 	err = 1;
+ 
+ 	if (!list_empty(&info->modelist)) {
+-		if (!lock_fb_info(info))
+-			return -ENODEV;
+ 		event.info = info;
+ 		err = fb_notifier_call_chain(FB_EVENT_NEW_MODELIST, &event);
+-		unlock_fb_info(info);
+ 	}
+ 
+ 	return err;
+--- a/drivers/video/fbsysfs.c
++++ b/drivers/video/fbsysfs.c
+@@ -175,6 +175,8 @@ static ssize_t store_modes(struct device
+ 	if (i * sizeof(struct fb_videomode) != count)
+ 		return -EINVAL;
+ 
++	if (!lock_fb_info(fb_info))
++		return -ENODEV;
+ 	console_lock();
+ 	list_splice(&fb_info->modelist, &old_list);
+ 	fb_videomode_to_modelist((const struct fb_videomode *)buf, i,
+@@ -186,6 +188,7 @@ static ssize_t store_modes(struct device
+ 		fb_destroy_modelist(&old_list);
+ 
+ 	console_unlock();
++	unlock_fb_info(fb_info);
+ 
+ 	return 0;
+ }
+--- a/include/linux/console.h
++++ b/include/linux/console.h
+@@ -78,6 +78,7 @@ int con_is_bound(const struct consw *csw
+ int register_con_driver(const struct consw *csw, int first, int last);
+ int unregister_con_driver(const struct consw *csw);
+ int take_over_console(const struct consw *sw, int first, int last, int deflt);
++int do_take_over_console(const struct consw *sw, int first, int last, int deflt);
+ void give_up_console(const struct consw *sw);
+ #ifdef CONFIG_HW_CONSOLE
+ int con_debug_enter(struct vc_data *vc);
 
 
