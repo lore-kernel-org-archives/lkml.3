@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933655Ab3B0A3R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:29:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42661 "EHLO
+	id S933681Ab3B0A3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:29:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42660 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933400Ab3B0AIn (ORCPT
+	with ESMTP id S933442Ab3B0AIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:08:43 -0500
+	Tue, 26 Feb 2013 19:08:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <js1304@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 20/86] Driver core: treat unregistered bus_types as having no devices
-Date: Tue, 26 Feb 2013 16:07:28 -0800
-Message-Id: <20130226235915.029753527@linuxfoundation.org>
+        Olaf Hering <olaf@aepfle.de>, "K. Y. Srinivasan" <kys@microsoft.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 09/86] x86: Hyper-V: register clocksource only if its advertised
+Date: Tue, 26 Feb 2013 16:07:17 -0800
+Message-Id: <20130226235913.874567531@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -26,57 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Olaf Hering <[mailto:olaf@aepfle.de]>
 
-commit 4fa3e78be7e985ca814ce2aa0c09cbee404efcf7 upstream.
+commit 32068f6527b8f1822a30671dedaf59c567325026 upstream.
 
-A bus_type has a list of devices (klist_devices), but the list and the
-subsys_private structure that contains it are not initialized until the
-bus_type is registered with bus_register().
+Enable hyperv_clocksource only if its advertised as a feature.
+XenServer 6 returns the signature which is checked in
+ms_hyperv_platform(), but it does not offer all features. Currently the
+clocksource is enabled unconditionally in ms_hyperv_init_platform(), and
+the result is a hanging guest.
 
-The panic/reboot path has fixups that look up devices in pci_bus_type.  If
-we panic before registering pci_bus_type, the bus_type exists but the list
-does not, so mach_reboot_fixups() trips over a null pointer and panics
-again:
+Hyper-V spec Bit 1 indicates the availability of Partition Reference
+Counter.  Register the clocksource only if this bit is set.
 
-    mach_reboot_fixups
-      pci_get_device
-        ..
-          bus_find_device(&pci_bus_type, ...)
-            bus->p is NULL
+The guest in question prints this in dmesg:
+ [    0.000000] Hypervisor detected: Microsoft HyperV
+ [    0.000000] HyperV: features 0x70, hints 0x0
 
-Joonsoo reported a problem when panicking before PCI was initialized.
-I think this patch should be sufficient to replace the patch he posted
-here: https://lkml.org/lkml/2012/12/28/75 ("[PATCH] x86, reboot: skip
-reboot_fixups in early boot phase")
+This bug can be reproduced easily be setting 'viridian=1' in a HVM domU
+.cfg file. A workaround without this patch is to boot the HVM guest with
+'clocksource=jiffies'.
 
-Reported-by: Joonsoo Kim <js1304@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Link: http://lkml.kernel.org/r/1359940959-32168-1-git-send-email-kys@microsoft.com
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/bus.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/mshyperv.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -294,7 +294,7 @@ int bus_for_each_dev(struct bus_type *bu
- 	struct device *dev;
- 	int error = 0;
+--- a/arch/x86/kernel/cpu/mshyperv.c
++++ b/arch/x86/kernel/cpu/mshyperv.c
+@@ -68,7 +68,8 @@ static void __init ms_hyperv_init_platfo
+ 	printk(KERN_INFO "HyperV: features 0x%x, hints 0x%x\n",
+ 	       ms_hyperv.features, ms_hyperv.hints);
  
--	if (!bus)
-+	if (!bus || !bus->p)
- 		return -EINVAL;
+-	clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
++	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
++		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+ }
  
- 	klist_iter_init_node(&bus->p->klist_devices, &i,
-@@ -328,7 +328,7 @@ struct device *bus_find_device(struct bu
- 	struct klist_iter i;
- 	struct device *dev;
- 
--	if (!bus)
-+	if (!bus || !bus->p)
- 		return NULL;
- 
- 	klist_iter_init_node(&bus->p->klist_devices, &i,
+ const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
 
 
