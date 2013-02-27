@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760340Ab3B0RF2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 12:05:28 -0500
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:54383 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab3B0RF1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 12:05:27 -0500
-Message-ID: <512E3CD4.6000305@gmail.com>
-Date: Wed, 27 Feb 2013 11:05:24 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Kim Phillips <kim.phillips@freescale.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Russell King <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH 1/3] libfdt: add fdt type definitions in libfdt_env.h
-References: <1361928975-29395-1-git-send-email-kim.phillips@freescale.com>
-In-Reply-To: <1361928975-29395-1-git-send-email-kim.phillips@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760321Ab3B0RGr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:06:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42236 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750927Ab3B0RGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 12:06:46 -0500
+Date: Wed, 27 Feb 2013 12:06:27 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: gong.chen@linux.intel.com
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Message-ID: <1361984787-yx7rovrg-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130227072517.GA30971@gchen.bj.intel.com>
+References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1361475708-25991-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130227072517.GA30971@gchen.bj.intel.com>
+Subject: Re: [PATCH 3/9] soft-offline: use migrate_pages() instead of
+ migrate_huge_page()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/2013 07:36 PM, Kim Phillips wrote:
-> in preparation for the forthcoming dtc update which adds fdt specific
-> types: fdt{16,32,64}_t.
+On Wed, Feb 27, 2013 at 02:25:17AM -0500, Chen Gong wrote:
+> On Thu, Feb 21, 2013 at 02:41:42PM -0500, Naoya Horiguchi wrote:
+> > Date: Thu, 21 Feb 2013 14:41:42 -0500
+...
+> > diff --git v3.8.orig/mm/memory-failure.c v3.8/mm/memory-failure.c
+> > index bc126f6..01e4676 100644
+> > --- v3.8.orig/mm/memory-failure.c
+> > +++ v3.8/mm/memory-failure.c
+...
+> > +		atomic_long_add(1<<compound_trans_order(hpage), &mce_bad_pages);
 > 
-> Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
-> ---
->  arch/arm/boot/compressed/libfdt_env.h | 4 ++++
->  include/linux/libfdt_env.h            | 6 ++++++
+> mce_bad_pages has been substituted by num_poisoned_pages.
 
-We should kill off arch/arm/boot/compressed/libfdt_env.h and use
-include/linux/libfdt_env.h instead. The only reason I see why we have
-both is the ARM version was introduced before include/linux/libfdt_env.h
-existed.
+This patchset is based on v3.8 (as show in diff header), where the
+replacing patch "memory-failure: use num_poisoned_pages instead of
+mce_bad_pages" is not merged yet. I'll rebase on v3.8-rc1 in the
+next post.
 
-Rob
-
->  2 files changed, 10 insertions(+)
-> 
-> diff --git a/arch/arm/boot/compressed/libfdt_env.h b/arch/arm/boot/compressed/libfdt_env.h
-> index 1f4e718..17ae0f3 100644
-> --- a/arch/arm/boot/compressed/libfdt_env.h
-> +++ b/arch/arm/boot/compressed/libfdt_env.h
-> @@ -5,6 +5,10 @@
->  #include <linux/string.h>
->  #include <asm/byteorder.h>
->  
-> +typedef __be16 fdt16_t;
-> +typedef __be32 fdt32_t;
-> +typedef __be64 fdt64_t;
-> +
->  #define fdt16_to_cpu(x)		be16_to_cpu(x)
->  #define cpu_to_fdt16(x)		cpu_to_be16(x)
->  #define fdt32_to_cpu(x)		be32_to_cpu(x)
-> diff --git a/include/linux/libfdt_env.h b/include/linux/libfdt_env.h
-> index 01508c7..da98097 100644
-> --- a/include/linux/libfdt_env.h
-> +++ b/include/linux/libfdt_env.h
-> @@ -5,6 +5,12 @@
->  
->  #include <asm/byteorder.h>
->  
-> +typedef __be16 fdt16_t;
-> +typedef __be32 fdt32_t;
-> +typedef __be64 fdt64_t;
-> +
-> +#define fdt16_to_cpu(x) be16_to_cpu(x)
-> +#define cpu_to_fdt16(x) cpu_to_be16(x)
->  #define fdt32_to_cpu(x) be32_to_cpu(x)
->  #define cpu_to_fdt32(x) cpu_to_be32(x)
->  #define fdt64_to_cpu(x) be64_to_cpu(x)
-> 
-
+Thanks,
+Naoya
