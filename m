@@ -1,117 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934066Ab3B0Avs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:51:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42167 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932594Ab3BZX6S (ORCPT
+	id S934087Ab3B0Avw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:51:52 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:63420 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932594Ab3B0Avu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:18 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>
-Subject: [ 116/150] fbcon: dont lose the console font across generic->chip driver switch
-Date: Tue, 26 Feb 2013 15:56:13 -0800
-Message-Id: <20130226235536.130172788@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
-References: <20130226235523.930663721@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 26 Feb 2013 19:51:50 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
+        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
+        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>, <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH Resend v5 16/16] ARM: dts: add pinctrl property for spi node for atmel SoC
+Date: Wed, 27 Feb 2013 08:49:27 +0800
+Message-ID: <1361926167-12683-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Dave Airlie <airlied@redhat.com>
-
-commit ae1287865f5361fa138d4d3b1b6277908b54eac9 upstream.
-
-If grub2 loads efifb/vesafb, then when systemd starts it can set the console
-font on that framebuffer device, however when we then load the native KMS
-driver, the first thing it does is tear down the generic framebuffer driver.
-
-The thing is the generic code is doing the right thing, it frees the font
-because otherwise it would leak memory. However we can assume that if you
-are removing the generic firmware driver (vesa/efi/offb), that a new driver
-*should* be loading soon after, so we effectively leak the font.
-
-However the old code left a dangling pointer in vc->vc_font.data and we
-can now reuse that dangling pointer to load the font into the new
-driver, now that we aren't freeing it.
-
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=892340
-
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: linux@arm.linux.org.uk
+Cc: linux-kernel@vger.kernel.org
 ---
- drivers/video/console/fbcon.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/at91sam9260.dtsi |   22 ++++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9263.dtsi |   22 ++++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9g45.dtsi |   22 ++++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9n12.dtsi |   22 ++++++++++++++++++++++
+ arch/arm/boot/dts/at91sam9x5.dtsi  |   22 ++++++++++++++++++++++
+ 5 files changed, 110 insertions(+)
 
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -990,7 +990,7 @@ static const char *fbcon_startup(void)
- 	}
+diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
+index 6e31dc8..39253b9 100644
+--- a/arch/arm/boot/dts/at91sam9260.dtsi
++++ b/arch/arm/boot/dts/at91sam9260.dtsi
+@@ -322,6 +322,24 @@
+ 					};
+ 				};
  
- 	/* Setup default font */
--	if (!p->fontdata) {
-+	if (!p->fontdata && !vc->vc_font.data) {
- 		if (!fontname[0] || !(font = find_font(fontname)))
- 			font = get_default_font(info->var.xres,
- 						info->var.yres,
-@@ -1000,6 +1000,8 @@ static const char *fbcon_startup(void)
- 		vc->vc_font.height = font->height;
- 		vc->vc_font.data = (void *)(p->fontdata = font->data);
- 		vc->vc_font.charcount = 256; /* FIXME  Need to support more fonts */
-+	} else {
-+		p->fontdata = vc->vc_font.data;
- 	}
- 
- 	cols = FBCON_SWAP(ops->rotate, info->var.xres, info->var.yres);
-@@ -1159,9 +1161,9 @@ static void fbcon_init(struct vc_data *v
- 	ops->p = &fb_display[fg_console];
- }
- 
--static void fbcon_free_font(struct display *p)
-+static void fbcon_free_font(struct display *p, bool freefont)
- {
--	if (p->userfont && p->fontdata && (--REFCOUNT(p->fontdata) == 0))
-+	if (freefont && p->userfont && p->fontdata && (--REFCOUNT(p->fontdata) == 0))
- 		kfree(p->fontdata - FONT_EXTRA_WORDS * sizeof(int));
- 	p->fontdata = NULL;
- 	p->userfont = 0;
-@@ -1173,8 +1175,8 @@ static void fbcon_deinit(struct vc_data
- 	struct fb_info *info;
- 	struct fbcon_ops *ops;
- 	int idx;
-+	bool free_font = true;
- 
--	fbcon_free_font(p);
- 	idx = con2fb_map[vc->vc_num];
- 
- 	if (idx == -1)
-@@ -1185,6 +1187,8 @@ static void fbcon_deinit(struct vc_data
- 	if (!info)
- 		goto finished;
- 
-+	if (info->flags & FBINFO_MISC_FIRMWARE)
-+		free_font = false;
- 	ops = info->fbcon_par;
- 
- 	if (!ops)
-@@ -1196,6 +1200,8 @@ static void fbcon_deinit(struct vc_data
- 	ops->flags &= ~FBCON_FLAGS_INIT;
- finished:
- 
-+	fbcon_free_font(p, free_font);
++				spi0 {
++					pinctrl_spi0: spi0-0 {
++						atmel,pins =
++							<0 0 0x1 0x0	/* PA0 periph A SPI0_MISO pin */
++							 0 1 0x1 0x0	/* PA1 periph A SPI0_MOSI pin */
++							 0 2 0x1 0x0>;	/* PA2 periph A SPI0_SPCK pin */
++					};
++				};
 +
- 	if (!con_is_bound(&fb_con))
- 		fbcon_exit();
++				spi1 {
++					pinctrl_spi1: spi1-0 {
++						atmel,pins =
++							<1 0 0x1 0x0	/* PB0 periph A SPI1_MISO pin */
++							 1 1 0x1 0x0	/* PB1 periph A SPI1_MOSI pin */
++							 1 2 0x1 0x0>;	/* PB2 periph A SPI1_SPCK pin */
++					};
++				};
++
+ 				pioA: gpio@fffff400 {
+ 					compatible = "atmel,at91rm9200-gpio";
+ 					reg = <0xfffff400 0x200>;
+@@ -477,6 +495,8 @@
+ 				compatible = "atmel,at91rm9200-spi";
+ 				reg = <0xfffc8000 0x200>;
+ 				interrupts = <12 4 3>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_spi0>;
+ 				status = "disabled";
+ 			};
  
-
+@@ -486,6 +506,8 @@
+ 				compatible = "atmel,at91rm9200-spi";
+ 				reg = <0xfffcc000 0x200>;
+ 				interrupts = <13 4 3>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_spi1>;
+ 				status = "disabled";
+ 			};
+ 
+diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
+index 6c6d9ae..94b58ab 100644
+--- a/arch/arm/boot/dts/at91sam9263.dtsi
++++ b/arch/arm/boot/dts/at91sam9263.dtsi
+@@ -303,6 +303,24 @@
+ 					};
+ 				};
+ 
++				spi0 {
++					pinctrl_spi0: spi0-0 {
++						atmel,pins =
++							<0 0 0x2 0x0	/* PA0 periph B SPI0_MISO pin */
++							 0 1 0x2 0x0	/* PA1 periph B SPI0_MOSI pin */
++							 0 2 0x2 0x0>;	/* PA2 periph B SPI0_SPCK pin */
++					};
++				};
++
++				spi1 {
++					pinctrl_spi1: spi1-0 {
++						atmel,pins =
++							<1 12 0x1 0x0	/* PB12 periph A SPI1_MISO pin */
++							 1 13 0x1 0x0	/* PB13 periph A SPI1_MOSI pin */
++							 1 14 0x1 0x0>;	/* PB14 periph A SPI1_SPCK pin */
++					};
++				};
++
+ 				pioA: gpio@fffff200 {
+ 					compatible = "atmel,at91rm9200-gpio";
+ 					reg = <0xfffff200 0x200>;
+@@ -469,6 +487,8 @@
+ 				compatible = "atmel,at91rm9200-spi";
+ 				reg = <0xfffa4000 0x200>;
+ 				interrupts = <14 4 3>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_spi0>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -478,6 +498,8 @@
+ 				compatible = "atmel,at91rm9200-spi";
+ 				reg = <0xfffa8000 0x200>;
+ 				interrupts = <15 4 3>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_spi1>;
+ 				status = "disabled";
+ 			};
+ 		};
+diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+index e085b8a..cfdf429 100644
+--- a/arch/arm/boot/dts/at91sam9g45.dtsi
++++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+@@ -322,6 +322,24 @@
+ 					};
+ 				};
+ 
++				spi0 {
++					pinctrl_spi0: spi0-0 {
++						atmel,pins =
++							<1 0 0x1 0x0	/* PB0 periph A SPI0_MISO pin */
++							 1 1 0x1 0x0	/* PB1 periph A SPI0_MOSI pin */
++							 1 2 0x1 0x0>;	/* PB2 periph A SPI0_SPCK pin */
++					};
++				};
++
++				spi1 {
++					pinctrl_spi1: spi1-0 {
++						atmel,pins =
++							<1 14 0x1 0x0	/* PB14 periph A SPI1_MISO pin */
++							 1 15 0x1 0x0	/* PB15 periph A SPI1_MOSI pin */
++							 1 16 0x1 0x0>;	/* PB16 periph A SPI1_SPCK pin */
++					};
++				};
++
+ 				pioA: gpio@fffff200 {
+ 					compatible = "atmel,at91rm9200-gpio";
+ 					reg = <0xfffff200 0x200>;
+@@ -538,6 +556,8 @@
+ 				compatible = "atmel,at91rm9200-spi";
+ 				reg = <0xfffa4000 0x200>;
+ 				interrupts = <14 4 3>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_spi0>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -547,6 +567,8 @@
+ 				compatible = "atmel,at91rm9200-spi";
+ 				reg = <0xfffa8000 0x200>;
+ 				interrupts = <15 4 3>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_spi1>;
+ 				status = "disabled";
+ 			};
+ 		};
+diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
+index 9f839a9..1092190 100644
+--- a/arch/arm/boot/dts/at91sam9n12.dtsi
++++ b/arch/arm/boot/dts/at91sam9n12.dtsi
+@@ -261,6 +261,24 @@
+ 					};
+ 				};
+ 
++				spi0 {
++					pinctrl_spi0: spi0-0 {
++						atmel,pins =
++							<0 11 0x1 0x0	/* PA11 periph A SPI0_MISO pin */
++							 0 12 0x1 0x0	/* PA12 periph A SPI0_MOSI pin */
++							 0 13 0x1 0x0>;	/* PA13 periph A SPI0_SPCK pin */
++					};
++				};
++
++				spi1 {
++					pinctrl_spi1: spi1-0 {
++						atmel,pins =
++							<0 21 0x2 0x0	/* PA21 periph B SPI1_MISO pin */
++							 0 22 0x2 0x0	/* PA22 periph B SPI1_MOSI pin */
++							 0 23 0x2 0x0>;	/* PA23 periph B SPI1_SPCK pin */
++					};
++				};
++
+ 				pioA: gpio@fffff400 {
+ 					compatible = "atmel,at91sam9x5-gpio", "atmel,at91rm9200-gpio";
+ 					reg = <0xfffff400 0x200>;
+@@ -388,6 +406,8 @@
+ 				compatible = "atmel,at91rm9200-spi";
+ 				reg = <0xf0000000 0x100>;
+ 				interrupts = <13 4 3>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_spi0>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -397,6 +417,8 @@
+ 				compatible = "atmel,at91rm9200-spi";
+ 				reg = <0xf0004000 0x100>;
+ 				interrupts = <14 4 3>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_spi1>;
+ 				status = "disabled";
+ 			};
+ 		};
+diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+index bc98e5a..23d39ca 100644
+--- a/arch/arm/boot/dts/at91sam9x5.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+@@ -319,6 +319,24 @@
+ 					};
+ 				};
+ 
++				spi0 {
++					pinctrl_spi0: spi0-0 {
++						atmel,pins =
++							<0 11 0x1 0x0	/* PA11 periph A SPI0_MISO pin */
++							 0 12 0x1 0x0	/* PA12 periph A SPI0_MOSI pin */
++							 0 13 0x1 0x0>;	/* PA13 periph A SPI0_SPCK pin */
++					};
++				};
++
++				spi1 {
++					pinctrl_spi1: spi1-0 {
++						atmel,pins =
++							<0 21 0x2 0x0	/* PA21 periph B SPI1_MISO pin */
++							 0 22 0x2 0x0	/* PA22 periph B SPI1_MOSI pin */
++							 0 23 0x2 0x0>;	/* PA23 periph B SPI1_SPCK pin */
++					};
++				};
++
+ 				pioA: gpio@fffff400 {
+ 					compatible = "atmel,at91sam9x5-gpio", "atmel,at91rm9200-gpio";
+ 					reg = <0xfffff400 0x200>;
+@@ -518,6 +536,8 @@
+ 				compatible = "atmel,at91rm9200-spi";
+ 				reg = <0xf0000000 0x100>;
+ 				interrupts = <13 4 3>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_spi0>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -527,6 +547,8 @@
+ 				compatible = "atmel,at91rm9200-spi";
+ 				reg = <0xf0004000 0x100>;
+ 				interrupts = <14 4 3>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_spi1>;
+ 				status = "disabled";
+ 			};
+ 		};
+-- 
+1.7.9.5
 
