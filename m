@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759367Ab3B0BaJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:30:09 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:41241 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755486Ab3B0BaG convert rfc822-to-8bit (ORCPT
+	id S1759076Ab3B0BhU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:37:20 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:17219 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637Ab3B0BhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 20:30:06 -0500
-X-IronPort-AV: E=Sophos;i="4.84,744,1355068800"; 
-   d="scan'208";a="6774853"
-Subject: Re: [PATCH 1/2] perf annotate: Fix build with NO_NEWT=1
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Namhyung Kim <namhyung@kernel.org>, acme@infradead.org,
-        linux-kernel@vger.kernel.org, feng.tang@intel.com,
-        namhyung.kim@lge.com
-In-Reply-To: <20130227012207.GC5819@concordia>
-References: <1361854923-1814-1-git-send-email-michael@ellerman.id.au>
-	 <87y5ebsb0s.fsf@sejong.aot.lge.com>
-	 <1361927668.2262.36.camel@liguang.fnst.cn.fujitsu.com>
-	 <20130227012207.GC5819@concordia>
-Date: Wed, 27 Feb 2013 09:29:52 +0800
-Message-ID: <1361928592.2262.38.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/27 09:29:11,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/27 09:29:11,
-	Serialize complete at 2013/02/27 09:29:11
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 26 Feb 2013 20:37:18 -0500
+X-IronPort-AV: E=Sophos;i="4.84,744,1355126400"; 
+   d="scan'208";a="26748431"
+Message-ID: <512D634D.5010600@codeaurora.org>
+Date: Tue, 26 Feb 2013 17:37:17 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-arm-msm@vger.kernel.org, Steve Muckle <smuckle@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: vfp: fix fpsid register subarchitecture field mask
+ width
+References: <1361520485-30269-1-git-send-email-sboyd@codeaurora.org> <20130225172545.GO17833@n2100.arm.linux.org.uk> <20130225200209.GP17833@n2100.arm.linux.org.uk>
+In-Reply-To: <20130225200209.GP17833@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2013-02-27三的 12:22 +1100，Michael Ellerman写道：
-> On Wed, Feb 27, 2013 at 09:14:28AM +0800, li guang wrote:
-> > 在 2013-02-26二的 18:02 +0900，Namhyung Kim写道：
-> > > Hi Michael,
-> > > 
-> > > On Tue, 26 Feb 2013 16:02:02 +1100, Michael Ellerman wrote:
-> > > > Commit 18c9e5c "Make it to be able to skip unannotatable symbols" broke
-> > > > the build with NO_NEWT=1:
-> > > >
-> > > >    CC builtin-annotate.o
-> > > > builtin-annotate.c: In function 'hists__find_annotations':
-> > > > builtin-annotate.c:161:4: error: duplicate case value
-> > > > builtin-annotate.c:154:4: error: previously used here
-> > > > make: *** [builtin-annotate.o] Error 1
-> > > >
-> > > > This is because without NEWT support K_LEFT is #defined to -1 in
-> > > > utils/hist.h
-> > > >
-> > > > Fix it by shifting the K_LEFT/K_RIGHT #defines out of the likely range
-> > > > of error values.
-> > > 
-> > > Argh, didn't check NO_NEWT build on this, sorry.
-> > > 
-> > > The hist_entry__tui_annotate() - hence, symbol__tui_annotate() - returns
-> > > either key code or error code.  This is not good IMHO but not sure it's
-> > > worth refactoring.  Maybe we can move the error check to under default
-> > > case so that possible future error checks to be done?
-> > 
-> > or can we skip gui-code-snippet when there's no gui library?
-> > anyway, for present fix-up, we can just temporarily change K_LEFT value
-> > like Michael's or my patch, I think.
-> 
-> Sorry I didn't see your patch, but yes I agree, either is fine and fixes
-> the build for now.
-> 
-> cheers
+On 02/25/13 12:02, Russell King - ARM Linux wrote:
+>
+> This can of worms is getting bigger.  We have more problems with our
+> handling of the different VFP versions, specifically the handling of
+> the EX=0 DEX=0 case.
+>
+> VFP common subarch 3 defines the EX=0, DEX=0 encoding to mean one of
+> the following conditions have been met:
+>
+> 1. an unallocated VFP instruction was encountered.
+>
+>    In other words, the VFP was the target of the co-processor instruction,
+>    but the instruction is not a known VFP instruction encoding.  This
+>    should raise an undefined instruction exception.
+>
+> 2. an allocated VFP instruction was encountered, but not handled in
+>    hardware.
+>
+>    In other words, the instruction is a valid VFP instruction, but the
+>    hardware has opted not to implement this instruction and wants
+>    software to emulate it instead.
+>
+>    (Note: this can also be raised as EX=0, DEX=1 - implementation
+>     defined!)
+>
+[snip]
+>
+> So, if EX or DEX is set, _or_ IXE is set, we pass control to VFP_bounce.
+> This is problematical.
+>
+> (a) condition (2) above isn't correctly handled for common subarch v3 - it
+>     is always treated as an undefined instruction, and will result in a
+>     SIGILL being delivered.
+>
+[snip]
+>
+> Now, (a) is just bad behaviour - as we haven't had any reports of this
+> yet, I suspect that no one has implemented VFP hardware with this
+> behaviour yet.
 
-https://lkml.org/lkml/2013/2/25/486
+I believe we ran into this a while ago and fixed it for our chips. We
+never sent the patch upstream. Sorry.
+
+https://www.codeaurora.org/gitweb/quic/la/?p=kernel/msm.git;a=commitdiff;h=00a13be874f230159a6b7f8cc9d0ff23bc1b7d05
+
+I'm looking into what our bits correspond to. Hopefully get back to you
+in 20 something hours.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
