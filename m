@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760795Ab3B0T1N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 14:27:13 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:46704 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759505Ab3B0T1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 14:27:12 -0500
-Message-ID: <512E5E09.1040605@gmail.com>
-Date: Thu, 28 Feb 2013 03:27:05 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S932182Ab3B0T2s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 14:28:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13771 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751398Ab3B0T2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 14:28:44 -0500
+Date: Wed, 27 Feb 2013 20:25:51 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Lai Jiangshan <eag0628@gmail.com>, linux-doc@vger.kernel.org,
+        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
+        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
+        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
+        vincent.guittot@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
+	Per-CPU Reader-Writer Locks
+Message-ID: <20130227192551.GA8333@redhat.com>
+References: <51226F91.7000108@linux.vnet.ibm.com> <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com> <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com> <512C7A38.8060906@linux.vnet.ibm.com> <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com> <512CC509.1050000@linux.vnet.ibm.com> <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com> <512D0D67.9010609@linux.vnet.ibm.com> <CANN689FuuEb9wpV43DkTtgv6syvBYL-LQxByWznyAq8dkrhzBw@mail.gmail.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-References: <20130227153435.GB5609@thunk.org> <20130227154450.GA23402@x4> <20130227170157.GA222@x4> <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com> <20130227172256.GA236@x4> <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com> <20130227174553.GA224@x4> <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com> <20130227184912.GA19624@thunk.org> <20130227185625.GA224@x4> <20130227191923.GA1121@redhat.com>
-In-Reply-To: <20130227191923.GA1121@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANN689FuuEb9wpV43DkTtgv6syvBYL-LQxByWznyAq8dkrhzBw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/28/2013 03:19 AM, Dave Jones wrote:
-> On Wed, Feb 27, 2013 at 07:56:25PM +0100, Markus Trippelsdorf wrote:
->  > On 2013.02.27 at 13:49 -0500, Theodore Ts'o wrote:
->  > 
->  > > Markus, Dave, can you confirm that this fixes your problem?
->  > 
->  > Yes, it fixes the issue.
-> 
-> Looks like it's fixed here too.
-> 
-> How did this make it through -next without anyone hitting it ?
+On 02/27, Michel Lespinasse wrote:
+>
+> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
+> +{
+> +       preempt_disable();
+> +
+> +       if (__this_cpu_read(*lgrw->local_refcnt) ||
+> +           arch_spin_trylock(this_cpu_ptr(lgrw->lglock->lock))) {
+> +               __this_cpu_inc(*lgrw->local_refcnt);
 
-Sorry, my apology.
+Please look at __this_cpu_generic_to_op(). You need this_cpu_inc()
+to avoid the race with irs. The same for _read_unlock.
 
-> 
-> I can't remember how many years ago I last bought a disk < 1TB,
-> and I can't be alone.  Or is everyone all about SSDs these days?
+But otherwise I agree, looks like a clever and working idea to me.
+And simple!
 
-I admit that I run xfstests on a SSD that has 128G.
+> There is an interesting case where lg_rwlock_local_read_lock could be
+> interrupted after getting the local lglock but before incrementing
+> local_refcnt to 1; if that happens any nested readers within that
+> interrupt will have to take the global rwlock read side. I think this
+> is perfectly acceptable
 
-> 
-> Is anyone running xfstests or similar on linux-next regularly ?
+Agreed.
 
-Ted has a dev branch for -next, and I work on this branch.
+Or interrupt can do spin_trylock(percpu-lock) after we take the global
+->fallback_rwlock (if we race with write_lock + write_unlock), but I do
+not see any possible deadlock in this case.
 
-Regards,
-						- Zheng
+Oleg.
+
