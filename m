@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab3B0UJT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 15:09:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36911 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183Ab3B0UJS (ORCPT
+	id S1753672Ab3B0UK1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 15:10:27 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:53645 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab3B0UKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 15:09:18 -0500
-Date: Wed, 27 Feb 2013 14:09:07 -0600
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: "Raphael S.Carvalho" <raphael.scarv@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] kernel/nsproxy.c: Improving a snippet of code.
-Message-ID: <20130227200907.GA19205@sergelap>
-References: <1361989929-1145-1-git-send-email-raphael.scarv@gmail.com>
+	Wed, 27 Feb 2013 15:10:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361989929-1145-1-git-send-email-raphael.scarv@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130227182617.GI19641@localhost.localdomain>
+References: <20130227052247.GA20213@redhat.com>
+	<20130227132736.GH19641@localhost.localdomain>
+	<CAFDW0jK6zigx0YgVMHomUkRQkqpw5mUgkdeynv36LUiQn4XTxg@mail.gmail.com>
+	<20130227182617.GI19641@localhost.localdomain>
+Date: Wed, 27 Feb 2013 21:10:25 +0100
+X-Google-Sender-Auth: bUiwWLIg56jrTJwGCKptGzVbUZo
+Message-ID: <CAFDW0jJ2yHftRW5Kp8sc+uxNC3oS4AZKqG0Szz2rUyxeeA0+2Q@mail.gmail.com>
+Subject: Re: btrfs crash when low on memory.
+From: Ahmet Inan <ainan@mathematik.uni-freiburg.de>
+To: Josef Bacik <jbacik@fusionio.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Raphael S.Carvalho (raphael.scarv@gmail.com):
-> It seems GCC generates a better code in that way, so I changed that statement.
-> Btw, they have the same semantic, so I'm sending this patch due to performance issues.
-> 
-> Signed-off-by: Raphael S.Carvalho <raphael.scarv@gmail.com>
+On Wed, Feb 27, 2013 at 7:26 PM, Josef Bacik <jbacik@fusionio.com> wrote:
+> On Wed, Feb 27, 2013 at 07:31:11AM -0700, Ahmet Inan wrote:
+>> > Yeah we have a lot of
+>> >
+>> > ptr = kmalloc();
+>> > BUG_ON(ptr);
+>> >
+>> > everywhere.  I'll fix this one up but I really need to sit down and go through
+>> > all of them and make sure we do the right thing in all these places.  Thanks,
+>>
+>> But what would be the right thing to do when you got no memory?
+>> Spinlock until you can kmalloc? Pre-reserve some memory?
+>>
+>
+> Return ENOMEM?  We have a way to abort transactions now, if it's in a horrible
+> of enough spot we can just abort the transaction and let the user deal with the
+> aftermath, it's nicer than panicing.  Thanks,
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+youre right. i am only afraid of silent corruption of data on aborts:
+our guys here trigger OOM all the time with their compilers and
+numerical codes (go figure).
+and until now we had no more aborts / panics because of
+"vm.min_free_kbytes = 65536" and thus no corruption.
 
-> ---
->  kernel/nsproxy.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-> index 78e2ecb..21da3d1 100644
-> --- a/kernel/nsproxy.c
-> +++ b/kernel/nsproxy.c
-> @@ -148,7 +148,8 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
->  	 * means share undolist with parent, so we must forbid using
->  	 * it along with CLONE_NEWIPC.
->  	 */
-> -	if ((flags & CLONE_NEWIPC) && (flags & CLONE_SYSVSEM)) {
-> +	if ((flags & (CLONE_NEWIPC | CLONE_SYSVSEM)) ==
-> +		(CLONE_NEWIPC | CLONE_SYSVSEM)) {
->  		err = -EINVAL;
->  		goto out;
->  	}
-> -- 
-> 1.7.2.5
-> 
+my point is:
+i like a freezing computer more than an corrupting computer, even if
+its a server. reboot to the rescue.
+
+Ahmet
