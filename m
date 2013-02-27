@@ -1,222 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099Ab3B0HiP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 02:38:15 -0500
-Received: from mga09.intel.com ([134.134.136.24]:1636 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752567Ab3B0HiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 02:38:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,746,1355126400"; 
-   d="asc'?scan'208";a="268367319"
-Date: Wed, 27 Feb 2013 02:36:04 -0500
-From: Chen Gong <gong.chen@linux.intel.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/9] memory-hotplug: enable memory hotplug to handle
- hugepage
-Message-ID: <20130227073604.GB30971@gchen.bj.intel.com>
-Mail-Followup-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-	linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-	Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1361475708-25991-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1753447Ab3B0HpV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 02:45:21 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:4879 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752537Ab3B0HpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 02:45:20 -0500
+X-IronPort-AV: E=Sophos;i="4.84,746,1355068800"; 
+   d="scan'208";a="6778648"
+Message-ID: <512DB96E.5030408@cn.fujitsu.com>
+Date: Wed, 27 Feb 2013 15:44:46 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hHWLQfXTYDoKhP50"
-Content-Disposition: inline
-In-Reply-To: <1361475708-25991-9-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Don Morris <don.morris@hp.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        jarkko.sakkinen@intel.com
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+References: <512B7D10.4060304@tpi.com> <512B8407.2090807@canonical.com> <512BD753.4080001@hp.com> <CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com> <CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com> <CAE9FiQU-CV4mF8x=Bi_4pmpmeZW-tSoes_f-jOt7yYrbrppo+A@mail.gmail.com> <512D58C2.1090403@jp.fujitsu.com> <CAE9FiQV5APHSGXuz3NrsApC+V7rsDQMDXMNwZszZuUqQVaZSew@mail.gmail.com> <512D7FAD.1040003@jp.fujitsu.com> <CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com> <512D8EDA.3010602@jp.fujitsu.com> <CAE9FiQWAxL6F70fF0dQcBZKTReJOiC+Ez0xcqcosgAdSagS-bA@mail.gmail.com> <512D9E69.6010102@jp.fujitsu.com> <CAE9FiQV9JRk1SYLkBXsQmrSEDHrYZDpBV6UZb+U5rB7=4gFhVA@mail.gmail.com> <512DB199.5050203@cn.fujitsu.com> <CAE9FiQXvdXoW8xFO2Q_dJo4jRkse5Lg9TmLHuFhqZ9H92ipsuw@mail.gmail.com>
+In-Reply-To: <CAE9FiQXvdXoW8xFO2Q_dJo4jRkse5Lg9TmLHuFhqZ9H92ipsuw@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/27 15:44:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/02/27 15:44:27,
+	Serialize complete at 2013/02/27 15:44:27
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/27/2013 03:25 PM, Yinghai Lu wrote:
+> On Tue, Feb 26, 2013 at 11:11 PM, Tang Chen<tangchen@cn.fujitsu.com>  wrote:
+>> On 02/27/2013 02:54 PM, Yinghai Lu wrote:
+>>>
+>>> Those patches are tangled together.
+>>
+>>
+>> No, they are not.
+>>
+>> The following commits supports "movablemem_map=nn[KMG]@ss[KMG]".
+>>
+>> commit fb06bc8e5f42f38c011de0e59481f464a82380f6
+>>      page_alloc: bootmem limit with movablecore_map
+>> commit 42f47e27e761fee07da69e04612ec7dd0d490edd
+>>      page_alloc: make movablemem_map have higher priority
+>> commit 6981ec31146cf19454c55c130625f6cee89aab95
+>>      page_alloc: introduce zone_movable_limit[] to keep movable limit for nodes
+>> commit 34b71f1e04fcba578e719e675b4882eeeb2a1f6f
+>>      page_alloc: add movable_memmap kernel parameter
+>> commit 4d59a75125d5a4717e57e9fc62c64b3d346e603e
+>>      x86: get pg_data_t's memory from other node
+>>
+>> And the following supports "movablemem_map=srat".
+>>
+>> commit f7210e6c4ac795694106c1c5307134d3fc233e88
+>>      mm/memblock.c: use CONFIG_HAVE_MEMBLOCK_NODE_MAP to protect movablecore_map in memblock_overlaps_region().
+>> commit 01a178a94e8eaec351b29ee49fbb3d1c124cb7fb
+>>      acpi, memory-hotplug: support getting hotplug info from SRAT
+>> commit 27168d38fa209073219abedbe6a9de7ba9acbfad
+>>      acpi, memory-hotplug: extend movablemem_map ranges to the end of node
+>> commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
+>>      acpi, memory-hotplug: parse SRAT before memblock is ready
+>
+> those four can be reverted cleanly?
 
---hHWLQfXTYDoKhP50
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sorry, if you want to revert, you just need to revert:
+  commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
+       acpi, memory-hotplug: parse SRAT before memblock is ready
+  commit 01a178a94e8eaec351b29ee49fbb3d1c124cb7fb
+       acpi, memory-hotplug: support getting hotplug info from SRAT
 
-On Thu, Feb 21, 2013 at 02:41:47PM -0500, Naoya Horiguchi wrote:
-> Date: Thu, 21 Feb 2013 14:41:47 -0500
-> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> To: linux-mm@kvack.org
-> Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
->  Hugh Dickins <hughd@google.com>, KOSAKI Motohiro
->  <kosaki.motohiro@jp.fujitsu.com>, Andi Kleen <andi@firstfloor.org>,
->  linux-kernel@vger.kernel.org
-> Subject: [PATCH 8/9] memory-hotplug: enable memory hotplug to handle
->  hugepage
->=20
-> Currently we can't offline memory blocks which contain hugepages because
-> a hugepage is considered as an unmovable page. But now with this patch
-> series, a hugepage has become movable, so by using hugepage migration we
-> can offline such memory blocks.
->=20
-> What's different from other users of hugepage migration is that we need
-> to decompose all the hugepages inside the target memory block into free
-> buddy pages after hugepage migration, because otherwise free hugepages
-> remaining in the memory block intervene the memory offlining.
-> For this reason we introduce new functions dissolve_free_huge_page() and
-> dissolve_free_huge_pages().
->=20
-> Other than that, what this patch does is straightforwardly to add hugepage
-> migration code, that is, adding hugepage code to the functions which scan
-> over pfn and collect hugepages to be migrated, and adding a hugepage
-> allocation function to alloc_migrate_target().
->=20
-> As for larger hugepages (1GB for x86_64), it's not easy to do hotremove
-> over them because it's larger than memory block. So we now simply leave
-> it to fail as it is.
->=20
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  include/linux/hugetlb.h |  8 ++++++++
->  mm/hugetlb.c            | 43 +++++++++++++++++++++++++++++++++++++++++
->  mm/memory_hotplug.c     | 51 ++++++++++++++++++++++++++++++++++++++++---=
-------
->  mm/migrate.c            | 12 +++++++++++-
->  mm/page_alloc.c         | 12 ++++++++++++
->  mm/page_isolation.c     |  5 +++++
->  6 files changed, 121 insertions(+), 10 deletions(-)
->=20
-> diff --git v3.8.orig/include/linux/hugetlb.h v3.8/include/linux/hugetlb.h
-> index 86a4d78..e33f07f 100644
-> --- v3.8.orig/include/linux/hugetlb.h
-> +++ v3.8/include/linux/hugetlb.h
-> @@ -70,6 +70,7 @@ int dequeue_hwpoisoned_huge_page(struct page *page);
->  void putback_active_hugepage(struct page *page);
->  void putback_active_hugepages(struct list_head *l);
->  void migrate_hugepage_add(struct page *page, struct list_head *list);
-> +int is_hugepage_movable(struct page *page);
->  void copy_huge_page(struct page *dst, struct page *src);
-> =20
->  extern unsigned long hugepages_treat_as_movable;
-> @@ -136,6 +137,7 @@ static inline int dequeue_hwpoisoned_huge_page(struct=
- page *page)
->  #define putback_active_hugepage(p) 0
->  #define putback_active_hugepages(l) 0
->  #define migrate_hugepage_add(p, l) 0
-> +#define is_hugepage_movable(x) 0
->  static inline void copy_huge_page(struct page *dst, struct page *src)
->  {
->  }
-> @@ -358,6 +360,10 @@ static inline int hstate_index(struct hstate *h)
->  	return h - hstates;
->  }
-> =20
-> +extern void dissolve_free_huge_page(struct page *page);
-> +extern void dissolve_free_huge_pages(unsigned long start_pfn,
-> +				     unsigned long end_pfn);
-> +
->  #else
->  struct hstate {};
->  #define alloc_huge_page(v, a, r) NULL
-> @@ -378,6 +384,8 @@ static inline unsigned int pages_per_huge_page(struct=
- hstate *h)
->  }
->  #define hstate_index_to_shift(index) 0
->  #define hstate_index(h) 0
-> +#define dissolve_free_huge_page(p) 0
-> +#define dissolve_free_huge_pages(s, e) 0
->  #endif
-> =20
->  #endif /* _LINUX_HUGETLB_H */
-> diff --git v3.8.orig/mm/hugetlb.c v3.8/mm/hugetlb.c
-> index ccf9995..c28e6c9 100644
-> --- v3.8.orig/mm/hugetlb.c
-> +++ v3.8/mm/hugetlb.c
-> @@ -843,6 +843,30 @@ static int free_pool_huge_page(struct hstate *h, nod=
-emask_t *nodes_allowed,
->  	return ret;
->  }
-> =20
-> +/* Dissolve a given free hugepage into free pages. */
-> +void dissolve_free_huge_page(struct page *page)
-> +{
-> +	if (PageHuge(page) && !page_count(page)) {
-> +		struct hstate *h =3D page_hstate(page);
-> +		int nid =3D page_to_nid(page);
-> +		spin_lock(&hugetlb_lock);
-> +		list_del(&page->lru);
-> +		h->free_huge_pages--;
-> +		h->free_huge_pages_node[nid]--;
-> +		update_and_free_page(h, page);
-> +		spin_unlock(&hugetlb_lock);
-> +	}
-> +}
-> +
-> +/* Dissolve free hugepages in a given pfn range. Used by memory hotplug.=
- */
-> +void dissolve_free_huge_pages(unsigned long start_pfn, unsigned long end=
-_pfn)
-> +{
-> +	unsigned long pfn;
-> +	unsigned int step =3D 1 << (HUGETLB_PAGE_ORDER);
-> +	for (pfn =3D start_pfn; pfn < end_pfn; pfn +=3D step)
-> +		dissolve_free_huge_page(pfn_to_page(pfn));
-> +}
-> +
->  static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
->  {
->  	struct page *page;
-> @@ -3158,6 +3182,25 @@ static int is_hugepage_on_freelist(struct page *hp=
-age)
->  	return 0;
->  }
-> =20
-> +/* Returns true for head pages of in-use hugepages, otherwise returns fa=
-lse. */
-> +int is_hugepage_movable(struct page *hpage)
-> +{
-> +	struct page *page;
-> +	struct page *tmp;
-> +	struct hstate *h =3D page_hstate(hpage);
-> +	int ret =3D 0;
-> +
-> +	VM_BUG_ON(!PageHuge(hpage));
-> +	if (PageTail(hpage))
-> +		return 0;
-> +	spin_lock(&hugetlb_lock);
-> +	list_for_each_entry_safe(page, tmp, &h->hugepage_activelist, lru)
-> +		if (page =3D=3D hpage)
-> +			ret =3D 1;
+The other two have nothing to do with SRAT. And they are necessary.
 
-I don't understand the logic here. 1) page is not removed why tmp is used?
-2) why hitting (page =3D=3Dhpage) but not breaking from the loop?
+Seeing from the code, I think it is clean. But we'd better test it.
 
-> +	spin_unlock(&hugetlb_lock);
-> +	return ret;
-> +}
-> +
-> [...]
+>
+>>
+>>>
+>>> Also it looks funny to ask user to specify mem range in boot command
+>>> line to enable mem hotplug.
+>>
+>>
+>> Well, I think sometimes users don't like the SRAT memory style, and want to
+>> increase or reduce hot-pluggable memory by themselves. And also, it is
+>> useful
+>> for debuging firmware bugs.
+>>
+>> I agree that "movablemem_map=srat" functionality need more work to improve.
+>> Can we not revert it, and improve it during 3.9rc ? I think during rc time,
+>> at least we can fix the problems brought by early_parse_srat().
+>
+> looks like acpi_override can not be fixed.
 
---hHWLQfXTYDoKhP50
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+About this problem, I need to do some investigation, and I think we can 
+have a try.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I do hope we can keep these patches. And put the improve work in the 
+future. :)
 
-iQIcBAEBAgAGBQJRLbdkAAoJEI01n1+kOSLHBqgP/jz3zpOJ5p+PdkX1nSbYjUsJ
-l0g1K6eNehbXRaAGlQ+2Za3yQkdMt1zSLl22CGx+l30bBtHX5q+xDBaR1QgmRp2A
-JUzwDotyzqapL/99VeCMABXAzZy06ZWplXN7r8S2MuQnE+nxhrOlVt8iC9wPRiPv
-K+hBsszUySNfe32Gsqy09HFL/CInOu5DbkK8ByXUn6pNmDn4R7jr89Rv7I0X2Rr9
-nAk8gZyb86M+0ZQfSGvHI/ZpF4QixtFjkyVTUcgHMkR817CnDD0WqJqJt17nEjxN
-nKjgjZs/4ybx1vjtsuXw7qGzW4Du642IIw/kGatk+pspjLvJtZDd8528p2o6lihB
-qRRWyQQMIfjmDdHDvnmToQU5Hwpx+RotHGxGpxGmyOvFT3v9vXY9fpN8IzQnrXcw
-rGsyddEb5QwPXADKefZythcpUWrifvmO1cuzV1Sx98flYGa3Xokf5EvXRIhiuSrL
-Bw6NXSPnH20mDqP/ZnTIpIx9j2td2plCWUlTQGz+2Fwhw0ro+vrWeFovjkc5UAvO
-9lo65UhfLD3hSfF49KEXNwJY5pFVyK148ZP3aC6mSw5GYf9V+Xql0gNBQdWrUUBP
-A0horNqv9Qvo/zFCMmJwpucS8l8EukJPMg4k0LsBO3ucfc1I+OiNqx0lFnDYLVjH
-H2On4eWMtFB+qN/Ok8w6
-=JLBD
------END PGP SIGNATURE-----
-
---hHWLQfXTYDoKhP50--
+Thanks. :)
