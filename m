@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757809Ab3B0KpK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 05:45:10 -0500
-Received: from 8bytes.org ([85.214.48.195]:35808 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756721Ab3B0KpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 05:45:09 -0500
-Date: Wed, 27 Feb 2013 11:45:05 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-Cc: Stuart Yoder <b08248@gmail.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Yoder Stuart-B08248 <B08248@freescale.com>
-Subject: Re: [PATCH 2/6] powerpc/fsl_pci: Store the platform device
- information corresponding to the pci controller.
-Message-ID: <20130227104505.GE26252@8bytes.org>
-References: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com>
- <1361191939-21260-3-git-send-email-Varun.Sethi@freescale.com>
- <CALRxmdDc9TuxH7HgAF3_iLgatoaOUML6fUt8SU+sxHyz6ZVjfw@mail.gmail.com>
- <C5ECD7A89D1DC44195F34B25E172658D3BD338@039-SN2MPN1-013.039d.mgd.msft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932210Ab3B0Kpj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 05:45:39 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:59555 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932072Ab3B0Kpi (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:7:1>);
+	Wed, 27 Feb 2013 05:45:38 -0500
+Message-Id: <512DF1DF02000078000C16A4@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Wed, 27 Feb 2013 10:45:35 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Chen Gang" <gang.chen@asianux.com>
+Cc: <roger.pau@citrix.com>, <stefano.stabellini@eu.citrix.com>,
+        "xen-devel" <xen-devel@lists.xen.org>, <konrad.wilk@oracle.com>,
+        <dgdegra@tycho.nsa.gov>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/block/xen-blkback: preq.dev is used
+ without initialized
+References: <512D90F2.9070200@asianux.com>
+ <512DE6B302000078000C1631@nat28.tlf.novell.com>
+ <512DE213.3050001@asianux.com>
+In-Reply-To: <512DE213.3050001@asianux.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Disposition: inline
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D3BD338@039-SN2MPN1-013.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Feb 27 11:45:07 2013
-X-DSPAM-Confidence: 0.9994
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 512de3b322972185743725
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 06:16:10AM +0000, Sethi Varun-B16395 wrote:
-> This patch is not present in Joerg's tree and the add_device API in
-> the PAMU driver requires this patch.
+>>> On 27.02.13 at 11:38, Chen Gang <gang.chen@asianux.com> wrote:
+> 于 2013年02月27日 17:57, Jan Beulich 写道:
+>> You also could have mentioned that even before commit 
+>> 01c681d4c70d64cb72142a2823f27c4146a02e63 the value printed
+>> here was bogus, as it was the guest provided value from
+>> req->u.rw.handle rather than the actual device.
+> 
+>   pardon ?
+> 
+>   I guess what you said is :
+>     my patch seems ok, but the comments need improving.
+>     need add "additional info" in comments:
+>       "before commit 01c681d4c70d64cb72142a2823f27c4146a02e63
+>        the value printed here was bogus, as it was the guest
+>        provided value from req->u.rw.handle rather than the
+>        actual device".
+> 
+>   is it correct ?
 
-Will this patch be part of v3.9-rc1?
+Yes (and you might have missed the ACK that I had already sent
+before this reply - that mail got bounced for your address).
 
-
-	Joerg
-
-
+Jan
