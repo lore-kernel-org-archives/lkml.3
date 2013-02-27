@@ -1,118 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760174Ab3B0PFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 10:05:25 -0500
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:48085 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab3B0PFY convert rfc822-to-8bit (ORCPT
+	id S1760204Ab3B0PHk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 10:07:40 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:60938 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752865Ab3B0PHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 10:05:24 -0500
+	Wed, 27 Feb 2013 10:07:38 -0500
+Date: Wed, 27 Feb 2013 07:07:33 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>, Wim Van Sebroeck <wim@iguana.be>,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-watchdog@vger.kernel.org, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [next-20130227] kernel NULL pointer dereference [ watchdog |
+ perf related ? ]
+Message-ID: <20130227150733.GB22383@htj.dyndns.org>
+References: <CA+icZUUsedHPqZc5jXQ_AqAbfmTMu5WW8CJ+vnHwL69ofw7uTw@mail.gmail.com>
+ <20130227122302.GA5678@pd.tnic>
+ <CA+icZUVXDfOhztQtrOxyYaHutpx=iVpPGmRT0PzP7045_mjh6w@mail.gmail.com>
+ <CA+icZUXJb5O7ML-xnQq8Zoa46NmaGZp2Xaqj6fJL+vudPeQTLw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <512DF827.1040508@simon.arlott.org.uk>
-References: <20130221033302.1F06F660B25@gitolite.kernel.org>
-	<512DF827.1040508@simon.arlott.org.uk>
-Date: Wed, 27 Feb 2013 23:05:22 +0800
-Message-ID: <CAEFj987hzi+yy0C9U7SMsHq1PYw1=gmkOXNsE+-nze-Hpi9fQg@mail.gmail.com>
-Subject: Re: rt2x00: allow AP and mesh mode to operate simultaneously
-From: Yeoh Chun-Yeow <yeohchunyeow@gmail.com>
-To: Simon Arlott <simon@fire.lp0.eu>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Helmut Schaa <helmut.schaa@googlemal.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUXJb5O7ML-xnQq8Zoa46NmaGZp2Xaqj6fJL+vudPeQTLw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Simon
+Replying here too just in case.
 
-Thanks for reporting. It seems that I have not done enough testing on this.
+On Wed, Feb 27, 2013 at 02:08:40PM +0100, Sedat Dilek wrote:
+> >> static inline void *idr_find(struct idr *idr, int id)
+> >> {
+> >>         struct idr_layer *hint = rcu_dereference_raw(idr->hint);
+> >>     86d7:       48 8b 05 00 00 00 00    mov    0x0(%rip),%rax        # 86de <perf_init_event+0x2e>
+> >>                         86da: R_X86_64_PC32     .bss+0xfc
+> >>
+> >>         if ((id & ~IDR_MASK) == hint->prefix)
+> >>     86de:       89 f2                   mov    %esi,%edx
+> >>     86e0:       30 d2                   xor    %dl,%dl
+> >>     86e2:       3b 10                   cmp    (%rax),%edx              <--- trapping insn
+> >>     86e4:       74 4a                   je     8730 <perf_init_event+0x80>
+> >>                 return rcu_dereference_raw(hint->ary[id & IDR_MASK]);
+> >>
+> >>
+> >> So 'hint' is NULL as RAX above confirms and we're not supposed to deref
+> >> NULL things.
+> >>
+> >> Looking at 29cf29e1fbb875019713eb55cf27ec35f1e5fa5e, Tejun should
+> >> probably know. CCed.
 
-Anyway, Felix has submitted a patch on this:
-http://www.spinics.net/lists/linux-wireless/msg104045.html
+Fix was posted some days ago.
 
-----
-Chun-Yeow
+  http://thread.gmane.org/gmane.linux.kernel.next/26213
 
-On Wed, Feb 27, 2013 at 8:12 PM, Simon Arlott <simon@fire.lp0.eu> wrote:
-> On 21/02/13 03:33, Linux Kernel Mailing List wrote:
->> Gitweb:     http://git.kernel.org/linus/;a=commit;h=4a5fc6d7074de72dd836fbb9c5cd79f9a491871c
->> Commit:     4a5fc6d7074de72dd836fbb9c5cd79f9a491871c
->> Parent:     92941382e8b80c55a4ad06b88a3bf95110969693
->> Author:     Chun-Yeow Yeoh <yeohchunyeow@gmail.com>
->> AuthorDate: Fri Jan 25 12:47:50 2013 +0800
->> Committer:  John W. Linville <linville@tuxdriver.com>
->> CommitDate: Wed Jan 30 15:06:44 2013 -0500
->>
->>     rt2x00: allow AP and mesh mode to operate simultaneously
->>
->>     Allow AP and Mesh mode to operate concurrently using
->>     single radio. Verify this using fonera 2.0n featuring
->>     RT3052 chipset and also TP-LINK TL-WN727N featuring
->>     RT5370 chipset.
->
-> This breaks the probe of my RT3071 device (Tenda W322UA):
-> [ 4376.598444] phy0 -> rt2x00_set_chip: Info - Chipset detected - rt: 3071, rf: 0008, rev: 021c.
-> [ 4376.598700] ------------[ cut here ]------------
-> [ 4376.598717] WARNING: at net/wireless/core.c:443 wiphy_register+0x549/0x6c0 [cfg80211]()
-> [ 4376.598719] Hardware name: empty
-> [ 4376.598721] Modules linked in: rt2800usb(+) rt2800lib rt2x00usb rt2x00lib mac80211 cfg80211 8021q garp bnep rfcomm bridge stp ext4 jbd2 nf_conntrack_ipv6 ipt_REJECT nf_defrag_ipv6 iptable_filter xt_state iptable_mangle ip6t_REJECT iptable_nat xt_tcpudp nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat ip6table_filter xt_dscp xt_string xt_owner xt_NFQUEUE xt_multiport xt_mark xt_iprange xt_hashlimit xt_conntrack ip_tables xt_connmark nf_conntrack ip6_tables x_tables fuse btusb crc_ccitt kvm_amd bluetooth kvm zaurus cdc_ether usbnet crc16 [last unloaded: cfg80211]
-> [ 4376.598758] Pid: 15052, comm: modprobe Tainted: G        W    3.8.0+ #09507-g19cd6a2
-> [ 4376.598760] Call Trace:
-> [ 4376.598770]  [<ffffffff8104912a>] warn_slowpath_common+0x7a/0xc0
-> [ 4376.598773]  [<ffffffff81049185>] warn_slowpath_null+0x15/0x20
-> [ 4376.598779]  [<ffffffffa0293a79>] wiphy_register+0x549/0x6c0 [cfg80211]
-> [ 4376.598786]  [<ffffffffa002c57f>] ? rt2x00lib_probe_dev+0x34f/0x770 [rt2x00lib]
-> [ 4376.598801]  [<ffffffffa02c75e7>] ieee80211_register_hw+0x3a7/0x830 [mac80211]
-> [ 4376.598805]  [<ffffffffa002c7c2>] rt2x00lib_probe_dev+0x592/0x770 [rt2x00lib]
-> [ 4376.598809]  [<ffffffffa001c320>] rt2x00usb_probe+0x160/0x220 [rt2x00usb]
-> [ 4376.598818]  [<ffffffffa00ef240>] rt2800usb_probe+0x10/0x20 [rt2800usb]
-> [ 4376.598830]  [<ffffffff814b6b78>] usb_probe_interface+0x1d8/0x2b0
-> [ 4376.598835]  [<ffffffff81411406>] driver_probe_device+0x76/0x230
-> [ 4376.598838]  [<ffffffff8141165b>] __driver_attach+0x9b/0xa0
-> [ 4376.598842]  [<ffffffff814115c0>] ? driver_probe_device+0x230/0x230
-> [ 4376.598845]  [<ffffffff8140f916>] bus_for_each_dev+0x56/0x90
-> [ 4376.598849]  [<ffffffff81410f59>] driver_attach+0x19/0x20
-> [ 4376.598851]  [<ffffffff81410a96>] bus_add_driver+0xf6/0x260
-> [ 4376.598854]  [<ffffffff81411b73>] driver_register+0x73/0x160
-> [ 4376.598858]  [<ffffffffa010a000>] ? 0xffffffffa0109fff
-> [ 4376.598861]  [<ffffffff814b587a>] usb_register_driver+0x9a/0x150
-> [ 4376.598879]  [<ffffffffa010a000>] ? 0xffffffffa0109fff
-> [ 4376.598892]  [<ffffffffa010a01e>] rt2800usb_driver_init+0x1e/0x1000 [rt2800usb]
-> [ 4376.598906]  [<ffffffff810002f6>] do_one_initcall+0x116/0x160
-> [ 4376.598915]  [<ffffffff810986a2>] load_module+0x1b52/0x22a0
-> [ 4376.598918]  [<ffffffff810947c0>] ? sys_getegid16+0x50/0x50
-> [ 4376.598922]  [<ffffffff81098e94>] sys_init_module+0xa4/0xd0
-> [ 4376.598927]  [<ffffffff817544d6>] system_call_fastpath+0x1a/0x1f
-> [ 4376.598929] ---[ end trace 52dc8aa1355df590 ]---
-> [ 4376.598932] interface_modes=0000007e types=00000088 <-- interface_modes does not contain NL80211_IFTYPE_MESH_POINT
-> [ 4376.598934] phy0 -> rt2x00lib_probe_dev: Error - Failed to initialize hw.
-> [ 4376.598958] rt2800usb: probe of 1-4.6:1.0 failed with error -22
->
->>     Signed-off-by: Chun-Yeow Yeoh <yeohchunyeow@gmail.com>
->>     Acked-by: Helmut Schaa <helmut.schaa@googlemal.com>
->>     Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
->>     Signed-off-by: John W. Linville <linville@tuxdriver.com>
->> ---
->>  drivers/net/wireless/rt2x00/rt2x00dev.c |    3 ++-
->>  1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
->> index 92a0aa5..1031db6 100644
->> --- a/drivers/net/wireless/rt2x00/rt2x00dev.c
->> +++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
->> @@ -1236,7 +1236,8 @@ static inline void rt2x00lib_set_if_combinations(struct rt2x00_dev *rt2x00dev)
->>        */
->>       if_limit = &rt2x00dev->if_limits_ap;
->>       if_limit->max = rt2x00dev->ops->max_ap_intf;
->> -     if_limit->types = BIT(NL80211_IFTYPE_AP);
->> +     if_limit->types = BIT(NL80211_IFTYPE_AP) |
->> +                     BIT(NL80211_IFTYPE_MESH_POINT);
->>
->>       /*
->>        * Build up AP interface combinations structure.
->
-> --
-> Simon Arlott
+I got Andrew's patch added to -mm message a week ago.  Not sure why it
+still hasn't showed up.  Andrew, any ideas?
+
+Thanks.
+
+-- 
+tejun
