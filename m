@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760517Ab3B0AOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:14:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42929 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760429Ab3B0AJX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760430Ab3B0AJX (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Feb 2013 19:09:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42908 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933943Ab3B0AJV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 19:09:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 62/86] [PARISC] Purge existing TLB entries in set_pte_at and ptep_set_wrprotect
-Date: Tue, 26 Feb 2013 16:08:10 -0800
-Message-Id: <20130226235919.341509699@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>
+Subject: [ 65/86] fbcon: dont lose the console font across generic->chip driver switch
+Date: Tue, 26 Feb 2013 16:08:13 -0800
+Message-Id: <20130226235919.661115116@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,92 +26,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 7139bc1579901b53db7e898789e916ee2fb52d78 upstream.
+commit ae1287865f5361fa138d4d3b1b6277908b54eac9 upstream.
 
-This patch goes a long way toward fixing the minifail bug, and
-it  significantly improves the stability of SMP machines such as
-the rp3440.  When write  protecting a page for COW, we need to
-purge the existing translation.  Otherwise, the COW break
-doesn't occur as expected because the TLB may still have a stale entry
-which allows writes.
+If grub2 loads efifb/vesafb, then when systemd starts it can set the console
+font on that framebuffer device, however when we then load the native KMS
+driver, the first thing it does is tear down the generic framebuffer driver.
 
-[jejb: fix up checkpatch errors]
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+The thing is the generic code is doing the right thing, it frees the font
+because otherwise it would leak memory. However we can assume that if you
+are removing the generic firmware driver (vesa/efi/offb), that a new driver
+*should* be loading soon after, so we effectively leak the font.
+
+However the old code left a dangling pointer in vc->vc_font.data and we
+can now reuse that dangling pointer to load the font into the new
+driver, now that we aren't freeing it.
+
+Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=892340
+
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/include/asm/pgtable.h |   13 ++++++++++---
- arch/parisc/kernel/cache.c        |   18 ++++++++++++++++++
- 2 files changed, 28 insertions(+), 3 deletions(-)
+ drivers/video/console/fbcon.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/arch/parisc/include/asm/pgtable.h
-+++ b/arch/parisc/include/asm/pgtable.h
-@@ -12,11 +12,10 @@
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -990,7 +990,7 @@ static const char *fbcon_startup(void)
+ 	}
  
- #include <linux/bitops.h>
- #include <linux/spinlock.h>
-+#include <linux/mm_types.h>
- #include <asm/processor.h>
- #include <asm/cache.h>
+ 	/* Setup default font */
+-	if (!p->fontdata) {
++	if (!p->fontdata && !vc->vc_font.data) {
+ 		if (!fontname[0] || !(font = find_font(fontname)))
+ 			font = get_default_font(info->var.xres,
+ 						info->var.yres,
+@@ -1000,6 +1000,8 @@ static const char *fbcon_startup(void)
+ 		vc->vc_font.height = font->height;
+ 		vc->vc_font.data = (void *)(p->fontdata = font->data);
+ 		vc->vc_font.charcount = 256; /* FIXME  Need to support more fonts */
++	} else {
++		p->fontdata = vc->vc_font.data;
+ 	}
  
--struct vm_area_struct;
--
- /*
-  * kern_addr_valid(ADDR) tests if ADDR is pointing to valid kernel
-  * memory.  For the return value to be meaningful, ADDR must be >=
-@@ -40,7 +39,14 @@ struct vm_area_struct;
-         do{                                                     \
-                 *(pteptr) = (pteval);                           \
-         } while(0)
--#define set_pte_at(mm,addr,ptep,pteval) set_pte(ptep,pteval)
-+
-+extern void purge_tlb_entries(struct mm_struct *, unsigned long);
-+
-+#define set_pte_at(mm, addr, ptep, pteval)                      \
-+	do {                                                    \
-+		set_pte(ptep, pteval);                          \
-+		purge_tlb_entries(mm, addr);                    \
-+	} while (0)
+ 	cols = FBCON_SWAP(ops->rotate, info->var.xres, info->var.yres);
+@@ -1159,9 +1161,9 @@ static void fbcon_init(struct vc_data *v
+ 	ops->p = &fb_display[fg_console];
+ }
  
- #endif /* !__ASSEMBLY__ */
- 
-@@ -466,6 +472,7 @@ static inline void ptep_set_wrprotect(st
- 		old = pte_val(*ptep);
- 		new = pte_val(pte_wrprotect(__pte (old)));
- 	} while (cmpxchg((unsigned long *) ptep, old, new) != old);
-+	purge_tlb_entries(mm, addr);
- #else
- 	pte_t old_pte = *ptep;
- 	set_pte_at(mm, addr, ptep, pte_wrprotect(old_pte));
---- a/arch/parisc/kernel/cache.c
-+++ b/arch/parisc/kernel/cache.c
-@@ -420,6 +420,24 @@ void kunmap_parisc(void *addr)
- EXPORT_SYMBOL(kunmap_parisc);
- #endif
- 
-+void purge_tlb_entries(struct mm_struct *mm, unsigned long addr)
-+{
-+	unsigned long flags;
-+
-+	/* Note: purge_tlb_entries can be called at startup with
-+	   no context.  */
-+
-+	/* Disable preemption while we play with %sr1.  */
-+	preempt_disable();
-+	mtsp(mm->context, 1);
-+	purge_tlb_start(flags);
-+	pdtlb(addr);
-+	pitlb(addr);
-+	purge_tlb_end(flags);
-+	preempt_enable();
-+}
-+EXPORT_SYMBOL(purge_tlb_entries);
-+
- void __flush_tlb_range(unsigned long sid, unsigned long start,
- 		       unsigned long end)
+-static void fbcon_free_font(struct display *p)
++static void fbcon_free_font(struct display *p, bool freefont)
  {
+-	if (p->userfont && p->fontdata && (--REFCOUNT(p->fontdata) == 0))
++	if (freefont && p->userfont && p->fontdata && (--REFCOUNT(p->fontdata) == 0))
+ 		kfree(p->fontdata - FONT_EXTRA_WORDS * sizeof(int));
+ 	p->fontdata = NULL;
+ 	p->userfont = 0;
+@@ -1173,8 +1175,8 @@ static void fbcon_deinit(struct vc_data
+ 	struct fb_info *info;
+ 	struct fbcon_ops *ops;
+ 	int idx;
++	bool free_font = true;
+ 
+-	fbcon_free_font(p);
+ 	idx = con2fb_map[vc->vc_num];
+ 
+ 	if (idx == -1)
+@@ -1185,6 +1187,8 @@ static void fbcon_deinit(struct vc_data
+ 	if (!info)
+ 		goto finished;
+ 
++	if (info->flags & FBINFO_MISC_FIRMWARE)
++		free_font = false;
+ 	ops = info->fbcon_par;
+ 
+ 	if (!ops)
+@@ -1196,6 +1200,8 @@ static void fbcon_deinit(struct vc_data
+ 	ops->flags &= ~FBCON_FLAGS_INIT;
+ finished:
+ 
++	fbcon_free_font(p, free_font);
++
+ 	if (!con_is_bound(&fb_con))
+ 		fbcon_exit();
+ 
 
 
