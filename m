@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759725Ab3B0Ltg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 06:49:36 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:34149 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759616Ab3B0Ltf (ORCPT
+	id S1759831Ab3B0LwO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 06:52:14 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:50741 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759733Ab3B0LwM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 06:49:35 -0500
+	Wed, 27 Feb 2013 06:52:12 -0500
 MIME-Version: 1.0
-In-Reply-To: <512DED86.4060207@ahsoftware.de>
-References: <87ppzo79in.fsf@mid.deneb.enyo.de>
-	<30665.1361461678@warthog.procyon.org.uk>
-	<CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
-	<20130221164244.GA19625@srcf.ucam.org>
-	<18738.1361836265@warthog.procyon.org.uk>
-	<loom.20130227T103444-514@post.gmane.org>
-	<CAAMvbhFgNC7fXE2KrDC+aq+Q1dsS7pESvtCrCcMyzJksvARyQQ@mail.gmail.com>
-	<512DED86.4060207@ahsoftware.de>
-Date: Wed, 27 Feb 2013 11:49:34 +0000
-Message-ID: <CAAMvbhF5MRWXZGfLH-GSjSBExrCu48=rz4UGrXwWxHZZY_rcXA@mail.gmail.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-From: James Courtier-Dutton <james.dutton@gmail.com>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: ownssh <ownssh@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAFLxGvyQmPz_iK26NavuRdBWAFiWzmt8BMfL8f6rg_Qm4LF7WQ@mail.gmail.com>
+References: <EB937501617BFC44BE90EDA24CA6A13A0117EB@SGSIMBX003.nsn-intra.net>
+	<512C56AF.1030801@oracle.com>
+	<CAFLxGvyQmPz_iK26NavuRdBWAFiWzmt8BMfL8f6rg_Qm4LF7WQ@mail.gmail.com>
+Date: Wed, 27 Feb 2013 12:52:11 +0100
+Message-ID: <CAFLxGvycGCyeg7AhJ=3J0ztZfgYLmyKZSrzNUd5ymAb-tSd4qg@mail.gmail.com>
+Subject: Re: [Ocfs2-users] Kernel panic due to ocfs2
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: "Ramappa, Ravi (NSN - IN/Bangalore)" <ravi.ramappa@nsn.com>,
+        "ocfs2-users@oss.oracle.com" <ocfs2-users@oss.oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, david@sigma-star.at
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 February 2013 11:27, Alexander Holler <holler@ahsoftware.de> wrote:
-> Am 27.02.2013 11:17, schrieb James Courtier-Dutton:
+On Tue, Feb 26, 2013 at 8:54 AM, richard -rw- weinberger
+<richard.weinberger@gmail.com> wrote:
+> On Tue, Feb 26, 2013 at 7:31 AM, Srinivas Eeda <srinivas.eeda@oracle.com> wrote:
+>> This is due to a race in lock mastery/purge. I have recently fixed this
+>> problem but haven't yet submitted the patch to mainline. Please file a
+>> Service request with Oracle to get a one-off fix.
 >
->
->> 3) Trust based on date. I trust everything from X that I put on my
->> system 2 weeks ago, but one week ago X got hacked, so don't trust
->> anything new from them until the hack has been stopped and the
->> revokation/correction steps have been completed.
->> E.g. the Bit9 case, where malware was able to be signed.
->
->
-> Which date? In reality dates are (mostly) defined as fixed points, but
-> computers just don't have such.
->
-> E.g. currently you can't use modsign based on X.509 certificates if the date
-> comes through USB, because modsign tries to load the certificate before
-> before the USB stack comes up, which ends up with invalid dates (Not
-> Before).
-> And changing the system date isn't that hard for an attacker if he is
-> already able to do other bad things.
->
+> Please submit the patch immediately.
+> Why does one need a f§&"!#$ SR from Oracle to have this fixed?
 
-Maybe date was not a good example.
-I think a single chain of trust is risky.
-Using multiple signatures on the same binary is better.
-e.g. Redhat have signed it, but only load the module if both redhat
-and Bit9 have signed it.
-In this case, the risk it mitigated, as both Redhat and Bit9 have to
-be hacked for the malware to get through.
-Now, if a local administrator created a new signing key each time they
-installed updates, and the system checked that both the redhat
-signature and the local administrator signature were valid before
-loading the module, this would give a form of signing based on date.
-(the install date)
-The local administrator could then quickly revoke the keys for a
-particular day, and not have to wait for Redhat to revoke their keys.
+So, where can I find this patch?
+Can you please share it with us insignificant and rubbishy community folks?
+
+https://oss.oracle.com/projects/ocfs2/source.html points to
+http://git.kernel.org/?p=linux/kernel/git/jlbec/ocfs2.git;a=summary
+This tree seems horrible outdated...
+
+-- 
+Thanks,
+//richard
