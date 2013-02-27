@@ -1,547 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932465Ab3B0OqX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 09:46:23 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:55453 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759935Ab3B0OqR (ORCPT
+	id S1760161Ab3B0Ous (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 09:50:48 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:39553 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759935Ab3B0Our (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 09:46:17 -0500
-X-AuditID: cbfee68f-b7f6a6d000004969-d1-512e1c37db36
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, gregkh@linuxfoundation.org,
-        balbi@ti.com, kgene.kim@samsung.com, dianders@chromium.org,
-        p.paneri@samsung.com
-Subject: [PATCH v6 2/2] usb: phy: samsung: Add PHY support for USB 3.0
- controller
-Date: Wed, 27 Feb 2013 20:13:49 +0530
-Message-id: <1361976229-16024-3-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-In-reply-to: <1361976229-16024-1-git-send-email-gautam.vivek@samsung.com>
-References: <1361976229-16024-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplkeLIzCtJLcpLzFFi42JZI2JSrWsuoxdosKZT3+Lg/XqLA7Mfslqc
-	XXaQzaJ58Xo2i94FV9ksLu+aw2Yx4/w+JotFy1qZLc5v6WRy4PSY3XCRxWP/3DXsHudnLGT0
-	6NuyitHj+I3tTB6fN8kFsEVx2aSk5mSWpRbp2yVwZVxo/cBW0JRf8aR7HWMDY2NMFyMnh4SA
-	iUTr9lksELaYxIV769m6GLk4hASWMkq8fHeTCaZoTdcLJojEdEaJOXe2sEM4U5gkZn88yApS
-	xSagK9H0dhcjiC0iICtx+MpvZpAiZoFbjBJ3mp+AFQkLBEv8mPIbzGYRUJU41rUWqIiDg1fA
-	Q6LhdTjENgWJN7efMYPYnAKeEhvmzAazhYBKjpzbALZYQmATu8SbzplMEHMEJL5NPsQCMkcC
-	aPGmA8wQcyQlDq64wTKBUXgBI8MqRtHUguSC4qT0ImO94sTc4tK8dL3k/NxNjMAoOP3vWf8O
-	xrsHrA8xJgONm8gsJZqcD4yivJJ4Q2MTc1NjUzMjS0tLU9KElcR55S/JBAoJpCeWpGanphak
-	FsUXleakFh9iZOLglGpgbPXmmzhF/tOBA8yPCn5vMHu7KmCFtcrOPxIix02vrjznGXc4e/U1
-	eT4XrbrGB3ePF+7U851+wmmXgZznKTnTtq1PDI4f62w+pdZY+/j+TLm0osmXa1nVZaT3LjKe
-	t4KpenLL3K6v0ybHRYvocPSW1Rz02eFU+5+zcOUxsSDv61H/HlUqn7uip8RSnJFoqMVcVJwI
-	AACKSUSYAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t9jQV1zGb1Ag1P9ShYH79dbHJj9kNXi
-	7LKDbBbNi9ezWfQuuMpmcXnXHDaLGef3MVksWtbKbHF+SyeTA6fH7IaLLB77565h9zg/YyGj
-	R9+WVYwex29sZ/L4vEkugC2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkh
-	LzE31VbJxSdA1y0zB+gqJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWPG
-	hdYPbAVN+RVPutcxNjA2xnQxcnJICJhIrOl6wQRhi0lcuLeerYuRi0NIYDqjxJw7W9ghnClM
-	ErM/HmQFqWIT0JVoeruLEcQWEZCVOHzlNzNIEbPALUaJO81PwIqEBYIlfkz5DWazCKhKHOta
-	C1TEwcEr4CHR8DocYpuCxJvbz5hBbE4BT4kNc2aD2UJAJUfObWCfwMi7gJFhFaNoakFyQXFS
-	eq6RXnFibnFpXrpecn7uJkZwjD2T3sG4qsHiEKMAB6MSD++CSzqBQqyJZcWVuYcYJTiYlUR4
-	bc/rBgrxpiRWVqUW5ccXleakFh9iTAY6aiKzlGhyPjD+80riDY1NzE2NTS1NLEzMLEkTVhLn
-	ZTz1JEBIID2xJDU7NbUgtQhmCxMHp1QD49qzN+vflP8IiVWydHjYvlmxVkPvcCVvZmdG7//l
-	AsvCGIxKMzgdvf3fC5Yv/jQzdclGIQbul/L/nKesvyd/balIsXVW3mbOH+07q12/5CxXcanc
-	d1fdRq/5zb7vd3YebT9xavH/nXa82hJXJ07zkVXWXHLxh+VZa3Oj/SXzOf6t6Ihc1HhxlRJL
-	cUaioRZzUXEiAP8JNSz1AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 27 Feb 2013 09:50:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <1361023812.11130.15.camel@cliu38-desktop-build>
+References: <1360163901.24670.13.camel@cliu38-desktop-build>
+	<1361023075.11130.12.camel@cliu38-desktop-build>
+	<1361023812.11130.15.camel@cliu38-desktop-build>
+Date: Wed, 27 Feb 2013 22:50:46 +0800
+Message-ID: <CACvQF51cfqYk3idypNrQ54TOYJSPYvzR+1TTRBOQ5_vH8etwWw@mail.gmail.com>
+Subject: Re: [PATCH V2] smp: Give WARN()ing when calling smp_call_function_many()/single()
+ in serving irq
+From: Lai Jiangshan <eag0628@gmail.com>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: mingo@kernel.org, peterz@infradead.org, jbeulich@suse.com,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        mina86@mina86.org, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, jun.zhang@intel.com,
+        fengguang.wu@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding PHY driver support for USB 3.0 controller for Samsung's
-SoCs.
+On Sat, Feb 16, 2013 at 10:10 PM, Chuansheng Liu
+<chuansheng.liu@intel.com> wrote:
+> Currently the functions smp_call_function_many()/single() will
+> give a WARN()ing only in the case of irqs_disabled(), but that
+> check is not enough to guarantee execution of the SMP
+> cross-calls.
+>
+> In many other cases such as softirq handling/interrupt handling,
+> the two APIs still can not be called, just as the
+> smp_call_function_many() comments say:
+>
+>   * You must not call this function with disabled interrupts or from a
+>   * hardware interrupt handler or from a bottom half handler. Preemption
+>   * must be disabled when calling this function.
+>
+> There is a real case for softirq DEADLOCK case:
+>
+> CPUA                            CPUB
+>                                 spin_lock(&spinlock)
+>                                 Any irq coming, call the irq handler
+>                                 irq_exit()
+> spin_lock_irq(&spinlock)
+> <== Blocking here due to
+> CPUB hold it
+>                                   __do_softirq()
+>                                     run_timer_softirq()
+>                                       timer_cb()
+>                                         call smp_call_function_many()
+>                                           send IPI interrupt to CPUA
+>                                             wait_csd()
+>
+> Then both CPUA and CPUB will be deadlocked here.
+>
+> So we should give a warning in the nmi, hardirq or softirq context as well.
+>
+> Moreover, adding one new macro in_serving_irq() which indicates
+> we are processing nmi, hardirq or sofirq.
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
----
- drivers/usb/phy/Kconfig           |    8 +
- drivers/usb/phy/Makefile          |    1 +
- drivers/usb/phy/samsung-usb3phy.c |  349 +++++++++++++++++++++++++++++++++++++
- drivers/usb/phy/samsung-usbphy.h  |   81 +++++++++
- 4 files changed, 439 insertions(+), 0 deletions(-)
- create mode 100644 drivers/usb/phy/samsung-usb3phy.c
+The code smells bad. in_serving_softirq() don't take spin_lock_bh() in account.
 
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index 4d72962..4f696d0 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -74,6 +74,14 @@ config SAMSUNG_USB2PHY
- 	  Enable this to support Samsung USB 2.0 (High Speed) PHY controller
- 	  driver for Samsung SoCs.
- 
-+config SAMSUNG_USB3PHY
-+	tristate "Samsung USB 3.0 PHY controller Driver"
-+	select SAMSUNG_USBPHY
-+	select USB_OTG_UTILS
-+	help
-+	  Enable this to support Samsung USB 3.0 (Super Speed) phy controller
-+	  for samsung SoCs.
-+
- config SAMSUNG_USBPHY
- 	tristate "Samsung USB PHY Driver"
- 	help
-diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
-index 1efa174..77f0b2e 100644
---- a/drivers/usb/phy/Makefile
-+++ b/drivers/usb/phy/Makefile
-@@ -13,3 +13,4 @@ obj-$(CONFIG_USB_EHCI_TEGRA)	+= tegra_usb_phy.o
- obj-$(CONFIG_USB_RCAR_PHY)		+= rcar-phy.o
- obj-$(CONFIG_SAMSUNG_USBPHY)		+= samsung-usbphy.o
- obj-$(CONFIG_SAMSUNG_USB2PHY)		+= samsung-usb2phy.o
-+obj-$(CONFIG_SAMSUNG_USB3PHY)		+= samsung-usb3phy.o
-diff --git a/drivers/usb/phy/samsung-usb3phy.c b/drivers/usb/phy/samsung-usb3phy.c
-new file mode 100644
-index 0000000..70e2c7b
---- /dev/null
-+++ b/drivers/usb/phy/samsung-usb3phy.c
-@@ -0,0 +1,349 @@
-+/* linux/drivers/usb/phy/samsung-usb3phy.c
-+ *
-+ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
-+ *              http://www.samsung.com
-+ *
-+ * Author: Vivek Gautam <gautam.vivek@samsung.com>
-+ *
-+ * Samsung USB 3.0 PHY transceiver; talks to DWC3 controller.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/clk.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/usb/samsung_usb_phy.h>
-+#include <linux/platform_data/samsung-usbphy.h>
-+
-+#include "samsung-usbphy.h"
-+
-+/*
-+ * Sets the phy clk as EXTREFCLK (XXTI) which is internal clock from clock core.
-+ */
-+static u32 samsung_usb3phy_set_refclk(struct samsung_usbphy *sphy)
-+{
-+	u32 reg;
-+	u32 refclk;
-+
-+	refclk = sphy->ref_clk_freq;
-+
-+	reg = PHYCLKRST_REFCLKSEL_EXT_REFCLK |
-+		PHYCLKRST_FSEL(refclk);
-+
-+	switch (refclk) {
-+	case FSEL_CLKSEL_50M:
-+		reg |= (PHYCLKRST_MPLL_MULTIPLIER_50M_REF |
-+			PHYCLKRST_SSC_REFCLKSEL(0x00));
-+		break;
-+	case FSEL_CLKSEL_20M:
-+		reg |= (PHYCLKRST_MPLL_MULTIPLIER_20MHZ_REF |
-+			PHYCLKRST_SSC_REFCLKSEL(0x00));
-+		break;
-+	case FSEL_CLKSEL_19200K:
-+		reg |= (PHYCLKRST_MPLL_MULTIPLIER_19200KHZ_REF |
-+			PHYCLKRST_SSC_REFCLKSEL(0x88));
-+		break;
-+	case FSEL_CLKSEL_24M:
-+	default:
-+		reg |= (PHYCLKRST_MPLL_MULTIPLIER_24MHZ_REF |
-+			PHYCLKRST_SSC_REFCLKSEL(0x88));
-+		break;
-+	}
-+
-+	return reg;
-+}
-+
-+static int samsung_exynos5_usb3phy_enable(struct samsung_usbphy *sphy)
-+{
-+	void __iomem *regs = sphy->regs;
-+	u32 phyparam0;
-+	u32 phyparam1;
-+	u32 linksystem;
-+	u32 phybatchg;
-+	u32 phytest;
-+	u32 phyclkrst;
-+
-+	/* Reset USB 3.0 PHY */
-+	writel(0x0, regs + EXYNOS5_DRD_PHYREG0);
-+
-+	phyparam0 = readl(regs + EXYNOS5_DRD_PHYPARAM0);
-+	/* Select PHY CLK source */
-+	phyparam0 &= ~PHYPARAM0_REF_USE_PAD;
-+	/* Set Loss-of-Signal Detector sensitivity */
-+	phyparam0 &= ~PHYPARAM0_REF_LOSLEVEL_MASK;
-+	phyparam0 |= PHYPARAM0_REF_LOSLEVEL;
-+	writel(phyparam0, regs + EXYNOS5_DRD_PHYPARAM0);
-+
-+	writel(0x0, regs + EXYNOS5_DRD_PHYRESUME);
-+
-+	/*
-+	 * Setting the Frame length Adj value[6:1] to default 0x20
-+	 * See xHCI 1.0 spec, 5.2.4
-+	 */
-+	linksystem = LINKSYSTEM_XHCI_VERSION_CONTROL |
-+			LINKSYSTEM_FLADJ(0x20);
-+	writel(linksystem, regs + EXYNOS5_DRD_LINKSYSTEM);
-+
-+	phyparam1 = readl(regs + EXYNOS5_DRD_PHYPARAM1);
-+	/* Set Tx De-Emphasis level */
-+	phyparam1 &= ~PHYPARAM1_PCS_TXDEEMPH_MASK;
-+	phyparam1 |= PHYPARAM1_PCS_TXDEEMPH;
-+	writel(phyparam1, regs + EXYNOS5_DRD_PHYPARAM1);
-+
-+	phybatchg = readl(regs + EXYNOS5_DRD_PHYBATCHG);
-+	phybatchg |= PHYBATCHG_UTMI_CLKSEL;
-+	writel(phybatchg, regs + EXYNOS5_DRD_PHYBATCHG);
-+
-+	/* PHYTEST POWERDOWN Control */
-+	phytest = readl(regs + EXYNOS5_DRD_PHYTEST);
-+	phytest &= ~(PHYTEST_POWERDOWN_SSP |
-+			PHYTEST_POWERDOWN_HSP);
-+	writel(phytest, regs + EXYNOS5_DRD_PHYTEST);
-+
-+	/* UTMI Power Control */
-+	writel(PHYUTMI_OTGDISABLE, regs + EXYNOS5_DRD_PHYUTMI);
-+
-+	phyclkrst = samsung_usb3phy_set_refclk(sphy);
-+
-+	phyclkrst |= PHYCLKRST_PORTRESET |
-+			/* Digital power supply in normal operating mode */
-+			PHYCLKRST_RETENABLEN |
-+			/* Enable ref clock for SS function */
-+			PHYCLKRST_REF_SSP_EN |
-+			/* Enable spread spectrum */
-+			PHYCLKRST_SSC_EN |
-+			/* Power down HS Bias and PLL blocks in suspend mode */
-+			PHYCLKRST_COMMONONN;
-+
-+	writel(phyclkrst, regs + EXYNOS5_DRD_PHYCLKRST);
-+
-+	udelay(10);
-+
-+	phyclkrst &= ~(PHYCLKRST_PORTRESET);
-+	writel(phyclkrst, regs + EXYNOS5_DRD_PHYCLKRST);
-+
-+	return 0;
-+}
-+
-+static void samsung_exynos5_usb3phy_disable(struct samsung_usbphy *sphy)
-+{
-+	u32 phyutmi;
-+	u32 phyclkrst;
-+	u32 phytest;
-+	void __iomem *regs = sphy->regs;
-+
-+	phyutmi = PHYUTMI_OTGDISABLE |
-+			PHYUTMI_FORCESUSPEND |
-+			PHYUTMI_FORCESLEEP;
-+	writel(phyutmi, regs + EXYNOS5_DRD_PHYUTMI);
-+
-+	/* Resetting the PHYCLKRST enable bits to reduce leakage current */
-+	phyclkrst = readl(regs + EXYNOS5_DRD_PHYCLKRST);
-+	phyclkrst &= ~(PHYCLKRST_REF_SSP_EN |
-+			PHYCLKRST_SSC_EN |
-+			PHYCLKRST_COMMONONN);
-+	writel(phyclkrst, regs + EXYNOS5_DRD_PHYCLKRST);
-+
-+	/* Control PHYTEST to remove leakage current */
-+	phytest = readl(regs + EXYNOS5_DRD_PHYTEST);
-+	phytest |= (PHYTEST_POWERDOWN_SSP |
-+			PHYTEST_POWERDOWN_HSP);
-+	writel(phytest, regs + EXYNOS5_DRD_PHYTEST);
-+}
-+
-+static int samsung_usb3phy_init(struct usb_phy *phy)
-+{
-+	struct samsung_usbphy *sphy;
-+	unsigned long flags;
-+	int ret = 0;
-+
-+	sphy = phy_to_sphy(phy);
-+
-+	/* Enable the phy clock */
-+	ret = clk_prepare_enable(sphy->clk);
-+	if (ret) {
-+		dev_err(sphy->dev, "%s: clk_prepare_enable failed\n", __func__);
-+		return ret;
-+	}
-+
-+	spin_lock_irqsave(&sphy->lock, flags);
-+
-+	/* setting default phy-type for USB 3.0 */
-+	samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_DEVICE);
-+
-+	/* Disable phy isolation */
-+	samsung_usbphy_set_isolation(sphy, false);
-+
-+	/* Initialize usb phy registers */
-+	samsung_exynos5_usb3phy_enable(sphy);
-+
-+	spin_unlock_irqrestore(&sphy->lock, flags);
-+
-+	/* Disable the phy clock */
-+	clk_disable_unprepare(sphy->clk);
-+
-+	return ret;
-+}
-+
-+/*
-+ * The function passed to the usb driver for phy shutdown
-+ */
-+static void samsung_usb3phy_shutdown(struct usb_phy *phy)
-+{
-+	struct samsung_usbphy *sphy;
-+	unsigned long flags;
-+
-+	sphy = phy_to_sphy(phy);
-+
-+	if (clk_prepare_enable(sphy->clk)) {
-+		dev_err(sphy->dev, "%s: clk_prepare_enable failed\n", __func__);
-+		return;
-+	}
-+
-+	spin_lock_irqsave(&sphy->lock, flags);
-+
-+	/* setting default phy-type for USB 3.0 */
-+	samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_DEVICE);
-+
-+	/* De-initialize usb phy registers */
-+	samsung_exynos5_usb3phy_disable(sphy);
-+
-+	/* Enable phy isolation */
-+	samsung_usbphy_set_isolation(sphy, true);
-+
-+	spin_unlock_irqrestore(&sphy->lock, flags);
-+
-+	clk_disable_unprepare(sphy->clk);
-+}
-+
-+static int samsung_usb3phy_probe(struct platform_device *pdev)
-+{
-+	struct samsung_usbphy *sphy;
-+	struct samsung_usbphy_data *pdata = pdev->dev.platform_data;
-+	struct device *dev = &pdev->dev;
-+	struct resource *phy_mem;
-+	void __iomem	*phy_base;
-+	struct clk *clk;
-+	int ret;
-+
-+	phy_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!phy_mem) {
-+		dev_err(dev, "%s: missing mem resource\n", __func__);
-+		return -ENODEV;
-+	}
-+
-+	phy_base = devm_request_and_ioremap(dev, phy_mem);
-+	if (!phy_base) {
-+		dev_err(dev, "%s: register mapping failed\n", __func__);
-+		return -ENXIO;
-+	}
-+
-+	sphy = devm_kzalloc(dev, sizeof(*sphy), GFP_KERNEL);
-+	if (!sphy)
-+		return -ENOMEM;
-+
-+	clk = devm_clk_get(dev, "usbdrd30");
-+	if (IS_ERR(clk)) {
-+		dev_err(dev, "Failed to get device clock\n");
-+		return PTR_ERR(clk);
-+	}
-+
-+	sphy->dev = dev;
-+
-+	if (dev->of_node) {
-+		ret = samsung_usbphy_parse_dt(sphy);
-+		if (ret < 0)
-+			return ret;
-+	} else {
-+		if (!pdata) {
-+			dev_err(dev, "no platform data specified\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	sphy->plat		= pdata;
-+	sphy->regs		= phy_base;
-+	sphy->clk		= clk;
-+	sphy->phy.dev		= sphy->dev;
-+	sphy->phy.label		= "samsung-usb3phy";
-+	sphy->phy.init		= samsung_usb3phy_init;
-+	sphy->phy.shutdown	= samsung_usb3phy_shutdown;
-+	sphy->drv_data		= samsung_usbphy_get_driver_data(pdev);
-+	sphy->ref_clk_freq	= samsung_usbphy_get_refclk_freq(sphy);
-+
-+	spin_lock_init(&sphy->lock);
-+
-+	platform_set_drvdata(pdev, sphy);
-+
-+	return usb_add_phy(&sphy->phy, USB_PHY_TYPE_USB3);
-+}
-+
-+static int samsung_usb3phy_remove(struct platform_device *pdev)
-+{
-+	struct samsung_usbphy *sphy = platform_get_drvdata(pdev);
-+
-+	usb_remove_phy(&sphy->phy);
-+
-+	if (sphy->pmuregs)
-+		iounmap(sphy->pmuregs);
-+	if (sphy->sysreg)
-+		iounmap(sphy->sysreg);
-+
-+	return 0;
-+}
-+
-+static struct samsung_usbphy_drvdata usb3phy_exynos5 = {
-+	.cpu_type		= TYPE_EXYNOS5250,
-+	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
-+};
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id samsung_usbphy_dt_match[] = {
-+	{
-+		.compatible = "samsung,exynos5250-usb3phy",
-+		.data = &usb3phy_exynos5
-+	},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, samsung_usbphy_dt_match);
-+#endif
-+
-+static struct platform_device_id samsung_usbphy_driver_ids[] = {
-+	{
-+		.name		= "exynos5250-usb3phy",
-+		.driver_data	= (unsigned long)&usb3phy_exynos5,
-+	},
-+	{},
-+};
-+
-+MODULE_DEVICE_TABLE(platform, samsung_usbphy_driver_ids);
-+
-+static struct platform_driver samsung_usb3phy_driver = {
-+	.probe		= samsung_usb3phy_probe,
-+	.remove		= samsung_usb3phy_remove,
-+	.id_table	= samsung_usbphy_driver_ids,
-+	.driver		= {
-+		.name	= "samsung-usb3phy",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = of_match_ptr(samsung_usbphy_dt_match),
-+	},
-+};
-+
-+module_platform_driver(samsung_usb3phy_driver);
-+
-+MODULE_DESCRIPTION("Samsung USB 3.0 phy controller");
-+MODULE_AUTHOR("Vivek Gautam <gautam.vivek@samsung.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:samsung-usb3phy");
-diff --git a/drivers/usb/phy/samsung-usbphy.h b/drivers/usb/phy/samsung-usbphy.h
-index 969632b..f7e657d 100644
---- a/drivers/usb/phy/samsung-usbphy.h
-+++ b/drivers/usb/phy/samsung-usbphy.h
-@@ -145,6 +145,87 @@
- 
- #define EXYNOS5_PHY_OTG_TUNE			(0x40)
- 
-+/* EXYNOS5: USB 3.0 DRD */
-+#define EXYNOS5_DRD_LINKSYSTEM			(0x04)
-+
-+#define LINKSYSTEM_FLADJ_MASK			(0x3f << 1)
-+#define LINKSYSTEM_FLADJ(_x)			((_x) << 1)
-+#define LINKSYSTEM_XHCI_VERSION_CONTROL		(0x1 << 27)
-+
-+#define EXYNOS5_DRD_PHYUTMI			(0x08)
-+
-+#define PHYUTMI_OTGDISABLE			(0x1 << 6)
-+#define PHYUTMI_FORCESUSPEND			(0x1 << 1)
-+#define PHYUTMI_FORCESLEEP			(0x1 << 0)
-+
-+#define EXYNOS5_DRD_PHYPIPE			(0x0c)
-+
-+#define EXYNOS5_DRD_PHYCLKRST			(0x10)
-+
-+#define PHYCLKRST_SSC_REFCLKSEL_MASK		(0xff << 23)
-+#define PHYCLKRST_SSC_REFCLKSEL(_x)		((_x) << 23)
-+
-+#define PHYCLKRST_SSC_RANGE_MASK		(0x03 << 21)
-+#define PHYCLKRST_SSC_RANGE(_x)			((_x) << 21)
-+
-+#define PHYCLKRST_SSC_EN			(0x1 << 20)
-+#define PHYCLKRST_REF_SSP_EN			(0x1 << 19)
-+#define PHYCLKRST_REF_CLKDIV2			(0x1 << 18)
-+
-+#define PHYCLKRST_MPLL_MULTIPLIER_MASK		(0x7f << 11)
-+#define PHYCLKRST_MPLL_MULTIPLIER_100MHZ_REF	(0x19 << 11)
-+#define PHYCLKRST_MPLL_MULTIPLIER_50M_REF	(0x02 << 11)
-+#define PHYCLKRST_MPLL_MULTIPLIER_24MHZ_REF	(0x68 << 11)
-+#define PHYCLKRST_MPLL_MULTIPLIER_20MHZ_REF	(0x7d << 11)
-+#define PHYCLKRST_MPLL_MULTIPLIER_19200KHZ_REF	(0x02 << 11)
-+
-+#define PHYCLKRST_FSEL_MASK			(0x3f << 5)
-+#define PHYCLKRST_FSEL(_x)			((_x) << 5)
-+#define PHYCLKRST_FSEL_PAD_100MHZ		(0x27 << 5)
-+#define PHYCLKRST_FSEL_PAD_24MHZ		(0x2a << 5)
-+#define PHYCLKRST_FSEL_PAD_20MHZ		(0x31 << 5)
-+#define PHYCLKRST_FSEL_PAD_19_2MHZ		(0x38 << 5)
-+
-+#define PHYCLKRST_RETENABLEN			(0x1 << 4)
-+
-+#define PHYCLKRST_REFCLKSEL_MASK		(0x03 << 2)
-+#define PHYCLKRST_REFCLKSEL_PAD_REFCLK		(0x2 << 2)
-+#define PHYCLKRST_REFCLKSEL_EXT_REFCLK		(0x3 << 2)
-+
-+#define PHYCLKRST_PORTRESET			(0x1 << 1)
-+#define PHYCLKRST_COMMONONN			(0x1 << 0)
-+
-+#define EXYNOS5_DRD_PHYREG0			(0x14)
-+#define EXYNOS5_DRD_PHYREG1			(0x18)
-+
-+#define EXYNOS5_DRD_PHYPARAM0			(0x1c)
-+
-+#define PHYPARAM0_REF_USE_PAD			(0x1 << 31)
-+#define PHYPARAM0_REF_LOSLEVEL_MASK		(0x1f << 26)
-+#define PHYPARAM0_REF_LOSLEVEL			(0x9 << 26)
-+
-+#define EXYNOS5_DRD_PHYPARAM1			(0x20)
-+
-+#define PHYPARAM1_PCS_TXDEEMPH_MASK		(0x1f << 0)
-+#define PHYPARAM1_PCS_TXDEEMPH			(0x1c)
-+
-+#define EXYNOS5_DRD_PHYTERM			(0x24)
-+
-+#define EXYNOS5_DRD_PHYTEST			(0x28)
-+
-+#define PHYTEST_POWERDOWN_SSP			(0x1 << 3)
-+#define PHYTEST_POWERDOWN_HSP			(0x1 << 2)
-+
-+#define EXYNOS5_DRD_PHYADP			(0x2c)
-+
-+#define EXYNOS5_DRD_PHYBATCHG			(0x30)
-+
-+#define PHYBATCHG_UTMI_CLKSEL			(0x1 << 2)
-+
-+#define EXYNOS5_DRD_PHYRESUME			(0x34)
-+#define EXYNOS5_DRD_LINKPORT			(0x44)
-+
-+
- #ifndef MHZ
- #define MHZ (1000*1000)
- #endif
--- 
-1.7.6.5
+CPUA                    CPUB                             CPUC
+                        spin_lock(&lockA)
+                          Any irq coming, call
+                          the irq handler
+                          irq_exit()
+spin_lock_irq(&lockA)
+*Blocking* here
+due to CPUB hold it                                      spin_lock_bh(&lockB)
+                            __do_softirq()
+                              run_timer_softirq()
+                                spin_lock_bh(&lockB)
+                                *Blocking* heredue to
+                                CPUC hold it
+                                                         call
+smp_call_function_many()
+                                                         send IPI
+interrupt to CPUA
+                                                           wait_csd()
+                                                           *Blocking* here.
 
+So it is still deadlock. but your code does not warn it.
+so in_softirq() is better than in_serving_softirq() in in_serving_irq(),
+and results in_serving_irq() is the same as in_interrupt().
+
+so please remove in_serving_irq() and use in_interrupt() instead.
+And add:
+
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+
+In the long-term, the best solution is using percpu lockdep for
+local_irq_disable()
+and smp_call_function_many():
+
+CPUA                    CPUB
+                        spin_lock(&lockA)
+spin_lock_irq(&lockA)
+*Blocking* here
+due to CPUB hold it
+                        call smp_call_function_many()
+                          send IPI interrupt to CPUA
+                            wait_csd()
+                            *Blocking* here.
+
+I will do it in the next week after the next week.
+
+Thanks,
+Lai
+
+
+>
+> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+> ---
+>  include/linux/hardirq.h |    5 +++++
+>  kernel/smp.c            |   11 +++++++----
+>  2 files changed, 12 insertions(+), 4 deletions(-)
+>
+> diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+> index 624ef3f..e07663f 100644
+> --- a/include/linux/hardirq.h
+> +++ b/include/linux/hardirq.h
+> @@ -94,6 +94,11 @@
+>   */
+>  #define in_nmi()       (preempt_count() & NMI_MASK)
+>
+> +/*
+> + * Are we in nmi,irq context, or softirq context?
+> + */
+> +#define in_serving_irq() (in_nmi() || in_irq() || in_serving_softirq())
+> +
+>  #if defined(CONFIG_PREEMPT_COUNT)
+>  # define PREEMPT_CHECK_OFFSET 1
+>  #else
+> diff --git a/kernel/smp.c b/kernel/smp.c
+> index 69f38bd..b0a5d21 100644
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -12,6 +12,7 @@
+>  #include <linux/gfp.h>
+>  #include <linux/smp.h>
+>  #include <linux/cpu.h>
+> +#include <linux/hardirq.h>
+>
+>  #include "smpboot.h"
+>
+> @@ -323,8 +324,9 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
+>          * send smp call function interrupt to this cpu and as such deadlocks
+>          * can't happen.
+>          */
+> -       WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
+> -                    && !oops_in_progress);
+> +       WARN_ON_ONCE(cpu_online(this_cpu)
+> +               && (irqs_disabled() || in_serving_irq())
+> +               && !oops_in_progress);
+>
+>         if (cpu == this_cpu) {
+>                 local_irq_save(flags);
+> @@ -462,8 +464,9 @@ void smp_call_function_many(const struct cpumask *mask,
+>          * send smp call function interrupt to this cpu and as such deadlocks
+>          * can't happen.
+>          */
+> -       WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
+> -                    && !oops_in_progress && !early_boot_irqs_disabled);
+> +       WARN_ON_ONCE(cpu_online(this_cpu)
+> +               && (irqs_disabled() || in_serving_irq())
+> +               && !oops_in_progress && !early_boot_irqs_disabled);
+>
+>         /* Try to fastpath.  So, what's a CPU they want? Ignoring this one. */
+>         cpu = cpumask_first_and(mask, cpu_online_mask);
+> --
+> 1.7.0.4
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
