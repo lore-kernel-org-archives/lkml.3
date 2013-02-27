@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933863Ab3B0AI7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:08:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42709 "EHLO
+	id S1760400Ab3B0AWq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:22:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42786 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933602Ab3B0AIv (ORCPT
+	with ESMTP id S933869Ab3B0AJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:08:51 -0500
+	Tue, 26 Feb 2013 19:09:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Haggai Eran <haggaie@mellanox.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 22/86] mm: mmu_notifier: make the mmu_notifier srcu static
-Date: Tue, 26 Feb 2013 16:07:30 -0800
-Message-Id: <20130226235915.221448184@linuxfoundation.org>
+Subject: [ 33/86] drivercore: Fix ordering between deferred_probe and exiting initcalls
+Date: Tue, 26 Feb 2013 16:07:41 -0800
+Message-Id: <20130226235916.303581528@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -32,55 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Grant Likely <grant.likely@secretlab.ca>
 
-commit 70400303ce0c4ced3139499c676d5c79636b0c72 upstream.
+commit d72cca1eee5b26e313da2a380d4862924e271031 upstream.
 
-The variable must be static especially given the variable name.
+One of the side effects of deferred probe is that some drivers which
+used to be probed before initcalls completed are now happening slightly
+later. This causes two problems.
+- If a console driver gets deferred, then it may not be ready when
+  userspace starts. For example, if a uart depends on pinctrl, then the
+  uart will get deferred and /dev/console will not be available
+- __init sections will be discarded before built-in drivers are probed.
+  Strictly speaking, __init functions should not be called in a drivers
+  __probe path, but there are a lot of drivers (console stuff again)
+  that do anyway. In the past it was perfectly safe to do so because all
+  built-in drivers got probed before the end of initcalls.
 
-s/RCU/SRCU/ over a few comments.
+This patch fixes the problem by forcing the first pass of the deferred
+list to complete at late_initcall time. This is late enough to catch the
+drivers that are known to have the above issues.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Sagi Grimberg <sagig@mellanox.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Haggai Eran <haggaie@mellanox.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Tested-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mmu_notifier.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/base/dd.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/mm/mmu_notifier.c
-+++ b/mm/mmu_notifier.c
-@@ -20,7 +20,7 @@
- #include <linux/slab.h>
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -160,6 +160,8 @@ static int deferred_probe_initcall(void)
  
- /* global SRCU for all MMs */
--struct srcu_struct srcu;
-+static struct srcu_struct srcu;
- 
- /*
-  * This function can't run concurrently against mmu_notifier_register
-@@ -41,7 +41,7 @@ void __mmu_notifier_release(struct mm_st
- 	int id;
- 
- 	/*
--	 * RCU here will block mmu_notifier_unregister until
-+	 * SRCU here will block mmu_notifier_unregister until
- 	 * ->release returns.
- 	 */
- 	id = srcu_read_lock(&srcu);
-@@ -302,7 +302,7 @@ void mmu_notifier_unregister(struct mmu_
- 
- 	if (!hlist_unhashed(&mn->hlist)) {
- 		/*
--		 * RCU here will force exit_mmap to wait ->release to finish
-+		 * SRCU here will force exit_mmap to wait ->release to finish
- 		 * before freeing the pages.
- 		 */
- 		int id;
+ 	driver_deferred_probe_enable = true;
+ 	driver_deferred_probe_trigger();
++	/* Sort as many dependencies as possible before exiting initcalls */
++	flush_workqueue(deferred_wq);
+ 	return 0;
+ }
+ late_initcall(deferred_probe_initcall);
 
 
