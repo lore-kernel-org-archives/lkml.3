@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab3B0Kii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 05:38:38 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:60367 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183Ab3B0Kig (ORCPT
+	id S1756450Ab3B0Kjq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 05:39:46 -0500
+Received: from forward19.mail.yandex.net ([95.108.253.144]:44940 "EHLO
+	forward19.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183Ab3B0Kjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 05:38:36 -0500
-X-Spam-Score: -100.8
-Message-ID: <512DE213.3050001@asianux.com>
-Date: Wed, 27 Feb 2013 18:38:11 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 27 Feb 2013 05:39:45 -0500
+From: Roman Gushchin <klamm@yandex-team.ru>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner-Arquette <hannes@cmpxchg.org>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, "mel@csn.ul.ie" <mel@csn.ul.ie>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Ying Han <yinghan@google.com>
+In-Reply-To: <20130227094054.GC16719@dhcp22.suse.cz>
+References: <8121361952156@webcorp1g.yandex-team.ru> <20130227094054.GC16719@dhcp22.suse.cz>
+Subject: Re: [PATCH] memcg: implement low limits
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: roger.pau@citrix.com, stefano.stabellini@eu.citrix.com,
-        xen-devel <xen-devel@lists.xen.org>, konrad.wilk@oracle.com,
-        dgdegra@tycho.nsa.gov,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/block/xen-blkback: preq.dev is used without initialized
-References: <512D90F2.9070200@asianux.com> <512DE6B302000078000C1631@nat28.tlf.novell.com>
-In-Reply-To: <512DE6B302000078000C1631@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Message-Id: <17521361961576@webcorp1g.yandex-team.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 27 Feb 2013 14:39:36 +0400
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年02月27日 17:57, Jan Beulich 写道:
-> You also could have mentioned that even before commit 
-> 01c681d4c70d64cb72142a2823f27c4146a02e63 the value printed
-> here was bogus, as it was the guest provided value from
-> req->u.rw.handle rather than the actual device.
+27.02.2013, 13:41, "Michal Hocko" <mhocko@suse.cz>:
+> Let me restate what I have already mentioned in the private
+> communication.
+>
+> We already have soft limit which can be implemented to achieve the
+> same/similar functionality and in fact this is a long term objective (at
+> least for me). I hope I will be able to post my code soon. The last post
+> by Ying Hand (cc-ing her) was here:
+> http://comments.gmane.org/gmane.linux.kernel.mm/83499
+>
+> To be honest I do not like introduction of a new limit because we have
+> two already and the situation would get over complicated.
 
-  pardon ?
+I think, there are three different tasks:
+1) keeping cgroups below theirs hard limit to avoid direct reclaim (for performance reasons),
+2) cgroup's prioritization during global reclaim,
+3) granting some amount of memory to a selected cgroup (and protecting it from reclaim without significant reasons)
 
-  I guess what you said is :
-    my patch seems ok, but the comments need improving.
-    need add "additional info" in comments:
-      "before commit 01c681d4c70d64cb72142a2823f27c4146a02e63
-       the value printed here was bogus, as it was the guest
-       provided value from req->u.rw.handle rather than the
-       actual device".
+IMHO, combining them all in one limit will simplify a kernel code, but will also make a user's (or administrator's) 
+life much more complicated. Introducing low limits can make the situation simpler.
 
-  is it correct ?
+>
+> More comments on the code bellow.
 
-  thanks.
+Thank you very much!
+I'll address them in an other letter.
 
--- 
-Chen Gang
-
-Asianux Corporation
+--
+Regards,
+Roman
