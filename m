@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab3B0USQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 15:18:16 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:54488 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945Ab3B0USP (ORCPT
+	id S1755556Ab3B0UUd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 15:20:33 -0500
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:53188 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab3B0UUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 15:18:15 -0500
+	Wed, 27 Feb 2013 15:20:32 -0500
 MIME-Version: 1.0
-In-Reply-To: <512E6443.9050603@redhat.com>
-References: <20130206150403.006e5294@cuia.bos.redhat.com>
-	<tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org>
-	<CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com>
-	<511BE4A3.8050607@redhat.com>
-	<CA+55aFycMB7OZGQ54ueQ74C42beDBSdQE_fKJDV=TbjTjr_emg@mail.gmail.com>
-	<511C1204.9040608@redhat.com>
-	<CA+55aFwxYK-BLH0crhySHaQvAYHOH-VGUi7WTd1aq-24+WTDYw@mail.gmail.com>
-	<511C24A6.8020409@redhat.com>
-	<CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com>
-	<512E376D.70105@redhat.com>
-	<CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com>
-	<512E6443.9050603@redhat.com>
-Date: Wed, 27 Feb 2013 12:18:13 -0800
-X-Google-Sender-Auth: As1Sj_hciKnBk8PiAkjJ03SDYy0
-Message-ID: <CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com>
-Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket lock
- out of line
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, aquini@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michel Lespinasse <walken@google.com>,
-        linux-tip-commits@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CA+5PVA5wtZipQRTPfvbh1U8gjDMaW0095EsNz==Co+iww3YN1g@mail.gmail.com>
+References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
+	<CA+5PVA5wtZipQRTPfvbh1U8gjDMaW0095EsNz==Co+iww3YN1g@mail.gmail.com>
+Date: Wed, 27 Feb 2013 15:20:31 -0500
+Message-ID: <CA+5PVA5vvw-JyODTtRwVhQSEiGrt=3wzDoCmeButEMTZxWAhbA@mail.gmail.com>
+Subject: Re: [git pull] drm merge for 3.9-rc1
+From: Josh Boyer <jwboyer@gmail.com>
+To: Dave Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Cc: torvalds@linux-foundation.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 11:53 AM, Rik van Riel <riel@redhat.com> wrote:
+On Wed, Feb 27, 2013 at 11:34 AM, Josh Boyer <jwboyer@gmail.com> wrote:
+> On Mon, Feb 25, 2013 at 7:05 PM, Dave Airlie <airlied@linux.ie> wrote:
+>> Alex Deucher (29):
+>>       drm/radeon: halt engines before disabling MC (6xx/7xx)
+>>       drm/radeon: halt engines before disabling MC (evergreen)
+>>       drm/radeon: halt engines before disabling MC (cayman/TN)
+>>       drm/radeon: halt engines before disabling MC (si)
+>>       drm/radeon: use the reset mask to determine if rings are hung
 >
-> If we have two classes of spinlocks, I suspect we would be better
-> off making those high-demand spinlocks MCS or LCH locks, which have
-> the property that having N+1 CPUs contend on the lock will never
-> result in slower aggregate throughput than having N CPUs contend.
-
-I doubt that.
-
-The fancy "no slowdown" locks almost never work in practice. They
-scale well by performing really badly for the normal case, either
-needing separate allocations or having memory ordering problems
-requiring multiple locked cycles.
-
-A spinlock basically needs to have a fast-case that is a single locked
-instruction, and all the clever ones tend to fail that simple test.
-
-> I can certainly take profiles of various workloads, but there is
-> absolutely no guarantee that I will see the same bottlenecks that
-> eg. the people at HP have seen. The largest test system I currently
-> have access to has 40 cores, vs. the 80 cores in the (much more
-> interesting) HP results I pasted.
+> Something in this series of commits is causing the GPU to hang on reboot
+> on my Dell XPS 8300 machine.  That has a:
 >
-> Would you also be interested in performance numbers (and profiles)
-> of a kernel that has bottleneck spinlocks replaced with MCS locks?
+> 01:00.0 VGA compatible controller: Advanced Micro Devices [AMD] nee
+> ATI Caicos [Radeon HD 6450]
+>
+> card in it.  After reboots, I get a screen that looks like this:
+>
+> http://t.co/tPnT6xQZUK
+>
+> I can hit it fairly consistently after a few reboots, so I tried doing a
+> git bisect on the radeon driver and it came down to:
+>
+> ca57802e521de54341efc8a56f70571f79ffac72 is the first bad commit
 
-MCS locks don't even work, last time I saw. They need that extra lock
-holder allocation, which forces people to have different calling
-conventions, and is just a pain. Or am I confusing them with something
-else?
+So I don't think that's actually the cause of the problem.  Or at least
+not that alone.  I reverted it on top of Linus' latest tree and I still
+get the lockups.
 
-They might work for the special cases like the sleeping locks, which
-have one or two places that take and release the lock, but not for the
-generic spinlock.
+Thus far I've reverted:
 
-Also, it might be worth trying current git - if it's a rwsem that is
-implicated, the new lock stealing might be a win.
+      drm/radeon: use status regs to determine what to reset (6xx/7xx)
+      drm/radeon: use status regs to determine what to reset (evergreen)
+      drm/radeon: use status regs to determine what to reset (cayman)
+      drm/radeon: use status regs to determine what to reset (si)
+      drm/radeon: halt engines before disabling MC (6xx/7xx)
+      drm/radeon: halt engines before disabling MC (evergreen)
+      drm/radeon: halt engines before disabling MC (cayman/TN)
+      drm/radeon: halt engines before disabling MC (si)
+      drm/radeon: use the reset mask to determine if rings are hung
 
-So before even trying anything fancy, just basic profiles would be
-good to see which lock it is. Many of the really bad slowdowns are
-actually about the timing details of the sleeping locks (do *not*
-enable lock debugging etc for profiling, you want the mutex spinning
-code to be active, for example).
+and can still recreate the issue.  I'm starting to think the problem is
+in one of:
 
-                   Linus
+      drm/radeon: rework GPU reset on r6xx/r7xx
+      drm/radeon: rework GPU reset on evergreen
+      drm/radeon: rework GPU reset on cayman/TN
+      drm/radeon: rework GPU reset on cayman/TN (which should be si)
+
+Still trying to figure out exactly which code paths are used on this
+card, but I'll keep poking at it.  Any ideas or tips for debug are more
+than welcome.
+
+josh
