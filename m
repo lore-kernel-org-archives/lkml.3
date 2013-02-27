@@ -1,135 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758532Ab3B0X1c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 18:27:32 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:37459 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab3B0X1b (ORCPT
+	id S1758967Ab3B0X2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 18:28:19 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:22804 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033Ab3B0X2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 18:27:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAMvbhFTNmUS-usRZKBEqp_YrpxDhckj9tdTtC+m_5EnO+UECw@mail.gmail.com>
-References: <CAPM=9txjG5rohsNbme=myrX+-Z5eucpEXYQMWqPQqN=5dNze8g@mail.gmail.com>
-	<CAPM=9tw_vfESbbH4dD9z8mAYVYcwmVs=n4BrRz4XBj1Rw1qrkw@mail.gmail.com>
-	<20130225223243.GA18744@kroah.com>
-	<20130226034545.GA1089@kroah.com>
-	<20130226173514.GA24136@kroah.com>
-	<CAAMvbhFTNmUS-usRZKBEqp_YrpxDhckj9tdTtC+m_5EnO+UECw@mail.gmail.com>
-Date: Wed, 27 Feb 2013 23:27:30 +0000
-Message-ID: <CAAMvbhEAcLuE+5KGP13wCc8nVBp1Eq-UPtaUD7c5oGVq8io8Lw@mail.gmail.com>
-Subject: Re: resume fails to light display on Macbook Pro Retina on 3.8-rc1
-From: James Courtier-Dutton <james.dutton@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Dave Airlie <airlied@gmail.com>, Ben Skeggs <bskeggs@redhat.com>,
-        David Airlie <airlied@linux.ie>, Martin Peres <martin.peres@labri.fr>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 27 Feb 2013 18:28:17 -0500
+X-IronPort-AV: E=Sophos;i="4.84,751,1355126400"; 
+   d="scan'208";a="26884897"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Barry Song <baohua.song@csr.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCHv2] ARM: Push selects for TWD/SCU into machine entries
+Date: Wed, 27 Feb 2013 15:28:14 -0800
+Message-Id: <1362007694-3419-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.rc1.4.g27db5a0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 February 2013 18:11, James Courtier-Dutton <james.dutton@gmail.com> wrote:
-> On 26 February 2013 17:35, Greg KH <gregkh@linuxfoundation.org> wrote:
->> On Mon, Feb 25, 2013 at 07:45:45PM -0800, Greg KH wrote:
->>> On Mon, Feb 25, 2013 at 02:32:43PM -0800, Greg KH wrote:
->>> > On Mon, Feb 25, 2013 at 04:06:02PM +1000, Dave Airlie wrote:
->>> > > On Mon, Feb 25, 2013 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>> > > > Hi Ben,
->>> > > >
->>> > > > My Macbook Pro Retina fails to resume properly on 3.8.  I tracked this
->>> > > > down to commit 6c5a04249d7afeea3e0ed971e7813f84e29a1706 (drm/nvd0/disp:
->>> > > > move link training helpers into core as display methods)
->>> > > >
->>> > > > Anything I can try to help solve this?
->>> > > >
->>> > > > Note, I'm using the Intel driver as the main controller for this laptop,
->>> > > > well, I think I am, my xorg log is attached.
->>> > >
->>> > > No you are using the nvidia, the efi always boots nvidia enabled now.
->>> >
->>> > Really?  When did that change?  I thought I wanted to be using the Intel
->>> > chip to save battery life.
->>> >
->>> > > btw I just tested my drm-next tree on mine and it resumed the display
->>> > > fine, something oopsed a few seconds later that I haven't tracked down
->>> > >
->>> > > git://git.freedesktop.org/~airlied/linux drm-next
->>> > >
->>> > > I'll be sending it to Linus this evening or tomorrow morning, once I
->>> > > fix my tree.
->>> >
->>> > Ok, I'll test again when it hits Linus's tree, and if that works, it
->>> > would be good to try to work out what patch fixes it to get them into
->>> > the 3.8-stable series so that others don't run into the same problem.
->>>
->>> I've tested Linus's tree now (I'm guessing it has all of your changes in
->>> it), and it works!
->>>
->>> I see a bunch of patches marked for the stable branch, so I'll try those
->>> out and see if they fix the problem.  If not, I'll let you and Ben know.
->>
->> I've applied the radeon patches tagged for -stable and tested that on
->> 3.8.0, but that doesn't solve the resume problem.  Any ideas of anything
->> else I can do to test this?  Doing a "backwards" git-bisect is a pain,
->> but I guess I can do that to try to track down what patch fixed this, if
->> that's the only idea people have...
->>
->
-> If it helps, I have a similar resume problem here.
-> 3.7.8 good
-> 3.8.0 bad
->
-> Laptop with no nvidia, no amd graphics, just Intel Graphics 4000, 3rd
-> Gen I5 CPU.
+The TWD and SCU configs are selected by default as long as
+MSM_SCORPIONMP is false and/or MCT is false. Implementing the
+logic this way certainly saves lines in the Kconfig but it
+precludes those machines which select MSM_SCORPIONMP or MCT from
+participating in the single zImage effort because when those
+machines are combined with other SMP capable machines the TWD and
+SCU are no longer selected by default.
 
-Problem: "Backlight not coming on after resume."
-git finally bisected  for my Samsung Serial 7 Laptop.
-Bisecting: 0 revisions left to test after this (roughly 0 steps)
-[cf0a6584aa6d382f802f2c3cacac23ccbccde0cd] drm/i915: write backlight
-harder     <- This is the problem commit. Seems that fixing some
-machines breaks others, based on the existing comments on that patch.
+Push the select out to the machine entries so that we can compile
+these machines together and still select the appropriate configs.
 
-git bisect log
-git bisect start
-# bad: [09884964335e85e897876d17783c2ad33cf8a2e0] mm: do not grow the
-stack vma just because of an overrun on preceding vma
-git bisect bad 09884964335e85e897876d17783c2ad33cf8a2e0
-# good: [6c5096e5538b455bc3bea2b02588c380f070d8c6] Merge tag 'boards'
-of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
-git bisect good 6c5096e5538b455bc3bea2b02588c380f070d8c6
-# good: [21fbd5809ad126b949206d78e0a0e07ec872ea11] Merge branch
-'v4l_for_linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media
-git bisect good 21fbd5809ad126b949206d78e0a0e07ec872ea11
-# bad: [fffddfd6c8e0c10c42c6e2cc54ba880fcc36ebbb] Merge branch
-'drm-next' of git://people.freedesktop.org/~airlied/linux
-git bisect bad fffddfd6c8e0c10c42c6e2cc54ba880fcc36ebbb
-# bad: [b81e059ec5a7128622ab5d74d78e9b4f361b54ae] Merge branch
-'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel
-into drm-next
-git bisect bad b81e059ec5a7128622ab5d74d78e9b4f361b54ae
-# good: [d6dd9eb1d96d2b7345fe4664066c2b7ed86da898] drm/i915: dynamic
-Haswell display power well support
-git bisect good d6dd9eb1d96d2b7345fe4664066c2b7ed86da898
-# good: [73ccd6962fff19e53a7d4baaa17cf9311284ac9c] Merge branch
-'drm-next-3.9' of git://people.freedesktop.org/~agd5f/linux into
-drm-next
-git bisect good 73ccd6962fff19e53a7d4baaa17cf9311284ac9c
-# good: [a4462f246c8821f625f45bce52c7ca7e0207dffe] staging/omapdrm:
-Use kmemdup rather than duplicating its implementation
-git bisect good a4462f246c8821f625f45bce52c7ca7e0207dffe
-# bad: [d84f031bd230fdf9c3b7734940c859bf28b90219] drm: Use C8 instead
-of RGB332 when determining the format from depth/bpp
-git bisect bad d84f031bd230fdf9c3b7734940c859bf28b90219
-# bad: [f73f760725636b9d0c3786273e185b053516d1eb] drm/i915/ctx: Remove
-bad invariant
-git bisect bad f73f760725636b9d0c3786273e185b053516d1eb
-# bad: [26739f12cf210cb8df35969258a1f064e8e12b63] drm/i915: unify
-HDMI/DP hpd definitions
-git bisect bad 26739f12cf210cb8df35969258a1f064e8e12b63
-# good: [b8efb17b3d687695b81485f606fc4e6c35a50f9a] i915: ignore lid
-open event when resuming
-git bisect good b8efb17b3d687695b81485f606fc4e6c35a50f9a
-# bad: [07ea0d85ac8adb87b817913d9720e3c76171b1f6] drm/i915: Clarify HW
-context size logic
-git bisect bad 07ea0d85ac8adb87b817913d9720e3c76171b1f6
+Cc: Barry Song <baohua.song@csr.com>
+Acked-by: David Brown <davidb@codeaurora.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Acked-by: Pawel Moll <pawel.moll@arm.com>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+Cc: Shiraz Hashim <shiraz.hashim@st.com>
+Acked-by: Simon Horman <horms@verge.net.au>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Tony Lindgren <tony@atomide.com>
+Acked-by: Viresh Kumar <viresh.linux@gmail.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+
+Resending to collect some more acks.
+
+ arch/arm/Kconfig               | 8 ++++++--
+ arch/arm/mach-exynos/Kconfig   | 2 ++
+ arch/arm/mach-highbank/Kconfig | 1 +
+ arch/arm/mach-imx/Kconfig      | 3 ++-
+ arch/arm/mach-msm/Kconfig      | 7 ++-----
+ arch/arm/mach-omap2/Kconfig    | 2 ++
+ arch/arm/mach-prima2/Kconfig   | 1 +
+ arch/arm/mach-realview/Kconfig | 8 ++++++++
+ arch/arm/mach-vexpress/Kconfig | 2 ++
+ arch/arm/plat-spear/Kconfig    | 2 ++
+ 10 files changed, 28 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index dedf02b..8f5707b 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -672,6 +672,8 @@ config ARCH_TEGRA
+ 	select CLKSRC_OF
+ 	select COMMON_CLK
+ 	select GENERIC_CLOCKEVENTS
++	select HAVE_ARM_SCU if SMP
++	select HAVE_ARM_TWD if LOCAL_TIMERS
+ 	select HAVE_CLK
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+@@ -718,6 +720,8 @@ config ARCH_SHMOBILE
+ 	bool "Renesas SH-Mobile / R-Mobile"
+ 	select CLKDEV_LOOKUP
+ 	select GENERIC_CLOCKEVENTS
++	select HAVE_ARM_SCU if SMP
++	select HAVE_ARM_TWD if LOCAL_TIMERS
+ 	select HAVE_CLK
+ 	select HAVE_MACH_CLKDEV
+ 	select HAVE_SMP
+@@ -910,6 +914,8 @@ config ARCH_U8500
+ 	select CLKDEV_LOOKUP
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
++	select HAVE_ARM_SCU if SMP
++	select HAVE_ARM_TWD if LOCAL_TIMERS
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+ 	select SPARSE_IRQ
+@@ -1526,7 +1532,6 @@ config SMP
+ 	depends on GENERIC_CLOCKEVENTS
+ 	depends on HAVE_SMP
+ 	depends on MMU
+-	select HAVE_ARM_SCU if !ARCH_MSM_SCORPIONMP
+ 	select USE_GENERIC_SMP_HELPERS
+ 	help
+ 	  This enables support for systems with more than one CPU. If you have
+@@ -1650,7 +1655,6 @@ config LOCAL_TIMERS
+ 	bool "Use local timer interrupts"
+ 	depends on SMP
+ 	default y
+-	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT)
+ 	help
+ 	  Enable support for local timers on SMP platforms, rather then the
+ 	  legacy IPI broadcast method.  Local timers allows the system
+diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+index 70f94c8..54cf73e 100644
+--- a/arch/arm/mach-exynos/Kconfig
++++ b/arch/arm/mach-exynos/Kconfig
+@@ -14,6 +14,7 @@ menu "SAMSUNG EXYNOS SoCs Support"
+ config ARCH_EXYNOS4
+ 	bool "SAMSUNG EXYNOS4"
+ 	default y
++	select HAVE_ARM_SCU if SMP
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+ 	help
+@@ -21,6 +22,7 @@ config ARCH_EXYNOS4
+ 
+ config ARCH_EXYNOS5
+ 	bool "SAMSUNG EXYNOS5"
++	select HAVE_ARM_SCU if SMP
+ 	select HAVE_SMP
+ 	help
+ 	  Samsung EXYNOS5 (Cortex-A15) SoC based systems
+diff --git a/arch/arm/mach-highbank/Kconfig b/arch/arm/mach-highbank/Kconfig
+index 44b12f9..cd9fcb1 100644
+--- a/arch/arm/mach-highbank/Kconfig
++++ b/arch/arm/mach-highbank/Kconfig
+@@ -12,6 +12,7 @@ config ARCH_HIGHBANK
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_ARM_SCU
++	select HAVE_ARM_TWD if LOCAL_TIMERS
+ 	select HAVE_SMP
+ 	select MAILBOX
+ 	select PL320_MBOX
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index 4c9c6f9..2cc0dbd 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -811,7 +811,8 @@ config SOC_IMX6Q
+ 	select ARM_GIC
+ 	select COMMON_CLK
+ 	select CPU_V7
+-	select HAVE_ARM_SCU
++	select HAVE_ARM_SCU if SMP
++	select HAVE_ARM_TWD if LOCAL_TIMERS
+ 	select HAVE_CAN_FLEXCAN if CAN
+ 	select HAVE_IMX_GPC
+ 	select HAVE_IMX_MMDC
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index b619085..fceb093 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -44,10 +44,10 @@ endchoice
+ 
+ config ARCH_MSM8X60
+ 	bool "MSM8X60"
+-	select ARCH_MSM_SCORPIONMP
+ 	select ARM_GIC
+ 	select CPU_V7
+ 	select GPIO_MSM_V2
++	select HAVE_SMP
+ 	select MSM_GPIOMUX
+ 	select MSM_SCM if SMP
+ 	select MSM_V2_TLMM
+@@ -55,9 +55,9 @@ config ARCH_MSM8X60
+ 
+ config ARCH_MSM8960
+ 	bool "MSM8960"
+-	select ARCH_MSM_SCORPIONMP
+ 	select ARM_GIC
+ 	select CPU_V7
++	select HAVE_SMP
+ 	select MSM_GPIOMUX
+ 	select MSM_SCM if SMP
+ 	select MSM_V2_TLMM
+@@ -68,9 +68,6 @@ config MSM_HAS_DEBUG_UART_HS
+ 
+ config MSM_SOC_REV_A
+ 	bool
+-config  ARCH_MSM_SCORPIONMP
+-	bool
+-	select HAVE_SMP
+ 
+ config  ARCH_MSM_ARM11
+ 	bool
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index 49ac3df..a003110 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -87,6 +87,8 @@ config ARCH_OMAP4
+ 	select ARM_GIC
+ 	select CACHE_L2X0
+ 	select CPU_V7
++	select HAVE_ARM_SCU if SMP
++	select HAVE_ARM_TWD if LOCAL_TIMERS
+ 	select HAVE_SMP
+ 	select LOCAL_TIMERS if SMP
+ 	select OMAP_INTERCONNECT
+diff --git a/arch/arm/mach-prima2/Kconfig b/arch/arm/mach-prima2/Kconfig
+index 4f7379f..48dfd89 100644
+--- a/arch/arm/mach-prima2/Kconfig
++++ b/arch/arm/mach-prima2/Kconfig
+@@ -16,6 +16,7 @@ config ARCH_MARCO
+ 	default y
+ 	select ARM_GIC
+ 	select CPU_V7
++	select HAVE_ARM_SCU if SMP
+ 	select HAVE_SMP
+ 	select SMP_ON_UP
+ 	help
+diff --git a/arch/arm/mach-realview/Kconfig b/arch/arm/mach-realview/Kconfig
+index 14c1d47..d210c0f9 100644
+--- a/arch/arm/mach-realview/Kconfig
++++ b/arch/arm/mach-realview/Kconfig
+@@ -12,6 +12,8 @@ config REALVIEW_EB_A9MP
+ 	bool "Support Multicore Cortex-A9 Tile"
+ 	depends on MACH_REALVIEW_EB
+ 	select CPU_V7
++	select HAVE_ARM_SCU if SMP
++	select HAVE_ARM_TWD if LOCAL_TIMERS
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+ 	help
+@@ -23,6 +25,8 @@ config REALVIEW_EB_ARM11MP
+ 	depends on MACH_REALVIEW_EB
+ 	select ARCH_HAS_BARRIERS if SMP
+ 	select CPU_V6K
++	select HAVE_ARM_SCU if SMP
++	select HAVE_ARM_TWD if LOCAL_TIMERS
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+ 	help
+@@ -43,6 +47,8 @@ config MACH_REALVIEW_PB11MP
+ 	select ARCH_HAS_BARRIERS if SMP
+ 	select ARM_GIC
+ 	select CPU_V6K
++	select HAVE_ARM_SCU if SMP
++	select HAVE_ARM_TWD if LOCAL_TIMERS
+ 	select HAVE_PATA_PLATFORM
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+@@ -85,6 +91,8 @@ config MACH_REALVIEW_PBX
+ 	bool "Support RealView(R) Platform Baseboard Explore"
+ 	select ARCH_SPARSEMEM_ENABLE if CPU_V7 && !REALVIEW_HIGH_PHYS_OFFSET
+ 	select ARM_GIC
++	select HAVE_ARM_SCU if SMP
++	select HAVE_ARM_TWD if LOCAL_TIMERS
+ 	select HAVE_PATA_PLATFORM
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+diff --git a/arch/arm/mach-vexpress/Kconfig b/arch/arm/mach-vexpress/Kconfig
+index 52d315b..5e3a2d3 100644
+--- a/arch/arm/mach-vexpress/Kconfig
++++ b/arch/arm/mach-vexpress/Kconfig
+@@ -9,6 +9,8 @@ config ARCH_VEXPRESS
+ 	select COMMON_CLK_VERSATILE
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
++	select HAVE_ARM_SCU if SMP
++	select HAVE_ARM_TWD if LOCAL_TIMERS
+ 	select HAVE_CLK
+ 	select HAVE_PATA_PLATFORM
+ 	select HAVE_SMP
+diff --git a/arch/arm/plat-spear/Kconfig b/arch/arm/plat-spear/Kconfig
+index 739d016..439eead 100644
+--- a/arch/arm/plat-spear/Kconfig
++++ b/arch/arm/plat-spear/Kconfig
+@@ -14,6 +14,8 @@ config ARCH_SPEAR13XX
+ 	select ARM_GIC
+ 	select CPU_V7
+ 	select GPIO_SPEAR_SPICS
++	select HAVE_ARM_SCU if SMP
++	select HAVE_ARM_TWD if LOCAL_TIMERS
+ 	select HAVE_SMP
+ 	select MIGHT_HAVE_CACHE_L2X0
+ 	select PINCTRL
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
