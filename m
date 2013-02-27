@@ -1,117 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab3B0ACL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:02:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42544 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933455Ab3BZX7P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:59:15 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>
-Subject: [ 39/53] fbcon: dont lose the console font across generic->chip driver switch
-Date: Tue, 26 Feb 2013 15:58:08 -0800
-Message-Id: <20130226235623.902759975@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
-References: <20130226235619.844721947@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1759911Ab3B0ACc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:02:32 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:45762 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758550Ab3B0AC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 19:02:29 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: [Update][PATCH v2, 3/7] ACPI / container: Use common hotplug code
+Date: Wed, 27 Feb 2013 01:09:14 +0100
+Message-ID: <2454110.rj1LbBxzqa@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <2961608.xElddy7TSk@vostro.rjw.lan>
+References: <3260206.bhaAobGhpZ@vostro.rjw.lan> <3171747.TOMjvVkWL1@vostro.rjw.lan> <2961608.xElddy7TSk@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: ACPI / container: Use common hotplug code
 
-------------------
+Switch the ACPI container driver to using common device hotplug code
+introduced previously.  This reduces the driver down to a trivial
+definition and registration of a struct acpi_scan_handler object.
 
-From: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-commit ae1287865f5361fa138d4d3b1b6277908b54eac9 upstream.
+I sent an old version of the patch before, sorry about that.
 
-If grub2 loads efifb/vesafb, then when systemd starts it can set the console
-font on that framebuffer device, however when we then load the native KMS
-driver, the first thing it does is tear down the generic framebuffer driver.
-
-The thing is the generic code is doing the right thing, it frees the font
-because otherwise it would leak memory. However we can assume that if you
-are removing the generic firmware driver (vesa/efi/offb), that a new driver
-*should* be loading soon after, so we effectively leak the font.
-
-However the old code left a dangling pointer in vc->vc_font.data and we
-can now reuse that dangling pointer to load the font into the new
-driver, now that we aren't freeing it.
-
-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=892340
-
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Thanks,
+Rafael
 
 ---
- drivers/video/console/fbcon.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/acpi/container.c |  146 +++--------------------------------------------
+ 1 file changed, 10 insertions(+), 136 deletions(-)
 
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -991,7 +991,7 @@ static const char *fbcon_startup(void)
- 	}
+Index: test/drivers/acpi/container.c
+===================================================================
+--- test.orig/drivers/acpi/container.c
++++ test/drivers/acpi/container.c
+@@ -1,12 +1,12 @@
+ /*
+- * acpi_container.c  - ACPI Generic Container Driver
+- * ($Revision: )
++ * container.c  - ACPI Generic Container Driver
+  *
+  * Copyright (C) 2004 Anil S Keshavamurthy (anil.s.keshavamurthy@intel.com)
+  * Copyright (C) 2004 Keiichiro Tokunaga (tokunaga.keiich@jp.fujitsu.com)
+  * Copyright (C) 2004 Motoyuki Ito (motoyuki@soft.fujitsu.com)
+- * Copyright (C) 2004 Intel Corp.
+  * Copyright (C) 2004 FUJITSU LIMITED
++ * Copyright (C) 2004, 2013 Intel Corp.
++ * Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+  *
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  *
+@@ -26,14 +26,9 @@
+  *
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  */
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/init.h>
+-#include <linux/slab.h>
+-#include <linux/types.h>
+ #include <linux/acpi.h>
+-#include <acpi/acpi_bus.h>
+-#include <acpi/acpi_drivers.h>
++
++#include "internal.h"
  
- 	/* Setup default font */
--	if (!p->fontdata) {
-+	if (!p->fontdata && !vc->vc_font.data) {
- 		if (!fontname[0] || !(font = find_font(fontname)))
- 			font = get_default_font(info->var.xres,
- 						info->var.yres,
-@@ -1001,6 +1001,8 @@ static const char *fbcon_startup(void)
- 		vc->vc_font.height = font->height;
- 		vc->vc_font.data = (void *)(p->fontdata = font->data);
- 		vc->vc_font.charcount = 256; /* FIXME  Need to support more fonts */
-+	} else {
-+		p->fontdata = vc->vc_font.data;
- 	}
+ #define PREFIX "ACPI: "
  
- 	cols = FBCON_SWAP(ops->rotate, info->var.xres, info->var.yres);
-@@ -1160,9 +1162,9 @@ static void fbcon_init(struct vc_data *v
- 	ops->p = &fb_display[fg_console];
+@@ -50,141 +45,20 @@ static const struct acpi_device_id conta
+ static int container_device_attach(struct acpi_device *device,
+ 				   const struct acpi_device_id *not_used)
+ {
+-	/*
+-	 * FIXME: This is necessary, so that acpi_eject_store() doesn't return
+-	 * -ENODEV for containers.
+-	 */
++	/* This is necessary for container hotplug to work. */
+ 	return 1;
  }
  
--static void fbcon_free_font(struct display *p)
-+static void fbcon_free_font(struct display *p, bool freefont)
+ static struct acpi_scan_handler container_device_handler = {
+ 	.ids = container_device_ids,
+ 	.attach = container_device_attach,
++	.hotplug = {
++		.enabled = true,
++		.mode = AHM_CONTAINER,
++	},
+ };
+ 
+-static int is_device_present(acpi_handle handle)
+-{
+-	acpi_handle temp;
+-	acpi_status status;
+-	unsigned long long sta;
+-
+-
+-	status = acpi_get_handle(handle, "_STA", &temp);
+-	if (ACPI_FAILURE(status))
+-		return 1;	/* _STA not found, assume device present */
+-
+-	status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
+-	if (ACPI_FAILURE(status))
+-		return 0;	/* Firmware error */
+-
+-	return ((sta & ACPI_STA_DEVICE_PRESENT) == ACPI_STA_DEVICE_PRESENT);
+-}
+-
+-static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+-{
+-	struct acpi_device *device = NULL;
+-	int result;
+-	int present;
+-	acpi_status status;
+-	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+-
+-	acpi_scan_lock_acquire();
+-
+-	switch (type) {
+-	case ACPI_NOTIFY_BUS_CHECK:
+-		/* Fall through */
+-	case ACPI_NOTIFY_DEVICE_CHECK:
+-		pr_debug("Container driver received %s event\n",
+-		       (type == ACPI_NOTIFY_BUS_CHECK) ?
+-		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
+-
+-		present = is_device_present(handle);
+-		status = acpi_bus_get_device(handle, &device);
+-		if (!present) {
+-			if (ACPI_SUCCESS(status)) {
+-				/* device exist and this is a remove request */
+-				device->flags.eject_pending = 1;
+-				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+-				goto out;
+-			}
+-			break;
+-		}
+-
+-		if (!ACPI_FAILURE(status) || device)
+-			break;
+-
+-		result = acpi_bus_scan(handle);
+-		if (result) {
+-			acpi_handle_warn(handle, "Failed to add container\n");
+-			break;
+-		}
+-		result = acpi_bus_get_device(handle, &device);
+-		if (result) {
+-			acpi_handle_warn(handle, "Missing device object\n");
+-			break;
+-		}
+-
+-		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
+-		ost_code = ACPI_OST_SC_SUCCESS;
+-		break;
+-
+-	case ACPI_NOTIFY_EJECT_REQUEST:
+-		if (!acpi_bus_get_device(handle, &device) && device) {
+-			device->flags.eject_pending = 1;
+-			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+-			goto out;
+-		}
+-		break;
+-
+-	default:
+-		/* non-hotplug event; possibly handled by other handler */
+-		goto out;
+-	}
+-
+-	/* Inform firmware that the hotplug operation has completed */
+-	(void) acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
+-
+- out:
+-	acpi_scan_lock_release();
+-}
+-
+-static bool is_container(acpi_handle handle)
+-{
+-	struct acpi_device_info *info;
+-	bool ret = false;
+-
+-	if (ACPI_FAILURE(acpi_get_object_info(handle, &info)))
+-		return false;
+-
+-	if (info->valid & ACPI_VALID_HID) {
+-		const struct acpi_device_id *id;
+-
+-		for (id = container_device_ids; id->id[0]; id++) {
+-			ret = !strcmp((char *)id->id, info->hardware_id.string);
+-			if (ret)
+-				break;
+-		}
+-	}
+-	kfree(info);
+-	return ret;
+-}
+-
+-static acpi_status acpi_container_register_notify_handler(acpi_handle handle,
+-							  u32 lvl, void *ctxt,
+-							  void **retv)
+-{
+-	if (is_container(handle))
+-		acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+-					    container_notify_cb, NULL);
+-
+-	return AE_OK;
+-}
+-
+ void __init acpi_container_init(void)
  {
--	if (p->userfont && p->fontdata && (--REFCOUNT(p->fontdata) == 0))
-+	if (freefont && p->userfont && p->fontdata && (--REFCOUNT(p->fontdata) == 0))
- 		kfree(p->fontdata - FONT_EXTRA_WORDS * sizeof(int));
- 	p->fontdata = NULL;
- 	p->userfont = 0;
-@@ -1174,8 +1176,8 @@ static void fbcon_deinit(struct vc_data
- 	struct fb_info *info;
- 	struct fbcon_ops *ops;
- 	int idx;
-+	bool free_font = true;
- 
--	fbcon_free_font(p);
- 	idx = con2fb_map[vc->vc_num];
- 
- 	if (idx == -1)
-@@ -1186,6 +1188,8 @@ static void fbcon_deinit(struct vc_data
- 	if (!info)
- 		goto finished;
- 
-+	if (info->flags & FBINFO_MISC_FIRMWARE)
-+		free_font = false;
- 	ops = info->fbcon_par;
- 
- 	if (!ops)
-@@ -1197,6 +1201,8 @@ static void fbcon_deinit(struct vc_data
- 	ops->flags &= ~FBCON_FLAGS_INIT;
- finished:
- 
-+	fbcon_free_font(p, free_font);
-+
- 	if (!con_is_bound(&fb_con))
- 		fbcon_exit();
- 
-
+-	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, ACPI_UINT32_MAX,
+-			    acpi_container_register_notify_handler, NULL,
+-			    NULL, NULL);
+-
+ 	acpi_scan_add_handler(&container_device_handler);
+ }
 
