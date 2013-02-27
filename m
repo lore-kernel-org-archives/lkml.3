@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab3B0T2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 14:28:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13771 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751398Ab3B0T2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 14:28:44 -0500
-Date: Wed, 27 Feb 2013 20:25:51 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Lai Jiangshan <eag0628@gmail.com>, linux-doc@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
-	Per-CPU Reader-Writer Locks
-Message-ID: <20130227192551.GA8333@redhat.com>
-References: <51226F91.7000108@linux.vnet.ibm.com> <CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com> <512BBAD8.8010006@linux.vnet.ibm.com> <CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com> <512C7A38.8060906@linux.vnet.ibm.com> <CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com> <512CC509.1050000@linux.vnet.ibm.com> <CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com> <512D0D67.9010609@linux.vnet.ibm.com> <CANN689FuuEb9wpV43DkTtgv6syvBYL-LQxByWznyAq8dkrhzBw@mail.gmail.com>
+	id S1760790Ab3B0T3V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 14:29:21 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:50364 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752847Ab3B0T3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 14:29:20 -0500
+Date: Wed, 27 Feb 2013 14:29:07 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Jones <davej@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ext4 updates for 3.9
+Message-ID: <20130227192907.GB14253@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Jones <davej@redhat.com>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+	Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20130227154450.GA23402@x4>
+ <20130227170157.GA222@x4>
+ <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
+ <20130227172256.GA236@x4>
+ <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
+ <20130227174553.GA224@x4>
+ <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
+ <20130227184912.GA19624@thunk.org>
+ <20130227185625.GA224@x4>
+ <20130227191923.GA1121@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANN689FuuEb9wpV43DkTtgv6syvBYL-LQxByWznyAq8dkrhzBw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130227191923.GA1121@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27, Michel Lespinasse wrote:
->
-> +void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
-> +{
-> +       preempt_disable();
-> +
-> +       if (__this_cpu_read(*lgrw->local_refcnt) ||
-> +           arch_spin_trylock(this_cpu_ptr(lgrw->lglock->lock))) {
-> +               __this_cpu_inc(*lgrw->local_refcnt);
+On Wed, Feb 27, 2013 at 02:19:23PM -0500, Dave Jones wrote:
+> 
+> Looks like it's fixed here too.
+> 
+> How did this make it through -next without anyone hitting it ?
+> 
+> I can't remember how many years ago I last bought a disk < 1TB,
+> and I can't be alone.  Or is everyone all about SSDs these days?
 
-Please look at __this_cpu_generic_to_op(). You need this_cpu_inc()
-to avoid the race with irs. The same for _read_unlock.
+I use LVM, so I have a number of volues which are smaler than 512GB,
+but very few which are actually larger than 1TB.  And none on my test
+boxes.  I was running the bleeding edge ext4 code on my laptop as for
+dogfooding purposes, but I have an 80GB mSATA SSD and a 500GB HDD on
+my X230 laptop (it requires a thin laptop drive, and 7mm drives don't
+come any bigger, alas).
 
-But otherwise I agree, looks like a clever and working idea to me.
-And simple!
+> Is anyone running xfstests or similar on linux-next regularly ?
 
-> There is an interesting case where lg_rwlock_local_read_lock could be
-> interrupted after getting the local lglock but before incrementing
-> local_refcnt to 1; if that happens any nested readers within that
-> interrupt will have to take the global rwlock read side. I think this
-> is perfectly acceptable
+I run xfstests on the ext4 tree, and I ran it on ext4 plus Linus's tip
+before I submitted a pull request.  The problem is that XFSTESTS is
+S-L-O-W if you use large partitions, so typically I use a 5GB
+partition sizes for my test runs.  Normally we're worried about race
+condition bugs, not something as bone-headed as a bitmasking problem,
+so it makes sense to use a smaller disk for most of your testing.
+(Some folks do their xfstests run on SSD's or tmpfs image files, again
+for speed reasons, and it's unlikely they would be big enough.)
 
-Agreed.
+So what we probably need to do is to have a separate set of tests
+using a loopback mount, and perhaps an artificially created file
+system which has a large percentage of the blocks in the middle of the
+file system busied out, to make efficient testing of these sorts of
+bugs more efficient.  As I said, I'm thinking about how's the best way
+to improve our testing regime to catch such problems the next time around.
 
-Or interrupt can do spin_trylock(percpu-lock) after we take the global
-->fallback_rwlock (if we race with write_lock + write_unlock), but I do
-not see any possible deadlock in this case.
+Cheers,
 
-Oleg.
-
+   	       	       	      	       	    - Ted
