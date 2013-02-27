@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760464Ab3B0ALu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:11:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42990 "EHLO
+	id S1760462Ab3B0AJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:09:29 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42953 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760479Ab3B0AJd (ORCPT
+	with ESMTP id S1760341Ab3B0AJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:33 -0500
+	Tue, 26 Feb 2013 19:09:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 82/86] USB: option: add Yota / Megafon M100-1 4g modem
-Date: Tue, 26 Feb 2013 16:08:30 -0800
-Message-Id: <20130226235921.439475876@linuxfoundation.org>
+        Tommi Rantala <tt.rantala@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 71/86] net: fix infinite loop in __skb_recv_datagram()
+Date: Tue, 26 Feb 2013 16:08:19 -0800
+Message-Id: <20130226235920.306125735@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,60 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
 
-commit cd565279e51bedee1b2988e84f9b3bef485adeb6 upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-Interface layout:
+[ Upstream commit 77c1090f94d1b0b5186fb13a1b71b47b1343f87f ]
 
- 00 CD-ROM
- 01 debug COM port
- 02 AP control port
- 03 modem
- 04 usb-ethernet
+Tommi was fuzzing with trinity and reported the following problem :
 
-Bus=01 Lev=02 Prnt=02 Port=01 Cnt=02 Dev#=  4 Spd=480  MxCh= 0
-D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-P:  Vendor=0408 ProdID=ea42 Rev= 0.00
-S:  Manufacturer=Qualcomm, Incorporated
-S:  Product=Qualcomm CDMA Technologies MSM
-S:  SerialNumber=353568051xxxxxx
-C:* #Ifs= 5 Cfg#= 1 Atr=e0 MxPwr=500mA
-I:* If#= 0 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
-E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 3 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=84(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
-E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 4 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=86(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
-E:  Ad=87(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+commit 3f518bf745 (datagram: Add offset argument to __skb_recv_datagram)
+missed that a raw socket receive queue can contain skbs with no payload.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+We can loop in __skb_recv_datagram() with MSG_PEEK mode, because
+wait_for_packet() is not prepared to skip these skbs.
+
+[   83.541011] INFO: rcu_sched detected stalls on CPUs/tasks: {}
+(detected by 0, t=26002 jiffies, g=27673, c=27672, q=75)
+[   83.541011] INFO: Stall ended before state dump start
+[  108.067010] BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child31:2847]
+...
+[  108.067010] Call Trace:
+[  108.067010]  [<ffffffff818cc103>] __skb_recv_datagram+0x1a3/0x3b0
+[  108.067010]  [<ffffffff818cc33d>] skb_recv_datagram+0x2d/0x30
+[  108.067010]  [<ffffffff819ed43d>] rawv6_recvmsg+0xad/0x240
+[  108.067010]  [<ffffffff818c4b04>] sock_common_recvmsg+0x34/0x50
+[  108.067010]  [<ffffffff818bc8ec>] sock_recvmsg+0xbc/0xf0
+[  108.067010]  [<ffffffff818bf31e>] sys_recvfrom+0xde/0x150
+[  108.067010]  [<ffffffff81ca4329>] system_call_fastpath+0x16/0x1b
+
+Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+Tested-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/core/datagram.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -576,6 +576,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLX) },
- 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GKE) },
- 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
-+	{ USB_DEVICE(QUANTA_VENDOR_ID, 0xea42),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
+--- a/net/core/datagram.c
++++ b/net/core/datagram.c
+@@ -187,7 +187,7 @@ struct sk_buff *__skb_recv_datagram(stru
+ 		skb_queue_walk(queue, skb) {
+ 			*peeked = skb->peeked;
+ 			if (flags & MSG_PEEK) {
+-				if (*off >= skb->len) {
++				if (*off >= skb->len && skb->len) {
+ 					*off -= skb->len;
+ 					continue;
+ 				}
 
 
