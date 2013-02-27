@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759100Ab3B0XrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 18:47:19 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:61641 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758444Ab3B0XrR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 18:47:17 -0500
+	id S1754577Ab3B0X7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 18:59:09 -0500
+Received: from ozlabs.org ([203.10.76.45]:51008 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750936Ab3B0X7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 18:59:07 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 02/16] virtio_ring: virtqueue_add_sgs, to add multiple sgs.
+In-Reply-To: <20130227074920.GA11775@redhat.com>
+References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au> <1361260594-601-3-git-send-email-rusty@rustcorp.com.au> <20130224221255.GA5300@redhat.com> <512C5E0E.5040305@redhat.com> <87obf6dxlm.fsf@rustcorp.com.au> <20130227074920.GA11775@redhat.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Wed, 27 Feb 2013 21:51:09 +1030
+Message-ID: <87fw0idmu2.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1302271509230.24485@chino.kir.corp.google.com>
-References: <1361945258-24420-1-git-send-email-john.stultz@linaro.org>
-	<1361945258-24420-2-git-send-email-john.stultz@linaro.org>
-	<alpine.DEB.2.02.1302271417000.7155@chino.kir.corp.google.com>
-	<CAMP5XgcjdZk5MZ9v+W5phgWgE4Q0Pc_2FfopapjctsV6sdguLQ@mail.gmail.com>
-	<alpine.DEB.2.02.1302271509230.24485@chino.kir.corp.google.com>
-Date: Wed, 27 Feb 2013 15:47:17 -0800
-Message-ID: <CAMP5XgemB4AdKEY4HFLwupo1CGv89hbmB+HUYYN8qdQRYCTdHg@mail.gmail.com>
-Subject: Re: [PATCH 1/5] staging: android: lowmemorykiller: Add config option
- to support oom_adj values
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: David Rientjes <rientjes@google.com>
-Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 3:12 PM, David Rientjes <rientjes@google.com> wrote:
-> On Wed, 27 Feb 2013, Arve Hjønnevåg wrote:
->
->> > Umm, writes to /proc/pid/oom_adj already are converted to the
->> > /proc/pid/oom_score_adj scale linearly.  Heavy NACK to this patch since
->> > oom_adj is completely deprecated.
->>
->> I know it is deprecated, but your change, staging: android,
->> lowmemorykiller: convert to use oom_score_adj, broke existing
->> user-space code that still write to /proc/pid/oom_adj. This option
->> lets you build a kernel that supports our user-space code until that
->> user-space has been converted to use /proc/pid/oom_score_adj.
->>
->
-> As stated, writes to /proc/pid/oom_adj already are converted to a linear
-> scale and stored in /proc/pid/oom_score_adj.  This is done with
->
->         oom_adj == 15   ->      oom_score_adj = 1000
->         oom_adj != 15   ->      oom_score_adj = (oom_adj * -1000) / -17
->
-> since the maximum oom_score_adj is 1000 and the minimum oom_adj is -17.
->
-> How does this not work as needed?
+"Michael S. Tsirkin" <mst@redhat.com> writes:
+> On Wed, Feb 27, 2013 at 05:58:37PM +1030, Rusty Russell wrote:
+>> Paolo Bonzini <pbonzini@redhat.com> writes:
+>> > Il 24/02/2013 23:12, Michael S. Tsirkin ha scritto:
+>> >> On Tue, Feb 19, 2013 at 06:26:20PM +1030, Rusty Russell wrote:
+>> >>> virtio_scsi can really use this, to avoid the current hack of copying
+>> >>> the whole sg array.  Some other things get slightly neater, too.
+>> >>>
+>> >>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+>> >> 
+>> >> Hmm, this makes add_buf a bit slower. virtio_test results
+>> >> (I'll send a patch to update the test shortly):
+>> >> 
+>> >> Before:
+>> >> 0.09user 0.01system 0:00.12elapsed 91%CPU (0avgtext+0avgdata 480maxresident)k
+>> >> 0inputs+0outputs (0major+145minor)pagefaults 0swaps
+>> >> 
+>> >> After:
+>> >> 0.11user 0.01system 0:00.13elapsed 90%CPU (0avgtext+0avgdata 480maxresident)k
+>> >> 0inputs+0outputs (0major+145minor)pagefaults 0swaps
+>> >
+>> > Not unexpected at all... :(
+>> >
+>> > Some of it can be recovered, but if it's 20% I doubt all of it.  So my
+>> > patches were not premature optimization; you really can take just two
+>> > among speed, flexibility, and having a nice API.
+>> 
+>> The error bars on this are far too large to say "20%".
+>> 
+>> Here are my numbers, using 50 runs of:
+>> time tools/virtio/vringh_test --indirect --eventidx --parallel and
+>> stats --trim-outliers:
+>> 
+>> Baseline (before add_sgs):
+>>         2.840000-3.040000(2.927292)user
+>> 
+>> After add_sgs:
+>>         2.970000-3.150000(3.053750)user
+>> 
+>> After simplifying add_buf a little:
+>>         2.950000-3.210000(3.081458)user
+>> 
+>> After inlining virtqueue_add/vring_add_indirect:
+>>         2.920000-3.150000(3.026875)user
+>> 
+>> After passing in iteration functions (chained vs unchained):
+>>         2.760000-2.970000(2.883542)user
 
-Because, without this patch, the values written to
-/sys/module/lowmemorykiller/parameters/adj do not get adjusted and
-therefore do not match the correct processes.
+Oops.  This result (and the next) is bogus.  I was playing with -O3, and
+accidentally left that in :(
 
--- 
-Arve Hjønnevåg
+The final result was 3.005208, ie. 3% slowdown.  Which almost makes it
+worth duplicating the whole set of code :(
+
+>> After removing the now-unnecessary chain-cleaning in add_buf:
+>>         2.660000-2.830000(2.753542)user
+>> 
+>> Any questions?
+>> Rusty.
+>
+> Sorry, so which patches are included in the last stage?
+> Something I didn't make clear: I tested 2/16 (the patch I replied to).
+
+I wanted to tidy them up, add commentry, and integrate your tool cleanup
+patches first.  That's when I noticed my screwup.
+
+I'll push them now, but I want to revisit to see if there's something
+cleverer I can do...
+
+Cheers,
+Rusty.
+
+
