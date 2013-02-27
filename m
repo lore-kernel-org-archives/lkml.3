@@ -1,83 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933892Ab3B0ArT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:47:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42219 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932977Ab3BZX6Z (ORCPT
+	id S933894Ab3B0Arg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:47:36 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:62184 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932259Ab3B0Are (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:25 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "Christopher S. Aker" <caker@theshore.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 124/150] xen-netback: cancel the credit timer when taking the vif down
-Date: Tue, 26 Feb 2013 15:56:21 -0800
-Message-Id: <20130226235537.004132123@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
-References: <20130226235523.930663721@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 26 Feb 2013 19:47:34 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
+        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
+        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH Resend v5 09/16] spi/spi-atmel: fix spi-atmel driver to adapt to slave_config changes
+Date: Wed, 27 Feb 2013 08:44:55 +0800
+Message-ID: <1361925895-12375-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+From: Richard Genoud <richard.genoud@gmail.com>
 
-------------------
+This is the following of the patch e2b35f3dbfc080f15b72834d08f04f0269dbe9be
 
-
-From: David Vrabel <david.vrabel@citrix.com>
-
-[ Upstream commit 3e55f8b306cf305832a4ac78aa82e1b40e818ece ]
-
-If the credit timer is left armed after calling
-xen_netbk_remove_xenvif(), then it may fire and attempt to schedule
-the vif which will then oops as vif->netbk == NULL.
-
-This may happen both in the fatal error path and during normal
-disconnection from the front end.
-
-The sequencing during shutdown is critical to ensure that: a)
-vif->netbk doesn't become unexpectedly NULL; and b) the net device/vif
-is not freed.
-
-1. Mark as unschedulable (netif_carrier_off()).
-2. Synchronously cancel the timer.
-3. Remove the vif from the schedule list.
-4. Remove it from it netback thread group.
-5. Wait for vif->refcnt to become 0.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Reported-by: Christopher S. Aker <caker@theshore.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+[wenyou.yang@atmel.com: BUG: dmaengine mode when enable both spi0 and spi1, spi0 doesn't work]
+[wenyou.yang@atmel.com: submit the patch]
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: spi-devel-general@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
 ---
- drivers/net/xen-netback/interface.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/spi/spi-atmel.c |   61 +++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 51 insertions(+), 10 deletions(-)
 
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -132,6 +132,7 @@ static void xenvif_up(struct xenvif *vif
- static void xenvif_down(struct xenvif *vif)
- {
- 	disable_irq(vif->irq);
-+	del_timer_sync(&vif->credit_timeout);
- 	xen_netbk_deschedule_xenvif(vif);
- 	xen_netbk_remove_xenvif(vif);
+diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+index d77dd53..d8af7d0 100644
+--- a/drivers/spi/spi-atmel.c
++++ b/drivers/spi/spi-atmel.c
+@@ -388,6 +388,37 @@ static inline int atmel_spi_xfer_can_be_chained(struct spi_transfer *xfer)
+ 	return xfer->delay_usecs == 0 && !xfer->cs_change;
  }
-@@ -363,8 +364,6 @@ void xenvif_disconnect(struct xenvif *vi
- 	atomic_dec(&vif->refcnt);
- 	wait_event(vif->waiting_to_free, atomic_read(&vif->refcnt) == 0);
  
--	del_timer_sync(&vif->credit_timeout);
++static int atmel_spi_dma_slave_config(struct atmel_spi *as,
++				struct dma_slave_config *slave_config)
++{
++	int err = 0;
++
++	slave_config->dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
++	slave_config->src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
++
++	slave_config->dst_addr = (dma_addr_t)as->phybase + SPI_TDR;
++	slave_config->src_addr = (dma_addr_t)as->phybase + SPI_RDR;
++	slave_config->src_maxburst = 1;
++	slave_config->dst_maxburst = 1;
++	slave_config->device_fc = false;
++
++	slave_config->direction = DMA_MEM_TO_DEV;
++	if (dmaengine_slave_config(as->dma.chan_tx, slave_config)) {
++		dev_err(&as->pdev->dev,
++			"failed to configure tx dma channel\n");
++		err = -EINVAL;
++	}
++
++	slave_config->direction = DMA_DEV_TO_MEM;
++	if (dmaengine_slave_config(as->dma.chan_rx, slave_config)) {
++		dev_err(&as->pdev->dev,
++			"failed to configure rx dma channel\n");
++		err = -EINVAL;
++	}
++
++	return err;
++}
++
+ static bool filter(struct dma_chan *chan, void *slave)
+ {
+ 	struct	at_dma_slave *sl = slave;
+@@ -403,14 +434,12 @@ static bool filter(struct dma_chan *chan, void *slave)
+ static int atmel_spi_configure_dma(struct atmel_spi *as)
+ {
+ 	struct at_dma_slave *sdata = &as->dma.dma_slave;
++	struct dma_slave_config	slave_config;
++	int err;
+ 
+ 	if (sdata && sdata->dma_dev) {
+ 		dma_cap_mask_t mask;
+ 
+-		/* setup DMA addresses */
+-		sdata->rx_reg = (dma_addr_t)as->phybase + SPI_RDR;
+-		sdata->tx_reg = (dma_addr_t)as->phybase + SPI_TDR;
 -
- 	if (vif->irq)
- 		unbind_from_irqhandler(vif->irq, vif);
+ 		/* Try to grab two DMA channels */
+ 		dma_cap_zero(mask);
+ 		dma_cap_set(DMA_SLAVE, mask);
+@@ -420,21 +449,27 @@ static int atmel_spi_configure_dma(struct atmel_spi *as)
+ 				dma_request_channel(mask, filter, sdata);
+ 	}
+ 	if (!as->dma.chan_rx || !as->dma.chan_tx) {
+-		if (as->dma.chan_rx)
+-			dma_release_channel(as->dma.chan_rx);
+-		if (as->dma.chan_tx)
+-			dma_release_channel(as->dma.chan_tx);
+ 		dev_err(&as->pdev->dev,
+ 			"DMA channel not available, unable to use SPI\n");
+-		return -EBUSY;
++		err = -EBUSY;
++		goto error;
+ 	}
  
-
++	err = atmel_spi_dma_slave_config(as, &slave_config);
++	if (err)
++		goto error;
++
+ 	dev_info(&as->pdev->dev,
+ 			"Using %s (tx) and %s (rx) for DMA transfers\n",
+ 			dma_chan_name(as->dma.chan_tx),
+ 			dma_chan_name(as->dma.chan_rx));
+-
+ 	return 0;
++error:
++	if (as->dma.chan_rx)
++		dma_release_channel(as->dma.chan_rx);
++	if (as->dma.chan_tx)
++		dma_release_channel(as->dma.chan_tx);
++	return err;
+ }
+ 
+ static void atmel_spi_stop_dma(struct atmel_spi *as)
+@@ -511,6 +546,7 @@ static int atmel_spi_next_xfer_dma_submit(struct spi_master *master,
+ 	struct dma_chan		*txchan = as->dma.chan_tx;
+ 	struct dma_async_tx_descriptor *rxdesc;
+ 	struct dma_async_tx_descriptor *txdesc;
++	struct dma_slave_config	slave_config;
+ 	dma_cookie_t		cookie;
+ 	u32	len = *plen;
+ 
+@@ -549,6 +585,10 @@ static int atmel_spi_next_xfer_dma_submit(struct spi_master *master,
+ 
+ 	*plen = len;
+ 
++	if (atmel_spi_dma_slave_config(as, &slave_config))
++		goto err_exit;
++
++
+ 	/* Send both scatterlists */
+ 	rxdesc = rxchan->device->device_prep_slave_sg(rxchan,
+ 					&as->dma.sgrx,
+@@ -597,6 +637,7 @@ static int atmel_spi_next_xfer_dma_submit(struct spi_master *master,
+ err_dma:
+ 	spi_writel(as, IDR, SPI_BIT(OVRES));
+ 	atmel_spi_stop_dma(as);
++err_exit:
+ 	atmel_spi_lock(as);
+ 	return -ENOMEM;
+ }
+-- 
+1.7.9.5
 
