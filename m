@@ -1,124 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab3B0RVH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 12:21:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36184 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760447Ab3B0RVE (ORCPT
+	id S1760440Ab3B0RXC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:23:02 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:43596 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755428Ab3B0RW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 12:21:04 -0500
-Date: Wed, 27 Feb 2013 17:20:59 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [ 79/86] USB: ehci-omap: Dont free gpios that we didnt request
-Message-ID: <20130227172059.GA5066@hercules>
-References: <20130226235912.881663118@linuxfoundation.org>
- <20130226235921.105248169@linuxfoundation.org>
- <512DBB46.1080609@ti.com>
+	Wed, 27 Feb 2013 12:22:59 -0500
+Date: Wed, 27 Feb 2013 18:22:56 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: "gnehzuil.liu" <gnehzuil.liu@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ext4 updates for 3.9
+Message-ID: <20130227172256.GA236@x4>
+References: <nsxr4k2kdwv.fsf@closure.thunk.org>
+ <20130227124727.GA225@x4>
+ <20130227153435.GB5609@thunk.org>
+ <20130227154450.GA23402@x4>
+ <20130227170157.GA222@x4>
+ <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <512DBB46.1080609@ti.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+On 2013.02.28 at 01:10 +0800, gnehzuil.liu wrote:
+> 在 2013-2-28，上午1:01，Markus Trippelsdorf <markus@trippelsdorf.de> 写道：
+> 
+> > On 2013.02.27 at 16:44 +0100, Markus Trippelsdorf wrote:
+> >> On 2013.02.27 at 10:34 -0500, Theodore Ts'o wrote:
+> >>> On Wed, Feb 27, 2013 at 01:47:27PM +0100, Markus Trippelsdorf wrote:
+> >>>> Just booted todays Linux tree and got the following errors:
+> >>>> 
+> >>>> ...
+> >>>> Feb 27 13:33:31 x4 kernel: EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)
+> >>>> ...
+> >>>> Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: inode #70647809: block 14164000: comm cupsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2569822761, rec_len=3837, name_len=1
+> >>>> Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: ignore#70911401: block 15213579: comm pdnsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2000846358, rec_len=36782, name_len=120
+> >>> 
+> >>> Is this reproducible? 
+> > 
+> > The issue is caused by:
+> > 
+> > commit d100eef2440fea13e4f09e88b1c8bcbca64beb9f
+> > Author: Zheng Liu <wenqing.lz@taobao.com>
+> > Date:   Mon Feb 18 00:29:59 2013 -0500
+> > 
+> >    ext4: lookup block mapping in extent status tree
+> 
+> Thanks for the report.  I am very sorry about that.  Now I am trying to fix it.
+> 
+Thank you.
 
-On Wed, Feb 27, 2013 at 09:52:38AM +0200, Roger Quadros wrote:
-> Hi Greg,
-> 
-> On 02/27/2013 02:08 AM, Greg Kroah-Hartman wrote:
-> > 3.4-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Roger Quadros <rogerq@ti.com>
-> > 
-> > commit 428525f97153505e83983460a8d08a3210aa6b8a upstream.
-> > 
-> > This driver does not request any gpios so don't free them.
-> > Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
-> > with ehci-omap in use.
-> 
-> Please drop this patch from 3.4-stable.
-> 
-> In 3.4, the driver requests the gpios in probe() so they must be freed
-> in remove() and this patch should not be applied. Thanks.
+Please note that if I run a kernel build with: 
+"git reset --hard f7fec032aa782d3fd7e51fbdf08aa3a296c01500" 
+(the commit before d100eef24) I get a different but similar error:
 
-I believe this is also true for the 3.5 kernels.  Can you confirm this?
+  EXT4-fs (sda): error count: 4
+  EXT4-fs (sda): initial error at 1361983458: ext4_find_dest_de:1657: inode 70911401: block 15213579 
+  EXT4-fs (sda): last error at 1361983663: ext4_find_dest_de:1658: inode 70647809: block 14164000
 
-Cheers,
---
-Luis
-
-> 
-> cheers, -roger
-> 
-> > 
-> > Without this patch, EHCI will break on repeated insmod/rmmod
-> > of ehci_hcd for all OMAP2+ platforms that use EHCI and
-> > set 'phy_reset = true' in usbhs_omap_board_data.
-> > i.e.
-> > 
-> > board-3430sdp.c:	.phy_reset  = true,
-> > board-3630sdp.c:	.phy_reset  = true,
-> > board-am3517crane.c:	.phy_reset  = true,
-> > board-am3517evm.c:	.phy_reset  = true,
-> > board-cm-t3517.c:	.phy_reset  = true,
-> > board-cm-t35.c:	.phy_reset  = true,
-> > board-devkit8000.c:	.phy_reset  = true,
-> > board-igep0020.c:	.phy_reset = true,
-> > board-igep0020.c:	.phy_reset = true,
-> > board-omap3beagle.c:	.phy_reset  = true,
-> > board-omap3evm.c:	.phy_reset  = true,
-> > board-omap3pandora.c:	.phy_reset  = true,
-> > board-omap3stalker.c:	.phy_reset = true,
-> > board-omap3touchbook.c:	.phy_reset  = true,
-> > board-omap4panda.c:	.phy_reset  = false,
-> > board-overo.c:	.phy_reset  = true,
-> > board-zoom.c:	.phy_reset		= true,
-> > 
-> > Signed-off-by: Roger Quadros <rogerq@ti.com>
-> > Reviewed-by: Felipe Balbi <balbi@ti.com>
-> > Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > ---
-> >  drivers/usb/host/ehci-omap.c |    8 --------
-> >  1 file changed, 8 deletions(-)
-> > 
-> > --- a/drivers/usb/host/ehci-omap.c
-> > +++ b/drivers/usb/host/ehci-omap.c
-> > @@ -288,7 +288,6 @@ static int ehci_hcd_omap_remove(struct p
-> >  {
-> >  	struct device *dev				= &pdev->dev;
-> >  	struct usb_hcd *hcd				= dev_get_drvdata(dev);
-> > -	struct ehci_hcd_omap_platform_data *pdata	= dev->platform_data;
-> >  
-> >  	usb_remove_hcd(hcd);
-> >  	disable_put_regulator(dev->platform_data);
-> > @@ -297,13 +296,6 @@ static int ehci_hcd_omap_remove(struct p
-> >  	pm_runtime_put_sync(dev);
-> >  	pm_runtime_disable(dev);
-> >  
-> > -	if (pdata->phy_reset) {
-> > -		if (gpio_is_valid(pdata->reset_gpio_port[0]))
-> > -			gpio_free(pdata->reset_gpio_port[0]);
-> > -
-> > -		if (gpio_is_valid(pdata->reset_gpio_port[1]))
-> > -			gpio_free(pdata->reset_gpio_port[1]);
-> > -	}
-> >  	return 0;
-> >  }
-> >  
-> > 
-> > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Markus
