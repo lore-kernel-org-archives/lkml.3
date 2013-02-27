@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab3B0KX2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 05:23:28 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:56800 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab3B0KX0 (ORCPT
+	id S1754613Ab3B0K2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 05:28:09 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:39631 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab3B0K2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 05:23:26 -0500
+	Wed, 27 Feb 2013 05:28:07 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-btrfs@vger.kernel.org
+Subject: Re: btrfs crash when low on memory.
+Date: Wed, 27 Feb 2013 11:28:05 +0100
+User-Agent: KMail/1.13.7 (Linux/3.8.0-tp520; KDE/4.9.5; x86_64; ; )
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130227052247.GA20213@redhat.com> (sfid-20130227_093819_089601_169F45B6)
+In-Reply-To: <20130227052247.GA20213@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130227101906.GB1924@cantiga.alporthouse.com>
-References: <20130226235912.881663118@linuxfoundation.org>
-	<20130226235918.530615135@linuxfoundation.org>
-	<CAMeQTsadxx_hEkJ0Jd5wHp2UNERh1+c5Z-VV-Zi4=xz=VJ3d+A@mail.gmail.com>
-	<20130227101906.GB1924@cantiga.alporthouse.com>
-Date: Wed, 27 Feb 2013 11:23:24 +0100
-Message-ID: <CAMeQTsbWO=7bWRsYR16i7orcudcA+_Fk9AKqPUxCZMfvDgzFOQ@mail.gmail.com>
-Subject: Re: [ 54/86] drm/i915: Set i9xx sdvo clock limits according to specifications
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302271128.05815.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 11:19 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Wed, Feb 27, 2013 at 11:11:38AM +0100, Patrik Jakobsson wrote:
->> On Wed, Feb 27, 2013 at 1:08 AM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > 3.4-stable review patch.  If anyone has any objections, please let me know.
->> >
->> > ------------------
->> >
->> > From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
->> >
->> > commit 4f7dfb6788dd022446847fbbfbe45e13bedb5be2 upstream.
->
->> Is this really stable material? It fixes no known issues and the bug
->> report seems to be a different problem.
->
-> https://bugs.freedesktop.org/show_bug.cgi?id=59066 is a genuine bug
-> fixed.
-> -Chris
+Am Mittwoch, 27. Februar 2013 schrieb Dave Jones:
+> Something I've yet to repeat managed to leak a whole bunch of memory
+> while I was travelling, and locked up my workstation.
+> 
+> When I got home, this was the last thing printed out before it locked up
+> (it did make it into the logs thankfully) after a bunch of instances of
+> the oom-killers handywork.
+> 
+> 
+> 
+> SLUB: Unable to allocate memory on node -1 (gfp=0x50)
+>   cache: btrfs_extent_state, object size: 176, buffer size: 504, default
+> order: 1, min order: 0 node 0: slabs: 49, objs: 640, free: 0
+> ------------[ cut here ]------------
+> kernel BUG at fs/btrfs/extent_io.c:748!
 
-Great, then I have no problems with this going in.
--Patrik
+Thank you for reporting this Dave.
+
+I have lockups due to memory pressure conditions on my ThinkPad T520 as well 
+when playing Planeshift for some time. (AFAIR since I switched my home 
+directory to BTRFS (/ was BTRFS before), but I am not sure about this.) 
+Planeshift goes from 2 GB to about 4 GB RSS and then the machine usually 
+starts to swap to SSD. 
+
+I did not get around to report this yet. The machine is basically locked (at 
+least for long periods of times like minutes). I intend to collect some 
+photos and upload them somewhere, cause I do not see anything in logs after 
+reboot.
+
+I think this happens *before* real OOM conditions are met (i.e. all of swap 
+is being used up as well).
+
+In backtraces btrfs related stuff appears.
+
+Expected results of cause: System continues swapping and if OOM conditions 
+are met calls the OOM killer (which might try to get rid of running 
+Planeshift client).
+
+Current workaround: Develop a good feeling on when to better restart the PS 
+client. :)
+
+So for now just a heads up that I have seen similar issues. (But I think my 
+backtraces might have been different, difficult to say since some of it 
+scrolls by quite quickly.)
+
+Ciao,
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
