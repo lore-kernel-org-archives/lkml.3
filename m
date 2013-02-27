@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760454Ab3B0AOC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:14:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42942 "EHLO
+	id S1760471Ab3B0AOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:14:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42934 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760439Ab3B0AJY (ORCPT
+	with ESMTP id S1760434Ab3B0AJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Feb 2013 19:09:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
-Subject: [ 68/86] mmc: sdhci-esdhc-imx: fix host version read
-Date: Tue, 26 Feb 2013 16:08:16 -0800
-Message-Id: <20130226235919.958224389@linuxfoundation.org>
+        Wei Liu <wei.liu2@citrix.com>, Jan Beulich <JBeulich@suse.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Christopher S. Aker" <caker@theshore.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 72/86] xen-netback: correctly return errors from netbk_count_requests()
+Date: Tue, 26 Feb 2013 16:08:20 -0800
+Message-Id: <20130226235920.424068113@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -26,56 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Guo <shawn.guo@linaro.org>
 
-commit ef4d0888bb7e1b963880f086575081c3d39cad2d upstream.
+From: David Vrabel <david.vrabel@citrix.com>
 
-When commit 95a2482 (mmc: sdhci-esdhc-imx: add basic imx6q usdhc
-support) works around host version issue on imx6q, it gets the
-register address fixup "reg ^= 2" lost for imx25/35/51/53 esdhc.
-Thus, the controller version on these SoCs is wrongly identified
-as v1 while it's actually v2.
+[ Upstream commit 35876b5ffc154c357476b2c3bdab10feaf4bd8f0 ]
 
-Add the address fixup back and take a different approach to correct
-imx6q host version, so that the host version read gets back to work
-for all SoCs.
+netbk_count_requests() could detect an error, call
+netbk_fatal_tx_error() but return 0.  The vif may then be used
+afterwards (e.g., in a call to netbk_tx_error().
 
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Since netbk_fatal_tx_error() could set vif->refcnt to 1, the vif may
+be freed immediately after the call to netbk_fatal_tx_error() (e.g.,
+if the vif is also removed).
+
+Netback thread              Xenwatch thread
+-------------------------------------------
+netbk_fatal_tx_err()        netback_remove()
+                              xenvif_disconnect()
+                                ...
+                                free_netdev()
+netbk_tx_err() Oops!
+
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Signed-off-by: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reported-by: Christopher S. Aker <caker@theshore.net>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/mmc/host/sdhci-esdhc-imx.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ drivers/net/xen-netback/netback.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/mmc/host/sdhci-esdhc-imx.c
-+++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-@@ -232,15 +232,18 @@ static void esdhc_writel_le(struct sdhci
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -883,13 +883,13 @@ static int netbk_count_requests(struct x
+ 		if (frags >= work_to_do) {
+ 			netdev_err(vif->dev, "Need more frags\n");
+ 			netbk_fatal_tx_err(vif);
+-			return -frags;
++			return -ENODATA;
+ 		}
  
- static u16 esdhc_readw_le(struct sdhci_host *host, int reg)
- {
-+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-+	struct pltfm_imx_data *imx_data = pltfm_host->priv;
-+
- 	if (unlikely(reg == SDHCI_HOST_VERSION)) {
--		u16 val = readw(host->ioaddr + (reg ^ 2));
--		/*
--		 * uSDHC supports SDHCI v3.0, but it's encoded as value
--		 * 0x3 in host controller version register, which violates
--		 * SDHCI_SPEC_300 definition.  Work it around here.
--		 */
--		if ((val & SDHCI_SPEC_VER_MASK) == 3)
--			return --val;
-+		reg ^= 2;
-+		if (is_imx6q_usdhc(imx_data)) {
-+			/*
-+			 * The usdhc register returns a wrong host version.
-+			 * Correct it here.
-+			 */
-+			return SDHCI_SPEC_300;
-+		}
- 	}
+ 		if (unlikely(frags >= MAX_SKB_FRAGS)) {
+ 			netdev_err(vif->dev, "Too many frags\n");
+ 			netbk_fatal_tx_err(vif);
+-			return -frags;
++			return -E2BIG;
+ 		}
  
- 	return readw(host->ioaddr + reg);
+ 		memcpy(txp, RING_GET_REQUEST(&vif->tx, cons + frags),
+@@ -897,7 +897,7 @@ static int netbk_count_requests(struct x
+ 		if (txp->size > first->size) {
+ 			netdev_err(vif->dev, "Frag is bigger than frame.\n");
+ 			netbk_fatal_tx_err(vif);
+-			return -frags;
++			return -EIO;
+ 		}
+ 
+ 		first->size -= txp->size;
+@@ -907,7 +907,7 @@ static int netbk_count_requests(struct x
+ 			netdev_err(vif->dev, "txp->offset: %x, size: %u\n",
+ 				 txp->offset, txp->size);
+ 			netbk_fatal_tx_err(vif);
+-			return -frags;
++			return -EINVAL;
+ 		}
+ 	} while ((txp++)->flags & XEN_NETTXF_more_data);
+ 	return frags;
 
 
