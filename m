@@ -1,235 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760367Ab3B0SqO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 13:46:14 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:37266 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753508Ab3B0SqM (ORCPT
+	id S1760735Ab3B0Sro (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 13:47:44 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:64945 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760035Ab3B0Srm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 13:46:12 -0500
-Message-ID: <512E546E.7060500@gmail.com>
-Date: Wed, 27 Feb 2013 11:46:06 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
+	Wed, 27 Feb 2013 13:47:42 -0500
 MIME-Version: 1.0
-To: chenggang <chenggang.qin@gmail.com>
-CC: linux-kernel@vger.kernel.org, chenggang <chenggang.qcg@taobao.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 1/4] Transform xyarray to linked list
-References: <1361870452-6143-1-git-send-email-chenggang.qin@gmail.com> <1361870452-6143-2-git-send-email-chenggang.qin@gmail.com>
-In-Reply-To: <1361870452-6143-2-git-send-email-chenggang.qin@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130227101354.15636ba5@nehalam.linuxnetplumber.net>
+References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com>
+	<20130227101354.15636ba5@nehalam.linuxnetplumber.net>
+Date: Wed, 27 Feb 2013 10:47:41 -0800
+Message-ID: <CA+mtBx85G3qD2_QP709kOMERP9T8v1W+ZNj12qnZWg_kALQtLg@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/5] net: low latency Ethernet device polling
+From: Tom Herbert <therbert@google.com>
+To: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Dave Miller <davem@davemloft.net>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/26/13 2:20 AM, chenggang wrote:
-> From: chenggang <chenggang.qcg@taobao.com>
+On Wed, Feb 27, 2013 at 10:13 AM, Stephen Hemminger
+<stephen@networkplumber.org> wrote:
 >
-> The 2-dimensional array cannot expand and shrink easily while we want to
-> response the thread's fork and exit events on-the-fly.
+> Have you looked at netmap? Seems like a cleaner user API for this.
+>
+That might be a bit orthogonal to this.  I believe the intent it to
+allow spin polling from socket calls without API change.
 
-perhaps a better explanation of why -- file descriptors for perf events 
-are kept in an xyarray where the x dimension is cpus and the y dimension 
-is threads of interest. You want to be able to grow and shrink the y 
-dimension as monitored processes spawn and terminate threads.
-
-> We transform xyarray to a 2-demesional linked list. The row is still a array,
-> but column is implemented as a list. The number of nodes in every row are same.
-> The interface to append and shrink a exist xyarray is provided.
-> 1) xyarray__append()
->     append a column for all rows.
-> 2) xyarray__remove()
->     remove a column for all rows.
 >
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Arjan van de Ven <arjan@linux.intel.com>
-> Cc: Namhyung Kim <namhyung@gmail.com>
-> Cc: Yanmin Zhang <yanmin.zhang@intel.com>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
->
-> ---
->   tools/perf/util/xyarray.c |   85 +++++++++++++++++++++++++++++++++++++++++----
->   tools/perf/util/xyarray.h |   25 +++++++++++--
->   2 files changed, 101 insertions(+), 9 deletions(-)
->
-> diff --git a/tools/perf/util/xyarray.c b/tools/perf/util/xyarray.c
-> index 22afbf6..fc48bda 100644
-> --- a/tools/perf/util/xyarray.c
-> +++ b/tools/perf/util/xyarray.c
-> @@ -1,20 +1,93 @@
->   #include "xyarray.h"
->   #include "util.h"
->
-> -struct xyarray *xyarray__new(int xlen, int ylen, size_t entry_size)
-> +/*
-> + * Add a column for all rows;
-> + */
-> +int xyarray__append(struct xyarray *xy)
->   {
-> -	size_t row_size = ylen * entry_size;
-> -	struct xyarray *xy = zalloc(sizeof(*xy) + xlen * row_size);
-> +	struct xyentry *new_entry;
-> +	unsigned int x;
-> +
-> +	for (x = 0; x < xy->row_count; x++) {
-> +		new_entry = zalloc(sizeof(*new_entry));
-> +		if (new_entry == NULL)
-> +			return -1;
-> +
-> +		new_entry->contents = zalloc(xy->entry_size);
-> +		if (new_entry->contents == NULL)
-
-free new_entry on this error path
-
-> +			return -1;
->
-> -	if (xy != NULL) {
-> -		xy->entry_size = entry_size;
-> -		xy->row_size   = row_size;
-> +		list_add_tail(&new_entry->next, &xy->rows[x].head);
->   	}
->
-> +	return 0;
-> +}
-> +
-> +struct xyarray *xyarray__new(int xlen, int ylen, size_t entry_size)
-> +{
-> +	struct xyarray *xy = zalloc(sizeof(*xy) + xlen * sizeof(struct row));
-> +	int i;
-> +
-> +	if (xy == NULL)
-> +		return NULL;
-> +
-> +	xy->row_count = xlen;
-> +	xy->entry_size = entry_size;
-> +
-> +	for (i = 0; i < xlen; i++)
-> +		INIT_LIST_HEAD(&xy->rows[i].head);
-> +
-> +	for (i = 0; i < ylen; i++)
-> +		if (xyarray__append(xy) < 0) {
-> +			xyarray__delete(xy);
-> +			return NULL;
-> +		}
-> +
->   	return xy;
->   }
->
-> +/*
-> + * remove a column for all rows;
-> + */
-> +int xyarray__remove(struct xyarray *xy, int y)
-> +{
-> +	struct xyentry *entry;
-> +	unsigned int x;
-> +	int count;
-> +
-> +	if (!xy)
-> +		return 0;
-> +
-> +	for (x = 0; x < xy->row_count; x++) {
-> +		count = 0;
-> +		list_for_each_entry(entry, &xy->rows[x].head, next)
-> +			if (count++ == y) {
-> +				list_del(&entry->next);
-> +				free(entry);
-> +				return 0;
-> +			}
-
-braces are needed around the list_for_each block.
-
-> +	}
-> +
-> +	return -1;
-> +}
-> +
-> +/*
-> + * All nodes in every rows should be deleted before delete @xy.
-> + */
->   void xyarray__delete(struct xyarray *xy)
->   {
-> +	unsigned int i;
-> +	struct xyentry *entry;
-> +
-> +	if (!xy)
-> +		return;
-> +
-> +	for (i = 0; i < xy->row_count; i++)
-> +		list_for_each_entry(entry, &xy->rows[i].head, next) {
-> +			list_del(&entry->next);
-> +			free(entry);
-> +		}
-> +
->   	free(xy);
->   }
-> diff --git a/tools/perf/util/xyarray.h b/tools/perf/util/xyarray.h
-> index c488a07..07fa370 100644
-> --- a/tools/perf/util/xyarray.h
-> +++ b/tools/perf/util/xyarray.h
-> @@ -2,19 +2,38 @@
->   #define _PERF_XYARRAY_H_ 1
->
->   #include <sys/types.h>
-> +#include <linux/list.h>
-> +
-> +struct row {
-> +	struct list_head head;
-> +};
-> +
-> +struct xyentry {
-> +	struct list_head next;
-> +	char *contents;
-> +};
->
->   struct xyarray {
-> -	size_t row_size;
-> +	size_t row_count;
->   	size_t entry_size;
-> -	char contents[];
-> +	struct row rows[];
->   };
->
->   struct xyarray *xyarray__new(int xlen, int ylen, size_t entry_size);
->   void xyarray__delete(struct xyarray *xy);
-> +int xyarray__append(struct xyarray *xy);
-> +int xyarray__remove(struct xyarray *xy, int y);
->
->   static inline void *xyarray__entry(struct xyarray *xy, int x, int y)
->   {
-> -	return &xy->contents[x * xy->row_size + y * xy->entry_size];
-> +	struct xyentry *entry;
-> +	int columns = 0;
-> +
-> +	list_for_each_entry(entry, &xy->rows[x].head, next)
-> +		if (columns++ == y)
-> +			return entry->contents;
-
-braces needed around multi-statement block
-
-I'll review next patches as I get time.
-
-David
-
-> +
-> +	return NULL;
->   }
->
->   #endif /* _PERF_XYARRAY_H_ */
->
-
+> There is a version for Linux, but it needs work. My plan is to send it staging
+> (after merge window reopens).
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
