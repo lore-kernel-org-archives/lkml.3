@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933528Ab3B0AIn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:08:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42648 "EHLO
+	id S933655Ab3B0A3R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:29:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42661 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933431Ab3B0AIl (ORCPT
+	with ESMTP id S933400Ab3B0AIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:08:41 -0500
+	Tue, 26 Feb 2013 19:08:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>, Dave Jones <davej@redhat.com>,
-        John Stultz <john.stultz@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 07/86] posix-cpu-timers: Fix nanosleep task_struct leak
-Date: Tue, 26 Feb 2013 16:07:15 -0800
-Message-Id: <20130226235913.666786166@linuxfoundation.org>
+        Joonsoo Kim <js1304@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 20/86] Driver core: treat unregistered bus_types as having no devices
+Date: Tue, 26 Feb 2013 16:07:28 -0800
+Message-Id: <20130226235915.029753527@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -28,69 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit e6c42c295e071dd74a66b5a9fcf4f44049888ed8 upstream.
+commit 4fa3e78be7e985ca814ce2aa0c09cbee404efcf7 upstream.
 
-The trinity fuzzer triggered a task_struct reference leak via
-clock_nanosleep with CPU_TIMERs. do_cpu_nanosleep() calls
-posic_cpu_timer_create(), but misses a corresponding
-posix_cpu_timer_del() which leads to the task_struct reference leak.
+A bus_type has a list of devices (klist_devices), but the list and the
+subsys_private structure that contains it are not initialized until the
+bus_type is registered with bus_register().
 
-Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Link: http://lkml.kernel.org/r/20130215100810.GF4392@redhat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+The panic/reboot path has fixups that look up devices in pci_bus_type.  If
+we panic before registering pci_bus_type, the bus_type exists but the list
+does not, so mach_reboot_fixups() trips over a null pointer and panics
+again:
+
+    mach_reboot_fixups
+      pci_get_device
+        ..
+          bus_find_device(&pci_bus_type, ...)
+            bus->p is NULL
+
+Joonsoo reported a problem when panicking before PCI was initialized.
+I think this patch should be sufficient to replace the patch he posted
+here: https://lkml.org/lkml/2012/12/28/75 ("[PATCH] x86, reboot: skip
+reboot_fixups in early boot phase")
+
+Reported-by: Joonsoo Kim <js1304@gmail.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/posix-cpu-timers.c |   23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ drivers/base/bus.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -1422,8 +1422,10 @@ static int do_cpu_nanosleep(const clocki
- 		while (!signal_pending(current)) {
- 			if (timer.it.cpu.expires.sched == 0) {
- 				/*
--				 * Our timer fired and was reset.
-+				 * Our timer fired and was reset, below
-+				 * deletion can not fail.
- 				 */
-+				posix_cpu_timer_del(&timer);
- 				spin_unlock_irq(&timer.it_lock);
- 				return 0;
- 			}
-@@ -1441,9 +1443,26 @@ static int do_cpu_nanosleep(const clocki
- 		 * We were interrupted by a signal.
- 		 */
- 		sample_to_timespec(which_clock, timer.it.cpu.expires, rqtp);
--		posix_cpu_timer_set(&timer, 0, &zero_it, it);
-+		error = posix_cpu_timer_set(&timer, 0, &zero_it, it);
-+		if (!error) {
-+			/*
-+			 * Timer is now unarmed, deletion can not fail.
-+			 */
-+			posix_cpu_timer_del(&timer);
-+		}
- 		spin_unlock_irq(&timer.it_lock);
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -294,7 +294,7 @@ int bus_for_each_dev(struct bus_type *bu
+ 	struct device *dev;
+ 	int error = 0;
  
-+		while (error == TIMER_RETRY) {
-+			/*
-+			 * We need to handle case when timer was or is in the
-+			 * middle of firing. In other cases we already freed
-+			 * resources.
-+			 */
-+			spin_lock_irq(&timer.it_lock);
-+			error = posix_cpu_timer_del(&timer);
-+			spin_unlock_irq(&timer.it_lock);
-+		}
-+
- 		if ((it->it_value.tv_sec | it->it_value.tv_nsec) == 0) {
- 			/*
- 			 * It actually did fire already.
+-	if (!bus)
++	if (!bus || !bus->p)
+ 		return -EINVAL;
+ 
+ 	klist_iter_init_node(&bus->p->klist_devices, &i,
+@@ -328,7 +328,7 @@ struct device *bus_find_device(struct bu
+ 	struct klist_iter i;
+ 	struct device *dev;
+ 
+-	if (!bus)
++	if (!bus || !bus->p)
+ 		return NULL;
+ 
+ 	klist_iter_init_node(&bus->p->klist_devices, &i,
 
 
