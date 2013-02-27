@@ -1,178 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab3B0Tpq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 14:45:46 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:47137 "EHLO e8.ny.us.ibm.com"
+	id S1752308Ab3B0TvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 14:51:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37142 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752847Ab3B0Tpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 14:45:43 -0500
-Message-ID: <1361994306.2908.307.camel@falcor1.watson.ibm.com>
-Subject: Re: [PATCH] ima: prevent dead lock when a file is opened for direct
- io
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 27 Feb 2013 14:45:06 -0500
-In-Reply-To: <20130227190046.GP4503@ZenIV.linux.org.uk>
-References: <1361395671.29360.26.camel@falcor1>
-	 <20130226162024.GI4503@ZenIV.linux.org.uk>
-	 <1361907128.2908.180.camel@falcor1.watson.ibm.com>
-	 <20130226203408.GJ4503@ZenIV.linux.org.uk>
-	 <1361920934.2908.228.camel@falcor1.watson.ibm.com>
-	 <CALLzPKbStdUdATJYPfMDxnPB9hgz=-iv1aYpSCTKgL9UUmSmmQ@mail.gmail.com>
-	 <20130227190046.GP4503@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022719-9360-0000-0000-000011195547
+	id S1750896Ab3B0TvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 14:51:04 -0500
+Date: Wed, 27 Feb 2013 16:43:36 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Gleb Natapov <gleb@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [Bisected][-next-20130204+] [x86/kvm] udevd:[97]: segfault at
+ ffffffffff5fd020 ip 00007fff069e277f sp 00007fff068c9ef8 error d
+Message-ID: <20130227194336.GA17324@amt.cnet>
+References: <1360715210.31472.20.camel@thor.lan>
+ <511AE0A7.2000101@linux.intel.com>
+ <20130213105129.GB9817@redhat.com>
+ <1360756629.4803.5.camel@thor.lan>
+ <20130218225955.GA6166@amt.cnet>
+ <1361236341.3263.11.camel@thor.lan>
+ <20130219082656.GE3600@redhat.com>
+ <1361741024.21499.37.camel@thor.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1361741024.21499.37.camel@thor.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-27 at 19:00 +0000, Al Viro wrote:
-> On Wed, Feb 27, 2013 at 11:21:15AM +0200, Kasatkin, Dmitry wrote:
-> > On Wed, Feb 27, 2013 at 1:22 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > > On Tue, 2013-02-26 at 20:34 +0000, Al Viro wrote:
-> > >> On Tue, Feb 26, 2013 at 02:32:08PM -0500, Mimi Zohar wrote:
-> > >> > Before anything gets access to the file, the file needs to be measured,
-> > >> > appraised, and/or audited, based on policy.  If IMA-appraisal is enabled
-> > >> > and the file is in policy, we enforce local file integrity and return
-> > >> > -EINVAL on failure, similar to LSMs.
-> > >> >
-> > >> > Appraising the file is a two step process.  Before appraising the file
-> > >> > data's integrity, we verify the integrity of the file metadata. Included
-> > >> > in the 'security.evm' calculation is the ino, generation, uid, gid,
-> > >> > mode, uuid, and the security xattrs.  'security.ima' contains the file
-> > >> > data hash or a signature based on the hash.
-> > >> >
-> > >> > The i_mutex is held when making file metadata changes (eg. xattrs,
-> > >> > chmod, ...).  We hold the i_mutex through the entire verification,
-> > >> > preventing the file data/metadata from changing.
-> > >>
-> > >> ->i_mutex is *not* guaranteed to prevent file data changes.  It does
-> > >> cover metadata, but that's it.  ->write() is not required to take it.
-> > >> Note, BTW, that as soon as you've dropped ->i_mutex, the metadata can
-> > >> be changed by somebody else.
-> > >
-> > > Any time file metadata included in the HMAC is updated, 'security.evm'
-> > > is updated to reflect the change.  But before 'security.evm' is updated,
-> > > evm_verify_current_integrity() verifies the existing value.
-> > >
-> > >> What do you achieve by holding it over the vfs_read() call?
-> > >
-> > > - Before calculating the file hash, verifying it against the digest in
-> > > 'security.ima' and storing the verification status in the iint, we check
-> > > the iint to see whether it was previously verified.  By taking the
-> > > i_mutex and keeping it, we prevent the file from being hashed multiple
-> > > times.
-> > >
-> > > - Prior to IMA-appraisal, on file close only the iint was updated,
-> > > reflecting the fact that the file would need to be re-measured and added
-> > > to the measurement list the next time it was opened.  With
-> > > IMA-appraisal, on file close, not only do we need to reflect this change
-> > > in the iint, but we also need to update the 'security.ima' xattr to
-> > > reflect the new hash value.  Having the iint specific lock caused a
-> > > lockdep.  In one case, we took the i_mutex followed by the iint lock,
-> > > while in the other case, the iint lock was taken before the i_mutex.
-> > >
-> > >> > I guess I wasn't clear here.  IMA always takes the i_mutex, regardless
-> > >> > of the O_DIRECT flag.  When a file is opened for read,
-> > >> > process_measurement() takes the i_mutex and then, if the file was opened
-> > >> > with the O_DIRECT flag, do_blockdev_direct_IO() attempts to take the
-> > >> > i_mutex again, causing the lockdep.
-> > >>
-> > >> *sigh*
-> > >> Do you actually disagree with my description of the locking rules you
-> > >> implicitly rely upon?
-> > >
-> > > Obsolutely not!  I misunderstood what you were saying.  The word
-> > > 'unless' was confusing.
-> > >
-> > >>  Suppose wankfs_file_read() happens to grab
-> > >> ->i_mutex for some reason; without IMA it used to be perfectly legitimate.
-> > >> With IMA it will deadlock as soon as IMA decides that such file is worth
-> > >> its attention.  So these days the rule has (silently) become
-> > >>       * ->read() on a regular file is not allowed to touch ->i_mutex
-> > >> and with your proposed change it becomes (still undocumented)
-> > >>       * ->read() on a regular file is not allowed to touch ->i_mutex unless
-> > >> O_DIRECT is present in file flags at the moment of ->read()
-> > >> Correct?
-> > >
-> > > yes, unfortunately.  What would you suggest?
-> > >
-> > 
-> > The main purpose of taking i_mutex is to ensure that measured content
-> > of the file (vfs_read) is in sync with extended attribute values.
-> > 
-> > If in overall taking a i_mutex before calling vsf_read is
-> > fundamentally wrong, then one of the solutions is to introduce back
-> > the usage of IMA specific mutex.
-> > iint->mutex was removed because it caused dead locking due different
-> > locking order in different cases.
+On Sun, Feb 24, 2013 at 04:23:44PM -0500, Peter Hurley wrote:
+> On Tue, 2013-02-19 at 10:26 +0200, Gleb Natapov wrote:
+> > On Mon, Feb 18, 2013 at 08:12:21PM -0500, Peter Hurley wrote:
+> > > On Mon, 2013-02-18 at 19:59 -0300, Marcelo Tosatti wrote:
+> > > > On Wed, Feb 13, 2013 at 06:57:09AM -0500, Peter Hurley wrote:
+> > > > > On Wed, 2013-02-13 at 12:51 +0200, Gleb Natapov wrote:
+> > > > > > On Tue, Feb 12, 2013 at 04:39:03PM -0800, H. Peter Anvin wrote:
+> > > > > > > On 02/12/2013 04:26 PM, Peter Hurley wrote:
+> > > > > > > > With -next-20130204+ in ubuntu 12.10 VM (so the 80x25 VGA
+> > > > > > > > device/console):
+> > > > > > > > 
+> > > > > > > > [    0.666410] udevd[97]: starting version 175
+> > > > > > > > [    0.674043] udevd[97]: udevd:[97]: segfault at ffffffffff5fd020 ip 00007fff069e277f sp 00007fff068c9ef8 error d
+> > > > > > > > 
+> > > > > > > > and boots to an initramfs prompt.
+> > > > > > > > 
+> > > > > > > > git bisect (log attached) blames:
+> > > > > > > > 
+> > > > > > > > commit 7b5c4a65cc27f017c170b025f8d6d75dabb11c6f
+> > > > > > > > Merge: 3596f5b 949db15
+> > > > > > > > Author: H. Peter Anvin <hpa@linux.intel.com>
+> > > > > > > > Date:   Fri Jan 25 16:31:21 2013 -0800
+> > > > > > > > 
+> > > > > > > >     Merge tag 'v3.8-rc5' into x86/mm
+> > > > > > > >     
+> > > > > > > >     The __pa() fixup series that follows touches KVM code that is not
+> > > > > > > >     present in the existing branch based on v3.7-rc5, so merge in the
+> > > > > > > >     current upstream from Linus.
+> > > > > > > >     
+> > > > > > > >     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > > > > > > > 
+> > > > > > > > 
+> > > > > > > > This only happens with the VGA device/console but that is the default
+> > > > > > > > configuration for Ubuntu/KVM because it blacklists pretty much every fb
+> > > > > > > > driver.
+> > > > > > > > 
+> > > > > > > 
+> > > > > > > I am guessing this is another bad use of __pa()... need to look into that.
+> > > > 
+> > > > Can't find this commit on kvm.git or linux-2.6.git. Is it reproducible
+> > > > there?
+> > > 
+> > > This is in the linux-next repo (any git tag after 'next-20130204' will
+> > > reproduce this). It's a pretty large merge commit.
+> > > 
+> > > This doesn't happen on 3.8-rc7.
+> > > 
+> > > I'll try to repro this on kvm.git sometime this week. Otherwise, we can
+> > > wait for it to show up in 3.9.
+> > > 
+> > Can you also drop 5dfd486c4750c9278c63fa96e6e85bdd2fb58e9d from linux-next and reproduce?
 > 
-> BTW, speaking of races in there: what's to stop ima_file_mmap() from
-> racing with rename()?  You have
-> int ima_file_mmap(struct file *file, unsigned long prot)
-> {
->         if (file && (prot & PROT_EXEC))
->                 return process_measurement(file, file->f_dentry->d_name.name,
->                                            MAY_EXEC, MMAP_CHECK);
->         return 0;
-> }
-> in there; just what is that ->d_name.name good for?  By the time you get
-> through calculating hash (which, by definition, may include a considerable
-> amount of IO), the pointer you have passed might be pointing to anything.
+> Ok, found and fixed. This will need to go to stable for 3.8 as well.
+
+ACK, please send an email with the patch to kvm@vger.kernel.org.
+
+> Regards,
+> Peter Hurley
 > 
-> If the name is short, it's kept within dentry and updated by d_move() (not
-> that I'd seen any exclusion with that in there, while we are at it).  If
-> the name is too long to fit into struct dentry, it's allocated separately.
-> See fs/dcache.c:switch_names() for what's being ultimately done on rename();
-> dname_external() is a predicate telling if we store the name separately.
-> The normal sequence of events if you rename(something/very_long_file_name,
-> something_else) is this:
-> 	* we get dentries of both source and target; dentry of source has
-> ->d_name pointing to separately allocated name
-> 	* filesystem is asked to move the sucker; suppose it succeeds
-> 	* we do d_move(source, target)
-> 		* target is unhashed
-> 		* source and target names and pointers to parents are
-> 		  exchanged - now source is where we wanted it to be placed
-> 		  and its old ->d_name is not lost - target->d_name points
-> 		  to it now.  Not for long, though, since...
-> 	* ... we drop references to source and target we had acquired.  And
-> 	  since target had been unhashed, down the drain it goes.  Which
-> 	  frees its separately allocated ->d_name (i.e. what used to be
-> 	  old name of source) and drops the reference to its parent (i.e.
-> 	  what used to be the old parent of source).
-> Now think what happens if you have found source->d_name.name before rename(2)
-> and dereferenced it after.
+> --- >% ---
+> From: Peter Hurley <peter@hurleysoftware.com>
+> Date: Sun, 24 Feb 2013 10:55:09 -0500
+> Subject: [PATCH] x86/kvm: Fix pvclock vsyscall fixmap
 > 
-> The real question is, what are you using that name for?  Or ima_d_path()
-> result that normally gets used instead of it, for that matter.  Sure,
-> in case of ima_d_path() you will have a safe copy of what used to be
-> the pathname.  What is it good for, though, when the file might've been
-> moved just as ima_d_path() returns its copy of pathname to caller?
-
-The name helps userspace correlate a file hash with a specific file:
-
-- cat /sys/kernel/security/ima/ascii_runtime_measurements
-
-The measurement list is being used for attestation.
-
-LSS 2012: The Linux Integrity Measurement Architecture and
-TPM-Based Network Endpoint Assessment - Andreas Steffen
-http://kernsec.org/files/LSS_2012_strongSwan_IMA.pdf
-
-- "audit log hashes" is being used, I assume, for big data analytics
-- auditing integrity errors
-
-thanks,
-
-Mimi
-
+> The physical memory fixmapped for the pvclock clock_gettime vsyscall
+> was allocated, and thus is not a kernel symbol. __pa() is the proper
+> method to use in this case.
+> 
+> Fixes the crash below when booting a next-20130204+ smp guest on a
+> 3.8-rc5+ KVM host.
+> 
+> [    0.666410] udevd[97]: starting version 175
+> [    0.674043] udevd[97]: udevd:[97]: segfault at ffffffffff5fd020
+>      ip 00007fff069e277f sp 00007fff068c9ef8 error d
+> 
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  arch/x86/kernel/pvclock.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
+> index 85c3959..2cb9470 100644
+> --- a/arch/x86/kernel/pvclock.c
+> +++ b/arch/x86/kernel/pvclock.c
+> @@ -185,7 +185,7 @@ int __init pvclock_init_vsyscall(struct pvclock_vsyscall_time_info *i,
+>  
+>  	for (idx = 0; idx <= (PVCLOCK_FIXMAP_END-PVCLOCK_FIXMAP_BEGIN); idx++) {
+>  		__set_fixmap(PVCLOCK_FIXMAP_BEGIN + idx,
+> -			     __pa_symbol(i) + (idx*PAGE_SIZE),
+> +			     __pa(i) + (idx*PAGE_SIZE),
+>  			     PAGE_KERNEL_VVAR);
+>  	}
+>  
+> -- 
+> 1.8.1.2
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
