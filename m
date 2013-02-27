@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933927Ab3B0AQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:16:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42881 "EHLO
+	id S933929Ab3B0ARD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:17:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42877 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760413Ab3B0AJR (ORCPT
+	with ESMTP id S1760415Ab3B0AJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:17 -0500
+	Tue, 26 Feb 2013 19:09:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Kukjin Kim <kgene.kim@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: [ 59/86] ARM: samsung: fix assembly syntax for new gas
-Date: Tue, 26 Feb 2013 16:08:07 -0800
-Message-Id: <20130226235919.039946103@linuxfoundation.org>
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Subject: [ 58/86] ARM: PXA3xx: program the CSMSADRCFG register
+Date: Tue, 26 Feb 2013 16:08:06 -0800
+Message-Id: <20130226235918.936540604@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -27,254 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Igor Grinberg <grinberg@compulab.co.il>
 
-commit 2815774bb38445006074e16251b9ef5123bdc616 upstream.
+commit d107a204154ddd79339203c2deeb7433f0cf6777 upstream.
 
-Recent assembler versions complain about extraneous
-whitespace inside [] brackets. This fixes all of
-these instances for the samsung platforms. We should
-backport this to all kernels that might need to
-be built with new binutils.
+The Chip Select Configuration Register must be programmed to 0x2 in
+order to achieve the correct behavior of the Static Memory Controller.
 
-arch/arm/kernel/entry-armv.S: Assembler messages:
-arch/arm/kernel/entry-armv.S:214: Error: ARM register expected -- `ldr r2,[ r6,#(0x10)]'
-arch/arm/kernel/entry-armv.S:214: Error: ARM register expected -- `ldr r0,[ r6,#(0x14)]'
-arch/arm/kernel/entry-armv.S:430: Error: ARM register expected -- `ldr r2,[ r6,#(0x10)]'
-arch/arm/kernel/entry-armv.S:430: Error: ARM register expected -- `ldr r0,[ r6,#(0x14)]'
-arch/arm/mach-s3c24xx/sleep-s3c2410.S: Assembler messages:
-arch/arm/mach-s3c24xx/sleep-s3c2410.S:48: Error: ARM register expected -- `ldr r7,[ r4 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2410.S:49: Error: ARM register expected -- `ldr r8,[ r5 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2410.S:50: Error: ARM register expected -- `ldr r9,[ r6 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2410.S:64: Error: ARM register expected -- `streq r7,[ r4 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2410.S:65: Error: ARM register expected -- `streq r8,[ r5 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2410.S:66: Error: ARM register expected -- `streq r9,[ r6 ]'
-arch/arm/kernel/debug.S: Assembler messages:
-arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r2,#((0x0B0)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))-((0)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))]'
-arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r3,#(0x18)]'
-arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r2,#((0x0B0)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))-((0)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))]'
-arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r3,#(0x18)]'
-arch/arm/mach-s3c24xx/pm-h1940.S: Assembler messages:
-arch/arm/mach-s3c24xx/pm-h1940.S:33: Error: ARM register expected -- `ldr pc,[ r0,#((0x0B8)+(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000))))-(((0x56000000)-(0x50000000))+(0xF6000000+(0x01000000)))]'
-arch/arm/mach-s3c24xx/sleep-s3c2412.S: Assembler messages:
-arch/arm/mach-s3c24xx/sleep-s3c2412.S:60: Error: ARM register expected -- `ldrne r9,[ r1 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2412.S:61: Error: ARM register expected -- `strne r9,[ r1 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2412.S:62: Error: ARM register expected -- `ldrne r9,[ r2 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2412.S:63: Error: ARM register expected -- `strne r9,[ r2 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2412.S:64: Error: ARM register expected -- `ldrne r9,[ r3 ]'
-arch/arm/mach-s3c24xx/sleep-s3c2412.S:65: Error: ARM register expected -- `strne r9,[ r3 ]'
-arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r3,#(0x08)]'
-arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r3,#(0x18)]'
-arch/arm/kernel/debug.S:83: Error: ARM register expected -- `ldr r2,[ r3,#(0x10)]'
-arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r3,#(0x08)]'
-arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r3,#(0x18)]'
-arch/arm/kernel/debug.S:85: Error: ARM register expected -- `ldr r2,[ r3,#(0x10)]'
+Without this patch devices wired to DFI and accessed through SMC cannot
+be accessed after resume from S2.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
+Do not rely on the boot loader to program the CSMSADRCFG register by
+programming it in the kernel smemc module.
+
+Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-s3c24xx/include/mach/debug-macro.S |   12 ++++++------
- arch/arm/mach-s3c24xx/include/mach/entry-macro.S |    4 ++--
- arch/arm/mach-s3c24xx/pm-h1940.S                 |    2 +-
- arch/arm/mach-s3c24xx/sleep-s3c2410.S            |   12 ++++++------
- arch/arm/mach-s3c24xx/sleep-s3c2412.S            |   12 ++++++------
- arch/arm/plat-samsung/include/plat/debug-macro.S |   18 +++++++++---------
- 6 files changed, 30 insertions(+), 30 deletions(-)
+ arch/arm/mach-pxa/include/mach/smemc.h |    1 +
+ arch/arm/mach-pxa/smemc.c              |   15 ++++++++++++++-
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-s3c24xx/include/mach/debug-macro.S
-+++ b/arch/arm/mach-s3c24xx/include/mach/debug-macro.S
-@@ -40,17 +40,17 @@
- 		addeq	\rd, \rx, #(S3C24XX_PA_GPIO - S3C24XX_PA_UART)
- 		addne	\rd, \rx, #(S3C24XX_VA_GPIO - S3C24XX_VA_UART)
- 		bic	\rd, \rd, #0xff000
--		ldr	\rd, [ \rd, # S3C2410_GSTATUS1 - S3C2410_GPIOREG(0) ]
-+		ldr	\rd, [\rd, # S3C2410_GSTATUS1 - S3C2410_GPIOREG(0)]
- 		and	\rd, \rd, #0x00ff0000
- 		teq	\rd, #0x00440000		@ is it 2440?
- 1004:
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		moveq	\rd, \rd, lsr #SHIFT_2440TXF
- 		tst	\rd, #S3C2410_UFSTAT_TXFULL
- 	.endm
+--- a/arch/arm/mach-pxa/include/mach/smemc.h
++++ b/arch/arm/mach-pxa/include/mach/smemc.h
+@@ -37,6 +37,7 @@
+ #define CSADRCFG1	(SMEMC_VIRT + 0x84)  /* Address Configuration Register for CS1 */
+ #define CSADRCFG2	(SMEMC_VIRT + 0x88)  /* Address Configuration Register for CS2 */
+ #define CSADRCFG3	(SMEMC_VIRT + 0x8C)  /* Address Configuration Register for CS3 */
++#define CSMSADRCFG	(SMEMC_VIRT + 0xA0)  /* Chip Select Configuration Register */
  
- 	.macro  fifo_full_s3c2410 rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		tst	\rd, #S3C2410_UFSTAT_TXFULL
- 	.endm
+ /*
+  * More handy macros for PCMCIA
+--- a/arch/arm/mach-pxa/smemc.c
++++ b/arch/arm/mach-pxa/smemc.c
+@@ -40,6 +40,8 @@ static void pxa3xx_smemc_resume(void)
+ 	__raw_writel(csadrcfg[1], CSADRCFG1);
+ 	__raw_writel(csadrcfg[2], CSADRCFG2);
+ 	__raw_writel(csadrcfg[3], CSADRCFG3);
++	/* CSMSADRCFG wakes up in its default state (0), so we need to set it */
++	__raw_writel(0x2, CSMSADRCFG);
+ }
  
-@@ -68,18 +68,18 @@
- 		addeq	\rd, \rx, #(S3C24XX_PA_GPIO - S3C24XX_PA_UART)
- 		addne	\rd, \rx, #(S3C24XX_VA_GPIO - S3C24XX_VA_UART)
- 		bic	\rd, \rd, #0xff000
--		ldr	\rd, [ \rd, # S3C2410_GSTATUS1 - S3C2410_GPIOREG(0) ]
-+		ldr	\rd, [\rd, # S3C2410_GSTATUS1 - S3C2410_GPIOREG(0)]
- 		and	\rd, \rd, #0x00ff0000
- 		teq	\rd, #0x00440000		@ is it 2440?
+ static struct syscore_ops smemc_syscore_ops = {
+@@ -49,8 +51,19 @@ static struct syscore_ops smemc_syscore_
  
- 10000:
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		andne	\rd, \rd, #S3C2410_UFSTAT_TXMASK
- 		andeq	\rd, \rd, #S3C2440_UFSTAT_TXMASK
- 	.endm
+ static int __init smemc_init(void)
+ {
+-	if (cpu_is_pxa3xx())
++	if (cpu_is_pxa3xx()) {
++		/*
++		 * The only documentation we have on the
++		 * Chip Select Configuration Register (CSMSADRCFG) is that
++		 * it must be programmed to 0x2.
++		 * Moreover, in the bit definitions, the second bit
++		 * (CSMSADRCFG[1]) is called "SETALWAYS".
++		 * Other bits are reserved in this register.
++		 */
++		__raw_writel(0x2, CSMSADRCFG);
++
+ 		register_syscore_ops(&smemc_syscore_ops);
++	}
  
- 	.macro fifo_level_s3c2410 rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		and	\rd, \rd, #S3C2410_UFSTAT_TXMASK
- 	.endm
- 
---- a/arch/arm/mach-s3c24xx/include/mach/entry-macro.S
-+++ b/arch/arm/mach-s3c24xx/include/mach/entry-macro.S
-@@ -31,10 +31,10 @@
- 
- 		@@ try the interrupt offset register, since it is there
- 
--		ldr	\irqstat, [ \base, #INTPND ]
-+		ldr	\irqstat, [\base, #INTPND ]
- 		teq	\irqstat, #0
- 		beq	1002f
--		ldr	\irqnr, [ \base, #INTOFFSET ]
-+		ldr	\irqnr, [\base, #INTOFFSET ]
- 		mov	\tmp, #1
- 		tst	\irqstat, \tmp, lsl \irqnr
- 		bne	1001f
---- a/arch/arm/mach-s3c24xx/pm-h1940.S
-+++ b/arch/arm/mach-s3c24xx/pm-h1940.S
-@@ -30,4 +30,4 @@
- 
- h1940_pm_return:
- 	mov	r0, #S3C2410_PA_GPIO
--	ldr	pc, [ r0, #S3C2410_GSTATUS3 - S3C24XX_VA_GPIO ]
-+	ldr	pc, [r0, #S3C2410_GSTATUS3 - S3C24XX_VA_GPIO]
---- a/arch/arm/mach-s3c24xx/sleep-s3c2410.S
-+++ b/arch/arm/mach-s3c24xx/sleep-s3c2410.S
-@@ -45,9 +45,9 @@ ENTRY(s3c2410_cpu_suspend)
- 	ldr	r4, =S3C2410_REFRESH
- 	ldr	r5, =S3C24XX_MISCCR
- 	ldr	r6, =S3C2410_CLKCON
--	ldr	r7, [ r4 ]		@ get REFRESH (and ensure in TLB)
--	ldr	r8, [ r5 ]		@ get MISCCR (and ensure in TLB)
--	ldr	r9, [ r6 ]		@ get CLKCON (and ensure in TLB)
-+	ldr	r7, [r4]		@ get REFRESH (and ensure in TLB)
-+	ldr	r8, [r5]		@ get MISCCR (and ensure in TLB)
-+	ldr	r9, [r6]		@ get CLKCON (and ensure in TLB)
- 
- 	orr	r7, r7, #S3C2410_REFRESH_SELF	@ SDRAM sleep command
- 	orr	r8, r8, #S3C2410_MISCCR_SDSLEEP @ SDRAM power-down signals
-@@ -61,8 +61,8 @@ ENTRY(s3c2410_cpu_suspend)
- 	@@ align next bit of code to cache line
- 	.align	5
- s3c2410_do_sleep:
--	streq	r7, [ r4 ]			@ SDRAM sleep command
--	streq	r8, [ r5 ]			@ SDRAM power-down config
--	streq	r9, [ r6 ]			@ CPU sleep
-+	streq	r7, [r4]			@ SDRAM sleep command
-+	streq	r8, [r5]			@ SDRAM power-down config
-+	streq	r9, [r6]			@ CPU sleep
- 1:	beq	1b
- 	mov	pc, r14
---- a/arch/arm/mach-s3c24xx/sleep-s3c2412.S
-+++ b/arch/arm/mach-s3c24xx/sleep-s3c2412.S
-@@ -57,12 +57,12 @@ s3c2412_sleep_enter1:
- 	 * retry, as simply returning causes the system to lock.
- 	*/
- 
--	ldrne	r9, [ r1 ]
--	strne	r9, [ r1 ]
--	ldrne	r9, [ r2 ]
--	strne	r9, [ r2 ]
--	ldrne	r9, [ r3 ]
--	strne	r9, [ r3 ]
-+	ldrne	r9, [r1]
-+	strne	r9, [r1]
-+	ldrne	r9, [r2]
-+	strne	r9, [r2]
-+	ldrne	r9, [r3]
-+	strne	r9, [r3]
- 	bne	s3c2412_sleep_enter1
- 
- 	mov	pc, r14
---- a/arch/arm/plat-samsung/include/plat/debug-macro.S
-+++ b/arch/arm/plat-samsung/include/plat/debug-macro.S
-@@ -14,12 +14,12 @@
- /* The S5PV210/S5PC110 implementations are as belows. */
- 
- 	.macro fifo_level_s5pv210 rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		and	\rd, \rd, #S5PV210_UFSTAT_TXMASK
- 	.endm
- 
- 	.macro  fifo_full_s5pv210 rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		tst	\rd, #S5PV210_UFSTAT_TXFULL
- 	.endm
- 
-@@ -27,7 +27,7 @@
-  * most widely re-used */
- 
- 	.macro fifo_level_s3c2440 rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		and	\rd, \rd, #S3C2440_UFSTAT_TXMASK
- 	.endm
- 
-@@ -36,7 +36,7 @@
- #endif
- 
- 	.macro  fifo_full_s3c2440 rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UFSTAT]
- 		tst	\rd, #S3C2440_UFSTAT_TXFULL
- 	.endm
- 
-@@ -45,11 +45,11 @@
- #endif
- 
- 	.macro	senduart,rd,rx
--		strb 	\rd, [\rx, # S3C2410_UTXH ]
-+		strb 	\rd, [\rx, # S3C2410_UTXH]
- 	.endm
- 
- 	.macro	busyuart, rd, rx
--		ldr	\rd, [ \rx, # S3C2410_UFCON ]
-+		ldr	\rd, [\rx, # S3C2410_UFCON]
- 		tst	\rd, #S3C2410_UFCON_FIFOMODE	@ fifo enabled?
- 		beq	1001f				@
- 		@ FIFO enabled...
-@@ -60,7 +60,7 @@
- 
- 1001:
- 		@ busy waiting for non fifo
--		ldr	\rd, [ \rx, # S3C2410_UTRSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UTRSTAT]
- 		tst	\rd, #S3C2410_UTRSTAT_TXFE
- 		beq	1001b
- 
-@@ -68,7 +68,7 @@
- 	.endm
- 
- 	.macro	waituart,rd,rx
--		ldr	\rd, [ \rx, # S3C2410_UFCON ]
-+		ldr	\rd, [\rx, # S3C2410_UFCON]
- 		tst	\rd, #S3C2410_UFCON_FIFOMODE	@ fifo enabled?
- 		beq	1001f				@
- 		@ FIFO enabled...
-@@ -79,7 +79,7 @@
- 		b	1002f
- 1001:
- 		@ idle waiting for non fifo
--		ldr	\rd, [ \rx, # S3C2410_UTRSTAT ]
-+		ldr	\rd, [\rx, # S3C2410_UTRSTAT]
- 		tst	\rd, #S3C2410_UTRSTAT_TXFE
- 		beq	1001b
- 
+ 	return 0;
+ }
 
 
