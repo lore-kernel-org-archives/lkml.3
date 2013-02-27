@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933951Ab3B0ATf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:19:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42832 "EHLO
+	id S933555Ab3B0ATe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:19:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42842 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933911Ab3B0AJI (ORCPT
+	with ESMTP id S1760377Ab3B0AJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:08 -0500
+	Tue, 26 Feb 2013 19:09:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Adam Jackson <ajax@redhat.com>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 47/86] drm: dont add inferred modes for monitors that dont support them
-Date: Tue, 26 Feb 2013 16:07:55 -0800
-Message-Id: <20130226235917.797986066@linuxfoundation.org>
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Dave Airlie <airlied@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 49/86] drm: Use C8 instead of RGB332 when determining the format from depth/bpp
+Date: Tue, 26 Feb 2013 16:07:57 -0800
+Message-Id: <20130226235917.992896998@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,42 +32,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paulo Zanoni <paulo.r.zanoni@intel.com>
+From: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-commit 196e077dc165a307efbd9e7569f81bbdbcf18f65 upstream.
+commit d84f031bd230fdf9c3b7734940c859bf28b90219 upstream.
 
-If bit 0 of the features byte (0x18) is set to 0, then, according to
-the EDID spec, "the display is non-continuous frequency (multi-mode)
-and is only specified to accept the video timing formats that are
-listed in Base EDID and certain Extension Blocks".
+Support for real RGB332 is a rarity, most hardware only really support
+C8. So use C8 instead of RGB332 when determining the format based on
+depth/bpp.
 
-For more information, please see the EDID spec, check the notes of the
-table that explains the "Feature Support" byte (18h) and also the
-notes on the tables of the section that explains "Display Range Limits
-& Additional Timing Description Definition (tag #FDh)".
+This fixes 8bpp fbcon on i915, since i915 will only accept C8 and not
+RGB332.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=45729
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Adam Jackson <ajax@redhat.com>
-Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=59572
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Acked-by: Dave Airlie <airlied@gmail.com>
+Tested-by: mlsemon35@gmail.com
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_edid.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/drm_crtc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -1769,7 +1769,8 @@ int drm_add_edid_modes(struct drm_connec
- 	num_modes += add_cvt_modes(connector, edid);
- 	num_modes += add_standard_modes(connector, edid);
- 	num_modes += add_established_modes(connector, edid);
--	num_modes += add_inferred_modes(connector, edid);
-+	if (edid->features & DRM_EDID_FEATURE_DEFAULT_GTF)
-+		num_modes += add_inferred_modes(connector, edid);
- 	num_modes += add_cea_modes(connector, edid);
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -2023,7 +2023,7 @@ uint32_t drm_mode_legacy_fb_format(uint3
  
- 	if (quirks & (EDID_QUIRK_PREFER_LARGE_60 | EDID_QUIRK_PREFER_LARGE_75))
+ 	switch (bpp) {
+ 	case 8:
+-		fmt = DRM_FORMAT_RGB332;
++		fmt = DRM_FORMAT_C8;
+ 		break;
+ 	case 16:
+ 		if (depth == 15)
 
 
