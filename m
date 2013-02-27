@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab3B0T4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 14:56:53 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:50240 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751248Ab3B0T4v convert rfc822-to-8bit (ORCPT
+	id S1752643Ab3B0T5w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 14:57:52 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:55654 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab3B0T5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 14:56:51 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3 1/2] timer_list: split timer_list_show_tickdevices()
-Thread-Topic: [PATCH v3 1/2] timer_list: split timer_list_show_tickdevices()
-Thread-Index: AQHOFHmo2JX4VYwGVU+tABlS/GtLypiOf18A//+gowg=
-Date: Wed, 27 Feb 2013 19:56:48 +0000
-Message-ID: <74F10842A85F514CA8D8C487E74474BB2D328C86@P-EXMB1-DC21.corp.sgi.com>
-References: <51267626.3030308@codeaurora.org>
- <1361921596-9636-1-git-send-email-nzimmer@sgi.com>
- <1361921596-9636-2-git-send-email-nzimmer@sgi.com>,<512E6076.7070506@codeaurora.org>
-In-Reply-To: <512E6076.7070506@codeaurora.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [198.149.23.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Feb 2013 14:57:51 -0500
+Message-ID: <512E653F.1090706@windriver.com>
+Date: Wed, 27 Feb 2013 14:57:51 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] usb: limit OMAP related USB options to OMAP2PLUS platforms
+References: <1361992119-2465-1-git-send-email-paul.gortmaker@windriver.com> <20130227195046.GA2300@arwen.pp.htv.fi>
+In-Reply-To: <20130227195046.GA2300@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I thought I grabbed the version without it.
-I'll fix it.
+On 13-02-27 02:51 PM, Felipe Balbi wrote:
+> HI,
+> 
+> On Wed, Feb 27, 2013 at 02:08:39PM -0500, Paul Gortmaker wrote:
+>> commit 57f6ce072e35770a63be0c5d5e82f90d8da7d665 ("usb: phy:
+>> add a new driver for usb3 phy") added the new Kconfig option
+>> OMAP_USB3, but it had no dependencies whatsoever, and hence
+>> became available across all arch/platforms.
+>>
+>> Which presumably caused this to show up in x86 randconfig:
+>>
+>>     warning: (USB_MUSB_HDRC && OMAP_USB3) selects \
+>>         OMAP_CONTROL_USB which has unmet direct \
+>>         dependencies (USB_SUPPORT && ARCH_OMAP2PLUS)
+>>
+>> Then commit 6992819feb39cb9adac72170555d957d07f869f2 ("usb: phy:
+>> fix Kconfig warning") was added.  However, this just deleted the
+>> ARCH_OMAP2PLUS dependency from OMAP_CONTROL_USB, further
+>> compounding the problem by opening up OMAP_CONTROL_USB to
+>> all arch/platforms as well.
+>>
+>> Here we revert the change of 6992819feb to restore the dependency,
+>> and add the same ARCH_OMAP2PLUS dependency to the new OMAP_USB3.
+>>
+>> Perhaps a more platform specific dependency could be chosen for
+>> OMAP_USB3, but at least this keeps it from bleeding out to other
+>> architectures and non-OMAP ARM platforms as it is currently doing.
+>>
+>> Cc: Felipe Balbi <balbi@ti.com>
+>> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+>> Cc: Moiz Sonasath <m-sonasath@ti.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+>> ---
+>>  drivers/usb/phy/Kconfig | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+>> index 65217a5..40b8463 100644
+>> --- a/drivers/usb/phy/Kconfig
+>> +++ b/drivers/usb/phy/Kconfig
+>> @@ -17,6 +17,7 @@ config OMAP_USB2
+>>  
+>>  config OMAP_USB3
+>>  	tristate "OMAP USB3 PHY Driver"
+>> +	depends on ARCH_OMAP2PLUS
+>>  	select USB_OTG_UTILS
+>>  	select OMAP_CONTROL_USB
+>>  	help
+>> @@ -27,6 +28,7 @@ config OMAP_USB3
+>>  
+>>  config OMAP_CONTROL_USB
+>>  	tristate "OMAP CONTROL USB Driver"
+>> +	depends on ARCH_OMAP2PLUS
+> 
+> I rather not add dependencies here and fix the selections of
+> OMAP_CONTROL_USB.
 
-________________________________________
-From: Stephen Boyd [sboyd@codeaurora.org]
-Sent: Wednesday, February 27, 2013 1:37 PM
-To: Nathan Zimmer
-Cc: johnstul@us.ibm.com; tglx@linutronix.de; akpm@linux-foundation.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] timer_list: split timer_list_show_tickdevices()
+I am not sure I understand what you mean, or why you wouldn't
+want sane dependencies in place like those given above.  Perhaps
+you can send an alternate patch so there is no ambiguity?
 
-On 02/26/13 15:33, Nathan Zimmer wrote:
-> @@ -246,12 +244,8 @@ static void timer_list_show_tickdevices(struct seq_file *m)
->  #endif
->       SEQ_printf(m, "\n");
->  #endif
-> -     for_each_online_cpu(cpu)
-> -             print_tickdevice(m, tick_get_device(cpu), cpu);
->       SEQ_printf(m, "\n");
->  }
+Paul.
 
-The duplicate newline is here again?
 
-> -#else
-> -static void timer_list_show_tickdevices(struct seq_file *m) { }
->  #endif
->
->  static int timer_list_show(struct seq_file *m, void *v)
->
-
---
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> 
