@@ -1,139 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab3B0LIp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 06:08:45 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:34682 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521Ab3B0LIn convert rfc822-to-8bit (ORCPT
+	id S932298Ab3B0LKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 06:10:54 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:39266 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756521Ab3B0LKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 06:08:43 -0500
-From: "Zhang, Lin-Bao (Linux Kernel R&D)" <linbao.zhang@hp.com>
-To: "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-CC: "Ingo Molnar (mingo@kernel.org)" <mingo@kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "Wang, Song-Bo (Stoney)" <song-bo.wang@hp.com>,
-        "trenn@suse.com" <trenn@suse.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [stable 3.0 v2] x86/apic: Work around boot failure on HP ProLiant
- DL980 G7 Server systems
-Thread-Topic: [stable 3.0 v2] x86/apic: Work around boot failure on HP
- ProLiant DL980 G7 Server systems
-Thread-Index: Ac4U2I9mPIbwlKtCSnai4wX/rbTZaQ==
-Date: Wed, 27 Feb 2013 11:07:26 +0000
-Message-ID: <92645B27BF79D04FBD2B0F8494FFD0F9C30940@G2W2436.americas.hpqcorp.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.193.232.29]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Feb 2013 06:10:53 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAPM=9txzwGBeKx=ozzTmf=FG6c3ke3Gw5meBD+d98UqhmjZJ2g@mail.gmail.com>
+References: <1352665488-13818-1-git-send-email-mathieu.poirier@linaro.org>
+	<20121119072525.GA16730@core.coreip.homeip.net>
+	<CAPM=9tw8mefcYTqELXFbZWZ44a--SNcPnRMAvMSGTiODzRpDhg@mail.gmail.com>
+	<CAPM=9tzyBuxwLS=0vAcF5h4vZnB01X7_1NbnMo0M=M454gwZBQ@mail.gmail.com>
+	<CAPM=9txzwGBeKx=ozzTmf=FG6c3ke3Gw5meBD+d98UqhmjZJ2g@mail.gmail.com>
+Date: Wed, 27 Feb 2013 21:10:49 +1000
+Message-ID: <CAPM=9tx_NCg4WS9Kmk_Gv1y7Yz9b8YWqZzg2xRjWyR9K5oarLQ@mail.gmail.com>
+Subject: Re: [PATCH v4] drivers/tty: Folding Android's keyreset driver in sysRQ
+From: Dave Airlie <airlied@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: mathieu.poirier@linaro.org, linux-kernel@vger.kernel.org, arve@android.com,
+        kernel-team@android.com, john.stultz@linaro.org,
+        alan@lxorguk.ukuu.org.uk,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Wed, Feb 27, 2013 at 9:06 PM, Dave Airlie <airlied@gmail.com> wrote:
+> On Wed, Feb 27, 2013 at 6:26 PM, Dave Airlie <airlied@gmail.com> wrote:
+>>>
+>>> this patch seems to be oopsing on my x86 32-bit machine on bootup, pic attached.
+>>>
+>>> .config attached.
+>>>
+>>> It looks to me like the weak bit isn't working so well
+>>>
+>>>         if (platform_sysrq_reset_seq) {
+>>>                 for (i = 0; i < ARRAY_SIZE(sysrq_reset_seq); i++) {
+>>>                         key = platform_sysrq_reset_seq[i];
+>>>   6d:   66 8b 8c 00 00 00 00    mov    0x0(%eax,%eax,1),%cx
+>>>   74:   00
+>>>
+>>> is around where it craps out.
+>>> gcc version 4.7.2 20121109 (Red Hat 4.7.2-8) (GCC)
+>>> Fedora 18 machine.
+>>
+>> And just to confirm reverting
+>> 154b7a489a5b1d808323b933b04864958c2f1056.in Linus' tree allows boot to
+>> proceed.
+>
+>
+> Looks like my first picture bounced,
+>
+> here's a link
+> http://www.skynet.ie/~airlied/sysrq_oops.jpg
 
-This patch is specially for 3.0 by integrating upstream commit cb214ede7657db458fd0b2a25ea0b28dbf900ebc 
-and ea0dcf903e7d76aa5d483d876215fedcfdfe140f .
-I fixed patch format warning and re-send it as v2. Thanks . 
+Just some more disasm:
 
------------------------
-./scripts/checkpatch.pl x2apic_FADT_check_for_3.0.66v2.patch
-total: 0 errors, 0 warnings, 31 lines checked
+       if (platform_sysrq_reset_seq) {
+  4c:   ba 00 00 00 00          mov    $0x0,%edx
+  51:   31 c0                   xor    %eax,%eax
+  53:   8b 1d 04 00 00 00       mov    0x4,%ebx
+  59:   85 d2                   test   %edx,%edx
+  5b:   75 2d                   jne    8a <sysrq_init+0x72>
 
-x2apic_FADT_check_for_3.0.66v2.patch has no obvious style problems and is ready for submission.
-----------------------
+                        sysrq_reset_seq[sysrq_reset_seq_len++] = key;
+                }
+        }
 
-From: Zhang Lin-Bao <linbao.zhang@hp.com>
-x86/apic: Work around boot failure on HP ProLiant DL980 G7 Server systems
+        error = input_register_handler(&sysrq_handler);
+  5d:   b8 b4 00 00 00          mov    $0xb4,%eax
+  62:   e8 fc ff ff ff          call   63 <sysrq_init+0x4b>
+        if (error)
+  67:   85 c0                   test   %eax,%eax
+  69:   74 3e                   je     a9 <sysrq_init+0x91>
+  6b:   eb 2d                   jmp    9a <sysrq_init+0x82>
+        int error;
+        int i;
+  6d:   66 8b 8c 00 00 00 00    mov    0x0(%eax,%eax,1),%cx
+  74:   00
+                        if (key == KEY_RESERVED || key > KEY_MAX)
+  75:   8d 71 ff                lea    -0x1(%ecx),%esi
+  78:   66 81 fe fe 02          cmp    $0x2fe,%si
+  7d:   76 02                   jbe    81 <sysrq_init+0x69>
+  7f:   eb 11                   jmp    92 <sysrq_init+0x7a>
+                                break;
 
-commit 	cb214ede7657db458fd0b2a25ea0b28dbf900ebc and ea0dcf903e7d76aa5d483d876215fedcfdfe140f upstream.
+                        sysrq_reset_seq[sysrq_reset_seq_len++] = key;
+  81:   66 89 8c 12 08 00 00    mov    %cx,0x8(%edx,%edx,1)
+  88:   00
 
-HP ProLiant DL980 G7 Server boots a regular kernel,
-there will be intermittent lost interrupts which could
-result in a hang or (in extreme cases) data loss.
-
-The reason is that this system only supports x2apic physical
-mode, while the kernel boots with a logical-cluster default
-setting.
-
-This bug can be worked around by specifying "x2apic_phys" or
-"nox2apic" boot option, but we want to handle this system without
-requiring manual workarounds.
-
-BIOS set ACPI_FADT_APIC_PHYSICAL in FADT table.
-As all apicids are less than 255, BIOS need to pass the control
-to the OS with xapic mode, according to x2apic-spec, chapter 2.9.
-
-Current code handle x2apic when BIOS pass with xapic mode:
-When user specify x2apic_phys, or FADT indicates PHYSICAL.
-1. During madt oem check, apic driver is set with xapic logical or
-xapic phys driver at first.
-2. enable_IR_x2apic() will enable x2apic_mode.
-3. if user specify x2apic_phys, x2apic_phys_probe() will install
-right x2apic phys driver and use x2apic phys mode.
-otherwise will skip and let x2apic_cluster_probe to take over
-to install x2apic cluster driver (wrong one) even FADT indicates
-PHYSICAL, because x2apic_phys_probe does not check FADT PHYSICAL.
-
-Add checking x2apic_fadt_phys in x2apic_phys_probe() to fix the problem.
-
-Signed-off-by: Stoney Wang <song-bo.wang@hp.com>
-[ updated the changelog and simplified the code ]
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Linbao.zhang@hp.com
-[ make a patch specially for 3.0.66]
-Cc: stable@kernel.org
-Link: http://lkml.kernel.org/r/1360263182-16226-1-git-send-email-yinghai@kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
----
- arch/x86/kernel/apic/x2apic_phys.c |   17 ++++++++++++-----
- 1 files changed, 12 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index f5373df..0f8cb3a 100644
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -20,12 +20,19 @@ static int set_x2apic_phys_mode(char *arg)
- }
- early_param("x2apic_phys", set_x2apic_phys_mode);
- 
-+static bool x2apic_fadt_phys(void)
-+{
-+	if ((acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) &&
-+		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
-+		printk(KERN_DEBUG "System requires x2apic physical mode\n");
-+		return true;
-+	}
-+	return false;
-+}
-+
- static int x2apic_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
- {
--	if (x2apic_phys)
--		return x2apic_enabled();
--	else
--		return 0;
-+	return x2apic_enabled() && (x2apic_phys || x2apic_fadt_phys());
- }
- 
- static void
-@@ -108,7 +115,7 @@ static void init_x2apic_ldr(void)
- 
- static int x2apic_phys_probe(void)
- {
--	if (x2apic_mode && x2apic_phys)
-+	if (x2apic_mode && (x2apic_phys || x2apic_fadt_phys()))
- 		return 1;
- 
- 	return apic == &apic_x2apic_phys;
--- 
-1.7.9
-
-
--- Bob(LinBao Zhang)
-HP linux kernel enginner
+Dave.
