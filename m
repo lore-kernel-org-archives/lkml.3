@@ -1,119 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758711Ab3B0Ei3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 23:38:29 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:53091 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773Ab3B0Ei1 (ORCPT
+	id S1758491Ab3B0Eod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 23:44:33 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46172 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab3B0Eob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 23:38:27 -0500
-X-AuditID: 9c930179-b7b61ae000004061-70-512d8dc1e062
-Date: Wed, 27 Feb 2013 13:38:24 +0900
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: David Sterba <dsterba@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org, Nicolas Pitre <nico@fluxnic.net>,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
-        raphael.andy.lee@gmail.com
-Subject: Re: [RFC PATCH v2 1/4] decompressor: Add LZ4 decompressor module
-Message-ID: <20130227043824.GA5652@Corona>
-References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
- <1361859870-15751-2-git-send-email-kyungsik.lee@lge.com>
- <20130226131206.GW27541@twin.jikos.cz>
+	Tue, 26 Feb 2013 23:44:31 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <512D8EDA.3010602@jp.fujitsu.com>
+Date: Wed, 27 Feb 2013 13:43:06 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130226131206.GW27541@twin.jikos.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Brightmail-Tracker: AAAAAA==
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Don Morris <don.morris@hp.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Thomas Renninger <trenn@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        <linux-kernel@vger.kernel.org>, <tglx@linutronix.de>,
+        <mingo@redhat.com>, <x86@kernel.org>, <a.p.zijlstra@chello.nl>,
+        <jarkko.sakkinen@intel.com>, <tangchen@cn.fujitsu.com>
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+References: <512B7D10.4060304@tpi.com> <512B8407.2090807@canonical.com> <512BD753.4080001@hp.com> <CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com> <CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com> <CAE9FiQU-CV4mF8x=Bi_4pmpmeZW-tSoes_f-jOt7yYrbrppo+A@mail.gmail.com> <512D58C2.1090403@jp.fujitsu.com> <CAE9FiQV5APHSGXuz3NrsApC+V7rsDQMDXMNwZszZuUqQVaZSew@mail.gmail.com> <512D7FAD.1040003@jp.fujitsu.com> <CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com>
+In-Reply-To: <CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 02:12:06PM +0100, David Sterba wrote:
-> On Tue, Feb 26, 2013 at 03:24:27PM +0900, Kyungsik Lee wrote:
-> > This patch adds support for LZ4 decompression in the Linux Kernel.
-> > LZ4 Decompression APIs for kernel are based on LZ4 implementation
-> > by Yann Collet.
-> > 
-> > LZ4 homepage : http://fastcompression.blogspot.com/p/lz4.html
-> > LZ4 source repository : http://code.google.com/p/lz4/
-> 
-> What SVN version did you use?
-It's based on r88.
+2013/02/27 13:04, Yinghai Lu wrote:
+> On Tue, Feb 26, 2013 at 7:38 PM, Yasuaki Ishimatsu
+> <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>> 2013/02/27 11:30, Yinghai Lu wrote:
+>>> Do you mean you can not boot one socket system with 1G ram ?
+>>> Assume socket 0 does not support hotplug, other 31 sockets support hot
+>>> plug.
+>>>
+>>> So we could boot system only with socket0, and later one by one hot
+>>> add other cpus.
+>>
+>>
+>> In this case, system can boot. But other cpus with bunch of ram hot
+>> plug may fails, since system does not have enough memory for cover
+>> hot added memory. When hot adding memory device, kernel object for the
+>> memory is allocated from 1G ram since hot added memory has not been
+>> enabled.
+>>
+>
+> yes, it may fail, if the one node memory need page table and vmemmap
+> is more than 1g ...
+>
 
-> > +/*
-> > + * LZ4_COMPRESSBOUND()
-> > + * Provides the maximum size that LZ4 may output in a "worst case" scenario
-> > + * (input data not compressible)
-> > + */
-> > +#define LZ4_COMPRESSBOUND(isize) (isize + ((isize)/255) + 16)
-> 
-> For safety reasons I suggest to add a temporary variable to avoid double
-> evaluation of isize.
-Yes, Good point.
-> > --- /dev/null
-> > +++ b/lib/lz4/lz4_decompress.c
-> > +	}
-> > +	cpy = op + length - (STEPSIZE - 4);
-> > +	if (cpy > oend - COPYLENGTH) {
-> > +
-> > +		/* Error: request to write beyond destination buffer */
-> > +		if (cpy > oend)
-> > +			goto _output_error;
-> > +		LZ4_SECURECOPY(ref, op, (oend - COPYLENGTH));
-> > +		while (op < cpy)
-> > +			*op++ = *ref++;
-> > +		op = cpy;
-> > +		/*
-> > +		 * Check EOF (should never happen, since last 5 bytes
-> > +		 * are supposed to be literals)
-> > +		 */
-> > +		if (op == oend)
-> > +			goto _output_error;
-> > +		continue;
-> > +	}
-> > +		LZ4_SECURECOPY(ref, op, cpy);
-> > +		op = cpy; /* correction */
-> > +	}
-> 
-> Does this compile? The } is an extra one, and does not match the
-> original sources.
->
-It's about indent errors. The } is a pair of braces regarding
-"while (1) {". However it compiled. It will be fixed.
- 
-> > +#define LZ4_COPYPACKET(s, d)	\
-> > +	do {			\
-> > +		LZ4_COPYSTEP(s, d);	\
-> > +		LZ4_COPYSTEP(s, d);	\
-> > +	} while (0)
-> > +
-> > +#define LZ4_SECURECOPY	LZ4_WILDCOPY
-> > +#endif
-> > +
-> > +#define LZ4_READ_LITTLEENDIAN_16(d, s, p) \
-> > +	(d = s - get_unaligned_le16(p))
-> > +#define LZ4_WILDCOPY(s, d, e)	\
-> > +	do {				\
-> > +		LZ4_COPYPACKET(s, d);	\
-> > +	} while (d < e)
-> 
-> All the \ at the ends of lines would look better aligned in one column.
->
-Yes, right. It looks better if it's aligned.
+> for hot add memory we need to
+> 1. add another wrapper for init_memory_mapping, just like
+> init_mem_mapping() for booting path.
+> 2. we need make memblock more generic, so we can use it with hot add
+> memory during runtime.
+> 3. with that we can initialize page table for hot added node with ram.
+> a. initial page table for 2M near node top is from node0 ( that does
+> not support hot plug).
+> b. then will use 2M for memory below node top...
+> c. with that we will make sure page table stay on local node.
+>   alloc_low_pages need to be updated to support that.
+> 4. need to make sure vmemmap on local node too.
+
+I think so too. By this, memory hot plug becomes more useful.
 
 Thanks,
-Kyungsik
+Yasuaki Ishimatsu
+
+>
+> so hot-remove node will work too later.
+>
+> In the long run, we should make booting path and hot adding more
+> similar and share at most code.
+> That will make code get more test coverage.
+>
+> Thanks
+>
+> Yinghai
+>
+
+
