@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab3B0J5l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 04:57:41 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51053 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab3B0J5k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 04:57:40 -0500
-Date: Wed, 27 Feb 2013 09:56:09 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>, Nicolas Pitre <nico@fluxnic.net>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        Kyungsik Lee <kyungsik.lee@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
-        raphael.andy.lee@gmail.com
-Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
-Message-ID: <20130227095609.GY17833@n2100.arm.linux.org.uk>
-References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com> <512D1C12.4080109@oberhumer.com> <alpine.LFD.2.03.1302261557220.1254@syhkavp.arg> <87fw0i7n6d.fsf@dell.be.48ers.dk> <20130226221027.GW17833@n2100.arm.linux.org.uk> <1361929234.1924.8.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757440Ab3B0J6B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 04:58:01 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:43128 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017Ab3B0J56 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:7:1>);
+	Wed, 27 Feb 2013 04:57:58 -0500
+Message-Id: <512DE6B302000078000C1631@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Wed, 27 Feb 2013 09:57:55 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Chen Gang" <gang.chen@asianux.com>
+Cc: <roger.pau@citrix.com>, <stefano.stabellini@eu.citrix.com>,
+        "xen-devel" <xen-devel@lists.xen.org>, <konrad.wilk@oracle.com>,
+        <dgdegra@tycho.nsa.gov>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/block/xen-blkback: preq.dev is used
+ without initialized
+References: <512D90F2.9070200@asianux.com>
+In-Reply-To: <512D90F2.9070200@asianux.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1361929234.1924.8.camel@joe-AO722>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 05:40:34PM -0800, Joe Perches wrote:
-> On Tue, 2013-02-26 at 22:10 +0000, Russell King - ARM Linux wrote:
-> > So... for a selected kernel version of a particular size, can we please
-> > have a comparison between the new LZO code and this LZ4 code, so that
-> > we can see whether it's worth updating the LZO code or replacing the
-> > LZO code with LZ4?
-> 
-> How could it be questionable that it's worth updating the LZO code?
+>>> On 27.02.13 at 05:52, Chen Gang <gang.chen@asianux.com> wrote:
+>   if call xen_vbd_translate failed, the preq.dev will be not initialized.
+>   so use blkif->vbd.pdevice instead (still better to print relative info).
 
-Please read the comments against the previous posting of these patches
-where I first stated this argument - and with agreement from those
-following the thread.  The thread started on 26 Jan 2013.  Thanks.
+You also could have mentioned that even before commit 
+01c681d4c70d64cb72142a2823f27c4146a02e63 the value printed
+here was bogus, as it was the guest provided value from
+req->u.rw.handle rather than the actual device.
+
+Jan
+
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  drivers/block/xen-blkback/blkback.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkback/blkback.c 
+> b/drivers/block/xen-blkback/blkback.c
+> index de1f319..6d1cc3d 100644
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -904,7 +904,8 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+>  		pr_debug(DRV_PFX "access denied: %s of [%llu,%llu] on dev=%04x\n",
+>  			 operation == READ ? "read" : "write",
+>  			 preq.sector_number,
+> -			 preq.sector_number + preq.nr_sects, preq.dev);
+> +			 preq.sector_number + preq.nr_sects,
+> +			 blkif->vbd.pdevice);
+>  		goto fail_response;
+>  	}
+>  
+> -- 
+> 1.7.7.6
+
+
+
