@@ -1,66 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab3B0J6B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 04:58:01 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:43128 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab3B0J56 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:7:1>);
-	Wed, 27 Feb 2013 04:57:58 -0500
-Message-Id: <512DE6B302000078000C1631@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Wed, 27 Feb 2013 09:57:55 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Chen Gang" <gang.chen@asianux.com>
-Cc: <roger.pau@citrix.com>, <stefano.stabellini@eu.citrix.com>,
-        "xen-devel" <xen-devel@lists.xen.org>, <konrad.wilk@oracle.com>,
-        <dgdegra@tycho.nsa.gov>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/block/xen-blkback: preq.dev is used
- without initialized
-References: <512D90F2.9070200@asianux.com>
-In-Reply-To: <512D90F2.9070200@asianux.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1752464Ab3B0KAb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 05:00:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55799 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750715Ab3B0KA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 05:00:27 -0500
+Date: Wed, 27 Feb 2013 11:00:24 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, show_mem: suppress page counts in non-blockable
+ contexts
+Message-ID: <20130227100024.GA16724@dhcp22.suse.cz>
+References: <alpine.DEB.2.02.1302261642520.11109@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1302261642520.11109@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 27.02.13 at 05:52, Chen Gang <gang.chen@asianux.com> wrote:
->   if call xen_vbd_translate failed, the preq.dev will be not initialized.
->   so use blkif->vbd.pdevice instead (still better to print relative info).
-
-You also could have mentioned that even before commit 
-01c681d4c70d64cb72142a2823f27c4146a02e63 the value printed
-here was bogus, as it was the guest provided value from
-req->u.rw.handle rather than the actual device.
-
-Jan
-
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  drivers/block/xen-blkback/blkback.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+On Tue 26-02-13 16:46:08, David Rientjes wrote:
+> On large systems with a lot of memory, walking all RAM to determine page 
+> types may take a half second or even more.
 > 
-> diff --git a/drivers/block/xen-blkback/blkback.c 
-> b/drivers/block/xen-blkback/blkback.c
-> index de1f319..6d1cc3d 100644
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -904,7 +904,8 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
->  		pr_debug(DRV_PFX "access denied: %s of [%llu,%llu] on dev=%04x\n",
->  			 operation == READ ? "read" : "write",
->  			 preq.sector_number,
-> -			 preq.sector_number + preq.nr_sects, preq.dev);
-> +			 preq.sector_number + preq.nr_sects,
-> +			 blkif->vbd.pdevice);
->  		goto fail_response;
->  	}
+> In non-blockable contexts, the page allocator will emit a page allocation 
+> failure warning unless __GFP_NOWARN is specified.  In such contexts, irqs 
+> are typically disabled and such a lengthy delay may result in soft 
+> lockups.
+
+But we are trying to prevent from soft lockups by calling
+touch_nmi_watchdog every now when iterating over pages so the lock up
+detector shouldn't trigger.
+
+Anyway, I think that the additional information (which can be really
+costly as you are describing) is not that useful. Most of the useful
+information is already printed by show_free_areas. Or does it help when
+we know how much memory is shared/reserved/etc. when the allocation
+fails?
+
+So I do agree with the dropping the additional information for the
+allocation failure path (sysrq+m might still show it) but I fail to see
+how the lockup detector plays any role here. Can we just drop it because
+it is not that interesting and it is costly so it is not worth
+bothering?
+ 
+> To fix this, suppress the page walk in such contexts when printing the 
+> page allocation failure warning.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  arch/arm/mm/init.c       | 3 +++
+>  arch/ia64/mm/contig.c    | 2 ++
+>  arch/ia64/mm/discontig.c | 2 ++
+>  arch/parisc/mm/init.c    | 2 ++
+>  arch/unicore32/mm/init.c | 3 +++
+>  include/linux/mm.h       | 3 ++-
+>  lib/show_mem.c           | 3 +++
+>  mm/page_alloc.c          | 7 +++++++
+>  8 files changed, 24 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -99,6 +99,9 @@ void show_mem(unsigned int filter)
+>  	printk("Mem-info:\n");
+>  	show_free_areas(filter);
 >  
-> -- 
-> 1.7.7.6
+> +	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
+> +		return;
+> +
+>  	for_each_bank (i, mi) {
+>  		struct membank *bank = &mi->bank[i];
+>  		unsigned int pfn1, pfn2;
+> diff --git a/arch/ia64/mm/contig.c b/arch/ia64/mm/contig.c
+> --- a/arch/ia64/mm/contig.c
+> +++ b/arch/ia64/mm/contig.c
+> @@ -47,6 +47,8 @@ void show_mem(unsigned int filter)
+>  	printk(KERN_INFO "Mem-info:\n");
+>  	show_free_areas(filter);
+>  	printk(KERN_INFO "Node memory in pages:\n");
+> +	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
+> +		return;
+>  	for_each_online_pgdat(pgdat) {
+>  		unsigned long present;
+>  		unsigned long flags;
+> diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
+> --- a/arch/ia64/mm/discontig.c
+> +++ b/arch/ia64/mm/discontig.c
+> @@ -623,6 +623,8 @@ void show_mem(unsigned int filter)
+>  
+>  	printk(KERN_INFO "Mem-info:\n");
+>  	show_free_areas(filter);
+> +	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
+> +		return;
+>  	printk(KERN_INFO "Node memory in pages:\n");
+>  	for_each_online_pgdat(pgdat) {
+>  		unsigned long present;
+> diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
+> --- a/arch/parisc/mm/init.c
+> +++ b/arch/parisc/mm/init.c
+> @@ -697,6 +697,8 @@ void show_mem(unsigned int filter)
+>  
+>  	printk(KERN_INFO "Mem-info:\n");
+>  	show_free_areas(filter);
+> +	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
+> +		return;
+>  #ifndef CONFIG_DISCONTIGMEM
+>  	i = max_mapnr;
+>  	while (i-- > 0) {
+> diff --git a/arch/unicore32/mm/init.c b/arch/unicore32/mm/init.c
+> --- a/arch/unicore32/mm/init.c
+> +++ b/arch/unicore32/mm/init.c
+> @@ -66,6 +66,9 @@ void show_mem(unsigned int filter)
+>  	printk(KERN_DEFAULT "Mem-info:\n");
+>  	show_free_areas(filter);
+>  
+> +	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
+> +		return;
+> +
+>  	for_each_bank(i, mi) {
+>  		struct membank *bank = &mi->bank[i];
+>  		unsigned int pfn1, pfn2;
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -898,7 +898,8 @@ extern void pagefault_out_of_memory(void);
+>   * Flags passed to show_mem() and show_free_areas() to suppress output in
+>   * various contexts.
+>   */
+> -#define SHOW_MEM_FILTER_NODES	(0x0001u)	/* filter disallowed nodes */
+> +#define SHOW_MEM_FILTER_NODES		(0x0001u)	/* disallowed nodes */
+> +#define SHOW_MEM_FILTER_PAGE_COUNT	(0x0002u)	/* page type count */
+>  
+>  extern void show_free_areas(unsigned int flags);
+>  extern bool skip_free_areas_node(unsigned int flags, int nid);
+> diff --git a/lib/show_mem.c b/lib/show_mem.c
+> --- a/lib/show_mem.c
+> +++ b/lib/show_mem.c
+> @@ -18,6 +18,9 @@ void show_mem(unsigned int filter)
+>  	printk("Mem-Info:\n");
+>  	show_free_areas(filter);
+>  
+> +	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
+> +		return;
+> +
+>  	for_each_online_pgdat(pgdat) {
+>  		unsigned long i, flags;
+>  
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2009,6 +2009,13 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
+>  		return;
+>  
+>  	/*
+> +	 * Walking all memory to count page types is very expensive and should
+> +	 * be inhibited in non-blockable contexts.
+> +	 */
+> +	if (!(gfp_mask & __GFP_WAIT))
+> +		filter |= SHOW_MEM_FILTER_PAGE_COUNT;
+> +
+> +	/*
+>  	 * This documents exceptions given to allocations in certain
+>  	 * contexts that are allowed to allocate outside current's set
+>  	 * of allowed nodes.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-
-
+-- 
+Michal Hocko
+SUSE Labs
