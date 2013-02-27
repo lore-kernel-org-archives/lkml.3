@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933486Ab3B0ASQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:18:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42862 "EHLO
+	id S933781Ab3B0ASf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:18:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42857 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760402Ab3B0AJN (ORCPT
+	with ESMTP id S1760397Ab3B0AJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:13 -0500
+	Tue, 26 Feb 2013 19:09:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
+        Mika Kuoppala <mika.kuoppala@intel.com>,
+        Andreas Sturmlechner <andreas.sturmlechner@gmail.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 54/86] drm/i915: Set i9xx sdvo clock limits according to specifications
-Date: Tue, 26 Feb 2013 16:08:02 -0800
-Message-Id: <20130226235918.530615135@linuxfoundation.org>
+Subject: [ 53/86] drm/i915: disable shared panel fitter for pipe
+Date: Tue, 26 Feb 2013 16:08:01 -0800
+Message-Id: <20130226235918.428901738@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -28,36 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+From: Mika Kuoppala <mika.kuoppala@linux.intel.com>
 
-commit 4f7dfb6788dd022446847fbbfbe45e13bedb5be2 upstream.
+commit 24a1f16de97c4cf0029d9acd04be06db32208726 upstream.
 
-The Intel PRM says the M1 and M2 divisors must be in the range of 10-20 and 5-9.
-Since we do all calculations based on them being register values (which are
-subtracted by 2) we need to specify them accordingly.
+If encoder is switched off by BIOS, but the panel fitter is left on,
+we never try to turn off the panel fitter and leave it still attached
+to the pipe - which can cause blurry output elsewhere.
 
-Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=56359
+Based on work by Chris Wilson <chris@chris-wilson.co.uk>
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=58867
+Signed-off-by: Mika Kuoppala <mika.kuoppala@intel.com>
+Tested-by: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+[danvet: Remove the redundant HAS_PCH_SPLIT check and add a tiny
+comment.]
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
 --- a/drivers/gpu/drm/i915/intel_display.c
 +++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -142,8 +142,8 @@ static const intel_limit_t intel_limits_
- 	.vco = { .min = 1400000, .max = 2800000 },
- 	.n = { .min = 1, .max = 6 },
- 	.m = { .min = 70, .max = 120 },
--	.m1 = { .min = 10, .max = 22 },
--	.m2 = { .min = 5, .max = 9 },
-+	.m1 = { .min = 8, .max = 18 },
-+	.m2 = { .min = 3, .max = 7 },
- 	.p = { .min = 5, .max = 80 },
- 	.p1 = { .min = 1, .max = 8 },
- 	.p2 = { .dot_limit = 200000,
+@@ -3303,6 +3303,7 @@ static void i9xx_crtc_disable(struct drm
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+ 	int pipe = intel_crtc->pipe;
+ 	int plane = intel_crtc->plane;
++	u32 pctl;
+ 
+ 	if (!intel_crtc->active)
+ 		return;
+@@ -3318,6 +3319,13 @@ static void i9xx_crtc_disable(struct drm
+ 
+ 	intel_disable_plane(dev_priv, plane, pipe);
+ 	intel_disable_pipe(dev_priv, pipe);
++
++	/* Disable pannel fitter if it is on this pipe. */
++	pctl = I915_READ(PFIT_CONTROL);
++	if ((pctl & PFIT_ENABLE) &&
++	    ((pctl & PFIT_PIPE_MASK) >> PFIT_PIPE_SHIFT) == pipe)
++		I915_WRITE(PFIT_CONTROL, 0);
++
+ 	intel_disable_pll(dev_priv, pipe);
+ 
+ 	intel_crtc->active = false;
 
 
