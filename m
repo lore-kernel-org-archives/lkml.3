@@ -1,138 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab3B0St1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 13:49:27 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:50331 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755183Ab3B0StZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 13:49:25 -0500
-Date: Wed, 27 Feb 2013 13:49:12 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
-        Zheng Liu <wenqing.lz@taobao.com>, Dave Jones <davej@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-Message-ID: <20130227184912.GA19624@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	"gnehzuil.liu" <gnehzuil.liu@gmail.com>,
-	Zheng Liu <wenqing.lz@taobao.com>, Dave Jones <davej@redhat.com>,
-	Borislav Petkov <bp@alien8.de>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <nsxr4k2kdwv.fsf@closure.thunk.org>
- <20130227124727.GA225@x4>
- <20130227153435.GB5609@thunk.org>
- <20130227154450.GA23402@x4>
- <20130227170157.GA222@x4>
- <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
- <20130227172256.GA236@x4>
- <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
- <20130227174553.GA224@x4>
- <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
+	id S1760746Ab3B0St7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 13:49:59 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:58474 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759862Ab3B0St6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 13:49:58 -0500
+Date: Wed, 27 Feb 2013 10:49:53 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mathieu Poirier <mathieu.poirier@linaro.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Airlie <airlied@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        arve@android.com, kernel-team@android.com,
+        John Stultz <john.stultz@linaro.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v4] drivers/tty: Folding Android's keyreset driver in
+ sysRQ
+Message-ID: <20130227184953.GA28638@core.coreip.homeip.net>
+References: <1352665488-13818-1-git-send-email-mathieu.poirier@linaro.org>
+ <20121119072525.GA16730@core.coreip.homeip.net>
+ <CAPM=9tw8mefcYTqELXFbZWZ44a--SNcPnRMAvMSGTiODzRpDhg@mail.gmail.com>
+ <CA+55aFysXNSJMHL-rKZ_fvPP3t357zTC-6hyHmh=S6K-Qx0WbQ@mail.gmail.com>
+ <512E4954.6060601@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
+In-Reply-To: <512E4954.6060601@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Markus, Dave, can you confirm that this fixes your problem?
+On Wed, Feb 27, 2013 at 10:58:44AM -0700, Mathieu Poirier wrote:
+> On 13-02-27 09:57 AM, Linus Torvalds wrote:
+> > On Tue, Feb 26, 2013 at 11:33 PM, Dave Airlie <airlied@gmail.com> wrote:
+> >>
+> >> It looks to me like the weak bit isn't working so well
+> >>
+> >>         if (platform_sysrq_reset_seq) {
+> >>                 for (i = 0; i < ARRAY_SIZE(sysrq_reset_seq); i++) {
+> >>                         key = platform_sysrq_reset_seq[i];
+> >>   6d:   66 8b 8c 00 00 00 00    mov    0x0(%eax,%eax,1),%cx
+> >>   74:   00
+> >>
+> >> is around where it craps out.
+> >> gcc version 4.7.2 20121109 (Red Hat 4.7.2-8) (GCC)
+> >> Fedora 18 machine.
+> > 
+> > Hmm. I would love to blame gcc, but no, I think the code is crap.
+> > 
+> > The whole 'platform_sysrq_reset_seq[]' thing is broken in current git,
+> > and it apparently only happens to work by mistake for most of us.
+> > 
+> > Doing a "grep" for it shows all three uses:
+> > 
+> >    git grep platform_sysrq_reset_seq
+> > 
+> >   extern unsigned short platform_sysrq_reset_seq[] __weak;
+> >   if (platform_sysrq_reset_seq) {
+> >             key = platform_sysrq_reset_seq[i];
+> > 
+> > and the thing is, if it is declared as an array (not a pointer), then
+> > I think it is perfectly understandable that when then testing the
+> > *address* of that array, gcc just says "you're stupid, you're testing
+> > something that cannot possibly be NULL, so I'll throw your idiotic
+> > test away".
+> > 
+> > And gcc would be completely correct. That test is moronic. You just
+> > said that platform_sysrq_reset_seq[] was an external array, there is
+> > no way in hell that is NULL.
+> > 
+> > Now, if it was a _pointer_, that would be a different thing entirely.
+> > A pointer can have a NULL value. A named array, not so much.
+> > 
+> > So I *think* the fix might be something like the attached. Totally
+> > untested. It may compile, or it may not.
+> > 
+> >                 Linus
+> > 
+> 
+> Your fix is compiling, running and yielding the correct results -
+> apologies about that.
+> 
 
-Thanks!!
+Actually defining platform_sysrq_reset_seq as __weak array was my doing
+so the fault is actually mine. Mathieu had a function there originally.
 
-(Sigh, this is a real brown paper bug; I'm embarassed I missed this in
-my code review.)
+Thanks.
 
-						- Ted
-
->From f47f0d11096ca5d9e1965d8a9f266aa13fe2b73b Mon Sep 17 00:00:00 2001
-From: Theodore Ts'o <tytso@mit.edu>
-Date: Wed, 27 Feb 2013 13:47:52 -0500
-Subject: [PATCH] ext4: fix extent status tree regression for file systems >
- 512GB
-
-This fixes a regression introduced by commit f7fec032aa782.  The
-problem was that the extents status flags caused us to mask out block
-numbers smaller than 2**28 blocks.  Since we didn't test with file
-systems smaller than 512GB, we didn't notice this during the
-development cycle.
-
-A typical failure looks like this:
-
-EXT4-fs error (device sdb1): htree_dirblock_to_tree:919: inode #172235804: block
-152052301: comm ls: bad entry in directory: rec_len is smaller than minimal -
-offset=0(0), inode=0, rec_len=0, name_len=0
-
-... where 'debugfs -R "stat <172235804>" /dev/sdb1' reports that the
-inode has block number 688923213.  When viewed in hex, block number
-152052301 (from the syslog) is 0x910224D, while block number 688923213
-is 0x2910224D.  Note the missing "0x20000000" in the block number.
-
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Reported-by: Dave Jones <davej@redhat.com>
-Cc: Zheng Liu <gnehzuil.liu@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
----
- fs/ext4/extents_status.h | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/fs/ext4/extents_status.h b/fs/ext4/extents_status.h
-index cf83e77..c795ff6 100644
---- a/fs/ext4/extents_status.h
-+++ b/fs/ext4/extents_status.h
-@@ -20,10 +20,10 @@
- #define es_debug(fmt, ...)	no_printk(fmt, ##__VA_ARGS__)
- #endif
- 
--#define EXTENT_STATUS_WRITTEN	0x80000000	/* written extent */
--#define EXTENT_STATUS_UNWRITTEN	0x40000000	/* unwritten extent */
--#define EXTENT_STATUS_DELAYED	0x20000000	/* delayed extent */
--#define EXTENT_STATUS_HOLE	0x10000000	/* hole */
-+#define EXTENT_STATUS_WRITTEN	(((unsigned long long) 1) << 63)
-+#define EXTENT_STATUS_UNWRITTEN	(((unsigned long long) 1) << 62)
-+#define EXTENT_STATUS_DELAYED	(((unsigned long long) 1) << 61)
-+#define EXTENT_STATUS_HOLE	(((unsigned long long) 1) << 60)
- 
- #define EXTENT_STATUS_FLAGS	(EXTENT_STATUS_WRITTEN | \
- 				 EXTENT_STATUS_UNWRITTEN | \
-@@ -58,22 +58,22 @@ extern int ext4_es_lookup_extent(struct inode *inode, ext4_lblk_t lblk,
- 
- static inline int ext4_es_is_written(struct extent_status *es)
- {
--	return (es->es_pblk & EXTENT_STATUS_WRITTEN);
-+	return (es->es_pblk & EXTENT_STATUS_WRITTEN) != 0;
- }
- 
- static inline int ext4_es_is_unwritten(struct extent_status *es)
- {
--	return (es->es_pblk & EXTENT_STATUS_UNWRITTEN);
-+	return (es->es_pblk & EXTENT_STATUS_UNWRITTEN) != 0;
- }
- 
- static inline int ext4_es_is_delayed(struct extent_status *es)
- {
--	return (es->es_pblk & EXTENT_STATUS_DELAYED);
-+	return (es->es_pblk & EXTENT_STATUS_DELAYED) != 0;
- }
- 
- static inline int ext4_es_is_hole(struct extent_status *es)
- {
--	return (es->es_pblk & EXTENT_STATUS_HOLE);
-+	return (es->es_pblk & EXTENT_STATUS_HOLE) != 0;
- }
- 
- static inline ext4_fsblk_t ext4_es_status(struct extent_status *es)
 -- 
-1.7.12.rc0.22.gcdd159b
-
+Dmitry
