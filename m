@@ -1,143 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab3B0H1V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 02:27:21 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23802 "EHLO mga01.intel.com"
+	id S1752647Ab3B0HaJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 02:30:09 -0500
+Received: from ozlabs.org ([203.10.76.45]:48398 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750749Ab3B0H1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 02:27:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,746,1355126400"; 
-   d="asc'?scan'208";a="296476411"
-Date: Wed, 27 Feb 2013 02:25:17 -0500
-From: Chen Gong <gong.chen@linux.intel.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/9] soft-offline: use migrate_pages() instead of
- migrate_huge_page()
-Message-ID: <20130227072517.GA30971@gchen.bj.intel.com>
-Mail-Followup-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-	linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-	Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1361475708-25991-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1750818Ab3B0HaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 02:30:07 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Paolo Bonzini <pbonzini@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 02/16] virtio_ring: virtqueue_add_sgs, to add multiple sgs.
+In-Reply-To: <512C5E0E.5040305@redhat.com>
+References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au> <1361260594-601-3-git-send-email-rusty@rustcorp.com.au> <20130224221255.GA5300@redhat.com> <512C5E0E.5040305@redhat.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Wed, 27 Feb 2013 17:58:37 +1030
+Message-ID: <87obf6dxlm.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
-Content-Disposition: inline
-In-Reply-To: <1361475708-25991-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Paolo Bonzini <pbonzini@redhat.com> writes:
+> Il 24/02/2013 23:12, Michael S. Tsirkin ha scritto:
+>> On Tue, Feb 19, 2013 at 06:26:20PM +1030, Rusty Russell wrote:
+>>> virtio_scsi can really use this, to avoid the current hack of copying
+>>> the whole sg array.  Some other things get slightly neater, too.
+>>>
+>>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+>> 
+>> Hmm, this makes add_buf a bit slower. virtio_test results
+>> (I'll send a patch to update the test shortly):
+>> 
+>> Before:
+>> 0.09user 0.01system 0:00.12elapsed 91%CPU (0avgtext+0avgdata 480maxresident)k
+>> 0inputs+0outputs (0major+145minor)pagefaults 0swaps
+>> 
+>> After:
+>> 0.11user 0.01system 0:00.13elapsed 90%CPU (0avgtext+0avgdata 480maxresident)k
+>> 0inputs+0outputs (0major+145minor)pagefaults 0swaps
+>
+> Not unexpected at all... :(
+>
+> Some of it can be recovered, but if it's 20% I doubt all of it.  So my
+> patches were not premature optimization; you really can take just two
+> among speed, flexibility, and having a nice API.
 
---MGYHOYXEY6WxJCY8
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The error bars on this are far too large to say "20%".
 
-On Thu, Feb 21, 2013 at 02:41:42PM -0500, Naoya Horiguchi wrote:
-> Date: Thu, 21 Feb 2013 14:41:42 -0500
-> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> To: linux-mm@kvack.org
-> Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
->  Hugh Dickins <hughd@google.com>, KOSAKI Motohiro
->  <kosaki.motohiro@jp.fujitsu.com>, Andi Kleen <andi@firstfloor.org>,
->  linux-kernel@vger.kernel.org
-> Subject: [PATCH 3/9] soft-offline: use migrate_pages() instead of
->  migrate_huge_page()
->=20
-> Currently migrate_huge_page() takes a pointer to a hugepage to be
-> migrated as an argument, instead of taking a pointer to the list of
-> hugepages to be migrated. This behavior was introduced in commit
-> 189ebff28 ("hugetlb: simplify migrate_huge_page()"), and was OK
-> because until now hugepage migration is enabled only for soft-offlining
-> which takes only one hugepage in a single call.
->=20
-> But the situation will change in the later patches in this series
-> which enable other users of page migration to support hugepage migration.
-> They can kick migration for both of normal pages and hugepages
-> in a single call, so we need to go back to original implementation
-> of using linked lists to collect the hugepages to be migrated.
->=20
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  mm/memory-failure.c | 20 ++++++++++++++++----
->  mm/migrate.c        |  2 ++
->  2 files changed, 18 insertions(+), 4 deletions(-)
->=20
-> diff --git v3.8.orig/mm/memory-failure.c v3.8/mm/memory-failure.c
-> index bc126f6..01e4676 100644
-> --- v3.8.orig/mm/memory-failure.c
-> +++ v3.8/mm/memory-failure.c
-> @@ -1467,6 +1467,7 @@ static int soft_offline_huge_page(struct page *page=
-, int flags)
->  	int ret;
->  	unsigned long pfn =3D page_to_pfn(page);
->  	struct page *hpage =3D compound_head(page);
-> +	LIST_HEAD(pagelist);
-> =20
->  	/* Synchronized using the page lock with memory_failure() */
->  	lock_page(hpage);
-> @@ -1479,13 +1480,24 @@ static int soft_offline_huge_page(struct page *pa=
-ge, int flags)
->  	unlock_page(hpage);
-> =20
->  	/* Keep page count to indicate a given hugepage is isolated. */
-> -	ret =3D migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, false,
-> -				MIGRATE_SYNC);
-> -	put_page(hpage);
-> +	list_move(&hpage->lru, &pagelist);
-> +	ret =3D migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, false,
-> +				MIGRATE_SYNC, MR_MEMORY_FAILURE);
->  	if (ret) {
->  		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
->  			pfn, ret, page->flags);
-> -		return ret;
-> +		/*
-> +		 * We know that soft_offline_huge_page() tries to migrate
-> +		 * only one hugepage pointed to by hpage, so we need not
-> +		 * run through the pagelist here.
-> +		 */
-> +		putback_active_hugepage(hpage);
-> +		if (ret > 0)
-> +			ret =3D -EIO;
-> +	} else {
-> +		set_page_hwpoison_huge_page(hpage);
-> +		dequeue_hwpoisoned_huge_page(hpage);
-> +		atomic_long_add(1<<compound_trans_order(hpage), &mce_bad_pages);
+Here are my numbers, using 50 runs of:
+time tools/virtio/vringh_test --indirect --eventidx --parallel and
+stats --trim-outliers:
 
-mce_bad_pages has been substituted by num_poisoned_pages.
+Baseline (before add_sgs):
+        2.840000-3.040000(2.927292)user
 
-[...]
+After add_sgs:
+        2.970000-3.150000(3.053750)user
 
---MGYHOYXEY6WxJCY8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+After simplifying add_buf a little:
+        2.950000-3.210000(3.081458)user
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+After inlining virtqueue_add/vring_add_indirect:
+        2.920000-3.150000(3.026875)user
 
-iQIcBAEBAgAGBQJRLbTdAAoJEI01n1+kOSLHGogP/Rcv8RKngbiqPEqKYrooYRB7
-t0w4yXk9Fn6oewPaUOLFc7WNflFvbLeQI7cPgFjnbP+nB9HKaqVlH52q11363pWK
-8hKfRy33gj2cXKbXjBh+Yy+QaeB+HDJQ4gXRGKtVM2O9J03su/GvA6Vx2rj1gnz/
-qQkYPu9Zu/9yL3PZP7ggRp9zhO+F6KxEmxdk3HB1UL0qUuEgPi5jqHNN+0euYDXO
-p8Vm0NZ68ZHvvfmQswIlzDQpr7F1UOpJJTShBHU0hqsh7Wf1IgDiEfjMljy3xkIl
-4p+w+aM733cqxlvDguFzQSiwefwS+s2+OKaAikQSWjKkMZzWRetF+IYa0omJBoKI
-g0yl6e8KJKW0t1vB+NSwFbqbyXqethmIiQVFyS/Ym6zAHtP+3NR5CK4E5Q3VrIhp
-61plLmxYhuTficNO/T6APwKOHEvE8hHloxuA8c+HpyqrGfXAXmDk2DBo4oIMhuTy
-YsrPpxA4mhBDjiP/j95XtGLNWuPwAbXAXEBd7LOmzwfFH7tRceTNEwgkEIvabPKc
-YnqpMJrjoCLRO4Kge885VTW544FHWbwgjLbt6jcSUT0GfqAl4xuxlx4kG8NZKg4W
-GFB4xxvlnv8uIdbZoXhUE/lOzoKyB1PRD24Tawb0qz1vzXhS/bMGKN1/KenDOtPC
-b6SQkMDSmtZYgTPudAcJ
-=XqMo
------END PGP SIGNATURE-----
+After passing in iteration functions (chained vs unchained):
+        2.760000-2.970000(2.883542)user
 
---MGYHOYXEY6WxJCY8--
+After removing the now-unnecessary chain-cleaning in add_buf:
+        2.660000-2.830000(2.753542)user
+
+Any questions?
+Rusty.
