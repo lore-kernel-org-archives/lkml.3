@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759942Ab3B0Bjt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:39:49 -0500
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:50887 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759903Ab3B0Bjr (ORCPT
+	id S1759971Ab3B0BkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:40:09 -0500
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:36966
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759951Ab3B0BkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 20:39:47 -0500
+	Tue, 26 Feb 2013 20:40:03 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1155h)
+From: Kim Phillips <kim.phillips@freescale.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>
+CC: Nicolas Pitre <nico@linaro.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3] ARM: zImage: sparse fixes
+Date: Tue, 26 Feb 2013 19:36:15 -0600
+Message-ID: <1361928975-29395-3-git-send-email-kim.phillips@freescale.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1361928975-29395-1-git-send-email-kim.phillips@freescale.com>
+References: <1361928975-29395-1-git-send-email-kim.phillips@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
-Date: Tue, 26 Feb 2013 17:39:46 -0800
-X-Google-Sender-Auth: 2saNoxUKknBA-bL-OTOH9C15qgc
-Message-ID: <CA+55aFzRRxTjuQcLhkhfxDWpHEg3EoSY8CMP+v78i+_Z-EkQ1g@mail.gmail.com>
-Subject: Re: [git pull] drm merge for 3.9-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Imre Deak <imre.deak@intel.com>
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 25, 2013 at 4:05 PM, Dave Airlie <airlied@linux.ie> wrote:
->
-> Highlights:
->
-> i915: all over the map, haswell power well enhancements, valleyview macro horrors cleaned up, killing lots of legacy GTT
-> code,
+arch/arm/boot/compressed/atags_to_fdt.c:107:34: warning: cast to restricted __be32
+arch/arm/boot/compressed/atags_to_fdt.c:107:34: warning: cast to restricted __be32
+arch/arm/boot/compressed/atags_to_fdt.c:107:34: warning: cast to restricted __be32
+arch/arm/boot/compressed/atags_to_fdt.c:107:34: warning: cast to restricted __be32
+arch/arm/boot/compressed/atags_to_fdt.c:107:34: warning: cast to restricted __be32
+arch/arm/boot/compressed/atags_to_fdt.c:107:34: warning: cast to restricted __be32
+arch/arm/boot/compressed/atags_to_fdt.c:140:54: warning: incorrect type in assignment (different base types)
+arch/arm/boot/compressed/atags_to_fdt.c:140:54:    expected unsigned int [unsigned] <noident>
+arch/arm/boot/compressed/atags_to_fdt.c:140:54:    got restricted __be32 [usertype] <noident>
+arch/arm/boot/compressed/atags_to_fdt.c:141:54: warning: incorrect type in assignment (different base types)
+arch/arm/boot/compressed/atags_to_fdt.c:141:54:    expected unsigned int [unsigned] <noident>
+arch/arm/boot/compressed/atags_to_fdt.c:141:54:    got restricted __be32 [usertype] <noident>
 
-Lowlight:
+Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+---
+ arch/arm/boot/compressed/atags_to_fdt.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-There's something wrong with i915 DP detection or whatever. I get
-stuff like this:
+diff --git a/arch/arm/boot/compressed/atags_to_fdt.c b/arch/arm/boot/compressed/atags_to_fdt.c
+index aabc02a..b7c4846 100644
+--- a/arch/arm/boot/compressed/atags_to_fdt.c
++++ b/arch/arm/boot/compressed/atags_to_fdt.c
+@@ -16,7 +16,7 @@ static int node_offset(void *fdt, const char *node_path)
+ }
+ 
+ static int setprop(void *fdt, const char *node_path, const char *property,
+-		   uint32_t *val_array, int size)
++		   fdt32_t *val_array, int size)
+ {
+ 	int offset = node_offset(fdt, node_path);
+ 	if (offset < 0)
+@@ -95,7 +95,7 @@ static void merge_fdt_bootargs(void *fdt, const char *fdt_cmdline)
+ int atags_to_fdt(void *atag_list, void *fdt, int total_space)
+ {
+ 	struct tag *atag = atag_list;
+-	uint32_t mem_reg_property[2 * NR_BANKS];
++	fdt32_t mem_reg_property[2 * NR_BANKS];
+ 	int memcount = 0;
+ 	int ret;
+ 
+@@ -104,7 +104,7 @@ int atags_to_fdt(void *atag_list, void *fdt, int total_space)
+ 		return 1;
+ 
+ 	/* if we get a DTB here we're done already */
+-	if (*(u32 *)atag_list == fdt32_to_cpu(FDT_MAGIC))
++	if (*(fdt32_t *)atag_list == cpu_to_fdt32(FDT_MAGIC))
+ 	       return 0;
+ 
+ 	/* validate the ATAG */
+-- 
+1.8.1.4
 
-[    5.710827] [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not
-signal timeout (has irq: 1)!
-[    5.720810] [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not
-signal timeout (has irq: 1)!
-[    5.730794] [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not
-signal timeout (has irq: 1)!
-[    5.740782] [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not
-signal timeout (has irq: 1)!
-[    5.750775] [drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not
-signal timeout (has irq: 1)!
-[    5.750778] [drm:intel_dp_aux_ch] *ERROR* dp_aux_ch not done status
-0xa145003f
-.....
-[    8.149931] [drm:intel_dp_aux_ch] *ERROR* dp_aux_ch not done status
-0xa145003f
 
-and after that the screen ends up black.
-
-It's happened twice now, but is not 100% repeatable. It looks like the
-message itself is new,  but the black screen is also new and does seem
-to happen when I get the message, so...
-
-The second time I touched the power button, and the machine came back.
-Apparently the suspend/resume cycle made it all magically work: the
-suspend caused the same errors, but then the resume made it all good
-again.
-
-Some kind of missed initialization at bootup? It's not reliable enough
-to bisect, but I obviously suspect commit 9ee32fea5fe8 ("drm/i915:
-irq-drive the dp aux communication") since that is where the message
-was added..
-
-Btw, looking at that commit, what do you think the semantics of the
-timeout in something like
-
-    done = wait_event_timeout(dev_priv->gmbus_wait_queue, C, 10);
-
-would be? What's that magic "10"? It's some totally random number.
-
-Guys, it should be something meaningful. If you meant a tenth of a
-second, use HZ/10 or something. Because just the plain "10" is crazy.
-I happen to have CONFIG_HZ_1000=y, and you're apparently waiting for a
-hundreth of a second. Was that what you intended? Because if it was,
-it is still crap, since CONFIG_HZ might be 100, and then you're
-waiting for ten times longer.
-
-IOW, passing in a random number like that is crazy. It cannot possibly
-be right.
-
-I have no idea whether the timeout has anything to do with anything,
-but it reinforces my suspicion that there is something wrong with that
-commit.
-
-                   Linus
