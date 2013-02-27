@@ -1,216 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192Ab3B0ApP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:45:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42241 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933009Ab3BZX62 (ORCPT
+	id S933555Ab3B0Apb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:45:31 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:24474 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933009Ab3B0Ap1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:28 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>, Gao Feng <gaofeng@cn.fujitsu.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "Steinar H. Gunderson" <sesse@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 128/150] ipv6: fix race condition regarding dst->expires and dst->from.
-Date: Tue, 26 Feb 2013 15:56:25 -0800
-Message-Id: <20130226235537.466394657@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
-References: <20130226235523.930663721@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 26 Feb 2013 19:45:27 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
+        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
+        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH Resend v5 07/16] spi/spi-atmel: add flag to controller data for lock operations
+Date: Wed, 27 Feb 2013 08:42:59 +0800
+Message-ID: <1361925779-12295-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-------------------
+Will allow to drop the lock during DMA operations.
 
-
-From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-
-[ Upstream commit ecd9883724b78cc72ed92c98bcb1a46c764fff21 ]
-
-Eric Dumazet wrote:
-| Some strange crashes happen in rt6_check_expired(), with access
-| to random addresses.
-|
-| At first glance, it looks like the RTF_EXPIRES and
-| stuff added in commit 1716a96101c49186b
-| (ipv6: fix problem with expired dst cache)
-| are racy : same dst could be manipulated at the same time
-| on different cpus.
-|
-| At some point, our stack believes rt->dst.from contains a dst pointer,
-| while its really a jiffie value (as rt->dst.expires shares the same area
-| of memory)
-|
-| rt6_update_expires() should be fixed, or am I missing something ?
-|
-| CC Neil because of https://bugzilla.redhat.com/show_bug.cgi?id=892060
-
-Because we do not have any locks for dst_entry, we cannot change
-essential structure in the entry; e.g., we cannot change reference
-to other entity.
-
-To fix this issue, split 'from' and 'expires' field in dst_entry
-out of union.  Once it is 'from' is assigned in the constructor,
-keep the reference until the very last stage of the life time of
-the object.
-
-Of course, it is unsafe to change 'from', so make rt6_set_from simple
-just for fresh entries.
-
-Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Gao Feng <gaofeng@cn.fujitsu.com>
-Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Reviewed-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Steinar H. Gunderson <sesse@google.com>
-Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: spi-devel-general@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+[wenyou.yang@atmel.com: submit the patch]
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 ---
- include/net/dst.h     |    8 ++------
- include/net/ip6_fib.h |   37 +++++++++++--------------------------
- net/core/dst.c        |    1 +
- net/ipv6/route.c      |    8 +++-----
- 4 files changed, 17 insertions(+), 37 deletions(-)
+ drivers/spi/spi-atmel.c |   31 +++++++++++++++++++------------
+ 1 file changed, 19 insertions(+), 12 deletions(-)
 
---- a/include/net/dst.h
-+++ b/include/net/dst.h
-@@ -36,13 +36,9 @@ struct dst_entry {
- 	struct net_device       *dev;
- 	struct  dst_ops	        *ops;
- 	unsigned long		_metrics;
--	union {
--		unsigned long           expires;
--		/* point to where the dst_entry copied from */
--		struct dst_entry        *from;
--	};
-+	unsigned long           expires;
- 	struct dst_entry	*path;
--	void			*__pad0;
-+	struct dst_entry	*from;
- #ifdef CONFIG_XFRM
- 	struct xfrm_state	*xfrm;
- #else
---- a/include/net/ip6_fib.h
-+++ b/include/net/ip6_fib.h
-@@ -166,50 +166,35 @@ static inline struct inet6_dev *ip6_dst_
+diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+index 136ed8f..1c2933a 100644
+--- a/drivers/spi/spi-atmel.c
++++ b/drivers/spi/spi-atmel.c
+@@ -196,6 +196,7 @@ struct atmel_spi_caps {
+  */
+ struct atmel_spi {
+ 	spinlock_t		lock;
++	unsigned long		flags;
  
- static inline void rt6_clean_expires(struct rt6_info *rt)
- {
--	if (!(rt->rt6i_flags & RTF_EXPIRES) && rt->dst.from)
--		dst_release(rt->dst.from);
--
- 	rt->rt6i_flags &= ~RTF_EXPIRES;
--	rt->dst.from = NULL;
+ 	resource_size_t		phybase;
+ 	void __iomem		*regs;
+@@ -334,6 +335,16 @@ static void cs_deactivate(struct atmel_spi *as, struct spi_device *spi)
+ 		gpio_set_value(asd->npcs_pin, !active);
  }
  
- static inline void rt6_set_expires(struct rt6_info *rt, unsigned long expires)
- {
--	if (!(rt->rt6i_flags & RTF_EXPIRES) && rt->dst.from)
--		dst_release(rt->dst.from);
--
--	rt->rt6i_flags |= RTF_EXPIRES;
- 	rt->dst.expires = expires;
-+	rt->rt6i_flags |= RTF_EXPIRES;
- }
- 
--static inline void rt6_update_expires(struct rt6_info *rt, int timeout)
-+static inline void rt6_update_expires(struct rt6_info *rt0, int timeout)
- {
--	if (!(rt->rt6i_flags & RTF_EXPIRES)) {
--		if (rt->dst.from)
--			dst_release(rt->dst.from);
--		/* dst_set_expires relies on expires == 0 
--		 * if it has not been set previously.
--		 */
--		rt->dst.expires = 0;
--	}
-+	struct rt6_info *rt;
- 
--	dst_set_expires(&rt->dst, timeout);
--	rt->rt6i_flags |= RTF_EXPIRES;
-+	for (rt = rt0; rt && !(rt->rt6i_flags & RTF_EXPIRES);
-+	     rt = (struct rt6_info *)rt->dst.from);
-+	if (rt && rt != rt0)
-+		rt0->dst.expires = rt->dst.expires;
++static void atmel_spi_lock(struct atmel_spi *as)
++{
++		spin_lock_irqsave(&as->lock, as->flags);
++}
 +
-+	dst_set_expires(&rt0->dst, timeout);
-+	rt0->rt6i_flags |= RTF_EXPIRES;
- }
- 
- static inline void rt6_set_from(struct rt6_info *rt, struct rt6_info *from)
++static void atmel_spi_unlock(struct atmel_spi *as)
++{
++		spin_unlock_irqrestore(&as->lock, as->flags);
++}
++
+ static inline int atmel_spi_xfer_is_last(struct spi_message *msg,
+ 					struct spi_transfer *xfer)
  {
- 	struct dst_entry *new = (struct dst_entry *) from;
+@@ -570,9 +581,9 @@ atmel_spi_msg_done(struct spi_master *master, struct atmel_spi *as,
+ 		"xfer complete: %u bytes transferred\n",
+ 		msg->actual_length);
  
--	if (!(rt->rt6i_flags & RTF_EXPIRES) && rt->dst.from) {
--		if (new == rt->dst.from)
--			return;
--		dst_release(rt->dst.from);
--	}
+-	spin_unlock(&as->lock);
++	atmel_spi_unlock(as);
+ 	msg->complete(msg->context);
+-	spin_lock(&as->lock);
++	atmel_spi_lock(as);
+ 
+ 	as->current_transfer = NULL;
+ 	as->next_transfer = NULL;
+@@ -803,13 +814,11 @@ static int atmel_spi_setup(struct spi_device *spi)
+ 		spi->controller_state = asd;
+ 		gpio_direction_output(npcs_pin, !(spi->mode & SPI_CS_HIGH));
+ 	} else {
+-		unsigned long		flags;
 -
- 	rt->rt6i_flags &= ~RTF_EXPIRES;
--	rt->dst.from = new;
- 	dst_hold(new);
-+	rt->dst.from = new;
- }
- 
- static inline void ip6_rt_put(struct rt6_info *rt)
---- a/net/core/dst.c
-+++ b/net/core/dst.c
-@@ -179,6 +179,7 @@ void *dst_alloc(struct dst_ops *ops, str
- 	dst_init_metrics(dst, dst_default_metrics, true);
- 	dst->expires = 0UL;
- 	dst->path = dst;
-+	dst->from = NULL;
- #ifdef CONFIG_XFRM
- 	dst->xfrm = NULL;
- #endif
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -300,6 +300,7 @@ static void ip6_dst_destroy(struct dst_e
- {
- 	struct rt6_info *rt = (struct rt6_info *)dst;
- 	struct inet6_dev *idev = rt->rt6i_idev;
-+	struct dst_entry *from = dst->from;
- 
- 	if (rt->n)
- 		neigh_release(rt->n);
-@@ -312,8 +313,8 @@ static void ip6_dst_destroy(struct dst_e
- 		in6_dev_put(idev);
+-		spin_lock_irqsave(&as->lock, flags);
++		atmel_spi_lock(as);
+ 		if (as->stay == spi)
+ 			as->stay = NULL;
+ 		cs_deactivate(as, spi);
+-		spin_unlock_irqrestore(&as->lock, flags);
++		atmel_spi_unlock(as);
  	}
  
--	if (!(rt->rt6i_flags & RTF_EXPIRES) && dst->from)
--		dst_release(dst->from);
-+	dst->from = NULL;
-+	dst_release(from);
+ 	asd->csr = csr;
+@@ -828,7 +837,6 @@ static int atmel_spi_transfer(struct spi_device *spi, struct spi_message *msg)
+ {
+ 	struct atmel_spi	*as;
+ 	struct spi_transfer	*xfer;
+-	unsigned long		flags;
+ 	struct device		*controller = spi->master->dev.parent;
+ 	u8			bits;
+ 	struct atmel_spi_device	*asd;
+@@ -893,11 +901,11 @@ static int atmel_spi_transfer(struct spi_device *spi, struct spi_message *msg)
+ 	msg->status = -EINPROGRESS;
+ 	msg->actual_length = 0;
  
- 	if (rt6_has_peer(rt)) {
- 		struct inet_peer *peer = rt6_peer_ptr(rt);
-@@ -1054,7 +1055,6 @@ struct dst_entry *ip6_blackhole_route(st
+-	spin_lock_irqsave(&as->lock, flags);
++	atmel_spi_lock(as);
+ 	list_add_tail(&msg->queue, &as->queue);
+ 	if (!as->current_transfer)
+ 		atmel_spi_next_message(spi->master);
+-	spin_unlock_irqrestore(&as->lock, flags);
++	atmel_spi_unlock(as);
  
- 		rt->rt6i_gateway = ort->rt6i_gateway;
- 		rt->rt6i_flags = ort->rt6i_flags;
--		rt6_clean_expires(rt);
- 		rt->rt6i_metric = 0;
+ 	return 0;
+ }
+@@ -907,17 +915,16 @@ static void atmel_spi_cleanup(struct spi_device *spi)
+ 	struct atmel_spi	*as = spi_master_get_devdata(spi->master);
+ 	struct atmel_spi_device	*asd = spi->controller_state;
+ 	unsigned		gpio = (unsigned) spi->controller_data;
+-	unsigned long		flags;
  
- 		memcpy(&rt->rt6i_dst, &ort->rt6i_dst, sizeof(struct rt6key));
-@@ -1859,8 +1859,6 @@ static struct rt6_info *ip6_rt_copy(stru
- 		if ((ort->rt6i_flags & (RTF_DEFAULT | RTF_ADDRCONF)) ==
- 		    (RTF_DEFAULT | RTF_ADDRCONF))
- 			rt6_set_from(rt, ort);
--		else
--			rt6_clean_expires(rt);
- 		rt->rt6i_metric = 0;
+ 	if (!asd)
+ 		return;
  
- #ifdef CONFIG_IPV6_SUBTREES
-
+-	spin_lock_irqsave(&as->lock, flags);
++	atmel_spi_lock(as);
+ 	if (as->stay == spi) {
+ 		as->stay = NULL;
+ 		cs_deactivate(as, spi);
+ 	}
+-	spin_unlock_irqrestore(&as->lock, flags);
++	atmel_spi_unlock(as);
+ 
+ 	spi->controller_state = NULL;
+ 	gpio_free(gpio);
+-- 
+1.7.9.5
 
