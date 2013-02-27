@@ -1,164 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466Ab3B0FNM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 00:13:12 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:56399 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750847Ab3B0FNJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 00:13:09 -0500
+	id S1751912Ab3B0FWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 00:22:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3564 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751209Ab3B0FWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 00:22:50 -0500
+Date: Wed, 27 Feb 2013 00:22:47 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-btrfs@vger.kernel.org
+Subject: btrfs crash when low on memory.
+Message-ID: <20130227052247.GA20213@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-btrfs@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <1361830121-32284-1-git-send-email-sjg@chromium.org>
-References: <1361830121-32284-1-git-send-email-sjg@chromium.org>
-Date: Tue, 26 Feb 2013 21:13:06 -0800
-X-Google-Sender-Auth: oQU1EQOhUFlqis89NRlOvpKFptg
-Message-ID: <CAPnjgZ3enERPu1uK5GW9+_ZinhiDmDuoNn2FGhgVNOZbFVQ0tQ@mail.gmail.com>
-Subject: Re: [PATCH v6 0/6] Add ChromeOS Embedded Controller support
-From: Simon Glass <sjg@chromium.org>
-To: LKML <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: Simon Glass <sjg@chromium.org>, Rob Landley <rob@landley.net>,
-        Felipe Balbi <balbi@ti.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Che-Liang Chiou <clchiou@chromium.org>,
-        Jonathan Kliegman <kliegs@chromium.org>, linux-input@vger.kernel.org,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        Roland Stigge <stigge@antcom.de>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Javier Martinez Canillas <javier@dowhile0.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-doc@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Bill Pemberton <wfp5p@virginia.edu>,
-        Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+Something I've yet to repeat managed to leak a whole bunch of memory
+while I was travelling, and locked up my workstation.
 
-On Mon, Feb 25, 2013 at 2:08 PM, Simon Glass <sjg@chromium.org> wrote:
-> The ChromeOS Embedded Controller (EC) is an Open Source EC implementation
-> used on ARM and Intel Chromebooks. Current implementations use a Cortex-M3
-> connected on a bus (such as I2C, SPI, LPC) to the AP. A separate interrupt
-> line is used to indicate when the EC needs service.
->
-> Functions performed by the EC vary by platform, but typically include
-> battery charging, keyboard scanning and power sequencing.
->
-> This series includes support for the EC message protocol, and implements
-> a matrix keyboard handler for Linux using the protocol. The EC performs
-> key scanning and passes scan data in response to AP requests. This is
-> used on the Samsung ARM Chromebook. No driver is available for LPC at
-> present.
->
-> This series can in principle operate on any hardware, but for it to actually
-> work on the Samsung ARM Chromebook, it needs patches which are currently in
-> progress to mainline: Exynos FDT interrupt support and I2C bus arbitration.
->
-> The driver is device-tree-enabled and a suitable binding is included in
-> this series. Example device tree nodes are included in the examples,
-> but no device tree patch for exynos5250-snow is provided at this stage, since
-> we must wait for the above-mentioned patches to land to avoid errors from
-> dtc. This can be added with a follow-on patch when that work is complete.
->
+When I got home, this was the last thing printed out before it locked up
+(it did make it into the logs thankfully) after a bunch of instances of
+the oom-killers handywork.
 
-Are you happy with this series? Do you think it is ready to be picked
-up for mfd?
 
-Regards,
-Simon
 
-> Changes in v6:
-> - Allow cros_ec to be a module
-> - Remove 'struct i2c_msg' definition
-> - Use %ph instead of for loop to output packet trace
-> - Fix incorrect indentation in cros_ec_keyb_process()
-> - Remove unnecessary assignment to NULL in probe function
->
-> Changes in v5:
-> - Remove cros_ec allocation functions
-> - Remove name access functions in cros_ec, using strings instead
-> - Fix Kconfig help message for MFD_CROS_EC_I2C
-> - Remove I2C retry logic
-> - Switch cros_ec_i2c driver to use devm
-> - Update cros_ec_i2c to work with new cros_ec interface
-> - Switch cros_ec_spi driver to use devm
-> - Update cros_ec_spi to work with new cros_ec interface
-> - Fix {} style nit in cros_ec_keyb_has_ghosting
-> - Correct key lookup logic which was broken in previous version
-> - Switch cros_ec_keyb driver to use devm
->
-> Changes in v4:
-> - Fix up trvial logging comments
-> - Remove messages reporting out of memory
-> - Add compatible string for cros-ec-keyb
-> - Remove wake notifier and let drivers use their own handlers instead
-> - Add 'depends on MFD_CROS_EC' to Kconfig
-> - Remove use of wake_notifier
-> - Remove manual code to locate device tree node
-> - Add resume handler to clear keyboard scan buffer if required
->
-> Changes in v3:
-> - Add stub for matrix_keypad_parse_of_params() when no CONFIG_OF
-> - Put back full DT range checking in tca8418 driver
-> - Remove 'select MFD_CROS_EC' from Kconfig as it isn't necessary
-> - Remove old_state by using input layer's idev->key
-> - Move inner loop of cros_ec_keyb_has_ghosting() into its own function and simplify
-> - Add check for not finding the device tree node
-> - Remove comment about leaking matrix_keypad_build_keymap()
-> - Use platform_get_drvdata() where possible
-> - Remove call to input_free_device() after input_unregister_device()
->
-> Changes in v2:
-> - Remove use of __devinit/__devexit
-> - Remove use of __devinit/__devexit
-> - Remove use of __devinit/__devexit
-> - Add new patch to decode matrix-keypad DT binding
-> - Remove use of __devinit/__devexit
-> - Use function to read matrix-keypad parameters from DT
-> - Remove key autorepeat parameters from DT binding and driver
-> - Use unsigned int for rows/cols
->
-> Simon Glass (6):
->   mfd: Add ChromeOS EC messages header
->   mfd: Add ChromeOS EC implementation
->   mfd: Add ChromeOS EC I2C driver
->   mfd: Add ChromeOS EC SPI driver
->   Input: matrix-keymap: Add function to read the new DT binding
->   Input: Add ChromeOS EC keyboard driver
->
->  .../devicetree/bindings/input/cros-ec-keyb.txt     |   72 +
->  Documentation/devicetree/bindings/mfd/cros-ec.txt  |   56 +
->  drivers/input/keyboard/Kconfig                     |   12 +
->  drivers/input/keyboard/Makefile                    |    1 +
->  drivers/input/keyboard/cros_ec_keyb.c              |  334 +++++
->  drivers/input/keyboard/lpc32xx-keys.c              |   11 +-
->  drivers/input/keyboard/omap4-keypad.c              |   16 +-
->  drivers/input/keyboard/tca8418_keypad.c            |    7 +-
->  drivers/input/matrix-keymap.c                      |   19 +
->  drivers/mfd/Kconfig                                |   28 +
->  drivers/mfd/Makefile                               |    3 +
->  drivers/mfd/cros_ec.c                              |  189 +++
->  drivers/mfd/cros_ec_i2c.c                          |  206 +++
->  drivers/mfd/cros_ec_spi.c                          |  375 ++++++
->  include/linux/input/matrix_keypad.h                |   19 +
->  include/linux/mfd/cros_ec.h                        |  170 +++
->  include/linux/mfd/cros_ec_commands.h               | 1369 ++++++++++++++++++++
->  17 files changed, 2869 insertions(+), 18 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/input/cros-ec-keyb.txt
->  create mode 100644 Documentation/devicetree/bindings/mfd/cros-ec.txt
->  create mode 100644 drivers/input/keyboard/cros_ec_keyb.c
->  create mode 100644 drivers/mfd/cros_ec.c
->  create mode 100644 drivers/mfd/cros_ec_i2c.c
->  create mode 100644 drivers/mfd/cros_ec_spi.c
->  create mode 100644 include/linux/mfd/cros_ec.h
->  create mode 100644 include/linux/mfd/cros_ec_commands.h
->
-> --
-> 1.8.1.3
->
+SLUB: Unable to allocate memory on node -1 (gfp=0x50)
+  cache: btrfs_extent_state, object size: 176, buffer size: 504, default order: 1, min order: 0
+  node 0: slabs: 49, objs: 640, free: 0
+------------[ cut here ]------------
+kernel BUG at fs/btrfs/extent_io.c:748!
+invalid opcode: 0000 [#1] PREEMPT SMP 
+Modules linked in: xfs vfat fat ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables snd_emu10k1 coretemp snd_hwdep snd_util_mem snd_ac97_codec ac97_bus snd_rawmidi snd_seq snd_seq_device microcode snd_pcm pcspkr snd_page_alloc snd_timer snd soundcore e1000e vhost_net tun macvtap macvlan kvm_intel kvm binfmt_misc nfsd auth_rpcgss nfs_acl lockd sunrpc btrfs libcrc32c lzo_compress zlib_deflate ata_piix usb_storage firewire_ohci firewire_core sata_sil crc_itu_t radeon i2c_algo_bit hwmon drm_kms_helper ttm drm i2c_core floppy
+CPU 1 
+Pid: 7017, comm: mutt Not tainted 3.8.0+ #67                  /D975XBX
+RIP: 0010:[<ffffffffa02502fe>]  [<ffffffffa02502fe>] __set_extent_bit+0x3ae/0x4d0 [btrfs]
+RSP: 0000:ffff8800a4c31838  EFLAGS: 00010246
+RAX: 0000000000000000 RBX: 00000000001bbfff RCX: 0000000000000000
+RDX: 0000000000000001 RSI: 00000000000000b0 RDI: 0000000000000000
+RBP: ffff8800a4c318b8 R08: ffffffff81cf0b80 R09: 0000000000000400
+R10: 0000000000000001 R11: 0000000000000508 R12: ffff8800ba4ab2c8
+R13: ffff8800ba4ab2c8 R14: 0000000000000000 R15: 00000000001bb000
+FS:  00007eff96e14800(0000) GS:ffff8800bfc00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000449cee CR3: 0000000080ebb000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process mutt (pid: 7017, threadinfo ffff8800a4c30000, task ffff880025cba4c0)
+Stack:
+ 0000000000002ab2 ffff8800a4c318e0 ffff8800a4c31fd8 0000000000000292
+ ffff8800a4c31fd8 0000000000001000 00000000001bbfff 0000100800000008
+ 00000000034a39a8 ffff8800ba4ab2c8 ffff8800a4c31898 00000000001bbfff
+Call Trace:
+ [<ffffffffa0251024>] lock_extent_bits+0x74/0xa0 [btrfs]
+ [<ffffffffa0251063>] lock_extent+0x13/0x20 [btrfs]
+ [<ffffffffa02531c4>] __extent_read_full_page+0xc4/0x720 [btrfs]
+ [<ffffffffa02520e0>] ? repair_io_failure+0x440/0x440 [btrfs]
+ [<ffffffffa023adf0>] ? btrfs_submit_direct+0x640/0x640 [btrfs]
+ [<ffffffffa023adf0>] ? btrfs_submit_direct+0x640/0x640 [btrfs]
+ [<ffffffffa023adf0>] ? btrfs_submit_direct+0x640/0x640 [btrfs]
+ [<ffffffffa0254886>] extent_readpages+0x116/0x1f0 [btrfs]
+ [<ffffffffa02383cf>] btrfs_readpages+0x1f/0x30 [btrfs]
+ [<ffffffff8115592a>] __do_page_cache_readahead+0x2aa/0x350
+ [<ffffffff81155790>] ? __do_page_cache_readahead+0x110/0x350
+ [<ffffffff81147d95>] ? find_get_page+0x5/0x280
+ [<ffffffff81155b61>] ra_submit+0x21/0x30
+ [<ffffffff81149f07>] filemap_fault+0x267/0x4a0
+ [<ffffffff811724fe>] __do_fault+0x6e/0x530
+ [<ffffffff8117539f>] handle_pte_fault+0x8f/0x900
+ [<ffffffff81176430>] handle_mm_fault+0x210/0x300
+ [<ffffffff81693d6c>] __do_page_fault+0x15c/0x4e0
+ [<ffffffff811029d7>] ? rcu_eqs_exit_common+0xc7/0x380
+ [<ffffffff81102cf5>] ? rcu_eqs_exit+0x65/0xb0
+ [<ffffffff8169411b>] do_page_fault+0x2b/0x50
+ [<ffffffff81690ccf>] page_fault+0x1f/0x30
+Code: c9 0f 85 c7 fc ff ff 66 0f 1f 44 00 00 f6 45 18 10 0f 84 b7 fc ff ff 8b 7d 18 e8 8e f2 ff ff 48 85 c0 48 89 c1 0f 85 a3 fc ff ff <0f> 0b 4d 89 ef 31 c9 eb 89 66 0f 1f 84 00 00 00 00 00 48 83 7b 
+
+WARNING: at kernel/exit.c:721 do_exit+0x55/0xc70()
+Hardware name:         
+Modules linked in: xfs vfat fat ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables snd_emu10k1 coretemp snd_hwdep snd_util_mem snd_ac97_codec ac97_bus snd_rawmidi snd_seq snd_seq_device microcode snd_pcm pcspkr snd_page_alloc snd_timer snd soundcore e1000e vhost_net tun macvtap macvlan kvm_intel kvm binfmt_misc nfsd auth_rpcgss nfs_acl lockd sunrpc btrfs libcrc32c lzo_compress zlib_deflate ata_piix usb_storage firewire_ohci firewire_core sata_sil crc_itu_t radeon i2c_algo_bit hwmon drm_kms_helper ttm drm i2c_core floppy
+Pid: 7017, comm: mutt Tainted: G      D      3.8.0+ #67
+Call Trace:
+ [<ffffffff8104b54f>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffff8104b5aa>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff810517c5>] do_exit+0x55/0xc70
+ [<ffffffff8133b1b8>] ? __const_udelay+0x28/0x30
+ [<ffffffff81075b3c>] ? __rcu_read_unlock+0x5c/0xa0
+ [<ffffffff8104f08d>] ? kmsg_dump+0x1bd/0x230
+ [<ffffffff8104eef5>] ? kmsg_dump+0x25/0x230
+ [<ffffffff81691936>] oops_end+0x96/0xe0
+ [<ffffffff81005ff8>] die+0x58/0x90
+ [<ffffffff8169116b>] do_trap+0x6b/0x170
+ [<ffffffff81002f1a>] do_invalid_op+0x9a/0xc0
+ [<ffffffffa02502fe>] ? __set_extent_bit+0x3ae/0x4d0 [btrfs]
+ [<ffffffffa024f5ae>] ? alloc_extent_state+0x2e/0x1b0 [btrfs]
+ [<ffffffff8133c6ed>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+ [<ffffffff81690acd>] ? restore_args+0x30/0x30
+ [<ffffffff81699965>] invalid_op+0x15/0x20
+ [<ffffffffa02502fe>] ? __set_extent_bit+0x3ae/0x4d0 [btrfs]
+ [<ffffffffa02502f2>] ? __set_extent_bit+0x3a2/0x4d0 [btrfs]
+ [<ffffffffa0251024>] lock_extent_bits+0x74/0xa0 [btrfs]
+ [<ffffffffa0251063>] lock_extent+0x13/0x20 [btrfs]
+ [<ffffffffa02531c4>] __extent_read_full_page+0xc4/0x720 [btrfs]
+ [<ffffffffa02520e0>] ? repair_io_failure+0x440/0x440 [btrfs]
+ [<ffffffffa023adf0>] ? btrfs_submit_direct+0x640/0x640 [btrfs]
+ [<ffffffffa023adf0>] ? btrfs_submit_direct+0x640/0x640 [btrfs]
+ [<ffffffffa023adf0>] ? btrfs_submit_direct+0x640/0x640 [btrfs]
+ [<ffffffffa0254886>] extent_readpages+0x116/0x1f0 [btrfs]
+ [<ffffffffa02383cf>] btrfs_readpages+0x1f/0x30 [btrfs]
+ [<ffffffff8115592a>] __do_page_cache_readahead+0x2aa/0x350
+ [<ffffffff81155790>] ? __do_page_cache_readahead+0x110/0x350
+ [<ffffffff81147d95>] ? find_get_page+0x5/0x280
+ [<ffffffff81155b61>] ra_submit+0x21/0x30
+ [<ffffffff81149f07>] filemap_fault+0x267/0x4a0
+ [<ffffffff811724fe>] __do_fault+0x6e/0x530
+ [<ffffffff8117539f>] handle_pte_fault+0x8f/0x900
+ [<ffffffff81176430>] handle_mm_fault+0x210/0x300
+ [<ffffffff81693d6c>] __do_page_fault+0x15c/0x4e0
+ [<ffffffff811029d7>] ? rcu_eqs_exit_common+0xc7/0x380
+ [<ffffffff81102cf5>] ? rcu_eqs_exit+0x65/0xb0
+ [<ffffffff8169411b>] do_page_fault+0x2b/0x50
+ [<ffffffff81690ccf>] page_fault+0x1f/0x30
+
+
+
+
+ 746         if (!prealloc && (mask & __GFP_WAIT)) {
+ 747                 prealloc = alloc_extent_state(mask);
+ 748                 BUG_ON(!prealloc);
+ 749         }
+
+	Dave
+
