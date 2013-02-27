@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760790Ab3B0T3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 14:29:21 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:50364 "EHLO
+	id S1760781Ab3B0TeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 14:34:18 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:50375 "EHLO
 	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752847Ab3B0T3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 14:29:20 -0500
-Date: Wed, 27 Feb 2013 14:29:07 -0500
+	id S1760284Ab3B0TeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 14:34:16 -0500
+Date: Wed, 27 Feb 2013 14:34:05 -0500
 From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Jones <davej@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
+To: Chris Friesen <chris.friesen@genband.com>
+Cc: Peter Jones <pjones@redhat.com>, Dave Airlie <airlied@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
-        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-Message-ID: <20130227192907.GB14253@thunk.org>
+        Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Message-ID: <20130227193405.GC14253@thunk.org>
 Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Jones <davej@redhat.com>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Chris Friesen <chris.friesen@genband.com>,
+	Peter Jones <pjones@redhat.com>, Dave Airlie <airlied@gmail.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	David Howells <dhowells@redhat.com>,
+	Florian Weimer <fw@deneb.enyo.de>,
 	Linus Torvalds <torvalds@linux-foundation.org>,
-	"gnehzuil.liu" <gnehzuil.liu@gmail.com>,
-	Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20130227154450.GA23402@x4>
- <20130227170157.GA222@x4>
- <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
- <20130227172256.GA236@x4>
- <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
- <20130227174553.GA224@x4>
- <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
- <20130227184912.GA19624@thunk.org>
- <20130227185625.GA224@x4>
- <20130227191923.GA1121@redhat.com>
+	Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+	Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20130226035416.GA1128@kroah.com>
+ <20130226040456.GA30717@srcf.ucam.org>
+ <20130226041324.GA7241@kroah.com>
+ <CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com>
+ <20130226044521.GC12906@thunk.org>
+ <20130226165451.GE32160@fenchurch.internal.datastacks.com>
+ <20130227152429.GA5609@thunk.org>
+ <512E4409.2040907@genband.com>
+ <20130227175947.GA16966@thunk.org>
+ <512E5C9F.2050800@genband.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130227191923.GA1121@redhat.com>
+In-Reply-To: <512E5C9F.2050800@genband.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: tytso@thunk.org
@@ -47,40 +52,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 02:19:23PM -0500, Dave Jones wrote:
+On Wed, Feb 27, 2013 at 01:21:03PM -0600, Chris Friesen wrote:
 > 
-> Looks like it's fixed here too.
+> I think it'd need to be "doesn't notice operationally when running
+> the virtualized Windows install".
 > 
-> How did this make it through -next without anyone hitting it ?
-> 
-> I can't remember how many years ago I last bought a disk < 1TB,
-> and I can't be alone.  Or is everyone all about SSDs these days?
+> Anyone going through all the trouble to virtualize an existing
+> install could probably arrange to have the target computer do the
+> conversion at a time when nobody is likely to be around.
 
-I use LVM, so I have a number of volues which are smaler than 512GB,
-but very few which are actually larger than 1TB.  And none on my test
-boxes.  I was running the bleeding edge ext4 code on my laptop as for
-dogfooding purposes, but I have an 80GB mSATA SSD and a 500GB HDD on
-my X230 laptop (it requires a thin laptop drive, and 7mm drives don't
-come any bigger, alas).
+It shouldn't be all that hard to avoid doing a full-fledged
+conversion.  I've in the pat managed to configure KVM so that a
+particular installation of Windows could be run either natively or
+under KVM.  The hard part would be to make Windows not notice the
+change in device drivers necessary, so trying to make this work with
+paravirtualization would be tricky.  But if you aren't shooting for a
+full performance, it shouldn't be that hard.
 
-> Is anyone running xfstests or similar on linux-next regularly ?
+That being said, if someone were being employed by the NSA to attack
+Iran, or by the MSS to attack the US Federal Government, or simply by
+a russian firm wanting to make $$$ selling Viagra, they'd probably try
+to shoot for figuring out some way to surrepticiously install the
+paravirtualization drivers into an existing Windows install.  But this
+is not a fundamental theoretical difficulty; just a practical one.)
 
-I run xfstests on the ext4 tree, and I ran it on ext4 plus Linus's tip
-before I submitted a pull request.  The problem is that XFSTESTS is
-S-L-O-W if you use large partitions, so typically I use a 5GB
-partition sizes for my test runs.  Normally we're worried about race
-condition bugs, not something as bone-headed as a bitmasking problem,
-so it makes sense to use a smaller disk for most of your testing.
-(Some folks do their xfstests run on SSD's or tmpfs image files, again
-for speed reasons, and it's unlikely they would be big enough.)
-
-So what we probably need to do is to have a separate set of tests
-using a loopback mount, and perhaps an artificially created file
-system which has a large percentage of the blocks in the middle of the
-file system busied out, to make efficient testing of these sorts of
-bugs more efficient.  As I said, I'm thinking about how's the best way
-to improve our testing regime to catch such problems the next time around.
-
-Cheers,
-
-   	       	       	      	       	    - Ted
+       	 	     		 	     	    - Ted
