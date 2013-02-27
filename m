@@ -1,103 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758543Ab3B0JAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 04:00:40 -0500
-Received: from smtp4.mundo-r.com ([212.51.32.151]:44889 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755824Ab3B0JAi (ORCPT
+	id S1758513Ab3B0JH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 04:07:26 -0500
+Received: from canardo.mork.no ([148.122.252.1]:45776 "EHLO canardo.mork.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756920Ab3B0JHX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 04:00:38 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjcLAK3KLVFbdWOb/2dsb2JhbABFuicih0Z8FnOCHwEBBAEnQBEBBQsLGAkWDwkDAgECAUUGDQEFAgEBiAkKvmGNQYFTB4NAA5ZBiWOHB4MJgWg
-X-IPAS-Result: AjcLAK3KLVFbdWOb/2dsb2JhbABFuicih0Z8FnOCHwEBBAEnQBEBBQsLGAkWDwkDAgECAUUGDQEFAgEBiAkKvmGNQYFTB4NAA5ZBiWOHB4MJgWg
-Message-ID: <512DCB33.6030500@igalia.com>
-Date: Wed, 27 Feb 2013 10:00:35 +0100
-From: =?ISO-8859-1?Q?Samuel_Iglesias_Gons=E1lvez?= <siglesias@igalia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Wed, 27 Feb 2013 04:07:23 -0500
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: gdt@gdt.id.au
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb/net/asix_devices: Add USBNET HG20F9 ethernet dongle
+Organization: m
+References: <1361852232.23197.4.camel@andromache.adelaide.aarnet.edu.au>
+	<20130226.172856.235525833921140241.davem@davemloft.net>
+	<20130226.172955.926853809838377302.davem@davemloft.net>
+Date: Wed, 27 Feb 2013 10:07:11 +0100
+In-Reply-To: <20130226.172955.926853809838377302.davem@davemloft.net> (David
+	Miller's message of "Tue, 26 Feb 2013 17:29:55 -0500 (EST)")
+Message-ID: <87zjyq86rk.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jens Taprogge <jens.taprogge@taprogge.org>,
-        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipack: add missing put_device() after device_register()
- failed
-References: <1361869395-23110-1-git-send-email-siglesias@igalia.com> <20130226222842.GA20670@core.coreip.homeip.net>
-In-Reply-To: <20130226222842.GA20670@core.coreip.homeip.net>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dmitry,
+David Miller <davem@davemloft.net> writes:
 
-First of all, thanks for your comments.
-
-On 02/26/2013 11:28 PM, Dmitry Torokhov wrote:
-> On Tue, Feb 26, 2013 at 10:03:15AM +0100, Samuel Iglesias Gonsalvez wrote:
->> put_device() must be called after device_register() fails,
->> since device_register() always initializes the refcount
->> on the device structure to one.
->>
->> dev->id is free'd inside of ipack_device_release function.
->> So, it's not needed to do it here.
->>
->> Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
->> ---
->>  drivers/ipack/ipack.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/ipack/ipack.c b/drivers/ipack/ipack.c
->> index 7ec6b20..3588ccf 100644
->> --- a/drivers/ipack/ipack.c
->> +++ b/drivers/ipack/ipack.c
->> @@ -449,7 +449,7 @@ int ipack_device_register(struct ipack_device *dev)
->>  
->>  	ret = device_register(&dev->dev);
->>  	if (ret < 0)
->> -		kfree(dev->id);
->> +		put_device(&dev->dev);
-> 
-> Now callers have no idea if they have to free (put_device) it in case of
-> failure or it is already done for them, because a few lines earlier, if
-> pack_device_read_id() fails, it simply returns error code.
-> 
-> IMO if a function did not allocate object it should not try to free it,
-> callers should dispose of the device as they see fit.
-> 
-> What is missing, however, is dev->id = NULL assignment so that if caller
-> does put_device() kit won't double-free the memory.
-
-OK. I will write a patch.
-
-> Also it would make
-> sense to split device_register into device_init() and device_add() so
-> that device_init() is very first thing you do and in case of all
-> failures callers should use put_device().
-> 
-
-It makes sense. I will write a patch for it.
-
-> Also tpci200.c need to learn to clean up after itself and I also not
-> sure why it tries to provide its own release function.
+>> Applied, thanks Glen.
 >
+> Actually, I had to revert, this doesn't even compile against
+> current sources:
+>
+>   CC [M]  drivers/net/usb/asix_devices.o
+> drivers/net/usb/asix_devices.c:941:14: error: ‘asix_rx_fixup’ undeclared here (not in a function)
+> make[1]: *** [drivers/net/usb/asix_devices.o] Error 1
+> make: *** [drivers/net/usb/asix_devices.o] Error 2
 
-tpci200 driver is the one who allocated the struct ipack_device and it
-should free it. The path to release it is the following:
+I believe this patch will make checkpatch cry
 
-* The kernel will call the corresponding release() function of the
-struct device. This callback is linked to ipack_release_device() in
-ipack.c. In that function, there is a kfree(dev->id) as it was
-previously allocated by ipack bus driver.
+  ERROR: do not use C99 // comments
 
-* Then, ipack_release_device() calls the carrier's release function to
-indicate that the device is being released and the carrier driver needs
-to take care of its own resources.
+as well.  It would be nice if that was fixed as well before resending.
+But please keep the commit message :)
 
-In summary, each driver allocate and free its own resources when
-unregistering a device.
 
-Thanks,
-
-Sam
+Bjørn
