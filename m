@@ -1,75 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab3B0Vv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 16:51:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56401 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab3B0Vv5 (ORCPT
+	id S1756950Ab3B0VxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 16:53:09 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:57775 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab3B0VxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 16:51:57 -0500
-Date: Wed, 27 Feb 2013 13:51:55 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rob Landley <rob@landley.net>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Dave Jones <davej@redhat.com>, David Howells <dhowell@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Josh Boyer <jwboyer@redhat.com>, Michal Marek <mmarek@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rusty Russell <rusty@rustcorp.com.au>, Sam Ravnborg <sam@ravnborg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vince Weaver <vincent.weaver@maine.edu>, x86@kernel.org,
-        Zheng Yan <zheng.z.yan@intel.com>
-Subject: Re: [PATCH 0/3] build linux-next without perl
-Message-Id: <20130227135155.c04453db.akpm@linux-foundation.org>
-In-Reply-To: <1361944667.957820@landley.net>
-References: <1361944667.957820@landley.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Feb 2013 16:53:07 -0500
+Date: Wed, 27 Feb 2013 16:09:25 -0500
+From: Andrew Shewmaker <agshew@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH v2 2/2] mm: tuning hardcoded reserved memory
+Message-ID: <20130227210925.GB8429@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Feb 2013 21:57:52 -0800 (PST)
-Rob Landley <rob@landley.net> wrote:
+Add a rootuser_reserve_pages knob to allow admins of large memory 
+systems running with overcommit disabled to change the hardcoded 
+memory reserve to something other than 3%.
 
-> Before 2.6.25 building Linux never required perl. This patch series removes
-> the requirement from basic kernel builds (tested on i686, x86_64, arm, mips,
-> powerpc, sparc, sh4, and m68k). Now updated to 3.8-rc1.
-> 
-> Note, this removes perl from the _build_ environment, not from the _development_
-> environment. This is approximately the same logic behind "make menuconfig"
-> requiring curses but "make oldconfig" not requiring curses. Including
-> zconf.lex.c_shipped in kconfig and then requiring perl makes no sense.
->
-> ...
->
-> Mostly people just copy the patches into their local projects (ala
-> https://github.com/rofl0r/sabotage/tree/master/KEEP ) but I'm reposting
-> them to linux-kernel after Gentoo considered using these patches, but didn't 
-> because they weren't upstream:
->   https://bugs.gentoo.org/show_bug.cgi?id=421483
+Signed-off-by: Andrew Shewmaker <agshew@gmail.com>
 
-Sitting here scratching head wondering why you-need-perl is a problem
-for anyone.
+---
 
-That gentoo bug report provides some explanation: "perl was removed
-from @system".  But I expect other people have different reasons.
+Patch based off of mmotm git tree as of February 27th.
 
-IOW, please better describe the motivation for this patchset.
+I set rootuser_reserve pages to be a default of 1000, and I suppose 
+I should have initialzed similarly to the way min_free_kbytes is, 
+scaling it with the size of the box. However, I wanted to get a 
+simple version of this patch out for feedback to see if it has any 
+chance of acceptance or if I need to take an entirely different 
+approach.
 
-It'll need to be reasonably good motivation, too.  Because not only do
-we need to patch the kernel, we also need to *maintain* its
-perl-freeness and fix up perlisms as they later get added by others.
+Any feedback will be appreciated!
 
-(Perhaps one way of doing this would be to disable perl in regular
-builds, so even if a developer has perl installed on his machine, his
-build will still fail when he invokes it.  Add "PERL=/dev/null" to some
-build targets in some manner.)
+ Documentation/sysctl/vm.txt |  9 +++++++++
+ include/linux/mm.h          |  2 ++
+ kernel/sysctl.c             |  8 ++++++++
+ mm/mmap.c                   | 30 +++++++++++++++++++++++-------
+ 4 files changed, 42 insertions(+), 7 deletions(-)
 
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index 078701f..3a71de9 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -51,6 +51,7 @@ Currently, these files are in /proc/sys/vm:
+ - page-cluster
+ - panic_on_oom
+ - percpu_pagelist_fraction
++- rootuser_reserve_pages
+ - stat_interval
+ - swappiness
+ - vfs_cache_pressure
+@@ -628,6 +629,14 @@ the high water marks for each per cpu page list.
+ 
+ ==============================================================
+ 
++rootuser_reserve_pages
++
++The number of free pages left in the system that should be reserved for users
++with the capability cap_sys_admin. The default falue is 3% of total system 
++memory. Changing this takes effect whenever an application requests memory.
++
++==============================================================
++
+ stat_interval
+ 
+ The time interval between which vm statistics are updated.  The default
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 66e2f7c..af7b39f 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1677,6 +1677,8 @@ int in_gate_area_no_mm(unsigned long addr);
+ 
+ int drop_caches_sysctl_handler(struct ctl_table *, int,
+ 					void __user *, size_t *, loff_t *);
++int rootuser_reserve_pages_sysctl_handler(struct ctl_table *, int,
++					void __user *, size_t *, loff_t *);
+ unsigned long shrink_slab(struct shrink_control *shrink,
+ 			  unsigned long nr_pages_scanned,
+ 			  unsigned long lru_pages);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index c88878d..cd1987e 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -96,6 +96,7 @@
+ /* External variables not in a header file. */
+ extern int sysctl_overcommit_memory;
+ extern int sysctl_overcommit_ratio;
++extern int sysctl_rootuser_reserve_pages;
+ extern int max_threads;
+ extern int suid_dumpable;
+ #ifdef CONFIG_COREDUMP
+@@ -1413,6 +1414,13 @@ static struct ctl_table vm_table[] = {
+ 		.extra2		= &one,
+ 	},
+ #endif
++	{
++		.procname	= "rootuser_reserve_pages",
++		.data		= &sysctl_rootuser_reserve_pages,
++		.maxlen		= sizeof(sysctl_rootuser_reserve_pages),
++		.mode		= 0644,
++		.proc_handler	= rootuser_reserve_pages_sysctl_handler,
++	},
+ 	{ }
+ };
+ 
+diff --git a/mm/mmap.c b/mm/mmap.c
+index d1e4124..b58af97 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -32,6 +32,7 @@
+ #include <linux/khugepaged.h>
+ #include <linux/uprobes.h>
+ #include <linux/rbtree_augmented.h>
++#include <linux/sysctl.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/cacheflush.h>
+@@ -83,6 +84,7 @@ EXPORT_SYMBOL(vm_get_page_prot);
+ int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
+ int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
+ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
++int sysctl_rootuser_reserve_pages __read_mostly = 1000;
+ /*
+  * Make sure vm_committed_as in one cacheline and not cacheline shared with
+  * other variables. It can be updated by several CPUs frequently.
+@@ -165,7 +167,7 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 		 * Leave the last 3% for root
+ 		 */
+ 		if (!cap_sys_admin)
+-			free -= free / 32;
++			free -= sysctl_rootuser_reserve_pages;
+ 
+ 		if (free > pages)
+ 			return 0;
+@@ -179,9 +181,9 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 	 * Leave the last 3% for root
+ 	 */
+ 	if (!cap_sys_admin)
+-		allowed -= allowed / 32;
++		allowed -= sysctl_rootuser_reserve_pages;
+ 	allowed += total_swap_pages;
+ 
+ 	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
+ 		return 0;
+ error:
+@@ -3052,3 +3049,22 @@ void __init mmap_init(void)
+ 	ret = percpu_counter_init(&vm_committed_as, 0);
+ 	VM_BUG_ON(ret);
+ }
++
++/*
++ * rootuser_reserve_pages_sysctl_handler - just a wrapper around proc_dointvec_minmax() so 
++ *	that we can cap the number of pages to the current number of free pages.
++ */
++int rootuser_reserve_pages_sysctl_handler(ctl_table *table, int write, 
++	void __user *buffer, size_t *length, loff_t *ppos)
++{
++	unsigned long free;
++
++	proc_dointvec(table, write, buffer, length, ppos);
++
++	if (write) {
++		free = global_page_state(NR_FREE_PAGES);
++		if (sysctl_rootuser_reserve_pages > free)
++			sysctl_rootuser_reserve_pages = free;
++	}
++	return 0;
++}
