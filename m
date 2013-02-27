@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab3B0I0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 03:26:31 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:62635 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753923Ab3B0I0a (ORCPT
+	id S1755582Ab3B0I23 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 03:28:29 -0500
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:63915 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab3B0I22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 03:26:30 -0500
+	Wed, 27 Feb 2013 03:28:28 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAPM=9tw8mefcYTqELXFbZWZ44a--SNcPnRMAvMSGTiODzRpDhg@mail.gmail.com>
-References: <1352665488-13818-1-git-send-email-mathieu.poirier@linaro.org>
-	<20121119072525.GA16730@core.coreip.homeip.net>
-	<CAPM=9tw8mefcYTqELXFbZWZ44a--SNcPnRMAvMSGTiODzRpDhg@mail.gmail.com>
-Date: Wed, 27 Feb 2013 18:26:29 +1000
-Message-ID: <CAPM=9tzyBuxwLS=0vAcF5h4vZnB01X7_1NbnMo0M=M454gwZBQ@mail.gmail.com>
-Subject: Re: [PATCH v4] drivers/tty: Folding Android's keyreset driver in sysRQ
-From: Dave Airlie <airlied@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: mathieu.poirier@linaro.org, linux-kernel@vger.kernel.org, arve@android.com,
-        kernel-team@android.com, john.stultz@linaro.org,
-        alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <CAFTL4hx6BGEotYH4yBH8UYDJYyxLAa56KT0ahAtke97rMKaw=A@mail.gmail.com>
+References: <1361435356-28466-1-git-send-email-vincent.guittot@linaro.org>
+	<20130222123213.GA17948@somewhere.redhat.com>
+	<CAKfTPtBgEsEJUD+C55Tad8xi3areARQ4GV8WjTaCjncj8hONEA@mail.gmail.com>
+	<CAFTL4hz5OzFGfhsj2bNR+76VrpXCxyDtN6fqC1cYF3zpJpjOTg@mail.gmail.com>
+	<CAKfTPtAq4GWoc8oOaUt17ZePfa4PMq7NvPEZYrqo2cvDpGwsWQ@mail.gmail.com>
+	<CAFTL4hx6BGEotYH4yBH8UYDJYyxLAa56KT0ahAtke97rMKaw=A@mail.gmail.com>
+Date: Wed, 27 Feb 2013 09:28:26 +0100
+Message-ID: <CAKfTPtBsk9s-w0A-uMMJuHY=_1y8WhdkArRxN=Jk0qtQwPZyDQ@mail.gmail.com>
+Subject: Re: [PATCH v4] sched: fix init NOHZ_IDLE flag
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, rostedt@goodmis.org,
+        efault@gmx.de
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 26 February 2013 18:43, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 2013/2/26 Vincent Guittot <vincent.guittot@linaro.org>:
+>> On 26 February 2013 14:16, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>> 2013/2/22 Vincent Guittot <vincent.guittot@linaro.org>:
+>>>> I wanted to avoid having to use the sd pointer for testing NOHZ_IDLE
+>>>> flag because it occurs each time we go into idle but it seems to be
+>>>> not easily feasible.
+>>>> Another solution could be to add a synchronization step between
+>>>> rcu_assign_pointer(dom 1, NULL) and create new domain to ensure that
+>>>> all pending access to old sd values, has finished but this will imply
+>>>> a potential delay in the rebuild  of sched_domain and i'm not sure
+>>>> that it's acceptable
 >
-> this patch seems to be oopsing on my x86 32-bit machine on bootup, pic attached.
->
-> .config attached.
->
-> It looks to me like the weak bit isn't working so well
->
->         if (platform_sysrq_reset_seq) {
->                 for (i = 0; i < ARRAY_SIZE(sysrq_reset_seq); i++) {
->                         key = platform_sysrq_reset_seq[i];
->   6d:   66 8b 8c 00 00 00 00    mov    0x0(%eax,%eax,1),%cx
->   74:   00
->
-> is around where it craps out.
-> gcc version 4.7.2 20121109 (Red Hat 4.7.2-8) (GCC)
-> Fedora 18 machine.
+> Ah I see what you meant there. Making a synchronize_rcu() after
+> setting the dom to NULL, on top of which we could work on preventing
+> from any concurrent nohz_flag modification. But cpu hotplug seem to
+> become a bit of a performance sensitive path this day.
 
-And just to confirm reverting
-154b7a489a5b1d808323b933b04864958c2f1056.in Linus' tree allows boot to
-proceed.
+That's was also my concern
 
-Dave.
+>
+> Ok I don't like having a per cpu state in struct sched domain but for
+> now I can't find anything better. So my suggestion is that we do this
+> and describe well the race, define the issue in the changelog and code
+> comments and explain how we are solving it. This way at least the
+> issue is identified and known. Then later, on review or after the
+> patch is upstream, if somebody with some good taste comes with a
+> better idea, we consider it.
+>
+> What do you think?
+
+I don't have better solution than adding this state in the
+sched_domain if we want to keep the exact same behavior. This will be
+a bit of waste of mem because we don't need to update all sched_domain
+level (1st level is enough).
+
+Vincent
