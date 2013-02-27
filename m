@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760204Ab3B0PHk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 10:07:40 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:60938 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab3B0PHi (ORCPT
+	id S1760224Ab3B0PKp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 10:10:45 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:42216 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760111Ab3B0PKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 10:07:38 -0500
-Date: Wed, 27 Feb 2013 07:07:33 -0800
+	Wed, 27 Feb 2013 10:10:43 -0500
+Date: Wed, 27 Feb 2013 07:10:36 -0800
 From: Tejun Heo <tj@kernel.org>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, Wim Van Sebroeck <wim@iguana.be>,
-        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-watchdog@vger.kernel.org, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [next-20130227] kernel NULL pointer dereference [ watchdog |
- perf related ? ]
-Message-ID: <20130227150733.GB22383@htj.dyndns.org>
-References: <CA+icZUUsedHPqZc5jXQ_AqAbfmTMu5WW8CJ+vnHwL69ofw7uTw@mail.gmail.com>
- <20130227122302.GA5678@pd.tnic>
- <CA+icZUVXDfOhztQtrOxyYaHutpx=iVpPGmRT0PzP7045_mjh6w@mail.gmail.com>
- <CA+icZUXJb5O7ML-xnQq8Zoa46NmaGZp2Xaqj6fJL+vudPeQTLw@mail.gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, rickard.andersson@stericsson.com,
+        fabio.baltieri@linaro.org
+Subject: Re: [PATCH 1/3] workqueue: define mod_scheduled_delayed_work[_on]()
+ helpers
+Message-ID: <20130227151036.GC22383@htj.dyndns.org>
+References: <5249868a014d716eb38cc90e04ed0f6051e65fc3.1361964515.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+icZUXJb5O7ML-xnQq8Zoa46NmaGZp2Xaqj6fJL+vudPeQTLw@mail.gmail.com>
+In-Reply-To: <5249868a014d716eb38cc90e04ed0f6051e65fc3.1361964515.git.viresh.kumar@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replying here too just in case.
+On Wed, Feb 27, 2013 at 04:59:10PM +0530, Viresh Kumar wrote:
+>  int execute_in_process_context(work_func_t fn, struct execute_work *);
+> @@ -465,6 +466,11 @@ static inline long work_on_cpu(unsigned int cpu, long (*fn)(void *), void *arg)
+>  long work_on_cpu(unsigned int cpu, long (*fn)(void *), void *arg);
+>  #endif /* CONFIG_SMP */
+>  
+> +#define mod_scheduled_delayed_work_on(cpu, dwork, delay)	\
+> +	mod_delayed_work_on(cpu, system_wq, dwork, delay)
+> +#define mod_scheduled_delayed_work(dwork, delay)		\
+> +	mod_delayed_work(system_wq, dwork, delay)
 
-On Wed, Feb 27, 2013 at 02:08:40PM +0100, Sedat Dilek wrote:
-> >> static inline void *idr_find(struct idr *idr, int id)
-> >> {
-> >>         struct idr_layer *hint = rcu_dereference_raw(idr->hint);
-> >>     86d7:       48 8b 05 00 00 00 00    mov    0x0(%rip),%rax        # 86de <perf_init_event+0x2e>
-> >>                         86da: R_X86_64_PC32     .bss+0xfc
-> >>
-> >>         if ((id & ~IDR_MASK) == hint->prefix)
-> >>     86de:       89 f2                   mov    %esi,%edx
-> >>     86e0:       30 d2                   xor    %dl,%dl
-> >>     86e2:       3b 10                   cmp    (%rax),%edx              <--- trapping insn
-> >>     86e4:       74 4a                   je     8730 <perf_init_event+0x80>
-> >>                 return rcu_dereference_raw(hint->ary[id & IDR_MASK]);
-> >>
-> >>
-> >> So 'hint' is NULL as RAX above confirms and we're not supposed to deref
-> >> NULL things.
-> >>
-> >> Looking at 29cf29e1fbb875019713eb55cf27ec35f1e5fa5e, Tejun should
-> >> probably know. CCed.
-
-Fix was posted some days ago.
-
-  http://thread.gmane.org/gmane.linux.kernel.next/26213
-
-I got Andrew's patch added to -mm message a week ago.  Not sure why it
-still hasn't showed up.  Andrew, any ideas?
+So, the intention is to just let people use system_wq.  We no longer
+have single system-wide workqueue and we don't wanna add different
+variants matching each system wq.  schedule_work() and friends were
+already there so I'm leaving those alone but I don't really want to
+add another set of rather meaningless wrappers.  Please just use
+system_wq with mode_delayed_work*().
 
 Thanks.
 
