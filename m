@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933617Ab3B0AQa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:16:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42890 "EHLO
+	id S1760423Ab3B0AJR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:09:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42846 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760426Ab3B0AJS (ORCPT
+	with ESMTP id S1760385Ab3B0AJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:18 -0500
+	Tue, 26 Feb 2013 19:09:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phileas Fogg <phileas-fogg@mail.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 61/86] powerpc/kexec: Disable hard IRQ before kexec
-Date: Tue, 26 Feb 2013 16:08:09 -0800
-Message-Id: <20130226235919.234881382@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 50/86] drm/usb: bind driver to correct device
+Date: Tue, 26 Feb 2013 16:07:58 -0800
+Message-Id: <20130226235918.097223583@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -27,49 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phileas Fogg <phileas-fogg@mail.ru>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 8520e443aa56cc157b015205ea53e7b9fc831291 upstream.
+commit 9f23de52b64f7fb801fd76f3dd8651a0dc89187b upstream.
 
-Disable hard IRQ before kexec a new kernel image.
-Not doing it can result in corrupted data in the memory segments
-reserved for the new kernel.
+While looking at plymouth on udl I noticed that plymouth was trying
+to use its fb plugin not its drm one, it was trying to drmOpen a driver called
+usb not udl, noticed that we actually had out driver pointing at the wrong
+device.
 
-Signed-off-by: Phileas Fogg <phileas-fogg@mail.ru>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/machine_kexec_64.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/drm_usb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/machine_kexec_64.c
-+++ b/arch/powerpc/kernel/machine_kexec_64.c
-@@ -162,6 +162,8 @@ static int kexec_all_irq_disabled = 0;
- static void kexec_smp_down(void *arg)
- {
- 	local_irq_disable();
-+	hard_irq_disable();
-+
- 	mb(); /* make sure our irqs are disabled before we say they are */
- 	get_paca()->kexec_state = KEXEC_STATE_IRQS_OFF;
- 	while(kexec_all_irq_disabled == 0)
-@@ -244,6 +246,8 @@ static void kexec_prepare_cpus(void)
- 	wake_offline_cpus();
- 	smp_call_function(kexec_smp_down, NULL, /* wait */0);
- 	local_irq_disable();
-+	hard_irq_disable();
-+
- 	mb(); /* make sure IRQs are disabled before we say they are */
- 	get_paca()->kexec_state = KEXEC_STATE_IRQS_OFF;
+--- a/drivers/gpu/drm/drm_usb.c
++++ b/drivers/gpu/drm/drm_usb.c
+@@ -18,7 +18,7 @@ int drm_get_usb_dev(struct usb_interface
  
-@@ -281,6 +285,7 @@ static void kexec_prepare_cpus(void)
- 	if (ppc_md.kexec_cpu_down)
- 		ppc_md.kexec_cpu_down(0, 0);
- 	local_irq_disable();
-+	hard_irq_disable();
- }
+ 	usbdev = interface_to_usbdev(interface);
+ 	dev->usbdev = usbdev;
+-	dev->dev = &usbdev->dev;
++	dev->dev = &interface->dev;
  
- #endif /* SMP */
+ 	mutex_lock(&drm_global_mutex);
+ 
 
 
