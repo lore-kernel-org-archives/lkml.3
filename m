@@ -1,130 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760605Ab3B0R7p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 12:59:45 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51446 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756508Ab3B0R7n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 12:59:43 -0500
-Date: Wed, 27 Feb 2013 17:57:50 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>, Peter Korsgaard <jacmet@sunsite.dk>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        Kyungsik Lee <kyungsik.lee@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
-        raphael.andy.lee@gmail.com
-Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
-Message-ID: <20130227175750.GD17833@n2100.arm.linux.org.uk>
-References: <alpine.LFD.2.03.1302261557220.1254@syhkavp.arg> <87fw0i7n6d.fsf@dell.be.48ers.dk> <20130226221027.GW17833@n2100.arm.linux.org.uk> <1361929234.1924.8.camel@joe-AO722> <20130227095609.GY17833@n2100.arm.linux.org.uk> <1361980152.2035.13.camel@joe-AO722> <20130227163118.GB17833@n2100.arm.linux.org.uk> <1361984688.2035.20.camel@joe-AO722> <alpine.LFD.2.03.1302271211360.1254@syhkavp.arg> <1361986787.20540.8.camel@joe-AO722>
+	id S932458Ab3B0R7z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:59:55 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52355 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760238Ab3B0R7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 12:59:53 -0500
+Date: Wed, 27 Feb 2013 09:59:45 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] printk: Avoid softlockups in console_unlock()
+Message-ID: <20130227175945.GC3336@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1361927819-1570-1-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1361986787.20540.8.camel@joe-AO722>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1361927819-1570-1-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13022717-5806-0000-0000-000020204783
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 09:39:47AM -0800, Joe Perches wrote:
-> On Wed, 2013-02-27 at 12:16 -0500, Nicolas Pitre wrote:
-> > On Wed, 27 Feb 2013, Joe Perches wrote:
-> > > On Wed, 2013-02-27 at 16:31 +0000, Russell King - ARM Linux wrote:
-> > > > On Wed, Feb 27, 2013 at 07:49:12AM -0800, Joe Perches wrote:
-> > > > > On Wed, 2013-02-27 at 09:56 +0000, Russell King - ARM Linux wrote:
-> > > > > > On Tue, Feb 26, 2013 at 05:40:34PM -0800, Joe Perches wrote:
-> > > > > > > On Tue, 2013-02-26 at 22:10 +0000, Russell King - ARM Linux wrote:
-> > > > > > > > So... for a selected kernel version of a particular size, can we please
-> > > > > > > > have a comparison between the new LZO code and this LZ4 code, so that
-> > > > > > > > we can see whether it's worth updating the LZO code or replacing the
-> > > > > > > > LZO code with LZ4?
-> > > > > > > 
-> > > > > > > How could it be questionable that it's worth updating the LZO code?
-> > > > > > 
-> > > > > > Please read the comments against the previous posting of these patches
-> > > > > > where I first stated this argument - and with agreement from those
-> > > > > > following the thread.  The thread started on 26 Jan 2013.  Thanks.
-> > > > > 
-> > > > > https://lkml.org/lkml/2013/1/29/145
-> > > > > 
-> > > > > I did not and do not see significant value in
-> > > > > adding LZ4 given Markus' LZO improvements.
-> > > > 
-> > > > Sorry, a 66% increase in decompression speed over the updated LZO code
-> > > > isn't "significant value" ?
-> > > 
-> > > We disagree.
-> > > 
-> > > > I'm curious - what in your mind qualifies "significant value" ?
-> > > 
-> > > faster boot time. smaller, faster overall code.
-> > 
-> > Sorry, but you certainly successfully got me confused, and probably 
-> > others as well.
-> > 
-> > RMK says that "66% increase in decompression speed over LZO" is 
-> > significant.  You apparently disagree with that.
+On Wed, Feb 27, 2013 at 02:16:59AM +0100, Jan Kara wrote:
+> A CPU can be caught in console_unlock() for a long time (tens of seconds
+> are reported by our customers) when other CPUs are using printk heavily
+> and serial console makes printing slow. Despite serial console drivers
+> are calling touch_nmi_watchdog() this triggers softlockup warnings
+> because interrupts are effectively disabled for the whole time printing
+> takes place. Thus IPIs cannot be processed and other CPUs get stuck
+> spinning in calls like smp_call_function_many(). Also RCU eventually
+> starts reporting lockups.
 > 
-> Yeah, I can see how that can be interpreted.
-> I'm referring only to the new LZO.
+> In my artifical testing I also managed to trigger a situation when disk
+> disappeared from the system apparently because commands to / from it
+> could not be delivered for long enough. This is why just silencing
+> watchdogs isn't a reliable solution to the problem.
 > 
-> I guess Russell has not reviewed the new LZO.
+> One part of fixing the issue is changing vprintk_emit() to call
+> console_unlock() with interrupts enabled (this isn't perfect as printk()
+> itself can be called with interrupts disabled but it improves the
+> situation in lots of cases). Another part is limiting the time we spend
+> in console_unlock() printing loop to watchdog_thresh() / 4. Then we
+> release console_sem and wait for watchdog_thresh() / 4 to give a chance
+> to other printk() users to get the semaphore and start printing. If
+> printk() was called with interrupts enabled, it also gives CPU a chance
+> to process blocked interrupts. Then we recheck if there's still anything
+> to print, try to grab console_sem again and if we succeed, we go on with
+> printing.
+
+Hello, Jan,
+
+If a CPU remains in your loop where you invoke rcu_cpu_stall_reset(),
+there is no indication of the stall.  Now, I do understand why having
+RCU add a CPU stall warning into the mix would be very bad, but it
+would be good to have some sort of indication that there is stalling.
+Perhaps a counter visible in sysfs?  Whatever it is, at least some way
+of diagnosing the stall condition would be very good.
+
+							Thanx, Paul
+
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  include/linux/nmi.h |   18 ++++++++++++++++++
+>  kernel/printk.c     |   44 ++++++++++++++++++++++++++++++++++++++------
+>  2 files changed, 56 insertions(+), 6 deletions(-)
 > 
-> There is apparently no speed increase for LZ4 over
-> the new LZO.
+> Andrew, I was playing with this problem some more and this patch is the least
+> scary fix I found ;). It may slow down printing in heavy-printk cases though.
+> What do you think?
+> 
+> diff --git a/include/linux/nmi.h b/include/linux/nmi.h
+> index db50840..ce32959 100644
+> --- a/include/linux/nmi.h
+> +++ b/include/linux/nmi.h
+> @@ -51,6 +51,24 @@ extern int watchdog_thresh;
+>  struct ctl_table;
+>  extern int proc_dowatchdog(struct ctl_table *, int ,
+>  			   void __user *, size_t *, loff_t *);
+> +/*
+> + * Return the maximum number of nanosecond for which interrupts may be disabled
+> + * on the current CPU
+> + */
+> +static inline u64 max_interrupt_disabled_duration(void)
+> +{
+> +	/*
+> +	 * We give us some headroom because timers need time to fire before the
+> +	 * watchdog period expires.
+> +	 */
+> +	return ((u64)watchdog_thresh) * NSEC_PER_SEC / 2;
+> +}
+> +#else
+> +static inline u64 max_interrupt_disabled_duration(void)
+> +{
+> +	/* About the value we'd get with the default watchdog setting */
+> +	return 5ULL * NSEC_PER_SEC;
+> +}
+>  #endif
+> 
+>  #endif
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 0b31715..2f4d9a4 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -1522,7 +1522,8 @@ asmlinkage int vprintk_emit(int facility, int level,
+>  		 */
+>  		if (!oops_in_progress && !lockdep_recursing(current)) {
+>  			recursion_bug = 1;
+> -			goto out_restore_irqs;
+> +			local_irq_restore(flags);
+> +			return printed_len;
+>  		}
+>  		zap_locks();
+>  	}
+> @@ -1616,17 +1617,19 @@ asmlinkage int vprintk_emit(int facility, int level,
+>  	/*
+>  	 * Try to acquire and then immediately release the console semaphore.
+>  	 * The release will print out buffers and wake up /dev/kmsg and syslog()
+> -	 * users.
+> +	 * users. We call console_unlock() with interrupts enabled if possible
+> +	 * since printing can take a long time.
+>  	 *
+>  	 * The console_trylock_for_printk() function will release 'logbuf_lock'
+>  	 * regardless of whether it actually gets the console semaphore or not.
+>  	 */
+> -	if (console_trylock_for_printk(this_cpu))
+> +	if (console_trylock_for_printk(this_cpu)) {
+> +		local_irq_restore(flags);
+>  		console_unlock();
+> +	} else
+> +		local_irq_restore(flags);
+> 
+>  	lockdep_on();
+> -out_restore_irqs:
+> -	local_irq_restore(flags);
+> 
+>  	return printed_len;
+>  }
+> @@ -2046,6 +2049,8 @@ void console_unlock(void)
+>  	unsigned long flags;
+>  	bool wake_klogd = false;
+>  	bool retry;
+> +	u64 end_time, now;
+> +	int cur_cpu;
+> 
+>  	if (console_suspended) {
+>  		up(&console_sem);
+> @@ -2053,6 +2058,15 @@ void console_unlock(void)
+>  	}
+> 
+>  	console_may_schedule = 0;
+> +	preempt_disable();
+> +	cur_cpu = smp_processor_id();
+> +	/*
+> +	 * We give us some headroom because we check the time only after
+> +	 * printing the whole message
+> +	 */
+> +	end_time = cpu_clock(cur_cpu) + max_interrupt_disabled_duration() / 2;
+> +	preempt_enable();
+> +
+> 
+>  	/* flush buffered message fragment immediately to console */
+>  	console_cont_flush(text, sizeof(text));
+> @@ -2075,7 +2089,8 @@ again:
+>  			console_prev = 0;
+>  		}
+>  skip:
+> -		if (console_seq == log_next_seq)
+> +		now = sched_clock_cpu(cur_cpu);
+> +		if (console_seq == log_next_seq || now > end_time)
+>  			break;
+> 
+>  		msg = log_from_idx(console_idx);
+> @@ -2121,6 +2136,23 @@ skip:
+>  	up(&console_sem);
+> 
+>  	/*
+> +	 * If the printing took too long, wait a bit to give other CPUs a
+> +	 * chance to take console_sem or at least provide some time for
+> +	 * interrupts to be processed (if we are lucky enough and they are
+> +	 * enabled at this point).
+> +	 */
+> +	if (now > end_time) {
+> +		/*
+> +		 * We won't reach RCU quiescent state anytime soon, silence
+> +		 * the warnings.
+> +		 */
+> +		local_irq_save(flags);
+> +		rcu_cpu_stall_reset();
+> +		local_irq_restore(flags);
+> +		ndelay(max_interrupt_disabled_duration() / 2);
+> +	}
+> +
+> +	/*
+>  	 * Someone could have filled up the buffer again, so re-check if there's
+>  	 * something to flush. In case we cannot trylock the console_sem again,
+>  	 * there's a new owner and the console_unlock() from them will do the
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Total claptrap.  I've no idea where you're getting your data from, but
-it's franky wrong and you're now being totally misleading to anyone
-else reading this thread.
-
-I explicitly asked for a comparison of the _new_ LZO vs the LZ4 code,
-and this is what I received from Kyungsik Lee in this thread:
-
-	Compiler: Linaro ARM gcc 4.6.2
-	2. ARMv7, 1.7GHz based board
-	   Kernel: linux 3.7
-	   Uncompressed Kernel Size: 14MB
-	         Compressed Size  Decompression Speed
-	    LZO  6.0MB            34.1MB/s            Old
-	         ----------------------------------------
-	         6.0MB            34.7MB/s            New
-	         6.0MB            52.2MB/s(UA)
-	    =============================================
-	    LZ4  6.5MB            86.7MB/s
-	UA: Unaligned memory Access support
-
-And my statement of a "66% increase in speed" of LZ4 is comparing the
-_new_ LZO code with unaligned access with the LZ4 code.
-
-Now, you refer to Markus' results - but Markus' results do not say what
-they're comparing - they don't say what the size of the compressed image
-is, nor what the size of the uncompressed image was.
-
-Now, Markus' results show a 42% increase in speed between the LZO-2012
-and LZO-2013-UA versions (do the calculation yourself - I'm sure you're
-capable of that?  If not, we can turn this into a maths lesson too).
-The above shows a 53% increase in speed between the existing LZO code
-and the new LZO code with unaligned accesses.
-
-_But_ the above shows an additional 66% increase between the new LZO
-code with unaligned accesses and LZ4.  Or, a whopping 150% increase
-in speed over the _existing_ LZO code.
-
-So please, stop stating what I have and have not reviewed.  Unlike you,
-I _have_ been following everything that's been said in this thread, and
- - unlike you - I have analysed the figures put forward and drawn
-conclusions which are fully supported by the published data from them,
-and stated them - now many times.
