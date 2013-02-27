@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758221Ab3B0Jt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 04:49:56 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:45362 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab3B0Jtz convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:7:1>);
-	Wed, 27 Feb 2013 04:49:55 -0500
-Message-Id: <512DE4CF02000078000C15FE@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Wed, 27 Feb 2013 09:49:51 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Chen Gang" <gang.chen@asianux.com>, <konrad.wilk@oracle.com>
-Cc: <roger.pau@citrix.com>, <stefano.stabellini@eu.citrix.com>,
-        "xen-devel" <xen-devel@lists.xen.org>, <dgdegra@tycho.nsa.gov>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/block/xen-blkback: preq.dev is used
- without initialized
-References: <512D90F2.9070200@asianux.com>
-In-Reply-To: <512D90F2.9070200@asianux.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S932262Ab3B0JwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 04:52:20 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:56368 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308Ab3B0JwR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 04:52:17 -0500
+MIME-Version: 1.0
+X-Originating-IP: [46.116.186.210]
+In-Reply-To: <CAEvN+1hLe=aPapmu8KCcoUHJ1LkaQJ8WGs4j=82S=jj6UUCxOw@mail.gmail.com>
+References: <CAEvN+1hLe=aPapmu8KCcoUHJ1LkaQJ8WGs4j=82S=jj6UUCxOw@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 27 Feb 2013 11:51:57 +0200
+Message-ID: <CAK=WgbYdMoeVTyXEX1ZXfLB7f7XdXsB7Q3C63VsYtyj2MYoe1A@mail.gmail.com>
+Subject: Re: rpmsg: support for being called in interrupt context?
+To: Tzu-Jung Lee <roylee17@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 27.02.13 at 05:52, Chen Gang <gang.chen@asianux.com> wrote:
+Hi,
 
->   if call xen_vbd_translate failed, the preq.dev will be not initialized.
->   so use blkif->vbd.pdevice instead (still better to print relative info).
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+On Wed, Feb 27, 2013 at 7:44 AM, Tzu-Jung Lee <roylee17@gmail.com> wrote:
+> I'm wondering is the support for being called in interrupt is on going?
 
-Acked-by: Jan Beulich <jbeulich@suse.com>
+Not that I know of.
 
-> ---
->  drivers/block/xen-blkback/blkback.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/block/xen-blkback/blkback.c 
-> b/drivers/block/xen-blkback/blkback.c
-> index de1f319..6d1cc3d 100644
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -904,7 +904,8 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
->  		pr_debug(DRV_PFX "access denied: %s of [%llu,%llu] on dev=%04x\n",
->  			 operation == READ ? "read" : "write",
->  			 preq.sector_number,
-> -			 preq.sector_number + preq.nr_sects, preq.dev);
-> +			 preq.sector_number + preq.nr_sects,
-> +			 blkif->vbd.pdevice);
->  		goto fail_response;
->  	}
->  
-> -- 
-> 1.7.7.6
+> If I'd  like to help on this, any suggestion or cautions should be take care
+> of?
 
+If you want this to be merged upstream, please describe your hardware
+and exact use cases so we are convinced this is indeed necessary.
 
-
+Thanks,
+Ohad.
