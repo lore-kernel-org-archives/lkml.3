@@ -1,128 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760785Ab3B0S7J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 13:59:09 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:53639 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760740Ab3B0S7H (ORCPT
+	id S1757852Ab3B0TBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 14:01:00 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42347 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab3B0TA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 13:59:07 -0500
-Message-ID: <512E5774.2090403@gmail.com>
-Date: Thu, 28 Feb 2013 02:59:00 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 27 Feb 2013 14:00:58 -0500
+Date: Wed, 27 Feb 2013 19:00:46 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] ima: prevent dead lock when a file is opened for direct
+ io
+Message-ID: <20130227190046.GP4503@ZenIV.linux.org.uk>
+References: <1361395671.29360.26.camel@falcor1>
+ <20130226162024.GI4503@ZenIV.linux.org.uk>
+ <1361907128.2908.180.camel@falcor1.watson.ibm.com>
+ <20130226203408.GJ4503@ZenIV.linux.org.uk>
+ <1361920934.2908.228.camel@falcor1.watson.ibm.com>
+ <CALLzPKbStdUdATJYPfMDxnPB9hgz=-iv1aYpSCTKgL9UUmSmmQ@mail.gmail.com>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Zheng Liu <wenqing.lz@taobao.com>, Dave Jones <davej@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-References: <nsxr4k2kdwv.fsf@closure.thunk.org> <20130227124727.GA225@x4> <20130227153435.GB5609@thunk.org> <20130227154450.GA23402@x4> <20130227170157.GA222@x4> <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com> <20130227172256.GA236@x4> <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com> <20130227174553.GA224@x4> <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com> <20130227184912.GA19624@thunk.org>
-In-Reply-To: <20130227184912.GA19624@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALLzPKbStdUdATJYPfMDxnPB9hgz=-iv1aYpSCTKgL9UUmSmmQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted,
+On Wed, Feb 27, 2013 at 11:21:15AM +0200, Kasatkin, Dmitry wrote:
+> On Wed, Feb 27, 2013 at 1:22 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > On Tue, 2013-02-26 at 20:34 +0000, Al Viro wrote:
+> >> On Tue, Feb 26, 2013 at 02:32:08PM -0500, Mimi Zohar wrote:
+> >> > Before anything gets access to the file, the file needs to be measured,
+> >> > appraised, and/or audited, based on policy.  If IMA-appraisal is enabled
+> >> > and the file is in policy, we enforce local file integrity and return
+> >> > -EINVAL on failure, similar to LSMs.
+> >> >
+> >> > Appraising the file is a two step process.  Before appraising the file
+> >> > data's integrity, we verify the integrity of the file metadata. Included
+> >> > in the 'security.evm' calculation is the ino, generation, uid, gid,
+> >> > mode, uuid, and the security xattrs.  'security.ima' contains the file
+> >> > data hash or a signature based on the hash.
+> >> >
+> >> > The i_mutex is held when making file metadata changes (eg. xattrs,
+> >> > chmod, ...).  We hold the i_mutex through the entire verification,
+> >> > preventing the file data/metadata from changing.
+> >>
+> >> ->i_mutex is *not* guaranteed to prevent file data changes.  It does
+> >> cover metadata, but that's it.  ->write() is not required to take it.
+> >> Note, BTW, that as soon as you've dropped ->i_mutex, the metadata can
+> >> be changed by somebody else.
+> >
+> > Any time file metadata included in the HMAC is updated, 'security.evm'
+> > is updated to reflect the change.  But before 'security.evm' is updated,
+> > evm_verify_current_integrity() verifies the existing value.
+> >
+> >> What do you achieve by holding it over the vfs_read() call?
+> >
+> > - Before calculating the file hash, verifying it against the digest in
+> > 'security.ima' and storing the verification status in the iint, we check
+> > the iint to see whether it was previously verified.  By taking the
+> > i_mutex and keeping it, we prevent the file from being hashed multiple
+> > times.
+> >
+> > - Prior to IMA-appraisal, on file close only the iint was updated,
+> > reflecting the fact that the file would need to be re-measured and added
+> > to the measurement list the next time it was opened.  With
+> > IMA-appraisal, on file close, not only do we need to reflect this change
+> > in the iint, but we also need to update the 'security.ima' xattr to
+> > reflect the new hash value.  Having the iint specific lock caused a
+> > lockdep.  In one case, we took the i_mutex followed by the iint lock,
+> > while in the other case, the iint lock was taken before the i_mutex.
+> >
+> >> > I guess I wasn't clear here.  IMA always takes the i_mutex, regardless
+> >> > of the O_DIRECT flag.  When a file is opened for read,
+> >> > process_measurement() takes the i_mutex and then, if the file was opened
+> >> > with the O_DIRECT flag, do_blockdev_direct_IO() attempts to take the
+> >> > i_mutex again, causing the lockdep.
+> >>
+> >> *sigh*
+> >> Do you actually disagree with my description of the locking rules you
+> >> implicitly rely upon?
+> >
+> > Obsolutely not!  I misunderstood what you were saying.  The word
+> > 'unless' was confusing.
+> >
+> >>  Suppose wankfs_file_read() happens to grab
+> >> ->i_mutex for some reason; without IMA it used to be perfectly legitimate.
+> >> With IMA it will deadlock as soon as IMA decides that such file is worth
+> >> its attention.  So these days the rule has (silently) become
+> >>       * ->read() on a regular file is not allowed to touch ->i_mutex
+> >> and with your proposed change it becomes (still undocumented)
+> >>       * ->read() on a regular file is not allowed to touch ->i_mutex unless
+> >> O_DIRECT is present in file flags at the moment of ->read()
+> >> Correct?
+> >
+> > yes, unfortunately.  What would you suggest?
+> >
+> 
+> The main purpose of taking i_mutex is to ensure that measured content
+> of the file (vfs_read) is in sync with extended attribute values.
+> 
+> If in overall taking a i_mutex before calling vsf_read is
+> fundamentally wrong, then one of the solutions is to introduce back
+> the usage of IMA specific mutex.
+> iint->mutex was removed because it caused dead locking due different
+> locking order in different cases.
 
-On 02/28/2013 02:49 AM, Theodore Ts'o wrote:
-> Markus, Dave, can you confirm that this fixes your problem?
-> 
-> Thanks!!
-> 
-> (Sigh, this is a real brown paper bug; I'm embarassed I missed this in
-> my code review.)
+BTW, speaking of races in there: what's to stop ima_file_mmap() from
+racing with rename()?  You have
+int ima_file_mmap(struct file *file, unsigned long prot)
+{
+        if (file && (prot & PROT_EXEC))
+                return process_measurement(file, file->f_dentry->d_name.name,
+                                           MAY_EXEC, MMAP_CHECK);
+        return 0;
+}
+in there; just what is that ->d_name.name good for?  By the time you get
+through calculating hash (which, by definition, may include a considerable
+amount of IO), the pointer you have passed might be pointing to anything.
 
-Sorry, I don't have a big disk in my hand now.  So I could reproduce it.
- But the patch looks good.  Thanks for fixing it.
+If the name is short, it's kept within dentry and updated by d_move() (not
+that I'd seen any exclusion with that in there, while we are at it).  If
+the name is too long to fit into struct dentry, it's allocated separately.
+See fs/dcache.c:switch_names() for what's being ultimately done on rename();
+dname_external() is a predicate telling if we store the name separately.
+The normal sequence of events if you rename(something/very_long_file_name,
+something_else) is this:
+	* we get dentries of both source and target; dentry of source has
+->d_name pointing to separately allocated name
+	* filesystem is asked to move the sucker; suppose it succeeds
+	* we do d_move(source, target)
+		* target is unhashed
+		* source and target names and pointers to parents are
+		  exchanged - now source is where we wanted it to be placed
+		  and its old ->d_name is not lost - target->d_name points
+		  to it now.  Not for long, though, since...
+	* ... we drop references to source and target we had acquired.  And
+	  since target had been unhashed, down the drain it goes.  Which
+	  frees its separately allocated ->d_name (i.e. what used to be
+	  old name of source) and drops the reference to its parent (i.e.
+	  what used to be the old parent of source).
+Now think what happens if you have found source->d_name.name before rename(2)
+and dereferenced it after.
 
-Regards,
-						- Zheng
-
-> 
-> 						- Ted
-> 
-> From f47f0d11096ca5d9e1965d8a9f266aa13fe2b73b Mon Sep 17 00:00:00 2001
-> From: Theodore Ts'o <tytso@mit.edu>
-> Date: Wed, 27 Feb 2013 13:47:52 -0500
-> Subject: [PATCH] ext4: fix extent status tree regression for file systems >
->  512GB
-> 
-> This fixes a regression introduced by commit f7fec032aa782.  The
-> problem was that the extents status flags caused us to mask out block
-> numbers smaller than 2**28 blocks.  Since we didn't test with file
-> systems smaller than 512GB, we didn't notice this during the
-> development cycle.
-> 
-> A typical failure looks like this:
-> 
-> EXT4-fs error (device sdb1): htree_dirblock_to_tree:919: inode #172235804: block
-> 152052301: comm ls: bad entry in directory: rec_len is smaller than minimal -
-> offset=0(0), inode=0, rec_len=0, name_len=0
-> 
-> ... where 'debugfs -R "stat <172235804>" /dev/sdb1' reports that the
-> inode has block number 688923213.  When viewed in hex, block number
-> 152052301 (from the syslog) is 0x910224D, while block number 688923213
-> is 0x2910224D.  Note the missing "0x20000000" in the block number.
-> 
-> Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-> Reported-by: Dave Jones <davej@redhat.com>
-> Cc: Zheng Liu <gnehzuil.liu@gmail.com>
-> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-> ---
->  fs/ext4/extents_status.h | 16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/fs/ext4/extents_status.h b/fs/ext4/extents_status.h
-> index cf83e77..c795ff6 100644
-> --- a/fs/ext4/extents_status.h
-> +++ b/fs/ext4/extents_status.h
-> @@ -20,10 +20,10 @@
->  #define es_debug(fmt, ...)	no_printk(fmt, ##__VA_ARGS__)
->  #endif
->  
-> -#define EXTENT_STATUS_WRITTEN	0x80000000	/* written extent */
-> -#define EXTENT_STATUS_UNWRITTEN	0x40000000	/* unwritten extent */
-> -#define EXTENT_STATUS_DELAYED	0x20000000	/* delayed extent */
-> -#define EXTENT_STATUS_HOLE	0x10000000	/* hole */
-> +#define EXTENT_STATUS_WRITTEN	(((unsigned long long) 1) << 63)
-> +#define EXTENT_STATUS_UNWRITTEN	(((unsigned long long) 1) << 62)
-> +#define EXTENT_STATUS_DELAYED	(((unsigned long long) 1) << 61)
-> +#define EXTENT_STATUS_HOLE	(((unsigned long long) 1) << 60)
->  
->  #define EXTENT_STATUS_FLAGS	(EXTENT_STATUS_WRITTEN | \
->  				 EXTENT_STATUS_UNWRITTEN | \
-> @@ -58,22 +58,22 @@ extern int ext4_es_lookup_extent(struct inode *inode, ext4_lblk_t lblk,
->  
->  static inline int ext4_es_is_written(struct extent_status *es)
->  {
-> -	return (es->es_pblk & EXTENT_STATUS_WRITTEN);
-> +	return (es->es_pblk & EXTENT_STATUS_WRITTEN) != 0;
->  }
->  
->  static inline int ext4_es_is_unwritten(struct extent_status *es)
->  {
-> -	return (es->es_pblk & EXTENT_STATUS_UNWRITTEN);
-> +	return (es->es_pblk & EXTENT_STATUS_UNWRITTEN) != 0;
->  }
->  
->  static inline int ext4_es_is_delayed(struct extent_status *es)
->  {
-> -	return (es->es_pblk & EXTENT_STATUS_DELAYED);
-> +	return (es->es_pblk & EXTENT_STATUS_DELAYED) != 0;
->  }
->  
->  static inline int ext4_es_is_hole(struct extent_status *es)
->  {
-> -	return (es->es_pblk & EXTENT_STATUS_HOLE);
-> +	return (es->es_pblk & EXTENT_STATUS_HOLE) != 0;
->  }
->  
->  static inline ext4_fsblk_t ext4_es_status(struct extent_status *es)
-> 
-
+The real question is, what are you using that name for?  Or ima_d_path()
+result that normally gets used instead of it, for that matter.  Sure,
+in case of ima_d_path() you will have a safe copy of what used to be
+the pathname.  What is it good for, though, when the file might've been
+moved just as ima_d_path() returns its copy of pathname to caller?
