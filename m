@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758491Ab3B0B3a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:29:30 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:47633 "EHLO song.cn.fujitsu.com"
+	id S1759367Ab3B0BaJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:30:09 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:41241 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753333Ab3B0B33 convert rfc822-to-8bit (ORCPT
+	id S1755486Ab3B0BaG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 20:29:29 -0500
+	Tue, 26 Feb 2013 20:30:06 -0500
 X-IronPort-AV: E=Sophos;i="4.84,744,1355068800"; 
-   d="scan'208";a="6774848"
+   d="scan'208";a="6774853"
 Subject: Re: [PATCH 1/2] perf annotate: Fix build with NO_NEWT=1
 From: li guang <lig.fnst@cn.fujitsu.com>
 To: Michael Ellerman <michael@ellerman.id.au>
@@ -20,15 +20,15 @@ References: <1361854923-1814-1-git-send-email-michael@ellerman.id.au>
 	 <87y5ebsb0s.fsf@sejong.aot.lge.com>
 	 <1361927668.2262.36.camel@liguang.fnst.cn.fujitsu.com>
 	 <20130227012207.GC5819@concordia>
-Date: Wed, 27 Feb 2013 09:29:17 +0800
-Message-ID: <1361928557.2262.37.camel@liguang.fnst.cn.fujitsu.com>
+Date: Wed, 27 Feb 2013 09:29:52 +0800
+Message-ID: <1361928592.2262.38.camel@liguang.fnst.cn.fujitsu.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/27 09:28:36,
+ 2013/02/27 09:29:11,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/27 09:28:37,
-	Serialize complete at 2013/02/27 09:28:37
+ 2013/02/27 09:29:11,
+	Serialize complete at 2013/02/27 09:29:11
 Content-Transfer-Encoding: 8BIT
 Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
@@ -72,4 +72,5 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > 
 > cheers
 
+https://lkml.org/lkml/2013/2/25/486
 
