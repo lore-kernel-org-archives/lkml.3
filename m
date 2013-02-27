@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab3B0Ugt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 15:36:49 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58117 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005Ab3B0Ugs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 15:36:48 -0500
-Message-ID: <512E6E5B.7010601@wwwdotorg.org>
-Date: Wed, 27 Feb 2013 13:36:43 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1758887Ab3B0UkN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 15:40:13 -0500
+Received: from mga03.intel.com ([143.182.124.21]:60709 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758428Ab3B0UkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 15:40:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,750,1355126400"; 
+   d="scan'208";a="262284360"
+Message-ID: <512E6F23.3090003@linux.intel.com>
+Date: Wed, 27 Feb 2013 22:40:03 +0200
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Ian Lartey <ian@slimlogic.co.uk>
-CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        ldewangan@nvidia.com, j-keerthy@ti.com, gg@slimlogic.co.uk,
-        wim@iguana.be, grant.likely@secretlab.ca, rob.herring@calxeda.com
-Subject: Re: [PATCH 1/2] watchdog: add Palmas Watchdog support
-References: <1361990168-882-1-git-send-email-ian@slimlogic.co.uk> <512E52BC.6070206@wwwdotorg.org> <512E69C5.5020607@slimlogic.co.uk>
-In-Reply-To: <512E69C5.5020607@slimlogic.co.uk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Rick Jones <rick.jones2@hp.com>
+CC: Eliezer Tamir <eliezer.tamir@linux.jf.intel.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Dave Miller <davem@davemloft.net>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        e1000-devel@lists.sourceforge.net,
+        Willem de Bruijn <willemb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, HPA <hpa@zytor.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Subject: Re: [RFC PATCH 0/5] net: low latency Ethernet device polling
+References: <20130227175549.10611.82188.stgit@gitlad.jf.intel.com> <512E654A.2010209@hp.com>
+In-Reply-To: <512E654A.2010209@hp.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2013 01:17 PM, Ian Lartey wrote:
-> On 27/02/13 18:38, Stephen Warren wrote:
->> On 02/27/2013 11:36 AM, Ian Lartey wrote:
->>> From: Graeme Gregory <gg@slimlogic.co.uk>
->>>
->>> Add support for the Palmas watchdog timer which has a timeout
->>> configurable
->>> from 1s to 128s.
+On 27/02/2013 21:58, Rick Jones wrote:
+> On 02/27/2013 09:55 AM, Eliezer Tamir wrote:
 >>
->>> diff --git a/drivers/watchdog/palmas_wdt.c
->>> b/drivers/watchdog/palmas_wdt.c
->>
->>> +static struct of_device_id of_palmas_match_tbl[] = {
->>> +    { .compatible = "ti,palmas-wdt", },
->>> +    { /* end */ }
->>> +};
->>
->> Is there a DT binding document for that compatible value?
-> 
-> The device tree for this compatible value is actually empty,
-> shall I remove it or is it OK to show it as empty in the
-> bindings document ?
-> There will be other palmas device bindings in this document.
+>> Performance numbers:
+>> Kernel   Config     C3/6  rx-usecs  TCP  UDP
+>> 3.8rc6   typical    off   adaptive  37k  40k
+>> 3.8rc6   typical    off   0*        50k  56k
+>> 3.8rc6   optimized  off   0*        61k  67k
+>> 3.8rc6   optimized  on    adaptive  26k  29k
+>> patched  typical    off   adaptive  70k  78k
+>> patched  optimized  off   adaptive  79k  88k
+>> patched  optimized  off   100       84k  92k
+>> patched  optimized  on    adaptive  83k  91k
+>> *rx-usecs=0 is usually not useful in a production environment.
+>
+> I would think that latency-sensitive folks would be using rx-usecs=0 in
+> production - at least if the NIC in use didn't have low enough latency
+> with its default interrupt coalescing/avoidance heuristics.
 
-Well, you need a binding document that describes how to create this
-node. If it needs no properties other than compatible, it'll be a simple
-document!
+It will only work well if you have no bulk traffic on the same port as 
+the low latency traffic at all.
 
-Did you review my comments on the other patches re: whether the
-sub-modules of this HW actually should be sub-nodes in DT or not? If
-not, then you don't need this node in DT, and hence there will be no
-compatible value for the node, and hence no need to write a binding
-document.
+> If I take the first "pure" A/B comparison it seems that the change as
+> benchmarked takes latency for TCP from ~27 usec (37k) to ~14 usec (70k).
+>   At what request/response size does the benefit taper-off?  13 usec
+> seems to be about 16250 bytes at 10 GbE.
+
+It's pretty easy to get a result of 80K+ with a little tweaking, an 
+rx-usecs value of 100 with C3/6 enabled will get you that.
+
+> When I last looked at netperf TCP_RR performance where something similar
+> could happen I think it was IPoIB where it was possible to set things up
+> such that polling happened rather than wakeups (perhaps it was with a
+> shim library that converted netperf's socket calls to "native" IB).  My
+> recollection is that it "did a number" on the netperf service demands
+> thanks to the spinning.  It would be a good thing to include those
+> figures in any subsequent rounds of benchmarking.
+
+I will get service demand numbers, but we are busy polling so I can tell 
+you right now that one core will be at 100%.
+
+> Am I correct in assuming this is a mechanism which would not be used in
+> a high aggregate PPS situation?
+
+The current design has in mind situations where you want to react very 
+fast to a trigger but that reaction could involve more than short 
+messages. so we are willing to burn CPU cycles when there is nothing 
+better to do, but we also want to work well when there is bulk traffic.
+Ideally I would want the system to be smart about this and to know when 
+not to allow busy polling.
+
+> happy benchmarking,
+we love netperf.
+
