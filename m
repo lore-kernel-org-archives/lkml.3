@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760306Ab3B0Qri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 11:47:38 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:53455 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037Ab3B0Qrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 11:47:36 -0500
-Date: Wed, 27 Feb 2013 17:46:10 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Wim Van Sebroeck <wim@iguana.be>,
-        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-watchdog@vger.kernel.org, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [next-20130227] kernel NULL pointer dereference [ watchdog |
- perf related ? ]
-Message-ID: <20130227164610.GG5530@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Sedat Dilek <sedat.dilek@gmail.com>, Tejun Heo <tj@kernel.org>,
-	Wim Van Sebroeck <wim@iguana.be>, Ingo Molnar <mingo@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	linux-watchdog@vger.kernel.org, x86@kernel.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	linux-next <linux-next@vger.kernel.org>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <CA+icZUUsedHPqZc5jXQ_AqAbfmTMu5WW8CJ+vnHwL69ofw7uTw@mail.gmail.com>
- <20130227122302.GA5678@pd.tnic>
- <CA+icZUVXDfOhztQtrOxyYaHutpx=iVpPGmRT0PzP7045_mjh6w@mail.gmail.com>
- <CA+icZUXJb5O7ML-xnQq8Zoa46NmaGZp2Xaqj6fJL+vudPeQTLw@mail.gmail.com>
- <20130227150733.GB22383@htj.dyndns.org>
- <CA+icZUUFCOPJ=TAE-5=suUqPy0NjA+BSToiZxX=Xm7u=30GdOA@mail.gmail.com>
- <20130227160833.GF5530@pd.tnic>
- <CA+icZUVhfYHu_EtC=itTR04OGq_yOq902_ZMb9_Jy=1pZfU_FA@mail.gmail.com>
+	id S1760296Ab3B0Qss (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 11:48:48 -0500
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:12198
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758651Ab3B0Qsq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 11:48:46 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275ch8275bhz2dh2a8h668h839h944hd24he5bhf0ah1220h1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1155h)
+Date: Wed, 27 Feb 2013 10:45:12 -0600
+From: Kim Phillips <kim.phillips@freescale.com>
+To: Rob Landley <rob@landley.net>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] dtc: import latest upstream dtc
+Message-ID: <20130227104512.c07c0ade0107aa7f4ec18217@freescale.com>
+In-Reply-To: <1361934486.18483.5@driftwood>
+References: <1361928975-29395-1-git-send-email-kim.phillips@freescale.com>
+	<1361928975-29395-2-git-send-email-kim.phillips@freescale.com>
+	<1361934486.18483.5@driftwood>
+Organization: Freescale Semiconductor, Inc.
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+icZUVhfYHu_EtC=itTR04OGq_yOq902_ZMb9_Jy=1pZfU_FA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 05:14:04PM +0100, Sedat Dilek wrote:
-> I am not screaming or whining... people should reflect a bit on the
-> patch workflow process? Also, I am sure a patchwork-service especially
-> for -next is helpful.
+On Tue, 26 Feb 2013 21:08:06 -0600
+Rob Landley <rob@landley.net> wrote:
 
-Ok, now this formulation reads much nicer. So if you really think this
-is needed, simply talk to sfr and see what he has to say about it. But
-please do it in a nice way.
+> On 02/26/2013 07:36:14 PM, Kim Phillips wrote:
+> > This updates scripts/dtc to upstream dtc commit 27cdc1b
+> 
+> There's an upstream for dts?
 
-I'd say, serious suggestions on how the workflow could be improved are
-always welcome.
+dtc - the device tree compiler, yes.
 
-Thanks.
+> > "Added license header to dtc/libfdt/fdt.h and libfdt_env.h"
+> > from git://git.jdl.com/software/dtc.git.
+> 
+> That git repository has a Documentation directory with for example  
+> "dts-format.txt" in it. My current linux git repository does not  
+> contain a file called dts-format.txt.
 
--- 
-Regards/Gruss,
-    Boris.
+this patch isn't attempting to update dts-format.txt, or any other
+file that exists in the upstream dtc project that isn't present -
+and used - in the kernel.  The purpose of this patch is to update
+libfdt, which has in-kernel users.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Kim
+
