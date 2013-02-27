@@ -1,100 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab3B0Hgv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 02:36:51 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63013 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab3B0Hgu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 02:36:50 -0500
-X-AuditID: 9c93016f-b7c56ae00000569b-af-512db78f4133
-Date: Wed, 27 Feb 2013 16:36:47 +0900
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org, Nicolas Pitre <nico@fluxnic.net>,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
-        raphael.andy.lee@gmail.com
-Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
-Message-ID: <20130227073646.GA22333@Corona>
-References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
- <512D1C12.4080109@oberhumer.com>
+	id S1753099Ab3B0HiP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 02:38:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:1636 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752567Ab3B0HiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 02:38:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,746,1355126400"; 
+   d="asc'?scan'208";a="268367319"
+Date: Wed, 27 Feb 2013 02:36:04 -0500
+From: Chen Gong <gong.chen@linux.intel.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/9] memory-hotplug: enable memory hotplug to handle
+ hugepage
+Message-ID: <20130227073604.GB30971@gchen.bj.intel.com>
+Mail-Followup-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+	linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+	Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1361475708-25991-9-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hHWLQfXTYDoKhP50"
 Content-Disposition: inline
-In-Reply-To: <512D1C12.4080109@oberhumer.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1361475708-25991-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 09:33:22PM +0100, Markus F.X.J. Oberhumer wrote:
-> On 2013-02-26 07:24, Kyungsik Lee wrote:
-> > Hi,
-> > 
-> > [...]
-> > 
-> > Through the benchmark, it was found that -Os Compiler flag for
-> > decompress.o brought better decompression performance in most of cases
-> > (ex, different compiler and hardware spec.) in ARM architecture.
-> > 
-> > Lastly, CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS is not always the best
-> > option even though it is supported. The decompression speed can be
-> > slightly slower in some cases.
-> > 
-> > This patchset is based on 3.8.
-> > 
-> > Any comments are appreciated.
-> 
-> Did you actually *try* the new LZO version and the patch (which is attached
-> once again) as explained in https://lkml.org/lkml/2013/2/3/367 ?
-> 
-> Because the new LZO version is faster than LZ4 in my testing, at least
-> when comparing apples with apples and enabling unaligned access in
-> BOTH versions:
-> 
-> armv7 (Cortex-A9), Linaro gcc-4.6 -O3, Silesia test corpus, 256 kB block-size:
-> 
->                    compression speed   decompression speed
-> 
->   LZO-2012    :          44 MB/sec          117 MB/sec     no unaligned access
->   LZO-2013-UA :          47 MB/sec          167 MB/sec     Unaligned Access
->   LZ4 r88  UA :          46 MB/sec          154 MB/sec     Unaligned Access
->
 
-I agree that the new LZO version provided shows better decompression
-speed than 3.7 based. It is much improved especially for UA.
+--hHWLQfXTYDoKhP50
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Compiler: Linaro ARM gcc 4.6.2
-2. ARMv7, 1.7GHz based board
-   Kernel: linux 3.7
-   Uncompressed Kernel Size: 14MB
-         Compressed Size  Decompression Speed
-    LZO  6.0MB            34.1MB/s            Old
-         ----------------------------------------
-         6.0MB            34.7MB/s            New
-         6.0MB            52.2MB/s(UA)
-    =============================================
-    LZ4  6.5MB            86.7MB/s
-UA: Unaligned memory Access support
+On Thu, Feb 21, 2013 at 02:41:47PM -0500, Naoya Horiguchi wrote:
+> Date: Thu, 21 Feb 2013 14:41:47 -0500
+> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> To: linux-mm@kvack.org
+> Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+>  Hugh Dickins <hughd@google.com>, KOSAKI Motohiro
+>  <kosaki.motohiro@jp.fujitsu.com>, Andi Kleen <andi@firstfloor.org>,
+>  linux-kernel@vger.kernel.org
+> Subject: [PATCH 8/9] memory-hotplug: enable memory hotplug to handle
+>  hugepage
+>=20
+> Currently we can't offline memory blocks which contain hugepages because
+> a hugepage is considered as an unmovable page. But now with this patch
+> series, a hugepage has become movable, so by using hugepage migration we
+> can offline such memory blocks.
+>=20
+> What's different from other users of hugepage migration is that we need
+> to decompose all the hugepages inside the target memory block into free
+> buddy pages after hugepage migration, because otherwise free hugepages
+> remaining in the memory block intervene the memory offlining.
+> For this reason we introduce new functions dissolve_free_huge_page() and
+> dissolve_free_huge_pages().
+>=20
+> Other than that, what this patch does is straightforwardly to add hugepage
+> migration code, that is, adding hugepage code to the functions which scan
+> over pfn and collect hugepages to be migrated, and adding a hugepage
+> allocation function to alloc_migrate_target().
+>=20
+> As for larger hugepages (1GB for x86_64), it's not easy to do hotremove
+> over them because it's larger than memory block. So we now simply leave
+> it to fail as it is.
+>=20
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  include/linux/hugetlb.h |  8 ++++++++
+>  mm/hugetlb.c            | 43 +++++++++++++++++++++++++++++++++++++++++
+>  mm/memory_hotplug.c     | 51 ++++++++++++++++++++++++++++++++++++++++---=
+------
+>  mm/migrate.c            | 12 +++++++++++-
+>  mm/page_alloc.c         | 12 ++++++++++++
+>  mm/page_isolation.c     |  5 +++++
+>  6 files changed, 121 insertions(+), 10 deletions(-)
+>=20
+> diff --git v3.8.orig/include/linux/hugetlb.h v3.8/include/linux/hugetlb.h
+> index 86a4d78..e33f07f 100644
+> --- v3.8.orig/include/linux/hugetlb.h
+> +++ v3.8/include/linux/hugetlb.h
+> @@ -70,6 +70,7 @@ int dequeue_hwpoisoned_huge_page(struct page *page);
+>  void putback_active_hugepage(struct page *page);
+>  void putback_active_hugepages(struct list_head *l);
+>  void migrate_hugepage_add(struct page *page, struct list_head *list);
+> +int is_hugepage_movable(struct page *page);
+>  void copy_huge_page(struct page *dst, struct page *src);
+> =20
+>  extern unsigned long hugepages_treat_as_movable;
+> @@ -136,6 +137,7 @@ static inline int dequeue_hwpoisoned_huge_page(struct=
+ page *page)
+>  #define putback_active_hugepage(p) 0
+>  #define putback_active_hugepages(l) 0
+>  #define migrate_hugepage_add(p, l) 0
+> +#define is_hugepage_movable(x) 0
+>  static inline void copy_huge_page(struct page *dst, struct page *src)
+>  {
+>  }
+> @@ -358,6 +360,10 @@ static inline int hstate_index(struct hstate *h)
+>  	return h - hstates;
+>  }
+> =20
+> +extern void dissolve_free_huge_page(struct page *page);
+> +extern void dissolve_free_huge_pages(unsigned long start_pfn,
+> +				     unsigned long end_pfn);
+> +
+>  #else
+>  struct hstate {};
+>  #define alloc_huge_page(v, a, r) NULL
+> @@ -378,6 +384,8 @@ static inline unsigned int pages_per_huge_page(struct=
+ hstate *h)
+>  }
+>  #define hstate_index_to_shift(index) 0
+>  #define hstate_index(h) 0
+> +#define dissolve_free_huge_page(p) 0
+> +#define dissolve_free_huge_pages(s, e) 0
+>  #endif
+> =20
+>  #endif /* _LINUX_HUGETLB_H */
+> diff --git v3.8.orig/mm/hugetlb.c v3.8/mm/hugetlb.c
+> index ccf9995..c28e6c9 100644
+> --- v3.8.orig/mm/hugetlb.c
+> +++ v3.8/mm/hugetlb.c
+> @@ -843,6 +843,30 @@ static int free_pool_huge_page(struct hstate *h, nod=
+emask_t *nodes_allowed,
+>  	return ret;
+>  }
+> =20
+> +/* Dissolve a given free hugepage into free pages. */
+> +void dissolve_free_huge_page(struct page *page)
+> +{
+> +	if (PageHuge(page) && !page_count(page)) {
+> +		struct hstate *h =3D page_hstate(page);
+> +		int nid =3D page_to_nid(page);
+> +		spin_lock(&hugetlb_lock);
+> +		list_del(&page->lru);
+> +		h->free_huge_pages--;
+> +		h->free_huge_pages_node[nid]--;
+> +		update_and_free_page(h, page);
+> +		spin_unlock(&hugetlb_lock);
+> +	}
+> +}
+> +
+> +/* Dissolve free hugepages in a given pfn range. Used by memory hotplug.=
+ */
+> +void dissolve_free_huge_pages(unsigned long start_pfn, unsigned long end=
+_pfn)
+> +{
+> +	unsigned long pfn;
+> +	unsigned int step =3D 1 << (HUGETLB_PAGE_ORDER);
+> +	for (pfn =3D start_pfn; pfn < end_pfn; pfn +=3D step)
+> +		dissolve_free_huge_page(pfn_to_page(pfn));
+> +}
+> +
+>  static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+>  {
+>  	struct page *page;
+> @@ -3158,6 +3182,25 @@ static int is_hugepage_on_freelist(struct page *hp=
+age)
+>  	return 0;
+>  }
+> =20
+> +/* Returns true for head pages of in-use hugepages, otherwise returns fa=
+lse. */
+> +int is_hugepage_movable(struct page *hpage)
+> +{
+> +	struct page *page;
+> +	struct page *tmp;
+> +	struct hstate *h =3D page_hstate(hpage);
+> +	int ret =3D 0;
+> +
+> +	VM_BUG_ON(!PageHuge(hpage));
+> +	if (PageTail(hpage))
+> +		return 0;
+> +	spin_lock(&hugetlb_lock);
+> +	list_for_each_entry_safe(page, tmp, &h->hugepage_activelist, lru)
+> +		if (page =3D=3D hpage)
+> +			ret =3D 1;
 
-One thing I can say that the code you may have used, guessing
-"lz4demo" is not the same code provided in this patch.
-It has been ported for the kernel and uses different function
-not like the "lz4demo". 
+I don't understand the logic here. 1) page is not removed why tmp is used?
+2) why hitting (page =3D=3Dhpage) but not breaking from the loop?
 
-Thanks,
-Kyungsik
+> +	spin_unlock(&hugetlb_lock);
+> +	return ret;
+> +}
+> +
+> [...]
 
+--hHWLQfXTYDoKhP50
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRLbdkAAoJEI01n1+kOSLHBqgP/jz3zpOJ5p+PdkX1nSbYjUsJ
+l0g1K6eNehbXRaAGlQ+2Za3yQkdMt1zSLl22CGx+l30bBtHX5q+xDBaR1QgmRp2A
+JUzwDotyzqapL/99VeCMABXAzZy06ZWplXN7r8S2MuQnE+nxhrOlVt8iC9wPRiPv
+K+hBsszUySNfe32Gsqy09HFL/CInOu5DbkK8ByXUn6pNmDn4R7jr89Rv7I0X2Rr9
+nAk8gZyb86M+0ZQfSGvHI/ZpF4QixtFjkyVTUcgHMkR817CnDD0WqJqJt17nEjxN
+nKjgjZs/4ybx1vjtsuXw7qGzW4Du642IIw/kGatk+pspjLvJtZDd8528p2o6lihB
+qRRWyQQMIfjmDdHDvnmToQU5Hwpx+RotHGxGpxGmyOvFT3v9vXY9fpN8IzQnrXcw
+rGsyddEb5QwPXADKefZythcpUWrifvmO1cuzV1Sx98flYGa3Xokf5EvXRIhiuSrL
+Bw6NXSPnH20mDqP/ZnTIpIx9j2td2plCWUlTQGz+2Fwhw0ro+vrWeFovjkc5UAvO
+9lo65UhfLD3hSfF49KEXNwJY5pFVyK148ZP3aC6mSw5GYf9V+Xql0gNBQdWrUUBP
+A0horNqv9Qvo/zFCMmJwpucS8l8EukJPMg4k0LsBO3ucfc1I+OiNqx0lFnDYLVjH
+H2On4eWMtFB+qN/Ok8w6
+=JLBD
+-----END PGP SIGNATURE-----
+
+--hHWLQfXTYDoKhP50--
