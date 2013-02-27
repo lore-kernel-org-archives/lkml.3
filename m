@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760722Ab3B0TOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 14:14:39 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:63003 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab3B0TOi (ORCPT
+	id S1760792Ab3B0TPE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 14:15:04 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:49843 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760768Ab3B0TPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 14:14:38 -0500
-Message-ID: <512E5B16.4050002@redhat.com>
-Date: Wed, 27 Feb 2013 20:14:30 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Chris Friesen <chris.friesen@genband.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Peter Jones <pjones@redhat.com>,
-        Dave Airlie <airlied@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
+	Wed, 27 Feb 2013 14:15:02 -0500
+Date: Wed, 27 Feb 2013 21:14:55 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, Luciano Coelho <coelho@ti.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-References: <20130226030249.GB23834@kroah.com> <20130226031338.GA29784@srcf.ucam.org> <20130226033156.GA24999@kroah.com> <20130226033803.GA30285@srcf.ucam.org> <20130226035416.GA1128@kroah.com> <20130226040456.GA30717@srcf.ucam.org> <20130226041324.GA7241@kroah.com> <CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com> <20130226044521.GC12906@thunk.org> <20130226165451.GE32160@fenchurch.internal.datastacks.com> <20130227152429.GA5609@thunk.org> <512E4409.2040907@genband.com>
-In-Reply-To: <512E4409.2040907@genband.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: container_of() doubt
+Message-ID: <20130227191455.GB27264@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130227191322.GA27264@arwen.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="61jdw2sOBCFtR2d/"
+Content-Disposition: inline
+In-Reply-To: <20130227191322.GA27264@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 27/02/2013 18:36, Chris Friesen ha scritto:
-> On 02/27/2013 09:24 AM, Theodore Ts'o wrote:
->> On Tue, Feb 26, 2013 at 11:54:51AM -0500, Peter Jones wrote:
->>> No, no, no.  Quit saying nobody knows.  We've got a pretty good idea -
->>> we've got a contract with them, and it says they provide the signing
->>> service, and under circumstances where the thing being signed is found
->>> to enable malware that circumvents Secure Boot
->>
->> The question is what does "malware that circuments Secure Boot" mean?
->> Does starting up a hacked KVM and running Windows 8 under KVM so that
->> malare can be injected count as circumenting Secure Boot?  If so, will
->> you have to disable KVM, too?
-> 
-> I could see an argument for KVM to require either a signed binary or
-> else someone at the keyboard to explicitly okay loading the image.
-> Anything else breaks the chain of trust.
+--61jdw2sOBCFtR2d/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Not just the executable; the firmware would also need to be signed.
+Hi again,
 
-In fact, I think requiring signed KVM binaries and signed VM firmwares
-makes sense in the long term, but you have to stop somewhere.
+On Wed, Feb 27, 2013 at 09:13:22PM +0200, Felipe Balbi wrote:
+> Hi Greg,
+>=20
+> hehe, you must've answered this over and over again, but I don't see the
+> need for __mptr in the container_of() macro. I tried googling it but
+> couldn't find much.
+>=20
+> I get the macro, but not the need __mptr. Wouldn't this work the same
+> way ?
+>=20
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 80d3687..bbce857 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -717,8 +717,7 @@ static inline void ftrace_dump(enum ftrace_dump_mode =
+oops_dump_mode) { }
+>   *
+>   */
+>  #define container_of(ptr, type, member) ({			\
+> -	const typeof( ((type *)0)->member ) *__mptr =3D (ptr);	\
+> -	(type *)( (char *)__mptr - offsetof(type,member) );})
+> +	(type *)( (char *)(ptr) - offsetof(type,member) );})
+> =20
+>  /* Trap pasters of __FUNCTION__ at compile-time */
+>  #define __FUNCTION__ (__func__)
+>=20
+> why do we need this type * NULL ?
 
-And BTW you can always emulate the instruction set instead of using
-hardware virtualization.  This way the kernel is not involved.  It's a
-slippery slope and leads you straight to the app store model and
-restrictions on interpreters like Apple's.
+nevermind, type safety ;-)
 
-Certainly an attack using unsigned modules is trivial, unlike one that
-virtualizes the victim OS, and also much harder to discover
-(virtualization is easy to detect by timing certain operations in the
-guest).  Just for this reason, putting unsigned modules on the "no" side
-makes much more sense than putting virtualization on the "no" side.
+--=20
+balbi
 
-Paolo
+--61jdw2sOBCFtR2d/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> It may be somewhat far-fetched, but I think it would be possible to take
-> an existing secure-boot Win 8 install, turn it into a VM but with an
-> infected kernel. Then install a signed Linux distro that runs the Win8
-> VM as a guest.
-> 
-> At this point you've got a running infected Win8 install that is running
-> on Secure Boot hardware but is actually running malware.
-> 
-> Admittedly this would be tricky to do reliably in a way that the user
-> doesn't notice, so it may not actually be a real-world threat.
-> 
-> Chris
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRLlsvAAoJEIaOsuA1yqREqw8P/1jh/8/iD81JeiCVExKo6Qn0
+G9zZrUSl3MWiRsJGkIo6zJwDuVYAU341lR7MbUrBnL2ky8EF6yyIPTZXMpyzuSu2
+hcYLpPjoh+DkJ4OmuHaqRnLYhw4l4kkVbvQ5sqa1T4qmRxgPRXYUDMpcRFP4WUoi
+NfrpHd+dmQi3uCRu3mKGmUaDu4i7G8/DfV1gxcd/o6TvOT44N3dEqQHtd7TNSxWP
+lMUbp1znEFDGtsUVUDEV5adm0hmLYq8P+gu74hINcIWWg4lAB8pux0A5VMpn9hpI
+lPcHu6cSIE14pNnjvTYzahq8kI4LbSY6M/zreXXLTZ1m1CeRG4ohI4b+MNrMQDQh
+/oQdAH0FOkO6C1i+UL1Es09vG7y0CpTBRSAQzurLUg7yJqm0jQUaH0rQBcfwS9OT
+8+sPpmSaqXquJ77TCHqxi+6bWQrt/RFp8gcz97KPcEUCc6b6jjYwuyownViOcN2n
+dXR3R8jZFoE5Aky5Y2khr3YJSnZ1rQntNesP5PgI81zeVUmIe0xiWsyv0LsycBEE
+8ZGmznuvHNmKu5LV/R8LlVxg8cYBCnDzjG+3cJoFjHQAGV1y+F8riGjcavQkd3Qa
+zUDSvxbDp6t6ceZpzUi0Z01SR2TJTsFMoJoC1BGbpn7OJtzcYsj2Z7nv/4JOIiEK
+vTiS0TQ3gNV/hrxKovUP
+=sdxw
+-----END PGP SIGNATURE-----
+
+--61jdw2sOBCFtR2d/--
