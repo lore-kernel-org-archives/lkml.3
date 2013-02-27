@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab3B0IrP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 03:47:15 -0500
-Received: from mail-gg0-f202.google.com ([209.85.161.202]:46759 "EHLO
-	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757982Ab3B0IrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 03:47:14 -0500
-From: Greg Thelen <gthelen@google.com>
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: Johannes Weiner-Arquette <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, Rik van Riel <riel@redhat.com>,
-        mel@csn.ul.ie, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] memcg: implement low limits
-References: <8121361952156@webcorp1g.yandex-team.ru>
-Date: Wed, 27 Feb 2013 00:20:36 -0800
-In-Reply-To: <8121361952156@webcorp1g.yandex-team.ru> (Roman Gushchin's
-	message of "Wed, 27 Feb 2013 12:02:36 +0400")
-Message-ID: <xr93y5eacgmj.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1758129Ab3B0Iwe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 03:52:34 -0500
+Received: from linux-sh.org ([111.68.239.195]:35082 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754297Ab3B0Iwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 03:52:33 -0500
+Date: Wed, 27 Feb 2013 17:52:17 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        benh@kernel.crashing.org, grant.likely@secretlab.ca,
+        horms@verge.net.au, tglx@linutronix.de
+Subject: Re: [PATCH] irqchip: Renesas INTC External IRQ pin driver
+Message-ID: <20130227085216.GC30395@linux-sh.org>
+References: <20130218142834.28739.39417.sendpatchset@w520>
+ <20130227082335.GB30395@linux-sh.org>
+ <CANqRtoSbiPhRbDsZppkJ+F48tEmuCdSfVRo3dTs9cEUxfvLopA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANqRtoSbiPhRbDsZppkJ+F48tEmuCdSfVRo3dTs9cEUxfvLopA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27 2013, Roman Gushchin wrote:
+On Wed, Feb 27, 2013 at 05:35:51PM +0900, Magnus Damm wrote:
+> On Wed, Feb 27, 2013 at 5:23 PM, Paul Mundt <lethal@linux-sh.org> wrote:
+> > So how exactly does this interact with the existing sh_intc code? Or is
+> > there some reason why you have opted to bypass it in order to implement a
+> > simplified reduced-functionality version of INTC support focused only on
+> > external pins? If both are used together this is going to be a nightmare
+> > for locking, and it's also non-obvious how the IRQ domains on both sides
+> > will interact.
+> >
+> > This needs a lot more explanation.
+> 
+> Recent GIC-based SoCs do not make use of INTC for any on-chip I/O
+> devices. This driver is meant to be used as a layer between the actual
+> IRQ pin and the GIC. Anything else needs the full driver. The existing
+> non-DT INTC driver can happily coexist with this driver like it does
+> in the case of sh73a0 here:
+> 
+> [PATCH 02/03] ARM: shmobile: INTC External IRQ pin driver on sh73a0
+> 
+Ok, thanks for clarifying.
 
-> Hi, all!
->
-> I've implemented low limits for memory cgroups. The primary goal was to add an ability 
-> to protect some memory from reclaiming without using mlock(). A kind of "soft mlock()".
->
-> I think this patch will be helpful when it's necessary to protect production processes from
-> memory-wasting backup processes.
->
-> --
->
-> Low limits for memory cgroup can be used to limit memory pressure on it.
-> If memory usage of a cgroup is under it's low limit, it will not be
-> affected by global reclaim. If it reaches it's low limit from above,
-> the reclaiming speed will be dropped exponentially.
->
-> Low limits don't affect soft reclaim.
-> Also, it's possible that a cgroup with memory usage under low limit
-> will be reclaimed slowly on very low scanning priorities.
+I suppose the main concern is how quickly this will simply turn in to a
+deviated partial implementation of the full driver as newer SoCs begin
+deviating from your simplified case, and we basically end up
+reimplementing sh_intc anyways.
 
-So the new low limit is not a rigid limit.  Global reclaim can reclaim
-from a cgroup when its usage is below low_limit_in_bytes although such
-reclaim is less aggressive than when usage is above low_limit_in_bytes.
-Correct?
+> The driver is not meant to be used with INTC-only based systems like
+> sh7372 and the SH architecture. I would be very happy if someone could
+> get their shit together and fix up DT support for the common INTC
+> code. This has not happened yet though. So if you know anyone with
+> time to spare then feel free to suggest them to work together with
+> Iwamatsu-san to get the DT version of the code reviewed together with
+> Linaro.
+> 
+I haven't heard or seen anything new on that in some time, so I assumed
+the work had stalled. I'm not sure why there wasn't more effort put in to
+DT support for the INTC code rather than simply coming up with a
+temporary bypass shim, and I'm not sure why you think this work is
+blocked by anyone (unless you're just referring to a general lack of
+resources).
 
-Why doesn't memcg reclaim (i.e. !global_reclaim) also consider
-low_limit_in_bytes?
-
-Do you have demonstration of how this improves system operation?
-
-Why is soft_limit insufficient?
-
-> Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-> ---
->  include/linux/memcontrol.h  |    7 +++++
->  include/linux/res_counter.h |   17 +++++++++++
->  kernel/res_counter.c        |    2 ++
->  mm/memcontrol.c             |   67 +++++++++++++++++++++++++++++++++++++++++++
->  mm/vmscan.c                 |    5 ++++
->  5 files changed, 98 insertions(+)
-
-Need to update Documentation/cgroups/memory.txt explaining the external
-behavior of this new know and how it interacts with soft_limit_in_bytes.
+In any event, I'm not sure what the best option for the interim is. I
+suppose we can merge the irqchips until the INTC stuff catches up, but
+then we are probaby going to run in to a situation where they either have
+to co-exist, or the irqchips are removed and the sh_intc code has to
+carry a compat shim to deal with those DT bindings. Neither of those
+options seem particularly appealing to me.
