@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760345Ab3B0Rg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 12:36:26 -0500
-Received: from exprod7og112.obsmtp.com ([64.18.2.177]:54576 "EHLO
-	exprod7og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab3B0RgX (ORCPT
+	id S1760506Ab3B0RhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:37:17 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:62197 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760263Ab3B0RhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 12:36:23 -0500
-Message-ID: <512E4409.2040907@genband.com>
-Date: Wed, 27 Feb 2013 11:36:09 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Wed, 27 Feb 2013 12:37:15 -0500
+Date: Wed, 27 Feb 2013 09:37:12 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Roger Quadros <rogerq@ti.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [ 79/86] USB: ehci-omap: Dont free gpios that we didnt request
+Message-ID: <20130227173712.GA10652@kroah.com>
+References: <20130226235912.881663118@linuxfoundation.org>
+ <20130226235921.105248169@linuxfoundation.org>
+ <512DBB46.1080609@ti.com>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Peter Jones <pjones@redhat.com>,
-        Dave Airlie <airlied@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-References: <20130226030249.GB23834@kroah.com> <20130226031338.GA29784@srcf.ucam.org> <20130226033156.GA24999@kroah.com> <20130226033803.GA30285@srcf.ucam.org> <20130226035416.GA1128@kroah.com> <20130226040456.GA30717@srcf.ucam.org> <20130226041324.GA7241@kroah.com> <CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com> <20130226044521.GC12906@thunk.org> <20130226165451.GE32160@fenchurch.internal.datastacks.com> <20130227152429.GA5609@thunk.org>
-In-Reply-To: <20130227152429.GA5609@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Feb 2013 17:36:11.0104 (UTC) FILETIME=[EED6D600:01CE1510]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19674.000
-X-TM-AS-Result: No--3.740200-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <512DBB46.1080609@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2013 09:24 AM, Theodore Ts'o wrote:
-> On Tue, Feb 26, 2013 at 11:54:51AM -0500, Peter Jones wrote:
->> No, no, no.  Quit saying nobody knows.  We've got a pretty good idea -
->> we've got a contract with them, and it says they provide the signing
->> service, and under circumstances where the thing being signed is found
->> to enable malware that circumvents Secure Boot
->
-> The question is what does "malware that circuments Secure Boot" mean?
-> Does starting up a hacked KVM and running Windows 8 under KVM so that
-> malare can be injected count as circumenting Secure Boot?  If so, will
-> you have to disable KVM, too?
+On Wed, Feb 27, 2013 at 09:52:38AM +0200, Roger Quadros wrote:
+> Hi Greg,
+> 
+> On 02/27/2013 02:08 AM, Greg Kroah-Hartman wrote:
+> > 3.4-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Roger Quadros <rogerq@ti.com>
+> > 
+> > commit 428525f97153505e83983460a8d08a3210aa6b8a upstream.
+> > 
+> > This driver does not request any gpios so don't free them.
+> > Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
+> > with ehci-omap in use.
+> 
+> Please drop this patch from 3.4-stable.
+> 
+> In 3.4, the driver requests the gpios in probe() so they must be freed
+> in remove() and this patch should not be applied. Thanks.
 
-I could see an argument for KVM to require either a signed binary or 
-else someone at the keyboard to explicitly okay loading the image. 
-Anything else breaks the chain of trust.
+Thanks for letting me know, now dropped.
 
-It may be somewhat far-fetched, but I think it would be possible to take 
-an existing secure-boot Win 8 install, turn it into a VM but with an 
-infected kernel. Then install a signed Linux distro that runs the Win8 
-VM as a guest.
-
-At this point you've got a running infected Win8 install that is running 
-on Secure Boot hardware but is actually running malware.
-
-Admittedly this would be tricky to do reliably in a way that the user 
-doesn't notice, so it may not actually be a real-world threat.
-
-Chris
+greg k-h
