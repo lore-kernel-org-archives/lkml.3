@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab3B0KNt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 05:13:49 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:35201 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592Ab3B0KNs (ORCPT
+	id S1755216Ab3B0KQW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 05:16:22 -0500
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:43503 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab3B0KQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 05:13:48 -0500
+	Wed, 27 Feb 2013 05:16:20 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130226224106.GC20670@core.coreip.homeip.net>
-References: <20130226132623.18365.36583.sendpatchset@w520>
-	<20130226224106.GC20670@core.coreip.homeip.net>
-Date: Wed, 27 Feb 2013 19:13:46 +0900
-Message-ID: <CANqRtoRUqDsspHQQ11d3c2jc+MvoROwfbv3so5=SGhHOs9k7WA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: em: Add Device Tree support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        horms@verge.net.au, linus.walleij@linaro.org, linux-sh@vger.kernel.org
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Wed, 27 Feb 2013 15:46:00 +0530
+Message-ID: <CAO_48GG2T1owdCPdmArG0ZY_SbBk5JwSu4a9O20qGvYfEObLhA@mail.gmail.com>
+Subject: [GIT PULL]: dma-buf updates for 3.9
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linaro MM SIG <linaro-mm-sig@lists.linaro.org>,
+        linux-media@vger.kernel.org
+Cc: akpm@linux-foundation.org, Daniel Vetter <daniel@ffwll.ch>,
+        Arnd Bergmann <arnd@arndb.de>, Dave Airlie <airlied@linux.ie>,
+        Tom Gall <tom.gall@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+Hi Linus,
 
-Thanks for your feedback!
+Here's the 3.9 pull request for dma-buf framework updates: could you
+please pull?
 
-On Wed, Feb 27, 2013 at 7:41 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Hi Magnus,
->
-> On Tue, Feb 26, 2013 at 10:26:23PM +0900, Magnus Damm wrote:
->> From: Magnus Damm <damm@opensource.se>
->>
->> Update the Emma Mobile GPIO driver to add DT support.
->>
->
-> ...
->
->> @@ -366,15 +387,33 @@ static int em_gio_remove(struct platform
->>       return 0;
->>  }
->>
->
-> #ifdef CONFIG_OF here? No need to have extra aliases in modules if OF
-> support is not enabled (or is entire ARM arch now enables device tree?).
->
->> +static const struct of_device_id em_gio_dt_ids[] = {
->> +     { .compatible = "renesas,em-gio", },
->> +     {},
->> +};
->> +MODULE_DEVICE_TABLE(of, em_gio_dt_ids);
->> +
+Thanks and best regards,
+~Sumit.
 
-I suppose we could sprinkle a couple of #ifdefs across the code, but I
-have to say that I'm not that fond of #ifdefs in general. So if it was
-up to me only then I would aim at having exactly zero #ifdefs in my
-drivers at the expense of slightly larger binaries in some cases.
 
-Are you interested in hacking on EMEV2 in general? I assume you're
-busy, but I could try to locate a developer board for you if you'd
-like.
+The following changes since commit d895cb1af15c04c522a25c79cc429076987c089b:
 
-Cheers,
+  Merge branch 'for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs (2013-02-26
+20:16:07 -0800)
 
-/ magnus
+are available in the git repository at:
+
+
+  git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git
+tags/tag-for-linus-3.9
+
+for you to fetch changes up to 495c10cc1c0c359871d5bef32dd173252fc17995:
+
+  CHROMIUM: dma-buf: restore args on failure of dma_buf_mmap
+(2013-02-27 15:14:02 +0530)
+
+----------------------------------------------------------------
+3.9: dma-buf updates
+Refcounting implemented for vmap in core dma-buf
+
+----------------------------------------------------------------
+Daniel Vetter (1):
+      dma-buf: implement vmap refcounting in the interface logic
+
+John Sheu (1):
+      CHROMIUM: dma-buf: restore args on failure of dma_buf_mmap
+
+ Documentation/dma-buf-sharing.txt |    6 +++-
+ drivers/base/dma-buf.c            |   66 ++++++++++++++++++++++++++++++-------
+ include/linux/dma-buf.h           |    4 ++-
+ 3 files changed, 63 insertions(+), 13 deletions(-)
