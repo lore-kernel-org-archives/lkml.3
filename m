@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760541Ab3B0Q4f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 11:56:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62128 "EHLO mx1.redhat.com"
+	id S1760574Ab3B0Q4o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 11:56:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56498 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760490Ab3B0Q4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 11:56:32 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/7] HID: multitouch: append " Pen" to the name of the stylus input
-Date: Wed, 27 Feb 2013 17:55:26 +0100
-Message-Id: <1361984127-912-7-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1361984127-912-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1361984127-912-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1760416Ab3B0Q4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 11:56:41 -0500
+Date: Wed, 27 Feb 2013 11:56:21 -0500
+From: Dave Jones <davej@redhat.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Borislav Petkov <bp@alien8.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: EXT4 corruption on Linus latest tree.
+Message-ID: <20130227165621.GA8834@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Theodore Ts'o <tytso@mit.edu>, Borislav Petkov <bp@alien8.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org
+References: <20130227154311.GA12450@redhat.com>
+ <20130227155539.GA2638@pd.tnic>
+ <20130227160446.GA4792@redhat.com>
+ <20130227164417.GF5609@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130227164417.GF5609@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not just cosmetics, it can help to write udev and X.org
-rules.
+On Wed, Feb 27, 2013 at 11:44:17AM -0500, Theodore Ts'o wrote:
+ > On Wed, Feb 27, 2013 at 11:04:46AM -0500, Dave Jones wrote:
+ > >  > > EXT4-fs error (device sdb1): htree_dirblock_to_tree:919: inode #172235804: block 152052301: comm ls: bad entry in directory: rec_len is smaller than minimal - offset=0(0), inode=0, rec_len=0, name_len=0
+ > > 
+ > > Yeah, looks similar.  The missing files/dirs reappeared when I
+ > > booted an older kernel, so it looks like the corruption doesn't
+ > > hit the disk.  Fsck (1.42.5) didn't find anything either.
+ > 
+ > I suspect I see the problem...   can you send me the results of 
+ > 
+ >   debugfs -R "stat <172235804>" /dev/sdb1
+ > 
+ > to confirm?
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-multitouch.c | 24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+debugfs 1.42.5 (29-Jul-2012)
+Inode: 172235804   Type: directory    Mode:  0775   Flags: 0x80000
+Generation: 1174354732    Version: 0x00000000:00000055
+User:  1000   Group:  1000   Size: 4096
+File ACL: 0    Directory ACL: 0
+Links: 24   Blockcount: 8
+Fragment:  Address: 0    Number: 0    Size: 0
+ ctime: 0x512d0fdc:71fe3000 -- Tue Feb 26 14:41:16 2013
+ atime: 0x512d106e:5a143300 -- Tue Feb 26 14:43:42 2013
+ mtime: 0x512d0fdc:71fe3000 -- Tue Feb 26 14:41:16 2013
+crtime: 0x50e76c35:1d69aad8 -- Fri Jan  4 18:56:37 2013
+Size of extra inode fields: 28
+Extended attributes stored in inode body: 
+  selinux = "unconfined_u:object_r:file_t:s0\000" (32)
+EXTENTS:
+(0):688923213
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index d89f0eb..faeec95 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -44,6 +44,7 @@
- #include <linux/slab.h>
- #include <linux/usb.h>
- #include <linux/input/mt.h>
-+#include <linux/string.h>
- 
- 
- MODULE_AUTHOR("Stephane Chatty <chatty@enac.fr>");
-@@ -371,6 +372,15 @@ static int mt_pen_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 		unsigned long **bit, int *max)
- {
- 	struct mt_device *td = hid_get_drvdata(hdev);
-+	char *name;
-+
-+	if (hi->input->name == hdev->name) {
-+		name = kzalloc(sizeof(hdev->name) + 5, GFP_KERNEL);
-+		if (name) {
-+			sprintf(name, "%s Pen", hdev->name);
-+			hi->input->name = name;
-+		}
-+	}
- 
- 	td->pen_report_id = field->report->id;
- 
-@@ -914,6 +924,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 	int ret, i;
- 	struct mt_device *td;
- 	struct mt_class *mtclass = mt_classes; /* MT_CLS_DEFAULT */
-+	struct hid_input *hi;
- 
- 	for (i = 0; mt_classes[i].name ; i++) {
- 		if (id->driver_data == mt_classes[i].name) {
-@@ -964,7 +975,7 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 
- 	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
- 	if (ret)
--		goto fail;
-+		goto hid_fail;
- 
- 	ret = sysfs_create_group(&hdev->dev.kobj, &mt_attribute_group);
- 
-@@ -976,6 +987,10 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 
- 	return 0;
- 
-+hid_fail:
-+	list_for_each_entry(hi, &hdev->inputs, list)
-+		if (hi->input->name != hdev->name)
-+			kfree(hi->input->name);
- fail:
- 	kfree(td->fields);
- 	kfree(td);
-@@ -1020,8 +1035,15 @@ static int mt_resume(struct hid_device *hdev)
- static void mt_remove(struct hid_device *hdev)
- {
- 	struct mt_device *td = hid_get_drvdata(hdev);
-+	struct hid_input *hi;
-+
- 	sysfs_remove_group(&hdev->dev.kobj, &mt_attribute_group);
- 	hid_hw_stop(hdev);
-+
-+	list_for_each_entry(hi, &hdev->inputs, list)
-+		if (hi->input->name != hdev->name)
-+			kfree(hi->input->name);
-+
- 	kfree(td);
- 	hid_set_drvdata(hdev, NULL);
- }
--- 
-1.8.1.2
 
+That took about 2 minutes to run btw, expected ?
+
+	Dave
+
+
+ 
