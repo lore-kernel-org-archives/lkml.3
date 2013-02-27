@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760467Ab3B0AYY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:24:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42753 "EHLO
+	id S1760609Ab3B0AYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:24:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933811Ab3B0AI4 (ORCPT
+	with ESMTP id S933722Ab3B0AIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:08:56 -0500
+	Tue, 26 Feb 2013 19:08:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
-        Mark Fasheh <mfasheh@suse.com>,
+        MITSUNARI Shigeo <herumi@nifty.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Jeff Moyer <jmoyer@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 29/86] ocfs2: unlock super lock if lockres refresh failed
-Date: Tue, 26 Feb 2013 16:07:37 -0800
-Message-Id: <20130226235915.911705420@linuxfoundation.org>
+Subject: [ 28/86] fs/block_dev.c: page cache wrongly left invalidated after revalidate_disk()
+Date: Tue, 26 Feb 2013 16:07:36 -0800
+Message-Id: <20130226235915.818795067@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -29,45 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: MITSUNARI Shigeo <herumi@nifty.com>
 
-commit 3278bb748d2437eb1464765f36429e5d6aa91c38 upstream.
+commit 7630b661da330b35dd57b6f5d6d62b386f2dd751 upstream.
 
-If lockres refresh failed, the super lock will never be released which
-will cause some processes on other cluster nodes hung forever.
+We found that bdev->bd_invalidated was left set once revalidate_disk()
+is called, which results in page cache flush every time that device is
+open.
 
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
+Specifically, we found this problem in MD block device.  Once we resize
+a MD device, mdadm --monitor periodically flush all page cache for that
+device every 60 or 1000 seconds when it opens the device.
+
+This bug lies since at least 3.2.0 till the latest kernel(3.6.2).  Patch
+is attached.
+
+The following steps will reproduce the problem.
+
+1. prepair a block device (eg /dev/sdb).
+
+2. create two partitions:
+
+   sudo parted /dev/sdb
+   mklabel gpt
+   mkpart primary 0% 50%
+   mkpart primary 50% 100%
+
+3. create a md device.
+
+   sudo mdadm -C /dev/md/hoge -l 1 -n 2 -e 1.2 --assume-clean --auto=md --symlink=no /dev/sdb1 /dev/sdb2
+
+4. create file system and mount it
+
+   sudo mkfs.ext3 /dev/md/hoge
+   sudo mkdir /mnt/test
+   sudo mount /dev/md/hoge /mnt/test
+
+5. try to resize the device
+
+   sudo mdadm -G /dev/md/hoge --size=max
+
+6. create a file to fill file cache.
+
+  sudo dd if=/dev/urandom of=/mnt/test/data bs=1M count=10
+
+and verify the current status of file by free command.
+
+7. mdadm monitor will open the md device every 1000 seconds and you
+   will find all file cache on the device are cleared.
+
+The timing can be reduced by the following steps.
+
+a) kill mdadm and restart it with --delay option
+
+   /sbin/mdadm --monitor --delay=30 --pid-file /var/run/mdadm/monitor.pid --daemonise --scan --syslog
+
+or open the md device directly.
+
+   sudo dd if=/dev/md/hoge of=/dev/null bs=4096 count=1
+
+Signed-off-by: MITSUNARI Shigeo <herumi@nifty.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Jeff Moyer <jmoyer@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/dlmglue.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/block_dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ocfs2/dlmglue.c
-+++ b/fs/ocfs2/dlmglue.c
-@@ -2545,6 +2545,7 @@ int ocfs2_super_lock(struct ocfs2_super
- 	 * everything is up to the caller :) */
- 	status = ocfs2_should_refresh_lock_res(lockres);
- 	if (status < 0) {
-+		ocfs2_cluster_unlock(osb, lockres, level);
- 		mlog_errno(status);
- 		goto bail;
- 	}
-@@ -2553,8 +2554,10 @@ int ocfs2_super_lock(struct ocfs2_super
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1047,6 +1047,7 @@ int revalidate_disk(struct gendisk *disk
  
- 		ocfs2_complete_lock_res_refresh(lockres, status);
- 
--		if (status < 0)
-+		if (status < 0) {
-+			ocfs2_cluster_unlock(osb, lockres, level);
- 			mlog_errno(status);
-+		}
- 		ocfs2_track_lock_refresh(lockres);
- 	}
- bail:
+ 	mutex_lock(&bdev->bd_mutex);
+ 	check_disk_size_change(disk, bdev);
++	bdev->bd_invalidated = 0;
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	bdput(bdev);
+ 	return ret;
 
 
