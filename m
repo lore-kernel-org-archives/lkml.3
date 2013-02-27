@@ -1,89 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623Ab3B0VZN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 16:25:13 -0500
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:61375 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279Ab3B0VZL (ORCPT
+	id S1754883Ab3B0V0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 16:26:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56235 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587Ab3B0V0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 16:25:11 -0500
-Message-ID: <512E79B5.3080402@lwfinger.net>
-Date: Wed, 27 Feb 2013 15:25:09 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Daniel Mack <zonque@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: WARNING from tty driver in 3.9-rc0
-References: <512D284B.8070802@lwfinger.net> <CACTFLAO0y-XOwBYJBnOjGJ6rzE2CZjKRnMx4+FpPScCeJkZnUw@mail.gmail.com> <512E7850.6060107@suse.cz>
-In-Reply-To: <512E7850.6060107@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 27 Feb 2013 16:26:15 -0500
+Date: Wed, 27 Feb 2013 13:26:12 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, Don Morris <don.morris@hp.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        jarkko.sakkinen@intel.com
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+Message-Id: <20130227132612.14664a3a.akpm@linux-foundation.org>
+In-Reply-To: <512DBD24.7090302@cn.fujitsu.com>
+References: <512B7D10.4060304@tpi.com>
+	<512B8407.2090807@canonical.com>
+	<512BD753.4080001@hp.com>
+	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
+	<CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com>
+	<CAE9FiQU-CV4mF8x=Bi_4pmpmeZW-tSoes_f-jOt7yYrbrppo+A@mail.gmail.com>
+	<512D58C2.1090403@jp.fujitsu.com>
+	<CAE9FiQV5APHSGXuz3NrsApC+V7rsDQMDXMNwZszZuUqQVaZSew@mail.gmail.com>
+	<512D7FAD.1040003@jp.fujitsu.com>
+	<CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com>
+	<512D8EDA.3010602@jp.fujitsu.com>
+	<CAE9FiQWAxL6F70fF0dQcBZKTReJOiC+Ez0xcqcosgAdSagS-bA@mail.gmail.com>
+	<512DBD24.7090302@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2013 03:19 PM, Jiri Slaby wrote:
-> On 02/26/2013 10:56 PM, Daniel Mack wrote:
->> On Tue, Feb 26, 2013 at 10:25 PM, Larry Finger
->> <Larry.Finger@lwfinger.net> wrote:
->>> Hi,
->>>
->>> With v3.8-8693-gbf722a0 from the mainline repo, I get the following warning
->>> because the pointer for tty is NULL:
->>>
->>> [   34.956862] WARNING: at drivers/tty/tty_buffer.c:428
->>> flush_to_ldisc+0x1bb/0x1c0()
->>> [   34.956865] Hardware name: HP Pavilion dv2700 Notebook PC
->>> [   34.956867] tty is NULL
->>> [   34.956869] Modules linked in: arc4 b43 mac80211 cfg80211
->>> snd_hda_codec_conexant snd_hda_intel rfkill snd_hda_codec ipv6 snd_pcm
->>> kvm_amd snd_seq kvm bcma rng_core snd_timer snd_seq_device ssb mmc_core snd
->>> pcmcia sr_mod cdrom sg soundcore forcedeth pcmcia_core snd_page_alloc
->>> i2c_nforce2 i2c_core k8temp hwmon ehci_pci battery ac serio_raw joydev video
->>> wmi button autofs4 ext4 mbcache jbd2 crc16 ohci_hcd ehci_hcd usbcore
->>> usb_common thermal processor scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac
->>> scsi_dh_emc scsi_dh ata_generic pata_acpi pata_amd
->>> [   34.956936] Pid: 270, comm: kworker/1:1 Not tainted 3.8.0+ #92
->>> [   34.956939] Call Trace:
->>> [   34.956944]  [<ffffffff812acc00>] ? flush_to_ldisc+0x120/0x1c0
->>> [   34.956951]  [<ffffffff81040a4a>] warn_slowpath_common+0x7a/0xc0
->>> [   34.956955]  [<ffffffff81040b31>] warn_slowpath_fmt+0x41/0x50
->>> [   34.956959]  [<ffffffff812acc9b>] flush_to_ldisc+0x1bb/0x1c0
->>> [   34.956964]  [<ffffffff810640f1>] process_one_work+0x1f1/0x660
->>> [   34.956968]  [<ffffffff81064085>] ? process_one_work+0x185/0x660
->>> [   34.956972]  [<ffffffff81064900>] worker_thread+0x110/0x380
->>> [   34.956978]  [<ffffffff810a5b7d>] ? trace_hardirqs_on+0xd/0x10
->>> [   34.956982]  [<ffffffff810647f0>] ? rescuer_thread+0x250/0x250
->>> [   34.956987]  [<ffffffff81069e96>] kthread+0xd6/0xe0
->>> [   34.956992]  [<ffffffff81424c9b>] ? _raw_spin_unlock_irq+0x2b/0x50
->>> [   34.956997]  [<ffffffff81069dc0>] ? __init_kthread_worker+0x70/0x70
->>> [   34.957002]  [<ffffffff81425a7c>] ret_from_fork+0x7c/0xb0
->>> [   34.957006]  [<ffffffff81069dc0>] ? __init_kthread_worker+0x70/0x70
->>> [   34.957009] ---[ end trace f467d4f2302660c1 ]---
->>> [   35.585060] forcedeth 0000:00:0a.0: irq 42 for MSI/MSI-X
->>> [   35.585182] forcedeth 0000:00:0a.0 eth0: MSI enabled
->>> [   36.140711] ------------[ cut here ]------------
->>>
->>>
->>> I have not yet bisected this problem yet; however, I can if requested. Being
->>> lazy, I hope that someone already has a patch, or can see the problem by
->>> inspection. :)
->>
->> FWIW, I see the same on an ARM embedded board ...
->
-> This one should be solved by Peter's "ldisc patchset". It didn't make it
-> to 3.9 though. Anyway, the warning was added for debugging purposes only
-> and it's apparently time to disable it now.
+On Wed, 27 Feb 2013 16:00:36 +0800
+Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
 
-Jiri,
+> In the mails and the changlog of the revert-patch, I think Yinghai
+> mainly worries about 3 problems.
+> 
+> 1) the current implement has bug and bad code.
+> 
+> 	Yes. Any bug should be fixed. we should fix it directly, or
+> 	we can revert the related patches and then send the fixed patches.
+> 
+> 	But the related patch is only one or two, it is not good idea
+> 	to revert the whole patchset or the whole feature. Right?
 
-Thanks for looking into this. Will you be pushing a 3.9 patch to disable the 
-warning?
+Reverting a new patchset isn't really a big deal.  The patchset gets
+fixed up, retested then reapplied.  We like to do things this way
+because it minimises the amount of trouble which the regression is
+causing other people.
 
-Larry
+Reverting one or two patches from a fairly large and complex patchset
+sounds risky - we're putting an untested patch combination straight
+into mainline with minimal testing.  It would be safer to revert
+everything.
 
+So I'm thinking that the best approach here is to revert everything and
+then try again for 3.10-rc1.  This gives people time to test the code
+while it's only in linux-next.  (Hint!)
+
+> 	Thank you all for addressing the bug. we are on the way to fix it.
+
+How long do you think this will take?
+
+> 2) many memory can be put into hotplugable memory, but we have not yet moved them
+>    into hotplugable memory yet. like: vmemmap, some page table ...etc, a lot.
+> 
+> 	This is a restriction in the currently kernel, we can't convert them quickly.
+> 	we must convert them step by step. example, we are converting the memory of
+> 	page_cgroup to hotplugable memory.
+> 
+> 
+> 3) if the user(or firmware) specify the un-hotplugable memory too small, the system can't
+>    work, even can't boot.
+> 
+> 	Any feature/system has its own minimum requirements, the user should
+> 	meet the requirements and specify more un-hotplugable memory.
+> 	so I don't think it is a problem in kernel land.
+> 
+> 	But the problem 2)(above) make this feature's "minimum requirements"
+> 	much higher. It is the real thing that Yinghai worries about.
+> 
+> 	But all systems which use this feature can offer this higher requirement
+> 	very easily. The users should specify enough un-hotplugable memory
+> 	before and after we decrease the "minimum requirements".
+> 
+> 	The whole feature works very well if the user specify enough
+> 	un-hotplugable memory. So the problem 2) and 3) are not urgent
+> 	problems.
+
+Yes, let's not mingle concepts.  From a feature perspective we've
+always understood that 3.9 memory hotplug would be "has limitations,
+needs work, but better than it was before".  Let's consider that
+separately from "your patchset broke my kernel".
 
