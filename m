@@ -1,50 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321Ab3B0Jjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 04:39:45 -0500
-Received: from plane.gmane.org ([80.91.229.3]:37700 "EHLO plane.gmane.org"
+	id S932340Ab3B0JlC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 04:41:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54983 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932210Ab3B0Jjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 04:39:44 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: ownssh <ownssh@gmail.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-Date: Wed, 27 Feb 2013 09:35:24 +0000 (UTC)
-Message-ID: <loom.20130227T103444-514@post.gmane.org>
-References: <87ppzo79in.fsf@mid.deneb.enyo.de> <30665.1361461678@warthog.procyon.org.uk> <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com> <20130221164244.GA19625@srcf.ucam.org> <18738.1361836265@warthog.procyon.org.uk>
-Mime-Version: 1.0
+	id S932146Ab3B0Jk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 04:40:59 -0500
+Date: Wed, 27 Feb 2013 10:40:54 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Roman Gushchin <klamm@yandex-team.ru>
+Cc: Johannes Weiner-Arquette <hannes@cmpxchg.org>, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, Rik van Riel <riel@redhat.com>,
+        mel@csn.ul.ie, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH] memcg: implement low limits
+Message-ID: <20130227094054.GC16719@dhcp22.suse.cz>
+References: <8121361952156@webcorp1g.yandex-team.ru>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 80.79.116.141 (Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130220 Firefox/17.0)
+Content-Disposition: inline
+In-Reply-To: <8121361952156@webcorp1g.yandex-team.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells <at> redhat.com> writes:
+On Wed 27-02-13 12:02:36, Roman Gushchin wrote:
+> Hi, all!
+> 
+> I've implemented low limits for memory cgroups. The primary goal was
+> to add an ability to protect some memory from reclaiming without using
+> mlock(). A kind of "soft mlock()".
 
-> 
-> 
-> Florian Weimer <fw <at> deneb.enyo.de> wrote:
-> 
-> > Seriously, folks, can we go back one step and discuss what problem you
-> > are trying to solve?  Is it about allowing third-party kernel modules
-> > in an environment which does not allow unsigned ring 0 code execution?
-> 
-> Let me try and lay things out:
-> 
->  (1) Like it or not, the reality is that machines exist that have UEFI secure
+Let me restate what I have already mentioned in the private
+communication.
 
-I think, redhat should have their own root key to sign binary files.
-Bootloader of install media can be sign by MS certificates, but only use to add
-the redhat root key to UEFI database before install.
-It will solve many problems like MS blacklist the keys although redhat said MS
-wont do that forever.
+We already have soft limit which can be implemented to achieve the
+same/similar functionality and in fact this is a long term objective (at
+least for me). I hope I will be able to post my code soon. The last post
+by Ying Hand (cc-ing her) was here:
+http://comments.gmane.org/gmane.linux.kernel.mm/83499
 
-And, even you do the all things of A-G, it still wont safe because many
-vulnerabilities can let the attacker enter ring0 only use to exploit the exist
-signed kernel module or kernel itself.
+To be honest I do not like introduction of a new limit because we have
+two already and the situation would get over complicated.
 
+More comments on the code bellow.
+
+[...]
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 53b8201..d8e6ee6 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1743,6 +1743,53 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
+>  			 NULL, "Memory cgroup out of memory");
+>  }
+>  
+> +/*
+> + * If a cgroup is under low limit or enough close to it,
+> + * decrease speed of page scanning.
+> + *
+> + * mem_cgroup_low_limit_scale() returns a number
+> + * from range [0, DEF_PRIORITY - 2], which is used
+> + * in the reclaim code as a scanning priority modifier.
+> + *
+> + * If the low limit is not set, it returns 0;
+> + *
+> + * usage - low_limit > usage / 8  => 0
+> + * usage - low_limit > usage / 16 => 1
+> + * usage - low_limit > usage / 32 => 2
+> + * ...
+> + * usage - low_limit > usage / (2 ^ DEF_PRIORITY - 3) => DEF_PRIORITY - 3
+> + * usage < low_limit => DEF_PRIORITY - 2
+
+Could you clarify why you have used this calculation. The comment
+exlaims _what_ is done but not _why_ it is done.
+
+It is also strange (and unexplained) that the low limit will work
+differently depending on the memcg memory usage - bigger groups have a
+bigger chance to be reclaimed even if they are under the limit.
+
+> + *
+> + */
+> +unsigned int mem_cgroup_low_limit_scale(struct lruvec *lruvec)
+> +{
+> +	struct mem_cgroup_per_zone *mz;
+> +	struct mem_cgroup *memcg;
+> +	unsigned long long low_limit;
+> +	unsigned long long usage;
+> +	unsigned int i;
+> +
+> +	mz = container_of(lruvec, struct mem_cgroup_per_zone, lruvec);
+> +	memcg = mz->memcg;
+> +	if (!memcg)
+> +		return 0;
+> +
+> +	low_limit = res_counter_read_u64(&memcg->res, RES_LOW_LIMIT);
+> +	if (!low_limit)
+> +		return 0;
+> +
+> +	usage = res_counter_read_u64(&memcg->res, RES_USAGE);
+> +
+> +	if (usage < low_limit)
+> +		return DEF_PRIORITY - 2;
+> +
+> +	for (i = 0; i < DEF_PRIORITY - 2; i++)
+> +		if (usage - low_limit > (usage >> (i + 3)))
+> +			break;
+
+why this doesn't depend in the current reclaim priority?
+
+> +
+> +	return i;
+> +}
+> +
+>  static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
+>  					gfp_t gfp_mask,
+>  					unsigned long flags)
+[...]
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 88c5fed..9c1c702 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1660,6 +1660,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+>  	bool force_scan = false;
+>  	unsigned long ap, fp;
+>  	enum lru_list lru;
+> +	unsigned int low_limit_scale = 0;
+>  
+>  	/*
+>  	 * If the zone or memcg is small, nr[l] can be 0.  This
+> @@ -1779,6 +1780,9 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+>  	fraction[1] = fp;
+>  	denominator = ap + fp + 1;
+>  out:
+> +	if (global_reclaim(sc))
+> +		low_limit_scale = mem_cgroup_low_limit_scale(lruvec);
+
+What if the group is reclaimed as a result from parent hitting its
+limit?
+
+> +
+>  	for_each_evictable_lru(lru) {
+>  		int file = is_file_lru(lru);
+>  		unsigned long size;
+> @@ -1786,6 +1790,7 @@ out:
+>  
+>  		size = get_lru_size(lruvec, lru);
+>  		scan = size >> sc->priority;
+> +		scan >>= low_limit_scale;
+>  
+>  		if (!scan && force_scan)
+>  			scan = min(size, SWAP_CLUSTER_MAX);
+
+Thanks!
+-- 
+Michal Hocko
+SUSE Labs
