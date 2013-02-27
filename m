@@ -1,81 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934031Ab3B0AuI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:50:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42187 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932726Ab3BZX6V (ORCPT
+	id S933851Ab3B0Au0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:50:26 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:63024 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932280Ab3B0AuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:21 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
-Subject: [ 119/150] mmc: sdhci-esdhc-imx: fix host version read
-Date: Tue, 26 Feb 2013 15:56:16 -0800
-Message-Id: <20130226235536.478932213@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
-References: <20130226235523.930663721@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 26 Feb 2013 19:50:23 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
+        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
+        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>, <linux@arm.linux.org.uk>,
+        <linux@maxim.org.za>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH Resend v5 13/16] ARM: at91: add clocks for spi dt entries
+Date: Wed, 27 Feb 2013 08:47:56 +0800
+Message-ID: <1361926076-12566-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+From: Richard Genoud <richard.genoud@gmail.com>
 
-------------------
-
-From: Shawn Guo <shawn.guo@linaro.org>
-
-commit ef4d0888bb7e1b963880f086575081c3d39cad2d upstream.
-
-When commit 95a2482 (mmc: sdhci-esdhc-imx: add basic imx6q usdhc
-support) works around host version issue on imx6q, it gets the
-register address fixup "reg ^= 2" lost for imx25/35/51/53 esdhc.
-Thus, the controller version on these SoCs is wrongly identified
-as v1 while it's actually v2.
-
-Add the address fixup back and take a different approach to correct
-imx6q host version, so that the host version read gets back to work
-for all SoCs.
-
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+[<wenyou.yang@atmel.com: declare the spi clocks for sam9260, at91sam9g45, and at91sam9n12]
+[wenyou.yang@atmel.com: submit the patch]
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: linux@arm.linux.org.uk
+Cc: linux@maxim.org.za
+Cc: linux-kernel@vger.kernel.org
 ---
- drivers/mmc/host/sdhci-esdhc-imx.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ arch/arm/mach-at91/at91sam9260.c |    2 ++
+ arch/arm/mach-at91/at91sam9g45.c |    2 ++
+ arch/arm/mach-at91/at91sam9n12.c |    2 ++
+ arch/arm/mach-at91/at91sam9x5.c  |    2 ++
+ 4 files changed, 8 insertions(+)
 
---- a/drivers/mmc/host/sdhci-esdhc-imx.c
-+++ b/drivers/mmc/host/sdhci-esdhc-imx.c
-@@ -237,15 +237,18 @@ static void esdhc_writel_le(struct sdhci
- 
- static u16 esdhc_readw_le(struct sdhci_host *host, int reg)
- {
-+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-+	struct pltfm_imx_data *imx_data = pltfm_host->priv;
-+
- 	if (unlikely(reg == SDHCI_HOST_VERSION)) {
--		u16 val = readw(host->ioaddr + (reg ^ 2));
--		/*
--		 * uSDHC supports SDHCI v3.0, but it's encoded as value
--		 * 0x3 in host controller version register, which violates
--		 * SDHCI_SPEC_300 definition.  Work it around here.
--		 */
--		if ((val & SDHCI_SPEC_VER_MASK) == 3)
--			return --val;
-+		reg ^= 2;
-+		if (is_imx6q_usdhc(imx_data)) {
-+			/*
-+			 * The usdhc register returns a wrong host version.
-+			 * Correct it here.
-+			 */
-+			return SDHCI_SPEC_300;
-+		}
- 	}
- 
- 	return readw(host->ioaddr + reg);
-
+diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+index b67cd53..44199bc 100644
+--- a/arch/arm/mach-at91/at91sam9260.c
++++ b/arch/arm/mach-at91/at91sam9260.c
+@@ -232,6 +232,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("t2_clk", "fffdc000.timer", &tc5_clk),
+ 	CLKDEV_CON_DEV_ID("hclk", "500000.ohci", &ohci_clk),
+ 	CLKDEV_CON_DEV_ID("mci_clk", "fffa8000.mmc", &mmc_clk),
++	CLKDEV_CON_DEV_ID("spi_clk", "fffc8000.spi", &spi0_clk),
++	CLKDEV_CON_DEV_ID("spi_clk", "fffcc000.spi", &spi1_clk),
+ 	/* fake hclk clock */
+ 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
+ 	CLKDEV_CON_ID("pioA", &pioA_clk),
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index d3addee..2ec5efe 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -262,6 +262,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("mci_clk", "fffd0000.mmc", &mmc1_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fff84000.i2c", &twi0_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fff88000.i2c", &twi1_clk),
++	CLKDEV_CON_DEV_ID("spi_clk", "fffa4000.spi", &spi0_clk),
++	CLKDEV_CON_DEV_ID("spi_clk", "fffa8000.spi", &spi1_clk),
+ 	/* fake hclk clock */
+ 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &uhphs_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff200.gpio", &pioA_clk),
+diff --git a/arch/arm/mach-at91/at91sam9n12.c b/arch/arm/mach-at91/at91sam9n12.c
+index 5dfc8fd..ccd0783 100644
+--- a/arch/arm/mach-at91/at91sam9n12.c
++++ b/arch/arm/mach-at91/at91sam9n12.c
+@@ -172,6 +172,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("dma_clk", "ffffec00.dma-controller", &dma_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "f8010000.i2c", &twi0_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "f8014000.i2c", &twi1_clk),
++	CLKDEV_CON_DEV_ID("spi_clk", "f0000000.spi", &spi0_clk),
++	CLKDEV_CON_DEV_ID("spi_clk", "f0004000.spi", &spi1_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioAB_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioAB_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioCD_clk),
+diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
+index 44a9a62..a200d8a 100644
+--- a/arch/arm/mach-at91/at91sam9x5.c
++++ b/arch/arm/mach-at91/at91sam9x5.c
+@@ -237,6 +237,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID(NULL, "f8010000.i2c", &twi0_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "f8014000.i2c", &twi1_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "f8018000.i2c", &twi2_clk),
++	CLKDEV_CON_DEV_ID("spi_clk", "f0000000.spi", &spi0_clk),
++	CLKDEV_CON_DEV_ID("spi_clk", "f0004000.spi", &spi1_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioAB_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioAB_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioCD_clk),
+-- 
+1.7.9.5
 
