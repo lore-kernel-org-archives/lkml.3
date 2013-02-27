@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934025Ab3B0ALe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:11:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42995 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760489Ab3B0AJd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760485Ab3B0AJd (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 26 Feb 2013 19:09:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42975 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760464Ab3B0AJa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 19:09:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "Christopher S. Aker" <caker@theshore.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 73/86] xen-netback: cancel the credit timer when taking the vif down
-Date: Tue, 26 Feb 2013 16:08:21 -0800
-Message-Id: <20130226235920.525726853@linuxfoundation.org>
+        Cong Wang <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Jesse Gross <jesse@nicira.com>
+Subject: [ 78/86] vlan: adjust vlan_set_encap_proto() for its callers
+Date: Tue, 26 Feb 2013 16:08:26 -0800
+Message-Id: <20130226235921.010406328@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -30,54 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Cong Wang <amwang@redhat.com>
 
-[ Upstream commit 3e55f8b306cf305832a4ac78aa82e1b40e818ece ]
+[ Upstream commit da8c87241c26aac81a64c7e4d21d438a33018f4e ]
 
-If the credit timer is left armed after calling
-xen_netbk_remove_xenvif(), then it may fire and attempt to schedule
-the vif which will then oops as vif->netbk == NULL.
+There are two places to call vlan_set_encap_proto():
+vlan_untag() and __pop_vlan_tci().
 
-This may happen both in the fatal error path and during normal
-disconnection from the front end.
+vlan_untag() assumes skb->data points after mac addr, otherwise
+the following code
 
-The sequencing during shutdown is critical to ensure that: a)
-vif->netbk doesn't become unexpectedly NULL; and b) the net device/vif
-is not freed.
+        vhdr = (struct vlan_hdr *) skb->data;
+        vlan_tci = ntohs(vhdr->h_vlan_TCI);
+        __vlan_hwaccel_put_tag(skb, vlan_tci);
 
-1. Mark as unschedulable (netif_carrier_off()).
-2. Synchronously cancel the timer.
-3. Remove the vif from the schedule list.
-4. Remove it from it netback thread group.
-5. Wait for vif->refcnt to become 0.
+        skb_pull_rcsum(skb, VLAN_HLEN);
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Reported-by: Christopher S. Aker <caker@theshore.net>
+won't be correct. But __pop_vlan_tci() assumes points _before_
+mac addr.
+
+In vlan_set_encap_proto(), it looks for some magic L2 value
+after mac addr:
+
+        rawp = skb->data;
+        if (*(unsigned short *) rawp == 0xFFFF)
+	...
+
+Therefore __pop_vlan_tci() is obviously wrong.
+
+A quick fix is avoiding using skb->data in vlan_set_encap_proto(),
+use 'vhdr+1' is always correct in both cases.
+
+Signed-off-by: Cong Wang <amwang@redhat.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Jesse Gross <jesse@nicira.com>
+Acked-by: Jesse Gross <jesse@nicira.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netback/interface.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ include/linux/if_vlan.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -132,6 +132,7 @@ static void xenvif_up(struct xenvif *vif
- static void xenvif_down(struct xenvif *vif)
+--- a/include/linux/if_vlan.h
++++ b/include/linux/if_vlan.h
+@@ -327,7 +327,7 @@ static inline void vlan_set_encap_proto(
+ 					struct vlan_hdr *vhdr)
  {
- 	disable_irq(vif->irq);
-+	del_timer_sync(&vif->credit_timeout);
- 	xen_netbk_deschedule_xenvif(vif);
- 	xen_netbk_remove_xenvif(vif);
- }
-@@ -363,8 +364,6 @@ void xenvif_disconnect(struct xenvif *vi
- 	atomic_dec(&vif->refcnt);
- 	wait_event(vif->waiting_to_free, atomic_read(&vif->refcnt) == 0);
+ 	__be16 proto;
+-	unsigned char *rawp;
++	unsigned short *rawp;
  
--	del_timer_sync(&vif->credit_timeout);
--
- 	if (vif->irq)
- 		unbind_from_irqhandler(vif->irq, vif);
+ 	/*
+ 	 * Was a VLAN packet, grab the encapsulated protocol, which the layer
+@@ -340,8 +340,8 @@ static inline void vlan_set_encap_proto(
+ 		return;
+ 	}
  
+-	rawp = skb->data;
+-	if (*(unsigned short *) rawp == 0xFFFF)
++	rawp = (unsigned short *)(vhdr + 1);
++	if (*rawp == 0xFFFF)
+ 		/*
+ 		 * This is a magic hack to spot IPX packets. Older Novell
+ 		 * breaks the protocol design and runs IPX over 802.3 without
 
 
