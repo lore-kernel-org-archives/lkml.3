@@ -1,48 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439Ab3B0SJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 13:09:08 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:49564 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758009Ab3B0SJF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 13:09:05 -0500
+	id S932490Ab3B0SK2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 13:10:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760052Ab3B0SK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 13:10:26 -0500
+Date: Wed, 27 Feb 2013 19:08:44 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Neil Horman <nhorman@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] freezer: do not send a fake signal to a
+	PF_DUMPCORE thread
+Message-ID: <20130227180844.GA6015@redhat.com>
+References: <20130224173144.GA32179@redhat.com> <20130224173206.GA32206@redhat.com> <20130224183656.GA8903@redhat.com> <CACBanvoOdfZr1x5kU1+fmtex1Cuoas_LwBKwZ_giiLE511E-jg@mail.gmail.com> <CACBanvr5vbkH1J+waRHMBq8hRuKqJtF0sD0+95v6Qmnd=3Zd_w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <512E4954.6060601@linaro.org>
-References: <1352665488-13818-1-git-send-email-mathieu.poirier@linaro.org>
-	<20121119072525.GA16730@core.coreip.homeip.net>
-	<CAPM=9tw8mefcYTqELXFbZWZ44a--SNcPnRMAvMSGTiODzRpDhg@mail.gmail.com>
-	<CA+55aFysXNSJMHL-rKZ_fvPP3t357zTC-6hyHmh=S6K-Qx0WbQ@mail.gmail.com>
-	<512E4954.6060601@linaro.org>
-Date: Wed, 27 Feb 2013 10:09:04 -0800
-X-Google-Sender-Auth: DidHcAguYc6PJKjXAMcDPEDSn74
-Message-ID: <CA+55aFyGr5J2nPwgbX9U_6WPnwnQ6t2AKpnoxrEqerM5Yv+WqA@mail.gmail.com>
-Subject: Re: [PATCH v4] drivers/tty: Folding Android's keyreset driver in sysRQ
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: Dave Airlie <airlied@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        arve@android.com, kernel-team@android.com,
-        John Stultz <john.stultz@linaro.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        David Howells <dhowells@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACBanvr5vbkH1J+waRHMBq8hRuKqJtF0sD0+95v6Qmnd=3Zd_w@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 9:58 AM, Mathieu Poirier
-<mathieu.poirier@linaro.org> wrote:
+On 02/26, Mandeep Singh Baines wrote:
 >
-> Your fix is compiling, running and yielding the correct results -
-> apologies about that.
+> >> Change freeze_task() to check PF_DUMPCORE along with PF_KTHREAD. We
+> >> need to recheck PF_DUMPCORE under ->siglock to avoid the race with
+> >> zap_threads() which can set this flag right before we take the lock.
+> >>
+> >
+> > Won't this prevent suspend?
+
+Hmm. I guess you mean that pipe_write() can hang in pipe_wait() if the
+user-space handler was already freezed... Damn, and I even mentioned
+this race when we discussed this 2 weeks ago.
+
+I need to think, but most probably you are right, and we need another
+solution...
+
+> You'd rather have reliable suspend than coredumps that aren't
+> truncated so you need to set TIF_SIGPENDING to break waits in the
+> dump_write path.
+
+Oh, I agree. In this case the necessary changes look simple.
+
+> static void wait_for_dump_helpers(struct file *file)
+> {
+>         struct pipe_inode_info *pipe;
 >
-> Acked-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+>         pipe = file->f_path.dentry->d_inode->i_pipe;
+>
+>         pipe_lock(pipe);
+>         pipe->readers++;
+>         pipe->writers--;
+>
+>         while (pipe->readers > 1) {
+>                 unsigned long flags;
+>
+>                 wake_up_interruptible_sync(&pipe->wait);
+>                 kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+>                 pipe_wait(pipe);
+>
+>                 pipe_unlock(pipe);
+>                 try_to_freeze();
+>                 pipe_lock(pipe);
+>
+>                 if (fatal_signal_pending(current))
+>                         break;
+>
+>                 /* Clear fake signal from freeze_task(). */
+>                 spin_lock_irqsave(&current->sighand->siglock, flags);
+>                 recalc_sigpending();
+>                 spin_unlock_irqrestore(&current->sighand->siglock, flags);
 
-Ok, good. Committed and pushed out. Adding rmk and dhowells to the cc
-just to let them know, since Dave said they were debugging this on
-irc.
+IIRC, this is what you added into your tree. But note that
+recalc_sigpending() is wrong, exactly because (say) SIGCHLD can
+be pending if it was sent before we set SIGNAL_GROUP_COREDUMP.
 
-             Linus
+So this code needs something like
+
+	spin_lock_irq(siglock);
+	if (!fatal_signal_pending)
+		clear_thread_flag(TIF_SIGPENDING);
+	spin_unlock_irq(siglock);
+
+Or we need to change recalc_sigpending() to check SIGNAL_GROUP_COREDUMP
+or PF_DUMPCORE. I'd like to avoid this, but perhaps we have to do this...
+
+(Btw, this is offtopic, but whatever we do 3/3 still looks like a nice
+ cleanup to me, although it probably needs more changes)
+
+> What do you think? That would fix most cases. You'll still get a
+> truncated core if you were to receive the signal during pipe_write or
+> something.
+
+Let me think a bit...
+
+Right now I can only say that personally I do not really like the
+idea to fix wait_for_dump_helpers() but not pipe_write(). I mean,
+if pipe_write() can fail due to freezing(), then why should we care
+about wait_for_dump_helpers() ? Let them all fail, suspend is not
+that often.
+
+Or we should try to make everything freezer-friendly. But if
+freeze_task() sets TIF_SIGPENDING then we need the ugly "retry"
+logic in dump_write()... Not good.
+
+Thanks Mandeep. If you have other ideas please tell me ;)
+
+Oleg.
+
