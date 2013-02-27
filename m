@@ -1,152 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab3B0H6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 02:58:42 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:18192 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752543Ab3B0H6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 02:58:41 -0500
-X-IronPort-AV: E=Sophos;i="4.84,746,1355068800"; 
-   d="scan'208";a="6778733"
-Message-ID: <512DBD24.7090302@cn.fujitsu.com>
-Date: Wed, 27 Feb 2013 16:00:36 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753335Ab3B0IGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 03:06:30 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:49163 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752387Ab3B0IG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 03:06:28 -0500
+Date: Wed, 27 Feb 2013 10:06:18 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Vivek Gautam <gautamvivek1987@gmail.com>
+CC: <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <sarah.a.sharp@linux.intel.com>,
+        <kgene.kim@samsung.com>, <dianders@chromium.org>,
+        <sylvester.nawrocki@gmail.com>, <tomasz.figa@gmail.com>
+Subject: Re: [PATCH 2/4] USB: dwc3: Adjust runtime pm the dwc3 driver to
+ allow runtime suspend
+Message-ID: <20130227080617.GD8016@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1359373348-18320-1-git-send-email-gautam.vivek@samsung.com>
+ <1359373348-18320-3-git-send-email-gautam.vivek@samsung.com>
+ <20130128114554.GE28698@arwen.pp.htv.fi>
+ <CAFp+6iFcZwu3=2u5ig_F14UKxTXwb2Czrv3JjCqR6QGLPHzFqg@mail.gmail.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, Don Morris <don.morris@hp.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        jarkko.sakkinen@intel.com
-Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
-References: <512B7D10.4060304@tpi.com>	<512B8407.2090807@canonical.com>	<512BD753.4080001@hp.com>	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>	<CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com>	<CAE9FiQU-CV4mF8x=Bi_4pmpmeZW-tSoes_f-jOt7yYrbrppo+A@mail.gmail.com>	<512D58C2.1090403@jp.fujitsu.com>	<CAE9FiQV5APHSGXuz3NrsApC+V7rsDQMDXMNwZszZuUqQVaZSew@mail.gmail.com>	<512D7FAD.1040003@jp.fujitsu.com>	<CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com>	<512D8EDA.3010602@jp.fujitsu.com> <CAE9FiQWAxL6F70fF0dQcBZKTReJOiC+Ez0xcqcosgAdSagS-bA@mail.gmail.com>
-In-Reply-To: <CAE9FiQWAxL6F70fF0dQcBZKTReJOiC+Ez0xcqcosgAdSagS-bA@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/27 15:57:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/02/27 15:57:48,
-	Serialize complete at 2013/02/27 15:57:48
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OROCMA9jn6tkzFBc"
+Content-Disposition: inline
+In-Reply-To: <CAFp+6iFcZwu3=2u5ig_F14UKxTXwb2Czrv3JjCqR6QGLPHzFqg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2013 01:11 PM, Yinghai Lu wrote:
-> On Tue, Feb 26, 2013 at 8:43 PM, Yasuaki Ishimatsu
-> <isimatu.yasuaki@jp.fujitsu.com> wrote:
->> 2013/02/27 13:04, Yinghai Lu wrote:
->>>
->>> On Tue, Feb 26, 2013 at 7:38 PM, Yasuaki Ishimatsu
->>> <isimatu.yasuaki@jp.fujitsu.com> wrote:
->>>>
->>>> 2013/02/27 11:30, Yinghai Lu wrote:
->>>>>
->>>>> Do you mean you can not boot one socket system with 1G ram ?
->>>>> Assume socket 0 does not support hotplug, other 31 sockets support hot
->>>>> plug.
->>>>>
->>>>> So we could boot system only with socket0, and later one by one hot
->>>>> add other cpus.
->>>>
->>>>
->>>>
->>>> In this case, system can boot. But other cpus with bunch of ram hot
->>>> plug may fails, since system does not have enough memory for cover
->>>> hot added memory. When hot adding memory device, kernel object for the
->>>> memory is allocated from 1G ram since hot added memory has not been
->>>> enabled.
->>>>
->>>
->>> yes, it may fail, if the one node memory need page table and vmemmap
->>> is more than 1g ...
->>>
->>
->>> for hot add memory we need to
->>> 1. add another wrapper for init_memory_mapping, just like
->>> init_mem_mapping() for booting path.
->>> 2. we need make memblock more generic, so we can use it with hot add
->>> memory during runtime.
->>> 3. with that we can initialize page table for hot added node with ram.
->>> a. initial page table for 2M near node top is from node0 ( that does
->>> not support hot plug).
->>> b. then will use 2M for memory below node top...
->>> c. with that we will make sure page table stay on local node.
->>>   alloc_low_pages need to be updated to support that.
->>> 4. need to make sure vmemmap on local node too.
->>
->>
->> I think so too. By this, memory hot plug becomes more useful.
->>
->>>
->>> so hot-remove node will work too later.
->>>
->>> In the long run, we should make booting path and hot adding more
->>> similar and share at most code.
->>> That will make code get more test coverage.
-> 
-> Tang,  Yasuaki, Andrew,
-> 
-> Please check if you are ok with attached reverting patch.
-> 
-> Tim, Don,
-> Can you try if attached reverting patch fix all the problems for you ?
-> 
+--OROCMA9jn6tkzFBc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
 
-Hi, Yinghai, Andrew
+sorry for the delay
 
-In the mails and the changlog of the revert-patch, I think Yinghai
-mainly worries about 3 problems.
+On Mon, Jan 28, 2013 at 07:06:56PM +0530, Vivek Gautam wrote:
+> Hi Felipe,
+>=20
+>=20
+> On Mon, Jan 28, 2013 at 5:15 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > On Mon, Jan 28, 2013 at 05:12:26PM +0530, Vivek Gautam wrote:
+> >> The current code in the dwc3 probe effectively disables runtime pm
+> >> from ever working because it calls a get() that was never put() until
+> >> device removal.  Change the runtime pm code to match the standard
+> >> formula and allow runtime pm to function.
+> >>
+> >> Note that this doesn't enable full runtime pm on the DWC3 device in
+> >> that the port isn't put into a lower power mode when not used.
+> >> However it does allow users of dwc3 (like dwc3-exynos) to do some
+> >> amount of runtime power management.
+> >>
+> >> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> >> ---
+> >>  drivers/usb/dwc3/core.c |    4 +++-
+> >>  1 files changed, 3 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> >> index 3a4004a..59c2494 100644
+> >> --- a/drivers/usb/dwc3/core.c
+> >> +++ b/drivers/usb/dwc3/core.c
+> >> @@ -453,6 +453,7 @@ static int dwc3_probe(struct platform_device *pdev)
+> >>       if (of_get_property(node, "tx-fifo-resize", NULL))
+> >>               dwc->needs_fifo_resize =3D true;
+> >>
+> >> +     pm_runtime_set_active(dev);
+> >
+> > this usage of pm_runtime_set_active() actually makes me a bit scared. At
+> > least OMAP starts with the device switched off, so this will probably
+> > break OMAP at least.
+>=20
+> I am fine with dropping pm_runtime_set_active(), actually thought
+> to put device in active state so that as and when system finds it idle,
+> force into suspend state.
+>=20
+> I fact should i drop  pm_runtime_set_active() calls from other places too
+> (xhci-plat, dwc3-exynos, and samsung-usb3 phy) and call get_sync() alongw=
+ith
+> enable() ?
 
-1) the current implement has bug and bad code.
+that's correct, make sure it works fine for you ;-)
 
-	Yes. Any bug should be fixed. we should fix it directly, or
-	we can revert the related patches and then send the fixed patches.
+--=20
+balbi
 
-	But the related patch is only one or two, it is not good idea
-	to revert the whole patchset or the whole feature. Right?
+--OROCMA9jn6tkzFBc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	Thank you all for addressing the bug. we are on the way to fix it.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-2) many memory can be put into hotplugable memory, but we have not yet moved them
-   into hotplugable memory yet. like: vmemmap, some page table ...etc, a lot.
+iQIcBAEBAgAGBQJRLb55AAoJEIaOsuA1yqREepoP/jCPKn/Xg63Ne1Rk7nfdEUUz
+7Z+t2PCdxCdqSQIL/mo0yydkSO4aBozmxoXqPKOpALa8xa008GnIFW0+Hbl5Wn6G
+G1o/E23GWFZEOuhhNzLmo5eNf8hIzCkWKjdvdcjPBLvtJ8vUN7LAYc8anF+HoF6k
+PPIn6NSnEUj1/j2jmC3RXYXwnGo0iNgjp8S32H3eu4QU4GFg7jakZyR5VxFkTQ7F
+u0XC8YAGleiPjqiEAkSXA57MJUj9XD0/bE5KYvXkTMdiGh9NTxc3uF5ke00FJ1qR
+mxYWyAz/pBy4K9xJGq8YMkZKK3p/5K8YjSgk0ETHbKx4fjQw5B/2eGpUATK9EmMx
+hn5fTruT7Z9sIsbZy0cqP2MY89wZwYf898u7Ibw8ZRwkCUw6Pwbx8rGMEiEPF18x
+51r34jLQ89aViG5kLAik49g2HkHx/HRxr6sxMSv8vTg4rQMQaX9vzjkgu3m3hRO8
+H+MkLNUcr0e/TVkvAPd9tWmMw1+5Jmt89kg4bfhwjy4EoZ84htT+EjHvE3RPIfWj
+yga/J4WtzFqL1m4InX4HepQGLS/IeVcycwbH96JUJj4PRZT2xGNNEdRCEYI75Gkj
+mtly4g1EWflqs5GwVcysA7/JYRYn1Pcb3qACxCUFN1SHDgPA2o+sNzNlRG05t56E
+/l+AwSiCyP883Mj592pc
+=EVen
+-----END PGP SIGNATURE-----
 
-	This is a restriction in the currently kernel, we can't convert them quickly.
-	we must convert them step by step. example, we are converting the memory of
-	page_cgroup to hotplugable memory.
-
-
-3) if the user(or firmware) specify the un-hotplugable memory too small, the system can't
-   work, even can't boot.
-
-	Any feature/system has its own minimum requirements, the user should
-	meet the requirements and specify more un-hotplugable memory.
-	so I don't think it is a problem in kernel land.
-
-	But the problem 2)(above) make this feature's "minimum requirements"
-	much higher. It is the real thing that Yinghai worries about.
-
-	But all systems which use this feature can offer this higher requirement
-	very easily. The users should specify enough un-hotplugable memory
-	before and after we decrease the "minimum requirements".
-
-	The whole feature works very well if the user specify enough
-	un-hotplugable memory. So the problem 2) and 3) are not urgent
-	problems.
-
-And our team has another problem, we are still not good at community work,
-(example, the patch TITLE is total misleading), but we are growing up.
-We are sorry and thank you for pointing out the mistakes.
-
-The feature/patchset does have problems. But it is not good to tangle
-all the problems together and revert the whole feature.
-
-Thanks,
-Lai
+--OROCMA9jn6tkzFBc--
