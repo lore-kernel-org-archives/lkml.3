@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759985Ab3B0Bkn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:40:43 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:56712 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758646Ab3B0Bkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 20:40:41 -0500
-Message-ID: <1361929234.1924.8.camel@joe-AO722>
-Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
-From: Joe Perches <joe@perches.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>, Nicolas Pitre <nico@fluxnic.net>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        Kyungsik Lee <kyungsik.lee@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
-        raphael.andy.lee@gmail.com
-Date: Tue, 26 Feb 2013 17:40:34 -0800
-In-Reply-To: <20130226221027.GW17833@n2100.arm.linux.org.uk>
-References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
-	 <512D1C12.4080109@oberhumer.com>
-	 <alpine.LFD.2.03.1302261557220.1254@syhkavp.arg>
-	 <87fw0i7n6d.fsf@dell.be.48ers.dk>
-	 <20130226221027.GW17833@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759677Ab3B0BlW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:41:22 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:62715 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754541Ab3B0BlU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Feb 2013 20:41:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <1361927080.31428.25.camel@kjgkr>
+References: <1361857068-31613-1-git-send-email-jaegeuk.kim@samsung.com>
+	<1361857068-31613-2-git-send-email-jaegeuk.kim@samsung.com>
+	<CAKYAXd-8cJaE8Ry1biTyM1utWs4J8gppBLadz36LMcny+W5EBA@mail.gmail.com>
+	<1361927080.31428.25.camel@kjgkr>
+Date: Wed, 27 Feb 2013 10:41:19 +0900
+Message-ID: <CAKYAXd_bMFDuuNzdvsDLC7EviAzp_zu7rK2pgoakjur+Xa-NQg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] f2fs: introduce readahead mode of node pages
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-02-26 at 22:10 +0000, Russell King - ARM Linux wrote:
-> So... for a selected kernel version of a particular size, can we please
-> have a comparison between the new LZO code and this LZ4 code, so that
-> we can see whether it's worth updating the LZO code or replacing the
-> LZO code with LZ4?
+2013/2/27, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> 2013-02-26 (화), 20:52 +0900, Namjae Jeon:
+>> > @@ -434,7 +434,7 @@ int get_dnode_of_data(struct dnode_of_data *dn,
+>> > pgoff_t
+>> > index, int ro)
+>> >  			alloc_nid_done(sbi, nids[i]);
+>> >  			mutex_unlock_op(sbi, NODE_NEW);
+>> >  			done = true;
+>> > -		} else if (ro && i == level && level > 1) {
+>> > +		} else if (mode == LOOKUP_NODE_RA && i == level && level > 1) {
+>> >  			npage[i] = get_node_page_ra(parent, offset[i - 1]);
+>> >  			if (IS_ERR(npage[i])) {
+>> >  				err = PTR_ERR(npage[i]);
+>>
+>> Hi Jaegeuk.
+>> There is no LOOKUP_NODE usage in this patch.
+>> I think that we can use LOOKUP_NODE flag instead of done(bool)  like
+>> this.
+>>  if (mode == LOOKUP_NODE)
+>
+> Hi.
+> In order to do that, we should check additional conditions like i and
+> level together with mode == LOOKUP_NODE.
+> So, I'm not sure how much it makes clearer by using LOOKUP_NODE
+> explicitly.
+> It seems fine to me, since we can just use LOOKUP_NODE to distinguish it
+> from the other modes.
+> Any thought?
+I agree. And It does really need additional condition.
+So Rather, It can make more complicated If using LOOKUP_NODE.
+Looks reasonable to me on current change.
 
-How could it be questionable that it's worth updating the LZO code?
+Reviewed-by: Namjae Jeon <namjae.jeon@samsung.com>
 
+Thanks!
+>
+> --
+> Jaegeuk Kim
+> Samsung
+>
