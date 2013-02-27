@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3B0KQW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 05:16:22 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:43503 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab3B0KQU (ORCPT
+	id S1753106Ab3B0KRS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 05:17:18 -0500
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:36257 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936Ab3B0KRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 05:16:20 -0500
+	Wed, 27 Feb 2013 05:17:17 -0500
 MIME-Version: 1.0
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Wed, 27 Feb 2013 15:46:00 +0530
-Message-ID: <CAO_48GG2T1owdCPdmArG0ZY_SbBk5JwSu4a9O20qGvYfEObLhA@mail.gmail.com>
-Subject: [GIT PULL]: dma-buf updates for 3.9
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linaro MM SIG <linaro-mm-sig@lists.linaro.org>,
-        linux-media@vger.kernel.org
-Cc: akpm@linux-foundation.org, Daniel Vetter <daniel@ffwll.ch>,
-        Arnd Bergmann <arnd@arndb.de>, Dave Airlie <airlied@linux.ie>,
-        Tom Gall <tom.gall@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <loom.20130227T103444-514@post.gmane.org>
+References: <87ppzo79in.fsf@mid.deneb.enyo.de>
+	<30665.1361461678@warthog.procyon.org.uk>
+	<CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com>
+	<20130221164244.GA19625@srcf.ucam.org>
+	<18738.1361836265@warthog.procyon.org.uk>
+	<loom.20130227T103444-514@post.gmane.org>
+Date: Wed, 27 Feb 2013 10:17:16 +0000
+Message-ID: <CAAMvbhFgNC7fXE2KrDC+aq+Q1dsS7pESvtCrCcMyzJksvARyQQ@mail.gmail.com>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+From: James Courtier-Dutton <james.dutton@gmail.com>
+To: ownssh <ownssh@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 27 February 2013 09:35, ownssh <ownssh@gmail.com> wrote:
+> David Howells <dhowells <at> redhat.com> writes:
+>
+>>
+>>
+>> Florian Weimer <fw <at> deneb.enyo.de> wrote:
+>>
+>> > Seriously, folks, can we go back one step and discuss what problem you
+>> > are trying to solve?  Is it about allowing third-party kernel modules
+>> > in an environment which does not allow unsigned ring 0 code execution?
+>>
+>> Let me try and lay things out:
+>>
+>>  (1) Like it or not, the reality is that machines exist that have UEFI secure
+>
+> I think, redhat should have their own root key to sign binary files.
+> Bootloader of install media can be sign by MS certificates, but only use to add
+> the redhat root key to UEFI database before install.
+> It will solve many problems like MS blacklist the keys although redhat said MS
+> wont do that forever.
+>
+> And, even you do the all things of A-G, it still wont safe because many
+> vulnerabilities can let the attacker enter ring0 only use to exploit the exist
+> signed kernel module or kernel itself.
+>
 
-Here's the 3.9 pull request for dma-buf framework updates: could you
-please pull?
+One way to judge if this is a good solution or not is to list what the
+threats are, and see how well the solution mitigates those.
+I will list a few I would like:
+1) Tamper evindence.
+2) Fast trust revokation and correction.
+3) Trust based on date. I trust everything from X that I put on my
+system 2 weeks ago, but one week ago X got hacked, so don't trust
+anything new from them until the hack has been stopped and the
+revokation/correction steps have been completed.
+E.g. the Bit9 case, where malware was able to be signed.
 
-Thanks and best regards,
-~Sumit.
+I think secure boot does a very week version of (1) and is very slow
+at (2), and does not do (3).
+The ARM version of secure boot is maybe slightly better, it does a
+good job of (1) but at the expense some of (2).
+I.e. the root certificate is in ROM on ARM and not EEPROM on x86.
+It is difficult to tamper with ROM, so you have a much stronger tamper
+evindence solution.
+Unfortunately, if the root certificate in the ROM is compromised, you
+cannot revoke it and correct it.
 
-
-The following changes since commit d895cb1af15c04c522a25c79cc429076987c089b:
-
-  Merge branch 'for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs (2013-02-26
-20:16:07 -0800)
-
-are available in the git repository at:
-
-
-  git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git
-tags/tag-for-linus-3.9
-
-for you to fetch changes up to 495c10cc1c0c359871d5bef32dd173252fc17995:
-
-  CHROMIUM: dma-buf: restore args on failure of dma_buf_mmap
-(2013-02-27 15:14:02 +0530)
-
-----------------------------------------------------------------
-3.9: dma-buf updates
-Refcounting implemented for vmap in core dma-buf
-
-----------------------------------------------------------------
-Daniel Vetter (1):
-      dma-buf: implement vmap refcounting in the interface logic
-
-John Sheu (1):
-      CHROMIUM: dma-buf: restore args on failure of dma_buf_mmap
-
- Documentation/dma-buf-sharing.txt |    6 +++-
- drivers/base/dma-buf.c            |   66 ++++++++++++++++++++++++++++++-------
- include/linux/dma-buf.h           |    4 ++-
- 3 files changed, 63 insertions(+), 13 deletions(-)
+Kind Regards
+				
+James
