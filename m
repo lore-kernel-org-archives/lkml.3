@@ -1,60 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab3B0VcA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 16:32:00 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:52679 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627Ab3B0Vb7 (ORCPT
+	id S1754961Ab3B0Vd5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 16:33:57 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:54645 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955Ab3B0Vdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 16:31:59 -0500
+	Wed, 27 Feb 2013 16:33:55 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] Consolidate CONFIG_DEBUG_STRICT_USER_COPY_CHECK
+Date: Wed, 27 Feb 2013 21:33:27 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-6-generic; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-parisc@vger.kernel.org, linux-s390@vger.kernel.org,
+        Arjan van de Ven <arjan@linux.intel.com>, Helge Deller <deller@gmx.de>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Chris Metcalf <cmetcalf@tilera.com>
+References: <1361934016-22630-1-git-send-email-sboyd@codeaurora.org> <201302272032.21014.arnd@arndb.de> <512E6FA9.4060504@codeaurora.org>
+In-Reply-To: <512E6FA9.4060504@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20130227152429.GA5609@thunk.org>
-References: <20130226030249.GB23834@kroah.com>
-	<20130226031338.GA29784@srcf.ucam.org>
-	<20130226033156.GA24999@kroah.com>
-	<20130226033803.GA30285@srcf.ucam.org>
-	<20130226035416.GA1128@kroah.com>
-	<20130226040456.GA30717@srcf.ucam.org>
-	<20130226041324.GA7241@kroah.com>
-	<CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com>
-	<20130226044521.GC12906@thunk.org>
-	<20130226165451.GE32160@fenchurch.internal.datastacks.com>
-	<20130227152429.GA5609@thunk.org>
-Date: Thu, 28 Feb 2013 07:31:57 +1000
-Message-ID: <CAPM=9twBA67kLADG4r51Q5me1AsLrHZeuTM4oSdkbKRmHGMtxA@mail.gmail.com>
-Subject: Re: [GIT PULL] Load keys from signed PE binaries
-From: Dave Airlie <airlied@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Peter Jones <pjones@redhat.com>,
-        Dave Airlie <airlied@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302272133.27466.arnd@arndb.de>
+X-Provags-ID: V02:K0:S+7V5DEm8QwC/NY9prAR3Y4stz9L2LIFd42V2ORiBhs
+ Tiw/SS6EJBc7xkB+nhjBxn1x70S9iHvDcBDnlSrOGqrxvmJyh9
+ Rt5rUoJ0iqqCmS5JZQePCtU865jdMZKgdEv3zWcGhJLfqVuKtQ
+ PdSyS5ylConMTjJN3uCQ28EfctJpZfmQEm66XrDm0M4a4l5x8o
+ guW4RZDnyw0mGfbvJMsqpf+uqe6MZVaYW2PnQzokdhv0wKlqBy
+ InN3wUG0VWtVthfxGggERvBpIONiRetOIFdf0eeEfzE7MoCF3L
+ /utJtIufH2uOSofvc+PzbU9JBgQG8eJ9UIzI1/DNaQunbCrBpI
+ 942nUiSxjdJTkrxcZyL4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 28, 2013 at 1:24 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Tue, Feb 26, 2013 at 11:54:51AM -0500, Peter Jones wrote:
->> No, no, no.  Quit saying nobody knows.  We've got a pretty good idea -
->> we've got a contract with them, and it says they provide the signing
->> service, and under circumstances where the thing being signed is found
->> to enable malware that circumvents Secure Boot
->
-> The question is what does "malware that circuments Secure Boot" mean?
-> Does starting up a hacked KVM and running Windows 8 under KVM so that
-> malare can be injected count as circumenting Secure Boot?  If so, will
-> you have to disable KVM, too?
->
-> What if someone implements a virtualization bootkit for Windows 8.
-> Will they revoke their own key?  Somehow, I doubt that....
+On Wednesday 27 February 2013, Stephen Boyd wrote:
+> On 02/27/13 12:32, Arnd Bergmann wrote:
+> > On Wednesday 27 February 2013, Stephen Boyd wrote:
+> >> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> >> index 28be08c..ae80518 100644
+> >> --- a/lib/Kconfig.debug
+> >> +++ b/lib/Kconfig.debug
+> >> @@ -1292,6 +1292,24 @@ config LATENCYTOP
+> >>  	  Enable this option if you want to use the LatencyTOP tool
+> >>  	  to find out which userspace is blocking on what kernel operations.
+> >>  
+> >> +config ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
+> >> +	bool
+> >> +
+> >> +config DEBUG_STRICT_USER_COPY_CHECKS
+> >> +	bool "Strict user copy size checks"
+> >> +	depends on ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
+> >> +	depends on DEBUG_KERNEL && !TRACE_BRANCH_PROFILING
+> >> +	help
+> >> +	  Enabling this option turns a certain set of sanity checks for user
+> >> +	  copy operations into compile time failures.
+> >> +
+> >> +	  The copy_from_user() etc checks are there to help test if there
+> >> +	  are sufficient security checks on the length argument of
+> >> +	  the copy operation, by having gcc prove that the argument is
+> >> +	  within bounds.
+> >> +
+> >> +	  If unsure, say N.
+> >> +
+> > Is there actually any architecture dependency left after this?
+> > I wonder if we actually need the ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
+> > symbol, or could just show the DEBUG_STRICT_USER_COPY_CHECKS option
+> > on all architectures.
+> >
+> > It's fine to do your patch as a first step though, which would not
+> > change the behavior.
+> 
+> A lot of arches seem to not want to enable it because false positives
+> are everywhere. It really depends on how good the compiler is at doing
+> constant propagation and dead code removal.
 
-Have you noticed that laptops rarely come with virtualisation enabled
-in the BIOS?
+Ok, I see. Of course they would not need to enable that option, but
+I guess if we know that enabling it doesn't work, there is no point
+in providing the option.
 
-Now you know why.
+> >>  
+> >> +lib-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+> >>  lib-$(CONFIG_MMU) += ioremap.o
+> >>  lib-$(CONFIG_SMP) += cpumask.o
+> >>
+> > I think this should instead be
+> >
+> > +lib-$(DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+> >
+> > No point building that file if we are not using it.
+> 
+> We still need it to link the kernel because the callers of the function
+> don't have ifdefs. Also, all arches were doing an obj-y before, so this
+> is equivalent.
 
-Dave.
+Ok.
+
+	Arnd
