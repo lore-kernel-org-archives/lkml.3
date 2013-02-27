@@ -1,65 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab3B0GcZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 01:32:25 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19132 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab3B0GcX (ORCPT
+	id S1752460Ab3B0Gyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 01:54:40 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:55066 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3B0Gyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 01:32:23 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 26 Feb 2013 22:30:34 -0800
-Date: Wed, 27 Feb 2013 08:32:13 +0200
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "Prashant Gaikwad" <pgaikwad@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [REPOST PATCH 1/2] clk: add table lookup to mux
-Message-ID: <20130227083213.aa234eea89272b09d6551f78@nvidia.com>
-In-Reply-To: <1361545358-22721-2-git-send-email-pdeschrijver@nvidia.com>
-References: <1361545358-22721-1-git-send-email-pdeschrijver@nvidia.com>
-	<1361545358-22721-2-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-X-NVConfidentiality: public
+	Wed, 27 Feb 2013 01:54:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <512D9E69.6010102@jp.fujitsu.com>
+References: <512B7D10.4060304@tpi.com>
+	<512B8407.2090807@canonical.com>
+	<512BD753.4080001@hp.com>
+	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
+	<CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com>
+	<CAE9FiQU-CV4mF8x=Bi_4pmpmeZW-tSoes_f-jOt7yYrbrppo+A@mail.gmail.com>
+	<512D58C2.1090403@jp.fujitsu.com>
+	<CAE9FiQV5APHSGXuz3NrsApC+V7rsDQMDXMNwZszZuUqQVaZSew@mail.gmail.com>
+	<512D7FAD.1040003@jp.fujitsu.com>
+	<CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com>
+	<512D8EDA.3010602@jp.fujitsu.com>
+	<CAE9FiQWAxL6F70fF0dQcBZKTReJOiC+Ez0xcqcosgAdSagS-bA@mail.gmail.com>
+	<512D9E69.6010102@jp.fujitsu.com>
+Date: Tue, 26 Feb 2013 22:54:38 -0800
+X-Google-Sender-Auth: sh6ExjBbdmsif9taFOS-ALTE2c8
+Message-ID: <CAE9FiQV9JRk1SYLkBXsQmrSEDHrYZDpBV6UZb+U5rB7=4gFhVA@mail.gmail.com>
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+From: Yinghai Lu <yinghai@kernel.org>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>, Don Morris <don.morris@hp.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        jarkko.sakkinen@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Feb 2013 16:02:28 +0100
-Peter De Schrijver <pdeschrijver@nvidia.com> wrote:
-
-> Add a table lookup feature to the mux clock. Also allow arbitrary masks
-> instead of the width. This will be used by some clocks on Tegra114.
+On Tue, Feb 26, 2013 at 9:49 PM, Yasuaki Ishimatsu
+<isimatu.yasuaki@jp.fujitsu.com> wrote:
+> 2013/02/27 14:11, Yinghai Lu wrote:
+>>
+>> On Tue, Feb 26, 2013 at 8:43 PM, Yasuaki Ishimatsu
+>> <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>>>
+>>> 2013/02/27 13:04, Yinghai Lu wrote:
+>>>>
+>>>>
+>>>> On Tue, Feb 26, 2013 at 7:38 PM, Yasuaki Ishimatsu
+>>>> <isimatu.yasuaki@jp.fujitsu.com> wrote:
+>>>>>
+>>>>>
+>>>>> 2013/02/27 11:30, Yinghai Lu wrote:
+>>>>>>
+>>>>>>
+>>>>>> Do you mean you can not boot one socket system with 1G ram ?
+>>>>>> Assume socket 0 does not support hotplug, other 31 sockets support hot
+>>>>>> plug.
+>>>>>>
+>>>>>> So we could boot system only with socket0, and later one by one hot
+>>>>>> add other cpus.
+>>>>>
+>>>>>
+>>>>>
+>>>>>
+>>>>> In this case, system can boot. But other cpus with bunch of ram hot
+>>>>> plug may fails, since system does not have enough memory for cover
+>>>>> hot added memory. When hot adding memory device, kernel object for the
+>>>>> memory is allocated from 1G ram since hot added memory has not been
+>>>>> enabled.
+>>>>>
+>>>>
+>>>> yes, it may fail, if the one node memory need page table and vmemmap
+>>>> is more than 1g ...
+>>>>
+>>>
 >
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-....
-> @@ -42,7 +43,17 @@ static u8 clk_mux_get_parent(struct clk_hw *hw)
->  	 * val = 0x4 really means "bit 2, index starts at bit 0"
->  	 */
-....
-> +	if (mux->table) {
-> +		int i;
-> +
-> +		for (i = 0; i < num_parents; i++)
-> +			if (mux->table[i] == val)
-> +				return i;
-> +		if (i == num_parents)
-> +			return -EINVAL;
-> +	}
+>>>> for hot add memory we need to
+>>>> 1. add another wrapper for init_memory_mapping, just like
+>>>> init_mem_mapping() for booting path.
+>>>> 2. we need make memblock more generic, so we can use it with hot add
+>>>> memory during runtime.
+>>>> 3. with that we can initialize page table for hot added node with ram.
+>>>> a. initial page table for 2M near node top is from node0 ( that does
+>>>> not support hot plug).
+>>>> b. then will use 2M for memory below node top...
+>>>> c. with that we will make sure page table stay on local node.
+>>>>    alloc_low_pages need to be updated to support that.
+>>>> 4. need to make sure vmemmap on local node too.
+>>>
+>>>
+>>>
+>>> I think so too. By this, memory hot plug becomes more useful.
+>
+>
+> I agree with your idea. But I think above ideas is future work.
+> So at first we should use movable memory for memory hot plug.
+> After that, we will implement above ideas.
+>
+>
+>>>
+>>>>
+>>>> so hot-remove node will work too later.
+>>>>
+>>>> In the long run, we should make booting path and hot adding more
+>>>> similar and share at most code.
+>>>> That will make code get more test coverage.
+>>
+>>
+>> Tang,  Yasuaki, Andrew,
+>>
+>> Please check if you are ok with attached reverting patch.
+>
+>
+> We will fix this problem with no objection. So please wait a while.
+>
+> And the problem occurs by "movablemem_map=srat" not
+> "movablemem_map=nn[KMG]@ss[KMG]"
+> At least, if you want to revert it, you should revert only
+> "movablemem_map=srat" part.
 
-Can't we just return after for-loop without checking i == num_parents as below?
+Those patches are tangled together.
 
-+		for (i = 0; i < num_parents; i++) {
-+			if (mux->table[i] == val)
-+				return i;
-+		}
-+
-+		return -EINVAL;
+Also it looks funny to ask user to specify mem range in boot command
+line to enable mem hotplug.
+
+Thanks
+
+Yinghai
