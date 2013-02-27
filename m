@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760316Ab3B0ATG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:19:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42850 "EHLO
+	id S933982Ab3B0ATh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:19:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42828 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760391Ab3B0AJL (ORCPT
+	with ESMTP id S933903Ab3B0AJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:11 -0500
+	Tue, 26 Feb 2013 19:09:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>
+To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [ 51/86] target: Fix divide by zero bug in fabric_max_sectors for unconfigured devices
-Date: Tue, 26 Feb 2013 16:07:59 -0800
-Message-Id: <20130226235918.195820918@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 46/86] vgacon/vt: clear buffer attributes when we load a 512 character font (v2)
+Date: Tue, 26 Feb 2013 16:07:54 -0800
+Message-Id: <20130226235917.700351868@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -27,51 +26,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Dave Airlie <airlied@redhat.com>
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+commit 2a2483072393b27f4336ab068a1f48ca19ff1c1e upstream.
 
-commit 7a3cf6ca1ab2a2f7161c6dec5a787fc7a5de864e upstream
+When we switch from 256->512 byte font rendering mode, it means the
+current contents of the screen is being reinterpreted. The bit that holds
+the high bit of the 9-bit font, may have been previously set, and thus
+the new font misrenders.
 
-This patch fixes a possible divide by zero bug when the fabric_max_sectors
-device attribute is written and backend se_device failed to be successfully
-configured -> enabled.
+The problem case we see is grub2 writes spaces with the bit set, so it
+ends up with data like 0x820, which gets reinterpreted into 0x120 char
+which the font translates into G with a circumflex. This flashes up on
+screen at boot and is quite ugly.
 
-Go ahead and use block_size=512 within se_dev_set_fabric_max_sectors()
-in the event of a target_configure_device() failure case, as no valid
-dev->dev_attrib.block_size value will have been setup yet.
+A current side effect of this patch though is that any rendering on the
+screen changes color to a slightly darker color, but at least the screen
+no longer corrupts.
 
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+v2: as suggested by hpa, always clear the attribute space, whether we
+are are going to or from 512 chars.
+
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/tty/vt/vt.c            |    2 +-
+ drivers/video/console/vgacon.c |   22 +++++++++++++++-------
+ include/linux/vt_kern.h        |    1 +
+ 3 files changed, 17 insertions(+), 8 deletions(-)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -1230,6 +1230,8 @@ int se_dev_set_max_sectors(struct se_dev
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -656,7 +656,7 @@ static inline void save_screen(struct vc
+  *	Redrawing of screen
+  */
  
- int se_dev_set_fabric_max_sectors(struct se_device *dev, u32 fabric_max_sectors)
+-static void clear_buffer_attributes(struct vc_data *vc)
++void clear_buffer_attributes(struct vc_data *vc)
  {
-+	int block_size = dev->se_sub_dev->se_dev_attrib.block_size;
-+
- 	if (atomic_read(&dev->dev_export_obj.obj_access_count)) {
- 		pr_err("dev[%p]: Unable to change SE Device"
- 			" fabric_max_sectors while dev_export_obj: %d count exists\n",
-@@ -1267,8 +1269,12 @@ int se_dev_set_fabric_max_sectors(struct
- 	/*
- 	 * Align max_sectors down to PAGE_SIZE to follow transport_allocate_data_tasks()
- 	 */
-+	if (!block_size) {
-+		block_size = 512;
-+		pr_warn("Defaulting to 512 for zero block_size\n");
-+	}
- 	fabric_max_sectors = se_dev_align_max_sectors(fabric_max_sectors,
--						      dev->se_sub_dev->se_dev_attrib.block_size);
-+						      block_size);
+ 	unsigned short *p = (unsigned short *)vc->vc_origin;
+ 	int count = vc->vc_screenbuf_size / 2;
+--- a/drivers/video/console/vgacon.c
++++ b/drivers/video/console/vgacon.c
+@@ -1064,7 +1064,7 @@ static int vgacon_do_font_op(struct vgas
+ 	unsigned short video_port_status = vga_video_port_reg + 6;
+ 	int font_select = 0x00, beg, i;
+ 	char *charmap;
+-	
++	bool clear_attribs = false;
+ 	if (vga_video_type != VIDEO_TYPE_EGAM) {
+ 		charmap = (char *) VGA_MAP_MEM(colourmap, 0);
+ 		beg = 0x0e;
+@@ -1169,12 +1169,6 @@ static int vgacon_do_font_op(struct vgas
  
- 	dev->se_sub_dev->se_dev_attrib.fabric_max_sectors = fabric_max_sectors;
- 	pr_debug("dev[%p]: SE Device max_sectors changed to %u\n",
+ 	/* if 512 char mode is already enabled don't re-enable it. */
+ 	if ((set) && (ch512 != vga_512_chars)) {
+-		/* attribute controller */
+-		for (i = 0; i < MAX_NR_CONSOLES; i++) {
+-			struct vc_data *c = vc_cons[i].d;
+-			if (c && c->vc_sw == &vga_con)
+-				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
+-		}
+ 		vga_512_chars = ch512;
+ 		/* 256-char: enable intensity bit
+ 		   512-char: disable intensity bit */
+@@ -1185,8 +1179,22 @@ static int vgacon_do_font_op(struct vgas
+ 		   it means, but it works, and it appears necessary */
+ 		inb_p(video_port_status);
+ 		vga_wattr(state->vgabase, VGA_AR_ENABLE_DISPLAY, 0);	
++		clear_attribs = true;
+ 	}
+ 	raw_spin_unlock_irq(&vga_lock);
++
++	if (clear_attribs) {
++		for (i = 0; i < MAX_NR_CONSOLES; i++) {
++			struct vc_data *c = vc_cons[i].d;
++			if (c && c->vc_sw == &vga_con) {
++				/* force hi font mask to 0, so we always clear
++				   the bit on either transition */
++				c->vc_hi_font_mask = 0x00;
++				clear_buffer_attributes(c);
++				c->vc_hi_font_mask = ch512 ? 0x0800 : 0;
++			}
++		}
++	}
+ 	return 0;
+ }
+ 
+--- a/include/linux/vt_kern.h
++++ b/include/linux/vt_kern.h
+@@ -47,6 +47,7 @@ int con_set_cmap(unsigned char __user *c
+ int con_get_cmap(unsigned char __user *cmap);
+ void scrollback(struct vc_data *vc, int lines);
+ void scrollfront(struct vc_data *vc, int lines);
++void clear_buffer_attributes(struct vc_data *vc);
+ void update_region(struct vc_data *vc, unsigned long start, int count);
+ void redraw_screen(struct vc_data *vc, int is_switch);
+ #define update_screen(x) redraw_screen(x, 0)
 
 
