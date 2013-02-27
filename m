@@ -1,62 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab3B0ShA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 13:37:00 -0500
-Received: from slimlogic.co.uk ([89.16.172.20]:52458 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760710Ab3B0Sg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 13:36:59 -0500
-From: Ian Lartey <ian@slimlogic.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: linux-watchdog@vger.kernel.org, ldewangan@nvidia.com, j-keerthy@ti.com,
-        gg@slimlogic.co.uk, wim@iguana.be, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, Ian Lartey <ian@slimlogic.co.uk>
-Subject: [PATCH 2/2] watchdog: Kconfig for Palmas watchdog driver
-Date: Wed, 27 Feb 2013 18:36:08 +0000
-Message-Id: <1361990168-882-2-git-send-email-ian@slimlogic.co.uk>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1361990168-882-1-git-send-email-ian@slimlogic.co.uk>
-References: <1361990168-882-1-git-send-email-ian@slimlogic.co.uk>
+	id S1760730Ab3B0Sh4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 13:37:56 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:33543 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760317Ab3B0Shy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 13:37:54 -0500
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 1/2] Use config scripts to detect ncurses libs for menuconfig
+Date: Wed, 27 Feb 2013 19:37:49 +0100
+User-Agent: KMail/1.13.5 (Linux/3.8.0-treguer; KDE/4.4.5; x86_64; ; )
+Cc: jlec@gentoo.org, linux-kernel@vger.kernel.org
+References: <jlec@gentoo.org> <1361988458-18486-1-git-send-email-jlec@gentoo.org>
+In-Reply-To: <1361988458-18486-1-git-send-email-jlec@gentoo.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201302271937.49565.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the Kconfig and MAkefile for the Palmas Watchdog driver
+Justin, All,
 
-Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
-Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
----
- drivers/watchdog/Kconfig  |    7 +++++++
- drivers/watchdog/Makefile |    1 +
- 2 files changed, 8 insertions(+), 0 deletions(-)
+On Wednesday 27 February 2013 jlec@gentoo.org wrote:
+> When building ncurses with --with-termlib several symbols get moved from
+> libncurses.so to libtinfo.so. Thus when linking with libncurses.so, one
+> additionally needs to link with libtinfo.so.
+> 
+> Ncurses provides a config script (ncurses5-config) to assist finding ncurses.
+> This patch makes use of it to detect the necessary libs for linking of the
+> ncurses menuconfig dialog.
+> 
+> Signed-off-by: Justin Lecher <jlec@gentoo.org>
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 0374e0e..dae5a91 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -103,6 +103,13 @@ config WM8350_WATCHDOG
- 	  Support for the watchdog in the WM8350 AudioPlus PMIC.  When
- 	  the watchdog triggers the system will be reset.
- 
-+config PALMAS_WATCHDOG
-+	tristate "Palmas Watchdog"
-+	depends on MFD_PALMAS
-+	help
-+	  Support for the watchdog in the Palmas family of PMICs. When the
-+	  watchdog times out system will be reset.
-+
- # ALPHA Architecture
- 
- # ARM Architecture
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index a300b94..e845c21 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -171,3 +171,4 @@ obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
- obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
- obj-$(CONFIG_MAX63XX_WATCHDOG) += max63xx_wdt.o
- obj-$(CONFIG_SOFT_WATCHDOG) += softdog.o
-+obj-$(CONFIG_PALMAS_WATCHDOG) += palmas_wdt.o
+Usually, patch subjects are of the form:
+  subsystem: subject
+
+So I'd suggest the following subject:
+    kconfig/menuconfig: use config scripts to detect ncurses libs
+
+That way, it makes it easy to see at first glance what the patch is
+about (kconfig/menuconfig), and what it achieves (use config scripts).
+
+> ---
+>  scripts/kconfig/lxdialog/check-lxdialog.sh | 24 ++++++++++++++++--------
+>  1 file changed, 16 insertions(+), 8 deletions(-)
+> 
+> diff --git a/scripts/kconfig/lxdialog/check-lxdialog.sh b/scripts/kconfig/lxdialog/check-lxdialog.sh
+> index c8e8a71..e429207 100644
+> --- a/scripts/kconfig/lxdialog/check-lxdialog.sh
+> +++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
+> @@ -4,15 +4,23 @@
+>  # What library to link
+>  ldflags()
+>  {
+> -	for ext in so a dll.a dylib ; do
+> -		for lib in ncursesw ncurses curses ; do
+> -			$cc -print-file-name=lib${lib}.${ext} | grep -q /
+> -			if [ $? -eq 0 ]; then
+> -				echo "-l${lib}"
+> -				exit
+> -			fi
+> +	if ncursesw5-config --libs >/dev/null 2>&1; then
+> +		ncursesw5-config --libs
+> +		exit
+> +	elif ncurses5-config --libs >/dev/null 2>&1; then
+> +		ncurses5-config --libs
+> +		exit
+
+No need to run ncurses{,w}5-config twice each. Just do:
+
+    ncursesw5-config --libs 2>/dev/null && exit
+    ncurses5-config --libs 2>/dev/null && exit
+    [old code unchanged]
+
+This avoids an ugly re-indent of otherwise unchanged code.
+
+On a side note: is the old code still useful, now we use the config
+scripts? In other words: are there cases where a ncurses install would
+not provide those scripts?
+
+If the answer is 'no', then just trash the old code away.
+
+I've just tested Debian Squeeze (stable for now), and Cygwin, and they
+both do provide ncurses{,w}5-config.
+
+> +	else
+> +		for ext in so a dll.a dylib ; do
+> +			for lib in ncursesw ncurses curses ; do
+> +				$cc -print-file-name=lib${lib}.${ext} | grep -q /
+> +				if [ $? -eq 0 ]; then
+> +					echo "-l${lib}"
+> +					exit
+> +				fi
+> +			done
+>  		done
+> -	done
+> +	fi
+>  	exit 1
+>  }
+
+Regards,
+Yann E. MORIN.
+
 -- 
-1.7.0.4
-
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
