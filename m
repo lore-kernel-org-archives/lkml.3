@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208Ab3B0DJm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 22:09:42 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:62581 "EHLO
+	id S1760013Ab3B0DJs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 22:09:48 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:62588 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756695Ab3B0DJj (ORCPT
+	with ESMTP id S1759890Ab3B0DJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 22:09:39 -0500
+	Tue, 26 Feb 2013 22:09:46 -0500
 From: Tiejun Chen <tiejun.chen@windriver.com>
 To: <benh@kernel.crashing.org>, <galak@kernel.crashing.org>
 CC: <jason.wessel@windriver.com>, <linux-kernel@vger.kernel.org>,
         <linuxppc-dev@lists.ozlabs.org>
-Subject: [v3][PATCH 1/6] powerpc/book3e: load critical/machine/debug exception stack
-Date: Wed, 27 Feb 2013 11:09:23 +0800
-Message-ID: <1361934568-31989-2-git-send-email-tiejun.chen@windriver.com>
+Subject: [v3][PATCH 5/6] kgdb/kgdbts: support ppc64
+Date: Wed, 27 Feb 2013 11:09:27 +0800
+Message-ID: <1361934568-31989-6-git-send-email-tiejun.chen@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361934568-31989-1-git-send-email-tiejun.chen@windriver.com>
 References: <1361934568-31989-1-git-send-email-tiejun.chen@windriver.com>
@@ -23,92 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We always alloc critical/machine/debug check exceptions. This is
-different from the normal exception. So we should load these exception
-stack properly like we did for booke.
+We can't look up the address of the entry point of the function simply
+via that function symbol for all architectures.
+
+For PPC64 ABI, actually there is a function descriptors structure.
+
+A function descriptor is a three doubleword data structure that contains
+the following values:
+	* The first doubleword contains the address of the entry point of
+		the function.
+	* The second doubleword contains the TOC base address for
+		the function.
+	* The third doubleword contains the environment pointer for
+		languages such as Pascal and PL/1.
+
+So we should call a wapperred dereference_function_descriptor() to get
+the address of the entry point of the function.
+
+Note this is also safe for other architecture after refer to
+"include/asm-generic/sections.h" since:
+
+dereference_function_descriptor(p) always is (p) if without arched definition.
 
 Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
 ---
- arch/powerpc/kernel/exceptions-64e.S |   49 +++++++++++++++++++++++++++++++---
- 1 file changed, 46 insertions(+), 3 deletions(-)
+ drivers/misc/kgdbts.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/powerpc/kernel/exceptions-64e.S b/arch/powerpc/kernel/exceptions-64e.S
-index 1e7782b..7fd6af0 100644
---- a/arch/powerpc/kernel/exceptions-64e.S
-+++ b/arch/powerpc/kernel/exceptions-64e.S
-@@ -36,6 +36,37 @@
-  */
- #define	SPECIAL_EXC_FRAME_SIZE	INT_FRAME_SIZE
+diff --git a/drivers/misc/kgdbts.c b/drivers/misc/kgdbts.c
+index 3aa9a96..4799e1f 100644
+--- a/drivers/misc/kgdbts.c
++++ b/drivers/misc/kgdbts.c
+@@ -103,6 +103,7 @@
+ #include <linux/delay.h>
+ #include <linux/kthread.h>
+ #include <linux/module.h>
++#include <asm/sections.h>
  
-+/* only on book3e */
-+#define DBG_STACK_BASE		dbgirq_ctx
-+#define MC_STACK_BASE		mcheckirq_ctx
-+#define CRIT_STACK_BASE		critirq_ctx
-+
-+#ifdef CONFIG_RELOCATABLE
-+#define LOAD_STACK_BASE(reg, level)			\
-+	tovirt(r2,r2);					\
-+	LOAD_REG_ADDR(reg, level##_STACK_BASE);
-+#else
-+#define LOAD_STACK_BASE(reg, level)			\
-+	LOAD_REG_IMMEDIATE(reg, level##_STACK_BASE);
-+#endif
-+
-+#ifdef CONFIG_SMP
-+#define BOOK3E_LOAD_EXC_LEVEL_STACK(level)		\
-+	mfspr	r14,SPRN_PIR;				\
-+	slwi	r14,r14,3;				\
-+	LOAD_STACK_BASE(r10, level);			\
-+	add	r10,r10,r14;				\
-+	ld	r10,0(r10);				\
-+	addi	r10,r10,THREAD_SIZE;			\
-+	std	r10,PACA_##level##_STACK(r13);
-+#else
-+#define BOOK3E_LOAD_EXC_LEVEL_STACK(level)		\
-+	LOAD_STACK_BASE(r10, level);			\
-+	ld	r10,0(r10);				\
-+	addi	r10,r10,THREAD_SIZE;			\
-+	std	r10,PACA_##level##_STACK(r13);
-+#endif
-+
- /* Exception prolog code for all exceptions */
- #define EXCEPTION_PROLOG(n, intnum, type, addition)	    		    \
- 	mtspr	SPRN_SPRG_##type##_SCRATCH,r13;	/* get spare registers */   \
-@@ -68,20 +99,32 @@
- #define SPRN_GDBELL_SRR1	SPRN_GSRR1
- 
- #define CRIT_SET_KSTACK						            \
-+	andi.	r10,r11,MSR_PR;							\
-+	bne	1f;								\
-+	BOOK3E_LOAD_EXC_LEVEL_STACK(CRIT);					\
- 	ld	r1,PACA_CRIT_STACK(r13);				    \
--	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;
-+	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;					\
-+1:
- #define SPRN_CRIT_SRR0	SPRN_CSRR0
- #define SPRN_CRIT_SRR1	SPRN_CSRR1
- 
- #define DBG_SET_KSTACK						            \
-+	andi.	r10,r11,MSR_PR;							\
-+	bne	1f;								\
-+	BOOK3E_LOAD_EXC_LEVEL_STACK(DBG);					\
- 	ld	r1,PACA_DBG_STACK(r13);					    \
--	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;
-+	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;					\
-+1:
- #define SPRN_DBG_SRR0	SPRN_DSRR0
- #define SPRN_DBG_SRR1	SPRN_DSRR1
- 
- #define MC_SET_KSTACK						            \
-+	andi.	r10,r11,MSR_PR;							\
-+	bne	1f;								\
-+	BOOK3E_LOAD_EXC_LEVEL_STACK(MC);					\
- 	ld	r1,PACA_MC_STACK(r13);					    \
--	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;
-+	subi	r1,r1,SPECIAL_EXC_FRAME_SIZE;					\
-+1:
- #define SPRN_MC_SRR0	SPRN_MCSRR0
- #define SPRN_MC_SRR1	SPRN_MCSRR1
+ #define v1printk(a...) do { \
+ 	if (verbose) \
+@@ -222,6 +223,7 @@ static unsigned long lookup_addr(char *arg)
+ 		addr = (unsigned long)do_fork;
+ 	else if (!strcmp(arg, "hw_break_val"))
+ 		addr = (unsigned long)&hw_break_val;
++	addr = (unsigned long )dereference_function_descriptor((void *)addr);
+ 	return addr;
+ }
  
 -- 
 1.7.9.5
