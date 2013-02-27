@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760506Ab3B0RhR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 12:37:17 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:62197 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760263Ab3B0RhP (ORCPT
+	id S1760474Ab3B0RiY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:38:24 -0500
+Received: from mail-da0-f47.google.com ([209.85.210.47]:64031 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754926Ab3B0RiX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 12:37:15 -0500
-Date: Wed, 27 Feb 2013 09:37:12 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Roger Quadros <rogerq@ti.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [ 79/86] USB: ehci-omap: Dont free gpios that we didnt request
-Message-ID: <20130227173712.GA10652@kroah.com>
-References: <20130226235912.881663118@linuxfoundation.org>
- <20130226235921.105248169@linuxfoundation.org>
- <512DBB46.1080609@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <512DBB46.1080609@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 27 Feb 2013 12:38:23 -0500
+References: <nsxr4k2kdwv.fsf@closure.thunk.org> <20130227124727.GA225@x4> <20130227153435.GB5609@thunk.org> <20130227154450.GA23402@x4> <20130227170157.GA222@x4> <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com> <20130227172256.GA236@x4>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <20130227172256.GA236@x4>
+Content-Type: text/plain;
+	charset=GB2312
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Mailer: iPad Mail (10B146)
+From: "gnehzuil.liu" <gnehzuil.liu@gmail.com>
+Subject: Re: [GIT PULL] ext4 updates for 3.9
+Date: Thu, 28 Feb 2013 01:38:13 +0800
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 09:52:38AM +0200, Roger Quadros wrote:
-> Hi Greg,
-> 
-> On 02/27/2013 02:08 AM, Greg Kroah-Hartman wrote:
-> > 3.4-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Roger Quadros <rogerq@ti.com>
-> > 
-> > commit 428525f97153505e83983460a8d08a3210aa6b8a upstream.
-> > 
-> > This driver does not request any gpios so don't free them.
-> > Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
-> > with ehci-omap in use.
-> 
-> Please drop this patch from 3.4-stable.
-> 
-> In 3.4, the driver requests the gpios in probe() so they must be freed
-> in remove() and this patch should not be applied. Thanks.
+在 2013-2-28，上午1:22，Markus Trippelsdorf <markus@trippelsdorf.de> 写道：
 
-Thanks for letting me know, now dropped.
+> On 2013.02.28 at 01:10 +0800, gnehzuil.liu wrote:
+>> 在 2013-2-28，上午1:01，Markus Trippelsdorf <markus@trippelsdorf.de> 写道：
+>> 
+>>> On 2013.02.27 at 16:44 +0100, Markus Trippelsdorf wrote:
+>>>> On 2013.02.27 at 10:34 -0500, Theodore Ts'o wrote:
+>>>>> On Wed, Feb 27, 2013 at 01:47:27PM +0100, Markus Trippelsdorf wrote:
+>>>>>> Just booted todays Linux tree and got the following errors:
+>>>>>> 
+>>>>>> ...
+>>>>>> Feb 27 13:33:31 x4 kernel: EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)
+>>>>>> ...
+>>>>>> Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: inode #70647809: block 14164000: comm cupsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2569822761, rec_len=3837, name_len=1
+>>>>>> Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: ignore#70911401: block 15213579: comm pdnsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2000846358, rec_len=36782, name_len=120
+>>>>> 
+>>>>> Is this reproducible? 
+>>> 
+>>> The issue is caused by:
+>>> 
+>>> commit d100eef2440fea13e4f09e88b1c8bcbca64beb9f
+>>> Author: Zheng Liu <wenqing.lz@taobao.com>
+>>> Date:   Mon Feb 18 00:29:59 2013 -0500
+>>> 
+>>>   ext4: lookup block mapping in extent status tree
+>> 
+>> Thanks for the report.  I am very sorry about that.  Now I am trying to fix it.
+>> 
+> Thank you.
+> 
+> Please note that if I run a kernel build with: 
+> "git reset --hard f7fec032aa782d3fd7e51fbdf08aa3a296c01500" 
+> (the commit before d100eef24) I get a different but similar error:
+> 
+>  EXT4-fs (sda): error count: 4
+>  EXT4-fs (sda): initial error at 1361983458: ext4_find_dest_de:1657: inode 70911401: block 15213579 
+>  EXT4-fs (sda): last error at 1361983663: ext4_find_dest_de:1658: inode 70647809: block 14164000
 
-greg k-h
+Yup, thanks for the note.  Could you please revert to this commit a25a4e1a5d5dc0f97dddbca44e695c532d8228c1 (the commit before f7fec032)?  I suspect that commit f7fec032 is the root cause.  Thanks for your help.
+
+Regards,
+                                                - Zheng
