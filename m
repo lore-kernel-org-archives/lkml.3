@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758717Ab3B0XGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 18:06:52 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7058 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758519Ab3B0XGu (ORCPT
+	id S1758913Ab3B0XHJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 18:07:09 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15258 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757867Ab3B0XHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 18:06:50 -0500
+	Wed, 27 Feb 2013 18:07:07 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 27 Feb 2013 15:01:24 -0800
+	by hqnvupgp07.nvidia.com on Wed, 27 Feb 2013 15:06:00 -0800
 From: Rhyland Klein <rklein@nvidia.com>
 To: Grant Likely <grant.likely@secretlab.ca>,
         Samuel Ortiz <sameo@linux.intel.com>, Anton Vorontsov <cbou@mail.ru>,
@@ -16,9 +16,9 @@ To: Grant Likely <grant.likely@secretlab.ca>,
 CC: Laxman Dewangan <ldewangan@nvidia.com>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>, Rhyland Klein <rklein@nvidia.com>
-Subject: [PATCH 2/4] mfd: tps65090: Add resources for charger
-Date: Wed, 27 Feb 2013 18:07:28 -0500
-Message-ID: <1362006450-4979-3-git-send-email-rklein@nvidia.com>
+Subject: [PATCH 1/4] mfd: tps65090: Fix enum in header file
+Date: Wed, 27 Feb 2013 18:07:27 -0500
+Message-ID: <1362006450-4979-2-git-send-email-rklein@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1362006450-4979-1-git-send-email-rklein@nvidia.com>
 References: <1362006450-4979-1-git-send-email-rklein@nvidia.com>
@@ -29,41 +29,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add irq resources to pass to the charger mfd sub dev so
-the charger can listen for interrupts.
+The enum is missing the definition for the first bit, which makes all
+the rest off by one. Add definition for the TPS65090_IRQ_INTERRUPT bit
+which at 0.
 
 Signed-off-by: Rhyland Klein <rklein@nvidia.com>
 ---
- drivers/mfd/tps65090.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ include/linux/mfd/tps65090.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-index 98edb5be..88846ae 100644
---- a/drivers/mfd/tps65090.c
-+++ b/drivers/mfd/tps65090.c
-@@ -56,12 +56,22 @@
- #define TPS65090_INT2_MASK_OVERLOAD_FET6		6
- #define TPS65090_INT2_MASK_OVERLOAD_FET7		7
+diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
+index 6694cf4..9ce231f 100644
+--- a/include/linux/mfd/tps65090.h
++++ b/include/linux/mfd/tps65090.h
+@@ -27,6 +27,7 @@
  
-+static struct resource charger_resources[] = {
-+	{
-+		.start  = TPS65090_IRQ_VAC_STATUS_CHANGE,
-+		.end    = TPS65090_IRQ_VAC_STATUS_CHANGE,
-+		.flags  = IORESOURCE_IRQ,
-+	}
-+};
-+
- static struct mfd_cell tps65090s[] = {
- 	{
- 		.name = "tps65090-pmic",
- 	},
- 	{
- 		.name = "tps65090-charger",
-+		.num_resources = ARRAY_SIZE(charger_resources),
-+		.resources = &charger_resources[0],
- 	},
- };
- 
+ /* TPS65090 IRQs */
+ enum {
++	TPS65090_IRQ_INTERRUPT,
+ 	TPS65090_IRQ_VAC_STATUS_CHANGE,
+ 	TPS65090_IRQ_VSYS_STATUS_CHANGE,
+ 	TPS65090_IRQ_BAT_STATUS_CHANGE,
 -- 
 1.7.9.5
 
