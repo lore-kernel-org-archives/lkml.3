@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760818Ab3B0Thm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 14:37:42 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:62612 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab3B0Thk (ORCPT
+	id S1755080Ab3B0Tls (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 14:41:48 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:59873 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab3B0Tlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 14:37:40 -0500
-X-IronPort-AV: E=Sophos;i="4.84,750,1355126400"; 
-   d="scan'208";a="26859745"
-Message-ID: <512E6076.7070506@codeaurora.org>
-Date: Wed, 27 Feb 2013 11:37:26 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Nathan Zimmer <nzimmer@sgi.com>
-CC: johnstul@us.ibm.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] timer_list: split timer_list_show_tickdevices()
-References: <51267626.3030308@codeaurora.org> <1361921596-9636-1-git-send-email-nzimmer@sgi.com> <1361921596-9636-2-git-send-email-nzimmer@sgi.com>
-In-Reply-To: <1361921596-9636-2-git-send-email-nzimmer@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Feb 2013 14:41:47 -0500
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Wed, 27 Feb 2013 13:41:46 -0600
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: Andy King <acking@vmware.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dtor@vmware.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] misc/vmw_vmci: Add dependency on CONFIG_NET
+Date: Wed, 27 Feb 2013 11:41:41 -0800
+Message-Id: <1361994101-15781-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/26/13 15:33, Nathan Zimmer wrote:
-> @@ -246,12 +244,8 @@ static void timer_list_show_tickdevices(struct seq_file *m)
->  #endif
->  	SEQ_printf(m, "\n");
->  #endif
-> -	for_each_online_cpu(cpu)
-> -		print_tickdevice(m, tick_get_device(cpu), cpu);
->  	SEQ_printf(m, "\n");
->  }
+Building the vmw_vmci driver with CONFIG_NET undefined results in:
 
-The duplicate newline is here again?
+drivers/built-in.o: In function `__qp_memcpy_from_queue.isra.13':
+vmci_queue_pair.c:(.text+0x1671a8): undefined reference to `memcpy_toiovec'
+drivers/built-in.o: In function `__qp_memcpy_to_queue.isra.14':
+vmci_queue_pair.c:(.text+0x167341): undefined reference to `memcpy_fromiovec'
+make[1]: [vmlinux] Error 1 (ignored)
 
-> -#else
-> -static void timer_list_show_tickdevices(struct seq_file *m) { }
->  #endif
->  
->  static int timer_list_show(struct seq_file *m, void *v)
->
+since memcpy_toiovec and memcpy_fromiovec are defined in the networking code.
+Add the missing dependency.
 
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/misc/vmw_vmci/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/misc/vmw_vmci/Kconfig b/drivers/misc/vmw_vmci/Kconfig
+index 39c2eca..ea98f7e 100644
+--- a/drivers/misc/vmw_vmci/Kconfig
++++ b/drivers/misc/vmw_vmci/Kconfig
+@@ -4,7 +4,7 @@
+ 
+ config VMWARE_VMCI
+ 	tristate "VMware VMCI Driver"
+-	depends on X86 && PCI
++	depends on X86 && PCI && NET
+ 	help
+ 	  This is VMware's Virtual Machine Communication Interface.  It enables
+ 	  high-speed communication between host and guest in a virtual
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.9.7
 
