@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933960Ab3B0ALU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:11:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43000 "EHLO
+	id S934025Ab3B0ALe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:11:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42995 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760464Ab3B0AJe (ORCPT
+	with ESMTP id S1760489Ab3B0AJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:34 -0500
+	Tue, 26 Feb 2013 19:09:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 84/86] USB: ehci-omap: Fix autoloading of module
-Date: Tue, 26 Feb 2013 16:08:32 -0800
-Message-Id: <20130226235921.649347965@linuxfoundation.org>
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "Christopher S. Aker" <caker@theshore.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 73/86] xen-netback: cancel the credit timer when taking the vif down
+Date: Tue, 26 Feb 2013 16:08:21 -0800
+Message-Id: <20130226235920.525726853@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -26,32 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
 
-commit 04753523266629b1cd0518091da1658755787198 upstream.
+From: David Vrabel <david.vrabel@citrix.com>
 
-The module alias should be "ehci-omap" and not
-"omap-ehci" to match the platform device name.
-The omap-ehci module should now autoload correctly.
+[ Upstream commit 3e55f8b306cf305832a4ac78aa82e1b40e818ece ]
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+If the credit timer is left armed after calling
+xen_netbk_remove_xenvif(), then it may fire and attempt to schedule
+the vif which will then oops as vif->netbk == NULL.
+
+This may happen both in the fatal error path and during normal
+disconnection from the front end.
+
+The sequencing during shutdown is critical to ensure that: a)
+vif->netbk doesn't become unexpectedly NULL; and b) the net device/vif
+is not freed.
+
+1. Mark as unschedulable (netif_carrier_off()).
+2. Synchronously cancel the timer.
+3. Remove the vif from the schedule list.
+4. Remove it from it netback thread group.
+5. Wait for vif->refcnt to become 0.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Reported-by: Christopher S. Aker <caker@theshore.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/host/ehci-omap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/xen-netback/interface.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/usb/host/ehci-omap.c
-+++ b/drivers/usb/host/ehci-omap.c
-@@ -363,7 +363,7 @@ static const struct hc_driver ehci_omap_
- 	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
- };
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -132,6 +132,7 @@ static void xenvif_up(struct xenvif *vif
+ static void xenvif_down(struct xenvif *vif)
+ {
+ 	disable_irq(vif->irq);
++	del_timer_sync(&vif->credit_timeout);
+ 	xen_netbk_deschedule_xenvif(vif);
+ 	xen_netbk_remove_xenvif(vif);
+ }
+@@ -363,8 +364,6 @@ void xenvif_disconnect(struct xenvif *vi
+ 	atomic_dec(&vif->refcnt);
+ 	wait_event(vif->waiting_to_free, atomic_read(&vif->refcnt) == 0);
  
--MODULE_ALIAS("platform:omap-ehci");
-+MODULE_ALIAS("platform:ehci-omap");
- MODULE_AUTHOR("Texas Instruments, Inc.");
- MODULE_AUTHOR("Felipe Balbi <felipe.balbi@nokia.com>");
+-	del_timer_sync(&vif->credit_timeout);
+-
+ 	if (vif->irq)
+ 		unbind_from_irqhandler(vif->irq, vif);
  
 
 
