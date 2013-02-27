@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab3B0Vsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 16:48:30 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:32120 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756701Ab3B0Vs2 (ORCPT
+	id S1756249Ab3B0Vv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 16:51:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56401 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab3B0Vv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 16:48:28 -0500
-Message-ID: <1362001700.2808.9.camel@lorien2>
-Subject: Re: [PATCH 1/4] pci: Add PCI_BUS() and PCI_DEVID() interfaces to
- return bus number and device id
-From: Shuah Khan <shuah@fc.hp.com>
-Reply-To: shuah@fc.hp.com
-To: Bjorn Helgaas <bhelgaas@google.com>, joro@8bytes.org
-Cc: dhowells@redhat.com, paulmck@linux.vnet.ibm.com, linasvepstas@gmail.com,
-        davej@redhat.com, tglx@linutronix.de, mtk.manpages@gmail.com,
-        iommu@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org, shemminger@vyatta.com, jiang.liu@huawei.com,
-        wangyijing@huawei.com, shuahkhan@gmail.com
-Date: Wed, 27 Feb 2013 14:48:20 -0700
-In-Reply-To: <1361829202.2958.3.camel@lorien2>
-References: <1360623637.2950.63.camel@lorien2>
-	 <CAErSpo6jY1bX9G59uz8Zt_pDJ4OoR=kJkGjNLYYRTrKVXM8+eg@mail.gmail.com>
-	 <1361810245.2975.14.camel@lorien2>
-	 <CAErSpo7u+vos73jTR1ASzv3XRwcMX1XwptP41mUWekz7Tv249w@mail.gmail.com>
-	 <1361829202.2958.3.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Feb 2013 16:51:57 -0500
+Date: Wed, 27 Feb 2013 13:51:55 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rob Landley <rob@landley.net>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Dave Jones <davej@redhat.com>, David Howells <dhowell@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Josh Boyer <jwboyer@redhat.com>, Michal Marek <mmarek@suse.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rusty Russell <rusty@rustcorp.com.au>, Sam Ravnborg <sam@ravnborg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vince Weaver <vincent.weaver@maine.edu>, x86@kernel.org,
+        Zheng Yan <zheng.z.yan@intel.com>
+Subject: Re: [PATCH 0/3] build linux-next without perl
+Message-Id: <20130227135155.c04453db.akpm@linux-foundation.org>
+In-Reply-To: <1361944667.957820@landley.net>
+References: <1361944667.957820@landley.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-02-25 at 14:53 -0700, Shuah Khan wrote:
-> On Mon, 2013-02-25 at 14:23 -0700, Bjorn Helgaas wrote:
-> > On Mon, Feb 25, 2013 at 9:37 AM, Shuah Khan <shuah.khan@hp.com> wrote:
-> > > On Wed, 2013-02-20 at 18:19 -0700, Bjorn Helgaas wrote:
-> > >> On Mon, Feb 11, 2013 at 4:00 PM, Shuah Khan <shuah.khan@hp.com> wrote:
+On Tue, 26 Feb 2013 21:57:52 -0800 (PST)
+Rob Landley <rob@landley.net> wrote:
 
-> > 
-> > It's not nice and consistent, but it does follow the simple rule of
-> > "don't expose things to user-space unnecessarily."  We might want to
-> > add a comment to keep somebody from cleaning it up later.
+> Before 2.6.25 building Linux never required perl. This patch series removes
+> the requirement from basic kernel builds (tested on i686, x86_64, arm, mips,
+> powerpc, sparc, sh4, and m68k). Now updated to 3.8-rc1.
 > 
-> ok. Will resend patches adding the new defines to linux/pci.h and
-> renaming PCI_BUS() to PCI_BUS_NR() or PCI_BUS_NUM() like you suggested.
-> 
-> Thanks,
-> -- Shuah
-> 
+> Note, this removes perl from the _build_ environment, not from the _development_
+> environment. This is approximately the same logic behind "make menuconfig"
+> requiring curses but "make oldconfig" not requiring curses. Including
+> zconf.lex.c_shipped in kconfig and then requiring perl makes no sense.
+>
+> ...
+>
+> Mostly people just copy the patches into their local projects (ala
+> https://github.com/rofl0r/sabotage/tree/master/KEEP ) but I'm reposting
+> them to linux-kernel after Gentoo considered using these patches, but didn't 
+> because they weren't upstream:
+>   https://bugs.gentoo.org/show_bug.cgi?id=421483
 
-Bjorn/Joerg,
+Sitting here scratching head wondering why you-need-perl is a problem
+for anyone.
 
-I added PCI_BUS_NUM() amd PCI_DEVID() to linux/pci.h. Please note that
-changing PCI_BUS() to PCI_BUS_NUM() required additional changes to AMD
-IOMMU source files and aer driver. Essentially in addition to removing
-local PCI_BUS() define, PCI_BUS() usages are changed to PCI_BUS_NUM(). I
-am resending the patches.
+That gentoo bug report provides some explanation: "perl was removed
+from @system".  But I expect other people have different reasons.
 
-Thanks,
--- Shuah
+IOW, please better describe the motivation for this patchset.
 
+It'll need to be reasonably good motivation, too.  Because not only do
+we need to patch the kernel, we also need to *maintain* its
+perl-freeness and fix up perlisms as they later get added by others.
+
+(Perhaps one way of doing this would be to disable perl in regular
+builds, so even if a developer has perl installed on his machine, his
+build will still fail when he invokes it.  Add "PERL=/dev/null" to some
+build targets in some manner.)
 
