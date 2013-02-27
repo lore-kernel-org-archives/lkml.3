@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432Ab3B0Po4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 10:44:56 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:51194 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932182Ab3B0Poy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 10:44:54 -0500
-Date: Wed, 27 Feb 2013 16:44:50 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-Message-ID: <20130227154450.GA23402@x4>
-References: <nsxr4k2kdwv.fsf@closure.thunk.org>
- <20130227124727.GA225@x4>
- <20130227153435.GB5609@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130227153435.GB5609@thunk.org>
+	id S1760281Ab3B0PtP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 10:49:15 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:38403 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759943Ab3B0PtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 10:49:14 -0500
+Message-ID: <1361980152.2035.13.camel@joe-AO722>
+Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
+From: Joe Perches <joe@perches.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>, Nicolas Pitre <nico@fluxnic.net>,
+        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        Kyungsik Lee <kyungsik.lee@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
+        raphael.andy.lee@gmail.com
+Date: Wed, 27 Feb 2013 07:49:12 -0800
+In-Reply-To: <20130227095609.GY17833@n2100.arm.linux.org.uk>
+References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
+	 <512D1C12.4080109@oberhumer.com>
+	 <alpine.LFD.2.03.1302261557220.1254@syhkavp.arg>
+	 <87fw0i7n6d.fsf@dell.be.48ers.dk>
+	 <20130226221027.GW17833@n2100.arm.linux.org.uk>
+	 <1361929234.1924.8.camel@joe-AO722>
+	 <20130227095609.GY17833@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013.02.27 at 10:34 -0500, Theodore Ts'o wrote:
-> On Wed, Feb 27, 2013 at 01:47:27PM +0100, Markus Trippelsdorf wrote:
-> > Just booted todays Linux tree and got the following errors:
+On Wed, 2013-02-27 at 09:56 +0000, Russell King - ARM Linux wrote:
+> On Tue, Feb 26, 2013 at 05:40:34PM -0800, Joe Perches wrote:
+> > On Tue, 2013-02-26 at 22:10 +0000, Russell King - ARM Linux wrote:
+> > > So... for a selected kernel version of a particular size, can we please
+> > > have a comparison between the new LZO code and this LZ4 code, so that
+> > > we can see whether it's worth updating the LZO code or replacing the
+> > > LZO code with LZ4?
 > > 
-> > ...
-> > Feb 27 13:33:31 x4 kernel: EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)
-> > ...
-> > Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: inode #70647809: block 14164000: comm cupsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2569822761, rec_len=3837, name_len=1
-> > Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: inode #70911401: block 15213579: comm pdnsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2000846358, rec_len=36782, name_len=120
+> > How could it be questionable that it's worth updating the LZO code?
 > 
-> Is this reproducible? 
+> Please read the comments against the previous posting of these patches
+> where I first stated this argument - and with agreement from those
+> following the thread.  The thread started on 26 Jan 2013.  Thanks.
 
-Haven't checked yet, because I got scared.
+https://lkml.org/lkml/2013/1/29/145
 
-> Is there anything special about your system?  How much memory do you
-> have?  What kind of device is /dev/sda?  What sort of workload did you
-> have running on your system before the failure?
+I did not and do not see significant value in
+adding LZ4 given Markus' LZO improvements.
 
-There is nothing special about my system. /dev/sda is a standard SATA
-drive: 
- Model Family:     Seagate Barracuda Green (AF)
- Device Model:     ST1500DL003-9VT16L
-The error happens during boot.
-I use ECC memory.
+I asked about LZO.
 
-> Also, can you send us the output of "debugfs -R "stat <70647809>"
-> /dev/sda" so I can confirm that block 14164000 really is assigned to
-> inode 70647809?  The one potential cause of this error I can think of
-> that might be related to recent changes in ext4 is if the extent
-> status tree had the wrong logical-to-physical mapping cached for the
-> directory inode.
+Why would the LZO code not be updated?
 
-Inode: 70647809   Type: directory    Mode:  0755   Flags: 0x80000
-Generation: 4138624941    Version: 0x00000000:0000000d
-User:     0   Group:     0   Size: 4096
-File ACL: 0    Directory ACL: 0
-Links: 13   Blockcount: 8
-Fragment:  Address: 0    Number: 0    Size: 0
- ctime: 0x50ab80de:2c77d5bc -- Tue Nov 20 14:08:46 2012
- atime: 0x50aa5519:c556886c -- Mon Nov 19 16:49:45 2012
- mtime: 0x50ab80de:2c77d5bc -- Tue Nov 20 14:08:46 2012
-crtime: 0x50aa4a81:06bc6fd0 -- Mon Nov 19 16:04:33 2012
-Size of extra inode fields: 28
-EXTENTS:
-(0):282599456
+The new LZO code is faster than ever and it's
+a standalone improvement.
 
--- 
-Markus
+Markus has posted what seems a clean git pull
+request.  It was not cc'd to arm or linux-arch.
+
+http://linux-kernel.2935.n7.nabble.com/GIT-PULL-Update-LZO-compression-code-for-v3-9-td605184.html
+
+
