@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760385Ab3B0RKZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 12:10:25 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:59692 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab3B0RKX convert rfc822-to-8bit (ORCPT
+	id S1760444Ab3B0RK6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:10:58 -0500
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:33930 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759605Ab3B0RK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 12:10:23 -0500
-References: <nsxr4k2kdwv.fsf@closure.thunk.org> <20130227124727.GA225@x4> <20130227153435.GB5609@thunk.org> <20130227154450.GA23402@x4> <20130227170157.GA222@x4>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <20130227170157.GA222@x4>
-Content-Type: text/plain;
-	charset=GB2312
-Content-Transfer-Encoding: 8BIT
-Message-Id: <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPad Mail (10B146)
-From: "gnehzuil.liu" <gnehzuil.liu@gmail.com>
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-Date: Thu, 28 Feb 2013 01:10:15 +0800
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
+	Wed, 27 Feb 2013 12:10:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <512E376D.70105@redhat.com>
+References: <20130206150403.006e5294@cuia.bos.redhat.com>
+	<tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org>
+	<CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com>
+	<511BE4A3.8050607@redhat.com>
+	<CA+55aFycMB7OZGQ54ueQ74C42beDBSdQE_fKJDV=TbjTjr_emg@mail.gmail.com>
+	<511C1204.9040608@redhat.com>
+	<CA+55aFwxYK-BLH0crhySHaQvAYHOH-VGUi7WTd1aq-24+WTDYw@mail.gmail.com>
+	<511C24A6.8020409@redhat.com>
+	<CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com>
+	<512E376D.70105@redhat.com>
+Date: Wed, 27 Feb 2013 09:10:55 -0800
+X-Google-Sender-Auth: kAA9hxOFhlyyVh_p2Gxj78s5opg
+Message-ID: <CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com>
+Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket lock
+ out of line
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, aquini@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michel Lespinasse <walken@google.com>,
+        linux-tip-commits@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ÔÚ 2013-2-28£¬ÉÏÎç1:01£¬Markus Trippelsdorf <markus@trippelsdorf.de> Ð´µÀ£º
+On Wed, Feb 27, 2013 at 8:42 AM, Rik van Riel <riel@redhat.com> wrote:
+>
+> To keep the results readable and relevant, I am reporting the
+> plateau performance numbers. Comments are given where required.
+>
+>                 3.7.6 vanilla   3.7.6 w/ backoff
+>
+> all_utime               333000          333000
+> alltests        300000-470000   180000-440000   large variability
+> compute                 528000          528000
+> custom          290000-320000   250000-330000   4 fast runs, 1 slow
+> dbase                   920000          925000
+> disk                    100000   90000-120000   similar plateau, wild
+>                                                 swings with patches
+> five_sec                140000          140000
+> fserver         160000-300000   250000-430000   w/ patch drops off at
+>                                                 higher number of users
+> high_systime     80000-110000    30000-125000   w/ patch mostly 40k-70k,
+>                                                 wild wings
+> long            no performance platform, equal performance for both
+> new_dbase               960000          96000
+> new_fserver     150000-300000   210000-420000   vanilla drops off,
+>                                                 w/ patches wild swings
+> shared          270000-440000   120000-440000   all runs ~equal to
+>                                                 vanilla up to 1000
+>                                                 users, one out of 5
+>                                                 runs slows down past
+>                                                 1100 users
+> short                   120000          190000
 
-> On 2013.02.27 at 16:44 +0100, Markus Trippelsdorf wrote:
->> On 2013.02.27 at 10:34 -0500, Theodore Ts'o wrote:
->>> On Wed, Feb 27, 2013 at 01:47:27PM +0100, Markus Trippelsdorf wrote:
->>>> Just booted todays Linux tree and got the following errors:
->>>> 
->>>> ...
->>>> Feb 27 13:33:31 x4 kernel: EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)
->>>> ...
->>>> Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: inode #70647809: block 14164000: comm cupsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2569822761, rec_len=3837, name_len=1
->>>> Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: ignore#70911401: block 15213579: comm pdnsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2000846358, rec_len=36782, name_len=120
->>> 
->>> Is this reproducible? 
-> 
-> The issue is caused by:
-> 
-> commit d100eef2440fea13e4f09e88b1c8bcbca64beb9f
-> Author: Zheng Liu <wenqing.lz@taobao.com>
-> Date:   Mon Feb 18 00:29:59 2013 -0500
-> 
->    ext4: lookup block mapping in extent status tree
+Ugh. That really is rather random. "short" and fserver seems to
+improve a lot (including the "new" version), the others look like they
+are either unchanged or huge regressions.
 
-Hi Markus,
+Is there any way to get profiles for the improved versions vs the
+regressed ones? It might well be that we have two different classes of
+spinlocks. Maybe we could make the back-off version be *explicit* (ie
+not part of the normal "spin_lock()", but you'd use a special
+"spin_lock_backoff()" function for it) because it works well for some
+cases but not for others?
 
-Thanks for the report.  I am very sorry about that.  Now I am trying to fix it.
+Hmm? At the very least, it would give us an idea of *which* spinlock
+it is that causes the most pain. I think your earlier indications was
+that it's the mutex->wait_lock or something?
 
-Thanks,
-                                                - Zheng
+                   Linus
