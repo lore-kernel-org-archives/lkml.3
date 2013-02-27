@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933713Ab3B0AIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:08:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42679 "EHLO
+	id S1759620Ab3B0AJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:09:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42903 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933602Ab3B0AIq (ORCPT
+	with ESMTP id S933941Ab3B0AJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:08:46 -0500
+	Tue, 26 Feb 2013 19:09:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Ruehl <chris.ruehl@gtsys.com.hk>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 14/86] USB: serial: fix null-pointer dereferences on disconnect
-Date: Tue, 26 Feb 2013 16:07:22 -0800
-Message-Id: <20130226235914.374632628@linuxfoundation.org>
+        Anatolij Gustschin <agust@denx.de>, Timur Tabi <timur@tabi.org>,
+        Timur Tabi <timur@freescale.com>
+Subject: [ 64/86] drivers/video: fsl-diu-fb: fix pixel formats for 24 and 16 bpp
+Date: Tue, 26 Feb 2013 16:08:12 -0800
+Message-Id: <20130226235919.565712984@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -27,207 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Anatolij Gustschin <agust@denx.de>
 
-commit b2ca699076573c94fee9a73cb0d8645383b602a0 upstream.
+commit 5d3cc311a76073f6e0a27c0752f7e41f69e95ea7 upstream.
 
-Make sure serial-driver dtr_rts is called with disc_mutex held after
-checking the disconnected flag.
+Framebuffer colors for 24 and 16 bpp are currently wrong. The order
+of the color component arguments in the MAKE_PF() is not natural
+and causes some confusion. The generated pixel format values for 24
+and 16 bpp depths do not much the values in the comments.
 
-Due to a bug in the tty layer, dtr_rts may get called after a device has
-been disconnected and the tty-device unregistered. Some drivers have had
-individual checks for disconnect to make sure the disconnected interface
-was not accessed, but this should really be handled in usb-serial core
-(at least until the long-standing tty-bug has been fixed).
+Fix the macro arguments to be in the natural RGB order and adjust
+the arguments for all depths to generate correct pixel format values
+(equal to the values mentioned in the comments).
 
-Note that the problem has been made more acute with commit 0998d0631001
-("device-core: Ensure drvdata = NULL when no driver is bound") as the
-port data is now also NULL when dtr_rts is called resulting in further
-oopses.
-
-Reported-by: Chris Ruehl <chris.ruehl@gtsys.com.hk>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Anatolij Gustschin <agust@denx.de>
+Cc: Timur Tabi <timur@tabi.org>
+Acked-by: Timur Tabi <timur@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c   |   20 +++++++++-----------
- drivers/usb/serial/mct_u232.c   |   22 +++++++++-------------
- drivers/usb/serial/sierra.c     |    8 +-------
- drivers/usb/serial/ssu100.c     |   19 ++++++++-----------
- drivers/usb/serial/usb-serial.c |   14 ++++++++++++--
- drivers/usb/serial/usb_wwan.c   |    8 +++-----
- 6 files changed, 42 insertions(+), 49 deletions(-)
+ drivers/video/fsl-diu-fb.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1919,24 +1919,22 @@ static void ftdi_dtr_rts(struct usb_seri
- {
- 	struct ftdi_private *priv = usb_get_serial_port_data(port);
+--- a/drivers/video/fsl-diu-fb.c
++++ b/drivers/video/fsl-diu-fb.c
+@@ -923,7 +923,7 @@ static u32 fsl_diu_get_pixel_format(unsi
+ #define PF_COMP_0_MASK		0x0000000F
+ #define PF_COMP_0_SHIFT		0
  
--	mutex_lock(&port->serial->disc_mutex);
--	if (!port->serial->disconnected) {
--		/* Disable flow control */
--		if (!on && usb_control_msg(port->serial->dev,
-+	/* Disable flow control */
-+	if (!on) {
-+		if (usb_control_msg(port->serial->dev,
- 			    usb_sndctrlpipe(port->serial->dev, 0),
- 			    FTDI_SIO_SET_FLOW_CTRL_REQUEST,
- 			    FTDI_SIO_SET_FLOW_CTRL_REQUEST_TYPE,
- 			    0, priv->interface, NULL, 0,
- 			    WDR_TIMEOUT) < 0) {
--			    dev_err(&port->dev, "error from flowcontrol urb\n");
-+			dev_err(&port->dev, "error from flowcontrol urb\n");
- 		}
--		/* drop RTS and DTR */
--		if (on)
--			set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
--		else
--			clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
- 	}
--	mutex_unlock(&port->serial->disc_mutex);
-+	/* drop RTS and DTR */
-+	if (on)
-+		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
-+	else
-+		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
- }
- 
- /*
---- a/drivers/usb/serial/mct_u232.c
-+++ b/drivers/usb/serial/mct_u232.c
-@@ -514,19 +514,15 @@ static void mct_u232_dtr_rts(struct usb_
- 	unsigned int control_state;
- 	struct mct_u232_private *priv = usb_get_serial_port_data(port);
- 
--	mutex_lock(&port->serial->disc_mutex);
--	if (!port->serial->disconnected) {
--		/* drop DTR and RTS */
--		spin_lock_irq(&priv->lock);
--		if (on)
--			priv->control_state |= TIOCM_DTR | TIOCM_RTS;
--		else
--			priv->control_state &= ~(TIOCM_DTR | TIOCM_RTS);
--		control_state = priv->control_state;
--		spin_unlock_irq(&priv->lock);
--		mct_u232_set_modem_ctrl(port->serial, control_state);
--	}
--	mutex_unlock(&port->serial->disc_mutex);
-+	spin_lock_irq(&priv->lock);
-+	if (on)
-+		priv->control_state |= TIOCM_DTR | TIOCM_RTS;
-+	else
-+		priv->control_state &= ~(TIOCM_DTR | TIOCM_RTS);
-+	control_state = priv->control_state;
-+	spin_unlock_irq(&priv->lock);
-+
-+	mct_u232_set_modem_ctrl(port->serial, control_state);
- }
- 
- static void mct_u232_close(struct usb_serial_port *port)
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -890,19 +890,13 @@ static int sierra_open(struct tty_struct
- 
- static void sierra_dtr_rts(struct usb_serial_port *port, int on)
- {
--	struct usb_serial *serial = port->serial;
- 	struct sierra_port_private *portdata;
- 
- 	portdata = usb_get_serial_port_data(port);
- 	portdata->rts_state = on;
- 	portdata->dtr_state = on;
- 
--	if (serial->dev) {
--		mutex_lock(&serial->disc_mutex);
--		if (!serial->disconnected)
--			sierra_send_setup(port);
--		mutex_unlock(&serial->disc_mutex);
--	}
-+	sierra_send_setup(port);
- }
- 
- static int sierra_startup(struct usb_serial *serial)
---- a/drivers/usb/serial/ssu100.c
-+++ b/drivers/usb/serial/ssu100.c
-@@ -532,19 +532,16 @@ static void ssu100_dtr_rts(struct usb_se
- 
- 	dbg("%s\n", __func__);
- 
--	mutex_lock(&port->serial->disc_mutex);
--	if (!port->serial->disconnected) {
--		/* Disable flow control */
--		if (!on &&
--		    ssu100_setregister(dev, 0, UART_MCR, 0) < 0)
-+	/* Disable flow control */
-+	if (!on) {
-+		if (ssu100_setregister(dev, 0, UART_MCR, 0) < 0)
- 			dev_err(&port->dev, "error from flowcontrol urb\n");
--		/* drop RTS and DTR */
--		if (on)
--			set_mctrl(dev, TIOCM_DTR | TIOCM_RTS);
--		else
--			clear_mctrl(dev, TIOCM_DTR | TIOCM_RTS);
- 	}
--	mutex_unlock(&port->serial->disc_mutex);
-+	/* drop RTS and DTR */
-+	if (on)
-+		set_mctrl(dev, TIOCM_DTR | TIOCM_RTS);
-+	else
-+		clear_mctrl(dev, TIOCM_DTR | TIOCM_RTS);
- }
- 
- static void ssu100_update_msr(struct usb_serial_port *port, u8 msr)
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -699,10 +699,20 @@ static int serial_carrier_raised(struct
- static void serial_dtr_rts(struct tty_port *port, int on)
- {
- 	struct usb_serial_port *p = container_of(port, struct usb_serial_port, port);
--	struct usb_serial_driver *drv = p->serial->type;
-+	struct usb_serial *serial = p->serial;
-+	struct usb_serial_driver *drv = serial->type;
- 
--	if (drv->dtr_rts)
-+	if (!drv->dtr_rts)
-+		return;
-+	/*
-+	 * Work-around bug in the tty-layer which can result in dtr_rts
-+	 * being called after a disconnect (and tty_unregister_device
-+	 * has returned). Remove once bug has been squashed.
-+	 */
-+	mutex_lock(&serial->disc_mutex);
-+	if (!serial->disconnected)
- 		drv->dtr_rts(p, on);
-+	mutex_unlock(&serial->disc_mutex);
- }
- 
- static const struct tty_port_operations serial_port_ops = {
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -41,7 +41,6 @@ static bool debug;
- 
- void usb_wwan_dtr_rts(struct usb_serial_port *port, int on)
- {
--	struct usb_serial *serial = port->serial;
- 	struct usb_wwan_port_private *portdata;
- 
- 	struct usb_wwan_intf_private *intfdata;
-@@ -54,12 +53,11 @@ void usb_wwan_dtr_rts(struct usb_serial_
- 		return;
- 
- 	portdata = usb_get_serial_port_data(port);
--	mutex_lock(&serial->disc_mutex);
-+	/* FIXME: locking */
- 	portdata->rts_state = on;
- 	portdata->dtr_state = on;
--	if (serial->dev)
--		intfdata->send_setup(port);
--	mutex_unlock(&serial->disc_mutex);
-+
-+	intfdata->send_setup(port);
- }
- EXPORT_SYMBOL(usb_wwan_dtr_rts);
- 
+-#define MAKE_PF(alpha, red, blue, green, size, c0, c1, c2, c3) \
++#define MAKE_PF(alpha, red, green, blue, size, c0, c1, c2, c3) \
+ 	cpu_to_le32(PF_BYTE_F | (alpha << PF_ALPHA_C_SHIFT) | \
+ 	(blue << PF_BLUE_C_SHIFT) | (green << PF_GREEN_C_SHIFT) | \
+ 	(red << PF_RED_C_SHIFT) | (c3 << PF_COMP_3_SHIFT) | \
+@@ -933,10 +933,10 @@ static u32 fsl_diu_get_pixel_format(unsi
+ 	switch (bits_per_pixel) {
+ 	case 32:
+ 		/* 0x88883316 */
+-		return MAKE_PF(3, 2, 0, 1, 3, 8, 8, 8, 8);
++		return MAKE_PF(3, 2, 1, 0, 3, 8, 8, 8, 8);
+ 	case 24:
+ 		/* 0x88082219 */
+-		return MAKE_PF(4, 0, 1, 2, 2, 0, 8, 8, 8);
++		return MAKE_PF(4, 0, 1, 2, 2, 8, 8, 8, 0);
+ 	case 16:
+ 		/* 0x65053118 */
+ 		return MAKE_PF(4, 2, 1, 0, 1, 5, 6, 5, 0);
 
 
