@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760092Ab3B0Pel (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 10:34:41 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:50263 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894Ab3B0Pej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 10:34:39 -0500
-Date: Wed, 27 Feb 2013 10:34:35 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-Message-ID: <20130227153435.GB5609@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <nsxr4k2kdwv.fsf@closure.thunk.org>
- <20130227124727.GA225@x4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130227124727.GA225@x4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1760183Ab3B0PfR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 10:35:17 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:41070 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759785Ab3B0PfN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 10:35:13 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Wed, 27 Feb 2013 10:35:11 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Johannes Stezenbach <js@sig21.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kyungsik Lee <kyungsik.lee@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
+        raphael.andy.lee@gmail.com
+Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
+In-reply-to: <20130227102053.GA24274@sig21.net>
+Message-id: <alpine.LFD.2.03.1302271027251.1254@syhkavp.arg>
+References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
+ <512D1C12.4080109@oberhumer.com> <20130227073646.GA22333@Corona>
+ <20130227095139.GX17833@n2100.arm.linux.org.uk>
+ <20130227102053.GA24274@sig21.net>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 01:47:27PM +0100, Markus Trippelsdorf wrote:
-> Just booted todays Linux tree and got the following errors:
+On Wed, 27 Feb 2013, Johannes Stezenbach wrote:
+
+> On Wed, Feb 27, 2013 at 09:51:39AM +0000, Russell King - ARM Linux wrote:
+> > On Wed, Feb 27, 2013 at 04:36:47PM +0900, Kyungsik Lee wrote:
+> > > Compiler: Linaro ARM gcc 4.6.2
+> > > 2. ARMv7, 1.7GHz based board
+> > >    Kernel: linux 3.7
+> > >    Uncompressed Kernel Size: 14MB
+> > >          Compressed Size  Decompression Speed
+> > >     LZO  6.0MB            34.1MB/s            Old
+> > >          ----------------------------------------
+> > >          6.0MB            34.7MB/s            New
+> > >          6.0MB            52.2MB/s(UA)
+> > >     =============================================
+> > >     LZ4  6.5MB            86.7MB/s
+> > > UA: Unaligned memory Access support
+> > 
+> > That is pretty conclusive - it shows an 8% increase in image size vs a
+> > 66% increase in decompression speed.  It will take a _lot_ to offset
+> > that increase in decompression speed.
+> > 
+> > So, what I think is that yes, we should accept LZ4 and drop LZO from
+> > the kernel - the "fast but may not be small" compression title has
+> > clearly been taken by LZ4.
 > 
-> ...
-> Feb 27 13:33:31 x4 kernel: EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)
-> ...
-> Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: inode #70647809: block 14164000: comm cupsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2569822761, rec_len=3837, name_len=1
-> Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: inode #70911401: block 15213579: comm pdnsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2000846358, rec_len=36782, name_len=120
+> I think LZO may be used by squashfs, jffs2 and btrfs, thus you
+> cannot drop it without breaking on disk storage formats.
 
-Is this reproducible?  This looks like the in-memory copy of the
-directory got corrupted.  This could be caused by a hardware error, or
-a wild pointer, or a bug in the buffer cache code, etc.  Since there
-are so many different possible causes of this kind of complaint, we
-really need some kind of reproducible test case to do anything with this.
+It is not about dropping LZO from the kernel entirely.  It's about 
+removing support for compressing zImage using LZO (and some others).  
+There is no compatibility issue as zImage embeds its own decompression 
+code.
 
-I did do a test compile of the ext4 tree with the latest linus.git
-tree merged in, and ran a full set of repgression tests before I sent
-my pull request.  Now, the regression tests take over 14 hours to run,
-and there is a delay between when a maintainer sends the pull request
-to when Linus acts on it --- so Linus almost certainly pulled in some
-other trees betewen when I did my final regression testing and when I
-sent the pull request and he pulled it into my tree.
 
-I'll see if I can reproduce this on my end, on Linus's tree after the
-ext4 tree was merged in, but at least in the past, this is the sort of
-thing that is almost certainly caused by a hardware failure or bug
-somewhere in the device driver, mm, or buffer cache, given that the
-directory looks completely insane and a subsequent e2fsck -f didn't
-discover any problem.
-
-Is there anything special about your system?  How much memory do you
-have?  What kind of device is /dev/sda?  What sort of workload did you
-have running on your system before the failure?
-
-Also, can you send us the output of "debugfs -R "stat <70647809>"
-/dev/sda" so I can confirm that block 14164000 really is assigned to
-inode 70647809?  The one potential cause of this error I can think of
-that might be related to recent changes in ext4 is if the extent
-status tree had the wrong logical-to-physical mapping cached for the
-directory inode.
-
-Regards,
-
-						- Ted
+Nicolas
