@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760740Ab3B0TLp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 14:11:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47413 "EHLO mx1.redhat.com"
+	id S1760742Ab3B0TNa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 14:13:30 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55082 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755061Ab3B0TLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 14:11:44 -0500
-Date: Wed, 27 Feb 2013 14:11:15 -0500
-From: Dave Jones <davej@redhat.com>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
-        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-Message-ID: <20130227191115.GA10710@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	"gnehzuil.liu" <gnehzuil.liu@gmail.com>,
-	Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20130227154450.GA23402@x4>
- <20130227170157.GA222@x4>
- <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
- <20130227172256.GA236@x4>
- <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
- <20130227174553.GA224@x4>
- <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
- <20130227184912.GA19624@thunk.org>
- <20130227185755.GA17786@redhat.com>
- <20130227190419.GB19624@thunk.org>
+	id S1755387Ab3B0TN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 14:13:29 -0500
+Date: Wed, 27 Feb 2013 21:13:22 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Luciano Coelho <coelho@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: container_of() doubt
+Message-ID: <20130227191322.GA27264@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
 Content-Disposition: inline
-In-Reply-To: <20130227190419.GB19624@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 02:04:19PM -0500, Theodore Ts'o wrote:
- > On Wed, Feb 27, 2013 at 01:57:55PM -0500, Dave Jones wrote:
- > > Building now.  Can you confirm that nothing on-disk should be awry ?
- > > Or will I need a new fsck to detect what happened ?
- > > 
- > 
- > Well, it's possible that a read from data file which had blocks
- > located above 512GB might have gotten bogus information, or a block
- > allocated above 512GB might result in a write to the wrong place on
- > disk.
- > 
- > So if you are very cautious, running fsck just to make sure things are
- > OK is not a bad idea.  But it's likely that the directory sanity
- > checks would have caught things quickly, or trying run an executable
- > would have caused a seg fault quickly enough.  If your system crashed
- > very quickly during the boot process, you'll probably be OK.
+--EVF5PPMfhYS0aIcm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It had been up a few hours before I hit those checks.
+Hi Greg,
 
-fsck never found anything.  I do have another disk (XFS formatted) with
-a backup from a week ago. I'll run a --dry-run rsync to see if it
-picks up any changes that I don't expect.
+hehe, you must've answered this over and over again, but I don't see the
+need for __mptr in the container_of() macro. I tried googling it but
+couldn't find much.
 
-	Dave
+I get the macro, but not the need __mptr. Wouldn't this work the same
+way ?
 
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 80d3687..bbce857 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -717,8 +717,7 @@ static inline void ftrace_dump(enum ftrace_dump_mode oo=
+ps_dump_mode) { }
+  *
+  */
+ #define container_of(ptr, type, member) ({			\
+-	const typeof( ((type *)0)->member ) *__mptr =3D (ptr);	\
+-	(type *)( (char *)__mptr - offsetof(type,member) );})
++	(type *)( (char *)(ptr) - offsetof(type,member) );})
+=20
+ /* Trap pasters of __FUNCTION__ at compile-time */
+ #define __FUNCTION__ (__func__)
+
+why do we need this type * NULL ?
+
+thanks
+
+--=20
+balbi
+
+--EVF5PPMfhYS0aIcm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRLlrSAAoJEIaOsuA1yqREDskP/iQ3HeIOLZ+B1E7buWjvr1rn
+9WcxPBq5B10FDr6soQQDpOuCaxFgw94h55/tP+ZvXtnm9bWUxtRnKgiJL61VsATX
+R3TG+g8jjRqNPMs2WGsaZyxsCxAO1w/E6105FIbV7f7bZclngIEX13BP7MZpW1ZT
+RLktecTi7WJG6ZivyrBG72c2GfsYAltDfxnryIY6fIRmgC7LO6hictU09eRELKZu
+8jWC70n0ZGvNRF/7kn81tdSBoeTKaKjMgFtoKdO+mKOTCbplYDJGO9M7/Di82H9C
+BH7Iga5AcGFXYuPGZi6fvQWgx8EFVq2+wDM3Pya1l6DSrClic9Ivjz4w7QcC/Ftc
+cEKGK1WOXqdGh98QGchjJRSnDPl7U0W3LwIlQEsdj4TZPI/Ix6K80G8h3zHjQ6iv
+Gg9zeI5C/5SE5DGriJOnmj6XNwypuGdWRNz3zzYoNKo2aTxt03uZOqdxOKYPWTi8
+hLVoKt0dlYeaf4fm/75qviYPxwF56rO6TqiNn6xj4qYf6oBLoLXuYtlHTwCpYUoN
+Qvmws8LaiLIwAnBQixzWu4px7kfSyycdfNUM6bBGM+qjav2h9o4sTTtMLUuoRn9c
+6yJERorhqqemjkNB5tCZAsWOR2txmRLN7UAxPpRDRE9SuGuCyIhXI1wPg3wmdG6V
+Wv20IFSaybvEdHukcm9t
+=4Mfk
+-----END PGP SIGNATURE-----
+
+--EVF5PPMfhYS0aIcm--
