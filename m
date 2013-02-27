@@ -1,44 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760491Ab3B0SfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 13:35:20 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44108 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758245Ab3B0SfT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 13:35:19 -0500
-Message-ID: <512E51E4.902@wwwdotorg.org>
-Date: Wed, 27 Feb 2013 11:35:16 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: J Keerthy <j-keerthy@ti.com>
-CC: broonie@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, gg@slimlogic.co.uk
-Subject: Re: [PATCH 3/4] regulator: palmas: Removing duplicated code
-References: <1361164446-3216-1-git-send-email-j-keerthy@ti.com>
-In-Reply-To: <1361164446-3216-1-git-send-email-j-keerthy@ti.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1760679Ab3B0Sg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 13:36:58 -0500
+Received: from slimlogic.co.uk ([89.16.172.20]:52448 "EHLO slimlogic.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758245Ab3B0Sg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 13:36:57 -0500
+From: Ian Lartey <ian@slimlogic.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: linux-watchdog@vger.kernel.org, ldewangan@nvidia.com, j-keerthy@ti.com,
+        gg@slimlogic.co.uk, wim@iguana.be, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, Ian Lartey <ian@slimlogic.co.uk>
+Subject: [PATCH 1/2] watchdog: add Palmas Watchdog support
+Date: Wed, 27 Feb 2013 18:36:07 +0000
+Message-Id: <1361990168-882-1-git-send-email-ian@slimlogic.co.uk>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/17/2013 10:14 PM, J Keerthy wrote:
-> Removing duplicate assignment in the existing code.
-...
-> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-...
-> @@ -566,11 +566,6 @@ static void palmas_dt_to_pdata(struct device *dev,
->  			pdata->reg_init[idx]->mode_sleep = prop;
->  
->  		ret = of_property_read_u32(palmas_matches[idx].of_node,
-> -				"ti,warm_reset", &prop);
-> -		if (!ret)
-> -			pdata->reg_init[idx]->warm_reset = prop;
-> -
-> -		ret = of_property_read_u32(palmas_matches[idx].of_node,
+From: Graeme Gregory <gg@slimlogic.co.uk>
 
-Can you point out where the duplicate of that is; I don't see any other
-assignment to warm_reset.
+Add support for the Palmas watchdog timer which has a timeout configurable
+from 1s to 128s.
+
+Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+Signed-off-by: Ian Lartey <ian@slimlogic.co.uk>
+---
+ drivers/watchdog/palmas_wdt.c |  291 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 291 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/watchdog/palmas_wdt.c
+
+diff --git a/drivers/watchdog/palmas_wdt.c b/drivers/watchdog/palmas_wdt.c
+new file mode 100644
+index 0000000..68cdc1e
+--- /dev/null
++++ b/drivers/watchdog/palmas_wdt.c
+@@ -0,0 +1,291 @@
++/*
++ * Driver for Watchdog part of Palmas PMIC Chips
++ *
++ * Copyright 2011 Texas Instruments Inc.
++ *
++ * Author: Graeme Gregory <gg@slimlogic.co.uk>
++ * Author: Ian Lartey <ian@slimlogic.co.uk>
++ *
++ * Based on twl4030_wdt.c
++ *
++ * Author: Timo Kokkonen <timo.t.kokkonen at nokia.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under  the terms of the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/slab.h>
++#include <linux/kernel.h>
++#include <linux/fs.h>
++#include <linux/watchdog.h>
++#include <linux/platform_device.h>
++#include <linux/miscdevice.h>
++#include <linux/uaccess.h>
++#include <linux/mfd/palmas.h>
++
++static struct platform_device *palmas_wdt_dev;
++
++struct palmas_wdt {
++	struct palmas *palmas;
++
++	struct miscdevice miscdev;
++	int timer_margin;
++	unsigned long state;
++};
++
++#define PALMAS_WDT_ENABLED	(1<<1)
++
++static int nowayout = WATCHDOG_NOWAYOUT;
++module_param(nowayout, int, 0);
++MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
++	"(default=" __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
++
++static int palmas_wdt_write(struct palmas *palmas, unsigned int data)
++{
++	unsigned int addr;
++
++	addr = PALMAS_BASE_TO_REG(PALMAS_PMU_CONTROL_BASE, PALMAS_WATCHDOG);
++
++	return palmas_write(palmas, PALMAS_PMU_CONTROL_BASE, addr, addr);
++}
++
++static int palmas_wdt_enable(struct palmas_wdt *wdt)
++{
++	return palmas_wdt_write(wdt->palmas,
++			wdt->timer_margin | PALMAS_WATCHDOG_ENABLE);
++}
++
++static int palmas_wdt_disable(struct palmas_wdt *wdt)
++{
++	return palmas_wdt_write(wdt->palmas, wdt->timer_margin);
++}
++
++static int palmas_wdt_set_timeout(struct palmas_wdt *wdt, int timeout)
++{
++	if (timeout < 1 || timeout > 128) {
++		dev_warn(wdt->miscdev.parent,
++			"Timeout can only be in the range [1-128] seconds");
++		return -EINVAL;
++	}
++	wdt->timer_margin = fls(timeout) - 1;
++	return palmas_wdt_enable(wdt);
++}
++
++static ssize_t palmas_wdt_write_fop(struct file *file,
++		const char __user *data, size_t len, loff_t *ppos)
++{
++	struct palmas_wdt *wdt = file->private_data;
++
++	if (len)
++		palmas_wdt_enable(wdt);
++
++	return len;
++}
++
++static long palmas_wdt_ioctl(struct file *file,
++		unsigned int cmd, unsigned long arg)
++{
++	void __user *argp = (void __user *)arg;
++	int __user *p = argp;
++	int new_margin;
++	struct palmas_wdt *wdt = file->private_data;
++	int time = 0;
++
++	static const struct watchdog_info palmas_wd_ident = {
++		.identity = "Palmas Watchdog",
++		.options = WDIOF_SETTIMEOUT,
++		.firmware_version = 0,
++	};
++
++	switch (cmd) {
++	case WDIOC_GETSUPPORT:
++		return copy_to_user(argp, &palmas_wd_ident,
++				sizeof(palmas_wd_ident)) ? -EFAULT : 0;
++
++	case WDIOC_GETSTATUS:
++	case WDIOC_GETBOOTSTATUS:
++		return put_user(0, p);
++
++	case WDIOC_KEEPALIVE:
++		palmas_wdt_enable(wdt);
++		break;
++
++	case WDIOC_SETTIMEOUT:
++		if (get_user(new_margin, p))
++			return -EFAULT;
++		if (palmas_wdt_set_timeout(wdt, new_margin))
++			return -EINVAL;
++
++		time = 1 << wdt->timer_margin;
++
++		return put_user(time, p);
++
++	case WDIOC_GETTIMEOUT:
++		time = 1 << wdt->timer_margin;
++
++		return put_user(time, p);
++
++	default:
++		return -ENOTTY;
++	}
++
++	return 0;
++}
++
++static int palmas_wdt_open(struct inode *inode, struct file *file)
++{
++	struct palmas_wdt *wdt = platform_get_drvdata(palmas_wdt_dev);
++
++	/* /dev/watchdog can only be opened once */
++	if (test_and_set_bit(0, &wdt->state))
++		return -EBUSY;
++
++	wdt->state |= PALMAS_WDT_ENABLED;
++	file->private_data = (void *) wdt;
++
++	palmas_wdt_enable(wdt);
++	return nonseekable_open(inode, file);
++}
++
++static int palmas_wdt_release(struct inode *inode, struct file *file)
++{
++	struct palmas_wdt *wdt = file->private_data;
++	if (nowayout) {
++		dev_alert(wdt->miscdev.parent,
++		       "Unexpected close, watchdog still running!\n");
++		palmas_wdt_enable(wdt);
++	} else {
++		if (palmas_wdt_disable(wdt))
++			return -EFAULT;
++		wdt->state &= ~PALMAS_WDT_ENABLED;
++	}
++
++	clear_bit(0, &wdt->state);
++	return 0;
++}
++
++static const struct file_operations palmas_wdt_fops = {
++	.owner		= THIS_MODULE,
++	.llseek		= no_llseek,
++	.open		= palmas_wdt_open,
++	.release	= palmas_wdt_release,
++	.unlocked_ioctl	= palmas_wdt_ioctl,
++	.write		= palmas_wdt_write_fop,
++};
++
++static int palmas_wdt_probe(struct platform_device *pdev)
++{
++	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
++	struct palmas_wdt *wdt;
++	int ret = 0;
++
++	wdt = kzalloc(sizeof(*wdt), GFP_KERNEL);
++	if (!wdt)
++		return -ENOMEM;
++
++	wdt->palmas		= palmas;
++	wdt->state		= 0;
++	wdt->timer_margin	= 7;
++	wdt->miscdev.parent	= &pdev->dev;
++	wdt->miscdev.fops	= &palmas_wdt_fops;
++	wdt->miscdev.minor	= WATCHDOG_MINOR;
++	wdt->miscdev.name	= "watchdog";
++
++	platform_set_drvdata(pdev, wdt);
++
++	palmas_wdt_dev = pdev;
++
++	palmas_wdt_disable(wdt);
++
++	ret = misc_register(&wdt->miscdev);
++	if (ret) {
++		dev_err(wdt->miscdev.parent,
++			"Failed to register misc device\n");
++		platform_set_drvdata(pdev, NULL);
++		kfree(wdt);
++		palmas_wdt_dev = NULL;
++		return ret;
++	}
++	return 0;
++}
++
++static int palmas_wdt_remove(struct platform_device *pdev)
++{
++	struct palmas_wdt *wdt = platform_get_drvdata(pdev);
++
++	if (wdt->state & PALMAS_WDT_ENABLED)
++		if (palmas_wdt_disable(wdt))
++			return -EFAULT;
++
++	wdt->state &= ~PALMAS_WDT_ENABLED;
++	misc_deregister(&wdt->miscdev);
++
++	platform_set_drvdata(pdev, NULL);
++	kfree(wdt);
++	palmas_wdt_dev = NULL;
++
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int palmas_wdt_suspend(struct platform_device *pdev, pm_message_t state)
++{
++	struct palmas_wdt *wdt = platform_get_drvdata(pdev);
++	if (wdt->state & PALMAS_WDT_ENABLED)
++		return palmas_wdt_disable(wdt);
++
++	return 0;
++}
++
++static int palmas_wdt_resume(struct platform_device *pdev)
++{
++	struct palmas_wdt *wdt = platform_get_drvdata(pdev);
++	if (wdt->state & PALMAS_WDT_ENABLED)
++		return palmas_wdt_enable(wdt);
++
++	return 0;
++}
++#else
++#define palmas_wdt_suspend        NULL
++#define palmas_wdt_resume         NULL
++#endif
++
++static struct of_device_id of_palmas_match_tbl[] = {
++	{ .compatible = "ti,palmas-wdt", },
++	{ /* end */ }
++};
++
++static struct platform_driver palmas_wdt_driver = {
++	.probe = palmas_wdt_probe,
++	.remove = palmas_wdt_remove,
++	.suspend = palmas_wdt_suspend,
++	.resume = palmas_wdt_resume,
++	.driver = {
++		.owner = THIS_MODULE,
++		.of_match_table = of_palmas_match_tbl,
++		.name = "palmas-wdt",
++	},
++};
++
++static int palmas_wdt_init(void)
++{
++	return platform_driver_register(&palmas_wdt_driver);
++}
++module_init(palmas_wdt_init);
++
++static void palmas_wdt_exit(void)
++{
++	platform_driver_unregister(&palmas_wdt_driver);
++}
++module_exit(palmas_wdt_exit);
++
++MODULE_AUTHOR("Graeme Gregory <gg@slimlogic.co.uk>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
++MODULE_ALIAS("platform:palmas-wdt");
++MODULE_DEVICE_TABLE(of, of_palmas_match_tbl);
+-- 
+1.7.0.4
+
