@@ -1,72 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab3B0Cbn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 21:31:43 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59833 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755381Ab3B0Cbm convert rfc822-to-8bit (ORCPT
+	id S1759952Ab3B0Cd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 21:33:27 -0500
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:57856 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755377Ab3B0CdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 21:31:42 -0500
-X-AuditID: 9c930179-b7b61ae000004061-06-512d700af0af
-From: Namhyung Kim <namhyung@kernel.org>
-To: li guang <lig.fnst@cn.fujitsu.com>
-Cc: Michael Ellerman <michael@ellerman.id.au>, acme@infradead.org,
-        linux-kernel@vger.kernel.org, feng.tang@intel.com,
-        namhyung.kim@lge.com
-Subject: Re: [PATCH 1/2] perf annotate: Fix build with NO_NEWT=1
-References: <1361854923-1814-1-git-send-email-michael@ellerman.id.au>
-	<87y5ebsb0s.fsf@sejong.aot.lge.com>
-	<1361927668.2262.36.camel@liguang.fnst.cn.fujitsu.com>
-Date: Wed, 27 Feb 2013 11:31:37 +0900
-In-Reply-To: <1361927668.2262.36.camel@liguang.fnst.cn.fujitsu.com> (li
-	guang's message of "Wed, 27 Feb 2013 09:14:28 +0800")
-Message-ID: <87ppzmsd12.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 26 Feb 2013 21:33:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <F3DBB1B3EF102E4994C89758CFCA32412CC4E9@DBDE01.ent.ti.com>
+References: <F3DBB1B3EF102E4994C89758CFCA32412CC4E9@DBDE01.ent.ti.com>
+Date: Wed, 27 Feb 2013 08:03:24 +0530
+Message-ID: <CABYxbz5GyxYaHANgdpwBNaaR6tnu=6LJuUNSvL7DEzU=4CPHcA@mail.gmail.com>
+Subject: Re: FW: [PATCH V4] ARM: dts: add minimal DT support for DevKit8000.
+From: Anil Kumar <anilk4.v@gmail.com>
+To: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: linux@arm.linux.org.uk, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Anil Kumar <anilk4.v@gmail.com>, thomas@tomweber.eu, b-cousson@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi li guang,
-
-On Wed, 27 Feb 2013 09:14:28 +0800, li guang wrote:
-> 在 2013-02-26二的 18:02 +0900，Namhyung Kim写道：
->> Hi Michael,
->> 
->> On Tue, 26 Feb 2013 16:02:02 +1100, Michael Ellerman wrote:
->> > Commit 18c9e5c "Make it to be able to skip unannotatable symbols" broke
->> > the build with NO_NEWT=1:
->> >
->> >    CC builtin-annotate.o
->> > builtin-annotate.c: In function 'hists__find_annotations':
->> > builtin-annotate.c:161:4: error: duplicate case value
->> > builtin-annotate.c:154:4: error: previously used here
->> > make: *** [builtin-annotate.o] Error 1
->> >
->> > This is because without NEWT support K_LEFT is #defined to -1 in
->> > utils/hist.h
->> >
->> > Fix it by shifting the K_LEFT/K_RIGHT #defines out of the likely range
->> > of error values.
->> 
->> Argh, didn't check NO_NEWT build on this, sorry.
->> 
->> The hist_entry__tui_annotate() - hence, symbol__tui_annotate() - returns
->> either key code or error code.  This is not good IMHO but not sure it's
->> worth refactoring.  Maybe we can move the error check to under default
->> case so that possible future error checks to be done?
+Hi,
 >
-> or can we skip gui-code-snippet when there's no gui library?
-> anyway, for present fix-up, we can just temporarily change K_LEFT value
-> like Michael's or my patch, I think.
+> DevKit8000 is a beagle board clone from Timll, sold by
+> armkits.com. The DevKit8000 has RS232 serial port, LCD, DVI-D,
+> S-Video, Ethernet, SD/MMC, keyboard, camera, SPI, I2C, USB and
+> JTAG interface.
+>
+> This patch adds the basic DT support for devkit8000. At this time, Information
+> of twl4030 (PMIC), MMC1, I2C1 and leds are added.
+>
+> Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
+> Tested-by: Thomas Weber <thomas@tomweber.eu>
 
-That part of code won't be run on NO_NEWT build since the 'use_browser'
-would be value of 0.  It's just a compilation problem.
-
-Anyway, I have no objection from the both of patches for now.
+Gentle Ping. As there are no review comments on this patch,
+Could you please pull this patch ?
 
 Thanks,
-Namhyung
+Anil
+
+> ---
+>  -This patch is based on top of kernel 3.8-rc5.
+>
+>  -Tested on Devkit8000.
+>
+> For V4:
+>  -Tiny nitpick.
+>
+> For V3:
+>  - Remove pin mux as done at device boot time by default.
+>
+> For V2:
+>  - Change model name as "TimLL OMAP3 Devkit8000"
+>  - Change compatible as "timll,omap3-devkit8000"
+>  - Doing i2c1 pinmux default with pinctrl-single driver instead of i2c1
+>    driver probe time.
+>
+> :100644 100644 5ebb44f... 22ebc76... M  arch/arm/boot/dts/Makefile
+> :000000 100644 0000000... 2e1463a... A  arch/arm/boot/dts/omap3-devkit8000.dts
+> :100644 100644 53cb380b.. ccecb76... M  arch/arm/mach-omap2/board-generic.c
+>  arch/arm/boot/dts/Makefile             |    1 +
+>  arch/arm/boot/dts/omap3-devkit8000.dts |  102 ++++++++++++++++++++++++++++++++
+>  arch/arm/mach-omap2/board-generic.c    |    1 +
+>  3 files changed, 104 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 5ebb44f..22ebc76 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -102,6 +102,7 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
+>         imx28-tx28.dtb
+>  dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+>         omap3-beagle.dtb \
+> +       omap3-devkit8000.dtb \
+>         omap3-beagle-xm.dtb \
+>         omap3-evm.dtb \
+>         omap3-tobi.dtb \
+> diff --git a/arch/arm/boot/dts/omap3-devkit8000.dts b/arch/arm/boot/dts/omap3-devkit8000.dts
+> new file mode 100644
+> index 0000000..2e1463a
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/omap3-devkit8000.dts
+> @@ -0,0 +1,102 @@
+> +/*
+> + * Author: Anil Kumar <anilk4.v@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +/dts-v1/;
+> +
+> +/include/ "omap3.dtsi"
+> +/ {
+> +       model = "TimLL OMAP3 Devkit8000";
+> +       compatible = "timll,omap3-devkit8000", "ti,omap3";
+> +
+> +       memory {
+> +               device_type = "memory";
+> +               reg = <0x80000000 0x10000000>;  /* 256 MB */
+> +       };
+> +
+> +       leds {
+> +               compatible = "gpio-leds";
+> +
+> +               heartbeat {
+> +                       label = "devkit8000::led1";
+> +                       gpios = <&gpio6 26 0>;  /* 186 -> LED1 */
+> +                       default-state = "on";
+> +                       linux,default-trigger = "heartbeat";
+> +               };
+> +
+> +               mmc {
+> +                       label = "devkit8000::led2";
+> +                       gpios = <&gpio6 3 0>;   /* 163 -> LED2 */
+> +                       default-state = "on";
+> +                       linux,default-trigger = "none";
+> +               };
+> +
+> +               usr {
+> +                       label = "devkit8000::led3";
+> +                       gpios = <&gpio6 4 0>;   /* 164 -> LED3 */
+> +                       default-state = "on";
+> +                       linux,default-trigger = "usr";
+> +                };
+> +       };
+> +};
+> +
+> +&i2c1 {
+> +       clock-frequency = <2600000>;
+> +
+> +       twl: twl@48 {
+> +               reg = <0x48>;
+> +               interrupts = <7>;       /* SYS_NIRQ cascaded to intc */
+> +               interrupt-parent = <&intc>;
+> +       };
+> +};
+> +
+> +&i2c2 {
+> +       status = "disabled";
+> +};
+> +
+> +&i2c3 {
+> +       status = "disabled";
+> +};
+> +
+> +/include/ "twl4030.dtsi"
+> +
+> +&mmc1 {
+> +       vmmc-supply = <&vmmc1>;
+> +       vmmc_aux-supply = <&vsim>;
+> +       bus-width = <8>;
+> +};
+> +
+> +&mmc2 {
+> +       status = "disabled";
+> +};
+> +
+> +&mmc3 {
+> +       status = "disabled";
+> +};
+> +
+> +&wdt2 {
+> +       status = "disabled";
+> +};
+> +
+> +&mcbsp1 {
+> +       status = "disabled";
+> +};
+> +
+> +&mcbsp2 {
+> +       status = "disabled";
+> +};
+> +
+> +&mcbsp3 {
+> +       status = "disabled";
+> +};
+> +
+> +&mcbsp4 {
+> +       status = "disabled";
+> +};
+> +
+> +&mcbsp5 {
+> +       status = "disabled";
+> +};
+> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+> index 53cb380..ccecb76 100644
+> --- a/arch/arm/mach-omap2/board-generic.c
+> +++ b/arch/arm/mach-omap2/board-generic.c
+> @@ -110,6 +110,7 @@ MACHINE_END
+>
+>  static const char *omap3_gp_boards_compat[] __initdata = {
+>         "ti,omap3-beagle",
+> +       "timll,omap3-devkit8000",
+>         NULL,
+>  };
+>
+> --
+> 1.7.0.4
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
