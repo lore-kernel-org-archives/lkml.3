@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933973Ab3B0AJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:09:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42971 "EHLO
+	id S1760483Ab3B0AJg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:09:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42965 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760459Ab3B0AJ3 (ORCPT
+	with ESMTP id S1760053Ab3B0AJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:29 -0500
+	Tue, 26 Feb 2013 19:09:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 77/86] sock_diag: Fix out-of-bounds access to sock_diag_handlers[]
-Date: Tue, 26 Feb 2013 16:08:25 -0800
-Message-Id: <20130226235920.914226168@linuxfoundation.org>
+        Roger Quadros <rogerq@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 79/86] USB: ehci-omap: Dont free gpios that we didnt request
+Date: Tue, 26 Feb 2013 16:08:27 -0800
+Message-Id: <20130226235921.105248169@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -28,36 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Roger Quadros <rogerq@ti.com>
 
-From: Mathias Krause <minipli@googlemail.com>
+commit 428525f97153505e83983460a8d08a3210aa6b8a upstream.
 
-[ Upstream commit 6e601a53566d84e1ffd25e7b6fe0b6894ffd79c0 ]
+This driver does not request any gpios so don't free them.
+Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
+with ehci-omap in use.
 
-Userland can send a netlink message requesting SOCK_DIAG_BY_FAMILY
-with a family greater or equal then AF_MAX -- the array size of
-sock_diag_handlers[]. The current code does not test for this
-condition therefore is vulnerable to an out-of-bound access opening
-doors for a privilege escalation.
+Without this patch, EHCI will break on repeated insmod/rmmod
+of ehci_hcd for all OMAP2+ platforms that use EHCI and
+set 'phy_reset = true' in usbhs_omap_board_data.
+i.e.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+board-3430sdp.c:	.phy_reset  = true,
+board-3630sdp.c:	.phy_reset  = true,
+board-am3517crane.c:	.phy_reset  = true,
+board-am3517evm.c:	.phy_reset  = true,
+board-cm-t3517.c:	.phy_reset  = true,
+board-cm-t35.c:	.phy_reset  = true,
+board-devkit8000.c:	.phy_reset  = true,
+board-igep0020.c:	.phy_reset = true,
+board-igep0020.c:	.phy_reset = true,
+board-omap3beagle.c:	.phy_reset  = true,
+board-omap3evm.c:	.phy_reset  = true,
+board-omap3pandora.c:	.phy_reset  = true,
+board-omap3stalker.c:	.phy_reset = true,
+board-omap3touchbook.c:	.phy_reset  = true,
+board-omap4panda.c:	.phy_reset  = false,
+board-overo.c:	.phy_reset  = true,
+board-zoom.c:	.phy_reset		= true,
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/sock_diag.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/net/core/sock_diag.c
-+++ b/net/core/sock_diag.c
-@@ -126,6 +126,9 @@ static int __sock_diag_rcv_msg(struct sk
- 	if (nlmsg_len(nlh) < sizeof(*req))
- 		return -EINVAL;
+---
+ drivers/usb/host/ehci-omap.c |    8 --------
+ 1 file changed, 8 deletions(-)
+
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -288,7 +288,6 @@ static int ehci_hcd_omap_remove(struct p
+ {
+ 	struct device *dev				= &pdev->dev;
+ 	struct usb_hcd *hcd				= dev_get_drvdata(dev);
+-	struct ehci_hcd_omap_platform_data *pdata	= dev->platform_data;
  
-+	if (req->sdiag_family >= AF_MAX)
-+		return -EINVAL;
-+
- 	hndl = sock_diag_lock_handler(req->sdiag_family);
- 	if (hndl == NULL)
- 		err = -ENOENT;
+ 	usb_remove_hcd(hcd);
+ 	disable_put_regulator(dev->platform_data);
+@@ -297,13 +296,6 @@ static int ehci_hcd_omap_remove(struct p
+ 	pm_runtime_put_sync(dev);
+ 	pm_runtime_disable(dev);
+ 
+-	if (pdata->phy_reset) {
+-		if (gpio_is_valid(pdata->reset_gpio_port[0]))
+-			gpio_free(pdata->reset_gpio_port[0]);
+-
+-		if (gpio_is_valid(pdata->reset_gpio_port[1]))
+-			gpio_free(pdata->reset_gpio_port[1]);
+-	}
+ 	return 0;
+ }
+ 
 
 
