@@ -1,111 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab3B0V4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 16:56:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6965 "EHLO mx1.redhat.com"
+	id S1752781Ab3B0WAI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 17:00:08 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:46832 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750699Ab3B0V4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 16:56:02 -0500
-Message-ID: <512E80E3.7060800@redhat.com>
-Date: Wed, 27 Feb 2013 16:55:47 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1750973Ab3B0WAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 17:00:06 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-usb@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: [Resend][PATCH] ACPI / glue: Drop .find_bridge() callback from struct acpi_bus_type
+Date: Wed, 27 Feb 2013 23:06:52 +0100
+Message-ID: <2612891.I2roH54cPk@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, aquini@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michel Lespinasse <walken@google.com>,
-        linux-tip-commits@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>, "Low, Jason" <jason.low2@hp.com>
-Subject: Re: [tip:core/locking] x86/smp: Move waiting on contended ticket
- lock out of line
-References: <20130206150403.006e5294@cuia.bos.redhat.com> <tip-4aef331850b637169ff036ed231f0d236874f310@git.kernel.org> <CA+55aFx6N6SaRN+w=CTXJ=ZSsOE6KeS2R9sT_uhAx9h2j+hjKg@mail.gmail.com> <511BE4A3.8050607@redhat.com> <CA+55aFycMB7OZGQ54ueQ74C42beDBSdQE_fKJDV=TbjTjr_emg@mail.gmail.com> <511C1204.9040608@redhat.com> <CA+55aFwxYK-BLH0crhySHaQvAYHOH-VGUi7WTd1aq-24+WTDYw@mail.gmail.com> <511C24A6.8020409@redhat.com> <CA+55aFws80EEJQskqiP+a5J-HOGu=M1Fe=uCs50ifedVxPxT1Q@mail.gmail.com> <512E376D.70105@redhat.com> <CA+55aFzPxJ3rfZvAvrP9LxCXfDU8AAVvhMZnP-OAoe-ycc70aw@mail.gmail.com> <512E6443.9050603@redhat.com> <CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com>
-In-Reply-To: <CA+55aFwHxv9RH75BoXYcwdKeHx+otOOpg9494TTdFwQe3biOhw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2013 03:18 PM, Linus Torvalds wrote:
-> On Wed, Feb 27, 2013 at 11:53 AM, Rik van Riel <riel@redhat.com> wrote:
->>
->> If we have two classes of spinlocks, I suspect we would be better
->> off making those high-demand spinlocks MCS or LCH locks, which have
->> the property that having N+1 CPUs contend on the lock will never
->> result in slower aggregate throughput than having N CPUs contend.
->
-> I doubt that.
->
-> The fancy "no slowdown" locks almost never work in practice. They
-> scale well by performing really badly for the normal case, either
-> needing separate allocations or having memory ordering problems
-> requiring multiple locked cycles.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-The relative costs of atomic operations, cache line acquisition, and
-other things has shifted over time. On the very latest systems, the
-cost of cache line acquisition appears to dominate over the cost of
-atomic operations.
+After PCI has stopped using the .find_bridge() callback in
+struct acpi_bus_type, the only remaining users of it are SATA and
+USB.  However, SATA only pretends to be a user, because it points
+that callback to a stub always returning -ENODEV, and USB uses it
+incorrectly, because as a result of the way it is used by USB every
+device in the system that doesn't have a bus type or parent is
+passed to usb_acpi_find_device() for inspection.
 
-Michel's results from last month show that MCS has essentially the same
-performance for the single thread (uncontended) situation, on some
-systems a degradation for 2 and 3 thread performance, in a tight micro
-test, and improved performance when the contention involves 3 or more
-CPUs.
+What USB actually needs, though, is to call usb_acpi_find_device()
+for USB ports that don't have a bus type defined, but have
+usb_port_device_type as their device type.
 
-http://thread.gmane.org/gmane.linux.kernel/1427417
+To fix that add a device type field to struct acpi_bus_type and
+make acpi_get_bus_type() compare it with the device type fields of
+the device objects it inspects in addition to checking their bus
+types.  Next, make USB set the new type field in usb_acpi_bus to
+point to usb_port_device_type and stop abusing the .find_bridge()
+callback.
 
-> A spinlock basically needs to have a fast-case that is a single locked
-> instruction, and all the clever ones tend to fail that simple test.
+In addition to that drop the SATA's dummy .find_bridge() callback,
+and remove .find_bridge(), which is not used any more, from struct
+acpi_bus_type entirely.
 
-With the cost of a cache line acquisition outweighing the cost of an
-atomic operation, for how much longer will this remain true?
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
-Michel's results suggest that on Sandybridge this no longer seems
-to hold.  The cost of the atomic operation on unlock appears to have
-more than paid for itself by avoiding extraneous cache line bouncing,
-and the cost of cache line acquisition. Even with only two CPUs
-contending on the lock...
+I send this as an RFC before the merge window, but since it depends on changes
+in both PM and PCI trees, it couldn't be applied before.  Now that they both
+have been merged, here it goes again.
 
->> I can certainly take profiles of various workloads, but there is
->> absolutely no guarantee that I will see the same bottlenecks that
->> eg. the people at HP have seen. The largest test system I currently
->> have access to has 40 cores, vs. the 80 cores in the (much more
->> interesting) HP results I pasted.
->>
->> Would you also be interested in performance numbers (and profiles)
->> of a kernel that has bottleneck spinlocks replaced with MCS locks?
->
-> MCS locks don't even work, last time I saw. They need that extra lock
-> holder allocation, which forces people to have different calling
-> conventions, and is just a pain. Or am I confusing them with something
-> else?
+Please let me know if there are any objections.
 
-Nope, those are the MCS locks alright.
+Thanks,
+Rafael
 
-> They might work for the special cases like the sleeping locks, which
-> have one or two places that take and release the lock, but not for the
-> generic spinlock.
+---
+ drivers/acpi/glue.c         |   39 ++++++---------------------------------
+ drivers/ata/libata-acpi.c   |    6 ------
+ drivers/usb/core/usb-acpi.c |    2 +-
+ include/acpi/acpi_bus.h     |    4 +---
+ 4 files changed, 8 insertions(+), 43 deletions(-)
 
-I am certainly not advocating that all spinlocks be replaced with
-harder to use locks.  On the other hand, we have to realize that
-Linux users do not have the luxury to upgrade their kernel to the
-latest upstream on whenever they run into a performance issue, so
-it would be good to make Linux more robust against scalability
-issues.
+Index: linux-pm/drivers/acpi/glue.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/glue.c
++++ linux-pm/drivers/acpi/glue.c
+@@ -64,16 +64,17 @@ int unregister_acpi_bus_type(struct acpi
+ }
+ EXPORT_SYMBOL_GPL(unregister_acpi_bus_type);
+ 
+-static struct acpi_bus_type *acpi_get_bus_type(struct bus_type *type)
++static struct acpi_bus_type *acpi_get_bus_type(struct device *dev)
+ {
+ 	struct acpi_bus_type *tmp, *ret = NULL;
+ 
+-	if (!type)
++	if (!dev->bus && !dev->type)
+ 		return NULL;
+ 
+ 	down_read(&bus_type_sem);
+ 	list_for_each_entry(tmp, &bus_type_list, list) {
+-		if (tmp->bus == type) {
++		if ((tmp->bus && tmp->bus == dev->bus)
++		    || (tmp->type && tmp->type == dev->type)) {
+ 			ret = tmp;
+ 			break;
+ 		}
+@@ -82,22 +83,6 @@ static struct acpi_bus_type *acpi_get_bu
+ 	return ret;
+ }
+ 
+-static int acpi_find_bridge_device(struct device *dev, acpi_handle * handle)
+-{
+-	struct acpi_bus_type *tmp;
+-	int ret = -ENODEV;
+-
+-	down_read(&bus_type_sem);
+-	list_for_each_entry(tmp, &bus_type_list, list) {
+-		if (tmp->find_bridge && !tmp->find_bridge(dev, handle)) {
+-			ret = 0;
+-			break;
+-		}
+-	}
+-	up_read(&bus_type_sem);
+-	return ret;
+-}
+-
+ static acpi_status do_acpi_find_child(acpi_handle handle, u32 lvl_not_used,
+ 				      void *addr_p, void **ret_p)
+ {
+@@ -261,22 +246,11 @@ err:
+ 
+ static int acpi_platform_notify(struct device *dev)
+ {
+-	struct acpi_bus_type *type;
++	struct acpi_bus_type *type = acpi_get_bus_type(dev);
+ 	acpi_handle handle;
+ 	int ret;
+ 
+ 	ret = acpi_bind_one(dev, NULL);
+-	if (ret && (!dev->bus || !dev->parent)) {
+-		/* bridge devices genernally haven't bus or parent */
+-		ret = acpi_find_bridge_device(dev, &handle);
+-		if (!ret) {
+-			ret = acpi_bind_one(dev, handle);
+-			if (ret)
+-				goto out;
+-		}
+-	}
+-
+-	type = acpi_get_bus_type(dev->bus);
+ 	if (ret) {
+ 		if (!type || !type->find_device) {
+ 			DBG("No ACPI bus support for %s\n", dev_name(dev));
+@@ -293,7 +267,6 @@ static int acpi_platform_notify(struct d
+ 		if (ret)
+ 			goto out;
+ 	}
+-
+ 	if (type && type->setup)
+ 		type->setup(dev);
+ 
+@@ -316,7 +289,7 @@ static int acpi_platform_notify_remove(s
+ {
+ 	struct acpi_bus_type *type;
+ 
+-	type = acpi_get_bus_type(dev->bus);
++	type = acpi_get_bus_type(dev);
+ 	if (type && type->cleanup)
+ 		type->cleanup(dev);
+ 
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -438,10 +438,8 @@ void acpi_remove_dir(struct acpi_device
+ struct acpi_bus_type {
+ 	struct list_head list;
+ 	struct bus_type *bus;
+-	/* For general devices under the bus */
++	struct device_type *type;
+ 	int (*find_device) (struct device *, acpi_handle *);
+-	/* For bridges, such as PCI root bridge, IDE controller */
+-	int (*find_bridge) (struct device *, acpi_handle *);
+ 	void (*setup)(struct device *);
+ 	void (*cleanup)(struct device *);
+ };
+Index: linux-pm/drivers/ata/libata-acpi.c
+===================================================================
+--- linux-pm.orig/drivers/ata/libata-acpi.c
++++ linux-pm/drivers/ata/libata-acpi.c
+@@ -1144,13 +1144,7 @@ static int ata_acpi_find_device(struct d
+ 		return -ENODEV;
+ }
+ 
+-static int ata_acpi_find_dummy(struct device *dev, acpi_handle *handle)
+-{
+-	return -ENODEV;
+-}
+-
+ static struct acpi_bus_type ata_acpi_bus = {
+-	.find_bridge = ata_acpi_find_dummy,
+ 	.find_device = ata_acpi_find_device,
+ };
+ 
+Index: linux-pm/drivers/usb/core/usb-acpi.c
+===================================================================
+--- linux-pm.orig/drivers/usb/core/usb-acpi.c
++++ linux-pm/drivers/usb/core/usb-acpi.c
+@@ -212,7 +212,7 @@ static int usb_acpi_find_device(struct d
+ 
+ static struct acpi_bus_type usb_acpi_bus = {
+ 	.bus = &usb_bus_type,
+-	.find_bridge = usb_acpi_find_device,
++	.type = &usb_port_device_type,
+ 	.find_device = usb_acpi_find_device,
+ };
+ 
 
-> So before even trying anything fancy, just basic profiles would be
-> good to see which lock it is. Many of the really bad slowdowns are
-> actually about the timing details of the sleeping locks (do *not*
-> enable lock debugging etc for profiling, you want the mutex spinning
-> code to be active, for example).
-
-No argument there, but that does in no way negate the need for
-some performance robustness.
-
--- 
-All rights reversed
