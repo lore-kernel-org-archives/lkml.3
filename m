@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815Ab3B0VlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 16:41:13 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:48514 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955Ab3B0VlL (ORCPT
+	id S1755624Ab3B0Vm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 16:42:29 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:62386 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab3B0Vm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 16:41:11 -0500
-Date: Wed, 27 Feb 2013 15:56:30 -0500
-From: Andrew Shewmaker <agshew@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH v2 1/2] mm: tuning hardcoded reserved memory
-Message-ID: <20130227205629.GA8429@localhost.localdomain>
+	Wed, 27 Feb 2013 16:42:28 -0500
+Date: Wed, 27 Feb 2013 13:42:25 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Daniel Mack <zonque@gmail.com>, Larry Finger <Larry.Finger@lwfinger.net>,
+        jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TTY: disable debugging warning
+Message-ID: <20130227214225.GB27224@kroah.com>
+References: <1362000624-18155-1-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1362000624-18155-1-git-send-email-jslaby@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patches are against the mmtom git tree as of February 27th.
+On Wed, Feb 27, 2013 at 10:30:24PM +0100, Jiri Slaby wrote:
+> We added a warning to flush_to_ldisc to report cases when it is called
+> with a NULL tty. It was for debugging purposes and it lead to a
+> patchset from Peter Hurley. The patchset however did not make it to
+> 3.9, so disable the warning now to not disturb people.
+> 
+> We can re-add it when the series is in and we are hunting for another
+> bugs.
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> ---
+>  drivers/tty/tty_buffer.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-The first patch only affects OVERCOMMIT_NEVER mode, entirely removing 
-the 3% reserve for other user processes.
+Thanks, I'll queue this up for 3.9-final, but does it also need to go
+into 3.8?
 
-The second patch affects both OVERCOMMIT_GUESS and OVERCOMMIT_NEVER 
-modes, replacing the hardcoded 3% reserve for the root user with a 
-tunable knob.
+thanks,
 
-Signed-off-by: Andrew Shewmaker <agshew@gmail.com>
-
----
-
-__vm_enough_memory reserves 3% of free pages with the default 
-overcommit mode and 6% when overcommit is disabled. These hardcoded 
-values have become less reasonable as memory sizes have grown.
-
-On scientific clusters, systems are generally dedicated to one user. 
-Also, overcommit is sometimes disabled in order to prevent a long 
-running job from suddenly failing days or weeks into a calculation.
-In this case, a user wishing to allocate as much memory as possible 
-to one process may be prevented from using, for example, around 7GB 
-out of 128GB.
-
-The effect is less, but still significant when a user starts a job 
-with one process per core. I have repeatedly seen a set of processes 
-requesting the same amount of memory fail because one of them could  
-not allocate the amount of memory a user would expect to be able to 
-allocate.
-
-diff --git a/mm/mmap.c b/mm/mmap.c
-index d1e4124..5993f33 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -182,11 +182,6 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 		allowed -= allowed / 32;
- 	allowed += total_swap_pages;
- 
--	/* Don't let a single process grow too big:
--	   leave 3% of the size of this process for other processes */
--	if (mm)
--		allowed -= mm->total_vm / 32;
--
- 	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
- 		return 0;
- error:
+greg k-h
