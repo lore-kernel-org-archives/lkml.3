@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758526Ab3B0K4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 05:56:41 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:36917
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757440Ab3B0K4k convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 05:56:40 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5hbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: Stuart Yoder <b08248@gmail.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Yoder Stuart-B08248 <B08248@freescale.com>
-Subject: RE: [PATCH 2/6] powerpc/fsl_pci: Store the platform device
- information corresponding to the pci controller.
-Thread-Topic: [PATCH 2/6] powerpc/fsl_pci: Store the platform device
- information corresponding to the pci controller.
-Thread-Index: AQHODdfJlEhE0nyIf0aqdKEpYTrUTpiLT0kAgABlsACAAd5YgIAAAghw
-Date: Wed, 27 Feb 2013 10:56:31 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D3C24A9@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com>
- <1361191939-21260-3-git-send-email-Varun.Sethi@freescale.com>
- <CALRxmdDc9TuxH7HgAF3_iLgatoaOUML6fUt8SU+sxHyz6ZVjfw@mail.gmail.com>
- <C5ECD7A89D1DC44195F34B25E172658D3BD338@039-SN2MPN1-013.039d.mgd.msft.net>
- <20130227104505.GE26252@8bytes.org>
-In-Reply-To: <20130227104505.GE26252@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.132.143]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758346Ab3B0K6y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 05:58:54 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:37168 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754558Ab3B0K6w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 05:58:52 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1361961985.15573.11.camel@dcbw.foobar.com>
+References: <1361912315-26024-1-git-send-email-bzhao@marvell.com>
+	<1361961985.15573.11.camel@dcbw.foobar.com>
+Date: Wed, 27 Feb 2013 11:58:48 +0100
+Message-ID: <CA+icZUVfjVXOFh0dJAcoF7TcUkcSvBeF8qQ+2J3s5So6ypvkBw@mail.gmail.com>
+Subject: Re: [PATCH 3.9] libertas: fix crash for SD8688
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Dan Williams <dcbw@redhat.com>
+Cc: Bing Zhao <bzhao@marvell.com>, Lubomir Rintel <lkundrak@v3.sk>,
+        Harro Haan <hrhaan@gmail.com>, Daniel Drake <dsd@laptop.org>,
+        libertas-dev@lists.infradead.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is present in the "next branch" of linux ppc tree maintained by Kumar Gala.
-Following is the commit id:
-52c5affc545053d37c0b05224bbf70f5336caa20
+On Wed, Feb 27, 2013 at 11:46 AM, Dan Williams <dcbw@redhat.com> wrote:
+> On Tue, 2013-02-26 at 12:58 -0800, Bing Zhao wrote:
+>> For SD8688, FUNC_INIT command is queued before fw_ready flag is
+>> set. This causes the following crash as lbs_thread blocks any
+>> command if fw_ready is not set.
+>
+> While we're at this; does somebody want to take over Libertas
+> maintainership?  I don't have time for it anymore (and truth be told,
+> haven't for a long time).  So I'm happy if Daniel or Bing or anyone else
+> who are already doing all this take it over.  I've got a few Libertas
+> devices (usb8388, sd8686, sd8687, cf8385) that I'm happy to send to
+> anyone who wants them.
+>
+> I'll ack a patch to MAINTAINERS to switch to somebody else.
+>
 
-I am not sure if this would be part of 3.9-rc1.
+It would be great to send out a separate mail for this concern?
 
-Regards
-varun
+- Sedat -
 
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joro@8bytes.org]
-> Sent: Wednesday, February 27, 2013 4:15 PM
-> To: Sethi Varun-B16395
-> Cc: Stuart Yoder; iommu@lists.linux-foundation.org; linuxppc-
-> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Wood Scott-B07421;
-> Yoder Stuart-B08248
-> Subject: Re: [PATCH 2/6] powerpc/fsl_pci: Store the platform device
-> information corresponding to the pci controller.
-> 
-> On Tue, Feb 26, 2013 at 06:16:10AM +0000, Sethi Varun-B16395 wrote:
-> > This patch is not present in Joerg's tree and the add_device API in
-> > the PAMU driver requires this patch.
-> 
-> Will this patch be part of v3.9-rc1?
-> 
-> 
-> 	Joerg
-> 
-> 
-
-
+> Dan
+>
+>> [  209.338953] [<c0502248>] (__schedule+0x610/0x764) from [<bf20ae24>] (__lbs_cmd+0xb8/0x130 [libertas])
+>> [  209.348340] [<bf20ae24>] (__lbs_cmd+0xb8/0x130 [libertas]) from [<bf222474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio])
+>> [  209.360136] [<bf222474>] (if_sdio_finish_power_on+0xec/0x1b0 [libertas_sdio]) from [<bf2226c4>] (if_sdio_power_on+0x18c/0x20c [libertas_sdio])
+>> [  209.373052] [<bf2226c4>] (if_sdio_power_on+0x18c/0x20c [libertas_sdio]) from [<bf222944>] (if_sdio_probe+0x200/0x31c [libertas_sdio])
+>> [  209.385316] [<bf222944>] (if_sdio_probe+0x200/0x31c [libertas_sdio]) from [<bf01d820>] (sdio_bus_probe+0x94/0xfc [mmc_core])
+>> [  209.396748] [<bf01d820>] (sdio_bus_probe+0x94/0xfc [mmc_core]) from [<c02e729c>] (driver_probe_device+0x12c/0x348)
+>> [  209.407214] [<c02e729c>] (driver_probe_device+0x12c/0x348) from [<c02e7530>] (__driver_attach+0x78/0x9c)
+>> [  209.416798] [<c02e7530>] (__driver_attach+0x78/0x9c) from [<c02e5658>] (bus_for_each_dev+0x50/0x88)
+>> [  209.425946] [<c02e5658>] (bus_for_each_dev+0x50/0x88) from [<c02e6810>] (bus_add_driver+0x108/0x268)
+>> [  209.435180] [<c02e6810>] (bus_add_driver+0x108/0x268) from [<c02e782c>] (driver_register+0xa4/0x134)
+>> [  209.444426] [<c02e782c>] (driver_register+0xa4/0x134) from [<bf22601c>] (if_sdio_init_module+0x1c/0x3c [libertas_sdio])
+>> [  209.455339] [<bf22601c>] (if_sdio_init_module+0x1c/0x3c [libertas_sdio]) from [<c00085b8>] (do_one_initcall+0x98/0x174)
+>> [  209.466236] [<c00085b8>] (do_one_initcall+0x98/0x174) from [<c0076504>] (load_module+0x1c5c/0x1f80)
+>> [  209.475390] [<c0076504>] (load_module+0x1c5c/0x1f80) from [<c007692c>] (sys_init_module+0x104/0x128)
+>> [  209.484632] [<c007692c>] (sys_init_module+0x104/0x128) from [<c0008c40>] (ret_fast_syscall+0x0/0x38)
+>>
+>> Fix it by setting fw_ready flag prior to queuing FUNC_INIT command.
+>>
+>> Cc: <stable@vger.kernel.org> # 3.5+
+>> Reported-by: Lubomir Rintel <lkundrak@v3.sk>
+>> Tested-by: Lubomir Rintel <lkundrak@v3.sk>
+>> Signed-off-by: Bing Zhao <bzhao@marvell.com>
+>> ---
+>>  drivers/net/wireless/libertas/if_sdio.c |    6 +++++-
+>>  1 files changed, 5 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/net/wireless/libertas/if_sdio.c b/drivers/net/wireless/libertas/if_sdio.c
+>> index 739309e..4557833 100644
+>> --- a/drivers/net/wireless/libertas/if_sdio.c
+>> +++ b/drivers/net/wireless/libertas/if_sdio.c
+>> @@ -825,6 +825,11 @@ static void if_sdio_finish_power_on(struct if_sdio_card *card)
+>>
+>>       sdio_release_host(func);
+>>
+>> +     /* Set fw_ready before queuing any commands so that
+>> +      * lbs_thread won't block from sending them to firmware.
+>> +      */
+>> +     priv->fw_ready = 1;
+>> +
+>>       /*
+>>        * FUNC_INIT is required for SD8688 WLAN/BT multiple functions
+>>        */
+>> @@ -839,7 +844,6 @@ static void if_sdio_finish_power_on(struct if_sdio_card *card)
+>>                       netdev_alert(priv->dev, "CMD_FUNC_INIT cmd failed\n");
+>>       }
+>>
+>> -     priv->fw_ready = 1;
+>>       wake_up(&card->pwron_waitq);
+>>
+>>       if (!card->started) {
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
