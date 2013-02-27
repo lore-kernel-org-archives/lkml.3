@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758130Ab3B0WpY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 17:45:24 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:43087 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753576Ab3B0WpX (ORCPT
+	id S1758286Ab3B0Wpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 17:45:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:37406 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799Ab3B0Wpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 17:45:23 -0500
-Date: Thu, 28 Feb 2013 09:45:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        linux-parisc@vger.kernel.org, linux-s390@vger.kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>, Helge Deller <deller@gmx.de>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] Consolidate CONFIG_DEBUG_STRICT_USER_COPY_CHECK
-Message-Id: <20130228094510.3341017130e4476e046bdd22@canb.auug.org.au>
-In-Reply-To: <512E8664.3070903@zytor.com>
-References: <1361934016-22630-1-git-send-email-sboyd@codeaurora.org>
-	<201302272032.21014.arnd@arndb.de>
-	<512E6FA9.4060504@codeaurora.org>
-	<512E8664.3070903@zytor.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__28_Feb_2013_09_45_10_+1100_i+n3.uHYzm3pPRiH"
+	Wed, 27 Feb 2013 17:45:33 -0500
+Message-ID: <512E8C31.8070106@canonical.com>
+Date: Wed, 27 Feb 2013 16:44:01 -0600
+From: Dave Chiluk <dave.chiluk@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Steve French <smfrench@gmail.com>
+CC: Jeff Layton <jlayton@samba.org>,
+        "Stefan (metze) Metzmacher" <metze@samba.org>,
+        Dave Chiluk <chiluk@canonical.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] CIFS: Decrease reconnection delay when switching nics
+References: <1361831310-24260-1-git-send-email-chiluk@canonical.com> <512DE8A6.9030000@samba.org> <20130227083419.0af9deaf@corrin.poochiereds.net> <512E8787.6070709@canonical.com> <CAH2r5mvM=OX+F4uqMh_c24DXLxwgRX2UzX3bsYqM00JPzbtjqA@mail.gmail.com>
+In-Reply-To: <CAH2r5mvM=OX+F4uqMh_c24DXLxwgRX2UzX3bsYqM00JPzbtjqA@mail.gmail.com>
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__28_Feb_2013_09_45_10_+1100_i+n3.uHYzm3pPRiH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 02/27/2013 04:40 PM, Steve French wrote:
+> On Wed, Feb 27, 2013 at 4:24 PM, Dave Chiluk <dave.chiluk@canonical.com> wrote:
+>> On 02/27/2013 10:34 AM, Jeff Layton wrote:
+>>> On Wed, 27 Feb 2013 12:06:14 +0100
+>>> "Stefan (metze) Metzmacher" <metze@samba.org> wrote:
+>>>
+>>>> Hi Dave,
+>>>>
+>>>>> When messages are currently in queue awaiting a response, decrease amount of
+>>>>> time before attempting cifs_reconnect to SMB_MAX_RTT = 10 seconds. The current
+>>>>> wait time before attempting to reconnect is currently 2*SMB_ECHO_INTERVAL(120
+>>>>> seconds) since the last response was recieved.  This does not take into account
+>>>>> the fact that messages waiting for a response should be serviced within a
+>>>>> reasonable round trip time.
+>>>>
+>>>> Wouldn't that mean that the client will disconnect a good connection,
+>>>> if the server doesn't response within 10 seconds?
+>>>> Reads and Writes can take longer than 10 seconds...
+>>>>
+>>>
+>>> Where does this magic value of 10s come from? Note that a slow server
+>>> can take *minutes* to respond to writes that are long past the EOF.
+>> It comes from the desire to decrease the reconnection delay to something
+>> better than a random number between 60 and 120 seconds.  I am not
+>> committed to this number, and it is open for discussion.  Additionally
+>> if you look closely at the logic it's not 10 seconds per request, but
+>> actually when requests have been in flight for more than 10 seconds make
+>> sure we've heard from the server in the last 10 seconds.
+>>
+>> Can you explain more fully your use case of writes that are long past
+>> the EOF?  Perhaps with a test-case or script that I can test?  As far as
+>> I know writes long past EOF will just result in a sparse file, and
+>> return in a reasonable round trip time *(that's at least what I'm seeing
+>> with my testing).  dd if=/dev/zero of=/mnt/cifs/a bs=1M count=100
+>> seek=100000, starts receiving responses from the server in about .05
+>> seconds with subsequent responses following at roughly .002-.01 second
+>> intervals.  This is well within my 10 second value.
+> 
+> Note that not all Linux file systems support sparse files and
+> certainly there are cifs servers running on operating systems other
+> than Linux which have popular file systems which don't support sparse
+> files (e.g. FAT32 but there are many others) - in any case, writes
+> after end of file can take a LONG time if sparse files are not
+> supported and I don't know a good way for the client to know that
+> attribute of the server file system ahead of time (although we could
+> attempt to set the sparse flag, servers can and do lie)
+> 
 
-Hi all,
-
-On Wed, 27 Feb 2013 14:19:16 -0800 "H. Peter Anvin" <hpa@zytor.com> wrote:
->
-> Although some of the cases I have seen being flagged as "false
-> positives" have been real bugs.
-
-[hijacking the thread :-)]
-
-I have been getting this warning for a very long time ( which would be an
-error if CONFIG_DEBUG_STRICT_USER_COPY_CHECK was set):
-
-i386 defconfig
-i386-linux-gcc (GCC) 4.6.3
-
-In file included from arch/x86/include/asm/uaccess.h:537:0,
-                 from include/linux/uaccess.h:5,
-                 from include/linux/highmem.h:8,
-                 from include/linux/pagemap.h:10,
-                 from fs/binfmt_misc.c:27:
-arch/x86/include/asm/uaccess_32.h: In function 'parse_command.part.2':
-arch/x86/include/asm/uaccess_32.h:211:26: warning: call to 'copy_from_user_=
-overflow' declared with attribute warning: copy_from_user() buffer size is =
-not provably correct [enabled by default]
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__28_Feb_2013_09_45_10_+1100_i+n3.uHYzm3pPRiH
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRLox2AAoJEECxmPOUX5FEAKwQAKmHBfYdwxb9iYsBLdeD9DnN
-MkEc6ZrCNma+Q0YI5hKbSpZMSM5232+J7d4Ft2E0K7g3ysVt0lOGt+Pkt3FCCeMA
-Dou3c5LOk1sALsqKvTVAkCRDqWJcKWlEdc82E+X1pqfvF+6Q2fS9B5OKZN4AfABn
-3HDJRiVcXirrByOglAeEWI+l70RjQNAE1VsZzTpt6YRl1Dl1jfweQgz9IwCbPQWi
-XCpYg9iuNX3+Ng2eF1jT5d9Vs5nQ0kUSdnae/BXKWfU8LidrQHBY1SuprQw6IYk+
-OfJIH9uXLViuXtx+Z1TBvASUrsJ8wYwuuq1ghg7PnO60ldk7yEQHYz9uHbvGKTVH
-fJZWagZS+p81+DLoeXjGyIUAP8FqepG5jIny4odu+wU0IWqD7quNVF10z4D33mOZ
-iBMudKnnnFJ2bQGo5UuSabfKWyIoZPhAl31EkhHoAZm3+nMboAlUMygxmMJzt8Gw
-GFtmgp0b8ThvMJKCWBl/b7Nolzwyer6U6k0dNRhjYhR9NVWbDz/7PnRbCBBC4DuP
-tCVyZLP1S2hunSlHpCjAQMgKew4dQpxUtCagD1Z1XONXIpQvwdk1MARa+zviuyFf
-ACZu5SQD2lSTHle7ensmlIK4dMPF0kBs+wn5wHvIptyD6hXndjwEgcAHuXF+pql+
-YdfN39MR3E6j7sxOQIzB
-=2dht
------END PGP SIGNATURE-----
-
---Signature=_Thu__28_Feb_2013_09_45_10_+1100_i+n3.uHYzm3pPRiH--
+It doesn't matter how long it takes for the entire operation to
+complete, just so long as the server acks something in less than 10
+seconds.  Now the question becomes, is there an OS out there that
+doesn't ack the request or doesn't ack the progress regularly.
