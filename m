@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759766Ab3B0ECx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 23:02:53 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:41082 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755057Ab3B0ECv (ORCPT
+	id S1759886Ab3B0EEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 23:04:39 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:54498 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756665Ab3B0EEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 23:02:51 -0500
-Date: Tue, 26 Feb 2013 20:02:51 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
-        Martin Peres <martin.peres@labri.fr>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: resume fails to light display on Macbook Pro Retina on 3.8-rc1
-Message-ID: <20130227040251.GA1081@kroah.com>
-References: <CAPM=9txjG5rohsNbme=myrX+-Z5eucpEXYQMWqPQqN=5dNze8g@mail.gmail.com>
- <CAPM=9tw_vfESbbH4dD9z8mAYVYcwmVs=n4BrRz4XBj1Rw1qrkw@mail.gmail.com>
- <20130225223243.GA18744@kroah.com>
- <20130226034545.GA1089@kroah.com>
- <20130226173514.GA24136@kroah.com>
+	Tue, 26 Feb 2013 23:04:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130226173514.GA24136@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <512D7FAD.1040003@jp.fujitsu.com>
+References: <512B7D10.4060304@tpi.com>
+	<512B8407.2090807@canonical.com>
+	<512BD753.4080001@hp.com>
+	<CAE9FiQVY4io_mO3PhTtE6FbGUgo1uZKKXO=pjx_FoZ1JuZmsAw@mail.gmail.com>
+	<CAE9FiQXRZ2VjfG4L2d2zDQ3Sud=JqjS=M9=XW=ORS58_y7i4_g@mail.gmail.com>
+	<CAE9FiQU-CV4mF8x=Bi_4pmpmeZW-tSoes_f-jOt7yYrbrppo+A@mail.gmail.com>
+	<512D58C2.1090403@jp.fujitsu.com>
+	<CAE9FiQV5APHSGXuz3NrsApC+V7rsDQMDXMNwZszZuUqQVaZSew@mail.gmail.com>
+	<512D7FAD.1040003@jp.fujitsu.com>
+Date: Tue, 26 Feb 2013 20:04:37 -0800
+X-Google-Sender-Auth: XEv6gkUSKDVxA0Sr96KREAChFUk
+Message-ID: <CAE9FiQWxq-HPKK+XNRLggZSM4NcdfaeGDWCgd3HegEhaDSSTtA@mail.gmail.com>
+Subject: Re: sched: CPU #1's llc-sibling CPU #0 is not on the same node!
+From: Yinghai Lu <yinghai@kernel.org>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Don Morris <don.morris@hp.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Thomas Renninger <trenn@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        a.p.zijlstra@chello.nl, jarkko.sakkinen@intel.com,
+        tangchen@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 09:35:14AM -0800, Greg KH wrote:
-> On Mon, Feb 25, 2013 at 07:45:45PM -0800, Greg KH wrote:
-> > On Mon, Feb 25, 2013 at 02:32:43PM -0800, Greg KH wrote:
-> > > On Mon, Feb 25, 2013 at 04:06:02PM +1000, Dave Airlie wrote:
-> > > > On Mon, Feb 25, 2013 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > > > > Hi Ben,
-> > > > >
-> > > > > My Macbook Pro Retina fails to resume properly on 3.8.  I tracked this
-> > > > > down to commit 6c5a04249d7afeea3e0ed971e7813f84e29a1706 (drm/nvd0/disp:
-> > > > > move link training helpers into core as display methods)
-> > > > >
-> > > > > Anything I can try to help solve this?
-> > > > >
-> > > > > Note, I'm using the Intel driver as the main controller for this laptop,
-> > > > > well, I think I am, my xorg log is attached.
-> > > > 
-> > > > No you are using the nvidia, the efi always boots nvidia enabled now.
-> > > 
-> > > Really?  When did that change?  I thought I wanted to be using the Intel
-> > > chip to save battery life.
-> > > 
-> > > > btw I just tested my drm-next tree on mine and it resumed the display
-> > > > fine, something oopsed a few seconds later that I haven't tracked down
-> > > > 
-> > > > git://git.freedesktop.org/~airlied/linux drm-next
-> > > > 
-> > > > I'll be sending it to Linus this evening or tomorrow morning, once I
-> > > > fix my tree.
-> > > 
-> > > Ok, I'll test again when it hits Linus's tree, and if that works, it
-> > > would be good to try to work out what patch fixes it to get them into
-> > > the 3.8-stable series so that others don't run into the same problem.
-> > 
-> > I've tested Linus's tree now (I'm guessing it has all of your changes in
-> > it), and it works!
-> > 
-> > I see a bunch of patches marked for the stable branch, so I'll try those
-> > out and see if they fix the problem.  If not, I'll let you and Ben know.
-> 
-> I've applied the radeon patches tagged for -stable and tested that on
-> 3.8.0, but that doesn't solve the resume problem.  Any ideas of anything
-> else I can do to test this?  Doing a "backwards" git-bisect is a pain,
-> but I guess I can do that to try to track down what patch fixed this, if
-> that's the only idea people have...
+On Tue, Feb 26, 2013 at 7:38 PM, Yasuaki Ishimatsu
+<isimatu.yasuaki@jp.fujitsu.com> wrote:
+> 2013/02/27 11:30, Yinghai Lu wrote:
+>> Do you mean you can not boot one socket system with 1G ram ?
+>> Assume socket 0 does not support hotplug, other 31 sockets support hot
+>> plug.
+>>
+>> So we could boot system only with socket0, and later one by one hot
+>> add other cpus.
+>
+>
+> In this case, system can boot. But other cpus with bunch of ram hot
+> plug may fails, since system does not have enough memory for cover
+> hot added memory. When hot adding memory device, kernel object for the
+> memory is allocated from 1G ram since hot added memory has not been
+> enabled.
+>
 
-Ok, after getting my brain warped by doing a reverse 'git bisect', I
-tracked it down to commit ac8cc241a81941932da44993242e68c62e115ec7
-(drm/nv50/devinit: reverse the logic for running encoder init scripts)
-as the patch that solves the problem.
+yes, it may fail, if the one node memory need page table and vmemmap
+is more than 1g ...
 
-So, I tried applying that patch on 3.8.1-rc1, but ran into the efifb bug
-that Dave fixed already, which took me a while, so I've queued that up
-for 3.8.1.  Then I determined that it really also needs commit
-f3ed1048715f2edc10c4dda6148b60e93f6282ed (drm/nouveau/bios: parse
-external transmitter type if off-chip) and commit
-8e992c8d9eebc2bd3246252ee5c0422dbbbce7ae (drm/nouveau/bios: store a
-type/mask hash in parsed dcb data) in order to build properly.
+for hot add memory we need to
+1. add another wrapper for init_memory_mapping, just like
+init_mem_mapping() for booting path.
+2. we need make memblock more generic, so we can use it with hot add
+memory during runtime.
+3. with that we can initialize page table for hot added node with ram.
+a. initial page table for 2M near node top is from node0 ( that does
+not support hot plug).
+b. then will use 2M for memory below node top...
+c. with that we will make sure page table stay on local node.
+ alloc_low_pages need to be updated to support that.
+4. need to make sure vmemmap on local node too.
 
-With those three patches, plus the efifb fix, I can now properly boot,
-and suspend and resume my macbook on 3.8.1-rc1.  Just like I can on
-Linus's tree.
+so hot-remove node will work too later.
 
-So, Ben, Dave, any objection to me including these 3 nouveau patches in
-the 3.8.1-final release?
+In the long run, we should make booting path and hot adding more
+similar and share at most code.
+That will make code get more test coverage.
 
-thanks,
+Thanks
 
-greg k-h
+Yinghai
