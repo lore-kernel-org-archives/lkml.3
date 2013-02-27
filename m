@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760061Ab3B0Nqd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 08:46:33 -0500
-Received: from mx0.parallels.com ([199.115.104.20]:45194 "EHLO
-	mx0.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760009Ab3B0Nqb (ORCPT
+	id S932374Ab3B0NsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 08:48:12 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:36048 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777Ab3B0NsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 08:46:31 -0500
-Message-ID: <512E0E53.9010908@parallels.com>
-Date: Wed, 27 Feb 2013 17:46:59 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Wed, 27 Feb 2013 08:48:09 -0500
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Christoph Lameter <cl@linux.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH v2] slub: correctly bootstrap boot caches
-References: <1361550000-14173-1-git-send-email-glommer@parallels.com> <alpine.DEB.2.02.1302221034380.7600@gentwo.org> <alpine.DEB.2.02.1302221057430.7600@gentwo.org> <0000013d02d9ee83-9b41b446-ee42-4498-863e-33b3175c007c-000000@email.amazonses.com> <5127A607.3040603@parallels.com> <0000013d02ee5bf7-a2d47cfc-64fb-4faa-b92e-e567aeb6b587-000000@email.amazonses.com> <CAOJsxLFzrw0pCzUG7Ru4dB9=aPoNKHiJ_y3bopiFvBhzV9A5Zg@mail.gmail.com>
-In-Reply-To: <CAOJsxLFzrw0pCzUG7Ru4dB9=aPoNKHiJ_y3bopiFvBhzV9A5Zg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+Date: Wed, 27 Feb 2013 14:48:08 +0100
+Message-ID: <CA+icZUXEiRLJFke4S-M2wOr+Gxc4fnWSsT-OD=6kUR6LDQhARA@mail.gmail.com>
+Subject: Re: [GIT] kbuild changes for v3.9-rc1
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/27/2013 11:47 AM, Pekka Enberg wrote:
-> On Fri, Feb 22, 2013 at 7:23 PM, Christoph Lameter <cl@linux.com> wrote:
->> On Fri, 22 Feb 2013, Glauber Costa wrote:
->>
->>> On 02/22/2013 09:01 PM, Christoph Lameter wrote:
->>>> Argh. This one was the final version:
->>>>
->>>> https://patchwork.kernel.org/patch/2009521/
->>>>
->>>
->>> It seems it would work. It is all the same to me.
->>> Which one do you prefer?
->>
->> Flushing seems to be simpler and less code.
-> 
-> Well, I completely lost track of what to apply... Can someone please
-> send me the final version that everybody agrees on with proper ACKs
-> and other attributions?
-> 
-You can apply this one as-is with Christoph's ACK.
+Hi Marek,
 
+as I see the today's git-pull-request for linux-kbuild... I and some
+other people (see 2/3 and 3/3) sent minor fixes to deb-pkg.
+Where they overseen?
+Anything wrong with them?
+( Sorry, didn't follow linux-kbuild ML for a while. )
+
+Regards,
+- Sedat -
+
+[PATCH 1/3] kbuild, deb-pkg: Try to determine distribution
+[PATCH 2/3] kbuild, deb-pkg: Bump year in debian/copyright file
+[PATCH 3/3] kbuild, deb-pkg: Update git repository URL in debian/copyright file
