@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760421Ab3B0ASt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:18:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42854 "EHLO
+	id S1760393Ab3B0AJL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:09:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42811 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760367Ab3B0AJM (ORCPT
+	with ESMTP id S1760367Ab3B0AJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:12 -0500
+	Tue, 26 Feb 2013 19:09:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Kettenis <mark.kettenis@xs4all.nl>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 42/86] sunvdc: Fix off-by-one in generic_request().
-Date: Tue, 26 Feb 2013 16:07:50 -0800
-Message-Id: <20130226235917.257432733@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 39/86] ALSA: hda - Release assigned pin/cvt at error path of hdmi_pcm_open()
+Date: Tue, 26 Feb 2013 16:07:47 -0800
+Message-Id: <20130226235916.947873442@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -27,31 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Takashi Iwai <tiwai@suse.de>
 
-From: "David S. Miller" <davem@davemloft.net>
+commit 2ad779b7329d6894a80df94e693e72eaa0d56790 upstream.
 
-[ Upstream commit f4d9605434c0fd4cc8639bf25cfc043418c52362 ]
+If the driver detects and invalid ELD, it gives an open error.
+But it forgot to release the assigned pin, converter and spdif ctls
+before returning.
 
-The 'operations' bitmap corresponds one-for-one with the operation
-codes, no adjustment is necessary.
-
-Reported-by: Mark Kettenis <mark.kettenis@xs4all.nl>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/block/sunvdc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -461,7 +461,7 @@ static int generic_request(struct vdc_po
- 	int op_len, err;
- 	void *req_buf;
+---
+ sound/pci/hda/patch_hdmi.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -924,8 +924,12 @@ static int hdmi_pcm_open(struct hda_pcm_
+ 	if (!static_hdmi_pcm && eld->eld_valid) {
+ 		snd_hdmi_eld_update_pcm_info(eld, hinfo);
+ 		if (hinfo->channels_min > hinfo->channels_max ||
+-		    !hinfo->rates || !hinfo->formats)
++		    !hinfo->rates || !hinfo->formats) {
++			per_cvt->assigned = 0;
++			hinfo->nid = 0;
++			snd_hda_spdif_ctls_unassign(codec, pin_idx);
+ 			return -ENODEV;
++		}
+ 	}
  
--	if (!(((u64)1 << ((u64)op - 1)) & port->operations))
-+	if (!(((u64)1 << (u64)op) & port->operations))
- 		return -EOPNOTSUPP;
- 
- 	switch (op) {
+ 	/* Store the updated parameters */
 
 
