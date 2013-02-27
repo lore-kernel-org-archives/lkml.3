@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760074Ab3B0NzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 08:55:12 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:46174 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759904Ab3B0NzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 08:55:10 -0500
+	id S1760082Ab3B0Nzt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 08:55:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37808 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759904Ab3B0Nzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 08:55:47 -0500
+Message-ID: <512E1061.3030007@suse.cz>
+Date: Wed, 27 Feb 2013 14:55:45 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUUp-w5vOxXc4aXuvwRMUX_f4jzrPubBLav=eamd8ZcTuw@mail.gmail.com>
-References: <512CE75A.5080203@oracle.com>
-	<CA+icZUUp-w5vOxXc4aXuvwRMUX_f4jzrPubBLav=eamd8ZcTuw@mail.gmail.com>
-Date: Wed, 27 Feb 2013 14:55:07 +0100
-Message-ID: <CA+icZUXx2ohmuthWXuOcE7wuzyLxpEgCo92fVSLQfBWMO_zjMQ@mail.gmail.com>
-Subject: Re: fs: WARNING: at fs/dcache.c:2587 prepend_path
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Sedat Dilek <sedat.dilek@googlemail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sedat Dilek <sedat.dilek@gmail.com>, maximilian attems <max@stro.at>
+Subject: Re: [PATCH 1/3] kbuild, deb-pkg: Try to determine distribution
+References: <1335219389-10887-1-git-send-email-sedat.dilek@gmail.com>
+In-Reply-To: <1335219389-10887-1-git-send-email-sedat.dilek@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 6:01 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Tue, Feb 26, 2013 at 5:48 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> Hi all,
->>
->> While fuzzing with trinity inside a KVM tools guest running latest -next,
->> I've started seeing a bunch of these, which wasn't there in the -next from
->> couple of days ago:
->>
->> [ 1169.020539] ------------[ cut here ]------------
->> [ 1169.021297] WARNING: at fs/dcache.c:2587 prepend_path+0x188/0x1f0()
->> [ 1169.022903] Root dentry has weird name <dev/zero>
->> [ 1169.023967] Modules linked in:
->> [ 1169.024479] Pid: 28818, comm: trinity Tainted: G        W    3.8.0-next-20130225-sasha-00042-g8547837 #997
->> [ 1169.026771] Call Trace:
->> [ 1169.027527]  [<ffffffff8110cd1c>] warn_slowpath_common+0x8c/0xc0
->> [ 1169.028442]  [<ffffffff8110cdf1>] warn_slowpath_fmt+0x41/0x50
->> [ 1169.029829]  [<ffffffff81147a10>] ? lg_local_lock+0x70/0x80
->> [ 1169.031038]  [<ffffffff8129e0da>] ? prepend_path+0x3a/0x1f0
->> [ 1169.032783]  [<ffffffff8129e228>] prepend_path+0x188/0x1f0
->> [ 1169.034083]  [<ffffffff8129f0e1>] d_path+0x101/0x140
->> [ 1169.034946]  [<ffffffff812ad5ae>] seq_path+0x5e/0xd0
->> [ 1169.035804]  [<ffffffff812f7494>] show_map_vma+0x174/0x2b0
->> [ 1169.037065]  [<ffffffff812f75fa>] show_map+0x2a/0x60
->> [ 1169.037790]  [<ffffffff812f764e>] show_pid_map+0xe/0x10
->> [ 1169.038902]  [<ffffffff812adf31>] seq_read+0x311/0x430
->> [ 1169.039944]  [<ffffffff81287e23>] vfs_read+0xb3/0x120
->> [ 1169.040934]  [<ffffffff8118554d>] ? trace_hardirqs_on+0xd/0x10
->> [ 1169.042842]  [<ffffffff812885dd>] sys_read+0x5d/0xa0
->> [ 1169.043696]  [<ffffffff84025290>] tracesys+0xdd/0xe2
->> [ 1169.045019] ---[ end trace 6e68f4c39bb079ca ]---
->>
->>
->
-> Known issue, please see below link...
->
-> http://marc.info/?l=linux-next&m=136187065814300&w=2
->
+Sorry I missed this series. Max, can you have a look? I don't know the
+policies for debian package changelogs. The full series is at
+http://lkml.indiana.edu/hypermail/linux/kernel/1204.2/index.html#04252,
+but the remaining two patches are obvious.
 
-Just FYI: Linux-Next (next-20130227) has the corrected fix now. You
-should no more see these warnings.
+Michal
 
-- Sedat -
+On 24.4.2012 00:16, Sedat Dilek wrote:
+> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+> ---
+>  scripts/package/builddeb |   15 ++++++++++++++-
+>  1 file changed, 14 insertions(+), 1 deletion(-)
+> 
+> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+> index eee5f8e..f5b56ac 100644
+> --- a/scripts/package/builddeb
+> +++ b/scripts/package/builddeb
+> @@ -172,9 +172,22 @@ else
+>  fi
+>  maintainer="$name <$email>"
+>  
+> +# Try to determine distribution
+> +if [ -e $(which lsb_release) ]; then
+> +       codename=$(lsb_release --codename --short)
+> +       if [ "$codename" != "" ]; then
+> +		distribution=$codename
+> +       else
+> +		distribution="UNRELEASED"
+> +		echo "WARNING: The distribution could NOT be determined!"
+> +       fi
+> +else
+> +       echo "HINT: Install lsb_release binary, this helps to identify your distribution!"
+> +fi
+> +
+>  # Generate a simple changelog template
+>  cat <<EOF > debian/changelog
+> -linux-upstream ($packageversion) unstable; urgency=low
+> +linux-upstream ($packageversion) $distribution; urgency=low
+>  
+>    * Custom built Linux kernel.
+>  
+> 
 
->> Thanks,
->> Sasha
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
