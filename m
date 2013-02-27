@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab3B0Kjq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 05:39:46 -0500
-Received: from forward19.mail.yandex.net ([95.108.253.144]:44940 "EHLO
-	forward19.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183Ab3B0Kjp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 05:39:45 -0500
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner-Arquette <hannes@cmpxchg.org>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, "mel@csn.ul.ie" <mel@csn.ul.ie>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+	id S1757809Ab3B0KpK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 05:45:10 -0500
+Received: from 8bytes.org ([85.214.48.195]:35808 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756721Ab3B0KpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 05:45:09 -0500
+Date: Wed, 27 Feb 2013 11:45:05 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Sethi Varun-B16395 <B16395@freescale.com>
+Cc: Stuart Yoder <b08248@gmail.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Ying Han <yinghan@google.com>
-In-Reply-To: <20130227094054.GC16719@dhcp22.suse.cz>
-References: <8121361952156@webcorp1g.yandex-team.ru> <20130227094054.GC16719@dhcp22.suse.cz>
-Subject: Re: [PATCH] memcg: implement low limits
+        Wood Scott-B07421 <B07421@freescale.com>,
+        Yoder Stuart-B08248 <B08248@freescale.com>
+Subject: Re: [PATCH 2/6] powerpc/fsl_pci: Store the platform device
+ information corresponding to the pci controller.
+Message-ID: <20130227104505.GE26252@8bytes.org>
+References: <1361191939-21260-1-git-send-email-Varun.Sethi@freescale.com>
+ <1361191939-21260-3-git-send-email-Varun.Sethi@freescale.com>
+ <CALRxmdDc9TuxH7HgAF3_iLgatoaOUML6fUt8SU+sxHyz6ZVjfw@mail.gmail.com>
+ <C5ECD7A89D1DC44195F34B25E172658D3BD338@039-SN2MPN1-013.039d.mgd.msft.net>
 MIME-Version: 1.0
-Message-Id: <17521361961576@webcorp1g.yandex-team.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 27 Feb 2013 14:39:36 +0400
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D3BD338@039-SN2MPN1-013.039d.mgd.msft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Feb 27 11:45:07 2013
+X-DSPAM-Confidence: 0.9994
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 512de3b322972185743725
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-27.02.2013, 13:41, "Michal Hocko" <mhocko@suse.cz>:
-> Let me restate what I have already mentioned in the private
-> communication.
->
-> We already have soft limit which can be implemented to achieve the
-> same/similar functionality and in fact this is a long term objective (at
-> least for me). I hope I will be able to post my code soon. The last post
-> by Ying Hand (cc-ing her) was here:
-> http://comments.gmane.org/gmane.linux.kernel.mm/83499
->
-> To be honest I do not like introduction of a new limit because we have
-> two already and the situation would get over complicated.
+On Tue, Feb 26, 2013 at 06:16:10AM +0000, Sethi Varun-B16395 wrote:
+> This patch is not present in Joerg's tree and the add_device API in
+> the PAMU driver requires this patch.
 
-I think, there are three different tasks:
-1) keeping cgroups below theirs hard limit to avoid direct reclaim (for performance reasons),
-2) cgroup's prioritization during global reclaim,
-3) granting some amount of memory to a selected cgroup (and protecting it from reclaim without significant reasons)
+Will this patch be part of v3.9-rc1?
 
-IMHO, combining them all in one limit will simplify a kernel code, but will also make a user's (or administrator's) 
-life much more complicated. Introducing low limits can make the situation simpler.
 
->
-> More comments on the code bellow.
+	Joerg
 
-Thank you very much!
-I'll address them in an other letter.
 
---
-Regards,
-Roman
