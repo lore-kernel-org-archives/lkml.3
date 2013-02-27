@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760550Ab3B0Rio (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 12:38:44 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51397 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760417Ab3B0Rim (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 12:38:42 -0500
-Date: Wed, 27 Feb 2013 17:36:44 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>, Nicolas Pitre <nico@fluxnic.net>,
+	id S1760431Ab3B0Rjv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:39:51 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:55027 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755428Ab3B0Rjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 12:39:49 -0500
+Message-ID: <1361986787.20540.8.camel@joe-AO722>
+Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
+From: Joe Perches <joe@perches.com>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
         "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
         Kyungsik Lee <kyungsik.lee@lge.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -27,135 +28,84 @@ Cc: Peter Korsgaard <jacmet@sunsite.dk>, Nicolas Pitre <nico@fluxnic.net>,
         Albin Tonnerre <albin.tonnerre@free-electrons.com>,
         Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
         raphael.andy.lee@gmail.com
-Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
-Message-ID: <20130227173644.GC17833@n2100.arm.linux.org.uk>
-References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com> <512D1C12.4080109@oberhumer.com> <alpine.LFD.2.03.1302261557220.1254@syhkavp.arg> <87fw0i7n6d.fsf@dell.be.48ers.dk> <20130226221027.GW17833@n2100.arm.linux.org.uk> <1361929234.1924.8.camel@joe-AO722> <20130227095609.GY17833@n2100.arm.linux.org.uk> <1361980152.2035.13.camel@joe-AO722> <20130227163118.GB17833@n2100.arm.linux.org.uk> <1361984688.2035.20.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1361984688.2035.20.camel@joe-AO722>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Date: Wed, 27 Feb 2013 09:39:47 -0800
+In-Reply-To: <alpine.LFD.2.03.1302271211360.1254@syhkavp.arg>
+References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
+	 <512D1C12.4080109@oberhumer.com>
+	 <alpine.LFD.2.03.1302261557220.1254@syhkavp.arg>
+	 <87fw0i7n6d.fsf@dell.be.48ers.dk>
+	 <20130226221027.GW17833@n2100.arm.linux.org.uk>
+	 <1361929234.1924.8.camel@joe-AO722>
+	 <20130227095609.GY17833@n2100.arm.linux.org.uk>
+	 <1361980152.2035.13.camel@joe-AO722>
+	 <20130227163118.GB17833@n2100.arm.linux.org.uk>
+	 <1361984688.2035.20.camel@joe-AO722>
+	 <alpine.LFD.2.03.1302271211360.1254@syhkavp.arg>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 09:04:48AM -0800, Joe Perches wrote:
-> On Wed, 2013-02-27 at 16:31 +0000, Russell King - ARM Linux wrote:
-> > On Wed, Feb 27, 2013 at 07:49:12AM -0800, Joe Perches wrote:
-> > > On Wed, 2013-02-27 at 09:56 +0000, Russell King - ARM Linux wrote:
-> > > > On Tue, Feb 26, 2013 at 05:40:34PM -0800, Joe Perches wrote:
-> > > > > On Tue, 2013-02-26 at 22:10 +0000, Russell King - ARM Linux wrote:
-> > > > > > So... for a selected kernel version of a particular size, can we please
-> > > > > > have a comparison between the new LZO code and this LZ4 code, so that
-> > > > > > we can see whether it's worth updating the LZO code or replacing the
-> > > > > > LZO code with LZ4?
+On Wed, 2013-02-27 at 12:16 -0500, Nicolas Pitre wrote:
+> On Wed, 27 Feb 2013, Joe Perches wrote:
+> > On Wed, 2013-02-27 at 16:31 +0000, Russell King - ARM Linux wrote:
+> > > On Wed, Feb 27, 2013 at 07:49:12AM -0800, Joe Perches wrote:
+> > > > On Wed, 2013-02-27 at 09:56 +0000, Russell King - ARM Linux wrote:
+> > > > > On Tue, Feb 26, 2013 at 05:40:34PM -0800, Joe Perches wrote:
+> > > > > > On Tue, 2013-02-26 at 22:10 +0000, Russell King - ARM Linux wrote:
+> > > > > > > So... for a selected kernel version of a particular size, can we please
+> > > > > > > have a comparison between the new LZO code and this LZ4 code, so that
+> > > > > > > we can see whether it's worth updating the LZO code or replacing the
+> > > > > > > LZO code with LZ4?
+> > > > > > 
+> > > > > > How could it be questionable that it's worth updating the LZO code?
 > > > > > 
-> > > > > How could it be questionable that it's worth updating the LZO code?
+> > > > > Please read the comments against the previous posting of these patches
+> > > > > where I first stated this argument - and with agreement from those
+> > > > > following the thread.  The thread started on 26 Jan 2013.  Thanks.
 > > > > 
-> > > > Please read the comments against the previous posting of these patches
-> > > > where I first stated this argument - and with agreement from those
-> > > > following the thread.  The thread started on 26 Jan 2013.  Thanks.
+> > > > https://lkml.org/lkml/2013/1/29/145
+> > > > 
+> > > > I did not and do not see significant value in
+> > > > adding LZ4 given Markus' LZO improvements.
 > > > 
-> > > https://lkml.org/lkml/2013/1/29/145
-> > > 
-> > > I did not and do not see significant value in
-> > > adding LZ4 given Markus' LZO improvements.
+> > > Sorry, a 66% increase in decompression speed over the updated LZO code
+> > > isn't "significant value" ?
 > > 
-> > Sorry, a 66% increase in decompression speed over the updated LZO code
-> > isn't "significant value" ?
+> > We disagree.
+> > 
+> > > I'm curious - what in your mind qualifies "significant value" ?
+> > 
+> > faster boot time. smaller, faster overall code.
 > 
-> We disagree.
-
-ROTFL.
-
-> > I'm curious - what in your mind qualifies "significant value" ?
+> Sorry, but you certainly successfully got me confused, and probably 
+> others as well.
 > 
-> faster boot time. smaller, faster overall code.
+> RMK says that "66% increase in decompression speed over LZO" is 
+> significant.  You apparently disagree with that.
 
-ROTFL again!  Because you've just disagreed with your above statement.
-"66% increase in decompression speed" as far as I know _is_ "faster
-boot time" !
+Yeah, I can see how that can be interpreted.
+I'm referring only to the new LZO.
 
-> > Maybe "significant value" is a patch which buggily involves converting
-> > all those "<n>" printk format strings in assembly files to KERN_* macros,
-> > thereby breaking those strings because you've not paid attention to what
-> > .asciz means?  (Yes, I've just cleaned that crap up after you...)
-> 
-> If you mean commit 0cc41e4a21d43, perhaps you could clarify with an
-> example.  I don't see any relevant changes by you in -next, but
-> maybe I'm not looking in the right spot.
+I guess Russell has not reviewed the new LZO.
 
-While recently asking someone to enable VFP debugging, so I could help
-sort out a problem they had reported, this is the debug output I was
-greeted by thanks to your meddling:
+There is apparently no speed increase for LZ4 over
+the new LZO.
 
-[  927.235546] \x01\x01\x01\x01\x01\x01\x01\x01
-...
-[  927.241505] \x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01                     
+I believe Markus has shown comparison testing in
+this very thread.
 
-Yes, really useful debug output isn't it?  You can really see what's
-going on there.  These are coming from ultimately two commits - the
-one you refer to above, which on its own would've changed the printk
-string to be merely "<7>" - and the follow on commit changing the
-way printk levels are dealt with.
+https://patchwork.kernel.org/patch/2187441/
 
-The above output is produced by:
+> Then you say that faster boot time is significant.
 
-#define KERN_SOH        "\001"          /* ASCII Start Of Header */
-#define KERN_DEBUG      KERN_SOH "7"    /* debug-level messages */
+Increasing speed in incumbent code without adding
+defects is always useful no?.  Replacing incumbent
+code with new code should be debated for utility.
 
-	.asciz  KERN_DEBUG "VFP: \str\n"
+I still think there's not much value in adding LZ4.
+LZ4 is not not faster than LZO, it's just more code.
 
-7.6 `.asciz "STRING"'...
-========================
-
-`.asciz' is just like `.ascii', but each string is followed by a zero
-                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-byte.  The "z" in `.asciz' stands for "zero".
-^^^^^
-
- 0000 01003700 5646503a 20696e73 74722025  ..7.VFP: instr %
-        ^^  ^^
- 0010 30387820 70632025 30387820 73746174  08x pc %08x stat
- 0020 65202570 0a000100 37005646 503a2066  e %p....7.VFP: f
-                 ^^
-...
-
-That is: \x01 \x00 7 \x00 VFP: instr %08x pc %08x state %p \x00
-
-See - three separately terminated strings because you changed:
-
-	.asciz	"<7>VFP: \str\n"
-
-to:
-
-	.asciz	"<7>" "VFP: \str\n"
-
-which turned it into _two_ separately NUL-terminated strings, and then
-the follow-on changes to printk kern levels changed this to:
-
-	.asciz	"\001" "7" "VFP: \str\n"
-
-producing _three_ separately NUL-terminated strings.
-
-The commit is not in mainline, nor linux-next, but in my tree as of
-yesterday (e36815e2e), ready to be pushed out when I've finished working
-on fixing other problems with VFP - or when I decide to push it out ready
-for submission during this merge window.
-
-> The change did enable reducing code size.
-
-??? Yea, right, meanwhile breaking the ability of stuff to produce
-kernel messages.
-
-> > > Why would the LZO code not be updated?
-> > I'm not saying that the LZO code should not be updated.
-> 
-> You said:
-> 
-> > > > > > so that we can see whether it's worth updating the LZO code
-> 
-> Sounded as if you were doubtful to me.
-
-_In_ the decompressor.  We're talking about the _decompressor_ in
-this thread.
