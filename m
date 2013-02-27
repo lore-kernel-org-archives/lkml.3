@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377Ab3B0Agj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:36:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42346 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933237Ab3BZX6p (ORCPT
+	id S933567Ab3B0Agv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:36:51 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:61784 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933237Ab3B0Agt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:45 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <js1304@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 12/53] Driver core: treat unregistered bus_types as having no devices
-Date: Tue, 26 Feb 2013 15:57:41 -0800
-Message-Id: <20130226235621.121605709@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235619.844721947@linuxfoundation.org>
-References: <20130226235619.844721947@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 26 Feb 2013 19:36:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <1361921882.31428.10.camel@kjgkr>
+References: <1361857068-31613-1-git-send-email-jaegeuk.kim@samsung.com>
+	<CAKYAXd-KYnxmFmaUdgB6Tv3tR=OjNGwdhjsUW0mcH7QufXunvQ@mail.gmail.com>
+	<1361921882.31428.10.camel@kjgkr>
+Date: Wed, 27 Feb 2013 09:36:48 +0900
+Message-ID: <CAKYAXd9_A3Wo+fy3JqVsQZ44AZ8x+DmDu5asnCzZrOXODH+v=w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] f2fs: read with READ_SYNC when getting dnode page
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Bjorn Helgaas <bhelgaas@google.com>
-
-commit 4fa3e78be7e985ca814ce2aa0c09cbee404efcf7 upstream.
-
-A bus_type has a list of devices (klist_devices), but the list and the
-subsys_private structure that contains it are not initialized until the
-bus_type is registered with bus_register().
-
-The panic/reboot path has fixups that look up devices in pci_bus_type.  If
-we panic before registering pci_bus_type, the bus_type exists but the list
-does not, so mach_reboot_fixups() trips over a null pointer and panics
-again:
-
-    mach_reboot_fixups
-      pci_get_device
-        ..
-          bus_find_device(&pci_bus_type, ...)
-            bus->p is NULL
-
-Joonsoo reported a problem when panicking before PCI was initialized.
-I think this patch should be sufficient to replace the patch he posted
-here: https://lkml.org/lkml/2012/12/28/75 ("[PATCH] x86, reboot: skip
-reboot_fixups in early boot phase")
-
-Reported-by: Joonsoo Kim <js1304@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/base/bus.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -289,7 +289,7 @@ int bus_for_each_dev(struct bus_type *bu
- 	struct device *dev;
- 	int error = 0;
- 
--	if (!bus)
-+	if (!bus || !bus->p)
- 		return -EINVAL;
- 
- 	klist_iter_init_node(&bus->p->klist_devices, &i,
-@@ -323,7 +323,7 @@ struct device *bus_find_device(struct bu
- 	struct klist_iter i;
- 	struct device *dev;
- 
--	if (!bus)
-+	if (!bus || !bus->p)
- 		return NULL;
- 
- 	klist_iter_init_node(&bus->p->klist_devices, &i,
-
-
+2013/2/27, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> Hi,
+>
+> 2013-02-26 (화), 18:35 +0900, Namjae Jeon:
+>> 2013/2/26, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+>> > It must be set READ_SYNC not READA.
+>> Hi Jaegeuk.
+>> Could you please elaborate more?
+>> Why we need to change READA to READ_SYNC over here, when the purpose
+>> was to read the node page in READ ahead mode.
+>
+> That point was a reason for me to make this bug before.
+> This is get_node_page_ra, not ra_node_page, which means that
+> ra_node_page does actual readahead for another node pages.
+>
+> In summary, get_node_page_ra tries to:
+> 1. grab or read a target node page for the given nid,
+> 2. then, call ra_node_page to read other adjacent node pages in advance.
+>
+> So, when we try to read a target node page by #1, we should submit bio
+> with READ_SYNC instead of READA.
+>
+> I'll add this to the description.
+> Thanks,
+okay, Clear :)
+Reviewed-by: Namjae Jeon <namjae.jeon@samsung.com>
+Thanks for explanation!
+>
+>>
+>> Thanks.
+>> >
+>> > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+>> > ---
+>> >  fs/f2fs/node.c | 2 +-
+>> >  1 file changed, 1 insertion(+), 1 deletion(-)
+>> >
+>> > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+>> > index e275218..185454f 100644
+>> > --- a/fs/f2fs/node.c
+>> > +++ b/fs/f2fs/node.c
+>> > @@ -930,7 +930,7 @@ repeat:
+>> >  	if (!page)
+>> >  		return ERR_PTR(-ENOMEM);
+>> >
+>> > -	err = read_node_page(page, READA);
+>> > +	err = read_node_page(page, READ_SYNC);
+>> >  	if (err) {
+>> >  		f2fs_put_page(page, 1);
+>> >  		return ERR_PTR(err);
+>> > --
+>> > 1.8.1.3.566.gaa39828
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel"
+>> > in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> >
+>
+> --
+> Jaegeuk Kim
+> Samsung
+>
