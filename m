@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab3B0LWm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 06:22:42 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:45226 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756450Ab3B0LWi (ORCPT
+	id S932322Ab3B0L1S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 06:27:18 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:42084 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756450Ab3B0L1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 06:22:38 -0500
+	Wed, 27 Feb 2013 06:27:17 -0500
+Message-ID: <512DED86.4060207@ahsoftware.de>
+Date: Wed, 27 Feb 2013 12:27:02 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Wed, 27 Feb 2013 12:22:37 +0100
-Message-ID: <CA+icZUW_S+Wcu2k59RR0nFOcUMbY-6SBUo15CJAHPVTbiej_og@mail.gmail.com>
-Subject: [wathdog] GitWeb service not available?
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: James Courtier-Dutton <james.dutton@gmail.com>
+CC: ownssh <ownssh@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+References: <87ppzo79in.fsf@mid.deneb.enyo.de> <30665.1361461678@warthog.procyon.org.uk> <CA+55aFxyuvC1H6doSw_e_yLTey2YGWU9cLnUzxUeT2kaeazydA@mail.gmail.com> <20130221164244.GA19625@srcf.ucam.org> <18738.1361836265@warthog.procyon.org.uk> <loom.20130227T103444-514@post.gmane.org> <CAAMvbhFgNC7fXE2KrDC+aq+Q1dsS7pESvtCrCcMyzJksvARyQQ@mail.gmail.com>
+In-Reply-To: <CAAMvbhFgNC7fXE2KrDC+aq+Q1dsS7pESvtCrCcMyzJksvARyQQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
+Am 27.02.2013 11:17, schrieb James Courtier-Dutton:
 
-while digging into a Linux-Next issue [0] I wanted to browse the
-watchdog GitWeb, but it seems not to be available for me!
+> 3) Trust based on date. I trust everything from X that I put on my
+> system 2 weeks ago, but one week ago X got hacked, so don't trust
+> anything new from them until the hack has been stopped and the
+> revokation/correction steps have been completed.
+> E.g. the Bit9 case, where malware was able to be signed.
 
-Can you please kill the "-2.6" suffix below?
-Just FYI: Linux-v3.0 was released on 22-Jul-2011 (see [5]) :-).
+Which date? In reality dates are (mostly) defined as fixed points, but 
+computers just don't have such.
 
->From [1]:
-
-GIT trees
-
-    The Linux-2.6-watchdog git tree
-    The Linux-2.6-watchdog-next git tree
-
-Thanks in advance.
+E.g. currently you can't use modsign based on X.509 certificates if the 
+date comes through USB, because modsign tries to load the certificate 
+before before the USB stack comes up, which ends up with invalid dates 
+(Not Before).
+And changing the system date isn't that hard for an attacker if he is 
+already able to do other bad things.
 
 Regards,
-- Sedat -
 
-[0] http://marc.info/?l=linux-kernel&m=136196361213632&w=2
-[1] http://www.linux-watchdog.org/
-[2] http://www.linux-watchdog.org/cgi-bin/gitweb.cgi?p=linux-watchdog.git;a=summary
-[3] http://www.linux-watchdog.org/cgi-bin/gitweb.cgi?p=linux-watchdog-next.git;a=summary
-[4] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=tag;h=4204bcde7c0b93c5e127eb868e17b337a513cf34
-[5] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=tag;h=4204bcde7c0b93c5e127eb868e17b337a513cf34
+Alexander
+
