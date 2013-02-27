@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933522Ab3B0ANr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:13:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42946 "EHLO
+	id S1760454Ab3B0AOC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:14:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42942 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933467Ab3B0AJZ (ORCPT
+	with ESMTP id S1760439Ab3B0AJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:25 -0500
+	Tue, 26 Feb 2013 19:09:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Victor Quicksilver <victor.quicksilver@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 69/86] HID: wiimote: fix nunchuck button parser
-Date: Tue, 26 Feb 2013 16:08:17 -0800
-Message-Id: <20130226235920.074022412@linuxfoundation.org>
+        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>
+Subject: [ 68/86] mmc: sdhci-esdhc-imx: fix host version read
+Date: Tue, 26 Feb 2013 16:08:16 -0800
+Message-Id: <20130226235919.958224389@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -27,44 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Herrmann <dh.herrmann@gmail.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit 89bdd0c6f38ccf0de43d5a36ede384a730f3394e upstream.
+commit ef4d0888bb7e1b963880f086575081c3d39cad2d upstream.
 
-The buttons of the Wii Remote Nunchuck extension are actually active low.
-Fix the parser to forward the inverted values. The comment in the function
-always said "0 == pressed" but the implementation was wrong from the
-beginning.
+When commit 95a2482 (mmc: sdhci-esdhc-imx: add basic imx6q usdhc
+support) works around host version issue on imx6q, it gets the
+register address fixup "reg ^= 2" lost for imx25/35/51/53 esdhc.
+Thus, the controller version on these SoCs is wrongly identified
+as v1 while it's actually v2.
 
-Reported-by: Victor Quicksilver <victor.quicksilver@gmail.com>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Add the address fixup back and take a different approach to correct
+imx6q host version, so that the host version read gets back to work
+for all SoCs.
+
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-wiimote-ext.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/mmc/host/sdhci-esdhc-imx.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/drivers/hid/hid-wiimote-ext.c
-+++ b/drivers/hid/hid-wiimote-ext.c
-@@ -378,14 +378,14 @@ static void handler_nunchuck(struct wiim
+--- a/drivers/mmc/host/sdhci-esdhc-imx.c
++++ b/drivers/mmc/host/sdhci-esdhc-imx.c
+@@ -232,15 +232,18 @@ static void esdhc_writel_le(struct sdhci
  
- 	if (ext->motionp) {
- 		input_report_key(ext->input,
--			wiiext_keymap[WIIEXT_KEY_Z], !!(payload[5] & 0x04));
-+			wiiext_keymap[WIIEXT_KEY_Z], !(payload[5] & 0x04));
- 		input_report_key(ext->input,
--			wiiext_keymap[WIIEXT_KEY_C], !!(payload[5] & 0x08));
-+			wiiext_keymap[WIIEXT_KEY_C], !(payload[5] & 0x08));
- 	} else {
- 		input_report_key(ext->input,
--			wiiext_keymap[WIIEXT_KEY_Z], !!(payload[5] & 0x01));
-+			wiiext_keymap[WIIEXT_KEY_Z], !(payload[5] & 0x01));
- 		input_report_key(ext->input,
--			wiiext_keymap[WIIEXT_KEY_C], !!(payload[5] & 0x02));
-+			wiiext_keymap[WIIEXT_KEY_C], !(payload[5] & 0x02));
+ static u16 esdhc_readw_le(struct sdhci_host *host, int reg)
+ {
++	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct pltfm_imx_data *imx_data = pltfm_host->priv;
++
+ 	if (unlikely(reg == SDHCI_HOST_VERSION)) {
+-		u16 val = readw(host->ioaddr + (reg ^ 2));
+-		/*
+-		 * uSDHC supports SDHCI v3.0, but it's encoded as value
+-		 * 0x3 in host controller version register, which violates
+-		 * SDHCI_SPEC_300 definition.  Work it around here.
+-		 */
+-		if ((val & SDHCI_SPEC_VER_MASK) == 3)
+-			return --val;
++		reg ^= 2;
++		if (is_imx6q_usdhc(imx_data)) {
++			/*
++			 * The usdhc register returns a wrong host version.
++			 * Correct it here.
++			 */
++			return SDHCI_SPEC_300;
++		}
  	}
  
- 	input_sync(ext->input);
+ 	return readw(host->ioaddr + reg);
 
 
