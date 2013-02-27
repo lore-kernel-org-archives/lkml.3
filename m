@@ -1,51 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758513Ab3B0JH0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 04:07:26 -0500
-Received: from canardo.mork.no ([148.122.252.1]:45776 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756920Ab3B0JHX convert rfc822-to-8bit (ORCPT
+	id S932176Ab3B0JVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 04:21:20 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:37451 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756446Ab3B0JVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 04:07:23 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: gdt@gdt.id.au
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb/net/asix_devices: Add USBNET HG20F9 ethernet dongle
-Organization: m
-References: <1361852232.23197.4.camel@andromache.adelaide.aarnet.edu.au>
-	<20130226.172856.235525833921140241.davem@davemloft.net>
-	<20130226.172955.926853809838377302.davem@davemloft.net>
-Date: Wed, 27 Feb 2013 10:07:11 +0100
-In-Reply-To: <20130226.172955.926853809838377302.davem@davemloft.net> (David
-	Miller's message of "Tue, 26 Feb 2013 17:29:55 -0500 (EST)")
-Message-ID: <87zjyq86rk.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Wed, 27 Feb 2013 04:21:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1361920934.2908.228.camel@falcor1.watson.ibm.com>
+References: <1361395671.29360.26.camel@falcor1>
+	<20130226162024.GI4503@ZenIV.linux.org.uk>
+	<1361907128.2908.180.camel@falcor1.watson.ibm.com>
+	<20130226203408.GJ4503@ZenIV.linux.org.uk>
+	<1361920934.2908.228.camel@falcor1.watson.ibm.com>
+Date: Wed, 27 Feb 2013 11:21:15 +0200
+Message-ID: <CALLzPKbStdUdATJYPfMDxnPB9hgz=-iv1aYpSCTKgL9UUmSmmQ@mail.gmail.com>
+Subject: Re: [PATCH] ima: prevent dead lock when a file is opened for direct io
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> writes:
-
->> Applied, thanks Glen.
+On Wed, Feb 27, 2013 at 1:22 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Tue, 2013-02-26 at 20:34 +0000, Al Viro wrote:
+>> On Tue, Feb 26, 2013 at 02:32:08PM -0500, Mimi Zohar wrote:
+>> > Before anything gets access to the file, the file needs to be measured,
+>> > appraised, and/or audited, based on policy.  If IMA-appraisal is enabled
+>> > and the file is in policy, we enforce local file integrity and return
+>> > -EINVAL on failure, similar to LSMs.
+>> >
+>> > Appraising the file is a two step process.  Before appraising the file
+>> > data's integrity, we verify the integrity of the file metadata. Included
+>> > in the 'security.evm' calculation is the ino, generation, uid, gid,
+>> > mode, uuid, and the security xattrs.  'security.ima' contains the file
+>> > data hash or a signature based on the hash.
+>> >
+>> > The i_mutex is held when making file metadata changes (eg. xattrs,
+>> > chmod, ...).  We hold the i_mutex through the entire verification,
+>> > preventing the file data/metadata from changing.
+>>
+>> ->i_mutex is *not* guaranteed to prevent file data changes.  It does
+>> cover metadata, but that's it.  ->write() is not required to take it.
+>> Note, BTW, that as soon as you've dropped ->i_mutex, the metadata can
+>> be changed by somebody else.
 >
-> Actually, I had to revert, this doesn't even compile against
-> current sources:
+> Any time file metadata included in the HMAC is updated, 'security.evm'
+> is updated to reflect the change.  But before 'security.evm' is updated,
+> evm_verify_current_integrity() verifies the existing value.
 >
->   CC [M]  drivers/net/usb/asix_devices.o
-> drivers/net/usb/asix_devices.c:941:14: error: ‘asix_rx_fixup’ undeclared here (not in a function)
-> make[1]: *** [drivers/net/usb/asix_devices.o] Error 1
-> make: *** [drivers/net/usb/asix_devices.o] Error 2
+>> What do you achieve by holding it over the vfs_read() call?
+>
+> - Before calculating the file hash, verifying it against the digest in
+> 'security.ima' and storing the verification status in the iint, we check
+> the iint to see whether it was previously verified.  By taking the
+> i_mutex and keeping it, we prevent the file from being hashed multiple
+> times.
+>
+> - Prior to IMA-appraisal, on file close only the iint was updated,
+> reflecting the fact that the file would need to be re-measured and added
+> to the measurement list the next time it was opened.  With
+> IMA-appraisal, on file close, not only do we need to reflect this change
+> in the iint, but we also need to update the 'security.ima' xattr to
+> reflect the new hash value.  Having the iint specific lock caused a
+> lockdep.  In one case, we took the i_mutex followed by the iint lock,
+> while in the other case, the iint lock was taken before the i_mutex.
+>
+>> > I guess I wasn't clear here.  IMA always takes the i_mutex, regardless
+>> > of the O_DIRECT flag.  When a file is opened for read,
+>> > process_measurement() takes the i_mutex and then, if the file was opened
+>> > with the O_DIRECT flag, do_blockdev_direct_IO() attempts to take the
+>> > i_mutex again, causing the lockdep.
+>>
+>> *sigh*
+>> Do you actually disagree with my description of the locking rules you
+>> implicitly rely upon?
+>
+> Obsolutely not!  I misunderstood what you were saying.  The word
+> 'unless' was confusing.
+>
+>>  Suppose wankfs_file_read() happens to grab
+>> ->i_mutex for some reason; without IMA it used to be perfectly legitimate.
+>> With IMA it will deadlock as soon as IMA decides that such file is worth
+>> its attention.  So these days the rule has (silently) become
+>>       * ->read() on a regular file is not allowed to touch ->i_mutex
+>> and with your proposed change it becomes (still undocumented)
+>>       * ->read() on a regular file is not allowed to touch ->i_mutex unless
+>> O_DIRECT is present in file flags at the moment of ->read()
+>> Correct?
+>
+> yes, unfortunately.  What would you suggest?
+>
 
-I believe this patch will make checkpatch cry
+The main purpose of taking i_mutex is to ensure that measured content
+of the file (vfs_read) is in sync with extended attribute values.
 
-  ERROR: do not use C99 // comments
+If in overall taking a i_mutex before calling vsf_read is
+fundamentally wrong, then one of the solutions is to introduce back
+the usage of IMA specific mutex.
+iint->mutex was removed because it caused dead locking due different
+locking order in different cases.
 
-as well.  It would be nice if that was fixed as well before resending.
-But please keep the commit message :)
+- Dmitry
 
-
-Bjørn
+> thanks,
+>
+> Mimi
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
