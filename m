@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760537Ab3B0AM7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:12:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42949 "EHLO
+	id S1760527Ab3B0AM6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:12:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42960 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760441Ab3B0AJ0 (ORCPT
+	with ESMTP id S1760447Ab3B0AJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:26 -0500
+	Tue, 26 Feb 2013 19:09:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
+        Ying Xue <ying.xue@windriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 70/86] bridge: set priority of STP packets
-Date: Tue, 26 Feb 2013 16:08:18 -0800
-Message-Id: <20130226235920.191958688@linuxfoundation.org>
+Subject: [ 74/86] net: fix a compile error when SOCK_REFCNT_DEBUG is enabled
+Date: Tue, 26 Feb 2013 16:08:22 -0800
+Message-Id: <20130226235920.624217932@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -28,40 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Stephen Hemminger <stephen@networkplumber.org>
+From: Ying Xue <ying.xue@windriver.com>
 
-[ Upstream commit 547b4e718115eea74087e28d7fa70aec619200db ]
+[ Upstream commit dec34fb0f5b7873de45132a84a3af29e61084a6b ]
 
-Spanning Tree Protocol packets should have always been marked as
-control packets, this causes them to get queued in the high prirority
-FIFO. As Radia Perlman mentioned in her LCA talk, STP dies if bridge
-gets overloaded and can't communicate. This is a long-standing bug back
-to the first versions of Linux bridge.
+When SOCK_REFCNT_DEBUG is enabled, below build error is met:
 
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+kernel/sysctl_binary.o: In function `sk_refcnt_debug_release':
+include/net/sock.h:1025: multiple definition of `sk_refcnt_debug_release'
+kernel/sysctl.o:include/net/sock.h:1025: first defined here
+kernel/audit.o: In function `sk_refcnt_debug_release':
+include/net/sock.h:1025: multiple definition of `sk_refcnt_debug_release'
+kernel/sysctl.o:include/net/sock.h:1025: first defined here
+make[1]: *** [kernel/built-in.o] Error 1
+make: *** [kernel] Error 2
+
+So we decide to make sk_refcnt_debug_release static to eliminate
+the error.
+
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_stp_bpdu.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/net/sock.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/bridge/br_stp_bpdu.c
-+++ b/net/bridge/br_stp_bpdu.c
-@@ -16,6 +16,7 @@
- #include <linux/etherdevice.h>
- #include <linux/llc.h>
- #include <linux/slab.h>
-+#include <linux/pkt_sched.h>
- #include <net/net_namespace.h>
- #include <net/llc.h>
- #include <net/llc_pdu.h>
-@@ -40,6 +41,7 @@ static void br_send_bpdu(struct net_brid
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -944,7 +944,7 @@ static inline void sk_refcnt_debug_dec(s
+ 	       sk->sk_prot->name, sk, atomic_read(&sk->sk_prot->socks));
+ }
  
- 	skb->dev = p->dev;
- 	skb->protocol = htons(ETH_P_802_2);
-+	skb->priority = TC_PRIO_CONTROL;
- 
- 	skb_reserve(skb, LLC_RESERVE);
- 	memcpy(__skb_put(skb, length), data, length);
+-inline void sk_refcnt_debug_release(const struct sock *sk)
++static inline void sk_refcnt_debug_release(const struct sock *sk)
+ {
+ 	if (atomic_read(&sk->sk_refcnt) != 1)
+ 		printk(KERN_DEBUG "Destruction of the %s socket %p delayed, refcnt=%d\n",
 
 
