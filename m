@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab3B0ARz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:17:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42867 "EHLO
+	id S933486Ab3B0ASQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:18:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42862 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933555Ab3B0AJO (ORCPT
+	with ESMTP id S1760402Ab3B0AJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:14 -0500
+	Tue, 26 Feb 2013 19:09:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 55/86] staging: comedi: disallow COMEDI_DEVCONFIG on non-board minors
-Date: Tue, 26 Feb 2013 16:08:03 -0800
-Message-Id: <20130226235918.629572558@linuxfoundation.org>
+        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 54/86] drm/i915: Set i9xx sdvo clock limits according to specifications
+Date: Tue, 26 Feb 2013 16:08:02 -0800
+Message-Id: <20130226235918.530615135@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -26,51 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 
-commit 754ab5c0e55dd118273ca2c217c4d95e9fbc8259 upstream.
+commit 4f7dfb6788dd022446847fbbfbe45e13bedb5be2 upstream.
 
-Comedi has two sorts of minor devices:
-(a) normal board minor devices in the range 0 to
-COMEDI_NUM_BOARD_MINORS-1 inclusive; and
-(b) special subdevice minor devices in the range COMEDI_NUM_BOARD_MINORS
-upwards that are used to open the same underlying comedi device as the
-normal board minor devices, but with non-default read and write
-subdevices for asynchronous commands.
+The Intel PRM says the M1 and M2 divisors must be in the range of 10-20 and 5-9.
+Since we do all calculations based on them being register values (which are
+subtracted by 2) we need to specify them accordingly.
 
-The special subdevice minor devices get created when a board supporting
-asynchronous commands is attached to a normal board minor device, and
-destroyed when the board is detached from the normal board minor device.
-One way to attach or detach a board is by using the COMEDI_DEVCONFIG
-ioctl.  This should only be used on normal board minors as the special
-subdevice minors are too ephemeral.  In particular, the change
-introduced in commit 7d3135af399e92cf4c9bbc5f86b6c140aab3b88c ("staging:
-comedi: prevent auto-unconfig of manually configured devices") breaks
-horribly for special subdevice minor devices.
-
-Since there's no legitimate use for the COMEDI_DEVCONFIG ioctl on a
-special subdevice minor device node, disallow it and return -ENOTTY.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=56359
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/i915/intel_display.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -136,6 +136,11 @@ static long comedi_unlocked_ioctl(struct
- 	/* Device config is special, because it must work on
- 	 * an unconfigured device. */
- 	if (cmd == COMEDI_DEVCONFIG) {
-+		if (minor >= COMEDI_NUM_BOARD_MINORS) {
-+			/* Device config not appropriate on non-board minors. */
-+			rc = -ENOTTY;
-+			goto done;
-+		}
- 		rc = do_devconfig_ioctl(dev,
- 					(struct comedi_devconfig __user *)arg);
- 		if (rc == 0)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -142,8 +142,8 @@ static const intel_limit_t intel_limits_
+ 	.vco = { .min = 1400000, .max = 2800000 },
+ 	.n = { .min = 1, .max = 6 },
+ 	.m = { .min = 70, .max = 120 },
+-	.m1 = { .min = 10, .max = 22 },
+-	.m2 = { .min = 5, .max = 9 },
++	.m1 = { .min = 8, .max = 18 },
++	.m2 = { .min = 3, .max = 7 },
+ 	.p = { .min = 5, .max = 80 },
+ 	.p1 = { .min = 1, .max = 8 },
+ 	.p2 = { .dot_limit = 200000,
 
 
