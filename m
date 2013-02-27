@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760612Ab3B0AZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:25:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42737 "EHLO
+	id S933458Ab3B0AZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:25:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42729 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933775Ab3B0AIy (ORCPT
+	with ESMTP id S933731Ab3B0AIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:08:54 -0500
+	Tue, 26 Feb 2013 19:08:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org,
-        paul.gortmaker@windriver.com, davej@redhat.com, keescook@chromium.org,
-        ebiederm@xmission.com
-Subject: [ 26/86] futex: Revert "futex: Mark get_robust_list as deprecated"
-Date: Tue, 26 Feb 2013 16:07:34 -0800
-Message-Id: <20130226235915.617209391@linuxfoundation.org>
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: [ 25/86] s390/kvm: Fix store status for ACRS/FPRS
+Date: Tue, 26 Feb 2013 16:07:33 -0800
+Message-Id: <20130226235915.512173447@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -30,52 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit fe2b05f7ca9f906be61dced5489f63b8b4d7c770 upstream.
+commit 15bc8d8457875f495c59d933b05770ba88d1eacb upstream.
 
-This reverts commit ec0c4274e33c0373e476b73e01995c53128f1257.
+On store status we need to copy the current state of registers
+into a save area. Currently we might save stale versions:
+The sie state descriptor doesnt have fields for guest ACRS,FPRS,
+those registers are simply stored in the host registers. The host
+program must copy these away if needed. We do that in vcpu_put/load.
 
-get_robust_list() is in use and a removal would break existing user
-space. With the permission checks in place it's not longer a security
-hole. Remove the deprecation warnings.
+If we now do a store status in KVM code between vcpu_put/load, the
+saved values are not up-to-date. Lets collect the ACRS/FPRS before
+saving them.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: akpm@linux-foundation.org
-Cc: paul.gortmaker@windriver.com
-Cc: davej@redhat.com
-Cc: keescook@chromium.org
-Cc: ebiederm@xmission.com
+This also fixes some strange problems with hotplug and virtio-ccw,
+since the low level machine check handler (on hotplug a machine check
+will happen) will revalidate all registers with the content of the
+save area.
+
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/futex.c        |    2 --
- kernel/futex_compat.c |    2 --
- 2 files changed, 4 deletions(-)
+ arch/s390/kvm/kvm-s390.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2471,8 +2471,6 @@ SYSCALL_DEFINE3(get_robust_list, int, pi
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -677,6 +677,14 @@ int kvm_s390_vcpu_store_status(struct kv
+ 	} else
+ 		prefix = 0;
  
--	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
--
- 	rcu_read_lock();
- 
- 	ret = -ESRCH;
---- a/kernel/futex_compat.c
-+++ b/kernel/futex_compat.c
-@@ -142,8 +142,6 @@ compat_sys_get_robust_list(int pid, comp
- 	if (!futex_cmpxchg_enabled)
- 		return -ENOSYS;
- 
--	WARN_ONCE(1, "deprecated: get_robust_list will be deleted in 2013.\n");
--
- 	rcu_read_lock();
- 
- 	ret = -ESRCH;
++	/*
++	 * The guest FPRS and ACRS are in the host FPRS/ACRS due to the lazy
++	 * copying in vcpu load/put. Lets update our copies before we save
++	 * it into the save area
++	 */
++	save_fp_regs(&vcpu->arch.guest_fpregs);
++	save_access_regs(vcpu->run->s.regs.acrs);
++
+ 	if (__guestcopy(vcpu, addr + offsetof(struct save_area, fp_regs),
+ 			vcpu->arch.guest_fpregs.fprs, 128, prefix))
+ 		return -EFAULT;
 
 
