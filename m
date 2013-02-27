@@ -1,212 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759952Ab3B0Cd1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 21:33:27 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:57856 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755377Ab3B0CdZ (ORCPT
+	id S1759920Ab3B0Cmz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 21:42:55 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:45942 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab3B0Cmx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 21:33:25 -0500
+	Tue, 26 Feb 2013 21:42:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <F3DBB1B3EF102E4994C89758CFCA32412CC4E9@DBDE01.ent.ti.com>
-References: <F3DBB1B3EF102E4994C89758CFCA32412CC4E9@DBDE01.ent.ti.com>
-Date: Wed, 27 Feb 2013 08:03:24 +0530
-Message-ID: <CABYxbz5GyxYaHANgdpwBNaaR6tnu=6LJuUNSvL7DEzU=4CPHcA@mail.gmail.com>
-Subject: Re: FW: [PATCH V4] ARM: dts: add minimal DT support for DevKit8000.
+In-Reply-To: <51220E78.5000409@ti.com>
+References: <1361000036-18121-1-git-send-email-anilk4.v@gmail.com>
+	<51220E78.5000409@ti.com>
+Date: Wed, 27 Feb 2013 08:12:52 +0530
+Message-ID: <CABYxbz5izBpc96EG++Qa2dZM3XCFeygQ-d8TOdEVw0DCeT6Qsg@mail.gmail.com>
+Subject: Re: [PATCH V2] ARM: dts: omap3-devkit8000: Enable audio support
 From: Anil Kumar <anilk4.v@gmail.com>
-To: "devicetree-discuss@lists.ozlabs.org" 
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: "devicetree-discuss@lists.ozlabs.org" 
 	<devicetree-discuss@lists.ozlabs.org>,
         "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Anil Kumar <anilk4.v@gmail.com>, thomas@tomweber.eu, b-cousson@ti.com
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Alsa Devel List <alsa-devel@alsa-project.org>, linux@arm.linux.org.uk,
+        b-cousson@ti.com, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>, thomas@tomweber.eu
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
+
+On Mon, Feb 18, 2013 at 4:50 PM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> On 02/16/2013 08:33 AM, Anil Kumar wrote:
+>> Add the needed sections to enable audio support on
+>> Devkit8000 when booted with DT blob.
+>>
+>> Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
 >
-> DevKit8000 is a beagle board clone from Timll, sold by
-> armkits.com. The DevKit8000 has RS232 serial port, LCD, DVI-D,
-> S-Video, Ethernet, SD/MMC, keyboard, camera, SPI, I2C, USB and
-> JTAG interface.
->
-> This patch adds the basic DT support for devkit8000. At this time, Information
-> of twl4030 (PMIC), MMC1, I2C1 and leds are added.
->
-> Signed-off-by: Anil Kumar <anilk4.v@gmail.com>
-> Tested-by: Thomas Weber <thomas@tomweber.eu>
+> Looks good:
+> Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
 Gentle Ping. As there are no review comments on this patch,
 Could you please pull this patch ?
 
 Thanks,
 Anil
-
-> ---
->  -This patch is based on top of kernel 3.8-rc5.
 >
->  -Tested on Devkit8000.
+>> ---
+>> This patch is based on top of kernel 3.8-rc5 and
+>> the following patches.
+>>
+>> Peter Ujfalusi:-
+>> ASoC: twl4030: Correct the support for Voice port
+>> ASoC: twl4030: Convert MICBIAS to SUPPLY widget
+>> ASoC: omap-twl4030: Add support for routing, voice port and jack detect
+>>
+>> Anil Kumar:-
+>> ARM: dts: add minimal DT support for DevKit8000
+>> https://patchwork.kernel.org/patch/2122461/
+>>
+>> -Tested for playback and capture on Devkit8000.
+>>
+>>  Test process:-
+>>
+>>  #amixer set 'PredriveR Mixer AudioR2' on
+>>  #amixer set 'PredriveL Mixer AudioL2' on
+>>  #amixer set PreDriv 100 unmute
+>>  #amixer set 'DAC2 Digital Fine' 100
+>>  #amixer cset numid=27 1
+>>  #arecord | aplay
+>>
+>> For V2:
+>>  - Remove pin mux as done at device boot time by default.
+>>
+>> :100644 100644 6338993... c70116f... M        arch/arm/boot/dts/omap3-devkit8000.dts
+>>  arch/arm/boot/dts/omap3-devkit8000.dts |   23 +++++++++++++++++++----
+>>  1 files changed, 19 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/omap3-devkit8000.dts b/arch/arm/boot/dts/omap3-devkit8000.dts
+>> index 6338993..c70116f 100644
+>> --- a/arch/arm/boot/dts/omap3-devkit8000.dts
+>> +++ b/arch/arm/boot/dts/omap3-devkit8000.dts
+>> @@ -42,6 +42,19 @@
+>>                  };
+>>
+>>       };
+>> +
+>> +     sound {
+>> +             compatible = "ti,omap-twl4030";
+>> +             ti,model = "devkit8000";
+>> +
+>> +             ti,mcbsp = <&mcbsp2>;
+>> +             ti,codec = <&twl_audio>;
+>> +             ti,audio-routing =
+>> +                     "Ext Spk", "PREDRIVEL",
+>> +                     "Ext Spk", "PREDRIVER",
+>> +                     "MAINMIC", "Main Mic",
+>> +                     "Main Mic", "Mic Bias 1";
+>> +     };
+>>  };
+>>
+>>  &i2c1 {
+>> @@ -51,6 +64,12 @@
+>>               reg = <0x48>;
+>>               interrupts = <7>;       /* SYS_NIRQ cascaded to intc */
+>>               interrupt-parent = <&intc>;
+>> +
+>> +             twl_audio: audio {
+>> +                     compatible = "ti,twl4030-audio";
+>> +                     codec {
+>> +                     };
+>> +             };
+>>       };
+>>  };
+>>
+>> @@ -86,10 +105,6 @@
+>>       status = "disabled";
+>>  };
+>>
+>> -&mcbsp2 {
+>> -     status = "disabled";
+>> -};
+>> -
+>>  &mcbsp3 {
+>>       status = "disabled";
+>>  };
+>>
 >
-> For V4:
->  -Tiny nitpick.
->
-> For V3:
->  - Remove pin mux as done at device boot time by default.
->
-> For V2:
->  - Change model name as "TimLL OMAP3 Devkit8000"
->  - Change compatible as "timll,omap3-devkit8000"
->  - Doing i2c1 pinmux default with pinctrl-single driver instead of i2c1
->    driver probe time.
->
-> :100644 100644 5ebb44f... 22ebc76... M  arch/arm/boot/dts/Makefile
-> :000000 100644 0000000... 2e1463a... A  arch/arm/boot/dts/omap3-devkit8000.dts
-> :100644 100644 53cb380b.. ccecb76... M  arch/arm/mach-omap2/board-generic.c
->  arch/arm/boot/dts/Makefile             |    1 +
->  arch/arm/boot/dts/omap3-devkit8000.dts |  102 ++++++++++++++++++++++++++++++++
->  arch/arm/mach-omap2/board-generic.c    |    1 +
->  3 files changed, 104 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index 5ebb44f..22ebc76 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -102,6 +102,7 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
->         imx28-tx28.dtb
->  dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
->         omap3-beagle.dtb \
-> +       omap3-devkit8000.dtb \
->         omap3-beagle-xm.dtb \
->         omap3-evm.dtb \
->         omap3-tobi.dtb \
-> diff --git a/arch/arm/boot/dts/omap3-devkit8000.dts b/arch/arm/boot/dts/omap3-devkit8000.dts
-> new file mode 100644
-> index 0000000..2e1463a
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/omap3-devkit8000.dts
-> @@ -0,0 +1,102 @@
-> +/*
-> + * Author: Anil Kumar <anilk4.v@gmail.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +/dts-v1/;
-> +
-> +/include/ "omap3.dtsi"
-> +/ {
-> +       model = "TimLL OMAP3 Devkit8000";
-> +       compatible = "timll,omap3-devkit8000", "ti,omap3";
-> +
-> +       memory {
-> +               device_type = "memory";
-> +               reg = <0x80000000 0x10000000>;  /* 256 MB */
-> +       };
-> +
-> +       leds {
-> +               compatible = "gpio-leds";
-> +
-> +               heartbeat {
-> +                       label = "devkit8000::led1";
-> +                       gpios = <&gpio6 26 0>;  /* 186 -> LED1 */
-> +                       default-state = "on";
-> +                       linux,default-trigger = "heartbeat";
-> +               };
-> +
-> +               mmc {
-> +                       label = "devkit8000::led2";
-> +                       gpios = <&gpio6 3 0>;   /* 163 -> LED2 */
-> +                       default-state = "on";
-> +                       linux,default-trigger = "none";
-> +               };
-> +
-> +               usr {
-> +                       label = "devkit8000::led3";
-> +                       gpios = <&gpio6 4 0>;   /* 164 -> LED3 */
-> +                       default-state = "on";
-> +                       linux,default-trigger = "usr";
-> +                };
-> +       };
-> +};
-> +
-> +&i2c1 {
-> +       clock-frequency = <2600000>;
-> +
-> +       twl: twl@48 {
-> +               reg = <0x48>;
-> +               interrupts = <7>;       /* SYS_NIRQ cascaded to intc */
-> +               interrupt-parent = <&intc>;
-> +       };
-> +};
-> +
-> +&i2c2 {
-> +       status = "disabled";
-> +};
-> +
-> +&i2c3 {
-> +       status = "disabled";
-> +};
-> +
-> +/include/ "twl4030.dtsi"
-> +
-> +&mmc1 {
-> +       vmmc-supply = <&vmmc1>;
-> +       vmmc_aux-supply = <&vsim>;
-> +       bus-width = <8>;
-> +};
-> +
-> +&mmc2 {
-> +       status = "disabled";
-> +};
-> +
-> +&mmc3 {
-> +       status = "disabled";
-> +};
-> +
-> +&wdt2 {
-> +       status = "disabled";
-> +};
-> +
-> +&mcbsp1 {
-> +       status = "disabled";
-> +};
-> +
-> +&mcbsp2 {
-> +       status = "disabled";
-> +};
-> +
-> +&mcbsp3 {
-> +       status = "disabled";
-> +};
-> +
-> +&mcbsp4 {
-> +       status = "disabled";
-> +};
-> +
-> +&mcbsp5 {
-> +       status = "disabled";
-> +};
-> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-> index 53cb380..ccecb76 100644
-> --- a/arch/arm/mach-omap2/board-generic.c
-> +++ b/arch/arm/mach-omap2/board-generic.c
-> @@ -110,6 +110,7 @@ MACHINE_END
->
->  static const char *omap3_gp_boards_compat[] __initdata = {
->         "ti,omap3-beagle",
-> +       "timll,omap3-devkit8000",
->         NULL,
->  };
 >
 > --
-> 1.7.0.4
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> Péter
