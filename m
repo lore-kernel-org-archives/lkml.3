@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759974Ab3B0DJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 22:09:44 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:62582 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759890Ab3B0DJm (ORCPT
+	id S1760028Ab3B0DJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 22:09:52 -0500
+Received: from mail.windriver.com ([147.11.1.11]:44511 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760010Ab3B0DJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 22:09:42 -0500
+	Tue, 26 Feb 2013 22:09:48 -0500
 From: Tiejun Chen <tiejun.chen@windriver.com>
 To: <benh@kernel.crashing.org>, <galak@kernel.crashing.org>
 CC: <jason.wessel@windriver.com>, <linux-kernel@vger.kernel.org>,
         <linuxppc-dev@lists.ozlabs.org>
-Subject: [v3][PATCH 3/6] book3e/kgdb: update thread's dbcr0
-Date: Wed, 27 Feb 2013 11:09:25 +0800
-Message-ID: <1361934568-31989-4-git-send-email-tiejun.chen@windriver.com>
+Subject: [v3][PATCH 6/6] powerpc/kgdb: remove copying the thread_info
+Date: Wed, 27 Feb 2013 11:09:28 +0800
+Message-ID: <1361934568-31989-7-git-send-email-tiejun.chen@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1361934568-31989-1-git-send-email-tiejun.chen@windriver.com>
 References: <1361934568-31989-1-git-send-email-tiejun.chen@windriver.com>
@@ -23,52 +23,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gdb always need to generate a single step properly to invoke
-a kgdb state. But with lazy interrupt, book3e can't always
-trigger a debug exception with a single step since the current
-is blocked for handling those pending exception, then we miss
-that expected dbcr configuration at last to generate a debug
-exception.
-
-So here we also update thread's dbcr0 to make sure the current
-can go back with that missed dbcr0 configuration.
+Currently BookE and Book3E always copy the thread_info from
+the kernel stack when we enter the debug exception, so we can
+remove these action here to avoid copying again.
 
 Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
 ---
- arch/powerpc/kernel/kgdb.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ arch/powerpc/kernel/kgdb.c |   28 ----------------------------
+ 1 file changed, 28 deletions(-)
 
 diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
-index 5ca82cd..1a57307 100644
+index 1a57307..e954888 100644
 --- a/arch/powerpc/kernel/kgdb.c
 +++ b/arch/powerpc/kernel/kgdb.c
-@@ -410,7 +410,7 @@ int kgdb_arch_handle_exception(int vector, int signo, int err_code,
- 			       struct pt_regs *linux_regs)
- {
- 	char *ptr = &remcom_in_buffer[1];
--	unsigned long addr;
-+	unsigned long addr, dbcr0;
+@@ -153,39 +153,11 @@ static int kgdb_handle_breakpoint(struct pt_regs *regs)
  
- 	switch (remcom_in_buffer[0]) {
- 		/*
-@@ -427,8 +427,15 @@ int kgdb_arch_handle_exception(int vector, int signo, int err_code,
- 		/* set the trace bit if we're stepping */
- 		if (remcom_in_buffer[0] == 's') {
- #ifdef CONFIG_PPC_ADV_DEBUG_REGS
--			mtspr(SPRN_DBCR0,
--			      mfspr(SPRN_DBCR0) | DBCR0_IC | DBCR0_IDM);
-+			dbcr0 = mfspr(SPRN_DBCR0) | DBCR0_IC | DBCR0_IDM;
-+			mtspr(SPRN_DBCR0, dbcr0);
-+#ifdef CONFIG_PPC_BOOK3E_64
-+			/* With lazy interrut we have to update thread dbcr0 here
-+			 * to make sure we can set debug properly at last to invoke
-+			 * kgdb again to work well.
-+			 */
-+			current->thread.dbcr0 = dbcr0;
-+#endif
- 			linux_regs->msr |= MSR_DE;
- #else
- 			linux_regs->msr |= MSR_SE;
+ static int kgdb_singlestep(struct pt_regs *regs)
+ {
+-	struct thread_info *thread_info, *exception_thread_info;
+-	struct thread_info *backup_current_thread_info;
+-
+ 	if (user_mode(regs))
+ 		return 0;
+ 
+-	backup_current_thread_info = (struct thread_info *)kmalloc(sizeof(struct thread_info), GFP_KERNEL);
+-	/*
+-	 * On Book E and perhaps other processors, singlestep is handled on
+-	 * the critical exception stack.  This causes current_thread_info()
+-	 * to fail, since it it locates the thread_info by masking off
+-	 * the low bits of the current stack pointer.  We work around
+-	 * this issue by copying the thread_info from the kernel stack
+-	 * before calling kgdb_handle_exception, and copying it back
+-	 * afterwards.  On most processors the copy is avoided since
+-	 * exception_thread_info == thread_info.
+-	 */
+-	thread_info = (struct thread_info *)(regs->gpr[1] & ~(THREAD_SIZE-1));
+-	exception_thread_info = current_thread_info();
+-
+-	if (thread_info != exception_thread_info) {
+-		/* Save the original current_thread_info. */
+-		memcpy(backup_current_thread_info, exception_thread_info, sizeof *thread_info);
+-		memcpy(exception_thread_info, thread_info, sizeof *thread_info);
+-	}
+-
+ 	kgdb_handle_exception(0, SIGTRAP, 0, regs);
+ 
+-	if (thread_info != exception_thread_info)
+-		/* Restore current_thread_info lastly. */
+-		memcpy(exception_thread_info, backup_current_thread_info, sizeof *thread_info);
+-
+-	kfree(backup_current_thread_info);
+ 	return 1;
+ }
+ 
 -- 
 1.7.9.5
 
