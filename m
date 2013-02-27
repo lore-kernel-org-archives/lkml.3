@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760035Ab3B0PVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 10:21:55 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:32952 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab3B0PVy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 10:21:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <87621dygvw.fsf@linaro.org>
-References: <1361389302-11968-1-git-send-email-khilman@linaro.org>
-	<1361389302-11968-2-git-send-email-khilman@linaro.org>
-	<20130222132750.GE17948@somewhere.redhat.com>
-	<87fw0izxe4.fsf@linaro.org>
-	<1361916782.1740.2.camel@leonhard>
-	<87621dygvw.fsf@linaro.org>
-Date: Wed, 27 Feb 2013 16:21:52 +0100
-Message-ID: <CAFTL4hzFBgT-hKHEdGshoGnWwbfrANaEQonXe3O03Oe6L2=_nQ@mail.gmail.com>
-Subject: Re: [RFC/PATCH 1/5] context tracking: conditionalize guest support
- based on CONFIG_KVM
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Mats Liljegren <mats.liljegren@enea.com>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760078Ab3B0PXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 10:23:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:36871 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758160Ab3B0PXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 10:23:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,747,1355126400"; 
+   d="scan'208";a="268554442"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Peter Tyser <ptyser@xes-inc.com>, Jean Delvare <khali@linux-fr.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] gpio: gpio-ich: fix ichx_gpio_check_available() return what callers expect
+Date: Wed, 27 Feb 2013 17:25:15 +0200
+Message-Id: <1361978715-14948-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/2/27 Kevin Hilman <khilman@linaro.org>:
-> From 61e35f069a64c03a2bce348487d41072aeb9f36b Mon Sep 17 00:00:00 2001
-> From: Kevin Hilman <khilman@linaro.org>
-> Date: Thu, 14 Feb 2013 10:17:37 -0800
-> Subject: [PATCH] context tracking: conditionalize guest support based on
->  CONFIG_KVM
->
-> So that it can build on !KVM systems too.
->
-> Signed-off-by: Kevin Hilman <khilman@linaro.org>
-> ---
->  kernel/context_tracking.c | 4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-> index 74f68f4..fda6cd6 100644
-> --- a/kernel/context_tracking.c
-> +++ b/kernel/context_tracking.c
-> @@ -1,5 +1,7 @@
->  #include <linux/context_tracking.h>
-> +#if IS_ENABLED(CONFIG_KVM)
->  #include <linux/kvm_host.h>
-> +#endif
+ichx_gpio_check_available() returns either 0 or -ENXIO depending on whether
+the given GPIO is available or not. However, callers of this function treat
+the return value as boolean:
 
-Please fix the header rather than its inclusion.
-General purpose headers like this must be able to handle the off-cases.
+	...
+	if (!ichx_gpio_check_available(gpio, nr))
+		return -ENXIO;
 
-Thanks.
+which erroneusly fails when the GPIO is available and not vice versa.
+
+Fix this by making the function return boolean as expected by the callers.
+
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/gpio/gpio-ich.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpio/gpio-ich.c b/drivers/gpio/gpio-ich.c
+index 6f2306d..f9dbd50 100644
+--- a/drivers/gpio/gpio-ich.c
++++ b/drivers/gpio/gpio-ich.c
+@@ -128,9 +128,9 @@ static int ichx_read_bit(int reg, unsigned nr)
+ 	return data & (1 << bit) ? 1 : 0;
+ }
+ 
+-static int ichx_gpio_check_available(struct gpio_chip *gpio, unsigned nr)
++static bool ichx_gpio_check_available(struct gpio_chip *gpio, unsigned nr)
+ {
+-	return (ichx_priv.use_gpio & (1 << (nr / 32))) ? 0 : -ENXIO;
++	return ichx_priv.use_gpio & (1 << (nr / 32));
+ }
+ 
+ static int ichx_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
+-- 
+1.7.10.4
+
