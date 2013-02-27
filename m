@@ -1,138 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619Ab3B0LLi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 06:11:38 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:38049 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758291Ab3B0LLf (ORCPT
+	id S932356Ab3B0LMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 06:12:23 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.182]:17422 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756920Ab3B0LMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 06:11:35 -0500
+	Wed, 27 Feb 2013 06:12:21 -0500
+X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Feb 2013 06:12:21 EST
+X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h2IziqwDGkR4lBo2mGrr2y5FyCzOIoND8eg+8rnLDwqmjazdGNPuw=
+X-RZG-CLASS-ID: mo05
+Message-ID: <512DE8A6.9030000@samba.org>
+Date: Wed, 27 Feb 2013 12:06:14 +0100
+From: "Stefan (metze) Metzmacher" <metze@samba.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <512D0D67.9010609@linux.vnet.ibm.com>
-References: <20130218123714.26245.61816.stgit@srivatsabhat.in.ibm.com>
-	<20130218123856.26245.46705.stgit@srivatsabhat.in.ibm.com>
-	<CANN689F9S7c1M8+cEpz3tsxGF34+NTRBLvxgPUOtbvav5u+RRA@mail.gmail.com>
-	<5122551E.1080703@linux.vnet.ibm.com>
-	<51226B46.9080707@linux.vnet.ibm.com>
-	<CANN689FSxOz+0Cu7EG_yKD8ZE1OpT4kyT+ybLfXSqaifodJRpw@mail.gmail.com>
-	<51226F91.7000108@linux.vnet.ibm.com>
-	<CACvQF53bdh4_BxF0y1fnTVR+T2OmRc0jmWQYftsvx92-fg-Lug@mail.gmail.com>
-	<512BBAD8.8010006@linux.vnet.ibm.com>
-	<CACvQF51jCxk5jUqmhD=QBBtUsBkQWZzakacrKO4Gsk=w61rNwQ@mail.gmail.com>
-	<512C7A38.8060906@linux.vnet.ibm.com>
-	<CACvQF51RvhM8XNqu3-1OTQ=cZUZ=pAX+_zx0a29+W67N1X+BgQ@mail.gmail.com>
-	<512CC509.1050000@linux.vnet.ibm.com>
-	<CACvQF50UgiqPpDk3HCmV86zKSf6tPjqr0bZowfPEOJs0g0r0MQ@mail.gmail.com>
-	<512D0D67.9010609@linux.vnet.ibm.com>
-Date: Wed, 27 Feb 2013 19:11:34 +0800
-Message-ID: <CANN689FuuEb9wpV43DkTtgv6syvBYL-LQxByWznyAq8dkrhzBw@mail.gmail.com>
-Subject: Re: [PATCH v6 04/46] percpu_rwlock: Implement the core design of
- Per-CPU Reader-Writer Locks
-From: Michel Lespinasse <walken@google.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <eag0628@gmail.com>, linux-doc@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@kernel.org, linux-arch@vger.kernel.org,
-        linux@arm.linux.org.uk, xiaoguangrong@linux.vnet.ibm.com,
-        wangyun@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        rusty@rustcorp.com.au, rostedt@goodmis.org, rjw@sisk.pl,
-        vincent.guittot@linaro.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        oleg@redhat.com, sbw@mit.edu, tj@kernel.org, akpm@linux-foundation.org,
-        linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dave Chiluk <chiluk@canonical.com>
+CC: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] CIFS: Decrease reconnection delay when switching nics
+References: <1361831310-24260-1-git-send-email-chiluk@canonical.com>
+In-Reply-To: <1361831310-24260-1-git-send-email-chiluk@canonical.com>
+X-Enigmail-Version: 1.4.6
+OpenPGP: id=0E53083F
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig5BE9327F652E0EF9B90395E1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srivatsa,
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig5BE9327F652E0EF9B90395E1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I think there is some elegance in Lai's proposal of using a local
-trylock for the reader uncontended case and global rwlock to deal with
-the contended case without deadlocks. He apparently didn't realize
-initially that nested read locks are common, and he seems to have
-confused you because of that, but I think his proposal could be
-changed easily to account for that and result in short, easily
-understood code. What about the following:
+Hi Dave,
 
-- local_refcnt is a local lock count; it indicates how many recursive
-locks are taken using the local lglock
-- lglock is used by readers for local locking; it must be acquired
-before local_refcnt becomes nonzero and released after local_refcnt
-goes back to zero.
-- fallback_rwlock is used by readers for global locking; it is
-acquired when fallback_reader_refcnt is zero and the trylock fails on
-lglock
+> When messages are currently in queue awaiting a response, decrease amou=
+nt of
+> time before attempting cifs_reconnect to SMB_MAX_RTT =3D 10 seconds. Th=
+e current
+> wait time before attempting to reconnect is currently 2*SMB_ECHO_INTERV=
+AL(120
+> seconds) since the last response was recieved.  This does not take into=
+ account
+> the fact that messages waiting for a response should be serviced within=
+ a
+> reasonable round trip time.
 
-+void lg_rwlock_local_read_lock(struct lgrwlock *lgrw)
-+{
-+       preempt_disable();
-+
-+       if (__this_cpu_read(*lgrw->local_refcnt) ||
-+           arch_spin_trylock(this_cpu_ptr(lgrw->lglock->lock))) {
-+               __this_cpu_inc(*lgrw->local_refcnt);
-+
-rwlock_acquire_read(&lgrw->fallback_rwlock->lock_dep_map, 0, 0,
-_RET_IP_);
-+       } else {
-+               read_lock(&lgrw->fallback_rwlock);
-+       }
-+}
-+EXPORT_SYMBOL(lg_rwlock_local_read_lock);
-+
-+void lg_rwlock_local_read_unlock(struct lgrwlock *lgrw)
-+{
-+       if (likely(__this_cpu_read(*lgrw->local_refcnt))) {
-+               rwlock_release(&lgrw->fallback_rwlock->lock_dep_map,
-1, _RET_IP_);
-+               if (!__this_cpu_dec_return(*lgrw->local_refcnt))
-+                       arch_spin_unlock(this_cpu_ptr(lgrw->lglock->lock));
-+       } else {
-+               read_unlock(&lgrw->fallback_rwlock);
-+       }
-+
-+       preempt_enable();
-+}
-+EXPORT_SYMBOL(lg_rwlock_local_read_unlock);
-+
-+void lg_rwlock_global_write_lock(struct lgrwlock *lgrw)
-+{
-+       int i;
-+
-+       preempt_disable();
-+
-+       for_each_possible_cpu(i)
-+               arch_spin_lock(per_cpu_ptr(lgrw->lglock->lock, i));
-+       write_lock(&lgrw->fallback_rwlock);
-+}
-+EXPORT_SYMBOL(lg_rwlock_global_write_lock);
-+
-+void lg_rwlock_global_write_unlock(struct lgrwlock *lgrw)
-+{
-+       int i;
-+
-+       write_unlock(&lgrw->fallback_rwlock);
-+       for_each_possible_cpu(i)
-+               arch_spin_unlock(per_cpu_ptr(lgrw->lglock->lock, i));
-+
-+       preempt_enable();
-+}
-+EXPORT_SYMBOL(lg_rwlock_global_write_unlock);
+Wouldn't that mean that the client will disconnect a good connection,
+if the server doesn't response within 10 seconds?
+Reads and Writes can take longer than 10 seconds...
 
-This is to me relatively easier to understand than Srivatsa's
-proposal. Now I'm not sure who wins efficiency wise, but I think it
-should be relatively close as readers at least don't touch shared
-state in the uncontended case (even with some recursion going on).
+> This fixes the issue where user moves from wired to wireless or vice ve=
+rsa
+> causing the mount to hang for 120 seconds, when it could reconnect cons=
+iderably
+> faster.  After this fix it will take SMB_MAX_RTT (10 seconds) from the =
+last
+> time the user attempted to access the volume or SMB_MAX_RTT after the l=
+ast
+> echo.  The worst case of the latter scenario being
+> 2*SMB_ECHO_INTERVAL+SMB_MAX_RTT+small scheduling delay (about 130 secon=
+ds).
+> Statistically speaking it would normally reconnect sooner.  However in =
+the best
+> case where the user changes nics, and immediately tries to access the c=
+ifs
+> share it will take SMB_MAX_RTT=3D10 seconds.
 
-There is an interesting case where lg_rwlock_local_read_lock could be
-interrupted after getting the local lglock but before incrementing
-local_refcnt to 1; if that happens any nested readers within that
-interrupt will have to take the global rwlock read side. I think this
-is perfectly acceptable as this should not be a common case though
-(and thus the global rwlock cache line probably wouldn't even bounce
-between cpus then).
+I think it would be better to detect the broken connection
+by using an AF_NETLINK socket listening for RTM_DELADDR
+messages?
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+metze
+
+
+--------------enig5BE9327F652E0EF9B90395E1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
+
+iEYEARECAAYFAlEt6KoACgkQm70gjA5TCD+2JgCdHpfZdm+EiffVKKpb+5EDWlay
+QtsAoIgq32yYqMQqWosNZf04SHW8J/Ur
+=B+VR
+-----END PGP SIGNATURE-----
+
+--------------enig5BE9327F652E0EF9B90395E1--
