@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760497Ab3B0AM5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:12:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42965 "EHLO
+	id S933522Ab3B0ANr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:13:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42946 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760449Ab3B0AJ2 (ORCPT
+	with ESMTP id S933467Ab3B0AJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:28 -0500
+	Tue, 26 Feb 2013 19:09:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Wei <lw@cn.fujitsu.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 75/86] ipv4: fix a bug in ping_err().
-Date: Tue, 26 Feb 2013 16:08:23 -0800
-Message-Id: <20130226235920.726692806@linuxfoundation.org>
+        Victor Quicksilver <victor.quicksilver@gmail.com>,
+        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 69/86] HID: wiimote: fix nunchuck button parser
+Date: Tue, 26 Feb 2013 16:08:17 -0800
+Message-Id: <20130226235920.074022412@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -26,32 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: David Herrmann <dh.herrmann@gmail.com>
 
-From: Li Wei <lw@cn.fujitsu.com>
+commit 89bdd0c6f38ccf0de43d5a36ede384a730f3394e upstream.
 
-[ Upstream commit b531ed61a2a2a77eeb2f7c88b49aa5ec7d9880d8 ]
+The buttons of the Wii Remote Nunchuck extension are actually active low.
+Fix the parser to forward the inverted values. The comment in the function
+always said "0 == pressed" but the implementation was wrong from the
+beginning.
 
-We should get 'type' and 'code' from the outer ICMP header.
-
-Signed-off-by: Li Wei <lw@cn.fujitsu.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Victor Quicksilver <victor.quicksilver@gmail.com>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/ping.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -321,8 +321,8 @@ void ping_err(struct sk_buff *skb, u32 i
- 	struct iphdr *iph = (struct iphdr *)skb->data;
- 	struct icmphdr *icmph = (struct icmphdr *)(skb->data+(iph->ihl<<2));
- 	struct inet_sock *inet_sock;
--	int type = icmph->type;
--	int code = icmph->code;
-+	int type = icmp_hdr(skb)->type;
-+	int code = icmp_hdr(skb)->code;
- 	struct net *net = dev_net(skb->dev);
- 	struct sock *sk;
- 	int harderr;
+---
+ drivers/hid/hid-wiimote-ext.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- a/drivers/hid/hid-wiimote-ext.c
++++ b/drivers/hid/hid-wiimote-ext.c
+@@ -378,14 +378,14 @@ static void handler_nunchuck(struct wiim
+ 
+ 	if (ext->motionp) {
+ 		input_report_key(ext->input,
+-			wiiext_keymap[WIIEXT_KEY_Z], !!(payload[5] & 0x04));
++			wiiext_keymap[WIIEXT_KEY_Z], !(payload[5] & 0x04));
+ 		input_report_key(ext->input,
+-			wiiext_keymap[WIIEXT_KEY_C], !!(payload[5] & 0x08));
++			wiiext_keymap[WIIEXT_KEY_C], !(payload[5] & 0x08));
+ 	} else {
+ 		input_report_key(ext->input,
+-			wiiext_keymap[WIIEXT_KEY_Z], !!(payload[5] & 0x01));
++			wiiext_keymap[WIIEXT_KEY_Z], !(payload[5] & 0x01));
+ 		input_report_key(ext->input,
+-			wiiext_keymap[WIIEXT_KEY_C], !!(payload[5] & 0x02));
++			wiiext_keymap[WIIEXT_KEY_C], !(payload[5] & 0x02));
+ 	}
+ 
+ 	input_sync(ext->input);
 
 
