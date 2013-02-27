@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471Ab3B0UXV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 15:23:21 -0500
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:58822 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754522Ab3B0UXT (ORCPT
+	id S1756794Ab3B0UYq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 15:24:46 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:39442 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755048Ab3B0UYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 15:23:19 -0500
+	Wed, 27 Feb 2013 15:24:45 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130227201503.GF14253@thunk.org>
-References: <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
-	<20130227172256.GA236@x4>
-	<7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
-	<20130227174553.GA224@x4>
-	<CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
-	<20130227184912.GA19624@thunk.org>
-	<20130227185625.GA224@x4>
-	<20130227191923.GA1121@redhat.com>
-	<20130227192907.GB14253@thunk.org>
-	<20130227201217.GD14253@thunk.org>
-	<20130227201503.GF14253@thunk.org>
-Date: Wed, 27 Feb 2013 12:23:18 -0800
-X-Google-Sender-Auth: CF2TFDe81h-d2PwVRIlSjffY8Jo
-Message-ID: <CA+55aFx+mHr080Wzfo8s8cb4qAO74x0r8iDFE90CziybFSTgQA@mail.gmail.com>
-Subject: Re: [GIT PULL URGENT] ext4 regression fix for 3.9
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
-        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CA+5PVA5vvw-JyODTtRwVhQSEiGrt=3wzDoCmeButEMTZxWAhbA@mail.gmail.com>
+References: <alpine.DEB.2.00.1302260003460.24684@skynet.skynet.ie>
+	<CA+5PVA5wtZipQRTPfvbh1U8gjDMaW0095EsNz==Co+iww3YN1g@mail.gmail.com>
+	<CA+5PVA5vvw-JyODTtRwVhQSEiGrt=3wzDoCmeButEMTZxWAhbA@mail.gmail.com>
+Date: Wed, 27 Feb 2013 15:24:43 -0500
+Message-ID: <CA+5PVA7d8fXNxXm0UG4RdH2QLgyRGZEScDtJnK0f-+j_hoCzOA@mail.gmail.com>
+Subject: Re: [git pull] drm merge for 3.9-rc1
+From: Josh Boyer <jwboyer@gmail.com>
+To: Dave Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Cc: torvalds@linux-foundation.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 12:15 PM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Wed, Feb 27, 2013 at 03:12:17PM -0500, Linus Torvalds wrote:
->> The following changes since commit 304e220f0879198b1f5309ad6f0be862b4009491:
+On Wed, Feb 27, 2013 at 3:20 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+> On Wed, Feb 27, 2013 at 11:34 AM, Josh Boyer <jwboyer@gmail.com> wrote:
+>> On Mon, Feb 25, 2013 at 7:05 PM, Dave Airlie <airlied@linux.ie> wrote:
+>>> Alex Deucher (29):
+>>>       drm/radeon: halt engines before disabling MC (6xx/7xx)
+>>>       drm/radeon: halt engines before disabling MC (evergreen)
+>>>       drm/radeon: halt engines before disabling MC (cayman/TN)
+>>>       drm/radeon: halt engines before disabling MC (si)
+>>>       drm/radeon: use the reset mask to determine if rings are hung
+>>
+>> Something in this series of commits is causing the GPU to hang on reboot
+>> on my Dell XPS 8300 machine.  That has a:
+>>
+>> 01:00.0 VGA compatible controller: Advanced Micro Devices [AMD] nee
+>> ATI Caicos [Radeon HD 6450]
+>>
+>> card in it.  After reboots, I get a screen that looks like this:
+>>
+>> http://t.co/tPnT6xQZUK
+>>
+>> I can hit it fairly consistently after a few reboots, so I tried doing a
+>> git bisect on the radeon driver and it came down to:
+>>
+>> ca57802e521de54341efc8a56f70571f79ffac72 is the first bad commit
 >
-> Obviously, this wasn't from Linus.  I screwed up on sending the pull
-> request.  Sigh...
+> So I don't think that's actually the cause of the problem.  Or at least
+> not that alone.  I reverted it on top of Linus' latest tree and I still
+> get the lockups.
+>
+> Thus far I've reverted:
+>
+>       drm/radeon: use status regs to determine what to reset (6xx/7xx)
+>       drm/radeon: use status regs to determine what to reset (evergreen)
+>       drm/radeon: use status regs to determine what to reset (cayman)
+>       drm/radeon: use status regs to determine what to reset (si)
+>       drm/radeon: halt engines before disabling MC (6xx/7xx)
+>       drm/radeon: halt engines before disabling MC (evergreen)
+>       drm/radeon: halt engines before disabling MC (cayman/TN)
+>       drm/radeon: halt engines before disabling MC (si)
+>       drm/radeon: use the reset mask to determine if rings are hung
+>
+> and can still recreate the issue.  I'm starting to think the problem is
 
-That looked really odd in my inbox for a while ;)
+Sigh.  Of course I just realized that I haven't been regenerating the
+initramfs, so I'm not even testing what I'm building at this point.  So
+all I know is that it's broken somewhere between the two commits in my
+initial bisect log.  I've had better days.
 
-          Linus "the *real* one" Torvalds
+josh
