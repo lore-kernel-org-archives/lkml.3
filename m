@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab3B0Jqo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 04:46:44 -0500
-Received: from sabertooth01.qualcomm.com ([65.197.215.72]:53584 "EHLO
-	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab3B0Jql convert rfc822-to-8bit (ORCPT
+	id S1758005Ab3B0Jt1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 04:49:27 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:57446 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3B0Jt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 04:46:41 -0500
-X-IronPort-AV: E=Sophos;i="4.84,746,1355126400"; 
-   d="scan'208";a="26381489"
-X-IronPort-AV: E=Sophos;i="4.84,746,1355126400"; 
-   d="scan'208";a="494782793"
-From: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-To: Chen Gang <gang.chen@asianux.com>
-CC: "John W. Linville" <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <wil6210@qca.qualcomm.com>,
-        "netdev@vger.kernel.org >> netdev" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/net/wireless/ath/wil6210: Makefile, only -Werror when no -W* in EXTRA_CFLAGS
-Date: Wed, 27 Feb 2013 11:46:37 +0200
-Message-ID: <1921426.IqHmmMU5eP@lx-vladimir>
-Organization: Qualcomm Atheros
-User-Agent: KMail/4.9.4 (Linux/3.5.0-25-generic; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <512DCA59.4040800@asianux.com>
-References: <512DADCA.9040609@asianux.com> <1385870.TegBXpTM9i@lx-vladimir> <512DCA59.4040800@asianux.com>
+	Wed, 27 Feb 2013 04:49:26 -0500
+X-IronPort-AV: E=Sophos;i="4.84,746,1355097600"; 
+   d="scan'208";a="1943243"
+Message-ID: <512DD6DA.5010706@citrix.com>
+Date: Wed, 27 Feb 2013 10:50:18 +0100
+From: =?GB2312?B?Um9nZXIgUGF1IE1vbm6opg==?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130216 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Originating-IP: [172.30.39.5]
+To: Chen Gang <gang.chen@asianux.com>
+CC: "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jbeulich@suse.com" <jbeulich@suse.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "dgdegra@tycho.nsa.gov" <dgdegra@tycho.nsa.gov>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/block/xen-blkback: preq.dev is used without initialized
+References: <512D90F2.9070200@asianux.com>
+In-Reply-To: <512D90F2.9070200@asianux.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, February 27, 2013 04:56:57 PM Chen Gang wrote:
-> 于 2013年02月27日 16:45, Vladimir Kondratiev 写道:
-> > On Wednesday, February 27, 2013 02:55:06 PM Chen Gang wrote:
-> >>
-> >>   When make with EXTRA_CFLAGS=-W, it will report error.
-> >>   so give a check in Makefile.
-> >>
-> >> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> >> ---
-> >>  drivers/net/wireless/ath/wil6210/Makefile |    4 +++-
-> >>  1 files changed, 3 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/drivers/net/wireless/ath/wil6210/Makefile b/drivers/net/wireless/ath/wil6210/Makefile
-> >> index 9396dc9..d288eea 100644
-> >> --- a/drivers/net/wireless/ath/wil6210/Makefile
-> >> +++ b/drivers/net/wireless/ath/wil6210/Makefile
-> >> @@ -9,5 +9,7 @@ wil6210-objs += wmi.o
-> >>  wil6210-objs += interrupt.o
-> >>  wil6210-objs += txrx.o
-> >>  
-> >> -subdir-ccflags-y += -Werror
-> >> +ifeq (, $(findstring -W,$(EXTRA_CFLAGS)))
-> >> +	subdir-ccflags-y += -Werror
-> >> +endif
-> >>  subdir-ccflags-y += -D__CHECK_ENDIAN__
-> >>
-> > Acked-by: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-> > 
-> > Well, agree; -W triggers lots of warnings, I suspect all other places that use
-> > -Werror should be problematic. Worth fixing all others? Quick look for v3.8 raises:
-> > 
+On 27/02/13 05:52, Chen Gang wrote:
 > 
->   thank you for your suggestion.
->   after this patch applied, I will do for others (let you as signed-of-by, too).
+>   if call xen_vbd_translate failed, the preq.dev will be not initialized.
+>   so use blkif->vbd.pdevice instead (still better to print relative info).
 
-Perhaps, it would be good idea to fight the original problem.
+preq.dev is initialized a a couple of lines prior to calling
+xen_vbd_translate:
 
-I mean, fix warnings where possible. Example: there are lots of
-"unused parameter" ones. Where it is false warning, add __maybe_unused
-attribute. Like this:
+preq.dev           = req->u.rw.handle;
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index c566927..83e43b7 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -163,8 +163,9 @@ extern int _cond_resched(void);
- # define might_sleep() \
-        do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
- #else
--  static inline void __might_sleep(const char *file, int line,
--                                  int preempt_offset) { }
-+  static inline void __might_sleep(const char *file __maybe_unused,
-+                                  int line __maybe_unused,
-+                                  int preempt_offset __maybe_unused) { }
- # define might_sleep() do { might_resched(); } while (0)
- #endif
- 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  drivers/block/xen-blkback/blkback.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+> index de1f319..6d1cc3d 100644
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -904,7 +904,8 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+>  		pr_debug(DRV_PFX "access denied: %s of [%llu,%llu] on dev=%04x\n",
+>  			 operation == READ ? "read" : "write",
+>  			 preq.sector_number,
+> -			 preq.sector_number + preq.nr_sects, preq.dev);
+> +			 preq.sector_number + preq.nr_sects,
+> +			 blkif->vbd.pdevice);
+>  		goto fail_response;
+>  	}
+>  
+> 
 
