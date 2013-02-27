@@ -1,136 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760166Ab3B0OYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 09:24:09 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:56442 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760147Ab3B0OYH convert rfc822-to-8bit (ORCPT
+	id S1760147Ab3B0O2F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 09:28:05 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13060 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759975Ab3B0O2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 09:24:07 -0500
-From: Kevin Hilman <khilman@linaro.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Mats Liljegren <mats.liljegren@enea.com>, linaro-dev@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC/PATCH 1/5] context tracking: conditionalize guest support based on CONFIG_KVM
-References: <1361389302-11968-1-git-send-email-khilman@linaro.org>
-	<1361389302-11968-2-git-send-email-khilman@linaro.org>
-	<20130222132750.GE17948@somewhere.redhat.com>
-	<87fw0izxe4.fsf@linaro.org> <1361916782.1740.2.camel@leonhard>
-Date: Wed, 27 Feb 2013 06:24:03 -0800
-In-Reply-To: <1361916782.1740.2.camel@leonhard> (Namhyung Kim's message of
-	"Wed, 27 Feb 2013 07:13:02 +0900")
-Message-ID: <87621dygvw.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 27 Feb 2013 09:28:04 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 27 Feb 2013 06:22:40 -0800
+Message-ID: <512E17AD.1080703@nvidia.com>
+Date: Wed, 27 Feb 2013 19:56:53 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Graeme Gregory <gg@slimlogic.co.uk>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>
+Subject: Re: [PATCH 2/2] mfd: palmas: get rid of of_platform_populate() in
+ DT registration
+References: <1361974120-18134-1-git-send-email-ldewangan@nvidia.com> <1361974120-18134-2-git-send-email-ldewangan@nvidia.com> <512E1685.6080206@slimlogic.co.uk>
+In-Reply-To: <512E1685.6080206@slimlogic.co.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namhyung Kim <namhyung@kernel.org> writes:
-
-> 2013-02-26 (화), 11:29 -0800, Kevin Hilman:
->> Frederic Weisbecker <fweisbec@gmail.com> writes:
->> 
->> > On Wed, Feb 20, 2013 at 11:41:38AM -0800, Kevin Hilman wrote:
->> >> So that it can build on !KVM systems too.
->> >> 
->> >> Signed-off-by: Kevin Hilman <khilman@linaro.org>
->> >> ---
->> >>  kernel/context_tracking.c | 4 ++++
->> >>  1 file changed, 4 insertions(+)
->> >> 
->> >> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
->> >> index 74f68f4..6fe96b1 100644
->> >> --- a/kernel/context_tracking.c
->> >> +++ b/kernel/context_tracking.c
->> >> @@ -1,5 +1,7 @@
->> >>  #include <linux/context_tracking.h>
->> >> +#ifdef CONFIG_KVM
->> >>  #include <linux/kvm_host.h>
->> >> +#endif
->> >
->> > The header should take care of the off-case, no need to ifdef its inclusion.
->> 
->> In their current form, the headers will not build on platforms without
->> KVM support.  For example, these platforms (like ARM) don't even have
->> <asm/kvm.h> or <asm/kvm_host.h>.
->> 
->> >>  #include <linux/rcupdate.h>
->> >>  #include <linux/sched.h>
->> >>  #include <linux/hardirq.h>
->> >> @@ -62,6 +64,7 @@ void user_exit(void)
->> >>  	local_irq_restore(flags);
->> >>  }
->> >>  
->> >> +#ifdef CONFIG_KVM
->> >>  void guest_enter(void)
->> >>  {
->> >>  	if (vtime_accounting_enabled())
->> >> @@ -79,6 +82,7 @@ void guest_exit(void)
->> >>  		__guest_exit();
->> >>  }
->> >>  EXPORT_SYMBOL_GPL(guest_exit);
->> >> +#endif
->> >
->> > Kvm might be built as a module so we can't actually do this unfortunately.
->> 
->> Ah, right.  How bout using 
->> 
->> #if defined(CONFIG_KVM) || defined(CONFIG_KVM_MODULE)
->> 
->> for both conditionals above?  Updated patch below.
->
-> This is what IS_ENABLED(CONFIG_KVM) is for.
-
-Right, updated patch below.
-
-Kevin
+On Wednesday 27 February 2013 07:51 PM, Graeme Gregory wrote:
+> On 27/02/13 14:08, Laxman Dewangan wrote:
+>> If driver is getting registered through DT then it look for
+>> population of platform data which is not possible if platform
+>> completely support the DT.
+> No it doesnt!
+>> In this case, if device is registered through DT then just ignore
+>> platform data population and continue the further registration.
+>> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+>> ---
+>>   drivers/mfd/palmas.c |   21 +++++++++------------
+>>   1 files changed, 9 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+>> index 25f0eab..6771d9b 100644
+>> --- a/drivers/mfd/palmas.c
+>> +++ b/drivers/mfd/palmas.c
+>> @@ -465,18 +465,6 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+>>   	if (ret)
+>>   		goto err_irq;
+>>   
+>> -	/*
+>> -	 * If we are probing with DT do this the DT way and return here
+>> -	 * otherwise continue and add devices using mfd helpers.
+>> -	 */
+>> -	if (node) {
+>> -		ret = of_platform_populate(node, NULL, NULL, &i2c->dev);
+>> -		if (ret < 0)
+>> -			goto err_irq;
+>> -		else
+>> -			return ret;
+>> -	}
+>> -
+> At this point we exit the function and do nothing with the platform data
+> which should work on wholy DT systems. I have tested it!
 
 
->From 61e35f069a64c03a2bce348487d41072aeb9f36b Mon Sep 17 00:00:00 2001
-From: Kevin Hilman <khilman@linaro.org>
-Date: Thu, 14 Feb 2013 10:17:37 -0800
-Subject: [PATCH] context tracking: conditionalize guest support based on
- CONFIG_KVM
+I think then dt files are different in this case. I did not saw the 
+documentation of dt file.
+But following is my entry in dts file which we follow for other devices:
 
-So that it can build on !KVM systems too.
+         i2c@7000d000 {
+                 status = "okay";
+                 clock-frequency = <100000>;
 
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
----
- kernel/context_tracking.c | 4 ++++
- 1 file changed, 4 insertions(+)
+   ::::::::::::::
+                 tps65913@58 {
+                         compatible = "ti,palmas";
+                         reg = <0x58>;
+                         interrupts = <0 86 0x4>;
 
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 74f68f4..fda6cd6 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -1,5 +1,7 @@
- #include <linux/context_tracking.h>
-+#if IS_ENABLED(CONFIG_KVM)
- #include <linux/kvm_host.h>
-+#endif
- #include <linux/rcupdate.h>
- #include <linux/sched.h>
- #include <linux/hardirq.h>
-@@ -62,6 +64,7 @@ void user_exit(void)
- 	local_irq_restore(flags);
- }
- 
-+#if IS_ENABLED(CONFIG_KVM)
- void guest_enter(void)
- {
- 	if (vtime_accounting_enabled())
-@@ -79,6 +82,7 @@ void guest_exit(void)
- 		__guest_exit();
- }
- EXPORT_SYMBOL_GPL(guest_exit);
-+#endif
- 
- void context_tracking_task_switch(struct task_struct *prev,
- 			     struct task_struct *next)
--- 
-1.8.1.2
+                         #interrupt-cells = <2>;
+                         interrupt-controller;
+
+                         #gpio-cells = <2>;
+                         gpio-controller;
+
+                         regulators {
+                                 smps12 {
+                                         regulator-name = "palmas-smps12";
+                                         regulator-min-microvolt = 
+<1350000>;
+                                         regulator-max-microvolt = 
+<1350000>;
+                                         regulator-always-on;
+                                         regulator-boot-on;
+                                 };
+
+                                 smps3 {
+                                         regulator-name = "palmas-smps3";
+                                         regulator-min-microvolt = 
+<1800000>;
+                                         regulator-max-microvolt = 
+<1800000>;
+                                         regulator-always-on;
+                                         regulator-boot-on;
+                                 };
+:::::::::::::::
+                     };
+             };
+     };
+
+
+In the above DT file, it does not work.
+
 
