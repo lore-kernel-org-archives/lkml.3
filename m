@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760046Ab3B0NYF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 08:24:05 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56581 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755827Ab3B0NYB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 08:24:01 -0500
-X-AuditID: 9c93016f-b7c56ae00000569b-5c-512e08efc447
-Date: Wed, 27 Feb 2013 22:23:58 +0900
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org, Nicolas Pitre <nico@fluxnic.net>,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
-        raphael.andy.lee@gmail.com
-Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
-Message-ID: <20130227132358.GA25071@Corona>
-References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
- <512D1C12.4080109@oberhumer.com>
- <20130227073646.GA22333@Corona>
- <20130227095139.GX17833@n2100.arm.linux.org.uk>
+	id S1760035Ab3B0N2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 08:28:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36419 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756626Ab3B0N2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 08:28:11 -0500
+Date: Wed, 27 Feb 2013 14:28:09 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Julia.Lawall@lip6.fr, bernd.schubert@itwm.fraunhofer.de, drbild@umich.edu,
+        peter.senna@gmail.com, schwab@linux-m68k.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild misc changes for v3.9-rc1
+Message-ID: <20130227132809.GA32484@sepie.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130227095139.GX17833@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Brightmail-Tracker: AAAAAA==
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 09:51:39AM +0000, Russell King - ARM Linux wrote:
-> On Wed, Feb 27, 2013 at 04:36:47PM +0900, Kyungsik Lee wrote:
-> > Compiler: Linaro ARM gcc 4.6.2
-> > 2. ARMv7, 1.7GHz based board
-> >    Kernel: linux 3.7
-> >    Uncompressed Kernel Size: 14MB
-> >          Compressed Size  Decompression Speed
-> >     LZO  6.0MB            34.1MB/s            Old
-> >          ----------------------------------------
-> >          6.0MB            34.7MB/s            New
-> >          6.0MB            52.2MB/s(UA)
-> >     =============================================
-> >     LZ4  6.5MB            86.7MB/s
-> > UA: Unaligned memory Access support
-> 
-> That is pretty conclusive - it shows an 8% increase in image size vs a
-> 66% increase in decompression speed.  It will take a _lot_ to offset
-> that increase in decompression speed.
-> 
-> So, what I think is that yes, we should accept LZ4 and drop LZO from
-> the kernel - the "fast but may not be small" compression title has
-> clearly been taken by LZ4.
+Hi Linus,
 
-I have read the comments regarding how many compressors the kernel
-should support and understand that it can not support all the
-compressors available.
+these are the non-critical kbuild changes for v3.9-rc1:
 
-However, I don't think that LZO can be replaced by LZ4 in all the
-cases. The benchmark above shows only about improved decompression
-speed.
+* Fix for make TAGS
+* Fix for make rpm
+* Some new coccinelle semantic patches
 
-Thanks,
-Kyungsik
+Please pull, thanks.
+Michal
 
+
+The following changes since commit a49f0d1ea3ec94fc7cf33a7c36a16343b74bd565:
+
+  Linux 3.8-rc1 (2012-12-21 17:19:00 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git misc
+
+for you to fetch changes up to 24f0c2d6ff859fbca45fd765f0d241528bdb4365:
+
+  scripts/coccinelle: find constant additions that could be bit ors (2013-02-22 14:26:00 +0100)
+
+----------------------------------------------------------------
+Andreas Schwab (1):
+      scripts/tags.sh: Fix regex syntax for etags
+
+Bernd Schubert (2):
+      coccicheck: Allow the user to give a V= (verbose) argument
+      coccicheck: Allow to show the executed command line
+
+David R. Bild (1):
+      kbuild: clear KBUILD_SRC when calling 'make' in RPM spec
+
+Julia Lawall (1):
+      scripts/coccinelle: find constant additions that could be bit ors
+
+Peter Senna Tschudin (2):
+      scripts/coccinelle/misc/semicolon.cocci: Add unneeded semicolon test
+      scripts/coccinelle/misc/memcpy-assign.cocci: Replace memcpy with struct assignment
+
+ Documentation/coccinelle.txt                |    4 ++
+ scripts/coccicheck                          |   39 +++++++---
+ scripts/coccinelle/misc/memcpy-assign.cocci |  103 +++++++++++++++++++++++++++
+ scripts/coccinelle/misc/orplus.cocci        |   55 ++++++++++++++
+ scripts/coccinelle/misc/semicolon.cocci     |   83 +++++++++++++++++++++
+ scripts/package/mkspec                      |    2 +-
+ scripts/tags.sh                             |   50 ++++++-------
+ 7 files changed, 302 insertions(+), 34 deletions(-)
+ create mode 100644 scripts/coccinelle/misc/memcpy-assign.cocci
+ create mode 100644 scripts/coccinelle/misc/orplus.cocci
+ create mode 100644 scripts/coccinelle/misc/semicolon.cocci
