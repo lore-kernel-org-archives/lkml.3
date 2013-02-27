@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab3B0LPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 06:15:09 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:58268 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521Ab3B0LPH (ORCPT
+	id S1759181Ab3B0LWh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 06:22:37 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51139 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756450Ab3B0LWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 06:15:07 -0500
-Date: Wed, 27 Feb 2013 12:15:02 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: bug in generic strncpy_from_user
-Message-ID: <20130227111502.GE4832@osiris>
-References: <20130226045424.GA3576@osiris>
- <CA+55aFx8pUSHPhC_-ob2i5BbvBkEC4BVYtAbNkf3+FE+=3AmgA@mail.gmail.com>
- <20130226125739.GA3924@osiris>
- <CA+55aFycXwZi-U2uJWWusLGeaV3=BMEBdgcxGN9Lo0QcHHUrDA@mail.gmail.com>
- <CA+55aFzCU3jKDssYj9sDJU-VkugCfy_Cv5+VhMv9renZ94jRdQ@mail.gmail.com>
- <CA+55aFzckUoJGEywgentKT-vQieiuLu-mQtELiA6UotWqBWH7A@mail.gmail.com>
- <CA+55aFz3JW6HnTC-4xqOBsgQNboLbjvZnQ0h7KfaZjQVinAt2g@mail.gmail.com>
+	Wed, 27 Feb 2013 06:22:36 -0500
+Date: Wed, 27 Feb 2013 11:22:23 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, Steve Muckle <smuckle@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: vfp: fix fpsid register subarchitecture field
+	mask width
+Message-ID: <20130227112223.GA17833@n2100.arm.linux.org.uk>
+References: <1361520485-30269-1-git-send-email-sboyd@codeaurora.org> <20130225172545.GO17833@n2100.arm.linux.org.uk> <20130225200209.GP17833@n2100.arm.linux.org.uk> <512D634D.5010600@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFz3JW6HnTC-4xqOBsgQNboLbjvZnQ0h7KfaZjQVinAt2g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13022711-3548-0000-0000-000004A92CAE
+In-Reply-To: <512D634D.5010600@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 04:30:50PM -0800, Linus Torvalds wrote:
-> On Tue, Feb 26, 2013 at 3:43 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
+On Tue, Feb 26, 2013 at 05:37:17PM -0800, Stephen Boyd wrote:
+> On 02/25/13 12:02, Russell King - ARM Linux wrote:
 > >
-> > So I'll need to extend on that logic a bit more.
+> > This can of worms is getting bigger.  We have more problems with our
+> > handling of the different VFP versions, specifically the handling of
+> > the EX=0 DEX=0 case.
+> >
+> > VFP common subarch 3 defines the EX=0, DEX=0 encoding to mean one of
+> > the following conditions have been met:
+> >
+> > 1. an unallocated VFP instruction was encountered.
+> >
+> >    In other words, the VFP was the target of the co-processor instruction,
+> >    but the instruction is not a known VFP instruction encoding.  This
+> >    should raise an undefined instruction exception.
+> >
+> > 2. an allocated VFP instruction was encountered, but not handled in
+> >    hardware.
+> >
+> >    In other words, the instruction is a valid VFP instruction, but the
+> >    hardware has opted not to implement this instruction and wants
+> >    software to emulate it instead.
+> >
+> >    (Note: this can also be raised as EX=0, DEX=1 - implementation
+> >     defined!)
+> >
+> [snip]
+> >
+> > So, if EX or DEX is set, _or_ IXE is set, we pass control to VFP_bounce.
+> > This is problematical.
+> >
+> > (a) condition (2) above isn't correctly handled for common subarch v3 - it
+> >     is always treated as an undefined instruction, and will result in a
+> >     SIGILL being delivered.
+> >
+> [snip]
+> >
+> > Now, (a) is just bad behaviour - as we haven't had any reports of this
+> > yet, I suspect that no one has implemented VFP hardware with this
+> > behaviour yet.
 > 
-> Ok, here's the fleshed-out patch. Also fixed to use "expand_stack()",
-> which is what the page fault handling actually uses. And it has the
-> GROWSUP case as well as a comment about this all.
+> I believe we ran into this a while ago and fixed it for our chips. We
+> never sent the patch upstream. Sorry.
 > 
-> So it all looks good. But it's still totally and entirely untested.
+> https://www.codeaurora.org/gitweb/quic/la/?p=kernel/msm.git;a=commitdiff;h=00a13be874f230159a6b7f8cc9d0ff23bc1b7d05
 
-Tested with 64 bit kernel with 64 bit and 31 bit mode user space as well as
-with 31 bit kernel and 31 bit user space. Each with legacy and flexible
-mmap layout.
-The bug is fixed and everything else still seems to work. Thanks!
+Yes, it looks like you did - because your short vector instructions are
+"allocated VFP instruction"s and your hardware response is to raise an
+exception with EX=0 DEX=0.
 
-Tested-By: Heiko Carstens <heiko.carstens@de.ibm.com>
-
+As you've found out, with the VFPv2 exception handling that we have, that
+is interpreted as an undefined instruction, rather than an instruction
+which needs fixing up.
