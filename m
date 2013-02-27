@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab3B0HaJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 02:30:09 -0500
-Received: from ozlabs.org ([203.10.76.45]:48398 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818Ab3B0HaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 02:30:07 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Paolo Bonzini <pbonzini@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 02/16] virtio_ring: virtqueue_add_sgs, to add multiple sgs.
-In-Reply-To: <512C5E0E.5040305@redhat.com>
-References: <1361260594-601-1-git-send-email-rusty@rustcorp.com.au> <1361260594-601-3-git-send-email-rusty@rustcorp.com.au> <20130224221255.GA5300@redhat.com> <512C5E0E.5040305@redhat.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 27 Feb 2013 17:58:37 +1030
-Message-ID: <87obf6dxlm.fsf@rustcorp.com.au>
+	id S1752878Ab3B0Hgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 02:36:51 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63013 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab3B0Hgu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 02:36:50 -0500
+X-AuditID: 9c93016f-b7c56ae00000569b-af-512db78f4133
+Date: Wed, 27 Feb 2013 16:36:47 +0900
+From: Kyungsik Lee <kyungsik.lee@lge.com>
+To: "Markus F.X.J. Oberhumer" <markus@oberhumer.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org, Nicolas Pitre <nico@fluxnic.net>,
+        Nitin Gupta <nitingupta910@gmail.com>,
+        Richard Purdie <rpurdie@openedhand.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
+        raphael.andy.lee@gmail.com
+Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
+Message-ID: <20130227073646.GA22333@Corona>
+References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
+ <512D1C12.4080109@oberhumer.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <512D1C12.4080109@oberhumer.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini <pbonzini@redhat.com> writes:
-> Il 24/02/2013 23:12, Michael S. Tsirkin ha scritto:
->> On Tue, Feb 19, 2013 at 06:26:20PM +1030, Rusty Russell wrote:
->>> virtio_scsi can really use this, to avoid the current hack of copying
->>> the whole sg array.  Some other things get slightly neater, too.
->>>
->>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->> 
->> Hmm, this makes add_buf a bit slower. virtio_test results
->> (I'll send a patch to update the test shortly):
->> 
->> Before:
->> 0.09user 0.01system 0:00.12elapsed 91%CPU (0avgtext+0avgdata 480maxresident)k
->> 0inputs+0outputs (0major+145minor)pagefaults 0swaps
->> 
->> After:
->> 0.11user 0.01system 0:00.13elapsed 90%CPU (0avgtext+0avgdata 480maxresident)k
->> 0inputs+0outputs (0major+145minor)pagefaults 0swaps
+On Tue, Feb 26, 2013 at 09:33:22PM +0100, Markus F.X.J. Oberhumer wrote:
+> On 2013-02-26 07:24, Kyungsik Lee wrote:
+> > Hi,
+> > 
+> > [...]
+> > 
+> > Through the benchmark, it was found that -Os Compiler flag for
+> > decompress.o brought better decompression performance in most of cases
+> > (ex, different compiler and hardware spec.) in ARM architecture.
+> > 
+> > Lastly, CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS is not always the best
+> > option even though it is supported. The decompression speed can be
+> > slightly slower in some cases.
+> > 
+> > This patchset is based on 3.8.
+> > 
+> > Any comments are appreciated.
+> 
+> Did you actually *try* the new LZO version and the patch (which is attached
+> once again) as explained in https://lkml.org/lkml/2013/2/3/367 ?
+> 
+> Because the new LZO version is faster than LZ4 in my testing, at least
+> when comparing apples with apples and enabling unaligned access in
+> BOTH versions:
+> 
+> armv7 (Cortex-A9), Linaro gcc-4.6 -O3, Silesia test corpus, 256 kB block-size:
+> 
+>                    compression speed   decompression speed
+> 
+>   LZO-2012    :          44 MB/sec          117 MB/sec     no unaligned access
+>   LZO-2013-UA :          47 MB/sec          167 MB/sec     Unaligned Access
+>   LZ4 r88  UA :          46 MB/sec          154 MB/sec     Unaligned Access
 >
-> Not unexpected at all... :(
->
-> Some of it can be recovered, but if it's 20% I doubt all of it.  So my
-> patches were not premature optimization; you really can take just two
-> among speed, flexibility, and having a nice API.
 
-The error bars on this are far too large to say "20%".
+I agree that the new LZO version provided shows better decompression
+speed than 3.7 based. It is much improved especially for UA.
 
-Here are my numbers, using 50 runs of:
-time tools/virtio/vringh_test --indirect --eventidx --parallel and
-stats --trim-outliers:
+Compiler: Linaro ARM gcc 4.6.2
+2. ARMv7, 1.7GHz based board
+   Kernel: linux 3.7
+   Uncompressed Kernel Size: 14MB
+         Compressed Size  Decompression Speed
+    LZO  6.0MB            34.1MB/s            Old
+         ----------------------------------------
+         6.0MB            34.7MB/s            New
+         6.0MB            52.2MB/s(UA)
+    =============================================
+    LZ4  6.5MB            86.7MB/s
+UA: Unaligned memory Access support
 
-Baseline (before add_sgs):
-        2.840000-3.040000(2.927292)user
+One thing I can say that the code you may have used, guessing
+"lz4demo" is not the same code provided in this patch.
+It has been ported for the kernel and uses different function
+not like the "lz4demo". 
 
-After add_sgs:
-        2.970000-3.150000(3.053750)user
+Thanks,
+Kyungsik
 
-After simplifying add_buf a little:
-        2.950000-3.210000(3.081458)user
-
-After inlining virtqueue_add/vring_add_indirect:
-        2.920000-3.150000(3.026875)user
-
-After passing in iteration functions (chained vs unchained):
-        2.760000-2.970000(2.883542)user
-
-After removing the now-unnecessary chain-cleaning in add_buf:
-        2.660000-2.830000(2.753542)user
-
-Any questions?
-Rusty.
