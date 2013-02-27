@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758406Ab3B0MSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 07:18:25 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:53810 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab3B0MSY (ORCPT
+	id S1758987Ab3B0MUL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 07:20:11 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:48072 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755216Ab3B0MUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 07:18:24 -0500
+	Wed, 27 Feb 2013 07:20:09 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130227115847.GB7867@spo001.leaseweb.com>
-References: <CA+icZUW_S+Wcu2k59RR0nFOcUMbY-6SBUo15CJAHPVTbiej_og@mail.gmail.com>
-	<20130227115847.GB7867@spo001.leaseweb.com>
-Date: Wed, 27 Feb 2013 13:18:22 +0100
-Message-ID: <CA+icZUXUp0tNcb9-iA94DLeSJhOH4woBC3LBqS4C3om-2f7iXw@mail.gmail.com>
-Subject: Re: [wathdog] GitWeb service not available?
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <5249868a014d716eb38cc90e04ed0f6051e65fc3.1361964515.git.viresh.kumar@linaro.org>
+References: <5249868a014d716eb38cc90e04ed0f6051e65fc3.1361964515.git.viresh.kumar@linaro.org>
+Date: Wed, 27 Feb 2013 17:50:08 +0530
+Message-ID: <CAKohpo=s2z=G=YZc7qm+9RAw7iLtODqbH-=PSzg4Wt-HtHoaCw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] workqueue: define mod_scheduled_delayed_work[_on]() helpers
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, rickard.andersson@stericsson.com,
+        fabio.baltieri@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 12:58 PM, Wim Van Sebroeck <wim@iguana.be> wrote:
-> Hi Sedat,
+On 27 February 2013 16:59, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> The only difference between schedule_delayed_work[_on]() and
+> queue_delayed_work[_on]() is the workqueue, work is scheduled on. We may need to
+> modify the delay for works queued with schedule_delayed_work[_on]() calls and
+> thus adding these helpers.
 >
->> while digging into a Linux-Next issue [0] I wanted to browse the
->> watchdog GitWeb, but it seems not to be available for me!
+> First users of these new helpers is cpufreq governors which need to modify the
+> delay for its works.
 >
-> Correct. I disabled it because the server has not enough memory...
->
+> Cc: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Then please update your website, Thanks!
+btw, this patchset is pushed here:
 
-- Sedat -
-
-> Kind regards,
-> Wim.
->
+http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/cpufreq-fix-gov-wakeups
