@@ -1,177 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756950Ab3B0VxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 16:53:09 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:57775 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab3B0VxH (ORCPT
+	id S1757301Ab3B0Vzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 16:55:52 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:60895 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab3B0Vzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 16:53:07 -0500
-Date: Wed, 27 Feb 2013 16:09:25 -0500
-From: Andrew Shewmaker <agshew@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH v2 2/2] mm: tuning hardcoded reserved memory
-Message-ID: <20130227210925.GB8429@localhost.localdomain>
+	Wed, 27 Feb 2013 16:55:51 -0500
+Date: Wed, 27 Feb 2013 13:55:48 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Daniel Mack <zonque@gmail.com>, Larry Finger <Larry.Finger@lwfinger.net>,
+        jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TTY: disable debugging warning
+Message-ID: <20130227215548.GA28005@kroah.com>
+References: <1362000624-18155-1-git-send-email-jslaby@suse.cz>
+ <20130227214225.GB27224@kroah.com>
+ <512E7F1D.2070401@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <512E7F1D.2070401@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a rootuser_reserve_pages knob to allow admins of large memory 
-systems running with overcommit disabled to change the hardcoded 
-memory reserve to something other than 3%.
+On Wed, Feb 27, 2013 at 10:48:13PM +0100, Jiri Slaby wrote:
+> On 02/27/2013 10:42 PM, Greg KH wrote:
+> > On Wed, Feb 27, 2013 at 10:30:24PM +0100, Jiri Slaby wrote:
+> >> We added a warning to flush_to_ldisc to report cases when it is called
+> >> with a NULL tty. It was for debugging purposes and it lead to a
+> >> patchset from Peter Hurley. The patchset however did not make it to
+> >> 3.9, so disable the warning now to not disturb people.
+> >>
+> >> We can re-add it when the series is in and we are hunting for another
+> >> bugs.
+> >>
+> >> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> >> ---
+> >>  drivers/tty/tty_buffer.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > Thanks, I'll queue this up for 3.9-final, but does it also need to go
+> > into 3.8?
+> 
+> That's a question... In 3.8 it happened too, but very seldomly. Read:
+> only triggerable by trinity fuzz tester after hours of fuzzing. But
+> yeah, let's disable it there too so that people won't complain.
 
-Signed-off-by: Andrew Shewmaker <agshew@gmail.com>
+Ok, I'll queue it up for the stable release then, thanks.
 
----
-
-Patch based off of mmotm git tree as of February 27th.
-
-I set rootuser_reserve pages to be a default of 1000, and I suppose 
-I should have initialzed similarly to the way min_free_kbytes is, 
-scaling it with the size of the box. However, I wanted to get a 
-simple version of this patch out for feedback to see if it has any 
-chance of acceptance or if I need to take an entirely different 
-approach.
-
-Any feedback will be appreciated!
-
- Documentation/sysctl/vm.txt |  9 +++++++++
- include/linux/mm.h          |  2 ++
- kernel/sysctl.c             |  8 ++++++++
- mm/mmap.c                   | 30 +++++++++++++++++++++++-------
- 4 files changed, 42 insertions(+), 7 deletions(-)
-
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 078701f..3a71de9 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -51,6 +51,7 @@ Currently, these files are in /proc/sys/vm:
- - page-cluster
- - panic_on_oom
- - percpu_pagelist_fraction
-+- rootuser_reserve_pages
- - stat_interval
- - swappiness
- - vfs_cache_pressure
-@@ -628,6 +629,14 @@ the high water marks for each per cpu page list.
- 
- ==============================================================
- 
-+rootuser_reserve_pages
-+
-+The number of free pages left in the system that should be reserved for users
-+with the capability cap_sys_admin. The default falue is 3% of total system 
-+memory. Changing this takes effect whenever an application requests memory.
-+
-+==============================================================
-+
- stat_interval
- 
- The time interval between which vm statistics are updated.  The default
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 66e2f7c..af7b39f 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1677,6 +1677,8 @@ int in_gate_area_no_mm(unsigned long addr);
- 
- int drop_caches_sysctl_handler(struct ctl_table *, int,
- 					void __user *, size_t *, loff_t *);
-+int rootuser_reserve_pages_sysctl_handler(struct ctl_table *, int,
-+					void __user *, size_t *, loff_t *);
- unsigned long shrink_slab(struct shrink_control *shrink,
- 			  unsigned long nr_pages_scanned,
- 			  unsigned long lru_pages);
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index c88878d..cd1987e 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -96,6 +96,7 @@
- /* External variables not in a header file. */
- extern int sysctl_overcommit_memory;
- extern int sysctl_overcommit_ratio;
-+extern int sysctl_rootuser_reserve_pages;
- extern int max_threads;
- extern int suid_dumpable;
- #ifdef CONFIG_COREDUMP
-@@ -1413,6 +1414,13 @@ static struct ctl_table vm_table[] = {
- 		.extra2		= &one,
- 	},
- #endif
-+	{
-+		.procname	= "rootuser_reserve_pages",
-+		.data		= &sysctl_rootuser_reserve_pages,
-+		.maxlen		= sizeof(sysctl_rootuser_reserve_pages),
-+		.mode		= 0644,
-+		.proc_handler	= rootuser_reserve_pages_sysctl_handler,
-+	},
- 	{ }
- };
- 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index d1e4124..b58af97 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -32,6 +32,7 @@
- #include <linux/khugepaged.h>
- #include <linux/uprobes.h>
- #include <linux/rbtree_augmented.h>
-+#include <linux/sysctl.h>
- 
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
-@@ -83,6 +84,7 @@ EXPORT_SYMBOL(vm_get_page_prot);
- int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
- int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
- int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
-+int sysctl_rootuser_reserve_pages __read_mostly = 1000;
- /*
-  * Make sure vm_committed_as in one cacheline and not cacheline shared with
-  * other variables. It can be updated by several CPUs frequently.
-@@ -165,7 +167,7 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 		 * Leave the last 3% for root
- 		 */
- 		if (!cap_sys_admin)
--			free -= free / 32;
-+			free -= sysctl_rootuser_reserve_pages;
- 
- 		if (free > pages)
- 			return 0;
-@@ -179,9 +181,9 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 	 * Leave the last 3% for root
- 	 */
- 	if (!cap_sys_admin)
--		allowed -= allowed / 32;
-+		allowed -= sysctl_rootuser_reserve_pages;
- 	allowed += total_swap_pages;
- 
- 	if (percpu_counter_read_positive(&vm_committed_as) < allowed)
- 		return 0;
- error:
-@@ -3052,3 +3049,22 @@ void __init mmap_init(void)
- 	ret = percpu_counter_init(&vm_committed_as, 0);
- 	VM_BUG_ON(ret);
- }
-+
-+/*
-+ * rootuser_reserve_pages_sysctl_handler - just a wrapper around proc_dointvec_minmax() so 
-+ *	that we can cap the number of pages to the current number of free pages.
-+ */
-+int rootuser_reserve_pages_sysctl_handler(ctl_table *table, int write, 
-+	void __user *buffer, size_t *length, loff_t *ppos)
-+{
-+	unsigned long free;
-+
-+	proc_dointvec(table, write, buffer, length, ppos);
-+
-+	if (write) {
-+		free = global_page_state(NR_FREE_PAGES);
-+		if (sysctl_rootuser_reserve_pages > free)
-+			sysctl_rootuser_reserve_pages = free;
-+	}
-+	return 0;
-+}
+greg k-h
