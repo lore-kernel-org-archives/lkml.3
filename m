@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab3B0Wgr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 17:36:47 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:35476 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab3B0Wgq (ORCPT
+	id S1757211Ab3B0WiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 17:38:09 -0500
+Received: from mail-da0-f54.google.com ([209.85.210.54]:63208 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752474Ab3B0WiG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 17:36:46 -0500
+	Wed, 27 Feb 2013 17:38:06 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Wed, 27 Feb 2013 23:36:44 +0100
-Message-ID: <CA+icZUXG7WgRap2-oQGBr_s=QbE0QW6_zChDRqC-eEzrWR3Y5g@mail.gmail.com>
-Subject: Re: [git pull] drm merge for 3.9-rc1
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <alpine.DEB.2.02.1302271417000.7155@chino.kir.corp.google.com>
+References: <1361945258-24420-1-git-send-email-john.stultz@linaro.org>
+	<1361945258-24420-2-git-send-email-john.stultz@linaro.org>
+	<alpine.DEB.2.02.1302271417000.7155@chino.kir.corp.google.com>
+Date: Wed, 27 Feb 2013 14:38:05 -0800
+Message-ID: <CAMP5XgcjdZk5MZ9v+W5phgWgE4Q0Pc_2FfopapjctsV6sdguLQ@mail.gmail.com>
+Subject: Re: [PATCH 1/5] staging: android: lowmemorykiller: Add config option
+ to support oom_adj values
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: David Rientjes <rientjes@google.com>
+Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Feb 27, 2013 at 2:18 PM, David Rientjes <rientjes@google.com> wrote:
+> On Tue, 26 Feb 2013, John Stultz wrote:
+>
+>> From: Arve Hjønnevåg <arve@android.com>
+>>
+>> The conversion to use oom_score_adj instead of the deprecated oom_adj
+>> values breaks existing user-space code. Add a config option to convert
+>> oom_adj values written to oom_score_adj values if they appear to be
+>> valid oom_adj values.
+>>
+>
+> Umm, writes to /proc/pid/oom_adj already are converted to the
+> /proc/pid/oom_score_adj scale linearly.  Heavy NACK to this patch since
+> oom_adj is completely deprecated.
 
-I am seeing this also on Linux-Next.
+I know it is deprecated, but your change, staging: android,
+lowmemorykiller: convert to use oom_score_adj, broke existing
+user-space code that still write to /proc/pid/oom_adj. This option
+lets you build a kernel that supports our user-space code until that
+user-space has been converted to use /proc/pid/oom_score_adj.
 
-/var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.202381]
-[drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
-(has irq: 1)!
-/var/log/kern.log:Feb 27 22:52:35 fambox kernel: [   28.210588]
-[drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
-(has irq: 1)!
-
-/var/log/kern.log.1:Feb 22 07:36:04 fambox kernel: [   27.408280]
-[drm:intel_dp_aux_wait_done] *ERROR* dp aux hw did not signal timeout
-(has irq: 1)!
-
-This seems to be hard reproducible...
-Laptop-LCD... Sandybridge Mobile-GT2.
-
-Is there a way to force the error?
-
-Possible patch see [1].
-
-- Sedat -
-
-[1] https://patchwork.kernel.org/patch/2192721/
+-- 
+Arve Hjønnevåg
