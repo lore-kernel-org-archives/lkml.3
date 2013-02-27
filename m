@@ -1,161 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758638Ab3B0XZG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 18:25:06 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30886 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab3B0XZE convert rfc822-to-8bit (ORCPT
+	id S1758532Ab3B0X1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 18:27:32 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:37459 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033Ab3B0X1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 18:25:04 -0500
+	Wed, 27 Feb 2013 18:27:31 -0500
 MIME-Version: 1.0
-Message-ID: <0efe9610-1aa5-4aa9-bde9-227acfa969ca@default>
-Date: Wed, 27 Feb 2013 15:24:07 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: minchan@kernel.org, sjenning@linux.vnet.ibm.com,
-        Nitin Gupta <nitingupta910@gmail.com>
-Cc: Konrad Wilk <konrad.wilk@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Bob Liu <lliubbo@gmail.com>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>
-Subject: zsmalloc limitations and related topics
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <CAAMvbhFTNmUS-usRZKBEqp_YrpxDhckj9tdTtC+m_5EnO+UECw@mail.gmail.com>
+References: <CAPM=9txjG5rohsNbme=myrX+-Z5eucpEXYQMWqPQqN=5dNze8g@mail.gmail.com>
+	<CAPM=9tw_vfESbbH4dD9z8mAYVYcwmVs=n4BrRz4XBj1Rw1qrkw@mail.gmail.com>
+	<20130225223243.GA18744@kroah.com>
+	<20130226034545.GA1089@kroah.com>
+	<20130226173514.GA24136@kroah.com>
+	<CAAMvbhFTNmUS-usRZKBEqp_YrpxDhckj9tdTtC+m_5EnO+UECw@mail.gmail.com>
+Date: Wed, 27 Feb 2013 23:27:30 +0000
+Message-ID: <CAAMvbhEAcLuE+5KGP13wCc8nVBp1Eq-UPtaUD7c5oGVq8io8Lw@mail.gmail.com>
+Subject: Re: resume fails to light display on Macbook Pro Retina on 3.8-rc1
+From: James Courtier-Dutton <james.dutton@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Dave Airlie <airlied@gmail.com>, Ben Skeggs <bskeggs@redhat.com>,
+        David Airlie <airlied@linux.ie>, Martin Peres <martin.peres@labri.fr>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all --
+On 26 February 2013 18:11, James Courtier-Dutton <james.dutton@gmail.com> wrote:
+> On 26 February 2013 17:35, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> On Mon, Feb 25, 2013 at 07:45:45PM -0800, Greg KH wrote:
+>>> On Mon, Feb 25, 2013 at 02:32:43PM -0800, Greg KH wrote:
+>>> > On Mon, Feb 25, 2013 at 04:06:02PM +1000, Dave Airlie wrote:
+>>> > > On Mon, Feb 25, 2013 at 3:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>>> > > > Hi Ben,
+>>> > > >
+>>> > > > My Macbook Pro Retina fails to resume properly on 3.8.  I tracked this
+>>> > > > down to commit 6c5a04249d7afeea3e0ed971e7813f84e29a1706 (drm/nvd0/disp:
+>>> > > > move link training helpers into core as display methods)
+>>> > > >
+>>> > > > Anything I can try to help solve this?
+>>> > > >
+>>> > > > Note, I'm using the Intel driver as the main controller for this laptop,
+>>> > > > well, I think I am, my xorg log is attached.
+>>> > >
+>>> > > No you are using the nvidia, the efi always boots nvidia enabled now.
+>>> >
+>>> > Really?  When did that change?  I thought I wanted to be using the Intel
+>>> > chip to save battery life.
+>>> >
+>>> > > btw I just tested my drm-next tree on mine and it resumed the display
+>>> > > fine, something oopsed a few seconds later that I haven't tracked down
+>>> > >
+>>> > > git://git.freedesktop.org/~airlied/linux drm-next
+>>> > >
+>>> > > I'll be sending it to Linus this evening or tomorrow morning, once I
+>>> > > fix my tree.
+>>> >
+>>> > Ok, I'll test again when it hits Linus's tree, and if that works, it
+>>> > would be good to try to work out what patch fixes it to get them into
+>>> > the 3.8-stable series so that others don't run into the same problem.
+>>>
+>>> I've tested Linus's tree now (I'm guessing it has all of your changes in
+>>> it), and it works!
+>>>
+>>> I see a bunch of patches marked for the stable branch, so I'll try those
+>>> out and see if they fix the problem.  If not, I'll let you and Ben know.
+>>
+>> I've applied the radeon patches tagged for -stable and tested that on
+>> 3.8.0, but that doesn't solve the resume problem.  Any ideas of anything
+>> else I can do to test this?  Doing a "backwards" git-bisect is a pain,
+>> but I guess I can do that to try to track down what patch fixed this, if
+>> that's the only idea people have...
+>>
+>
+> If it helps, I have a similar resume problem here.
+> 3.7.8 good
+> 3.8.0 bad
+>
+> Laptop with no nvidia, no amd graphics, just Intel Graphics 4000, 3rd
+> Gen I5 CPU.
 
-I've been doing some experimentation on zsmalloc in preparation
-for my topic proposed for LSFMM13 and have run across some
-perplexing limitations.  Those familiar with the intimate details
-of zsmalloc might be well aware of these limitations, but they
-aren't documented or immediately obvious, so I thought it would
-be worthwhile to air them publicly.  I've also included some
-measurements from the experimentation and some related thoughts.
+Problem: "Backlight not coming on after resume."
+git finally bisected  for my Samsung Serial 7 Laptop.
+Bisecting: 0 revisions left to test after this (roughly 0 steps)
+[cf0a6584aa6d382f802f2c3cacac23ccbccde0cd] drm/i915: write backlight
+harder     <- This is the problem commit. Seems that fixing some
+machines breaks others, based on the existing comments on that patch.
 
-(Some of the terms here are unusual and may be used inconsistently
-by different developers so a glossary of definitions of the terms
-used here is appended.)
-
-ZSMALLOC LIMITATIONS
-
-Zsmalloc is used for two zprojects: zram and the out-of-tree
-zswap.  Zsmalloc can achieve high density when "full".  But:
-
-1) Zsmalloc has a worst-case density of 0.25 (one zpage per
-   four pageframes).
-2) When not full and especially when nearly-empty _after_
-   being full, density may fall below 1.0 as a result of
-   fragmentation.
-3) Zsmalloc has a density of exactly 1.0 for any number of
-   zpages with zsize >= 0.8.
-4) Zsmalloc contains several compile-time parameters;
-   the best value of these parameters may be very workload
-   dependent.
-
-If density == 1.0, that means we are paying the overhead of
-compression+decompression for no space advantage.  If
-density < 1.0, that means using zsmalloc is detrimental,
-resulting in worse memory pressure than if it were not used.
-
-WORKLOAD ANALYSIS
-
-These limitations emphasize that the workload used to evaluate
-zsmalloc is very important.  Benchmarks that measure data
-throughput or CPU utilization are of questionable value because
-it is the _content_ of the data that is particularly relevant
-for compression.  Even more precisely, it is the "entropy"
-of the data that is relevant, because the amount of
-compressibility in the data is related to the entropy:
-I.e. an entirely random pagefull of bits will compress poorly
-and a highly-regular pagefull of bits will compress well.
-Since the zprojects manage a large number of zpages, both
-the mean and distribution of zsize of the workload should
-be "representative".
-
-The workload most widely used to publish results for
-the various zprojects is a kernel-compile using "make -jN"
-where N is artificially increased to impose memory pressure.
-By adding some debug code to zswap, I was able to analyze
-this workload and found the following:
-
-1) The average page compressed by almost a factor of six
-   (mean zsize == 694, stddev == 474)
-2) Almost eleven percent of the pages were zero pages.  A
-   zero page compresses to 28 bytes.
-3) On average, 77% of the bytes (3156) in the pages-to-be-
-   compressed contained a byte-value of zero.
-4) Despite the above, mean density of zsmalloc was measured at
-   3.2 zpages/pageframe, presumably losing nearly half of
-   available space to fragmentation.
-
-I have no clue if these measurements are representative
-of a wide range of workloads over the lifetime of a booted
-machine, but I am suspicious that they are not.  For example,
-the lzo1x compression algorithm claims to compress data by
-about a factor of two.
-
-I would welcome ideas on how to evaluate workloads for
-"representativeness".  Personally I don't believe we should
-be making decisions about selecting the "best" algorithms
-or merging code without an agreement on workloads.
-
-PAGEFRAME EVACUATION AND RECLAIM
-
-I've repeatedly stated the opinion that managing the number of
-pageframes containing compressed pages will be valuable for
-managing MM interaction/policy when compression is used in
-the kernel.  After the experimentation above and some brainstorming,
-I still do not see an effective method for zsmalloc evacuating and
-reclaiming pageframes, because both are complicated by high density
-and page-crossing.  In other words, zsmalloc's strengths may
-also be its Achilles heels.  For zram, as far as I can see,
-pageframe evacuation/reclaim is irrelevant except perhaps
-as part of mass defragmentation.  For zcache and zswap, where
-writethrough is used, pageframe evacuation/reclaim is very relevant.
-(Note: The writeback implemented in zswap does _zpage_ evacuation
-without pageframe reclaim.)
-
-CLOSING THOUGHT
-
-Since zsmalloc and zbud have different strengths and weaknesses,
-I wonder if some combination or hybrid might be more optimal?
-But unless/until we have and can measure a representative workload,
-only intuition can answer that.
-
-GLOSSARY
-
-zproject -- a kernel project using compression (zram, zcache, zswap)
-zpage -- a compressed sequence of PAGE_SIZE bytes
-zsize -- the number of bytes in a compressed page
-pageframe -- the term "page" is widely used both to describe
-    either (1) PAGE_SIZE bytes of data, or (2) a physical RAM
-    area with size=PAGE_SIZE which is PAGE_SIZE-aligned,
-    as represented in the kernel by a struct page.  To be explicit,
-    we refer to (2) as a pageframe.
-density -- zpages per pageframe; higher is (presumably) better
-zsmalloc -- a slab-based allocator written by Nitin Gupta to
-     efficiently store zpages and designed to allow zpages
-     to be split across two non-contiguous pageframes
-zspage -- a grouping of N non-contiguous pageframes managed
-     as a unit by zsmalloc to store zpages for which zsize
-     falls within a certain range.  (The compile-time
-     default maximum size for N is 4).
-zbud -- a buddy-based allocator written by Dan Magenheimer
-     (specifically for zcache) to predictably store zpages;
-     no more than two zpages are stored in any pageframe
-pageframe evacuation/reclaim -- the process of removing
-     zpages from one or more pageframes, including pointers/nodes
-     from any data structures referencing those zpages,
-     so that the pageframe(s) can be freed for use by
-     the rest of the kernel
-writeback --  the process of transferring zpages from
-     storage in a zproject to a backing swap device
-lzo1x -- a compression algorithm used by default by all the
-     zprojects; the kernel implementation resides in lib/lzo.c
-entropy -- randomness of data to be compressed; higher entropy
-     means worse data compression
+git bisect log
+git bisect start
+# bad: [09884964335e85e897876d17783c2ad33cf8a2e0] mm: do not grow the
+stack vma just because of an overrun on preceding vma
+git bisect bad 09884964335e85e897876d17783c2ad33cf8a2e0
+# good: [6c5096e5538b455bc3bea2b02588c380f070d8c6] Merge tag 'boards'
+of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
+git bisect good 6c5096e5538b455bc3bea2b02588c380f070d8c6
+# good: [21fbd5809ad126b949206d78e0a0e07ec872ea11] Merge branch
+'v4l_for_linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media
+git bisect good 21fbd5809ad126b949206d78e0a0e07ec872ea11
+# bad: [fffddfd6c8e0c10c42c6e2cc54ba880fcc36ebbb] Merge branch
+'drm-next' of git://people.freedesktop.org/~airlied/linux
+git bisect bad fffddfd6c8e0c10c42c6e2cc54ba880fcc36ebbb
+# bad: [b81e059ec5a7128622ab5d74d78e9b4f361b54ae] Merge branch
+'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel
+into drm-next
+git bisect bad b81e059ec5a7128622ab5d74d78e9b4f361b54ae
+# good: [d6dd9eb1d96d2b7345fe4664066c2b7ed86da898] drm/i915: dynamic
+Haswell display power well support
+git bisect good d6dd9eb1d96d2b7345fe4664066c2b7ed86da898
+# good: [73ccd6962fff19e53a7d4baaa17cf9311284ac9c] Merge branch
+'drm-next-3.9' of git://people.freedesktop.org/~agd5f/linux into
+drm-next
+git bisect good 73ccd6962fff19e53a7d4baaa17cf9311284ac9c
+# good: [a4462f246c8821f625f45bce52c7ca7e0207dffe] staging/omapdrm:
+Use kmemdup rather than duplicating its implementation
+git bisect good a4462f246c8821f625f45bce52c7ca7e0207dffe
+# bad: [d84f031bd230fdf9c3b7734940c859bf28b90219] drm: Use C8 instead
+of RGB332 when determining the format from depth/bpp
+git bisect bad d84f031bd230fdf9c3b7734940c859bf28b90219
+# bad: [f73f760725636b9d0c3786273e185b053516d1eb] drm/i915/ctx: Remove
+bad invariant
+git bisect bad f73f760725636b9d0c3786273e185b053516d1eb
+# bad: [26739f12cf210cb8df35969258a1f064e8e12b63] drm/i915: unify
+HDMI/DP hpd definitions
+git bisect bad 26739f12cf210cb8df35969258a1f064e8e12b63
+# good: [b8efb17b3d687695b81485f606fc4e6c35a50f9a] i915: ignore lid
+open event when resuming
+git bisect good b8efb17b3d687695b81485f606fc4e6c35a50f9a
+# bad: [07ea0d85ac8adb87b817913d9720e3c76171b1f6] drm/i915: Clarify HW
+context size logic
+git bisect bad 07ea0d85ac8adb87b817913d9720e3c76171b1f6
