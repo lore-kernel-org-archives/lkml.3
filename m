@@ -1,94 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933998Ab3B0Aso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:48:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42203 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932940Ab3BZX6X (ORCPT
+	id S934022Ab3B0Asz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:48:55 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:62554 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932940Ab3B0Asy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 18:58:23 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yuchung Cheng <ycheng@google.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 132/150] tcp: fix SYN-data space mis-accounting
-Date: Tue, 26 Feb 2013 15:56:29 -0800
-Message-Id: <20130226235537.920210317@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235523.930663721@linuxfoundation.org>
-References: <20130226235523.930663721@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 26 Feb 2013 19:48:54 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>
+CC: <grant.likely@secretlab.ca>, <nicolas.ferre@atmel.com>,
+        <plagnioj@jcrosoft.com>, <richard.genoud@gmail.com>,
+        <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH Resend v5 11/16] spi/spi-atmel: correct 16 bits transfers with DMA
+Date: Wed, 27 Feb 2013 08:46:23 +0800
+Message-ID: <1361925983-12481-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+References: <1361925297-11854-1-git-send-email-wenyou.yang@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+From: Richard Genoud <richard.genoud@gmail.com>
 
-------------------
-
-
-From: Yuchung Cheng <ycheng@google.com>
-
-[ Upstream commit 1b63edd6ecc55c3a61b40297b49e2323783bddfd ]
-
-In fast open the sender unncessarily reduces the space available
-for data in SYN by 12 bytes.  This is because in the sender
-incorrectly reserves space for TS option twice in tcp_send_syn_data():
-tcp_mtu_to_mss() already accounts for TS option space. But it further
-reserves MAX_TCP_OPTION_SPACE when computing the payload space.
-
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Cc: spi-devel-general@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
+[wenyou.yang@atmel.com: submit the patch]
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 ---
- net/ipv4/tcp_output.c |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ drivers/spi/spi-atmel.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1351,8 +1351,8 @@ int tcp_trim_head(struct sock *sk, struc
- 	return 0;
+diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+index 786a84b..00ca85f 100644
+--- a/drivers/spi/spi-atmel.c
++++ b/drivers/spi/spi-atmel.c
+@@ -389,12 +389,18 @@ static inline int atmel_spi_xfer_can_be_chained(struct spi_transfer *xfer)
  }
  
--/* Calculate MSS. Not accounting for SACKs here.  */
--int tcp_mtu_to_mss(struct sock *sk, int pmtu)
-+/* Calculate MSS not accounting any TCP options.  */
-+static inline int __tcp_mtu_to_mss(struct sock *sk, int pmtu)
+ static int atmel_spi_dma_slave_config(struct atmel_spi *as,
+-				struct dma_slave_config *slave_config)
++				struct dma_slave_config *slave_config,
++				u8 bits_per_word)
  {
- 	const struct tcp_sock *tp = tcp_sk(sk);
- 	const struct inet_connection_sock *icsk = inet_csk(sk);
-@@ -1381,13 +1381,17 @@ int tcp_mtu_to_mss(struct sock *sk, int
- 	/* Then reserve room for full set of TCP options and 8 bytes of data */
- 	if (mss_now < 48)
- 		mss_now = 48;
--
--	/* Now subtract TCP options size, not including SACKs */
--	mss_now -= tp->tcp_header_len - sizeof(struct tcphdr);
--
- 	return mss_now;
- }
+ 	int err = 0;
  
-+/* Calculate MSS. Not accounting for SACKs here.  */
-+int tcp_mtu_to_mss(struct sock *sk, int pmtu)
-+{
-+	/* Subtract TCP options size, not including SACKs */
-+	return __tcp_mtu_to_mss(sk, pmtu) -
-+	       (tcp_sk(sk)->tcp_header_len - sizeof(struct tcphdr));
-+}
-+
- /* Inverse of above */
- int tcp_mss_to_mtu(struct sock *sk, int mss)
- {
-@@ -2930,7 +2934,7 @@ static int tcp_send_syn_data(struct sock
- 	 */
- 	if (tp->rx_opt.user_mss && tp->rx_opt.user_mss < tp->rx_opt.mss_clamp)
- 		tp->rx_opt.mss_clamp = tp->rx_opt.user_mss;
--	space = tcp_mtu_to_mss(sk, inet_csk(sk)->icsk_pmtu_cookie) -
-+	space = __tcp_mtu_to_mss(sk, inet_csk(sk)->icsk_pmtu_cookie) -
- 		MAX_TCP_OPTION_SPACE;
+-	slave_config->dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+-	slave_config->src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
++	if (bits_per_word > 8) {
++		slave_config->dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
++		slave_config->src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
++	} else {
++		slave_config->dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
++		slave_config->src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
++	}
  
- 	syn_data = skb_copy_expand(syn, skb_headroom(syn), space,
-
+ 	slave_config->dst_addr = (dma_addr_t)as->phybase + SPI_TDR;
+ 	slave_config->src_addr = (dma_addr_t)as->phybase + SPI_RDR;
+@@ -455,7 +461,7 @@ static int atmel_spi_configure_dma(struct atmel_spi *as)
+ 		goto error;
+ 	}
+ 
+-	err = atmel_spi_dma_slave_config(as, &slave_config);
++	err = atmel_spi_dma_slave_config(as, &slave_config, 8);
+ 	if (err)
+ 		goto error;
+ 
+@@ -589,10 +595,9 @@ static int atmel_spi_next_xfer_dma_submit(struct spi_master *master,
+ 
+ 	*plen = len;
+ 
+-	if (atmel_spi_dma_slave_config(as, &slave_config))
++	if (atmel_spi_dma_slave_config(as, &slave_config, 8))
+ 		goto err_exit;
+ 
+-
+ 	/* Send both scatterlists */
+ 	rxdesc = rxchan->device->device_prep_slave_sg(rxchan,
+ 					&as->dma.sgrx,
+-- 
+1.7.9.5
 
