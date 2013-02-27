@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab3B0GDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 01:03:35 -0500
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:60798 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab3B0GDd (ORCPT
+	id S1752091Ab3B0GH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 01:07:26 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:40702 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715Ab3B0GHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 01:03:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAA9_cmfa1hhijh4g_hSwMy_GR81rxjEFMurJwSvhBruh1R5dtw@mail.gmail.com>
-References: <20130223074001.GA5199@www.outflux.net>
-	<CAA9_cmfa1hhijh4g_hSwMy_GR81rxjEFMurJwSvhBruh1R5dtw@mail.gmail.com>
-Date: Tue, 26 Feb 2013 22:03:32 -0800
-X-Google-Sender-Auth: cjr7jwcDU22DhNP4Bie5ZCUywdk
-Message-ID: <CAGXu5jL06MLHYtPdBXG7McS=xM7E3yjXVOy0hegQSa6BbZvi9A@mail.gmail.com>
-Subject: Re: [PATCH] md/raid456: remove depends on CONFIG_EXPERIMENTAL
-From: Kees Cook <keescook@chromium.org>
-To: Dan Williams <djbw@fb.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-        linux-raid@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Alasdair G Kergon <agk@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Feb 2013 01:07:25 -0500
+From: Andrey Smirnov <andrew.smirnov@gmail.com>
+To: mchehab@redhat.com
+Cc: andrew.smirnov@gmail.com, hverkuil@xs4all.nl, sameo@linux.intel.com,
+        sam@ravnborg.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v7 0/9] Driver for Si476x series of chips
+Date: Tue, 26 Feb 2013 22:06:44 -0800
+Message-Id: <1361945213-4280-1-git-send-email-andrew.smirnov@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 26, 2013 at 5:27 PM, Dan Williams <djbw@fb.com> wrote:
-> On Fri, Feb 22, 2013 at 11:40 PM, Kees Cook <keescook@chromium.org> wrote:
->> The CONFIG_EXPERIMENTAL config item has not carried much meaning for a
->> while now and is almost always enabled by default. As agreed during the
->> Linux kernel summit, remove it from any "depends on" lines in Kconfigs.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> Cc: Arjan van de Ven <arjan@linux.intel.com>
->> Cc: Dan Williams <dan.j.williams@intel.com>
->> Cc: Alasdair G Kergon <agk@redhat.com>
->> ---
->>  drivers/md/Kconfig |    1 -
->>  1 file changed, 1 deletion(-)
->>
->> diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
->> index 7cdf359..0cc3a3d 100644
->> --- a/drivers/md/Kconfig
->> +++ b/drivers/md/Kconfig
->> @@ -158,7 +158,6 @@ config MULTICORE_RAID456
->>         bool "RAID-4/RAID-5/RAID-6 Multicore processing (EXPERIMENTAL)"
->>         depends on MD_RAID456
->>         depends on SMP
->> -       depends on EXPERIMENTAL
->
-> In this case MULTICORE_RAID456 and the related code should go as
-> well... now that there are patches to supersede this implementation in
-> md-next.
+This is a fourth version of the patchset originaly posted here:
+https://lkml.org/lkml/2012/9/13/590
 
-Hrm, well as long as EXPERIMENTAL goes away, I'm happy. :) I sent this
-most recent patch series based on what was living in linux-next, so if
-that's changing, that's fine.
+Second version of the patch was posted here:
+https://lkml.org/lkml/2012/10/5/598
 
--Kees
+Third version of the patch was posted here:
+https://lkml.org/lkml/2012/10/23/510
+
+Fourth version of the patch was posted here:
+https://lkml.org/lkml/2013/2/18/572
+
+Fifth version of the patch was posted here:
+https://lkml.org/lkml/2013/2/26/45
+
+Sixth version of the patch was posted here;
+https://lkml.org/lkml/2013/2/26/257
+
+To save everyone's time I'll repost the original description of it:
+
+This patchset contains a driver for a Silicon Laboratories 476x series
+of radio tuners. The driver itself is implemented as an MFD devices
+comprised of three parts: 
+ 1. Core device that provides all the other devices with basic
+functionality and locking scheme.
+ 2. Radio device that translates between V4L2 subsystem requests into
+Core device commands.
+ 3. Codec device that does similar to the earlier described task, but
+for ALSA SoC subsystem.
+
+v7 of this driver has following changes:
+   - Minor Makefile/Kconfig changes 
+   - MFD driver commit reordering
+
+as per suggestions from Sam Ravnborg
+
+Andrey Smirnov (9):
+  mfd: Add commands abstraction layer for SI476X MFD
+  mfd: Add the main bulk of core driver for SI476x code
+  mfd: Add chip properties handling code for SI476X MFD
+  mfd: Add header files and Kbuild plumbing for SI476x MFD core
+  v4l2: Fix the type of V4L2_CID_TUNE_PREEMPHASIS in the documentation
+  v4l2: Add standard controls for FM receivers
+  v4l2: Add documentation for the FM RX controls
+  v4l2: Add private controls base for SI476X
+  v4l2: Add a V4L2 driver for SI476X MFD
+
+ Documentation/DocBook/media/v4l/compat.xml         |    3 +
+ Documentation/DocBook/media/v4l/controls.xml       |   74 +-
+ .../DocBook/media/v4l/vidioc-g-ext-ctrls.xml       |    9 +
+ Documentation/video4linux/si476x.txt               |  187 +++
+ drivers/media/radio/Kconfig                        |   17 +
+ drivers/media/radio/Makefile                       |    1 +
+ drivers/media/radio/radio-si476x.c                 | 1574 ++++++++++++++++++++
+ drivers/media/v4l2-core/v4l2-ctrls.c               |   14 +-
+ drivers/mfd/Kconfig                                |   12 +
+ drivers/mfd/Makefile                               |    4 +
+ drivers/mfd/si476x-cmd.c                           | 1553 +++++++++++++++++++
+ drivers/mfd/si476x-i2c.c                           |  878 +++++++++++
+ drivers/mfd/si476x-prop.c                          |  234 +++
+ include/linux/mfd/si476x-core.h                    |  525 +++++++
+ include/media/si476x.h                             |  426 ++++++
+ include/uapi/linux/v4l2-controls.h                 |   17 +
+ 16 files changed, 5524 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/video4linux/si476x.txt
+ create mode 100644 drivers/media/radio/radio-si476x.c
+ create mode 100644 drivers/mfd/si476x-cmd.c
+ create mode 100644 drivers/mfd/si476x-i2c.c
+ create mode 100644 drivers/mfd/si476x-prop.c
+ create mode 100644 include/linux/mfd/si476x-core.h
+ create mode 100644 include/media/si476x.h
 
 -- 
-Kees Cook
-Chrome OS Security
+1.7.10.4
+
