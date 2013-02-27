@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933564Ab3B0AJO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:09:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42837 "EHLO
+	id S1757589Ab3B0ARz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:17:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42867 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760371Ab3B0AJJ (ORCPT
+	with ESMTP id S933555Ab3B0AJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:09 -0500
+	Tue, 26 Feb 2013 19:09:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 48/86] drm: Fill depth/bits_per_pixel for C8 format
-Date: Tue, 26 Feb 2013 16:07:56 -0800
-Message-Id: <20130226235917.895841907@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 55/86] staging: comedi: disallow COMEDI_DEVCONFIG on non-board minors
+Date: Tue, 26 Feb 2013 16:08:03 -0800
+Message-Id: <20130226235918.629572558@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,30 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ville Syrjälä <ville.syrjala@linux.intel.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit c51a6bc5f6d328926a9a4a1247c5030faf190a80 upstream.
+commit 754ab5c0e55dd118273ca2c217c4d95e9fbc8259 upstream.
 
-Set depth/bits_per_pixel to 8 for C8 format.
+Comedi has two sorts of minor devices:
+(a) normal board minor devices in the range 0 to
+COMEDI_NUM_BOARD_MINORS-1 inclusive; and
+(b) special subdevice minor devices in the range COMEDI_NUM_BOARD_MINORS
+upwards that are used to open the same underlying comedi device as the
+normal board minor devices, but with non-default read and write
+subdevices for asynchronous commands.
 
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Acked-by: Dave Airlie <airlied@gmail.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+The special subdevice minor devices get created when a board supporting
+asynchronous commands is attached to a normal board minor device, and
+destroyed when the board is detached from the normal board minor device.
+One way to attach or detach a board is by using the COMEDI_DEVCONFIG
+ioctl.  This should only be used on normal board minors as the special
+subdevice minors are too ephemeral.  In particular, the change
+introduced in commit 7d3135af399e92cf4c9bbc5f86b6c140aab3b88c ("staging:
+comedi: prevent auto-unconfig of manually configured devices") breaks
+horribly for special subdevice minor devices.
+
+Since there's no legitimate use for the COMEDI_DEVCONFIG ioctl on a
+special subdevice minor device node, disallow it and return -ENOTTY.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_crtc.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/comedi/comedi_fops.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -3409,6 +3409,7 @@ void drm_fb_get_bpp_depth(uint32_t forma
- 			  int *bpp)
- {
- 	switch (format) {
-+	case DRM_FORMAT_C8:
- 	case DRM_FORMAT_RGB332:
- 	case DRM_FORMAT_BGR233:
- 		*depth = 8;
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -136,6 +136,11 @@ static long comedi_unlocked_ioctl(struct
+ 	/* Device config is special, because it must work on
+ 	 * an unconfigured device. */
+ 	if (cmd == COMEDI_DEVCONFIG) {
++		if (minor >= COMEDI_NUM_BOARD_MINORS) {
++			/* Device config not appropriate on non-board minors. */
++			rc = -ENOTTY;
++			goto done;
++		}
+ 		rc = do_devconfig_ioctl(dev,
+ 					(struct comedi_devconfig __user *)arg);
+ 		if (rc == 0)
 
 
