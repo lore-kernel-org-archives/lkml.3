@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab3B0U7E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 15:59:04 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:65010 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955Ab3B0U7C (ORCPT
+	id S1753956Ab3B0VLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 16:11:35 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:50346 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab3B0VLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 15:59:02 -0500
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Dave Jones <davej@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
-        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
-        "linux-ext4\@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-In-Reply-To: <20130227192907.GB14253@thunk.org>
-References: <20130227154450.GA23402@x4> <20130227170157.GA222@x4> <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com> <20130227172256.GA236@x4> <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com> <20130227174553.GA224@x4> <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com> <20130227184912.GA19624@thunk.org> <20130227185625.GA224@x4> <20130227191923.GA1121@redhat.com> <20130227192907.GB14253@thunk.org>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Thu, 28 Feb 2013 00:58:55 +0400
-Message-ID: <87k3pteank.fsf@openvz.org>
+	Wed, 27 Feb 2013 16:11:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CAFDW0jJ2yHftRW5Kp8sc+uxNC3oS4AZKqG0Szz2rUyxeeA0+2Q@mail.gmail.com>
+References: <20130227052247.GA20213@redhat.com>
+	<20130227132736.GH19641@localhost.localdomain>
+	<CAFDW0jK6zigx0YgVMHomUkRQkqpw5mUgkdeynv36LUiQn4XTxg@mail.gmail.com>
+	<20130227182617.GI19641@localhost.localdomain>
+	<CAFDW0jJ2yHftRW5Kp8sc+uxNC3oS4AZKqG0Szz2rUyxeeA0+2Q@mail.gmail.com>
+Date: Wed, 27 Feb 2013 16:11:32 -0500
+Message-ID: <CAEzrpqeQTVwSYd_0NpjnfMJKiLPeL-tC2tGPAh6ov2ViBndXUg@mail.gmail.com>
+Subject: Re: btrfs crash when low on memory.
+From: Josef Bacik <josef@toxicpanda.com>
+To: Ahmet Inan <ainan@mathematik.uni-freiburg.de>
+Cc: Josef Bacik <jbacik@fusionio.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Feb 2013 14:29:07 -0500, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Wed, Feb 27, 2013 at 02:19:23PM -0500, Dave Jones wrote:
-> > 
-> > Looks like it's fixed here too.
-> > 
-> > How did this make it through -next without anyone hitting it ?
-> > 
-> > I can't remember how many years ago I last bought a disk < 1TB,
-> > and I can't be alone.  Or is everyone all about SSDs these days?
-> 
-> I use LVM, so I have a number of volues which are smaler than 512GB,
-> but very few which are actually larger than 1TB.  And none on my test
-> boxes.  I was running the bleeding edge ext4 code on my laptop as for
-> dogfooding purposes, but I have an 80GB mSATA SSD and a 500GB HDD on
-> my X230 laptop (it requires a thin laptop drive, and 7mm drives don't
-> come any bigger, alas).
-> 
-> > Is anyone running xfstests or similar on linux-next regularly ?
-> 
-> I run xfstests on the ext4 tree, and I ran it on ext4 plus Linus's tip
-> before I submitted a pull request.  The problem is that XFSTESTS is
-> S-L-O-W if you use large partitions, so typically I use a 5GB
-Indeed. That's why i give-up rotated disks and run xfstest only on SSD
-or brd module 
-> partition sizes for my test runs.  Normally we're worried about race
-> condition bugs, not something as bone-headed as a bitmasking problem,
-> so it makes sense to use a smaller disk for most of your testing.
-> (Some folks do their xfstests run on SSD's or tmpfs image files, again
-> for speed reasons, and it's unlikely they would be big enough.)
-> 
-> So what we probably need to do is to have a separate set of tests
-> using a loopback mount, and perhaps an artificially created file
-> system which has a large percentage of the blocks in the middle of the
-> file system busied out, to make efficient testing of these sorts of
-> bugs more efficient.  As I said, I'm thinking about how's the best way
-> to improve our testing regime to catch such problems the next time around.
-Amazing idea. Something like:
+On Wed, Feb 27, 2013 at 3:10 PM, Ahmet Inan
+<ainan@mathematik.uni-freiburg.de> wrote:
+> On Wed, Feb 27, 2013 at 7:26 PM, Josef Bacik <jbacik@fusionio.com> wrote:
+>> On Wed, Feb 27, 2013 at 07:31:11AM -0700, Ahmet Inan wrote:
+>>> > Yeah we have a lot of
+>>> >
+>>> > ptr = kmalloc();
+>>> > BUG_ON(ptr);
+>>> >
+>>> > everywhere.  I'll fix this one up but I really need to sit down and go through
+>>> > all of them and make sure we do the right thing in all these places.  Thanks,
+>>>
+>>> But what would be the right thing to do when you got no memory?
+>>> Spinlock until you can kmalloc? Pre-reserve some memory?
+>>>
+>>
+>> Return ENOMEM?  We have a way to abort transactions now, if it's in a horrible
+>> of enough spot we can just abort the transaction and let the user deal with the
+>> aftermath, it's nicer than panicing.  Thanks,
+>
+> youre right. i am only afraid of silent corruption of data on aborts:
+> our guys here trigger OOM all the time with their compilers and
+> numerical codes (go figure).
+> and until now we had no more aborts / panics because of
+> "vm.min_free_kbytes = 65536" and thus no corruption.
+>
+> my point is:
+> i like a freezing computer more than an corrupting computer, even if
+> its a server. reboot to the rescue.
+>
 
-#dd if=/dev/zero of=/tmp/fs.img bs=1M seek=2000000 count=1
-#mkfs.ext4 -m0 -i4096000 /tmp/fs.img
-#mount /tmp/fs.img /mnt/ -oloop
-#for ((i=0; i < 2000; i++));do   fallocate -l $((1024*1024*1024)) /mnt/f$i ;done
-#for ((i=0; i < 2000; i++));do   truncate -s $((1023*1024*1024)) /mnt/f$i ;done
+If we're corrupting on abort that is a bug too that needs to be fixed
+too.  I've banged on the abort stuff a lot recently when trying to
+make it not panic the box and it appears to work fine.  Obviously that
+kind of stuff needs to be tested as well, but so far I haven't seen
+abort corrupt the file system.  Thanks,
 
-As result file system image has 2gb of free space wich is fragmented to ~2000
-chunks 1Mb each. But image itself is quite small
-# df /mnt
-Filesystem      1K-blocks       Used Available Use% Mounted on
-/dev/loop0     2047678076 2045679228   1998848 100% /mnt
-# du -sch /tmp/fs.img 
-242M     /tmp/fs.img
-242M     total
-
-Later we can simply run xfstest/fio/fsx on this image.
-I'll prepare new xfstest based on that idea. But the only disadvantage
-is that loop dev has bottleneck, all requests will be serialized on i_mutex.
-> 
-> Cheers,
-> 
->    	       	       	      	       	    - Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Josef
