@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760483Ab3B0AJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:09:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42965 "EHLO
+	id S933997Ab3B0AKO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:10:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43010 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760053Ab3B0AJa (ORCPT
+	with ESMTP id S1759744Ab3B0AJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:30 -0500
+	Tue, 26 Feb 2013 19:09:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 79/86] USB: ehci-omap: Dont free gpios that we didnt request
-Date: Tue, 26 Feb 2013 16:08:27 -0800
-Message-Id: <20130226235921.105248169@linuxfoundation.org>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 83/86] USB: option: add Huawei "ACM" devices using protocol = vendor
+Date: Tue, 26 Feb 2013 16:08:31 -0800
+Message-Id: <20130226235921.538649486@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,69 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 428525f97153505e83983460a8d08a3210aa6b8a upstream.
+commit 1f3f687722fd9b29a0c2a85b4844e3b2a3585c63 upstream.
 
-This driver does not request any gpios so don't free them.
-Fixes L3 bus error on multiple modprobe/rmmod of ehci_hcd
-with ehci-omap in use.
+The USB device descriptor of one identity presented by a few
+Huawei morphing devices have serial functions with class codes
+02/02/ff, indicating CDC ACM with a vendor specific protocol. This
+combination is often used for MSFT RNDIS functions, and the CDC
+ACM class driver will therefore ignore such functions.
 
-Without this patch, EHCI will break on repeated insmod/rmmod
-of ehci_hcd for all OMAP2+ platforms that use EHCI and
-set 'phy_reset = true' in usbhs_omap_board_data.
-i.e.
+The CDC ACM class driver cannot support functions with only 2
+endpoints.  The underlying serial functions of these modems are
+also believed to be the same as for alternate device identities
+already supported by the option driver. Letting the same driver
+handle these functions independently of the current identity
+ensures consistent handling and user experience.
 
-board-3430sdp.c:	.phy_reset  = true,
-board-3630sdp.c:	.phy_reset  = true,
-board-am3517crane.c:	.phy_reset  = true,
-board-am3517evm.c:	.phy_reset  = true,
-board-cm-t3517.c:	.phy_reset  = true,
-board-cm-t35.c:	.phy_reset  = true,
-board-devkit8000.c:	.phy_reset  = true,
-board-igep0020.c:	.phy_reset = true,
-board-igep0020.c:	.phy_reset = true,
-board-omap3beagle.c:	.phy_reset  = true,
-board-omap3evm.c:	.phy_reset  = true,
-board-omap3pandora.c:	.phy_reset  = true,
-board-omap3stalker.c:	.phy_reset = true,
-board-omap3touchbook.c:	.phy_reset  = true,
-board-omap4panda.c:	.phy_reset  = false,
-board-overo.c:	.phy_reset  = true,
-board-zoom.c:	.phy_reset		= true,
+There is no need to blacklist these devices in the rndis_host
+driver. Huawei serial functions will either have only 2 endpoints
+or a CDC ACM functional descriptor with bmCapabilities != 0, making
+them correctly ignored as "non RNDIS" by that driver.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-omap.c |    8 --------
- 1 file changed, 8 deletions(-)
+ drivers/usb/serial/option.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/host/ehci-omap.c
-+++ b/drivers/usb/host/ehci-omap.c
-@@ -288,7 +288,6 @@ static int ehci_hcd_omap_remove(struct p
- {
- 	struct device *dev				= &pdev->dev;
- 	struct usb_hcd *hcd				= dev_get_drvdata(dev);
--	struct ehci_hcd_omap_platform_data *pdata	= dev->platform_data;
- 
- 	usb_remove_hcd(hcd);
- 	disable_put_regulator(dev->platform_data);
-@@ -297,13 +296,6 @@ static int ehci_hcd_omap_remove(struct p
- 	pm_runtime_put_sync(dev);
- 	pm_runtime_disable(dev);
- 
--	if (pdata->phy_reset) {
--		if (gpio_is_valid(pdata->reset_gpio_port[0]))
--			gpio_free(pdata->reset_gpio_port[0]);
--
--		if (gpio_is_valid(pdata->reset_gpio_port[1]))
--			gpio_free(pdata->reset_gpio_port[1]);
--	}
- 	return 0;
- }
- 
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -578,8 +578,12 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, 0xea42),
+ 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c05, USB_CLASS_COMM, 0x02, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1c23, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1441, USB_CLASS_COMM, 0x02, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 0x1442, USB_CLASS_COMM, 0x02, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
 
 
