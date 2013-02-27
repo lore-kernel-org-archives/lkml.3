@@ -1,141 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760148Ab3B0PYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 10:24:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41259 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758160Ab3B0PYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 10:24:08 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] HID: multitouch: remove useless last_field_index field
-Date: Wed, 27 Feb 2013 16:23:15 +0100
-Message-Id: <1361978595-24225-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1760175Ab3B0PYq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 10:24:46 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:50258 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759999Ab3B0PYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 10:24:45 -0500
+Date: Wed, 27 Feb 2013 10:24:29 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Peter Jones <pjones@redhat.com>
+Cc: Dave Airlie <airlied@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        David Howells <dhowells@redhat.com>, Florian Weimer <fw@deneb.enyo.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Load keys from signed PE binaries
+Message-ID: <20130227152429.GA5609@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Peter Jones <pjones@redhat.com>, Dave Airlie <airlied@gmail.com>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	David Howells <dhowells@redhat.com>,
+	Florian Weimer <fw@deneb.enyo.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Josh Boyer <jwboyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+	Kees Cook <keescook@chromium.org>, keyrings@linux-nfs.org,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20130226030249.GB23834@kroah.com>
+ <20130226031338.GA29784@srcf.ucam.org>
+ <20130226033156.GA24999@kroah.com>
+ <20130226033803.GA30285@srcf.ucam.org>
+ <20130226035416.GA1128@kroah.com>
+ <20130226040456.GA30717@srcf.ucam.org>
+ <20130226041324.GA7241@kroah.com>
+ <CAPM=9tzTXL_mystUa2=hGGzNZaYH==pMwt_PMLsWuqpRTs335g@mail.gmail.com>
+ <20130226044521.GC12906@thunk.org>
+ <20130226165451.GE32160@fenchurch.internal.datastacks.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130226165451.GE32160@fenchurch.internal.datastacks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The aim of last_field_index was to detect the end of the report.
-With the introduction of .report(), it is not required anymore to
-detect it on the fly as we can put it in the right place during the
-.report().
+On Tue, Feb 26, 2013 at 11:54:51AM -0500, Peter Jones wrote:
+> No, no, no.  Quit saying nobody knows.  We've got a pretty good idea -
+> we've got a contract with them, and it says they provide the signing
+> service, and under circumstances where the thing being signed is found
+> to enable malware that circumvents Secure Boot
 
-The resulting code path is simpler to read because the terminating
-condition is not evaluated after each field.
+The question is what does "malware that circuments Secure Boot" mean?
+Does starting up a hacked KVM and running Windows 8 under KVM so that
+malare can be injected count as circumenting Secure Boot?  If so, will
+you have to disable KVM, too?
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-multitouch.c | 19 +++----------------
- 1 file changed, 3 insertions(+), 16 deletions(-)
+What if someone implements a virtualization bootkit for Windows 8.
+Will they revoke their own key?  Somehow, I doubt that....
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 3af9efdd..51d8938 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -97,7 +97,6 @@ struct mt_device {
- 					   multitouch fields */
- 	int cc_index;	/* contact count field index in the report */
- 	int cc_value_index;	/* contact count value index in the field */
--	unsigned last_field_index;	/* last field index of the report */
- 	unsigned last_slot_field;	/* the last field of a slot */
- 	unsigned mt_report_id;	/* the report ID of the multitouch device */
- 	__s8 inputmode;		/* InputMode HID feature, -1 if non-existent */
-@@ -416,7 +415,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 			}
- 
- 			mt_store_field(usage, td, hi);
--			td->last_field_index = field->index;
- 			return 1;
- 		case HID_GD_Y:
- 			if (prev_usage && (prev_usage->hid == usage->hid)) {
-@@ -432,7 +430,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 			}
- 
- 			mt_store_field(usage, td, hi);
--			td->last_field_index = field->index;
- 			return 1;
- 		}
- 		return 0;
-@@ -447,21 +444,17 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 					ABS_MT_DISTANCE, 0, 1, 0, 0);
- 			}
- 			mt_store_field(usage, td, hi);
--			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONFIDENCE:
- 			mt_store_field(usage, td, hi);
--			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_TIPSWITCH:
- 			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
- 			input_set_capability(hi->input, EV_KEY, BTN_TOUCH);
- 			mt_store_field(usage, td, hi);
--			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTID:
- 			mt_store_field(usage, td, hi);
--			td->last_field_index = field->index;
- 			td->touches_by_report++;
- 			td->mt_report_id = field->report->id;
- 			return 1;
-@@ -472,7 +465,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 				set_abs(hi->input, ABS_MT_TOUCH_MAJOR, field,
- 					cls->sn_width);
- 			mt_store_field(usage, td, hi);
--			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_HEIGHT:
- 			hid_map_usage(hi, usage, bit, max,
-@@ -484,7 +476,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 					ABS_MT_ORIENTATION, 0, 1, 0, 0);
- 			}
- 			mt_store_field(usage, td, hi);
--			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_TIPPRESSURE:
- 			hid_map_usage(hi, usage, bit, max,
-@@ -492,17 +483,14 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 			set_abs(hi->input, ABS_MT_PRESSURE, field,
- 				cls->sn_pressure);
- 			mt_store_field(usage, td, hi);
--			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTCOUNT:
- 			td->cc_index = field->index;
- 			td->cc_value_index = usage->usage_index;
--			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTMAX:
- 			/* we don't set td->last_slot_field as contactcount and
- 			 * contact max are global to the report */
--			td->last_field_index = field->index;
- 			return -1;
- 		case HID_DG_TOUCH:
- 			/* Legacy devices use TIPSWITCH and not TOUCH.
-@@ -688,10 +676,6 @@ static void mt_process_mt_event(struct hid_device *hid, struct hid_field *field,
- 			/* we only take into account the last report. */
- 			if (usage->hid == td->last_slot_field)
- 				mt_complete_slot(td, field->hidinput->input);
--
--			if (field->index == td->last_field_index
--				&& td->num_received >= td->num_expected)
--				mt_sync_frame(td, field->hidinput->input);
- 		}
- 
- 	}
-@@ -732,6 +716,9 @@ static void mt_report(struct hid_device *hid, struct hid_report *report)
- 			mt_process_mt_event(hid, field, &field->usage[n],
- 					field->value[n]);
- 	}
-+
-+	if (td->num_received >= td->num_expected)
-+		mt_sync_frame(td, report->field[0]->hidinput->input);
- }
- 
- static void mt_set_input_mode(struct hid_device *hdev)
--- 
-1.8.1.2
-
+						- Ted
