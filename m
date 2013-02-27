@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760283Ab3B0REv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 12:04:51 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:40586 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750927Ab3B0REt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 12:04:49 -0500
-Message-ID: <1361984688.2035.20.camel@joe-AO722>
-Subject: Re: [RFC PATCH v2 0/4] Add support for LZ4-compressed kernel
-From: Joe Perches <joe@perches.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>, Nicolas Pitre <nico@fluxnic.net>,
-        "Markus F.X.J. Oberhumer" <markus@oberhumer.com>,
-        Kyungsik Lee <kyungsik.lee@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org,
-        Nitin Gupta <nitingupta910@gmail.com>,
-        Richard Purdie <rpurdie@openedhand.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Joe Millenbach <jmillenbach@gmail.com>, David Sterba <dsterba@suse.cz>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        Egon Alter <egon.alter@gmx.net>, hyojun.im@lge.com, chan.jeong@lge.com,
-        raphael.andy.lee@gmail.com
-Date: Wed, 27 Feb 2013 09:04:48 -0800
-In-Reply-To: <20130227163118.GB17833@n2100.arm.linux.org.uk>
-References: <1361859870-15751-1-git-send-email-kyungsik.lee@lge.com>
-	 <512D1C12.4080109@oberhumer.com>
-	 <alpine.LFD.2.03.1302261557220.1254@syhkavp.arg>
-	 <87fw0i7n6d.fsf@dell.be.48ers.dk>
-	 <20130226221027.GW17833@n2100.arm.linux.org.uk>
-	 <1361929234.1924.8.camel@joe-AO722>
-	 <20130227095609.GY17833@n2100.arm.linux.org.uk>
-	 <1361980152.2035.13.camel@joe-AO722>
-	 <20130227163118.GB17833@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1760340Ab3B0RF2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:05:28 -0500
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:54383 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab3B0RF1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 12:05:27 -0500
+Message-ID: <512E3CD4.6000305@gmail.com>
+Date: Wed, 27 Feb 2013 11:05:24 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Kim Phillips <kim.phillips@freescale.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH 1/3] libfdt: add fdt type definitions in libfdt_env.h
+References: <1361928975-29395-1-git-send-email-kim.phillips@freescale.com>
+In-Reply-To: <1361928975-29395-1-git-send-email-kim.phillips@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-02-27 at 16:31 +0000, Russell King - ARM Linux wrote:
-> On Wed, Feb 27, 2013 at 07:49:12AM -0800, Joe Perches wrote:
-> > On Wed, 2013-02-27 at 09:56 +0000, Russell King - ARM Linux wrote:
-> > > On Tue, Feb 26, 2013 at 05:40:34PM -0800, Joe Perches wrote:
-> > > > On Tue, 2013-02-26 at 22:10 +0000, Russell King - ARM Linux wrote:
-> > > > > So... for a selected kernel version of a particular size, can we please
-> > > > > have a comparison between the new LZO code and this LZ4 code, so that
-> > > > > we can see whether it's worth updating the LZO code or replacing the
-> > > > > LZO code with LZ4?
-> > > > 
-> > > > How could it be questionable that it's worth updating the LZO code?
-> > > 
-> > > Please read the comments against the previous posting of these patches
-> > > where I first stated this argument - and with agreement from those
-> > > following the thread.  The thread started on 26 Jan 2013.  Thanks.
-> > 
-> > https://lkml.org/lkml/2013/1/29/145
-> > 
-> > I did not and do not see significant value in
-> > adding LZ4 given Markus' LZO improvements.
+On 02/26/2013 07:36 PM, Kim Phillips wrote:
+> in preparation for the forthcoming dtc update which adds fdt specific
+> types: fdt{16,32,64}_t.
 > 
-> Sorry, a 66% increase in decompression speed over the updated LZO code
-> isn't "significant value" ?
+> Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+> ---
+>  arch/arm/boot/compressed/libfdt_env.h | 4 ++++
+>  include/linux/libfdt_env.h            | 6 ++++++
 
-We disagree.
+We should kill off arch/arm/boot/compressed/libfdt_env.h and use
+include/linux/libfdt_env.h instead. The only reason I see why we have
+both is the ARM version was introduced before include/linux/libfdt_env.h
+existed.
 
-> I'm curious - what in your mind qualifies "significant value" ?
+Rob
 
-faster boot time. smaller, faster overall code.
-
-> Maybe "significant value" is a patch which buggily involves converting
-> all those "<n>" printk format strings in assembly files to KERN_* macros,
-> thereby breaking those strings because you've not paid attention to what
-> .asciz means?  (Yes, I've just cleaned that crap up after you...)
-
-If you mean commit 0cc41e4a21d43, perhaps you could clarify with an
-example.  I don't see any relevant changes by you in -next, but
-maybe I'm not looking in the right spot.
-
-The change did enable reducing code size.
-
-> > Why would the LZO code not be updated?
-> I'm not saying that the LZO code should not be updated.
-
-You said:
-
-> > > > > so that we can see whether it's worth updating the LZO code
-
-Sounded as if you were doubtful to me.
-
-> I'm saying that
-> the kernel boot time decompressor is not a play ground for an ever
-> increasing number of "my favourite compression method" crap.
-
-Completely agree.
-
+>  2 files changed, 10 insertions(+)
+> 
+> diff --git a/arch/arm/boot/compressed/libfdt_env.h b/arch/arm/boot/compressed/libfdt_env.h
+> index 1f4e718..17ae0f3 100644
+> --- a/arch/arm/boot/compressed/libfdt_env.h
+> +++ b/arch/arm/boot/compressed/libfdt_env.h
+> @@ -5,6 +5,10 @@
+>  #include <linux/string.h>
+>  #include <asm/byteorder.h>
+>  
+> +typedef __be16 fdt16_t;
+> +typedef __be32 fdt32_t;
+> +typedef __be64 fdt64_t;
+> +
+>  #define fdt16_to_cpu(x)		be16_to_cpu(x)
+>  #define cpu_to_fdt16(x)		cpu_to_be16(x)
+>  #define fdt32_to_cpu(x)		be32_to_cpu(x)
+> diff --git a/include/linux/libfdt_env.h b/include/linux/libfdt_env.h
+> index 01508c7..da98097 100644
+> --- a/include/linux/libfdt_env.h
+> +++ b/include/linux/libfdt_env.h
+> @@ -5,6 +5,12 @@
+>  
+>  #include <asm/byteorder.h>
+>  
+> +typedef __be16 fdt16_t;
+> +typedef __be32 fdt32_t;
+> +typedef __be64 fdt64_t;
+> +
+> +#define fdt16_to_cpu(x) be16_to_cpu(x)
+> +#define cpu_to_fdt16(x) cpu_to_be16(x)
+>  #define fdt32_to_cpu(x) be32_to_cpu(x)
+>  #define cpu_to_fdt32(x) cpu_to_be32(x)
+>  #define fdt64_to_cpu(x) be64_to_cpu(x)
+> 
 
