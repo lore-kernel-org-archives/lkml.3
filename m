@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934020Ab3B0AK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:10:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43003 "EHLO
+	id S933960Ab3B0ALU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:11:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43000 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933424Ab3B0AJf (ORCPT
+	with ESMTP id S1760464Ab3B0AJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:35 -0500
+	Tue, 26 Feb 2013 19:09:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        fangxiaozhi <huananhu@huawei.com>
-Subject: [ 85/86] USB: storage: properly handle the endian issues of idProduct
-Date: Tue, 26 Feb 2013 16:08:33 -0800
-Message-Id: <20130226235921.745930909@linuxfoundation.org>
+        Roger Quadros <rogerq@ti.com>, Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 84/86] USB: ehci-omap: Fix autoloading of module
+Date: Tue, 26 Feb 2013 16:08:32 -0800
+Message-Id: <20130226235921.649347965@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -26,39 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: fangxiaozhi <huananhu@huawei.com>
+From: Roger Quadros <rogerq@ti.com>
 
-commit cd060956c5e97931c3909e4a808508469c0bb9f6 upstream.
+commit 04753523266629b1cd0518091da1658755787198 upstream.
 
-1. The idProduct is little endian, so make sure its value to be
-compatible with the current CPU. Make no break on big endian processors.
+The module alias should be "ehci-omap" and not
+"omap-ehci" to match the platform device name.
+The omap-ehci module should now autoload correctly.
 
-Signed-off-by: fangxiaozhi <huananhu@huawei.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/initializers.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/host/ehci-omap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/storage/initializers.c
-+++ b/drivers/usb/storage/initializers.c
-@@ -147,7 +147,7 @@ static int usb_stor_huawei_dongles_pid(s
- 	int idProduct;
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -363,7 +363,7 @@ static const struct hc_driver ehci_omap_
+ 	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
+ };
  
- 	idesc = &us->pusb_intf->cur_altsetting->desc;
--	idProduct = us->pusb_dev->descriptor.idProduct;
-+	idProduct = le16_to_cpu(us->pusb_dev->descriptor.idProduct);
- 	/* The first port is CDROM,
- 	 * means the dongle in the single port mode,
- 	 * and a switch command is required to be sent. */
-@@ -169,7 +169,7 @@ int usb_stor_huawei_init(struct us_data
- 	int result = 0;
+-MODULE_ALIAS("platform:omap-ehci");
++MODULE_ALIAS("platform:ehci-omap");
+ MODULE_AUTHOR("Texas Instruments, Inc.");
+ MODULE_AUTHOR("Felipe Balbi <felipe.balbi@nokia.com>");
  
- 	if (usb_stor_huawei_dongles_pid(us)) {
--		if (us->pusb_dev->descriptor.idProduct >= 0x1446)
-+		if (le16_to_cpu(us->pusb_dev->descriptor.idProduct) >= 0x1446)
- 			result = usb_stor_huawei_scsi_init(us);
- 		else
- 			result = usb_stor_huawei_feature_init(us);
 
 
