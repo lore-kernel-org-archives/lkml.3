@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab3B0UK1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 15:10:27 -0500
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:53645 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab3B0UKZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 15:10:25 -0500
+	id S1753873Ab3B0UMa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 15:12:30 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:50393 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752286Ab3B0UM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 15:12:29 -0500
+Date: Wed, 27 Feb 2013 15:12:17 -0500
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+        Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL URGENT] ext4 regression fix for 3.9
+Message-ID: <20130227201217.GD14253@thunk.org>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Dave Jones <davej@redhat.com>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	"gnehzuil.liu" <gnehzuil.liu@gmail.com>,
+	Zheng Liu <wenqing.lz@taobao.com>, Borislav Petkov <bp@alien8.de>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20130227170157.GA222@x4>
+ <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
+ <20130227172256.GA236@x4>
+ <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
+ <20130227174553.GA224@x4>
+ <CA+55aFwWA1jPEEQNx_5oJ6Ze=3yFb6=E9nraBfX-Ve=WjRkQMw@mail.gmail.com>
+ <20130227184912.GA19624@thunk.org>
+ <20130227185625.GA224@x4>
+ <20130227191923.GA1121@redhat.com>
+ <20130227192907.GB14253@thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <20130227182617.GI19641@localhost.localdomain>
-References: <20130227052247.GA20213@redhat.com>
-	<20130227132736.GH19641@localhost.localdomain>
-	<CAFDW0jK6zigx0YgVMHomUkRQkqpw5mUgkdeynv36LUiQn4XTxg@mail.gmail.com>
-	<20130227182617.GI19641@localhost.localdomain>
-Date: Wed, 27 Feb 2013 21:10:25 +0100
-X-Google-Sender-Auth: bUiwWLIg56jrTJwGCKptGzVbUZo
-Message-ID: <CAFDW0jJ2yHftRW5Kp8sc+uxNC3oS4AZKqG0Szz2rUyxeeA0+2Q@mail.gmail.com>
-Subject: Re: btrfs crash when low on memory.
-From: Ahmet Inan <ainan@mathematik.uni-freiburg.de>
-To: Josef Bacik <jbacik@fusionio.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130227192907.GB14253@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 27, 2013 at 7:26 PM, Josef Bacik <jbacik@fusionio.com> wrote:
-> On Wed, Feb 27, 2013 at 07:31:11AM -0700, Ahmet Inan wrote:
->> > Yeah we have a lot of
->> >
->> > ptr = kmalloc();
->> > BUG_ON(ptr);
->> >
->> > everywhere.  I'll fix this one up but I really need to sit down and go through
->> > all of them and make sure we do the right thing in all these places.  Thanks,
->>
->> But what would be the right thing to do when you got no memory?
->> Spinlock until you can kmalloc? Pre-reserve some memory?
->>
->
-> Return ENOMEM?  We have a way to abort transactions now, if it's in a horrible
-> of enough spot we can just abort the transaction and let the user deal with the
-> aftermath, it's nicer than panicing.  Thanks,
+The following changes since commit 304e220f0879198b1f5309ad6f0be862b4009491:
 
-youre right. i am only afraid of silent corruption of data on aborts:
-our guys here trigger OOM all the time with their compilers and
-numerical codes (go figure).
-and until now we had no more aborts / panics because of
-"vm.min_free_kbytes = 65536" and thus no corruption.
+  ext4: fix free clusters calculation in bigalloc filesystem (2013-02-22 15:27:52 -0500)
 
-my point is:
-i like a freezing computer more than an corrupting computer, even if
-its a server. reboot to the rescue.
+are available in the git repository at:
 
-Ahmet
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+
+for you to fetch changes up to 8e919d13048cd5acaadb2b15b48acbfb8832d3c2:
+
+  ext4: fix extent status tree regression for file systems > 512GB (2013-02-27 14:54:37 -0500)
+
+----------------------------------------------------------------
+This fixes a real brown paper bag bug which causes ext4 to choke on
+file systems larger than 512GB.
+
+----------------------------------------------------------------
+Theodore Ts'o (1):
+      ext4: fix extent status tree regression for file systems > 512GB
+
+ fs/ext4/extents_status.h | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
