@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933713Ab3B0A1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:27:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42687 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933634Ab3B0AIr (ORCPT
+	id S933840Ab3B0A2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:28:03 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53305 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933634Ab3B0A17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:08:47 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 16/86] rtlwifi: rtl8192cu: Add new USB ID
-Date: Tue, 26 Feb 2013 16:07:24 -0800
-Message-Id: <20130226235914.597437762@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
-References: <20130226235912.881663118@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Tue, 26 Feb 2013 19:27:59 -0500
+Date: Wed, 27 Feb 2013 00:27:55 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mark Jackson <mpfj-list@mimc.co.uk>, linux-next@vger.kernel.org,
+        linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: JFFS2 deadlock
+Message-ID: <20130227002755.GL4503@ZenIV.linux.org.uk>
+References: <512CA290.6050509@mimc.co.uk>
+ <20130227101704.90466ae6df78ab9b3aa4ba22@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130227101704.90466ae6df78ab9b3aa4ba22@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Feb 27, 2013 at 10:17:04AM +1100, Stephen Rothwell wrote:
+> Hi Mark,
+> 
+> On Tue, 26 Feb 2013 11:54:56 +0000 Mark Jackson <mpfj-list@mimc.co.uk> wrote:
+> >
+> > Just tested the current next-20130226 on a custom AM335X board, and I received the JFFS2 deadlock shown below.
+> 
+> Is this new today?  is it reproducible? Does if ail for Linus' tree?
+> 
+> Al, could this be something to do with the new stuff in the vfs tree?
 
-------------------
-
-From: Larry Finger <Larry.Finger@lwfinger.net>
-
-commit 8708aac79e4572ba673d7a21e94ddca9f3abb7fc upstream.
-
-A new model of the RTL8188CUS has appeared.
-
-Reported-and-tested-by: Thomas Rosenkrantz <tom.rosary@googlemail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -285,6 +285,7 @@ static struct usb_device_id rtl8192c_usb
- 	{RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x817f, rtl92cu_hal_cfg)},
- 	/* RTL8188CUS-VL */
- 	{RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x818a, rtl92cu_hal_cfg)},
-+	{RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x819a, rtl92cu_hal_cfg)},
- 	/* 8188 Combo for BC4 */
- 	{RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x8754, rtl92cu_hal_cfg)},
- 
-
-
+Very unlikely.  jffs2_readdir() does, indeed, grab ->sem on the inode in
+question and then calls the callback (which might fault, grabbing ->mmap_sem).
+Had been doing that all along.  And if the userland area we are doing
+getdents(2) into had been mmapped from jffs2 file, jffs2_readpage() would
+be called, which would grab ->sem on the inode of file mmaped in there.
+Again, that had been going on all along.  Unlike the situation with ->i_mutex,
+this one is probably a false positive - ->sem on directories nests outside of
+->mmap_sem, ->sem on non-directories - inside.  But that false positive
+shouldn't be something new; hell, both paths are present in 2.6.12 with
+the lock orders as in the current tree (except that ->sem used to be
+a semaphore instead of a mutex).
