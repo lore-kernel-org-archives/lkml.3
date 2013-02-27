@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760508Ab3B0RqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 12:46:07 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:47530 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756718Ab3B0RqG (ORCPT
+	id S1760505Ab3B0RtA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 12:49:00 -0500
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:34719 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248Ab3B0Rs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 12:46:06 -0500
-Date: Wed, 27 Feb 2013 18:45:53 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: "gnehzuil.liu" <gnehzuil.liu@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 updates for 3.9
-Message-ID: <20130227174553.GA224@x4>
-References: <nsxr4k2kdwv.fsf@closure.thunk.org>
- <20130227124727.GA225@x4>
- <20130227153435.GB5609@thunk.org>
- <20130227154450.GA23402@x4>
- <20130227170157.GA222@x4>
- <98C6DE45-F050-4AAD-82E2-7352F5BB0A5D@gmail.com>
- <20130227172256.GA236@x4>
- <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
+	Wed, 27 Feb 2013 12:48:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7BFB2135-A1F0-4B6D-9962-16E75E5560F8@gmail.com>
+In-Reply-To: <1361979498-24446-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1361979498-24446-1-git-send-email-benjamin.tissoires@redhat.com>
+Date: Wed, 27 Feb 2013 18:48:57 +0100
+Message-ID: <CANq1E4Q8_J6W0oH7QH=vamtg0HRjimzk6N4M-9oSMRzyD=o-7A@mail.gmail.com>
+Subject: Re: [RFC 0/2] HID: Introduce .idle() to remove last usb dependence
+ from hid-multitouch
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013.02.28 at 01:38 +0800, gnehzuil.liu wrote:
-> 在 2013-2-28，上午1:22，Markus Trippelsdorf <markus@trippelsdorf.de> 写道：
-> 
-> > On 2013.02.28 at 01:10 +0800, gnehzuil.liu wrote:
-> >> 在 2013-2-28，上午1:01，Markus Trippelsdorf <markus@trippelsdorf.de> 写道：
-> >> 
-> >>> On 2013.02.27 at 16:44 +0100, Markus Trippelsdorf wrote:
-> >>>> On 2013.02.27 at 10:34 -0500, Theodore Ts'o wrote:
-> >>>>> On Wed, Feb 27, 2013 at 01:47:27PM +0100, Markus Trippelsdorf wrote:
-> >>>>>> Just booted todays Linux tree and got the following errors:
-> >>>>>> 
-> >>>>>> ...
-> >>>>>> Feb 27 13:33:31 x4 kernel: EXT4-fs (sda): mounted filesystem with ordered data mode. Opts: (null)
-> >>>>>> ...
-> >>>>>> Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: inode #70647809: block 14164000: comm cupsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2569822761, rec_len=3837, name_len=1
-> >>>>>> Feb 27 13:33:32 x4 kernel: EXT4-fs error (device sda): ext4_find_dest_de:1657: ignore#70911401: block 15213579: comm pdnsd: bad entry in directory: rec_len % 4 != 0 - offset=0(0), inode=2000846358, rec_len=36782, name_len=120
-> >>>>> 
-> >>>>> Is this reproducible? 
-> >>> 
-> >>> The issue is caused by:
-> >>> 
-> >>> commit d100eef2440fea13e4f09e88b1c8bcbca64beb9f
-> >>> Author: Zheng Liu <wenqing.lz@taobao.com>
-> >>> Date:   Mon Feb 18 00:29:59 2013 -0500
-> >>> 
-> >>>   ext4: lookup block mapping in extent status tree
-> >> 
-> >> Thanks for the report.  I am very sorry about that.  Now I am trying to fix it.
-> >> 
-> > Thank you.
-> > 
-> > Please note that if I run a kernel build with: 
-> > "git reset --hard f7fec032aa782d3fd7e51fbdf08aa3a296c01500" 
-> > (the commit before d100eef24) I get a different but similar error:
-> > 
-> >  EXT4-fs (sda): error count: 4
-> >  EXT4-fs (sda): initial error at 1361983458: ext4_find_dest_de:1657: inode 70911401: block 15213579 
-> >  EXT4-fs (sda): last error at 1361983663: ext4_find_dest_de:1658: inode 70647809: block 14164000
-> 
-> Yup, thanks for the note.  Could you please revert to this commit
-> a25a4e1a5d5dc0f97dddbca44e695c532d8228c1 (the commit before f7fec032)?
-> I suspect that commit f7fec032 is the root cause.  Thanks for your
-> help. 
+Hi Benjamin
 
-git revert 06b0c886214a223dde7b21cbfc3008fd20a8ce16..74cd15cd02708c7188581f279f33a98b2ae8d322
-fixes all issues...
+On Wed, Feb 27, 2013 at 4:38 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> Hi guys,
+>
+> Well, this series of two patches aims at removing the dependence between usb
+> and hid-multitouch.
+> I put a RFC and not a patch as I'm not satisfied with the result:
+> - adding this callback for one use may not be accurate
+> - the parameters may not be good either (HID_REQ_SET_IDLE is the only valid
+>   value for now as noone seems to be using HID_REQ_GET_IDLE)
+> - the return value is clearly not very interesting.
+> - maybe we should just add HID_REQ_SET_IDLE to .request, but this will require
+>   a few changes in the parameters.
+>
+> The main purpose of this RFC was to share it with David this new ll callback, so
+> that we can have a global view of what is needed.
 
--- 
-Markus
+I actually never read the specs for SET/GET_IDLE. The Bluetooth HID
+Profile deprecated these and I haven't seen a Bluetooth device that
+relies on it. Any reasons why I should implement them?
+
+Also, for things like UHID I think we can safely drop this request.
+Considering that, I think the patches can be applied as they are, so:
+  Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+
+The Bluetooth HID Profile actually implements some other SUSPEND
+calls,  but these are supposed to be handled by the Bluetooth stack
+independently of the HID driver. So if there is no other magic going
+on with SET_IDLE, I'd just leave it for usbhid.
+
+(does anyone know whether i2c-hid support these?)
+
+Thanks
+David
