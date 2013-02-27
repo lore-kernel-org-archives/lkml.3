@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760485Ab3B0AJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:09:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42975 "EHLO
+	id S1760464Ab3B0ALu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:11:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42990 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760464Ab3B0AJa (ORCPT
+	with ESMTP id S1760479Ab3B0AJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:09:30 -0500
+	Tue, 26 Feb 2013 19:09:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cong Wang <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Jesse Gross <jesse@nicira.com>
-Subject: [ 78/86] vlan: adjust vlan_set_encap_proto() for its callers
-Date: Tue, 26 Feb 2013 16:08:26 -0800
-Message-Id: <20130226235921.010406328@linuxfoundation.org>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 82/86] USB: option: add Yota / Megafon M100-1 4g modem
+Date: Tue, 26 Feb 2013 16:08:30 -0800
+Message-Id: <20130226235921.439475876@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,69 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Bjørn Mork <bjorn@mork.no>
 
-From: Cong Wang <amwang@redhat.com>
+commit cd565279e51bedee1b2988e84f9b3bef485adeb6 upstream.
 
-[ Upstream commit da8c87241c26aac81a64c7e4d21d438a33018f4e ]
+Interface layout:
 
-There are two places to call vlan_set_encap_proto():
-vlan_untag() and __pop_vlan_tci().
+ 00 CD-ROM
+ 01 debug COM port
+ 02 AP control port
+ 03 modem
+ 04 usb-ethernet
 
-vlan_untag() assumes skb->data points after mac addr, otherwise
-the following code
+Bus=01 Lev=02 Prnt=02 Port=01 Cnt=02 Dev#=  4 Spd=480  MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+P:  Vendor=0408 ProdID=ea42 Rev= 0.00
+S:  Manufacturer=Qualcomm, Incorporated
+S:  Product=Qualcomm CDMA Technologies MSM
+S:  SerialNumber=353568051xxxxxx
+C:* #Ifs= 5 Cfg#= 1 Atr=e0 MxPwr=500mA
+I:* If#= 0 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
+E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 3 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=84(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
+E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 4 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=86(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
+E:  Ad=87(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
 
-        vhdr = (struct vlan_hdr *) skb->data;
-        vlan_tci = ntohs(vhdr->h_vlan_TCI);
-        __vlan_hwaccel_put_tag(skb, vlan_tci);
-
-        skb_pull_rcsum(skb, VLAN_HLEN);
-
-won't be correct. But __pop_vlan_tci() assumes points _before_
-mac addr.
-
-In vlan_set_encap_proto(), it looks for some magic L2 value
-after mac addr:
-
-        rawp = skb->data;
-        if (*(unsigned short *) rawp == 0xFFFF)
-	...
-
-Therefore __pop_vlan_tci() is obviously wrong.
-
-A quick fix is avoiding using skb->data in vlan_set_encap_proto(),
-use 'vhdr+1' is always correct in both cases.
-
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Jesse Gross <jesse@nicira.com>
-Acked-by: Jesse Gross <jesse@nicira.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/if_vlan.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/include/linux/if_vlan.h
-+++ b/include/linux/if_vlan.h
-@@ -327,7 +327,7 @@ static inline void vlan_set_encap_proto(
- 					struct vlan_hdr *vhdr)
- {
- 	__be16 proto;
--	unsigned char *rawp;
-+	unsigned short *rawp;
- 
- 	/*
- 	 * Was a VLAN packet, grab the encapsulated protocol, which the layer
-@@ -340,8 +340,8 @@ static inline void vlan_set_encap_proto(
- 		return;
- 	}
- 
--	rawp = skb->data;
--	if (*(unsigned short *) rawp == 0xFFFF)
-+	rawp = (unsigned short *)(vhdr + 1);
-+	if (*rawp == 0xFFFF)
- 		/*
- 		 * This is a magic hack to spot IPX packets. Older Novell
- 		 * breaks the protocol design and runs IPX over 802.3 without
+---
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -576,6 +576,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLX) },
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GKE) },
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
++	{ USB_DEVICE(QUANTA_VENDOR_ID, 0xea42),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
 
 
