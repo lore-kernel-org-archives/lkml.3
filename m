@@ -1,108 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758606Ab3B0I5R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 03:57:17 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:16742 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754962Ab3B0I5Q (ORCPT
+	id S1758543Ab3B0JAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Feb 2013 04:00:40 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:44889 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755824Ab3B0JAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Feb 2013 03:57:16 -0500
-X-Spam-Score: -100.8
-Message-ID: <512DCA59.4040800@asianux.com>
-Date: Wed, 27 Feb 2013 16:56:57 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 27 Feb 2013 04:00:38 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjcLAK3KLVFbdWOb/2dsb2JhbABFuicih0Z8FnOCHwEBBAEnQBEBBQsLGAkWDwkDAgECAUUGDQEFAgEBiAkKvmGNQYFTB4NAA5ZBiWOHB4MJgWg
+X-IPAS-Result: AjcLAK3KLVFbdWOb/2dsb2JhbABFuicih0Z8FnOCHwEBBAEnQBEBBQsLGAkWDwkDAgECAUUGDQEFAgEBiAkKvmGNQYFTB4NAA5ZBiWOHB4MJgWg
+Message-ID: <512DCB33.6030500@igalia.com>
+Date: Wed, 27 Feb 2013 10:00:35 +0100
+From: =?ISO-8859-1?Q?Samuel_Iglesias_Gons=E1lvez?= <siglesias@igalia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-CC: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, wil6210@qca.qualcomm.com,
-        "netdev@vger.kernel.org >> netdev" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/net/wireless/ath/wil6210: Makefile, only -Werror
- when no -W* in EXTRA_CFLAGS
-References: <512DADCA.9040609@asianux.com> <1385870.TegBXpTM9i@lx-vladimir>
-In-Reply-To: <1385870.TegBXpTM9i@lx-vladimir>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jens Taprogge <jens.taprogge@taprogge.org>,
+        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipack: add missing put_device() after device_register()
+ failed
+References: <1361869395-23110-1-git-send-email-siglesias@igalia.com> <20130226222842.GA20670@core.coreip.homeip.net>
+In-Reply-To: <20130226222842.GA20670@core.coreip.homeip.net>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年02月27日 16:45, Vladimir Kondratiev 写道:
-> On Wednesday, February 27, 2013 02:55:06 PM Chen Gang wrote:
+Hello Dmitry,
+
+First of all, thanks for your comments.
+
+On 02/26/2013 11:28 PM, Dmitry Torokhov wrote:
+> On Tue, Feb 26, 2013 at 10:03:15AM +0100, Samuel Iglesias Gonsalvez wrote:
+>> put_device() must be called after device_register() fails,
+>> since device_register() always initializes the refcount
+>> on the device structure to one.
 >>
->>   When make with EXTRA_CFLAGS=-W, it will report error.
->>   so give a check in Makefile.
+>> dev->id is free'd inside of ipack_device_release function.
+>> So, it's not needed to do it here.
 >>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 >> ---
->>  drivers/net/wireless/ath/wil6210/Makefile |    4 +++-
->>  1 files changed, 3 insertions(+), 1 deletions(-)
+>>  drivers/ipack/ipack.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
 >>
->> diff --git a/drivers/net/wireless/ath/wil6210/Makefile b/drivers/net/wireless/ath/wil6210/Makefile
->> index 9396dc9..d288eea 100644
->> --- a/drivers/net/wireless/ath/wil6210/Makefile
->> +++ b/drivers/net/wireless/ath/wil6210/Makefile
->> @@ -9,5 +9,7 @@ wil6210-objs += wmi.o
->>  wil6210-objs += interrupt.o
->>  wil6210-objs += txrx.o
+>> diff --git a/drivers/ipack/ipack.c b/drivers/ipack/ipack.c
+>> index 7ec6b20..3588ccf 100644
+>> --- a/drivers/ipack/ipack.c
+>> +++ b/drivers/ipack/ipack.c
+>> @@ -449,7 +449,7 @@ int ipack_device_register(struct ipack_device *dev)
 >>  
->> -subdir-ccflags-y += -Werror
->> +ifeq (, $(findstring -W,$(EXTRA_CFLAGS)))
->> +	subdir-ccflags-y += -Werror
->> +endif
->>  subdir-ccflags-y += -D__CHECK_ENDIAN__
->>
-> Acked-by: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+>>  	ret = device_register(&dev->dev);
+>>  	if (ret < 0)
+>> -		kfree(dev->id);
+>> +		put_device(&dev->dev);
 > 
-> Well, agree; -W triggers lots of warnings, I suspect all other places that use
-> -Werror should be problematic. Worth fixing all others? Quick look for v3.8 raises:
+> Now callers have no idea if they have to free (put_device) it in case of
+> failure or it is already done for them, because a few lines earlier, if
+> pack_device_read_id() fails, it simply returns error code.
 > 
-
-  thank you for your suggestion.
-  after this patch applied, I will do for others (let you as signed-of-by, too).
-
-  :-)
-
-
-> linux$ find . -name Makefile | xargs grep -e -Werror
-> ./arch/sh/lib/Makefile:ccflags-y := -Werror
-> ./arch/sh/kernel/Makefile:ccflags-y := -Werror
-> ./arch/sh/mm/Makefile:ccflags-y := -Werror
-> ./arch/sh/cchips/hd6446x/Makefile:ccflags-y := -Werror
-> ./arch/sparc/prom/Makefile:ccflags := -Werror
-> ./arch/sparc/lib/Makefile:ccflags-y := -Werror
-> ./arch/sparc/kernel/Makefile:ccflags-y := -Werror
-> ./arch/sparc/mm/Makefile:ccflags-y := -Werror
-> ./arch/alpha/lib/Makefile:ccflags-y := -Werror
-> ./arch/alpha/oprofile/Makefile:ccflags-y := -Werror -Wno-sign-compare
-> ./arch/alpha/mm/Makefile:ccflags-y := -Werror
-> ./arch/powerpc/kvm/Makefile:subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
-> ./arch/powerpc/lib/Makefile:subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
-> ./arch/powerpc/kernel/Makefile:subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
-> ./arch/powerpc/oprofile/Makefile:subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
-> ./arch/powerpc/xmon/Makefile:subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
-> ./arch/powerpc/mm/Makefile:subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
-> ./arch/powerpc/sysdev/Makefile:subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
-> ./arch/powerpc/sysdev/Makefile:subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
-> ./arch/powerpc/sysdev/xics/Makefile:subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
-> ./arch/powerpc/platforms/Makefile:subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
-> ./arch/powerpc/perf/Makefile:subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
-> ./Makefile:                -Werror-implicit-function-declaration \
-> ./tools/perf/Makefile:  CFLAGS_WERROR := -Werror
-> ./tools/perf/Makefile:ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
-> ./tools/perf/Makefile:ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector,-Wstack-protector),y)
-> ./tools/perf/Makefile:ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-Wvolatile-register-var),y)
-> ./drivers/scsi/lpfc/Makefile:ccflags-y += -Werror
-> ./drivers/scsi/aic7xxx/Makefile:ccflags-y += -Werror
-> ./drivers/staging/omapdrm/Makefile:ccflags-y := -Iinclude/drm -Werror
-> ./drivers/net/wireless/ath/wil6210/Makefile:subdir-ccflags-y += -Werror
+> IMO if a function did not allocate object it should not try to free it,
+> callers should dispose of the device as they see fit.
 > 
-> 
+> What is missing, however, is dev->id = NULL assignment so that if caller
+> does put_device() kit won't double-free the memory.
+
+OK. I will write a patch.
+
+> Also it would make
+> sense to split device_register into device_init() and device_add() so
+> that device_init() is very first thing you do and in case of all
+> failures callers should use put_device().
 > 
 
+It makes sense. I will write a patch for it.
 
--- 
-Chen Gang
+> Also tpci200.c need to learn to clean up after itself and I also not
+> sure why it tries to provide its own release function.
+>
 
-Asianux Corporation
+tpci200 driver is the one who allocated the struct ipack_device and it
+should free it. The path to release it is the following:
+
+* The kernel will call the corresponding release() function of the
+struct device. This callback is linked to ipack_release_device() in
+ipack.c. In that function, there is a kfree(dev->id) as it was
+previously allocated by ipack bus driver.
+
+* Then, ipack_release_device() calls the carrier's release function to
+indicate that the device is being released and the carrier driver needs
+to take care of its own resources.
+
+In summary, each driver allocate and free its own resources when
+unregistering a device.
+
+Thanks,
+
+Sam
