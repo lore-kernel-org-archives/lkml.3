@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933685Ab3B0A2m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:28:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42675 "EHLO
+	id S933791Ab3B0A2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:28:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42671 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933567Ab3B0AIp (ORCPT
+	with ESMTP id S933543Ab3B0AIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:08:45 -0500
+	Tue, 26 Feb 2013 19:08:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Rakus <rrakus@redhat.com>, Lingzhu Xiang <lxiang@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [ 13/86] tty: set_termios/set_termiox should not return -EINTR
-Date: Tue, 26 Feb 2013 16:07:21 -0800
-Message-Id: <20130226235914.276168626@linuxfoundation.org>
+        Dirkjan Bussink <dirkjan.bussink@nedap.com>
+Subject: [ 12/86] tty: Prevent deadlock in n_gsm driver
+Date: Tue, 26 Feb 2013 16:07:20 -0800
+Message-Id: <20130226235914.182837144@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -27,77 +26,195 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Dirkjan Bussink <d.bussink@gmail.com>
 
-commit 183d95cdd834381c594d3aa801c1f9f9c0c54fa9 upstream.
+commit 4d9b109060f690f5c835130ff54165ae157b3087 upstream.
 
-See https://bugzilla.redhat.com/show_bug.cgi?id=904907
-read command causes bash to abort with double free or corruption (out).
+This change fixes a deadlock when the multiplexer is closed while there
+are still client side ports open.
 
-A simple test-case from Roman:
+When the multiplexer is closed and there are active tty's it tries to
+close them with tty_vhangup. This has a problem though, because
+tty_vhangup needs the tty_lock. This patch changes it to unlock the
+tty_lock before attempting the hangup and relocks afterwards. The
+additional call to tty_port_tty_set is needed because otherwise the
+port stays active because of the reference counter.
 
-	// Compile the reproducer and send sigchld ti that process.
-	// EINTR occurs even if SA_RESTART flag is set.
+This change also exposed another problem that other code paths don't
+expect that the multiplexer could have been closed. This patch also adds
+checks for these cases in the gsmtty_ class of function that could be
+called.
 
-	void handler(int sig)
-	{
-	}
+The documentation explicitly states that "first close all virtual ports
+before closing the physical port" but we've found this to not always
+reality in our field situations. The GPRS / UTMS modem sometimes crashes
+and needs a power cycle in that case which means cleanly shutting down
+everything is not always possible. This change makes it much more robust
+for our situation where at least the system is recoverable with this patch
+and doesn't hang in a deadlock situation inside the kernel.
 
-	main()
-	{
-	  struct sigaction act;
-	  act.sa_handler = handler;
-	  act.sa_flags = SA_RESTART;
-	  sigaction (SIGCHLD, &act, 0);
-	  struct termio ttp;
-	  ioctl(0, TCGETA, &ttp);
-	  while(1)
-	  {
-	    if (ioctl(0, TCSETAW, ttp) < 0)
-	      {
-		if (errno == EINTR)
-		{
-		  fprintf(stderr, "BUG!"); return(1);
-		}
-	      }
-	  }
-	}
+The patch is against the long term support kernel (3.4.27) and should
+apply cleanly to more recent branches. Tested with a Telit GE864-QUADV2
+and Telit HE910 modem.
 
-Change set_termios/set_termiox to return -ERESTARTSYS to fix this
-particular problem.
-
-I didn't dare to change other EINTR's in drivers/tty/, but they look
-equally wrong.
-
-Reported-by: Roman Rakus <rrakus@redhat.com>
-Reported-by: Lingzhu Xiang <lxiang@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Dirkjan Bussink <dirkjan.bussink@nedap.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_ioctl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/tty/n_gsm.c |   42 +++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 41 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/tty_ioctl.c
-+++ b/drivers/tty/tty_ioctl.c
-@@ -617,7 +617,7 @@ static int set_termios(struct tty_struct
- 	if (opt & TERMIOS_WAIT) {
- 		tty_wait_until_sent(tty, 0);
- 		if (signal_pending(current))
--			return -EINTR;
-+			return -ERESTARTSYS;
- 	}
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -1692,6 +1692,8 @@ static inline void dlci_put(struct gsm_d
+ 	kref_put(&dlci->ref, gsm_dlci_free);
+ }
  
- 	tty_set_termios(tty, &tmp_termios);
-@@ -684,7 +684,7 @@ static int set_termiox(struct tty_struct
- 	if (opt & TERMIOS_WAIT) {
- 		tty_wait_until_sent(tty, 0);
- 		if (signal_pending(current))
--			return -EINTR;
-+			return -ERESTARTSYS;
++static void gsm_destroy_network(struct gsm_dlci *dlci);
++
+ /**
+  *	gsm_dlci_release		-	release DLCI
+  *	@dlci: DLCI to destroy
+@@ -1705,9 +1707,19 @@ static void gsm_dlci_release(struct gsm_
+ {
+ 	struct tty_struct *tty = tty_port_tty_get(&dlci->port);
+ 	if (tty) {
++		mutex_lock(&dlci->mutex);
++		gsm_destroy_network(dlci);
++		mutex_unlock(&dlci->mutex);
++
++		/* tty_vhangup needs the tty_lock, so unlock and
++		   relock after doing the hangup. */
++		tty_unlock();
+ 		tty_vhangup(tty);
++		tty_lock();
++		tty_port_tty_set(&dlci->port, NULL);
+ 		tty_kref_put(tty);
  	}
++	dlci->state = DLCI_CLOSED;
+ 	dlci_put(dlci);
+ }
  
- 	mutex_lock(&tty->termios_mutex);
+@@ -2933,6 +2945,8 @@ static void gsmtty_close(struct tty_stru
+ 
+ 	if (dlci == NULL)
+ 		return;
++	if (dlci->state == DLCI_CLOSED)
++		return;
+ 	mutex_lock(&dlci->mutex);
+ 	gsm_destroy_network(dlci);
+ 	mutex_unlock(&dlci->mutex);
+@@ -2951,6 +2965,8 @@ out:
+ static void gsmtty_hangup(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return;
+ 	tty_port_hangup(&dlci->port);
+ 	gsm_dlci_begin_close(dlci);
+ }
+@@ -2958,9 +2974,12 @@ static void gsmtty_hangup(struct tty_str
+ static int gsmtty_write(struct tty_struct *tty, const unsigned char *buf,
+ 								    int len)
+ {
++	int sent;
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 	/* Stuff the bytes into the fifo queue */
+-	int sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
++	sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
+ 	/* Need to kick the channel */
+ 	gsm_dlci_data_kick(dlci);
+ 	return sent;
+@@ -2969,18 +2988,24 @@ static int gsmtty_write(struct tty_struc
+ static int gsmtty_write_room(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 	return TX_SIZE - kfifo_len(dlci->fifo);
+ }
+ 
+ static int gsmtty_chars_in_buffer(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 	return kfifo_len(dlci->fifo);
+ }
+ 
+ static void gsmtty_flush_buffer(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return;
+ 	/* Caution needed: If we implement reliable transport classes
+ 	   then the data being transmitted can't simply be junked once
+ 	   it has first hit the stack. Until then we can just blow it
+@@ -2999,6 +3024,8 @@ static void gsmtty_wait_until_sent(struc
+ static int gsmtty_tiocmget(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 	return dlci->modem_rx;
+ }
+ 
+@@ -3008,6 +3035,8 @@ static int gsmtty_tiocmset(struct tty_st
+ 	struct gsm_dlci *dlci = tty->driver_data;
+ 	unsigned int modem_tx = dlci->modem_tx;
+ 
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 	modem_tx &= ~clear;
+ 	modem_tx |= set;
+ 
+@@ -3026,6 +3055,8 @@ static int gsmtty_ioctl(struct tty_struc
+ 	struct gsm_netconfig nc;
+ 	int index;
+ 
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 	switch (cmd) {
+ 	case GSMIOC_ENABLE_NET:
+ 		if (copy_from_user(&nc, (void __user *)arg, sizeof(nc)))
+@@ -3052,6 +3083,9 @@ static int gsmtty_ioctl(struct tty_struc
+ 
+ static void gsmtty_set_termios(struct tty_struct *tty, struct ktermios *old)
+ {
++	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return;
+ 	/* For the moment its fixed. In actual fact the speed information
+ 	   for the virtual channel can be propogated in both directions by
+ 	   the RPN control message. This however rapidly gets nasty as we
+@@ -3063,6 +3097,8 @@ static void gsmtty_set_termios(struct tt
+ static void gsmtty_throttle(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return;
+ 	if (tty->termios->c_cflag & CRTSCTS)
+ 		dlci->modem_tx &= ~TIOCM_DTR;
+ 	dlci->throttled = 1;
+@@ -3073,6 +3109,8 @@ static void gsmtty_throttle(struct tty_s
+ static void gsmtty_unthrottle(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
++	if (dlci->state == DLCI_CLOSED)
++		return;
+ 	if (tty->termios->c_cflag & CRTSCTS)
+ 		dlci->modem_tx |= TIOCM_DTR;
+ 	dlci->throttled = 0;
+@@ -3084,6 +3122,8 @@ static int gsmtty_break_ctl(struct tty_s
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
+ 	int encode = 0;	/* Off */
++	if (dlci->state == DLCI_CLOSED)
++		return -EINVAL;
+ 
+ 	if (state == -1)	/* "On indefinitely" - we can't encode this
+ 				    properly */
 
 
