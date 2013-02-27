@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933791Ab3B0A2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 19:28:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42671 "EHLO
+	id S933528Ab3B0AIn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 19:08:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42648 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933543Ab3B0AIo (ORCPT
+	with ESMTP id S933431Ab3B0AIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 19:08:44 -0500
+	Tue, 26 Feb 2013 19:08:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirkjan Bussink <dirkjan.bussink@nedap.com>
-Subject: [ 12/86] tty: Prevent deadlock in n_gsm driver
-Date: Tue, 26 Feb 2013 16:07:20 -0800
-Message-Id: <20130226235914.182837144@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>, Dave Jones <davej@redhat.com>,
+        John Stultz <john.stultz@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 07/86] posix-cpu-timers: Fix nanosleep task_struct leak
+Date: Tue, 26 Feb 2013 16:07:15 -0800
+Message-Id: <20130226235913.666786166@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130226235912.881663118@linuxfoundation.org>
 References: <20130226235912.881663118@linuxfoundation.org>
@@ -26,195 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirkjan Bussink <d.bussink@gmail.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 4d9b109060f690f5c835130ff54165ae157b3087 upstream.
+commit e6c42c295e071dd74a66b5a9fcf4f44049888ed8 upstream.
 
-This change fixes a deadlock when the multiplexer is closed while there
-are still client side ports open.
+The trinity fuzzer triggered a task_struct reference leak via
+clock_nanosleep with CPU_TIMERs. do_cpu_nanosleep() calls
+posic_cpu_timer_create(), but misses a corresponding
+posix_cpu_timer_del() which leads to the task_struct reference leak.
 
-When the multiplexer is closed and there are active tty's it tries to
-close them with tty_vhangup. This has a problem though, because
-tty_vhangup needs the tty_lock. This patch changes it to unlock the
-tty_lock before attempting the hangup and relocks afterwards. The
-additional call to tty_port_tty_set is needed because otherwise the
-port stays active because of the reference counter.
-
-This change also exposed another problem that other code paths don't
-expect that the multiplexer could have been closed. This patch also adds
-checks for these cases in the gsmtty_ class of function that could be
-called.
-
-The documentation explicitly states that "first close all virtual ports
-before closing the physical port" but we've found this to not always
-reality in our field situations. The GPRS / UTMS modem sometimes crashes
-and needs a power cycle in that case which means cleanly shutting down
-everything is not always possible. This change makes it much more robust
-for our situation where at least the system is recoverable with this patch
-and doesn't hang in a deadlock situation inside the kernel.
-
-The patch is against the long term support kernel (3.4.27) and should
-apply cleanly to more recent branches. Tested with a Telit GE864-QUADV2
-and Telit HE910 modem.
-
-Signed-off-by: Dirkjan Bussink <dirkjan.bussink@nedap.com>
+Reported-and-tested-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20130215100810.GF4392@redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_gsm.c |   42 +++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 41 insertions(+), 1 deletion(-)
+ kernel/posix-cpu-timers.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1692,6 +1692,8 @@ static inline void dlci_put(struct gsm_d
- 	kref_put(&dlci->ref, gsm_dlci_free);
- }
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -1422,8 +1422,10 @@ static int do_cpu_nanosleep(const clocki
+ 		while (!signal_pending(current)) {
+ 			if (timer.it.cpu.expires.sched == 0) {
+ 				/*
+-				 * Our timer fired and was reset.
++				 * Our timer fired and was reset, below
++				 * deletion can not fail.
+ 				 */
++				posix_cpu_timer_del(&timer);
+ 				spin_unlock_irq(&timer.it_lock);
+ 				return 0;
+ 			}
+@@ -1441,9 +1443,26 @@ static int do_cpu_nanosleep(const clocki
+ 		 * We were interrupted by a signal.
+ 		 */
+ 		sample_to_timespec(which_clock, timer.it.cpu.expires, rqtp);
+-		posix_cpu_timer_set(&timer, 0, &zero_it, it);
++		error = posix_cpu_timer_set(&timer, 0, &zero_it, it);
++		if (!error) {
++			/*
++			 * Timer is now unarmed, deletion can not fail.
++			 */
++			posix_cpu_timer_del(&timer);
++		}
+ 		spin_unlock_irq(&timer.it_lock);
  
-+static void gsm_destroy_network(struct gsm_dlci *dlci);
++		while (error == TIMER_RETRY) {
++			/*
++			 * We need to handle case when timer was or is in the
++			 * middle of firing. In other cases we already freed
++			 * resources.
++			 */
++			spin_lock_irq(&timer.it_lock);
++			error = posix_cpu_timer_del(&timer);
++			spin_unlock_irq(&timer.it_lock);
++		}
 +
- /**
-  *	gsm_dlci_release		-	release DLCI
-  *	@dlci: DLCI to destroy
-@@ -1705,9 +1707,19 @@ static void gsm_dlci_release(struct gsm_
- {
- 	struct tty_struct *tty = tty_port_tty_get(&dlci->port);
- 	if (tty) {
-+		mutex_lock(&dlci->mutex);
-+		gsm_destroy_network(dlci);
-+		mutex_unlock(&dlci->mutex);
-+
-+		/* tty_vhangup needs the tty_lock, so unlock and
-+		   relock after doing the hangup. */
-+		tty_unlock();
- 		tty_vhangup(tty);
-+		tty_lock();
-+		tty_port_tty_set(&dlci->port, NULL);
- 		tty_kref_put(tty);
- 	}
-+	dlci->state = DLCI_CLOSED;
- 	dlci_put(dlci);
- }
- 
-@@ -2933,6 +2945,8 @@ static void gsmtty_close(struct tty_stru
- 
- 	if (dlci == NULL)
- 		return;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	mutex_lock(&dlci->mutex);
- 	gsm_destroy_network(dlci);
- 	mutex_unlock(&dlci->mutex);
-@@ -2951,6 +2965,8 @@ out:
- static void gsmtty_hangup(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	tty_port_hangup(&dlci->port);
- 	gsm_dlci_begin_close(dlci);
- }
-@@ -2958,9 +2974,12 @@ static void gsmtty_hangup(struct tty_str
- static int gsmtty_write(struct tty_struct *tty, const unsigned char *buf,
- 								    int len)
- {
-+	int sent;
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	/* Stuff the bytes into the fifo queue */
--	int sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
-+	sent = kfifo_in_locked(dlci->fifo, buf, len, &dlci->lock);
- 	/* Need to kick the channel */
- 	gsm_dlci_data_kick(dlci);
- 	return sent;
-@@ -2969,18 +2988,24 @@ static int gsmtty_write(struct tty_struc
- static int gsmtty_write_room(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	return TX_SIZE - kfifo_len(dlci->fifo);
- }
- 
- static int gsmtty_chars_in_buffer(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	return kfifo_len(dlci->fifo);
- }
- 
- static void gsmtty_flush_buffer(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	/* Caution needed: If we implement reliable transport classes
- 	   then the data being transmitted can't simply be junked once
- 	   it has first hit the stack. Until then we can just blow it
-@@ -2999,6 +3024,8 @@ static void gsmtty_wait_until_sent(struc
- static int gsmtty_tiocmget(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	return dlci->modem_rx;
- }
- 
-@@ -3008,6 +3035,8 @@ static int gsmtty_tiocmset(struct tty_st
- 	struct gsm_dlci *dlci = tty->driver_data;
- 	unsigned int modem_tx = dlci->modem_tx;
- 
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	modem_tx &= ~clear;
- 	modem_tx |= set;
- 
-@@ -3026,6 +3055,8 @@ static int gsmtty_ioctl(struct tty_struc
- 	struct gsm_netconfig nc;
- 	int index;
- 
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 	switch (cmd) {
- 	case GSMIOC_ENABLE_NET:
- 		if (copy_from_user(&nc, (void __user *)arg, sizeof(nc)))
-@@ -3052,6 +3083,9 @@ static int gsmtty_ioctl(struct tty_struc
- 
- static void gsmtty_set_termios(struct tty_struct *tty, struct ktermios *old)
- {
-+	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	/* For the moment its fixed. In actual fact the speed information
- 	   for the virtual channel can be propogated in both directions by
- 	   the RPN control message. This however rapidly gets nasty as we
-@@ -3063,6 +3097,8 @@ static void gsmtty_set_termios(struct tt
- static void gsmtty_throttle(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	if (tty->termios->c_cflag & CRTSCTS)
- 		dlci->modem_tx &= ~TIOCM_DTR;
- 	dlci->throttled = 1;
-@@ -3073,6 +3109,8 @@ static void gsmtty_throttle(struct tty_s
- static void gsmtty_unthrottle(struct tty_struct *tty)
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
-+	if (dlci->state == DLCI_CLOSED)
-+		return;
- 	if (tty->termios->c_cflag & CRTSCTS)
- 		dlci->modem_tx |= TIOCM_DTR;
- 	dlci->throttled = 0;
-@@ -3084,6 +3122,8 @@ static int gsmtty_break_ctl(struct tty_s
- {
- 	struct gsm_dlci *dlci = tty->driver_data;
- 	int encode = 0;	/* Off */
-+	if (dlci->state == DLCI_CLOSED)
-+		return -EINVAL;
- 
- 	if (state == -1)	/* "On indefinitely" - we can't encode this
- 				    properly */
+ 		if ((it->it_value.tv_sec | it->it_value.tv_nsec) == 0) {
+ 			/*
+ 			 * It actually did fire already.
 
 
