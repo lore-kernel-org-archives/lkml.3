@@ -1,168 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760572Ab3B0Q6X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Feb 2013 11:58:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53316 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760399Ab3B0Q4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760393Ab3B0Q4Y (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 27 Feb 2013 11:56:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20886 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756742Ab3B0Q4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Feb 2013 11:56:22 -0500
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] HID: multitouch: breaks out touch handling in specific functions
-Date: Wed, 27 Feb 2013 17:55:22 +0100
-Message-Id: <1361984127-912-3-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1361984127-912-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1361984127-912-1-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 0/7] HID: multitouch: support of hybrid finger/pen devices
+Date: Wed, 27 Feb 2013 17:55:20 +0100
+Message-Id: <1361984127-912-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will allow easier integration of hybrid pen and touch devices.
+Hi guys,
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-multitouch.c | 75 +++++++++++++++++++++++++++++++-------------
- 1 file changed, 54 insertions(+), 21 deletions(-)
+Here is the support of hybrid devices presenting pen and touch at the same time.
+I don't think it's possible to split the handling of the different reports by
+several hid drivers unless deepest changes in the HID core subsystem.
+The main problem is the control of the underlaying transport layer of the hid
+device. For instance, if two drivers (let's say hid-multitouch and hid-generic)
+handle the same device, and one of them is removed, then we should not call
+hid_hw_stop at this point, but only when the second is also removed.
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 3af9efdd..6314473 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -365,7 +365,7 @@ static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
- 	f->usages[f->length++] = usage->hid;
- }
- 
--static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-+static int mt_touch_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 		struct hid_field *field, struct hid_usage *usage,
- 		unsigned long **bit, int *max)
- {
-@@ -374,13 +374,8 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	int code;
- 	struct hid_usage *prev_usage = NULL;
- 
--	/* Only map fields from TouchScreen or TouchPad collections.
--	* We need to ignore fields that belong to other collections
--	* such as Mouse that might have the same GenericDesktop usages. */
- 	if (field->application == HID_DG_TOUCHSCREEN)
- 		td->mt_flags |= INPUT_MT_DIRECT;
--	else if (field->application != HID_DG_TOUCHPAD)
--		return 0;
- 
- 	/*
- 	 * Model touchscreens providing buttons as touchpads.
-@@ -389,12 +384,6 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	    (usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON)
- 		td->mt_flags |= INPUT_MT_POINTER;
- 
--	/* eGalax devices provide a Digitizer.Stylus input which overrides
--	 * the correct Digitizers.Finger X/Y ranges.
--	 * Let's just ignore this input. */
--	if (field->physical == HID_DG_STYLUS)
--		return -1;
--
- 	if (usage->usage_index)
- 		prev_usage = &field->usage[usage->usage_index - 1];
- 
-@@ -526,7 +515,7 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	return 0;
- }
- 
--static int mt_input_mapped(struct hid_device *hdev, struct hid_input *hi,
-+static int mt_touch_input_mapped(struct hid_device *hdev, struct hid_input *hi,
- 		struct hid_field *field, struct hid_usage *usage,
- 		unsigned long **bit, int *max)
- {
-@@ -617,7 +606,7 @@ static void mt_sync_frame(struct mt_device *td, struct input_dev *input)
- 	td->num_received = 0;
- }
- 
--static int mt_event(struct hid_device *hid, struct hid_field *field,
-+static int mt_touch_event(struct hid_device *hid, struct hid_field *field,
- 				struct hid_usage *usage, __s32 value)
- {
- 	/* we will handle the hidinput part later, now remains hiddev */
-@@ -697,19 +686,13 @@ static void mt_process_mt_event(struct hid_device *hid, struct hid_field *field,
- 	}
- }
- 
--static void mt_report(struct hid_device *hid, struct hid_report *report)
-+static void mt_touch_report(struct hid_device *hid, struct hid_report *report)
- {
- 	struct mt_device *td = hid_get_drvdata(hid);
- 	struct hid_field *field;
- 	unsigned count;
- 	int r, n;
- 
--	if (report->id != td->mt_report_id)
--		return;
--
--	if (!(hid->claimed & HID_CLAIMED_INPUT))
--		return;
--
- 	/*
- 	 * Includes multi-packet support where subsequent
- 	 * packets are sent with zero contactcount.
-@@ -734,6 +717,56 @@ static void mt_report(struct hid_device *hid, struct hid_report *report)
- 	}
- }
- 
-+static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-+		struct hid_field *field, struct hid_usage *usage,
-+		unsigned long **bit, int *max)
-+{
-+	/* Only map fields from TouchScreen or TouchPad collections.
-+	* We need to ignore fields that belong to other collections
-+	* such as Mouse that might have the same GenericDesktop usages. */
-+	if (field->application != HID_DG_TOUCHSCREEN &&
-+	    field->application != HID_DG_TOUCHPAD)
-+		return 0;
-+
-+	/* eGalax devices provide a Digitizer.Stylus input which overrides
-+	 * the correct Digitizers.Finger X/Y ranges.
-+	 * Let's just ignore this input. */
-+	if (field->physical == HID_DG_STYLUS)
-+		return -1;
-+
-+	return mt_touch_input_mapping(hdev, hi, field, usage, bit, max);
-+}
-+
-+static int mt_input_mapped(struct hid_device *hdev, struct hid_input *hi,
-+		struct hid_field *field, struct hid_usage *usage,
-+		unsigned long **bit, int *max)
-+{
-+	return mt_touch_input_mapped(hdev, hi, field, usage, bit, max);
-+}
-+
-+static int mt_event(struct hid_device *hid, struct hid_field *field,
-+				struct hid_usage *usage, __s32 value)
-+{
-+	struct mt_device *td = hid_get_drvdata(hid);
-+
-+	if (field->report->id == td->mt_report_id)
-+		return mt_touch_event(hid, field, usage, value);
-+
-+	/* ignore other reports */
-+	return 1;
-+}
-+
-+static void mt_report(struct hid_device *hid, struct hid_report *report)
-+{
-+	struct mt_device *td = hid_get_drvdata(hid);
-+
-+	if (!(hid->claimed & HID_CLAIMED_INPUT))
-+		return;
-+
-+	if (report->id == td->mt_report_id)
-+		mt_touch_report(hid, report);
-+}
-+
- static void mt_set_input_mode(struct hid_device *hdev)
- {
- 	struct mt_device *td = hid_get_drvdata(hdev);
+The other big problem lies with hid drivers that fix the hid report descriptors.
+We can not split the hid device before we get the fix, so those drivers should
+have a special behavior.
+
+To sum up, I think does not make sense to do such deep changes, and to take such
+a risk of breaking existing devices.
+
+So the solution consists in relying inconditionaly to the quirk MULTI_INPUT for
+hid-multitouch. Before registering the input device in hid-input, we can test if
+it has been populated, and if not, then we simply don't register it. In order to
+prevent a regression for drivers that do not fill the input device, we need to
+add an other quirk.
+
+Cheers,
+Benjamin
+
+Benjamin Tissoires (7):
+  HID: input: don't register unmapped input devices
+  HID: multitouch: breaks out touch handling in specific functions
+  HID: multitouch: do not map usage from non used reports
+  HID: multitouch: add handling for pen in dual-sensors device
+  HID: multitouch: manually send sync event for pen input report
+  HID: multitouch: append " Pen" to the name of the stylus input
+  HID: multitouch: force BTN_STYLUS for pen devices
+
+ drivers/hid/hid-input.c      |  77 ++++++++++++++++++++++
+ drivers/hid/hid-multitouch.c | 151 ++++++++++++++++++++++++++++++++++++-------
+ include/linux/hid.h          |   1 +
+ 3 files changed, 207 insertions(+), 22 deletions(-)
+
 -- 
 1.8.1.2
 
