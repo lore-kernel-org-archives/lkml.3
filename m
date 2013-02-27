@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759076Ab3B0BhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Feb 2013 20:37:20 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:17219 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637Ab3B0BhS (ORCPT
+	id S1759686Ab3B0Bjh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Feb 2013 20:39:37 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:20796
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754541Ab3B0Bjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Feb 2013 20:37:18 -0500
-X-IronPort-AV: E=Sophos;i="4.84,744,1355126400"; 
-   d="scan'208";a="26748431"
-Message-ID: <512D634D.5010600@codeaurora.org>
-Date: Tue, 26 Feb 2013 17:37:17 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Tue, 26 Feb 2013 20:39:35 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1155h)
+From: Kim Phillips <kim.phillips@freescale.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>
+CC: Nicolas Pitre <nico@linaro.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/3] libfdt: add fdt type definitions in libfdt_env.h
+Date: Tue, 26 Feb 2013 19:36:13 -0600
+Message-ID: <1361928975-29395-1-git-send-email-kim.phillips@freescale.com>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: linux-arm-msm@vger.kernel.org, Steve Muckle <smuckle@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: vfp: fix fpsid register subarchitecture field mask
- width
-References: <1361520485-30269-1-git-send-email-sboyd@codeaurora.org> <20130225172545.GO17833@n2100.arm.linux.org.uk> <20130225200209.GP17833@n2100.arm.linux.org.uk>
-In-Reply-To: <20130225200209.GP17833@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/25/13 12:02, Russell King - ARM Linux wrote:
->
-> This can of worms is getting bigger.  We have more problems with our
-> handling of the different VFP versions, specifically the handling of
-> the EX=0 DEX=0 case.
->
-> VFP common subarch 3 defines the EX=0, DEX=0 encoding to mean one of
-> the following conditions have been met:
->
-> 1. an unallocated VFP instruction was encountered.
->
->    In other words, the VFP was the target of the co-processor instruction,
->    but the instruction is not a known VFP instruction encoding.  This
->    should raise an undefined instruction exception.
->
-> 2. an allocated VFP instruction was encountered, but not handled in
->    hardware.
->
->    In other words, the instruction is a valid VFP instruction, but the
->    hardware has opted not to implement this instruction and wants
->    software to emulate it instead.
->
->    (Note: this can also be raised as EX=0, DEX=1 - implementation
->     defined!)
->
-[snip]
->
-> So, if EX or DEX is set, _or_ IXE is set, we pass control to VFP_bounce.
-> This is problematical.
->
-> (a) condition (2) above isn't correctly handled for common subarch v3 - it
->     is always treated as an undefined instruction, and will result in a
->     SIGILL being delivered.
->
-[snip]
->
-> Now, (a) is just bad behaviour - as we haven't had any reports of this
-> yet, I suspect that no one has implemented VFP hardware with this
-> behaviour yet.
+in preparation for the forthcoming dtc update which adds fdt specific
+types: fdt{16,32,64}_t.
 
-I believe we ran into this a while ago and fixed it for our chips. We
-never sent the patch upstream. Sorry.
+Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+---
+ arch/arm/boot/compressed/libfdt_env.h | 4 ++++
+ include/linux/libfdt_env.h            | 6 ++++++
+ 2 files changed, 10 insertions(+)
 
-https://www.codeaurora.org/gitweb/quic/la/?p=kernel/msm.git;a=commitdiff;h=00a13be874f230159a6b7f8cc9d0ff23bc1b7d05
-
-I'm looking into what our bits correspond to. Hopefully get back to you
-in 20 something hours.
-
+diff --git a/arch/arm/boot/compressed/libfdt_env.h b/arch/arm/boot/compressed/libfdt_env.h
+index 1f4e718..17ae0f3 100644
+--- a/arch/arm/boot/compressed/libfdt_env.h
++++ b/arch/arm/boot/compressed/libfdt_env.h
+@@ -5,6 +5,10 @@
+ #include <linux/string.h>
+ #include <asm/byteorder.h>
+ 
++typedef __be16 fdt16_t;
++typedef __be32 fdt32_t;
++typedef __be64 fdt64_t;
++
+ #define fdt16_to_cpu(x)		be16_to_cpu(x)
+ #define cpu_to_fdt16(x)		cpu_to_be16(x)
+ #define fdt32_to_cpu(x)		be32_to_cpu(x)
+diff --git a/include/linux/libfdt_env.h b/include/linux/libfdt_env.h
+index 01508c7..da98097 100644
+--- a/include/linux/libfdt_env.h
++++ b/include/linux/libfdt_env.h
+@@ -5,6 +5,12 @@
+ 
+ #include <asm/byteorder.h>
+ 
++typedef __be16 fdt16_t;
++typedef __be32 fdt32_t;
++typedef __be64 fdt64_t;
++
++#define fdt16_to_cpu(x) be16_to_cpu(x)
++#define cpu_to_fdt16(x) cpu_to_be16(x)
+ #define fdt32_to_cpu(x) be32_to_cpu(x)
+ #define cpu_to_fdt32(x) cpu_to_be32(x)
+ #define fdt64_to_cpu(x) be64_to_cpu(x)
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.1.4
+
 
